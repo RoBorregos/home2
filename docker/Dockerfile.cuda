@@ -43,4 +43,4 @@ RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o 
     && apt-get update && apt install -y ros-humble-ros-base
 
 # Install ROS utilities
-RUN apt-get install -y ros-dev-tools
+RUN apt-get update && apt-get install -y ros-dev-tools
