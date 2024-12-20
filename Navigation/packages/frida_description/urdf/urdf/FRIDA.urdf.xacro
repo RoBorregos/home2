@@ -1,0 +1,172 @@
+<?xml version="1.0"?>
+<robot name="FRIDA" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+<!-- Properties -->
+<xacro:property name="mesh_path" value="package://frida_description/urdf/meshes/" />
+<xacro:property name="material_rgba" value="0.792 0.820 0.933 1" />
+<xacro:property name="lidar_rgba" value="0.102 0.102 0.102 1" />
+<xacro:property name="intel_rgba" value="0.776 0.757 0.737 1" />
+
+  <!-- Base Link -->
+  <link name="base_link">
+    <inertial>
+      <origin xyz="-0.0572325931675447 -0.00437678741979631 0.384343979057305" rpy="0 0 0" />
+      <mass value="13.9552672276187" />
+      <inertia ixx="0.387816129675932" ixy="-0.000166177926142373" ixz="-0.000583661776621432" 
+               iyy="0.34439433785987" iyz="-0.000132493833429814" izz="0.131300466770956" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="${mesh_path}base_link.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="${material_rgba}" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="${mesh_path}base_link.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <!-- Right Wheel -->
+  <link name="right_wheel">
+    <inertial>
+      <origin xyz="-0.1875 -0.034916320504547 0.256" rpy="0 0 0" />
+      <mass value="0.528918539158378" />
+      <inertia ixx="0.000631308353030454" ixy="4.50512202234995E-20" ixz="1.22382015150358E-21" 
+               iyy="0.000631308353030454" iyz="7.24830396865864E-21" izz="0.00112157176228534" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="${mesh_path}right_wheel.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="${material_rgba}" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="${mesh_path}right_wheel.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="rightwheel" type="continuous">
+    <origin xyz="0.11226 -0.09 0.0025837" rpy="-1.5708 0 0" />
+    <parent link="base_link" />
+    <child link="right_wheel" />
+    <axis xyz="0 0 0" />
+  </joint>
+
+  <!-- Left Wheel -->
+  <link name="left_wheel">
+    <inertial>
+      <origin xyz="-2.77555756156289E-17 0 -0.0389999999999999" rpy="0 0 0" />
+      <mass value="0.528918539158378" />
+      <inertia ixx="0.000631308353030454" ixy="-4.50512202234995E-20" ixz="-1.22382015150358E-21" 
+               iyy="0.000631308353030454" iyz="-7.24830396865864E-21" izz="0.00112157176228534" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="${mesh_path}left_wheel.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="${material_rgba}" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="${mesh_path}left_wheel.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="leftwheel" type="continuous">
+    <origin xyz="-0.075244 0.205 0.0375" rpy="-1.5708 0 0" />
+    <parent link="base_link" />
+    <child link="left_wheel" />
+    <axis xyz="0 0 0" />
+  </joint>
+
+  <!-- RealSense Camera -->
+  <link name="camera_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="${mesh_path}intel_realsense.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="${intel_rgba}" />
+      </material>
+    </visual>
+  </link>
+
+  <joint name="camera_joint" type="fixed">
+    <origin xyz="0.06478 0 0.55626" rpy="0 0 0" />
+    <parent link="base_link" />
+    <child link="camera_link" />
+  </joint>
+
+  <!-- Lidar Sensor -->
+  <link name="lidar_link">
+  <inertial>
+      <origin xyz="-1.38777878078145E-17 -3.38181918277552E-34 0.0125" rpy="0 0 0" />
+      <mass value="0.0962112750161874" />
+      <inertia ixx="3.44757068808005E-05" ixy="1.3254524700622E-52"  ixz="-6.00991536754997E-37"
+               iyy="3.44757068808005E-05" iyz="8.13422838622583E-38" izz="5.89294059474148E-05" />
+  </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="${mesh_path}LIDAR.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="${lidar_rgba}" />
+      </material>
+    </visual>
+  </link>
+
+  <joint name="lidar_joint" type="fixed">
+    <origin xyz="0.0 0.0 0.4" rpy="0 0 0" />
+    <parent link="base_link" />
+    <child link="lidar_link" />
+  </joint>
+
+<!-- external Xarm6 attachment
+
+  <xacro:arg name="prefix" default="" />
+  <xacro:arg name="add_gripper" default="false" />
+  <xacro:arg name="add_vacuum_gripper" default="false" />
+  <xacro:arg name="robot_type" default="xarm" />
+  <xacro:arg name="model1300" default="false" />
+  <xacro:arg name="add_realsense_d435i" default="false" />
+  <xacro:arg name="add_d435i_links" default="false" />
+  <xacro:arg name="robot_sn" default="" />
+
+  <xacro:arg name="dof" default="6" />
+  
+  <xacro:include filename="$(find xarm_description)/urdf/xarm_device_macro.xacro" />
+  <xacro:xarm_device prefix="$(arg prefix)" dof="$(arg dof)" attach_to="BaseBrazo" model1300="$(arg model1300)" add_gripper="$(arg add_gripper)" add_vacuum_gripper="$(arg add_vacuum_gripper)" add_realsense_d435i="$(arg add_realsense_d435i)" add_d435i_links="$(arg add_d435i_links)" robot_sn="$(arg robot_sn)" />
+
+
+  <xacro:include filename="$(find robot_description)/urdf/gripper/gripper.urdf.xacro" />
+  <xacro:include filename="$(find robot_description)/urdf/gripper/gripperP.urdf.xacro" />
+  <xacro:include filename="$(find robot_description)/urdf/gripper/gripperFakeSF.urdf.xacro" />
+  <xacro:include filename="$(find robot_description)/urdf/gripper/gripperSF.urdf.xacro" />
+  
+  <xacro:load_gripperSF attach_to="$(arg prefix)link_eef" xyz="0 0 0.007" rpy="-1.57 0 2.3554" />
+  
+  <xacro:include filename="$(find robot_description)/urdf/camera.urdf.xacro" />
+  
+  <xacro:load_camera name="Cam1" attach_to="Base_Gripper" x="0.068098" y="-0.035446" z="0.0" r_p="-0.785398" r_r="1.5707" r_y="0.0" />
+-->
+
+</robot>
