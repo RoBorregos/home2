@@ -10,6 +10,8 @@ find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 # find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
+find_package(cv_bridge REQUIRED)
+find_package(sensor_msgs REQUIRED)
 
 #Install directories
 install(DIRECTORY launch config
@@ -40,6 +42,7 @@ ament_python_install_package(${PROJECT_NAME})
 #Install python scripts
 install(PROGRAMS
   scripts/example_pkg_node.py
+  scripts/zed_simulator.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
