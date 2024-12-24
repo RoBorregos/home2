@@ -1,0 +1,35 @@
+<?xml version="1.0" ?>
+<sdf version="1.7">
+  <world name="default">
+    <!-- The physics engine to use -->
+    <physics type="dart">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1</real_time_factor>
+    </physics>
+
+    <!-- The default light source -->
+    <light name="sun" type="directional">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>1 1 1 1</diffuse>
+      <specular>1 1 1 1</specular>
+      <attenuation>
+        <range>1000</range>
+        <constant>0.9</constant>
+        <linear>0.01</linear>
+        <quadratic>0.001</quadratic>
+      </attenuation>
+      <direction>-0.5 0.5 -1</direction>
+    </light>
+
+    <!-- An empty ground plane -->
+    <include>
+      <uri>https://fuel.ignitionrobotics.org/1.0/OpenRobotics/models/Ground Plane</uri>
+    </include>
+
+    <!-- A simple environment sky -->
+    <include>
+      <uri>https://fuel.ignitionrobotics.org/1.0/OpenRobotics/models/Sky</uri>
+    </include>
+  </world>
+</sdf>
