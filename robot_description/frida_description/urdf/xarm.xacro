@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+<link name="Xarm">
+  </link>
+  <joint name="xarm" type="fixed">
+    <origin xyz="0.0049756 0 0.34" rpy="0 0 1.57" />
+    <parent link="base_link" />
+    <child link="Xarm" />
+    <axis xyz="0 0 0" />
+  </joint>
+
+  <xacro:arg name="prefix" default="" />
+  <xacro:arg name="add_gripper" default="false" />
+  <xacro:arg name="add_vacuum_gripper" default="false" />
+  <xacro:arg name="robot_type" default="xarm" />
+  <xacro:arg name="model1300" default="false" />
+  <xacro:arg name="add_realsense_d435i" default="false" />
+  <xacro:arg name="add_d435i_links" default="false" />
+  <xacro:arg name="robot_sn" default="" />
+
+  <xacro:arg name="dof" default="6" />
+  
+  <xacro:include filename="$(find xarm_description)/urdf/xarm_device_macro.xacro" />
+  <xacro:xarm_device prefix="$(arg prefix)" dof="$(arg dof)" attach_to="Xarm" model1300="$(arg model1300)" add_gripper="$(arg add_gripper)" add_vacuum_gripper="$(arg add_vacuum_gripper)" add_realsense_d435i="$(arg add_realsense_d435i)" add_d435i_links="$(arg add_d435i_links)" robot_sn="$(arg robot_sn)" />
+
+</robot>
