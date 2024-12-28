@@ -5,6 +5,4 @@
 *.user
 **/.vscode/
 **/__pychache__/
-Docker_command.txt
-ws/src/robot_localization
 

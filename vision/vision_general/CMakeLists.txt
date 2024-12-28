@@ -1,38 +1,19 @@
 cmake_minimum_required(VERSION 3.8)
 project(vision_general)
 
-if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic)
-endif()
-
 # find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
-# find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(cv_bridge REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(frida_interfaces REQUIRED)
 
 #Install directories
-install(DIRECTORY launch config
+install(DIRECTORY launch Utils
   DESTINATION share/${PROJECT_NAME})
-
-
-######################### CPP #########################
-# Include Cpp "include" directory
-include_directories(include)
-
-# Create Cpp executable
-# add_executable(cpp_executable src/example_pkg_cpp_node.cpp)
-# ament_target_dependencies(cpp_executable rclcpp)
-
-
-# Install Cpp executables
-# install(TARGETS
-#   cpp_executable
-#   DESTINATION lib/${PROJECT_NAME}
-# )
-
 
 
 ######################### Python  #########################
@@ -43,9 +24,9 @@ ament_python_install_package(${PROJECT_NAME})
 install(PROGRAMS
   scripts/example_pkg_node.py
   scripts/zed_simulator.py
+  scripts/face_recognition_node.py
   DESTINATION lib/${PROJECT_NAME}
 )
-
 
 ######################### Testing  #########################
 ##For testing
@@ -55,8 +36,5 @@ if(BUILD_TESTING)
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
-
-
-
 
 ament_package()
