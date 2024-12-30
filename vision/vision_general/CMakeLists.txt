@@ -25,6 +25,7 @@ install(PROGRAMS
   scripts/example_pkg_node.py
   scripts/zed_simulator.py
   scripts/face_recognition_node.py
+  scripts/receptionist_commands.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

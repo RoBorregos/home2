@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 
+'''
+    Node to recognize known people and
+    name new faces.
+    - Publisher for largest face detected 
+    coordinates for arm following.
+    - Service to assign name to face.
+'''
+
 import cv2
 import pathlib
 import face_recognition
@@ -18,16 +26,9 @@ from ament_index_python.packages import get_package_share_directory
 from frida_interfaces.srv import NewHost
 from frida_interfaces.msg import Person, PersonList
 
-'''
-    Node to recognize known people and
-    name new faces.
-    - Publisher for largest face detected 
-    coordinates for arm following.
-    - Service to assign name to face.
-'''
 
-NEW_NAME_TOPIC = '/vision/new_name'
 CAMERA_TOPIC = '/zed2/zed_node/rgb/image_rect_color'
+NEW_NAME_TOPIC = '/vision/new_name'
 FOLLOW_TOPIC = '/vision/follow_face'
 PERSON_LIST_TOPIC = '/vision/person_list'
 PERSON_NAME_TOPIC = '/vision/person_detected_name'
@@ -47,47 +48,56 @@ class FaceRecognition(Node):
         self.bridge = CvBridge()
         self.pbar = tqdm.tqdm(total=2)
 
+        self.image_subscriber = self.create_subscription(Image, CAMERA_TOPIC, self.image_callback, 10)
         self.new_name_service = self.create_service(NewHost, NEW_NAME_TOPIC, self.new_name_callback)
         self.follow_publisher = self.create_publisher(Point, FOLLOW_TOPIC, 10)
         self.name_publisher = self.create_publisher(String, PERSON_NAME_TOPIC, 10)
         self.person_list_publisher = self.create_publisher(PersonList, PERSON_LIST_TOPIC, 10)
-        self.image_subscriber = self.create_subscription(Image, CAMERA_TOPIC, self.image_callback, 10)
         
         self.setup()
         self.create_timer(0.1, self.run)
 
     def setup(self):
-            random = face_recognition.load_image_file(f"{KNOWN_FACES_PATH}/random.png")
-            random_encodings = face_recognition.face_encodings(random)[0]
-            self.pbar.update(1)
-            self.new_name = ""
-            self.image_view = None
-            self.image = None
-            self.prev_faces = [] 
-            self.curr_faces = []
+        '''
+        Setup face recognition, reset variables
+        and load models
+        '''
+        random = face_recognition.load_image_file(f"{KNOWN_FACES_PATH}/random.png")
+        random_encodings = face_recognition.face_encodings(random)[0]
+        self.pbar.update(1)
+        self.new_name = ""
+        self.image_view = None
+        self.image = None
+        self.prev_faces = [] 
+        self.curr_faces = []
 
-            self.people = [
-                [random_encodings, "random"]
-            ]
-            self.people_encodings = [
-                random_encodings
-            ]
-            self.people_names = [
-                "random"
-            ]
+        self.people = [
+            [random_encodings, "random"]
+        ]
+        self.people_encodings = [
+            random_encodings
+        ]
+        self.people_names = [
+            "random"
+        ]
 
-            self.clear()
-            self.process_imgs()
-            self.get_logger().info("Face Recognition Ready")
+        self.clear()
+        self.process_imgs()
+        self.get_logger().info("Face Recognition Ready")
+
+    def image_callback(self, data):
+        '''
+        Callback to get image from camera
+        '''
+        self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
 
     def new_name_callback(self, req, res):
-        self.get_logger().info("New face request")
+        '''
+        Callback to add a new face to the known faces
+        '''
+        self.get_logger().info("Executing service new face")
         self.new_name = req.name
         return res
-    
-    def image_callback(self, data):
-        self.get_logger().info("Image received")
-        self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
 
     def process_imgs(self) -> None:
         '''
@@ -114,7 +124,6 @@ class FaceRecognition(Node):
             file_path = os.path.join(KNOWN_FACES_PATH, filename)
             os.remove(file_path)
 
-        print("Cleared")
     
     def process_img(self, filename:str) -> None:
         '''
@@ -134,7 +143,6 @@ class FaceRecognition(Node):
         self.people_names.append(filename[:-4])
         self.people.append([cur_encodings, filename[:-4]])
 
-        print(f"{KNOWN_FACES_PATH}/{filename}")
 
     def save_face(self, name:str, xc:float, yc:float) -> None:
         '''
@@ -160,7 +168,6 @@ class FaceRecognition(Node):
         self.process_img(img_name)
 
         # Update prev recognitions for tracker
-        # index = 0
         for i, face in enumerate(self.curr_faces):
             if face["x"] == xc and face["y"] == yc:
                 index = i
@@ -199,18 +206,11 @@ class FaceRecognition(Node):
 
     def run(self) -> None:
         '''
-        Run face recognition
+        Run face recognition algorithm
         '''
 
-        # self.clear()
-        
-        
-        self.get_logger().info("Running face recognition")
-
-        # while rclpy.ok():
         if self.image is None:
             self.get_logger().info("No image")
-            # continue
             return
         
         self.get_logger().info("Processing frame")
@@ -315,9 +315,6 @@ class FaceRecognition(Node):
                 self.assign_name(left, top, bottom, right, xc, yc)
 
         self.prev_faces = self.curr_faces
-
-        
-        
 
         # Calculate the joint degrees for the arm to follow the face
         if detected:

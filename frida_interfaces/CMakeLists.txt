@@ -9,8 +9,10 @@ find_package(std_msgs REQUIRED)
 # Specify the .srv and .msg files
 rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/NewHost.srv"
+  "srv/FindSeat.srv"
   "msg/Person.msg"
   "msg/PersonList.msg"
+  "action/DetectPerson.action"
   DEPENDENCIES std_msgs 
 )
 
