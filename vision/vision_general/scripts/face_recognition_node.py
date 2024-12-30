@@ -103,7 +103,6 @@ class FaceRecognition(Node):
         '''
         Make encodings of known people images
         '''
-
         self.get_logger().info("Processing images")
         for filename in os.listdir(KNOWN_FACES_PATH):
             if filename == ".DS_Store":
