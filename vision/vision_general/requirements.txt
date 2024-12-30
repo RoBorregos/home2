@@ -1,0 +1,5 @@
+opencv-python
+pathlib
+tqdm
+numpy
+face_recognition
