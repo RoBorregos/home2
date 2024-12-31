@@ -1,0 +1,5 @@
+int32 guest_id 
+---
+bool success
+string name
+string favorite_drink
