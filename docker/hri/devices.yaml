@@ -28,10 +28,8 @@ services:
               count: 1 # alternatively, use `count: all` for all GPUs
               capabilities: [gpu]
     volumes:
-      - ../../hri/packages/:/workspace/ws
+      - ../../:/workspace/src
       - /tmp:/tmp
-      - ../../frida_interfaces:/workspace/frida_interfaces
-      - /var/run/docker.sock:/var/run/docker.sock
 
     network_mode: host
     user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
