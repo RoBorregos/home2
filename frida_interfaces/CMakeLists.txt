@@ -12,7 +12,10 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "vision/srv/FindSeat.srv"
   "vision/msg/Person.msg"
   "vision/msg/PersonList.msg"
-  "vision/action/DetectPerson.action"
+  # "vision/action/DetectPerson.action"
+  "hri/msg/AudioData.msg"
+  "hri/msg/AudioDataStamped.msg"
+  "hri/msg/AudioInfo.msg"
   DEPENDENCIES std_msgs 
 )
 
