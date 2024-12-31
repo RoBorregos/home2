@@ -5,4 +5,3 @@
 *.user
 **/.vscode/
 **/__pychache__/
-frida_interfaces
