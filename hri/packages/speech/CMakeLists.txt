@@ -27,11 +27,32 @@ install(DIRECTORY launch
 
 ament_python_install_package(${PROJECT_NAME})
 
-  #Install python scripts
-  # install(PROGRAMS
-  #   scripts/dashgo_driver
-  #   DESTINATION lib/${PROJECT_NAME}
-  # )
+# Install the Python module
+install(
+  DIRECTORY scripts/
+  DESTINATION ${PYTHON_INSTALL_DIR}/speech
+  FILES_MATCHING PATTERN "*.py"
+)
+
+# Install ONNX files
+# install(
+#   DIRECTORY assets/
+#   DESTINATION lib/${PROJECT_NAME}
+#   FILES_MATCHING PATTERN "*.onnx"
+# )
+
+# Install JSON files
+# install(
+#   DIRECTORY assets/
+#   DESTINATION lib/${PROJECT_NAME}
+#   FILES_MATCHING PATTERN "*.json"
+# )
+
+# Install python scripts
+install(PROGRAMS
+  scripts/say.py
+  DESTINATION lib/${PROJECT_NAME}
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
