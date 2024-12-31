@@ -1,0 +1,3 @@
+frida_interfaces/AudioData audio
+---
+string text_heard

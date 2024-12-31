@@ -1,0 +1,50 @@
+# Speech variables
+x-speech-devices:
+  &speech-devices # MIC_DEVICE_NAME: "ReSpeaker 4 Mic Array (UAC1.0): USB Audio"
+  MIC_DEVICE_NAME: "default"
+  MIC_INPUT_CHANNELS: 32
+  MIC_OUT_CHANNELS: 32
+  SPEAKER_DEVICE_NAME: "default"
+  SPEAKER_INPUT_CHANNELS: 32
+  SPEAKER_OUT_CHANNELS: 32
+  KEYWORD_DIR: /workspace/ws/src/speech/scripts/keywords
+  PULSE_SERVER: unix:/tmp/pulseaudio.socket
+  PULSE_COOKIE: /tmp/pulseaudio.cookie
+
+services:
+  speech_devices:
+    container_name: home2-hri-cuda-devices
+    build:
+      context: ../..
+      dockerfile: docker/hri/Dockerfile.cuda
+      args:
+        BASE_IMAGE: roborregos/home2:cuda_base
+    image: roborregos/home2:hri-cuda
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1 # alternatively, use `count: all` for all GPUs
+              capabilities: [gpu]
+    volumes:
+      - ../../:/workspace/src
+      - /tmp:/tmp
+
+    network_mode: host
+    user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
+    privileged: true
+    devices:
+      - /dev:/dev
+    environment:
+      <<:
+        - *speech-devices
+      DISPLAY: ${DISPLAY}
+    # env_file:
+    #   - ../.env
+    #   - network.env
+    tty: true
+    command: [
+        "bash",
+        # "source /workspace/ws/devel/setup.bash && roslaunch hri recepcionist_laptop.launch",
+      ]
