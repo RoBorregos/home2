@@ -1,6 +1,10 @@
-FROM nvidia/cuda:11.8.0-runtime-ubuntu22.04 AS base
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
 
+# Cuda images: BASE_IMAGE: nvidia/cuda:11.8.0-runtime-ubuntu22.04
+# CPU images: BASE_IMAGE: ubuntu:22.04
 
+ENV ROS_DISTRO=humble
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Install language
@@ -44,3 +48,19 @@ RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o 
 
 # Install ROS utilities
 RUN apt-get update && apt-get install -y ros-dev-tools
+
+# Setup workspace directory
+RUN mkdir -p /workspace
+WORKDIR /workspace
+
+# Set up autocompletion for user
+RUN apt-get update && apt-get install -y git-core bash-completion \
+    && echo "if [ -f /opt/ros/${ROS_DISTRO}/setup.bash ]; then source /opt/ros/${ROS_DISTRO}/setup.bash; fi" >> /home/$USERNAME/.bashrc \
+    && echo "if [ -f /usr/share/colcon_argcomplete/hook/colcon-argcomplete.bash ]; then source /usr/share/colcon_argcomplete/hook/colcon-argcomplete.bash; fi" >> /home/$USERNAME/.bashrc \
+    && rm -rf /var/lib/apt/lists/* 
+
+# Install general utilities
+RUN apt-get update -qq && apt-get install -y  build-essential \
+    ffmpeg libsm6 libxext6 autoconf libtool mesa-utils \
+    terminator nano git wget iputils-ping \
+    libcanberra-gtk-module libcanberra-gtk3-module
