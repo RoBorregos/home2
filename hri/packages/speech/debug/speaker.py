@@ -1,10 +1,8 @@
 # python3 debug/speaker.py
 
-from speech.speech_api_utils import SpeechApiUtils
-
-from speech.wav_utils import WavUtils
-
-import os
+# from speech.speech_api_utils import SpeechApiUtils
+# from speech.wav_utils import WavUtils
+# import os
 
 import sounddevice as sd
 from pygame import mixer
@@ -15,7 +13,8 @@ def get_devices():
     num_dev = 0
     for device_info in devices:
         print(
-            f"Device [{num_dev}]: [{device_info['name']}], [{device_info['max_input_channels']}] input channels, [{device_info['max_output_channels']}] output channels")
+            f"Device [{num_dev}]: [{device_info['name']}], [{device_info['max_input_channels']}] input channels, [{device_info['max_output_channels']}] output channels"
+        )
         num_dev = num_dev + 1
 
     # print("Original order:")
