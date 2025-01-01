@@ -48,9 +48,11 @@ install(
 #   FILES_MATCHING PATTERN "*.json"
 # )
 
+file(GLOB PYTHON_SCRIPTS scripts/*.py)
+
 # Install python scripts
 install(PROGRAMS
-  scripts/say.py
+  ${PYTHON_SCRIPTS}
   DESTINATION lib/${PROJECT_NAME}
 )
 
