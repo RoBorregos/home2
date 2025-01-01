@@ -4,15 +4,16 @@ import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from std_msgs.msg import String, Bool
-from speech.speech_api_utils import SpeechApiUtils
+from frida_interfaces.srv import Speak
 
 import os
 from gtts import gTTS
+from pygame import mixer
+import subprocess
+
+from speech.speech_api_utils import SpeechApiUtils
 from speech.wav_utils import WavUtils
 
-from pygame import mixer
-from frida_interfaces.srv import Speak
-import subprocess
 
 SPEAK_SERVICE_TOPIC = "/speech/speak"
 SPEAK_NOW_TOPIC = "/speech/speak_now"
