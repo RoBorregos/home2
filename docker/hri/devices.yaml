@@ -13,20 +13,13 @@ x-speech-devices:
 
 services:
   speech_devices:
-    container_name: home2-hri-cuda-devices
+    container_name: home2-hri-cpu-devices
     build:
       context: ../..
-      dockerfile: docker/hri/Dockerfile.cuda
+      dockerfile: docker/hri/Dockerfile.cpu
       args:
-        BASE_IMAGE: roborregos/home2:cuda_base
-    image: roborregos/home2:hri-cuda
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1 # alternatively, use `count: all` for all GPUs
-              capabilities: [gpu]
+        BASE_IMAGE: roborregos/home2:cpu_base
+    image: roborregos/home2:hri-cpu
     volumes:
       - ../../:/workspace/src
       - /tmp:/tmp
