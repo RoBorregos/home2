@@ -49,3 +49,7 @@ If you are using vscode, you can add the following in `.vscode/settings.json` to
   }
 }
 ```
+
+### Other integrations
+
+For integration with other editors, check the [ruff documentation](https://docs.astral.sh/ruff/editors/setup/)
