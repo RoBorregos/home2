@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+ <xacro:macro name="castwheel" params="prefix inertial_origin ixy ixz iyz">
+    <link name="${prefix}_cast_wheel">
+      <inertial>
+        <origin xyz="${inertial_origin}" rpy="0 0 0" />
+        <mass value="0.069429" />
+        <inertia ixx="1.9537E-05" ixy="${ixy}" ixz="${ixz}"
+                 iyy="1.9515E-05" iyz="${iyz}" izz="3.1777E-05" />
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="${mesh_path}${prefix}_cast_wheel.STL" />
+        </geometry>
+        <material name="">
+          <color rgba="${lidar_rgba}" />
+        </material>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="${mesh_path}${prefix}_cast_wheel.STL" />
+        </geometry>
+      </collision>
+    </link>
+    <joint name="${prefix}castwheel" type="continuous">
+      <origin xyz="0 0 0.044416" rpy="1.5708 0 0" />
+      <parent link="${prefix}_castwheel_bracket" />
+      <child link="${prefix}_cast_wheel" />
+      <axis xyz="0 0 1" />
+    </joint>
+  </xacro:macro>
+
+  <xacro:castwheel prefix="right" inertial_origin="6.93889390390723E-17 4.16333634234434E-17 1.11022302462516E-16" ixy="2.0056E-21" ixz="1.5647E-227" iyz="2.0594E-22" />
+  <xacro:castwheel prefix="left" inertial_origin="5.5511E-17 1.9082E-17 -6.9389E-17" ixy="-4.5297E-22" ixz="1.137E-217" iyz="-3.028E-21" />
+
+</robot>
