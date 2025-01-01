@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot name="FRIDA" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+
+<xacro:include filename="robot.xacro"/>
+
+</robot>

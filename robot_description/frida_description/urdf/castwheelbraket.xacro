@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+ <xacro:macro name="castwheel_bracket" params="prefix inertial_origin ixy ixz iyz joint_origin">
+    <link name="${prefix}_castwheel_bracket">
+      <inertial>
+        <origin xyz="${inertial_origin}" rpy="0 0 0" />
+        <mass value="0.045185" />
+        <inertia ixx="1.9146E-05" ixy="${ixy}" ixz="${ixz}"
+                 iyy="2.036E-05" iyz="${iyz}" izz="1.5813E-05" />
+      </inertial>
+      <visual>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="${mesh_path}${prefix}_castwheel_bracket.STL" />
+        </geometry>
+        <material name="">
+          <color rgba="${intel_rgba}" />
+        </material>
+      </visual>
+      <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+          <mesh filename="${mesh_path}${prefix}_castwheel_bracket.STL" />
+        </geometry>
+      </collision>
+    </link>
+    <joint name="${prefix}castwheelbracket" type="continuous">
+      <origin xyz="${joint_origin}" rpy="3.1416 0 0" />
+      <parent link="base_link" />
+      <child link="${prefix}_castwheel_bracket" />
+      <axis xyz="0 0 -1" />
+    </joint>
+  </xacro:macro>
+
+  <xacro:castwheel_bracket prefix="right" inertial_origin="-6.9389E-17 -1.3878E-17 0.012445" ixy="-5.23501237066605E-21" ixz="1.02910979879346E-20" iyz="1.03781586309714E-20" joint_origin="0.11226 -0.09 -0.068" />
+  <xacro:castwheel_bracket prefix="left" inertial_origin="0 -4.1633E-17 0.012445" ixy="2.58235447481398E-21" ixz="-2.02138625848788E-21" iyz="-2.42344897559804E-22" joint_origin="0.11226 0.09 -0.068" />
+</robot>

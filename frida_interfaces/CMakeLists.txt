@@ -8,13 +8,15 @@ find_package(std_msgs REQUIRED)
 find_package(action_msgs REQUIRED)
 find_package(unique_identifier_msgs REQUIRED)
 
+file(GLOB_RECURSE action_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "*.action")
+file(GLOB_RECURSE srv_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "*.srv")
+file(GLOB_RECURSE msg_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "*.msg")
+
 # Specify the .srv and .msg files
 rosidl_generate_interfaces(${PROJECT_NAME}
-  "vision/srv/NewHost.srv"
-  "vision/srv/FindSeat.srv"
-  "vision/msg/Person.msg"
-  "vision/msg/PersonList.msg"
-  "vision/action/DetectPerson.action"
+  ${action_files}
+  ${srv_files}
+  ${msg_files}
   DEPENDENCIES std_msgs unique_identifier_msgs action_msgs
 )
 
