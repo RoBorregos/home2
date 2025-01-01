@@ -12,7 +12,7 @@ home2
 │
 │hri
 ├── packages # Contains packages for the project
-│   ├── nlp 
+│   ├── nlp
 │   └── speech
 │       ├── CMakeLists.txt
 │       ├── launch
@@ -45,7 +45,7 @@ docker compose -f devices.yaml up
 docker exec -it home2-hri-cuda-devices bash
 
 # Enable non-root ownership of the workspace
-sudo chown -R $(id -u):$(id -g) 
+sudo chown -R $(id -u):$(id -g) .
 
 # pwd -> /workspace
 colcon build --symlink-install  --packages-select frida_interfaces speech
@@ -54,12 +54,12 @@ colcon build --symlink-install  --packages-select frida_interfaces speech
 
 ## Running the project
 
-Most of the final commands will be executed using the docker compose file. 
+Most of the final commands will be executed using the docker compose file.
 
 However, some testing commands are the following:
 
 ```bash
-ros2 run speech say.py 
+ros2 run speech say.py
 
 ros2 topic pub /speech/speak_now --once std_msgs/msg/String "data: 'Go to the kitchen and grab cookies'"
 ```
