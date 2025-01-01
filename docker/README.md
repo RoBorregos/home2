@@ -56,6 +56,20 @@ docker compose -f docker/cuda.yaml build
 
 The base images must be built before running areas' docker compose files.
 
+## Using Docker Compose files and containers
+
+```bash
+# pwd -> home2/docker/hri
+docker compose -f devices.yaml up # Create containers
+
+docker compose -f devices.yaml down # Remove containers
+
+docker compose -f devices.yaml stop # Stop containers
+
+# Enter a container
+docker exec -it <container_name> bash
+```
+
 ## Dockerfile.ROS
 
 The `Dockerfile.ROS` file is a template that can be used to install ROS humble in a plain docker image. This is used to build the base image for both `cpu.yaml` and `cuda.yaml`.
