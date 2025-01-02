@@ -1,21 +1,21 @@
-
-import socket
 import audioop
+import socket
+
 import sounddevice as sd
 
 
 class SpeechApiUtils(object):
     @staticmethod
     def is_connected():
-        '''
+        """
         Try to connect the fastest possible to a stablished server to see if
-        there is internet connection. It connects to one of the Google's 
+        there is internet connection. It connects to one of the Google's
         dns servers (port 53) (https://developers.google.com/speed/public-dns/docs/using),
-        this to avoid timeouts in DNS servers via a hostname. 
+        this to avoid timeouts in DNS servers via a hostname.
         https://stackoverflow.com/a/33117579
 
         TODO: Maybe try to do this to also ensure a enough good internet.
-        '''
+        """
         try:
             # connect to the host -- tells us if the host is actually
             # reachable
@@ -40,13 +40,13 @@ class SpeechApiUtils(object):
         index = 0
         while True:
             try:
-                index = index+1
+                index = index + 1
                 sample = audioop.getsample(data, 2, index)
-                sample_8a = sample & 0xff
-                sample_8b = (sample >> 8) & 0xff
+                sample_8a = sample & 0xFF
+                sample_8b = (sample >> 8) & 0xFF
                 allsamples.append(int(str(sample_8a)))
                 allsamples.append(int(str(sample_8b)))
-            except:
+            except audioop.error:
                 break
 
         return allsamples
@@ -62,8 +62,12 @@ class SpeechApiUtils(object):
         num_dev = 0
         for device_info in devices:
             # print(f"Device {num_dev}: [{device_info['name']}], [{device_info['max_input_channels']}] input channels, [{device_info['max_output_channels']}] output channels")
-            if name in device_info['name'] or (device_info['max_input_channels'] == in_channels and device_info['max_output_channels'] == out_channels):
+            if name in device_info["name"] or (
+                device_info["max_input_channels"] == in_channels
+                and device_info["max_output_channels"] == out_channels
+            ):
                 return num_dev
             num_dev = num_dev + 1
 
+        return None
         return None
