@@ -43,11 +43,10 @@ OFFLINE = True
 
 
 class Say(Node):
-
     def __init__(self):
-        super().__init__('say')
-        self.publisher_ = self.create_publisher(Bool, 'saying', 10)
-        self.get_logger().info('Say node has started.')
+        super().__init__("say")
+        self.publisher_ = self.create_publisher(Bool, "saying", 10)
+        self.get_logger().info("Say node has started.")
 
         self.connected = False
         if not OFFLINE:
@@ -55,8 +54,7 @@ class Say(Node):
 
         self.create_service(Speak, SPEAK_SERVICE_TOPIC, self.speak_service)
 
-        self.create_subscription(String,
-                                 SPEAK_NOW_TOPIC, self.speak_topic, 10)
+        self.create_subscription(String, SPEAK_NOW_TOPIC, self.speak_topic, 10)
 
     def speak_service(self, req):
         """When say is called as a service. Caller awaits for the response."""
@@ -138,8 +136,11 @@ class Say(Node):
     def synthesize_voice_offline(self, output_path, text):
         """Synthesize text using the offline voice model."""
 
-        executable = "/workspace/piper/install/piper" if os.path.exists(
-            "/workspace/piper/install/piper") else "python3.10 -m piper"
+        executable = (
+            "/workspace/piper/install/piper"
+            if os.path.exists("/workspace/piper/install/piper")
+            else "python3.10 -m piper"
+        )
 
         model_path = os.path.join(VOICE_DIRECTORY, MODEL + ".onnx")
 
@@ -176,5 +177,5 @@ def main(args=None):
         rclpy.try_shutdown()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
