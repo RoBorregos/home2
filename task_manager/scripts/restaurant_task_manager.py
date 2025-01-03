@@ -8,7 +8,6 @@ import rclpy
 from rclpy.node import Node
 
 from subtask_managers.vision_tasks import VisionTasks
-# from frida_interfaces.srv import SaveName
 
 AREAS = ["nav", "manipulation", "hri", "vision"]
 
@@ -36,6 +35,7 @@ class RestaurantTaskManager(Node):
         self.run()
     
     def run(self):
+        """testing vision tasks"""
         self.subtask_manager["vision"].save_face_name("John Doe")
         angle = self.subtask_manager["vision"].find_seat()
         self.subtask_manager["vision"].detect_person()
