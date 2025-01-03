@@ -57,15 +57,11 @@ class ReceptionistCommands(Node):
         self.create_timer(0.1, self.publish_image)
 
     def image_callback(self, data):
-        '''
-        Callback to receive the image from the camera.
-        '''
+        """ Callback to receive the image from the camera. """
         self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
 
     def find_seat_callback(self, request, response):
-        '''
-        Callback to find an available seat.
-        '''
+        """ Callback to find an available seat. """
         self.get_logger().info('Executing service Find Seat')
 
         if self.image is None:
@@ -102,10 +98,8 @@ class ReceptionistCommands(Node):
         return response
     
     async def detect_person_callback(self, goal_handle):
-        '''
-        Callback to return a response until a person is 
-        detected in a frame or timeout is reached.
-        '''
+        """ Callback to return a response until a person is 
+        detected in a frame or timeout is reached. """
         self.get_logger().info('Executing action Detect Person')
 
         self.person_found = False
@@ -126,35 +120,25 @@ class ReceptionistCommands(Node):
         return result
     
     def success(self, message):
-        '''
-        Log a success message.
-        '''
+        """ Log a success message. """
         self.get_logger().info(f"\033[92mSUCCESS:\033[0m {message}")
 
     def publish_image(self):
-        '''
-        Publish the image with the detections
-        if available.
-        '''
+        """ Publish the image with the detections if available. """
         if len(self.output_image) != 0:
             cv2.imshow("Receptionist Commands", self.output_image)
             cv2.waitKey(1)
             self.image_publisher.publish(self.bridge.cv2_to_imgmsg(self.output_image, "bgr8"))
     
     def getAngle(self, x, width):
-        '''
-        Get the angle for the robot to point
-        at the available seat.
-        '''
+        """ Get the angle for the robot to point at the available seat. """
         diff = x - (width / 2)
         move = diff * MAX_DEGREE / (width / 2)
         return move
     
     def detect_person(self):
-        '''
-        Check if there is a person in the frame
-        and resolve the future promise.
-        '''
+        """ Check if there is a person in the frame and 
+        resolve the future promise. """
         if self.image is None:
             self.get_logger().warn("No image received yet.")
             return
@@ -184,9 +168,7 @@ class ReceptionistCommands(Node):
             self.detection_future.set_result(self.person_found)
         
     def get_detections(self, frame) -> None:
-        '''
-        Obtain yolo detections for people, chairs and couches.
-        '''
+        """ Obtain yolo detections for people, chairs and couches. """
         results = self.model(frame, verbose=False, classes=[0,56,57])
 
         for out in results:
@@ -217,11 +199,9 @@ class ReceptionistCommands(Node):
                 cv2.putText(self.output_image, label, (x1, y1), cv2.FONT_HERSHEY_SIMPLEX, 1, color, 2, cv2.LINE_AA)
 
     def check_chairs(self, frame) -> tuple[bool, float]:
-        '''
-        Check if there is an available chair with
+        """ Check if there is an available chair with
         no person within the bbox and return the angle
-        of the largest available chair. 
-        '''
+        of the largest available chair. """
         chair_queue = queue.PriorityQueue()
 
         for chair in self.chairs:
@@ -258,11 +238,8 @@ class ReceptionistCommands(Node):
         return False, 0
     
     def check_couches(self, frame) -> tuple[bool, float]:
-        '''
-        Check if there is an available space in the
-        couches and return the angle of the largest 
-        space.
-        '''
+        """ Check if there is an available space in the
+        couches and return the angle of the largest space. """
         available_spaces = queue.PriorityQueue()
 
             # Check if there are couch spaces available

@@ -58,10 +58,7 @@ class FaceRecognition(Node):
         self.create_timer(0.1, self.run)
 
     def setup(self):
-        '''
-        Setup face recognition, reset variables
-        and load models
-        '''
+        """ Setup face recognition, reset variables and load models """
         random = face_recognition.load_image_file(f"{KNOWN_FACES_PATH}/random.png")
         random_encodings = face_recognition.face_encodings(random)[0]
         self.pbar.update(1)
@@ -86,30 +83,22 @@ class FaceRecognition(Node):
         self.get_logger().info("Face Recognition Ready")
 
     def image_callback(self, data):
-        '''
-        Callback to get image from camera
-        '''
+        """ Callback to get image from camera """
         self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
 
     def new_name_callback(self, req, res):
-        '''
-        Callback to add a new face to the known faces
-        '''
+        """ Callback to add a new face to the known faces """
         self.get_logger().info("Executing service new face")
         self.new_name = req.name
         res.success = True
         return res
     
     def success(self, message) -> None:
-        '''
-        Print success message
-        '''
+        """ Print success message """
         self.get_logger().info(f"\033[92mSUCCESS:\033[0m {message}")
 
     def process_imgs(self) -> None:
-        '''
-        Make encodings of known people images
-        '''
+        """ Make encodings of known people images """
         self.get_logger().info("Processing images")
         for filename in os.listdir(KNOWN_FACES_PATH):
             if filename == ".DS_Store":
@@ -118,9 +107,7 @@ class FaceRecognition(Node):
             self.process_img(filename)
 
     def clear(self) -> None:
-        '''
-        Clear previous results
-        '''
+        """ Clear previous results """
         for filename in os.listdir(KNOWN_FACES_PATH):
             if filename == ".DS_Store" or filename == "random.png" or filename == DEFAULT_NAME + ".png":
                 continue
@@ -132,9 +119,7 @@ class FaceRecognition(Node):
 
     
     def process_img(self, filename:str) -> None:
-        '''
-        Process image, obtain encodings and add to known people
-        '''
+        """ Process image, obtain encodings and add to known people """
         img = face_recognition.load_image_file(f"{KNOWN_FACES_PATH}/{filename}")
         cur_encodings = face_recognition.face_encodings(img)
 
@@ -151,9 +136,7 @@ class FaceRecognition(Node):
 
 
     def save_face(self, name:str, xc:float, yc:float) -> None:
-        '''
-        Save face to list and return Person message
-        '''
+        """ Save face to list and return Person message """
         self.curr_faces.append({"x": xc, "y": yc, "name": name})
         curr_person = Person()
         curr_person.name = name
@@ -162,9 +145,7 @@ class FaceRecognition(Node):
         self.face_list.list.append(curr_person)
     
     def assign_name(self, left:float, top:float, bottom:float, right:float, xc:float, yc:float) -> None:
-        '''
-        Assign name to largest face detected
-        '''
+        """ Assign name to largest face detected """
 
         crop = self.frame[top:bottom, left:right]
 
@@ -187,9 +168,7 @@ class FaceRecognition(Node):
         self.new_name = ""
     
     def publish_follow_face(self, xc:float, yc:float, largest_face_name:str) -> None:
-        '''
-        Publish coordinates for arm to follow face
-        '''
+        """ Publish coordinates for arm to follow face """
         # Coordinates to follow largest face
         difx = 0 if xc == 0 else xc - self.center[0]
         dify = 0 if yc == 0 else self.center[1] - yc
@@ -211,9 +190,7 @@ class FaceRecognition(Node):
         self.person_list_publisher.publish(self.face_list)
 
     def run(self) -> None:
-        '''
-        Run face recognition algorithm
-        '''
+        """ Run face recognition algorithm """
 
         if self.image is None:
             self.get_logger().info("No image")
