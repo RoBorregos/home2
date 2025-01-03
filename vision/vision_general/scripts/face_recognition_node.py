@@ -242,7 +242,7 @@ class FaceRecognition(Node):
 
             # If not a tracked face, then it needs to be processed (compare to known faces)
             if not flag:
-                if face_encodings == None:
+                if face_encodings is None:
                     face_encodings = face_recognition.face_encodings(resized_frame, face_locations)
                 
                 face_encoding = face_encodings[i]
