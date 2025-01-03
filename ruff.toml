@@ -2,7 +2,6 @@
 exclude = [
     "navigation",
     "robot_description",
-    "vision",
     ".bzr",
     ".direnv",
     ".eggs",
