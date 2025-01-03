@@ -37,7 +37,7 @@ class RestaurantTaskManager(Node):
     def run(self):
         """testing vision tasks"""
         self.subtask_manager["vision"].save_face_name("John Doe")
-        angle = self.subtask_manager["vision"].find_seat()
+        self.subtask_manager["vision"].find_seat()
         self.subtask_manager["vision"].detect_person()
 
 def main(args=None):
