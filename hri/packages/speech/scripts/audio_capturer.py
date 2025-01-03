@@ -20,7 +20,8 @@ MIC_INPUT_CHANNELS = int(os.getenv("MIC_INPUT_CHANNELS", default=2))
 MIC_OUT_CHANNELS = int(os.getenv("MIC_OUT_CHANNELS", default=0))
 
 INPUT_DEVICE_INDEX = SpeechApiUtils.getIndexByNameAndChannels(
-    MIC_DEVICE_NAME, MIC_INPUT_CHANNELS, MIC_OUT_CHANNELS)
+    MIC_DEVICE_NAME, MIC_INPUT_CHANNELS, MIC_OUT_CHANNELS
+)
 
 if INPUT_DEVICE_INDEX is None:
     print("Warning: input device index not found, using system default.")
@@ -28,12 +29,12 @@ if INPUT_DEVICE_INDEX is None:
 
 class AudioCapturer(Node):
     def __init__(self):
-        super().__init__('audio_capturer')
-        self.publisher_ = self.create_publisher(AudioData, 'rawAudioChunk', 20)
-        self.get_logger().info('AudioCapturer node initialized.')
+        super().__init__("audio_capturer")
+        self.publisher_ = self.create_publisher(AudioData, "rawAudioChunk", 20)
+        self.get_logger().info("AudioCapturer node initialized.")
 
     def record(self):
-        self.get_logger().info('AudioCapturer node recording.')
+        self.get_logger().info("AudioCapturer node recording.")
 
         # Format for the recorded audio, constants set from the Porcupine demo.py
         CHUNK_SIZE = 512
@@ -43,19 +44,20 @@ class AudioCapturer(Node):
         EXTRACT_CHANNEL = 0  # Use channel 0. Tested with TestMic.py. See channel meaning: https://wiki.seeedstudio.com/ReSpeaker-USB-Mic-Array/#update-firmware
 
         p = pyaudio.PyAudio()
-        stream = p.open(input_device_index=INPUT_DEVICE_INDEX,  # See list_audio_devices() or set it to None for default
-                        format=FORMAT,
-                        channels=CHANNELS,
-                        rate=RATE,
-                        input=True,
-                        frames_per_buffer=CHUNK_SIZE)
+        stream = p.open(
+            input_device_index=INPUT_DEVICE_INDEX,  # See list_audio_devices() or set it to None for default
+            format=FORMAT,
+            channels=CHANNELS,
+            rate=RATE,
+            input=True,
+            frames_per_buffer=CHUNK_SIZE,
+        )
 
         while stream.is_active() and rclpy.ok():
             try:
                 in_data = stream.read(CHUNK_SIZE, exception_on_overflow=False)
                 if USE_RESPEAKER:
-                    in_data = np.frombuffer(in_data, dtype=np.int16)[
-                        EXTRACT_CHANNEL:: 6]
+                    in_data = np.frombuffer(in_data, dtype=np.int16)[EXTRACT_CHANNEL::6]
                     in_data = in_data.tobytes()
                 msg = in_data
                 self.publisher_.publish(AudioData(data=msg))
@@ -81,5 +83,5 @@ def main(args=None):
         rclpy.try_shutdown()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
