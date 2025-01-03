@@ -143,4 +143,3 @@ if __name__ == '__main__':
         rclpy.spin(node)
     except Exception as e:
         print(f"Error: {e}")
-        
