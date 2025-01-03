@@ -20,25 +20,27 @@ AREA_ENABLED = {
     "nav": NAV_ENABLED,
     "manipulation": MANIPULATION_ENABLED,
     "hri": CONVERSATION_ENABLED,
-    "vision": VISION_ENABLED
+    "vision": VISION_ENABLED,
 }
+
 
 class RestaurantTaskManager(Node):
     def __init__(self):
-        super().__init__('restaurant_task_manager')
+        super().__init__("restaurant_task_manager")
         self.subtask_manager = {}
 
         if VISION_ENABLED:
             self.subtask_manager["vision"] = VisionTasks(self)
 
-        self.get_logger().info('RestaurantTaskManager has started.')
+        self.get_logger().info("RestaurantTaskManager has started.")
         self.run()
-    
+
     def run(self):
         """testing vision tasks"""
         self.subtask_manager["vision"].save_face_name("John Doe")
         self.subtask_manager["vision"].find_seat()
         self.subtask_manager["vision"].detect_person()
+
 
 def main(args=None):
     rclpy.init(args=args)
@@ -52,5 +54,6 @@ def main(args=None):
         node.destroy_node()
         rclpy.shutdown()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
