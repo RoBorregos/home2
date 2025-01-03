@@ -25,7 +25,7 @@ from frida_interfaces.srv import FindSeat
 
 
 CAMERA_TOPIC = "/zed2/zed_node/rgb/image_rect_color"
-CHECK_PERSON_TOPIC = "/vision/check_person"
+CHECK_PERSON_TOPIC = "/vision/detect_person"
 FIND_SEAT_TOPIC = "/vision/find_seat"
 IMAGE_TOPIC = "/vision/img_person_detecion"
 
@@ -45,7 +45,7 @@ class ReceptionistCommands(Node):
         self.image_subscriber = self.create_subscription(Image, CAMERA_TOPIC, self.image_callback, 10)
         self.image_publisher = self.create_publisher(Image, IMAGE_TOPIC, 10)
         self.person_detection_action_server = ActionServer(
-            self, DetectPerson, CHECK_PERSON_TOPIC, self.check_person_callback)
+            self, DetectPerson, CHECK_PERSON_TOPIC, self.detect_person_callback)
         
         self.image = None
         self.model = YOLO(MODEL_LOCATION)
@@ -86,7 +86,7 @@ class ReceptionistCommands(Node):
         if has_chair_seat:
             response.success = True
             response.angle = angle
-            self.get_logger().info(f"Seat found: {angle}")
+            self.success(f"Seat found in chair at angle: {angle}")
             return response
 
         has_couch_seat, angle = self.check_couches(frame)
@@ -94,18 +94,19 @@ class ReceptionistCommands(Node):
         if has_couch_seat:
             response.success = True
             response.angle = angle
-            self.get_logger().info(f"Seat found: {angle}")
+            self.success(f"Seat found in couch at angle: {angle}")
             return response
         
         response.success = False
+        self.get_logger().warn("No seat found")
         return response
     
-    async def check_person_callback(self, goal_handle):
+    async def detect_person_callback(self, goal_handle):
         '''
         Callback to return a response until a person is 
         detected in a frame or timeout is reached.
         '''
-        self.get_logger().info('Executing action Check Person')
+        self.get_logger().info('Executing action Detect Person')
 
         self.person_found = False
         self.goal_handle = goal_handle
@@ -118,8 +119,18 @@ class ReceptionistCommands(Node):
         result = DetectPerson.Result()
         result.success = self.person_found
         goal_handle.succeed()
+        if self.person_found:
+            self.success("Person detected")
+        else:
+            self.get_logger().warn("No person detected")
         return result
     
+    def success(self, message):
+        '''
+        Log a success message.
+        '''
+        self.get_logger().info(f"\033[92mSUCCESS:\033[0m {message}")
+
     def publish_image(self):
         '''
         Publish the image with the detections

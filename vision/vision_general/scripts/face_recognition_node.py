@@ -23,7 +23,7 @@ from geometry_msgs.msg import Point
 from std_msgs.msg import String
 from ament_index_python.packages import get_package_share_directory
 
-from frida_interfaces.srv import NewHost
+from frida_interfaces.srv import SaveName
 from frida_interfaces.msg import Person, PersonList
 
 
@@ -49,7 +49,7 @@ class FaceRecognition(Node):
         self.pbar = tqdm.tqdm(total=2)
 
         self.image_subscriber = self.create_subscription(Image, CAMERA_TOPIC, self.image_callback, 10)
-        self.new_name_service = self.create_service(NewHost, NEW_NAME_TOPIC, self.new_name_callback)
+        self.new_name_service = self.create_service(SaveName, NEW_NAME_TOPIC, self.new_name_callback)
         self.follow_publisher = self.create_publisher(Point, FOLLOW_TOPIC, 10)
         self.name_publisher = self.create_publisher(String, PERSON_NAME_TOPIC, 10)
         self.person_list_publisher = self.create_publisher(PersonList, PERSON_LIST_TOPIC, 10)
@@ -97,7 +97,14 @@ class FaceRecognition(Node):
         '''
         self.get_logger().info("Executing service new face")
         self.new_name = req.name
+        res.success = True
         return res
+    
+    def success(self, message) -> None:
+        '''
+        Print success message
+        '''
+        self.get_logger().info(f"\033[92mSUCCESS:\033[0m {message}")
 
     def process_imgs(self) -> None:
         '''
@@ -175,7 +182,7 @@ class FaceRecognition(Node):
 
         self.curr_faces[index]["name"] = self.new_name
         self.face_list.list[index].name = self.new_name
-        self.get_logger().info(f"{self.new_name} face saved")
+        self.success(f"{self.new_name} face saved")
         
         self.new_name = ""
     
@@ -212,7 +219,6 @@ class FaceRecognition(Node):
             self.get_logger().info("No image")
             return
         
-        self.get_logger().info("Processing frame")
         self.frame = self.image
         self.center = [self.frame.shape[1]/2, self.frame.shape[0]/2]
 
