@@ -26,8 +26,8 @@
   </link>
 
    <gazebo reference="base_link">
-    <mu1>200</mu1>
-    <mu2>200</mu2>
+    <mu1>0.1</mu1>
+    <mu2>0.1</mu2>
     <kp>1000000</kp>
     <kd>1</kd>
   </gazebo>
