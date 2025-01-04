@@ -11,8 +11,8 @@
   <right_joint>rightwheel</right_joint>
 
   <!-- kinematics -->
-  <wheel_separation>0.287</wheel_separation>
-  <wheel_radius>0.033</wheel_radius> <!-- computed from <wheel_diameter> in the original plugin-->
+  <wheel_separation>0.332</wheel_separation>
+  <wheel_radius>0.065</wheel_radius> <!-- computed from <wheel_diameter> in the original plugin-->
 
   <!-- limits -->   
   <max_linear_acceleration>0.033</max_linear_acceleration> <!-- computed from <max_linear_acceleration> in the original plugin-->
