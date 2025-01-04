@@ -36,4 +36,18 @@
   <xacro:castwheel prefix="right" inertial_origin="6.93889390390723E-17 4.16333634234434E-17 1.11022302462516E-16" ixy="2.0056E-21" ixz="1.5647E-227" iyz="2.0594E-22" />
   <xacro:castwheel prefix="left" inertial_origin="5.5511E-17 1.9082E-17 -6.9389E-17" ixy="-4.5297E-22" ixz="1.137E-217" iyz="-3.028E-21" />
 
+  <gazebo reference="right_cast_wheel">
+    <mu1>0.0</mu1>
+    <mu2>0.0</mu2>
+    <kp>100000000.0</kp>
+    <kd>10000.0</kd>
+  </gazebo>
+  <gazebo reference="left_cast_wheel">
+    <mu1>0.0</mu1>
+    <mu2>0.0</mu2>
+    <kp>100000000.0</kp>
+    <kd>10000.0</kd>
+  </gazebo>
+
+
 </robot>
