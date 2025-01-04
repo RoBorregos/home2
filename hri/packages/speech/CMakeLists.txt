@@ -12,9 +12,8 @@ find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(frida_interfaces REQUIRED)
 
-# IF THERE ISNT A LAUNCH DIRECTORY DONT ADD THIS
-#install(DIRECTORY launch
-#  DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY launch config
+ DESTINATION share/${PROJECT_NAME})
 
 # Add Cpp executable
 # add_executable(ignore_laser src/ignore_laser.cpp)

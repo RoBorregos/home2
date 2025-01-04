@@ -1,0 +1,12 @@
+say:
+  ros__parameters:
+    SPEAKER_DEVICE_NAME: "default"
+    SPEAKER_INPUT_CHANNELS: 32
+    SPEAKER_OUT_CHANNELS: 32
+
+    speak_service: "/speech/speak"
+    speak_topic: "/speech/speak_now"
+    speaking_topic: "saying"
+
+    model: "en_US-amy-medium"
+    offline: True
