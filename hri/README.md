@@ -31,6 +31,11 @@ home2
 
 ## Setup with docker
 
+Note: some of the docker compose files relie on the following environment variables, you may set them on the terminal running the docker compose command or on your ~/.bashrc file:
+
+- export LOCAL_USER_ID=$(id -u)
+- export LOCAL_GROUP_ID=$(id -g)
+
 ```bash
 # Build base image
 # pwd -> home2/docker
