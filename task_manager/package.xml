@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>vision_general</name>
+  <name>task_manager</name>
   <version>0.0.0</version>
   <description>TODO: Package description</description>
   <maintainer email="Roborregos@roborregos.com">Roborregos</maintainer>
@@ -11,9 +11,6 @@
   <buildtool_depend>ament_cmake_python</buildtool_depend>
  
   <depend>rclpy</depend>
-  <depend>sensor_msgs</depend>
-  <depend>cv_bridge</depend>
-  <depend>python3-opencv</depend>
   <depend>std_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>frida_interfaces</depend>
@@ -25,3 +22,4 @@
     <build_type>ament_cmake</build_type>
   </export>
 </package>
+

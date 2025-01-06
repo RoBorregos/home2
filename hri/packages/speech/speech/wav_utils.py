@@ -11,8 +11,8 @@ class WavUtils:
     # Convert incoming data (AudioData) to wav file
     def generate_temp_wav(n_channels, sample_width, sample_rate, data):
         # data = bytes(data)
-        with tempfile.NamedTemporaryFile(suffix='.wav', delete=False) as temp_file:
-            with wave.open(temp_file, 'w') as wav_file:
+        with tempfile.NamedTemporaryFile(suffix=".wav", delete=False) as temp_file:
+            with wave.open(temp_file, "w") as wav_file:
                 wav_file.setnchannels(n_channels)
                 wav_file.setsampwidth(sample_width)
                 wav_file.setframerate(sample_rate)
@@ -23,7 +23,11 @@ class WavUtils:
 
     @staticmethod
     def discard_wav(file_path):
-        if os.path.exists(file_path) and os.path.isfile(file_path) and file_path.endswith('.wav'):
+        if (
+            os.path.exists(file_path)
+            and os.path.isfile(file_path)
+            and file_path.endswith(".wav")
+        ):
             os.remove(file_path)
 
     @staticmethod
@@ -36,10 +40,10 @@ class WavUtils:
 
     @staticmethod
     def get_file_time(file_path):
-        with wave.open(file_path, 'r') as f:
+        with wave.open(file_path, "r") as f:
             frames = f.getnframes()
             rate = f.getframerate()
-            duration = frames/float(rate * f.getnchannels())
+            duration = frames / float(rate * f.getnchannels())
             return duration
 
     @staticmethod
@@ -57,8 +61,7 @@ class WavUtils:
         audio = AudioSegment.from_mp3(mp3_path)
 
         # Export the audio to WAV format
-        audio.export(wav_path, format="wav", parameters=[
-                     "-ar", str(sample_rate)])
+        audio.export(wav_path, format="wav", parameters=["-ar", str(sample_rate)])
 
     @staticmethod
     def play_mp3(mp3_path, device_index=11):

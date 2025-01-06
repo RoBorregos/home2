@@ -5,4 +5,5 @@
 *.user
 **/.vscode/
 **/__pychache__/
+.ruff_cache
 
