@@ -11,25 +11,9 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.actions import SetEnvironmentVariable
 
 def generate_launch_description():
-    
     ld = LaunchDescription()
 
-    package_name = 'frida_description'
-    # SetEnvironmentVariable(name='IGN_GAZEBO_RESOURCE_PATH', value=get_package_share_directory(package_name))
-    default_world = os.path.join(
-        get_package_share_directory(package_name),
-        'worlds',
-        'empty.world'
-        )    
-    
-    world = LaunchConfiguration('world')
-
-    world_arg = DeclareLaunchArgument(
-        'world',
-        default_value=default_world,
-        description='World to load'
-        )
-
+    package_name = 'frida_description'   
 
     ld.add_action(IncludeLaunchDescription(
         PathJoinSubstitution([FindPackageShare('urdf_launch'), 'launch', 'display.launch.py']),

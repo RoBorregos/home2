@@ -1,62 +1,77 @@
 #!/usr/bin/env python3
 
-import rclpy
-from rclpy.executors import ExternalShutdownException
-from rclpy.node import Node
-from std_msgs.msg import String, Bool
-from frida_interfaces.srv import Speak
-
 import os
-from gtts import gTTS
-from pygame import mixer
 import subprocess
 
+import rclpy
+from gtts import gTTS
+from pygame import mixer
+from rclpy.executors import ExternalShutdownException
+from rclpy.node import Node
 from speech.speech_api_utils import SpeechApiUtils
 from speech.wav_utils import WavUtils
+from std_msgs.msg import Bool, String
 
+from frida_interfaces.srv import Speak
 
-SPEAK_SERVICE_TOPIC = "/speech/speak"
-SPEAK_NOW_TOPIC = "/speech/speak_now"
-
-# Offline voice
-MODEL = "en_US-amy-medium"
 CURRENT_FILE_PATH = os.path.abspath(__file__)
-
-CURRENT_DIRECTORY = os.path.dirname(CURRENT_FILE_PATH)
-VOICE_DIRECTORY = os.path.join(CURRENT_DIRECTORY, "offline_voice")
-
-
-# Get device index using environment variables
-SPEAKER_DEVICE_NAME = os.getenv("SPEAKER_DEVICE_NAME", default=None)
-SPEAKER_INPUT_CHANNELS = int(os.getenv("SPEAKER_INPUT_CHANNELS", default=2))
-SPEAKER_OUT_CHANNELS = int(os.getenv("SPEAKER_OUT_CHANNELS", default=0))
-
-OUTPUT_DEVICE_INDEX = SpeechApiUtils.getIndexByNameAndChannels(
-    SPEAKER_DEVICE_NAME, SPEAKER_INPUT_CHANNELS, SPEAKER_OUT_CHANNELS
-)
-
-if OUTPUT_DEVICE_INDEX is None:
-    print("Warning: output device index not found, using system default.")
-
-DEBUG = True
-OFFLINE = True
+VOICE_DIRECTORY = os.path.join(os.path.dirname(CURRENT_FILE_PATH), "offline_voice")
 
 
 class Say(Node):
-
     def __init__(self):
-        super().__init__('say')
-        self.publisher_ = self.create_publisher(Bool, 'saying', 10)
-        self.get_logger().info('Say node has started.')
+        super().__init__("say")
+        self.get_logger().info("Say node has started.")
 
         self.connected = False
-        if not OFFLINE:
+        self.declare_parameter("speaking_topic", "/saying")
+
+        self.declare_parameter("speak_service", "/speech/speak")
+        self.declare_parameter("speak_topic", "/speech/speak_now")
+        self.declare_parameter("model", "en_US-amy-medium")
+        self.declare_parameter("offline", True)
+
+        self.declare_parameter("SPEAKER_DEVICE_NAME", "default")
+        self.declare_parameter("SPEAKER_INPUT_CHANNELS", 32)
+        self.declare_parameter("SPEAKER_OUT_CHANNELS", 32)
+
+        speaker_device_name = (
+            self.get_parameter("SPEAKER_DEVICE_NAME").get_parameter_value().string_value
+        )
+        speaker_input_channels = (
+            self.get_parameter("SPEAKER_INPUT_CHANNELS")
+            .get_parameter_value()
+            .integer_value
+        )
+        speaker_out_channels = (
+            self.get_parameter("SPEAKER_OUT_CHANNELS")
+            .get_parameter_value()
+            .integer_value
+        )
+
+        self.output_device_index = SpeechApiUtils.getIndexByNameAndChannels(
+            speaker_device_name, speaker_input_channels, speaker_out_channels
+        )
+
+        speak_service = (
+            self.get_parameter("speak_service").get_parameter_value().string_value
+        )
+        speak_topic = (
+            self.get_parameter("speak_topic").get_parameter_value().string_value
+        )
+        speaking_topic = (
+            self.get_parameter("speaking_topic").get_parameter_value().string_value
+        )
+
+        self.model = self.get_parameter("model").get_parameter_value().string_value
+        self.offline = self.get_parameter("offline").get_parameter_value().bool_value
+
+        if not self.offline:
             self.connected = SpeechApiUtils.is_connected()
 
-        self.create_service(Speak, SPEAK_SERVICE_TOPIC, self.speak_service)
-
-        self.create_subscription(String,
-                                 SPEAK_NOW_TOPIC, self.speak_topic, 10)
+        self.create_service(Speak, speak_service, self.speak_service)
+        self.create_subscription(String, speak_topic, self.speak_topic, 10)
+        self.publisher_ = self.create_publisher(Bool, speaking_topic, 10)
 
     def speak_service(self, req):
         """When say is called as a service. Caller awaits for the response."""
@@ -72,15 +87,15 @@ class Say(Node):
         self.publisher_.publish(Bool(data=True))
         success = False
         try:
-            if OFFLINE or not self.connected:
+            if self.offline or not self.connected:
                 self.offline_voice(text)
             else:
                 self.connectedVoice(text)
             success = True
         except Exception as e:
-            print(e)
-            if not OFFLINE:
-                print("Retrying with offline mode")
+            self.get_logger().error(e)
+            if not self.offline:
+                self.get_logger().warn("Retrying with offline mode")
                 self.offline_voice(text)
 
         self.publisher_.publish(Bool(data=False))
@@ -96,12 +111,12 @@ class Say(Node):
             output_path = os.path.join(VOICE_DIRECTORY, f"{counter}.wav")
             self.synthesize_voice_offline(output_path, chunk)
 
-        print(f"Generated {counter} wav files.")
+        self.get_logger().debug(f"Generated {counter} wav files.")
 
         # Play and remove all mp3 files
         for i in range(1, counter + 1):
             save_path = os.path.join(VOICE_DIRECTORY, f"{i}.wav")
-            # WavUtils.play_wav(save_path, device_index=OUTPUT_DEVICE_INDEX)
+            # WavUtils.play_wav(save_path, device_index=self.output_device_index)
             self.play_audio(save_path)
             WavUtils.discard_wav(save_path)
 
@@ -110,8 +125,8 @@ class Say(Node):
         save_path = "play.mp3"
         tts.save(save_path)
         self.get_logger().info("Saying...")
-        # WavUtils.play_mp3(save_path, device_index=OUTPUT_DEVICE_INDEX)
-        # .play_mp3(save_path, device_index=OUTPUT_DEVICE_INDEX)
+        # WavUtils.play_mp3(save_path, device_index=self.output_device_index)
+        # .play_mp3(save_path, device_index=self.output_device_index)
         self.play_audio(save_path)
         self.get_logger().info("Finished speaking.")
 
@@ -138,10 +153,13 @@ class Say(Node):
     def synthesize_voice_offline(self, output_path, text):
         """Synthesize text using the offline voice model."""
 
-        executable = "/workspace/piper/install/piper" if os.path.exists(
-            "/workspace/piper/install/piper") else "python3.10 -m piper"
+        executable = (
+            "/workspace/piper/install/piper"
+            if os.path.exists("/workspace/piper/install/piper")
+            else "python3.10 -m piper"
+        )
 
-        model_path = os.path.join(VOICE_DIRECTORY, MODEL + ".onnx")
+        model_path = os.path.join(VOICE_DIRECTORY, self.model + ".onnx")
 
         download_model = not os.path.exists(model_path)
 
@@ -154,7 +172,7 @@ class Say(Node):
             "|",
             executable,
             "--model",
-            MODEL if download_model else model_path,
+            self.model if download_model else model_path,
             "--data-dir",
             VOICE_DIRECTORY,
             "--download-dir",
@@ -176,5 +194,5 @@ def main(args=None):
         rclpy.try_shutdown()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
