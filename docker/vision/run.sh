@@ -100,18 +100,6 @@ fi
 
 #_________________________RUN_________________________
 
-# Build and run the Docker container
-# docker compose up --build -d
-
-# # Check if the build was successful and start a bash shell in the container
-# if [ $? -eq 0 ]; then
-#     docker compose run --rm vision /bin/bash
-#     docker compose down
-# else
-#     echo "Docker build failed. Please check the errors above."
-#     exit 1
-# fi
-
 SERVICE_NAME="vision"  # Change this to your service name in docker-compose.yml
 
 # Check if the container exists
