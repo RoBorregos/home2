@@ -1,0 +1,31 @@
+ARG BASE_IMAGE=nvidia/cuda:11.4.1-cudnn8-devel-ubuntu20.04
+FROM ${BASE_IMAGE}
+
+RUN mkdir -p /workspace/requirements
+
+WORKDIR /workspace
+
+# Requirements
+COPY vision/vision_general/requirements.txt /workspace/requirements/requirements.txt   
+RUN pip install -r requirements/requirements.txt
+RUN pip install torch==1.11 torchvision==0.11.0 -f https://download.pytorch.org/whl/cu111/torch_stable.html
+
+# Download and extract dlib
+RUN wget http://dlib.net/files/dlib-19.21.tar.bz2 && \
+    tar jxvf dlib-19.21.tar.bz2
+
+WORKDIR /workspace/dlib-19.21
+RUN mkdir build
+WORKDIR /workspace/dlib-19.21/build
+
+# Configure and build dlib
+RUN cmake .. && \
+    cmake --build .
+
+WORKDIR /workspace/dlib-19.21
+
+# Install dlib
+RUN python3 setup.py install --set DLIB_USE_CUDA=1
+
+# CV-bridge
+RUN apt update && apt install -y ros-humble-cv-bridge

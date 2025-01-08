@@ -18,6 +18,7 @@ ACTION_SERVICE_TOPIC = "/example/action_service_topic"
 
 class ExampleNode(Node):
     def __init__(self):
+        """Initialize the node"""
         super().__init__("example_node")
 
         # Create Subscriber
@@ -45,10 +46,11 @@ class ExampleNode(Node):
         self.get_logger().info("Example node ready.")
 
     def subscriber_callback(self, msg):
-        # Print message data each time a message is received
+        """Print message data each time a message is received"""
         self.get_logger().info("I heard: " + msg.data)
 
     def timer_callback(self):
+        """Publish a message"""
         # Create message and set data
         msg = String()
         msg.data = "Hello World"
@@ -57,6 +59,8 @@ class ExampleNode(Node):
         self.example_publisher.publish(msg)
 
     def service_callback(self, request, response):
+        """Print request data and return response"""
+
         # Get the request data
         req = request.data
 
@@ -73,6 +77,8 @@ class ExampleNode(Node):
         return response
 
     def action_callback(self, goal_handle):
+        """Print goal data, publish feedback and return result"""
+
         self.goal_handle = goal_handle
         request = goal_handle.request
         self.get_logger().info(f"Goal received: {request}")
@@ -95,6 +101,7 @@ class ExampleNode(Node):
 
 
 def main(args=None):
+    """Main function to initialize the node and spin it"""
     rclpy.init(args=args)
     node = ExampleNode()
 
