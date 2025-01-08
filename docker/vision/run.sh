@@ -34,7 +34,7 @@ else
     fi
 fi
 echo "Detected environment: $ENV_TYPE"
-
+> .env
 # Write environment variables to .env file for Docker Compose and build base images
 case $ENV_TYPE in
   "cpu")
