@@ -52,6 +52,11 @@ colcon build
 source install/setup.bash
 ```
 
+If your node is not appearing when running ros2 run ... It is possible that it does not have the correct permissions. You can change the permissions of the file:
+``` bash
+chmod +x <file_name>
+```
+
 ## General Node Structure (Python)
 In general, a node is a script that will run and interact with the ROS2 system through topics, services, actions, etc.
 A `topic` is a channel where nodes can send and receive messages. 

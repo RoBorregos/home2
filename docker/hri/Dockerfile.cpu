@@ -12,12 +12,12 @@ RUN mkdir -p /workspace/requirements
 COPY ../../hri/requirements/nlp.txt /workspace/requirements/nlp.txt
 COPY ../../hri/requirements/speech.txt /workspace/requirements/speech.txt
 
-RUN pip install -r requirements/nlp.txt
-RUN pip install -r requirements/speech.txt
-RUN apt-get install -y python3-pyaudio
+# RUN pip install -r requirements/nlp.txt
+# RUN pip install -r requirements/speech.txt
+# RUN apt-get install -y python3-pyaudio
 
-RUN apt-get update && apt-get install -y alsa-base alsa-utils gstreamer-1.0
-RUN apt-get install -y libasound-dev portaudio19-dev libportaudio2 libportaudiocpp0 pulseaudio
+# RUN apt-get update && apt-get install -y alsa-base alsa-utils gstreamer-1.0
+# RUN apt-get install -y libasound-dev portaudio19-dev libportaudio2 libportaudiocpp0 pulseaudio
 
 # RUN apt install -y espeak
 # RUN pip install -U openai-whisper
