@@ -34,11 +34,10 @@ install(
 )
 
 # Install ONNX files
-# install(
-#   DIRECTORY assets/
-#   DESTINATION lib/${PROJECT_NAME}
-#   FILES_MATCHING PATTERN "*.onnx"
-# )
+install(DIRECTORY assets
+  DESTINATION share/${PROJECT_NAME}/
+  FILES_MATCHING PATTERN "*.onnx"
+)
 
 # Install JSON files
 # install(
@@ -53,6 +52,12 @@ file(GLOB PYTHON_SCRIPTS scripts/*.py)
 install(PROGRAMS
   ${PYTHON_SCRIPTS}
   DESTINATION lib/${PROJECT_NAME}
+)
+
+install(
+  DIRECTORY scripts/stt
+  DESTINATION lib/${PROJECT_NAME}
+  FILES_MATCHING PATTERN "*.py"
 )
 
 if(BUILD_TESTING)
