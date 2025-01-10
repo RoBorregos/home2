@@ -1,0 +1,12 @@
+ARG BASE_IMAGE=ubuntu:22.04
+FROM ${BASE_IMAGE}
+
+RUN mkdir -p /workspace/requirements
+
+# Requirements
+COPY vision/vision_general/requirements.txt /workspace/requirements/requirements.txt   
+RUN pip install -r requirements/requirements.txt
+RUN pip install torch==1.11 torchvision==0.12.0
+
+# CV-bridge
+RUN apt update && apt install -y ros-humble-cv-bridge
