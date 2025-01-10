@@ -29,7 +29,7 @@ ament_python_install_package(${PROJECT_NAME})
 # Install the Python module
 install(
   DIRECTORY scripts/
-  DESTINATION ${PYTHON_INSTALL_DIR}/nlp
+  DESTINATION ${PYTHON_INSTALL_DIR}/${PROJECT_NAME}
   FILES_MATCHING PATTERN "*.py"
 )
 
