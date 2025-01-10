@@ -2,7 +2,6 @@ ARG BASE_IMAGE=ubuntu:22.04
 FROM ${BASE_IMAGE}
 
 RUN mkdir -p /workspace/requirements
-WORKDIR /workspace
 
 # Requirements
 COPY vision/vision_general/requirements.txt /workspace/requirements/requirements.txt   
