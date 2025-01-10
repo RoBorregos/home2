@@ -35,4 +35,18 @@
 
   <xacro:castwheel_bracket prefix="right" inertial_origin="-6.9389E-17 -1.3878E-17 0.012445" ixy="-5.23501237066605E-21" ixz="1.02910979879346E-20" iyz="1.03781586309714E-20" joint_origin="0.11226 -0.09 -0.068" />
   <xacro:castwheel_bracket prefix="left" inertial_origin="0 -4.1633E-17 0.012445" ixy="2.58235447481398E-21" ixz="-2.02138625848788E-21" iyz="-2.42344897559804E-22" joint_origin="0.11226 0.09 -0.068" />
+
+  <gazebo reference="right_castwheel_bracket">
+    <mu1>1.0</mu1>
+    <mu2>1.0</mu2>
+    <kp>100000000.0</kp>
+    <kd>10000.0</kd>
+  </gazebo>
+  <gazebo reference="left_castwheel_bracket">
+   <mu1>1.0</mu1>
+    <mu2>1.0</mu2>
+    <kp>100000000.0</kp>
+    <kd>10000.0</kd>
+  </gazebo>
+
 </robot>
