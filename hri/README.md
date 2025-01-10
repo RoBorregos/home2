@@ -31,15 +31,15 @@ home2
 
 ## Setup with docker
 
-Note: some of the docker compose files relie on the following environment variables, you may set them on the terminal running the docker compose command or on your ~/.bashrc file:
+Run the script `setup.bash` located in `home2/docker/hri` to setup the configuration for docker. The script provides additional setup instructions.
 
-- export LOCAL_USER_ID=$(id -u)
-- export LOCAL_GROUP_ID=$(id -g)
+## Using with docker
 
 ```bash
 # Build base image
 # pwd -> home2/docker
-docker compose -f cuda.yaml up
+docker compose -f cuda.yaml build
+# or -> docker compose -f cpu.yaml build
 
 # Use devices compose (for audio I/O)
 # pwd -> home2/docker/hri
@@ -50,6 +50,7 @@ docker compose -f devices.yaml up
 docker exec -it home2-hri-cuda-devices bash
 
 # Enable non-root ownership of the workspace
+# pwd -> /workspace
 sudo chown -R $(id -u):$(id -g) .
 
 # pwd -> /workspace
