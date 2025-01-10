@@ -2,7 +2,7 @@
 
 # Docker
 
-/docker/navigation/ Vision.md @RoBorregos/home-vision
+/docker/vision/ @RoBorregos/home-vision
 /docker/navigation/ @RoBorregos/home-nav
 /docker/manipulation/ @RoBorregos/home-manipulacion
 /docker/hri/ @RoBorregos/home-hri
