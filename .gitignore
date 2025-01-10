@@ -6,4 +6,4 @@
 **/.vscode/
 **/__pychache__/
 .ruff_cache
-# *.env
+**.env
