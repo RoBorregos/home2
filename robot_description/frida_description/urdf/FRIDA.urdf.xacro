@@ -1,8 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <robot name="FRIDA" xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-
+<xacro:arg name="sim_mode" default="false"/>
 <xacro:include filename="robot.xacro"/>
 
+<gazebo>
+<plugin filename="gz-sim-diff-drive-system" name="gz::sim::systems::DiffDrive">
+  <!-- wheels -->
+  <left_joint>leftwheel</left_joint>
+  <right_joint>rightwheel</right_joint>
 
-</robot>
+  <!-- kinematics -->
+  <wheel_separation>0.332</wheel_separation>
+  <wheel_radius>0.065</wheel_radius> <!-- computed from <wheel_diameter> in the original plugin-->
+
+  <!-- limits -->   
+  <max_linear_acceleration>0.033</max_linear_acceleration> <!-- computed from <max_linear_acceleration> in the original plugin-->
+
+  <topic>cmd_vel</topic> <!-- from <commant_topic> -->
+
+  <odom_topic>odom</odom_topic> <!-- from <odometry_topic> -->
+  <frame_id>odom</frame_id> <!-- from <odometry_frame> -->
+  <child_frame_id>base_link</child_frame_id> <!-- from <robot_base_frame> -->
+  <odom_publisher_frequency>30</odom_publisher_frequency> <!-- from <update_rate>-->
+
+  <tf_topic>/tf</tf_topic> <!-- Short topic name for tf output -->
+
+</plugin>
+
+
+</gazebo>
+</robot>    
