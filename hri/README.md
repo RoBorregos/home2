@@ -54,7 +54,7 @@ docker exec -it home2-hri-cuda-devices bash
 sudo chown -R $(id -u):$(id -g) .
 
 # pwd -> /workspace
-colcon build --symlink-install  --packages-select frida_interfaces speech
+colcon build --symlink-install  --packages-select frida_interfaces speech nlp
 
 ```
 
@@ -65,7 +65,13 @@ Most of the final commands will be executed using the docker compose file.
 However, some testing commands are the following:
 
 ```bash
-ros2 run speech say.py
+# Speech
+ros2 launch speech devices_launch.py
 
 ros2 topic pub /speech/speak_now --once std_msgs/msg/String "data: 'Go to the kitchen and grab cookies'"
+
+# NLP
+ros2 launch nlp nlp_launch.py
+
+ros2 topic pub /speech/raw_command std_msgs/msg/String "data: Go to the kitchen and grab cookies" --once
 ```

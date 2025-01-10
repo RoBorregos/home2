@@ -40,7 +40,8 @@ class CommandInterpreter(Node):
         self.declare_parameter("base_url", "None")
         self.declare_parameter("model", "gpt-4o-2024-08-06")
         self.declare_parameter("speech_command_topic", "/speech/raw_command")
-        self.declare_parameter("out_command_topic", "/task_manager/commands")
+        self.declare_parameter("publish_command_topic", "/task_manager/commands")
+        self.declare_parameter("temperature", 0.5)
 
         base_url = self.get_parameter("base_url").get_parameter_value().string_value
         model = self.get_parameter("model").get_parameter_value().string_value
@@ -49,8 +50,14 @@ class CommandInterpreter(Node):
             .get_parameter_value()
             .string_value
         )
-        out_command_topic = (
-            self.get_parameter("out_command_topic").get_parameter_value().string_value
+        publish_command_topic = (
+            self.get_parameter("publish_command_topic")
+            .get_parameter_value()
+            .string_value
+        )
+
+        self.temperature = (
+            self.get_parameter("temperature").get_parameter_value().double_value
         )
 
         if base_url == "None":
@@ -65,7 +72,7 @@ class CommandInterpreter(Node):
         self.subscriber = self.create_subscription(
             String, speech_command_topic, self._callback, 10
         )
-        self.publisher = self.create_publisher(CommandList, out_command_topic, 10)
+        self.publisher = self.create_publisher(CommandList, publish_command_topic, 10)
 
         self.get_logger().info("Initialized Command Interpreter")
 
@@ -79,6 +86,7 @@ class CommandInterpreter(Node):
         response = (
             self.client.beta.chat.completions.parse(
                 model=self.model,
+                temperature=self.temperature,
                 messages=[
                     {"role": "system", "content": get_system_prompt_ci_v2()},
                     {"role": "user", "content": raw_command},
