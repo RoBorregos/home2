@@ -17,6 +17,7 @@ PUBLISHER_TOPIC = "/zed2/zed_node/rgb/image_rect_color"
 
 class ZedSimulator(Node):
     def __init__(self):
+        """Initialize the node and the camera source."""
         super().__init__("zed_simulator")
         self.bridge = CvBridge()
 
@@ -27,6 +28,7 @@ class ZedSimulator(Node):
         self.run()
 
     def run(self):
+        """Get frames from the webcam and publish them."""
         while rclpy.ok():
             ret, frame = self.cap.read()
             if not ret:
