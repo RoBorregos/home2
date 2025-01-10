@@ -3,8 +3,6 @@ FROM ${BASE_IMAGE}
 
 RUN mkdir -p /workspace/requirements
 
-WORKDIR /workspace
-
 # Requirements
 COPY vision/vision_general/requirements.txt /workspace/requirements/requirements.txt   
 RUN pip install -r requirements/requirements.txt
