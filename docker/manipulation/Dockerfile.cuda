@@ -1,0 +1,25 @@
+# Devel image for access to CUDA compilation
+ARG BASE_IMAGE=nvidia/cuda:11.8.0-devel-ubuntu22.04 
+FROM ${BASE_IMAGE} AS base
+
+LABEL maintainer="RoBorregos <roborregosteam@gmail.com>"
+
+FROM base AS manipulation
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN mkdir -p /workspace/requirements
+
+# Torch+GPU
+RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+
+# ROS Requirements
+RUN apt update && apt install -y ros-humble-cv-bridge
+
+# Python Requirements
+COPY manipulation/requirements.txt /workspace/requirements/requirements.txt
+RUN pip3 install -r /workspace/requirements/requirements.txt
+
+RUN chown -R ros:ros /workspace
+
+ENTRYPOINT [ "/bin/bash", "-l", "-c" ]
