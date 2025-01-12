@@ -1,0 +1,3 @@
+[submodule "manipulacion/packages/gpd"]
+	path = manipulacion/packages/gpd
+	url = https://github.com/Deivideich/gpd
