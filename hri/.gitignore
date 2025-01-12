@@ -5,3 +5,4 @@
 *.user
 **/.vscode/
 **/__pychache__/
+**/models

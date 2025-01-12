@@ -5,20 +5,20 @@ import speech_pb2_grpc
 from faster_whisper import WhisperModel
 import os
 import torch
-from WavUtils import WavUtils
+from wav_utils import WavUtils
 import argparse
 
 
 class WhisperServicer(speech_pb2_grpc.SpeechServiceServicer):
-    def __init__(self):
+    def __init__(self, model_size):
+        self.model_size = model_size
         self.audio_model = self.load_model()
 
     def load_model(self):
-        model_size = "base"  # .en?
         model_directory = os.path.join(os.path.dirname(__file__), "models")
         device = "cuda" if torch.cuda.is_available() else "cpu"
         return WhisperModel(
-            model_size,
+            self.model_size,
             download_root=model_directory,
             device=device,
             compute_type="float32",
@@ -42,10 +42,12 @@ class WhisperServicer(speech_pb2_grpc.SpeechServiceServicer):
         return speech_pb2.TextResponse(text=result["text"].strip())
 
 
-def serve(port):
+def serve(port, model_size):
     # Create the gRPC server
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    speech_pb2_grpc.add_SpeechServiceServicer_to_server(WhisperServicer(), server)
+    speech_pb2_grpc.add_SpeechServiceServicer_to_server(
+        WhisperServicer(model_size), server
+    )
 
     # Bind to a port
     server.add_insecure_port(f"0.0.0.0:{port}")
@@ -59,5 +61,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "--port", type=int, default=50051, help="Port to run the gRPC server on"
     )
+    parser.add_argument(
+        "--model_size",
+        type=str,
+        default="base",
+        help="Model size to use (base, large, or small)",
+    )
     args = parser.parse_args()
-    serve(args.port)
+    serve(args.port, args.model_size)
