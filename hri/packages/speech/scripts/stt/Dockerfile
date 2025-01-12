@@ -2,7 +2,7 @@ FROM python:3.9-slim
 
 WORKDIR /app
 
-COPY scripts/stt/requirements.txt .
+COPY requirements.txt .
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
