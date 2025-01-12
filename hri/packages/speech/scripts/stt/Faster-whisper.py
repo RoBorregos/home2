@@ -64,8 +64,8 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model_size",
         type=str,
-        default="base",
-        help="Model size to use (base, large, or small)",
+        default="base.en",
+        help="Model size to use (base.en, large.en, or small.en)",
     )
     args = parser.parse_args()
     serve(args.port, args.model_size)
