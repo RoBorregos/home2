@@ -1,0 +1,26 @@
+services:
+  vision:
+    container_name: home2-vision
+    build:
+      context: ../..
+      dockerfile: ${DOCKERFILE:-docker/vision/Dockerfile.cpu}
+      args:
+        BASE_IMAGE: ${BASE_IMAGE:-roborregos/home2:cpu_base} 
+    image: ${IMAGE_NAME:-roborregos/home2:vision-cpu}
+    volumes:
+      - ../../:/workspace
+      - /tmp:/tmp
+    
+    network_mode: host
+    user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
+    privileged: true
+    devices:
+      - /dev:/dev
+      - /dev/video0:/dev/video0
+    environment:
+      DISPLAY: ${DISPLAY}
+      TERM: xterm-256color
+    tty: true
+    stdin_open: true    
+    working_dir: /workspace
+    command: ["/bin/bash", "-i", "-l"]

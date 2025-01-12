@@ -1,5 +1,7 @@
 opencv-python
 pathlib
 tqdm
-numpy
+numpy<2
 face_recognition
+ultralytics
+# pybind11>=2.12
