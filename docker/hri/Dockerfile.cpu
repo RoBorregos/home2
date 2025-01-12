@@ -19,5 +19,7 @@ RUN apt-get install -y python3-pyaudio
 RUN apt-get update && apt-get install -y alsa-base alsa-utils gstreamer-1.0
 RUN apt-get install -y libasound-dev portaudio19-dev libportaudio2 libportaudiocpp0 pulseaudio
 
+USER ros
+
 # RUN apt install -y espeak
 # RUN pip install -U openai-whisper
