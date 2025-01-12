@@ -29,9 +29,14 @@ home2
     └── speech.txt
 ```
 
+
 ## Setup with docker
 
 Run the script `setup.bash` located in `home2/docker/hri` to setup the configuration for docker. The script provides additional setup instructions.
+
+In addition, the following files are required:
+- `docker/hri/.env`: Contains the environment variables for the docker compose files. `docker/hri/.env.example` contains examples of the required variables.
+
 
 ## Using with docker
 
