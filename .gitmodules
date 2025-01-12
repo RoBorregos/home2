@@ -1,3 +1,6 @@
 [submodule "manipulacion/packages/gpd"]
 	path = manipulacion/packages/gpd
 	url = https://github.com/Deivideich/gpd
+[submodule "manipulacion/packages/xarm_ros2"]
+	path = manipulacion/packages/xarm_ros2
+	url = https://github.com/xArm-Developer/xarm_ros2/tree/humble
