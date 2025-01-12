@@ -22,7 +22,3 @@ sudo usermod -aG audio $USER # Make sure current user has access to audio resour
 sudo chmod 777 /dev/snd/* # Allow access to audio devices.
 
 echo "Finished hri setup configuration for docker."
-echo "Note: some of the docker compose files depend on the following environment variables. You may set them on the terminal running the docker compose command, in an .env file in the docker compose directory, or in your ~/.bashrc file:
-
-- export LOCAL_USER_ID=\$(id -u)
-- export LOCAL_GROUP_ID=\$(id -g)"
