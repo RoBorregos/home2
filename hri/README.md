@@ -54,8 +54,8 @@ docker exec -it home2-hri-cuda-devices bash
 sudo chown -R $(id -u):$(id -g) .
 
 # pwd -> /workspace
-colcon build --symlink-install  --packages-select frida_interfaces speech nlp
-
+colcon build --symlink-install --packages-select frida_interfaces speech nlp
+source install/setup.bash
 ```
 
 ## Running the project
