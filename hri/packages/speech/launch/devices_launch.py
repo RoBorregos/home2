@@ -13,6 +13,9 @@ def generate_launch_description():
     speaker_config = os.path.join(
         get_package_share_directory("speech"), "config", "speaker.yaml"
     )
+    # respeaker_config = os.path.join(
+    #     get_package_share_directory("speech"), "config", "respeaker.yaml"
+    # )
 
     return LaunchDescription(
         [
@@ -32,5 +35,13 @@ def generate_launch_description():
                 emulate_tty=True,
                 parameters=[speaker_config],
             ),
+            # Node(
+            #     package="speech",
+            #     executable="respeaker.py",
+            #     name="respeaker",
+            #     output="screen",
+            #     emulate_tty=True,
+            #     parameters=[respeaker_config],
+            # ),
         ]
     )
