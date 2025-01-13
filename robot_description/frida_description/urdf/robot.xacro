@@ -12,7 +12,7 @@
 <xacro:include filename="castwheel.xacro"/>
 <xacro:include filename="lidar.xacro"/>
 <xacro:include filename="realsense.xacro"/>
-<xacro:include filename="xarm.xacro"/>
+<!-- <xacro:include filename="xarm.xacro"/> -->
 
 <!-- <link name="base_footprint">
       <visual>
