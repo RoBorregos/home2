@@ -25,7 +25,6 @@ services:
       - /tmp:/tmp
 
     network_mode: host
-    user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
     privileged: true
     devices:
       - /dev:/dev
