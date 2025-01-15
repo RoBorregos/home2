@@ -79,7 +79,8 @@ class StopListenerNode(rclpy.node.Node):
                 return
 
         response = openai.beta.chat.completions.parse(
-            model="gpt-4o-2024-08-06",
+            model=self.model,
+            base_url=self.base_url,
             messages=[
                 {
                     "role": "system",
