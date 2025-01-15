@@ -24,9 +24,33 @@ class ExtractedData(BaseModel):
 class DataExtractor(Node):
     """Class to encapsulate the guest analysis node"""
 
+    base_url: Optional[str]
+    model: Optional[str]
+
     def __init__(self) -> None:
+        global EXTRACT_DATA_SERVICE
         """Initialize the ROS2 node"""
         super().__init__("data_extractor")
+
+        self.declare_parameter("base_url", None)
+        self.declare_parameter("model", "gpt-4o-2024-08-06")
+        self.declare_parameter("EXTRACT_DATA_SERVICE_NAME", EXTRACT_DATA_SERVICE)
+
+        base_url = self.get_parameter("base_url").get_parameter_value().string_value
+        if base_url == "None":
+            self.base_url = None
+        else:
+            self.base_url = base_url
+
+        model = self.get_parameter("model").get_parameter_value().string_value
+        self.model = model
+
+        EXTRACT_DATA_SERVICE = (
+            self.get_parameter("EXTRACT_DATA_SERVICE_NAME")
+            .get_parameter_value()
+            .string_value
+        )
+
         self.get_logger().info("Starting data extractor node")
 
         self.srv = self.create_service(
@@ -46,7 +70,8 @@ class DataExtractor(Node):
         instruction = "You will be presented with some text and data to extract. Please provide the requested information or leave empty if it isn't available."
         response_content = (
             openai.beta.chat.completions.parse(
-                model="gpt-4o-2024-08-06",
+                model=self.model,
+                base_url=self.base_url,
                 messages=[
                     {"role": "system", "content": instruction},
                     {
