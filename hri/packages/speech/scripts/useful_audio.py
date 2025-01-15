@@ -66,7 +66,7 @@ class UsefulAudio(Node):
 
         self.triggered = False
         self.chunk_count = 0
-        self.voiced_frames = []
+        self.voiced_frames = None
         self.ring_buffer = collections.deque(maxlen=NUM_PADDING_CHUNKS)
 
         self.audio_collection = []
@@ -123,6 +123,99 @@ class UsefulAudio(Node):
         if self.debug_mode:
             self.log(message)
 
+    def build_audio(self, data):
+        if self.voiced_frames is None:
+            self.voiced_frames = data
+        else:
+            self.voiced_frames += data
+        self.chunk_count += 1
+
+    def discard_audio(self):
+        if not self.service_active:
+            self.ring_buffer.clear()
+            self.voiced_frames = None
+            self.chunk_count = 0
+
+    def publish_audio(self):
+        if self.chunk_count > MIN_CHUNKS_AUDIO_LENGTH:
+            self.publisher.publish(AudioData(data=self.voiced_frames))
+        self.discard_audio()
+
+    def int2float(self, sound):
+        abs_max = np.abs(sound).max()
+        sound = sound.astype("float32")
+        if abs_max > 0:
+            sound *= 1 / 32768
+        sound = sound.squeeze()
+        return sound
+
+    def is_speech_silero_vad(self, audio_data: np.ndarray) -> bool:
+        input_data = {
+            "input": audio_data.reshape(1, -1),
+            "sr": np.array([self.sampling_rate], dtype=np.int64),
+            "h": self.h,
+            "c": self.c,
+        }
+        out, h, c = self.inference_session.run(None, input_data)
+        self.h, self.c = h, c
+        return out > self.threshold
+
+    def vad_collector(self, chunk):
+        is_speech = False
+
+        if self.use_silero_vad:
+            chunk_vad = np.frombuffer(chunk, dtype=np.int16)
+            audio_float32 = self.int2float(chunk_vad)
+
+            if self.chunk_collection is None:
+                self.chunk_collection = chunk
+            else:
+                self.chunk_collection += chunk
+
+            if len(self.audio_collection) < 3:
+                self.audio_collection.append(audio_float32)
+                return
+
+            audio = np.concatenate(self.audio_collection)
+            chunk = self.chunk_collection
+            self.audio_collection = []
+            self.chunk_collection = None
+            is_speech = self.is_speech_silero_vad(audio)
+        else:
+            is_speech = self.vad.is_speech(chunk, RATE)
+
+        if not self.triggered:
+            self.ring_buffer.append((chunk, is_speech))
+            num_voiced = len([f for f, speech in self.ring_buffer if speech])
+
+            if num_voiced > 0.75 * self.ring_buffer.maxlen:
+                self.triggered = True
+                self.compute_audio_state()
+                self.debug("Moving to triggered state")
+                for f, _ in self.ring_buffer:
+                    self.build_audio(f)
+                self.ring_buffer.clear()
+        else:
+            if self.timer is None:
+                self.timer = self.get_clock().now()
+
+            self.build_audio(chunk)
+            self.ring_buffer.append((chunk, is_speech))
+            num_unvoiced = len([f for f, speech in self.ring_buffer if not speech])
+
+            current_time = self.get_clock().now()
+            time_delta = (current_time - self.timer).nanoseconds / 1e9
+
+            if (
+                num_unvoiced > 0.75 * self.ring_buffer.maxlen
+                or time_delta > self.max_audio_duration
+            ):
+                self.triggered = False
+                self.compute_audio_state()
+                if not self.service_active:
+                    self.publish_audio()
+                self.timer = None
+
     def callback_raw_audio(self, msg):
         if self.audio_state == "saying":
             self.discard_audio()
@@ -147,6 +240,7 @@ class UsefulAudio(Node):
         )
         if self.audio_state != new_state:
             self.debug(f"Audio state changed from {self.audio_state} to {new_state}")
+            self.timer = None
             self.audio_state = new_state
             self.audio_state_publisher.publish(String(data=self.audio_state))
             self.publish_lamp(new_state)
@@ -173,12 +267,11 @@ class UsefulAudio(Node):
         timeout = 15
         counter = 0
         while self.triggered and counter < timeout:
-            self.get_clock().sleep_for(1)
+            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=1))
             counter += 1
 
-        raw_text = self.whisper_client.call(
-            AudioData(data=self.voiced_frames)
-        ).text_heard
+        response = self.whisper_client.call(AudioData(data=self.voiced_frames))
+        raw_text = response.text_heard
 
         self.service_active = False
         self.discard_audio()
@@ -187,13 +280,11 @@ class UsefulAudio(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    useful_audio = UsefulAudio()
     try:
-        rclpy.spin(useful_audio)
+        rclpy.spin(UsefulAudio())
     except (ExternalShutdownException, KeyboardInterrupt):
         pass
     finally:
-        useful_audio.destroy_node()
         rclpy.shutdown()
 
 
