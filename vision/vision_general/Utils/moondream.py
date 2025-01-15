@@ -91,8 +91,10 @@ def detect_objects(model, encoded_image, subject):
     except Exception as e:
         print(f"Error detecting objects: {e}")
 
-def main():
-    model_path = './moondream-0_5b-int8.mf.gz'
+'''
+Example usage:
+
+ model_path = './moondream-0_5b-int8.mf.gz'
     image_path = 'people.jpg'
     query_text = "Describe people"
     subject = "apple"
@@ -106,6 +108,4 @@ def main():
     query_image(model, encoded_image, query_text)
     stream_query(model, encoded_image, query_text)
     detect_objects(model, encoded_image, subject)
-
-if __name__ == "__main__":
-    main()
+'''
