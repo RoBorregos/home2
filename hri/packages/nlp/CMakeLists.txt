@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(speech)
+project(nlp)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -29,15 +29,16 @@ ament_python_install_package(${PROJECT_NAME})
 # Install the Python module
 install(
   DIRECTORY scripts/
-  DESTINATION ${PYTHON_INSTALL_DIR}/speech
+  DESTINATION ${PYTHON_INSTALL_DIR}/${PROJECT_NAME}
   FILES_MATCHING PATTERN "*.py"
 )
 
 # Install ONNX files
-install(DIRECTORY assets
-  DESTINATION share/${PROJECT_NAME}/
-  FILES_MATCHING PATTERN "*.onnx"
-)
+# install(
+#   DIRECTORY assets/
+#   DESTINATION lib/${PROJECT_NAME}
+#   FILES_MATCHING PATTERN "*.onnx"
+# )
 
 # Install JSON files
 # install(
@@ -52,12 +53,6 @@ file(GLOB PYTHON_SCRIPTS scripts/*.py)
 install(PROGRAMS
   ${PYTHON_SCRIPTS}
   DESTINATION lib/${PROJECT_NAME}
-)
-
-install(
-  DIRECTORY scripts/stt
-  DESTINATION lib/${PROJECT_NAME}
-  FILES_MATCHING PATTERN "*.py"
 )
 
 if(BUILD_TESTING)
