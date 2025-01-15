@@ -17,6 +17,10 @@ def generate_launch_description():
     #     get_package_share_directory("speech"), "config", "respeaker.yaml"
     # )
 
+    kws_config = os.path.join(
+        get_package_share_directory("speech"), "config", "kws.yaml"
+    )
+
     return LaunchDescription(
         [
             Node(
@@ -43,5 +47,13 @@ def generate_launch_description():
             #     emulate_tty=True,
             #     parameters=[respeaker_config],
             # ),
+            Node(
+                package="speech",
+                executable="kws.py",
+                name="keyword_spotting",
+                output="screen",
+                emulate_tty=True,
+                parameters=[kws_config],
+            ),
         ]
     )
