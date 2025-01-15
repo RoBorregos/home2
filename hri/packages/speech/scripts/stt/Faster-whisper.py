@@ -25,6 +25,8 @@ class WhisperServicer(speech_pb2_grpc.SpeechServiceServicer):
         )
 
     def Transcribe(self, request, context):
+        print("Received audio data, transcribing...")
+
         # Generate a temporary WAV file from received audio data
         temp_file = WavUtils.generate_temp_wav(1, 2, 16000, request.audio_data)
 
@@ -38,8 +40,16 @@ class WhisperServicer(speech_pb2_grpc.SpeechServiceServicer):
 
         WavUtils.discard_wav(temp_file)
 
+        # Access the generator to collect text segments
+        segments = result[0]  # The generator
+        transcription = "".join(
+            [segment.text for segment in segments]
+        )  # Collect all text
+
+        print(f"Transcription: {transcription}")
+
         # Return the transcribed text
-        return speech_pb2.TextResponse(text=result["text"].strip())
+        return speech_pb2.TextResponse(text=transcription)
 
 
 def serve(port, model_size):
