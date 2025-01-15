@@ -14,6 +14,9 @@
 <xacro:include filename="realsense.xacro"/>
 <xacro:include filename="xarm.xacro"/>
 
+<xacro:include filename="gripper.xacro"/>
+<xacro:include filename="zed.xacro"/>
+
 <!-- <link name="base_footprint">
       <visual>
         <origin xyz="0 0 0" rpy="0 0 0" />
