@@ -51,7 +51,7 @@ fi
 
 
 # Install clangd
-sudo apt install clangd -y
+sudo apt install clangd libstdc++-12-dev -y
 
 code --install-extension ms-vscode.cpptools
 code --install-extension ms-iot.vscode-ros 
@@ -104,4 +104,6 @@ sed -i "s|{{WS_PATH}}|$WS_PATH|g" .vscode/tasks.json
 sed -i "s|{{PYTHON_PATHS}}|$PYTHON_PATHS|g" .vscode/tasks.json
 
 
-echo "Setup complete"
+echo "Setup complete for workspace: $WS_PATH"
+
+# echo "If running in a remote environment, remember to install clangd in your local machine and update the paths in the .vscode/settings.json file"
