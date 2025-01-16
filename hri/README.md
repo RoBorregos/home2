@@ -32,7 +32,7 @@ home2
 
 ## Setup with docker
 
-Run the script `setup.bash` located in `home2/docker/hri` to setup the configuration for docker. The script provides additional setup instructions. In addition, that script must be executed each time the host system is restarted. Otherwise, speech devices aren't visible within the docker containers.
+Run the script `setup.bash` located in `home2/docker/hri` to setup the configuration for docker.
 
 In addition, the following files are required:
 - `docker/hri/.env`: Contains the environment variables for the docker compose files. `docker/hri/.env.example` contains examples of the required variables.
