@@ -7,3 +7,5 @@
 **/__pychache__/
 .ruff_cache
 **.env
+
+.prev-vscode
