@@ -1,8 +1,7 @@
 # Speech variables
-x-speech-devices:
-  &speech-devices
-  PULSE_SERVER: unix:/tmp/pulseaudio.socket
-  PULSE_COOKIE: /tmp/pulseaudio.cookie
+x-speech-devices: &speech-devices
+  PULSE_SERVER: unix:/tmp/pulse/pulseaudio.socket
+  PULSE_COOKIE: /tmp/pulse/pulseaudio.cookie
 
 services:
   speech_devices:
@@ -15,7 +14,7 @@ services:
     image: roborregos/home2:hri-cpu
     volumes:
       - ../../:/workspace/src
-      - /tmp:/tmp
+      - ~/.config/pulse:/tmp/pulse
 
     network_mode: host
     privileged: true
