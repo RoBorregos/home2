@@ -20,18 +20,24 @@ import onnxruntime
 
 
 # Constants
-FORMAT = pyaudio.paInt16
-CHANNELS = 1
-CHUNK_SIZE = 512
-RATE = 16000
-CHUNK_DURATION = CHUNK_SIZE / RATE
-TIME_FOR_CHANGE = 0.25
-COUNT_FOR_CHANGE = TIME_FOR_CHANGE / CHUNK_DURATION
-MIN_AUDIO_LENGTH = 0.50
-MIN_CHUNKS_AUDIO_LENGTH = MIN_AUDIO_LENGTH / CHUNK_DURATION
-
-PADDING_DURATION = 0.50
-NUM_PADDING_CHUNKS = int(PADDING_DURATION / CHUNK_DURATION)
+FORMAT = pyaudio.paInt16  # Audio format (16-bit PCM)
+CHANNELS = 1  # Number of audio channels (1 = mono)
+CHUNK_SIZE = 512  # Number of audio frames per chunk
+RATE = 16000  # Sampling rate in Hz (16 kHz)
+CHUNK_DURATION = CHUNK_SIZE / RATE  # Duration of each chunk in seconds
+TIME_FOR_CHANGE = 0.25  # Time in seconds for state change detection
+COUNT_FOR_CHANGE = TIME_FOR_CHANGE / CHUNK_DURATION  # Number of chunks for state change
+MIN_AUDIO_LENGTH = 0.50  # Minimum audio length in seconds
+MIN_CHUNKS_AUDIO_LENGTH = (
+    MIN_AUDIO_LENGTH / CHUNK_DURATION
+)  # Minimum chunks for valid audio
+PADDING_DURATION = 0.50  # Duration of padding audio in seconds
+NUM_PADDING_CHUNKS = int(
+    PADDING_DURATION / CHUNK_DURATION
+)  # Number of chunks for padding
+INT16_MAX_VALUE = 32768  # Maximum absolute value for int16 audio data
+TRIGGER_THRESHOLD = 0.75  # Threshold for detecting speech or silence in ring buffer
+NANOSECONDS_IN_SECOND = 1e9  # Conversion factor from nanoseconds to seconds
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -145,7 +151,7 @@ class UsefulAudio(Node):
         abs_max = np.abs(sound).max()
         sound = sound.astype("float32")
         if abs_max > 0:
-            sound *= 1 / 32768
+            sound *= 1 / INT16_MAX_VALUE
         sound = sound.squeeze()
         return sound
 
@@ -188,7 +194,7 @@ class UsefulAudio(Node):
             self.ring_buffer.append((chunk, is_speech))
             num_voiced = len([f for f, speech in self.ring_buffer if speech])
 
-            if num_voiced > 0.75 * self.ring_buffer.maxlen:
+            if num_voiced > TRIGGER_THRESHOLD * self.ring_buffer.maxlen:
                 self.triggered = True
                 self.compute_audio_state()
                 self.debug("Moving to triggered state")
@@ -204,10 +210,10 @@ class UsefulAudio(Node):
             num_unvoiced = len([f for f, speech in self.ring_buffer if not speech])
 
             current_time = self.get_clock().now()
-            time_delta = (current_time - self.timer).nanoseconds / 1e9
+            time_delta = (current_time - self.timer).nanoseconds / NANOSECONDS_IN_SECOND
 
             if (
-                num_unvoiced > 0.75 * self.ring_buffer.maxlen
+                num_unvoiced > TRIGGER_THRESHOLD * self.ring_buffer.maxlen
                 or time_delta > self.max_audio_duration
             ):
                 self.triggered = False
