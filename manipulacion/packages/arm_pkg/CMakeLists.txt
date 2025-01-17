@@ -54,10 +54,12 @@ ament_python_install_package(${PROJECT_NAME})
 
 
 ###################### GPD #################################
-find_library(GPD_LIB NAMES gpd PATHS /home/gerardo/Roborregos/Repos/home_repo/install/gpd/lib PATH_SUFFIXES lib NO_DEFAULT_PATH)
+
+find_library(GPD_LIB NAMES gpd PATHS $ENV{GPD_INSTALL_DIR}/lib PATH_SUFFIXES lib NO_DEFAULT_PATH)
 target_link_libraries(gpd_test ${GPD_LIB})
 
 if (NOT GPD_LIB)
+  message("Lib path $ENV{GPD_INSTALL_DIR}")
   message(FATAL_ERROR "Library GPD not found")
 else()
   message(STATUS "Library GPD found in ${GPD_LIB}")
