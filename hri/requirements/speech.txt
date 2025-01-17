@@ -18,3 +18,7 @@ pvrecorder==1.2.2
 pyusb==1.2.1
 pixel-ring==0.1.0
 piper-tts
+
+# gRPC
+grpcio==1.68.1
+grpcio-tools==1.68.1

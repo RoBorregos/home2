@@ -62,8 +62,9 @@ class SpeechApiUtils(object):
         num_dev = 0
         for device_info in devices:
             # print(f"Device {num_dev}: [{device_info['name']}], [{device_info['max_input_channels']}] input channels, [{device_info['max_output_channels']}] output channels")
-            if name in device_info["name"] or (
-                device_info["max_input_channels"] == in_channels
+            if (
+                name in device_info["name"]
+                and device_info["max_input_channels"] == in_channels
                 and device_info["max_output_channels"] == out_channels
             ):
                 return num_dev
