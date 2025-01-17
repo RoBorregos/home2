@@ -59,8 +59,7 @@ find_library(GPD_LIB NAMES gpd PATHS $ENV{GPD_INSTALL_DIR}/lib PATH_SUFFIXES lib
 target_link_libraries(gpd_test ${GPD_LIB})
 
 if (NOT GPD_LIB)
-  message("Lib path $ENV{GPD_INSTALL_DIR}")
-  message(FATAL_ERROR "Library GPD not found")
+  message(FATAL_ERROR "Library GPD not found check ENV variable GPD_INSTALL_DIR")
 else()
   message(STATUS "Library GPD found in ${GPD_LIB}")
 endif()
