@@ -67,7 +67,8 @@ if grep -q '^export GPD_INSTALL_DIR=' ~/.bashrc; then
 else 
     echo "export GPD_INSTALL_DIR=$LIB_DIR" >> ~/.bashrc
 fi
-export GPD_INSTALL_DIR=$LIB_DIR
+source ~/.bashrc
+
 cd $GPD_DIR
 mkdir build
 
