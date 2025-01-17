@@ -12,9 +12,8 @@ find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(frida_interfaces REQUIRED)
 
-# IF THERE ISNT A LAUNCH DIRECTORY DONT ADD THIS
-#install(DIRECTORY launch
-#  DESTINATION share/${PROJECT_NAME})
+install(DIRECTORY launch config
+ DESTINATION share/${PROJECT_NAME})
 
 # Add Cpp executable
 # add_executable(ignore_laser src/ignore_laser.cpp)
@@ -35,11 +34,10 @@ install(
 )
 
 # Install ONNX files
-# install(
-#   DIRECTORY assets/
-#   DESTINATION lib/${PROJECT_NAME}
-#   FILES_MATCHING PATTERN "*.onnx"
-# )
+install(DIRECTORY assets
+  DESTINATION share/${PROJECT_NAME}/
+  FILES_MATCHING PATTERN "*.onnx"
+)
 
 # Install JSON files
 # install(
@@ -54,6 +52,12 @@ file(GLOB PYTHON_SCRIPTS scripts/*.py)
 install(PROGRAMS
   ${PYTHON_SCRIPTS}
   DESTINATION lib/${PROJECT_NAME}
+)
+
+install(
+  DIRECTORY scripts/stt
+  DESTINATION lib/${PROJECT_NAME}
+  FILES_MATCHING PATTERN "*.py"
 )
 
 if(BUILD_TESTING)
