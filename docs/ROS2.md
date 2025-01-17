@@ -187,7 +187,7 @@ bool data
 bool success 
 string message
 ```
-This meanas that the request will have a boolean data field, and the response will have a boolean success field and a string message field. This are separated by `---`. This standard service should be imported from `std_srvs.srv`.
+This means that the request will have a boolean data field, and the response will have a boolean success field and a string message field. This are separated by `---`. This standard service should be imported from `std_srvs.srv`.
 
 ``` python
     def __init__(self):
