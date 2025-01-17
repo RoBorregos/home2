@@ -20,8 +20,8 @@ class grasp_detect : public rclcpp::Node
                           std::shared_ptr<std_srvs::srv::Trigger::Response> response)
     {
         RCLCPP_INFO(this->get_logger(), "Getting pose");
-        std::string config_filename = "/home/gerardo/Roborregos/Repos/home_repo/src/home2/manipulacion/packages/gpd/cfg/eigen_params.cfg";
-        std::string pathcloud = "/home/gerardo/Roborregos/Repos/home_repo/src/home2/manipulacion/packages/gpd/tutorials/krylon.pcd";
+        std::string config_filename = "/cfg/eigen_params.cfg";
+        std::string pathcloud = "/tutorials/krylon.pcd";
         gpd::util::Cloud cloud(pathcloud, Eigen::Matrix3Xd::Zero(3, 1));
         gpd::GraspDetector detector(config_filename);
         detector.preprocessPointCloud(cloud);
