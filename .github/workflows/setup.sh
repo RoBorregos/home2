@@ -1,8 +1,13 @@
 #!/bin/bash
 
+DEBIAN_FRONTEND=noninteractive
+
+echo "LS MANIPULATION"
+ls ./
+
 echo "APT UPDATE" 
 sudo apt update
-DEBIAN_FRONTEND=noninteractive
+
  
 echo "ROSDEP INIT" 
 rosdep init
@@ -10,16 +15,7 @@ rosdep init
 echo "ROSDEP UPDATE"
 rosdep update
 
-#install vcs-tools
-DEBIAN_FRONTEND=noninteractive 
-
-#rosdep install
-DEBIAN_FRONTEND=noninteractive 
-
-#For testing 
-echo "LS MANIPULATION"
-ls ./manipulation/package/
-
+#For testing
 echo "ROSDEP INSTALL"
 rosdep install --from-paths . -y --ignore-src -r --skip-keys gpd
 
