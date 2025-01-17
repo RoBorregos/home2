@@ -5,4 +5,3 @@ useful_audio:
     threshold: 0.1
     DISABLE_KWS: False
     MAX_AUDIO_DURATION: 10
-    STT_SERVICE: False
