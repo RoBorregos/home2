@@ -21,4 +21,4 @@ rosdep install --from-paths . -y --ignore-src -r --skip-keys gpd
 
 #Running prebuild
 echo "PREBUILD SCRIPT"
-bash ./prebuild.sh -y
+./prebuild.sh -y
