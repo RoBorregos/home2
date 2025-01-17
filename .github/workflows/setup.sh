@@ -11,7 +11,7 @@ DEBIAN_FRONTEND=noninteractive
 
 #rosdep install
 DEBIAN_FRONTEND=noninteractive 
-rosdep install --from-paths . -y --ignore-src -r
+rosdep install --from-paths . -y --ignore-src -r --skip-keys gpd
 
-# - Importing all dependencies
-colcon build --symlink-install
+#Running prebuild
+bash ./prebuild.sh -y
