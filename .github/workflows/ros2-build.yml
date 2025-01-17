@@ -22,4 +22,4 @@ jobs:
           chmod +x ./.github/workflows/setup.sh
 
       - name: Build
-        run: . /opt/ros/humble/setup.sh && ./.github/workflows/setup.sh && colcon build
+        run: . /opt/ros/humble/setup.sh && ./.github/workflows/setup.sh && colcon build --symlink-install
