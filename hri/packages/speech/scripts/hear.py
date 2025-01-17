@@ -39,7 +39,7 @@ class HearNode(Node):
 
         # Get the gRPC server address from parameters
         server_ip = (
-            self.declare_parameter("STT_SERVER_IP", "localhost:50051")
+            self.declare_parameter("STT_SERVER_IP", "127.0.0.1:50051")
             .get_parameter_value()
             .string_value
         )
@@ -85,13 +85,11 @@ class HearNode(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = HearNode()
     try:
-        rclpy.spin(node)
+        rclpy.spin(HearNode())
     except (ExternalShutdownException, KeyboardInterrupt):
         pass
     finally:
-        node.destroy_node()
         rclpy.shutdown()
 
 
