@@ -53,7 +53,7 @@ rosdep update
 rosdep install --from-paths . --ignore-src --skip-keys gpd
 
 #Checking GPD 
-GPD_DIR=$SCRIPT_DIR/manipulacion/packages/gpd
+GPD_DIR=$SCRIPT_DIR/manipulation/packages/gpd
 
 if [ ! -d "$GPD_DIR" ]; then
     echo "Error: gdp does not exist"
