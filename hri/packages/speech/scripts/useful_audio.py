@@ -6,7 +6,6 @@ from rclpy.executors import ExternalShutdownException
 
 from frida_interfaces.msg import AudioData
 from std_msgs.msg import Bool, String
-from frida_interfaces.srv import STT, AudioText
 
 from ament_index_python.packages import get_package_share_directory
 
@@ -51,7 +50,6 @@ class UsefulAudio(Node):
         self.declare_parameter("threshold", 0.1)
         self.declare_parameter("DISABLE_KWS", False)
         self.declare_parameter("MAX_AUDIO_DURATION", 10)
-        self.declare_parameter("STT_SERVICE", False)
 
         self.debug_mode = self.get_parameter("debug").get_parameter_value().bool_value
         self.use_silero_vad = (
@@ -65,9 +63,6 @@ class UsefulAudio(Node):
         )
         self.max_audio_duration = (
             self.get_parameter("MAX_AUDIO_DURATION").get_parameter_value().integer_value
-        )
-        self.stt_service = (
-            self.get_parameter("STT_SERVICE").get_parameter_value().bool_value
         )
 
         self.triggered = False
@@ -89,12 +84,6 @@ class UsefulAudio(Node):
         self.respeaker_light_publisher = self.create_publisher(
             String, "/ReSpeaker/light", 10
         )
-
-        if self.stt_service:
-            self.whisper_client = self.create_client(
-                AudioText, "/speech/service/raw_command"
-            )
-            self.create_service(STT, "/speech/STT", self.stt_handler)
 
         self.create_subscription(
             AudioData, "rawAudioChunk", self.callback_raw_audio, 10
@@ -263,25 +252,6 @@ class UsefulAudio(Node):
             "speak" if state == "saying" else "think" if state == "listening" else "off"
         )
         self.respeaker_light_publisher.publish(String(data=light))
-
-    def stt_handler(self, request, response):
-        self.discard_audio()
-        self.service_active = True
-        self.triggered = True
-        self.compute_audio_state()
-
-        timeout = 15
-        counter = 0
-        while self.triggered and counter < timeout:
-            self.get_clock().sleep_for(rclpy.duration.Duration(seconds=1))
-            counter += 1
-
-        response = self.whisper_client.call(AudioData(data=self.voiced_frames))
-        raw_text = response.text_heard
-
-        self.service_active = False
-        self.discard_audio()
-        return raw_text
 
 
 def main(args=None):
