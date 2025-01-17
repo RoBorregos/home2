@@ -3,7 +3,7 @@
 DEBIAN_FRONTEND=noninteractive
 
 echo "LS MANIPULATION"
-ls ./
+ls ./manipulation/packages
 
 echo "APT UPDATE" 
 sudo apt update
