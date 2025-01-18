@@ -31,5 +31,3 @@ exclude = [
     "*pb2*",
 ]
 
-line-length = 100
-lint.extend-ignore = ["E501"]

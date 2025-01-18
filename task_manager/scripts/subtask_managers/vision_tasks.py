@@ -65,9 +65,7 @@ class VisionTasks:
 
         if VisionTasks.SERVICES["save_face_name"] in VisionTasks.SUBTASKS[self.task]:
             if not self.save_name_client.wait_for_service(timeout_sec=TIMEOUT):
-                Logger.warn(
-                    self.node, "Save name service not initialized. (face_recognition)"
-                )
+                Logger.warn(self.node, "Save name service not initialized. (face_recognition)")
 
         if VisionTasks.SERVICES["find_seat"] in VisionTasks.SUBTASKS[self.task]:
             if not self.find_seat_client.wait_for_service(timeout_sec=TIMEOUT):
@@ -77,9 +75,7 @@ class VisionTasks:
                 )
 
         if VisionTasks.SERVICES["detect_person"] in VisionTasks.SUBTASKS[self.task]:
-            if not self.detect_person_action_client.wait_for_server(
-                timeout_sec=TIMEOUT
-            ):
+            if not self.detect_person_action_client.wait_for_server(timeout_sec=TIMEOUT):
                 Logger.warn(
                     self.node,
                     "Detect person action server not initialized. (face_recognition)",
@@ -144,9 +140,7 @@ class VisionTasks:
 
         try:
             goal_future = self.detect_person_action_client.send_goal_async(goal)
-            rclpy.spin_until_future_complete(
-                self.node, goal_future, timeout_sec=TIMEOUT
-            )
+            rclpy.spin_until_future_complete(self.node, goal_future, timeout_sec=TIMEOUT)
 
             goal_handle = goal_future.result()
 
@@ -154,9 +148,7 @@ class VisionTasks:
                 raise Exception("Goal rejected")
 
             result_future = goal_handle.get_result_async()
-            rclpy.spin_until_future_complete(
-                self.node, result_future, timeout_sec=TIMEOUT
-            )
+            rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=TIMEOUT)
             result = result_future.result()
 
             if result and result.result.success:
