@@ -23,7 +23,7 @@ jobs:
           chmod +x ./prebuild.sh
 
       - name: Prebuild
-        run: . /opt/ros/humble/setup.sh && ./.github/workflows/setup.sh && source ~/.bashrc
+        run: . /opt/ros/humble/setup.sh && ./.github/workflows/setup.sh && echo $GPD_INSTALL_DIR
 
       - name: Build
         run: colcon build --symlink-install
