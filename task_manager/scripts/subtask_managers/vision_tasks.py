@@ -28,7 +28,7 @@ class VisionTasks:
 
     STATE = {"TERMINAL_ERROR": -1, "EXECUTION_ERROR": 0, "EXECUTION_SUCCESS": 1}
 
-    def __init__(self, task_manager, mock_data=False) -> None:
+    def __init__(self, task_manager, mock_data=True) -> None:
         self.node = task_manager
         self.mock_data = mock_data
 
@@ -38,7 +38,8 @@ class VisionTasks:
             self.node, DetectPerson, DETECT_PERSON_TOPIC
         )
 
-        self.setup_services()
+        if not self.mock_data:
+            self.setup_services()
 
     def setup_services(self):
         """Initialize services and actions"""
@@ -61,8 +62,8 @@ class VisionTasks:
         """Print success message"""
         self.node.get_logger().info(f"\033[92mSUCCESS:\033[0m {message}")
 
+    @mockable(return_value=100)
     @service_check("save_name_client", -1, TIMEOUT)
-    @mockable(default_value=100)
     def save_face_name(self, name: str) -> int:
         """Save the name of the person detected"""
 
@@ -85,8 +86,8 @@ class VisionTasks:
         self.success(f"Name saved: {name}")
         return self.STATE["EXECUTION_SUCCESS"]
 
+    @mockable(return_value=100)
     @service_check("find_seat_client", 300, TIMEOUT)
-    @mockable(default_value=100)
     def find_seat(self) -> int:
         """Find an available seat and get the angle for the camera to point at"""
 
@@ -109,8 +110,8 @@ class VisionTasks:
 
         return 300
 
+    @mockable(return_value=True, delay=2)
     @service_check("detect_person_action_client", False, TIMEOUT)
-    @mockable(default_value=True, delay=2)
     def detect_person(self) -> bool:
         """Returns true when a person is detected"""
 
