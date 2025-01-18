@@ -38,10 +38,11 @@ $ cd ~/home_ws/
 #DO NOT omit "--recursive"，or the source code of dependent submodule will not be downloaded.
 $ git clone https://github.com/RoBorregos/home2.git --recursive src/
 #Pay attention where are you executing prebuild, it has to be on the home_ws directory.
-$ bash src/prebuild.sh
+$ ./src/prebuild.sh
 ```
 #### 3 Compile and source project
 ``` bash
+$ source ~/.bashrc
 #Remember to source ros2 environment settings first
 $ cd ~/home_ws/
 #You can add the --executor sequential for only one compiling thread
