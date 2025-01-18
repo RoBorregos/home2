@@ -40,9 +40,7 @@ class RestaurantTaskManager(Node):
         super().__init__("restaurant_task_manager")
         self.subtask_manager = {}
 
-        self.subtask_manager["vision"] = VisionTasks(
-            self, task="RESTAURANT", mock_data=MOCK_VISION
-        )
+        self.subtask_manager["vision"] = VisionTasks(self, task="RESTAURANT", mock_data=MOCK_VISION)
         self.subtask_manager["nav"] = None
         self.subtask_manager["manipulation"] = None
         self.subtask_manager["hri"] = None
@@ -67,21 +65,14 @@ class RestaurantTaskManager(Node):
                 self.subtask_manager["hri"].say("I am ready to start the task.")
                 self.current_state += 1
 
-            if (
-                self.current_state
-                == RestaurantTaskManager.TASK_STATES["DETECT_CUSTOMERS"]
-            ):
+            if self.current_state == RestaurantTaskManager.TASK_STATES["DETECT_CUSTOMERS"]:
                 Logger.state(self, "Detecting customers...")
-                status, self.coordinates = self.subtask_manager[
-                    "vision"
-                ].detect_waving_customer()
+                status, self.coordinates = self.subtask_manager["vision"].detect_waving_customer()
                 if status == VisionTasks.STATE["EXECUTION_SUCCESS"]:
                     self.subtask_manager["hri"].say(
                         "I have detected a customer. I will navigate to them."
                     )
-                    self.current_state = RestaurantTaskManager.TASK_STATES[
-                        "NAVIGATE_TO_CUSTOMER"
-                    ]
+                    self.current_state = RestaurantTaskManager.TASK_STATES["NAVIGATE_TO_CUSTOMER"]
                 elif (
                     status == VisionTasks.STATE["TARGET_NOT_FOUND"]
                     and self.detection_attempts < ATTEMPT_LIMIT
@@ -89,24 +80,17 @@ class RestaurantTaskManager(Node):
                     self.subtask_manager["manipulation"].pan_camera(self.pan_direction)
                     self.pan_direction *= -1
                 else:
-                    self.current_state = RestaurantTaskManager.TASK_STATES[
-                        "DEUX_GUIDE_TO_TABLE"
-                    ]
+                    self.current_state = RestaurantTaskManager.TASK_STATES["DEUX_GUIDE_TO_TABLE"]
                 self.detection_attempts += 1
 
-            if (
-                self.current_state
-                == RestaurantTaskManager.TASK_STATES["NAVIGATE_TO_CUSTOMER"]
-            ):
+            if self.current_state == RestaurantTaskManager.TASK_STATES["NAVIGATE_TO_CUSTOMER"]:
                 Logger.state(self, "Navigating to customer...")
                 self.detection_attempts = 0
                 self.subtask_manager["nav"].navigate_to_target(self.coordinates)
                 if self.order is None:
                     self.current_state = RestaurantTaskManager.TASK_STATES["TAKE_ORDER"]
                 else:
-                    self.current_state = RestaurantTaskManager.TASK_STATES[
-                        "DELIVER_ORDER"
-                    ]
+                    self.current_state = RestaurantTaskManager.TASK_STATES["DELIVER_ORDER"]
 
             if self.current_state == RestaurantTaskManager.TASK_STATES["TAKE_ORDER"]:
                 Logger.state(self, "Taking order...")
@@ -114,28 +98,19 @@ class RestaurantTaskManager(Node):
                 self.subtask_manager["hri"].say("Hello! What would you like to order?")
                 self.order = self.subtask_manager["hri"].get_order()
                 if self.order != "error":
-                    self.subtask_manager["hri"].say(
-                        f"I'll bring your order: {self.order}."
-                    )
+                    self.subtask_manager["hri"].say(f"I'll bring your order: {self.order}.")
                     self.subtask_manager["manipulation"].follow_face(False)
-                    self.current_state = RestaurantTaskManager.TASK_STATES[
-                        "NAVIGATE_TO_KITCHENBAR"
-                    ]
+                    self.current_state = RestaurantTaskManager.TASK_STATES["NAVIGATE_TO_KITCHENBAR"]
                 else:
                     self.subtask_manager["hri"].say(
                         "I'm sorry, I didn't understand. Can you repeat that?"
                     )
 
-            if (
-                self.current_state
-                == RestaurantTaskManager.TASK_STATES["NAVIGATE_TO_KITCHENBAR"]
-            ):
+            if self.current_state == RestaurantTaskManager.TASK_STATES["NAVIGATE_TO_KITCHENBAR"]:
                 Logger.state(self, "Navigating to kitchen/bar...")
                 self.subtask_manager["nav"].navigate_to_origin()
                 if self.order is None:
-                    self.current_state = RestaurantTaskManager.TASK_STATES[
-                        "DETECT_CUSTOMERS"
-                    ]
+                    self.current_state = RestaurantTaskManager.TASK_STATES["DETECT_CUSTOMERS"]
                 else:
                     self.current_state = RestaurantTaskManager.TASK_STATES["PICK_ITEMS"]
 
@@ -143,9 +118,7 @@ class RestaurantTaskManager(Node):
                 Logger.state(self, "Picking items...")
                 # TODO: Choose to pick items one by one or attempt using tray
                 self.subtask_manager["manipulation"].pick_items()
-                self.current_state = RestaurantTaskManager.TASK_STATES[
-                    "NAVIGATE_TO_CUSTOMER"
-                ]
+                self.current_state = RestaurantTaskManager.TASK_STATES["NAVIGATE_TO_CUSTOMER"]
 
             if self.current_state == RestaurantTaskManager.TASK_STATES["DELIVER_ORDER"]:
                 Logger.state(self, "Delivering order...")
@@ -156,18 +129,11 @@ class RestaurantTaskManager(Node):
                 self.customers_served += 1
                 self.order = None
                 if self.customers_served < CUSTOMERS_LIMIT:
-                    self.current_state = RestaurantTaskManager.TASK_STATES[
-                        "NAVIGATE_TO_KITCHENBAR"
-                    ]
+                    self.current_state = RestaurantTaskManager.TASK_STATES["NAVIGATE_TO_KITCHENBAR"]
                 else:
-                    self.current_state = RestaurantTaskManager.TASK_STATES[
-                        "FINISH_TASK"
-                    ]
+                    self.current_state = RestaurantTaskManager.TASK_STATES["FINISH_TASK"]
 
-            if (
-                self.current_state
-                == RestaurantTaskManager.TASK_STATES["DEUX_GUIDE_TO_TABLE"]
-            ):
+            if self.current_state == RestaurantTaskManager.TASK_STATES["DEUX_GUIDE_TO_TABLE"]:
                 Logger.state(self, "Following to table...")
                 self.subtask_manager["hri"].say(
                     "I couldn't find any customers. Please stand in front of me and guide me to the customer's table."
@@ -179,9 +145,7 @@ class RestaurantTaskManager(Node):
 
             if self.current_state == RestaurantTaskManager.TASK_STATES["FINISH_TASK"]:
                 Logger.state(self, "Finishing task...")
-                self.subtask_manager["hri"].say(
-                    "I have served all customers. I will rest now."
-                )
+                self.subtask_manager["hri"].say("I have served all customers. I will rest now.")
                 self.get_logger().info("Task completed.")
                 self.timer.cancel()
 
