@@ -5,12 +5,7 @@ Decorators for subtask managers
 import time
 from rclpy.action import ActionClient
 import rclpy.client
-import rclpy.node
-
-
-def log_mock(node, message):
-    """Function to log mock messages in blue"""
-    node.get_logger().info(f"\033[94mMOCKING_FUNCTION:\033[0m {message}")
+from .logger import Logger
 
 
 def mockable(return_value=None, delay=0):
@@ -27,7 +22,7 @@ def mockable(return_value=None, delay=0):
             if getattr(self, "mock_data", False):
                 if delay > 0:
                     time.sleep(delay)
-                log_mock(self.node, f"{func.__name__}. Value: {return_value}")
+                Logger.mock(self.node, f"{func.__name__}. Value: {return_value}")
                 return return_value
 
             return func(self, *args, **kwargs)

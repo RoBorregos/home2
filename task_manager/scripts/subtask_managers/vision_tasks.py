@@ -15,6 +15,7 @@ from frida_interfaces.srv import FindSeat
 from frida_interfaces.action import DetectPerson
 
 from utils.decorators import mockable, service_check
+from utils.logger import Logger
 
 SAVE_NAME_TOPIC = "/vision/new_name"
 FIND_SEAT_TOPIC = "/vision/find_seat"
@@ -28,7 +29,7 @@ class VisionTasks:
 
     STATE = {"TERMINAL_ERROR": -1, "EXECUTION_ERROR": 0, "EXECUTION_SUCCESS": 1}
 
-    def __init__(self, task_manager, mock_data=True) -> None:
+    def __init__(self, task_manager, mock_data=False) -> None:
         self.node = task_manager
         self.mock_data = mock_data
 
@@ -58,10 +59,6 @@ class VisionTasks:
                 "Detect person action server not initialized. (face_recognition)"
             )
 
-    def success(self, message) -> None:
-        """Print success message"""
-        self.node.get_logger().info(f"\033[92mSUCCESS:\033[0m {message}")
-
     @mockable(return_value=100)
     @service_check("save_name_client", -1, TIMEOUT)
     def save_face_name(self, name: str) -> int:
@@ -83,7 +80,7 @@ class VisionTasks:
             self.node.get_logger().error(f"Error saving name: {e}")
             return self.STATE["EXECUTION_ERROR"]
 
-        self.success(f"Name saved: {name}")
+        Logger.success(self, f"Name saved: {name}")
         return self.STATE["EXECUTION_SUCCESS"]
 
     @mockable(return_value=100)
@@ -101,7 +98,7 @@ class VisionTasks:
             result = future.result()
 
             if result.success:
-                self.success(f"Seat found at angle: {result.angle}")
+                Logger.success(node, f"Seat found at angle: {result.angle}")
                 return result.angle
             else:
                 self.node.get_logger().warn("No seat found")
@@ -137,7 +134,7 @@ class VisionTasks:
             result = result_future.result()
 
             if result and result.result.success:
-                self.success("Person detected")
+                Logger.success(node, "Person detected")
                 return self.STATE["EXECUTION_SUCCESS"]
             else:
                 self.node.get_logger().warn("No person detected")
