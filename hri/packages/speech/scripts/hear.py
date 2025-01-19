@@ -2,10 +2,12 @@
 
 import rclpy
 from rclpy.node import Node
-from rclpy.executors import ExternalShutdownException
+from rclpy.executors import ExternalShutdownException, MultiThreadedExecutor
+from rclpy.callback_groups import ReentrantCallbackGroup
 import grpc
 from frida_interfaces.msg import AudioData
-from std_msgs.msg import String
+from frida_interfaces.srv import STT
+from std_msgs.msg import Bool, String
 from speech.speech_api_utils import SpeechApiUtils
 
 import sys
@@ -37,12 +39,18 @@ class HearNode(Node):
         super().__init__("hear_node")
         self.get_logger().info("*Starting Hear Node*")
 
-        # Get the gRPC server address from parameters
         server_ip = (
             self.declare_parameter("STT_SERVER_IP", "127.0.0.1:50051")
             .get_parameter_value()
             .string_value
         )
+        start_service = (
+            self.declare_parameter("START_SERVICE", False)
+            .get_parameter_value()
+            .bool_value
+        )
+
+        # Initialize the Whisper gRPC client
         self.client = WhisperClient(server_ip)
 
         # Create a publisher for the transcriptions
@@ -50,10 +58,36 @@ class HearNode(Node):
             String, "/speech/raw_command", 10
         )
 
+        # Create groups for the subscription and service
+        multithread_group = ReentrantCallbackGroup()
+
         # Subscribe to audio data
         self.audio_subscription = self.create_subscription(
-            AudioData, "UsefulAudio", self.callback_audio, 10
+            AudioData,
+            "UsefulAudio",
+            self.callback_audio,
+            10,
+            callback_group=multithread_group,
         )
+
+        # Create a service
+        self.service_active = False
+        if start_service:
+            self.service_text = ""
+            detection_publish_topic = (
+                self.declare_parameter("detection_publish_topic", "/keyword_detected")
+                .get_parameter_value()
+                .string_value
+            )
+            self.KWS_publisher_mock = self.create_publisher(
+                Bool, detection_publish_topic, 10
+            )
+            self.stt_service = self.create_service(
+                STT,
+                "stt_service",
+                self.stt_service_callback,
+                callback_group=multithread_group,
+            )
 
         self.get_logger().info("*Hear Node is ready*")
 
@@ -75,21 +109,42 @@ class HearNode(Node):
             # Publish the transcription
             msg = String()
             msg.data = transcription
-            self.transcription_publisher.publish(msg)
-            self.get_logger().info("Transcription published to ROS topic.")
+
+            if self.service_active:
+                # If the service is active, store the transcription
+                self.service_text = transcription
+                self.service_active = False
+            else:
+                # If the service is not active, publish the transcription
+                self.transcription_publisher.publish(msg)
+                self.get_logger().info("Transcription published to ROS topic.")
         except grpc.RpcError as e:
             self.get_logger().error(f"gRPC error: {e.code()}, {e.details()}")
         except Exception as ex:
             self.get_logger().error(f"Error during transcription: {str(ex)}")
 
+    def stt_service_callback(self, request, response):
+        self.get_logger().info("STT service requested")
+        self.service_active = True
+        self.KWS_publisher_mock.publish(Bool(data=True))
+        while self.service_active:
+            pass
+        response.text_heard = self.service_text
+        # self.get_logger().info(f"STT service response: {response.text_heard}")
+        return response
+
 
 def main(args=None):
     rclpy.init(args=args)
+    node = HearNode()
+    executor = MultiThreadedExecutor()
+    executor.add_node(node)
     try:
-        rclpy.spin(HearNode())
+        executor.spin()
     except (ExternalShutdownException, KeyboardInterrupt):
         pass
     finally:
+        node.destroy_node()
         rclpy.shutdown()
 
 
