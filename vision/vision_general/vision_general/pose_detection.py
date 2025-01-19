@@ -4,8 +4,6 @@ import cv2
 import mediapipe as mp
 import numpy as np
 
-import os  # For testing
-
 
 class PoseDetection:
     def __init__(self):
@@ -18,7 +16,7 @@ class PoseDetection:
         self.pose = self.mp_pose.Pose()
         self.mp_drawing = mp.solutions.drawing_utils  # For visualizing landmarks
 
-    def detectPose(self):
+    def detectPose(self, image):
         pass
 
     def detectGesture(self):
@@ -27,9 +25,8 @@ class PoseDetection:
     def detectClothes(self):
         pass
 
-    def isChestVisible(self, image_path):
-        # Load and preprocess the image
-        image = cv2.imread(image_path)
+    def isChestVisible(self, image):
+        # Preprocess the image
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         # Process the image
@@ -53,13 +50,8 @@ class PoseDetection:
             print("No pose detected.")
         return False
 
-    def chestPosition(self, image_path, save_image=False):
-        # Load and preprocess the image
-        image = cv2.imread(image_path)
-        if image is None:
-            print("Error: Could not load image.")
-            return None
-
+    def chestPosition(self, image, save_image=False):
+        # Preprocess the image
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         # Process the image to detect pose landmarks
@@ -88,13 +80,8 @@ class PoseDetection:
         print("Chest landmarks not detected or not fully visible.")
         return None
 
-    def personAngle(self, image_path):
-        # Load and preprocess the image
-        image = cv2.imread(image_path)
-        if image is None:
-            print("Error: Could not load image.")
-            return None
-
+    def personAngle(self, image, save_image=False):
+        # Preprocess the image
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         # Process the image to detect pose landmarks
@@ -154,9 +141,14 @@ class PoseDetection:
                     orientation = "unknown"
 
                 # Optionally, draw landmarks on the image and save
-                # annotated_image = image.copy()
-                # self.mp_drawing.draw_landmarks(annotated_image, results.pose_landmarks, self.mp_pose.POSE_CONNECTIONS)
-                # cv2.imwrite(f"../Utils/tests/person_angle.jpg", annotated_image)
+                if save_image:
+                    annotated_image = image.copy()
+                    self.mp_drawing.draw_landmarks(
+                        annotated_image,
+                        results.pose_landmarks,
+                        self.mp_pose.POSE_CONNECTIONS,
+                    )
+                    cv2.imwrite("../Utils/tests/person_angle.jpg", annotated_image)
 
                 return orientation
 
@@ -165,28 +157,11 @@ class PoseDetection:
 
 
 def main():
-    # image_path = "./testImages/image4.jpg"
-
-    # pose_detection = PoseDetection()
-
-    # print(pose_detection.isChestVisible(image_path=image_path))
-
-    # chest_coords = pose_detection.chestPosition(image_path=image_path, save_image=True)
-    # if chest_coords:
-    #     print(f"Chest coordinates: {chest_coords}")
-
-    # angle = pose_detection.personAngle(image_path=image_path)
-    # if angle:
-    #     print(f"Person angle: {angle:.2f} degrees")
-
-    test_images_dir = "../Utils/angle_test_images"
     pose_detection = PoseDetection()
 
-    for i in range(1, 20):
-        image_name = f"{i}.jpeg"
-        image_path = os.path.join(test_images_dir, image_name)
-        angle = pose_detection.personAngle(image_path=image_path)
-        print(f"{i} {angle}")
+    img = cv2.imread("../Utils/pose_test_images/standing3.jpg")
+    pose = pose_detection.detectPose(img, save_image=True)
+    print(f"Detected pose: {pose}")
 
 
 if __name__ == "__main__":
