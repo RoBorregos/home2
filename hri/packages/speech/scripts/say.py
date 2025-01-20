@@ -26,7 +26,7 @@ class Say(Node):
         self.connected = False
         self.declare_parameter("speaking_topic", "/saying")
 
-        self.declare_parameter("speak_service", "/speech/speak")
+        self.declare_parameter("SPEAK_SERVICE", "/speech/speak")
         self.declare_parameter("speak_topic", "/speech/speak_now")
         self.declare_parameter("model", "en_US-amy-medium")
         self.declare_parameter("offline", True)
@@ -54,7 +54,7 @@ class Say(Node):
         )
 
         speak_service = (
-            self.get_parameter("speak_service").get_parameter_value().string_value
+            self.get_parameter("SPEAK_SERVICE").get_parameter_value().string_value
         )
         speak_topic = (
             self.get_parameter("speak_topic").get_parameter_value().string_value
