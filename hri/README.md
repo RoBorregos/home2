@@ -29,9 +29,14 @@ home2
     └── speech.txt
 ```
 
+
 ## Setup with docker
 
-Run the script `setup.bash` located in `home2/docker/hri` to setup the configuration for docker. The script provides additional setup instructions.
+Run the script `setup.bash` located in `home2/docker/hri` to setup the configuration for docker.
+
+In addition, the following files are required:
+- `docker/hri/.env`: Contains the environment variables for the docker compose files. `docker/hri/.env.example` contains examples of the required variables.
+
 
 ## Using with docker
 
@@ -65,7 +70,7 @@ Most of the final commands will be executed using the docker compose file.
 However, some testing commands are the following:
 
 ```bash
-# Speech
+# Speech (Remember to start the whisper docker before)
 ros2 launch speech devices_launch.py
 
 ros2 topic pub /speech/speak_now --once std_msgs/msg/String "data: 'Go to the kitchen and grab cookies'"
@@ -75,3 +80,39 @@ ros2 launch nlp nlp_launch.py
 
 ros2 topic pub /speech/raw_command std_msgs/msg/String "data: Go to the kitchen and grab cookies" --once
 ```
+
+## Speech pipeline
+
+### AudioCapturer.py
+
+Captures raw audio in chunks and publishes it.
+
+- publish -> rawAudioChunk
+
+### KWS.py
+
+Uses porcupine to detect kew words sush as "Frida".
+
+- subscribe -> rawAudioChunk
+- publish -> keyword_detected
+
+### UsefulAudio.py
+
+Uses silero VAD to identify speech in raw audio and publish it to UsefulAudio.
+
+- subscribe
+    -> rawAudioChunk
+    | saying
+    | keyword_detected
+- publish
+    -> UsefulAudio
+    | AudioState
+    | colorInstruction
+    | /ReSpeaker/light
+
+### Hear.py
+
+Takes UsefulAudio, performs STT with gRPC servers and publishes it.
+
+- subscribe -> UsefulAudio
+- publish -> /speech/transcription

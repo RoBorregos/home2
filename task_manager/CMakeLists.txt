@@ -18,6 +18,7 @@ ament_python_install_package(${PROJECT_NAME})
 
 file(GLOB TASK_MANAGERS scripts/*.py)
 file (GLOB SUBTASK_MANAGERS scripts/subtask_managers/*.py)
+file (GLOB UTILS scripts/utils/*.py)
 
 # Install python scripts
 install(PROGRAMS
@@ -28,6 +29,16 @@ install(PROGRAMS
 install(PROGRAMS
   ${SUBTASK_MANAGERS}
   DESTINATION lib/${PROJECT_NAME}/subtask_managers
+)
+
+install(PROGRAMS
+  ${UTILS}
+  DESTINATION lib/${PROJECT_NAME}/utils
+)
+
+install(PROGRAMS
+  ${UTILS}
+  DESTINATION lib/${PROJECT_NAME}/subtask_managers/utils
 )
 
 ######################### Testing  #########################

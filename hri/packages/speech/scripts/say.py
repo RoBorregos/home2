@@ -21,7 +21,7 @@ VOICE_DIRECTORY = os.path.join(os.path.dirname(CURRENT_FILE_PATH), "offline_voic
 class Say(Node):
     def __init__(self):
         super().__init__("say")
-        self.get_logger().info("Say node has started.")
+        self.get_logger().info("Initializing Say node.")
 
         self.connected = False
         self.declare_parameter("speaking_topic", "/saying")
@@ -72,6 +72,8 @@ class Say(Node):
         self.create_service(Speak, speak_service, self.speak_service)
         self.create_subscription(String, speak_topic, self.speak_topic, 10)
         self.publisher_ = self.create_publisher(Bool, speaking_topic, 10)
+
+        self.get_logger().info("Say node initialized.")
 
     def speak_service(self, req):
         """When say is called as a service. Caller awaits for the response."""
