@@ -3,7 +3,7 @@
 import rclpy
 from rclpy.node import Node
 from rclpy.executors import ExternalShutdownException, MultiThreadedExecutor
-from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 import grpc
 from frida_interfaces.msg import AudioData
 from frida_interfaces.srv import STT
@@ -59,7 +59,8 @@ class HearNode(Node):
         )
 
         # Create groups for the subscription and service
-        multithread_group = ReentrantCallbackGroup()
+        subscription_group = MutuallyExclusiveCallbackGroup()
+        service_group = MutuallyExclusiveCallbackGroup()
 
         # Subscribe to audio data
         self.audio_subscription = self.create_subscription(
@@ -67,7 +68,7 @@ class HearNode(Node):
             "UsefulAudio",
             self.callback_audio,
             10,
-            callback_group=multithread_group,
+            callback_group=subscription_group,
         )
 
         # Create a service
@@ -86,7 +87,7 @@ class HearNode(Node):
                 STT,
                 "stt_service",
                 self.stt_service_callback,
-                callback_group=multithread_group,
+                callback_group=service_group,
             )
 
         self.get_logger().info("*Hear Node is ready*")
@@ -124,13 +125,12 @@ class HearNode(Node):
             self.get_logger().error(f"Error during transcription: {str(ex)}")
 
     def stt_service_callback(self, request, response):
-        self.get_logger().info("STT service requested")
+        self.get_logger().info("Keyword mock service activated, recording audio...")
         self.service_active = True
         self.KWS_publisher_mock.publish(Bool(data=True))
         while self.service_active:
             pass
         response.text_heard = self.service_text
-        # self.get_logger().info(f"STT service response: {response.text_heard}")
         return response
 
 
