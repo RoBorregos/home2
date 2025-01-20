@@ -3,22 +3,22 @@
 
 # Ref: https://github.com/mviereck/x11docker/wiki/Container-sound:-ALSA-or-Pulseaudio
 
-# Remove files if they exist
-sudo rm -rf /tmp/pulseaudio.socket
-sudo rm -rf /tmp/pulseaudio.client.conf
+# Add pulseaudio socket on start up (user)
+sudo mkdir -p /etc/pulse/default.pa.d
+sudo mkdir -p /home/$USER/.config/pulse
 
-# Create pulseaudio socket.
-pactl load-module module-native-protocol-unix socket=/tmp/pulseaudio.socket
 
-# Create pulseaudio clients config.
-echo 'default-server = unix:/tmp/pulseaudio.socket
-# Prevent a server running in the container
-autospawn = yes
-daemon-binary = /bin/true
-# Prevent the use of shared memory
-enable-shm = false' > /tmp/pulseaudio.client.conf
+sudo sh -c "echo '# RoBorregos@Home | Socket to use pulseaudio in docker container
+load-module module-native-protocol-unix socket=/home/$USER/.config/pulse/pulseaudio.socket
+' > /etc/pulse/default.pa.d/speech_sound.pa"
+
+echo "Added pulseaudio socket config to /etc/pulse/default.pa.d/speech_sound.pa"
+
+# Restart pulseaudio
+echo "Restarting pulseaudio for user."
+
+systemctl --user restart pulseaudio
 
 sudo usermod -aG audio $USER # Make sure current user has access to audio resources.
-sudo chmod 777 /dev/snd/* # Allow access to audio devices.
 
 echo "Finished hri setup configuration for docker."
