@@ -75,7 +75,7 @@ class UsefulAudio(Node):
 
         self.timer = None
         self.is_saying = False
-        self.audio_state = "None"
+        self.audio_state = "idle"
 
         self.publisher = self.create_publisher(AudioData, "UsefulAudio", 20)
         self.audio_state_publisher = self.create_publisher(String, "AudioState", 10)
@@ -221,9 +221,10 @@ class UsefulAudio(Node):
         self.compute_audio_state()
 
     def callback_keyword(self, msg):
-        self.triggered = True
-        self.discard_audio()
-        self.compute_audio_state()
+        if self.audio_state == "idle":
+            self.triggered = True
+            self.discard_audio()
+            self.compute_audio_state()
 
     def compute_audio_state(self):
         new_state = (
