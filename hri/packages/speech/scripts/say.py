@@ -12,6 +12,7 @@ from speech.speech_api_utils import SpeechApiUtils
 from speech.wav_utils import WavUtils
 from std_msgs.msg import Bool, String
 
+from frida_constants.hri_constants import SPEAK_SERVICE
 from frida_interfaces.srv import Speak
 
 CURRENT_FILE_PATH = os.path.abspath(__file__)
@@ -26,7 +27,7 @@ class Say(Node):
         self.connected = False
         self.declare_parameter("speaking_topic", "/saying")
 
-        self.declare_parameter("SPEAK_SERVICE", "/speech/speak")
+        self.declare_parameter("SPEAK_SERVICE", SPEAK_SERVICE)
         self.declare_parameter("speak_topic", "/speech/speak_now")
         self.declare_parameter("model", "en_US-amy-medium")
         self.declare_parameter("offline", True)
