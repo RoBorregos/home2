@@ -1,7 +1,7 @@
 from functools import wraps
 
-from utils.config_parser import parse_config
 from utils.logger import Logger
+from utils.types.config import SubtaskConfig
 
 
 class SubtaskMeta(type):
@@ -23,7 +23,7 @@ class SubtaskMeta(type):
             instance = super(cls.__class__, cls).__new__(cls)
 
             if kwargs.get("config", None):
-                kwargs["config"] = parse_config(kwargs["config"])
+                kwargs["config"] = SubtaskConfig(**(kwargs["config"]))
 
             return instance
 
