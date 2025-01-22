@@ -1,7 +1,7 @@
-from functools import wraps
+from unittest.mock import Mock
 
+from utils.config import SubtaskConfig
 from utils.logger import Logger
-from utils.types.config import SubtaskConfig
 
 
 class SubtaskMeta(type):
@@ -11,59 +11,43 @@ class SubtaskMeta(type):
     NOTE: Assumes ros node is stored in a property called 'node', and that the config (if any) is passed as a keyword argument named 'config'.
     """
 
-    def __new__(cls, name, bases, dct):
-        """
-        Invoked when the class is created.
-        This method is used to add a new __new__ method to the class, which parses the configurations
-        """
-
-        original_new = dct.get("__new__", None)
-
-        def new_method(cls, *args, **kwargs):
-            instance = super(cls.__class__, cls).__new__(cls)
-
-            if kwargs.get("config", None):
-                kwargs["config"] = SubtaskConfig(**(kwargs["config"]))
-
-            return instance
-
-        # Add the __new__ method in the class, if not already defined
-        if not original_new:
-            dct["__new__"] = new_method
-
-        return super().__new__(cls, name, bases, dct)
-
     def __call__(cls, *args, **kwargs):
         """Invoked when the class is called to create an instance"""
 
         instance = super().__call__(*args, **kwargs)
-        config = kwargs.pop("config", None)
+        config: SubtaskConfig = kwargs.pop("config", None)
 
         # Apply mocks
+        mock_count = 0
         if config and config.mock_config:
-            for mock_config in config:
+            for mock_config in config.mock_config:
                 if mock_config.enabled:
                     method_name = mock_config.function_name
                     mock_data = mock_config.mock_data
 
                     if hasattr(instance, method_name):
-                        original_method = getattr(instance, method_name)
+                        # Replace original function with mock
+                        mock_count += 1
+                        if callable(mock_data):
+                            mock_method = Mock(side_effect=mock_data)
+                            setattr(instance, method_name, mock_method)
+                        else:
 
-                        # Wrap the method to return mock data
-                        @wraps(original_method)
-                        def mock_method(*method_args, **method_kwargs):
-                            Logger.mock(instance.node, method_name)
+                            def create_mock_method(mock_data):
+                                def mock_method(*method_args, **method_kwargs):
+                                    Logger.mock(instance.node, method_name)
+                                    return mock_data
 
-                            # Callback support for dynamic mock data
-                            if callable(mock_data):
-                                return mock_data(*method_args, **method_kwargs)
+                                return mock_method
 
-                            return mock_data
+                            mock_method = Mock(
+                                side_effect=create_mock_method(mock_data)
+                            )
+                            setattr(instance, method_name, mock_method)
 
-                        setattr(instance, method_name, mock_method)
                     else:
                         message = f"Method '{method_name}' not found in {cls.__name__}."
-                        if mock_config.strict:
+                        if config.strict:
                             raise AttributeError(
                                 message
                                 + f" Disable strict mode or remove {method_name}."
@@ -71,6 +55,10 @@ class SubtaskMeta(type):
                         else:
                             Logger.warn(instance.node, message)
 
-        Logger.success(instance.node, f"Applied mocks for {cls.__name__}")
+            Logger.success(
+                instance.node, f"Applied {mock_count} mocks for {cls.__name__}"
+            )
+        else:
+            Logger.warn(instance.node, f"No config found for {cls.__name__}")
 
         return instance
