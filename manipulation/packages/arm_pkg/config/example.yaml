@@ -1,4 +1,0 @@
-Ros_Example:
-  ros__parameters:    
-    port: /dev/ttyUSB0
-    

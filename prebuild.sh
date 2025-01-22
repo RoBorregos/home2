@@ -1,10 +1,5 @@
 #!/bin/bash
 
-AUTO_ACCEPT=false
-if [[ "$1" == "-y" ]]; then
-    AUTO_ACCEPT=true
-fi
-
 # Display a warning message
 cat << 'EOF'
 
@@ -26,26 +21,24 @@ EOF
 
 # Pause for a few seconds to let the user read the warning
 sleep 5
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
+CURRENT_DIR="$(pwd)"
 
 # Show the current directory
-echo "You are currently in: $(pwd)"
+echo "You are currently in: $CURRENT_DIR"
 
-# Confirm with the user if not auto-accepted
-if [[ "$AUTO_ACCEPT" == false ]]; then
-    read -p "Are you sure you want to proceed? (yes/no): " choice
-    if [[ "$choice" != "yes" ]]; then
-        echo "Aborting script. Please navigate to the correct directory and try again."
-        exit 1
-    fi
+#Check the correct execution path
+if [[ "$CURRENT_DIR" == "$SCRIPT_DIR" ]]; then
+    echo "Executing from the script's directory. Proceeding..."
+elif [[ "$CURRENT_DIR" == "$SCRIPT_DIR"/* ]]; then
+    echo "You are in a subfolder of the script's directory. Execution stopped."
+    exit 1
 else
-    echo "Auto-accept flag (-y) detected. Proceeding without confirmation."
+    echo "Executing from outside the script's directory. Proceeding..."
 fi
-
-echo "Proceeding with the script..."
 
 LIB_DIR="$(pwd)/install/gpd"
 echo "The path is $LIB_DIR"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd $SCRIPT_DIR
 
 # ROSDEP INSTALLING DEPENDENCIES

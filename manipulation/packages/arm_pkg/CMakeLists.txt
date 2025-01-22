@@ -16,7 +16,7 @@ find_package(std_srvs REQUIRED)
 
 
 #Install directories
-install(DIRECTORY launch config worlds
+install(DIRECTORY launch worlds
   DESTINATION share/${PROJECT_NAME})
 
 
