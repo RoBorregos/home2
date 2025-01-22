@@ -33,15 +33,15 @@ class SubtaskMeta(type):
                             setattr(instance, method_name, mock_method)
                         else:
 
-                            def create_mock_method(mock_data):
+                            def create_mock_method(mock_data, method_name_):
                                 def mock_method(*method_args, **method_kwargs):
-                                    Logger.mock(instance.node, method_name)
+                                    Logger.mock(instance.node, method_name_)
                                     return mock_data
 
                                 return mock_method
 
                             mock_method = Mock(
-                                side_effect=create_mock_method(mock_data)
+                                side_effect=create_mock_method(mock_data, method_name)
                             )
                             setattr(instance, method_name, mock_method)
 

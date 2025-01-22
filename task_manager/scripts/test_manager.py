@@ -22,12 +22,10 @@ class TestTaskManager(Node):
     def run(self):
         """testing vision tasks"""
 
-        for attr_name in dir(self.subtask_manager["hri"]):
-            print(attr_name, ":", getattr(self.subtask_manager["hri"], attr_name))
-
         user_request = self.subtask_manager["hri"].hear()
         say_res = self.subtask_manager["hri"].say("Hi, my name is frida")
-        print("user reuquest:", user_request)
+
+        print("user_request:", user_request)
         print("say_res:", say_res)
 
         drink = self.subtask_manager["hri"].extract_data("Drink", user_request)

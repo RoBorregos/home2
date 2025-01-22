@@ -24,7 +24,7 @@ __config = {
     ],
     "mock_config": [
         {
-            "function_name": "extract_dat",
+            "function_name": "extract_data",
             "enabled": True,
             "mock_data": mock_extract_data,
         },
