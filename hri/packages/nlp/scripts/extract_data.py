@@ -38,12 +38,17 @@ class DataExtractor(Node):
         self.declare_parameter("base_url", "None")
         self.declare_parameter("model", "gpt-4o-2024-08-06")
         self.declare_parameter("EXTRACT_DATA_SERVICE", EXTRACT_DATA_SERVICE)
+        self.declare_parameter("temperature", 0.5)
 
         base_url = self.get_parameter("base_url").get_parameter_value().string_value
         if base_url == "None":
             self.base_url = None
         else:
             self.base_url = base_url
+
+        self.temperature = (
+            self.get_parameter("temperature").get_parameter_value().double_value
+        )
 
         self.client = OpenAI(
             api_key=os.getenv("OPENAI_API_KEY", "ollama"), base_url=base_url
@@ -77,6 +82,7 @@ class DataExtractor(Node):
         response_content = (
             self.client.beta.chat.completions.parse(
                 model=self.model,
+                temperature=self.temperature,
                 messages=[
                     {"role": "system", "content": instruction},
                     {
