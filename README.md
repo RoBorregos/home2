@@ -17,8 +17,7 @@ Ensure the following are installed on your system:
 
 ###  Ubuntu 22.04  
 ## ⚠️ Prebuild Warning  
-
-To ensure the repository compiles correctly, **run `prebuild.sh` first**.  
+It only runs once, to ensure the repository compiles correctly, **run `prebuild.sh` first**.  
 
 Make sure to execute the script in the **workspace (`ws`) directory** where you plan to run `colcon build` afterward.  
 
@@ -39,9 +38,12 @@ $ cd ~/home_ws/
 $ git clone https://github.com/RoBorregos/home2.git --recursive src/
 #Pay attention where are you executing prebuild, it has to be on the home_ws directory.
 $ ./src/prebuild.sh
+#AFTER RUNNING PREBUILD IMPORTANT TO SOURCE .BASHRC 
+$ source ~/.bashrc
 ```
 #### 3 Compile and source project
 ``` bash
+#AFTER RUNNING PREBUILD IMPORTANT TO SOURCE .BASHRC 
 $ source ~/.bashrc
 #Remember to source ros2 environment settings first
 $ cd ~/home_ws/
