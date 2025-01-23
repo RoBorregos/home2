@@ -13,7 +13,7 @@ class TestNode(Node):
         self.timer = self.create_timer(0.5, self.timer_callback)
 
     def timer_callback(self):
-        self.get_logger.info(os.environ["SRC_HOME_PATH"])
+        self.get_logger().info(os.environ["SRC_HOME_PATH"])
 
 
 def main(args=None):
