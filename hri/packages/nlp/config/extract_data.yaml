@@ -1,5 +1,5 @@
-command_interpreter:
+extract_data:
   ros__parameters:
     base_url: "http://localhost:11434/v1"
     model: "llama3.2"
-    EXTRACT_DATA_SERVICE_NAME: "/extract_data"
+    EXTRACT_DATA_SERVICE: REPLACE
