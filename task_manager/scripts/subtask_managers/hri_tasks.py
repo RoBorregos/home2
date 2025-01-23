@@ -31,13 +31,13 @@ class HRITasks(metaclass=SubtaskMeta):
     def __init__(self, task_manager, config=None) -> None:
         self.node = task_manager
 
-        self.speak_service = self.node.create_client(Speak, SPEAK_SERVICE)
-        self.hear_service = self.node.create_client(STT, HEAR_SERVICE)
-        self.extract_data_service = self.node.create_client(
+        self.speak_client = self.node.create_client(Speak, SPEAK_SERVICE)
+        self.hear_client = self.node.create_client(STT, HEAR_SERVICE)
+        self.extract_data_client = self.node.create_client(
             ExtractInfo, EXTRACT_DATA_SERVICE
         )
 
-        self.command_interpreter_service = self.node.create_client(
+        self.command_interpreter_client = self.node.create_client(
             CommandInterpreter, COMMAND_INTERPRETER_SERVICE
         )
         self.grammar_service = self.node.create_client(Grammar, GRAMMAR_SERVICE)
@@ -47,7 +47,7 @@ class HRITasks(metaclass=SubtaskMeta):
         self.node.get_logger().info(f"Sending to saying service: {text}")
         request = Speak.Request(text=text)
 
-        future = self.speak_service.call_async(request)
+        future = self.speak_client.call_async(request)
 
         if wait:
             rclpy.spin_until_future_complete(self.node, future)
@@ -60,13 +60,15 @@ class HRITasks(metaclass=SubtaskMeta):
 
     def extract_data(self, query, complete_text) -> str:
         request = ExtractInfo.Request(data=query, full_text=complete_text)
-        future = self.extract_data_service.call_async(request)
+        future = self.extract_data_client.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
         return future.result().result
 
+    # TODO
     def hear(self, timeout: float = 15.0) -> str:
         pass
 
+    # TODO
     def interpret_keyword(self, keyword: str, timeout: float) -> str:
         pass
 
@@ -76,15 +78,20 @@ class HRITasks(metaclass=SubtaskMeta):
         rclpy.spin_until_future_complete(self.node, future)
         return future.result().corrected_text
 
+    # TODO
     def find_closest(self, query: str, options: Union[list[str], str]) -> str:
         pass
 
+    # TODO
     def ask(self, question: str) -> str:
-        """Method to publish directly text to the speech node"""
         pass
 
-    def command_interpreter(self, text: str) -> str:
-        pass
+    def command_interpreter(self, text: str) -> CommandInterpreter.Response:
+        request = CommandInterpreter.Request(text=text)
+        future = self.command_interpreter_client.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+
+        return future.result().commands
 
 
 if __name__ == "__main__":
