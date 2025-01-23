@@ -73,7 +73,6 @@ class Say(Node):
         self.get_logger().info("Say node initialized.")
 
     def speak_service(self, req, res):
-        """When say is called as a service. Caller awaits for the response."""
         self.get_logger().debug("[Service] I will say: " + req.text)
         if req.text:
             self.say(req.text)
