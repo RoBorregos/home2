@@ -39,9 +39,12 @@ $ cd ~/home_ws/
 $ git clone https://github.com/RoBorregos/home2.git --recursive src/
 #Pay attention where are you executing prebuild, it has to be on the home_ws directory.
 $ . ./src/prebuild.sh
+#AFTER RUNNING PREBUILD IMPORTANT TO SOURCE .BASHRC 
+$ source ~/.bashrc
 ```
 #### 3 Compile and source project
 ``` bash
+#AFTER RUNNING PREBUILD IMPORTANT TO SOURCE .BASHRC 
 $ source ~/.bashrc
 #Remember to source ros2 environment settings first
 $ cd ~/home_ws/
