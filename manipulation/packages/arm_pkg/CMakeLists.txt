@@ -43,7 +43,7 @@ install(TARGETS
 #Python compatability
 ament_python_install_package(${PROJECT_NAME})
 
-Install python scripts
+# Install python scripts
 install(PROGRAMS
  scripts/test_env.py
  DESTINATION lib/${PROJECT_NAME}
