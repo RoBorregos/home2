@@ -38,7 +38,7 @@ $ cd ~/home_ws/
 #DO NOT omit "--recursive"，or the source code of dependent submodule will not be downloaded.
 $ git clone https://github.com/RoBorregos/home2.git --recursive src/
 #Pay attention where are you executing prebuild, it has to be on the home_ws directory.
-$ . ./src/prebuild.sh
+$ ./src/prebuild.sh
 #AFTER RUNNING PREBUILD IMPORTANT TO SOURCE .BASHRC 
 $ source ~/.bashrc
 ```
