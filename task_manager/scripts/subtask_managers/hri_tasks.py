@@ -8,15 +8,16 @@ from typing import Union
 
 import rclpy
 from rclpy.node import Node
-from .subtask_meta import SubtaskMeta
+from subtask_managers.subtask_meta import SubtaskMeta
 
 from frida_constants.hri_constants import (
     COMMAND_INTERPRETER_SERVICE,
-    DATA_EXTRACTOR_SERVICE,
+    EXTRACT_DATA_SERVICE,
+    GRAMMAR_SERVICE,
     HEAR_SERVICE,
     SPEAK_SERVICE,
 )
-from frida_interfaces.srv import STT, CommandInterpreter, ExtractInfo, Speak
+from frida_interfaces.srv import STT, CommandInterpreter, ExtractInfo, Grammar, Speak
 
 TIMEOUT = 5.0
 
@@ -26,37 +27,54 @@ class HRITasks(metaclass=SubtaskMeta):
 
     STATE = {"TERMINAL_ERROR": -1, "EXECUTION_ERROR": 0, "EXECUTION_SUCCESS": 1}
 
-    def __init__(self, task_manager, config) -> None:
+    # TODO: perform service checks using config.topic_config
+    def __init__(self, task_manager, config=None) -> None:
         self.node = task_manager
 
         self.speak_service = self.node.create_client(Speak, SPEAK_SERVICE)
         self.hear_service = self.node.create_client(STT, HEAR_SERVICE)
-        self.extract_data_service = self.node.create_client(ExtractInfo, DATA_EXTRACTOR_SERVICE)
+        self.extract_data_service = self.node.create_client(
+            ExtractInfo, EXTRACT_DATA_SERVICE
+        )
 
         self.command_interpreter_service = self.node.create_client(
             CommandInterpreter, COMMAND_INTERPRETER_SERVICE
         )
+        self.grammar_service = self.node.create_client(Grammar, GRAMMAR_SERVICE)
 
-    def say(self, text: str, now: bool = False) -> None:
+    def say(self, text: str, wait: bool = False) -> None:
         """Method to publish directly text to the speech node"""
         self.node.get_logger().info(f"Sending to saying service: {text}")
+        request = Speak.Request(text=text)
 
-        self.speak_service(text)
+        future = self.speak_service.call_async(request)
+
+        if wait:
+            rclpy.spin_until_future_complete(self.node, future)
+            return (
+                HRITasks.STATE["EXECUTION_SUCCESS"]
+                if future.result().success
+                else HRITasks.STATE["EXECUTION_ERROR"]
+            )
+        return HRITasks.STATE["EXECUTION_SUCCESS"]
 
     def extract_data(self, query, complete_text) -> str:
-        pass
+        request = ExtractInfo.Request(data=query, full_text=complete_text)
+        future = self.extract_data_service.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+        return future.result().result
 
-    def extract_date(self, query, complete_text) -> str:
-        pass
-
-    def hear(self, timeout: float) -> str:
+    def hear(self, timeout: float = 15.0) -> str:
         pass
 
     def interpret_keyword(self, keyword: str, timeout: float) -> str:
         pass
 
-    def refactor_sentence(self, sentence: str) -> str:
-        pass
+    def refactor_text(self, text: str) -> str:
+        request = Grammar.Request(text=text)
+        future = self.grammar_service.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+        return future.result().corrected_text
 
     def find_closest(self, query: str, options: Union[list[str], str]) -> str:
         pass
