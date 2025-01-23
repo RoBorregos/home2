@@ -37,6 +37,14 @@ else
     echo "Executing from outside the script's directory. Proceeding..."
 fi
 
+#Exporting source directory
+if grep -q '^export SRC_HOME_PATH=' ~/.bashrc; then
+    echo "SRC_HOME_PATH ALREADY ADDED TO BASHRC"
+else 
+    echo "export SRC_HOME_PATH=$SCRIPT_DIR" >> ~/.bashrc
+fi
+export SRC_HOME_PATH=$SCRIPT_DIR
+
 LIB_DIR="$(pwd)/install/gpd"
 echo "The path is $LIB_DIR"
 cd $SCRIPT_DIR
