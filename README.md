@@ -17,8 +17,7 @@ Ensure the following are installed on your system:
 
 ###  Ubuntu 22.04  
 ## ⚠️ Prebuild Warning  
-
-To ensure the repository compiles correctly, **run `prebuild.sh` first**.  
+It only runs once, to ensure the repository compiles correctly, **run `prebuild.sh` first**.  
 
 Make sure to execute the script in the **workspace (`ws`) directory** where you plan to run `colcon build` afterward.  
 
