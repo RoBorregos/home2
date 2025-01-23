@@ -13,7 +13,9 @@ class TestNode(Node):
         self.timer = self.create_timer(0.5, self.timer_callback)
 
     def timer_callback(self):
-        self.get_logger().info(os.environ["SRC_HOME_PATH"])
+        route= os.environ["SRC_HOME_PATH"] + "/hri/packages/nlp"
+        print(os.path.dirname(route))
+        self.get_logger().info(route)
 
 
 def main(args=None):
