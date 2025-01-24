@@ -1,11 +1,19 @@
-from pydantic import BaseModel
-import openai
-import os
-import rclpy
-import rclpy.impl.rcutils_logger
-from std_msgs.msg import String, Bool
-from typing import Optional
+#!/usr/bin/env python3
+
+"""Miscellanous functions that interact with an LLM."""
+
 import json
+import os
+from typing import Optional
+
+import rclpy
+from openai import OpenAI
+from pydantic import BaseModel
+from rclpy.executors import ExternalShutdownException
+from rclpy.node import Node
+from std_msgs.msg import Bool, String
+
+from frida_interfaces.srv import Grammar
 
 SPEECH_COMMAND_TOPIC = "/speech/raw_command"
 OUT_COMMAND_TOPIC = "/stop_following"
@@ -17,20 +25,23 @@ class ResponseFormat(BaseModel):
     is_stop: bool
 
 
-class StopListenerNode(rclpy.node.Node):
-    logger: rclpy.impl.rcutils_logger.RcutilsLogger
+class LLMUtils(Node):
     model: Optional[str]
     base_url: Optional[str]
 
     def __init__(self) -> None:
         global SPEECH_COMMAND_TOPIC, OUT_COMMAND_TOPIC
-        super().__init__("stop_listener")
+        super().__init__("llm_utils")
+        self.logger = self.get_logger()
+        self.logger.info("Initializing llm_utils node")
 
-        self.declare_parameter("base_url", None)
+        self.declare_parameter("base_url", "None")
         self.declare_parameter("model", "gpt-4o-2024-08-06")
         self.declare_parameter("SPEECH_COMMAND_TOPIC_NAME", SPEECH_COMMAND_TOPIC)
         self.declare_parameter("OUT_COMMAND_TOPIC_NAME", OUT_COMMAND_TOPIC)
+        self.declare_parameter("GRAMMAR_SERVICE", "/nlp/grammar")
 
+        self.declare_parameter("temperature", 0.5)
         base_url = self.get_parameter("base_url").get_parameter_value().string_value
 
         if base_url == "None":
@@ -40,6 +51,12 @@ class StopListenerNode(rclpy.node.Node):
 
         model = self.get_parameter("model").get_parameter_value().string_value
         self.model = model
+        self.client = OpenAI(
+            api_key=os.getenv("OPENAI_API_KEY", "ollama"), base_url=base_url
+        )
+        self.temperature = (
+            self.get_parameter("temperature").get_parameter_value().double_value
+        )
 
         SPEECH_COMMAND_TOPIC = (
             self.get_parameter("SPEECH_COMMAND_TOPIC_NAME")
@@ -53,17 +70,18 @@ class StopListenerNode(rclpy.node.Node):
             .string_value
         )
 
-        self.logger = self.get_logger()
-        self.logger.info("Starting stop listener node")
+        grammar_service = (
+            self.get_parameter("GRAMMAR_SERVICE").get_parameter_value().string_value
+        )
 
-        openai.api_key = os.getenv("OPENAI_API_KEY")
-        self.logger.info("Stop listener node started")
+        self.create_service(Grammar, grammar_service, self.grammar_service)
 
         # publisher
         self.publisher = self.create_publisher(Bool, OUT_COMMAND_TOPIC, 10)
         self.subscription = self.create_subscription(
             String, SPEECH_COMMAND_TOPIC, self.callback, 10
         )
+        self.logger.info("Initialized llm_utils node")
 
     def callback(self, data: String) -> None:
         if data.data == "" or len(data.data) == 0:
@@ -78,9 +96,9 @@ class StopListenerNode(rclpy.node.Node):
                 self.publisher.publish(msg)
                 return
 
-        response = openai.beta.chat.completions.parse(
+        response = self.client.beta.chat.completions.parse(
             model=self.model,
-            base_url=self.base_url,
+            temperature=self.temperature,
             messages=[
                 {
                     "role": "system",
@@ -104,9 +122,39 @@ class StopListenerNode(rclpy.node.Node):
             self.publisher.publish(msg)
         return
 
+    def grammar_service(self, req, res):
+        response = (
+            self.client.beta.chat.completions.parse(
+                model=self.model,
+                temperature=self.temperature,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You will be presented with some text. Your task is to fix the grammar so that the text is correct. Output ONLY the corrected text, don't include any additional explanations.",
+                    },
+                    {"role": "user", "content": req.text},
+                ],
+            )
+            .choices[0]
+            .message.content
+        )
+
+        print("response:", response)
+
+        res.corrected_text = response
+
+        return res
+
 
 def main(args=None):
     rclpy.init(args=args)
-    node = StopListenerNode()
-    rclpy.spin(node)
-    rclpy.shutdown()
+    try:
+        rclpy.spin(LLMUtils())
+    except (ExternalShutdownException, KeyboardInterrupt):
+        pass
+    finally:
+        rclpy.try_shutdown()
+
+
+if __name__ == "__main__":
+    main()
