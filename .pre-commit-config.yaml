@@ -5,8 +5,14 @@ repos:
     hooks:
       # Run the linter.
       - id: ruff
+        name: Ruff Global
         types_or: [python, pyi]
+        exclude: ^task_manager/.*
         # args: [--fix]
       # Run the formatter.
+      - id: ruff
+        name: Ruff Taks Manager
+        types_or: [python, pyi]
+        files: ^task_manager/.*
       - id: ruff-format
         types_or: [python, pyi]
