@@ -12,35 +12,7 @@
 <xacro:include filename="castwheel.xacro"/>
 <xacro:include filename="lidar.xacro"/>
 <xacro:include filename="realsense.xacro"/>
-<!-- <xacro:include filename="xarm.xacro"/> -->
-
-<!-- <link name="base_footprint">
-      <visual>
-        <origin xyz="0 0 0" rpy="0 0 0" />
-        <geometry>
-          <box size="0.05 0.05 0.001" />
-        </geometry>
-        <material name="TransparentGreen" />
-      </visual>
-  </link>
-  
-  <joint name="base_joint" type="fixed">
-
-    <origin xyz="0 0 0" rpy="0 0 0" />      
-    <parent link="base_footprint"/>
-    <child link="base_link" />
-  </joint> -->
-
-
-  <!-- Gripper
-  <xacro:include filename="$(find robot_description)/urdf/gripper/gripper.urdf.xacro" />
-  <xacro:include filename="$(find robot_description)/urdf/gripper/gripperP.urdf.xacro" />
-  <xacro:include filename="$(find robot_description)/urdf/gripper/gripperFakeSF.urdf.xacro" />
-  <xacro:include filename="$(find robot_description)/urdf/gripper/gripperSF.urdf.xacro" />
-  
-  <xacro:load_gripperSF attach_to="$(arg prefix)link_eef" xyz="0 0 0.007" rpy="-1.57 0 2.3554" />
-  <xacro:include filename="$(find robot_description)/urdf/camera.urdf.xacro" />
-  <xacro:load_camera name="Cam1" attach_to="Base_Gripper" x="0.068098" y="-0.035446" z="0.0" r_p="-0.785398" r_r="1.5707" r_y="0.0" />
-  -->
+<!-- <xacro:include filename="gripper.xacro"/>
+<xacro:include filename="zed.xacro"/> -->
 
 </robot>
