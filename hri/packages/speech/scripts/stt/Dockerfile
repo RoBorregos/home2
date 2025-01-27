@@ -14,8 +14,3 @@ RUN apt-get update && apt-get install -y \
 RUN pip install --no-cache-dir -r requirements.txt
 
 RUN apt-get update && apt-get install -y ffmpeg
-
-# Expose the port for the gRPC server
-EXPOSE 50051
-
-CMD ["bash", "-c", "python -u $SCRIPT_NAME --port $PORT --model_size $MODEL_SIZE"]
