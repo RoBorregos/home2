@@ -24,23 +24,11 @@ python3 Whisper.py
 
 ## Running on CPU
 
-If testing or running on a PC/laptop, use the Dockerfile to run the scripts.
+If testing or running on a PC/laptop, use docker compose to run the scripts.
 
 ```bash
 # pwd -> /speech/scripts/stt
-docker build -t roborregos/home2:stt .
-
-# To run whisper for the first time:
-# pwd -> /speech/scripts/stt
-docker run -e SCRIPT_NAME=Whisper.py -e PORT=50051 -e MODEL_SIZE=base.en -p 50051:50051 --name whisper -v .:/app roborregos/home2:stt
-# In the future you can use:
-docker start -ai whisper
-
-# To run faster-whisper for the first time:
-# pwd -> /speech/scripts/stt
-docker run -e SCRIPT_NAME=Faster-whisper.py -e PORT=50051 -e MODEL_SIZE=base.en -p 50051:50051 --name faster-whisper -v .:/app roborregos/home2:stt
-# In the future you can use:
-docker start -ai faster-whisper
+docker compose up
 ```
 
 ## gRPC implementation

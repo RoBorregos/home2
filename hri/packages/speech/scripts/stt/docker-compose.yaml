@@ -1,0 +1,12 @@
+services:
+  stt:
+    container_name: home2-hri-stt
+    image: roborregos/home2:hri-stt
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "50051:50051"
+    volumes:
+      - .:/app
+    command: ["bash", "-c", "python -u Faster-whisper.py --port 50051 --model_size base.en"]
