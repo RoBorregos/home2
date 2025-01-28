@@ -27,8 +27,8 @@ python3 Whisper.py
 If testing or running on a PC/laptop, use docker compose to run the scripts.
 
 ```bash
-# pwd -> /speech/scripts/stt
-docker compose up
+# pwd -> /docker/hri
+docker compose -f stt.yaml up
 ```
 
 ## gRPC implementation
