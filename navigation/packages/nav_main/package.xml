@@ -9,10 +9,19 @@
 
   <buildtool_depend>ament_cmake</buildtool_depend>
   <buildtool_depend>ament_cmake_python</buildtool_depend>
+  <!-- Action server move -->
+  <buildtool_depend>rosidl_default_generators</buildtool_depend>
 
   <depend>rclcpp</depend>
   <depend>rclpy</depend>
   <depend>sensor_msgs</depend>
+  
+  <!-- Action server move -->
+  <depend>action_msgs</depend>
+
+  <!-- Action server move -->
+  <member_of_group>rosidl_interface_packages</member_of_group>
+  <!-- Action server move -->
   
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

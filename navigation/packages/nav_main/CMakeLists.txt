@@ -12,6 +12,13 @@ find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(sensor_msgs REQUIRED)
 
+# Action server move
+find_package(rosidl_default_generators REQUIRED)
+
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "action/Move.action"
+)
+
 
 install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME})
@@ -41,6 +48,8 @@ if(BUILD_TESTING)
   # a copyright and license is added to all source files
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
+
 endif()
+
 
 ament_package()
