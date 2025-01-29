@@ -1,37 +1,41 @@
 cmake_minimum_required(VERSION 3.8)
 project(embeddings)
 
-# Find dependencies
+if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
+# find dependencies
 find_package(ament_cmake REQUIRED)
-find_package(ament_cmake_python REQUIRED)
+find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(frida_interfaces REQUIRED)
 
-# Install Python package
 ament_python_install_package(${PROJECT_NAME})
 
-# Install Python scripts
 install(
   DIRECTORY scripts/
-  DESTINATION ${PYTHON_INSTALL_DIR}
+  DESTINATION ${PYTHON_INSTALL_DIR}/embeddings
   FILES_MATCHING PATTERN "*.py"
 )
 
-# Install additional configuration files (launch, config, etc.)
+file(GLOB PYTHON_SCRIPTS scripts/*.py)
+
+install(PROGRAMS
+  ${PYTHON_SCRIPTS}
+  DESTINATION lib/${PROJECT_NAME}
+)
 
 
-# If you need to install non-Python assets (e.g., ONNX, JSON files), uncomment and configure as needed:
-# install(
-#   DIRECTORY assets/
-#   DESTINATION lib/${PROJECT_NAME}
-#   FILES_MATCHING PATTERN "*.onnx"
-# )
-
-# Optional: Testing and linting
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
-  set(ament_cmake_copyright_FOUND TRUE)  # Skip copyright linter if needed
-  set(ament_cmake_cpplint_FOUND TRUE)    # Skip cpplint if no C++ code
+  # the following line skips the linter which checks for copyrights
+  # comment the line when a copyright and license is added to all source files
+  set(ament_cmake_copyright_FOUND TRUE)
+  # the following line skips cpplint (only works in a git repo)
+  # comment the line when this package is in a git repo and when
+  # a copyright and license is added to all source files
+  set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
 
