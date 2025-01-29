@@ -4,6 +4,9 @@
 **/log
 *.user
 **/.vscode/
-**/__pychache__/
+**/__pycache__/
 .ruff_cache
 **.env
+
+.prev-vscode
+**.pt
