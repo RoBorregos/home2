@@ -21,11 +21,17 @@ install(
 
 file(GLOB PYTHON_SCRIPTS scripts/*.py)
 
-install(PROGRAMS
-  ${PYTHON_SCRIPTS}
-  DESTINATION lib/${PROJECT_NAME}
-)
 
+install(
+  PROGRAMS
+    scripts/item_categorization.py  # Path to your Python script
+  DESTINATION lib/${PROJECT_NAME}  # Install to the package's lib directory
+)
+# Install csv files
+install(DIRECTORY dataframes
+  DESTINATION share/${PROJECT_NAME}/
+  FILES_MATCHING PATTERN "*.csv"
+)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
