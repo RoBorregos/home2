@@ -23,14 +23,24 @@ class TestTaskManager(Node):
         """testing vision tasks"""
 
         user_request = self.subtask_manager["hri"].hear()
-        say_res = self.subtask_manager["hri"].say("Hi, my name is frida")
-
-        print("user_request:", user_request)
-        print("say_res:", say_res)
+        self.subtask_manager["hri"].say("Hi, my name is frida", wait=True)
 
         drink = self.subtask_manager["hri"].extract_data("Drink", user_request)
 
         self.get_logger().info(f"Extracted data: {drink}")
+
+        commands = self.subtask_manager["hri"].command_interpreter(user_request)
+
+        self.get_logger().info(f"Interpreted commands: {commands}")
+
+        command_strs = [
+            f"I will do action:{command.action}, ({command.complement}), ({command.characteristic})"
+            for command in commands
+        ]
+        command_str = " and ".join(command_strs)
+
+        fixed_text = self.subtask_manager["hri"].refactor_text(command_str)
+        self.subtask_manager["hri"].say(fixed_text)
 
 
 def main(args=None):
