@@ -2,7 +2,7 @@ import rclpy
 from rclpy.action import ActionClient
 from rclpy.node import Node
 
-from nav_main.action import Move
+from frida_interfaces.navigation.action import Move
 
 
 class MoveActionClient(Node):

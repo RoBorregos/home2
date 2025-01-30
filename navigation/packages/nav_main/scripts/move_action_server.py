@@ -3,7 +3,7 @@ from rclpy.action import ActionServer
 from rclpy.node import Node
 import json
 
-from nav_main.action import Move
+from frida_interfaces.navigation.action import Move
 
 class MoveActionServer(Node):
 

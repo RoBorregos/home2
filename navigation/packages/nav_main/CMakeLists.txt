@@ -11,14 +11,7 @@ find_package(ament_cmake_python REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(sensor_msgs REQUIRED)
-
-# Action server move
-find_package(rosidl_default_generators REQUIRED)
-
-rosidl_generate_interfaces(${PROJECT_NAME}
-  "action/Move.action"
-)
-
+find_package(frida_interfaces REQUIRED)
 
 install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME})
@@ -30,13 +23,15 @@ install(TARGETS
   ignore_laser
   DESTINATION lib/${PROJECT_NAME})
 
-ament_python_install_package(${PROJECT_NAME})
+  
+  ament_python_install_package(${PROJECT_NAME})
 
   #Install python scripts
-  # install(PROGRAMS
-  #   scripts/dashgo_driver
-  #   DESTINATION lib/${PROJECT_NAME}
-  # )
+  install(PROGRAMS
+    scripts/move_action_client.py
+    scripts/move_action_server.py
+    DESTINATION lib/${PROJECT_NAME}
+  )
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
