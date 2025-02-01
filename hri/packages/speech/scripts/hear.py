@@ -49,6 +49,11 @@ class HearNode(Node):
             .get_parameter_value()
             .bool_value
         )
+        service_name = (
+            self.declare_parameter("STT_SERVICE_NAME", "stt_service")
+            .get_parameter_value()
+            .string_value
+        )
 
         # Initialize the Whisper gRPC client
         self.client = WhisperClient(server_ip)
@@ -85,7 +90,7 @@ class HearNode(Node):
             )
             self.stt_service = self.create_service(
                 STT,
-                "stt_service",
+                service_name,
                 self.stt_service_callback,
                 callback_group=service_group,
             )
