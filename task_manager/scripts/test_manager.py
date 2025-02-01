@@ -22,8 +22,12 @@ class TestTaskManager(Node):
     def run(self):
         """testing vision tasks"""
 
+        self.subtask_manager["hri"].say(
+            "Hi, my name is frida. What is your favorite drink?", wait=True
+        )
+        self.get_logger().info("Hearing from the user...")
         user_request = self.subtask_manager["hri"].hear()
-        self.subtask_manager["hri"].say("Hi, my name is frida", wait=True)
+        self.get_logger().info(f"Heard: {user_request}")
 
         drink = self.subtask_manager["hri"].extract_data("Drink", user_request)
 
