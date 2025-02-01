@@ -64,9 +64,14 @@ class HRITasks(metaclass=SubtaskMeta):
         rclpy.spin_until_future_complete(self.node, future)
         return future.result().result
 
-    # TODO
     def hear(self, timeout: float = 15.0) -> str:
-        pass
+        request = STT.Request()
+
+        future = self.hear_client.call_async(request)
+
+        rclpy.spin_until_future_complete(self.node, future)
+
+        return future.result().text_heard
 
     # TODO
     def interpret_keyword(self, keyword: str, timeout: float) -> str:

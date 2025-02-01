@@ -12,9 +12,10 @@ def generate_launch_description():
         get_package_share_directory("speech"), "config", "microphone.yaml"
     )
 
-    hear_config = os.path.join(
-        get_package_share_directory("speech"), "config", "hear.yaml"
-    )
+    hear_config = parse_ros_config(
+        os.path.join(get_package_share_directory("speech"), "config", "hear.yaml"),
+        [ModuleNames.HRI.value],
+    )["hear"]["ros__parameters"]
 
     speaker_config = parse_ros_config(
         os.path.join(get_package_share_directory("speech"), "config", "speaker.yaml"),

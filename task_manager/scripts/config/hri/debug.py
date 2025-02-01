@@ -25,17 +25,17 @@ __config = {
     "mock_config": [
         {
             "function_name": "extract_data",
-            "enabled": True,
+            "enabled": False,
             "mock_data": mock_extract_data,
         },
         {
             "function_name": "say",
-            "enabled": True,
+            "enabled": False,
             "mock_data": "Succeeded!",
         },
         {
             "function_name": "hear",
-            "enabled": True,
+            "enabled": False,
             "mock_data": "Hi Frida, can you bring me a glass of water?",
         },
     ],
