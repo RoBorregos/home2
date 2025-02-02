@@ -19,6 +19,8 @@ install(
   FILES_MATCHING PATTERN "*.py"
 )
 
+install(DIRECTORY launch
+ DESTINATION share/${PROJECT_NAME})
 file(GLOB PYTHON_SCRIPTS scripts/*.py)
 
 

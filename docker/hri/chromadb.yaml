@@ -6,6 +6,6 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ./data-items:/chroma/chroma
+      - /src/hri/packages/embeddings/chromadb:/chroma/chroma
     restart: unless-stopped
     network_mode: host
