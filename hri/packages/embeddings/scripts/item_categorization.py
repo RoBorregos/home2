@@ -44,9 +44,9 @@ class Embeddings(Node):
         )
 
         # Initialize ChromaDB client
-        script_dir = Path(__file__).resolve().parent
-        chroma_path = str(script_dir / "../chromadb")
-        self.chroma_client = chromadb.PersistentClient(path=chroma_path)
+        # script_dir = Path(__file__).resolve().parent
+        # chroma_path = str(script_dir / "../chromadb") for local use only
+        self.chroma_client = chromadb.HttpClient(host="localhost", port=8000)
 
         # Configure the embedding function
         self.sentence_transformer_ef = (
