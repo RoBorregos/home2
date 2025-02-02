@@ -1,13 +1,16 @@
 #!/usr/bin/env python3
-import os
 from pathlib import Path
 import pandas as pd
-from sentence_transformers import SentenceTransformer
 import chromadb
 from chromadb.utils import embedding_functions
 import rclpy
 from rclpy.node import Node
-from frida_interfaces.srv import AddItem, RemoveItem, UpdateItem, QueryItem  # Updated service imports
+from frida_interfaces.srv import (
+    AddItem,
+    RemoveItem,
+    UpdateItem,
+    QueryItem,
+)  # Updated service imports
 
 # Test Commands:
 # ros2 service call /query_item frida_interfaces/srv/QueryItem "{query: 'kitchen', collection: 'locations', topk: 2}"
@@ -15,15 +18,24 @@ from frida_interfaces.srv import AddItem, RemoveItem, UpdateItem, QueryItem  # U
 # ros2 service call /add_item frida_interfaces/srv/AddItem "{document: ['Test Item'], id: ['test_id'], collection: 'items'}"
 # ros2 service call /remove_item frida_interfaces/srv/RemoveItem "{item_id: ['test_id'], collection: 'items'}"
 
+
 class Embeddings(Node):
     def __init__(self):
-        super().__init__('embeddings')
+        super().__init__("embeddings")
 
         # Initialize services
-        self.add_item_service = self.create_service(AddItem, 'add_item', self.add_item_callback)
-        self.remove_item_service = self.create_service(RemoveItem, 'remove_item', self.remove_item_callback)
-        self.update_item_service = self.create_service(UpdateItem, 'update_item', self.update_item_callback)
-        self.query_item_service = self.create_service(QueryItem, 'query_item', self.query_item_callback)
+        self.add_item_service = self.create_service(
+            AddItem, "add_item", self.add_item_callback
+        )
+        self.remove_item_service = self.create_service(
+            RemoveItem, "remove_item", self.remove_item_callback
+        )
+        self.update_item_service = self.create_service(
+            UpdateItem, "update_item", self.update_item_callback
+        )
+        self.query_item_service = self.create_service(
+            QueryItem, "query_item", self.query_item_callback
+        )
 
         # Initialize ChromaDB client
         script_dir = Path(__file__).resolve().parent
@@ -31,8 +43,10 @@ class Embeddings(Node):
         self.chroma_client = chromadb.PersistentClient(path=chroma_path)
 
         # Configure the embedding function
-        self.sentence_transformer_ef = embedding_functions.SentenceTransformerEmbeddingFunction(
-            model_name="all-MiniLM-L12-v2"
+        self.sentence_transformer_ef = (
+            embedding_functions.SentenceTransformerEmbeddingFunction(
+                model_name="all-MiniLM-L12-v2"
+            )
         )
 
     def add_item_callback(self, request, response):
@@ -43,8 +57,8 @@ class Embeddings(Node):
 
             collection.add(
                 documents=request.document,
-                metadatas=[{'text': doc} for doc in request.document],
-                ids=request.id
+                metadatas=[{"text": doc} for doc in request.document],
+                ids=request.id,
             )
 
             response.success = True
@@ -61,7 +75,9 @@ class Embeddings(Node):
             collection_name = self._sanitize_collection_name(request.collection)
             collection = self._get_or_create_collection(collection_name)
 
-            self.get_logger().info(f"Removing items: {request.item_id} from collection: {collection_name}")
+            self.get_logger().info(
+                f"Removing items: {request.item_id} from collection: {collection_name}"
+            )
             collection.delete(ids=request.item_id)
 
             response.success = True
@@ -78,14 +94,18 @@ class Embeddings(Node):
             collection_name = self._sanitize_collection_name(request.collection)
             collection = self._get_or_create_collection(collection_name)
 
-            for item_id, field, new_data in zip(request.item_id, request.field, request.new_data):
-                self.get_logger().info(f"Updating {field} for item_id={item_id} with new_data={new_data}")
+            for item_id, field, new_data in zip(
+                request.item_id, request.field, request.new_data
+            ):
+                self.get_logger().info(
+                    f"Updating {field} for item_id={item_id} with new_data={new_data}"
+                )
 
-                update_args = {'ids': [item_id]}
-                if field == 'document':
-                    update_args['documents'] = [new_data]
-                elif field == 'metadata':
-                    update_args['metadatas'] = [{'text': new_data}]
+                update_args = {"ids": [item_id]}
+                if field == "document":
+                    update_args["documents"] = [new_data]
+                elif field == "metadata":
+                    update_args["metadatas"] = [{"text": new_data}]
 
                 collection.update(**update_args)
 
@@ -104,14 +124,15 @@ class Embeddings(Node):
             collection = self._get_or_create_collection(collection_name)
 
             results = collection.query(
-                query_texts=[request.query],
-                n_results=request.topk
+                query_texts=[request.query], n_results=request.topk
             )
 
             # Ensure results exist before accessing
-            response.results = [str(doc) for doc in results.get('documents', [])]
+            response.results = [str(doc) for doc in results.get("documents", [])]
             response.success = True if response.results else False
-            response.message = "Query successful" if response.results else "No matching items found"
+            response.message = (
+                "Query successful" if response.results else "No matching items found"
+            )
         except Exception as e:
             response.success = False
             response.message = f"Failed to query items: {str(e)}"
@@ -125,7 +146,10 @@ class Embeddings(Node):
 
         collection = str(collection).strip()
 
-        if not (3 <= len(collection) <= 63 and collection.replace("-", "").replace("_", "").isalnum()):
+        if not (
+            3 <= len(collection) <= 63
+            and collection.replace("-", "").replace("_", "").isalnum()
+        ):
             self.get_logger().error(f"Invalid collection name: {collection}")
             raise ValueError(f"Invalid collection name: {collection}")
 
@@ -136,42 +160,61 @@ class Embeddings(Node):
         try:
             return self.chroma_client.get_or_create_collection(name=collection_name)
         except Exception as e:
-            self.get_logger().error(f"Error retrieving collection '{collection_name}': {str(e)}")
+            self.get_logger().error(
+                f"Error retrieving collection '{collection_name}': {str(e)}"
+            )
             raise
 
     def build_embeddings(self):
         """Method to build embeddings for the household items data"""
         script_dir = Path(__file__).resolve().parent
         dataframes = [
-            (script_dir / "../embeddings/dataframes/items.csv", "Household items context"),
-            (script_dir / "../embeddings/dataframes/locations.csv", "Household locations context"),
-            (script_dir / "../embeddings/dataframes/categories.csv", "Household categories context"),
-            (script_dir / "../embeddings/dataframes/actions.csv", "Household actions context"),
+            (
+                script_dir / "../embeddings/dataframes/items.csv",
+                "Household items context",
+            ),
+            (
+                script_dir / "../embeddings/dataframes/locations.csv",
+                "Household locations context",
+            ),
+            (
+                script_dir / "../embeddings/dataframes/categories.csv",
+                "Household categories context",
+            ),
+            (
+                script_dir / "../embeddings/dataframes/actions.csv",
+                "Household actions context",
+            ),
         ]
-        
+
         collections = {}
         for file, context in dataframes:
             file = file.resolve()  # Ensure the path is absolute
             df = pd.read_csv(file)
 
-            if 'name' not in df.columns:
+            if "name" not in df.columns:
                 raise ValueError(f"The 'name' column is missing in {file}")
 
-            df['name'] = df['name'].apply(lambda x: f"{x} {context}")
+            df["name"] = df["name"].apply(lambda x: f"{x} {context}")
             collection_name = file.stem
-            collections[collection_name] = self._get_or_create_collection(collection_name)
-
-            collections[collection_name].add(
-                documents=df['name'].tolist(),
-                metadatas=[{
-                    'text': row['name'],
-                    'original_name': row['name'].split(" ")[0],
-                    **row.to_dict()
-                } for _, row in df.iterrows()],
-                ids=[f"{collection_name}_{i}" for i in range(len(df))]
+            collections[collection_name] = self._get_or_create_collection(
+                collection_name
             )
 
-        self.get_logger().info('Build request received and handled successfully')
+            collections[collection_name].add(
+                documents=df["name"].tolist(),
+                metadatas=[
+                    {
+                        "text": row["name"],
+                        "original_name": row["name"].split(" ")[0],
+                        **row.to_dict(),
+                    }
+                    for _, row in df.iterrows()
+                ],
+                ids=[f"{collection_name}_{i}" for i in range(len(df))],
+            )
+
+        self.get_logger().info("Build request received and handled successfully")
 
 
 def main():
@@ -182,5 +225,5 @@ def main():
     rclpy.shutdown()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
