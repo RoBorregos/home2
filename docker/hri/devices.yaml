@@ -27,7 +27,8 @@ services:
     env_file:
       - .env
     tty: true
+    entrypoint: [ "bash", "-il", "-c"]
     command: [
-        "bash",
-        # "source /workspace/ws/devel/setup.bash && roslaunch hri recepcionist_laptop.launch",
+      "colcon build --symlink-install --packages-select task_manager frida_interfaces frida_constants speech nlp && source ~/.bashrc && ros2 launch speech devices_launch.py"
       ]
+      
