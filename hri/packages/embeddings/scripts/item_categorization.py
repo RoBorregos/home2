@@ -22,7 +22,10 @@ from frida_interfaces.srv import (
 class Embeddings(Node):
     def __init__(self):
         super().__init__("embeddings")
-
+        self.declare_parameter("Embeddings_model", "all-MiniLM-L12-v2")
+        model_name_ = (
+            self.get_parameter("Embeddings_model").get_parameter_value().string_value
+        )
         # Initialize services
         self.add_item_service = self.create_service(
             AddItem, "add_item", self.add_item_callback
@@ -45,7 +48,7 @@ class Embeddings(Node):
         # Configure the embedding function
         self.sentence_transformer_ef = (
             embedding_functions.SentenceTransformerEmbeddingFunction(
-                model_name="all-MiniLM-L12-v2"
+                model_name=model_name_
             )
         )
 
