@@ -10,22 +10,20 @@ from frida_interfaces.srv import (
     RemoveItem,
     UpdateItem,
     QueryItem,
+    BuildEmbeddings,  # Import the BuildEmbeddings service
 )  # Updated service imports
-
-# Test Commands:
-# ros2 service call /query_item frida_interfaces/srv/QueryItem "{query: 'kitchen', collection: 'locations', topk: 2}"
-# ros2 service call /update_item frida_interfaces/srv/UpdateItem "{item_id: ['locations_1'], field: ['document'], new_data: ['Updated kitchen item'], collection: 'locations'}"
-# ros2 service call /add_item frida_interfaces/srv/AddItem "{document: ['Test Item'], id: ['test_id'], collection: 'items'}"
-# ros2 service call /remove_item frida_interfaces/srv/RemoveItem "{item_id: ['test_id'], collection: 'items'}"
 
 
 class Embeddings(Node):
     def __init__(self):
         super().__init__("embeddings")
+
+        # Declare the parameter for the sentence transformer model
         self.declare_parameter("Embeddings_model", "all-MiniLM-L12-v2")
         model_name_ = (
             self.get_parameter("Embeddings_model").get_parameter_value().string_value
         )
+
         # Initialize services
         self.add_item_service = self.create_service(
             AddItem, "add_item", self.add_item_callback
@@ -38,6 +36,11 @@ class Embeddings(Node):
         )
         self.query_item_service = self.create_service(
             QueryItem, "query_item", self.query_item_callback
+        )
+
+        # Create the BuildEmbeddings service
+        self.build_embeddings_service = self.create_service(
+            BuildEmbeddings, "build_embeddings", self.build_embeddings_callback
         )
 
         # Initialize ChromaDB client
@@ -142,31 +145,17 @@ class Embeddings(Node):
             self.get_logger().error(response.message)
         return response
 
-    def _sanitize_collection_name(self, collection):
-        """Ensures collection name is a valid string"""
-        if isinstance(collection, list):
-            collection = collection[0]  # Extract from list if necessary
-
-        collection = str(collection).strip()
-
-        if not (
-            3 <= len(collection) <= 63
-            and collection.replace("-", "").replace("_", "").isalnum()
-        ):
-            self.get_logger().error(f"Invalid collection name: {collection}")
-            raise ValueError(f"Invalid collection name: {collection}")
-
-        return collection
-
-    def _get_or_create_collection(self, collection_name):
-        """Helper method to get or create a collection"""
+    def build_embeddings_callback(self, request, response):
+        """Service callback to build embeddings for the dataset"""
         try:
-            return self.chroma_client.get_or_create_collection(name=collection_name)
+            self.build_embeddings()  # Call the existing build_embeddings method
+            response.success = True
+            response.message = "Embeddings built successfully"
         except Exception as e:
-            self.get_logger().error(
-                f"Error retrieving collection '{collection_name}': {str(e)}"
-            )
-            raise
+            response.success = False
+            response.message = f"Failed to build embeddings: {str(e)}"
+            self.get_logger().error(response.message)
+        return response
 
     def build_embeddings(self):
         """Method to build embeddings for the household items data"""
@@ -219,11 +208,36 @@ class Embeddings(Node):
 
         self.get_logger().info("Build request received and handled successfully")
 
+    def _sanitize_collection_name(self, collection):
+        """Ensures collection name is a valid string"""
+        if isinstance(collection, list):
+            collection = collection[0]  # Extract from list if necessary
+
+        collection = str(collection).strip()
+
+        if not (
+            3 <= len(collection) <= 63
+            and collection.replace("-", "").replace("_", "").isalnum()
+        ):
+            self.get_logger().error(f"Invalid collection name: {collection}")
+            raise ValueError(f"Invalid collection name: {collection}")
+
+        return collection
+
+    def _get_or_create_collection(self, collection_name):
+        """Helper method to get or create a collection"""
+        try:
+            return self.chroma_client.get_or_create_collection(name=collection_name)
+        except Exception as e:
+            self.get_logger().error(
+                f"Error retrieving collection '{collection_name}': {str(e)}"
+            )
+            raise
+
 
 def main():
     rclpy.init()
     embeddings = Embeddings()
-    embeddings.build_embeddings()  # Call the embedding builder if needed at startup
     rclpy.spin(embeddings)
     rclpy.shutdown()
 
