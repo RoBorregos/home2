@@ -1,5 +1,5 @@
 SPEAK_SERVICE = "/speech/speak"
-HEAR_SERVICE = "/speech/STT"
+STT_SERVICE_NAME = "/speech/STT"
 KEYWORD_TOPIC = "/speech/kws"
 COMMAND_INTERPRETER_SERVICE = "/nlp/command_interpreter"
 EXTRACT_DATA_SERVICE = "/nlp/data_extractor"

@@ -14,8 +14,8 @@ from frida_constants.hri_constants import (
     COMMAND_INTERPRETER_SERVICE,
     EXTRACT_DATA_SERVICE,
     GRAMMAR_SERVICE,
-    HEAR_SERVICE,
     SPEAK_SERVICE,
+    STT_SERVICE_NAME,
 )
 from frida_interfaces.srv import STT, CommandInterpreter, ExtractInfo, Grammar, Speak
 
@@ -32,7 +32,7 @@ class HRITasks(metaclass=SubtaskMeta):
         self.node = task_manager
 
         self.speak_client = self.node.create_client(Speak, SPEAK_SERVICE)
-        self.hear_client = self.node.create_client(STT, HEAR_SERVICE)
+        self.hear_client = self.node.create_client(STT, STT_SERVICE_NAME)
         self.extract_data_client = self.node.create_client(
             ExtractInfo, EXTRACT_DATA_SERVICE
         )

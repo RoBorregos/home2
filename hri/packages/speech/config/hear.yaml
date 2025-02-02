@@ -2,5 +2,5 @@ hear:
   ros__parameters:
     STT_SERVER_IP: "127.0.0.1:50051"
     START_SERVICE: True
-    STT_SERVICE_NAME: "stt_service"
+    STT_SERVICE_NAME: REPLACE
     detection_publish_topic: "/keyword_detected"
