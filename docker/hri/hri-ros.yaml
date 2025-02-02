@@ -11,6 +11,7 @@ services:
       dockerfile: docker/hri/Dockerfile.cpu
       args:
         BASE_IMAGE: roborregos/home2:cpu_base
+
     image: roborregos/home2:hri-cpu
     volumes:
       - ../../:/workspace/src
@@ -31,4 +32,3 @@ services:
     command: [
       "colcon build --symlink-install --packages-select task_manager frida_interfaces frida_constants speech nlp && source ~/.bashrc && ros2 launch speech devices_launch.py"
       ]
-      
