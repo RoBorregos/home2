@@ -1,0 +1,6 @@
+include:
+  # Runs speech and nlp nodes
+  - path: hri-ros.yaml
+
+  # Runs Faster-whisper
+  - path: stt.yaml
