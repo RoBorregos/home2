@@ -5,21 +5,24 @@ import chromadb
 from chromadb.utils import embedding_functions
 import rclpy
 from rclpy.node import Node
+from rclpy.parameter import Parameter
 from frida_interfaces.srv import (
     AddItem,
     RemoveItem,
     UpdateItem,
     QueryItem,
-    BuildEmbeddings,  # Import the BuildEmbeddings service
-)  # Updated service imports
+    BuildEmbeddings,
+)
 
 
 class Embeddings(Node):
     def __init__(self):
         super().__init__("embeddings")
 
-        # Declare the parameter for the sentence transformer model
+        # Declare parameters for the sentence transformer model and collections built flag
         self.declare_parameter("Embeddings_model", "all-MiniLM-L12-v2")
+        self.declare_parameter("collections_built", 0)  # Default: 0 (not built)
+
         model_name_ = (
             self.get_parameter("Embeddings_model").get_parameter_value().string_value
         )
@@ -44,8 +47,6 @@ class Embeddings(Node):
         )
 
         # Initialize ChromaDB client
-        # script_dir = Path(__file__).resolve().parent
-        # chroma_path = str(script_dir / "../chromadb") for local use only
         self.chroma_client = chromadb.HttpClient(host="localhost", port=8000)
 
         # Configure the embedding function
@@ -54,6 +55,44 @@ class Embeddings(Node):
                 model_name=model_name_
             )
         )
+
+        # Check if collections are built or need to be built
+        self.check_and_update_collections()
+
+    def check_and_update_collections(self):
+        """Check if collections exist and call the method to build them if missing."""
+        collections = [
+            "items",
+            "locations",
+            "categories",
+            "actions",
+        ]  # List of expected collections
+        collections_built = 1  # Assume collections are built unless proven otherwise
+
+        for collection_name in collections:
+            try:
+                # Check if the collection exists
+                collection = self.chroma_client.get_collection(name=collection_name)
+                if collection is None:
+                    collections_built = (
+                        0  # If any collection is missing, set to 0 (not built)
+                    )
+                    break  # No need to check further
+            except Exception:
+                collections_built = (
+                    0  # If any error occurs (collection doesn't exist), set to 0
+                )
+                break  # No need to check further
+
+        # Update the ROS parameter based on whether collections are built
+        self.set_parameters([Parameter("collections_built", value=collections_built)])
+        if collections_built:
+            self.get_logger().info("Collections already built, skipping build.")
+        else:
+            self.get_logger().info(
+                "Collections not found, proceeding to build collections."
+            )
+            self.build_embeddings()  # Build the collections if not built
 
     def add_item_callback(self, request, response):
         """Service callback to add items to ChromaDB"""
@@ -145,19 +184,7 @@ class Embeddings(Node):
             self.get_logger().error(response.message)
         return response
 
-    def build_embeddings_callback(self, request, response):
-        """Service callback to build embeddings for the dataset"""
-        try:
-            self.build_embeddings()  # Call the existing build_embeddings method
-            response.success = True
-            response.message = "Embeddings built successfully"
-        except Exception as e:
-            response.success = False
-            response.message = f"Failed to build embeddings: {str(e)}"
-            self.get_logger().error(response.message)
-        return response
-
-    def build_embeddings(self):
+    def build_embeddings_callback(self):
         """Method to build embeddings for the household items data"""
         script_dir = Path(__file__).resolve().parent
         dataframes = [
