@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 
-import rclpy
-from rclpy.node import Node
-from rclpy.executors import ExternalShutdownException, MultiThreadedExecutor
-from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
+import os
+import sys
+
 import grpc
+import rclpy
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
+from rclpy.executors import ExternalShutdownException, MultiThreadedExecutor
+from rclpy.node import Node
+from speech.speech_api_utils import SpeechApiUtils
+from std_msgs.msg import Bool, String
+
 from frida_interfaces.msg import AudioData
 from frida_interfaces.srv import STT
-from std_msgs.msg import Bool, String
-from speech.speech_api_utils import SpeechApiUtils
-
-import sys
-import os
 
 # Add the directory containing the protos to the Python path
 sys.path.append(os.path.join(os.path.dirname(__file__), "stt"))
