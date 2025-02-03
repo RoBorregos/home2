@@ -16,6 +16,10 @@ find_package(frida_interfaces REQUIRED)
 install(DIRECTORY launch
   DESTINATION share/${PROJECT_NAME})
 
+# instalar el json
+install(DIRECTORY locations
+  DESTINATION share/${PROJECT_NAME})
+
 add_executable(ignore_laser src/ignore_laser.cpp)
 ament_target_dependencies(ignore_laser rclcpp sensor_msgs)
 
@@ -26,12 +30,14 @@ install(TARGETS
   
   ament_python_install_package(${PROJECT_NAME})
 
+  file(GLOB PYTHON_SCRIPTS scripts/*.py)
+
   #Install python scripts
   install(PROGRAMS
-    scripts/move_action_client.py
-    scripts/move_action_server.py
+    ${PYTHON_SCRIPTS}
     DESTINATION lib/${PROJECT_NAME}
   )
+
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

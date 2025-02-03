@@ -1,27 +1,41 @@
+#!/usr/bin/env python3
+
 import rclpy
 from rclpy.action import ActionServer
 from rclpy.node import Node
 import json
-
-from frida_interfaces.navigation.action import Move
+import os
+from ament_index_python.packages import get_package_share_directory
+from frida_interfaces.action import Move
 
 class MoveActionServer(Node):
 
+    
     def __init__(self):
         super().__init__('move_action_server')
 
-         # Cargar locaciones desde un archivo JSON
-        with open('areas.json', 'r') as file:
-            self.locations = json.load(file)
+        # Obtener la ruta de instalación del paquete
+        package_share_directory = get_package_share_directory('nav_main')
+        json_path = os.path.join(package_share_directory, 'locations', 'areas.json')
+     
+        # Intentar cargar el archivo JSON
+        try:
+            with open(json_path, 'r') as file:
+                self.locations = json.load(file)
+            self.get_logger().info("JSON loaded sucessfully.")
+        except Exception as e:
+            print(f"[ERROR] Failed to load JSON file: {e}")
+            self.locations = {}
 
+
+        # Inicializar el servidor de acción
         self._action_server = ActionServer(
             self,
             Move,
-            'Move',
+            'move',
             self.execute_callback)
 
     def execute_callback(self, goal_handle):
-        self.get_logger().info('Moving...')
         target_location = goal_handle.request.location
 
         # Validar si la locación existe en el JSON
@@ -33,6 +47,7 @@ class MoveActionServer(Node):
             result.message = f"Location '{target_location}' not available."
             return result
         
+        self.get_logger().info(f'Moving to {target_location}...')
         goal_handle.succeed()
 
         result = Move.Result()
@@ -44,6 +59,8 @@ class MoveActionServer(Node):
     # Verificar si la locación solicitada existe en el JSON.
     def is_valid_location(self, location):
         for area, objects in self.locations.items():
+            if location == area:
+                return True
             if location in objects:
                 return True
         return False
@@ -52,9 +69,9 @@ class MoveActionServer(Node):
 def main(args=None):
     rclpy.init(args=args)
 
-    fibonacci_action_server = MoveActionServer()
+    move_action_server = MoveActionServer()
 
-    rclpy.spin(fibonacci_action_server)
+    rclpy.spin(move_action_server)
 
 
 if __name__ == '__main__':
