@@ -16,10 +16,16 @@ def generate_launch_description():
     nlp_launch_path = os.path.join(
         get_package_share_directory("nlp"), "launch", "nlp_launch.py"
     )
+    embeddings_launch_path = os.path.join(
+        get_package_share_directory("embeddings"), "launch", "chroma_launch.py"
+    )
 
     return LaunchDescription(
         [
             IncludeLaunchDescription(PythonLaunchDescriptionSource(speech_launch_path)),
             IncludeLaunchDescription(PythonLaunchDescriptionSource(nlp_launch_path)),
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(embeddings_launch_path)
+            ),
         ]
     )

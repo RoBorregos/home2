@@ -4,4 +4,4 @@ command_interpreter:
     model: "llama3.2"
     speech_command_topic: "/speech/raw_command"
     publish_command_topic: "/task_manager/commands"
-    temperature: 1.0
+    temperature: 0.0
