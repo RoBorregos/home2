@@ -11,13 +11,23 @@ from rclpy.node import Node
 from subtask_managers.subtask_meta import SubtaskMeta
 
 from frida_constants.hri_constants import (
+    ADD_ITEM_SERVICE,
     COMMAND_INTERPRETER_SERVICE,
     EXTRACT_DATA_SERVICE,
     GRAMMAR_SERVICE,
+    QUERY_ITEM_SERVICE,
     SPEAK_SERVICE,
     STT_SERVICE_NAME,
 )
-from frida_interfaces.srv import STT, CommandInterpreter, ExtractInfo, Grammar, Speak
+from frida_interfaces.srv import (
+    STT,
+    AddItem,
+    CommandInterpreter,
+    ExtractInfo,
+    Grammar,
+    QueryItem,
+    Speak,
+)
 
 TIMEOUT = 5.0
 
@@ -42,6 +52,9 @@ class HRITasks(metaclass=SubtaskMeta):
         )
         self.grammar_service = self.node.create_client(Grammar, GRAMMAR_SERVICE)
 
+        self.query_item_client = self.node.create_client(QueryItem, QUERY_ITEM_SERVICE)
+        self.add_item_client = self.node.create_client(AddItem, ADD_ITEM_SERVICE)
+
     def say(self, text: str, wait: bool = False) -> None:
         """Method to publish directly text to the speech node"""
         self.node.get_logger().info(f"Sending to saying service: {text}")
@@ -59,12 +72,22 @@ class HRITasks(metaclass=SubtaskMeta):
         return HRITasks.STATE["EXECUTION_SUCCESS"]
 
     def extract_data(self, query, complete_text) -> str:
+        """
+        Extracts data from the given query and complete text.
+
+        Args:
+            query (str): specifies what to extract from complete_text.
+            complete_text (str): The complete text from which data is to be extracted.
+
+        Returns:
+            str: The extracted data as a string. If no data is found, an empty string is returned.
+        """
         request = ExtractInfo.Request(data=query, full_text=complete_text)
         future = self.extract_data_client.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
         return future.result().result
 
-    def hear(self, timeout: float = 15.0) -> str:
+    def hear(self) -> str:
         request = STT.Request()
 
         future = self.hear_client.call_async(request)
@@ -74,7 +97,15 @@ class HRITasks(metaclass=SubtaskMeta):
         return future.result().text_heard
 
     # TODO
-    def interpret_keyword(self, keyword: str, timeout: float) -> str:
+    def interpret_keyword(self, keyword: Union[list[str], str], timeout: float) -> str:
+        """
+        Interprets the given keyword(s) within a specified timeout period.
+        Args:
+            keyword (Union[list[str], str]): The keyword or list of keywords to interpret.
+            timeout (float): The maximum time allowed for interpretation in seconds.
+        Returns:
+            str: The interpreted result as a string, or an empty string if no result is found within the timeout period.
+        """
         pass
 
     def refactor_text(self, text: str) -> str:
@@ -83,9 +114,23 @@ class HRITasks(metaclass=SubtaskMeta):
         rclpy.spin_until_future_complete(self.node, future)
         return future.result().corrected_text
 
-    # TODO
-    def find_closest(self, query: str, options: Union[list[str], str]) -> str:
-        pass
+    def find_closest(self, query: str, collection: str, top_k: int = 1) -> list[str]:
+        """
+        Finds the closest matching item in a specified collection based on the given query.
+
+        Args:
+            query (str): The search query to find the closest match for.
+            collection (str): The name of the collection to search within.
+            top_k (int, optional): The number of top matches to return. Defaults to 1.
+
+        Returns:
+            list[str]: The closest matching item(s) from the collection.
+        """
+        request = QueryItem.Request(query=query, collection=collection, top_k=top_k)
+        future = self.grammar_service.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+
+        return future.result().results
 
     # TODO
     def ask(self, question: str) -> str:
