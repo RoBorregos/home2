@@ -4,3 +4,6 @@ include:
 
   # Runs Faster-whisper
   - path: stt.yaml
+
+  # Chroma db for embeddings
+  - path: chromadb.yaml
