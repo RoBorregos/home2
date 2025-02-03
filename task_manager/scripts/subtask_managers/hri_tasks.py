@@ -82,6 +82,10 @@ class HRITasks(metaclass=SubtaskMeta):
         Returns:
             str: The extracted data as a string. If no data is found, an empty string is returned.
         """
+        self.node.get_logger().info(
+            f"Sending to extract data service: query={query}, text={complete_text}"
+        )
+
         request = ExtractInfo.Request(data=query, full_text=complete_text)
         future = self.extract_data_client.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)

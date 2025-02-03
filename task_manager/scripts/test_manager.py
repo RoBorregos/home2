@@ -26,7 +26,10 @@ class TestTaskManager(Node):
             "Hi, my name is frida. What is your favorite drink?", wait=True
         )
         self.get_logger().info("Hearing from the user...")
+
+        # This line does run
         user_request = self.subtask_manager["hri"].hear()
+
         self.get_logger().info(f"Heard: {user_request}")
 
         drink = self.subtask_manager["hri"].extract_data("Drink", user_request)
@@ -45,6 +48,18 @@ class TestTaskManager(Node):
 
         fixed_text = self.subtask_manager["hri"].refactor_text(command_str)
         self.subtask_manager["hri"].say(fixed_text)
+
+        self.subtask_manager["hri"].say("Can you tell me where to go?")
+        location_hint = self.subtask_manager["hri"].hear()
+
+        # Previous line doesn't return
+        self.get_logger().info(f"location_hint: {location_hint}")
+
+        closest_found = self.subtask_manager["hri"].find_closest(
+            location_hint, "location"
+        )
+
+        self.subtask_manager["hri"].say(f"Got it, I will go to {closest_found}!")
 
 
 def main(args=None):
