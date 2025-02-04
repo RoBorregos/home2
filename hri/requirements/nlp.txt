@@ -11,7 +11,7 @@ qrcode==7.4.2
 # Stop Commands
 huggingface-hub==0.22.2
 safetensors==0.4.3
-scikit-learn==1.3.2
+scikit-learn==1.5.0
 sentence-transformers==2.6.1
 threadpoolctl==3.4.0
 tokenizers==0.15.2
