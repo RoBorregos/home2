@@ -44,7 +44,7 @@
   <xacro:arg name="attach_rpy" default="0 0 1.57"/>
   <xacro:arg name="mesh_suffix" default="stl"/>
   <xacro:arg name="kinematics_suffix" default=""/>
-  <xacro:arg name="sim_mode" default="false"/>
+  <xacro:arg name="sim_mode" default="true"/>
 
 
   <xacro:include filename="robot.xacro"/>
