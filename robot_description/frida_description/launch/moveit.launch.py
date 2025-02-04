@@ -128,7 +128,7 @@ def launch_setup(context, *args, **kwargs):
     # robot gazebo launch
     # xarm_gazebo/launch/_robot_beside_table_gazebo.launch.py
     robot_gazebo_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(PathJoinSubstitution([FindPackageShare('frida_description'), 'launch', 'test_xarm_launch.launch.py'])),
+        PythonLaunchDescriptionSource(PathJoinSubstitution([FindPackageShare('frida_description'), 'launch', 'xarm_launch.launch.py'])),
         launch_arguments={
             'dof': dof,
             'robot_type': robot_type,

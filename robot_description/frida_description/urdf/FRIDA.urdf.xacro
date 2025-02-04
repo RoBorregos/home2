@@ -70,10 +70,10 @@
     model1300="$(arg model1300)" attach_to="$(arg attach_to)" attach_xyz="$(arg attach_xyz)" attach_rpy="$(arg attach_rpy)"
     robot_sn="$(arg robot_sn)" use_gazebo_camera="$(arg use_gazebo_camera)" mesh_suffix="$(arg mesh_suffix)" kinematics_suffix="$(arg kinematics_suffix)" />
  <!-- Gripper -->
-  <!-- <xacro:include filename="gripper.xacro" />
+  <xacro:include filename="gripper.xacro" />
   <xacro:load_gripper attach_to="link_eef" xyz="0 0 0" rpy="0 -1.5708 0" />
 
   <xacro:include filename="zed.xacro" />
-  <xacro:load_zed attach_to="gripper" xyz="0.030461 0 -0.050649" rpy="0 0.81804 0" /> -->
+  <xacro:load_zed attach_to="gripper" xyz="0.030461 0 -0.050649" rpy="0 0.81804 0" />
 
 </robot>   
