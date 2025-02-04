@@ -88,4 +88,8 @@
   </joint>
 
   </xacro:macro>
+
+  <gazebo reference="gripper">
+    <material>Gazebo/DarkGrey</material>
+  </gazebo>
 </robot>
