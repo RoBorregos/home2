@@ -12,6 +12,6 @@ def generate_launch_description():
         PathJoinSubstitution([FindPackageShare('urdf_launch'), 'launch', 'display.launch.py']),
         launch_arguments={
             'urdf_package': 'frida_description',
-            'urdf_package_path': PathJoinSubstitution(['urdf','urdf','FRIDA.urdf'])}.items()
+            'urdf_package_path': PathJoinSubstitution(['urdf','FRIDA.urdf.xacro'])}.items()
     ))
     return ld

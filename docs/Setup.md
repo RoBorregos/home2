@@ -10,6 +10,7 @@ To install pre-commit and the repo's hooks, run the following commands:
 
 ```bash
 pip install pre-commit
+# pwd -> home2
 pre-commit install
 ```
 

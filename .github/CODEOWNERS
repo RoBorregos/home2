@@ -1,0 +1,17 @@
+/.github/ @RoBorregos/home-integracion
+
+# Docker
+
+/docker/vision/ @RoBorregos/home-vision
+/docker/navigation/ @RoBorregos/home-nav
+/docker/manipulation/ @RoBorregos/home-manipulacion
+/docker/hri/ @RoBorregos/home-hri
+
+# ROS packages
+
+/frida_interfaces/ @RoBorregos/home-integracion
+/hri/ @RoBorregos/home-hri
+/navigation/ @RoBorregos/home-nav
+/robot_description/ @RoBorregos/home-mecanica
+/task_manager/ @RoBorregos/home-integracion
+/vision/ @RoBorregos/home-vision

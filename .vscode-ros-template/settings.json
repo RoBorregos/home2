@@ -1,0 +1,19 @@
+{
+  "cmake.configureOnOpen": false,
+  "python.autoComplete.extraPaths": [
+    {{PYTHON_PATHS}}
+  ],
+  "python.analysis.extraPaths": [
+    {{PYTHON_PATHS}}
+  ],
+  "ros.distro": "humble",
+  "C_Cpp.intelliSenseEngine": "disabled",
+  "clangd.path": "{{CLANGD_PATH}}",
+  "clangd.enable": true,
+  "clangd.arguments": [
+    "-log=verbose",
+    "-pretty",
+    "--background-index",
+    "--compile-commands-dir={{WS_PATH}}/build"
+  ]
+}

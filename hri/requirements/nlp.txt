@@ -1,6 +1,7 @@
 # NLP scripts
 openai
 python-dotenv==1.0.1
+pytz
 
 # Command generator
 pypng==0.20220715.0

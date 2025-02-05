@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  chromadb:
+    image: chromadb/chroma:latest
+    ports:
+      - "8000:8000"
+    volumes:
+      - /src/hri/packages/embeddings/chromadb:/chroma/chroma
+    restart: unless-stopped
+    network_mode: host
