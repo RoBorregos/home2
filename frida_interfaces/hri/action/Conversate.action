@@ -1,0 +1,9 @@
+#goal definition
+string request
+int32 wait
+---
+#result definition
+int32 success
+---
+#feedback
+string execution_state

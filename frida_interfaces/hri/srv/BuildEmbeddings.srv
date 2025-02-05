@@ -1,0 +1,4 @@
+# BuildEmbeddings.srv
+---
+bool success  # Whether the operation was successful
+string message  # A message describing the result

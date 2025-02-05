@@ -1,0 +1,8 @@
+services:
+  ros2-build:
+    build: .
+    container_name: local-ci-ros2-build
+    volumes:
+      - ../:/ros2_ws
+    # add --progress=plain to avoid buffering
+    command: ["/bin/bash", "-c", "source /opt/ros/humble/setup.sh && ./.github/workflows/setup.sh && colcon build --symlink-install"]

@@ -28,4 +28,5 @@ exclude = [
     "node_modules",
     "site-packages",
     "venv",
+    "*pb2*",
 ]

@@ -1,0 +1,18 @@
+<package format="3">
+  <name>frida_constants</name>
+  <version>0.1.0</version>
+  <description>Package containing shared constants and utilities.</description>
+  <maintainer email="roborregosteam@gmail.com">RoBorregos</maintainer>
+  <license>Apache-2.0</license>
+
+  <!-- Build dependencies -->
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <buildtool_depend>ament_cmake_python</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>rclpy</depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

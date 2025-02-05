@@ -1,0 +1,3 @@
+string action
+string characteristic
+string complement

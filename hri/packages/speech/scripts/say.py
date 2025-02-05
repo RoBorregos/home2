@@ -12,6 +12,7 @@ from speech.speech_api_utils import SpeechApiUtils
 from speech.wav_utils import WavUtils
 from std_msgs.msg import Bool, String
 
+from frida_constants.hri_constants import SPEAK_SERVICE
 from frida_interfaces.srv import Speak
 
 CURRENT_FILE_PATH = os.path.abspath(__file__)
@@ -21,12 +22,12 @@ VOICE_DIRECTORY = os.path.join(os.path.dirname(CURRENT_FILE_PATH), "offline_voic
 class Say(Node):
     def __init__(self):
         super().__init__("say")
-        self.get_logger().info("Say node has started.")
+        self.get_logger().info("Initializing Say node.")
 
         self.connected = False
         self.declare_parameter("speaking_topic", "/saying")
 
-        self.declare_parameter("speak_service", "/speech/speak")
+        self.declare_parameter("SPEAK_SERVICE", SPEAK_SERVICE)
         self.declare_parameter("speak_topic", "/speech/speak_now")
         self.declare_parameter("model", "en_US-amy-medium")
         self.declare_parameter("offline", True)
@@ -54,7 +55,7 @@ class Say(Node):
         )
 
         speak_service = (
-            self.get_parameter("speak_service").get_parameter_value().string_value
+            self.get_parameter("SPEAK_SERVICE").get_parameter_value().string_value
         )
         speak_topic = (
             self.get_parameter("speak_topic").get_parameter_value().string_value
@@ -72,6 +73,8 @@ class Say(Node):
         self.create_service(Speak, speak_service, self.speak_service)
         self.create_subscription(String, speak_topic, self.speak_topic, 10)
         self.publisher_ = self.create_publisher(Bool, speaking_topic, 10)
+
+        self.get_logger().info("Say node initialized.")
 
     def speak_service(self, req):
         """When say is called as a service. Caller awaits for the response."""
