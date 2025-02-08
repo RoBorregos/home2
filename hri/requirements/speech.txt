@@ -14,6 +14,9 @@ pygame
 pvporcupine==3.0.2
 pvrecorder==1.2.2
 
+# KWS with openwakeword
+openwakeword
+
 # Respeaker
 pyusb==1.2.1
 pixel-ring==0.1.0
