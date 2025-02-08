@@ -11,6 +11,7 @@ services:
       dockerfile: docker/hri/Dockerfile.cpu
       args:
         BASE_IMAGE: roborregos/home2:cpu_base
+
     image: roborregos/home2:hri-cpu
     volumes:
       - ../../:/workspace/src
@@ -27,7 +28,7 @@ services:
     env_file:
       - .env
     tty: true
+    entrypoint: [ "bash", "-il", "-c"]
     command: [
-        "bash",
-        # "source /workspace/ws/devel/setup.bash && roslaunch hri recepcionist_laptop.launch",
+      "colcon build --symlink-install --packages-select task_manager frida_interfaces frida_constants speech nlp embeddings && source ~/.bashrc && ros2 launch speech hri_launch.py"
       ]
