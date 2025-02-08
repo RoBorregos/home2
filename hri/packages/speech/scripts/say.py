@@ -16,7 +16,15 @@ from frida_constants.hri_constants import SPEAK_SERVICE
 from frida_interfaces.srv import Speak
 
 CURRENT_FILE_PATH = os.path.abspath(__file__)
-VOICE_DIRECTORY = os.path.join(os.path.dirname(CURRENT_FILE_PATH), "offline_voice")
+
+FILE_DIR = CURRENT_FILE_PATH[: CURRENT_FILE_PATH.index("install")]
+ASSETS_DIR = os.path.join(
+    FILE_DIR, "src", "hri", "packages", "speech", "assets", "downloads"
+)
+
+VOICE_DIRECTORY = os.path.join(ASSETS_DIR, "offline_voice")
+
+os.makedirs(VOICE_DIRECTORY, exist_ok=True)
 
 
 class Say(Node):
