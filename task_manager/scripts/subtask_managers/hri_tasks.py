@@ -130,8 +130,8 @@ class HRITasks(metaclass=SubtaskMeta):
         Returns:
             list[str]: The closest matching item(s) from the collection.
         """
-        request = QueryItem.Request(query=query, collection=collection, top_k=top_k)
-        future = self.grammar_service.call_async(request)
+        request = QueryItem.Request(query=query, collection=collection, topk=top_k)
+        future = self.query_item_client.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
 
         return future.result().results

@@ -20,7 +20,7 @@ from frida_interfaces.srv import (
 class Embeddings(Node):
     def __init__(self):
         super().__init__("embeddings")
-
+        self.get_logger().info("Initializing item_categorization.")
         # Declare parameters for the sentence transformer model and collections built flag
         self.declare_parameter("Embeddings_model", "all-MiniLM-L12-v2")
         self.declare_parameter("collections_built", 0)  # Default: 0 (not built)
@@ -55,20 +55,6 @@ class Embeddings(Node):
             .string_value
         )
 
-        # Initialize services
-        self.add_item_service = self.create_service(
-            AddItem, add_item_service, self.add_item_callback
-        )
-        self.remove_item_service = self.create_service(
-            RemoveItem, remove_item_service, self.remove_item_callback
-        )
-        self.update_item_service = self.create_service(
-            UpdateItem, update_item_service, self.update_item_callback
-        )
-        self.query_item_service = self.create_service(
-            QueryItem, query_item_service, self.query_item_callback
-        )
-
         # Create the BuildEmbeddings service
         self.build_embeddings_service = self.create_service(
             BuildEmbeddings, build_embeddings_service, self.build_embeddings_callback
@@ -86,6 +72,21 @@ class Embeddings(Node):
 
         # Check if collections are built or need to be built
         self.check_and_update_collections()
+
+        # Initialize services
+        self.add_item_service = self.create_service(
+            AddItem, add_item_service, self.add_item_callback
+        )
+        self.remove_item_service = self.create_service(
+            RemoveItem, remove_item_service, self.remove_item_callback
+        )
+        self.update_item_service = self.create_service(
+            UpdateItem, update_item_service, self.update_item_callback
+        )
+        self.query_item_service = self.create_service(
+            QueryItem, query_item_service, self.query_item_callback
+        )
+        self.get_logger().info("item_categorization initialized.")
 
     def check_and_update_collections(self):
         """Check if collections exist and call the method to build them if missing."""
@@ -120,7 +121,7 @@ class Embeddings(Node):
             self.get_logger().info(
                 "Collections not found, proceeding to build collections."
             )
-            self.build_embeddings()  # Build the collections if not built
+            self.build_embeddings_callback()  # Build the collections if not built
 
     def add_item_callback(self, request, response):
         """Service callback to add items to ChromaDB"""
