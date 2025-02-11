@@ -4,17 +4,23 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch_ros.actions import Node
 
+from frida_constants import ModuleNames, parse_ros_config
+
 
 def generate_launch_description():
     mic_config = os.path.join(
         get_package_share_directory("speech"), "config", "microphone.yaml"
     )
+
     hear_config = os.path.join(
         get_package_share_directory("speech"), "config", "hear.yaml"
     )
-    speaker_config = os.path.join(
-        get_package_share_directory("speech"), "config", "speaker.yaml"
-    )
+
+    speaker_config = parse_ros_config(
+        os.path.join(get_package_share_directory("speech"), "config", "speaker.yaml"),
+        [ModuleNames.HRI.value],
+    )["say"]["ros__parameters"]
+
     # respeaker_config = os.path.join(
     #     get_package_share_directory("speech"), "config", "respeaker.yaml"
     # )

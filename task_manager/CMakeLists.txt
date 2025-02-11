@@ -7,6 +7,8 @@ find_package(rosidl_default_generators REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(action_msgs REQUIRED)
 find_package(frida_interfaces REQUIRED)
+find_package(frida_constants REQUIRED)
+
 
 #Install directories
 install(DIRECTORY
@@ -16,30 +18,36 @@ install(DIRECTORY
 #Python compatability
 ament_python_install_package(${PROJECT_NAME})
 
-file(GLOB TASK_MANAGERS scripts/*.py)
+file (GLOB TASK_MANAGERS scripts/*.py)
 file (GLOB SUBTASK_MANAGERS scripts/subtask_managers/*.py)
 file (GLOB UTILS scripts/utils/*.py)
 
+
 # Install python scripts
 install(PROGRAMS
-  ${TASK_MANAGERS}
-  DESTINATION lib/${PROJECT_NAME}
+${TASK_MANAGERS}
+DESTINATION lib/${PROJECT_NAME}
 )
 
 install(PROGRAMS
-  ${SUBTASK_MANAGERS}
-  DESTINATION lib/${PROJECT_NAME}/subtask_managers
+${SUBTASK_MANAGERS}
+DESTINATION lib/${PROJECT_NAME}/subtask_managers
 )
 
 install(PROGRAMS
-  ${UTILS}
-  DESTINATION lib/${PROJECT_NAME}/utils
+${UTILS}
+DESTINATION lib/${PROJECT_NAME}/utils
 )
 
 install(PROGRAMS
-  ${UTILS}
-  DESTINATION lib/${PROJECT_NAME}/subtask_managers/utils
+${UTILS}
+DESTINATION lib/${PROJECT_NAME}/subtask_managers/utils
 )
+
+file (GLOB CONFIG scripts/config/*.py)
+
+# Install python config
+install(DIRECTORY scripts/config/ DESTINATION lib/${PROJECT_NAME}/config FILES_MATCHING PATTERN "*.py")
 
 ######################### Testing  #########################
 ##For testing
