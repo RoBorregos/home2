@@ -49,15 +49,12 @@ class SubtaskMeta(type):
                         message = f"Method '{method_name}' not found in {cls.__name__}."
                         if config.strict:
                             raise AttributeError(
-                                message
-                                + f" Disable strict mode or remove {method_name}."
+                                message + f" Disable strict mode or remove {method_name}."
                             )
                         else:
                             Logger.warn(instance.node, message)
 
-            Logger.success(
-                instance.node, f"Applied {mock_count} mocks for {cls.__name__}"
-            )
+            Logger.success(instance.node, f"Applied {mock_count} mocks for {cls.__name__}")
         else:
             Logger.warn(instance.node, f"No config found for {cls.__name__}")
 
