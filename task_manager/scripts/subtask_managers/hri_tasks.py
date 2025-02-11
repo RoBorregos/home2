@@ -31,9 +31,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
         self.speak_service = self.node.create_client(Speak, SPEAK_SERVICE)
         self.hear_service = self.node.create_client(STT, HEAR_SERVICE)
-        self.extract_data_service = self.node.create_client(
-            ExtractInfo, DATA_EXTRACTOR_SERVICE
-        )
+        self.extract_data_service = self.node.create_client(ExtractInfo, DATA_EXTRACTOR_SERVICE)
 
         self.command_interpreter_service = self.node.create_client(
             CommandInterpreter, COMMAND_INTERPRETER_SERVICE
