@@ -50,9 +50,7 @@ def service_check(client, return_value=None, timeout=3.0):
 
             if isinstance(service_client, rclpy.client.Client):
                 if not service_client.wait_for_service(timeout_sec=timeout):
-                    self.node.get_logger().error(
-                        f"Service not available for: {client}."
-                    )
+                    self.node.get_logger().error(f"Service not available for: {client}.")
                     return return_value
 
             elif isinstance(service_client, ActionClient):

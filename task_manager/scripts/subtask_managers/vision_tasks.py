@@ -27,11 +27,26 @@ TIMEOUT = 5.0
 class VisionTasks:
     """Class to manage the vision tasks"""
 
-    STATE = {"TERMINAL_ERROR": -1, "EXECUTION_ERROR": 0, "EXECUTION_SUCCESS": 1}
+    STATE = {
+        "TERMINAL_ERROR": -1,
+        "EXECUTION_ERROR": 0,
+        "EXECUTION_SUCCESS": 1,
+        "TARGET_NOT_FOUND": 2,
+    }
+    SERVICES = {"detect_person": 0, "save_face_name": 1, "find_seat": 2}
+    SUBTASKS = {
+        "RECEPTIONIST": [
+            SERVICES["detect_person"],
+            SERVICES["find_seat"],
+            SERVICES["save_face_name"],
+        ]
+    }
 
-    def __init__(self, task_manager, mock_data=False) -> None:
+    def __init__(self, task_manager, task, mock_data=False) -> None:
+        """Initialize the class"""
         self.node = task_manager
         self.mock_data = mock_data
+        self.task = task
 
         self.save_name_client = self.node.create_client(SaveName, SAVE_NAME_TOPIC)
         self.find_seat_client = self.node.create_client(FindSeat, FIND_SEAT_TOPIC)
@@ -44,27 +59,34 @@ class VisionTasks:
 
     def setup_services(self):
         """Initialize services and actions"""
-        if not self.save_name_client.wait_for_service(timeout_sec=TIMEOUT):
-            self.node.get_logger().warn(
-                "Save name service not initialized. (face_recognition)"
-            )
+        if self.task not in VisionTasks.SUBTASKS:
+            Logger.error(self.node, "Task not available")
+            return
 
-        if not self.find_seat_client.wait_for_service(timeout_sec=TIMEOUT):
-            self.node.get_logger().warn(
-                "Find seat service not initialized. (receptionist_commands)"
-            )
+        if VisionTasks.SERVICES["save_face_name"] in VisionTasks.SUBTASKS[self.task]:
+            if not self.save_name_client.wait_for_service(timeout_sec=TIMEOUT):
+                Logger.warn(self.node, "Save name service not initialized. (face_recognition)")
 
-        if not self.detect_person_action_client.wait_for_server(timeout_sec=TIMEOUT):
-            self.node.get_logger().warn(
-                "Detect person action server not initialized. (face_recognition)"
-            )
+        if VisionTasks.SERVICES["find_seat"] in VisionTasks.SUBTASKS[self.task]:
+            if not self.find_seat_client.wait_for_service(timeout_sec=TIMEOUT):
+                Logger.warn(
+                    self.node,
+                    "Find seat service not initialized. (receptionist_commands)",
+                )
+
+        if VisionTasks.SERVICES["detect_person"] in VisionTasks.SUBTASKS[self.task]:
+            if not self.detect_person_action_client.wait_for_server(timeout_sec=TIMEOUT):
+                Logger.warn(
+                    self.node,
+                    "Detect person action server not initialized. (face_recognition)",
+                )
 
     @mockable(return_value=100)
     @service_check("save_name_client", -1, TIMEOUT)
     def save_face_name(self, name: str) -> int:
         """Save the name of the person detected"""
 
-        self.node.get_logger().info(f"Saving name: {name}")
+        Logger.info(self.node, f"Saving name: {name}")
         request = SaveName.Request()
         request.name = name
 
@@ -77,10 +99,10 @@ class VisionTasks:
                 raise Exception("Service call failed")
 
         except Exception as e:
-            self.node.get_logger().error(f"Error saving name: {e}")
+            Logger.error(self.node, f"Error saving name: {e}")
             return self.STATE["EXECUTION_ERROR"]
 
-        Logger.success(self, f"Name saved: {name}")
+        Logger.success(self.node, f"Name saved: {name}")
         return self.STATE["EXECUTION_SUCCESS"]
 
     @mockable(return_value=100)
@@ -88,7 +110,7 @@ class VisionTasks:
     def find_seat(self) -> int:
         """Find an available seat and get the angle for the camera to point at"""
 
-        self.node.get_logger().info("Finding available seat")
+        Logger.info(self.node, "Finding available seat")
         request = FindSeat.Request()
         request.request = True
 
@@ -98,12 +120,12 @@ class VisionTasks:
             result = future.result()
 
             if result.success:
-                Logger.success(node, f"Seat found at angle: {result.angle}")
+                Logger.success(self.node, f"Seat found at angle: {result.angle}")
                 return result.angle
             else:
-                self.node.get_logger().warn("No seat found")
+                Logger.warn(self.node, "No seat found")
         except Exception as e:
-            self.node.get_logger().error(f"Error finding seat: {e}")
+            Logger.error(self.node, f"Error finding seat: {e}")
 
         return 300
 
@@ -112,15 +134,13 @@ class VisionTasks:
     def detect_person(self) -> bool:
         """Returns true when a person is detected"""
 
-        self.node.get_logger().info("Waiting for person detection")
+        Logger.info(self.node, "Waiting for person detection")
         goal = DetectPerson.Goal()
         goal.request = True
 
         try:
             goal_future = self.detect_person_action_client.send_goal_async(goal)
-            rclpy.spin_until_future_complete(
-                self.node, goal_future, timeout_sec=TIMEOUT
-            )
+            rclpy.spin_until_future_complete(self.node, goal_future, timeout_sec=TIMEOUT)
 
             goal_handle = goal_future.result()
 
@@ -128,26 +148,24 @@ class VisionTasks:
                 raise Exception("Goal rejected")
 
             result_future = goal_handle.get_result_async()
-            rclpy.spin_until_future_complete(
-                self.node, result_future, timeout_sec=TIMEOUT
-            )
+            rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=TIMEOUT)
             result = result_future.result()
 
             if result and result.result.success:
-                Logger.success(node, "Person detected")
+                Logger.success(self.node, "Person detected")
                 return self.STATE["EXECUTION_SUCCESS"]
             else:
-                self.node.get_logger().warn("No person detected")
+                Logger.warn(self.node, "No person detected")
                 return self.STATE["EXECUTION_ERROR"]
         except Exception as e:
-            self.node.get_logger().error(f"Error detecting person: {e}")
+            Logger.error(self.node, f"Error detecting person: {e}")
             return self.STATE["EXECUTION_ERROR"]
 
 
 if __name__ == "__main__":
     rclpy.init()
     node = Node("vision_tasks")
-    vision_tasks = VisionTasks(node)
+    vision_tasks = VisionTasks(node, task="RECEPTIONIST")
 
     try:
         rclpy.spin(node)
