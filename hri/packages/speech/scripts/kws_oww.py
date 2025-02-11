@@ -78,7 +78,8 @@ class OpenWakeWordNode(Node):
                     self.get_logger().info(
                         f"Wakeword '{keyword}' detected with score {scores[-1]:.2f}"
                     )
-                    self.publisher.publish(Bool(data=True))
+                    detection_info = {"keyword": keyword, "score": scores[-1]}
+                    self.publisher.publish(detection_info)
                     self.last_detection_time = current_time
                 break
 
