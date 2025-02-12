@@ -14,7 +14,7 @@ RUN mkdir -p /workspace/requirements
 RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
 # ROS Requirements
-RUN apt update && apt install -y ros-humble-cv-bridge
+RUN apt update && apt install -y ros-humble-cv-bridge ros-humble-rviz2 ros-humble-moveit
 
 # Python Requirements
 COPY manipulation/requirements.txt /workspace/requirements/requirements.txt
