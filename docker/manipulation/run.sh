@@ -18,6 +18,7 @@ if [ "$1" == "--rebuild" ]; then
     if [ -n "$(docker ps -a -q -f "name=home2-manipulation")" ]; then
         read -p "Do you want to delete the existing container? (y/n): " confirmation
         if [[ "$confirmation" == "y" ]]; then
+            docker stop home2-manipulation
             docker rm home2-manipulation
             echo "Container deleted."
         else
@@ -103,23 +104,6 @@ esac
 export LOCAL_USER_ID=$(id -u)
 export LOCAL_GROUP_ID=$(id -g)
 
-# Remove current install, build and log directories if they exist 
-# if [ -d "../../install" ] || [ -d "../../log" ] || [ -d "../../build" ]; then
-#   read -p "Do you want to delete 'install', 'log', and 'build' directories (Recommended for first build)? (y/n): " confirmation
-#   if [[ "$confirmation" == "y" ]]; then
-#     rm -rf ../../install/ ../../log/ ../../build/
-#     echo "Directories deleted."
-#   else
-#     echo "Operation cancelled."
-#   fi
-# fi
-
-# Setup camera permissions
-if [ -e /dev/video0 ]; then
-    echo "Setting permissions for /dev/video0..."
-    sudo chmod 666 /dev/video0  # Allow the container to access the camera device
-fi
-
 #_________________________RUN_________________________
 
 # Check if the container exists
@@ -132,6 +116,7 @@ fi
 # Check if the container is running
 RUNNING_CONTAINER=$(docker ps -q -f "name=$CONTAINER_NAME")
 
+xhost +
 if [ -n "$RUNNING_CONTAINER" ]; then
     echo "Container $CONTAINER_NAME is already running. Executing bash..."
     docker exec -it $CONTAINER_NAME /bin/bash
