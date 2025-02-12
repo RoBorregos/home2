@@ -71,7 +71,7 @@ class Respeaker(Node):
     def publish_DOA(self):
         if self.tuning:
             next_angle = self.moving_average.next(self.tuning.direction)
-            self.publisher_.publish(Int16(int(next_angle)))
+            self.publisher_.publish(Int16(data=int(next_angle)))
         else:
             self.get_logger().error("Respeaker not found.")
 
