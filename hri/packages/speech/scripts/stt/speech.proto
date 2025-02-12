@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package speech;
+
+// The gRPC service definition
+service SpeechService {
+  // Sends audio data and gets the transcribed text
+  rpc Transcribe (AudioRequest) returns (TextResponse);
+}
+
+// The message containing audio data
+message AudioRequest {
+  bytes audio_data = 1;
+}
+
+// The message containing the transcribed text
+message TextResponse {
+  string text = 1;
+}

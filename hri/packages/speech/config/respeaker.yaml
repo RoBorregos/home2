@@ -1,0 +1,5 @@
+respeaker:
+  ros__parameters:
+    doa_publish_topic: "/respeaker/doa"
+    doa_timer: 0.5
+    light_subscriber_topic: "/respeaker/light"

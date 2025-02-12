@@ -1,0 +1,8 @@
+grpcio
+grpcio-tools
+torch
+torchaudio
+faster-whisper
+pydub
+soundfile
+sounddevice

@@ -30,7 +30,7 @@ class RestaurantTaskManager(Node):
         self.subtask_manager = {}
 
         if VISION_ENABLED:
-            self.subtask_manager["vision"] = VisionTasks(self)
+            self.subtask_manager["vision"] = VisionTasks(self, mock_data=True)
 
         self.get_logger().info("RestaurantTaskManager has started.")
         self.run()
