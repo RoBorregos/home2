@@ -56,7 +56,7 @@ RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o 
 RUN apt-get update && apt-get install -y ros-dev-tools
 
 # Setup workspace directory
-RUN mkdir -p /workspace
+RUN mkdir -p /workspace && chown -R $USERNAME:$USERNAME /workspace
 WORKDIR /workspace
 
 # Set up autocompletion for user

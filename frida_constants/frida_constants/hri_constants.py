@@ -1,0 +1,8 @@
+SPEAK_SERVICE = "/speech/speak"
+HEAR_SERVICE = "/speech/STT"
+KEYWORD_TOPIC = "/speech/kws"
+COMMAND_INTERPRETER_SERVICE = "/nlp/command_interpreter"
+DATA_EXTRACTOR_SERVICE = "/nlp/data_extractor"
+SENTENCE_BUILDER_SERVICE = "/nlp/sentence_builder"
+ITEM_CATEGORIZATION_SERVICE = "/nlp/item_categorization"
+CONVESATION_SERVICE = "/nlp/conversation"
