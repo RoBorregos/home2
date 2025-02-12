@@ -1,15 +1,15 @@
-INPUT=$1  # If no parameter is passed, $1 will be empty
-
+ARGS=("$@")  # Save all arguments in an array
+AREA=${ARGS[0]}  # Get the first argument
 # Check if the parameter is passed, if not, set a default value (e.g., "vision")
-if [ -z "$INPUT" ]; then
+if [ -z "$AREA" ]; then
   echo "No service name provided or invalid. Valid args are: vision, hri, etc"
   exit 1
 fi
 
-echo "Service name is: $INPUT"
+echo "Service name is: $AREA"
 
 # check arguments passed as --help or -h
-if [ "$INPUT" == "--help" ] || [ "$INPUT" == "-h" ]; then
+if [ "$AREA" == "--help" ] || [ "$AREA" == "-h" ]; then
   echo "Usage: ./run.sh [service_name]"
   echo "Example: ./run.sh vision"
   exit 0
@@ -18,7 +18,8 @@ fi
 area=""
 rebuild=0
 
-case $INPUT in
+
+case $AREA in
   vision)
     echo "Running vision..."
     area="vision"
@@ -27,15 +28,19 @@ case $INPUT in
     echo "Running manipulation"
     area="manipulation"
     ;;
-  rebuild)
-    echo "Rebuilding all services..."
-    rebuild=1
-    ;;
   *)
     echo "Invalid service name provided. Valid args are: vision, hri, etc"
     exit 1
     ;;
 esac
+
+REBUILD=0
+# check if one of the arguments is --rebuild
+for arg in "${ARGS[@]}"; do
+  if [ "$arg" == "--rebuild" ]; then
+    rebuild=1
+  fi
+done
 
 if [ -z "$area" ]; then
   echo "Invalid service name provided. Valid args are: vision, hri, etc"
