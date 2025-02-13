@@ -27,7 +27,7 @@ class DemoTaskManager(Node):
         self.subtask_manager["vision"] = VisionTasks(self, taks="DEMO", mock_data=False)
         self.subtask_manager["hri"] = HRITasks(self, config=test_hri_config)
 
-        self.current_state = DemoTaskManager.TASK_STATES["START"]
+        self.current_state = DemoTaskManager.TASK_STATES["FOLLOW_FACE"]
 
         self.get_logger().info("DemoTaskManager has started.")
         self.run()
@@ -41,7 +41,7 @@ class DemoTaskManager(Node):
                 self.subtask_manager["hri"].say(
                     "Hi, I'm FRIDA, a service robot designed by RoBorregos. I can do several requests, just say my name to chat."
                 )
-                self.current_state = DemoTaskManager.TASK_STATES["INTRODUCTION"]
+                self.current_state = DemoTaskManager.TASK_STATES["FOLLOW_FACE"]
 
             if self.current_state == DemoTaskManager.TASK_STATES["INTRODUCTION"]:
                 Logger.state(self, "Introduction task")
