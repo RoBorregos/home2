@@ -30,36 +30,39 @@ class DemoTaskManager(Node):
         self.current_state = DemoTaskManager.TASK_STATES["FOLLOW_FACE"]
 
         self.get_logger().info("DemoTaskManager has started.")
-        self.run()
+        self.create_timer(1.0, self.run)
 
     def run(self):
         """Running main loop"""
 
-        while rclpy.ok():
-            if self.current_state == DemoTaskManager.TASK_STATES["START"]:
-                Logger.state(self, "Starting task")
-                self.subtask_manager["hri"].say(
-                    "Hi, I'm FRIDA, a service robot designed by RoBorregos. I can do several requests, just say my name to chat."
-                )
-                self.current_state = DemoTaskManager.TASK_STATES["FOLLOW_FACE"]
+        # while rclpy.ok():
+        # rclpy.spin_once(self.subtask_manager["vision"])
+        if self.current_state == DemoTaskManager.TASK_STATES["START"]:
+            Logger.state(self, "Starting task")
+            self.subtask_manager["hri"].say(
+                "Hi, I'm FRIDA, a service robot designed by RoBorregos. I can do several requests, just say my name to chat."
+            )
+            self.current_state = DemoTaskManager.TASK_STATES["FOLLOW_FACE"]
 
-            if self.current_state == DemoTaskManager.TASK_STATES["INTRODUCTION"]:
-                Logger.state(self, "Introduction task")
-                # Wait until keyword is said
-                self.subtask_manager["hri"].say("Hi, I'm FRIDA, what is your name?")
-                name = self.subtask_manager["hri"].hear()
-                self.subtask_manager["vision"].save_face_name(name)
-                self.subtask_manager["hri"].say(f"Hello {name}, how can i help you?")
-                self.current_state = DemoTaskManager.TASK_STATES["RECEIVE_COMMAND"]
+        if self.current_state == DemoTaskManager.TASK_STATES["INTRODUCTION"]:
+            Logger.state(self, "Introduction task")
+            # Wait until keyword is said
+            self.subtask_manager["hri"].say("Hi, I'm FRIDA, what is your name?")
+            name = self.subtask_manager["hri"].hear()
+            self.subtask_manager["vision"].save_face_name(name)
+            self.subtask_manager["hri"].say(f"Hello {name}, how can i help you?")
+            self.current_state = DemoTaskManager.TASK_STATES["RECEIVE_COMMAND"]
 
-            if self.current_state == DemoTaskManager.TASK_STATES["RECEIVE_COMMAND"]:
-                # Do sth to receive and parse basic commands (go to, pick, place)
-                Logger.state(self, "Receive command task")
+        if self.current_state == DemoTaskManager.TASK_STATES["RECEIVE_COMMAND"]:
+            # Do sth to receive and parse basic commands (go to, pick, place)
+            Logger.state(self, "Receive command task")
 
-            if self.current_state == DemoTaskManager.TASK_STATES["FOLLOW_FACE"]:
-                # Follow face task
-                Logger.state(self, "Follow face task")
-                x, y = self.subtask_manager["vision"].get_follow_face()
+        if self.current_state == DemoTaskManager.TASK_STATES["FOLLOW_FACE"]:
+            # Follow face task
+            Logger.state(self, "Follow face task")
+            x, y = self.subtask_manager["vision"].get_follow_face()
+            print(f"X: {x}, Y: {y}")
+            # TODO: mover brazito (x )
 
 
 def main(args=None):

@@ -49,7 +49,7 @@ class VisionTasks:
         self.node = task_manager
         self.mock_data = mock_data
         self.task = task
-        self.follow_face = None
+        self.follow_face = {"x": None, "y": None}
 
         self.face_subscriber = self.node.create_subscription(
             Point, FOLLOW_TOPIC, self.follow_callback, 10
@@ -89,8 +89,8 @@ class VisionTasks:
 
     def follow_callback(self, msg):
         """Callback for the face following subscriber"""
-        Logger.info(self.node, f"Following face at: {msg.x}, {msg.y}")
-        self.follow_face = msg
+        self.follow_face["x"] = msg.x
+        self.follow_face["y"] = msg.y
 
     @mockable(return_value=100)
     @service_check("save_name_client", -1, TIMEOUT)
@@ -174,7 +174,7 @@ class VisionTasks:
 
     def get_follow_face(self):
         """Get the face to follow"""
-        return self.follow_face.x, self.follow_face.y
+        return self.follow_face["x"], self.follow_face["y"]
 
 
 if __name__ == "__main__":
