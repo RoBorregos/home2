@@ -8,7 +8,7 @@ from typing import Union
 
 import rclpy
 from rclpy.node import Node
-from subtask_meta import SubtaskMeta
+from .subtask_meta import SubtaskMeta
 
 from frida_constants.hri_constants import (
     COMMAND_INTERPRETER_SERVICE,
@@ -42,6 +42,9 @@ class HRITasks(metaclass=SubtaskMeta):
         self.node.get_logger().info(f"Sending to saying service: {text}")
 
         self.speak_service(text)
+
+    def extract_data(self, query, complete_text) -> str:
+        pass
 
     def extract_date(self, query, complete_text) -> str:
         pass
