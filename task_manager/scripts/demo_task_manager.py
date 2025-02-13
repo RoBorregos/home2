@@ -6,10 +6,10 @@ Task Manager for Demos
 
 import rclpy
 from rclpy.node import Node
-# from config.hri.debug import config as test_hri_config
+from config.hri.debug import config as test_hri_config
 
 from subtask_managers.vision_tasks import VisionTasks
-# from subtask_managers.hri_tasks import HRITasks
+from subtask_managers.hri_tasks import HRITasks
 
 from utils.logger import Logger
 
@@ -107,6 +107,7 @@ class DemoTaskManager(Node):
 
             if self.subtask_manager.hri.keyword() = "frida":
                 self.current_state = DemoTaskManager.TASK_STATES["INTRODUCTION"]
+
 
 
 

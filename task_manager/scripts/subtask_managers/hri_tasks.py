@@ -7,6 +7,7 @@ HRI Subtask manager
 from typing import Union
 
 import rclpy
+
 from rclpy.node import Node
 from subtask_managers.subtask_meta import SubtaskMeta
 
@@ -28,6 +29,8 @@ from frida_interfaces.srv import (
     QueryItem,
     Speak,
 )
+
+
 
 TIMEOUT = 5.0
 
