@@ -3,6 +3,7 @@ import os
 import time
 
 import numpy as np
+import openwakeword.utils as utils
 import rclpy
 from openwakeword.model import Model
 from rclpy.node import Node
@@ -41,6 +42,8 @@ class OpenWakeWordNode(Node):
         self.detection_cooldown = (
             self.get_parameter("detection_cooldown").get_parameter_value().double_value
         )
+
+        utils.download_models()
 
         # Handle model loading dynamically from a directory
         if model_path:
