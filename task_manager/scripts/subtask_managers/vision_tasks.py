@@ -87,7 +87,7 @@ class VisionTasks:
                     "Detect person action server not initialized. (face_recognition)",
                 )
 
-    def follow_callback(self, msg):
+    def follow_callback(self, msg: Point):
         """Callback for the face following subscriber"""
         Logger.info(self.node, f"Following face at: {msg.x}, {msg.y}")
         self.follow_face = msg
