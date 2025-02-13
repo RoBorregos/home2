@@ -95,6 +95,16 @@ class HRITasks(metaclass=SubtaskMeta):
         rclpy.spin_until_future_complete(self.node, future)
         return future.result().result
 
+    def execute_command(self, command: str, complement: str, characteristic: str) -> None:
+        if command == "speak":
+            return self.say(complement)
+        elif command == "clarification":
+            self.say("Sorry, I don't undestand your command.")
+            self.say(command.complement)
+
+        else:
+            return self.say(f"Sorry, I don't know how to {command}")
+
     def _get_keyword(self, msg: String) -> None:
         data = eval(msg.data)
         self.keyword = data["keyword"]

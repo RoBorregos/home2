@@ -81,7 +81,7 @@ class Say(Node):
         self.get_logger().info("Say node initialized.")
 
     def speak_service(self, req, res):
-        self.get_logger().debug("[Service] I will say: " + req.text)
+        self.get_logger().info("[Service] I will say: " + req.text)
         if req.text:
             self.say(req.text)
             res.success = True

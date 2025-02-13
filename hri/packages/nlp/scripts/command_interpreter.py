@@ -10,7 +10,7 @@ import os
 from typing import List, Optional
 
 import rclpy
-from nlp.assets.prompts import get_system_prompt_ci_v2
+from nlp.assets.prompts import get_system_prompt_expo
 from openai import OpenAI
 from pydantic import BaseModel, Field
 from rclpy.node import Node
@@ -110,7 +110,7 @@ class CommandInterpreter(Node):
                 model=self.model,
                 temperature=self.temperature,
                 messages=[
-                    {"role": "system", "content": get_system_prompt_ci_v2()},
+                    {"role": "system", "content": get_system_prompt_expo()},
                     {"role": "user", "content": raw_command},
                 ],
                 response_format=CommandListShape,
