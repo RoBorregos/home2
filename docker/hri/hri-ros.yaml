@@ -16,11 +16,10 @@ services:
     volumes:
       - ../../:/workspace/src
       - ~/.config/pulse:/tmp/pulse
+      - /dev:/dev
 
     network_mode: host
     privileged: true
-    devices:
-      - /dev:/dev
     environment:
       <<:
         - *speech-devices

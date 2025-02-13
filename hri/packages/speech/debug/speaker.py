@@ -1,11 +1,11 @@
 # python3 debug/speaker.py
 
 # from speech.speech_api_utils import SpeechApiUtils
-# from speech.wav_utils import WavUtils
-# import os
-
 import sounddevice as sd
 from pygame import mixer
+from speech.wav_utils import WavUtils
+
+# import os
 
 
 def get_devices():
@@ -35,12 +35,13 @@ if __name__ == "__main__":
 
     # mp3_path = "play.mp3"
     # WavUtils.play_mp3(mp3_path, device_index=4)
-    # play_audio("/workspace/ws/src/speech/scripts/play_temp.wav")
+    # play_audio("../recorded_audio.wav")
 
     # wav_path = "recorded_audio.wav"
+    wav_path = "last_run_audio.wav"
     # wav_path = "play_temp.wav"
     # WavUtils.play_mp3(mp3_path, device_index=12)
-    # WavUtils.play_wav(wav_path, device_index=12)
+    WavUtils.play_wav(wav_path, device_index=None)
     # SPEAKER_DEVICE_NAME = os.getenv("SPEAKER_DEVICE_NAME", default=None)
     # SPEAKER_INPUT_CHANNELS = int(
     #     os.getenv("SPEAKER_INPUT_CHANNELS", default=2))

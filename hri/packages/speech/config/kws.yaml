@@ -3,4 +3,4 @@ keyword_spotting:
     KEYWORD_DIR: "/workspace/src/hri/packages/speech/assets"
     audio_topic: "/rawAudioChunk"
     detection_publish_topic: "/keyword_detected"
-    sensitivity: 0.8
+    sensitivity: 0.6
