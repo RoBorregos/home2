@@ -19,5 +19,5 @@ transformers==4.39.3
 #triton==2.2.0
 
 # Embeddings dependencies
-chromadb==0.6.3
-pandas==2.2.3
+# chromadb==0.6.3
+# pandas==2.2.3
