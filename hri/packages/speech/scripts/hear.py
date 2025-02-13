@@ -9,7 +9,7 @@ from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.executors import ExternalShutdownException, MultiThreadedExecutor
 from rclpy.node import Node
 from speech.speech_api_utils import SpeechApiUtils
-from std_msgs.msg import Bool, String
+from std_msgs.msg import String
 
 from frida_interfaces.msg import AudioData
 from frida_interfaces.srv import STT
@@ -87,7 +87,7 @@ class HearNode(Node):
                 .string_value
             )
             self.KWS_publisher_mock = self.create_publisher(
-                Bool, detection_publish_topic, 10
+                String, detection_publish_topic, 10
             )
             self.stt_service = self.create_service(
                 STT,
@@ -133,7 +133,7 @@ class HearNode(Node):
     def stt_service_callback(self, request, response):
         self.get_logger().info("Keyword mock service activated, recording audio...")
         self.service_active = True
-        self.KWS_publisher_mock.publish(Bool(data=True))
+        self.KWS_publisher_mock.publish(String(data="frida"))
         while self.service_active:
             pass
         response.text_heard = self.service_text

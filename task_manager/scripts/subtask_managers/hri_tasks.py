@@ -62,10 +62,12 @@ class HRITasks(metaclass=SubtaskMeta):
         self.node.get_logger().info(f"Sending to saying service: {text}")
         request = Speak.Request(text=text)
 
-        future = self.speak_client.call_async(request)
+        future = self.speak_service.call_async(request)
 
         if wait:
+            self.node.get_logger().info("in wait")
             rclpy.spin_until_future_complete(self.node, future)
+            self.node.get_logger().info("after future complete")
             return (
                 HRITasks.STATE["EXECUTION_SUCCESS"]
                 if future.result().success
@@ -98,9 +100,10 @@ class HRITasks(metaclass=SubtaskMeta):
         self.keyword = data["keyword"]
 
     def hear(self) -> str:
+        self.node.get_logger().info("Hearing from user")
         request = STT.Request()
 
-        future = self.hear_client.call_async(request)
+        future = self.hear_service.call_async(request)
 
         rclpy.spin_until_future_complete(self.node, future)
 

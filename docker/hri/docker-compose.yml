@@ -6,4 +6,4 @@ include:
   - path: stt.yaml
 
   # Chroma db for embeddings
-  - path: chromadb.yaml
+  # - path: chromadb.yaml

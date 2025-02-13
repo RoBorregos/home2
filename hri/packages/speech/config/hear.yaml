@@ -3,4 +3,4 @@ hear:
     STT_SERVER_IP: "127.0.0.1:50051"
     START_SERVICE: True
     STT_SERVICE_NAME: REPLACE
-    detection_publish_topic: "/keyword_detected"
+    detection_publish_topic: "/wakeword_detected"

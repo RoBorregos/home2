@@ -8,7 +8,7 @@ import pvporcupine
 import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
-from std_msgs.msg import Bool
+from std_msgs.msg import String
 
 from frida_interfaces.msg import AudioData
 
@@ -97,7 +97,7 @@ class KeywordSpotting(Node):
                 self.keywords.append(keyword_phrase_part[0])
 
         # Ros interactions
-        self.publisher = self.create_publisher(Bool, detection_publish_topic, 10)
+        self.publisher = self.create_publisher(String, detection_publish_topic, 10)
         self.create_subscription(AudioData, audio_topic, self.detect_keyword, 10)
 
         self.get_logger().info("KeywordSpotting node initialized.")
@@ -115,7 +115,7 @@ class KeywordSpotting(Node):
             self.get_logger().info(
                 "[%s] Detected %s" % (str(datetime.now()), self.keywords[result])
             )
-            self.publisher.publish(Bool(data=True))
+            self.publisher.publish(String(data="frida"))
 
 
 def main(args=None):
