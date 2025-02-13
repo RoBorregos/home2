@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
-import rclpy
-from rclpy.node import Node
-from std_msgs.msg import Bool
-from frida_interfaces.msg import AudioData
-from openwakeword.model import Model
 import os
 import time
+
+import numpy as np
+import rclpy
+from openwakeword.model import Model
+from rclpy.node import Node
+from std_msgs.msg import String
+
+from frida_interfaces.msg import AudioData
 
 
 class OpenWakeWordNode(Node):
@@ -14,7 +17,7 @@ class OpenWakeWordNode(Node):
         self.get_logger().info("Initializing OpenWakeWord node.")
 
         self.declare_parameter(
-            "model_path", "/workspace/src/hri/packages/speech/assets"
+            "model_path", "/workspace/src/hri/packages/speech/assets/oww"
         )
         self.declare_parameter("inference_framework", "onnx")
         self.declare_parameter("audio_topic", "/rawAudioChunk")
@@ -58,7 +61,7 @@ class OpenWakeWordNode(Node):
         self.get_logger().info("OpenWakeWord model loaded successfully.")
         self.keywords = list(self.oww_model.models.keys())
 
-        self.publisher = self.create_publisher(Bool, detection_topic, 10)
+        self.publisher = self.create_publisher(String, detection_topic, 10)
         self.create_subscription(AudioData, audio_topic, self.audio_callback, 10)
 
         # Flag to prevent rapid repeated publishing
@@ -67,6 +70,10 @@ class OpenWakeWordNode(Node):
 
     def audio_callback(self, msg):
         """Process incoming audio data and detect wakewords."""
+        # Convert audio data from ROS to NumPy array (to obtain directly from microphone)
+        audio_data = np.frombuffer(msg.data, dtype=np.int16)
+        # Perform prediction using OpenWakeWord (returns numerical value)
+        self.oww_model.predict(audio_data)
 
         # Check for wakeword detection
         for keyword, buffer in self.oww_model.prediction_buffer.items():
@@ -79,7 +86,7 @@ class OpenWakeWordNode(Node):
                         f"Wakeword '{keyword}' detected with score {scores[-1]:.2f}"
                     )
                     detection_info = {"keyword": keyword, "score": scores[-1]}
-                    self.publisher.publish(detection_info)
+                    self.publisher.publish(String(data=str(detection_info)))
                     self.last_detection_time = current_time
                 break
 

@@ -6,8 +6,8 @@ from launch_ros.actions import Node
 
 from frida_constants import ModuleNames, parse_ros_config
 
-USE_RESPEAKER = False
-USE_OWW = False
+USE_RESPEAKER = True
+USE_OWW = True
 
 
 def generate_launch_description():
