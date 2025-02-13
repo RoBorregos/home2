@@ -129,3 +129,35 @@ Takes UsefulAudio, performs STT with gRPC servers and publishes it.
 
 - subscribe -> UsefulAudio
 - publish -> /speech/transcription
+
+## Debug speech
+
+Sinks (Pulseaudio)
+
+```bash
+# See default sink
+pactl info | grep "Default Sink"
+# Set default sink
+pactl set-default-sink <index>
+# List all sinks
+pactl list short sinks
+```
+
+Sources (Pulseaudio)
+
+```bash
+# See default sink
+pactl info | grep "Default Source"
+# Set default sink
+pactl set-default-source <index>
+# List all sinks
+pactl list short sources
+```
+
+## Download openwakeword base model
+
+```
+python3
+import openwakeword
+openwakeword.utils.download_models()
+```
