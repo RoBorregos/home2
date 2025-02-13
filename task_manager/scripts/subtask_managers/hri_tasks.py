@@ -7,14 +7,18 @@ HRI Subtask manager
 from typing import Union
 
 import rclpy
+
+from rclpy.node import Node
+from subtask_managers.subtask_meta import SubtaskMeta
+
 from frida_constants.hri_constants import (
     ADD_ITEM_SERVICE,
     COMMAND_INTERPRETER_SERVICE,
-    DATA_EXTRACTOR_SERVICE,
+    EXTRACT_DATA_SERVICE,
     GRAMMAR_SERVICE,
-    HEAR_SERVICE,
     QUERY_ITEM_SERVICE,
     SPEAK_SERVICE,
+    STT_SERVICE_NAME,
 )
 from frida_interfaces.srv import (
     STT,
@@ -25,9 +29,8 @@ from frida_interfaces.srv import (
     QueryItem,
     Speak,
 )
-from rclpy.node import Node
 
-from subtask_managers.subtask_meta import SubtaskMeta
+
 
 TIMEOUT = 5.0
 
@@ -41,9 +44,11 @@ class HRITasks(metaclass=SubtaskMeta):
     def __init__(self, task_manager, config=None) -> None:
         self.node = task_manager
 
-        self.speak_service = self.node.create_client(Speak, SPEAK_SERVICE)
-        self.hear_service = self.node.create_client(STT, HEAR_SERVICE)
-        self.extract_data_service = self.node.create_client(ExtractInfo, DATA_EXTRACTOR_SERVICE)
+        self.speak_client = self.node.create_client(Speak, SPEAK_SERVICE)
+        self.hear_client = self.node.create_client(STT, STT_SERVICE_NAME)
+        self.extract_data_client = self.node.create_client(
+            ExtractInfo, EXTRACT_DATA_SERVICE
+        )
 
         self.command_interpreter_client = self.node.create_client(
             CommandInterpreter, COMMAND_INTERPRETER_SERVICE
