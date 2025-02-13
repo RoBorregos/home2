@@ -31,7 +31,6 @@ from frida_interfaces.srv import (
 )
 
 
-
 TIMEOUT = 5.0
 
 
@@ -46,9 +45,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
         self.speak_client = self.node.create_client(Speak, SPEAK_SERVICE)
         self.hear_client = self.node.create_client(STT, STT_SERVICE_NAME)
-        self.extract_data_client = self.node.create_client(
-            ExtractInfo, EXTRACT_DATA_SERVICE
-        )
+        self.extract_data_client = self.node.create_client(ExtractInfo, EXTRACT_DATA_SERVICE)
 
         self.command_interpreter_client = self.node.create_client(
             CommandInterpreter, COMMAND_INTERPRETER_SERVICE

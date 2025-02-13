@@ -55,7 +55,6 @@ class DemoTaskManager(Node):
         self.subtask_manager.manipulation.activate_arm()
 
         self.current_state = DemoTaskManager.TASK_STATES["FOLLOW_FACE"]
-        
 
         self.get_logger().info("DemoTaskManager has started.")
         self.create_timer(0.1, self.run)
@@ -73,9 +72,9 @@ class DemoTaskManager(Node):
         if self.current_state == DemoTaskManager.TASK_STATES["INTRODUCTION"]:
             Logger.state(self, "Introduction task")
             # Wait until keyword is said
-            # self.subtask_manager.hri.say("Hi, I'm FRIDA, what is your name?",wait=True)
-            # text = self.subtask_manager.hri.hear()
-            # name = self.subtask_manager.hri.extract_data("name", text)
+            self.subtask_manager.hri.say("Hi, I'm FRIDA, what is your name?", wait=True)
+            text = self.subtask_manager.hri.hear()
+            name = self.subtask_manager.hri.extract_data("name", text)
             self.subtask_manager.vision.save_face_name(name)
             # self.subtask_manager.hri.say(f"Hello {name}, how can i help you?",wait=True)
             self.current_state = DemoTaskManager.TASK_STATES["RECEIVE_COMMAND"]
@@ -90,12 +89,15 @@ class DemoTaskManager(Node):
         if self.current_state == DemoTaskManager.TASK_STATES["FOLLOW_FACE"]:
             # Follow face task
             Logger.state(self, "Follow face task")
-            if self.subtask_manager.vision.follow_face["y"] is None or self.subtask_manager.vision.follow_face["x"] is None:
+            if (
+                self.subtask_manager.vision.follow_face["y"] is None
+                or self.subtask_manager.vision.follow_face["x"] is None
+            ):
                 pass
             else:
-                x = self.subtask_manager.vision.follow_face["x"] 
+                x = self.subtask_manager.vision.follow_face["x"]
                 y = self.subtask_manager.vision.follow_face["y"]
-                print( f"x and y {x} {y}")
+                print(f"x and y {x} {y}")
                 # new_x = min(
                 #     max(x * self.x_delta_multiplier + self.current_x, self.min_x), self.max_x
                 # )
@@ -104,13 +106,11 @@ class DemoTaskManager(Node):
                 #     max(y * self.y_delta_multiplier + self.current_y, self.min_y), self.max_y
                 # )
 
-                #if new_x != self.current_x or new_y != self.current_y:
-                if  x > 0.09 or x < -0.09:    
+                # if new_x != self.current_x or new_y != self.current_y:
+                if x > 0.09 or x < -0.09:
                     self.subtask_manager.manipulation.move_to(x, y)
                 else:
                     self.subtask_manager.manipulation.move_to(0.0, 0.0)
-
-
 
 
 def main(args=None):
