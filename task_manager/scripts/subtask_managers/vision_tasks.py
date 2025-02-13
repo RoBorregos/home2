@@ -7,14 +7,11 @@ commands.
 """
 
 import rclpy
-from rclpy.node import Node
-from rclpy.action import ActionClient
-
-from frida_interfaces.srv import SaveName
-from frida_interfaces.srv import FindSeat
-from geometry_msgs.msg import Point
 from frida_interfaces.action import DetectPerson
-
+from frida_interfaces.srv import FindSeat, SaveName
+from geometry_msgs.msg import Point
+from rclpy.action import ActionClient
+from rclpy.node import Node
 from utils.decorators import mockable, service_check
 from utils.logger import Logger
 
@@ -44,7 +41,7 @@ class VisionTasks:
         ],
         "DEMO": [
             SERVICES["detect_person"],
-        ]
+        ],
     }
 
     def __init__(self, task_manager, task, mock_data=False) -> None:
