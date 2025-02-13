@@ -41,6 +41,9 @@ class VisionTasks:
             SERVICES["detect_person"],
             SERVICES["find_seat"],
             SERVICES["save_face_name"],
+        ],
+        "DEMO": [
+            SERVICES["detect_person"],
         ]
     }
 
