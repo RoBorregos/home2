@@ -36,7 +36,7 @@ PERSON_NAME_TOPIC = "/vision/person_detected_name"
 DEFAULT_NAME = "ale"
 TRACK_THRESHOLD = 50
 MATCH_THRESHOLD = 0.5
-MAX_DEGREE = 90
+MAX_DEGREE = 1
 
 PATH = str(pathlib.Path(__file__).parent)
 PATH = get_package_share_directory("vision_general")
@@ -183,6 +183,8 @@ class FaceRecognition(Node):
 
         target = Point()
 
+        # normalized_x = move_x / MAX_DEGREE
+        # normalized_y = move_y / MAX_DEGREE
         target.x = move_x
         target.y = move_y
 
