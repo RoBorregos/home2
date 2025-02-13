@@ -89,7 +89,7 @@ class VisionTasks:
 
     def follow_callback(self, msg: Point):
         """Callback for the face following subscriber"""
-        if(msg.x == 10000000000.0):
+        if msg.x == 10000000000.0:
             self.follow_face["x"] = None
             self.follow_face["y"] = None
         else:

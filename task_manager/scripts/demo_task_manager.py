@@ -55,7 +55,6 @@ class DemoTaskManager(Node):
         self.subtask_manager.manipulation.activate_arm()
 
         self.current_state = DemoTaskManager.TASK_STATES["FOLLOW_FACE"]
-        
 
         self.get_logger().info("DemoTaskManager has started.")
         self.create_timer(0.1, self.run)
@@ -91,25 +90,32 @@ class DemoTaskManager(Node):
             # Follow face task
             Logger.state(self, "Follow face task")
 # <<<<<<< hri_manager
-#             if self.subtask_manager.vision.follow_face is None:
-#                 pass
-#             x, y = self.subtask_manager.vision.follow_face
-#             new_x = min(max(x * self.x_delta_multiplier + self.current_x, self.min_x), self.max_x)
+# # <<<<<<< hri_manager
+# #             if self.subtask_manager.vision.follow_face is None:
+# #                 pass
+# #             x, y = self.subtask_manager.vision.follow_face
+# #             new_x = min(max(x * self.x_delta_multiplier + self.current_x, self.min_x), self.max_x)
 
-#             new_y = min(max(y * self.y_delta_multiplier + self.current_y, self.min_y), self.max_y)
+# #             new_y = min(max(y * self.y_delta_multiplier + self.current_y, self.min_y), self.max_y)
 
-#             if new_x != self.current_x or new_y != self.current_y:
-#                 self.subtask_manager.manipulation.move_to(new_x, new_y)
+# #             if new_x != self.current_x or new_y != self.current_y:
+# #                 self.subtask_manager.manipulation.move_to(new_x, new_y)
 
-#             if self.subtask_manager.hri.keyword() == "frida":
-#                 self.current_state = DemoTaskManager.TASK_STATES["INTRODUCTION"]
+# #             if self.subtask_manager.hri.keyword() == "frida":
+# #                 self.current_state = DemoTaskManager.TASK_STATES["INTRODUCTION"]
+# # =======
+#             if self.subtask_manager.vision.follow_face["y"] is None or self.subtask_manager.vision.follow_face["x"] is None:
 # =======
-            if self.subtask_manager.vision.follow_face["y"] is None or self.subtask_manager.vision.follow_face["x"] is None:
+            if (
+                self.subtask_manager.vision.follow_face["y"] is None
+                or self.subtask_manager.vision.follow_face["x"] is None
+            ):
+
                 pass
             else:
-                x = self.subtask_manager.vision.follow_face["x"] 
+                x = self.subtask_manager.vision.follow_face["x"]
                 y = self.subtask_manager.vision.follow_face["y"]
-                print( f"x and y {x} {y}")
+                print(f"x and y {x} {y}")
                 # new_x = min(
                 #     max(x * self.x_delta_multiplier + self.current_x, self.min_x), self.max_x
                 # )
@@ -118,8 +124,8 @@ class DemoTaskManager(Node):
                 #     max(y * self.y_delta_multiplier + self.current_y, self.min_y), self.max_y
                 # )
 
-                #if new_x != self.current_x or new_y != self.current_y:
-                if  x > 0.09 or x < -0.09:    
+                # if new_x != self.current_x or new_y != self.current_y:
+                if x > 0.09 or x < -0.09:
                     self.subtask_manager.manipulation.move_to(x, y)
                 else:
                     self.subtask_manager.manipulation.move_to(0.0, 0.0)

@@ -10,7 +10,7 @@ import rclpy
 from rclpy.node import Node
 from utils.logger import Logger
 from xarm_msgs.srv import SetInt16, SetInt16ById, MoveVelocity
-import time as t
+# import time as t
 
 XARM_ENABLE_SERVICE = "/xarm/motion_enable"
 XARM_SETMODE_SERVICE = "/xarm/set_mode"
@@ -74,36 +74,33 @@ class ManipulationTasks:
             if not self.move_client.wait_for_service(timeout_sec=TIMEOUT):
                 Logger.warn(self.node, "Move client not initialized")
 
-  
-
     def activate_arm(self):
         """Activate arm"""
 
-        Logger.info(self.node, f"Activating arm")
-        #Set motion
+        Logger.info(self.node, "Activating arm")
+        # Set motion
         motion_request = SetInt16ById.Request()
         motion_request.id = 8
         motion_request.data = 1
         # Set state
         state_request = SetInt16.Request()
-        state_request.data = 0    
+        state_request.data = 0
         # Set mode
         mode_request = SetInt16.Request()
         mode_request.data = 4
-
 
         try:
             future_motion = self.motion_enable_client.call_async(motion_request)
             rclpy.spin_until_future_complete(self.node, future_motion, timeout_sec=TIMEOUT)
 
             future_mode = self.mode_client.call_async(mode_request)
-            rclpy.spin_until_future_complete(self.node, future_mode, timeout_sec=TIMEOUT) # Fire-and-forget
-            
+            rclpy.spin_until_future_complete(
+                self.node, future_mode, timeout_sec=TIMEOUT
+            )  # Fire-and-forget
+
             # result = future.result()
             future_state = self.state_client.call_async(state_request)
             rclpy.spin_until_future_complete(self.node, future_state, timeout_sec=TIMEOUT)
-            
-            
 
             # if not result.success:
             #     raise Exception("Service call failed")
@@ -112,14 +109,14 @@ class ManipulationTasks:
             Logger.error(self.node, f"Error Activating arm: {e}")
             return self.STATE["EXECUTION_ERROR"]
 
-        Logger.success(self.node, f"Arm Activated!")
+        Logger.success(self.node, "Arm Activated!")
         return self.STATE["EXECUTION_SUCCESS"]
 
     def desactivate_arm(self):
         """Desactivate arm"""
 
-        Logger.info(self.node, f"Desactivating arm")
-        #Set motion
+        Logger.info(self.node, "Desactivating arm")
+        # Set motion
         motion_request = SetInt16ById.Request()
         motion_request.id = 8
         motion_request.data = 0
@@ -135,18 +132,18 @@ class ManipulationTasks:
             Logger.error(self.node, f"Error desactivating arm: {e}")
             return self.STATE["EXECUTION_ERROR"]
 
-        Logger.success(self.node, f"Arm Desactivated!")
+        Logger.success(self.node, "Arm Desactivated!")
         return self.STATE["EXECUTION_SUCCESS"]
-    
-    def move_to(self,x: float, y: float):
+
+    def move_to(self, x: float, y: float):
         """Desactivate arm"""
 
-        Logger.info(self.node, f"Moving arm")
-        #Set motion
+        Logger.info(self.node, "Moving arm")
+        # Set motion
         x = x * -1
-        if(x > 0.1):
+        if x > 0.1:
             x_vel = 0.1
-        elif(x < -0.1):
+        elif x < -0.1:
             x_vel = -0.1
         else:
             x_vel = x
@@ -166,9 +163,8 @@ class ManipulationTasks:
             Logger.error(self.node, f"Error desactivating arm: {e}")
             return self.STATE["EXECUTION_ERROR"]
 
-        Logger.success(self.node, f"Arm moved")
+        Logger.success(self.node, "Arm moved")
         return self.STATE["EXECUTION_SUCCESS"]
-
 
 
 if __name__ == "__main__":
