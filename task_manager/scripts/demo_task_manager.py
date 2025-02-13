@@ -5,12 +5,10 @@ Task Manager for Demos
 """
 
 import rclpy
-from rclpy.node import Node
 from config.hri.debug import config as test_hri_config
-
-from subtask_managers.vision_tasks import VisionTasks
+from rclpy.node import Node
 from subtask_managers.hri_tasks import HRITasks
-
+from subtask_managers.vision_tasks import VisionTasks
 from utils.logger import Logger
 
 
@@ -74,11 +72,11 @@ class DemoTaskManager(Node):
         if self.current_state == DemoTaskManager.TASK_STATES["INTRODUCTION"]:
             Logger.state(self, "Introduction task")
             # Wait until keyword is said
-            self.subtask_manager.hri.say("Hi, I'm FRIDA, what is your name?",wait=True)
+            self.subtask_manager.hri.say("Hi, I'm FRIDA, what is your name?", wait=True)
             text = self.subtask_manager.hri.hear()
             name = self.subtask_manager.hri.extract_data("name", text)
             self.subtask_manager.vision.save_face_name(name)
-            self.subtask_manager.hri.say(f"Hello {name}, how can i help you?",wait=True)
+            self.subtask_manager.hri.say(f"Hello {name}, how can i help you?", wait=True)
             self.current_state = DemoTaskManager.TASK_STATES["RECEIVE_COMMAND"]
 
         if self.current_state == DemoTaskManager.TASK_STATES["RECEIVE_COMMAND"]:
@@ -92,23 +90,17 @@ class DemoTaskManager(Node):
             # Follow face task
             Logger.state(self, "Follow face task")
             if self.subtask_manager.vision.follow_face is None:
-                continue
+                pass
             x, y = self.subtask_manager.vision.follow_face
-            new_x = min(
-                max(x * self.x_delta_multiplier + self.current_x, self.min_x), self.max_x
-            )
+            new_x = min(max(x * self.x_delta_multiplier + self.current_x, self.min_x), self.max_x)
 
-            new_y = min(
-                max(y * self.y_delta_multiplier + self.current_y, self.min_y), self.max_y
-            )
+            new_y = min(max(y * self.y_delta_multiplier + self.current_y, self.min_y), self.max_y)
 
             if new_x != self.current_x or new_y != self.current_y:
                 self.subtask_manager.manipulation.move_to(new_x, new_y)
 
-            if self.subtask_manager.hri.keyword() = "frida":
+            if self.subtask_manager.hri.keyword() == "frida":
                 self.current_state = DemoTaskManager.TASK_STATES["INTRODUCTION"]
-
-
 
 
 def main(args=None):
