@@ -6,10 +6,10 @@ Task Manager for Demos
 
 import rclpy
 from rclpy.node import Node
-from config.hri.debug import config as test_hri_config
+# from config.hri.debug import config as test_hri_config
 
 from subtask_managers.vision_tasks import VisionTasks
-from subtask_managers.hri_tasks import HRITasks
+# from subtask_managers.hri_tasks import HRITasks
 
 from utils.logger import Logger
 
@@ -17,15 +17,15 @@ from utils.logger import Logger
 class DemoTaskManager(Node):
     """Class to manage demo tasks"""
 
-    TASK_STATES = {"START": 0, "INTRODUCTION": 1, "RECEIVE_COMMAND": 2}
+    TASK_STATES = {"START": 0, "INTRODUCTION": 1, "RECEIVE_COMMAND": 2, "FOLLOW_FACE": 3}
 
     def __init__(self):
         """Initialize the node"""
         super().__init__("demo_task_manager")
         self.subtask_manager = {}
 
-        self.subtask_manager["vision"] = VisionTasks(self, taks="DEMO", mock_data=False)
-        self.subtask_manager["hri"] = HRITasks(self, config=test_hri_config)
+        self.subtask_manager["vision"] = VisionTasks(self, task="RECEPTIONIST", mock_data=False)
+        # self.subtask_manager["hri"] = HRITasks(self, config=test_hri_config)
 
         self.current_state = DemoTaskManager.TASK_STATES["FOLLOW_FACE"]
 
@@ -59,4 +59,22 @@ class DemoTaskManager(Node):
             if self.current_state == DemoTaskManager.TASK_STATES["FOLLOW_FACE"]:
                 # Follow face task
                 Logger.state(self, "Follow face task")
-                x, y = self.subtask_manager["vision"].follow_face()
+                x, y = self.subtask_manager["vision"].get_follow_face()
+
+
+def main(args=None):
+    """Main function to initialize the node and spin it"""
+    rclpy.init(args=args)
+    node = DemoTaskManager()
+
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+
+    node.destroy_node()
+    rclpy.shutdown()
+
+
+if __name__ == "__main__":
+    main()
