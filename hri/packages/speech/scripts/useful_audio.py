@@ -1,22 +1,19 @@
 #!/usr/bin/env python3
 
-import rclpy
-from rclpy.node import Node
-from rclpy.executors import ExternalShutdownException
-
-from frida_interfaces.msg import AudioData
-from std_msgs.msg import Bool, String
-
-from ament_index_python.packages import get_package_share_directory
-
-import webrtcvad
-import pyaudio
 import collections
+import os
 
 import numpy as np
-import os
 import onnxruntime
+import pyaudio
+import rclpy
+import webrtcvad
+from ament_index_python.packages import get_package_share_directory
+from rclpy.executors import ExternalShutdownException
+from rclpy.node import Node
+from std_msgs.msg import Bool, String
 
+from frida_interfaces.msg import AudioData
 
 # Constants
 FORMAT = pyaudio.paInt16  # Audio format (16-bit PCM)
@@ -88,7 +85,9 @@ class UsefulAudio(Node):
             AudioData, "rawAudioChunk", self.callback_raw_audio, 10
         )
         self.create_subscription(Bool, "saying", self.callback_saying, 10)
-        self.create_subscription(Bool, "/keyword_detected", self.callback_keyword, 10)
+        self.create_subscription(
+            String, "/wakeword_detected", self.callback_keyword, 10
+        )
 
         if not self.use_silero_vad:
             self.vad = webrtcvad.Vad()
@@ -221,10 +220,19 @@ class UsefulAudio(Node):
         self.compute_audio_state()
 
     def callback_keyword(self, msg):
-        if self.audio_state == "idle":
-            self.triggered = True
-            self.discard_audio()
-            self.compute_audio_state()
+        self.log("keyword callback activated.")
+        self.triggered = True
+
+        self.discard_audio()
+        self.compute_audio_state()
+
+        # if not self.service_active:
+        #     self.discardAudio()
+        #     self.computeAudioState()
+        # if self.audio_state == "idle":
+        #     self.triggered = True
+        #     self.discard_audio()
+        #     self.compute_audio_state()
 
     def compute_audio_state(self):
         new_state = (

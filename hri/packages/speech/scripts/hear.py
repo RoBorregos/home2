@@ -82,7 +82,7 @@ class HearNode(Node):
         if start_service:
             self.service_text = ""
             detection_publish_topic = (
-                self.declare_parameter("detection_publish_topic", "/keyword_detected")
+                self.declare_parameter("detection_publish_topic", "/wakeword_detected")
                 .get_parameter_value()
                 .string_value
             )
