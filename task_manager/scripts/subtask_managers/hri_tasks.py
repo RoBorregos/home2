@@ -4,17 +4,15 @@
 HRI Subtask manager
 """
 
-from typing import Union
-
 import rclpy
 from frida_constants.hri_constants import (
     ADD_ITEM_SERVICE,
     COMMAND_INTERPRETER_SERVICE,
-    DATA_EXTRACTOR_SERVICE,
+    EXTRACT_DATA_SERVICE,
     GRAMMAR_SERVICE,
-    HEAR_SERVICE,
     QUERY_ITEM_SERVICE,
     SPEAK_SERVICE,
+    STT_SERVICE_NAME,
 )
 from frida_interfaces.srv import (
     STT,
@@ -22,10 +20,12 @@ from frida_interfaces.srv import (
     CommandInterpreter,
     ExtractInfo,
     Grammar,
+    LLMWrapper,
     QueryItem,
     Speak,
 )
 from rclpy.node import Node
+from std_msgs.msg import String
 
 from subtask_managers.subtask_meta import SubtaskMeta
 
@@ -40,10 +40,10 @@ class HRITasks(metaclass=SubtaskMeta):
     # TODO: perform service checks using config.topic_config
     def __init__(self, task_manager, config=None) -> None:
         self.node = task_manager
-
+        self.keyword = ""
         self.speak_service = self.node.create_client(Speak, SPEAK_SERVICE)
-        self.hear_service = self.node.create_client(STT, HEAR_SERVICE)
-        self.extract_data_service = self.node.create_client(ExtractInfo, DATA_EXTRACTOR_SERVICE)
+        self.hear_service = self.node.create_client(STT, STT_SERVICE_NAME)
+        self.extract_data_service = self.node.create_client(ExtractInfo, EXTRACT_DATA_SERVICE)
 
         self.command_interpreter_client = self.node.create_client(
             CommandInterpreter, COMMAND_INTERPRETER_SERVICE
@@ -52,6 +52,10 @@ class HRITasks(metaclass=SubtaskMeta):
 
         self.query_item_client = self.node.create_client(QueryItem, QUERY_ITEM_SERVICE)
         self.add_item_client = self.node.create_client(AddItem, ADD_ITEM_SERVICE)
+        self.llm_wrapper_service = self.node.create_client(LLMWrapper, "/nlp/llm")
+        self.keyword_client = self.node.create_subscription(
+            String, "/wakeword_detected", self._get_keyword, 10
+        )
 
     def say(self, text: str, wait: bool = False) -> None:
         """Method to publish directly text to the speech node"""
@@ -89,6 +93,10 @@ class HRITasks(metaclass=SubtaskMeta):
         rclpy.spin_until_future_complete(self.node, future)
         return future.result().result
 
+    def _get_keyword(self, msg: String) -> None:
+        data = eval(msg.data)
+        self.keyword = data["keyword"]
+
     def hear(self) -> str:
         request = STT.Request()
 
@@ -98,17 +106,11 @@ class HRITasks(metaclass=SubtaskMeta):
 
         return future.result().text_heard
 
-    # TODO
-    def interpret_keyword(self, keyword: Union[list[str], str], timeout: float) -> str:
-        """
-        Interprets the given keyword(s) within a specified timeout period.
-        Args:
-            keyword (Union[list[str], str]): The keyword or list of keywords to interpret.
-            timeout (float): The maximum time allowed for interpretation in seconds.
-        Returns:
-            str: The interpreted result as a string, or an empty string if no result is found within the timeout period.
-        """
-        pass
+    def interpret_keyword(self) -> str:
+        ret = self.keyword
+        # erase keyword after use
+        self.keyword = ""
+        return ret
 
     def refactor_text(self, text: str) -> str:
         request = Grammar.Request(text=text)
@@ -134,9 +136,12 @@ class HRITasks(metaclass=SubtaskMeta):
 
         return future.result().results
 
-    # TODO
     def ask(self, question: str) -> str:
-        pass
+        self.llm_wrapper_service
+        request = LLMWrapper.Request(question=question)
+        future = self.extract_data_client.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+        return future.result().answer
 
     def command_interpreter(self, text: str) -> CommandInterpreter.Response:
         request = CommandInterpreter.Request(text=text)

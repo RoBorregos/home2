@@ -4,8 +4,10 @@
 
 import json
 import os
+from datetime import datetime
 from typing import Optional
 
+import pytz
 import rclpy
 from openai import OpenAI
 from pydantic import BaseModel
@@ -13,12 +15,26 @@ from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from std_msgs.msg import Bool, String
 
-from frida_interfaces.srv import Grammar
+from frida_interfaces.srv import Grammar, LLMWrapper
 
 SPEECH_COMMAND_TOPIC = "/speech/raw_command"
 OUT_COMMAND_TOPIC = "/stop_following"
 
 exit_keys = ["exit", "quit", "stop", "end", "terminate", "finish", "cancel"]
+
+
+CURRENT_CONTEXT = """
+Today is {CURRENT_DATE}.
+Your name is FRIDA (Friendly robotic interactive domestic assistant), a domestic assistant developed by RoBorregos.
+RoBorregos is the representative Robotic team from Tec de Monterrey, Campus Monterrey. It has around 40 members.
+You compete in the Robocup@home competition. Last summer you competed in the Netherlands, at the international competition. Last March you competed in TMR, obtaining 2nd place in Mexico.
+"""
+
+
+def get_context():
+    timezone = pytz.timezone("America/Mexico_City")
+    current_date = datetime.now(timezone).strftime("%Y-%m-%d %H:%M:%S")
+    return CURRENT_CONTEXT.format(CURRENT_DATE=current_date)
 
 
 class ResponseFormat(BaseModel):
@@ -40,6 +56,7 @@ class LLMUtils(Node):
         self.declare_parameter("SPEECH_COMMAND_TOPIC_NAME", SPEECH_COMMAND_TOPIC)
         self.declare_parameter("OUT_COMMAND_TOPIC_NAME", OUT_COMMAND_TOPIC)
         self.declare_parameter("GRAMMAR_SERVICE", "/nlp/grammar")
+        self.declare_parameter("LLM_WRAPPER_SERVICE", "/nlp/llm")
 
         self.declare_parameter("temperature", 0.5)
         base_url = self.get_parameter("base_url").get_parameter_value().string_value
@@ -74,7 +91,13 @@ class LLMUtils(Node):
             self.get_parameter("GRAMMAR_SERVICE").get_parameter_value().string_value
         )
 
+        llm_wrapper_service = (
+            self.get_parameter("LLM_WRAPPER_SERVICE").get_parameter_value().string_value
+        )
+
         self.create_service(Grammar, grammar_service, self.grammar_service)
+
+        self.create_service(LLMWrapper, llm_wrapper_service, self.llm_wrapper_service)
 
         # publisher
         self.publisher = self.create_publisher(Bool, OUT_COMMAND_TOPIC, 10)
@@ -142,6 +165,27 @@ class LLMUtils(Node):
         print("response:", response)
 
         res.corrected_text = response
+
+        return res
+
+    def llm_wrapper_service(self, req, res):
+        response = (
+            self.client.beta.chat.completions.parse(
+                model=self.model,
+                temperature=self.temperature,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": f"You will be presented with some a question. Your task is to answer it to the best of your ability. Here is some related context: {get_context()}",
+                    },
+                    {"role": "user", "content": req.question},
+                ],
+            )
+            .choices[0]
+            .message.content
+        )
+
+        res.answer = response
 
         return res
 
