@@ -5,5 +5,5 @@ services:
       # Dockerfile.ROS is the same for both CPU and GPU
       dockerfile: Dockerfile.ROS
       args:
-        BASE_IMAGE: dustynv/pycuda:r36.2.0
+        BASE_IMAGE: dustynv/l4t-pytorch:r36.4.0
     image: roborregos/home2:l4t_base

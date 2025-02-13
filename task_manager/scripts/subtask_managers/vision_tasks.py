@@ -89,8 +89,12 @@ class VisionTasks:
 
     def follow_callback(self, msg: Point):
         """Callback for the face following subscriber"""
-        self.follow_face["x"] = msg.x
-        self.follow_face["y"] = msg.y
+        if(msg.x == 10000000000.0):
+            self.follow_face["x"] = None
+            self.follow_face["y"] = None
+        else:
+            self.follow_face["x"] = msg.x
+            self.follow_face["y"] = msg.y
 
     @mockable(return_value=100)
     @service_check("save_name_client", -1, TIMEOUT)

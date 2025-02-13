@@ -27,11 +27,12 @@ from frida_interfaces.srv import SaveName
 from frida_interfaces.msg import Person, PersonList
 
 
-CAMERA_TOPIC = "/zed2/zed_node/rgb/image_rect_color"
+CAMERA_TOPIC = "/zed/zed_node/rgb/image_rect_color"
 NEW_NAME_TOPIC = "/vision/new_name"
 FOLLOW_TOPIC = "/vision/follow_face"
 PERSON_LIST_TOPIC = "/vision/person_list"
 PERSON_NAME_TOPIC = "/vision/person_detected_name"
+VISION_FRAME_TOPIC = "/vision/person_frame"
 
 DEFAULT_NAME = "ale"
 TRACK_THRESHOLD = 50
@@ -56,6 +57,7 @@ class FaceRecognition(Node):
             SaveName, NEW_NAME_TOPIC, self.new_name_callback
         )
         self.follow_publisher = self.create_publisher(Point, FOLLOW_TOPIC, 10)
+        self.view_pub = self.create_publisher(Image, VISION_FRAME_TOPIC, 10)
         self.name_publisher = self.create_publisher(String, PERSON_NAME_TOPIC, 10)
         self.person_list_publisher = self.create_publisher(
             PersonList, PERSON_LIST_TOPIC, 10
@@ -336,10 +338,16 @@ class FaceRecognition(Node):
         # Calculate the joint degrees for the arm to follow the face
         if detected:
             self.publish_follow_face(xc, yc, largest_face_name)
+        else:
+            target = Point()
+            target.x = 10000000000.0
+            target.y = 10000000000.0
 
-        cv2.imshow("Face detection", annotated_frame)
+            self.follow_publisher.publish(target)
+
+        # cv2.imshow("Face detection", annotated_frame)
         self.image_view = annotated_frame
-        # self.view_pub.publish(self.bridge.cv2_to_imgmsg(annotated_frame, "bgr8"))
+        self.view_pub.publish(self.bridge.cv2_to_imgmsg(annotated_frame, "bgr8"))
 
         if cv2.waitKey(1) & 0xFF == ord("q"):
             self.prev_faces = []

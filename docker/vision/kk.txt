@@ -18,7 +18,7 @@ services:
     # devices:
     environment:
       DISPLAY: ${DISPLAY}
-      TERM: xterm-256color
+      # TERM: xterm-256color
     tty: true
     # stdin_open: true    
     working_dir: /workspace
