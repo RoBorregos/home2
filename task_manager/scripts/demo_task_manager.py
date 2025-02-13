@@ -13,14 +13,11 @@ from subtask_managers.hri_tasks import HRITasks
 
 from utils.logger import Logger
 
+
 class DemoTaskManager(Node):
     """Class to manage demo tasks"""
 
-    TASK_STATES = {
-        "START": 0,
-        "INTRODUCTION": 1,
-        "RECEIVE_COMMAND": 2
-    }
+    TASK_STATES = {"START": 0, "INTRODUCTION": 1, "RECEIVE_COMMAND": 2}
 
     def __init__(self):
         """Initialize the node"""
@@ -31,18 +28,19 @@ class DemoTaskManager(Node):
         self.subtask_manager["hri"] = HRITasks(self, config=test_hri_config)
 
         self.current_state = DemoTaskManager.TASK_STATES["START"]
-        
+
         self.get_logger().info("DemoTaskManager has started.")
         self.run()
 
-    
     def run(self):
         """Running main loop"""
 
         while rclpy.ok():
             if self.current_state == DemoTaskManager.TASK_STATES["START"]:
                 Logger.state(self, "Starting task")
-                self.subtask_manager["hri"].say("Hi, I'm FRIDA, a service robot designed by RoBorregos. I can do several requests, just say my name to chat.")
+                self.subtask_manager["hri"].say(
+                    "Hi, I'm FRIDA, a service robot designed by RoBorregos. I can do several requests, just say my name to chat."
+                )
                 self.current_state = DemoTaskManager.TASK_STATES["INTRODUCTION"]
 
             if self.current_state == DemoTaskManager.TASK_STATES["INTRODUCTION"]:
@@ -57,3 +55,8 @@ class DemoTaskManager(Node):
             if self.current_state == DemoTaskManager.TASK_STATES["RECEIVE_COMMAND"]:
                 # Do sth to receive and parse basic commands (go to, pick, place)
                 Logger.state(self, "Receive command task")
+
+            if self.current_state == DemoTaskManager.TASK_STATES["FOLLOW_FACE"]:
+                # Follow face task
+                Logger.state(self, "Follow face task")
+                x, y = self.subtask_manager["vision"].follow_face()

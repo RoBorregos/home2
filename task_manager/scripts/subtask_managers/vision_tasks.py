@@ -12,6 +12,7 @@ from rclpy.action import ActionClient
 
 from frida_interfaces.srv import SaveName
 from frida_interfaces.srv import FindSeat
+from geometry_msgs.msg import Point
 from frida_interfaces.action import DetectPerson
 
 from utils.decorators import mockable, service_check
@@ -20,6 +21,7 @@ from utils.logger import Logger
 SAVE_NAME_TOPIC = "/vision/new_name"
 FIND_SEAT_TOPIC = "/vision/find_seat"
 DETECT_PERSON_TOPIC = "/vision/detect_person"
+FOLLOW_TOPIC = "/vision/follow_face"
 
 TIMEOUT = 5.0
 
@@ -47,9 +49,10 @@ class VisionTasks:
         self.node = task_manager
         self.mock_data = mock_data
         self.task = task
+        self.follow_face = None
 
         self.face_subscriber = self.node.create_subscription(
-            
+            Point, FOLLOW_TOPIC, self.follow_callback, 10
         )
         self.save_name_client = self.node.create_client(SaveName, SAVE_NAME_TOPIC)
         self.find_seat_client = self.node.create_client(FindSeat, FIND_SEAT_TOPIC)
@@ -83,6 +86,11 @@ class VisionTasks:
                     self.node,
                     "Detect person action server not initialized. (face_recognition)",
                 )
+
+    def follow_callback(self, msg):
+        """Callback for the face following subscriber"""
+        Logger.info(self.node, f"Following face at: {msg.x}, {msg.y}")
+        self.follow_face = msg
 
     @mockable(return_value=100)
     @service_check("save_name_client", -1, TIMEOUT)
@@ -163,6 +171,10 @@ class VisionTasks:
         except Exception as e:
             Logger.error(self.node, f"Error detecting person: {e}")
             return self.STATE["EXECUTION_ERROR"]
+
+    def get_follow_face(self):
+        """Get the face to follow"""
+        return self.follow_face.x, self.follow_face.y
 
 
 if __name__ == "__main__":
