@@ -130,9 +130,28 @@ Takes UsefulAudio, performs STT with gRPC servers and publishes it.
 - subscribe -> UsefulAudio
 - publish -> /speech/transcription
 
-## Debug speech
+## Setup speech default sink and source
 
-Sinks (Pulseaudio)
+Sinks and sources are the audio devices that pulseaudio uses to play and record audio. Setting the default sink and source is useful to make sure that the audio is played and recorded from the correct device.
+
+```bash 
+# Set default sink
+nano ~/.config/pulse/default.pa
+# Add the following line
+
+# Respeaker 4 mic array
+set-default-source alsa_input.usb-SEEED_ReSpeaker_4_Mic_Array__UAC1.0_-00.multichannel-input
+
+# Frida's speaker
+set-default-sink alsa_output.usb-GeneralPlus_USB_Audio_Device-00.analog-stereo
+
+# Restart pulseaudio (add to .bashrc)
+pulseaudio -k && pulseaudio --start
+```
+
+### Debug speech devices
+
+Sinks (Speakers)
 
 ```bash
 # See default sink
@@ -143,14 +162,14 @@ pactl set-default-sink <index>
 pactl list short sinks
 ```
 
-Sources (Pulseaudio)
+Sources (Microphones)
 
 ```bash
-# See default sink
+# See default source
 pactl info | grep "Default Source"
-# Set default sink
+# Set default source
 pactl set-default-source <index>
-# List all sinks
+# List all source
 pactl list short sources
 ```
 
