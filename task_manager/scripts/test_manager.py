@@ -55,9 +55,7 @@ class TestTaskManager(Node):
         # Previous line doesn't return
         self.get_logger().info(f"location_hint: {location_hint}")
 
-        closest_found = self.subtask_manager["hri"].find_closest(
-            location_hint, "locations"
-        )
+        closest_found = self.subtask_manager["hri"].find_closest(location_hint, "locations")
 
         self.subtask_manager["hri"].say(f"Got it, I will go to {closest_found}!")
 
