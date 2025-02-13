@@ -48,6 +48,9 @@ class VisionTasks:
         self.mock_data = mock_data
         self.task = task
 
+        self.face_subscriber = self.node.create_subscription(
+            
+        )
         self.save_name_client = self.node.create_client(SaveName, SAVE_NAME_TOPIC)
         self.find_seat_client = self.node.create_client(FindSeat, FIND_SEAT_TOPIC)
         self.detect_person_action_client = ActionClient(
