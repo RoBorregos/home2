@@ -10,13 +10,21 @@ from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from speech.speech_api_utils import SpeechApiUtils
 from speech.wav_utils import WavUtils
-from std_msgs.msg import Bool, String
+from std_msgs.msg import Bool
 
 from frida_constants.hri_constants import SPEAK_SERVICE
 from frida_interfaces.srv import Speak
 
 CURRENT_FILE_PATH = os.path.abspath(__file__)
-VOICE_DIRECTORY = os.path.join(os.path.dirname(CURRENT_FILE_PATH), "offline_voice")
+
+FILE_DIR = CURRENT_FILE_PATH[: CURRENT_FILE_PATH.index("install")]
+ASSETS_DIR = os.path.join(
+    FILE_DIR, "src", "hri", "packages", "speech", "assets", "downloads"
+)
+
+VOICE_DIRECTORY = os.path.join(ASSETS_DIR, "offline_voice")
+
+os.makedirs(VOICE_DIRECTORY, exist_ok=True)
 
 
 class Say(Node):
@@ -28,7 +36,6 @@ class Say(Node):
         self.declare_parameter("speaking_topic", "/saying")
 
         self.declare_parameter("SPEAK_SERVICE", SPEAK_SERVICE)
-        self.declare_parameter("speak_topic", "/speech/speak_now")
         self.declare_parameter("model", "en_US-amy-medium")
         self.declare_parameter("offline", True)
 
@@ -57,9 +64,7 @@ class Say(Node):
         speak_service = (
             self.get_parameter("SPEAK_SERVICE").get_parameter_value().string_value
         )
-        speak_topic = (
-            self.get_parameter("speak_topic").get_parameter_value().string_value
-        )
+
         speaking_topic = (
             self.get_parameter("speaking_topic").get_parameter_value().string_value
         )
@@ -71,20 +76,20 @@ class Say(Node):
             self.connected = SpeechApiUtils.is_connected()
 
         self.create_service(Speak, speak_service, self.speak_service)
-        self.create_subscription(String, speak_topic, self.speak_topic, 10)
         self.publisher_ = self.create_publisher(Bool, speaking_topic, 10)
 
         self.get_logger().info("Say node initialized.")
 
-    def speak_service(self, req):
-        """When say is called as a service. Caller awaits for the response."""
+    def speak_service(self, req, res):
         self.get_logger().debug("[Service] I will say: " + req.text)
-        return self.say(req.text)
+        if req.text:
+            self.say(req.text)
+            res.success = True
+        else:
+            res.success = False
+            self.get_logger().info("[Service] Nothing to say.")
 
-    def speak_topic(self, msg):
-        """When say is called as a topic. Caller doesn't wait for response."""
-        self.get_logger().debug("[Topic] I will say: " + msg.data)
-        self.say(msg.data)
+        return res
 
     def say(self, text):
         self.publisher_.publish(Bool(data=True))

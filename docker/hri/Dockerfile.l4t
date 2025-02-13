@@ -26,5 +26,7 @@ RUN sudo usermod -aG audio ros
 RUN sudo chown -R ros /usr/lib/python3.10/
 RUN sudo chown -R ros /usr/local/lib/python3.10/
 
-# RUN apt install -y espeak
-# RUN pip install -U openai-whisper
+# Install piper from source 
+RUN git clone https://github.com/rhasspy/piper.git /workspace/piper && \
+  cd /workspace/piper && \
+  make all

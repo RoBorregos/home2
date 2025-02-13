@@ -13,6 +13,10 @@ pygame
 # KWS
 pvporcupine==3.0.2
 pvrecorder==1.2.2
+openwakeword==0.6.0
+
+# KWS with openwakeword
+openwakeword
 
 # Respeaker
 pyusb==1.2.1
