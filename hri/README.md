@@ -68,7 +68,7 @@ ros2 launch speech hri_launch.py
 # Speech (Remember to start the stt docker before, this is done automatically if running the hri docker compose file)
 ros2 launch speech devices_launch.py
 
-ros2 topic pub /speech/speak_now --once std_msgs/msg/String "data: 'Go to the kitchen and grab cookies'"
+ros2 service call /speech/speak frida_interfaces/srv/Speak "{text: \"Go to the kitchen and grab cookies\"}"
 
 # NLP
 ros2 launch nlp nlp_launch.py
