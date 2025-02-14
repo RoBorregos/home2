@@ -5,14 +5,16 @@ Task Manager for Demos
 """
 
 import rclpy
-from config.hri.debug import config as test_hri_config
-from rclpy.node import Node
-from subtask_managers.hri_tasks import HRITasks
-from subtask_managers.vision_tasks import VisionTasks
-from subtask_managers.new_subtask import ManipulationTasks
-# from subtask_managers.hri_tasks import HRITasks
 
+# from config.hri.debug import config as test_hri_config
+from rclpy.node import Node
+from subtask_managers.new_subtask import ManipulationTasks
+
+# from subtask_managers.hri_tasks import HRITasks
+from subtask_managers.vision_tasks import VisionTasks
 from utils.logger import Logger
+
+# from subtask_managers.hri_tasks import HRITasks
 
 
 class subtask_manager:
@@ -89,28 +91,27 @@ class DemoTaskManager(Node):
         if self.current_state == DemoTaskManager.TASK_STATES["FOLLOW_FACE"]:
             # Follow face task
             Logger.state(self, "Follow face task")
-# <<<<<<< hri_manager
-# # <<<<<<< hri_manager
-# #             if self.subtask_manager.vision.follow_face is None:
-# #                 pass
-# #             x, y = self.subtask_manager.vision.follow_face
-# #             new_x = min(max(x * self.x_delta_multiplier + self.current_x, self.min_x), self.max_x)
+            # <<<<<<< hri_manager
+            # # <<<<<<< hri_manager
+            # #             if self.subtask_manager.vision.follow_face is None:
+            # #                 pass
+            # #             x, y = self.subtask_manager.vision.follow_face
+            # #             new_x = min(max(x * self.x_delta_multiplier + self.current_x, self.min_x), self.max_x)
 
-# #             new_y = min(max(y * self.y_delta_multiplier + self.current_y, self.min_y), self.max_y)
+            # #             new_y = min(max(y * self.y_delta_multiplier + self.current_y, self.min_y), self.max_y)
 
-# #             if new_x != self.current_x or new_y != self.current_y:
-# #                 self.subtask_manager.manipulation.move_to(new_x, new_y)
+            # #             if new_x != self.current_x or new_y != self.current_y:
+            # #                 self.subtask_manager.manipulation.move_to(new_x, new_y)
 
-# #             if self.subtask_manager.hri.keyword() == "frida":
-# #                 self.current_state = DemoTaskManager.TASK_STATES["INTRODUCTION"]
-# # =======
-#             if self.subtask_manager.vision.follow_face["y"] is None or self.subtask_manager.vision.follow_face["x"] is None:
-# =======
+            # #             if self.subtask_manager.hri.keyword() == "frida":
+            # #                 self.current_state = DemoTaskManager.TASK_STATES["INTRODUCTION"]
+            # # =======
+            #             if self.subtask_manager.vision.follow_face["y"] is None or self.subtask_manager.vision.follow_face["x"] is None:
+            # =======
             if (
                 self.subtask_manager.vision.follow_face["y"] is None
                 or self.subtask_manager.vision.follow_face["x"] is None
             ):
-
                 pass
             else:
                 x = self.subtask_manager.vision.follow_face["x"]

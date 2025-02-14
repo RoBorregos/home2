@@ -7,12 +7,12 @@ commands.
 """
 
 import rclpy
-from rclpy.node import Node
-from utils.logger import Logger
-from xarm_msgs.srv import MoveVelocity
-from rclpy.action import ActionServer
 from frida_interfaces.action import Xarm_move
+from rclpy.action import ActionServer
+from rclpy.node import Node
 
+# from utils.logger import Logger
+from xarm_msgs.srv import MoveVelocity
 
 XARM_MOVEVELOCITY_SERVICE = "/xarm/vc_set_joint_velocity"
 
