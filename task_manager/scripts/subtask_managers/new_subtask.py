@@ -7,15 +7,16 @@ commands.
 """
 
 import rclpy
+from frida_interfaces.action import Xarm_move
+from rclpy.action import ActionClient
 from rclpy.node import Node
 from utils.logger import Logger
-from xarm_msgs.srv import SetInt16, SetInt16ById, MoveVelocity
-# import time as t
+from xarm_msgs.srv import SetInt16, SetInt16ById
 
 XARM_ENABLE_SERVICE = "/xarm/motion_enable"
 XARM_SETMODE_SERVICE = "/xarm/set_mode"
 XARM_SETSTATE_SERVICE = "/xarm/set_state"
-XARM_MOVEVELOCITY_SERVICE = "/xarm/vc_set_joint_velocity"
+
 
 TIMEOUT = 5.0
 
@@ -47,7 +48,7 @@ class ManipulationTasks:
         self.motion_enable_client = self.node.create_client(SetInt16ById, XARM_ENABLE_SERVICE)
         self.mode_client = self.node.create_client(SetInt16, XARM_SETMODE_SERVICE)
         self.state_client = self.node.create_client(SetInt16, XARM_SETSTATE_SERVICE)
-        self.move_client = self.node.create_client(MoveVelocity, XARM_MOVEVELOCITY_SERVICE)
+        self.move_client = ActionClient(self, Xarm_move, "xarm_move_actions")
 
         if not self.mock_data:
             self.setup_services()
@@ -71,7 +72,7 @@ class ManipulationTasks:
                 Logger.warn(self.node, "Motiion enable client not initialized")
 
         if ManipulationTasks.SERVICES["move_arm"] in ManipulationTasks.SUBTASKS[self.task]:
-            if not self.move_client.wait_for_service(timeout_sec=TIMEOUT):
+            if not self.move_client.wait_for_server(timeout_sec=TIMEOUT):
                 Logger.warn(self.node, "Move client not initialized")
 
     def activate_arm(self):
@@ -148,14 +149,12 @@ class ManipulationTasks:
         else:
             x_vel = x
 
-        motion_msg = MoveVelocity.Request()
-        motion_msg.is_sync = True
+        motion_msg = Xarm_move.Goal()
         motion_msg.speeds = [x_vel, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
         try:
             print(f"mock moving to {x} {y}")
-            future_move = self.move_client.call_async(motion_msg)
-            rclpy.spin_until_future_complete(self.node, future_move, timeout_sec=TIMEOUT)
+            self.move_client.send_goal_async(motion_msg)
             # if not result.success:
             #     raise Exception("Service call failed")
 
