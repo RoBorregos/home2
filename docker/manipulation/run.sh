@@ -70,6 +70,7 @@ case $ENV_TYPE in
     check_image_exists "$CPU_IMAGE" || [ $rebuild -eq 1 ]
     if [ $? -eq 1 ]; then
         docker compose -f ../cpu.yaml build --build-arg "USER_UID=$(id -u)" --build-arg "USER_GID=$(id -g)"
+        rebuild=1
     fi
     ;;
   "cuda")
@@ -82,6 +83,7 @@ case $ENV_TYPE in
     check_image_exists "$CUDA_IMAGE" || [ $rebuild -eq 1 ]
     if [ $? -eq 1 ]; then
         docker compose -f ../cuda.yaml build --build-arg "USER_UID=$(id -u)" --build-arg "USER_GID=$(id -g)"
+        rebuild=1
     fi
 
     ;;
@@ -117,6 +119,15 @@ fi
 RUNNING_CONTAINER=$(docker ps -q -f "name=$CONTAINER_NAME")
 
 xhost +
+
+# if rebuild, run ./prebuild.sh
+if [ $rebuild -eq 1 ]; then
+    # Rebuild modifies lines on mounted files, so this is done after the container is started
+    # TODO: Is there a better way to do this?
+    echo "Running prebuild script..."
+    docker exec -it $CONTAINER_NAME /bin/bash -c "./src/home2/prebuild.sh"
+fi
+
 if [ -n "$RUNNING_CONTAINER" ]; then
     echo "Container $CONTAINER_NAME is already running. Executing bash..."
     docker exec -it $CONTAINER_NAME /bin/bash
