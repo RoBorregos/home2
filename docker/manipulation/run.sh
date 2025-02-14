@@ -59,6 +59,7 @@ echo "Detected environment: $ENV_TYPE"
 USER_UID=$(id -u)
 USER_GID=$(id -g)
 echo "USER_UID=$USER_UID, USER_GID=$USER_GID"
+
 case $ENV_TYPE in
   "cpu")
     #_____CPU_____
@@ -87,7 +88,7 @@ case $ENV_TYPE in
     fi
 
     ;;
-  "jetson")
+    "jetson")
     #_____Jetson_____
     echo "DOCKERFILE=docker/manipulation/Dockerfile.jetson" >> .env
     echo "BASE_IMAGE=roborregos/home2:jetson_base" >> .env
@@ -112,7 +113,13 @@ xhost +
 EXISTING_CONTAINER=$(docker ps -a -q -f "name=$CONTAINER_NAME")
 if [ -z "$EXISTING_CONTAINER" ]; then
     echo "No container with the name $CONTAINER_NAME exists. Building and starting the container now..."
-    docker compose -f docker-compose-cuda.yaml up --build -d
+    if [ $ENV_TYPE == "cpu" ]; then
+        docker compose -f docker-compose-cpu.yaml up --build -d
+    elif [ $ENV_TYPE == "cuda" ]; then
+        docker compose -f docker-compose-cuda.yaml up --build -d
+    elif [ $ENV_TYPE == "jetson" ]; then
+        docker compose -f docker-compose-jetson.yaml up --build -d
+    fi
     echo "Running prebuild script..."
     docker exec -it $CONTAINER_NAME /bin/bash -c "./src/home2/prebuild.sh"
 fi
