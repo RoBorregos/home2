@@ -107,26 +107,18 @@ export LOCAL_USER_ID=$(id -u)
 export LOCAL_GROUP_ID=$(id -g)
 
 #_________________________RUN_________________________
-
+xhost +
 # Check if the container exists
 EXISTING_CONTAINER=$(docker ps -a -q -f "name=$CONTAINER_NAME")
 if [ -z "$EXISTING_CONTAINER" ]; then
     echo "No container with the name $CONTAINER_NAME exists. Building and starting the container now..."
-    docker compose up --build -d
+    docker compose -f docker-compose-cuda.yaml up --build -d
+    echo "Running prebuild script..."
+    docker exec -it $CONTAINER_NAME /bin/bash -c "./src/home2/prebuild.sh"
 fi
 
 # Check if the container is running
 RUNNING_CONTAINER=$(docker ps -q -f "name=$CONTAINER_NAME")
-
-xhost +
-
-# if rebuild, run ./prebuild.sh
-if [ $rebuild -eq 1 ]; then
-    # Rebuild modifies lines on mounted files, so this is done after the container is started
-    # TODO: Is there a better way to do this?
-    echo "Running prebuild script..."
-    docker exec -it $CONTAINER_NAME /bin/bash -c "./src/home2/prebuild.sh"
-fi
 
 if [ -n "$RUNNING_CONTAINER" ]; then
     echo "Container $CONTAINER_NAME is already running. Executing bash..."

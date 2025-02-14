@@ -10,7 +10,13 @@ services:
     volumes:
       - ../../:/workspace/src/home2
       - /tmp:/tmp
-    
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     network_mode: host
     user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
     privileged: true
