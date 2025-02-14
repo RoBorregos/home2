@@ -25,6 +25,7 @@ home2
 - Docker Engine
 - Nvidia Container Toolkit (for CUDA enabled images)
 
+### Building the image and container
 To make a container and open a shell for developing or testing the vision package, use the script `docker/manipulation/run.sh`. This can be accessed from the general script `./run.sh` in the root directory by passing the argument manipulation. This will first build the base image according to your system (cpu only or cuda enabled) as well as the full manipulation image and container.
 
 *Note: Please report any issues to A00833160@tec.mx*
@@ -41,7 +42,7 @@ cd home2
 ./run manipulation
 ```
 
-This will install ROS2 dependencies and mount your cloned repository for easy access to the code. Inside the container, you can run the following commands to build the project:
+This will install ROS2 dependencies and mount your cloned repository for easy access to the code. Inside the container, you can run the command to build the project. It is recommended to run this on `/workspace` to avoid issues and keep build files inside container:
 
 ```bash
 colcon build --symlink-install
