@@ -24,7 +24,7 @@ install(PROGRAMS
     ${EXAMPLES_DIR}/ex_gripper.py
     # ${EXAMPLES_DIR}/ex_ik.py
     # ${EXAMPLES_DIR}/ex_orientation_path_constraint.py
-    # ${EXAMPLES_DIR}/ex_pose_goal.py
+    ${EXAMPLES_DIR}/ex_pose_goal.py
     # ${EXAMPLES_DIR}/ex_servo.py
     DESTINATION lib/${PROJECT_NAME}
 )
