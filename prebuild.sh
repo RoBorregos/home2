@@ -57,7 +57,7 @@ rosdep install --from-paths . --ignore-src --skip-keys gpd
 GPD_DIR=$SCRIPT_DIR/manipulation/packages/gpd
 
 if [ ! -d "$GPD_DIR" ]; then
-    echo "Error: gdp does not exist"
+    echo "Error: GPD does not exist"
     git submodule update --init --recursive
     
 fi
