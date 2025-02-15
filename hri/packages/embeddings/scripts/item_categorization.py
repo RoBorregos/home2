@@ -36,7 +36,7 @@ class Embeddings(Node):
         model_name_ = (
             self.get_parameter("Embeddings_model").get_parameter_value().string_value
         )
-
+        """
         add_item_service = (
             self.get_parameter("ADD_ITEM_SERVICE").get_parameter_value().string_value
         )
@@ -49,6 +49,7 @@ class Embeddings(Node):
         query_item_service = (
             self.get_parameter("QUERY_ITEM_SERVICE").get_parameter_value().string_value
         )
+        """
         build_embeddings_service = (
             self.get_parameter("BUILD_EMBEDDINGS_SERVICE")
             .get_parameter_value()
@@ -74,18 +75,32 @@ class Embeddings(Node):
         self.check_and_update_collections()
 
         # Initialize services
+        # self.add_item_service = self.create_service(
+        #    AddItem, add_item_service, self.add_item_callback
+        # )
         self.add_item_service = self.create_service(
-            AddItem, add_item_service, self.add_item_callback
+            AddItem, "add_item", self.add_item_callback
         )
+        # self.remove_item_service = self.create_service(
+        #    RemoveItem, remove_item_service, self.remove_item_callback
+        # )
         self.remove_item_service = self.create_service(
-            RemoveItem, remove_item_service, self.remove_item_callback
+            RemoveItem, "remove_item", self.remove_item_callback
         )
+        # self.update_item_service = self.create_service(
+        #    UpdateItem, update_item_service, self.update_item_callback
+        # )
         self.update_item_service = self.create_service(
-            UpdateItem, update_item_service, self.update_item_callback
+            UpdateItem, "update_item", self.update_item_callback
         )
+
+        # self.query_item_service = self.create_service(
+        #    QueryItem, query_item_service, self.query_item_callback
+        # )
         self.query_item_service = self.create_service(
-            QueryItem, query_item_service, self.query_item_callback
+            QueryItem, "query_item", self.query_item_callback
         )
+
         self.get_logger().info("item_categorization initialized.")
 
     def check_and_update_collections(self):
