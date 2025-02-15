@@ -19,11 +19,11 @@ def joint_names(prefix: str = "") -> List[str]:
 
 
 def base_link_name(prefix: str = "") -> str:
-    return prefix + "link0"
+    return prefix + "link_base"
 
 
 def end_effector_name(prefix: str = "") -> str:
-    return prefix + "hand_tcp"
+    return prefix + "link_eef"
 
 
 def gripper_joint_names(prefix: str = "") -> List[str]:
