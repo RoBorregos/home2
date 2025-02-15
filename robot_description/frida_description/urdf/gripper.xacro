@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-<xacro:property name="mesh_path" value="package://frida_description/urdf/meshes/" />
+<xacro:property name="mesh_path" value="file://$(find frida_description)/urdf/meshes/" />
 
 <xacro:macro name="load_gripper" params="attach_to:='' xyz:='0 0 0' rpy:='0 0 0'">
     <xacro:unless value="${attach_to == ''}">
@@ -88,4 +88,8 @@
   </joint>
 
   </xacro:macro>
+
+  <gazebo reference="gripper">
+    <material>Gazebo/DarkGrey</material>
+  </gazebo>
 </robot>
