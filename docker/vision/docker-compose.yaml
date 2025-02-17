@@ -22,7 +22,8 @@ services:
     tty: true
     # stdin_open: true    
     working_dir: /workspace
-    entrypoint: [ "bash", "-il", "-c"]
-    command: [
-      "colcon build --symlink-install --packages-select task_manager frida_interfaces frida_constants speech nlp embeddings && source ~/.bashrc && bash"
-      ]
+    command: ["/bin/bash", "-i", "-l"]
+    # entrypoint: [ "bash", "-il", "-c"]
+    # command: [
+    #   "colcon build --symlink-install --packages-select task_manager frida_interfaces frida_constants speech nlp embeddings && source ~/.bashrc && bash"
+    #   ]
