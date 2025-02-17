@@ -146,7 +146,7 @@ class VisionTasks:
 
     @mockable(return_value=True, delay=2)
     @service_check("detect_person_action_client", False, TIMEOUT)
-    def detect_person(self) -> bool:
+    def detect_person(self, timeout: float = TIMEOUT) -> int:
         """Returns true when a person is detected"""
 
         Logger.info(self.node, "Waiting for person detection")
@@ -155,7 +155,7 @@ class VisionTasks:
 
         try:
             goal_future = self.detect_person_action_client.send_goal_async(goal)
-            rclpy.spin_until_future_complete(self.node, goal_future, timeout_sec=TIMEOUT)
+            rclpy.spin_until_future_complete(self.node, goal_future, timeout_sec=timeout)
 
             goal_handle = goal_future.result()
 
@@ -163,7 +163,7 @@ class VisionTasks:
                 raise Exception("Goal rejected")
 
             result_future = goal_handle.get_result_async()
-            rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=TIMEOUT)
+            rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=timeout)
             result = result_future.result()
 
             if result and result.result.success:
