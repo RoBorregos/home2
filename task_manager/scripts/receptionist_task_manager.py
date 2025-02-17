@@ -74,24 +74,27 @@ class ReceptionistTM(Node):
         self.subtask_manager.manipulation.move_to_position("navigation")
         self.subtask_manager.nav.navigate_to(location)
 
-    def ensure(self, statement: str) -> bool:
-        """Ensure the name is correct"""
+    def confirm(self, statement: str) -> bool:
+        """Confirm the name is correct"""
         self.subtask_manager.hri.say(f"I heard {statement}, is that correct?")
         response = self.subtask_manager.hri.hear()
         return self.subtask_manager.hri.is_positive(response)
 
     # TODO (@alecoeto): Check default or error return value for hri.hear()
     # TODO (@alecoeto): Check nav positions and manipulation positions
+    # TODO (@alecoeto): Add guest 1 description (4 attributes)
+    # TODO (@alecoeto): Confirm drink and interest
     def run(self):
         """State machine"""
 
         if self.current_state == ReceptionistTM.TASK_STATES["START"]:
             Logger.state(self, "Starting task")
-            self.subtask_manager.hri.say("I am ready to receive guests.")
+            self.subtask_manager.hri.say("I am ready to start my task.")
             self.current_state = ReceptionistTM.TASK_STATES["WAIT_FOR_GUEST"]
 
         if self.current_state == ReceptionistTM.TASK_STATES["WAIT_FOR_GUEST"]:
             Logger.state(self, "Waiting for guest")
+            self.subtask_manager.hri.say("I am ready to receive guests, please open the door.")
             result = self.subtask_manager.vision.detect_person(timeout=5)
             if result == VisionTasks.STATE["EXECUTION_SUCCESS"]:
                 self.subtask_manager.manipulation.move_to_position("gaze")
@@ -112,7 +115,7 @@ class ReceptionistTM(Node):
 
             if self.get_guest().name is not None:
                 Logger.info(self, f"Guest name: {self.get_guest().name}")
-                if self.get_guest().name == f"Guest {self.current_guest}" or self.ensure(
+                if self.get_guest().name == f"Guest {self.current_guest}" or self.confirm(
                     self.get_guest().name
                 ):
                     self.subtask_manager.hri.say(f"Nice to meet you, {self.get_guest().name}.")
@@ -142,7 +145,7 @@ class ReceptionistTM(Node):
         if self.current_state == ReceptionistTM.TASK_STATES["ASK_FOR_DRINK"]:
             Logger.state(self, "Asking for drink")
             self.subtask_manager.manipulation.follow_face(True)
-            self.subtask_manager.hri.say("What would you like to drink?")
+            self.subtask_manager.hri.say("What is your favorite drink?")
             self.get_guest().drink = self.subtask_manager.hri.hear()
             self.current_attempts += 1
             if self.get_guest().drink is not None or self.current_attempts >= ATTEMPT_LIMIT:
