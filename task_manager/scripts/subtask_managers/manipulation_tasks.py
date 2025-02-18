@@ -152,10 +152,8 @@ class ManipulationTasks:
 
         Logger.success(self.node, "Arm moved")
         return self.STATE["EXECUTION_SUCCESS"]
-    
 
-
-## CALLBACKS FOR FORGET SERVICE STATE
+    ## CALLBACKS FOR FORGET SERVICE STATE
     def state_response_callback(self, future):
         """Callback for state service response"""
         try:

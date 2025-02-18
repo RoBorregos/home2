@@ -61,7 +61,6 @@ class DemoTaskManager(Node):
             Logger.state(self, "Starting task")
             self.current_state = DemoTaskManager.TASK_STATES["FOLLOW_FACE"]
 
-
         if self.current_state == DemoTaskManager.TASK_STATES["FOLLOW_FACE"]:
             # Follow face task
             Logger.state(self, "Follow face task")
@@ -75,7 +74,6 @@ class DemoTaskManager(Node):
                 x = self.subtask_manager.vision.follow_face["x"]
                 y = self.subtask_manager.vision.follow_face["y"]
                 print(f"x and y {x} {y}")
-
 
                 if x > 0.09 or x < -0.09:
                     self.subtask_manager.manipulation.move_to(x, y)
