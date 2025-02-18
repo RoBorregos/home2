@@ -62,13 +62,22 @@ if [ ! -d "$GPD_DIR" ]; then
     
 fi
 
-#Preparing gpd
+# Preparing GPD
 if grep -q '^export GPD_INSTALL_DIR=' ~/.bashrc; then
-    echo "GPD INSTALL PATH ALREADY ADDED TO BASHRC"
+    # Update existing entry
+    sed -i 's|^export GPD_INSTALL_DIR=.*|export GPD_INSTALL_DIR='"$LIB_DIR"'|' ~/.bashrc
+    echo "Updated GPD_INSTALL_DIR in ~/.bashrc to: $LIB_DIR"
 else 
+    # Add the entry if it does not exist
     echo "export GPD_INSTALL_DIR=$LIB_DIR" >> ~/.bashrc
+    echo "Added GPD_INSTALL_DIR to ~/.bashrc: $LIB_DIR"
 fi
+
+# Set GPD_INSTALL_DIR for the current session
 export GPD_INSTALL_DIR=$LIB_DIR
+
+# Always echo the value
+echo "GPD_INSTALL_DIR is set to: $GPD_INSTALL_DIR"
 
 cd $GPD_DIR
 mkdir build
