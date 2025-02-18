@@ -1,5 +1,0 @@
-float32[] speeds
----
-bool success
----
-string feedback

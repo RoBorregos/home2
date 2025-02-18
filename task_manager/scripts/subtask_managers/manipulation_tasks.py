@@ -7,16 +7,15 @@ commands.
 """
 
 import rclpy
-from frida_interfaces.action import Xarm_move
-from rclpy.action import ActionClient
 from rclpy.node import Node
 from utils.logger import Logger
-from xarm_msgs.srv import SetInt16, SetInt16ById
+from xarm_msgs.srv import SetInt16, SetInt16ById, MoveVelocity
+# import time as t
 
 XARM_ENABLE_SERVICE = "/xarm/motion_enable"
 XARM_SETMODE_SERVICE = "/xarm/set_mode"
 XARM_SETSTATE_SERVICE = "/xarm/set_state"
-
+XARM_MOVEVELOCITY_SERVICE = "/xarm/vc_set_joint_velocity"
 
 TIMEOUT = 5.0
 
@@ -48,7 +47,7 @@ class ManipulationTasks:
         self.motion_enable_client = self.node.create_client(SetInt16ById, XARM_ENABLE_SERVICE)
         self.mode_client = self.node.create_client(SetInt16, XARM_SETMODE_SERVICE)
         self.state_client = self.node.create_client(SetInt16, XARM_SETSTATE_SERVICE)
-        self.move_client = ActionClient(self, Xarm_move, "xarm_move_actions")
+        self.move_client = self.node.create_client(MoveVelocity, XARM_MOVEVELOCITY_SERVICE)
 
         if not self.mock_data:
             self.setup_services()
@@ -72,7 +71,7 @@ class ManipulationTasks:
                 Logger.warn(self.node, "Motiion enable client not initialized")
 
         if ManipulationTasks.SERVICES["move_arm"] in ManipulationTasks.SUBTASKS[self.task]:
-            if not self.move_client.wait_for_server(timeout_sec=TIMEOUT):
+            if not self.move_client.wait_for_service(timeout_sec=TIMEOUT):
                 Logger.warn(self.node, "Move client not initialized")
 
     def activate_arm(self):
@@ -95,16 +94,10 @@ class ManipulationTasks:
             rclpy.spin_until_future_complete(self.node, future_motion, timeout_sec=TIMEOUT)
 
             future_mode = self.mode_client.call_async(mode_request)
-            rclpy.spin_until_future_complete(
-                self.node, future_mode, timeout_sec=TIMEOUT
-            )  # Fire-and-forget
+            rclpy.spin_until_future_complete(self.node, future_mode, timeout_sec=TIMEOUT)
 
-            # result = future.result()
             future_state = self.state_client.call_async(state_request)
             rclpy.spin_until_future_complete(self.node, future_state, timeout_sec=TIMEOUT)
-
-            # if not result.success:
-            #     raise Exception("Service call failed")
 
         except Exception as e:
             Logger.error(self.node, f"Error Activating arm: {e}")
@@ -126,9 +119,6 @@ class ManipulationTasks:
             future_motion = self.motion_enable_client.call_async(motion_request)
             rclpy.spin_until_future_complete(self.node, future_motion, timeout_sec=TIMEOUT)
 
-            # if not result.success:
-            #     raise Exception("Service call failed")
-
         except Exception as e:
             Logger.error(self.node, f"Error desactivating arm: {e}")
             return self.STATE["EXECUTION_ERROR"]
@@ -137,8 +127,6 @@ class ManipulationTasks:
         return self.STATE["EXECUTION_SUCCESS"]
 
     def move_to(self, x: float, y: float):
-        """Desactivate arm"""
-
         Logger.info(self.node, "Moving arm")
         # Set motion
         x = x * -1
@@ -149,14 +137,14 @@ class ManipulationTasks:
         else:
             x_vel = x
 
-        motion_msg = Xarm_move.Goal()
+        motion_msg = MoveVelocity.Request()
+        motion_msg.is_sync = True
         motion_msg.speeds = [x_vel, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
         try:
             print(f"mock moving to {x} {y}")
-            self.move_client.send_goal_async(motion_msg)
-            # if not result.success:
-            #     raise Exception("Service call failed")
+            future_move = self.move_client.call_async(motion_msg)
+            future_move.add_done_callback(self.state_response_callback)  # Fire-and-forget
 
         except Exception as e:
             Logger.error(self.node, f"Error desactivating arm: {e}")
@@ -164,6 +152,20 @@ class ManipulationTasks:
 
         Logger.success(self.node, "Arm moved")
         return self.STATE["EXECUTION_SUCCESS"]
+    
+
+
+## CALLBACKS FOR FORGET SERVICE STATE
+    def state_response_callback(self, future):
+        """Callback for state service response"""
+        try:
+            result = future.result()
+            if result:
+                self.get_logger().info("Arm moved")
+            else:
+                self.get_logger().error("Failed to move arm")
+        except Exception as e:
+            self.get_logger().error(f"move service call failed: {str(e)}")
 
 
 if __name__ == "__main__":
