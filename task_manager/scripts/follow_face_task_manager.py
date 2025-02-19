@@ -9,7 +9,7 @@ from rclpy.node import Node
 from subtask_managers.manipulation_tasks import ManipulationTasks
 from subtask_managers.vision_tasks import VisionTasks
 from utils.logger import Logger
-
+from time import time as t
 
 class subtask_manager:
     vision: VisionTasks
@@ -43,7 +43,9 @@ class DemoTaskManager(Node):
         self.max_delta_y = 1
         self.min_delta_x = -2
         self.min_delta_y = -1
-        self.prev = None
+        self.prevx = 0.0
+        self.prevy = 0.0
+        self.counter_move = t()
 
         self.x_delta_multiplier = self.Multiplier
         self.y_delta_multiplier = self.Multiplier / 2
@@ -65,21 +67,26 @@ class DemoTaskManager(Node):
         if self.current_state == DemoTaskManager.TASK_STATES["FOLLOW_FACE"]:
             # Follow face task
             Logger.state(self, "Follow face task")
-            x,y, asdasd = self.subtask_manager.vision.get_follow_face()
-            if asdasd == self.prev: 
-                pass
-            else:
-                self.prev = asdasd
-            if (x is None):
-                self.subtask_manager.manipulation.move_to(0.0, 0.0)
-                pass
+            x,y= self.subtask_manager.vision.get_follow_face()
+            if (x is None and y is None):
+                Logger.info(self, f"prev = {self.prevx} t = {t()} counter = {self.counter_move} resta = {t() - self.counter_move}")
+                if(self.prevx != 0.0 and self.prevy != 0.0 and t() - self.counter_move >= 1):
+                    self.subtask_manager.manipulation.move_to(0.0, 0.0)
+                else:
+                    pass
+                # pass
             else:
                 
                 print(f"x and y {x} {y}")
                 if x > 0.09 or x < -0.09:
                     self.subtask_manager.manipulation.move_to(x, y)
+                    self.prevx = x
+                    self.prevy = y
+                    self.counter_move = t()
                 else:
                     self.subtask_manager.manipulation.move_to(0.0, 0.0)
+                    self.prevx = x
+                    self.prevy = y
 
 
 def main(args=None):

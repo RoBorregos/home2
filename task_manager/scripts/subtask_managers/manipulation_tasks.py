@@ -136,10 +136,16 @@ class ManipulationTasks:
             x_vel = -0.1
         else:
             x_vel = x
+        if y > 0.1:
+            y_vel = 0.1
+        elif y < -0.1:
+            y_vel = -0.1
+        else:
+            y_vel = y
 
         motion_msg = MoveVelocity.Request()
         motion_msg.is_sync = True
-        motion_msg.speeds = [x_vel, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        motion_msg.speeds = [x_vel, 0.0, 0.0, 0.0, y_vel, 0.0, 0.0]
 
         try:
             print(f"mock moving to {x} {y}")
