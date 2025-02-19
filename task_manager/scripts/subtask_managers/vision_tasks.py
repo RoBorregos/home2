@@ -50,6 +50,7 @@ class VisionTasks:
         self.mock_data = mock_data
         self.task = task
         self.follow_face = {"x": None, "y": None}
+        self.flag_active_face = False
 
         self.face_subscriber = self.node.create_subscription(
             Point, FOLLOW_TOPIC, self.follow_callback, 10
@@ -89,12 +90,9 @@ class VisionTasks:
 
     def follow_callback(self, msg: Point):
         """Callback for the face following subscriber"""
-        if msg.x == 10000000000.0:
-            self.follow_face["x"] = None
-            self.follow_face["y"] = None
-        else:
-            self.follow_face["x"] = msg.x
-            self.follow_face["y"] = msg.y
+        self.follow_face["x"] = msg.x
+        self.follow_face["y"] = msg.y
+        self.flag_active_face = True
 
     @mockable(return_value=100)
     @service_check("save_name_client", -1, TIMEOUT)
@@ -178,7 +176,11 @@ class VisionTasks:
 
     def get_follow_face(self):
         """Get the face to follow"""
-        return self.follow_face["x"], self.follow_face["y"]
+        if self.flag_active_face:
+            self.flag_active_face = False
+            return self.follow_face["x"], self.follow_face["y"]
+        else:
+            return None, None
 
 
 if __name__ == "__main__":
