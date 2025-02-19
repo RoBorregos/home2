@@ -9,14 +9,13 @@ services:
     image: ${IMAGE_NAME:-roborregos/home2:vision-cpu}
     volumes:
       - ../../:/workspace
-      - /tmp:/tmp
-    
-    network_mode: host
-    user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
-    privileged: true
-    devices:
       - /dev:/dev
       - /dev/video0:/dev/video0
+  
+    network_mode: host
+    user: 1000:1000
+    privileged: true
+
     environment:
       DISPLAY: ${DISPLAY}
       TERM: xterm-256color

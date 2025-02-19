@@ -7,19 +7,19 @@ commands.
 """
 
 import rclpy
-from rclpy.node import Node
-from rclpy.action import ActionClient
-
-from frida_interfaces.srv import SaveName
-from frida_interfaces.srv import FindSeat
 from frida_interfaces.action import DetectPerson
-
+from frida_interfaces.srv import FindSeat, SaveName
+from geometry_msgs.msg import Point
+from rclpy.action import ActionClient
+from rclpy.node import Node
 from utils.decorators import mockable, service_check
 from utils.logger import Logger
+
 
 SAVE_NAME_TOPIC = "/vision/new_name"
 FIND_SEAT_TOPIC = "/vision/find_seat"
 DETECT_PERSON_TOPIC = "/vision/detect_person"
+FOLLOW_TOPIC = "/vision/follow_face"
 
 TIMEOUT = 5.0
 
@@ -39,7 +39,10 @@ class VisionTasks:
             SERVICES["detect_person"],
             SERVICES["find_seat"],
             SERVICES["save_face_name"],
-        ]
+        ],
+        "DEMO": [
+            SERVICES["detect_person"],
+        ],
     }
 
     def __init__(self, task_manager, task, mock_data=False) -> None:
@@ -47,7 +50,12 @@ class VisionTasks:
         self.node = task_manager
         self.mock_data = mock_data
         self.task = task
+        self.follow_face = {"x": None, "y": None}
+        self.flag_active_face = False
 
+        self.face_subscriber = self.node.create_subscription(
+            Point, FOLLOW_TOPIC, self.follow_callback, 10
+        )
         self.save_name_client = self.node.create_client(SaveName, SAVE_NAME_TOPIC)
         self.find_seat_client = self.node.create_client(FindSeat, FIND_SEAT_TOPIC)
         self.detect_person_action_client = ActionClient(
@@ -80,6 +88,12 @@ class VisionTasks:
                     self.node,
                     "Detect person action server not initialized. (face_recognition)",
                 )
+
+    def follow_callback(self, msg: Point):
+        """Callback for the face following subscriber"""
+        self.follow_face["x"] = msg.x
+        self.follow_face["y"] = msg.y
+        self.flag_active_face = True
 
     @mockable(return_value=100)
     @service_check("save_name_client", -1, TIMEOUT)
@@ -160,6 +174,14 @@ class VisionTasks:
         except Exception as e:
             Logger.error(self.node, f"Error detecting person: {e}")
             return self.STATE["EXECUTION_ERROR"]
+
+    def get_follow_face(self):
+        """Get the face to follow"""
+        if self.flag_active_face:
+            self.flag_active_face = False
+            return self.follow_face["x"], self.follow_face["y"]
+        else:
+            return None, None
 
 
 if __name__ == "__main__":

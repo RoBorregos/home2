@@ -57,7 +57,7 @@ class RestaurantTaskManager(Node):
         self.run()
 
     def run(self):
-        """testing vision tasks"""
+        """Running main loop"""
 
         while rclpy.ok():
             if self.current_state == RestaurantTaskManager.TASK_STATES["START"]:

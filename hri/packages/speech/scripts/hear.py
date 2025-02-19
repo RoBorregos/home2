@@ -1,17 +1,18 @@
 #!/usr/bin/env python3
 
-import rclpy
-from rclpy.node import Node
-from rclpy.executors import ExternalShutdownException, MultiThreadedExecutor
-from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
+import os
+import sys
+
 import grpc
+import rclpy
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
+from rclpy.executors import ExternalShutdownException, MultiThreadedExecutor
+from rclpy.node import Node
+from speech.speech_api_utils import SpeechApiUtils
+from std_msgs.msg import String
+
 from frida_interfaces.msg import AudioData
 from frida_interfaces.srv import STT
-from std_msgs.msg import Bool, String
-from speech.speech_api_utils import SpeechApiUtils
-
-import sys
-import os
 
 # Add the directory containing the protos to the Python path
 sys.path.append(os.path.join(os.path.dirname(__file__), "stt"))
@@ -81,12 +82,12 @@ class HearNode(Node):
         if start_service:
             self.service_text = ""
             detection_publish_topic = (
-                self.declare_parameter("detection_publish_topic", "/keyword_detected")
+                self.declare_parameter("detection_publish_topic", "/wakeword_detected")
                 .get_parameter_value()
                 .string_value
             )
             self.KWS_publisher_mock = self.create_publisher(
-                Bool, detection_publish_topic, 10
+                String, detection_publish_topic, 10
             )
             self.stt_service = self.create_service(
                 STT,
@@ -132,7 +133,7 @@ class HearNode(Node):
     def stt_service_callback(self, request, response):
         self.get_logger().info("Keyword mock service activated, recording audio...")
         self.service_active = True
-        self.KWS_publisher_mock.publish(Bool(data=True))
+        self.KWS_publisher_mock.publish(String(data="frida"))
         while self.service_active:
             pass
         response.text_heard = self.service_text

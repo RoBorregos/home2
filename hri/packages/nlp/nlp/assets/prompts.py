@@ -105,10 +105,39 @@ You may break a given instruction into the following commands:
 
 """
 
+SYSTEM_PROMPT_EXPO = """
+You will be presented with an instruction from a human. The instruction may skip details, contain grammar mistakes or be ambiguous. The instruction could also make no sense at all.
+
+Your task is to divide the provided instruction into small commands. The commands contain an action, and could contain an optional characteristic and complement. The commands should also be listed in the correct order such the initial instruction can be achieved. 
+
+You may break a given instruction into the following commands:
+
+1. [
+    action = "clarification" (call when the provided instruction is unclear, and you need more information to proceed).
+    complement = Explain what you need to know.
+    characteristic = ""
+]
+
+2. [
+    action = "speak" (answer back using voice. ONLY use this command when a question is asked).
+    complement = The textual response to the user's question. To answer a question, you can use the following context: [{CURRENT_CONTEXT}]
+    characteristic = "" or "describe". If describe is specified, the robot will say the description saved with the describe command.
+]
+
+"""
+
 
 def get_system_prompt_ci_v2():
     timezone = pytz.timezone("America/Mexico_City")
     current_date = datetime.now(timezone).strftime("%Y-%m-%d %H:%M:%S")
     return SYSTEM_PROMPT_CI_V2.format(
+        CURRENT_CONTEXT=CURRENT_CONTEXT.format(CURRENT_DATE=current_date)
+    )
+
+
+def get_system_prompt_expo():
+    timezone = pytz.timezone("America/Mexico_City")
+    current_date = datetime.now(timezone).strftime("%Y-%m-%d %H:%M:%S")
+    return SYSTEM_PROMPT_EXPO.format(
         CURRENT_CONTEXT=CURRENT_CONTEXT.format(CURRENT_DATE=current_date)
     )

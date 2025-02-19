@@ -1,49 +1,62 @@
 #!/usr/bin/env python3
 from pathlib import Path
-import pandas as pd
+
 import chromadb
-from chromadb.utils import embedding_functions
+import pandas as pd
 import rclpy
+from chromadb.utils import embedding_functions
 from rclpy.node import Node
 from rclpy.parameter import Parameter
+
 from frida_interfaces.srv import (
     AddItem,
+    BuildEmbeddings,
+    QueryItem,
     RemoveItem,
     UpdateItem,
-    QueryItem,
-    BuildEmbeddings,
 )
 
 
 class Embeddings(Node):
     def __init__(self):
         super().__init__("embeddings")
-
+        self.get_logger().info("Initializing item_categorization.")
         # Declare parameters for the sentence transformer model and collections built flag
         self.declare_parameter("Embeddings_model", "all-MiniLM-L12-v2")
         self.declare_parameter("collections_built", 0)  # Default: 0 (not built)
 
+        # Parameters for services
+        self.declare_parameter("ADD_ITEM_SERVICE", "add_item")
+        self.declare_parameter("REMOVE_ITEM_SERVICE", "remove_item")
+        self.declare_parameter("UPDATE_ITEM_SERVICE", "update_item")
+        self.declare_parameter("QUERY_ITEM_SERVICE", "query_item")
+        self.declare_parameter("BUILD_EMBEDDINGS_SERVICE", "build_embeddings")
+
+        # Resolve parameters
         model_name_ = (
             self.get_parameter("Embeddings_model").get_parameter_value().string_value
         )
-
-        # Initialize services
-        self.add_item_service = self.create_service(
-            AddItem, "add_item", self.add_item_callback
+        add_item_service = (
+            self.get_parameter("ADD_ITEM_SERVICE").get_parameter_value().string_value
         )
-        self.remove_item_service = self.create_service(
-            RemoveItem, "remove_item", self.remove_item_callback
+        remove_item_service = (
+            self.get_parameter("REMOVE_ITEM_SERVICE").get_parameter_value().string_value
         )
-        self.update_item_service = self.create_service(
-            UpdateItem, "update_item", self.update_item_callback
+        update_item_service = (
+            self.get_parameter("UPDATE_ITEM_SERVICE").get_parameter_value().string_value
         )
-        self.query_item_service = self.create_service(
-            QueryItem, "query_item", self.query_item_callback
+        query_item_service = (
+            self.get_parameter("QUERY_ITEM_SERVICE").get_parameter_value().string_value
+        )
+        build_embeddings_service = (
+            self.get_parameter("BUILD_EMBEDDINGS_SERVICE")
+            .get_parameter_value()
+            .string_value
         )
 
         # Create the BuildEmbeddings service
         self.build_embeddings_service = self.create_service(
-            BuildEmbeddings, "build_embeddings", self.build_embeddings_callback
+            BuildEmbeddings, build_embeddings_service, self.build_embeddings_callback
         )
 
         # Initialize ChromaDB client
@@ -58,6 +71,24 @@ class Embeddings(Node):
 
         # Check if collections are built or need to be built
         self.check_and_update_collections()
+
+        # Initialize services
+        self.add_item_service = self.create_service(
+            AddItem, add_item_service, self.add_item_callback
+        )
+
+        self.remove_item_service = self.create_service(
+            RemoveItem, remove_item_service, self.remove_item_callback
+        )
+
+        self.update_item_service = self.create_service(
+            UpdateItem, update_item_service, self.update_item_callback
+        )
+        self.query_item_service = self.create_service(
+            QueryItem, query_item_service, self.query_item_callback
+        )
+
+        self.get_logger().info("item_categorization initialized.")
 
     def check_and_update_collections(self):
         """Check if collections exist and call the method to build them if missing."""
@@ -92,7 +123,7 @@ class Embeddings(Node):
             self.get_logger().info(
                 "Collections not found, proceeding to build collections."
             )
-            self.build_embeddings()  # Build the collections if not built
+            self.build_embeddings_callback()  # Build the collections if not built
 
     def add_item_callback(self, request, response):
         """Service callback to add items to ChromaDB"""
