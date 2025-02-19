@@ -23,5 +23,8 @@ RUN pip install -r requirements/speech.txt
 USER ros
 RUN sudo usermod -aG audio ros
 
+RUN sudo chown -R ros /usr/lib/python3.10/
+RUN sudo chown -R ros /usr/local/lib/python3.10/
+
 # RUN apt install -y espeak
 # RUN pip install -U openai-whisper

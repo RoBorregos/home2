@@ -10,3 +10,4 @@
 **/chromadb/*
 .prev-vscode
 **.pt
+**.pth

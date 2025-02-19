@@ -1,7 +1,13 @@
 command_interpreter:
   ros__parameters:
-    base_url: "http://localhost:11434/v1"
-    model: "llama3.2"
     speech_command_topic: "/speech/raw_command"
     publish_command_topic: "/task_manager/commands"
-    temperature: 1.0
+    temperature: 0.0
+
+    # API
+    base_url: "None"
+    model: "gpt-4o-2024-08-06"
+
+    # Local
+    # base_url: "http://localhost:11434/v1"
+    # model: "llama3.2"
