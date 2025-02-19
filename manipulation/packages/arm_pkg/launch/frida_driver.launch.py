@@ -25,7 +25,6 @@ def launch_setup(context, *args, **kwargs):
         DeclareLaunchArgument(
             'robot_ip',
             description='IP address by which the robot can be reached.',
-            default_value='192.168.31.180',
         )
     )
     declared_arguments.append(
@@ -38,7 +37,7 @@ def launch_setup(context, *args, **kwargs):
     declared_arguments.append(
         DeclareLaunchArgument(
             'dof',
-            default_value='6',
+            default_value='7',
             description='Degree of freedom of manipulator, defalut is 7.',
         )
     )
@@ -51,7 +50,7 @@ def launch_setup(context, *args, **kwargs):
     )
 
     # Initialize Arguments
-    robot_ip = LaunchConfiguration('robot_ip', default="192.168.31.180")
+    robot_ip = LaunchConfiguration('robot_ip')
     report_type = LaunchConfiguration('report_type', default='normal')
     dof = LaunchConfiguration('dof', default=7)
     hw_ns = LaunchConfiguration('hw_ns', default='xarm')
