@@ -14,6 +14,7 @@ from rclpy.action import ActionClient
 from rclpy.node import Node
 from utils.decorators import mockable, service_check
 from utils.logger import Logger
+from time import time
 
 SAVE_NAME_TOPIC = "/vision/new_name"
 FIND_SEAT_TOPIC = "/vision/find_seat"
@@ -178,9 +179,9 @@ class VisionTasks:
         """Get the face to follow"""
         if self.flag_active_face:
             self.flag_active_face = False
-            return self.follow_face["x"], self.follow_face["y"]
+            return self.follow_face["x"], self.follow_face["y"], time()
         else:
-            return None, None
+            return None, None, time()
 
 
 if __name__ == "__main__":

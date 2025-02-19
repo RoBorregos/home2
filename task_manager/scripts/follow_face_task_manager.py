@@ -43,6 +43,7 @@ class DemoTaskManager(Node):
         self.max_delta_y = 1
         self.min_delta_x = -2
         self.min_delta_y = -1
+        self.prev = None
 
         self.x_delta_multiplier = self.Multiplier
         self.y_delta_multiplier = self.Multiplier / 2
@@ -64,17 +65,17 @@ class DemoTaskManager(Node):
         if self.current_state == DemoTaskManager.TASK_STATES["FOLLOW_FACE"]:
             # Follow face task
             Logger.state(self, "Follow face task")
-
-            if (
-                self.subtask_manager.vision.follow_face["y"] is None
-                or self.subtask_manager.vision.follow_face["x"] is None
-            ):
+            x,y, asdasd = self.subtask_manager.vision.get_follow_face()
+            if asdasd == self.prev: 
                 pass
             else:
-                x = self.subtask_manager.vision.follow_face["x"]
-                y = self.subtask_manager.vision.follow_face["y"]
+                self.prev = asdasd
+            if (x is None):
+                self.subtask_manager.manipulation.move_to(0.0, 0.0)
+                pass
+            else:
+                
                 print(f"x and y {x} {y}")
-
                 if x > 0.09 or x < -0.09:
                     self.subtask_manager.manipulation.move_to(x, y)
                 else:

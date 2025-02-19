@@ -159,11 +159,11 @@ class ManipulationTasks:
         try:
             result = future.result()
             if result:
-                self.get_logger().info("Arm moved")
+                Logger.info(self.node, "Arm moved")
             else:
-                self.get_logger().error("Failed to move arm")
+                Logger.error(self.node, "Failed to move arm")
         except Exception as e:
-            self.get_logger().error(f"move service call failed: {str(e)}")
+            self.Logger.error(self.node, f"move service call failed: {str(e)}")
 
 
 if __name__ == "__main__":
