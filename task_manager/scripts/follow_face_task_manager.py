@@ -11,6 +11,7 @@ from subtask_managers.vision_tasks import VisionTasks
 from utils.logger import Logger
 from time import time as t
 
+
 class subtask_manager:
     vision: VisionTasks
     manipulation: ManipulationTasks
@@ -67,16 +68,18 @@ class DemoTaskManager(Node):
         if self.current_state == DemoTaskManager.TASK_STATES["FOLLOW_FACE"]:
             # Follow face task
             Logger.state(self, "Follow face task")
-            x,y= self.subtask_manager.vision.get_follow_face()
-            if (x is None and y is None):
-                Logger.info(self, f"prev = {self.prevx} t = {t()} counter = {self.counter_move} resta = {t() - self.counter_move}")
-                if(self.prevx != 0.0 and self.prevy != 0.0 and t() - self.counter_move >= 1):
+            x, y = self.subtask_manager.vision.get_follow_face()
+            if x is None and y is None:
+                Logger.info(
+                    self,
+                    f"prev = {self.prevx} t = {t()} counter = {self.counter_move} resta = {t() - self.counter_move}",
+                )
+                if self.prevx != 0.0 and self.prevy != 0.0 and t() - self.counter_move >= 1:
                     self.subtask_manager.manipulation.move_to(0.0, 0.0)
                 else:
                     pass
                 # pass
             else:
-                
                 print(f"x and y {x} {y}")
                 if x > 0.09 or x < -0.09:
                     self.subtask_manager.manipulation.move_to(x, y)
