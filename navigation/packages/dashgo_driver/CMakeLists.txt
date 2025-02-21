@@ -22,7 +22,7 @@ ament_python_install_package(${PROJECT_NAME})
 
 #Install python scripts
 install(PROGRAMS
-  scripts/dashgo_driver.py
+  scripts/dashgo_driver2.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
