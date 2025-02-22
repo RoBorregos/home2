@@ -29,36 +29,36 @@ class ManipulationTasks:
         "EXECUTION_SUCCESS": 1,
         "TARGET_NOT_FOUND": 2,
     }
-    SERVICES = {"activate_arm": 0, "desactivate_arm": 1, "move_arm_velocity": 2}
+    SERVICES = {"activate_arm": 0, "deactivate_arm": 1, "move_arm_velocity": 2}
     SUBTASKS = {
         "RECEPTIONIST": [
             SERVICES["activate_arm"],
-            SERVICES["desactivate_arm"],
+            SERVICES["deactivate_arm"],
             SERVICES["move_arm"],
         ],
         "RESTAURANT": [
             # SERVICES["activate_arm"],
-            # SERVICES["desactivate_arm"],
+            # SERVICES["deactivate_arm"],
             # SERVICES["move_arm"],
         ],
         "SERVE_BREAKFAST": [
             # SERVICES["activate_arm"],
-            # SERVICES["desactivate_arm"],
+            # SERVICES["deactivate_arm"],
             # SERVICES["move_arm"],
         ],
         "STORING_GROCERIES": [
             # SERVICES["activate_arm"],
-            # SERVICES["desactivate_arm"],
+            # SERVICES["deactivate_arm"],
             # SERVICES["move_arm"],
         ],
         "STICKLER_RULES": [
             # SERVICES["activate_arm"],
-            # SERVICES["desactivate_arm"],
+            # SERVICES["deactivate_arm"],
             # SERVICES["move_arm"],
         ],
         "DEMO": [
             SERVICES["activate_arm"],
-            SERVICES["desactivate_arm"],
+            SERVICES["deactivate_arm"],
             SERVICES["move_arm"],
         ],
     }
@@ -91,7 +91,7 @@ class ManipulationTasks:
             if not self.state_client.wait_for_service(timeout_sec=TIMEOUT):
                 Logger.warn(self.node, "Motion enable client not initialized")
 
-        if ManipulationTasks.SERVICES["desactivate_arm"] in ManipulationTasks.SUBTASKS[self.task]:
+        if ManipulationTasks.SERVICES["deactivate_arm"] in ManipulationTasks.SUBTASKS[self.task]:
             if not self.motion_enable_client.wait_for_service(timeout_sec=TIMEOUT):
                 Logger.warn(self.node, "Motion enable client not initialized")
 
@@ -132,7 +132,7 @@ class ManipulationTasks:
         Logger.success(self.node, "Arm Activated!")
         return self.STATE["EXECUTION_SUCCESS"]
 
-    def desactivate_arm(self):
+    def deactivate_arm(self):
         """Desactivate arm"""
 
         Logger.info(self.node, "Desactivating arm")
