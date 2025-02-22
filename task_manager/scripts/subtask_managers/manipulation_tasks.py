@@ -60,7 +60,7 @@ class ManipulationTasks:
             SERVICES["activate_arm"],
             SERVICES["desactivate_arm"],
             SERVICES["move_arm"],
-        ]
+        ],
     }
 
     def __init__(self, task_manager, task, mock_data=False) -> None:
@@ -154,20 +154,20 @@ class ManipulationTasks:
 
     def move_to(self, x: float, y: float):
         Logger.info(self.node, "Moving arm with velocity")
-        
+
         mode_request = SetInt16.Request()
         mode_request.data = 4
-        
-        try: 
+
+        try:
             future_mode = self.mode_client.call_async(mode_request)
             rclpy.spin_until_future_complete(self.node, future_mode, timeout_sec=TIMEOUT)
-            
+
         except Exception as e:
             Logger.error(self.node, f"Error changing mode of arm: {e}")
             return self.STATE["EXECUTION_ERROR"]
 
         Logger.success(self.node, "Mode changed!")
-        
+
         # Set motion
         x = x * -1
         if x > 0.1:
