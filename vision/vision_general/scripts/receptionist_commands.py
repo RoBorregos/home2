@@ -22,10 +22,12 @@ from rclpy.task import Future
 
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.srv import FindSeat
+from frida_interfaces.srv import PersonDescription
 
 
 CAMERA_TOPIC = "/zed2/zed_node/rgb/image_rect_color"
 CHECK_PERSON_TOPIC = "/vision/detect_person"
+MOONDREAM_TOPIC = "vision/moondream"
 FIND_SEAT_TOPIC = "/vision/find_seat"
 IMAGE_TOPIC = "/vision/img_person_detecion"
 
@@ -47,6 +49,9 @@ class ReceptionistCommands(Node):
         )
         self.image_subscriber = self.create_subscription(
             Image, CAMERA_TOPIC, self.image_callback, 10
+        )
+        self.person_description_service = self.create_service(
+            PersonDescription, MOONDREAM_TOPIC, self.person_description_callback
         )
         self.image_publisher = self.create_publisher(Image, IMAGE_TOPIC, 10)
         self.person_detection_action_server = ActionServer(
@@ -101,6 +106,19 @@ class ReceptionistCommands(Node):
 
         response.success = False
         self.get_logger().warn("No seat found")
+        return response
+
+    def person_description_callback(self, request, response):
+        """Callback to describe the person in the image."""
+        self.get_logger().info("Executing service Person Description")
+
+        if self.image is None:
+            response.description = "No image received yet."
+            return response
+
+        frame = self.image
+        encoded_image = self.model.encode_image(frame)
+        response.description = self.model.caption_image(encoded_image)
         return response
 
     async def detect_person_callback(self, goal_handle):
