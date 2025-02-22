@@ -11,7 +11,7 @@ import rclpy
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.node import Node
 
-from pymoveit2 import MoveIt2, MoveIt2State
+from pymoveit2 import MoveIt2
 from pymoveit2.robots import panda as robot
 
 
@@ -123,7 +123,7 @@ def main():
 
     # Set orientation path constraint
     if use_orientation_constraint:
-        node.get_logger().info(f"Setting orientation path constraint")
+        node.get_logger().info("Setting orientation path constraint")
         moveit2.set_path_orientation_constraint(
             quat_xyzw=orientation_constraint_quaternion,
             tolerance=orientation_constraint_tolerance,

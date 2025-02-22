@@ -79,7 +79,7 @@ def main():
     # Move to joint configuration
     node.get_logger().info(f"Moving to {{joint_positions: {list(joint_positions)}}}")
     moveit2.move_to_configuration(joint_positions)
-    
+
     #  This has to be addressed carefully with more complex nodes
     if synchronous:
         # Note: the same functionality can be achieved by setting
