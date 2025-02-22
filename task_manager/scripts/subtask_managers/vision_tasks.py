@@ -22,6 +22,8 @@ DETECT_PERSON_TOPIC = "/vision/detect_person"
 FOLLOW_TOPIC = "/vision/follow_face"
 
 TIMEOUT = 5.0
+# TODO: find_drink
+# TODO: detect_guest
 
 
 class VisionTasks:
@@ -174,6 +176,16 @@ class VisionTasks:
         except Exception as e:
             Logger.error(self.node, f"Error detecting person: {e}")
             return self.STATE["EXECUTION_ERROR"]
+
+    @mockable(return_value=True, delay=2)
+    def detect_guest(self, name: str, timeout: float = TIMEOUT):
+        """Returns true when a person is detected"""
+        pass
+
+    @mockable(return_value=True, delay=2)
+    def find_drink(self, name: str, timeout: float = TIMEOUT):
+        """Returns true when a person is detected"""
+        return "left", vision_tasks.STATE["EXECUTION_SUCCESS"]
 
     def get_follow_face(self):
         """Get the face to follow"""
