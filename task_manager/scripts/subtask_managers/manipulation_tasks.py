@@ -29,13 +29,38 @@ class ManipulationTasks:
         "EXECUTION_SUCCESS": 1,
         "TARGET_NOT_FOUND": 2,
     }
-    SERVICES = {"activate_arm": 0, "desactivate_arm": 1, "move_arm": 2}
+    SERVICES = {"activate_arm": 0, "deactivate_arm": 1, "move_arm_velocity": 2}
     SUBTASKS = {
+        "RECEPTIONIST": [
+            SERVICES["activate_arm"],
+            SERVICES["deactivate_arm"],
+            SERVICES["move_arm"],
+        ],
+        "RESTAURANT": [
+            # SERVICES["activate_arm"],
+            # SERVICES["deactivate_arm"],
+            # SERVICES["move_arm"],
+        ],
+        "SERVE_BREAKFAST": [
+            # SERVICES["activate_arm"],
+            # SERVICES["deactivate_arm"],
+            # SERVICES["move_arm"],
+        ],
+        "STORING_GROCERIES": [
+            # SERVICES["activate_arm"],
+            # SERVICES["deactivate_arm"],
+            # SERVICES["move_arm"],
+        ],
+        "STICKLER_RULES": [
+            # SERVICES["activate_arm"],
+            # SERVICES["deactivate_arm"],
+            # SERVICES["move_arm"],
+        ],
         "DEMO": [
             SERVICES["activate_arm"],
-            SERVICES["desactivate_arm"],
+            SERVICES["deactivate_arm"],
             SERVICES["move_arm"],
-        ]
+        ],
     }
 
     def __init__(self, task_manager, task, mock_data=False) -> None:
@@ -60,15 +85,15 @@ class ManipulationTasks:
 
         if ManipulationTasks.SERVICES["activate_arm"] in ManipulationTasks.SUBTASKS[self.task]:
             if not self.motion_enable_client.wait_for_service(timeout_sec=TIMEOUT):
-                Logger.warn(self.node, "Motiion enable client not initialized")
+                Logger.warn(self.node, "Motion enable client not initialized")
             if not self.mode_client.wait_for_service(timeout_sec=TIMEOUT):
-                Logger.warn(self.node, "Motiion enable client not initialized")
+                Logger.warn(self.node, "Motion enable client not initialized")
             if not self.state_client.wait_for_service(timeout_sec=TIMEOUT):
-                Logger.warn(self.node, "Motiion enable client not initialized")
+                Logger.warn(self.node, "Motion enable client not initialized")
 
-        if ManipulationTasks.SERVICES["desactivate_arm"] in ManipulationTasks.SUBTASKS[self.task]:
+        if ManipulationTasks.SERVICES["deactivate_arm"] in ManipulationTasks.SUBTASKS[self.task]:
             if not self.motion_enable_client.wait_for_service(timeout_sec=TIMEOUT):
-                Logger.warn(self.node, "Motiion enable client not initialized")
+                Logger.warn(self.node, "Motion enable client not initialized")
 
         if ManipulationTasks.SERVICES["move_arm"] in ManipulationTasks.SUBTASKS[self.task]:
             if not self.move_client.wait_for_service(timeout_sec=TIMEOUT):
@@ -86,8 +111,9 @@ class ManipulationTasks:
         state_request = SetInt16.Request()
         state_request.data = 0
         # Set mode
+        # 0: position control mode
         mode_request = SetInt16.Request()
-        mode_request.data = 4
+        mode_request.data = 0
 
         try:
             future_motion = self.motion_enable_client.call_async(motion_request)
@@ -106,7 +132,7 @@ class ManipulationTasks:
         Logger.success(self.node, "Arm Activated!")
         return self.STATE["EXECUTION_SUCCESS"]
 
-    def desactivate_arm(self):
+    def deactivate_arm(self):
         """Desactivate arm"""
 
         Logger.info(self.node, "Desactivating arm")
@@ -127,7 +153,21 @@ class ManipulationTasks:
         return self.STATE["EXECUTION_SUCCESS"]
 
     def move_to(self, x: float, y: float):
-        Logger.info(self.node, "Moving arm")
+        Logger.info(self.node, "Moving arm with velocity")
+
+        mode_request = SetInt16.Request()
+        mode_request.data = 4
+
+        try:
+            future_mode = self.mode_client.call_async(mode_request)
+            rclpy.spin_until_future_complete(self.node, future_mode, timeout_sec=TIMEOUT)
+
+        except Exception as e:
+            Logger.error(self.node, f"Error changing mode of arm: {e}")
+            return self.STATE["EXECUTION_ERROR"]
+
+        Logger.success(self.node, "Mode changed!")
+
         # Set motion
         x = x * -1
         if x > 0.1:

@@ -1,6 +1,14 @@
 import moondream as md
 from PIL import Image
 import cv2
+# ===== STEP 1: Install Dependencies =====
+# pip install moondream  # Install dependencies in your project directory
+
+
+# ===== STEP 2: Download Model =====
+# Download model (593 MiB download size, 996 MiB memory usage)
+# Use: wget (Linux and Mac) or curl.exe -O (Windows)
+# wget https://huggingface.co/vikhyatk/moondream2/resolve/9dddae84d54db4ac56fe37817aeaeb502ed083e2/moondream-0_5b-int8.mf.gz
 
 
 class MoonDreamModel:
@@ -22,7 +30,7 @@ class MoonDreamModel:
             print("Caption:", caption)
             return caption
 
-    def query_image(self, encoded_image, query, stream=False):
+    def generate_person_description(self, encoded_image, query, stream=False):
         if stream:
             print("Streaming answer:", end=" ", flush=True)
             for chunk in self.model.query(encoded_image, query, stream=True)["answer"]:
