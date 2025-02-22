@@ -8,6 +8,7 @@ import rclpy
 from rclpy.node import Node
 from subtask_managers.manipulation_tasks import ManipulationTasks
 from subtask_managers.vision_tasks import VisionTasks
+from frida_interfaces.srv import FollowFace
 from utils.logger import Logger
 from time import time as t
 
@@ -56,7 +57,19 @@ class DemoTaskManager(Node):
         self.current_state = DemoTaskManager.TASK_STATES["FOLLOW_FACE"]
 
         self.get_logger().info("DemoTaskManager has started.")
+
+        self.service = self.create_service(FollowFace, "/follow_face", self.follow_face_callback)
+
+        self.is_following_face_active = False
+
         self.create_timer(0.1, self.run)
+
+    def follow_face_callback(self, request: FollowFace.Request, response: FollowFace.Response):
+        self.is_following_face_active = request.follow_face
+        if not self.is_following_face_active:
+            self.subtask_manager.manipulation.move_to(0.0, 0.0)
+        response.success = True
+        return response
 
     def run(self):
         """Running main loop"""
