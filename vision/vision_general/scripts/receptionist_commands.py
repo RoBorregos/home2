@@ -19,10 +19,12 @@ from rclpy.action import ActionServer
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 from rclpy.task import Future
+from ament_index_python.packages import get_package_share_directory
 
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.srv import FindSeat
 
+from vision_general.moondream_lib import MoonDreamModel
 
 CAMERA_TOPIC = "/zed2/zed_node/rgb/image_rect_color"
 CHECK_PERSON_TOPIC = "/vision/detect_person"
@@ -30,6 +32,15 @@ FIND_SEAT_TOPIC = "/vision/find_seat"
 IMAGE_TOPIC = "/vision/img_person_detecion"
 
 MODEL_LOCATION = str(pathlib.Path(__file__).parent) + "/Utils/yolov8n.pt"
+# MOONDREAM_LOCATION = str(pathlib.Path(__file__).parent) + "/Utils/moondream-2b-int8.mf.gz"
+package_share_dir = get_package_share_directory("vision_general")
+
+MOONDREAM_LOCATION = str(
+    pathlib.Path(package_share_dir) / "Utils/moondream-2b-int8.mf.gz"
+)
+
+print(f"Model path: {MOONDREAM_LOCATION}")
+
 PERCENTAGE = 0.3
 MAX_DEGREE = 30
 AREA_PERCENTAGE_THRESHOLD = 0.2
@@ -55,6 +66,7 @@ class ReceptionistCommands(Node):
 
         self.image = None
         self.model = YOLO(MODEL_LOCATION)
+        self.moondream = MoonDreamModel(MOONDREAM_LOCATION)
         self.output_image = []
         self.check = False
 
