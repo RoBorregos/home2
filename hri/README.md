@@ -70,7 +70,7 @@ Most of the final commands will be executed using the docker compose file.
 However, some testing commands are the following:
 
 ```bash
-# Speech (Remember to start the whisper docker before)
+# Speech (Remember to start the stt docker before)
 ros2 launch speech devices_launch.py
 
 ros2 topic pub /speech/speak_now --once std_msgs/msg/String "data: 'Go to the kitchen and grab cookies'"

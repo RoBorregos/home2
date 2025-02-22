@@ -5,8 +5,13 @@ import speech_pb2_grpc
 from faster_whisper import WhisperModel
 import os
 import torch
-from wav_utils import WavUtils
 import argparse
+import sys
+
+# Add the directory containing the protos to the Python path
+sys.path.append(os.path.join(os.path.dirname(__file__), "speech"))
+
+from wav_utils import WavUtils
 
 
 class WhisperServicer(speech_pb2_grpc.SpeechServiceServicer):
