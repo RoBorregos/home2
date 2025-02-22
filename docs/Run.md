@@ -8,7 +8,7 @@ To make a container and open a shell for developing or testing the vision packag
 
 In root directory (home2), run:
 ```bash
-./run vision
+./run.sh vision
 ```
 
 If the script is not executable, run:

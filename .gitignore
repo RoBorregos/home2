@@ -7,3 +7,5 @@
 **/__pychache__/
 .ruff_cache
 **.env
+vision/vision_general/scripts/moondream-0_5b-int8.mf.gz
+vision/vision_general/scripts/moondream-2b-int8.mf.gz
