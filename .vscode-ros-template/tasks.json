@@ -1,0 +1,35 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "colcon: build",
+      "type": "shell",
+      "command": [
+        "source /opt/ros/humble/setup.bash;",
+        "colcon",
+        "build",
+        "--build-base {{WS_PATH}}/build",
+        "--install-base {{WS_PATH}}/install",
+        "--base-path {{WS_PATH}}",
+        "--symlink-install",
+        "--event-handlers console_cohesion+",
+        "--cmake-args -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXPORT_COMPILE_COMMANDS=true"
+      ],
+      "problemMatcher": [],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "colcon: clean",
+      "type": "shell",
+      "command": [
+        "cd {{WS_PATH}};",
+        "rm -rf build;",
+        "rm -rf install;",
+        "rm -rf log;"
+      ]
+    }
+  ]
+}

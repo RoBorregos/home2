@@ -1,12 +1,18 @@
-import grpc
+import argparse
+import os
+import sys
 from concurrent import futures
+
+import grpc
 import speech_pb2
 import speech_pb2_grpc
-from faster_whisper import WhisperModel
-import os
 import torch
+from faster_whisper import WhisperModel
+
+# Add the directory containing the protos to the Python path
+sys.path.append(os.path.join(os.path.dirname(__file__), "speech"))
+
 from wav_utils import WavUtils
-import argparse
 
 
 class WhisperServicer(speech_pb2_grpc.SpeechServiceServicer):
@@ -25,6 +31,8 @@ class WhisperServicer(speech_pb2_grpc.SpeechServiceServicer):
         )
 
     def Transcribe(self, request, context):
+        print("Received audio data, transcribing...")
+
         # Generate a temporary WAV file from received audio data
         temp_file = WavUtils.generate_temp_wav(1, 2, 16000, request.audio_data)
 
@@ -32,14 +40,22 @@ class WhisperServicer(speech_pb2_grpc.SpeechServiceServicer):
         result = self.audio_model.transcribe(
             temp_file,
             language="en",
-            hotwords="Frida kitchen attendance",
+            hotwords="Frida kitchen attendance RoBorregos",
             condition_on_previous_text=True,
         )
 
         WavUtils.discard_wav(temp_file)
 
+        # Access the generator to collect text segments
+        segments = result[0]  # The generator
+        transcription = "".join(
+            [segment.text for segment in segments]
+        )  # Collect all text
+
+        print(f"Transcription: {transcription}")
+
         # Return the transcribed text
-        return speech_pb2.TextResponse(text=result["text"].strip())
+        return speech_pb2.TextResponse(text=transcription)
 
 
 def serve(port, model_size):

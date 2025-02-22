@@ -29,9 +29,14 @@ home2
     └── speech.txt
 ```
 
+
 ## Setup with docker
 
-Run the script `setup.bash` located in `home2/docker/hri` to setup the configuration for docker. The script provides additional setup instructions.
+Run the script `setup.bash` located in `home2/docker/hri` to setup the configuration for docker.
+
+In addition, the following files are required:
+- `docker/hri/.env`: Contains the environment variables for the docker compose files. `docker/hri/.env.example` contains examples of the required variables.
+
 
 ## Using with docker
 
@@ -41,21 +46,13 @@ Run the script `setup.bash` located in `home2/docker/hri` to setup the configura
 docker compose -f cuda.yaml build
 # or -> docker compose -f cpu.yaml build
 
-# Use devices compose (for audio I/O)
+# Build and run HRI containers
 # pwd -> home2/docker/hri
-docker compose -f devices.yaml up
+docker compose up
 
-# Build packages
-## Enter the container
+# Enter the container (this container has the ros 2 environment)
 docker exec -it home2-hri-cuda-devices bash
 
-# Enable non-root ownership of the workspace
-# pwd -> /workspace
-sudo chown -R $(id -u):$(id -g) .
-
-# pwd -> /workspace
-colcon build --symlink-install --packages-select frida_interfaces speech nlp
-source install/setup.bash
 ```
 
 ## Running the project
@@ -65,13 +62,121 @@ Most of the final commands will be executed using the docker compose file.
 However, some testing commands are the following:
 
 ```bash
-# Speech
+# Launch HRI (includes speech, and nlp)
+ros2 launch speech hri_launch.py
+
+# Speech (Remember to start the stt docker before, this is done automatically if running the hri docker compose file)
 ros2 launch speech devices_launch.py
 
-ros2 topic pub /speech/speak_now --once std_msgs/msg/String "data: 'Go to the kitchen and grab cookies'"
+ros2 service call /speech/speak frida_interfaces/srv/Speak "{text: \"Go to the kitchen and grab cookies\"}"
 
 # NLP
 ros2 launch nlp nlp_launch.py
 
 ros2 topic pub /speech/raw_command std_msgs/msg/String "data: Go to the kitchen and grab cookies" --once
+```
+
+## Other useful commands
+
+Source the environment (this is automatically done in the .bashrc)
+```bash
+source /workspace/install/setup.bash
+```
+
+Build the hri packages (this is automatically done in `hri-ros.yaml` docker compose file)
+```bash
+colcon build --symlink-install --packages-select task_manager frida_interfaces frida_constants speech nlp embeddings
+```
+
+Enable file permissions for the current user, this is useful if there is a mismatch between the user in the container and the user in the host.
+```bash
+# pwd -> home2
+sudo chown -R $(id -u):$(id -g) .
+```
+
+## Speech pipeline
+
+### AudioCapturer.py
+
+Captures raw audio in chunks and publishes it.
+
+- publish -> rawAudioChunk
+
+### KWS.py
+
+Uses porcupine to detect kew words sush as "Frida".
+
+- subscribe -> rawAudioChunk
+- publish -> keyword_detected
+
+### UsefulAudio.py
+
+Uses silero VAD to identify speech in raw audio and publish it to UsefulAudio.
+
+- subscribe
+    -> rawAudioChunk
+    | saying
+    | keyword_detected
+- publish
+    -> UsefulAudio
+    | AudioState
+    | colorInstruction
+    | /ReSpeaker/light
+
+### Hear.py
+
+Takes UsefulAudio, performs STT with gRPC servers and publishes it.
+
+- subscribe -> UsefulAudio
+- publish -> /speech/transcription
+
+## Setup speech default sink and source
+
+Sinks and sources are the audio devices that pulseaudio uses to play and record audio. Setting the default sink and source is useful to make sure that the audio is played and recorded from the correct device.
+
+```bash 
+# Set default sink
+nano ~/.config/pulse/default.pa
+# Add the following line
+
+# Respeaker 4 mic array
+set-default-source alsa_input.usb-SEEED_ReSpeaker_4_Mic_Array__UAC1.0_-00.multichannel-input
+
+# Frida's speaker
+set-default-sink alsa_output.usb-GeneralPlus_USB_Audio_Device-00.analog-stereo
+
+# Restart pulseaudio (add to .bashrc)
+pulseaudio -k && pulseaudio --start
+```
+
+### Debug speech devices
+
+Sinks (Speakers)
+
+```bash
+# See default sink
+pactl info | grep "Default Sink"
+# Set default sink
+pactl set-default-sink <index>
+# List all sinks
+pactl list short sinks
+```
+
+Sources (Microphones)
+
+```bash
+# See default source
+pactl info | grep "Default Source"
+# Set default source
+pactl set-default-source <index>
+# List all source
+pactl list short sources
+```
+
+## Download openwakeword base model
+
+```
+python3
+import openwakeword
+openwakeword.utils.download_models()
 ```

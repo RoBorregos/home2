@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+<xacro:property name="mesh_path" value="file://$(find frida_description)/urdf/meshes/" />
+
+<xacro:macro name="load_zed" params="attach_to:='' xyz:='0 0 0' rpy:='0 0 0'">
+    <xacro:unless value="${attach_to == ''}">
+      <joint name="zed" type="fixed">
+        <parent link="${attach_to}"/>
+        <child link="ZED"/>
+        <origin xyz="${xyz}" rpy="${rpy}"/>
+      </joint>
+    </xacro:unless>
+
+<link name="ZED">
+    <inertial>
+      <origin xyz="0.00022189 -2.7346E-06 1.8693E-05" rpy="0 0 0" />
+      <mass value="0.230" />
+      <inertia ixx="0.00038053" ixy="2.1426E-09" ixz="-8.1327E-08"
+               iyy="2.3258E-05" iyz="6.6645E-09" izz="0.00038297" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="${mesh_path}ZED.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="${lidar_rgba}" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="${mesh_path}ZED.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <!--
+  <joint
+    name="zed"
+    type="fixed">
+    <origin xyz="0.030461 0 -0.050649" rpy="0 0.81804 0" />
+    <parent link="gripper" />
+    <child link="ZED" />
+    <axis xyz="0 0 0" />
+  </joint>
+  -->
+
+</xacro:macro>
+</robot>

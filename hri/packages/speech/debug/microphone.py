@@ -131,7 +131,18 @@ def list_audio_devices():
 if __name__ == "__main__":
     list_audio_devices()
 
-    # output_file = "../recorded_audio.wav"
-    # record_audio(output_file, input_device_index=12, duration=5)
-    # record_audio_respeaker(output_file, input_device_index=10, duration=10, channels=6, sample_rate=16000, chunk_size=512, format=pyaudio.paInt16, extract_channel=0)
+    output_file = "recorded_audio.wav"
+    # record_audio(
+    #     output_file, input_device_index=None, duration=5, channels=6, sample_rate=16000
+    # )
+    record_audio_respeaker(
+        output_file,
+        input_device_index=None,
+        duration=5,
+        channels=6,
+        sample_rate=16000,
+        chunk_size=512,
+        format=pyaudio.paInt16,
+        extract_channel=0,
+    )
     # record_audio_respeaker(output_file, input_device_index=10, duration=10, channels=6, sample_rate=16000, chunk_size=512, format=pyaudio.paInt16, extract_channel=0)

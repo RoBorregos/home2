@@ -1,0 +1,13 @@
+
+
+[submodule "manipulation/packages/gpd"]
+	path = manipulation/packages/gpd
+	url = https://github.com/Deivideich/gpd
+	
+[submodule "manipulation/packages/xarm_ros2"]
+	path = manipulation/packages/xarm_ros2
+	url = https://github.com/xArm-Developer/xarm_ros2.git
+	branch = humble
+[submodule "manipulation/packages/pymoveit2"]
+	path = manipulation/packages/pymoveit2
+	url = https://github.com/AndrejOrsula/pymoveit2

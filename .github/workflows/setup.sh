@@ -1,17 +1,24 @@
 #!/bin/bash
 
-sudo apt update
-DEBIAN_FRONTEND=noninteractive 
+DEBIAN_FRONTEND=noninteractive
 
+echo "LS MANIPULATION"
+ls ./manipulation/packages
+
+echo "APT UPDATE" 
+sudo apt update
+
+ 
+echo "ROSDEP INIT" 
 rosdep init
+
+echo "ROSDEP UPDATE"
 rosdep update
 
-#install vcs-tools
-DEBIAN_FRONTEND=noninteractive 
+#For testing
+echo "ROSDEP INSTALL"
+rosdep install --from-paths . -y --ignore-src -r --skip-keys gpd
 
-#rosdep install
-DEBIAN_FRONTEND=noninteractive 
-rosdep install --from-paths . -y --ignore-src -r
-
-# - Importing all dependencies
-colcon build --symlink-install
+#Running prebuild
+echo "PREBUILD SCRIPT"
+./prebuild.sh -y
