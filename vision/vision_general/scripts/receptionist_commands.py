@@ -116,8 +116,8 @@ class ReceptionistCommands(Node):
             response.description = "No image received yet."
             return response
 
-        frame = self.image
-        encoded_image = self.model.encode_image(frame)
+        cropped_frame = self.detect_and_crop_person()
+        encoded_image = self.model.encode_image(cropped_frame)
         response.description = self.model.caption_image(encoded_image)
         return response
 
@@ -206,6 +206,56 @@ class ReceptionistCommands(Node):
         if self.person_found or (time.time() - self.start_time) > CHECK_TIMEOUT:
             self.timer.cancel()
             self.detection_future.set_result(self.person_found)
+
+    def detect_and_crop_person(self):
+        """Check if there is a person in the frame, crop the image to the person with the largest area, and return the cropped frame."""
+        if self.image is None:
+            self.get_logger().warn("No image received yet.")
+            return None
+
+        frame = self.image
+        self.output_image = frame.copy()
+        width = frame.shape[1]
+
+        results = self.model(frame, verbose=False, classes=0)
+        largest_area = 0
+        largest_box = None
+
+        for out in results:
+            for box in out.boxes:
+                x, y, w, h = [round(i) for i in box.xywh[0].tolist()]
+                confidence = box.conf.item()
+                area = w * h
+
+                if (
+                    confidence > CONF_THRESHOLD
+                    and x >= int(width * PERCENTAGE)
+                    and x <= int(width * (1 - PERCENTAGE))
+                ):
+                    if area > largest_area:
+                        largest_area = area
+                        largest_box = (x, y, w, h)
+
+        if largest_box:
+            x, y, w, h = largest_box
+            self.person_found = True
+            cv2.rectangle(
+                self.output_image,
+                (int(x - w / 2), int(y - h / 2)),
+                (int(x + w / 2), int(y + h / 2)),
+                (0, 255, 0),
+                2,
+            )
+            cropped_frame = frame[
+                int(y - h / 2) : int(y + h / 2), int(x - w / 2) : int(x + w / 2)
+            ]
+            return cropped_frame
+
+        if (time.time() - self.start_time) > CHECK_TIMEOUT:
+            self.timer.cancel()
+            self.detection_future.set_result(self.person_found)
+
+        return None
 
     def get_detections(self, frame) -> None:
         """Obtain yolo detections for people, chairs and couches."""
