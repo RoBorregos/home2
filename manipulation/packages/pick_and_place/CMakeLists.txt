@@ -14,8 +14,11 @@ ament_python_install_package(pick_and_place)
 
 # Install examples
 set(SCRIPTS_DIR pick_and_place)
+set(TESTS_DIR ${SCRIPTS_DIR}/tests)
 install(PROGRAMS
     ${SCRIPTS_DIR}/pick_server.py
+    ${TESTS_DIR}/call_pick_action.py
+    DESTINATION lib/${PROJECT_NAME}
 )
 
 ament_package()
