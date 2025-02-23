@@ -118,6 +118,7 @@ class ReceptionistCommands(Node):
 
         cropped_frame = self.detect_and_crop_person()
         encoded_image = self.model.encode_image(cropped_frame)
+
         response.description = self.model.caption_image(encoded_image)
         return response
 
