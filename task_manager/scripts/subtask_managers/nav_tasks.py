@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-Node to move to a place. 
+Node to move to a place.
 """
 
 import rclpy
@@ -10,12 +10,13 @@ from rclpy.action import ActionClient
 
 from frida_interfaces.action import Move
 
-from utils.decorators import mockable, service_check  
+from utils.decorators import mockable, service_check
 from utils.logger import Logger
 
 MOVE_TOPIC = "/navigation/move"
 
-TIMEOUT = 5.0 
+TIMEOUT = 5.0
+
 
 class NavigationTasks:
     """Class to manage the navigation tasks"""
@@ -33,9 +34,7 @@ class NavigationTasks:
 
     def setup_services(self):
         if not self.move_action_client.wait_for_server(timeout_sec=TIMEOUT):
-            self.node.get_logger().warn(
-                "Move service not initialized."
-            )
+            self.node.get_logger().warn("Move service not initialized.")
 
     @mockable(return_value=True, delay=2)
     @service_check("move_action_client", False, TIMEOUT)
@@ -48,7 +47,9 @@ class NavigationTasks:
 
         try:
             goal_future = self.move_action_client.send_goal_async(goal)
-            rclpy.spin_until_future_complete(self.node, goal_future, timeout_sec=TIMEOUT)
+            rclpy.spin_until_future_complete(
+                self.node, goal_future, timeout_sec=TIMEOUT
+            )
 
             goal_handle = goal_future.result()
 
@@ -56,7 +57,9 @@ class NavigationTasks:
                 raise Exception("Goal rejected")
 
             result_future = goal_handle.get_result_async()
-            rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=TIMEOUT)
+            rclpy.spin_until_future_complete(
+                self.node, result_future, timeout_sec=TIMEOUT
+            )
             result = result_future.result()
 
             if result and result.result.success:
@@ -67,18 +70,18 @@ class NavigationTasks:
                 return self.STATE["EXECUTION_ERROR"]
 
         except Exception as e:
-                    self.node.get_logger().error(f"Error moving to location: {e}")
-                    return self.STATE["EXECUTION_ERROR"]
-        
+            self.node.get_logger().error(f"Error moving to location: {e}")
+            return self.STATE["EXECUTION_ERROR"]
+
+
 if __name__ == "__main__":
-    
     rclpy.init()
     node = Node("navigation_tasks")
-    navigation_tasks = NavigationTasks(node)  
+    navigation_tasks = NavigationTasks(node)
 
     try:
         while rclpy.ok():
-            location = input("Enter a location: ")  
+            location = input("Enter a location: ")
             if location.lower() == "exit":
                 break  # Exit loop
 
