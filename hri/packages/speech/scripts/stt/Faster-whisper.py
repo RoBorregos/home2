@@ -1,12 +1,13 @@
-import grpc
+import argparse
+import os
+import sys
 from concurrent import futures
+
+import grpc
 import speech_pb2
 import speech_pb2_grpc
-from faster_whisper import WhisperModel
-import os
 import torch
-import argparse
-import sys
+from faster_whisper import WhisperModel
 
 # Add the directory containing the protos to the Python path
 sys.path.append(os.path.join(os.path.dirname(__file__), "speech"))
@@ -39,7 +40,7 @@ class WhisperServicer(speech_pb2_grpc.SpeechServiceServicer):
         result = self.audio_model.transcribe(
             temp_file,
             language="en",
-            hotwords="Frida kitchen attendance",
+            hotwords="Frida kitchen attendance RoBorregos",
             condition_on_previous_text=True,
         )
 

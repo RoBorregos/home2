@@ -5,5 +5,5 @@ services:
       # Dockerfile.ROS is the same for both CPU and GPU
       dockerfile: Dockerfile.ROS
       args:
-        BASE_IMAGE: nvidia/cuda:11.8.0-runtime-ubuntu22.04
+        BASE_IMAGE: nvidia/cuda:11.8.0-devel-ubuntu22.04
     image: roborregos/home2:cuda_base

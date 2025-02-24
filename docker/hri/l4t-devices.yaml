@@ -1,0 +1,31 @@
+# Speech variables
+x-speech-devices: &speech-devices
+  PULSE_SERVER: unix:/tmp/pulse/pulseaudio.socket
+  PULSE_COOKIE: /tmp/pulse/pulseaudio.cookie
+
+services:
+  speech_devices:
+    container_name: home2-hri-l4t-devices
+    build:
+      context: ../..
+      dockerfile: docker/hri/Dockerfile.l4t
+      args:
+        BASE_IMAGE: roborregos/home2:l4t_base
+    image: roborregos/home2:hri-l4t
+    volumes:
+      - ../../:/workspace/src
+      - ~/.config/pulse:/tmp/pulse
+      - /dev:/dev
+    network_mode: host
+    privileged: true
+    environment:
+      <<:
+        - *speech-devices
+      DISPLAY: ${DISPLAY}
+    env_file:
+      - .env
+    tty: true
+    entrypoint: [ "bash", "-il", "-c"]
+    command: [
+      "colcon build --symlink-install --packages-select task_manager frida_interfaces frida_constants speech nlp embeddings && source ~/.bashrc && ros2 launch speech hri_launch.py"
+      ]
