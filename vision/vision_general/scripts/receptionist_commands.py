@@ -252,10 +252,6 @@ class ReceptionistCommands(Node):
             ]
             return cropped_frame
 
-        if (time.time() - self.start_time) > CHECK_TIMEOUT:
-            self.timer.cancel()
-            self.detection_future.set_result(self.person_found)
-
         return None
 
     def get_detections(self, frame) -> None:
