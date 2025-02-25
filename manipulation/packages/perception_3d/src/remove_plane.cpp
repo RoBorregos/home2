@@ -30,9 +30,6 @@ private:
 
 public:
   TableSegmentationNode() : Node("test_node") {
-    // int some;
-    std::cout << "asdqweqwe" << std::endl;
-    // std::cin >> some;
     RCLCPP_INFO(this->get_logger(), "Starting Table Segmentation Node");
     this->cloud_sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
         "/zed/zed_node/point_cloud/cloud_registered", rclcpp::SensorDataQoS(),
@@ -48,9 +45,6 @@ public:
         std::bind(&TableSegmentationNode::test_service, this,
                   std::placeholders::_1, std::placeholders::_2,
                   std::placeholders::_3));
-
-    // this->publ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-    //     "/point_cloud2", rclcpp::SensorDataQoS());
 
     this->remove_place_srv =
         this->create_service<frida_interfaces::srv::RemovePlane>(
@@ -83,7 +77,8 @@ public:
 
     copyPointCloud(last_, cloud_out);
 
-    response->health_response = this->removePlane(cloud_out, cloud_out);
+    response->health_response =
+        this->extractPlane(cloud_out, cloud_out, request->extract_or_remove);
 
     if (response->health_response != u32bStatusErrorCodes::OK) {
       return;
@@ -264,6 +259,38 @@ public:
     this->savePointCloud("/home/ivanromero/Desktop/home2/manipulation/packages/"
                          "perception_3d/pcl_debug/asdasd.pcd",
                          cloud_f);
+
+    return status;
+  };
+
+  uint32_t extractPlane(_IN_ const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
+                        _OUT_ pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out,
+                        bool extract_negative = false) {
+    uint32_t status = u32bStatusErrorCodes::OK;
+
+    pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
+    pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
+    pcl::SACSegmentation<pcl::PointXYZ> seg;
+    seg.setOptimizeCoefficients(true);
+    seg.setModelType(pcl::SACMODEL_PLANE);
+    seg.setMethodType(pcl::SAC_RANSAC);
+    seg.setMaxIterations(1000);
+    seg.setDistanceThreshold(0.01);
+
+    seg.setInputCloud(cloud);
+    seg.segment(*inliers, *coefficients);
+
+    if (inliers->indices.size() == 0) {
+      RCLCPP_ERROR(this->get_logger(), "Could not estimate a planar model");
+      return u32bStatusErrorCodes::COULD_NOT_ESTIMATE_PLANAR_MODEL;
+    }
+
+    pcl::ExtractIndices<pcl::PointXYZ> extract;
+    this->copyPointCloud(cloud, cloud_out);
+    extract.setInputCloud(cloud_out);
+    extract.setIndices(inliers);
+    extract.setNegative(extract_negative);
+    extract.filter(*cloud_out);
 
     return status;
   };
