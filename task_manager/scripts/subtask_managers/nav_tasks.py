@@ -47,9 +47,7 @@ class NavigationTasks:
 
         try:
             goal_future = self.move_action_client.send_goal_async(goal)
-            rclpy.spin_until_future_complete(
-                self.node, goal_future, timeout_sec=TIMEOUT
-            )
+            rclpy.spin_until_future_complete(self.node, goal_future, timeout_sec=TIMEOUT)
 
             goal_handle = goal_future.result()
 
@@ -57,9 +55,7 @@ class NavigationTasks:
                 raise Exception("Goal rejected")
 
             result_future = goal_handle.get_result_async()
-            rclpy.spin_until_future_complete(
-                self.node, result_future, timeout_sec=TIMEOUT
-            )
+            rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=TIMEOUT)
             result = result_future.result()
 
             if result and result.result.success:
