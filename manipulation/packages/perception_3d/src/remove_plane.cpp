@@ -29,7 +29,7 @@ private:
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr cloud_sub_;
 
 public:
-  TableSegmentationNode() : Node("test_node") {
+  TableSegmentationNode() : Node("table_segmentation_node") {
     RCLCPP_INFO(this->get_logger(), "Starting Table Segmentation Node");
     this->cloud_sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
         "/zed/zed_node/point_cloud/cloud_registered", rclcpp::SensorDataQoS(),
@@ -299,13 +299,14 @@ public:
 int main(int argc, _IN_ char *argv[]) {
   rclcpp::init(argc, argv);
 
-  RCLCPP_INFO(rclcpp::get_logger("main"), "Starting Table Segmentation Node");
+  RCLCPP_INFO(rclcpp::get_logger("table_segmentation_main"),
+              "Starting Table Segmentation Node");
   std::shared_ptr<rclcpp::Node> ptr = std::static_pointer_cast<rclcpp::Node>(
       std::make_shared<TableSegmentationNode>());
-  RCLCPP_INFO(rclcpp::get_logger("main"), "Node created");
+  RCLCPP_INFO(rclcpp::get_logger("table_segmentation_main"), "Node created");
   rclcpp::spin(ptr);
-  RCLCPP_INFO(rclcpp::get_logger("main"), "Node spinning");
+  RCLCPP_INFO(rclcpp::get_logger("table_segmentation_main"), "Node spinning");
   rclcpp::shutdown();
-  RCLCPP_INFO(rclcpp::get_logger("main"), "Node shutdown");
+  RCLCPP_INFO(rclcpp::get_logger("table_segmentation_main"), "Node shutdown");
   return 0;
 }
