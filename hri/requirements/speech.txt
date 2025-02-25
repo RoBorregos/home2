@@ -22,6 +22,7 @@ openwakeword
 pyusb==1.2.1
 pixel-ring==0.1.0
 piper-tts
+piper
 
 # gRPC
 grpcio==1.68.1
