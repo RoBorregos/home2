@@ -246,8 +246,6 @@ class ManipulationTasks:
 
     def move_joints_positions(self, joint_positions):
         """Set position of joints"""
-        # rclpy.init()
-        # node = Node("setJointsPositions")
 
         if joint_positions is None:
             Logger.error(self.node, "Joint positions not found")
@@ -256,38 +254,13 @@ class ManipulationTasks:
             Logger.error(self.node, "Joint positions not valid")
             return
         Logger.info(self.node, f"Setting joint positions to: {joint_positions}")
-        # Set position of joints
 
-        # self.node.declare_parameter("joints_postions", joint_positions)
         self.node.declare_parameter("synchronous", True)
         if not self.node.has_parameter("planner_id"):
             self.node.declare_parameter("planner_id", "RRTConnectConfigDefault")
 
-        # callback_group = ReentrantCallbackGroup()
-        # moveit2 = MoveIt2(
-        #     node=node,
-        #     joint_names=xarm6.joint_names(),
-        #     base_link_name=xarm6.base_link_name(),
-        #     end_effector_name=xarm6.end_effector_name(),
-        #     group_name=xarm6.MOVE_GROUP_ARM,
-        #     callback_group=callback_group,
-        # )
-        # moveit2.planner_id = (
-        #     node.get_parameter("planner_id").get_parameter_value().string_value
-        # )
-
-        # executor = rclpy.executors.MultiThreadedExecutor(2)
-        # executor.add_node(node)
-        # executor_thread = Thread(target=executor.spin, daemon=True, args=())
-        # executor_thread.start()
-        # node.create_rate(1.0).sleep()
-
         self.moveit2.max_velocity = 0.15
         self.moveit2.max_acceleration = 0.1
-
-        # joint_positions = (
-        #     self.node.get_parameter("joint_positions").get_parameter_value().double_array_value
-        # )
 
         synchronous = self.node.get_parameter("synchronous").get_parameter_value().bool_value
         cancel_after_secs = (
