@@ -27,6 +27,6 @@ RUN sudo chown -R ros /usr/lib/python3.10/
 RUN sudo chown -R ros /usr/local/lib/python3.10/
 
 # Install piper from source 
-RUN git clone https://github.com/rhasspy/piper.git /workspace/piper && \
+RUN git clone https://github.com/RoBorregos/piper.git /workspace/piper && \
   cd /workspace/piper && \
   make all
