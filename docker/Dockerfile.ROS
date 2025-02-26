@@ -3,14 +3,6 @@ FROM ${BASE_IMAGE}
 
 # Cuda images: BASE_IMAGE: nvidia/cuda:11.8.0-runtime-ubuntu22.04
 # CPU images: BASE_IMAGE: ubuntu:22.04
-
-# ARG USERNAME=ros
-# ARG USER_UID
-
-# # default USER_UID and USER_GID for compatibility
-# RUN if [ -z "$USER_UID" ]; then USER_UID=1000; fi
-# RUN if [ -z "$USER_GID" ]; then USER_GID=1000; fi
-
 ARG USERNAME=ros
 ARG USER_UID=1000
 ARG USER_GID=$USER_UID
