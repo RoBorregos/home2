@@ -1,7 +1,7 @@
 # NLP scripts
-openai
+openai==1.62.0
 python-dotenv==1.0.1
-pytz
+pytz==2025.1
 
 # Command generator
 pypng==0.20220715.0
@@ -16,7 +16,6 @@ sentence-transformers==2.6.1
 threadpoolctl==3.4.0
 tokenizers==0.15.2
 transformers==4.39.3
-#triton==2.2.0
 
 # Embeddings dependencies
 # chromadb==0.6.3
