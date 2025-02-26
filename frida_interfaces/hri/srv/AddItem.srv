@@ -2,6 +2,7 @@
 string[] document 
 string[] id  
 string collection
+string metadata
 ---
 bool success  # Whether the operation was successful
 string message  # A message describing the result

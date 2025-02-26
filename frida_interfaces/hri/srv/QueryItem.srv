@@ -2,7 +2,9 @@
 string query  # The search query
 string collection
 int16 topk #number of results 
+string where
 ---
 string[] results  # List of results (documents) that match the query, top k
+string[] metadata 
 bool success  # Whether the operation was successful
 string message  # A message describing the result
