@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
-
+import json
 import chromadb
 import pandas as pd
 import rclpy
@@ -58,10 +58,8 @@ class Embeddings(Node):
         self.build_embeddings_service = self.create_service(
             BuildEmbeddings, build_embeddings_service, self.build_embeddings_callback
         )
-
         # Initialize ChromaDB client
         self.chroma_client = chromadb.HttpClient(host="localhost", port=8000)
-
         # Configure the embedding function
         self.sentence_transformer_ef = (
             embedding_functions.SentenceTransformerEmbeddingFunction(
@@ -133,10 +131,9 @@ class Embeddings(Node):
 
             collection.add(
                 documents=request.document,
-                metadatas=[{"text": doc} for doc in request.document],
+                metadatas=[json.loads(request.metadata)],
                 ids=request.id,
             )
-
             response.success = True
             response.message = "Items added successfully"
         except Exception as e:
@@ -198,10 +195,34 @@ class Embeddings(Node):
         try:
             collection_name = self._sanitize_collection_name(request.collection)
             collection = self._get_or_create_collection(collection_name)
+            where_condition = {}
+            if request.where:
+                try:
+                    where_condition = json.loads(
+                        request.where
+                    )  # Convert stringified JSON to a dictionary
+                    self.get_logger().info(f"Parsed where condition: {where_condition}")
+                    results = collection.query(
+                        query_texts=[request.query],
+                        n_results=request.topk,
+                        where=where_condition,
+                        include=["documents", "metadatas", "distances"],
+                    )
+                except json.JSONDecodeError:
+                    response.success = False
+                    response.message = "Invalid JSON format in where condition."
+                    return response
+            else:
+                self.get_logger().info(
+                    "No where condition provided, using empty condition."
+                )
+                results = collection.query(
+                    query_texts=[request.query],
+                    n_results=request.topk,
+                    include=["documents", "metadatas", "distances"],
+                )
 
-            results = collection.query(
-                query_texts=[request.query], n_results=request.topk
-            )
+            self.get_logger().info(f"Raw query results: {results}")
 
             # Ensure results exist before accessing
             response.results = [str(doc) for doc in results.get("documents", [])]
@@ -209,13 +230,15 @@ class Embeddings(Node):
             response.message = (
                 "Query successful" if response.results else "No matching items found"
             )
+            response.metadata = [str(doc) for doc in results.get("metadatas", [])]
+
         except Exception as e:
             response.success = False
             response.message = f"Failed to query items: {str(e)}"
             self.get_logger().error(response.message)
         return response
 
-    def build_embeddings_callback(self):
+    def build_embeddings_callback(self, request, response):
         """Method to build embeddings for the household items data"""
         script_dir = Path(__file__).resolve().parent
         dataframes = [
@@ -265,6 +288,9 @@ class Embeddings(Node):
             )
 
         self.get_logger().info("Build request received and handled successfully")
+        response.success = True
+        response.message = "Embeddings built successfully"
+        return response
 
     def _sanitize_collection_name(self, collection):
         """Ensures collection name is a valid string"""
