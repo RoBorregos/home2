@@ -1,5 +1,4 @@
 import moondream as md
-from PIL import Image
 import cv2
 # ===== STEP 1: Install Dependencies =====
 # pip install moondream  # Install dependencies in your project directory
@@ -15,20 +14,8 @@ class MoonDreamModel:
     def __init__(self, model_path):
         self.model = md.vl(model=model_path)
 
-    def encode_image(self, image_path):
-        image = Image.open(image_path)
+    def encode_image(self, image):
         return self.model.encode_image(image)
-
-    def caption_image(self, encoded_image, length="normal", stream=False):
-        if stream:
-            print("Streaming caption:", end=" ", flush=True)
-            for chunk in self.model.caption(encoded_image, stream=True)["caption"]:
-                print(chunk, end="", flush=True)
-            print()
-        else:
-            caption = self.model.caption(encoded_image, length=length)["caption"]
-            print("Caption:", caption)
-            return caption
 
     def generate_person_description(self, encoded_image, query, stream=False):
         if stream:
@@ -80,9 +67,10 @@ if __name__ == "__main__":
     prompt_person_desc = "Describe the clothing of the person in the image in a detailed and specific manner. Include the type of clothing, colors, patterns, and any notable accessories. Ensure that the description is clear and distinct."
     object = "fanta"
     encoded_image = moon_dream.encode_image(image_path)
-    moon_dream.query_image(
+    moon_dream.generate_person_description(
         encoded_image,
         "What are the people wearing on the image, mention it as people1:, people2: and so on in json format, you can choose any keys and values",
+        stream=False,
     )
     xmin, ymin, xmax, ymax = moon_dream.find_beverage(encoded_image, object)
     if xmin is not None:
