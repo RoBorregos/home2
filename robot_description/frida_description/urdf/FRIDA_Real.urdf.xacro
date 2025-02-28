@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <robot name="FRIDA" xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-
+<!-- XARM ARGUMENTS -->
   <xacro:arg name="prefix" default=""/>
   <xacro:arg name="hw_ns" default="xarm"/>
   <xacro:arg name="limited" default="false"/>
@@ -11,20 +11,16 @@
   <xacro:arg name="add_vacuum_gripper" default="false"/>
   <xacro:arg name="add_bio_gripper" default="false"/>
   <xacro:arg name="model1300" default="false"/>
-  
   <xacro:arg name="dof" default="6"/>
   <xacro:arg name="robot_ip" default=""/>
   <xacro:arg name="robot_type" default="xarm"/>
   <xacro:arg name="robot_sn" default=""/>
   <xacro:arg name="report_type" default="normal"/>
-
   <xacro:arg name="ros2_control_plugin" default="uf_robot_hardware/UFRobotSystemHardware"/>
   <xacro:arg name="ros2_control_params" default=""/>
-
   <xacro:arg name="add_realsense_d435i" default="false"/>
   <xacro:arg name="add_d435i_links" default="true"/>
   <xacro:arg name="use_gazebo_camera" default="false"/>
-
   <xacro:arg name="add_other_geometry" default="false"/>
   <xacro:arg name="geometry_type" default="box"/>
   <xacro:arg name="geometry_mass" default="0.1"/>
@@ -44,11 +40,19 @@
   <xacro:arg name="attach_rpy" default="0 0 1.57"/>
   <xacro:arg name="mesh_suffix" default="stl"/>
   <xacro:arg name="kinematics_suffix" default=""/>
-  <xacro:arg name="sim_mode" default="true"/>
+  <!-- ZED ARGUMENTS -->
+  <xacro:arg name="camera_name"   default="zed" />
+  <xacro:arg name="camera_model"  default="zed2" />
+  <xacro:arg name="custom_baseline"  default="0.0" />
+  <!-- If GNSS fusion is enabled the position of the antenna with respect to the camera mount point is required -->
+  <xacro:arg name="enable_gnss"   default="false" />
+  <xacro:arg name="gnss_x" default="0.0" />
+  <xacro:arg name="gnss_y" default="0.0" />
+  <xacro:arg name="gnss_z" default="0.0" />
 
-
+  <!-- ROBOT COMPONENTS -->
   <xacro:include filename="robot_real.xacro"/>
-
+  <!-- XARM MACRO -->
   <xacro:include filename="$(find xarm_description)/urdf/xarm_device_macro.xacro" />
     <xacro:xarm_device prefix="$(arg prefix)" hw_ns="$(arg hw_ns)" limited="$(arg limited)" 
     effort_control="$(arg effort_control)" velocity_control="$(arg velocity_control)"
@@ -69,27 +73,16 @@
     baud_checkset="$(arg baud_checkset)" default_gripper_baud="$(arg default_gripper_baud)"
     model1300="$(arg model1300)" attach_to="$(arg attach_to)" attach_xyz="$(arg attach_xyz)" attach_rpy="$(arg attach_rpy)"
     robot_sn="$(arg robot_sn)" use_gazebo_camera="$(arg use_gazebo_camera)" mesh_suffix="$(arg mesh_suffix)" kinematics_suffix="$(arg kinematics_suffix)" />
- <!-- Gripper -->
+  <!-- Gripper -->
   <xacro:include filename="gripper.xacro" />
-  <xacro:load_gripper attach_to="link_eef" xyz="0 0 0" rpy="2.3562 -1.5708 0" />
-
-  <!-- <xacro:include filename="zed.xacro" /> -->
-  <!-- <xacro:load_zed attach_to="gripper" xyz="0.030461 0 -0.050649" rpy="0 0.81804 0" /> -->
-  <!-- <xacro:arg name="camera_name"   default="zed" />
-  <xacro:arg name="camera_model"  default="zed2" />
-  <xacro:arg name="custom_baseline"  default="0.0" /> -->
-  <!-- If GNSS fusion is enabled the position of the antenna with respect to the camera mount point is required -->
-  <!-- <xacro:arg name="enable_gnss"   default="false" />
-  <xacro:arg name="gnss_x" default="0.0" />
-  <xacro:arg name="gnss_y" default="0.0" />
-  <xacro:arg name="gnss_z" default="0.0" />
-
+    <xacro:load_gripper attach_to="link_eef" xyz="0 0 0" rpy="2.3562 -1.5708 0" />
+   <!-- ZED MACRO -->
   <xacro:include filename="$(find frida_description)/urdf/zed_macro.urdf.xacro" />
-  <xacro:zed_camera name="$(arg camera_name)" model="$(arg camera_model)" custom_baseline="$(arg custom_baseline)" enable_gnss="$(arg enable_gnss)">
-	    <origin xyz="$(arg gnss_x) $(arg gnss_y) $(arg gnss_z)" rpy="0 0 0"/>
-  </xacro:zed_camera>
+    <xacro:zed_camera name="$(arg camera_name)" model="$(arg camera_model)" custom_baseline="$(arg custom_baseline)" enable_gnss="$(arg enable_gnss)">
+	      <origin xyz="$(arg gnss_x) $(arg gnss_y) $(arg gnss_z)" rpy="0 0 0"/>
+    </xacro:zed_camera>
 
-  <joint name="base_footprint_joint" type="fixed">
+  <!-- <joint name="base_footprint_joint" type="fixed">
       <origin xyz="0 0 ${base_length/2 + caster_radius*2}" rpy="0 0 0" />        
       <parent link="base_footprint"/>
       <child link="base_link" />

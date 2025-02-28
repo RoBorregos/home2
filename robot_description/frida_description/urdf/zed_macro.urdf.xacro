@@ -110,7 +110,8 @@
     </xacro:if>
 
     <!-- Camera mounting point (the threaded screw hole in the bottom) -->
-    <link name="${name}_camera_link" />
+    <!-- <link name="${name}_camera_link" /> -->
+    
     
     <!-- Camera Center -->
     <link name="${name}_camera_center">
@@ -131,9 +132,11 @@
       </xacro:unless>
     </link>
     <joint name="${name}_camera_center_joint" type="fixed">
-      <parent link="${name}_camera_link"/>
+      <!-- <parent link="${name}_camera_link"/> -->
+      <parent link="gripper"/>
       <child link="${name}_camera_center"/>
-      <origin xyz="0 0 ${height/2}" rpy="0 ${bottom_slope} 0" />
+      <!-- <origin xyz="0 0 ${height/2}" rpy="0 ${bottom_slope} 0" /> -->
+      <origin xyz="0.030461 0 -0.050649" rpy="0 0.81804 0" />
     </joint>
 
     <xacro:unless value="${mono}">
@@ -251,7 +254,8 @@
     <xacro:if value="${enable_gnss}">
       <link name="${name}_gnss_link" />
       <joint name="${name}_gnss_joint" type="fixed">
-        <parent link="${name}_camera_link"/>
+        <!-- <parent link="${name}_camera_link"/> -->
+        <parent link="gripper"/>
         <child link="${name}_gnss_link"/>
         <xacro:insert_block name="gnss_origin" />
       </joint>
