@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-<link name="LIDAR">
+<link name="laser">
     <inertial>
       <origin xyz="-1.3878E-17 3.3818E-34 -0.0125" rpy="0 0 0" />
       <mass value="0.096211" />
@@ -25,9 +25,9 @@
     </collision>
   </link>
   <joint name="lidar" type="fixed">
-    <origin xyz="0.15026 0 0.002" rpy="3.1416 0 0" />
+    <origin xyz="0.15026 0 0.002" rpy="0 0 -1.57" />
     <parent link="base_link" />
-    <child link="LIDAR" />
+    <child link="laser" />
     <axis xyz="0 0 0" />
   </joint>
 

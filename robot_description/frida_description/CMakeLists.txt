@@ -16,7 +16,7 @@ find_package(xarm_description REQUIRED)
 ament_environment_hooks("hooks/resource_paths.dsv.in")
 
 #Install directories
-install(DIRECTORY launch urdf worlds
+install(DIRECTORY launch urdf worlds srdf
   DESTINATION share/${PROJECT_NAME})
 
 

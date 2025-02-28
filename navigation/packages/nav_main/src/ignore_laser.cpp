@@ -16,6 +16,7 @@ public:
         std::string ignore_list;
         this->declare_parameter("ignore_array", "");
         this->get_parameter("ignore_array", ignore_list);
+        RCLCPP_INFO(this->get_logger(), "ignore_list: %s", ignore_list.c_str());
         ignore_array_ = split(ignore_list, ',');
 
         if (ignore_array_.size() % 2 != 0) {
@@ -33,7 +34,7 @@ public:
             "/scan_input", 10, std::bind(&IgnoreLaser::scanCallback, this, std::placeholders::_1));
 
         // Publisher for modified scan
-        scan_fixed_ = this->create_publisher<sensor_msgs::msg::LaserScan>("scan_fixed", 10);
+        scan_fixed_ = this->create_publisher<sensor_msgs::msg::LaserScan>("scan", 10);
     }
 
 private:
