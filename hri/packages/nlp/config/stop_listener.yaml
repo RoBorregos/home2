@@ -1,6 +1,0 @@
-command_interpreter:
-  ros__parameters:
-    base_url: "http://localhost:11434/v1"
-    model: "llama3.2"
-    SPEECH_COMMAND_TOPIC_NAME: "/speech/raw_command"
-    OUT_COMMAND_TOPIC_NAME: "/stop_following"

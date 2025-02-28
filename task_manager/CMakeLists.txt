@@ -44,6 +44,9 @@ ${UTILS}
 DESTINATION lib/${PROJECT_NAME}/subtask_managers/utils
 )
 
+install(DIRECTORY launch scripts
+ DESTINATION share/${PROJECT_NAME})
+
 file (GLOB CONFIG scripts/config/*.py)
 
 # Install python config

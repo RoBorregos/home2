@@ -1,22 +1,19 @@
 #!/usr/bin/env python3
 
-import rclpy
-from rclpy.node import Node
-from rclpy.executors import ExternalShutdownException
-
-from frida_interfaces.msg import AudioData
-from std_msgs.msg import Bool, String
-
-from ament_index_python.packages import get_package_share_directory
-
-import webrtcvad
-import pyaudio
 import collections
+import os
 
 import numpy as np
-import os
 import onnxruntime
+import pyaudio
+import rclpy
+import webrtcvad
+from ament_index_python.packages import get_package_share_directory
+from rclpy.executors import ExternalShutdownException
+from rclpy.node import Node
+from std_msgs.msg import Bool, String
 
+from frida_interfaces.msg import AudioData
 
 # Constants
 FORMAT = pyaudio.paInt16  # Audio format (16-bit PCM)
@@ -75,8 +72,7 @@ class UsefulAudio(Node):
 
         self.timer = None
         self.is_saying = False
-        self.audio_state = "None"
-        self.service_active = False
+        self.audio_state = "idle"
 
         self.publisher = self.create_publisher(AudioData, "UsefulAudio", 20)
         self.audio_state_publisher = self.create_publisher(String, "AudioState", 10)
@@ -89,7 +85,9 @@ class UsefulAudio(Node):
             AudioData, "rawAudioChunk", self.callback_raw_audio, 10
         )
         self.create_subscription(Bool, "saying", self.callback_saying, 10)
-        self.create_subscription(Bool, "keyword_detected", self.callback_keyword, 10)
+        self.create_subscription(
+            String, "/wakeword_detected", self.callback_keyword, 10
+        )
 
         if not self.use_silero_vad:
             self.vad = webrtcvad.Vad()
@@ -126,10 +124,9 @@ class UsefulAudio(Node):
         self.chunk_count += 1
 
     def discard_audio(self):
-        if not self.service_active:
-            self.ring_buffer.clear()
-            self.voiced_frames = None
-            self.chunk_count = 0
+        self.ring_buffer.clear()
+        self.voiced_frames = None
+        self.chunk_count = 0
 
     def publish_audio(self):
         if self.chunk_count > MIN_CHUNKS_AUDIO_LENGTH:
@@ -207,8 +204,7 @@ class UsefulAudio(Node):
             ):
                 self.triggered = False
                 self.compute_audio_state()
-                if not self.service_active:
-                    self.publish_audio()
+                self.publish_audio()
                 self.timer = None
 
     def callback_raw_audio(self, msg):
@@ -224,10 +220,19 @@ class UsefulAudio(Node):
         self.compute_audio_state()
 
     def callback_keyword(self, msg):
+        self.log("keyword callback activated.")
         self.triggered = True
-        if not self.service_active:
-            self.discard_audio()
-            self.compute_audio_state()
+
+        self.discard_audio()
+        self.compute_audio_state()
+
+        # if not self.service_active:
+        #     self.discardAudio()
+        #     self.computeAudioState()
+        # if self.audio_state == "idle":
+        #     self.triggered = True
+        #     self.discard_audio()
+        #     self.compute_audio_state()
 
     def compute_audio_state(self):
         new_state = (

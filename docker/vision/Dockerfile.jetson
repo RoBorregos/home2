@@ -1,0 +1,32 @@
+ARG BASE_IMAGE=dustynv/l4t-pytorch:r36.4.0
+FROM ${BASE_IMAGE}
+
+RUN mkdir -p /workspace/requirements
+
+# Requirements
+COPY vision/vision_general/requirements.txt /workspace/requirements/requirements.txt   
+RUN pip install -r requirements/requirements.txt
+
+# Download and extract dlib
+RUN wget http://dlib.net/files/dlib-19.21.tar.bz2 && \
+    tar jxvf dlib-19.21.tar.bz2
+
+WORKDIR /workspace/dlib-19.21
+RUN mkdir build
+WORKDIR /workspace/dlib-19.21/build
+
+# Configure and build dlib
+RUN cmake .. && \
+    cmake --build .
+
+WORKDIR /workspace/dlib-19.21
+
+# Install dlib
+RUN python3 setup.py install --set DLIB_USE_CUDA=1
+
+# CV-bridge
+RUN apt update && apt install -y ros-humble-cv-bridge
+
+USER ros
+RUN sudo usermod -a -G video ros
+WORKDIR /workspace

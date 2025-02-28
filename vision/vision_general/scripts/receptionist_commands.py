@@ -8,6 +8,7 @@ commands.
 
 import cv2
 from ultralytics import YOLO
+from moondream_lib import MoonDreamModel
 import pathlib
 import numpy as np
 import queue
@@ -22,14 +23,18 @@ from rclpy.task import Future
 
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.srv import FindSeat
+from frida_interfaces.srv import PersonDescription
+from frida_interfaces.srv import BeverageLocation
 
 
 CAMERA_TOPIC = "/zed2/zed_node/rgb/image_rect_color"
 CHECK_PERSON_TOPIC = "/vision/detect_person"
+MOONDREAM_TOPIC = "vision/moondream"
 FIND_SEAT_TOPIC = "/vision/find_seat"
 IMAGE_TOPIC = "/vision/img_person_detecion"
 
-MODEL_LOCATION = str(pathlib.Path(__file__).parent) + "/Utils/yolov8n.pt"
+YOLO_LOCATION = str(pathlib.Path(__file__).parent) + "/Utils/yolov8n.pt"
+MOONDREAM_LOCATION = "vision/vision_general/scripts/moondream-2b-int8.mf.gz"
 PERCENTAGE = 0.3
 MAX_DEGREE = 30
 AREA_PERCENTAGE_THRESHOLD = 0.2
@@ -48,13 +53,20 @@ class ReceptionistCommands(Node):
         self.image_subscriber = self.create_subscription(
             Image, CAMERA_TOPIC, self.image_callback, 10
         )
+        self.person_description_service = self.create_service(
+            PersonDescription, MOONDREAM_TOPIC, self.person_description_callback
+        )
+        self.beverage_location_service = self.create_service(
+            BeverageLocation, MOONDREAM_TOPIC, self.beverage_location_callback
+        )
         self.image_publisher = self.create_publisher(Image, IMAGE_TOPIC, 10)
         self.person_detection_action_server = ActionServer(
             self, DetectPerson, CHECK_PERSON_TOPIC, self.detect_person_callback
         )
 
         self.image = None
-        self.model = YOLO(MODEL_LOCATION)
+        self.yolo_model = YOLO(YOLO_LOCATION)
+        self.moondream_model = MoonDreamModel(MOONDREAM_LOCATION)
         self.output_image = []
         self.check = False
 
@@ -101,6 +113,37 @@ class ReceptionistCommands(Node):
 
         response.success = False
         self.get_logger().warn("No seat found")
+        return response
+
+    def person_description_callback(self, request, response):
+        """Callback to describe the person in the image."""
+        self.get_logger().info("Executing service Person Description")
+
+        if self.image is None:
+            response.description = "No image received yet."
+            return response
+
+        query = "Describe the clothing of the person in the image in a detailed and specific manner. Include the type of clothing, colors, patterns, and any notable accessories. Ensure that the description is clear and distinct."
+        cropped_frame = self.detect_and_crop_person()
+        encoded_image = self.moondream_model.encode_image(cropped_frame)
+
+        response.description = self.moondream_model.generate_person_description(
+            encoded_image, query, stream=False
+        )
+        return response
+
+    def beverage_location_callback(self, request, response, beverage):
+        """Callback to locate x,y bounding box in the image."""
+        self.get_logger().info("Executing service Beverage Location")
+
+        if self.image is None:
+            response.location = "No image received yet."
+            return response
+
+        frame = self.image
+        encoded_image = self.moondream_model.encode_image(frame)
+
+        response.location = self.moondream_model.find_beverage(encoded_image, beverage)
         return response
 
     async def detect_person_callback(self, goal_handle):
@@ -155,7 +198,7 @@ class ReceptionistCommands(Node):
         self.output_image = frame.copy()
         width = frame.shape[1]
 
-        results = self.model(frame, verbose=False, classes=0)
+        results = self.yolo_model(frame, verbose=False, classes=0)
 
         for out in results:
             for box in out.boxes:
@@ -189,15 +232,61 @@ class ReceptionistCommands(Node):
             self.timer.cancel()
             self.detection_future.set_result(self.person_found)
 
+    def detect_and_crop_person(self):
+        """Check if there is a person in the frame, crop the image to the person with the largest area, and return the cropped frame."""
+        if self.image is None:
+            self.get_logger().warn("No image received yet.")
+            return None
+
+        frame = self.image
+        self.output_image = frame.copy()
+        width = frame.shape[1]
+
+        results = self.yolo_model(frame, verbose=False, classes=0)
+        largest_area = 0
+        largest_box = None
+
+        for out in results:
+            for box in out.boxes:
+                x, y, w, h = [round(i) for i in box.xywh[0].tolist()]
+                confidence = box.conf.item()
+                area = w * h
+
+                if (
+                    confidence > CONF_THRESHOLD
+                    and x >= int(width * PERCENTAGE)
+                    and x <= int(width * (1 - PERCENTAGE))
+                ):
+                    if area > largest_area:
+                        largest_area = area
+                        largest_box = (x, y, w, h)
+
+        if largest_box:
+            x, y, w, h = largest_box
+            self.person_found = True
+            cv2.rectangle(
+                self.output_image,
+                (int(x - w / 2), int(y - h / 2)),
+                (int(x + w / 2), int(y + h / 2)),
+                (0, 255, 0),
+                2,
+            )
+            cropped_frame = frame[
+                int(y - h / 2) : int(y + h / 2), int(x - w / 2) : int(x + w / 2)
+            ]
+            return cropped_frame
+
+        return None
+
     def get_detections(self, frame) -> None:
         """Obtain yolo detections for people, chairs and couches."""
-        results = self.model(frame, verbose=False, classes=[0, 56, 57])
+        results = self.yolo_model(frame, verbose=False, classes=[0, 56, 57])
 
         for out in results:
             for box in out.boxes:
                 x1, y1, x2, y2 = [round(x) for x in box.xyxy[0].tolist()]
                 class_id = box.cls[0].item()
-                label = self.model.names[class_id]
+                label = self.yolo_model.names[class_id]
                 bbox = (x1, y1, x2, y2)
                 confidence = box.conf.item()
                 area = (x2 - x1) * (y2 - y1)

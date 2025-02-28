@@ -29,4 +29,8 @@ exclude = [
     "site-packages",
     "venv",
     "*pb2*",
+    "manipulation/packages/pymoveit2",
+    "manipulation/packages/xarm_ros2",
+    "manipulation/packages/gpd"
 ]
+

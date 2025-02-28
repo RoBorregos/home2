@@ -4,14 +4,17 @@
 Python ROS2 node to extract information from text
 """
 
+import json
+import os
+
 # Libraries
 from typing import Optional
+
 import rclpy
-from rclpy.node import Node
-import os
-import openai
+from openai import OpenAI
 from pydantic import BaseModel
-import json
+from rclpy.node import Node
+
 from frida_interfaces.srv import ExtractInfo
 
 EXTRACT_DATA_SERVICE = "/extract_data"
@@ -32,9 +35,10 @@ class DataExtractor(Node):
         """Initialize the ROS2 node"""
         super().__init__("data_extractor")
 
-        self.declare_parameter("base_url", None)
+        self.declare_parameter("base_url", "None")
         self.declare_parameter("model", "gpt-4o-2024-08-06")
-        self.declare_parameter("EXTRACT_DATA_SERVICE_NAME", EXTRACT_DATA_SERVICE)
+        self.declare_parameter("EXTRACT_DATA_SERVICE", EXTRACT_DATA_SERVICE)
+        self.declare_parameter("temperature", 0.5)
 
         base_url = self.get_parameter("base_url").get_parameter_value().string_value
         if base_url == "None":
@@ -42,11 +46,19 @@ class DataExtractor(Node):
         else:
             self.base_url = base_url
 
+        self.temperature = (
+            self.get_parameter("temperature").get_parameter_value().double_value
+        )
+
+        self.client = OpenAI(
+            api_key=os.getenv("OPENAI_API_KEY", "ollama"), base_url=base_url
+        )
+
         model = self.get_parameter("model").get_parameter_value().string_value
         self.model = model
 
         EXTRACT_DATA_SERVICE = (
-            self.get_parameter("EXTRACT_DATA_SERVICE_NAME")
+            self.get_parameter("EXTRACT_DATA_SERVICE")
             .get_parameter_value()
             .string_value
         )
@@ -57,7 +69,6 @@ class DataExtractor(Node):
             ExtractInfo, EXTRACT_DATA_SERVICE, self.extract_info_requested
         )
 
-        openai.api_key = os.getenv("OPENAI_API_KEY")
         self.get_logger().info("Data extractor node started")
 
     def extract_info_requested(
@@ -69,9 +80,9 @@ class DataExtractor(Node):
 
         instruction = "You will be presented with some text and data to extract. Please provide the requested information or leave empty if it isn't available."
         response_content = (
-            openai.beta.chat.completions.parse(
+            self.client.beta.chat.completions.parse(
                 model=self.model,
-                base_url=self.base_url,
+                temperature=self.temperature,
                 messages=[
                     {"role": "system", "content": instruction},
                     {
