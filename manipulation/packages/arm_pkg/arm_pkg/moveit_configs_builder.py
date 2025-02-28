@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python3
 # Software License Agreement (BSD License)
 #
@@ -5,7 +6,7 @@
 # All rights reserved.
 #
 # Author: Vinman <vinman.wen@ufactory.cc> <vinman.cub@gmail.com>
-
+ 
 """Simplify loading moveit config parameters.
 
 xarm_moveit_config/
@@ -22,8 +23,8 @@ MoveItConfigsBuilder(
     **kwargs
 )
     context: instance of launch.launch_context.LaunchContext
-    controllers_name: 'controllers' if realmove else 'fake_controllers'
-    **kwargs:
+    controllers_name: 'controllers' if realmove else 'fake_controllers' 
+    **kwargs: 
         robot_ip=''
         dof=7
         robot_type='xarm'
@@ -62,7 +63,7 @@ DualMoveItConfigsBuilder(
     **kwargs
 )
     context: instance of launch.launch_context.LaunchContext
-    controllers_name: 'controllers' if realmove else 'fake_controllers'
+    controllers_name: 'controllers' if realmove else 'fake_controllers' 
     **kwargs:
         robot_ip_1=''
         robot_ip_2=''
@@ -134,6 +135,7 @@ Example:
     moveit_configs.to_dict()
 """
 
+import os
 import re
 import logging
 from pathlib import Path
@@ -148,16 +150,11 @@ from uf_ros_lib.substitutions.common import CommonYAML, DualCommonYAML
 from uf_ros_lib.substitutions.joint_limits import JointLimitsYAML, DualJointLimitsYAML
 from uf_ros_lib.substitutions.kinematics import KinematicsYAML, DualKinematicsYAML
 from uf_ros_lib.substitutions.controllers import ControllersYAML, DualControllersYAML
-from uf_ros_lib.substitutions.planning_pipelines import (
-    get_pattern_matches,
-    PlanningPipelinesYAML,
-    DualPlanningPipelinesYAML,
-)
+from uf_ros_lib.substitutions.planning_pipelines import get_pattern_matches, PlanningPipelinesYAML, DualPlanningPipelinesYAML
 
 try:
     from moveit_configs_utils import MoveItConfigs
-except Exception:
-
+except Exception as e:
     @dataclass
     class MoveItConfigs:
         """Class containing MoveIt related parameters."""
@@ -208,166 +205,140 @@ except Exception:
 
 class MoveItConfigsBuilder(ParameterBuilder):
     __moveit_configs = None
-    __urdf_package = ""
+    __urdf_package = ''
     # Relative path of the URDF file w.r.t. __urdf_package
-    __urdf_file_path = ""
+    __urdf_file_path = ''
     # Relative path of the SRDF file  w.r.t. xarm_moveit_config
-    __srdf_file_path = ""
+    __srdf_file_path = ''
     # String specify the parameter name that the robot description will be loaded to, it will also be used as a prefix
     # for "_planning", "_semantic", and "_kinematics"
-    __robot_description = ""
+    __robot_description = ''
 
-    def __init__(self, context=None, controllers_name="fake_controllers", **kwargs):
-        super().__init__("xarm_moveit_config")
+    def __init__(
+        self,
+        context=None,
+        controllers_name='fake_controllers',
+        **kwargs
+    ):
+        super().__init__('xarm_moveit_config')
         self.__moveit_configs = MoveItConfigs()
 
         self.__context = context
 
         def get_param_str(name, default_val):
             val = kwargs.get(name, default_val)
-            return (
-                val
-                if isinstance(val, str)
-                else "false"
-                if not val
-                else "true"
-                if val
-                else (val.perform(context) if context is not None else val)
-                if isinstance(val, LaunchConfiguration)
-                else str(val)
-            )
+            return val if isinstance(val, str) else 'false' if val == False else 'true' if val == True else (val.perform(context) if context is not None else val) if isinstance(val, LaunchConfiguration) else str(val)
 
         def get_list_param_str(name, default_val):
             val = get_param_str(name, default_val)
-            return (
-                val[1:-1]
-                if context is not None
-                and isinstance(val, str)
-                and val[0] in ['"', "'"]
-                and val[-1] in ['"', "'"]
-                else val
-            )
+            return val[1:-1] if context is not None and isinstance(val, str) and val[0] in ['"', '\''] and val[-1] in ['"', '\''] else val
 
-        robot_ip = get_param_str("robot_ip", "")
-        report_type = get_param_str("report_type", "normal")
-        baud_checkset = get_param_str("baud_checkset", True)
-        default_gripper_baud = get_param_str("default_gripper_baud", 2000000)
-        dof = get_param_str("dof", 7)
-        robot_type = get_param_str("robot_type", "xarm")
-        prefix = get_param_str("prefix", "")
-        hw_ns = get_param_str("hw_ns", "xarm")
-        limited = get_param_str("limited", False)
-        effort_control = get_param_str("effort_control", False)
-        velocity_control = get_param_str("velocity_control", False)
-        model1300 = get_param_str("model1300", False)
-        robot_sn = get_param_str("robot_sn", "")
-        attach_to = get_param_str("attach_to", "world")
-        attach_xyz = get_list_param_str("attach_xyz", "0 0 0")
-        attach_rpy = get_list_param_str("attach_rpy", "0 0 0")
-        mesh_suffix = get_param_str("mesh_suffix", "stl")
-        kinematics_suffix = get_param_str("kinematics_suffix", "")
-        ros2_control_plugin = get_param_str(
-            "ros2_control_plugin", "uf_robot_hardware/UFRobotSystemHardware"
-        )
-        ros2_control_params = get_param_str("ros2_control_params", "")
-        add_gripper = get_param_str("add_gripper", False)
-        add_vacuum_gripper = get_param_str("add_vacuum_gripper", False)
-        add_bio_gripper = get_param_str("add_bio_gripper", False)
-        add_realsense_d435i = get_param_str("add_realsense_d435i", False)
-        add_d435i_links = get_param_str("add_d435i_links", True)
-        use_gazebo_camera = get_param_str("use_gazebo_camera", False)
-        add_other_geometry = get_param_str("add_other_geometry", False)
-        geometry_type = get_param_str("geometry_type", "box")
-        geometry_mass = get_param_str("geometry_mass", 0.1)
-        geometry_height = get_param_str("geometry_height", 0.1)
-        geometry_radius = get_param_str("geometry_radius", 0.1)
-        geometry_length = get_param_str("geometry_length", 0.1)
-        geometry_width = get_param_str("geometry_width", 0.1)
-        geometry_mesh_filename = get_param_str("geometry_mesh_filename", "")
-        geometry_mesh_origin_xyz = get_list_param_str(
-            "geometry_mesh_origin_xyz", "0 0 0"
-        )
-        geometry_mesh_origin_rpy = get_list_param_str(
-            "geometry_mesh_origin_rpy", "0 0 0"
-        )
-        geometry_mesh_tcp_xyz = get_list_param_str("geometry_mesh_tcp_xyz", "0 0 0")
-        geometry_mesh_tcp_rpy = get_list_param_str("geometry_mesh_tcp_rpy", "0 0 0")
+        robot_ip = get_param_str('robot_ip', '')
+        report_type = get_param_str('report_type', 'normal')
+        baud_checkset = get_param_str('baud_checkset', True)
+        default_gripper_baud = get_param_str('default_gripper_baud', 2000000)
+        dof = get_param_str('dof', 7)
+        robot_type = get_param_str('robot_type', 'xarm')
+        prefix = get_param_str('prefix', '')
+        hw_ns = get_param_str('hw_ns', 'xarm')
+        limited = get_param_str('limited', False)
+        effort_control = get_param_str('effort_control', False)
+        velocity_control = get_param_str('velocity_control', False)
+        model1300 = get_param_str('model1300', False)
+        robot_sn = get_param_str('robot_sn', '')
+        attach_to = get_param_str('attach_to', 'world')
+        attach_xyz = get_list_param_str('attach_xyz', '0 0 0')
+        attach_rpy = get_list_param_str('attach_rpy', '0 0 0')
+        mesh_suffix = get_param_str('mesh_suffix', 'stl')
+        kinematics_suffix = get_param_str('kinematics_suffix', '')
+        ros2_control_plugin = get_param_str('ros2_control_plugin', 'uf_robot_hardware/UFRobotSystemHardware')
+        ros2_control_params = get_param_str('ros2_control_params', '')
+        add_gripper = get_param_str('add_gripper', False)
+        add_vacuum_gripper = get_param_str('add_vacuum_gripper', False)
+        add_bio_gripper = get_param_str('add_bio_gripper', False)
+        add_realsense_d435i = get_param_str('add_realsense_d435i', False)
+        add_d435i_links = get_param_str('add_d435i_links', True)
+        use_gazebo_camera = get_param_str('use_gazebo_camera', False)
+        add_other_geometry = get_param_str('add_other_geometry', False)
+        geometry_type = get_param_str('geometry_type', 'box')
+        geometry_mass = get_param_str('geometry_mass', 0.1)
+        geometry_height = get_param_str('geometry_height', 0.1)
+        geometry_radius = get_param_str('geometry_radius', 0.1)
+        geometry_length = get_param_str('geometry_length', 0.1)
+        geometry_width = get_param_str('geometry_width', 0.1)
+        geometry_mesh_filename = get_param_str('geometry_mesh_filename', '')
+        geometry_mesh_origin_xyz = get_list_param_str('geometry_mesh_origin_xyz', '0 0 0')
+        geometry_mesh_origin_rpy = get_list_param_str('geometry_mesh_origin_rpy', '0 0 0')
+        geometry_mesh_tcp_xyz = get_list_param_str('geometry_mesh_tcp_xyz', '0 0 0')
+        geometry_mesh_tcp_rpy = get_list_param_str('geometry_mesh_tcp_rpy', '0 0 0')
 
         self.__prefix = prefix
         self.__robot_dof = dof
         self.__robot_type = robot_type
         self.__add_gripper = add_gripper
         self.__add_bio_gripper = add_bio_gripper
-        self.__controllers_name = (
-            (
-                controllers_name.perform(context)
-                if context is not None
-                else controllers_name
-            )
-            if isinstance(controllers_name, LaunchConfiguration)
-            else controllers_name
-        )
+        self.__controllers_name = (controllers_name.perform(context) if context is not None else controllers_name) if isinstance(controllers_name, LaunchConfiguration) else controllers_name
 
         self.__urdf_xacro_args = {
-            "robot_ip": robot_ip,
-            "report_type": report_type,
-            "baud_checkset": baud_checkset,
-            "default_gripper_baud": default_gripper_baud,
-            "dof": dof,
-            "robot_type": robot_type,
-            "prefix": prefix,
-            "hw_ns": hw_ns,
-            "limited": limited,
-            "effort_control": effort_control,
-            "velocity_control": velocity_control,
-            "model1300": model1300,
-            "robot_sn": robot_sn,
-            "attach_to": attach_to,
-            "attach_xyz": attach_xyz,
-            "attach_rpy": attach_rpy,
-            "mesh_suffix": mesh_suffix,
-            "kinematics_suffix": kinematics_suffix,
-            "ros2_control_plugin": ros2_control_plugin,
-            "ros2_control_params": ros2_control_params,
-            "add_gripper": add_gripper,
-            "add_vacuum_gripper": add_vacuum_gripper,
-            "add_bio_gripper": add_bio_gripper,
-            "add_realsense_d435i": add_realsense_d435i,
-            "add_d435i_links": add_d435i_links,
-            "use_gazebo_camera": use_gazebo_camera,
-            "add_other_geometry": add_other_geometry,
-            "geometry_type": geometry_type,
-            "geometry_mass": geometry_mass,
-            "geometry_height": geometry_height,
-            "geometry_radius": geometry_radius,
-            "geometry_length": geometry_length,
-            "geometry_width": geometry_width,
-            "geometry_mesh_filename": geometry_mesh_filename,
-            "geometry_mesh_origin_xyz": geometry_mesh_origin_xyz,
-            "geometry_mesh_origin_rpy": geometry_mesh_origin_rpy,
-            "geometry_mesh_tcp_xyz": geometry_mesh_tcp_xyz,
-            "geometry_mesh_tcp_rpy": geometry_mesh_tcp_rpy,
+            'robot_ip': robot_ip,
+            'report_type': report_type,
+            'baud_checkset': baud_checkset,
+            'default_gripper_baud': default_gripper_baud,
+            'dof': dof,
+            'robot_type': robot_type,
+            'prefix': prefix,
+            'hw_ns': hw_ns,
+            'limited': limited,
+            'effort_control': effort_control,
+            'velocity_control': velocity_control,
+            'model1300': model1300,
+            'robot_sn': robot_sn,
+            'attach_to': attach_to,
+            'attach_xyz': attach_xyz,
+            'attach_rpy': attach_rpy,
+            'mesh_suffix': mesh_suffix,
+            'kinematics_suffix': kinematics_suffix,
+            'ros2_control_plugin': ros2_control_plugin,
+            'ros2_control_params': ros2_control_params,
+            'add_gripper': add_gripper,
+            'add_vacuum_gripper': add_vacuum_gripper,
+            'add_bio_gripper': add_bio_gripper,
+            'add_realsense_d435i': add_realsense_d435i,
+            'add_d435i_links': add_d435i_links,
+            'use_gazebo_camera': use_gazebo_camera,
+            'add_other_geometry': add_other_geometry,
+            'geometry_type': geometry_type,
+            'geometry_mass': geometry_mass,
+            'geometry_height': geometry_height,
+            'geometry_radius': geometry_radius,
+            'geometry_length': geometry_length,
+            'geometry_width': geometry_width,
+            'geometry_mesh_filename': geometry_mesh_filename,
+            'geometry_mesh_origin_xyz': geometry_mesh_origin_xyz,
+            'geometry_mesh_origin_rpy': geometry_mesh_origin_rpy,
+            'geometry_mesh_tcp_xyz': geometry_mesh_tcp_xyz,
+            'geometry_mesh_tcp_rpy': geometry_mesh_tcp_rpy,
         }
         self.__srdf_xacro_args = {
-            "prefix": prefix,
-            "dof": dof,
-            "robot_type": robot_type,
-            "add_gripper": add_gripper,
-            "add_vacuum_gripper": add_vacuum_gripper,
-            "add_bio_gripper": add_bio_gripper,
-            "add_other_geometry": add_other_geometry,
+            'prefix': prefix,
+            'dof': dof,
+            'robot_type': robot_type,
+            'add_gripper': add_gripper,
+            'add_vacuum_gripper': add_vacuum_gripper,
+            'add_bio_gripper': add_bio_gripper,
+            'add_other_geometry': add_other_geometry,
         }
 
         self.__urdf_package = Path(get_package_share_directory("frida_description"))
         self.__urdf_file_path = Path("urdf/FRIDA_Real.urdf.xacro")
         self.__srdf_file_path = Path("srdf/xarm.srdf.xacro")
 
-        self.__robot_description = "robot_description"
+        self.__robot_description = 'robot_description'
 
     def robot_description(
         self,
-        file_path=None,
-        mappings=None,
+        file_path = None,
+        mappings = None,
     ):
         """Load robot description.
 
@@ -380,7 +351,7 @@ class MoveItConfigsBuilder(ParameterBuilder):
         else:
             robot_description_file_path = self._package_path / file_path
         mappings = mappings or self.__urdf_xacro_args
-
+        
         if (mappings is None) or all(
             (isinstance(key, str) and isinstance(value, str))
             for key, value in mappings.items()
@@ -393,10 +364,8 @@ class MoveItConfigsBuilder(ParameterBuilder):
                     )
                 }
             except ParameterBuilderFileNotFoundError as e:
-                logging.warning("\x1b[33;21m{}\x1b[0m".format(e))
-                logging.warning(
-                    "\x1b[33;21mThe robot description will be loaded from /robot_description topic \x1b[0m"
-                )
+                logging.warning('\x1b[33;21m{}\x1b[0m'.format(e))
+                logging.warning('\x1b[33;21mThe robot description will be loaded from /robot_description topic \x1b[0m')
         else:
             self.__moveit_configs.robot_description = {
                 self.__robot_description: get_xacro_command(
@@ -408,8 +377,8 @@ class MoveItConfigsBuilder(ParameterBuilder):
 
     def robot_description_semantic(
         self,
-        file_path=None,
-        mappings=None,
+        file_path = None,
+        mappings = None,
     ):
         """Load semantic robot description.
 
@@ -417,10 +386,10 @@ class MoveItConfigsBuilder(ParameterBuilder):
         :param mappings: mappings to be passed when loading the xacro file.
         :return: Instance of MoveItConfigsBuilder with robot_description_semantic loaded.
         """
-        key = self.__robot_description + "_semantic"
+        key = self.__robot_description + '_semantic'
         file_path = self.__urdf_package / self.__srdf_file_path
         mappings = mappings or self.__srdf_xacro_args
-
+        
         if (mappings is None) or all(
             (isinstance(key, str) and isinstance(value, str))
             for key, value in mappings.items()
@@ -432,145 +401,88 @@ class MoveItConfigsBuilder(ParameterBuilder):
             self.__moveit_configs.robot_description_semantic = {
                 key: get_xacro_command(str(file_path), mappings=mappings)
             }
-
+        
         return self
 
-    def robot_description_kinematics(self, file_path=None):
+    def robot_description_kinematics(self, file_path = None):
         """Load IK solver parameters.
 
         :param file_path: Absolute or relative path to the kinematics yaml file (w.r.t. xarm_moveit_config).
         :return: Instance of MoveItConfigsBuilder with robot_description_kinematics loaded.
         """
-        key = self.__robot_description + "_kinematics"
+        key = self.__robot_description + '_kinematics'
 
         params = [self.__prefix, self.__robot_type, self.__robot_dof]
         if all(isinstance(value, str) for value in params):
-            robot_name = "{}{}".format(
-                self.__robot_type,
-                self.__robot_dof
-                if self.__robot_type == "xarm"
-                else "6"
-                if self.__robot_type == "lite"
-                else "",
-            )
-
+            robot_name = '{}{}'.format(self.__robot_type, self.__robot_dof if self.__robot_type == 'xarm' else '6' if self.__robot_type == 'lite' else '')
+            
             if file_path is None:
-                file_path = (
-                    self._package_path / "config" / robot_name / "kinematics.yaml"
-                )
+                file_path = self._package_path / 'config' / robot_name / 'kinematics.yaml'
                 kinematics_yaml = load_yaml(file_path)
             else:
                 file_path = self._package_path / file_path
                 kinematics_yaml = load_yaml(file_path) if file_path else {}
             if kinematics_yaml and self.__prefix:
                 for name in list(kinematics_yaml.keys()):
-                    kinematics_yaml["{}{}".format(self.__prefix, name)] = (
-                        kinematics_yaml.pop(name)
-                    )
-            self.__moveit_configs.robot_description_kinematics = {key: kinematics_yaml}
+                    kinematics_yaml['{}{}'.format(self.__prefix, name)] = kinematics_yaml.pop(name)
+            self.__moveit_configs.robot_description_kinematics = {
+                key: kinematics_yaml
+            }
         else:
             self.__moveit_configs.robot_description_kinematics = {
                 key: YamlParameterValue(
-                    KinematicsYAML(
-                        file_path,
-                        package_path=self._package_path,
-                        prefix=self.__prefix,
-                        robot_type=self.__robot_type,
-                        robot_dof=self.__robot_dof,
-                    ),
-                    value_type=str,
-                )
+                    KinematicsYAML(file_path, package_path=self._package_path, 
+                        prefix=self.__prefix, robot_type=self.__robot_type, robot_dof=self.__robot_dof
+                    ), value_type=str)
             }
 
         return self
 
-    def joint_limits(self, file_path=None):
+    def joint_limits(self, file_path = None):
         """Load joint limits overrides.
 
         :param file_path: Absolute or relative path to the joint limits yaml file (w.r.t. xarm_moveit_config).
         :return: Instance of MoveItConfigsBuilder with robot_description_planning loaded.
         """
-        key = self.__robot_description + "_planning"
+        key = self.__robot_description + '_planning'
 
-        params = [
-            self.__prefix,
-            self.__robot_type,
-            self.__robot_dof,
-            self.__add_gripper,
-            self.__add_bio_gripper,
-        ]
+        params = [self.__prefix, self.__robot_type, self.__robot_dof, self.__add_gripper, self.__add_bio_gripper]
         if all(isinstance(value, str) for value in params):
-            robot_name = "{}{}".format(
-                self.__robot_type,
-                self.__robot_dof
-                if self.__robot_type == "xarm"
-                else "6"
-                if self.__robot_type == "lite"
-                else "",
-            )
-
+            robot_name = '{}{}'.format(self.__robot_type, self.__robot_dof if self.__robot_type == 'xarm' else '6' if self.__robot_type == 'lite' else '')
+            
             if file_path is None:
-                file_path = (
-                    self._package_path / "config" / robot_name / "joint_limits.yaml"
-                )
+                file_path = self._package_path / 'config' / robot_name / 'joint_limits.yaml'
                 joint_limits = load_yaml(file_path)
             else:
                 file_path = self._package_path / file_path
                 joint_limits = load_yaml(file_path) if file_path else {}
             joint_limits = joint_limits if joint_limits else {}
-            if self.__robot_type != "lite" and self.__add_gripper in ("True", "true"):
-                gripper_joint_limits_yaml = load_yaml(
-                    self._package_path
-                    / "config"
-                    / "{}_gripper".format(self.__robot_type)
-                    / "joint_limits.yaml"
-                )
-                if (
-                    gripper_joint_limits_yaml
-                    and "joint_limits" in gripper_joint_limits_yaml
-                ):
-                    joint_limits["joint_limits"].update(
-                        gripper_joint_limits_yaml["joint_limits"]
-                    )
-            elif self.__robot_type != "lite" and self.__add_bio_gripper in (
-                "True",
-                "true",
-            ):
-                gripper_joint_limits_yaml = load_yaml(
-                    self._package_path / "config" / "bio_gripper" / "joint_limits.yaml"
-                )
-                if (
-                    gripper_joint_limits_yaml
-                    and "joint_limits" in gripper_joint_limits_yaml
-                ):
-                    joint_limits["joint_limits"].update(
-                        gripper_joint_limits_yaml["joint_limits"]
-                    )
+            if self.__robot_type != 'lite' and self.__add_gripper in ('True', 'true'):
+                gripper_joint_limits_yaml = load_yaml(self._package_path / 'config' / '{}_gripper'.format(self.__robot_type) / 'joint_limits.yaml')
+                if gripper_joint_limits_yaml and 'joint_limits' in gripper_joint_limits_yaml:
+                    joint_limits['joint_limits'].update(gripper_joint_limits_yaml['joint_limits'])
+            elif self.__robot_type != 'lite' and self.__add_bio_gripper in ('True', 'true'):
+                gripper_joint_limits_yaml = load_yaml(self._package_path / 'config' / 'bio_gripper' / 'joint_limits.yaml')
+                if gripper_joint_limits_yaml and 'joint_limits' in gripper_joint_limits_yaml:
+                    joint_limits['joint_limits'].update(gripper_joint_limits_yaml['joint_limits'])
             if joint_limits and self.__prefix:
-                for name in list(joint_limits["joint_limits"]):
-                    joint_limits["joint_limits"]["{}{}".format(self.__prefix, name)] = (
-                        joint_limits["joint_limits"].pop(name)
-                    )
-            self.__moveit_configs.joint_limits = {key: joint_limits}
+                for name in list(joint_limits['joint_limits']):
+                    joint_limits['joint_limits']['{}{}'.format(self.__prefix, name)] = joint_limits['joint_limits'].pop(name)
+            self.__moveit_configs.joint_limits = {
+                key: joint_limits
+            }
         else:
             self.__moveit_configs.joint_limits = {
                 key: YamlParameterValue(
-                    JointLimitsYAML(
-                        file_path,
-                        package_path=self._package_path,
-                        prefix=self.__prefix,
-                        robot_type=self.__robot_type,
-                        robot_dof=self.__robot_dof,
-                        add_gripper=self.__add_gripper,
-                        add_bio_gripper=self.__add_bio_gripper,
-                    ),
-                    value_type=str,
-                )
+                    JointLimitsYAML(file_path, package_path=self._package_path, 
+                        prefix=self.__prefix, robot_type=self.__robot_type, robot_dof=self.__robot_dof,
+                        add_gripper=self.__add_gripper, add_bio_gripper=self.__add_bio_gripper
+                ), value_type=str)
             }
 
         return self
 
-    def moveit_cpp(self, file_path=None):
+    def moveit_cpp(self, file_path = None):
         """Load MoveItCpp parameters.
 
         :param file_path: Absolute or relative path to the MoveItCpp yaml file (w.r.t. xarm_moveit_config).
@@ -578,19 +490,10 @@ class MoveItConfigsBuilder(ParameterBuilder):
         """
         params = [self.__robot_type, self.__robot_dof]
         if all(isinstance(value, str) for value in params):
-            robot_name = "{}{}".format(
-                self.__robot_type,
-                self.__robot_dof
-                if self.__robot_type == "xarm"
-                else "6"
-                if self.__robot_type == "lite"
-                else "",
-            )
-
+            robot_name = '{}{}'.format(self.__robot_type, self.__robot_dof if self.__robot_type == 'xarm' else '6' if self.__robot_type == 'lite' else '')
+            
             if file_path is None:
-                file_path = (
-                    self._package_path / "config" / robot_name / "moveit_cpp.yaml"
-                )
+                file_path = self._package_path / 'config' / robot_name / 'moveit_cpp.yaml'
                 moveit_cpp = load_yaml(file_path)
             else:
                 file_path = self._package_path / file_path
@@ -601,9 +504,9 @@ class MoveItConfigsBuilder(ParameterBuilder):
 
     def trajectory_execution(
         self,
-        file_path=None,
-        controllers_name=None,
-        moveit_manage_controllers=False,
+        file_path = None,
+        controllers_name = None,
+        moveit_manage_controllers = False,
     ):
         """Load trajectory execution and moveit controller managers' parameters
 
@@ -611,145 +514,95 @@ class MoveItConfigsBuilder(ParameterBuilder):
         :param moveit_manage_controllers: Whether trajectory execution manager is allowed to switch controllers' states.
         :return: Instance of MoveItConfigsBuilder with trajectory_execution loaded.
         """
-        controllers_name = (
-            controllers_name if controllers_name else self.__controllers_name
-        )
+        controllers_name = controllers_name if controllers_name else self.__controllers_name
 
-        params = [
-            self.__prefix,
-            self.__robot_type,
-            self.__robot_dof,
-            self.__add_gripper,
-            self.__add_bio_gripper,
-            controllers_name,
-        ]
+        params = [self.__prefix, self.__robot_type, self.__robot_dof, self.__add_gripper, self.__add_bio_gripper, controllers_name]
         if all(isinstance(value, str) for value in params):
-            robot_name = "{}{}".format(
-                self.__robot_type,
-                self.__robot_dof
-                if self.__robot_type == "xarm"
-                else "6"
-                if self.__robot_type == "lite"
-                else "",
-            )
-            controllers_name = (
-                controllers_name
-                if controllers_name.endswith(".yaml")
-                else "{}.yaml".format(controllers_name)
-            )
+            robot_name = '{}{}'.format(self.__robot_type, self.__robot_dof if self.__robot_type == 'xarm' else '6' if self.__robot_type == 'lite' else '')
+            controllers_name = controllers_name if controllers_name.endswith('.yaml') else '{}.yaml'.format(controllers_name)
             if file_path is None:
-                file_path = (
-                    self._package_path / "config" / robot_name / controllers_name
-                )
+                file_path = self._package_path / 'config' / robot_name / controllers_name
                 controllers_yaml = load_yaml(file_path)
                 controllers_yaml = controllers_yaml if controllers_yaml else {}
             else:
                 file_path = self._package_path / file_path
                 controllers_yaml = load_yaml(file_path) if file_path else {}
-            if self.__robot_type != "lite" and self.__add_gripper in ("True", "true"):
-                gripper_controllers_yaml = load_yaml(
-                    self._package_path
-                    / "config"
-                    / "{}_gripper".format(self.__robot_type)
-                    / controllers_name
-                )
-                if (
-                    gripper_controllers_yaml
-                    and "controller_names" in gripper_controllers_yaml
-                ):
-                    for name in gripper_controllers_yaml["controller_names"]:
+            if self.__robot_type != 'lite' and self.__add_gripper in ('True', 'true'):
+                gripper_controllers_yaml = load_yaml(self._package_path / 'config' / '{}_gripper'.format(self.__robot_type) / controllers_name)
+                if gripper_controllers_yaml and 'controller_names' in gripper_controllers_yaml:
+                    for name in gripper_controllers_yaml['controller_names']:
                         if name in gripper_controllers_yaml:
-                            if name not in controllers_yaml["controller_names"]:
-                                controllers_yaml["controller_names"].append(name)
+                            if name not in controllers_yaml['controller_names']:
+                                controllers_yaml['controller_names'].append(name)
                             controllers_yaml[name] = gripper_controllers_yaml[name]
-            elif self.__robot_type != "lite" and self.__add_bio_gripper in (
-                "True",
-                "true",
-            ):
-                gripper_controllers_yaml = load_yaml(
-                    self._package_path / "config" / "bio_gripper" / controllers_name
-                )
-                if (
-                    gripper_controllers_yaml
-                    and "controller_names" in gripper_controllers_yaml
-                ):
-                    for name in gripper_controllers_yaml["controller_names"]:
+            elif self.__robot_type != 'lite' and self.__add_bio_gripper in ('True', 'true'):
+                gripper_controllers_yaml = load_yaml(self._package_path / 'config' / 'bio_gripper' / controllers_name)
+                if gripper_controllers_yaml and 'controller_names' in gripper_controllers_yaml:
+                    for name in gripper_controllers_yaml['controller_names']:
                         if name in gripper_controllers_yaml:
-                            if name not in controllers_yaml["controller_names"]:
-                                controllers_yaml["controller_names"].append(name)
+                            if name not in controllers_yaml['controller_names']:
+                                controllers_yaml['controller_names'].append(name)
                             controllers_yaml[name] = gripper_controllers_yaml[name]
 
             if controllers_yaml and self.__prefix:
-                for i, name in enumerate(controllers_yaml["controller_names"]):
-                    joints = controllers_yaml.get(name, {}).get("joints", [])
+                for i, name in enumerate(controllers_yaml['controller_names']):
+                    joints = controllers_yaml.get(name, {}).get('joints', [])
                     for j, joint in enumerate(joints):
-                        joints[j] = "{}{}".format(self.__prefix, joint)
-                    controllers_yaml["controller_names"][i] = "{}{}".format(
-                        self.__prefix, name
-                    )
+                        joints[j] = '{}{}'.format(self.__prefix, joint)
+                    controllers_yaml['controller_names'][i] = '{}{}'.format(self.__prefix, name)
                     if name in controllers_yaml:
-                        controllers_yaml["{}{}".format(self.__prefix, name)] = (
-                            controllers_yaml.pop(name)
-                        )
+                        controllers_yaml['{}{}'.format(self.__prefix, name)] = controllers_yaml.pop(name)
 
             self.__moveit_configs.trajectory_execution = {
-                "moveit_manage_controllers": moveit_manage_controllers,
-                "moveit_controller_manager": "moveit_simple_controller_manager/MoveItSimpleControllerManager",
-                "moveit_simple_controller_manager": controllers_yaml,
-                "trajectory_execution.allowed_execution_duration_scaling": 1.2,
-                "trajectory_execution.allowed_goal_duration_margin": 0.5,
-                "trajectory_execution.allowed_start_tolerance": 0.01,
-                "trajectory_execution.execution_duration_monitoring": False,
-                "plan_execution.record_trajectory_state_frequency": 10.0,
+                'moveit_manage_controllers': moveit_manage_controllers,
+                'moveit_controller_manager': 'moveit_simple_controller_manager/MoveItSimpleControllerManager',
+                'moveit_simple_controller_manager': controllers_yaml,
+                'trajectory_execution.allowed_execution_duration_scaling': 1.2,
+                'trajectory_execution.allowed_goal_duration_margin': 0.5,
+                'trajectory_execution.allowed_start_tolerance': 0.01,
+                'trajectory_execution.execution_duration_monitoring': False,
+                'plan_execution.record_trajectory_state_frequency': 10.0
             }
         else:
             self.__moveit_configs.trajectory_execution = {
-                "moveit_manage_controllers": moveit_manage_controllers,
-                "moveit_controller_manager": "moveit_simple_controller_manager/MoveItSimpleControllerManager",
-                "moveit_simple_controller_manager": YamlParameterValue(
-                    ControllersYAML(
-                        file_path,
-                        package_path=self._package_path,
-                        prefix=self.__prefix,
-                        robot_type=self.__robot_type,
-                        robot_dof=self.__robot_dof,
-                        add_gripper=self.__add_gripper,
-                        add_bio_gripper=self.__add_bio_gripper,
-                        controllers_name=controllers_name,
-                    ),
-                    value_type=str,
-                ),
-                "trajectory_execution.allowed_execution_duration_scaling": 1.2,
-                "trajectory_execution.allowed_goal_duration_margin": 0.5,
-                "trajectory_execution.allowed_start_tolerance": 0.01,
-                "trajectory_execution.execution_duration_monitoring": False,
-                "plan_execution.record_trajectory_state_frequency": 10.0,
+                'moveit_manage_controllers': moveit_manage_controllers,
+                'moveit_controller_manager': 'moveit_simple_controller_manager/MoveItSimpleControllerManager',
+                'moveit_simple_controller_manager': YamlParameterValue(
+                    ControllersYAML(file_path, package_path=self._package_path, 
+                        prefix=self.__prefix, robot_type=self.__robot_type, robot_dof=self.__robot_dof,
+                        add_gripper=self.__add_gripper, add_bio_gripper=self.__add_bio_gripper, controllers_name=controllers_name
+                    ), value_type=str),
+                'trajectory_execution.allowed_execution_duration_scaling': 1.2,
+                'trajectory_execution.allowed_goal_duration_margin': 0.5,
+                'trajectory_execution.allowed_start_tolerance': 0.01,
+                'trajectory_execution.execution_duration_monitoring': False,
+                'plan_execution.record_trajectory_state_frequency': 10.0
             }
         return self
 
     def planning_scene_monitor(
         self,
-        publish_planning_scene=True,
-        publish_geometry_updates=True,
-        publish_state_updates=True,
-        publish_transforms_updates=True,
-        publish_robot_description=False,
-        publish_robot_description_semantic=False,
+        publish_planning_scene = True,
+        publish_geometry_updates = True,
+        publish_state_updates = True,
+        publish_transforms_updates = True,
+        publish_robot_description = False,
+        publish_robot_description_semantic = False,
     ):
         self.__moveit_configs.planning_scene_monitor = {
             # TODO: Fix parameter namespace upstream -- see planning_scene_monitor.cpp:262
             # 'planning_scene_monitor': {
-            "publish_planning_scene": publish_planning_scene,
-            "publish_geometry_updates": publish_geometry_updates,
-            "publish_state_updates": publish_state_updates,
-            "publish_transforms_updates": publish_transforms_updates,
-            "publish_robot_description": publish_robot_description,
-            "publish_robot_description_semantic": publish_robot_description_semantic,
+            'publish_planning_scene': publish_planning_scene,
+            'publish_geometry_updates': publish_geometry_updates,
+            'publish_state_updates': publish_state_updates,
+            'publish_transforms_updates': publish_transforms_updates,
+            'publish_robot_description': publish_robot_description,
+            'publish_robot_description_semantic': publish_robot_description_semantic,
             # }
         }
         return self
 
-    def sensors_3d(self, file_path=None):
+    def sensors_3d(self, file_path = None):
         """Load sensors_3d parameters.
 
         :param file_path: Absolute or relative path to the sensors_3d yaml file (w.r.t. xarm_moveit_config).
@@ -757,40 +610,27 @@ class MoveItConfigsBuilder(ParameterBuilder):
         """
         params = [self.__robot_type, self.__robot_dof]
         if all(isinstance(value, str) for value in params):
-            robot_name = "{}{}".format(
-                self.__robot_type,
-                self.__robot_dof
-                if self.__robot_type == "xarm"
-                else "6"
-                if self.__robot_type == "lite"
-                else "",
-            )
-
+            robot_name = '{}{}'.format(self.__robot_type, self.__robot_dof if self.__robot_type == 'xarm' else '6' if self.__robot_type == 'lite' else '')
+            
             if file_path is None:
-                file_path = (
-                    self._package_path / "config" / robot_name / "sensors_3d.yaml"
-                )
+                file_path = self._package_path / 'config' / robot_name / 'sensors_3d.yaml'
             else:
                 file_path = self._package_path / file_path
             if file_path and file_path.exists():
                 sensors_data = load_yaml(file_path)
                 # TODO(mikeferguson): remove the second part of this check once
                 # https://github.com/ros-planning/moveit_resources/pull/141 has made through buildfarm
-                if (
-                    sensors_data
-                    and len(sensors_data["sensors"]) > 0
-                    and sensors_data["sensors"][0]
-                ):
+                if sensors_data and len(sensors_data['sensors']) > 0 and sensors_data['sensors'][0]:
                     self.__moveit_configs.sensors_3d = sensors_data
-
+        
         return self
 
     def planning_pipelines(
         self,
-        default_planning_pipeline=None,
-        pipelines=None,
-        load_all=True,
-        config_folder=None,
+        default_planning_pipeline = None,
+        pipelines = None,
+        load_all = True,
+        config_folder = None
     ):
         """Load planning pipelines parameters.
 
@@ -801,52 +641,37 @@ class MoveItConfigsBuilder(ParameterBuilder):
                          If false, only loads the pipelines defined in config package.
         :return: Instance of MoveItConfigsBuilder with planning_pipelines loaded.
         """
-        params = [
-            self.__prefix,
-            self.__robot_type,
-            self.__robot_dof,
-            self.__add_gripper,
-            self.__add_bio_gripper,
-        ]
+        params = [self.__prefix, self.__robot_type, self.__robot_dof, self.__add_gripper, self.__add_bio_gripper]
         if all(isinstance(value, str) for value in params):
-            robot_name = "{}{}".format(
-                self.__robot_type,
-                self.__robot_dof
-                if self.__robot_type == "xarm"
-                else "6"
-                if self.__robot_type == "lite"
-                else "",
-            )
+            robot_name = '{}{}'.format(self.__robot_type, self.__robot_dof if self.__robot_type == 'xarm' else '6' if self.__robot_type == 'lite' else '')
             if config_folder is None:
-                config_folder = self._package_path / "config" / robot_name
+                config_folder = self._package_path / 'config' / robot_name
             else:
                 config_folder = self._package_path / config_folder
             if pipelines is None:
-                planning_pattern = re.compile("^(.*)_planning.yaml$")
+                planning_pattern = re.compile('^(.*)_planning.yaml$')
                 pipelines = get_pattern_matches(config_folder, planning_pattern)
             pipelines = list(set(pipelines))
-            # Define default pipeline as needed
+             # Define default pipeline as needed
             if not default_planning_pipeline:
-                if not pipelines or "ompl" in pipelines:
-                    default_planning_pipeline = "ompl"
+                if not pipelines or 'ompl' in pipelines:
+                    default_planning_pipeline = 'ompl'
                 else:
                     default_planning_pipeline = pipelines[0]
 
             if default_planning_pipeline not in pipelines:
                 raise RuntimeError(
-                    "default_planning_pipeline: `{}` doesn't name any of the input pipelines `{}`".format(
-                        default_planning_pipeline, ",".join(pipelines)
-                    )
+                    'default_planning_pipeline: `{}` doesn\'t name any of the input pipelines `{}`'.format(default_planning_pipeline, ','.join(pipelines))
                 )
 
             self.__moveit_configs.planning_pipelines = {
-                "planning_pipelines": pipelines,
-                "default_planning_pipeline": default_planning_pipeline,
+                'planning_pipelines': pipelines,
+                'default_planning_pipeline': default_planning_pipeline,
             }
-            default_config_folder = self._package_path / "config" / "moveit_configs"
-
+            default_config_folder = self._package_path / 'config' / 'moveit_configs'
+            
             for pipeline in pipelines:
-                filename = pipeline + "_planning.yaml"
+                filename = pipeline + '_planning.yaml'
                 parameter_file = default_config_folder / filename
                 if parameter_file.exists():
                     planning_yaml = load_yaml(parameter_file)
@@ -857,45 +682,30 @@ class MoveItConfigsBuilder(ParameterBuilder):
                 parameter_file = config_folder / filename
                 if parameter_file.exists():
                     pipeline_planning_yaml = load_yaml(parameter_file)
-                    pipeline_planning_yaml = (
-                        pipeline_planning_yaml if pipeline_planning_yaml else {}
-                    )
+                    pipeline_planning_yaml = pipeline_planning_yaml if pipeline_planning_yaml else {}
                 else:
                     pipeline_planning_yaml = {}
-
-                if self.__add_gripper in ("True", "true"):
-                    parameter_file = (
-                        self._package_path
-                        / "config"
-                        / "{}_gripper".format(self.__robot_type)
-                        / filename
-                    )
+                
+                if self.__add_gripper in ('True', 'true'):
+                    parameter_file = self._package_path / 'config' / '{}_gripper'.format(self.__robot_type) / filename
                     if parameter_file.exists():
                         gripper_planning_yaml = load_yaml(parameter_file)
                         if gripper_planning_yaml:
                             pipeline_planning_yaml.update(gripper_planning_yaml)
-                elif self.__add_bio_gripper in ("True", "true"):
-                    parameter_file = (
-                        self._package_path / "config" / "bio_gripper" / filename
-                    )
+                elif self.__add_bio_gripper in ('True', 'true'):
+                    parameter_file = self._package_path / 'config' / 'bio_gripper' / filename
                     if parameter_file.exists():
                         gripper_planning_yaml = load_yaml(parameter_file)
                         if gripper_planning_yaml:
                             pipeline_planning_yaml.update(gripper_planning_yaml)
                 if pipeline_planning_yaml and self.__prefix:
                     for name in list(pipeline_planning_yaml.keys()):
-                        if (
-                            pipeline == "ompl"
-                            and name != "planner_configs"
-                            and name not in planning_yaml
-                        ):
-                            pipeline_planning_yaml[
-                                "{}{}".format(self.__prefix, name)
-                            ] = pipeline_planning_yaml.pop(name)
-
+                        if pipeline == 'ompl' and name != 'planner_configs' and name not in planning_yaml:
+                            pipeline_planning_yaml['{}{}'.format(self.__prefix, name)] = pipeline_planning_yaml.pop(name)
+                
                 planning_yaml.update(pipeline_planning_yaml)
-                if pipeline == "ompl" and "planner_configs" not in planning_yaml:
-                    parameter_file = default_config_folder / "ompl_defaults.yaml"
+                if pipeline == 'ompl' and 'planner_configs' not in planning_yaml:
+                    parameter_file = default_config_folder / 'ompl_defaults.yaml'
                     planning_yaml.update(load_yaml(parameter_file))
                 self.__moveit_configs.planning_pipelines[pipeline] = planning_yaml
             # # Special rule to add ompl planner_configs
@@ -923,38 +733,26 @@ class MoveItConfigsBuilder(ParameterBuilder):
             #             'start_state_max_bounds_error': 0.1,
             #         })
         else:
-            pipelines = list(set(pipelines)) if pipelines else ["ompl"]
-            default_planning_pipeline = (
-                default_planning_pipeline if default_planning_pipeline else "ompl"
-            )
+            pipelines = list(set(pipelines)) if pipelines else ['ompl']
+            default_planning_pipeline = default_planning_pipeline if default_planning_pipeline else 'ompl'
             if default_planning_pipeline not in pipelines:
                 raise RuntimeError(
-                    "default_planning_pipeline: `{}` doesn't name any of the input pipelines `{}`".format(
-                        default_planning_pipeline, ",".join(pipelines)
-                    )
+                    'default_planning_pipeline: `{}` doesn\'t name any of the input pipelines `{}`'.format(default_planning_pipeline, ','.join(pipelines))
                 )
             self.__moveit_configs.planning_pipelines = {
-                "planning_pipelines": pipelines,
-                "default_planning_pipeline": default_planning_pipeline,
+                'planning_pipelines': pipelines,
+                'default_planning_pipeline': default_planning_pipeline,
             }
             for pipeline in pipelines:
                 self.__moveit_configs.planning_pipelines[pipeline] = YamlParameterValue(
-                    PlanningPipelinesYAML(
-                        pipeline,
-                        package_path=self._package_path,
-                        config_folder=config_folder,
-                        prefix=self.__prefix,
-                        robot_type=self.__robot_type,
-                        robot_dof=self.__robot_dof,
-                        add_gripper=self.__add_gripper,
-                        add_bio_gripper=self.__add_bio_gripper,
-                    ),
-                    value_type=str,
-                )
-
+                    PlanningPipelinesYAML(pipeline, package_path=self._package_path, config_folder=config_folder,
+                        prefix=self.__prefix, robot_type=self.__robot_type, robot_dof=self.__robot_dof,
+                        add_gripper=self.__add_gripper, add_bio_gripper=self.__add_bio_gripper
+                    ), value_type=str)
+        
         return self
 
-    def pilz_cartesian_limits(self, file_path=None):
+    def pilz_cartesian_limits(self, file_path = None):
         """Load cartesian limits.
 
         :param file_path: Absolute or relative path to the cartesian limits file (w.r.t. xarm_moveit_config).
@@ -962,54 +760,28 @@ class MoveItConfigsBuilder(ParameterBuilder):
         """
         params = [self.__robot_type, self.__robot_dof]
         if all(isinstance(value, str) for value in params):
-            robot_name = "{}{}".format(
-                self.__robot_type,
-                self.__robot_dof
-                if self.__robot_type == "xarm"
-                else "6"
-                if self.__robot_type == "lite"
-                else "",
-            )
-            deprecated_path = (
-                self._package_path / "config" / robot_name / "cartesian_limits.yaml"
-            )
+            robot_name = '{}{}'.format(self.__robot_type, self.__robot_dof if self.__robot_type == 'xarm' else '6' if self.__robot_type == 'lite' else '')
+            deprecated_path = self._package_path / 'config' / robot_name / 'cartesian_limits.yaml'
             if deprecated_path.exists():
-                logging.warning(
-                    "\x1b[33;21mcartesian_limits.yaml is deprecated, please rename to pilz_cartesian_limits.yaml\x1b[0m"
-                )
+                logging.warning('\x1b[33;21mcartesian_limits.yaml is deprecated, please rename to pilz_cartesian_limits.yaml\x1b[0m')
             if file_path is None:
-                file_path = (
-                    self._package_path
-                    / "config"
-                    / robot_name
-                    / "pilz_cartesian_limits.yaml"
-                )
+                file_path = self._package_path / 'config' / robot_name / 'pilz_cartesian_limits.yaml'
                 if not file_path.exists():
-                    file_path = (
-                        self._package_path
-                        / "config"
-                        / "moveit_configs"
-                        / "pilz_cartesian_limits.yaml"
-                    )
+                    file_path = self._package_path / 'config' / 'moveit_configs' / 'pilz_cartesian_limits.yaml'
             else:
                 file_path = self._package_path / file_path
-            key = self.__robot_description + "_planning"
+            key = self.__robot_description + '_planning'
             if file_path.exists():
                 self.__moveit_configs.pilz_cartesian_limits = {
                     key: load_yaml(file_path)
                 }
         else:
-            key = self.__robot_description + "_planning"
+            key = self.__robot_description + '_planning'
             self.__moveit_configs.pilz_cartesian_limits = {
                 key: YamlParameterValue(
-                    CommonYAML(
-                        "pilz_cartesian_limits.yaml",
-                        package_path=self._package_path,
-                        robot_type=self.__robot_type,
-                        robot_dof=self.__robot_dof,
-                    ),
-                    value_type=str,
-                )
+                    CommonYAML('pilz_cartesian_limits.yaml', package_path=self._package_path, 
+                        robot_type=self.__robot_type, robot_dof=self.__robot_dof,
+                ), value_type=str)
             }
 
         return self
@@ -1038,12 +810,12 @@ class MoveItConfigsBuilder(ParameterBuilder):
         # TODO(JafarAbdi): We should have a default moveit_cpp.yaml as port of a moveit config package
         # if not self.__moveit_configs.moveit_cpp:
         #     self.moveit_cpp()
-        if "pilz_industrial_motion_planner" in self.__moveit_configs.planning_pipelines:
+        if 'pilz_industrial_motion_planner' in self.__moveit_configs.planning_pipelines:
             if not self.__moveit_configs.pilz_cartesian_limits:
                 self.pilz_cartesian_limits()
         return self.__moveit_configs
 
-    def to_dict(self, include_moveit_configs=True):
+    def to_dict(self, include_moveit_configs = True):
         """Get loaded parameters from xarm_moveit_config as a dictionary.
 
         :param include_moveit_configs: Whether to include the MoveIt config parameters or
@@ -1058,167 +830,121 @@ class MoveItConfigsBuilder(ParameterBuilder):
 
 class DualMoveItConfigsBuilder(ParameterBuilder):
     __moveit_configs = None
-    __urdf_package = ""
+    __urdf_package = ''
     # Relative path of the URDF file w.r.t. __urdf_package
-    __urdf_file_path = ""
+    __urdf_file_path = ''
     # Relative path of the SRDF file  w.r.t. xarm_moveit_config
-    __srdf_file_path = ""
+    __srdf_file_path = ''
     # String specify the parameter name that the robot description will be loaded to, it will also be used as a prefix
     # for "_planning", "_semantic", and "_kinematics"
-    __robot_description = ""
+    __robot_description = ''
 
-    def __init__(self, context=None, controllers_name="fake_controllers", **kwargs):
-        super().__init__("xarm_moveit_config")
+    def __init__(
+        self,
+        context=None,
+        controllers_name='fake_controllers',
+        **kwargs
+    ):
+        super().__init__('xarm_moveit_config')
         self.__moveit_configs = MoveItConfigs()
 
         self.__context = context
 
         def get_param_str(name, default_val):
             val = kwargs.get(name, default_val)
-            return (
-                val
-                if isinstance(val, str)
-                else "false"
-                if not val
-                else "true"
-                if val
-                else (val.perform(context) if context is not None else val)
-                if isinstance(val, LaunchConfiguration)
-                else str(val)
-            )
-
+            return val if isinstance(val, str) else 'false' if val == False else 'true' if val == True else (val.perform(context) if context is not None else val) if isinstance(val, LaunchConfiguration) else str(val)
+        
         def get_list_param_str(name, default_val):
             val = get_param_str(name, default_val)
-            return (
-                val[1:-1]
-                if context is not None
-                and isinstance(val, str)
-                and val[0] in ['"', "'"]
-                and val[-1] in ['"', "'"]
-                else val
-            )
+            return val[1:-1] if context is not None and isinstance(val, str) and val[0] in ['"', '\''] and val[-1] in ['"', '\''] else val
 
-        robot_ip_1 = get_param_str("robot_ip_1", "")
-        robot_ip_2 = get_param_str("robot_ip_2", "")
-        report_type = get_param_str("report_type", "normal")
-        report_type_1 = get_param_str("report_type_1", report_type)
-        report_type_2 = get_param_str("report_type_2", report_type)
-        baud_checkset = get_param_str("baud_checkset", True)
-        baud_checkset_1 = get_param_str("baud_checkset_1", baud_checkset)
-        baud_checkset_2 = get_param_str("baud_checkset_2", baud_checkset)
-        default_gripper_baud = get_param_str("default_gripper_baud", 2000000)
-        default_gripper_baud_1 = get_param_str(
-            "default_gripper_baud_1", default_gripper_baud
-        )
-        default_gripper_baud_2 = get_param_str(
-            "default_gripper_baud_2", default_gripper_baud
-        )
-        dof = get_param_str("dof", 7)
-        dof_1 = get_param_str("dof_1", dof)
-        dof_2 = get_param_str("dof_2", dof)
-        robot_type = get_param_str("robot_type", "xarm")
-        robot_type_1 = get_param_str("robot_type_1", robot_type)
-        robot_type_2 = get_param_str("robot_type_2", robot_type)
-        prefix_1 = get_param_str("prefix_1", "L_")
-        prefix_2 = get_param_str("prefix_2", "R_")
-        hw_ns = get_param_str("hw_ns", "xarm")
-        limited = get_param_str("limited", False)
-        effort_control = get_param_str("effort_control", False)
-        velocity_control = get_param_str("velocity_control", False)
-        model1300 = get_param_str("model1300", False)
-        model1300_1 = get_param_str("model1300_1", model1300)
-        model1300_2 = get_param_str("model1300_2", model1300)
-        robot_sn = get_param_str("robot_sn", "")
-        robot_sn_1 = get_param_str("robot_sn_1", robot_sn)
-        robot_sn_2 = get_param_str("robot_sn_2", robot_sn)
-        mesh_suffix = get_param_str("mesh_suffix", "stl")
-        kinematics_suffix = get_param_str("kinematics_suffix", "")
-        kinematics_suffix_1 = get_param_str("kinematics_suffix_1", kinematics_suffix)
-        kinematics_suffix_2 = get_param_str("kinematics_suffix_2", kinematics_suffix)
-        ros2_control_plugin = get_param_str(
-            "ros2_control_plugin", "uf_robot_hardware/UFRobotSystemHardware"
-        )
-        ros2_control_params = get_param_str("ros2_control_params", "")
-        add_gripper = get_param_str("add_gripper", False)
-        add_gripper_1 = get_param_str("add_gripper_1", add_gripper)
-        add_gripper_2 = get_param_str("add_gripper_2", add_gripper)
-        add_vacuum_gripper = get_param_str("add_vacuum_gripper", False)
-        add_vacuum_gripper_1 = get_param_str("add_vacuum_gripper_1", add_vacuum_gripper)
-        add_vacuum_gripper_2 = get_param_str("add_vacuum_gripper_2", add_vacuum_gripper)
-        add_bio_gripper = get_param_str("add_bio_gripper", False)
-        add_bio_gripper_1 = get_param_str("add_bio_gripper_1", add_bio_gripper)
-        add_bio_gripper_2 = get_param_str("add_bio_gripper_2", add_bio_gripper)
-        add_realsense_d435i = get_param_str("add_realsense_d435i", False)
-        add_realsense_d435i_1 = get_param_str(
-            "add_realsense_d435i_1", add_realsense_d435i
-        )
-        add_realsense_d435i_2 = get_param_str(
-            "add_realsense_d435i_2", add_realsense_d435i
-        )
-        add_d435i_links = get_param_str("add_d435i_links", True)
-        add_d435i_links_1 = get_param_str("add_d435i_links_1", add_d435i_links)
-        add_d435i_links_2 = get_param_str("add_d435i_links_2", add_d435i_links)
-        add_other_geometry = get_param_str("add_other_geometry", False)
-        add_other_geometry_1 = get_param_str("add_other_geometry_1", add_other_geometry)
-        add_other_geometry_2 = get_param_str("add_other_geometry_2", add_other_geometry)
-        geometry_type = get_param_str("geometry_type", "box")
-        geometry_type_1 = get_param_str("geometry_type_1", geometry_type)
-        geometry_type_2 = get_param_str("geometry_type_2", geometry_type)
-        geometry_mass = get_param_str("geometry_mass", 0.1)
-        geometry_mass_1 = get_param_str("geometry_mass_1", geometry_mass)
-        geometry_mass_2 = get_param_str("geometry_mass_2", geometry_mass)
-        geometry_height = get_param_str("geometry_height", 0.1)
-        geometry_height_1 = get_param_str("geometry_height_1", geometry_height)
-        geometry_height_2 = get_param_str("geometry_height_2", geometry_height)
-        geometry_radius = get_param_str("geometry_radius", 0.1)
-        geometry_radius_1 = get_param_str("geometry_radius_1", geometry_radius)
-        geometry_radius_2 = get_param_str("geometry_radius_2", geometry_radius)
-        geometry_length = get_param_str("geometry_length", 0.1)
-        geometry_length_1 = get_param_str("geometry_length_1", geometry_length)
-        geometry_length_2 = get_param_str("geometry_length_2", geometry_length)
-        geometry_width = get_param_str("geometry_width", 0.1)
-        geometry_width_1 = get_param_str("geometry_width_1", geometry_width)
-        geometry_width_2 = get_param_str("geometry_width_2", geometry_width)
-        geometry_mesh_filename = get_param_str("geometry_mesh_filename", "")
-        geometry_mesh_filename_1 = get_param_str(
-            "geometry_mesh_filename_1", geometry_mesh_filename
-        )
-        geometry_mesh_filename_2 = get_param_str(
-            "geometry_mesh_filename_2", geometry_mesh_filename
-        )
-        geometry_mesh_origin_xyz = get_list_param_str(
-            "geometry_mesh_origin_xyz", "0 0 0"
-        )
-        geometry_mesh_origin_xyz_1 = get_list_param_str(
-            "geometry_mesh_origin_xyz_1", geometry_mesh_origin_xyz
-        )
-        geometry_mesh_origin_xyz_2 = get_list_param_str(
-            "geometry_mesh_origin_xyz_2", geometry_mesh_origin_xyz
-        )
-        geometry_mesh_origin_rpy = get_list_param_str(
-            "geometry_mesh_origin_rpy", "0 0 0"
-        )
-        geometry_mesh_origin_rpy_1 = get_list_param_str(
-            "geometry_mesh_origin_rpy_1", geometry_mesh_origin_rpy
-        )
-        geometry_mesh_origin_rpy_2 = get_list_param_str(
-            "geometry_mesh_origin_rpy_2", geometry_mesh_origin_rpy
-        )
-        geometry_mesh_tcp_xyz = get_list_param_str("geometry_mesh_tcp_xyz", "0 0 0")
-        geometry_mesh_tcp_xyz_1 = get_list_param_str(
-            "geometry_mesh_tcp_xyz_1", geometry_mesh_tcp_xyz
-        )
-        geometry_mesh_tcp_xyz_2 = get_list_param_str(
-            "geometry_mesh_tcp_xyz_2", geometry_mesh_tcp_xyz
-        )
-        geometry_mesh_tcp_rpy = get_list_param_str("geometry_mesh_tcp_rpy", "0 0 0")
-        geometry_mesh_tcp_rpy_1 = get_list_param_str(
-            "geometry_mesh_tcp_rpy_1", geometry_mesh_tcp_rpy
-        )
-        geometry_mesh_tcp_rpy_2 = get_list_param_str(
-            "geometry_mesh_tcp_rpy_2", geometry_mesh_tcp_rpy
-        )
-
+        robot_ip_1 = get_param_str('robot_ip_1', '')
+        robot_ip_2 = get_param_str('robot_ip_2', '')
+        report_type = get_param_str('report_type', 'normal')
+        report_type_1 = get_param_str('report_type_1', report_type)
+        report_type_2 = get_param_str('report_type_2', report_type)
+        baud_checkset = get_param_str('baud_checkset', True)
+        baud_checkset_1 = get_param_str('baud_checkset_1', baud_checkset)
+        baud_checkset_2 = get_param_str('baud_checkset_2', baud_checkset)
+        default_gripper_baud = get_param_str('default_gripper_baud', 2000000)
+        default_gripper_baud_1 = get_param_str('default_gripper_baud_1', default_gripper_baud)
+        default_gripper_baud_2 = get_param_str('default_gripper_baud_2', default_gripper_baud)
+        dof = get_param_str('dof', 7)
+        dof_1 = get_param_str('dof_1', dof)
+        dof_2 = get_param_str('dof_2', dof)
+        robot_type = get_param_str('robot_type', 'xarm')
+        robot_type_1 = get_param_str('robot_type_1', robot_type)
+        robot_type_2 = get_param_str('robot_type_2', robot_type)
+        prefix_1 = get_param_str('prefix_1', 'L_')
+        prefix_2 = get_param_str('prefix_2', 'R_')
+        hw_ns = get_param_str('hw_ns', 'xarm')
+        limited = get_param_str('limited', False)
+        effort_control = get_param_str('effort_control', False)
+        velocity_control = get_param_str('velocity_control', False)
+        model1300 = get_param_str('model1300', False)
+        model1300_1 = get_param_str('model1300_1', model1300)
+        model1300_2 = get_param_str('model1300_2', model1300)
+        robot_sn = get_param_str('robot_sn', '')
+        robot_sn_1 = get_param_str('robot_sn_1', robot_sn)
+        robot_sn_2 = get_param_str('robot_sn_2', robot_sn)
+        mesh_suffix = get_param_str('mesh_suffix', 'stl')
+        kinematics_suffix = get_param_str('kinematics_suffix', '')
+        kinematics_suffix_1 = get_param_str('kinematics_suffix_1', kinematics_suffix)
+        kinematics_suffix_2 = get_param_str('kinematics_suffix_2', kinematics_suffix)
+        ros2_control_plugin = get_param_str('ros2_control_plugin', 'uf_robot_hardware/UFRobotSystemHardware')
+        ros2_control_params = get_param_str('ros2_control_params', '')
+        add_gripper = get_param_str('add_gripper', False)
+        add_gripper_1 = get_param_str('add_gripper_1', add_gripper)
+        add_gripper_2 = get_param_str('add_gripper_2', add_gripper)
+        add_vacuum_gripper = get_param_str('add_vacuum_gripper', False)
+        add_vacuum_gripper_1 = get_param_str('add_vacuum_gripper_1', add_vacuum_gripper)
+        add_vacuum_gripper_2 = get_param_str('add_vacuum_gripper_2', add_vacuum_gripper)
+        add_bio_gripper = get_param_str('add_bio_gripper', False)
+        add_bio_gripper_1 = get_param_str('add_bio_gripper_1', add_bio_gripper)
+        add_bio_gripper_2 = get_param_str('add_bio_gripper_2', add_bio_gripper)
+        add_realsense_d435i = get_param_str('add_realsense_d435i', False)
+        add_realsense_d435i_1 = get_param_str('add_realsense_d435i_1', add_realsense_d435i)
+        add_realsense_d435i_2 = get_param_str('add_realsense_d435i_2', add_realsense_d435i)
+        add_d435i_links = get_param_str('add_d435i_links', True)
+        add_d435i_links_1 = get_param_str('add_d435i_links_1', add_d435i_links)
+        add_d435i_links_2 = get_param_str('add_d435i_links_2', add_d435i_links)
+        add_other_geometry = get_param_str('add_other_geometry', False)
+        add_other_geometry_1 = get_param_str('add_other_geometry_1', add_other_geometry)
+        add_other_geometry_2 = get_param_str('add_other_geometry_2', add_other_geometry)
+        geometry_type = get_param_str('geometry_type', 'box')
+        geometry_type_1 = get_param_str('geometry_type_1', geometry_type)
+        geometry_type_2 = get_param_str('geometry_type_2', geometry_type)
+        geometry_mass = get_param_str('geometry_mass', 0.1)
+        geometry_mass_1 = get_param_str('geometry_mass_1', geometry_mass)
+        geometry_mass_2 = get_param_str('geometry_mass_2', geometry_mass)
+        geometry_height = get_param_str('geometry_height', 0.1)
+        geometry_height_1 = get_param_str('geometry_height_1', geometry_height)
+        geometry_height_2 = get_param_str('geometry_height_2', geometry_height)
+        geometry_radius = get_param_str('geometry_radius', 0.1)
+        geometry_radius_1 = get_param_str('geometry_radius_1', geometry_radius)
+        geometry_radius_2 = get_param_str('geometry_radius_2', geometry_radius)
+        geometry_length = get_param_str('geometry_length', 0.1)
+        geometry_length_1 = get_param_str('geometry_length_1', geometry_length)
+        geometry_length_2 = get_param_str('geometry_length_2', geometry_length)
+        geometry_width = get_param_str('geometry_width', 0.1)
+        geometry_width_1 = get_param_str('geometry_width_1', geometry_width)
+        geometry_width_2 = get_param_str('geometry_width_2', geometry_width)
+        geometry_mesh_filename = get_param_str('geometry_mesh_filename', '')
+        geometry_mesh_filename_1 = get_param_str('geometry_mesh_filename_1', geometry_mesh_filename)
+        geometry_mesh_filename_2 = get_param_str('geometry_mesh_filename_2', geometry_mesh_filename)
+        geometry_mesh_origin_xyz = get_list_param_str('geometry_mesh_origin_xyz', '0 0 0')
+        geometry_mesh_origin_xyz_1 = get_list_param_str('geometry_mesh_origin_xyz_1', geometry_mesh_origin_xyz)
+        geometry_mesh_origin_xyz_2 = get_list_param_str('geometry_mesh_origin_xyz_2', geometry_mesh_origin_xyz)
+        geometry_mesh_origin_rpy = get_list_param_str('geometry_mesh_origin_rpy', '0 0 0')
+        geometry_mesh_origin_rpy_1 = get_list_param_str('geometry_mesh_origin_rpy_1', geometry_mesh_origin_rpy)
+        geometry_mesh_origin_rpy_2 = get_list_param_str('geometry_mesh_origin_rpy_2', geometry_mesh_origin_rpy)
+        geometry_mesh_tcp_xyz = get_list_param_str('geometry_mesh_tcp_xyz', '0 0 0')
+        geometry_mesh_tcp_xyz_1 = get_list_param_str('geometry_mesh_tcp_xyz_1', geometry_mesh_tcp_xyz)
+        geometry_mesh_tcp_xyz_2 = get_list_param_str('geometry_mesh_tcp_xyz_2', geometry_mesh_tcp_xyz)
+        geometry_mesh_tcp_rpy = get_list_param_str('geometry_mesh_tcp_rpy', '0 0 0')
+        geometry_mesh_tcp_rpy_1 = get_list_param_str('geometry_mesh_tcp_rpy_1', geometry_mesh_tcp_rpy)
+        geometry_mesh_tcp_rpy_2 = get_list_param_str('geometry_mesh_tcp_rpy_2', geometry_mesh_tcp_rpy)
+        
         self.__prefix_1 = prefix_1
         self.__prefix_2 = prefix_2
         self.__robot_dof_1 = dof_1
@@ -1229,106 +955,98 @@ class DualMoveItConfigsBuilder(ParameterBuilder):
         self.__add_gripper_2 = add_gripper_2
         self.__add_bio_gripper_1 = add_bio_gripper_1
         self.__add_bio_gripper_2 = add_bio_gripper_2
-        self.__controllers_name = (
-            (
-                controllers_name.perform(context)
-                if context is not None
-                else controllers_name
-            )
-            if isinstance(controllers_name, LaunchConfiguration)
-            else controllers_name
-        )
-
+        self.__controllers_name = (controllers_name.perform(context) if context is not None else controllers_name) if isinstance(controllers_name, LaunchConfiguration) else controllers_name
+        
         self.__urdf_xacro_args = {
-            "robot_ip_1": robot_ip_1,
-            "robot_ip_2": robot_ip_2,
-            "report_type_1": report_type_1,
-            "report_type_2": report_type_2,
-            "baud_checkset_1": baud_checkset_1,
-            "baud_checkset_2": baud_checkset_2,
-            "default_gripper_baud_1": default_gripper_baud_1,
-            "default_gripper_baud_2": default_gripper_baud_2,
-            "dof_1": dof_1,
-            "dof_2": dof_2,
-            "robot_type_1": robot_type_1,
-            "robot_type_2": robot_type_2,
-            "prefix_1": prefix_1,
-            "prefix_2": prefix_2,
-            "hw_ns": hw_ns,
-            "limited": limited,
-            "effort_control": effort_control,
-            "velocity_control": velocity_control,
-            "model1300_1": model1300_1,
-            "model1300_2": model1300_2,
-            "robot_sn_1": robot_sn_1,
-            "robot_sn_2": robot_sn_2,
-            "mesh_suffix": mesh_suffix,
-            "kinematics_suffix_1": kinematics_suffix_1,
-            "kinematics_suffix_2": kinematics_suffix_2,
-            "ros2_control_plugin": ros2_control_plugin,
-            "ros2_control_params": ros2_control_params,
-            "add_gripper_1": add_gripper_1,
-            "add_gripper_2": add_gripper_2,
-            "add_vacuum_gripper_1": add_vacuum_gripper_1,
-            "add_vacuum_gripper_2": add_vacuum_gripper_2,
-            "add_bio_gripper_1": add_bio_gripper_1,
-            "add_bio_gripper_2": add_bio_gripper_2,
-            "add_realsense_d435i_1": add_realsense_d435i_1,
-            "add_realsense_d435i_2": add_realsense_d435i_2,
-            "add_d435i_links_1": add_d435i_links_1,
-            "add_d435i_links_2": add_d435i_links_2,
-            "add_other_geometry_1": add_other_geometry_1,
-            "add_other_geometry_2": add_other_geometry_2,
-            "geometry_type_1": geometry_type_1,
-            "geometry_type_2": geometry_type_2,
-            "geometry_mass_1": geometry_mass_1,
-            "geometry_mass_2": geometry_mass_2,
-            "geometry_height_1": geometry_height_1,
-            "geometry_height_2": geometry_height_2,
-            "geometry_radius_1": geometry_radius_1,
-            "geometry_radius_2": geometry_radius_2,
-            "geometry_length_1": geometry_length_1,
-            "geometry_length_2": geometry_length_2,
-            "geometry_width_1": geometry_width_1,
-            "geometry_width_2": geometry_width_2,
-            "geometry_mesh_filename_1": geometry_mesh_filename_1,
-            "geometry_mesh_filename_2": geometry_mesh_filename_2,
-            "geometry_mesh_origin_xyz_1": geometry_mesh_origin_xyz_1,
-            "geometry_mesh_origin_xyz_2": geometry_mesh_origin_xyz_2,
-            "geometry_mesh_origin_rpy_1": geometry_mesh_origin_rpy_1,
-            "geometry_mesh_origin_rpy_2": geometry_mesh_origin_rpy_2,
-            "geometry_mesh_tcp_xyz_1": geometry_mesh_tcp_xyz_1,
-            "geometry_mesh_tcp_xyz_2": geometry_mesh_tcp_xyz_2,
-            "geometry_mesh_tcp_rpy_1": geometry_mesh_tcp_rpy_1,
-            "geometry_mesh_tcp_rpy_2": geometry_mesh_tcp_rpy_2,
+            'robot_ip_1': robot_ip_1,
+            'robot_ip_2': robot_ip_2,
+            'report_type_1': report_type_1,
+            'report_type_2': report_type_2,
+            'baud_checkset_1': baud_checkset_1,
+            'baud_checkset_2': baud_checkset_2,
+            'default_gripper_baud_1': default_gripper_baud_1,
+            'default_gripper_baud_2': default_gripper_baud_2,
+            'dof_1': dof_1,
+            'dof_2': dof_2,
+            'robot_type_1': robot_type_1,
+            'robot_type_2': robot_type_2,
+            'prefix_1': prefix_1,
+            'prefix_2': prefix_2,
+            'hw_ns': hw_ns,
+            'limited': limited,
+            'effort_control': effort_control,
+            'velocity_control': velocity_control,
+            'model1300_1': model1300_1,
+            'model1300_2': model1300_2,
+            'robot_sn_1': robot_sn_1,
+            'robot_sn_2': robot_sn_2,
+            'mesh_suffix': mesh_suffix,
+            'kinematics_suffix_1': kinematics_suffix_1,
+            'kinematics_suffix_2': kinematics_suffix_2,
+            'ros2_control_plugin': ros2_control_plugin,
+            'ros2_control_params': ros2_control_params,
+            'add_gripper_1': add_gripper_1,
+            'add_gripper_2': add_gripper_2,
+            'add_vacuum_gripper_1': add_vacuum_gripper_1,
+            'add_vacuum_gripper_2': add_vacuum_gripper_2,
+            'add_bio_gripper_1': add_bio_gripper_1,
+            'add_bio_gripper_2': add_bio_gripper_2,
+            'add_realsense_d435i_1': add_realsense_d435i_1,
+            'add_realsense_d435i_2': add_realsense_d435i_2,
+            'add_d435i_links_1': add_d435i_links_1,
+            'add_d435i_links_2': add_d435i_links_2,
+            'add_other_geometry_1': add_other_geometry_1,
+            'add_other_geometry_2': add_other_geometry_2,
+            'geometry_type_1': geometry_type_1,
+            'geometry_type_2': geometry_type_2,
+            'geometry_mass_1': geometry_mass_1,
+            'geometry_mass_2': geometry_mass_2,
+            'geometry_height_1': geometry_height_1,
+            'geometry_height_2': geometry_height_2,
+            'geometry_radius_1': geometry_radius_1,
+            'geometry_radius_2': geometry_radius_2,
+            'geometry_length_1': geometry_length_1,
+            'geometry_length_2': geometry_length_2,
+            'geometry_width_1': geometry_width_1,
+            'geometry_width_2': geometry_width_2,
+            'geometry_mesh_filename_1': geometry_mesh_filename_1,
+            'geometry_mesh_filename_2': geometry_mesh_filename_2,
+            'geometry_mesh_origin_xyz_1': geometry_mesh_origin_xyz_1,
+            'geometry_mesh_origin_xyz_2': geometry_mesh_origin_xyz_2,
+            'geometry_mesh_origin_rpy_1': geometry_mesh_origin_rpy_1,
+            'geometry_mesh_origin_rpy_2': geometry_mesh_origin_rpy_2,
+            'geometry_mesh_tcp_xyz_1': geometry_mesh_tcp_xyz_1,
+            'geometry_mesh_tcp_xyz_2': geometry_mesh_tcp_xyz_2,
+            'geometry_mesh_tcp_rpy_1': geometry_mesh_tcp_rpy_1,
+            'geometry_mesh_tcp_rpy_2': geometry_mesh_tcp_rpy_2,
         }
         self.__srdf_xacro_args = {
-            "prefix_1": prefix_1,
-            "prefix_2": prefix_2,
-            "dof_1": dof_1,
-            "dof_2": dof_2,
-            "robot_type_1": robot_type_1,
-            "robot_type_2": robot_type_2,
-            "add_gripper_1": add_gripper_1,
-            "add_gripper_2": add_gripper_2,
-            "add_vacuum_gripper_1": add_vacuum_gripper_1,
-            "add_vacuum_gripper_2": add_vacuum_gripper_2,
-            "add_bio_gripper_1": add_bio_gripper_1,
-            "add_bio_gripper_2": add_bio_gripper_2,
-            "add_other_geometry_1": add_other_geometry_1,
-            "add_other_geometry_2": add_other_geometry_2,
+            'prefix_1': prefix_1,
+            'prefix_2': prefix_2,
+            'dof_1': dof_1,
+            'dof_2': dof_2,
+            'robot_type_1': robot_type_1,
+            'robot_type_2': robot_type_2,
+            'add_gripper_1': add_gripper_1,
+            'add_gripper_2': add_gripper_2,
+            'add_vacuum_gripper_1': add_vacuum_gripper_1,
+            'add_vacuum_gripper_2': add_vacuum_gripper_2,
+            'add_bio_gripper_1': add_bio_gripper_1,
+            'add_bio_gripper_2': add_bio_gripper_2,
+            'add_other_geometry_1': add_other_geometry_1,
+            'add_other_geometry_2': add_other_geometry_2,
         }
 
-        self.__urdf_package = Path(get_package_share_directory("xarm_description"))
-        self.__urdf_file_path = Path("urdf/dual_xarm_device.urdf.xacro")
-        self.__srdf_file_path = Path("srdf/dual_xarm.srdf.xacro")
+        self.__urdf_package = Path(get_package_share_directory('xarm_description'))
+        self.__urdf_file_path = Path('urdf/dual_xarm_device.urdf.xacro')
+        self.__srdf_file_path = Path('srdf/dual_xarm.srdf.xacro')
 
-        self.__robot_description = "robot_description"
+        self.__robot_description = 'robot_description'
 
     def robot_description(
         self,
-        file_path=None,
-        mappings=None,
+        file_path = None,
+        mappings = None,
     ):
         """Load robot description.
 
@@ -1341,7 +1059,7 @@ class DualMoveItConfigsBuilder(ParameterBuilder):
         else:
             robot_description_file_path = self._package_path / file_path
         mappings = mappings or self.__urdf_xacro_args
-
+        
         if (mappings is None) or all(
             (isinstance(key, str) and isinstance(value, str))
             for key, value in mappings.items()
@@ -1354,10 +1072,8 @@ class DualMoveItConfigsBuilder(ParameterBuilder):
                     )
                 }
             except ParameterBuilderFileNotFoundError as e:
-                logging.warning("\x1b[33;21m{}\x1b[0m".format(e))
-                logging.warning(
-                    "\x1b[33;21mThe robot description will be loaded from /robot_description topic \x1b[0m"
-                )
+                logging.warning('\x1b[33;21m{}\x1b[0m'.format(e))
+                logging.warning('\x1b[33;21mThe robot description will be loaded from /robot_description topic \x1b[0m')
         else:
             self.__moveit_configs.robot_description = {
                 self.__robot_description: get_xacro_command(
@@ -1369,8 +1085,8 @@ class DualMoveItConfigsBuilder(ParameterBuilder):
 
     def robot_description_semantic(
         self,
-        file_path=None,
-        mappings=None,
+        file_path = None,
+        mappings = None,
     ):
         """Load semantic robot description.
 
@@ -1378,10 +1094,10 @@ class DualMoveItConfigsBuilder(ParameterBuilder):
         :param mappings: mappings to be passed when loading the xacro file.
         :return: Instance of MoveItConfigsBuilder with robot_description_semantic loaded.
         """
-        key = self.__robot_description + "_semantic"
-        file_path = self.__urdf_package / self.__srdf_file_path
+        key = self.__robot_description + '_semantic'
+        file_path = self._package_path / (file_path or self.__srdf_file_path)
         mappings = mappings or self.__srdf_xacro_args
-
+        
         if (mappings is None) or all(
             (isinstance(key, str) and isinstance(value, str))
             for key, value in mappings.items()
@@ -1393,50 +1109,25 @@ class DualMoveItConfigsBuilder(ParameterBuilder):
             self.__moveit_configs.robot_description_semantic = {
                 key: get_xacro_command(str(file_path), mappings=mappings)
             }
-
+        
         return self
 
-    def robot_description_kinematics(self, file_path=None):
+    def robot_description_kinematics(self, file_path = None):
         """Load IK solver parameters.
 
         :param file_path: Absolute or relative path to the kinematics yaml file (w.r.t. xarm_moveit_config).
         :return: Instance of MoveItConfigsBuilder with robot_description_kinematics loaded.
         """
-        key = self.__robot_description + "_kinematics"
+        key = self.__robot_description + '_kinematics'
 
-        params = [
-            self.__prefix_1,
-            self.__prefix_2,
-            self.__robot_type_1,
-            self.__robot_dof_2,
-            self.__robot_dof_1,
-            self.__robot_dof_2,
-        ]
+        params = [self.__prefix_1, self.__prefix_2, self.__robot_type_1, self.__robot_dof_2, self.__robot_dof_1, self.__robot_dof_2]
         if all(isinstance(value, str) for value in params):
-            robot_name_1 = "{}{}".format(
-                self.__robot_type_1,
-                self.__robot_dof_1
-                if self.__robot_type_1 == "xarm"
-                else "6"
-                if self.__robot_type_1 == "lite"
-                else "",
-            )
-            robot_name_2 = "{}{}".format(
-                self.__robot_type_2,
-                self.__robot_dof_2
-                if self.__robot_type_2 == "xarm"
-                else "6"
-                if self.__robot_type_2 == "lite"
-                else "",
-            )
-
+            robot_name_1 = '{}{}'.format(self.__robot_type_1, self.__robot_dof_1 if self.__robot_type_1 == 'xarm' else '6' if self.__robot_type_1 == 'lite' else '')
+            robot_name_2 = '{}{}'.format(self.__robot_type_2, self.__robot_dof_2 if self.__robot_type_2 == 'xarm' else '6' if self.__robot_type_2 == 'lite' else '')
+            
             if file_path is None:
-                file_path_1 = (
-                    self._package_path / "config" / robot_name_1 / "kinematics.yaml"
-                )
-                file_path_2 = (
-                    self._package_path / "config" / robot_name_2 / "kinematics.yaml"
-                )
+                file_path_1 = self._package_path / 'config' / robot_name_1 / 'kinematics.yaml'
+                file_path_2 = self._package_path / 'config' / robot_name_2 / 'kinematics.yaml'
                 kinematics_yaml_1 = load_yaml(file_path_1)
                 kinematics_yaml_2 = load_yaml(file_path_2)
             else:
@@ -1448,83 +1139,45 @@ class DualMoveItConfigsBuilder(ParameterBuilder):
             kinematics_yaml_2 = kinematics_yaml_2 if kinematics_yaml_2 else {}
             if kinematics_yaml_1 and self.__prefix_1:
                 for name in list(kinematics_yaml_1.keys()):
-                    kinematics_yaml_1["{}{}".format(self.__prefix_1, name)] = (
-                        kinematics_yaml_1.pop(name)
-                    )
+                    kinematics_yaml_1['{}{}'.format(self.__prefix_1, name)] = kinematics_yaml_1.pop(name)
             if kinematics_yaml_2 and self.__prefix_2:
                 for name in list(kinematics_yaml_2.keys()):
-                    kinematics_yaml_2["{}{}".format(self.__prefix_2, name)] = (
-                        kinematics_yaml_2.pop(name)
-                    )
+                    kinematics_yaml_2['{}{}'.format(self.__prefix_2, name)] = kinematics_yaml_2.pop(name)
 
             kinematics_yaml = {}
             kinematics_yaml.update(kinematics_yaml_1)
             kinematics_yaml.update(kinematics_yaml_2)
-            self.__moveit_configs.robot_description_kinematics = {key: kinematics_yaml}
+            self.__moveit_configs.robot_description_kinematics = {
+                key: kinematics_yaml
+            }
         else:
             self.__moveit_configs.robot_description_kinematics = {
                 key: YamlParameterValue(
-                    DualKinematicsYAML(
-                        file_path,
-                        package_path=self._package_path,
-                        prefix_1=self.__prefix_1,
-                        prefix_2=self.__prefix_2,
-                        robot_type_1=self.__robot_type_1,
-                        robot_type_2=self.__robot_type_2,
-                        robot_dof_1=self.__robot_dof_1,
-                        robot_dof_2=self.__robot_dof_2,
-                    ),
-                    value_type=str,
-                )
+                    DualKinematicsYAML(file_path, package_path=self._package_path, 
+                        prefix_1=self.__prefix_1, prefix_2=self.__prefix_2, 
+                        robot_type_1=self.__robot_type_1, robot_type_2=self.__robot_type_2,
+                        robot_dof_1=self.__robot_dof_1, robot_dof_2=self.__robot_dof_2
+                    ), value_type=str)
             }
 
         return self
 
-    def joint_limits(self, file_path=None):
+    def joint_limits(self, file_path = None):
         """Load joint limits overrides.
 
         :param file_path: Absolute or relative path to the joint limits yaml file (w.r.t. xarm_moveit_config).
         :return: Instance of MoveItConfigsBuilder with robot_description_planning loaded.
         """
-        key = self.__robot_description + "_planning"
-        params = [
-            self.__prefix_1,
-            self.__prefix_2,
-            self.__robot_type_1,
-            self.__robot_dof_2,
-            self.__robot_dof_1,
-            self.__robot_dof_2,
-            self.__add_gripper_1,
-            self.__add_gripper_2,
-            self.__add_bio_gripper_1,
-            self.__add_bio_gripper_2,
-        ]
+        key = self.__robot_description + '_planning'
+        params = [self.__prefix_1, self.__prefix_2, self.__robot_type_1, self.__robot_dof_2, self.__robot_dof_1, self.__robot_dof_2, self.__add_gripper_1, self.__add_gripper_2, self.__add_bio_gripper_1, self.__add_bio_gripper_2]
 
         if all(isinstance(value, str) for value in params):
-            robot_name_1 = "{}{}".format(
-                self.__robot_type_1,
-                self.__robot_dof_1
-                if self.__robot_type_1 == "xarm"
-                else "6"
-                if self.__robot_type_1 == "lite"
-                else "",
-            )
-            robot_name_2 = "{}{}".format(
-                self.__robot_type_2,
-                self.__robot_dof_2
-                if self.__robot_type_2 == "xarm"
-                else "6"
-                if self.__robot_type_2 == "lite"
-                else "",
-            )
-
+            robot_name_1 = '{}{}'.format(self.__robot_type_1, self.__robot_dof_1 if self.__robot_type_1 == 'xarm' else '6' if self.__robot_type_1 == 'lite' else '')
+            robot_name_2 = '{}{}'.format(self.__robot_type_2, self.__robot_dof_2 if self.__robot_type_2 == 'xarm' else '6' if self.__robot_type_2 == 'lite' else '')
+            
             if file_path is None:
-                file_path_1 = (
-                    self._package_path / "config" / robot_name_1 / "joint_limits.yaml"
-                )
-                file_path_2 = (
-                    self._package_path / "config" / robot_name_2 / "joint_limits.yaml"
-                )
+                file_path_1 = self._package_path / 'config' / robot_name_1 / 'joint_limits.yaml'
+                file_path_2 = self._package_path / 'config' / robot_name_2 / 'joint_limits.yaml'
                 joint_limits_1 = load_yaml(file_path_1)
                 joint_limits_2 = load_yaml(file_path_2)
             else:
@@ -1534,132 +1187,64 @@ class DualMoveItConfigsBuilder(ParameterBuilder):
                 joint_limits_2 = load_yaml(file_path_2) if file_path_2 else {}
             joint_limits_1 = joint_limits_1 if joint_limits_1 else {}
             joint_limits_2 = joint_limits_2 if joint_limits_2 else {}
-            if self.__add_gripper_1 in ("True", "true"):
-                gripper_joint_limits_yaml = load_yaml(
-                    self._package_path
-                    / "config"
-                    / "{}_gripper".format(self.__robot_type_1)
-                    / "joint_limits.yaml"
-                )
-                if (
-                    gripper_joint_limits_yaml
-                    and "joint_limits" in gripper_joint_limits_yaml
-                ):
-                    joint_limits_1["joint_limits"].update(
-                        gripper_joint_limits_yaml["joint_limits"]
-                    )
-            elif self.__add_bio_gripper_1 in ("True", "true"):
-                gripper_joint_limits_yaml = load_yaml(
-                    self._package_path / "config" / "bio_gripper" / "joint_limits.yaml"
-                )
-                if (
-                    gripper_joint_limits_yaml
-                    and "joint_limits" in gripper_joint_limits_yaml
-                ):
-                    joint_limits_1["joint_limits"].update(
-                        gripper_joint_limits_yaml["joint_limits"]
-                    )
+            if self.__add_gripper_1 in ('True', 'true'):
+                gripper_joint_limits_yaml = load_yaml(self._package_path / 'config' / '{}_gripper'.format(self.__robot_type_1) / 'joint_limits.yaml')
+                if gripper_joint_limits_yaml and 'joint_limits' in gripper_joint_limits_yaml:
+                    joint_limits_1['joint_limits'].update(gripper_joint_limits_yaml['joint_limits'])
+            elif self.__add_bio_gripper_1 in ('True', 'true'):
+                gripper_joint_limits_yaml = load_yaml(self._package_path / 'config' / 'bio_gripper' / 'joint_limits.yaml')
+                if gripper_joint_limits_yaml and 'joint_limits' in gripper_joint_limits_yaml:
+                    joint_limits_1['joint_limits'].update(gripper_joint_limits_yaml['joint_limits'])
             if joint_limits_1 and self.__prefix_1:
-                for name in list(joint_limits_1["joint_limits"]):
-                    joint_limits_1["joint_limits"][
-                        "{}{}".format(self.__prefix_1, name)
-                    ] = joint_limits_1["joint_limits"].pop(name)
-
-            if self.__add_gripper_2 in ("True", "true"):
-                gripper_joint_limits_yaml = load_yaml(
-                    self._package_path
-                    / "config"
-                    / "{}_gripper".format(self.__robot_type_1)
-                    / "joint_limits.yaml"
-                )
-                if (
-                    gripper_joint_limits_yaml
-                    and "joint_limits" in gripper_joint_limits_yaml
-                ):
-                    joint_limits_2["joint_limits"].update(
-                        gripper_joint_limits_yaml["joint_limits"]
-                    )
-            elif self.__add_bio_gripper_2 in ("True", "true"):
-                gripper_joint_limits_yaml = load_yaml(
-                    self._package_path / "config" / "bio_gripper" / "joint_limits.yaml"
-                )
-                if (
-                    gripper_joint_limits_yaml
-                    and "joint_limits" in gripper_joint_limits_yaml
-                ):
-                    joint_limits_2["joint_limits"].update(
-                        gripper_joint_limits_yaml["joint_limits"]
-                    )
+                for name in list(joint_limits_1['joint_limits']):
+                    joint_limits_1['joint_limits']['{}{}'.format(self.__prefix_1, name)] = joint_limits_1['joint_limits'].pop(name)
+            
+            if self.__add_gripper_2 in ('True', 'true'):
+                gripper_joint_limits_yaml = load_yaml(self._package_path / 'config' / '{}_gripper'.format(self.__robot_type_1) / 'joint_limits.yaml')
+                if gripper_joint_limits_yaml and 'joint_limits' in gripper_joint_limits_yaml:
+                    joint_limits_2['joint_limits'].update(gripper_joint_limits_yaml['joint_limits'])
+            elif self.__add_bio_gripper_2 in ('True', 'true'):
+                gripper_joint_limits_yaml = load_yaml(self._package_path / 'config' / 'bio_gripper' / 'joint_limits.yaml')
+                if gripper_joint_limits_yaml and 'joint_limits' in gripper_joint_limits_yaml:
+                    joint_limits_2['joint_limits'].update(gripper_joint_limits_yaml['joint_limits'])
             if joint_limits_2 and self.__prefix_2:
-                for name in list(joint_limits_2["joint_limits"]):
-                    joint_limits_2["joint_limits"][
-                        "{}{}".format(self.__prefix_2, name)
-                    ] = joint_limits_2["joint_limits"].pop(name)
-
-            joint_limits = {"joint_limits": {}}
-            joint_limits["joint_limits"].update(joint_limits_1["joint_limits"])
-            joint_limits["joint_limits"].update(joint_limits_2["joint_limits"])
-            self.__moveit_configs.joint_limits = {key: joint_limits}
+                for name in list(joint_limits_2['joint_limits']):
+                    joint_limits_2['joint_limits']['{}{}'.format(self.__prefix_2, name)] = joint_limits_2['joint_limits'].pop(name)
+            
+            joint_limits = {'joint_limits': {}}
+            joint_limits['joint_limits'].update(joint_limits_1['joint_limits'])
+            joint_limits['joint_limits'].update(joint_limits_2['joint_limits'])
+            self.__moveit_configs.joint_limits = {
+                key: joint_limits
+            }
         else:
             self.__moveit_configs.joint_limits = {
                 key: YamlParameterValue(
-                    DualJointLimitsYAML(
-                        file_path,
-                        package_path=self._package_path,
-                        prefix_1=self.__prefix_1,
-                        prefix_2=self.__prefix_2,
-                        robot_type_1=self.__robot_type_1,
-                        robot_type_2=self.__robot_type_2,
-                        robot_dof_1=self.__robot_dof_1,
-                        robot_dof_2=self.__robot_dof_2,
-                        add_gripper_1=self.__add_gripper_1,
-                        add_gripper_2=self.__add_gripper_2,
-                        add_bio_gripper_1=self.__add_bio_gripper_1,
-                        add_bio_gripper_2=self.__add_bio_gripper_2,
-                    ),
-                    value_type=str,
-                )
+                    DualJointLimitsYAML(file_path, package_path=self._package_path, 
+                        prefix_1=self.__prefix_1, prefix_2=self.__prefix_2, 
+                        robot_type_1=self.__robot_type_1, robot_type_2=self.__robot_type_2, 
+                        robot_dof_1=self.__robot_dof_1, robot_dof_2=self.__robot_dof_2,
+                        add_gripper_1=self.__add_gripper_1, add_gripper_2=self.__add_gripper_2, 
+                        add_bio_gripper_1=self.__add_bio_gripper_1, add_bio_gripper_2=self.__add_bio_gripper_2,
+                ), value_type=str)
             }
 
         return self
 
-    def moveit_cpp(self, file_path=None):
+    def moveit_cpp(self, file_path = None):
         """Load MoveItCpp parameters.
 
         :param file_path: Absolute or relative path to the MoveItCpp yaml file (w.r.t. xarm_moveit_config).
         :return: Instance of MoveItConfigsBuilder with moveit_cpp loaded.
         """
-        params = [
-            self.__robot_type_1,
-            self.__robot_type_2,
-            self.__robot_dof_1,
-            self.__robot_dof_2,
-        ]
+        params = [self.__robot_type_1, self.__robot_type_2, self.__robot_dof_1, self.__robot_dof_2]
         if all(isinstance(value, str) for value in params):
-            robot_name_1 = "{}{}".format(
-                self.__robot_type_1,
-                self.__robot_dof_1
-                if self.__robot_type_1 == "xarm"
-                else "6"
-                if self.__robot_type_1 == "lite"
-                else "",
-            )
-            robot_name_2 = "{}{}".format(
-                self.__robot_type_2,
-                self.__robot_dof_2
-                if self.__robot_type_2 == "xarm"
-                else "6"
-                if self.__robot_type_2 == "lite"
-                else "",
-            )
-
+            robot_name_1 = '{}{}'.format(self.__robot_type_1, self.__robot_dof_1 if self.__robot_type_1 == 'xarm' else '6' if self.__robot_type_1 == 'lite' else '')
+            robot_name_2 = '{}{}'.format(self.__robot_type_2, self.__robot_dof_2 if self.__robot_type_2 == 'xarm' else '6' if self.__robot_type_2 == 'lite' else '')
+            
             if file_path is None:
-                file_path_1 = (
-                    self._package_path / "config" / robot_name_1 / "moveit_cpp.yaml"
-                )
-                file_path_2 = (
-                    self._package_path / "config" / robot_name_2 / "moveit_cpp.yaml"
-                )
+                file_path_1 = self._package_path / 'config' / robot_name_1 / 'moveit_cpp.yaml'
+                file_path_2 = self._package_path / 'config' / robot_name_2 / 'moveit_cpp.yaml'
                 moveit_cpp = load_yaml(file_path_1)
                 moveit_cpp_2 = load_yaml(file_path_2)
                 moveit_cpp = moveit_cpp if moveit_cpp else {}
@@ -1667,18 +1252,16 @@ class DualMoveItConfigsBuilder(ParameterBuilder):
                 moveit_cpp.update(moveit_cpp_2)
             else:
                 file_path = self._package_path / file_path
-                moveit_cpp = (
-                    load_yaml(file_path) if file_path and file_path.exists() else {}
-                )
+                moveit_cpp = load_yaml(file_path) if file_path and file_path.exists() else {}
             self.__moveit_configs.moveit_cpp = moveit_cpp
-
+        
         return self
 
     def trajectory_execution(
         self,
-        file_path=None,
-        controllers_name=None,
-        moveit_manage_controllers=False,
+        file_path = None,
+        controllers_name = None,
+        moveit_manage_controllers = False,
     ):
         """Load trajectory execution and moveit controller managers' parameters
 
@@ -1686,52 +1269,16 @@ class DualMoveItConfigsBuilder(ParameterBuilder):
         :param moveit_manage_controllers: Whether trajectory execution manager is allowed to switch controllers' states.
         :return: Instance of MoveItConfigsBuilder with trajectory_execution loaded.
         """
-        controllers_name = (
-            controllers_name if controllers_name else self.__controllers_name
-        )
-
-        params = [
-            self.__prefix_1,
-            self.__prefix_2,
-            self.__robot_type_1,
-            self.__robot_dof_2,
-            self.__robot_dof_1,
-            self.__robot_dof_2,
-            self.__add_gripper_1,
-            self.__add_gripper_2,
-            self.__add_bio_gripper_1,
-            self.__add_bio_gripper_2,
-            controllers_name,
-        ]
+        controllers_name = controllers_name if controllers_name else self.__controllers_name
+        
+        params = [self.__prefix_1, self.__prefix_2, self.__robot_type_1, self.__robot_dof_2, self.__robot_dof_1, self.__robot_dof_2, self.__add_gripper_1, self.__add_gripper_2, self.__add_bio_gripper_1, self.__add_bio_gripper_2, controllers_name]
         if all(isinstance(value, str) for value in params):
-            robot_name_1 = "{}{}".format(
-                self.__robot_type_1,
-                self.__robot_dof_1
-                if self.__robot_type_1 == "xarm"
-                else "6"
-                if self.__robot_type_1 == "lite"
-                else "",
-            )
-            robot_name_2 = "{}{}".format(
-                self.__robot_type_2,
-                self.__robot_dof_2
-                if self.__robot_type_2 == "xarm"
-                else "6"
-                if self.__robot_type_2 == "lite"
-                else "",
-            )
-            controllers_name = (
-                controllers_name
-                if controllers_name.endswith(".yaml")
-                else "{}.yaml".format(controllers_name)
-            )
+            robot_name_1 = '{}{}'.format(self.__robot_type_1, self.__robot_dof_1 if self.__robot_type_1 == 'xarm' else '6' if self.__robot_type_1 == 'lite' else '')
+            robot_name_2 = '{}{}'.format(self.__robot_type_2, self.__robot_dof_2 if self.__robot_type_2 == 'xarm' else '6' if self.__robot_type_2 == 'lite' else '')
+            controllers_name = controllers_name if controllers_name.endswith('.yaml') else '{}.yaml'.format(controllers_name)
             if file_path is None:
-                file_path_1 = (
-                    self._package_path / "config" / robot_name_1 / controllers_name
-                )
-                file_path_2 = (
-                    self._package_path / "config" / robot_name_2 / controllers_name
-                )
+                file_path_1 = self._package_path / 'config' / robot_name_1 / controllers_name
+                file_path_2 = self._package_path / 'config' / robot_name_2 / controllers_name
                 controllers_yaml_1 = load_yaml(file_path_1)
                 controllers_yaml_2 = load_yaml(file_path_2)
                 controllers_yaml_1 = controllers_yaml_1 if controllers_yaml_1 else {}
@@ -1743,198 +1290,130 @@ class DualMoveItConfigsBuilder(ParameterBuilder):
                 controllers_yaml_2 = load_yaml(file_path_2) if file_path_2 else {}
                 controllers_yaml_1 = controllers_yaml_1 if controllers_yaml_1 else {}
                 controllers_yaml_2 = controllers_yaml_2 if controllers_yaml_2 else {}
-            if self.__add_gripper_1 in ("True", "true"):
-                gripper_controllers_yaml = load_yaml(
-                    self._package_path
-                    / "config"
-                    / "{}_gripper".format(self.__robot_type_1)
-                    / controllers_name
-                )
-                if (
-                    gripper_controllers_yaml
-                    and "controller_names" in gripper_controllers_yaml
-                ):
-                    for name in gripper_controllers_yaml["controller_names"]:
+            if self.__add_gripper_1 in ('True', 'true'):
+                gripper_controllers_yaml = load_yaml(self._package_path / 'config' / '{}_gripper'.format(self.__robot_type_1) / controllers_name)
+                if gripper_controllers_yaml and 'controller_names' in gripper_controllers_yaml:
+                    for name in gripper_controllers_yaml['controller_names']:
                         if name in gripper_controllers_yaml:
-                            if name not in controllers_yaml_1["controller_names"]:
-                                controllers_yaml_1["controller_names"].append(name)
+                            if name not in controllers_yaml_1['controller_names']:
+                                controllers_yaml_1['controller_names'].append(name)
                             controllers_yaml_1[name] = gripper_controllers_yaml[name]
-            elif self.__add_bio_gripper_1 in ("True", "true"):
-                gripper_controllers_yaml = load_yaml(
-                    self._package_path / "config" / "bio_gripper" / controllers_name
-                )
-                if (
-                    gripper_controllers_yaml
-                    and "controller_names" in gripper_controllers_yaml
-                ):
-                    for name in gripper_controllers_yaml["controller_names"]:
+            elif self.__add_bio_gripper_1 in ('True', 'true'):
+                gripper_controllers_yaml = load_yaml(self._package_path / 'config' / 'bio_gripper' / controllers_name)
+                if gripper_controllers_yaml and 'controller_names' in gripper_controllers_yaml:
+                    for name in gripper_controllers_yaml['controller_names']:
                         if name in gripper_controllers_yaml:
-                            if name not in controllers_yaml_1["controller_names"]:
-                                controllers_yaml_1["controller_names"].append(name)
+                            if name not in controllers_yaml_1['controller_names']:
+                                controllers_yaml_1['controller_names'].append(name)
                             controllers_yaml_1[name] = gripper_controllers_yaml[name]
 
-            if self.__add_gripper_2 in ("True", "true"):
-                gripper_controllers_yaml = load_yaml(
-                    self._package_path
-                    / "config"
-                    / "{}_gripper".format(self.__robot_type_2)
-                    / controllers_name
-                )
-                if (
-                    gripper_controllers_yaml
-                    and "controller_names" in gripper_controllers_yaml
-                ):
-                    for name in gripper_controllers_yaml["controller_names"]:
+            if self.__add_gripper_2 in ('True', 'true'):
+                gripper_controllers_yaml = load_yaml(self._package_path / 'config' / '{}_gripper'.format(self.__robot_type_2) / controllers_name)
+                if gripper_controllers_yaml and 'controller_names' in gripper_controllers_yaml:
+                    for name in gripper_controllers_yaml['controller_names']:
                         if name in gripper_controllers_yaml:
-                            if name not in controllers_yaml_2["controller_names"]:
-                                controllers_yaml_2["controller_names"].append(name)
+                            if name not in controllers_yaml_2['controller_names']:
+                                controllers_yaml_2['controller_names'].append(name)
                             controllers_yaml_2[name] = gripper_controllers_yaml[name]
-            elif self.__add_bio_gripper_2 in ("True", "true"):
-                gripper_controllers_yaml = load_yaml(
-                    self._package_path / "config" / "bio_gripper" / controllers_name
-                )
-                if (
-                    gripper_controllers_yaml
-                    and "controller_names" in gripper_controllers_yaml
-                ):
-                    for name in gripper_controllers_yaml["controller_names"]:
+            elif self.__add_bio_gripper_2 in ('True', 'true'):
+                gripper_controllers_yaml = load_yaml(self._package_path / 'config' / 'bio_gripper' / controllers_name)
+                if gripper_controllers_yaml and 'controller_names' in gripper_controllers_yaml:
+                    for name in gripper_controllers_yaml['controller_names']:
                         if name in gripper_controllers_yaml:
-                            if name not in controllers_yaml_2["controller_names"]:
-                                controllers_yaml_2["controller_names"].append(name)
+                            if name not in controllers_yaml_2['controller_names']:
+                                controllers_yaml_2['controller_names'].append(name)
                             controllers_yaml_2[name] = gripper_controllers_yaml[name]
 
             if controllers_yaml_1 and self.__prefix_1:
-                for i, name in enumerate(controllers_yaml_1["controller_names"]):
-                    joints = controllers_yaml_1.get(name, {}).get("joints", [])
+                for i, name in enumerate(controllers_yaml_1['controller_names']):
+                    joints = controllers_yaml_1.get(name, {}).get('joints', [])
                     for j, joint in enumerate(joints):
-                        joints[j] = "{}{}".format(self.__prefix_1, joint)
-                    controllers_yaml_1["controller_names"][i] = "{}{}".format(
-                        self.__prefix_1, name
-                    )
+                        joints[j] = '{}{}'.format(self.__prefix_1, joint)
+                    controllers_yaml_1['controller_names'][i] = '{}{}'.format(self.__prefix_1, name)
                     if name in controllers_yaml_1:
-                        controllers_yaml_1["{}{}".format(self.__prefix_1, name)] = (
-                            controllers_yaml_1.pop(name)
-                        )
+                        controllers_yaml_1['{}{}'.format(self.__prefix_1, name)] = controllers_yaml_1.pop(name)
             if controllers_yaml_2 and self.__prefix_2:
-                for i, name in enumerate(controllers_yaml_2["controller_names"]):
-                    joints = controllers_yaml_2.get(name, {}).get("joints", [])
+                for i, name in enumerate(controllers_yaml_2['controller_names']):
+                    joints = controllers_yaml_2.get(name, {}).get('joints', [])
                     for j, joint in enumerate(joints):
-                        joints[j] = "{}{}".format(self.__prefix_2, joint)
-                    controllers_yaml_2["controller_names"][i] = "{}{}".format(
-                        self.__prefix_2, name
-                    )
+                        joints[j] = '{}{}'.format(self.__prefix_2, joint)
+                    controllers_yaml_2['controller_names'][i] = '{}{}'.format(self.__prefix_2, name)
                     if name in controllers_yaml_2:
-                        controllers_yaml_2["{}{}".format(self.__prefix_2, name)] = (
-                            controllers_yaml_2.pop(name)
-                        )
+                        controllers_yaml_2['{}{}'.format(self.__prefix_2, name)] = controllers_yaml_2.pop(name)
 
             controllers_yaml = {}
             controllers_yaml.update(controllers_yaml_1)
-            controllers_yaml["controller_names"].extend(
-                controllers_yaml_2["controller_names"]
-            )
-            controllers_yaml_2.pop("controller_names", [])
+            controllers_yaml['controller_names'].extend(controllers_yaml_2['controller_names'])
+            controllers_yaml_2.pop('controller_names', [])
             controllers_yaml.update(controllers_yaml_2)
 
             self.__moveit_configs.trajectory_execution = {
-                "moveit_manage_controllers": moveit_manage_controllers,
-                "moveit_controller_manager": "moveit_simple_controller_manager/MoveItSimpleControllerManager",
-                "moveit_simple_controller_manager": controllers_yaml,
-                "trajectory_execution.allowed_execution_duration_scaling": 1.2,
-                "trajectory_execution.allowed_goal_duration_margin": 0.5,
-                "trajectory_execution.allowed_start_tolerance": 0.01,
-                "trajectory_execution.execution_duration_monitoring": False,
-                "plan_execution.record_trajectory_state_frequency": 10.0,
+                'moveit_manage_controllers': moveit_manage_controllers,
+                'moveit_controller_manager': 'moveit_simple_controller_manager/MoveItSimpleControllerManager',
+                'moveit_simple_controller_manager': controllers_yaml,
+                'trajectory_execution.allowed_execution_duration_scaling': 1.2,
+                'trajectory_execution.allowed_goal_duration_margin': 0.5,
+                'trajectory_execution.allowed_start_tolerance': 0.01,
+                'trajectory_execution.execution_duration_monitoring': False,
+                'plan_execution.record_trajectory_state_frequency': 10.0
             }
         else:
             self.__moveit_configs.trajectory_execution = {
-                "moveit_manage_controllers": moveit_manage_controllers,
-                "moveit_controller_manager": "moveit_simple_controller_manager/MoveItSimpleControllerManager",
-                "moveit_simple_controller_manager": YamlParameterValue(
-                    DualControllersYAML(
-                        file_path,
-                        package_path=self._package_path,
-                        prefix_1=self.__prefix_1,
-                        prefix_2=self.__prefix_2,
-                        robot_type_1=self.__robot_type_1,
-                        robot_type_2=self.__robot_type_2,
-                        robot_dof_1=self.__robot_dof_1,
-                        robot_dof_2=self.__robot_dof_2,
-                        add_gripper_1=self.__add_gripper_1,
-                        add_gripper_2=self.__add_gripper_2,
-                        add_bio_gripper_1=self.__add_bio_gripper_1,
-                        add_bio_gripper_2=self.__add_bio_gripper_2,
-                        controllers_name=controllers_name,
-                    ),
-                    value_type=str,
-                ),
-                "trajectory_execution.allowed_execution_duration_scaling": 1.2,
-                "trajectory_execution.allowed_goal_duration_margin": 0.5,
-                "trajectory_execution.allowed_start_tolerance": 0.01,
-                "trajectory_execution.execution_duration_monitoring": False,
-                "plan_execution.record_trajectory_state_frequency": 10.0,
+                'moveit_manage_controllers': moveit_manage_controllers,
+                'moveit_controller_manager': 'moveit_simple_controller_manager/MoveItSimpleControllerManager',
+                'moveit_simple_controller_manager': YamlParameterValue(
+                    DualControllersYAML(file_path, package_path=self._package_path, 
+                        prefix_1=self.__prefix_1, prefix_2=self.__prefix_2, 
+                        robot_type_1=self.__robot_type_1, robot_type_2=self.__robot_type_2, 
+                        robot_dof_1=self.__robot_dof_1, robot_dof_2=self.__robot_dof_2,
+                        add_gripper_1=self.__add_gripper_1, add_gripper_2=self.__add_gripper_2, 
+                        add_bio_gripper_1=self.__add_bio_gripper_1, add_bio_gripper_2=self.__add_bio_gripper_2, 
+                        controllers_name=controllers_name
+                    ), value_type=str),
+                'trajectory_execution.allowed_execution_duration_scaling': 1.2,
+                'trajectory_execution.allowed_goal_duration_margin': 0.5,
+                'trajectory_execution.allowed_start_tolerance': 0.01,
+                'trajectory_execution.execution_duration_monitoring': False,
+                'plan_execution.record_trajectory_state_frequency': 10.0
             }
         return self
 
     def planning_scene_monitor(
         self,
-        publish_planning_scene=True,
-        publish_geometry_updates=True,
-        publish_state_updates=True,
-        publish_transforms_updates=True,
-        publish_robot_description=False,
-        publish_robot_description_semantic=False,
+        publish_planning_scene = True,
+        publish_geometry_updates = True,
+        publish_state_updates = True,
+        publish_transforms_updates = True,
+        publish_robot_description = False,
+        publish_robot_description_semantic = False,
     ):
         self.__moveit_configs.planning_scene_monitor = {
             # TODO: Fix parameter namespace upstream -- see planning_scene_monitor.cpp:262
             # 'planning_scene_monitor': {
-            "publish_planning_scene": publish_planning_scene,
-            "publish_geometry_updates": publish_geometry_updates,
-            "publish_state_updates": publish_state_updates,
-            "publish_transforms_updates": publish_transforms_updates,
-            "publish_robot_description": publish_robot_description,
-            "publish_robot_description_semantic": publish_robot_description_semantic,
+            'publish_planning_scene': publish_planning_scene,
+            'publish_geometry_updates': publish_geometry_updates,
+            'publish_state_updates': publish_state_updates,
+            'publish_transforms_updates': publish_transforms_updates,
+            'publish_robot_description': publish_robot_description,
+            'publish_robot_description_semantic': publish_robot_description_semantic,
             # }
         }
         return self
 
-    def sensors_3d(self, file_path=None):
+    def sensors_3d(self, file_path = None):
         """Load sensors_3d parameters.
 
         :param file_path: Absolute or relative path to the sensors_3d yaml file (w.r.t. xarm_moveit_config).
         :return: Instance of MoveItConfigsBuilder with robot_description_planning loaded.
         """
-        params = [
-            self.__robot_type_1,
-            self.__robot_type_2,
-            self.__robot_dof_1,
-            self.__robot_dof_2,
-        ]
+        params = [self.__robot_type_1, self.__robot_type_2, self.__robot_dof_1, self.__robot_dof_2]
         if all(isinstance(value, str) for value in params):
-            robot_name_1 = "{}{}".format(
-                self.__robot_type_1,
-                self.__robot_dof_1
-                if self.__robot_type_1 == "xarm"
-                else "6"
-                if self.__robot_type_1 == "lite"
-                else "",
-            )
-            robot_name_2 = "{}{}".format(
-                self.__robot_type_2,
-                self.__robot_dof_2
-                if self.__robot_type_2 == "xarm"
-                else "6"
-                if self.__robot_type_2 == "lite"
-                else "",
-            )
-
+            robot_name_1 = '{}{}'.format(self.__robot_type_1, self.__robot_dof_1 if self.__robot_type_1 == 'xarm' else '6' if self.__robot_type_1 == 'lite' else '')
+            robot_name_2 = '{}{}'.format(self.__robot_type_2, self.__robot_dof_2 if self.__robot_type_2 == 'xarm' else '6' if self.__robot_type_2 == 'lite' else '')
+            
             if file_path is None:
-                file_path_1 = (
-                    self._package_path / "config" / robot_name_1 / "sensors_3d.yaml"
-                )
-                file_path_2 = (
-                    self._package_path / "config" / robot_name_2 / "sensors_3d.yaml"
-                )
+                file_path_1 = self._package_path / 'config' / robot_name_1 / 'sensors_3d.yaml'
+                file_path_2 = self._package_path / 'config' / robot_name_2 / 'sensors_3d.yaml'
                 sensors_data = {}
                 if file_path_1.exists():
                     sensors_data_1 = load_yaml(file_path_1)
@@ -1946,26 +1425,20 @@ class DualMoveItConfigsBuilder(ParameterBuilder):
                     sensors_data.update(sensors_data_2)
             else:
                 file_path = self._package_path / file_path
-                sensors_data = (
-                    load_yaml(file_path) if file_path and file_path.exists() else {}
-                )
+                sensors_data = load_yaml(file_path) if file_path and file_path.exists() else {}
 
             # TODO(mikeferguson): remove the second part of this check once
             # https://github.com/ros-planning/moveit_resources/pull/141 has made through buildfarm
-            if (
-                sensors_data
-                and len(sensors_data["sensors"]) > 0
-                and sensors_data["sensors"][0]
-            ):
+            if sensors_data and len(sensors_data['sensors']) > 0 and sensors_data['sensors'][0]:
                 self.__moveit_configs.sensors_3d = sensors_data
-
+        
         return self
 
     def planning_pipelines(
         self,
-        default_planning_pipeline=None,
-        pipelines=None,
-        load_all=True,
+        default_planning_pipeline = None,
+        pipelines = None,
+        load_all = True,
     ):
         """Load planning pipelines parameters.
 
@@ -1976,39 +1449,14 @@ class DualMoveItConfigsBuilder(ParameterBuilder):
                          If false, only loads the pipelines defined in config package.
         :return: Instance of MoveItConfigsBuilder with planning_pipelines loaded.
         """
-        params = [
-            self.__prefix_1,
-            self.__prefix_2,
-            self.__robot_type_1,
-            self.__robot_dof_2,
-            self.__robot_dof_1,
-            self.__robot_dof_2,
-            self.__add_gripper_1,
-            self.__add_gripper_2,
-            self.__add_bio_gripper_1,
-            self.__add_bio_gripper_2,
-        ]
+        params = [self.__prefix_1, self.__prefix_2, self.__robot_type_1, self.__robot_dof_2, self.__robot_dof_1, self.__robot_dof_2, self.__add_gripper_1, self.__add_gripper_2, self.__add_bio_gripper_1, self.__add_bio_gripper_2]
         if all(isinstance(value, str) for value in params):
-            robot_name_1 = "{}{}".format(
-                self.__robot_type_1,
-                self.__robot_dof_1
-                if self.__robot_type_1 == "xarm"
-                else "6"
-                if self.__robot_type_1 == "lite"
-                else "",
-            )
-            robot_name_2 = "{}{}".format(
-                self.__robot_type_2,
-                self.__robot_dof_2
-                if self.__robot_type_2 == "xarm"
-                else "6"
-                if self.__robot_type_2 == "lite"
-                else "",
-            )
-            config_folder_1 = self._package_path / "config" / robot_name_1
-            config_folder_2 = self._package_path / "config" / robot_name_2
+            robot_name_1 = '{}{}'.format(self.__robot_type_1, self.__robot_dof_1 if self.__robot_type_1 == 'xarm' else '6' if self.__robot_type_1 == 'lite' else '')
+            robot_name_2 = '{}{}'.format(self.__robot_type_2, self.__robot_dof_2 if self.__robot_type_2 == 'xarm' else '6' if self.__robot_type_2 == 'lite' else '')
+            config_folder_1 = self._package_path / 'config' / robot_name_1
+            config_folder_2 = self._package_path / 'config' / robot_name_2
             if pipelines is None:
-                planning_pattern = re.compile("^(.*)_planning.yaml$")
+                planning_pattern = re.compile('^(.*)_planning.yaml$')
                 pipelines_1 = get_pattern_matches(config_folder_1, planning_pattern)
                 pipelines_2 = get_pattern_matches(config_folder_2, planning_pattern)
                 pipelines = []
@@ -2019,29 +1467,27 @@ class DualMoveItConfigsBuilder(ParameterBuilder):
                 pipelines = list(set(pipelines))
                 pipelines_1 = pipelines
                 pipelines_2 = pipelines
-            # Define default pipeline as needed
+             # Define default pipeline as needed
             if not default_planning_pipeline:
-                if not pipelines or "ompl" in pipelines:
-                    default_planning_pipeline = "ompl"
+                if not pipelines or 'ompl' in pipelines:
+                    default_planning_pipeline = 'ompl'
                 else:
                     default_planning_pipeline = pipelines[0]
 
             if default_planning_pipeline not in pipelines:
                 raise RuntimeError(
-                    "default_planning_pipeline: `{}` doesn't name any of the input pipelines `{}`".format(
-                        default_planning_pipeline, ",".join(pipelines)
-                    )
+                    'default_planning_pipeline: `{}` doesn\'t name any of the input pipelines `{}`'.format(default_planning_pipeline, ','.join(pipelines))
                 )
 
             self.__moveit_configs.planning_pipelines = {
-                "planning_pipelines": pipelines,
-                "default_planning_pipeline": default_planning_pipeline,
+                'planning_pipelines': pipelines,
+                'default_planning_pipeline': default_planning_pipeline,
             }
 
-            default_config_folder = self._package_path / "config" / "moveit_configs"
-
+            default_config_folder = self._package_path / 'config' / 'moveit_configs'
+            
             for pipeline in pipelines:
-                filename = pipeline + "_planning.yaml"
+                filename = pipeline + '_planning.yaml'
                 parameter_file = default_config_folder / filename
                 if parameter_file.exists():
                     planning_yaml = load_yaml(parameter_file)
@@ -2054,78 +1500,52 @@ class DualMoveItConfigsBuilder(ParameterBuilder):
                     parameter_file = config_folder_1 / filename
                     planning_yaml_1 = load_yaml(parameter_file)
                     planning_yaml_1 = planning_yaml_1 if planning_yaml_1 else {}
-                    if self.__add_gripper_1 in ("True", "true"):
-                        parameter_file = (
-                            self._package_path
-                            / "config"
-                            / "{}_gripper".format(self.__robot_type_1)
-                            / filename
-                        )
+                    if self.__add_gripper_1 in ('True', 'true'):
+                        parameter_file = self._package_path / 'config' / '{}_gripper'.format(self.__robot_type_1) / filename
                         if parameter_file.exists():
                             gripper_planning_yaml = load_yaml(parameter_file)
                             if gripper_planning_yaml:
                                 planning_yaml_1.update(gripper_planning_yaml)
-                    elif self.__add_bio_gripper_1 in ("True", "true"):
-                        parameter_file = (
-                            self._package_path / "config" / "bio_gripper" / filename
-                        )
+                    elif self.__add_bio_gripper_1 in ('True', 'true'):
+                        parameter_file = self._package_path / 'config' / 'bio_gripper' / filename
                         if parameter_file.exists():
                             gripper_planning_yaml = load_yaml(parameter_file)
                             if gripper_planning_yaml:
                                 planning_yaml_1.update(gripper_planning_yaml)
                     if planning_yaml_1 and self.__prefix_1:
                         for name in list(planning_yaml_1.keys()):
-                            if (
-                                pipeline == "ompl"
-                                and name != "planner_configs"
-                                and name not in planning_yaml
-                            ):
-                                planning_yaml_1[
-                                    "{}{}".format(self.__prefix_1, name)
-                                ] = planning_yaml_1.pop(name)
+                            if pipeline == 'ompl' and name != 'planner_configs' and name not in planning_yaml:
+                                planning_yaml_1['{}{}'.format(self.__prefix_1, name)] = planning_yaml_1.pop(name)
 
                 if pipeline in pipelines_2:
                     parameter_file = config_folder_2 / filename
                     planning_yaml_2 = load_yaml(parameter_file)
                     planning_yaml_2 = planning_yaml_2 if planning_yaml_2 else {}
-
-                    if self.__add_gripper_2 in ("True", "true"):
-                        parameter_file = (
-                            self._package_path
-                            / "config"
-                            / "{}_gripper".format(self.__robot_type_2)
-                            / filename
-                        )
+                                
+                    if self.__add_gripper_2 in ('True', 'true'):
+                        parameter_file = self._package_path / 'config' / '{}_gripper'.format(self.__robot_type_2) / filename
                         if parameter_file.exists():
                             gripper_planning_yaml = load_yaml(parameter_file)
                             if gripper_planning_yaml:
                                 planning_yaml_2.update(gripper_planning_yaml)
-                    elif self.__add_bio_gripper_2 in ("True", "true"):
-                        parameter_file = (
-                            self._package_path / "config" / "bio_gripper" / filename
-                        )
+                    elif self.__add_bio_gripper_2 in ('True', 'true'):
+                        parameter_file = self._package_path / 'config' / 'bio_gripper' / filename
                         if parameter_file.exists():
                             gripper_planning_yaml = load_yaml(parameter_file)
                             if gripper_planning_yaml:
                                 planning_yaml_2.update(gripper_planning_yaml)
                     if planning_yaml_2 and self.__prefix_2:
                         for name in list(planning_yaml_2.keys()):
-                            if (
-                                pipeline == "ompl"
-                                and name != "planner_configs"
-                                and name not in planning_yaml
-                            ):
-                                planning_yaml_2[
-                                    "{}{}".format(self.__prefix_2, name)
-                                ] = planning_yaml_2.pop(name)
-
+                            if pipeline == 'ompl' and name != 'planner_configs' and name not in planning_yaml:
+                                planning_yaml_2['{}{}'.format(self.__prefix_2, name)] = planning_yaml_2.pop(name)
+                
                 planning_yaml.update(planning_yaml_1)
                 planning_yaml.update(planning_yaml_2)
-                if pipeline == "ompl" and "planner_configs" not in planning_yaml:
-                    parameter_file = default_config_folder / "ompl_defaults.yaml"
+                if pipeline == 'ompl' and 'planner_configs' not in planning_yaml:
+                    parameter_file = default_config_folder / 'ompl_defaults.yaml'
                     planning_yaml.update(load_yaml(parameter_file))
                 self.__moveit_configs.planning_pipelines[pipeline] = planning_yaml
-
+            
             # # Special rule to add ompl planner_configs
             # if 'ompl' in self.__moveit_configs.planning_pipelines:
             #     ompl_config = self.__moveit_configs.planning_pipelines['ompl']
@@ -2151,141 +1571,75 @@ class DualMoveItConfigsBuilder(ParameterBuilder):
             #             'start_state_max_bounds_error': 0.1,
             #         })
         else:
-            pipelines = list(set(pipelines)) if pipelines else ["ompl"]
-            default_planning_pipeline = (
-                default_planning_pipeline if default_planning_pipeline else "ompl"
-            )
+            pipelines = list(set(pipelines)) if pipelines else ['ompl']
+            default_planning_pipeline = default_planning_pipeline if default_planning_pipeline else 'ompl'
             if default_planning_pipeline not in pipelines:
                 raise RuntimeError(
-                    "default_planning_pipeline: `{}` doesn't name any of the input pipelines `{}`".format(
-                        default_planning_pipeline, ",".join(pipelines)
-                    )
+                    'default_planning_pipeline: `{}` doesn\'t name any of the input pipelines `{}`'.format(default_planning_pipeline, ','.join(pipelines))
                 )
             self.__moveit_configs.planning_pipelines = {
-                "planning_pipelines": pipelines,
-                "default_planning_pipeline": default_planning_pipeline,
+                'planning_pipelines': pipelines,
+                'default_planning_pipeline': default_planning_pipeline,
             }
             for pipeline in pipelines:
                 self.__moveit_configs.planning_pipelines[pipeline] = YamlParameterValue(
-                    DualPlanningPipelinesYAML(
-                        pipeline,
-                        package_path=self._package_path,
-                        prefix_1=self.__prefix_1,
-                        prefix_2=self.__prefix_2,
-                        robot_type_1=self.__robot_type_1,
-                        robot_type_2=self.__robot_type_2,
-                        robot_dof_1=self.__robot_dof_1,
-                        robot_dof_2=self.__robot_dof_2,
-                        add_gripper_1=self.__add_gripper_1,
-                        add_gripper_2=self.__add_gripper_2,
-                        add_bio_gripper_1=self.__add_bio_gripper_1,
-                        add_bio_gripper_2=self.__add_bio_gripper_2,
-                    ),
-                    value_type=str,
-                )
-
+                    DualPlanningPipelinesYAML(pipeline, package_path=self._package_path, 
+                        prefix_1=self.__prefix_1, prefix_2=self.__prefix_2, 
+                        robot_type_1=self.__robot_type_1, robot_type_2=self.__robot_type_2, 
+                        robot_dof_1=self.__robot_dof_1, robot_dof_2=self.__robot_dof_2,
+                        add_gripper_1=self.__add_gripper_1, add_gripper_2=self.__add_gripper_2, 
+                        add_bio_gripper_1=self.__add_bio_gripper_1, add_bio_gripper_2=self.__add_bio_gripper_2, 
+                    ), value_type=str)
+        
         return self
 
-    def pilz_cartesian_limits(self, file_path=None):
+    def pilz_cartesian_limits(self, file_path = None):
         """Load cartesian limits.
 
         :param file_path: Absolute or relative path to the cartesian limits file (w.r.t. xarm_moveit_config).
         :return: Instance of MoveItConfigsBuilder with pilz_cartesian_limits loaded.
         """
-        params = [
-            self.__robot_type_1,
-            self.__robot_type_2,
-            self.__robot_dof_1,
-            self.__robot_dof_2,
-        ]
+        params = [self.__robot_type_1, self.__robot_type_2, self.__robot_dof_1, self.__robot_dof_2]
         if all(isinstance(value, str) for value in params):
-            robot_name_1 = "{}{}".format(
-                self.__robot_type_1,
-                self.__robot_dof_1
-                if self.__robot_type_1 == "xarm"
-                else "6"
-                if self.__robot_type_1 == "lite"
-                else "",
-            )
-            robot_name_2 = "{}{}".format(
-                self.__robot_type_2,
-                self.__robot_dof_2
-                if self.__robot_type_2 == "xarm"
-                else "6"
-                if self.__robot_type_2 == "lite"
-                else "",
-            )
-
-            deprecated_path_1 = (
-                self._package_path / "config" / robot_name_1 / "cartesian_limits.yaml"
-            )
-            deprecated_path_2 = (
-                self._package_path / "config" / robot_name_2 / "cartesian_limits.yaml"
-            )
+            robot_name_1 = '{}{}'.format(self.__robot_type_1, self.__robot_dof_1 if self.__robot_type_1 == 'xarm' else '6' if self.__robot_type_1 == 'lite' else '')
+            robot_name_2 = '{}{}'.format(self.__robot_type_2, self.__robot_dof_2 if self.__robot_type_2 == 'xarm' else '6' if self.__robot_type_2 == 'lite' else '')
+            
+            deprecated_path_1 = self._package_path / 'config' / robot_name_1 / 'cartesian_limits.yaml'
+            deprecated_path_2 = self._package_path / 'config' / robot_name_2 / 'cartesian_limits.yaml'
             if deprecated_path_1.exists() or deprecated_path_2.exists():
-                logging.warning(
-                    "\x1b[33;21mcartesian_limits.yaml is deprecated, please rename to pilz_cartesian_limits.yaml\x1b[0m"
-                )
+                logging.warning('\x1b[33;21mcartesian_limits.yaml is deprecated, please rename to pilz_cartesian_limits.yaml\x1b[0m')
             if file_path is None:
-                file_path_1 = (
-                    self._package_path
-                    / "config"
-                    / robot_name_1
-                    / "pilz_cartesian_limits.yaml"
-                )
-                file_path_2 = (
-                    self._package_path
-                    / "config"
-                    / robot_name_2
-                    / "pilz_cartesian_limits.yaml"
-                )
-                pilz_cartesian_limits = load_yaml(
-                    self._package_path
-                    / "config"
-                    / "moveit_configs"
-                    / "pilz_cartesian_limits.yaml"
-                )
-                pilz_cartesian_limits = (
-                    pilz_cartesian_limits if pilz_cartesian_limits else {}
-                )
+                file_path_1 = self._package_path / 'config' / robot_name_1 / 'pilz_cartesian_limits.yaml'
+                file_path_2 = self._package_path / 'config' / robot_name_2 / 'pilz_cartesian_limits.yaml'
+                pilz_cartesian_limits = load_yaml(self._package_path / 'config' / 'moveit_configs' / 'pilz_cartesian_limits.yaml')
+                pilz_cartesian_limits = pilz_cartesian_limits if pilz_cartesian_limits else {}
                 if file_path_1.exists():
                     pilz_cartesian_limits_1 = load_yaml(file_path_1)
-                    pilz_cartesian_limits_1 = (
-                        pilz_cartesian_limits_1 if pilz_cartesian_limits_1 else {}
-                    )
+                    pilz_cartesian_limits_1 = pilz_cartesian_limits_1 if pilz_cartesian_limits_1 else {}
                     pilz_cartesian_limits.update(pilz_cartesian_limits_1)
                 if file_path_2.exists():
                     pilz_cartesian_limits_2 = load_yaml(file_path_2)
-                    pilz_cartesian_limits_2 = (
-                        pilz_cartesian_limits_2 if pilz_cartesian_limits_2 else {}
-                    )
+                    pilz_cartesian_limits_2 = pilz_cartesian_limits_2 if pilz_cartesian_limits_2 else {}
                     pilz_cartesian_limits.update(pilz_cartesian_limits_2)
             else:
                 file_path = self._package_path / file_path
-                pilz_cartesian_limits = (
-                    load_yaml(file_path) if file_path and file_path.exists() else {}
-                )
-
-            key = self.__robot_description + "_planning"
-            self.__moveit_configs.pilz_cartesian_limits = {key: pilz_cartesian_limits}
+                pilz_cartesian_limits = load_yaml(file_path) if file_path and file_path.exists() else {}
+            
+            key = self.__robot_description + '_planning'
+            self.__moveit_configs.pilz_cartesian_limits = {
+                key: pilz_cartesian_limits
+            }
         else:
-            key = self.__robot_description + "_planning"
+            key = self.__robot_description + '_planning'
             self.__moveit_configs.pilz_cartesian_limits = {
                 key: YamlParameterValue(
-                    DualCommonYAML(
-                        "pilz_cartesian_limits.yaml",
-                        package_path=self._package_path,
-                        prefix_1=self.__prefix_1,
-                        prefix_2=self.__prefix_2,
-                        robot_type_1=self.__robot_type_1,
-                        robot_type_2=self.__robot_type_2,
-                        robot_dof_1=self.__robot_dof_1,
-                        robot_dof_2=self.__robot_dof_2,
-                    ),
-                    value_type=str,
-                )
+                    DualCommonYAML('pilz_cartesian_limits.yaml', package_path=self._package_path, 
+                        prefix_1=self.__prefix_1, prefix_2=self.__prefix_2, 
+                        robot_type_1=self.__robot_type_1, robot_type_2=self.__robot_type_2, 
+                        robot_dof_1=self.__robot_dof_1, robot_dof_2=self.__robot_dof_2,
+                ), value_type=str)
             }
-
+        
         return self
 
     def to_moveit_configs(self):
@@ -2312,12 +1666,12 @@ class DualMoveItConfigsBuilder(ParameterBuilder):
         # TODO(JafarAbdi): We should have a default moveit_cpp.yaml as port of a moveit config package
         # if not self.__moveit_configs.moveit_cpp:
         #     self.moveit_cpp()
-        if "pilz_industrial_motion_planner" in self.__moveit_configs.planning_pipelines:
+        if 'pilz_industrial_motion_planner' in self.__moveit_configs.planning_pipelines:
             if not self.__moveit_configs.pilz_cartesian_limits:
                 self.pilz_cartesian_limits()
         return self.__moveit_configs
 
-    def to_dict(self, include_moveit_configs=True):
+    def to_dict(self, include_moveit_configs = True):
         """Get loaded parameters from xarm_moveit_config as a dictionary.
 
         :param include_moveit_configs: Whether to include the MoveIt config parameters or
