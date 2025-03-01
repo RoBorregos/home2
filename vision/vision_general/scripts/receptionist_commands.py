@@ -40,9 +40,8 @@ IMAGE_TOPIC = "/vision/img_person_detecion"
 
 
 YOLO_LOCATION = str(pathlib.Path(__file__).parent) + "/Utils/yolov8n.pt"
-# MOONDREAM_LOCATION = "vision/vision_general/scripts/moondream-2b-int8.mf.gz"
 MOONDREAM_LOCATION = str(
-    pathlib.Path(package_share_dir) / "Utils/moondream-2b-int8.mf.gz"
+    pathlib.Path(package_share_dir) / "Utils/models/moondream-2b-int8.mf.gz"
 )
 PERCENTAGE = 0.3
 MAX_DEGREE = 30
