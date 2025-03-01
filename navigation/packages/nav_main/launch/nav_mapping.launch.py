@@ -28,9 +28,9 @@ def generate_launch_description():
                     "launch",
                     "nav_basics.launch.py",
                 ]
-            ),
-            launch_arguments={'publish_tf': publish_urdf }.items()
-        ))
+            )),
+        launch_arguments={'publish_tf': publish_urdf }.items()
+        )
 
     slam_toolbox = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -40,10 +40,10 @@ def generate_launch_description():
                     "launch",
                     "online_async_launch.py",
                 ]
-            ),
+            )),
             launch_arguments={'params_file': params_file,
                               'use_sim_time': 'false'}.items()
-        ))
+        )
     
     return LaunchDescription([
         declare_publish_tf,
