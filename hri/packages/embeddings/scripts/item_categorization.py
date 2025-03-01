@@ -97,6 +97,9 @@ class Embeddings(Node):
             "locations",
             "categories",
             "actions",
+            "frida_knowledge",
+            "roborregos_knowledge",
+            "tec_knowledge",
         ]  # List of expected collections
         collections_built = 1  # Assume collections are built unless proven otherwise
 
@@ -234,6 +237,18 @@ class Embeddings(Node):
             (
                 script_dir / "../embeddings/dataframes/actions.csv",
                 "Household actions context",
+            ),
+            (
+                script_dir / "../embeddings/dataframes/frida_knowledge.csv",
+                "Frida knowledge context",
+            ),
+            (
+                script_dir / "../embeddings/dataframes/roborregos_knowledge.csv",
+                "Roborregos knowledge context",
+            ),
+            (
+                script_dir / "../embeddings/dataframes/tec_knowledge.csv",
+                "TEC knowledge context",
             ),
         ]
 
