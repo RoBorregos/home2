@@ -12,6 +12,7 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <perception_3d/macros.hpp>
 #include <rclcpp/logging.hpp>
+#include <rclcpp/qos.hpp>
 #include <rclcpp/timer.hpp>
 #include <sensor_msgs/msg/detail/point_cloud2__struct.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
@@ -42,8 +43,11 @@ public:
         this->declare_parameter("OutputPointCloudTopic", output_topic);
     this->leaf_size = this->declare_parameter("LeafSize", leaf_size);
 
+    rclcpp::QoS qos = rclcpp::QoS(rclcpp::SensorDataQoS());
+    qos.reliability(rclcpp::ReliabilityPolicy::Reliable);
+
     this->publisher = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-        output_topic, rclcpp::SensorDataQoS());
+        output_topic, qos);
 
     this->subscriber = this->create_subscription<sensor_msgs::msg::PointCloud2>(
         input_topic, rclcpp::SensorDataQoS(),
