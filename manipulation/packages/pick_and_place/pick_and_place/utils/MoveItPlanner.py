@@ -70,7 +70,10 @@ class MoveItPlanner(Planner):
         if wait:
             while not future.done():
                 pass
-            return future.result().status == 0
+
+            print("future result", future.result())
+            print("future result status", future.result().status)
+            return future.result().status == 4  # 4 is the status for success
 
         return self.moveit2.get_execution_future()
 
