@@ -9,7 +9,9 @@ import rclpy
 from rclpy.node import Node
 from utils.logger import Logger
 
-from utils.subtask_manager import SubtaskManager
+from utils.subtask_manager import SubtaskManager, Task
+
+# from utils.task import Task
 from subtask_managers.vision_tasks import VisionTasks
 # from subtask_managers.hri_tasks import HRITasks
 
@@ -52,7 +54,7 @@ class ReceptionistTM(Node):
     def __init__(self):
         """Initialize the node"""
         super().__init__("receptionist_task_manager")
-        self.subtask_manager = SubtaskManager(self, task="RECEPTIONIST")
+        self.subtask_manager = SubtaskManager(self, task=Task.RECEPTIONIST)
         self.current_state = ReceptionistTM.TASK_STATES["START"]
         self.current_guest = 1
 
@@ -60,9 +62,12 @@ class ReceptionistTM(Node):
         self.guests[0] = Guest("John", "Beer", "Football")
 
         self.current_attempts = 0
+        self.running_task = True
 
-        Logger.info("ReceptionistTaskManager has started.")
-        self.timer = self.create_timer(0.1, self.run)
+        Logger.info(self, "ReceptionistTaskManager has started.")
+        # self.timer = self.create_timer(0.1, self.run)
+        while rclpy.ok() and self.running_task:
+            self.run()
 
     def get_guest(self) -> Guest:
         """Get the current guest"""
@@ -95,7 +100,7 @@ class ReceptionistTM(Node):
         if self.current_state == ReceptionistTM.TASK_STATES["WAIT_FOR_GUEST"]:
             Logger.state(self, "Waiting for guest")
             self.subtask_manager.hri.say("I am ready to receive guests, please open the door.")
-            result = self.subtask_manager.vision.detect_person(timeout=5)
+            result = self.subtask_manager.vision.detect_person(timeout=10)
             if result == VisionTasks.STATE["EXECUTION_SUCCESS"]:
                 self.subtask_manager.manipulation.move_to_position("gaze")
                 self.subtask_manager.manipulation.follow_face(True)
@@ -106,6 +111,7 @@ class ReceptionistTM(Node):
 
         if self.current_state == ReceptionistTM.TASK_STATES["GREETING"]:
             Logger.state(self, "Greeting guest")
+
             if self.current_attempts >= ATTEMPT_LIMIT:
                 self.get_guest().name = f"Guest {self.current_guest}"
             else:
@@ -235,7 +241,8 @@ class ReceptionistTM(Node):
         if self.current_state == ReceptionistTM.TASK_STATES["END"]:
             Logger.state(self, "Ending task")
             self.subtask_manager.hri.say("I have finished my task, I will rest now.")
-            self.timer.cancel()
+            # self.timer.cancel()
+            self.running_task = False
 
 
 def main(args=None):

@@ -173,6 +173,13 @@ pactl set-default-source <index>
 pactl list short sources
 ```
 
+### Speaker
+
+If the speaker isn't loud, make sure to increase the volume level in the device that controlls the speaker.
+```bash
+amixer -D pulse sset Master 100%
+```
+
 ## Download openwakeword base model
 
 ```

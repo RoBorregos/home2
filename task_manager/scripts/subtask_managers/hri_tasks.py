@@ -27,9 +27,7 @@ from frida_interfaces.srv import (
 from rclpy.node import Node
 from std_msgs.msg import String
 
-
 from subtask_managers.subtask_meta import SubtaskMeta
-
 
 TIMEOUT = 5.0
 
@@ -121,11 +119,16 @@ class HRITasks(metaclass=SubtaskMeta):
 
         return future.result().text_heard
 
-    def interpret_keyword(self) -> str:
-        ret = self.keyword
-        # erase keyword after use
-        self.keyword = ""
-        return ret
+    def interpret_keyword(self, keywords: list[str], timeout: float) -> str:
+        start_time = self.node.get_clock().now()
+        self.keyword = "None"
+        while (
+            self.keyword not in keywords
+            and ((self.node.get_clock().now() - start_time).nanoseconds / 1e9) < timeout
+        ):
+            rclpy.spin_once(self.node, timeout_sec=0.1)
+
+        return self.keyword
 
     def refactor_text(self, text: str) -> str:
         request = Grammar.Request(text=text)
