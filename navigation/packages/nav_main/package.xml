@@ -18,7 +18,7 @@
   <depend>p9n_node</depend>
   <depend>rclcpp_components</depend>
   <depend>navigation2</depend>
-  <depend>nav2-bringup</depend>
+  <depend>nav2_bringup</depend>
   <!-- Action server move -->
   <depend>action_msgs</depend>
 
