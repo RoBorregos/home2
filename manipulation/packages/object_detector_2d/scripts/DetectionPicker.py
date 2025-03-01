@@ -2,29 +2,24 @@
 # Published detections in 2D and 3D with a specified model.
 
 import numpy as np
-import argparse
-import torch
-#import tensorflow as tf
+
+# import tensorflow as tf
 import cv2
 import pathlib
 import rclpy
 import threading
-import imutils
-import time
 from imutils.video import FPS
-from sensor_msgs.msg import CompressedImage, Image, CameraInfo
+from sensor_msgs.msg import Image, CameraInfo
 from cv_bridge import CvBridge, CvBridgeError
 from std_msgs.msg import Header
-from geometry_msgs.msg import Point, PointStamped, PoseArray, Pose
+from geometry_msgs.msg import Point, PointStamped
 from visualization_msgs.msg import Marker, MarkerArray
-from std_msgs.msg import Bool
-from frida_interfaces.manipulation.msg import ObjectDetection, ObjectDetectionArray
+from frida_interfaces.manipulation.msg import ObjectDetection
 import sys
-sys.path.append(str(pathlib.Path(__file__).parent) + '/../include')
+
+sys.path.append(str(pathlib.Path(__file__).parent) + "/../include")
 from vision_utils import *
 import tf2_ros
-import tf2_geometry_msgs
-import imutils
 import copy
 
 SOURCES = {
@@ -33,7 +28,7 @@ SOURCES = {
     "ROS_IMG": "/camaras/0",
 }
 
-ARGS= {
+ARGS = {
     "SOURCE": SOURCES["VIDEO"],
     "ROS_INPUT": False,
     "USE_ACTIVE_FLAG": True,
@@ -50,44 +45,47 @@ ARGS= {
     "FLIP_IMAGE": False,
 }
 
+
 class DetectionPicker:
     def __init__(self):
         self.bridge = CvBridge()
         self.depth_image = []
         self.rgb_image = []
         self.imageInfo = CameraInfo()
-        
+
         cv2.namedWindow("Detection Selection", cv2.WINDOW_NORMAL)
         # left click to select object
         cv2.setMouseCallback("Detection Selection", self.select_object)
         print("STARTED WINDOW")
-        
+
         # Frames per second throughput estimator
         self.fps = None
         callFpsThread = threading.Thread(target=self.callFps, args=(), daemon=True)
         callFpsThread.start()
-        
+
         self.frame_available = False
-        
+
         self.subscriber = None
         self.handleSource()
-        self.selected_point_pub = rclpy.Publisher('/debug/selected_detection', ObjectDetection, queue_size=5)
-        self.image_publisher = rclpy.Publisher('detections_image', Image, queue_size=5)
+        self.selected_point_pub = rclpy.Publisher(
+            "/debug/selected_detection", ObjectDetection, queue_size=5
+        )
+        self.image_publisher = rclpy.Publisher("detections_image", Image, queue_size=5)
         # to visualize the 3d points of detected objects
-        self.marker_3d_publisher = rclpy.Publisher('/debug/selected_point_3d', MarkerArray, queue_size=5)
+        self.marker_3d_publisher = rclpy.Publisher(
+            "/debug/selected_point_3d", MarkerArray, queue_size=5
+        )
 
         # TFs
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer)
 
-        
-        
         print("FINISHED INIT")
-        
+
         self.run()
-        
+
         # Show OpenCV window.
-        
+
         # try:
         #     self.detections_frame = []
         #     rate = rclpy.Rate(60)
@@ -98,19 +96,25 @@ class DetectionPicker:
 
         #         if len(self.detections_frame) != 0:
         #             self.image_publisher.publish(self.bridge.cv2_to_imgmsg(self.detections_frame, "bgr8"))
-                    
+
         #         rate.sleep()
         # except KeyboardInterrupt:
         #     pass
         # cv2.destroyAllWindows()
-    
+
     # Function to handle either a cv2 image or a ROS image.
     def handleSource(self):
         if ARGS["ROS_INPUT"]:
-            self.subscriber = rclpy.Subscriber(ARGS["SOURCE"], Image, self.imageRosCallback)
+            self.subscriber = rclpy.Subscriber(
+                ARGS["SOURCE"], Image, self.imageRosCallback
+            )
             if ARGS["DEPTH_ACTIVE"]:
-                self.subscriberDepth = rclpy.Subscriber(ARGS["DEPTH_INPUT"], Image, self.depthImageRosCallback)
-                self.subscriberInfo = rclpy.Subscriber(ARGS["CAMERA_INFO"], CameraInfo, self.infoImageRosCallback)
+                self.subscriberDepth = rclpy.Subscriber(
+                    ARGS["DEPTH_INPUT"], Image, self.depthImageRosCallback
+                )
+                self.subscriberInfo = rclpy.Subscriber(
+                    ARGS["CAMERA_INFO"], CameraInfo, self.infoImageRosCallback
+                )
         else:
             cThread = threading.Thread(target=self.cameraThread, daemon=True)
             cThread.start()
@@ -139,14 +143,14 @@ class DetectionPicker:
             self.imageCallback(self.bridge.imgmsg_to_cv2(data, "bgr8"))
         except CvBridgeError as e:
             print(e)
-    
+
     # Function to handle a ROS depth input.
     def depthImageRosCallback(self, data):
         try:
             self.depth_image = self.bridge.imgmsg_to_cv2(data, "32FC1")
         except CvBridgeError as e:
             print(e)
-    
+
     # Function to handle ROS camera info input.
     def infoImageRosCallback(self, data):
         self.imageInfo = data
@@ -157,8 +161,7 @@ class DetectionPicker:
     def imageCallback(self, img):
         self.rgb_image = copy.deepcopy(img)
         self.frame_available = True
-            
-            
+
     # Function to handle the selection of an object in the image.
     def select_object(self, event, x, y, flags, param):
         if event == cv2.EVENT_LBUTTONDOWN:
@@ -169,14 +172,19 @@ class DetectionPicker:
             point3d = deproject_pixel_to_point(self.imageInfo, point2D, depth)
             print(f"3D Point: {point3d}")
             detection = ObjectDetection(
-                label = -2,
-                label_text = "Picked Point",
-                score = 1.0,
-                ymin = 0,
-                xmin = 0,
-                ymax = 0,
-                xmax = 0,
-                point3d = PointStamped(header=Header(frame_id=ARGS["CAMERA_FRAME"], stamp=rclpy.Time.now()), point=Point(x=point3d[0], y=point3d[1], z=point3d[2]))
+                label=-2,
+                label_text="Picked Point",
+                score=1.0,
+                ymin=0,
+                xmin=0,
+                ymax=0,
+                xmax=0,
+                point3d=PointStamped(
+                    header=Header(
+                        frame_id=ARGS["CAMERA_FRAME"], stamp=rclpy.Time.now()
+                    ),
+                    point=Point(x=point3d[0], y=point3d[1], z=point3d[2]),
+                ),
             )
             # Publish marker
             marker = Marker()
@@ -200,7 +208,7 @@ class DetectionPicker:
             self.selected_point_pub.publish(detection)
 
     # Handle FPS calculation.
-    def callFps(self):	
+    def callFps(self):
         if self.fps != None:
             self.fps.stop()
             if ARGS["VERBOSE"]:
@@ -209,10 +217,10 @@ class DetectionPicker:
             self.fpsValue = self.fps.fps()
 
         self.fps = FPS().start()
-        
+
         callFpsThread = threading.Timer(2.0, self.callFps, args=())
         callFpsThread.start()
-        
+
     def run(self):
         try:
             while True:
@@ -225,17 +233,15 @@ class DetectionPicker:
                         self.fps.update()
         except KeyboardInterrupt:
             pass
-        
-    
+
 
 def main():
-    rclpy.init_node('Vision2D_Picker', anonymous=True)
+    rclpy.init_node("Vision2D_Picker", anonymous=True)
     for key in ARGS:
-        ARGS[key] = rclpy.get_param('~' + key, ARGS[key])
+        ARGS[key] = rclpy.get_param("~" + key, ARGS[key])
     DetectionPicker()
     rclpy.spin()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()
-
-
