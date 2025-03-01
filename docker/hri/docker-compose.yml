@@ -1,9 +1,10 @@
 include:
-  # Runs speech and nlp nodes
-  - path: hri-ros.yaml
-
-  # Runs Faster-whisper
+  # Jetson Orin
+  - path: l4t-devices.yaml
   - path: stt.yaml
+  # - path: chromadb.yaml
 
   # Chroma db for embeddings
-  - path: chromadb.yaml
+  # - path: hri-ros.yaml
+  # - path: chromadb.yaml
+  # - path: stt.yaml
