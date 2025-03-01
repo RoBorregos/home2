@@ -8,7 +8,7 @@ import rclpy.client
 from .logger import Logger
 
 
-def mockable(return_value=None, delay=0):
+def mockable(return_value=None, delay=0, mock=False):
     """
     Decorator to return mock values instead of performing
     the function.
@@ -19,7 +19,7 @@ def mockable(return_value=None, delay=0):
 
     def decorator(func):
         def wrapper(self, *args, **kwargs):
-            if getattr(self, "mock_data", False):
+            if getattr(self, "mock_data", False) or mock:
                 if delay > 0:
                     time.sleep(delay)
                 Logger.mock(self.node, f"{func.__name__}. Value: {return_value}")

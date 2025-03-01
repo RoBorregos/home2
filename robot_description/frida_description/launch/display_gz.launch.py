@@ -20,7 +20,9 @@ def generate_launch_description():
         launch_arguments={
             'urdf_package': 'frida_description',
             'use_sim_time': 'true',
+            'jsp_gui': 'false',
             'urdf_package_path': PathJoinSubstitution(['urdf','FRIDA.urdf.xacro'])}.items(),
+            
     ))
     
     ld.add_action(Node(

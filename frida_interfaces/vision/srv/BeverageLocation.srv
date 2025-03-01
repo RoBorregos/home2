@@ -1,0 +1,4 @@
+bool request
+---
+string location
+bool success

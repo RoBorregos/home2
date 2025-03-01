@@ -11,9 +11,13 @@ find_package(ament_cmake_python REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(sensor_msgs REQUIRED)
-
+find_package(frida_interfaces REQUIRED)
 
 install(DIRECTORY launch
+  DESTINATION share/${PROJECT_NAME})
+
+# instalar el json
+install(DIRECTORY locations
   DESTINATION share/${PROJECT_NAME})
 
 add_executable(ignore_laser src/ignore_laser.cpp)
@@ -23,13 +27,17 @@ install(TARGETS
   ignore_laser
   DESTINATION lib/${PROJECT_NAME})
 
-ament_python_install_package(${PROJECT_NAME})
+  
+  ament_python_install_package(${PROJECT_NAME})
+
+  file(GLOB PYTHON_SCRIPTS scripts/*.py)
 
   #Install python scripts
-  # install(PROGRAMS
-  #   scripts/dashgo_driver
-  #   DESTINATION lib/${PROJECT_NAME}
-  # )
+  install(PROGRAMS
+    ${PYTHON_SCRIPTS}
+    DESTINATION lib/${PROJECT_NAME}
+  )
+
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -41,6 +49,8 @@ if(BUILD_TESTING)
   # a copyright and license is added to all source files
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
+
 endif()
+
 
 ament_package()
