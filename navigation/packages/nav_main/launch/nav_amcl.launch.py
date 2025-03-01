@@ -25,7 +25,7 @@ def generate_launch_description():
     )
 
     nav_main_package = get_package_share_directory('nav_main')
-    params_file = os.path.join(nav_main_package, 'maps', map_route)
+    params_file = os.path.join([nav_main_package, 'maps', map_route])
 
     nav_basics = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
