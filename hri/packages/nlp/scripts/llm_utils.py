@@ -15,7 +15,7 @@ from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from std_msgs.msg import Bool, String
 
-from frida_interfaces.srv import Grammar, LLMWrapper
+from frida_interfaces.srv import Grammar, LLMWrapper, CommonInterest
 
 SPEECH_COMMAND_TOPIC = "/speech/raw_command"
 OUT_COMMAND_TOPIC = "/stop_following"
@@ -57,6 +57,7 @@ class LLMUtils(Node):
         self.declare_parameter("OUT_COMMAND_TOPIC_NAME", OUT_COMMAND_TOPIC)
         self.declare_parameter("GRAMMAR_SERVICE", "/nlp/grammar")
         self.declare_parameter("LLM_WRAPPER_SERVICE", "/nlp/llm")
+        self.declare_parameter("COMMON_INTEREST_SERVICE", "/nlp/common_interest")
 
         self.declare_parameter("temperature", 0.5)
         base_url = self.get_parameter("base_url").get_parameter_value().string_value
@@ -95,9 +96,19 @@ class LLMUtils(Node):
             self.get_parameter("LLM_WRAPPER_SERVICE").get_parameter_value().string_value
         )
 
+        common_interest_service = (
+            self.get_parameter("COMMON_INTEREST_SERVICE")
+            .get_parameter_value()
+            .string_value
+        )
+
         self.create_service(Grammar, grammar_service, self.grammar_service)
 
         self.create_service(LLMWrapper, llm_wrapper_service, self.llm_wrapper_service)
+
+        self.create_service(
+            CommonInterest, common_interest_service, self.common_interest
+        )
 
         # publisher
         self.publisher = self.create_publisher(Bool, OUT_COMMAND_TOPIC, 10)
@@ -186,6 +197,30 @@ class LLMUtils(Node):
         )
 
         res.answer = response
+
+        return res
+
+    def common_interest(self, req, res):
+        response = (
+            self.client.beta.chat.completions.parse(
+                model=self.model,
+                temperature=self.temperature,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": f"You will be presented with the interests of two people, your task is to get the common interests between them. Give a short answer with one common interest.",
+                    },
+                    {
+                        "role": "user",
+                        "content": f"{req.person1} likes {req.interests1} and {req.person2} likes {req.interests2}",
+                    },
+                ],
+            )
+            .choices[0]
+            .message.content
+        )
+
+        res.common_interest = response
 
         return res
 
