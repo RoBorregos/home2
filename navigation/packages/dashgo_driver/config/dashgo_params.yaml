@@ -1,0 +1,31 @@
+DashgoDriver:
+  ros__parameters:    
+    port: /dev/ttyUSB0
+    baud: 115200
+    timeout: 0.1
+    rate: 50
+    imu_offset: 1.005
+    # === Robot Module activation
+    #useImu: False
+    useImu: True 
+
+    # For a robot that uses base_footprint, change base_frame to base_footprint
+    base_frame: base_link
+
+    
+    # === Robot drivetrain parameters
+    #wheel_diameter: 0.1230
+    #wheel_track: 0.31
+    #encoder_resolution: 610
+    #gear_reduction: 1.0
+
+    wheel_diameter: 0.1280
+    wheel_track: 0.341
+    encoder_resolution: 670
+    #encoder_resolution: 1200
+    gear_reduction: 1.0
+    #encoder_max: 32768
+    #encoder_min: -32768
+
+    accel_limit: 1.0
+    
