@@ -13,7 +13,7 @@ find_package(rclpy REQUIRED)
 find_package(sensor_msgs REQUIRED)
 
 
-install(DIRECTORY launch
+install(DIRECTORY launch config
   DESTINATION share/${PROJECT_NAME})
 
 add_executable(ignore_laser src/ignore_laser.cpp)
@@ -25,9 +25,9 @@ install(TARGETS
 
 ament_python_install_package(${PROJECT_NAME})
 
-  #Install python scripts
+  # #Install python scripts
   # install(PROGRAMS
-  #   scripts/dashgo_driver
+  #   launch/nav_frida.launch.py
   #   DESTINATION lib/${PROJECT_NAME}
   # )
 
