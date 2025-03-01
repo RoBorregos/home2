@@ -32,24 +32,31 @@ using namespace std::chrono_literals;
 class PublishNode : public rclcpp::Node {
 private:
   pcl::PointCloud<pcl::PointXYZ>::Ptr cloud;
-  const std::string cloud_file =
-      "/home/ivanromero/Desktop/home2/manipulation/"
-      "packages/perception_3d/pcl_debug/pcl_table.pcd";
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr publisher;
   rclcpp::TimerBase::SharedPtr timer;
   rclcpp::TimerBase::SharedPtr timer_2;
+
+  std::string base_link = "base_link";
+  std::string child_frame = "table";
+  std::string point_cloud_topic = "/point_cloud";
+  std::string cloud_file = "/home/ivanromero/Desktop/home2/manipulation/"
+                           "packages/perception_3d/pcl_debug/pcl_table.pcd";
 
 public:
   PublishNode() : Node("publish_node") {
     RCLCPP_INFO(this->get_logger(), "Starting Publish Node");
 
+    this->base_link = this->declare_parameter("base_link", base_link);
+    this->child_frame = this->declare_parameter("child_frame", child_frame);
+    this->point_cloud_topic =
+        this->declare_parameter("point_cloud_topic", point_cloud_topic);
+    this->cloud_file = this->declare_parameter("cloud_file", cloud_file);
+
     cloud =
         pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
 
-    // load point cloud
-
-    if (pcl::io::loadPCDFile(cloud_file, *cloud) == -1) {
-      PCL_ERROR("Couldn't read file %s \n", cloud_file.c_str());
+    if (pcl::io::loadPCDFile(this->cloud_file, *cloud) == -1) {
+      PCL_ERROR("Couldn't read file %s \n", this->cloud_file.c_str());
       return;
     }
 
@@ -58,7 +65,7 @@ public:
     auto qos = rclcpp::QoS(rclcpp::SensorDataQoS());
     qos.reliability(rclcpp::ReliabilityPolicy::Reliable);
     publisher = this->create_publisher<sensor_msgs::msg::PointCloud2>(
-        "/point_cloud", qos);
+        this->point_cloud_topic, qos);
 
     RCLCPP_INFO(this->get_logger(), "Created publisher");
 
@@ -74,7 +81,7 @@ public:
     auto msg = sensor_msgs::msg::PointCloud2();
     pcl::toROSMsg(*cloud, msg);
     // msg.header.frame_id = "zed_left_camera_frame";
-    msg.header.frame_id = "base_link";
+    msg.header.frame_id = this->base_link;
     publisher->publish(msg);
   }
 
@@ -88,7 +95,7 @@ public:
 
     geometry_msgs::msg::TransformStamped transform_stamped;
     transform_stamped.header.stamp = this->now();
-    transform_stamped.header.frame_id = "base_link";
+    transform_stamped.header.frame_id = this->base_link;
     transform_stamped.transform.translation.x = x;
     transform_stamped.transform.translation.y = y;
     transform_stamped.transform.translation.z = z;
@@ -96,7 +103,7 @@ public:
     transform_stamped.transform.rotation.y = 0;
     transform_stamped.transform.rotation.z = 0;
     transform_stamped.transform.rotation.w = 1;
-    transform_stamped.child_frame_id = "table";
+    transform_stamped.child_frame_id = this->child_frame;
 
     base_link->sendTransform(transform_stamped);
   }
