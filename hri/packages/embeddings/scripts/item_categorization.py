@@ -135,8 +135,8 @@ class Embeddings(Node):
         try:
             try:
                 #check that the metadata has the same format as required
-                metadata_parsed = MetadataModel.model_validate_json(request.metadata())
-                metadata_parsed = metadata_parsed.model_dumped()
+                metadata_parsed = MetadataModel.model_validate_json(request.metadata)
+                metadata_parsed = metadata_parsed.model_dump()
             except ValidationError as e:
                 response.success = False
                 response.message = f"Invalid metadata: {str(e)}"
