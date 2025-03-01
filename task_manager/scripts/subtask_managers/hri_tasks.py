@@ -26,6 +26,8 @@ from frida_interfaces.srv import (
 )
 from rclpy.node import Node
 from std_msgs.msg import String
+from utils.logger import Logger
+from utils.task import Task
 
 from subtask_managers.subtask_meta import SubtaskMeta
 
@@ -56,6 +58,44 @@ class HRITasks(metaclass=SubtaskMeta):
         self.keyword_client = self.node.create_subscription(
             String, "/wakeword_detected", self._get_keyword, 10
         )
+
+        self.services = {
+            Task.RECEPTIONIST: {
+                "hear": {
+                    "client": self.hear_service,
+                    "type": "service",
+                },
+                "say": {
+                    "client": self.speak_service,
+                    "type": "service",
+                },
+                "extract_data_service": {
+                    "client": self.extract_data_service,
+                    "type": "service",
+                },
+                "keyword_client": {
+                    "client": self.keyword_client,
+                    "type": "service",
+                },
+            },
+        }
+
+        self.setup_services()
+
+    def setup_services(self):
+        """Initialize services and actions"""
+
+        if self.task not in self.services:
+            Logger.error(self.node, "Task not available")
+            return
+
+        for key, service in self.services[self.task].items():
+            if service["type"] == "service":
+                if not service["client"].wait_for_service(timeout_sec=TIMEOUT):
+                    Logger.warn(self.node, f"{key} service not initialized. ({self.task})")
+            elif service["type"] == "action":
+                if not service["client"].wait_for_server(timeout_sec=TIMEOUT):
+                    Logger.warn(self.node, f"{key} action server not initialized. ({self.task})")
 
     def say(self, text: str, wait: bool = False) -> None:
         """Method to publish directly text to the speech node"""
@@ -106,8 +146,12 @@ class HRITasks(metaclass=SubtaskMeta):
             return self.say(f"Sorry, I don't know how to {command}")
 
     def _get_keyword(self, msg: String) -> None:
-        data = eval(msg.data)
-        self.keyword = data["keyword"]
+        try:
+            data = eval(msg.data)
+            self.keyword = data["keyword"]
+        except Exception as e:
+            self.node.get_logger().error(f"Error: {e}")
+            self.keyword = ""
 
     def hear(self) -> str:
         self.node.get_logger().info("Hearing from user")
@@ -121,7 +165,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
     def interpret_keyword(self, keywords: list[str], timeout: float) -> str:
         start_time = self.node.get_clock().now()
-        self.keyword = "None"
+        self.keyword = ""
         while (
             self.keyword not in keywords
             and ((self.node.get_clock().now() - start_time).nanoseconds / 1e9) < timeout
