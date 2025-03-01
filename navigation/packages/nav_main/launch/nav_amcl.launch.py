@@ -43,14 +43,14 @@ def generate_launch_description():
             name='map_server',
             output='screen',
             parameters=[{'yaml_filename': LaunchConfiguration('map'),
-                         'use_sim_time' : 'false'}],
+                         'use_sim_time' : False}],
     )
     amcl_server = Node(
          package='nav2_amcl',
             executable='amcl',
             name='amcl',
             output='screen',
-            parameters=[{'use_sim_time' : 'false'}],
+            parameters=[{'use_sim_time' : False}],
     )
     
     lifecycle_node = Node(
@@ -58,7 +58,7 @@ def generate_launch_description():
             executable='lifecycle_manager',
             name='lifecycle_manager_localization',
             output='screen',
-            parameters=[{'use_sim_time': 'false'},
+            parameters=[{'use_sim_time': False},
                         {'autostart': 'true'},
                         {'node_names': lifecycle_nodes}])
     
