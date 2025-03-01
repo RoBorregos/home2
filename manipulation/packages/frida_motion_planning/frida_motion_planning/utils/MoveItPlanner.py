@@ -55,9 +55,11 @@ class MoveItPlanner(Planner):
         self.moveit2.planner_id = planner_id
 
     def plan_joint_goal(
-        self, joint_positions: List[float], wait: bool = True
+        self, joint_positions: List[float], joint_names: List[str], wait: bool = True
     ) -> Union[bool, Future]:
-        trajectory = self._plan_joint_goal(joint_positions, xarm6.joint_names())
+        if joint_names is None or len(joint_names) == 0:
+            joint_names = xarm6.joint_names()
+        trajectory = self._plan_joint_goal(joint_positions, joint_names)
         if not trajectory:
             return False
         self.moveit2.execute(trajectory)
