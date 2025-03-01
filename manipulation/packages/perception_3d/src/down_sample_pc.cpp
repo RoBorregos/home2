@@ -21,8 +21,8 @@
 
 using namespace std::chrono_literals;
 
-// typedef pcl::PointXYZ pointCloudType; // No RGB
-typedef pcl::PointXYZRGB pointCloudType; // RGB
+typedef pcl::PointXYZ pointCloudType; // No RGB
+// typedef pcl::PointXYZRGB pointCloudType; // RGB
 typedef pcl::PointCloud<pointCloudType> PointCloudNS;
 
 class DownSamplePointCloud : public rclcpp::Node {
@@ -38,10 +38,10 @@ public:
   DownSamplePointCloud() : Node("downsample_pointcloud") {
     RCLCPP_INFO(this->get_logger(), "Starting Publish Node");
 
-    this->input_topic = this->declare_parameter("PointCloudTopic", input_topic);
+    this->input_topic = this->declare_parameter("input_topic", input_topic);
     this->output_topic =
         this->declare_parameter("OutputPointCloudTopic", output_topic);
-    this->leaf_size = this->declare_parameter("LeafSize", leaf_size);
+    this->leaf_size = this->declare_parameter("leaf_size", leaf_size);
 
     rclcpp::QoS qos = rclcpp::QoS(rclcpp::SensorDataQoS());
     qos.reliability(rclcpp::ReliabilityPolicy::Reliable);
