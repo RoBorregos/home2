@@ -40,7 +40,7 @@ class HRITasks(metaclass=SubtaskMeta):
     STATE = {"TERMINAL_ERROR": -1, "EXECUTION_ERROR": 0, "EXECUTION_SUCCESS": 1}
 
     # TODO: perform service checks using config.topic_config
-    def __init__(self, task_manager, config=None) -> None:
+    def __init__(self, task_manager, config=None, task=Task.RECEPTIONIST) -> None:
         self.node = task_manager
         self.keyword = ""
         self.speak_service = self.node.create_client(Speak, SPEAK_SERVICE)
@@ -50,6 +50,7 @@ class HRITasks(metaclass=SubtaskMeta):
         self.command_interpreter_client = self.node.create_client(
             CommandInterpreter, COMMAND_INTERPRETER_SERVICE
         )
+        self.task = task
         self.grammar_service = self.node.create_client(Grammar, GRAMMAR_SERVICE)
 
         self.query_item_client = self.node.create_client(QueryItem, QUERY_ITEM_SERVICE)
