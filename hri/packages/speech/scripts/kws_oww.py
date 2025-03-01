@@ -9,6 +9,7 @@ from openwakeword.model import Model
 from rclpy.node import Node
 from std_msgs.msg import String
 
+from frida_constants.hri_constants import SENSITIVITY_THRESHOLD
 from frida_interfaces.msg import AudioData
 
 
@@ -81,7 +82,7 @@ class OpenWakeWordNode(Node):
         # Check for wakeword detection
         for keyword, buffer in self.oww_model.prediction_buffer.items():
             scores = list(buffer)
-            if scores[-1] > 0.5:
+            if scores[-1] > SENSITIVITY_THRESHOLD:
                 # Only publish if the score is above a certain threshold
                 current_time = time.time()
                 if current_time - self.last_detection_time >= self.detection_cooldown:

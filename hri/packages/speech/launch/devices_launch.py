@@ -5,15 +5,16 @@ from launch import LaunchDescription
 from launch_ros.actions import Node
 
 from frida_constants import ModuleNames, parse_ros_config
-
-USE_RESPEAKER = True
-USE_OWW = True
+from frida_constants.hri_constants import USE_OWW, USE_RESPEAKER
 
 
 def generate_launch_description():
-    mic_config = os.path.join(
-        get_package_share_directory("speech"), "config", "microphone.yaml"
-    )
+    mic_config = parse_ros_config(
+        os.path.join(
+            get_package_share_directory("speech"), "config", "microphone.yaml"
+        ),
+        [ModuleNames.HRI.value],
+    )["audio_capturer"]["ros__parameters"]
 
     hear_config = parse_ros_config(
         os.path.join(get_package_share_directory("speech"), "config", "hear.yaml"),

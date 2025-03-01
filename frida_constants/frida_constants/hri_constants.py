@@ -13,3 +13,9 @@ REMOVE_ITEM_SERVICE = "/nlp/embeddings/remove_item_service"
 UPDATE_ITEM_SERVICE = "/nlp/embeddings/update_item_service"
 QUERY_ITEM_SERVICE = "/nlp/embeddings/query_item_service"
 BUILD_EMBEDDINGS_SERVICE = "/nlp/embeddings/build_embeddings_service"
+
+USE_RESPEAKER = False
+
+# OpenWakeWord
+USE_OWW = True
+SENSITIVITY_THRESHOLD = 0.3
