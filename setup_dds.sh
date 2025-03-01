@@ -24,7 +24,7 @@ sudo apt install ros-humble-rmw-cyclonedds-cpp
 echo export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp >> ~/.bashrc
 cp $SCRIPT_DIR/cyclonedds.xml ~/
 sudo cp $SCRIPT_DIR/10-cyclone-max.conf /etc/sysctl.d/
-echo export CYCLONEDDS_URI=file://$SCRIPT_DIR/cyclonedds.xml >> ~/.bashrc
+echo export CYCLONEDDS_URI=file://$HOME/cyclonedds.xml >> ~/.bashrc
 
 #Reboot system
 read -p "Do you want to reboot the computer now? (y/n): " choice
