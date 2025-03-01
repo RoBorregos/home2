@@ -58,11 +58,18 @@ def generate_launch_description():
                 ]
             )
         ))
+    
+    joint_state = Node(
+        package='joint_state_publisher',
+        executable='joint_state_publisher',
+    )
+
     if publish_urdf:
         return LaunchDescription([
             dashgo_driver,
             ekf_launch,
             robot_description_launch,
+            joint_state,
             laser_launch
         ])
     else:
