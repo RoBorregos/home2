@@ -7,7 +7,8 @@ import rclpy
 from chromadb.utils import embedding_functions
 from rclpy.node import Node
 from rclpy.parameter import Parameter
-
+from pydantic import BaseModel, ValidationError
+from typing import Optional
 from frida_interfaces.srv import (
     AddItem,
     BuildEmbeddings,
@@ -15,6 +16,12 @@ from frida_interfaces.srv import (
     RemoveItem,
     UpdateItem,
 )
+"""JSON parsing validation model for metadata"""
+class MetadataModel(BaseModel):
+    shelve: Optional[str] 
+    category: Optional[str] 
+    timestamp: Optional[str]
+    #TODOother metadata fields wil be defined here
 
 
 class Embeddings(Node):
@@ -126,12 +133,21 @@ class Embeddings(Node):
     def add_item_callback(self, request, response):
         """Service callback to add items to ChromaDB"""
         try:
+            try:
+                #check that the metadata has the same format as required
+                metadata_parsed = MetadataModel.model_validate_json(request.metadata())
+                metadata_parsed = metadata_parsed.model_dumped()
+            except ValidationError as e:
+                response.success = False
+                response.message = f"Invalid metadata: {str(e)}"
+                return response
+            
             collection_name = self._sanitize_collection_name(request.collection)
             collection = self._get_or_create_collection(collection_name)
 
             collection.add(
                 documents=request.document,
-                metadatas=[json.loads(request.metadata)],
+                metadatas=[metadata_parsed],
                 ids=request.id,
             )
             response.success = True
