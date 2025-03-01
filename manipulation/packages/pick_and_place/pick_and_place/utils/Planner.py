@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import List, Union, Any
 from rclpy.node import Node
 from concurrent.futures import Future
+from geometry_msgs.msg import PoseStamped
 
 
 class Planner(ABC):
@@ -43,8 +44,7 @@ class Planner(ABC):
     @abstractmethod
     def plan_pose_goal(
         self,
-        position: List[float],
-        quat_xyzw: List[float],
+        pose: PoseStamped,
         cartesian: bool = False,
         wait: bool = True,
     ) -> Union[bool, Future]:
@@ -52,8 +52,85 @@ class Planner(ABC):
         pass
 
     @abstractmethod
-    def get_current_state(self) -> Any:
-        """Get the current robot state"""
+    def get_current_operation_state(self) -> Any:
+        """Get the current robot state -> Planning, Moving, Idle..."""
+        pass
+
+    @abstractmethod
+    def get_fk(self, links: List[str]) -> List[PoseStamped]:
+        """Get the forward kinematics for a list of links based on current joint positions"""
+        pass
+
+    @abstractmethod
+    def compute_fk(self, joint_positions: List[float]) -> PoseStamped:
+        """Compute the forward kinematics for a robot state (set of joint positions)"""
+        pass
+
+    @abstractmethod
+    def set_joint_constraints(
+        self, joint_positions: List[float], tolerance: float = 0.001
+    ) -> None:
+        """Set joint constraints during planning"""
+        pass
+
+    @abstractmethod
+    def set_position_constraints(
+        self, position: List[float], tolerance: float = 0.001
+    ) -> None:
+        """Set position constraints during planning"""
+        pass
+
+    @abstractmethod
+    def set_orientation_constraints(
+        self, quat_xyzw: List[float], tolerance: float = 0.001
+    ) -> None:
+        """Set orientation constraints during planning"""
+        pass
+
+    @abstractmethod
+    def delete_all_constraints(self) -> None:
+        """Clear all path and goal constraints"""
+        pass
+
+    @abstractmethod
+    def add_collision_box(
+        self, id: str, size: List[float], position: List[float], quat_xyzw: List[float]
+    ) -> None:
+        """Add box collision object to planning scene"""
+        pass
+
+    @abstractmethod
+    def add_collision_cylinder(
+        self,
+        id: str,
+        height: float,
+        radius: float,
+        position: List[float],
+        quat_xyzw: List[float],
+    ) -> None:
+        """Add cylinder collision object to planning scene"""
+        pass
+
+    @abstractmethod
+    def add_collision_mesh(
+        self,
+        id: str,
+        filepath: str,
+        position: List[float],
+        quat_xyzw: List[float],
+        scale: float = 1.0,
+    ) -> None:
+        """Add mesh collision object to planning scene"""
+        pass
+
+    @abstractmethod
+    def remove_collision_object(self, id: str) -> None:
+        """Remove collision object from planning scene"""
+        pass
+
+    @abstractmethod
+    def clear_all_collision_objects(self) -> None:
+        """Remove all collision objects from planning scene"""
         pass
 
     @abstractmethod
