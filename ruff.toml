@@ -32,5 +32,6 @@ exclude = [
     "manipulation/packages/pymoveit2",
     "manipulation/packages/xarm_ros2",
     "manipulation/packages/gpd"
+    "manipulation/packages/object_detector_2d",
 ]
 

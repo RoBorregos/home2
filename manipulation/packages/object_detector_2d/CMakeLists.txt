@@ -23,6 +23,7 @@ find_package(tf2_eigen REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 find_package(laser_geometry REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(frida_interfaces REQUIRED)
 
 #Install directories
 install(DIRECTORY launch config
