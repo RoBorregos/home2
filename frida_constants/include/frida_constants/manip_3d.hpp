@@ -3,11 +3,11 @@
 
 #include <string>
 
-typedef const std::string consts;
+typedef const std::string conststr;
 
-consts ZED_POINT_CLOUD_TOPIC = "/zed/zed_node/point_cloud/cloud_registered";
-consts POINT_CLOUD_TOPIC = "/point_cloud";
-consts REMOVE_PC_TEST = "/manip/test_service";
-consts REMOVE_PLANE_SERVICE = "/manip/extract_plane";
+conststr ZED_POINT_CLOUD_TOPIC = "/zed/zed_node/point_cloud/cloud_registered";
+conststr POINT_CLOUD_TOPIC = "/point_cloud";
+conststr REMOVE_PC_TEST = "/manip/test_service";
+conststr REMOVE_PLANE_SERVICE = "/manip/extract_plane";
 
 #endif // MANIP_3D_HPP
