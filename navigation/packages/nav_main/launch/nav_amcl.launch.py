@@ -19,13 +19,11 @@ def generate_launch_description():
         description='Whether to publish URDF'
     )
     declare_map_route = DeclareLaunchArgument(
-        'map',
-        default_value='Lab01.yaml',  
-        description='yaml inside maps folder'
+    'map',
+    default_value=os.path.join(get_package_share_directory('nav_main'), 'maps', 'Lab01.yaml'),
+    description='Path to the map file'
     )
-
     nav_main_package = get_package_share_directory('nav_main')
-    params_file = os.path.join([nav_main_package, 'maps', map_route])
 
     nav_basics = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -44,7 +42,7 @@ def generate_launch_description():
             executable='map_server',
             name='map_server',
             output='screen',
-            parameters=[{'yaml_filename':  PathJoinSubstitution([nav_main_package, 'maps', map_route]),
+            parameters=[{'yaml_filename': LaunchConfiguration('map'),
                          'use_sim_time' : 'false'}],
     )
     amcl_server = Node(
@@ -70,6 +68,6 @@ def generate_launch_description():
         declare_map_route,
         map_server,
         amcl_server,
-        lifecycle_node,
+        lifecycle_node
 
     ])
