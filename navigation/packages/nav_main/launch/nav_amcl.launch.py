@@ -59,7 +59,7 @@ def generate_launch_description():
             name='lifecycle_manager_localization',
             output='screen',
             parameters=[{'use_sim_time': False},
-                        {'autostart': 'true'},
+                        {'autostart': True},
                         {'node_names': lifecycle_nodes}])
     
     return LaunchDescription([
