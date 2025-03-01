@@ -26,6 +26,7 @@ class Guest:
         self.name = name
         self.drink = drink
         self.interest = interest
+        self.description = ""
 
     def __str__(self):
         """Return the string representation of the class"""
@@ -55,7 +56,7 @@ class ReceptionistTM(Node):
         """Initialize the node"""
         super().__init__("receptionist_task_manager")
         self.subtask_manager = SubtaskManager(self, task=Task.RECEPTIONIST)
-        self.current_state = ReceptionistTM.TASK_STATES["START"]
+        self.current_state = ReceptionistTM.TASK_STATES["GREETING"]
         self.current_guest = 1
 
         self.guests = [Guest() for _ in range(2)]
@@ -85,7 +86,11 @@ class ReceptionistTM(Node):
         response = self.subtask_manager.hri.hear()
         return self.subtask_manager.hri.is_positive(response)
 
-    # TODO (@alecoeto): Check default or error return value for hri.hear()
+    def hear_word(self, word: str) -> bool:
+        """Check if the word is heard"""
+        statement = self.subtask_manager.hri.hear()
+        return self.subtask_manager.hri.extract_data(word, statement)
+
     # TODO (@alecoeto): Check nav positions and manipulation positions
     # TODO (@alecoeto): Add guest 1 description (4 attributes)
     # TODO (@alecoeto): Confirm drink and interest
@@ -116,7 +121,8 @@ class ReceptionistTM(Node):
                 self.get_guest().name = f"Guest {self.current_guest}"
             else:
                 self.subtask_manager.hri.say("What is your name?")
-                self.get_guest().name = self.subtask_manager.hri.hear()
+                self.get_guest().name = self.hear_word("name")
+                Logger.info(self, f"Heard name: {self.get_guest().name}")
                 self.current_attempts += 1
 
             if self.get_guest().name is not None:
@@ -131,6 +137,8 @@ class ReceptionistTM(Node):
         if self.current_state == ReceptionistTM.TASK_STATES["SAVE_FACE"]:
             Logger.state(self, "Saving face")
             result = self.subtask_manager.vision.save_face_name(self.get_guest().name)
+            self.get_guest().description = self.subtask_manager.vision.describe_person()
+
             if (
                 result == VisionTasks.STATE["EXECUTION_SUCCESS"]
                 or self.current_attempts >= ATTEMPT_LIMIT
@@ -152,7 +160,7 @@ class ReceptionistTM(Node):
             Logger.state(self, "Asking for drink")
             self.subtask_manager.manipulation.follow_face(True)
             self.subtask_manager.hri.say("What is your favorite drink?")
-            self.get_guest().drink = self.subtask_manager.hri.hear()
+            self.get_guest().drink = self.hear_word("drink")
             self.current_attempts += 1
             if self.get_guest().drink is not None or self.current_attempts >= ATTEMPT_LIMIT:
                 self.current_attempts = 0
@@ -179,7 +187,7 @@ class ReceptionistTM(Node):
             Logger.state(self, "Asking for interest")
             self.subtask_manager.manipulation.follow_face(True)
             self.subtask_manager.hri.say("What is your main interest?")
-            self.get_guest().interest = self.subtask_manager.hri.hear()
+            self.get_guest().interest = self.hear_word("interest")
             self.current_attempts += 1
             if self.get_guest().interest is not None or self.current_attempts >= ATTEMPT_LIMIT:
                 self.current_attempts = 0
@@ -241,7 +249,6 @@ class ReceptionistTM(Node):
         if self.current_state == ReceptionistTM.TASK_STATES["END"]:
             Logger.state(self, "Ending task")
             self.subtask_manager.hri.say("I have finished my task, I will rest now.")
-            # self.timer.cancel()
             self.running_task = False
 
 

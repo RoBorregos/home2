@@ -136,6 +136,7 @@ class ReceptionistCommands(Node):
 
         query = "Describe the clothing of the person in the image in a detailed and specific manner. Include the type of clothing, colors, patterns, and any notable accessories. Ensure that the description is clear and distinct."
         cropped_frame = self.detect_and_crop_person()
+        # cv2.imshow(cropped_frame)
         encoded_image = self.moondream_model.encode_image(cropped_frame)
 
         response.description = self.moondream_model.generate_person_description(
@@ -251,7 +252,6 @@ class ReceptionistCommands(Node):
 
         frame = self.image
         self.output_image = frame.copy()
-        width = frame.shape[1]
 
         results = self.yolo_model(frame, verbose=False, classes=0)
         largest_area = 0
@@ -263,14 +263,9 @@ class ReceptionistCommands(Node):
                 confidence = box.conf.item()
                 area = w * h
 
-                if (
-                    confidence > CONF_THRESHOLD
-                    and x >= int(width * PERCENTAGE)
-                    and x <= int(width * (1 - PERCENTAGE))
-                ):
-                    if area > largest_area:
-                        largest_area = area
-                        largest_box = (x, y, w, h)
+                if confidence > CONF_THRESHOLD and area > largest_area:
+                    largest_area = area
+                    largest_box = (x, y, w, h)
 
         if largest_box:
             x, y, w, h = largest_box
@@ -285,6 +280,7 @@ class ReceptionistCommands(Node):
             cropped_frame = frame[
                 int(y - h / 2) : int(y + h / 2), int(x - w / 2) : int(x + w / 2)
             ]
+            print("CROPEED")
             return cropped_frame
 
         return None

@@ -8,7 +8,7 @@ commands.
 
 import rclpy
 from frida_interfaces.action import DetectPerson
-from frida_interfaces.srv import FindSeat, SaveName
+from frida_interfaces.srv import FindSeat, SaveName, PersonDescription, BeverageLocation
 from geometry_msgs.msg import Point
 from rclpy.action import ActionClient
 from rclpy.node import Node
@@ -20,6 +20,8 @@ SAVE_NAME_TOPIC = "/vision/new_name"
 FIND_SEAT_TOPIC = "/vision/find_seat"
 DETECT_PERSON_TOPIC = "/vision/detect_person"
 FOLLOW_TOPIC = "/vision/follow_face"
+DESCRIPTION_TOPIC = "/vision/person_description"
+BEVERAGE_TOPIC = "/vision/beverage_location"
 TIMEOUT = 5.0
 
 
@@ -46,6 +48,10 @@ class VisionTasks:
         )
         self.save_name_client = self.node.create_client(SaveName, SAVE_NAME_TOPIC)
         self.find_seat_client = self.node.create_client(FindSeat, FIND_SEAT_TOPIC)
+        self.person_description_client = self.node.create_client(
+            PersonDescription, DESCRIPTION_TOPIC
+        )
+        self.beverage_location_client = self.node.create_client(BeverageLocation, BEVERAGE_TOPIC)
         self.detect_person_action_client = ActionClient(
             self.node, DetectPerson, DETECT_PERSON_TOPIC
         )
@@ -64,6 +70,8 @@ class VisionTasks:
                     "client": self.save_name_client,
                     "type": "service",
                 },
+                "person_description": {"client": self.person_description_client, "type": "service"},
+                "beverage_location": {"client": self.beverage_location_client, "type": "service"},
             },
         }
 
@@ -185,10 +193,27 @@ class VisionTasks:
         """Returns true when a person is detected"""
         return "left", vision_tasks.STATE["EXECUTION_SUCCESS"]
 
-    @mockable(return_value="tall person", delay=2)
+    @mockable(return_value="tall person", delay=2, mock=True)
     def describe_person(self):
         """Returns description of a person"""
-        pass
+        Logger.info(self.node, "Describing a person")
+        request = PersonDescription.Request()
+        request.request = True
+
+        try:
+            future = self.find_seat_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+            result = future.result()
+
+            if result.success:
+                Logger.success(self.node, f"Seat found at angle: {result.angle}")
+                return result.angle
+            else:
+                Logger.warn(self.node, "No seat found")
+        except Exception as e:
+            Logger.error(self.node, f"Error finding seat: {e}")
+
+        return 300
 
     def get_follow_face(self):
         """Get the face to follow"""
