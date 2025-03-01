@@ -44,7 +44,7 @@ def generate_launch_description():
             executable='map_server',
             name='map_server',
             output='screen',
-            parameters=[{'yaml_filename': params_file,
+            parameters=[{'yaml_filename':  PathJoinSubstitution([nav_main_package, 'maps', map_route]),
                          'use_sim_time' : 'false'}],
     )
     amcl_server = Node(
