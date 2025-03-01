@@ -34,16 +34,35 @@ include_directories(
   ${PCL_INCLUDE_DIRS}
 )
 
+add_executable(down_sample_pc src/down_sample_pc.cpp)
+add_executable(publish_cloud src/publish_pcl.cpp)
 add_executable(plane_service src/remove_plane.cpp)
 
-ament_target_dependencies(
-  plane_service 
+ament_target_dependencies(down_sample_pc
+  frida_interfaces
+  rclcpp std_msgs geometry_msgs sensor_msgs tf2_ros tf2 pcl_ros pcl_conversions tf2_eigen PCL)
 
+ament_target_dependencies(publish_cloud
+  frida_interfaces
+  rclcpp std_msgs geometry_msgs sensor_msgs tf2_ros tf2 pcl_ros pcl_conversions tf2_eigen PCL)
+
+ament_target_dependencies(plane_service
   frida_interfaces
   rclcpp std_msgs geometry_msgs sensor_msgs tf2_ros tf2 pcl_ros pcl_conversions tf2_eigen PCL)
 
 install(TARGETS 
-plane_service
+  plane_service
+
+  DESTINATION lib/${PROJECT_NAME})
+
+install(TARGETS 
+  publish_cloud
+  
+  DESTINATION lib/${PROJECT_NAME})
+
+install(TARGETS 
+  down_sample_pc
+
   DESTINATION lib/${PROJECT_NAME})
 
 # Install header files
