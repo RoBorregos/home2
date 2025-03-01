@@ -66,9 +66,12 @@ def main(args=None):
 
     # Pose 3 - Right side
     pose3 = Pose()
-    pose3.position.x = 0.4
-    pose3.position.y = -0.2
-    pose3.position.z = 0.3
+    pose3.position.x = 0.5
+    pose3.position.y = 0.5
+    pose3.position.z = 0.4
+    pose3.orientation.x = 0.0
+    pose3.orientation.y = 0.0
+    pose3.orientation.z = 0.0
     pose3.orientation.w = 1.0
 
     sample_poses = [pose1, pose2, pose3]

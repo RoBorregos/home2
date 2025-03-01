@@ -4,20 +4,26 @@ import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionServer
 from rclpy.callback_groups import ReentrantCallbackGroup
-import time
 from frida_interfaces.action import PickAction
+from pick_and_place.utils.MoveItPlanner import MoveItPlanner
 
 
 class PickActionServer(Node):
     def __init__(self):
-        super().__init__("pick_action_server")
+        super().__init__("pick_server")
+        self.callback_group = ReentrantCallbackGroup()
+
         self._action_server = ActionServer(
             self,
             PickAction,
             "pick_action_server",
             self.execute_callback,
-            callback_group=ReentrantCallbackGroup(),
+            callback_group=self.callback_group,
         )
+        self.planner = MoveItPlanner(self, self.callback_group)
+        self.planner.set_velocity(0.15)
+        self.planner.set_acceleration(0.15)
+        self.planner.set_planner("RRTConnect")
         self.get_logger().info("Pick Action Server has been started")
 
     async def execute_callback(self, goal_handle):
@@ -27,31 +33,40 @@ class PickActionServer(Node):
         # Initialize result
         feedback = PickAction.Feedback()
         result = PickAction.Result()
-
         try:
-            await self.perform_pick(goal_handle, feedback)
-
+            result.success = self.pick(goal_handle, feedback)
             goal_handle.succeed()
-            result.success = True
             return result
-
         except Exception as e:
             self.get_logger().error(f"Pick failed: {str(e)}")
             goal_handle.abort()
             result.success = False
             return result
 
-    async def perform_pick(self, goal_handle, feedback):
+    def pick(self, goal_handle, feedback):
         """Perform the pick operation."""
-        self.get_logger().info("Performing pick operation...")
-        time.sleep(5)  # Simulate pick operation
-        self.get_logger().info("Pick operation completed")
+        self.get_logger().info(
+            f"Trying to pick up object: {goal_handle.request.object_name}"
+        )
+        grasping_poses = goal_handle.request.grasping_poses
+        for i, pose in enumerate(grasping_poses):
+            # Move to pre-grasp pose
+            result = self.planner.plan_pose_goal(
+                pose,
+                wait=True,
+            )
+            print(f"Grasp Pose {i} result: {result}")
+            if result:
+                return True
+        return False
 
 
 def main(args=None):
     rclpy.init(args=args)
+    executor = rclpy.executors.MultiThreadedExecutor(5)
     pick_server = PickActionServer()
-    rclpy.spin(pick_server)
+    executor.add_node(pick_server)
+    executor.spin()
     rclpy.shutdown()
 
 
