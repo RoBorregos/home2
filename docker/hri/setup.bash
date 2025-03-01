@@ -38,4 +38,11 @@ grep -qxF "$SCRIPT_CMD" "$BASHRC" || echo "$SCRIPT_CMD" >> "$BASHRC"
 
 bash -i $BASHRC
 
+if [ ! -f /etc/udev/rules.d/99-usb.rules ]; then
+    echo "SUBSYSTEM==\"usb\", ATTR{idVendor}==\"2886\", ATTR{idProduct}==\"0018\", MODE=\"0666\"" | sudo tee -a /etc/udev/rules.d/99-usb.rules
+    sudo udevadm control --reload-rules
+    sudo udevadm trigger
+fi
+
+
 echo "Finished hri setup configuration for docker."
