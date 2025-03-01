@@ -19,6 +19,8 @@
 #include <string>
 #include <variant>
 
+#include <frida_constants/manip_3d.hpp>
+
 using namespace std::chrono_literals;
 
 typedef pcl::PointXYZ pointCloudType; // No RGB
@@ -30,8 +32,8 @@ private:
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr publisher;
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr subscriber;
 
-  std::string input_topic = "/zed/zed_node/point_cloud/cloud_registered";
-  std::string output_topic = "/point_cloud";
+  std::string input_topic = ZED_POINT_CLOUD_TOPIC;
+  std::string output_topic = POINT_CLOUD_TOPIC;
   float leaf_size = 0.01f;
 
 public:
