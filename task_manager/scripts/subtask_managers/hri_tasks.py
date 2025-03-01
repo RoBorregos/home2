@@ -74,10 +74,6 @@ class HRITasks(metaclass=SubtaskMeta):
                     "client": self.extract_data_service,
                     "type": "service",
                 },
-                "keyword_client": {
-                    "client": self.keyword_client,
-                    "type": "service",
-                },
             },
         }
 
