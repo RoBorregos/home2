@@ -13,7 +13,7 @@ find_package(rclpy REQUIRED)
 find_package(sensor_msgs REQUIRED)
 
 
-install(DIRECTORY launch
+install(DIRECTORY launch config
   DESTINATION share/${PROJECT_NAME})
 
 add_executable(ignore_laser src/ignore_laser.cpp)
