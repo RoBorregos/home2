@@ -15,7 +15,7 @@ from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from std_msgs.msg import Bool, String
 
-from frida_interfaces.srv import Grammar, LLMWrapper, CommonInterest
+from frida_interfaces.srv import CommonInterest, Grammar, LLMWrapper
 
 SPEECH_COMMAND_TOPIC = "/speech/raw_command"
 OUT_COMMAND_TOPIC = "/stop_following"
@@ -208,7 +208,7 @@ class LLMUtils(Node):
                 messages=[
                     {
                         "role": "system",
-                        "content": f"You will be presented with the interests of two people, your task is to get the common interests between them. Give a short answer with one common interest.",
+                        "content": "You will be presented with the interests of two people, your task is to get the common interests between them. Give a short answer with one common interest.",
                     },
                     {
                         "role": "user",
