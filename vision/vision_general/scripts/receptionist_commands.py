@@ -26,15 +26,24 @@ from frida_interfaces.srv import FindSeat
 from frida_interfaces.srv import PersonDescription
 from frida_interfaces.srv import BeverageLocation
 
+from ament_index_python.packages import get_package_share_directory
 
-CAMERA_TOPIC = "/zed2/zed_node/rgb/image_rect_color"
+package_share_dir = get_package_share_directory("vision_general")
+
+
+CAMERA_TOPIC = "/zed/zed_node/rgb/image_rect_color"
 CHECK_PERSON_TOPIC = "/vision/detect_person"
-MOONDREAM_TOPIC = "vision/moondream"
+PERSON_DESCRIPTION_TOPIC = "/vision/person_description"
+BEVERAGE_TOPIC = "/vision/beverage_location"
 FIND_SEAT_TOPIC = "/vision/find_seat"
 IMAGE_TOPIC = "/vision/img_person_detecion"
 
+
 YOLO_LOCATION = str(pathlib.Path(__file__).parent) + "/Utils/yolov8n.pt"
-MOONDREAM_LOCATION = "vision/vision_general/scripts/moondream-2b-int8.mf.gz"
+# MOONDREAM_LOCATION = "vision/vision_general/scripts/moondream-2b-int8.mf.gz"
+MOONDREAM_LOCATION = str(
+    pathlib.Path(package_share_dir) / "Utils/moondream-2b-int8.mf.gz"
+)
 PERCENTAGE = 0.3
 MAX_DEGREE = 30
 AREA_PERCENTAGE_THRESHOLD = 0.2
@@ -47,17 +56,20 @@ class ReceptionistCommands(Node):
         super().__init__("receptionist_commands")
         self.bridge = CvBridge()
 
-        self.find_seat_service = self.create_service(
-            FindSeat, FIND_SEAT_TOPIC, self.find_seat_callback
-        )
         self.image_subscriber = self.create_subscription(
             Image, CAMERA_TOPIC, self.image_callback, 10
         )
+
+        self.find_seat_service = self.create_service(
+            FindSeat, FIND_SEAT_TOPIC, self.find_seat_callback
+        )
         self.person_description_service = self.create_service(
-            PersonDescription, MOONDREAM_TOPIC, self.person_description_callback
+            PersonDescription,
+            PERSON_DESCRIPTION_TOPIC,
+            self.person_description_callback,
         )
         self.beverage_location_service = self.create_service(
-            BeverageLocation, MOONDREAM_TOPIC, self.beverage_location_callback
+            BeverageLocation, BEVERAGE_TOPIC, self.beverage_location_callback
         )
         self.image_publisher = self.create_publisher(Image, IMAGE_TOPIC, 10)
         self.person_detection_action_server = ActionServer(

@@ -14,13 +14,12 @@ from rclpy.action import ActionClient
 from rclpy.node import Node
 from utils.decorators import mockable, service_check
 from utils.logger import Logger
-
+from utils.task import Task
 
 SAVE_NAME_TOPIC = "/vision/new_name"
 FIND_SEAT_TOPIC = "/vision/find_seat"
 DETECT_PERSON_TOPIC = "/vision/detect_person"
 FOLLOW_TOPIC = "/vision/follow_face"
-
 TIMEOUT = 5.0
 
 
@@ -33,19 +32,8 @@ class VisionTasks:
         "EXECUTION_SUCCESS": 1,
         "TARGET_NOT_FOUND": 2,
     }
-    SERVICES = {"detect_person": 0, "save_face_name": 1, "find_seat": 2}
-    SUBTASKS = {
-        "RECEPTIONIST": [
-            SERVICES["detect_person"],
-            SERVICES["find_seat"],
-            SERVICES["save_face_name"],
-        ],
-        "DEMO": [
-            SERVICES["detect_person"],
-        ],
-    }
 
-    def __init__(self, task_manager, task, mock_data=False) -> None:
+    def __init__(self, task_manager, task: Task, mock_data=False) -> None:
         """Initialize the class"""
         self.node = task_manager
         self.mock_data = mock_data
@@ -62,32 +50,40 @@ class VisionTasks:
             self.node, DetectPerson, DETECT_PERSON_TOPIC
         )
 
+        self.services = {
+            Task.RECEPTIONIST: {
+                "detect_person": {
+                    "client": self.detect_person_action_client,
+                    "type": "action",
+                },
+                "find_seat": {
+                    "client": self.find_seat_client,
+                    "type": "service",
+                },
+                "save_face_name": {
+                    "client": self.save_name_client,
+                    "type": "service",
+                },
+            },
+        }
+
         if not self.mock_data:
             self.setup_services()
 
     def setup_services(self):
         """Initialize services and actions"""
-        if self.task not in VisionTasks.SUBTASKS:
+
+        if self.task not in self.services:
             Logger.error(self.node, "Task not available")
             return
 
-        if VisionTasks.SERVICES["save_face_name"] in VisionTasks.SUBTASKS[self.task]:
-            if not self.save_name_client.wait_for_service(timeout_sec=TIMEOUT):
-                Logger.warn(self.node, "Save name service not initialized. (face_recognition)")
-
-        if VisionTasks.SERVICES["find_seat"] in VisionTasks.SUBTASKS[self.task]:
-            if not self.find_seat_client.wait_for_service(timeout_sec=TIMEOUT):
-                Logger.warn(
-                    self.node,
-                    "Find seat service not initialized. (receptionist_commands)",
-                )
-
-        if VisionTasks.SERVICES["detect_person"] in VisionTasks.SUBTASKS[self.task]:
-            if not self.detect_person_action_client.wait_for_server(timeout_sec=TIMEOUT):
-                Logger.warn(
-                    self.node,
-                    "Detect person action server not initialized. (face_recognition)",
-                )
+        for key, service in self.services[self.task].items():
+            if service["type"] == "service":
+                if not service["client"].wait_for_service(timeout_sec=TIMEOUT):
+                    Logger.warn(self.node, f"{key} service not initialized. ({self.task})")
+            elif service["type"] == "action":
+                if not service["client"].wait_for_server(timeout_sec=TIMEOUT):
+                    Logger.warn(self.node, f"{key} action server not initialized. ({self.task})")
 
     def follow_callback(self, msg: Point):
         """Callback for the face following subscriber"""
@@ -143,7 +139,7 @@ class VisionTasks:
 
         return 300
 
-    @mockable(return_value=True, delay=2)
+    @mockable(return_value=True, delay=2, mock=False)
     @service_check("detect_person_action_client", False, TIMEOUT)
     def detect_person(self, timeout: float = TIMEOUT) -> int:
         """Returns true when a person is detected"""
@@ -157,6 +153,10 @@ class VisionTasks:
             rclpy.spin_until_future_complete(self.node, goal_future, timeout_sec=timeout)
 
             goal_handle = goal_future.result()
+            Logger.info(self.node, f"Goal future result: {goal_handle}")
+
+            if goal_handle is None:
+                raise Exception("Failed to get a valid goal handle")
 
             if not goal_handle.accepted:
                 raise Exception("Goal rejected")
@@ -174,6 +174,21 @@ class VisionTasks:
         except Exception as e:
             Logger.error(self.node, f"Error detecting person: {e}")
             return self.STATE["EXECUTION_ERROR"]
+
+    @mockable(return_value=True, delay=2)
+    def detect_guest(self, name: str, timeout: float = TIMEOUT):
+        """Returns true when a person is detected"""
+        pass
+
+    @mockable(return_value=True, delay=2)
+    def find_drink(self, name: str, timeout: float = TIMEOUT):
+        """Returns true when a person is detected"""
+        return "left", vision_tasks.STATE["EXECUTION_SUCCESS"]
+
+    @mockable(return_value="tall person", delay=2)
+    def describe_person(self):
+        """Returns description of a person"""
+        pass
 
     def get_follow_face(self):
         """Get the face to follow"""
