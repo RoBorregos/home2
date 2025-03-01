@@ -128,7 +128,7 @@ class HRITasks(metaclass=SubtaskMeta):
         )
 
         request = ExtractInfo.Request(data=query, full_text=complete_text)
-        future = self.extract_data_client.call_async(request)
+        future = self.extract_data_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
         return future.result().result
 
@@ -198,7 +198,7 @@ class HRITasks(metaclass=SubtaskMeta):
     def ask(self, question: str) -> str:
         self.llm_wrapper_service
         request = LLMWrapper.Request(question=question)
-        future = self.extract_data_client.call_async(request)
+        future = self.extract_data_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
         return future.result().answer
 
