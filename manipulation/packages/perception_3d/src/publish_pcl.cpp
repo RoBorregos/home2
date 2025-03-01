@@ -24,6 +24,7 @@
 // #include <frida_interfaces/action/detect_objects3_d.hpp>
 
 #include "rclcpp/rclcpp.hpp"
+#include <frida_constants/manip_3d.hpp>
 #include <frida_interfaces/srv/remove_plane.hpp>
 #include <frida_interfaces/srv/test.hpp>
 
@@ -38,7 +39,7 @@ private:
 
   std::string base_link = "base_link";
   std::string child_frame = "table";
-  std::string point_cloud_topic = "/point_cloud";
+  std::string point_cloud_topic = POINT_CLOUD_TOPIC;
   std::string cloud_file = "/home/ivanromero/Desktop/home2/manipulation/"
                            "packages/perception_3d/pcl_debug/pcl_table.pcd";
 

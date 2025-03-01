@@ -16,7 +16,8 @@
 #include <variant>
 
 #include "rclcpp/rclcpp.hpp"
-// #include <frida_interfaces/action/detect_objects3_d.hpp>
+
+#include <frida_constants/manip_3d.hpp>
 #include <frida_interfaces/srv/remove_plane.hpp>
 #include <frida_interfaces/srv/test.hpp>
 
@@ -28,11 +29,17 @@ private:
       remove_place_srv;
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr cloud_sub_;
 
+  std::string point_cloud_topic = POINT_CLOUD_TOPIC;
+
 public:
   TableSegmentationNode() : Node("table_segmentation_node") {
     RCLCPP_INFO(this->get_logger(), "Starting Table Segmentation Node");
+
+    this->point_cloud_topic =
+        this->declare_parameter("point_cloud_topic", point_cloud_topic);
+
     this->cloud_sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-        "/zed/zed_node/point_cloud/cloud_registered", rclcpp::SensorDataQoS(),
+        point_cloud_topic, rclcpp::SensorDataQoS(),
         std::bind(&TableSegmentationNode::pointCloudCallback, this,
                   std::placeholders::_1));
 
@@ -41,14 +48,13 @@ public:
     last_ = nullptr;
 
     this->test_srv = this->create_service<frida_interfaces::srv::Test>(
-        "/manip/test_service",
-        std::bind(&TableSegmentationNode::test_service, this,
-                  std::placeholders::_1, std::placeholders::_2,
-                  std::placeholders::_3));
+        REMOVE_PC_TEST, std::bind(&TableSegmentationNode::test_service, this,
+                                  std::placeholders::_1, std::placeholders::_2,
+                                  std::placeholders::_3));
 
     this->remove_place_srv =
         this->create_service<frida_interfaces::srv::RemovePlane>(
-            "/manip/extract_plane",
+            REMOVE_PLANE_SERVICE,
             std::bind(&TableSegmentationNode::remove_plane, this,
                       std::placeholders::_1, std::placeholders::_2,
                       std::placeholders::_3));
