@@ -1,0 +1,25 @@
+services:
+  navigation:
+    container_name: home2-navigation
+    build:
+      context: ../..
+      dockerfile: ${DOCKERFILE:-docker/navigation/Dockerfile.cpu}
+      args:
+        BASE_IMAGE: ${BASE_IMAGE:-roborregos/home2:cpu_base} 
+    image: ${IMAGE_NAME:-roborregos/home2:vision-cpu}
+    volumes:
+      - ../../:/workspace
+      - /dev:/dev
+      - /dev/video0:/dev/video0
+  
+    network_mode: host
+    user: 1000:1000
+    privileged: true
+
+    environment:
+      DISPLAY: ${DISPLAY}
+      TERM: xterm-256color
+    tty: true
+    stdin_open: true    
+    working_dir: /workspace
+    command: ["/bin/bash", "-i", "-l"]
