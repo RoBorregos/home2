@@ -1,0 +1,2 @@
+curl -L https://huggingface.co/diegohc/robollm/resolve/main/rbrgs-finetuned-unsloth.F16.gguf -o rbrgs-finetuned.F16.gguf
+curl -L https://huggingface.co/diegohc/robollm/resolve/main/Modelfile -o Modelfile

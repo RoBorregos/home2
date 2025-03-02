@@ -2,6 +2,7 @@ include:
   # Jetson Orin
   - path: l4t-devices.yaml
   - path: stt.yaml
+  - path: ollama.yaml
   # - path: chromadb.yaml
 
   # Chroma db for embeddings
