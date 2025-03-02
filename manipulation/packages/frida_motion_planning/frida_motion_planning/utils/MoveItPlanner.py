@@ -105,13 +105,14 @@ class MoveItPlanner(Planner):
         cartesian_fraction_threshold: float = 0.8,
     ) -> Union[bool, Future]:
         return self.moveit2.plan(
-            position=[pose.position.x, pose.position.y, pose.position.z],
+            position=[pose.pose.position.x, pose.pose.position.y, pose.pose.position.z],
             quat_xyzw=[
-                pose.orientation.x,
-                pose.orientation.y,
-                pose.orientation.z,
-                pose.orientation.w,
+                pose.pose.orientation.x,
+                pose.pose.orientation.y,
+                pose.pose.orientation.z,
+                pose.pose.orientation.w,
             ],
+            frame_id=pose.header.frame_id,
             cartesian=cartesian,
             tolerance_position=tolerance_position,
             tolerance_orientation=tolerance_orientation,
