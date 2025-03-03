@@ -117,7 +117,7 @@ class VisionTasks:
             result = future.result()
 
             if not result.success:
-                raise Exception("Service call failedzZZZZ")
+                raise Exception("Service call failed")
 
         except Exception as e:
             Logger.error(self.node, f"Error saving name: {e}")
