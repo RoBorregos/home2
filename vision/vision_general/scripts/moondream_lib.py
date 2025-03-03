@@ -27,7 +27,7 @@ class MoonDreamModel:
             print()
         else:
             answer = self.model.query(encoded_image, query)["answer"]
-            print("Answer:", answer)
+            # print("Answer:", answer)
             return answer
 
     def find_beverage(self, encoded_image, subject):

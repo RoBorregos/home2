@@ -8,12 +8,8 @@ import rclpy
 
 from rclpy.node import Node
 from utils.logger import Logger
-
 from utils.subtask_manager import SubtaskManager, Task
-
-# from utils.task import Task
 from subtask_managers.vision_tasks import VisionTasks
-# from subtask_managers.hri_tasks import HRITasks
 
 ATTEMPT_LIMIT = 3
 
@@ -56,8 +52,9 @@ class ReceptionistTM(Node):
         """Initialize the node"""
         super().__init__("receptionist_task_manager")
         self.subtask_manager = SubtaskManager(self, task=Task.RECEPTIONIST)
-        self.current_state = ReceptionistTM.TASK_STATES["GREETING"]
+        self.current_state = ReceptionistTM.TASK_STATES["START"]
         self.current_guest = 1
+        self.seat_angles = [-90, 0, 90]
 
         self.guests = [Guest() for _ in range(2)]
         self.guests[0] = Guest("John", "Beer", "Football")
@@ -66,9 +63,6 @@ class ReceptionistTM(Node):
         self.running_task = True
 
         Logger.info(self, "ReceptionistTaskManager has started.")
-        # self.timer = self.create_timer(0.1, self.run)
-        while rclpy.ok() and self.running_task:
-            self.run()
 
     def get_guest(self) -> Guest:
         """Get the current guest"""
@@ -92,7 +86,6 @@ class ReceptionistTM(Node):
         return self.subtask_manager.hri.extract_data(word, statement)
 
     # TODO (@alecoeto): Check nav positions and manipulation positions
-    # TODO (@alecoeto): Add guest 1 description (4 attributes)
     # TODO (@alecoeto): Confirm drink and interest
     def run(self):
         """State machine"""
@@ -173,7 +166,9 @@ class ReceptionistTM(Node):
             Logger.state(self, "Checking drink availability")
             self.subtask_manager.manipulation.follow_face(False)
             self.subtask_manager.manipulation.move_to_position("table")
-            position, status = self.subtask_manager.vision.find_drink(self.get_guest().drink)
+            position, status = self.subtask_manager.vision.find_drink(
+                self.get_guest().drink, timeout=40
+            )
             self.subtask_manager.manipulation.move_to_position("gaze")
             if status == VisionTasks.STATE["EXECUTION_SUCCESS"]:
                 self.subtask_manager.hri.say(
@@ -208,7 +203,7 @@ class ReceptionistTM(Node):
 
             for seat_angle in self.seat_angles:
                 self.subtask_manager.manipulation.pan_to(seat_angle)
-                angle, status = self.subtask_manager.vision.find_seat()
+                angle = self.subtask_manager.vision.find_seat()
                 if status == VisionTasks.STATE["EXECUTION_SUCCESS"]:
                     target = angle
                     break
@@ -226,9 +221,9 @@ class ReceptionistTM(Node):
             for guest in self.guests:
                 if guest.name is None or guest == self.get_guest():
                     continue
-                self.subtask_manager.vision.follow_face(guest.name)
+                self.subtask_manager.vision.follow_by_name(guest.name)
                 self.subtask_manager.hri.say(
-                    f"Hello {guest.name}. This is {self.get_guest().name} and they like {self.get_guest().drink}."
+                    f"Hello {guest.name}. This is {self.get_guest().name}. {self.get_guest().description} and they like {self.get_guest().drink}."
                 )
                 common_message = self.subtask_manager.hri.common_interest(
                     self.get_guest().interest, guest.interest
@@ -258,7 +253,9 @@ def main(args=None):
     node = ReceptionistTM()
 
     try:
-        rclpy.spin(node)
+        while rclpy.ok() and node.running_task:
+            rclpy.spin_once(node, timeout_sec=0.1)
+            node.run()
     except KeyboardInterrupt:
         pass
     finally:

@@ -33,6 +33,7 @@ FOLLOW_TOPIC = "/vision/follow_face"
 PERSON_LIST_TOPIC = "/vision/person_list"
 PERSON_NAME_TOPIC = "/vision/person_detected_name"
 VISION_FRAME_TOPIC = "/vision/person_frame"
+FOLLOW_BY_TOPIC = "/vision/follow_by_name"
 
 DEFAULT_NAME = "ale"
 TRACK_THRESHOLD = 50
@@ -56,6 +57,9 @@ class FaceRecognition(Node):
         self.new_name_service = self.create_service(
             SaveName, NEW_NAME_TOPIC, self.new_name_callback
         )
+        self.follow_by_service = self.create_service(
+            SaveName, FOLLOW_BY_TOPIC, self.follow_by_name_callback
+        )
         self.follow_publisher = self.create_publisher(Point, FOLLOW_TOPIC, 10)
         self.view_pub = self.create_publisher(Image, VISION_FRAME_TOPIC, 10)
         self.name_publisher = self.create_publisher(String, PERSON_NAME_TOPIC, 10)
@@ -77,6 +81,7 @@ class FaceRecognition(Node):
         self.image = None
         self.prev_faces = []
         self.curr_faces = []
+        self.follow_name = "area"
 
         self.people = [[random_encodings, "random"]]
         self.people_encodings = [random_encodings]
@@ -94,6 +99,13 @@ class FaceRecognition(Node):
         """Callback to add a new face to the known faces"""
         self.get_logger().info("Executing service new face")
         self.new_name = req.name
+        res.success = True
+        return res
+
+    def follow_by_name_callback(self, req, res):
+        """Callback to follow face by name or area"""
+        self.get_logger().info("Executing service follow by")
+        self.follow_name = req.name
         res.success = True
         return res
 
@@ -119,8 +131,6 @@ class FaceRecognition(Node):
                 or filename == DEFAULT_NAME + ".png"
             ):
                 continue
-
-            # self.process_img(filename)
 
             file_path = os.path.join(KNOWN_FACES_PATH, filename)
             os.remove(file_path)
@@ -186,8 +196,6 @@ class FaceRecognition(Node):
 
         target = Point()
 
-        # normalized_x = move_x / MAX_DEGREE
-        # normalized_y = move_y / MAX_DEGREE
         target.x = move_x
         target.y = move_y
 
@@ -215,7 +223,8 @@ class FaceRecognition(Node):
         face_locations = face_recognition.face_locations(resized_frame)
 
         largest_area = 0
-        largest_face_params = None
+        follow_face_params = None
+        largest_area_params = None
         largest_face_name = ""
 
         annotated_frame = self.frame.copy()
@@ -317,15 +326,18 @@ class FaceRecognition(Node):
 
             if area > largest_area:
                 largest_area = area
-                largest_face_params = [left, top, right, bottom]
+                largest_area_params = [left, top, right, bottom]
                 largest_face_name = name
+
+            if self.follow_name == name:
+                follow_face_params = [left, top, right, bottom]
 
         xc = 0
         yc = 0
 
-        # For the largest face detected:
+        # For the follow face by name or area:
         if largest_area != 0:
-            left, top, right, bottom = largest_face_params
+            left, top, right, bottom = largest_area_params
             xc = left + (right - left) / 2
             yc = top + (bottom - top) / 2
 
@@ -333,6 +345,15 @@ class FaceRecognition(Node):
             if self.new_name != "":
                 largest_face_name = self.new_name
                 self.assign_name(left, top, bottom, right, xc, yc)
+
+        if self.follow_name != "area":
+            if follow_face_params is not None:
+                left, top, right, bottom = follow_face_params
+                xc = left + (right - left) / 2
+                yc = top + (bottom - top) / 2
+                largest_face_name = self.follow_name
+            else:
+                detected = False
 
         self.prev_faces = self.curr_faces
 
