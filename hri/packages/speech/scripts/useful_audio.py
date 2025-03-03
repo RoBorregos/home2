@@ -47,6 +47,7 @@ class UsefulAudio(Node):
         self.declare_parameter("threshold", 0.1)
         self.declare_parameter("DISABLE_KWS", False)
         self.declare_parameter("MAX_AUDIO_DURATION", 10)
+        self.declare_parameter("WAKEWORD_TOPIC", "/speech/oww")
 
         self.debug_mode = self.get_parameter("debug").get_parameter_value().bool_value
         self.use_silero_vad = (
@@ -60,6 +61,10 @@ class UsefulAudio(Node):
         )
         self.max_audio_duration = (
             self.get_parameter("MAX_AUDIO_DURATION").get_parameter_value().integer_value
+        )
+
+        self.wakeword_topic = (
+            self.get_parameter("WAKEWORD_TOPIC").get_parameter_value().string_value
         )
 
         self.triggered = False
@@ -85,9 +90,7 @@ class UsefulAudio(Node):
             AudioData, "rawAudioChunk", self.callback_raw_audio, 10
         )
         self.create_subscription(Bool, "saying", self.callback_saying, 10)
-        self.create_subscription(
-            String, "/wakeword_detected", self.callback_keyword, 10
-        )
+        self.create_subscription(String, self.wakeword_topic, self.callback_keyword, 10)
 
         if not self.use_silero_vad:
             self.vad = webrtcvad.Vad()

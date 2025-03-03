@@ -81,14 +81,12 @@ class HearNode(Node):
         self.service_active = False
         if start_service:
             self.service_text = ""
-            detection_publish_topic = (
-                self.declare_parameter("detection_publish_topic", "/wakeword_detected")
+            wakeword_topic = (
+                self.declare_parameter("WAKEWORD_TOPIC", "/wakeword_detected")
                 .get_parameter_value()
                 .string_value
             )
-            self.KWS_publisher_mock = self.create_publisher(
-                String, detection_publish_topic, 10
-            )
+            self.KWS_publisher_mock = self.create_publisher(String, wakeword_topic, 10)
             self.stt_service = self.create_service(
                 STT,
                 service_name,

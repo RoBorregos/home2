@@ -1,6 +1,7 @@
 SPEAK_SERVICE = "/speech/speak"
 STT_SERVICE_NAME = "/speech/STT"
 KEYWORD_TOPIC = "/speech/kws"
+WAKEWORD_TOPIC = "/speech/oww"
 COMMAND_INTERPRETER_SERVICE = "/nlp/command_interpreter"
 EXTRACT_DATA_SERVICE = "/nlp/data_extractor"
 SENTENCE_BUILDER_SERVICE = "/nlp/sentence_builder"
