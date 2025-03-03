@@ -1,4 +1,4 @@
-bool request
+string beverage
 ---
 string location
 bool success
