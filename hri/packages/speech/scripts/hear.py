@@ -131,7 +131,9 @@ class HearNode(Node):
     def stt_service_callback(self, request, response):
         self.get_logger().info("Keyword mock service activated, recording audio...")
         self.service_active = True
-        self.KWS_publisher_mock.publish(String(data="frida"))
+
+        detection_info = {"keyword": "frida", "score": 1}
+        self.KWS_publisher_mock.publish(String(data=str(detection_info)))
         while self.service_active:
             pass
         response.text_heard = self.service_text

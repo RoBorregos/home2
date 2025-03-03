@@ -224,6 +224,12 @@ class UsefulAudio(Node):
 
     def callback_keyword(self, msg):
         self.log("keyword callback activated.")
+
+        # Ignore if the keyword is not "frida"
+        data = eval(msg.data)
+        if data["keyword"] != "frida":
+            return
+
         self.triggered = True
 
         self.discard_audio()
