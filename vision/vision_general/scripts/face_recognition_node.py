@@ -360,7 +360,7 @@ class FaceRecognition(Node):
         # Calculate the joint degrees for the arm to follow the face
         if detected:
             self.publish_follow_face(xc, yc, largest_face_name)
-        if self.get_parameter("verbose").value:
+        if self.verbose:
             cv2.imshow("Face detection", annotated_frame)
         self.image_view = annotated_frame
         self.view_pub.publish(self.bridge.cv2_to_imgmsg(annotated_frame, "bgr8"))
