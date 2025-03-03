@@ -66,7 +66,7 @@ class FaceRecognition(Node):
         self.person_list_publisher = self.create_publisher(
             PersonList, PERSON_LIST_TOPIC, 10
         )
-        self.declare_parameter("verbose", True)
+        self.verbose = self.declare_parameter("verbose", True)
 
         self.setup()
         self.create_timer(0.1, self.run)
