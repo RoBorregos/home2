@@ -4,7 +4,7 @@ include:
   - path: stt.yaml
   # - path: chromadb.yaml
 
-  # Chroma db for embeddings
+  # Laptop
   # - path: hri-ros.yaml
   # - path: chromadb.yaml
   # - path: stt.yaml
