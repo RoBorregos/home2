@@ -121,6 +121,7 @@ if [ -z "$EXISTING_CONTAINER" ]; then
         docker compose -f docker-compose-jetson.yaml up --build -d
     fi
     echo "Running prebuild script..."
+    docker start $CONTAINER_NAME
     docker exec -it $CONTAINER_NAME /bin/bash -c "./src/home2/prebuild.sh"
 fi
 
@@ -129,10 +130,12 @@ RUNNING_CONTAINER=$(docker ps -q -f "name=$CONTAINER_NAME")
 
 if [ -n "$RUNNING_CONTAINER" ]; then
     echo "Container $CONTAINER_NAME is already running. Executing bash..."
+    docker start $CONTAINER_NAME
     docker exec -it $CONTAINER_NAME /bin/bash
 else
     echo "Container $CONTAINER_NAME is stopped. Starting it now..."
     docker compose up --build -d
+    docker start $CONTAINER_NAME
     docker exec $CONTAINER_NAME /bin/bash
 fi
 
