@@ -31,6 +31,7 @@ exclude = [
     "*pb2*",
     "manipulation/packages/pymoveit2",
     "manipulation/packages/xarm_ros2",
-    "manipulation/packages/gpd"
+    "manipulation/packages/gpd",
+    "manipulation/packages/arm_pkg/arm_pkg"
 ]
 

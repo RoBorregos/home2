@@ -12,7 +12,7 @@ def generate_launch_description():
     return LaunchDescription([
         Node(
             package='dashgo_driver',
-            executable='dashgo_driver.py',
+            executable='dashgo_driver2.py',
             name='DashgoDriver',
             output='screen',
             emulate_tty=True,
