@@ -1,6 +1,13 @@
 import os
 import chromadb
 from sentence_transformers import SentenceTransformer, util
+from llama_cpp import Llama
+
+llm = Llama.from_pretrained(
+    repo_id="lmstudio-community/Qwen2.5-7B-Instruct-1M-GGUF",
+    filename="Qwen2.5-7B-Instruct-1M-Q3_K_L.gguf",
+    verbose=False,
+)
 
 model = SentenceTransformer("all-MiniLM-L6-v2")
 client = chromadb.Client()
@@ -43,15 +50,29 @@ def answer_question(question):
     all_similarities.sort(key=lambda x: x[0], reverse=True)
     top_3_results = all_similarities[:3]
 
-    return top_3_results
+    # Check if any similarity is above 0.4
+    relevant_contexts = [result for result in top_3_results if result[0] > 0.4]
+
+    # Answer with context from knowledge base
+    if relevant_contexts:
+        context_statements = " ".join([context[1] for context in relevant_contexts])
+        prompt = f"{context_statements} {question}"
+    # Answer with question only
+    else:
+        prompt = question
+
+    response = llm.create_chat_completion(
+        messages=[{"role": "user", "content": prompt}]
+    )
+
+    assistant_response = response["choices"][0]["message"]["content"]
+    return assistant_response
 
 
 # Example usage
-question = "what is frida"
-top_3_results = answer_question(question)
-for similarity, line, filename in top_3_results:
-    print(f"File: {filename}, Similarity: {similarity}, Line: {line}")
-
+question = "What is the capital of France?"
+answer = answer_question(question)
+print(answer)
 
 # 1. knowledge base upload of txt with embeddings per line to chroma db (there are 3 different knowledge bases)
 # 2. when the query is done we will retrieve the top 3 results from all the files
