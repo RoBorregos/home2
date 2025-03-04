@@ -1,7 +1,7 @@
 services:
   ollama:
     container_name: home2-hri-ollama
-    image: ollama/ollama
+    image: dustynv/ollama:r36.4.0
     runtime: nvidia
     network_mode: host
     volumes:

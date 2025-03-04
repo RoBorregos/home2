@@ -12,4 +12,5 @@
 **.pt
 **.pth
 **.gz
-**.gguf
+hri/packages/nlp/assets/**
+!hri/packages/nlp/assets/download-model.bash
