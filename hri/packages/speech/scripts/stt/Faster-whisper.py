@@ -23,6 +23,7 @@ class WhisperServicer(speech_pb2_grpc.SpeechServiceServicer):
     def load_model(self):
         model_directory = os.path.join(os.path.dirname(__file__), "models")
         device = "cuda" if torch.cuda.is_available() else "cpu"
+        print(f"running with {device}")
         return WhisperModel(
             self.model_size,
             download_root=model_directory,
