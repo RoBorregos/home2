@@ -19,9 +19,10 @@ class TestTaskManager(Node):
         self.subtask_manager = {}
         # self.subtask_manager["hri"] = HRITasks(self, config=test_hri_config)
 
-        self.declare_parameter("planner_id", "default_value")
         self.subtask_manager["manipulation"] = ManipulationTasks(self, task="DEMO", mock_data=False)
 
+        # wait for a bit
+        rclpy.spin_once(self, timeout_sec=1.0)
         self.get_logger().info("TestTaskManager has started.")
         self.run()
 

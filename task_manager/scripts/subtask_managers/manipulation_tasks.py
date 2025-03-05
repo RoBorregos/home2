@@ -262,6 +262,7 @@ class ManipulationTasks:
         degrees=False,  # set to true to return in degrees
     ) -> dict:
         """Get the current joint positions"""
+        self._get_joints_client.wait_for_service(timeout_sec=TIMEOUT)
         future = self._get_joints_client.call_async(GetJoints.Request())
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
         result = future.result()
