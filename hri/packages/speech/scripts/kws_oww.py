@@ -9,7 +9,6 @@ from openwakeword.model import Model
 from rclpy.node import Node
 from std_msgs.msg import String
 
-from frida_constants.hri_constants import SENSITIVITY_THRESHOLD
 from frida_interfaces.msg import AudioData
 
 
