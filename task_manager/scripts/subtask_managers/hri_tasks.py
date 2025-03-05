@@ -203,6 +203,41 @@ class HRITasks(metaclass=SubtaskMeta):
         rclpy.spin_until_future_complete(self.node, future)
         return future.result().answer
 
+    def add_item(self, document: list, item_id: list, collection: str, metadata: list) -> str:
+        """
+        Adds new items to the ChromaDB collection.
+
+        Args:
+            document (list): List of documents to be added.
+            item_id (list): List of item IDs corresponding to each document.
+            collection (str): The collection to add the items to.
+            metadata (list): List of metadata corresponding to each document.
+
+        Returns:
+            str: A message indicating the success or failure of the operation.
+        """
+        try:
+            # Prepare the request with the necessary arguments
+            request = AddItem.Request(
+                document=document,  # List of documents
+                id=item_id,  # List of item IDs
+                collection=collection,  # The collection to add the items to
+                metadata=metadata,  # Metadata as a JSON
+            )
+
+            # Make the service call
+            future = self.add_item_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future)
+
+            # Check if the operation was successful
+            if future.result().success:
+                return "Items added successfully"
+            else:
+                return f"Failed to add items: {future.result().message}"
+
+        except Exception as e:
+            return f"Error: {str(e)}"
+
     def command_interpreter(self, text: str) -> CommandInterpreter.Response:
         request = CommandInterpreter.Request(text=text)
         future = self.command_interpreter_client.call_async(request)
