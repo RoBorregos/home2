@@ -1,0 +1,13 @@
+services:
+  ollama:
+    container_name: home2-hri-ollama
+    image: ollama/ollama
+    runtime: nvidia
+    network_mode: host
+    volumes:
+      - ../../hri/packages/nlp/assets:/ollama
+    environment:
+      - OLLAMA_MODELS=/ollama
+    stdin_open: true
+    tty: true
+    restart: unless-stopped
