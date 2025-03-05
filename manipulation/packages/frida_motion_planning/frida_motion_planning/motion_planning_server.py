@@ -5,10 +5,11 @@ from rclpy.node import Node
 from rclpy.action import ActionServer
 from rclpy.callback_groups import ReentrantCallbackGroup
 from frida_interfaces.action import MoveToPose, MoveJoints
+from frida_interfaces.srv import GetJoints
 from frida_motion_planning.utils.MoveItPlanner import MoveItPlanner
 
 
-class PickActionServer(Node):
+class MotionPlanningServer(Node):
     def __init__(self):
         super().__init__("pick_server")
         self.callback_group = ReentrantCallbackGroup()
@@ -29,6 +30,11 @@ class PickActionServer(Node):
             callback_group=self.callback_group,
         )
 
+        self.get_joints_service = self.create_service(
+            GetJoints, "get_joints", self.get_joints_callback
+        )
+
+        # Here we can select other planner (if implemented)
         self.planner = MoveItPlanner(self, self.callback_group)
         self.planner.set_velocity(0.15)
         self.planner.set_acceleration(0.15)
@@ -118,11 +124,18 @@ class PickActionServer(Node):
         self.planner.set_acceleration(acceleration)
         self.planner.set_planner(planner_id)
 
+    def get_joints_callback(self, request, response):
+        joint_dict = self.planner.get_joint_positions()
+        for joint_name in joint_dict:
+            response.joint_positions.append(float(joint_dict[joint_name]))
+            response.joint_names.append(joint_name)
+        return response
+
 
 def main(args=None):
     rclpy.init(args=args)
     executor = rclpy.executors.MultiThreadedExecutor(5)
-    pick_server = PickActionServer()
+    pick_server = MotionPlanningServer()
     executor.add_node(pick_server)
     executor.spin()
     rclpy.shutdown()

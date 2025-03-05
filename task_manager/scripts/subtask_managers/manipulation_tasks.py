@@ -11,6 +11,7 @@ from rclpy.node import Node
 from utils.logger import Logger
 from xarm_msgs.srv import SetInt16, SetInt16ById, MoveVelocity
 from frida_interfaces.action import MoveJoints
+from frida_interfaces.srv import GetJoints
 from rclpy.action import ActionClient
 from typing import List
 # import time as t
@@ -21,6 +22,9 @@ XARM_SETSTATE_SERVICE = "/xarm/set_state"
 XARM_MOVEVELOCITY_SERVICE = "/xarm/vc_set_joint_velocity"
 
 TIMEOUT = 5.0
+
+RAD_TO_DEG = 180 / 3.14159265359
+DEG_TO_RAD = 3.14159265359 / 180
 
 
 class ManipulationTasks:
@@ -83,6 +87,8 @@ class ManipulationTasks:
         self._move_joints_action_client = ActionClient(
             self.node, MoveJoints, "move_joints_action_server"
         )
+
+        self._get_joints_client = self.node.create_client(GetJoints, "get_joints")
 
         if not self.mock_data and not simulation:
             self.setup_services()
@@ -221,18 +227,20 @@ class ManipulationTasks:
         except Exception as e:
             self.Logger.error(self.node, f"move service call failed: {str(e)}")
 
-    def getFutureJointsPositions(self):
-        """Send position of joints"""
-        joints_positions = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        return joints_positions
-
     def move_joint_positions(
-        self, joint_positions: List[float] = None, named_position: str = None, velocity: float = 0.1
+        self,
+        joint_positions: List[float] = None,
+        named_position: str = None,
+        velocity: float = 0.1,
+        degrees=False,  # set to true if joint_positions are in degrees
     ):
         """Set position of joints"""
         """ named_position has priority over joint_positions"""
         # Send goal
-
+        if named_position:
+            joint_positions = self.get_named_target(named_position)
+        if degrees:
+            joint_positions = [x * DEG_TO_RAD for x in joint_positions]
         future = self._send_joint_goal(joint_positions=joint_positions, velocity=velocity)
 
         # Wait for goal to be accepted
@@ -249,9 +257,17 @@ class ManipulationTasks:
         else:
             return None
 
-    def get_joint_positions(self):
+    def get_joint_positions(
+        self,
+        degrees=False,  # set to true to return in degrees
+    ) -> dict:
         """Get the current joint positions"""
-        return [0, 0, 0, 0, 0, 0]
+        future = self._get_joints_client.call_async(GetJoints.Request())
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+        result = future.result()
+        if degrees:
+            result.joint_positions = [x * RAD_TO_DEG for x in result.joint_positions]
+        return dict(zip(result.joint_names, result.joint_positions))
 
     # let the server pick the default values
     def _send_joint_goal(
