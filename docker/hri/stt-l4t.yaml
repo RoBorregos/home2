@@ -12,4 +12,4 @@ services:
       - ../../hri/packages/speech/scripts/stt/:/app
       - ../../hri/packages/speech/speech/:/app/speech
     command: >
-      bash -c "source /tmp/PyAV/scripts/activate.sh && deactivate && python3 -u Faster-whisper.py --port 50051 --model_size base.en"
+      bash -c "source /tmp/PyAV/scripts/activate.sh && deactivate && python3 -u faster-whisper-l4t.py --port 50051 --model_size base.en"

@@ -6,13 +6,7 @@ COPY ../../hri/packages/speech/scripts/stt/requirements.txt .
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
-    libsndfile1 \
-    ffmpeg \
     portaudio19-dev \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install torch torchaudio
-
 RUN pip install --no-cache-dir -r requirements.txt
-
-RUN apt-get update && apt-get install -y ffmpeg
