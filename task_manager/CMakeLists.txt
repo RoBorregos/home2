@@ -8,7 +8,6 @@ find_package(std_msgs REQUIRED)
 find_package(action_msgs REQUIRED)
 find_package(frida_interfaces REQUIRED)
 find_package(frida_constants REQUIRED)
-find_package(frida_motion_planning REQUIRED)
 
 #Install directories
 install(DIRECTORY
