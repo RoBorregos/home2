@@ -25,6 +25,7 @@ from frida_interfaces.action import DetectPerson
 from frida_interfaces.srv import FindSeat
 from frida_interfaces.srv import PersonDescription
 from frida_interfaces.srv import BeverageLocation
+from firda_interfaces.srv import PersonPosture
 
 
 CAMERA_TOPIC = "/zed2/zed_node/rgb/image_rect_color"
@@ -58,6 +59,9 @@ class ReceptionistCommands(Node):
         )
         self.beverage_location_service = self.create_service(
             BeverageLocation, MOONDREAM_TOPIC, self.beverage_location_callback
+        )
+        self.person_posture_service = self.create_service(
+            PersonPosture, MOONDREAM_TOPIC, self.person_posture_callback
         )
         self.image_publisher = self.create_publisher(Image, IMAGE_TOPIC, 10)
         self.person_detection_action_server = ActionServer(
@@ -132,7 +136,7 @@ class ReceptionistCommands(Node):
         )
         return response
 
-    def beverage_location_callback(self, request, response, beverage):
+    def beverage_location_callback(self, request, response):
         """Callback to locate x,y bounding box in the image."""
         self.get_logger().info("Executing service Beverage Location")
 
@@ -143,7 +147,25 @@ class ReceptionistCommands(Node):
         frame = self.image
         encoded_image = self.moondream_model.encode_image(frame)
 
-        response.location = self.moondream_model.find_beverage(encoded_image, beverage)
+        response.location = self.moondream_model.find_beverage(encoded_image)
+        return response
+
+    def person_posture_callback(self, request, response):
+        """Callback to determine the position of the person in the image."""
+        self.get_logger().info("Executing service Person Posture")
+
+        if self.image is None:
+            response.position = "No image received yet."
+            return response
+
+        query = "Determine if the person is sitting, standing, or lying down. Just mention the pose, no aditional information is needed."
+        cropped_frame = self.detect_and_crop_person()
+        encoded_image = self.moondream_model.encode_image(cropped_frame)
+
+        # Use same method for dperson_description but with different query
+        response.description = self.moondream_model.generate_person_description(
+            encoded_image, query, stream=False
+        )
         return response
 
     async def detect_person_callback(self, goal_handle):

@@ -1,5 +1,4 @@
 import moondream as md
-import cv2
 # ===== STEP 1: Install Dependencies =====
 # pip install moondream  # Install dependencies in your project directory
 
@@ -54,33 +53,3 @@ class MoonDreamModel:
         vertical_position = "up" if bbox_center_y < image_center_y else "down"
 
         return horizontal_position, vertical_position
-
-
-# Example usage
-if __name__ == "__main__":
-    model_path = "vision/vision_general/scripts/moondream-2b-int8.mf.gz"
-    image_path = (
-        "/Users/jvelarde/Desktop/home2/vision/vision_general/scripts/beverage.jpeg"
-    )
-    image = cv2.imread(image_path)
-    moon_dream = MoonDreamModel(model_path)
-    prompt_person_desc = "Describe the clothing of the person in the image in a detailed and specific manner. Include the type of clothing, colors, patterns, and any notable accessories. Ensure that the description is clear and distinct."
-    object = "fanta"
-    encoded_image = moon_dream.encode_image(image_path)
-    moon_dream.generate_person_description(
-        encoded_image,
-        "What are the people wearing on the image, mention it as people1:, people2: and so on in json format, you can choose any keys and values",
-        stream=False,
-    )
-    xmin, ymin, xmax, ymax = moon_dream.find_beverage(encoded_image, object)
-    if xmin is not None:
-        cv2.rectangle(image, (xmin, ymin), (xmax, ymax), (255, 0, 0), 2)
-        horizontal_position, vertical_position = moon_dream.determine_position(
-            image, xmin, ymin, xmax, ymax
-        )
-        print(
-            f"The beverage is located at the {horizontal_position}-{vertical_position} of the image."
-        )
-        cv2.imshow("Detected Object", image)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
