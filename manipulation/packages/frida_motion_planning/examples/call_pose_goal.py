@@ -43,8 +43,8 @@ def main(args=None):
     pose_stamped.header.stamp = action_client.get_clock().now().to_msg()
 
     # Set the pose component
-    pose_stamped.pose.position.x = 0.4
-    pose_stamped.pose.position.y = 0.4
+    pose_stamped.pose.position.x = 0.5
+    pose_stamped.pose.position.y = 0.5
     pose_stamped.pose.position.z = 0.4
     pose_stamped.pose.orientation.x = 0.0
     pose_stamped.pose.orientation.y = 0.0
