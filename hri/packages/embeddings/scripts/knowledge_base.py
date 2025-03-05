@@ -16,8 +16,6 @@ frida_knowledge = client.create_collection("frida_knowledge")
 roborregos_knowledge = client.create_collection("roborregos_knowledge")
 tec_knowledge = client.create_collection("tec_knowledge")
 
-model = SentenceTransformer("all-MiniLM-L6-v2")
-
 directory = "hri/packages/embeddings/embeddings/dataframes/knowledge_base"
 
 file_embeddings = {}
