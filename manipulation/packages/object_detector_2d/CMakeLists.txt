@@ -49,6 +49,9 @@ ament_python_install_package(${PROJECT_NAME})
 install(PROGRAMS
   scripts/Detection2D.py
   scripts/DetectionPicker.py
+  scripts/object_detector_node.py
+  scripts/ObjectDetector.py
+  scripts/YoloV5ObjectDetector.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
