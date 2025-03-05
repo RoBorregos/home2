@@ -10,10 +10,9 @@ import rclpy
 from rclpy.node import Node
 from utils.logger import Logger
 from xarm_msgs.srv import SetInt16, SetInt16ById, MoveVelocity
-from threading import Thread
-from rclpy.callback_groups import ReentrantCallbackGroup
-from pymoveit2 import MoveIt2, MoveIt2State
-from frida_pymoveit2.robots import xarm6
+from frida_interfaces.action import MoveJoints
+from rclpy.action import ActionClient
+from typing import List
 # import time as t
 
 XARM_ENABLE_SERVICE = "/xarm/motion_enable"
@@ -74,33 +73,16 @@ class ManipulationTasks:
         self.mock_data = mock_data
         self.task = task
         simulation = 1
-        # self.node.declare_parameter("joint_positions", [-55.0, -3.0, -52.0, 0.0, 53.0, -55.0])
         self.node.declare_parameter("cancel_after_secs", 5.0)
-        # self.executor_thread = threading.Thread(target=self.spin_executor, daemon=True)
-        # self.executor_thread.start()
-
-        callback_group = ReentrantCallbackGroup()
-        self.moveit2 = MoveIt2(
-            node=self.node,
-            joint_names=xarm6.joint_names(),
-            base_link_name=xarm6.base_link_name(),
-            end_effector_name=xarm6.end_effector_name(),
-            group_name=xarm6.MOVE_GROUP_ARM,
-            callback_group=callback_group,
-        )
-        self.moveit2.planner_id = (
-            self.node.get_parameter("planner_id").get_parameter_value().string_value
-        )
-        self.executor = rclpy.executors.MultiThreadedExecutor(2)
-        self.executor.add_node(self.node)
-        self.executor_thread = Thread(target=self.executor.spin, daemon=True, args=())
-        self.executor_thread.start()
-        self.node.create_rate(1.0).sleep()
 
         self.motion_enable_client = self.node.create_client(SetInt16ById, XARM_ENABLE_SERVICE)
         self.mode_client = self.node.create_client(SetInt16, XARM_SETMODE_SERVICE)
         self.state_client = self.node.create_client(SetInt16, XARM_SETSTATE_SERVICE)
         self.move_client = self.node.create_client(MoveVelocity, XARM_MOVEVELOCITY_SERVICE)
+
+        self._move_joints_action_client = ActionClient(
+            self.node, MoveJoints, "move_joints_action_server"
+        )
 
         if not self.mock_data and not simulation:
             self.setup_services()
@@ -244,58 +226,70 @@ class ManipulationTasks:
         joints_positions = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         return joints_positions
 
-    def move_joints_positions(self, joint_positions):
+    def move_joint_positions(
+        self, joint_positions: List[float] = None, named_position: str = None, velocity: float = 0.1
+    ):
         """Set position of joints"""
+        """ named_position has priority over joint_positions"""
+        # Send goal
 
-        if joint_positions is None:
-            Logger.error(self.node, "Joint positions not found")
-            return
-        if len(joint_positions) != 6:
-            Logger.error(self.node, "Joint positions not valid")
-            return
-        Logger.info(self.node, f"Setting joint positions to: {joint_positions}")
+        future = self._send_joint_goal(joint_positions=joint_positions, velocity=velocity)
 
-        self.node.declare_parameter("synchronous", True)
-        if not self.node.has_parameter("planner_id"):
-            self.node.declare_parameter("planner_id", "RRTConnectConfigDefault")
+        # Wait for goal to be accepted
+        if not self._wait_for_future(future):
+            return self.STATE["EXECUTION_ERROR"]
+        return self.STATE["EXECUTION_SUCCESS"]
 
-        self.moveit2.max_velocity = 0.15
-        self.moveit2.max_acceleration = 0.1
-
-        synchronous = self.node.get_parameter("synchronous").get_parameter_value().bool_value
-        cancel_after_secs = (
-            self.node.get_parameter("cancel_after_secs").get_parameter_value().double_value
-        )
-
-        self.node.get_logger().info(f"Moving to {{joint_positions: {list(joint_positions)}}}")
-        self.moveit2.move_to_configuration(joint_positions)
-
-        if synchronous:
-            self.moveit2.wait_until_executed()
+    def get_named_target(self, target_name: str):
+        """Get named target"""
+        if target_name == "home":
+            return [-55.0, -3.0, -52.0, 0.0, 53.0, -55.0]
+        elif target_name == "zero":
+            return [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         else:
-            print("Current State:" + str(self.moveit2.query_state()))
-            rate = self.create_rate(10)
-            while self.moveit2.query_state() != MoveIt2State.EXECUTING:
-                rate.sleep()
+            return None
 
-            print("Current State:" + str(self.moveit2.query_state()))
-            future = self.moveit2.get_execution_future()
+    def get_joint_positions(self):
+        """Get the current joint positions"""
+        return [0, 0, 0, 0, 0, 0]
 
-            if cancel_after_secs > 0.0:
-                sleep_time = self.create_rate(cancel_after_secs)
-                sleep_time.sleep()
-                print("Cancelling goal")
-                self.moveit2.cancel_execution()
+    # let the server pick the default values
+    def _send_joint_goal(
+        self,
+        joint_names=[],
+        joint_positions=[],
+        velocity=0.0,
+        acceleration=0.0,
+        planner_id="",
+    ):
+        goal_msg = MoveJoints.Goal()
+        goal_msg.joint_names = joint_names
+        goal_msg.joint_positions = joint_positions
+        goal_msg.velocity = velocity
+        goal_msg.acceleration = acceleration
+        goal_msg.planner_id = planner_id
 
-            while not future.done():
-                rate.sleep()
+        self._move_joints_action_client.wait_for_server()
 
-            print("Result status: " + str(future.result().status))
-            print("Result error code: " + str(future.result().error_code))
+        self.node.get_logger().info("Sending joint goal...")
+        return self._move_joints_action_client.send_goal_async(goal_msg)
 
-        rclpy.shutdown()
-        self.executor_thread.join()
-        exit(0)
+    def _wait_for_future(self, future) -> bool:
+        # Wait for goal to be accepted
+        rclpy.spin_until_future_complete(self.node, future)
+        goal_handle = future.result()
+
+        if not goal_handle.accepted:
+            True
+
+        # Get result
+        result_future = goal_handle.get_result_async()
+        rclpy.spin_until_future_complete(self.node, result_future)
+
+        result = result_future.result().result
+        if not result.success:
+            return False
+        return True
 
 
 if __name__ == "__main__":
