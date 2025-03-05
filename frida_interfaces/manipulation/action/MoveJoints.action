@@ -1,0 +1,12 @@
+float64[] joint_positions
+string[] joint_names
+float32 velocity
+float32 acceleration
+string planner_id
+bool constrained
+---
+#result definition
+int32 success
+---
+#feedback
+string execution_state

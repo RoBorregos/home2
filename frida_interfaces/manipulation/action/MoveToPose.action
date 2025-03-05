@@ -1,0 +1,10 @@
+geometry_msgs/PoseStamped pose
+float32 velocity
+float32 acceleration
+string planner_id
+---
+#result definition
+int32 success
+---
+#feedback
+string execution_state
