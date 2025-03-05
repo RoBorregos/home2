@@ -19,6 +19,7 @@ set(SCRIPTS_DIR frida_motion_planning)
 install(PROGRAMS
     ${EXAMPLES_DIR}/call_joint_goal.py
     ${EXAMPLES_DIR}/call_pose_goal.py
+    ${EXAMPLES_DIR}/add_collision_object.py
     ${SCRIPTS_DIR}/motion_planning_server.py
     DESTINATION lib/${PROJECT_NAME}
 )
