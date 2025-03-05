@@ -9,7 +9,6 @@ find_package(action_msgs REQUIRED)
 find_package(frida_interfaces REQUIRED)
 find_package(frida_constants REQUIRED)
 
-
 #Install directories
 install(DIRECTORY
   DESTINATION share/${PROJECT_NAME})

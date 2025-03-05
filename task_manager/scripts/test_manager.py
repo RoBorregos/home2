@@ -19,9 +19,10 @@ class TestTaskManager(Node):
         self.subtask_manager = {}
         # self.subtask_manager["hri"] = HRITasks(self, config=test_hri_config)
 
-        self.declare_parameter("planner_id", "default_value")
         self.subtask_manager["manipulation"] = ManipulationTasks(self, task="DEMO", mock_data=False)
 
+        # wait for a bit
+        rclpy.spin_once(self, timeout_sec=1.0)
         self.get_logger().info("TestTaskManager has started.")
         self.run()
 
@@ -58,9 +59,15 @@ class TestTaskManager(Node):
         # self.subtask_manager["hri"].say("I'm frida, Can you tell me where to go?")
         # location_hint = self.subtask_manager["hri"].hear()
 
-        self.subtask_manager["manipulation"].move_joints_positions(
-            [-55.0, -3.0, -52.0, 0.0, 53.0, -55.0]
+        joint_positions = self.subtask_manager["manipulation"].get_joint_positions()
+        print(joint_positions)
+        new_joint_positions = [-55.0, -3.0, -52.0, 0.0, 53.0, -55.0]
+        res = self.subtask_manager["manipulation"].move_joint_positions(
+            joint_positions=new_joint_positions, velocity=0.5, degrees=True
         )
+        print("Move joint positions result: ", res)
+        joint_positions = self.subtask_manager["manipulation"].get_joint_positions(degrees=True)
+        print(joint_positions)
 
 
 def main(args=None):

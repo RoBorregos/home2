@@ -15,7 +15,7 @@ from frida_interfaces.msg import AudioData
 
 class OpenWakeWordNode(Node):
     def __init__(self):
-        super().__init__("openwakeword_node")
+        super().__init__("kws_oww")
         self.get_logger().info("Initializing OpenWakeWord node.")
 
         self.declare_parameter(
@@ -23,9 +23,10 @@ class OpenWakeWordNode(Node):
         )
         self.declare_parameter("inference_framework", "onnx")
         self.declare_parameter("audio_topic", "/rawAudioChunk")
-        self.declare_parameter("detection_topic", "/wakeword_detected")
+        self.declare_parameter("WAKEWORD_TOPIC", "/speech/oww")
         self.declare_parameter("chunk_size", 1280)
         self.declare_parameter("detection_cooldown", 1.0)
+        self.declare_parameter("SENSITIVITY_THRESHOLD", 0.5)
 
         model_path = self.get_parameter("model_path").get_parameter_value().string_value
         inference_framework = (
@@ -34,14 +35,19 @@ class OpenWakeWordNode(Node):
         audio_topic = (
             self.get_parameter("audio_topic").get_parameter_value().string_value
         )
-        detection_topic = (
-            self.get_parameter("detection_topic").get_parameter_value().string_value
+        wakeword_topic = (
+            self.get_parameter("WAKEWORD_TOPIC").get_parameter_value().string_value
         )
         self.chunk_size = (
             self.get_parameter("chunk_size").get_parameter_value().integer_value
         )
         self.detection_cooldown = (
             self.get_parameter("detection_cooldown").get_parameter_value().double_value
+        )
+        self.sensitivity_threshold = (
+            self.get_parameter("SENSITIVITY_THRESHOLD")
+            .get_parameter_value()
+            .double_value
         )
 
         utils.download_models()
@@ -65,7 +71,7 @@ class OpenWakeWordNode(Node):
         self.get_logger().info("OpenWakeWord model loaded successfully.")
         self.keywords = list(self.oww_model.models.keys())
 
-        self.publisher = self.create_publisher(String, detection_topic, 10)
+        self.publisher = self.create_publisher(String, wakeword_topic, 10)
         self.create_subscription(AudioData, audio_topic, self.audio_callback, 10)
 
         # Flag to prevent rapid repeated publishing
@@ -82,7 +88,7 @@ class OpenWakeWordNode(Node):
         # Check for wakeword detection
         for keyword, buffer in self.oww_model.prediction_buffer.items():
             scores = list(buffer)
-            if scores[-1] > SENSITIVITY_THRESHOLD:
+            if scores[-1] > self.sensitivity_threshold:
                 # Only publish if the score is above a certain threshold
                 current_time = time.time()
                 if current_time - self.last_detection_time >= self.detection_cooldown:

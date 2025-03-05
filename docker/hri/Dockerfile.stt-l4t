@@ -1,0 +1,40 @@
+FROM dustynv/l4t-pytorch:r36.4.0
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+libsndfile1 \
+libxml2-dev \
+portaudio19-dev \
+git \
+cmake \
+g++ \
+&& rm -rf /var/lib/apt/lists/*
+
+# Install CTranslate2 from source
+WORKDIR /tmp
+RUN git clone --recursive https://github.com/OpenNMT/CTranslate2.git
+WORKDIR /tmp/CTranslate2
+RUN mkdir build
+WORKDIR /tmp/CTranslate2/build
+RUN cmake .. -DOPENMP_RUNTIME=NONE -DWITH_CUDA=ON -DWITH_MKL=OFF -DWITH_CUDNN=ON
+RUN make -j4
+RUN make install
+RUN ldconfig
+WORKDIR /tmp/CTranslate2/python
+RUN pip install -r install_requirements.txt
+RUN python3 setup.py bdist_wheel
+RUN pip install dist/*.whl
+
+# Install PyAV from source
+WORKDIR /tmp
+RUN git clone https://github.com/PyAV-Org/PyAV.git
+WORKDIR /tmp/PyAV
+RUN pip install virtualenv
+RUN bash -c "source ./scripts/activate.sh && ./scripts/build-deps && make && deactivate && pip install ."
+
+# Install additional Python dependencies
+WORKDIR /app
+COPY ../../hri/packages/speech/scripts/stt/requirements.txt .
+RUN python3 -m pip install --upgrade pip
+RUN pip install --no-cache-dir -r /app/requirements.txt
+RUN pip install --upgrade protobuf

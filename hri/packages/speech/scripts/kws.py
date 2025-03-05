@@ -40,7 +40,7 @@ class KeywordSpotting(Node):
             "KEYWORD_DIR", "/workspace/src/hri/packages/speech/assets"
         )
         self.declare_parameter("audio_topic", "/rawAudioChunk")
-        self.declare_parameter("detection_publish_topic", "/keyword_detected")
+        self.declare_parameter("WAKEWORD_TOPIC", "/keyword_detected")
         self.declare_parameter("sensitivity", 0.8)
 
         keyword_dir = (
@@ -51,10 +51,8 @@ class KeywordSpotting(Node):
             self.get_parameter("audio_topic").get_parameter_value().string_value
         )
 
-        detection_publish_topic = (
-            self.get_parameter("detection_publish_topic")
-            .get_parameter_value()
-            .string_value
+        wakeword_topic = (
+            self.get_parameter("WAKEWORD_TOPIC").get_parameter_value().string_value
         )
         sensitivity = (
             self.get_parameter("sensitivity").get_parameter_value().double_value
@@ -97,7 +95,7 @@ class KeywordSpotting(Node):
                 self.keywords.append(keyword_phrase_part[0])
 
         # Ros interactions
-        self.publisher = self.create_publisher(String, detection_publish_topic, 10)
+        self.publisher = self.create_publisher(String, wakeword_topic, 10)
         self.create_subscription(AudioData, audio_topic, self.detect_keyword, 10)
 
         self.get_logger().info("KeywordSpotting node initialized.")

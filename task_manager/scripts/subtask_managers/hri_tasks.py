@@ -13,6 +13,7 @@ from frida_constants.hri_constants import (
     QUERY_ITEM_SERVICE,
     SPEAK_SERVICE,
     STT_SERVICE_NAME,
+    WAKEWORD_TOPIC,
 )
 from frida_interfaces.srv import (
     STT,
@@ -57,7 +58,7 @@ class HRITasks(metaclass=SubtaskMeta):
         self.add_item_client = self.node.create_client(AddItem, ADD_ITEM_SERVICE)
         self.llm_wrapper_service = self.node.create_client(LLMWrapper, "/nlp/llm")
         self.keyword_client = self.node.create_subscription(
-            String, "/wakeword_detected", self._get_keyword, 10
+            String, WAKEWORD_TOPIC, self._get_keyword, 10
         )
 
         self.services = {

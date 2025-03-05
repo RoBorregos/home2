@@ -1,5 +1,5 @@
 #goal definition
-geometry_msgs/Pose[] grasping_poses
+geometry_msgs/PoseStamped[] grasping_poses
 string object_name
 ---
 #result definition

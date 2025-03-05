@@ -36,6 +36,9 @@ $ mkdir -p home_ws/src
 $ cd ~/home_ws/
 #DO NOT omit "--recursive"，or the source code of dependent submodule will not be downloaded.
 $ git clone https://github.com/RoBorregos/home2.git --recursive src/
+# or if you have already cloned the repository
+$ cd ~/home_ws/src/home2
+$ git submodule update --init --recursive
 #Pay attention where are you executing prebuild, it has to be on the home_ws directory.
 $ ./src/prebuild.sh
 #AFTER RUNNING PREBUILD IMPORTANT TO SOURCE .BASHRC 

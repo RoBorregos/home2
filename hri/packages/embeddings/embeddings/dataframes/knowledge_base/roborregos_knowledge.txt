@@ -1,0 +1,31 @@
+In 2015, four students competed in the TMR, reaching a pass to the international; There, they met people from other countries and noticed the potential that Mexico could have. Motivated, they started RoBorregos, intending to share knowledge and experiences through generations.
+
+We participate in different national and international competitions for autonomous robots such as Mexico's TMR (Torneo Mexicano de Robótica), RoboCup, and IEEE LARC (Latin American Robotics Competition).
+
+As a team, we want to demonstrate the potential of Mexico in the development and innovation of technology.
+
+RoBorregos is the official robotics team of Tec de Monterrey, proudly representing a community of 53 talented students.
+
+Our name proudly represents our identity: `Borrego`: Spanish for lamb, representing our university's mascot `Robot`: for robot, symbolizing our passion for robotics
+
+This amazing community was founded in August 2015 by a group of 4 students who wanted to make the participation in robotics competitions more accessible to our university community.
+
+We specialize in the development of: Autonomous robotics, IoT projects, Internal web development
+
+We are also strong promoters of open-source development, which is why all of our code and contributions for every competition are publicly available in our [GitHub organization]
+
+Today, we proudly host an annual internal competition open to all university students who aspire to join our team. This year we welcomed over 30 new members! But most importantly, we believe in the diffusion of knowledge and actively promote it within our community.
+
+Roborregos is brought together with Diffusion of knowledge in robotics field across latinoamerica. Love for pairing with different organizations to provide free workshops and competitions to students. Competing in high scale robotics events in the name of Mexico with open source projects. Contribute to good documentation and coding practice during all our events.
+
+The mission of roborregos is to Create a community that integrates students, teachers, alumni, companies, institutions and society in general to promote the development of robotics in Mexico
+
+Our social events to help the community are: Candidates is our annual recruiting event in September. 300+ participants join to explore programming, electronics, and mechanics through mentorship, material support, workshops, and assistance. RoboChamp is somehow similar to Candidates but focused on high school students. TechTalks are talks for the university community to learn about various topics.
+
+We have a super active community towards social media. Most of our new members prefer to engage through Instagram, for this we have a dedicated Marketing team that answers all requests as they come in. GitHub is also a super important platform as we try to style all of our repositories in a super organized manner, so they can be taken as standards of open source code, which will be helpful for future team members.
+
+Our community is organized by a Committee, which is elected each year by both the old committee and community members trough an open voting. Each committee member is responsible for a specific area in the team and has goals to fulfill after each management cycle. President: Alejandra Coeto Sancheez. Vicepresident: Ivan Romero Wells. Projects organization: Ximena Lizeth Trejo Lavin. Finances: Diego Martinez Sanciprian
+
+To organize each different competition aside from Home we also have mentors and Project Managers (PMs) for each competition, so even of you are not part of management you can still be involved in this two areas which also require plenty of organizational and teaching skills.
+
+We measure our impact proposals and goals in a very effective manner using a point system. At the beginning of each semester the president and vice president schedule individual meetings with each of the community members after they filled out a google forms commenting the projects they want to participate and their personal/team goals. During the meetings Ale and Ivan confirm to the member which events will they form part to or they will be in charge of organizing, they also refresh general things as team goals, mandatory meetings and scheduled lab cleanings. Once this is reviewed they show you an excel sheet with the points you can gain depending on the activities you signed up to. As a community member you are required to assist to the 3 general meetings during the semester (initial, midterm, final), plus at least 2 mandatory lab cleanings and the events that you signed up to. It is not mandatory to go to all the events or be actively involved in everything, but the more you do the more points you get. Each member has this point system and at the end of the semester the points are added and they check which ones completed the requirements, the ones that didn't are entitled to a 1:1 meeting to talk about what happened and draft a working plan so we can improve. On the other side, the members that obtained the most points are recognized at the final team meeting for their efforts and accomplishments. This system has been very effective in keeping the community engaged and motivated to participate in the different activities while keeping track of everyone's and measuring our success.
