@@ -1,6 +1,7 @@
 SPEAK_SERVICE = "/speech/speak"
 STT_SERVICE_NAME = "/speech/STT"
 KEYWORD_TOPIC = "/speech/kws"
+WAKEWORD_TOPIC = "/speech/oww"
 COMMAND_INTERPRETER_SERVICE = "/nlp/command_interpreter"
 EXTRACT_DATA_SERVICE = "/nlp/data_extractor"
 SENTENCE_BUILDER_SERVICE = "/nlp/sentence_builder"
@@ -14,7 +15,7 @@ UPDATE_ITEM_SERVICE = "/nlp/embeddings/update_item_service"
 QUERY_ITEM_SERVICE = "/nlp/embeddings/query_item_service"
 BUILD_EMBEDDINGS_SERVICE = "/nlp/embeddings/build_embeddings_service"
 
-USE_RESPEAKER = False
+USE_RESPEAKER = True
 
 # OpenWakeWord
 USE_OWW = True
