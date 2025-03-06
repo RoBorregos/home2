@@ -91,7 +91,7 @@ case $ENV_TYPE in
     "jetson")
     #_____Jetson_____
     echo "DOCKERFILE=docker/manipulation/Dockerfile.jetson" >> .env
-    echo "BASE_IMAGE=roborregos/home2:jetson_base" >> .env
+    echo "BASE_IMAGE=roborregos/home2:l4t_base" >> .env
     echo "IMAGE_NAME=roborregos/home2:manipulation-jetson" >> .env
     ;;
   *)

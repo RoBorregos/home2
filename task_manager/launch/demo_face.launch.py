@@ -24,7 +24,7 @@ def generate_launch_description():
                         [
                             FindPackageShare("xarm_api"),
                             "launch",
-                            "xarm_driver.launch.py",
+                            "xarm6_driver.launch.py",
                         ]
                     )
                 ),

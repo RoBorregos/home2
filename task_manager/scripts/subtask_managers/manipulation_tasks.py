@@ -33,7 +33,7 @@ class ManipulationTasks:
         "EXECUTION_SUCCESS": 1,
         "TARGET_NOT_FOUND": 2,
     }
-    SERVICES = {"activate_arm": 0, "deactivate_arm": 1, "move_arm_velocity": 2}
+    SERVICES = {"activate_arm": 0, "deactivate_arm": 1, "move_arm_velocity": 2, "set_move_mode": 3}
     SUBTASKS = {
         "RECEPTIONIST": [
             SERVICES["activate_arm"],
@@ -64,18 +64,21 @@ class ManipulationTasks:
             SERVICES["activate_arm"],
             SERVICES["deactivate_arm"],
             SERVICES["move_arm_velocity"],
+            SERVICES["set_move_mode"]
         ],
     }
 
     def __init__(self, task_manager, task, mock_data=False) -> None:
         """Initialize the class"""
-
+        self.planner_id="RRTConnectConfigDefault"
+        self.synchronous=True
+        self.cancel_after_secs=5.0
         self.node = task_manager
         self.mock_data = mock_data
         self.task = task
         simulation = 1
         # self.node.declare_parameter("joint_positions", [-55.0, -3.0, -52.0, 0.0, 53.0, -55.0])
-        self.node.declare_parameter("cancel_after_secs", 5.0)
+        
         # self.executor_thread = threading.Thread(target=self.spin_executor, daemon=True)
         # self.executor_thread.start()
 
@@ -89,7 +92,7 @@ class ManipulationTasks:
             callback_group=callback_group,
         )
         self.moveit2.planner_id = (
-            self.node.get_parameter("planner_id").get_parameter_value().string_value
+            self.planner_id
         )
         self.executor = rclpy.executors.MultiThreadedExecutor(2)
         self.executor.add_node(self.node)
@@ -141,7 +144,8 @@ class ManipulationTasks:
         # Set mode
         # 0: position control mode
         mode_request = SetInt16.Request()
-        mode_request.data = 0
+        # mode_request.data = 0
+        mode_request.data = 4
 
         try:
             future_motion = self.motion_enable_client.call_async(motion_request)
@@ -256,22 +260,20 @@ class ManipulationTasks:
             return
         Logger.info(self.node, f"Setting joint positions to: {joint_positions}")
 
-        self.node.declare_parameter("synchronous", True)
-        if not self.node.has_parameter("planner_id"):
-            self.node.declare_parameter("planner_id", "RRTConnectConfigDefault")
+        
 
         self.moveit2.max_velocity = 0.15
         self.moveit2.max_acceleration = 0.1
 
-        synchronous = self.node.get_parameter("synchronous").get_parameter_value().bool_value
+        
         cancel_after_secs = (
-            self.node.get_parameter("cancel_after_secs").get_parameter_value().double_value
+            self.cancel_after_secs
         )
 
         self.node.get_logger().info(f"Moving to {{joint_positions: {list(joint_positions)}}}")
         self.moveit2.move_to_configuration(joint_positions)
 
-        if synchronous:
+        if self.synchronous:
             self.moveit2.wait_until_executed()
         else:
             print("Current State:" + str(self.moveit2.query_state()))
