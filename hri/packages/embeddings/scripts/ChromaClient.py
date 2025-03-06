@@ -4,7 +4,7 @@ from chromadb.utils import embedding_functions
 import pandas as pd
 from pathlib import Path
 import json
-
+from uuid import uuid4
 class ChromaClient:
     def __init__(self):
         self.client = chromadb.HttpClient(host = 'localhost', port = 8000)
@@ -15,7 +15,6 @@ class ChromaClient:
             )
         )
 
-        print("Class initialized")
         
     def list_collections(self):
         """Method to list all collections"""
@@ -74,19 +73,19 @@ class ChromaClient:
                 collections[collection_name].add(
                     documents=df["name"].tolist(),
                     metadatas=[
-                        json.loads(row["metadata_string"]) if "metadata_string" in row and row["metadata_string"] else {}
+                        json.loads(row["metadata"]) if "metadata" in row and row["metadata"] else {}
                         for _, row in df.iterrows()
                     ],
-                    ids=[f"{collection_name}_{i}" for i in range(len(df))],
+                    ids=[str(uuid4()) for _ in range(len(df))],
                 )
             #There is no metadata
             else:
                 collections[collection_name].add(
                     documents=df["name"].tolist(),
-                    ids=[f"{collection_name}_{i}" for i in range(len(df))],
+                    ids=[str(uuid4()) for _ in range(len(df))],
                 )
-        print("Embeddings built successfully")
         return 
+
     def remove_collection(self, collection_name):
         """Method to remove a collection"""
         try:
@@ -94,12 +93,14 @@ class ChromaClient:
         except Exception:
             raise ValueError(f"The collection is missing {collection_name}")
         return
+
     def _get_or_create_collection(self, collection_name):
         """Helper method to get or create a collection"""
         try:
             return self.client.get_or_create_collection(name=collection_name)
         except Exception:
             raise ValueError(f"The collection is missing {collection_name}")
+            
     def get_entry_by_id(self, collection_name, id_):
         """Method to get an entry by id"""
         try:
@@ -115,7 +116,16 @@ class ChromaClient:
         except Exception:
             raise ValueError(f"The collection is missing {collection_name}")
         
-        return collection_.get(metadata=metadata, include=["metadatas", "documents"])
+        return collection_.get(where = metadata, include=["metadatas", "documents"])
+    
+    def get_entry_by_document(self, collection_name, document):
+        """Method to get an entry by document"""
+        try:
+            collection_ = self.client.get_collection(name=collection_name)
+        except Exception:
+            raise ValueError(f"The collection is missing {collection_name}")
+        
+        return collection_.get(where_document={"$contains":document}, include=["metadatas", "documents"])
     
     def add_entry(self, collection_name, document):
         """Method to add an entry to a collection"""
@@ -124,7 +134,7 @@ class ChromaClient:
         except Exception:
             raise ValueError(f"The collection is missing {collection_name}")
         
-        return collection_.add(documents=[document])
+        return collection_.add(ids=str(uuid4()),documents=[document])
     
     def add_entry_with_metadata(self, collection_name, document, metadata):
         """Method to add an entry with metadata to a collection"""
@@ -133,16 +143,16 @@ class ChromaClient:
         except Exception:
             raise ValueError(f"The collection is missing {collection_name}")
         
-        return collection_.add(documents=[document], metadatas=[metadata])
+        return collection_.add(ids = str(uuid4()),documents=[document], metadatas=[metadata])
     
-    # def query(self, collection_name, query, top_k=1):
-    #     """Method to query the collection"""
-    #     try:
-    #         collection_ = self.client.get_collection(name=collection_name)
-    #     except Exception:
-    #         raise ValueError(f"Does not exist collection: {collection_name}")
+    def query(self, collection_name, query, top_k):
+        """Method to query the collection"""
+        try:
+            collection_ = self.client.get_collection(name=collection_name)
+        except Exception:
+            raise ValueError(f"Does not exist collection: {collection_name}")
 
-    #     return collection_.query(query=query, top_k=top_k, include=["metadatas", "documents","ids","distances"])
+        return collection_.query(query_texts=query, n_results=top_k, include=["metadatas", "documents","distances"])
     
     def _sanitize_collection_name(self, collection):
         """Ensures collection name is a valid string due to the constraints of the ChromaDB API https://docs.trychroma.com/docs/collections/create-get-delete"""
@@ -156,14 +166,30 @@ class ChromaClient:
             raise ValueError(f"Invalid collection name: {collection}")
 
         return collection
-def main():
-    client_ = ChromaClient()
-    client_.remove_collection("locations")
-    client_.build_embeddings_callback()
-    print(client_.list_collections())
-    #collection = client_.get_collection("locations") 
-    #print("Id:", collection.get(include = ["metadatas"]))  # Use method to access documents
-    print(client_.get_entry_by_id("locations", "locations_0"))
 
-if __name__ == "__main__":
-    main()
+    def remove_context(self,collection_name, document):
+        """Method to remove a context"""
+        try:
+            collection_ = self.client.get_collection(name=collection_name)
+        except Exception:
+            raise ValueError(f"The collection is missing {collection_name}")
+
+        return
+
+    
+
+#def main():
+    #client_ = ChromaClient()
+    #client_.remove_collection("actions")
+    #client_.build_embeddings_callback()
+    #print(client_.list_collections())
+    #collection = client_.get_collection("actions") 
+    #print("Id:", collection.get(include = ["documents"]))  # Use method to access documents
+    #client_.add_entry_with_metadata("locations", "bedroom_for_testing", {"room": "bedroom","color": "blue"})
+    #print("Id:", collection.get(include = ["documents", "metadatas"]))  # Use method to access documents
+    #print(client_.query("locations", "bedroom for testing", top_k=1))
+    #print(client_.get_entry_by_metadata("locations", {"color": "blue"}))
+    #print(client_.get_entry_by_document("locations", "living_room"))
+
+#if __name__ == "__main__":
+    #main()
