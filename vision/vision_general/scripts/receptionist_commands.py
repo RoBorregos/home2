@@ -173,9 +173,16 @@ class ReceptionistCommands(Node):
         frame = self.image
         encoded_image = self.moondream_model.encode_image(frame)
 
-        response.location = self.moondream_model.find_beverage(encoded_image)
-        self.success(f"Beverage location: {response.location}")
-        return response
+        if response.location == "not found":
+            self.get_logger().warn("Beverage not found")
+            response.success = False
+            return response
+        else:
+            response.location = self.moondream_model.find_beverage(
+                encoded_image, request.beverage
+            )
+            self.success(f"Beverage location: {response.location}")
+            return response
 
     def person_posture_callback(self, request, response):
         """Callback to determine the position of the person in the image."""

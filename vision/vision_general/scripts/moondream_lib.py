@@ -32,27 +32,25 @@ class MoonDreamModel:
 
     def find_beverage(self, encoded_image, subject):
         detect_result = self.model.detect(encoded_image, subject)
-        print("Detected:", detect_result["objects"])
-        if detect_result["objects"]:
-            obj = detect_result["objects"][0]  # Consider the first detected object
-            xmin, ymin, xmax, ymax = (
-                obj["x_min"],
-                obj["y_min"],
-                obj["x_max"],
-                obj["y_max"],
-            )
-            print(f"xmin: {xmin}, ymin: {ymin}, xmax: {xmax}, ymax: {ymax}")
-            return int(xmin), int(ymin), int(xmax), int(ymax)
-        return None, None, None, None
 
-    def determine_position(self, image, xmin, ymin, xmax, ymax):
-        image_height, image_width, _ = image.shape
-        bbox_center_x = (xmin + xmax) / 2
-        bbox_center_y = (ymin + ymax) / 2
-        image_center_x = image_width / 2
-        image_center_y = image_height / 2
+        if not detect_result["objects"]:
+            return "not found"
+        else:
+            for obj in detect_result["objects"]:
+                x_center = (obj["x_min"] + obj["x_max"]) / 2
+                if x_center < 1 / 3:
+                    position = "left"
+                elif x_center > 2 / 3:
+                    position = "right"
+                else:
+                    position = "center"
+                return position
 
-        horizontal_position = "left" if bbox_center_x < image_center_x else "right"
-        vertical_position = "up" if bbox_center_y < image_center_y else "down"
 
-        return horizontal_position, vertical_position
+# Test beverage location
+if __name__ == "__main__":
+    model_path = "vision/vision_general/scripts/moondream-2b-int8.mf.gz"
+    md_model = MoonDreamModel(model_path)
+    img = cv2.imread("vision/vision_general/scripts/gatorade.jpg")
+    encoded_image = md_model.encode_image(img)
+    md_model.find_beverage(encoded_image, "purple gatorade")
