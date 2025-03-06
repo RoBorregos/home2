@@ -10,5 +10,4 @@ services:
     volumes:
       - ../../hri/packages/speech/scripts/stt/:/app
       - ../../hri/packages/speech/speech/:/app/speech
-      
-    command: ["bash", "-c", "python3 -u Faster-whisper.py --port 50051 --model_size base.en"]
+    command: ["bash", "-c", "python3 -u faster-whisper.py --port 50051 --model_size base.en"]

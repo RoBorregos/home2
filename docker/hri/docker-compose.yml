@@ -1,7 +1,8 @@
 include:
   # Jetson Orin
   - path: l4t-devices.yaml
-  - path: stt.yaml
+  - path: stt-l4t.yaml
+  - path: ollama-jetson.yaml
   # - path: chromadb.yaml
 
   # Laptop
