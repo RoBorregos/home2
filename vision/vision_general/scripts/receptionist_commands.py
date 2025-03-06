@@ -35,6 +35,7 @@ package_share_dir = get_package_share_directory("vision_general")
 CAMERA_TOPIC = "/zed/zed_node/rgb/image_rect_color"
 CHECK_PERSON_TOPIC = "/vision/detect_person"
 PERSON_DESCRIPTION_TOPIC = "/vision/person_description"
+PERSON_POSTURE_TOPIC = "/vision/person_posture"
 BEVERAGE_TOPIC = "/vision/beverage_location"
 FIND_SEAT_TOPIC = "/vision/find_seat"
 IMAGE_TOPIC = "/vision/img_person_detecion"
@@ -71,11 +72,13 @@ class ReceptionistCommands(Node):
         self.beverage_location_service = self.create_service(
             BeverageLocation, BEVERAGE_TOPIC, self.beverage_location_callback
         )
-        self.beverage_location_service = self.create_service(
-            BeverageLocation, MOONDREAM_TOPIC, self.beverage_location_callback
+        self.person_description_service = self.create_service(
+            PersonDescription,
+            PERSON_DESCRIPTION_TOPIC,
+            self.person_description_callback,
         )
         self.person_posture_service = self.create_service(
-            PersonPosture, MOONDREAM_TOPIC, self.person_posture_callback
+            PersonPosture, PERSON_POSTURE_TOPIC, self.person_posture_callback
         )
         self.image_publisher = self.create_publisher(Image, IMAGE_TOPIC, 10)
         self.person_detection_action_server = ActionServer(
@@ -162,24 +165,6 @@ class ReceptionistCommands(Node):
     def beverage_location_callback(self, request, response):
         """Callback to locate x,y bounding box in the image."""
         self.get_logger().info("Executing service Beverage Location")
-        beverage = request.beverage
-
-        if self.image is None:
-            response.location = "No image received yet."
-            return response
-
-        query = "Describe the clothing of the person in the image in a detailed and specific manner. Include the type of clothing, colors, patterns, and any notable accessories. Ensure that the description is clear and distinct."
-        cropped_frame = self.detect_and_crop_person()
-        encoded_image = self.moondream_model.encode_image(cropped_frame)
-
-        response.description = self.moondream_model.generate_person_description(
-            encoded_image, query, stream=False
-        )
-        return response
-
-    def beverage_location_callback(self, request, response):
-        """Callback to locate x,y bounding box in the image."""
-        self.get_logger().info("Executing service Beverage Location")
 
         if self.image is None:
             response.location = "No image received yet."
@@ -207,7 +192,7 @@ class ReceptionistCommands(Node):
         # Use same method for dperson_description but with different query
         response.description = self.moondream_model.generate_person_description(
             encoded_image, query, stream=False
-        )    
+        )
         return response
 
     async def detect_person_callback(self, goal_handle):

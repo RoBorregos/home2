@@ -1,5 +1,6 @@
 import moondream as md
 from PIL import Image
+import cv2
 # ===== STEP 1: Install Dependencies =====
 # pip install moondream  # Install dependencies in your project directory
 
