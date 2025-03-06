@@ -46,10 +46,15 @@ include_directories(include)
 ament_python_install_package(${PROJECT_NAME})
 
 
-file (GLOB NODES scripts/*.py)
+#file (GLOB NODES scripts/*.py)
 #Install python scripts
 install(PROGRAMS
-  ${NODES}
+  scripts/Detection2D.py
+  scripts/DetectionPicker.py
+  scripts/object_detector_node.py
+  # scripts/YoloV5ObjectDetector.py
+  # scripts/ObjectDetector.py
+  scripts/test/local_camera.py
   DESTINATION lib/${PROJECT_NAME}
 )
 
