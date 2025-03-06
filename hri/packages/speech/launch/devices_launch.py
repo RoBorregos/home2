@@ -5,15 +5,16 @@ from launch import LaunchDescription
 from launch_ros.actions import Node
 
 from frida_constants import ModuleNames, parse_ros_config
-
-USE_RESPEAKER = True
-USE_OWW = True
+from frida_constants.hri_constants import USE_OWW, USE_RESPEAKER
 
 
 def generate_launch_description():
-    mic_config = os.path.join(
-        get_package_share_directory("speech"), "config", "microphone.yaml"
-    )
+    mic_config = parse_ros_config(
+        os.path.join(
+            get_package_share_directory("speech"), "config", "microphone.yaml"
+        ),
+        [ModuleNames.HRI.value],
+    )["audio_capturer"]["ros__parameters"]
 
     hear_config = parse_ros_config(
         os.path.join(get_package_share_directory("speech"), "config", "hear.yaml"),
@@ -29,12 +30,22 @@ def generate_launch_description():
         get_package_share_directory("speech"), "config", "respeaker.yaml"
     )
 
-    kws_config = os.path.join(
-        get_package_share_directory("speech"), "config", "kws.yaml"
-    )
-    useful_audio_config = os.path.join(
-        get_package_share_directory("speech"), "config", "useful_audio.yaml"
-    )
+    kws_config = parse_ros_config(
+        os.path.join(get_package_share_directory("speech"), "config", "kws.yaml"),
+        [ModuleNames.HRI.value],
+    )["keyword_spotting"]["ros__parameters"]
+
+    oww_config = parse_ros_config(
+        os.path.join(get_package_share_directory("speech"), "config", "kws_oww.yaml"),
+        [ModuleNames.HRI.value],
+    )["kws_oww"]["ros__parameters"]
+
+    useful_audio_config = parse_ros_config(
+        os.path.join(
+            get_package_share_directory("speech"), "config", "useful_audio.yaml"
+        ),
+        [ModuleNames.HRI.value],
+    )["useful_audio"]["ros__parameters"]
 
     nodes = [
         Node(
@@ -91,6 +102,7 @@ def generate_launch_description():
                 name="kws_oww",
                 output="screen",
                 emulate_tty=True,
+                parameters=[oww_config],
             )
         )
     else:

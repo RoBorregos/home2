@@ -5,17 +5,24 @@ Task Manager for testing the subtask managers
 """
 
 import rclpy
-from config.hri.debug import config as test_hri_config
+
+# from config.hri.debug import config as test_hri_config
 from rclpy.node import Node
-from subtask_managers.hri_tasks import HRITasks
+
+# from subtask_managers.hri_tasks import HRITasks
+from subtask_managers.manipulation_tasks import ManipulationTasks
 
 
 class TestTaskManager(Node):
     def __init__(self):
         super().__init__("test_task_manager")
         self.subtask_manager = {}
-        self.subtask_manager["hri"] = HRITasks(self, config=test_hri_config)
+        # self.subtask_manager["hri"] = HRITasks(self, config=test_hri_config)
 
+        self.subtask_manager["manipulation"] = ManipulationTasks(self, task="DEMO", mock_data=False)
+
+        # wait for a bit
+        rclpy.spin_once(self, timeout_sec=1.0)
         self.get_logger().info("TestTaskManager has started.")
         self.run()
 
@@ -49,15 +56,18 @@ class TestTaskManager(Node):
         # fixed_text = self.subtask_manager["hri"].refactor_text(command_str)
         # self.subtask_manager["hri"].say(fixed_text)
 
-        self.subtask_manager["hri"].say("I'm frida, Can you tell me where to go?")
-        location_hint = self.subtask_manager["hri"].hear()
+        # self.subtask_manager["hri"].say("I'm frida, Can you tell me where to go?")
+        # location_hint = self.subtask_manager["hri"].hear()
 
-        # Previous line doesn't return
-        self.get_logger().info(f"location_hint: {location_hint}")
-
-        closest_found = self.subtask_manager["hri"].find_closest(location_hint, "locations")
-
-        self.subtask_manager["hri"].say(f"Got it, I will go to {closest_found}!")
+        joint_positions = self.subtask_manager["manipulation"].get_joint_positions()
+        print(joint_positions)
+        new_joint_positions = [-55.0, -3.0, -52.0, 0.0, 53.0, -55.0]
+        res = self.subtask_manager["manipulation"].move_joint_positions(
+            joint_positions=new_joint_positions, velocity=0.5, degrees=True
+        )
+        print("Move joint positions result: ", res)
+        joint_positions = self.subtask_manager["manipulation"].get_joint_positions(degrees=True)
+        print(joint_positions)
 
 
 def main(args=None):

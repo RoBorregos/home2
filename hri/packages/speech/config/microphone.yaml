@@ -3,5 +3,5 @@ audio_capturer:
     MIC_DEVICE_NAME: "default"
     MIC_INPUT_CHANNELS: 32
     MIC_OUT_CHANNELS: 32
-    USE_RESPEAKER: True
+    USE_RESPEAKER: REPLACE
     publish_topic: "/rawAudioChunk"

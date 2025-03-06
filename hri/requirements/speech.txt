@@ -8,21 +8,20 @@ pydub==0.25.1
 soundfile==0.12.1
 sounddevice==0.4.6
 cffi==1.16.0
-pygame
+pygame==2.6.1
 
 # KWS
 pvporcupine==3.0.2
 pvrecorder==1.2.2
 openwakeword==0.6.0
 
-# KWS with openwakeword
-openwakeword
-
 # Respeaker
 pyusb==1.2.1
 pixel-ring==0.1.0
-piper-tts
+piper-tts==1.2.0
+piper==0.14.4
 
 # gRPC
-grpcio==1.68.1
-grpcio-tools==1.68.1
+grpcio==1.70.0
+grpcio-tools==1.70.0
+protobuf==5.29.0

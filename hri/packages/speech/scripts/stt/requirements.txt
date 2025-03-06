@@ -1,8 +1,6 @@
-grpcio
-grpcio-tools
-torch
-torchaudio
-faster-whisper
-pydub
-soundfile
-sounddevice
+grpcio==1.70.0
+grpcio-tools==1.70.0
+faster-whisper==1.1.1
+pydub==0.25.1
+soundfile==0.13.1
+sounddevice==0.5.1

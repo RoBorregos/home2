@@ -81,14 +81,12 @@ class HearNode(Node):
         self.service_active = False
         if start_service:
             self.service_text = ""
-            detection_publish_topic = (
-                self.declare_parameter("detection_publish_topic", "/wakeword_detected")
+            wakeword_topic = (
+                self.declare_parameter("WAKEWORD_TOPIC", "/wakeword_detected")
                 .get_parameter_value()
                 .string_value
             )
-            self.KWS_publisher_mock = self.create_publisher(
-                String, detection_publish_topic, 10
-            )
+            self.KWS_publisher_mock = self.create_publisher(String, wakeword_topic, 10)
             self.stt_service = self.create_service(
                 STT,
                 service_name,
@@ -133,7 +131,9 @@ class HearNode(Node):
     def stt_service_callback(self, request, response):
         self.get_logger().info("Keyword mock service activated, recording audio...")
         self.service_active = True
-        self.KWS_publisher_mock.publish(String(data="frida"))
+
+        detection_info = {"keyword": "frida", "score": 1}
+        self.KWS_publisher_mock.publish(String(data=str(detection_info)))
         while self.service_active:
             pass
         response.text_heard = self.service_text

@@ -1,4 +1,5 @@
 import moondream as md
+from PIL import Image
 # ===== STEP 1: Install Dependencies =====
 # pip install moondream  # Install dependencies in your project directory
 
@@ -6,7 +7,7 @@ import moondream as md
 # ===== STEP 2: Download Model =====
 # Download model (593 MiB download size, 996 MiB memory usage)
 # Use: wget (Linux and Mac) or curl.exe -O (Windows)
-# wget https://huggingface.co/vikhyatk/moondream2/resolve/9dddae84d54db4ac56fe37817aeaeb502ed083e2/moondream-0_5b-int8.mf.gz
+# wget https://huggingface.co/vikhyatk/moondream2/resolve/9dddae84d54db4ac56fe37817aeaeb502ed083e2/moondream-2b-int8.mf.gz
 
 
 class MoonDreamModel:
@@ -14,7 +15,8 @@ class MoonDreamModel:
         self.model = md.vl(model=model_path)
 
     def encode_image(self, image):
-        return self.model.encode_image(image)
+        img = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
+        return self.model.encode_image(img)
 
     def generate_person_description(self, encoded_image, query, stream=False):
         if stream:
@@ -24,7 +26,7 @@ class MoonDreamModel:
             print()
         else:
             answer = self.model.query(encoded_image, query)["answer"]
-            print("Answer:", answer)
+            # print("Answer:", answer)
             return answer
 
     def find_beverage(self, encoded_image, subject):

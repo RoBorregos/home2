@@ -21,4 +21,28 @@ systemctl --user restart pulseaudio
 
 sudo usermod -aG audio $USER # Make sure current user has access to audio resources.
 
+SCRIPT_PATH="$HOME/scripts/hri_devices.bash"
+BASHRC="$HOME/.bashrc"
+SCRIPT_CMD="source $SCRIPT_PATH"
+SOURCE_SCRIPT="./mic_script.bash"
+
+# Si el archivo ya existe, saltar la creación
+if [ ! -f "$SCRIPT_PATH" ]; then
+    echo "Copying $SOURCE_SCRIPT to $SCRIPT_PATH"
+    mkdir -p "$(dirname "$SCRIPT_PATH")"
+    cp "$SOURCE_SCRIPT" "$SCRIPT_PATH"
+    chmod u+x "$SCRIPT_PATH"
+fi
+
+grep -qxF "$SCRIPT_CMD" "$BASHRC" || echo "$SCRIPT_CMD" >> "$BASHRC"
+
+bash -i $BASHRC
+
+if [ ! -f /etc/udev/rules.d/99-usb.rules ]; then
+    echo "SUBSYSTEM==\"usb\", ATTR{idVendor}==\"2886\", ATTR{idProduct}==\"0018\", MODE=\"0666\"" | sudo tee -a /etc/udev/rules.d/99-usb.rules
+    sudo udevadm control --reload-rules
+    sudo udevadm trigger
+fi
+
+
 echo "Finished hri setup configuration for docker."

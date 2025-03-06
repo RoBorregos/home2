@@ -1,0 +1,9 @@
+#goal definition
+geometry_msgs/PoseStamped[] grasping_poses
+string object_name
+---
+#result definition
+int32 success
+---
+#feedback
+string execution_state
