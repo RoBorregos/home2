@@ -12,14 +12,12 @@ import pathlib
 
 
 version = torch.__version__
-
 use_swin = True
 use_dense = False
 epoch = "last"
 linear_num = 512
 batch_size = 256
 folder_path = str(pathlib.Path(__file__).parent)
-# folder_path = './src/vision/scripts/Utils'
 
 
 use_gpu = torch.cuda.is_available()
@@ -67,41 +65,6 @@ if linear_num <= 0 and (use_swin or use_dense):
 
 stride = config["stride"]
 
-# def check_visibility(poseModel, image):
-#     pose = poseModel
-#     # Convert the image to RGB
-#     image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-#     # Process the image
-#     results = pose.process(image)
-#     # Check if the pose landmarks are detected
-#     if results.pose_landmarks is not None:
-#         # Get the x and y coordinates of the chest and face landmarks
-#         chest_x = results.pose_landmarks.landmark[11].x
-#         chest_y = results.pose_landmarks.landmark[11].y
-#         chest_visibility = results.pose_landmarks.landmark[11].visibility
-
-#         mp_drawing = mp.solutions.drawing_utils
-#         annotated_image = image.copy()
-#         mp_drawing.draw_landmarks(annotated_image, results.pose_landmarks, mp.solutions.pose.POSE_CONNECTIONS)
-#         # Convert the image back to BGR
-#         annotated_image = cv2.cvtColor(annotated_image, cv2.COLOR_RGB2BGR)
-#         # Display the annotated image
-#         # cv2.imshow("Annotated Image", annotated_image)
-
-#         if (chest_x < 0 or chest_x > 1 or chest_y < 0 or chest_y > 1) and chest_visibility < 0.95:
-#             # print("Chest not visible")
-#             return False
-#         else:
-#             # print("Chest visible")
-#             return True
-
-# else:
-#     print("Pose landmarks not detected")
-
-
-# print("-------------------------")
-
-
 def get_structure():
     if use_swin:
         model_structure = ft_net_swin(nclasses, stride=stride, linear_num=linear_num)
@@ -116,7 +79,6 @@ def get_structure():
 
 
 def load_network(network):
-    # netword = model_structure
 
     save_path = os.path.join(folder_path, name, "net_%s.pth" % epoch)
     try:
@@ -146,8 +108,6 @@ def load_network(network):
                 torch.load(save_path, map_location=torch.device("cpu"))
             )
 
-    # map_location=torch.device('cpu')
-
     return network
 
 
@@ -160,12 +120,7 @@ def fliplr(img):
 
 def extract_feature_from_img(image, model):
     if use_gpu:
-        # Load and preprocess the image
-        # image = Image.open(image_path).convert('RGB')
-        # n, c, h, w = image.size()
-
         image = data_transforms(image).unsqueeze(0)  # Add batch dimension
-        # ff = torch.FloatTensor(n,opt.linear_num).zero_().cuda()
 
         # Extract features from the image
         model.eval()
@@ -241,8 +196,9 @@ def compare_images(features1, features2, threshold=0.55):
     # distance = np.linalg.norm(features1 - features2)
     # print(distance)
 
-    # Compare with threshold
     # return distance <= threshold
+
+    # Compare with threshold
     if features1.ndim != 1 or features2.ndim != 1:
         print("error comparing images")
         return False
@@ -273,10 +229,8 @@ if __name__ == "__main__":
     with torch.no_grad():
         image = Image.open(f"{folder_path}/angle_test_images/1.jpeg").convert("RGB")
         features1 = extract_feature_from_img(image, model)
-        # gallery_feature = extract_feature(model,dataloaders['gallery'])
         image2 = Image.open(f"{folder_path}/angle_test_images/1.jpeg").convert("RGB")
         features2 = extract_feature_from_img(image2, model)
-        # query_feature = extract_feature(model,dataloaders['query'])
     is_same_person = compare_images(features1, features2, threshold=0.7)
 
     if is_same_person:

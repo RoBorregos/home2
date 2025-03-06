@@ -8,13 +8,9 @@ import numpy as np
 class PoseDetection:
     def __init__(self):
         print("Pose Detection Ready")
-        # rospy.init_node('pose_detection')
-        # rospy.loginfo("Pose Detection Ready")
-
-        # Initialize MediaPipe Pose as a class attribute
         self.mp_pose = mp.solutions.pose
         self.pose = self.mp_pose.Pose()
-        self.mp_drawing = mp.solutions.drawing_utils  # For visualizing landmarks
+        self.mp_drawing = mp.solutions.drawing_utils  
 
     def detectPose(self, image):
         pass
@@ -122,8 +118,6 @@ class PoseDetection:
 
                 # Calculate S2T ratio
                 s2t_ratio = shoulder_width / torso_height
-                # print(f'S2T ratio: {s2t_ratio:.2f}')
-                # print(f'nose: {nose.visibility}')
 
                 # Determine orientation based on heuristic thresholds
                 if s2t_ratio > 0.5:  # Forward or backward
@@ -152,7 +146,6 @@ class PoseDetection:
 
                 return orientation
 
-        # print("Pose landmarks not detected or not sufficiently visible.")
         return None
 
 
