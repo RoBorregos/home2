@@ -1,20 +1,13 @@
 #!/usr/bin/env python3
-from pathlib import Path
-import json
-import pandas as pd
 import rclpy
 from rclpy.node import Node
-from rclpy.parameter import Parameter
 from pydantic import BaseModel, ValidationError
 from typing import Optional
-from frida_interfaces.srv import (
-    AddItem,
-    BuildEmbeddings,
-    QueryItem
-)
+from frida_interfaces.srv import AddItem, BuildEmbeddings, QueryItem
 
 # Assuming ChromaAdapter handles Chroma client and embedding functions
 from ChromaClient import ChromaClient
+
 
 # Metadata validation model for metadata
 class MetadataModel(BaseModel):
@@ -22,6 +15,7 @@ class MetadataModel(BaseModel):
     category: Optional[str]
     timestamp: Optional[str]
     # other metadata fields can be defined here
+
 
 class Embeddings(Node):
     def __init__(self):
@@ -32,15 +26,12 @@ class Embeddings(Node):
         self.declare_parameter("Embeddings_model", "all-MiniLM-L12-v2")
         self.declare_parameter("collections_built", 0)
 
-
         # Parameters for services
         self.declare_parameter("ADD_ITEM_SERVICE", "add_item")
         self.declare_parameter("QUERY_ITEM_SERVICE", "query_item")
         self.declare_parameter("BUILD_EMBEDDINGS_SERVICE", "build_embeddings")
 
         # Resolve parameters
-        model_name_ = self.get_parameter("Embeddings_model").get_parameter_value().string_value
-                # Resolve parameters
 
         add_item_service = (
             self.get_parameter("ADD_ITEM_SERVICE").get_parameter_value().string_value
@@ -59,7 +50,7 @@ class Embeddings(Node):
         # Create services
         self.build_embeddings_service = self.create_service(
             BuildEmbeddings, build_embeddings_service, self.build_embeddings_callback
-        )       
+        )
         self.add_item_service = self.create_service(
             AddItem, add_item_service, self.add_item_callback
         )
@@ -76,7 +67,9 @@ class Embeddings(Node):
                 # If metadata is provided and not empty, validate and parse it
                 metadata_parsed = MetadataModel.model_validate_json(request.metadata)
                 metadata_parsed = metadata_parsed.model_dump()
-                self.chroma_adapter.add_entry(request.collection, request.document, metadata_parsed)
+                self.chroma_adapter.add_entry(
+                    request.collection, request.document, metadata_parsed
+                )
             else:
                 # If metadata is empty (either empty string or only whitespace), set it to an empty dictionary
                 metadata_parsed = {}
@@ -96,13 +89,16 @@ class Embeddings(Node):
     def query_item_callback(self, request, response):
         """Service callback to query items from ChromaDB"""
         try:
-    
             # Delegate to ChromaAdapter to handle the actual ChromaDB interaction
-            results = self.chroma_adapter.query(request.collection, request.query, request.topk)
+            results = self.chroma_adapter.query(
+                request.collection, request.query, request.topk
+            )
 
             response.results = [str(doc) for doc in results.get("documents", [])]
             response.success = True if response.results else False
-            response.message = "Query successful" if response.results else "No matching items found"
+            response.message = (
+                "Query successful" if response.results else "No matching items found"
+            )
             response.metadata = [str(doc) for doc in results.get("metadatas", [])]
 
         except Exception as e:
@@ -126,10 +122,8 @@ class Embeddings(Node):
             response.success = False
             response.message = f"Error while building embeddings: {str(e)}"
             self.get_logger().error(f"Error while building embeddings: {str(e)}")
-        
+
         return response
-
-
 
 
 def main():
