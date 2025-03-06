@@ -5,7 +5,7 @@ from rclpy.node import Node
 from rclpy.action import ActionServer
 from rclpy.callback_groups import ReentrantCallbackGroup
 from frida_interfaces.action import MoveToPose, MoveJoints
-from frida_interfaces.srv import GetJoints, AddCollisionObject
+from frida_interfaces.srv import GetJoints, AddCollisionObject, RemoveCollisionObject
 from frida_motion_planning.utils.MoveItPlanner import MoveItPlanner
 
 
@@ -38,6 +38,12 @@ class MotionPlanningServer(Node):
             AddCollisionObject,
             "/manipulation/add_collision_object",
             self.add_collision_object_callback,
+        )
+
+        self.remove_collision_object_service = self.create_service(
+            RemoveCollisionObject,
+            "/manipulation/remove_collision_object",
+            self.remove_collision_object_callback,
         )
 
         # Here we can select other planner (if implemented)
@@ -137,17 +143,6 @@ class MotionPlanningServer(Node):
             response.joint_names.append(joint_name)
         return response
 
-    """
-    string id
-    string type
-    geometry_msgs/PoseStamped pose
-    geometry_msgs/Point dimensions # length, width, height
-    shape_msgs/Mesh
-    string path_to_mesh
-    ---
-    bool success
-    """
-
     def add_collision_object_callback(self, request, response):
         """Handle requests to add collision objects to the planning scene"""
         try:
@@ -233,6 +228,24 @@ class MotionPlanningServer(Node):
 
         except Exception as e:
             self.get_logger().error(f"Failed to add collision object: {str(e)}")
+            response.success = False
+            return response
+
+    def remove_collision_object_callback(self, request, response):
+        """Handle requests to remove collision objects from the planning scene"""
+        try:
+            # Generate a unique ID for the collision object
+            object_id = f"{request.id}"
+
+            # Remove the collision object
+            self.planner.remove_collision_object(object_id)
+            self.get_logger().info(f"Removed collision object: {object_id}")
+
+            response.success = True
+            return response
+
+        except Exception as e:
+            self.get_logger().error(f"Failed to remove collision object: {str(e)}")
             response.success = False
             return response
 
