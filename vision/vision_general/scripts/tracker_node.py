@@ -104,6 +104,7 @@ class SingleTracker(Node):
         self.get_logger().info(f"\033[92mSUCCESS:\033[0m {message}")
 
     def set_target(self):
+        """Set the target to track (Default: Largest person in frame)"""
         self.frame = self.image
         results = self.model.track(
             self.frame,
@@ -203,6 +204,7 @@ class SingleTracker(Node):
                     )
 
                     angle = None
+
                     # Check if person is in frame:
                     if track_id == self.person_data["id"]:
                         person_in_frame = True
@@ -211,7 +213,6 @@ class SingleTracker(Node):
                         embedding = None
 
                         if self.person_data["embeddings"] is None:
-                            # cv2.imshow('crpd',cropped_image)
                             pil_image = PILImage.fromarray(cropped_image)
 
                             with torch.no_grad():
@@ -231,16 +232,10 @@ class SingleTracker(Node):
                                     )
 
                             self.person_data[angle] = embedding
-                        # print("ANGLE", angle)
-                        # Get embeddings
-                        # self.person_data["embeddings"] = extract_feature_from_img(self.frame, get_structure())
 
-                        # get angle
-                        # if data["angle"] is None update it
                     else:
                         cv2.rectangle(self.frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
 
-                    # Add text
                     cv2.putText(
                         self.frame,
                         f"{label} {track_id}, Prob: {prob}, Angle: {angle}",
@@ -252,7 +247,6 @@ class SingleTracker(Node):
                     )
 
             if not person_in_frame and len(people) > 0:
-                # print("Re-identifying person")
                 for person in people:
                     cropped_image = self.frame[
                         person["y1"] : person["y2"], person["x1"] : person["x2"]
