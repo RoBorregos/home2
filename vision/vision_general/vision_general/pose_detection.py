@@ -138,7 +138,7 @@ class PoseDetection:
                     else:
                         orientation = "right"
                 else:
-                    orientation = "unknown"
+                    orientation = None
 
                 # Optionally, draw landmarks on the image and save
                 if save_image:
@@ -152,7 +152,7 @@ class PoseDetection:
 
                 return orientation
 
-        print("Pose landmarks not detected or not sufficiently visible.")
+        # print("Pose landmarks not detected or not sufficiently visible.")
         return None
 
 
