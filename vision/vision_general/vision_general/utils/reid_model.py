@@ -65,6 +65,7 @@ if linear_num <= 0 and (use_swin or use_dense):
 
 stride = config["stride"]
 
+
 def get_structure():
     if use_swin:
         model_structure = ft_net_swin(nclasses, stride=stride, linear_num=linear_num)
@@ -79,7 +80,6 @@ def get_structure():
 
 
 def load_network(network):
-
     save_path = os.path.join(folder_path, name, "net_%s.pth" % epoch)
     try:
         if use_gpu:

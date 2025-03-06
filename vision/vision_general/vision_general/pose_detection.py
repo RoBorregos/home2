@@ -10,7 +10,7 @@ class PoseDetection:
         print("Pose Detection Ready")
         self.mp_pose = mp.solutions.pose
         self.pose = self.mp_pose.Pose()
-        self.mp_drawing = mp.solutions.drawing_utils  
+        self.mp_drawing = mp.solutions.drawing_utils
 
     def detectPose(self, image):
         pass
