@@ -19,15 +19,27 @@ from std_msgs.msg import Header, Bool
 from sensor_msgs.msg import Image, CameraInfo
 
 class ObjectDectectorParams:
-    def __init__(self, depth_active : bool, min_score_thresh : float, camera_frame : str, flip_image : bool, camera_info : CameraInfo):   
+    def __init__(self, 
+                 depth_active : bool = None, 
+                 min_score_thresh : float = None, 
+                 camera_frame : str = None, 
+                 flip_image : bool = None, 
+                 camera_info : CameraInfo = None):   
         self.depth_active = depth_active
         self.min_score_thresh = min_score_thresh
         self.camera_frame = camera_frame
         self.flip_image = flip_image
         self.camera_info = camera_info
+    
+    def __init__(self):
+        self.depth_active= None
+        self.min_score_thresh = None
+        self.camera_frame = None
+        self.flip_image = None
+        self.camera_info = None
 
-#STRUCT C++
-class BBOX(dataclass):
+@dataclass
+class BBOX():
     x : float = 0
     y : float = 0
     w : float = 0
@@ -77,7 +89,7 @@ class ObjectDectector(ABC):
         if depth_image != None:
             pose_array = PoseArray()
             pose_array.header.frame_id = self.object_detector_params_.camera_frame
-            pose_array.header.stamp = rclpy.time.Time.
+            pose_array.header.stamp = rclpy.time.Time()
 
         for detection in self.detections_:
             if not detection.class_id_ in object_set or object_set[detection.class_id_] < detection.confidence_:

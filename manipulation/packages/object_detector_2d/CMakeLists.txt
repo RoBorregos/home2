@@ -45,13 +45,11 @@ include_directories(include)
 #Python compatability
 ament_python_install_package(${PROJECT_NAME})
 
+
+file (GLOB NODES scripts/*.py)
 #Install python scripts
 install(PROGRAMS
-  scripts/Detection2D.py
-  scripts/DetectionPicker.py
-  scripts/object_detector_node.py
-  scripts/ObjectDetector.py
-  scripts/YoloV5ObjectDetector.py
+  ${NODES}
   DESTINATION lib/${PROJECT_NAME}
 )
 

@@ -1,10 +1,11 @@
+#! /usr/bin/env python3
 from ObjectDetector import ObjectDectector, Detection, BBOX, ObjectDectectorParams
 import torch
 
 
 class YoloV5ObjectDetector(ObjectDectector):
     def __init__(self, model_path : str, object_detector_params : ObjectDectectorParams):
-        super.__init__(model_path, object_detector_params)
+        super().__init__(model_path, object_detector_params)
 
     def loadYoloV5Model(self):
         self.model = torch.hub.load(

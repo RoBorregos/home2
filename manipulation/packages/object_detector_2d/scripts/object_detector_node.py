@@ -1,3 +1,4 @@
+#! /usr/bin/env python3
 import rclpy
 import rclpy.node
 import tf2_ros
@@ -41,19 +42,19 @@ ARGS = {
 
 @dataclass
 class NodeParams():
-    RGB_IMAGE_TOPIC : str
-    DEPTH_IMAGE_TOPIC : str
-    CAMERA_INFO_TOPIC : str
-    DETECTIONS_TOPIC : str
-    DETECTIONS_POSES_TOPIC : str
-    DETECTIONS_3D_TOPIC : str
-    DETECTIONS_ACTIVE_TOPIC : str
-    DETECTIONS_IMAGE_TOPIC : str
-    DEBUG_IMAGE_TOPIC : str
-    YOLO_MODEL_PATH : str
-    USE_ACTIVE_FLAG : bool
-    VERBOSE : bool
-    USE_YOLO8 : bool
+    RGB_IMAGE_TOPIC : str = None
+    DEPTH_IMAGE_TOPIC : str = None
+    CAMERA_INFO_TOPIC : str = None
+    DETECTIONS_TOPIC : str = None
+    DETECTIONS_POSES_TOPIC : str = None
+    DETECTIONS_3D_TOPIC : str = None
+    DETECTIONS_ACTIVE_TOPIC : str = None
+    DETECTIONS_IMAGE_TOPIC : str = None
+    DEBUG_IMAGE_TOPIC : str = None
+    YOLO_MODEL_PATH : str = None
+    USE_ACTIVE_FLAG : bool = None
+    VERBOSE : bool = None
+    USE_YOLO8 : bool = None
 
 
 #TODO DEFINE HOW TO GET params
@@ -84,8 +85,8 @@ class object_detector_node(rclpy.node.Node):
         self.runThread = None
 
         # TFs
-        self.tfBuffer = tf2_ros.Buffer()
-        self.listener = tf2_ros.TransformListener(self.tfBuffer)
+        #self.tfBuffer = tf2_ros.Buffer()
+        #self.listener = tf2_ros.TransformListener(self.tfBuffer)
 
         # Frames per second throughput estimator
         self.fps = None
@@ -95,7 +96,7 @@ class object_detector_node(rclpy.node.Node):
     def set_parameters(self): 
         self.object_detector_parameters = ObjectDectectorParams()
         self.object_detector_parameters.depth_active = self.get_parameter("DEPTH_ACTIVE").get_parameter_value().bool_value
-        self.object_detector_parameters.camera_info = self.get_parameter("CAMERA_INFO").get_parameter_value().string_value
+        # self.object_detector_parameters.camera_info = self.get_parameter("CAMERA_INFO").get_parameter_value().string_value
         self.object_detector_parameters.min_score_thresh = self.get_parameter("MIN_SCORE_THRESH").get_parameter_value().double_value
         self.object_detector_parameters.camera_frame = self.get_parameter("CAMERA_FRAME").get_parameter_value().string_value
         self.object_detector_parameters.flip_image = self.get_parameter("FLIP_IMAGE").get_parameter_value().bool_value
@@ -117,37 +118,37 @@ class object_detector_node(rclpy.node.Node):
         
     def handlePublishers(self):
         self.detections_publisher = self.create_publisher(
-            self.node_params.DETECTIONS_TOPIC, ObjectDetectionArray, 5
+            ObjectDetectionArray, self.node_params.DETECTIONS_TOPIC, 5
         )
         self.detections_pose_publisher = self.create_publisher(
-            self.node_params.DETECTIONS_POSES_TOPIC, PoseArray, 5
+            PoseArray, self.node_params.DETECTIONS_POSES_TOPIC, 5
         )
         self.detections_3d = self.create_publisher(
-            self.node_params.DETECTIONS_3D_TOPIC, MarkerArray, 5
+            MarkerArray, self.node_params.DETECTIONS_3D_TOPIC, 5
         )
         self.detections_image_publisher = self.create_publisher(
-            self.node_params.DETECTIONS_IMAGE_TOPIC, Image, 5
+            Image, self.node_params.DETECTIONS_IMAGE_TOPIC, 5
         )
         self.debug_image_publisher = self.create_publisher(
-            self.node_params.DEBUG_IMAGE_TOPIC, Image, 5
+            Image, self.node_params.DEBUG_IMAGE_TOPIC, 5
         )
         
     def handleSubcriptions(self):
         self.rgb_image_sub = self.create_subscription(
-            self.node_params.RGB_IMAGE_TOPIC, Image, self.rgbImageCallback
+            Image, self.node_params.RGB_IMAGE_TOPIC, self.rgbImageCallback, 5
         )
         if self.object_detector_parameters.depth_active:
             self.depth_subscriber = self.create_subscription(
-                self.node_params.DEPTH_IMAGE_TOPIC, Image, self.depthImageCallback
+                Image, self.node_params.DEPTH_IMAGE_TOPIC, self.depthImageCallback, 5
             )
             self.recieved_camera_info = False
             self.camera_info_subscriber = self.create_subscription(
-                self.node_params.CAMERA_INFO_TOPIC, CameraInfo, self.cameraInfoCallback
+                CameraInfo, self.node_params.CAMERA_INFO_TOPIC, self.cameraInfoCallback, 5
             )
         
         if self.node_params.USE_ACTIVE_FLAG:
             self.create_subscription(
-                self.node_params.DETECTIONS_ACTIVE_TOPIC, Bool, self.activeFlagCallback
+                Bool, self.node_params.DETECTIONS_ACTIVE_TOPIC, self.activeFlagCallback, 5
             )
 
     # Callback for active flag
