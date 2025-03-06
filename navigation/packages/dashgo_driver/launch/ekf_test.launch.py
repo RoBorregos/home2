@@ -18,7 +18,7 @@ def generate_launch_description():
                     'two_d_mode': True,
                     'publish_tf': True,
                     'map_frame': 'map',
-                    'base_link_frame': 'base_footprint',
+                    'base_link_frame': 'base_link',
                     'world_frame': 'odom',
                     'odom0': 'dashgo_odom',
                     #'odom0': 'odom',
