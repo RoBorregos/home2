@@ -4,15 +4,35 @@ import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionServer
 from rclpy.callback_groups import ReentrantCallbackGroup
+from geometry_msgs.msg import TwistStamped
 from frida_interfaces.action import MoveToPose, MoveJoints
-from frida_interfaces.srv import GetJoints, AddCollisionObject, RemoveCollisionObject
+from frida_interfaces.srv import (
+    GetJoints,
+    AddCollisionObject,
+    RemoveCollisionObject,
+    ToggleServo,
+)
 from frida_motion_planning.utils.MoveItPlanner import MoveItPlanner
+from frida_motion_planning.utils.MoveItServo import MoveItServo
 
 
 class MotionPlanningServer(Node):
     def __init__(self):
         super().__init__("pick_server")
         self.callback_group = ReentrantCallbackGroup()
+
+        # Here we can select other planner (if implemented)
+        self.planner = MoveItPlanner(self, self.callback_group)
+        self.planner.set_velocity(0.15)
+        self.planner.set_acceleration(0.15)
+        self.planner.set_planner("RRTConnect")
+
+        self.servo = MoveItServo(
+            self,
+            self.callback_group,
+            max_velocity=0.1,
+            max_acceleration=0.1,
+        )
 
         self._move_to_pose_server = ActionServer(
             self,
@@ -46,11 +66,18 @@ class MotionPlanningServer(Node):
             self.remove_collision_object_callback,
         )
 
-        # Here we can select other planner (if implemented)
-        self.planner = MoveItPlanner(self, self.callback_group)
-        self.planner.set_velocity(0.15)
-        self.planner.set_acceleration(0.15)
-        self.planner.set_planner("RRTConnect")
+        self.toggle_servo_service = self.create_service(
+            ToggleServo, "/manipulation/toggle_servo", self.toggle_servo_callback
+        )
+
+        self.servo_speed_subscriber = self.create_subscription(
+            TwistStamped,
+            "/manipulation/servo_speed",
+            self.servo_speed_callback,
+            10,
+            callback_group=self.callback_group,
+        )
+
         self.get_logger().info("Pick Action Server has been started")
 
     async def move_to_pose_execute_callback(self, goal_handle):
@@ -248,6 +275,32 @@ class MotionPlanningServer(Node):
             self.get_logger().error(f"Failed to remove collision object: {str(e)}")
             response.success = False
             return response
+
+    def toggle_servo_callback(self, request, response):
+        """Handle requests to toggle the servo"""
+        try:
+            if request.state:
+                self.servo.enable_servo()
+                self.get_logger().info("Enabled servo")
+            else:
+                self.servo.disable_servo()
+                self.get_logger().info("Disabled servo")
+            response.success = True
+            return response
+        except Exception as e:
+            self.get_logger().error(f"Failed to toggle servo: {str(e)}")
+            response.success = False
+            return response
+
+    def servo_speed_callback(self, msg):
+        """Handle changes to the servo speed"""
+        self.get_logger().info(f"Received servo speed: {msg.twist}")
+
+        self.servo.update_servo(
+            linear=(msg.twist.linear.x, msg.twist.linear.y, msg.twist.linear.z),
+            angular=(msg.twist.angular.x, msg.twist.angular.y, msg.twist.angular.z),
+            frame_id=msg.header.frame_id,
+        )
 
 
 def main(args=None):
