@@ -71,8 +71,9 @@ class ObjectDectector(ABC):
     def inference(self,frame, depth_image = None):
         if self.object_detector_params_.flip_image:
             frame = imutils.rotate(frame, 180)
-
+        
         visual_frame = copy.deepcopy(frame)
+        self.detections_ : List[Detection] = [] 
         self._inference(visual_frame)
 
         # y1, x1, y2, x2
@@ -84,7 +85,7 @@ class ObjectDectector(ABC):
         
 
     def extract3D(self, depth_image):
-        object_set = dict(int, Detection)
+        object_set = {}
 
         if depth_image != None:
             pose_array = PoseArray()
@@ -92,7 +93,7 @@ class ObjectDectector(ABC):
             pose_array.header.stamp = rclpy.time.Time()
 
         for detection in self.detections_:
-            if not detection.class_id_ in object_set or object_set[detection.class_id_] < detection.confidence_:
+            if not detection.class_id_ in object_set.keys() or object_set[detection.class_id_].confidence_ < detection.confidence_:
                 point_3D = PointStamped(
                     header=Header(frame_id=self.object_detector_params_.camera_frame), point=Point()
                 )
@@ -111,7 +112,6 @@ class ObjectDectector(ABC):
                     detection.point_stamped_ = point_3D
                 
                 object_set[detection.class_id_] = detection
-        
         # PUBLISH POINT ARRAY
         
         #TODO: VISUALIZE MARKER

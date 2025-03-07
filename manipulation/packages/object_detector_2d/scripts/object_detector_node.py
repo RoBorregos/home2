@@ -32,7 +32,7 @@ ARGS = {
     "DEBUG_IMAGE_TOPIC" : "/debug_image",
     "CAMERA_FRAME" :  "xtion_rgb_optical_frame",
     "YOLO_MODEL_PATH" :  str(pathlib.Path(__file__).parent) + "/../models/yolov5s.pt",
-    "USE_ACTIVE_FLAG" :  True,
+    "USE_ACTIVE_FLAG" :  False,
     "DEPTH_ACTIVE" :  False,
     "VERBOSE" :  False,
     "USE_YOLO8" :  False,
@@ -70,6 +70,7 @@ class object_detector_node(rclpy.node.Node):
         self.depth_image = []
         self.rgb_image = []
         self.camera_info = CameraInfo()
+        self.detections_frame = []
 
         self.set_parameters()
         self.active_flag = not self.node_params.USE_ACTIVE_FLAG
@@ -171,9 +172,12 @@ class object_detector_node(rclpy.node.Node):
         self.rgb_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
         if not self.active_flag:
             self.detections_frame = self.rgb_image
-        elif self.runThread == None or not self.runThread.is_alive():
+        elif self.active_flag and self.runThread == None or not self.runThread.is_alive():
             self.runThread = threading.Thread(target=self.run, args=(self.rgb_image,), daemon=True)
             self.runThread.start()
+        
+        if len(self.detections_frame) > 0:
+            self.detections_image_publisher.publish(self.bridge.cv2_to_imgmsg(self.detections_frame, "bgr8"))
 
     # Handle FPS calculation.
     def callFps(self):
@@ -230,7 +234,7 @@ class object_detector_node(rclpy.node.Node):
 
         # Convert image back to RGB format
         image = cv.cvtColor(image, cv.COLOR_BGR2RGB)
-
+        
         return image
 
     def run(self, frame):
@@ -245,8 +249,9 @@ class object_detector_node(rclpy.node.Node):
             max_boxes_to_draw=200,
             agnostic_mode=False,
         )
+
         
-        self.detections_publisher.publish(ObjectDetectionArray(detections=detected_objects))
+        #self.detections_publisher.publish(ObjectDetectionArray(detections=detected_objects))
         self.fps.update()
 
 def main(args=None):

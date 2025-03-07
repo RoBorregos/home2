@@ -6,15 +6,15 @@ from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 import numpy as np
 
-ROS_TOPIC = 'camera'
+ROS_TOPIC = 'raw_image'
 ROS_NODE = 'local_camera'
-
+HZ = 30
 class Camera(Node):
     def __init__(self):
         super().__init__(ROS_NODE)
         self.publisher = self.create_publisher(Image, ROS_TOPIC, 10)
         self.bridge = CvBridge()
-        self.timer = self.create_timer(0.1, self.callback)
+        self.timer = self.create_timer(1/HZ, self.callback)
         self.cap = cv.VideoCapture(0)
 
         if not self.cap.isOpened():
