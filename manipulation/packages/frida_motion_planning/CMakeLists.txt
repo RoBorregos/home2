@@ -21,6 +21,7 @@ file(GLOB_RECURSE example_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "${EXAMPL
 
 install(PROGRAMS
     ${example_files}
+    ${EXAMPLES_DIR}/ds4_demo.py
     ${SCRIPTS_DIR}/motion_planning_server.py
     DESTINATION lib/${PROJECT_NAME}
 )
