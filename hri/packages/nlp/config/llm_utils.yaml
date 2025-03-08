@@ -6,3 +6,4 @@ llm_utils:
     OUT_COMMAND_TOPIC_NAME: "/stop_following"
     GRAMMAR_SERVICE: REPLACE
     temperature: 0.0
+    COMMON_INTEREST_SERVICE: REPLACE
