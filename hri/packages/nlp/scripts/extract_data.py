@@ -42,9 +42,7 @@ class DataExtractor(Node):
 
         base_url = self.get_parameter("base_url").get_parameter_value().string_value
         if base_url == "None":
-            self.base_url = None
-        else:
-            self.base_url = base_url
+            base_url = None
 
         self.temperature = (
             self.get_parameter("temperature").get_parameter_value().double_value
