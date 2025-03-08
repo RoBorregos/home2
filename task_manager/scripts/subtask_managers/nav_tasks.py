@@ -7,13 +7,16 @@ Node to move to a place.
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
-
-from frida_interfaces.action import Move
-
 from utils.decorators import mockable, service_check
 from utils.logger import Logger
+from geometry_msgs.msg import PoseStamped
+from ament_index_python.packages import get_package_share_directory
+from nav2_msgs.action import NavigateToPose
+import os
+import json
 
-MOVE_TOPIC = "/navigation/move"
+
+MOVE_TOPIC = "/navigate_to_pose"
 
 TIMEOUT = 5.0
 
@@ -27,38 +30,62 @@ class NavigationTasks:
         self.node = task_manager
         self.mock_data = mock_data
 
-        self.move_action_client = ActionClient(self.node, Move, MOVE_TOPIC)
-
         if not self.mock_data:
             self.setup_services()
 
     def setup_services(self):
-        if not self.move_action_client.wait_for_server(timeout_sec=TIMEOUT):
+        self.pose_client = ActionClient(self.node, NavigateToPose, MOVE_TOPIC)
+        if not self.pose_client.wait_for_server(timeout_sec=TIMEOUT):
             self.node.get_logger().warn("Move service not initialized.")
 
     @mockable(return_value=True, delay=2)
-    @service_check("move_action_client", False, TIMEOUT)
-    def move_to_location(self, location: str) -> bool:
+    @service_check("pose_client", False, TIMEOUT)
+    def move_to_location(self, location: str, sublocation: str) -> bool:
         """Attempts to move to the given location and returns True if successful."""
 
-        self.node.get_logger().info(f"Sending move request to: {location}")
-        goal = Move.Goal()
-        goal.location = location
+        try:
+            package_share_directory = get_package_share_directory("frida_constants")
+            file_path = os.path.join(package_share_directory, "map_areas/areas.json")
+            with open(file_path, "r") as file:
+                data = json.load(file)
+            if sublocation != "":
+                coordinates = data[location][sublocation]
+            else:
+                coordinates = data[location]["safe_place"]
+                sublocation = "safe_place"
+            self.node.get_logger().info(f"{coordinates}")
+        except Exception as e:
+            self.node.get_logger().error(f"Error fetching coordinates: {e}")
+            return self.STATE["EXECUTION_ERROR"]
 
         try:
-            goal_future = self.move_action_client.send_goal_async(goal)
-            rclpy.spin_until_future_complete(self.node, goal_future, timeout_sec=TIMEOUT)
+            self.node.get_logger().info(f"Sending move request to: {location} {sublocation}")
+            client_goal = NavigateToPose.Goal()
+            goal = PoseStamped()
+            goal.header.frame_id = "map"
+            goal.pose.position.x = coordinates[0]
+            goal.pose.position.y = coordinates[1]
+            goal.pose.position.z = coordinates[2]
+            goal.pose.orientation.x = coordinates[3]
+            goal.pose.orientation.y = coordinates[4]
+            goal.pose.orientation.z = coordinates[5]
+            goal.pose.orientation.w = coordinates[6]
 
+            client_goal.pose = goal
+
+            goal_future = self.pose_client.send_goal_async(client_goal)
+            while not goal_future.done():
+                rclpy.spin_once(self.node)
             goal_handle = goal_future.result()
-
             if not goal_handle.accepted:
                 raise Exception("Goal rejected")
 
+            self.get_logger().info("Goal accepted, waiting for result...")
             result_future = goal_handle.get_result_async()
-            rclpy.spin_until_future_complete(self.node, result_future, timeout_sec=TIMEOUT)
+            rclpy.spin_until_future_complete(self.node, result_future)
             result = result_future.result()
 
-            if result and result.result.success:
+            if result.status == rclpy.action.ResultCode.SUCCEEDED:
                 Logger.success(node, f"Succesfully moved to {location}.")
                 return self.STATE["EXECUTION_SUCCESS"]
             else:
@@ -74,22 +101,7 @@ if __name__ == "__main__":
     rclpy.init()
     node = Node("navigation_tasks")
     navigation_tasks = NavigationTasks(node)
-
     try:
-        while rclpy.ok():
-            location = input("Enter a location: ")
-            if location.lower() == "exit":
-                break  # Exit loop
-
-            success = navigation_tasks.move_to_location(location)
-            if success:
-                node.get_logger().info("Move action completed successfully.")
-            else:
-                node.get_logger().warn("Move action failed.")
-
+        rclpy.spin(node)
     except Exception as e:
         print(f"Error: {e}")
-
-    finally:
-        node.destroy_node()
-        rclpy.shutdown()
