@@ -95,7 +95,7 @@ class HRITasks(metaclass=SubtaskMeta):
                 if not service["client"].wait_for_server(timeout_sec=TIMEOUT):
                     Logger.warn(self.node, f"{key} action server not initialized. ({self.task})")
 
-    def say(self, text: str, wait: bool = False) -> None:
+    def say(self, text: str, wait: bool = True) -> None:
         """Method to publish directly text to the speech node"""
         self.node.get_logger().info(f"Sending to saying service: {text}")
         request = Speak.Request(text=text)
