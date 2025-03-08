@@ -1,0 +1,4 @@
+geometry_msgs/Point point
+---
+sensor_msgs/PointCloud2 cluster
+int32 status
