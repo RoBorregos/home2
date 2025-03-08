@@ -6,7 +6,7 @@ from frida_interfaces.srv import RemoveCollisionObject
 
 """
 Usage
-- ros2 run frida_motion_planning add_collision_object.py --ros-args -p id:="object"
+- ros2 run frida_motion_planning remove_collision_object.py --ros-args -p id:="object"
 """
 
 
@@ -27,13 +27,13 @@ def main():
     request = RemoveCollisionObject.Request()
     request.id = id
 
-    print(f"Sending id: {id}")
+    node.get_logger().info(f"Sending id: {id}")
 
     future = remove_collision_object_client.call_async(request)
     rclpy.spin_until_future_complete(node, future)
     response = future.result()
 
-    print(f"Response: {response.success}")
+    node.get_logger().info(f"Response: {response.success}")
 
     node.destroy_node()
     rclpy.shutdown()
