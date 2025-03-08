@@ -6,6 +6,7 @@
 # Image names
 CPU_IMAGE="roborregos/home2:cpu_base"
 CUDA_IMAGE="roborregos/home2:gpu_base"
+JETSON_IMAGE="roborregos/home2:l4t_base"
 
 # Function to check if an image exists
 check_image_exists() {
@@ -67,6 +68,12 @@ case $ENV_TYPE in
     echo "DOCKERFILE=docker/vision/Dockerfile.jetson" >> .env
     echo "BASE_IMAGE=roborregos/home2:l4t_base" >> .env
     echo "IMAGE_NAME=roborregos/home2:vision-jetson" >> .env
+
+    # Build the base image if it doesn't exist
+    check_image_exists "$JETSON_IMAGE"
+    if [ $? -eq 1 ]; then
+        docker compose -f ../jetson.yaml build
+    fi
     ;;
   *)
     echo "Unknown environment type!"
