@@ -10,14 +10,14 @@ class MoveToPoseClient(Node):
     def __init__(self):
         super().__init__("move_to_pose_client")
         self._action_client = ActionClient(
-            self, MoveToPose, "move_to_pose_action_server"
+            self, MoveToPose, "/manipulation/move_to_pose_action_server"
         )
 
     # let the server pick the default values
     def send_goal(
         self,
         pose=PoseStamped(),
-        velocity=0.0,
+        velocity=0.2,
         acceleration=0.0,
         planner_id="",
     ):
@@ -49,7 +49,7 @@ def main(args=None):
     pose_stamped.pose.orientation.x = 0.0
     pose_stamped.pose.orientation.y = 0.0
     pose_stamped.pose.orientation.z = 0.0
-    pose_stamped.pose.orientation.w = 1.0
+    pose_stamped.pose.orientation.w = -1.0
 
     # Send goal
     future = action_client.send_goal(pose_stamped)
