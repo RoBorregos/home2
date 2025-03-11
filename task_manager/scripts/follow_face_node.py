@@ -53,6 +53,7 @@ class DemoTaskManager(Node):
         self.y_delta_multiplier = self.Multiplier / 2
 
         self.subtask_manager.manipulation.activate_arm()
+
         # self.subtask_manager.manipulation.set_move_mode()
 
         self.current_state = DemoTaskManager.TASK_STATES["FOLLOW_FACE"]
