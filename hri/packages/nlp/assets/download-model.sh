@@ -1,5 +1,6 @@
-#!/bin/bash
+#!/bin/sh
 
+# Download model and Modelfile
 curl -L https://huggingface.co/diegohc/robollm/resolve/main/rbrgs-finetuned-unsloth.F16.gguf -o rbrgs-finetuned.F16.gguf
 curl -L https://huggingface.co/diegohc/robollm/resolve/main/Modelfile -o Modelfile
 
@@ -17,13 +18,9 @@ else
     COMMAND=""
 fi
 
-echo "Running: docker run -d --rm --runtime=nvidia -v $(pwd):/ollama $IMAGE $COMMAND"
+echo "Running: docker run -d --rm --runtime=nvidia -v \"$PWD\":/ollama $IMAGE $COMMAND"
 
-if [[ -n "$COMMAND" ]]; then
-    CONTAINER_ID=$(docker run -d --rm --runtime=nvidia -v "$(pwd)":/ollama "$IMAGE" $COMMAND)
-else
-    CONTAINER_ID=$(docker run -d --rm --runtime=nvidia -v "$(pwd)":/ollama "$IMAGE")
-fi
+CONTAINER_ID=$(docker run -d --rm --runtime=nvidia -v "$PWD":/ollama "$IMAGE" $COMMAND)
 
 docker exec "$CONTAINER_ID" ollama create -f /ollama/Modelfile robollm
 docker exec "$CONTAINER_ID" ollama pull nomic-embed-text
