@@ -11,6 +11,7 @@ import os
 from typing import Optional
 
 import rclpy
+from nlp.assets.dialogs import get_extract_data_args
 from openai import OpenAI
 from pydantic import BaseModel
 from rclpy.node import Node
@@ -75,22 +76,16 @@ class DataExtractor(Node):
         """Service to extract information from text."""
 
         self.get_logger().info("Extracting information from text")
+        messages, response_format = get_extract_data_args(
+            request.full_text, request.data
+        )
 
-        instruction = "You will be presented with some text and data to extract. Please provide the requested information or leave empty if it isn't available."
         response_content = (
             self.client.beta.chat.completions.parse(
                 model=self.model,
                 temperature=self.temperature,
-                messages=[
-                    {"role": "system", "content": instruction},
-                    {
-                        "role": "user",
-                        "content": str(request.full_text)
-                        + "Data to extract: "
-                        + str(request.data),
-                    },
-                ],
-                response_format=ExtractedData,
+                messages=messages,
+                response_format=response_format,
             )
             .choices[0]
             .message.content

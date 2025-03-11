@@ -5,14 +5,22 @@
 pip install deepeval
 ```
 
-2. Run the tests
+2. Run the ollama server
 ```bash
-deepeval test run test_data_extractor.py
+# pwd-> docker/hri
+docker compose -f ollama.yaml up
 ```
+
+3. Set local embeddings for evaluations
 
 ```bash
 # Set local embeddings for evaluations
 deepeval set-local-embeddings --model-name=nomic-embed-text:latest \
     --base-url="http://localhost:11434/v1/" \
     --api-key="ollama"
+```
+
+4. Run the tests
+```bash
+deepeval test run test_data_extractor.py
 ```

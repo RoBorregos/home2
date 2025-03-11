@@ -258,7 +258,7 @@ class HRITasks(metaclass=SubtaskMeta):
         request = CommonInterest.Request(
             person1=person1, interests1=interest1, person2=person2, interests2=interest2
         )
-        future = self.command_interpreter_client.call_async(request)
+        future = self.common_interest_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
         return future.result().common_interest
 
