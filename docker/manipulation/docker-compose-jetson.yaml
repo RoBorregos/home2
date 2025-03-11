@@ -1,16 +1,17 @@
 services:
-  vision:
-    container_name: home2-vision
+  manipulation:
+    container_name: home2-manipulation
     build:
       context: ../..
-      dockerfile: ${DOCKERFILE:-docker/vision/Dockerfile.cpu}
+      dockerfile: ${DOCKERFILE:-docker/manipulation/Dockerfile.jetson}
       args:
         BASE_IMAGE: ${BASE_IMAGE:-roborregos/home2:cpu_base} 
-    image: ${IMAGE_NAME:-roborregos/home2:vision-cpu}
+    image: ${IMAGE_NAME:-roborregos/home2:manipulation-jetson}
     volumes:
       - ../../:/workspace
       - /dev:/dev
       - /dev/video0:/dev/video0
+      - /tmp:/tmp
   
     network_mode: host
     user: 1000:1000

@@ -54,6 +54,8 @@ class DemoTaskManager(Node):
 
         self.subtask_manager.manipulation.activate_arm()
 
+        # self.subtask_manager.manipulation.set_move_mode()
+
         self.current_state = DemoTaskManager.TASK_STATES["FOLLOW_FACE"]
 
         self.get_logger().info("DemoTaskManager has started.")
@@ -82,6 +84,8 @@ class DemoTaskManager(Node):
             # Follow face task
             Logger.state(self, "Follow face task")
             x, y = self.subtask_manager.vision.get_follow_face()
+            # x *= -1
+            # y*=-1
             if x is None and y is None:
                 Logger.info(
                     self,
@@ -93,6 +97,7 @@ class DemoTaskManager(Node):
                     pass
                 # pass
             else:
+                y *= -1
                 print(f"x and y {x} {y}")
                 if x > 0.09 or x < -0.09:
                     self.subtask_manager.manipulation.move_to(x, y)
