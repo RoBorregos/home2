@@ -13,4 +13,4 @@
 **.pth
 **.gz
 hri/packages/nlp/assets/**
-!hri/packages/nlp/assets/download-model.bash
+!hri/packages/nlp/assets/download-model.sh
