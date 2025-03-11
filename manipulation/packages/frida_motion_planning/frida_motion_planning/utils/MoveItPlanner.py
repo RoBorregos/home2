@@ -75,11 +75,11 @@ class MoveItPlanner(Planner):
     def plan_pose_goal(
         self, pose: PoseStamped, cartesian: bool = False, wait: bool = True
     ) -> Union[bool, Future]:
-        print("calling plan")
+        self.node.get_logger().info("Planning pose goal")
         trajectory = self._plan(pose, cartesian)
         if not trajectory:
             return False
-        print("calling execute")
+        self.node.get_logger().info("Executing trajectory")
         self.moveit2.execute(trajectory)
         future = None
         while future is None:
@@ -87,8 +87,9 @@ class MoveItPlanner(Planner):
         if wait:
             while not future.done():
                 pass
-            print("future result", future.result())
-            print("future result status", future.result().status)
+            self.node.get_logger().info(
+                "Execution done witth status: " + str(future.result().status)
+            )
             return future.result().status == 4  # 4 is the status for success
 
         return self.moveit2.get_execution_future()
@@ -183,45 +184,69 @@ class MoveItPlanner(Planner):
         self.moveit2.clear_goal_constraints()
         self.moveit2.clear_path_constraints()
 
-    def add_collision_box(
-        self, id: str, size: List[float], position: List[float], quat_xyzw: List[float]
-    ) -> None:
+    def add_collision_box(self, id: str, size: List[float], pose: PoseStamped) -> None:
         self.moveit2.add_collision_box(
             id=id,
             size=tuple(size),
-            position=tuple(position),
-            quat_xyzw=tuple(quat_xyzw),
+            position=[pose.pose.position.x, pose.pose.position.y, pose.pose.position.z],
+            quat_xyzw=[
+                pose.pose.orientation.x,
+                pose.pose.orientation.y,
+                pose.pose.orientation.z,
+                pose.pose.orientation.w,
+            ],
+            frame_id=pose.header.frame_id,
         )
 
     def add_collision_cylinder(
-        self,
-        id: str,
-        height: float,
-        radius: float,
-        position: List[float],
-        quat_xyzw: List[float],
+        self, id: str, height: float, radius: float, pose: PoseStamped
     ) -> None:
         self.moveit2.add_collision_cylinder(
             id=id,
             height=height,
             radius=radius,
-            position=tuple(position),
-            quat_xyzw=tuple(quat_xyzw),
+            position=[pose.pose.position.x, pose.pose.position.y, pose.pose.position.z],
+            quat_xyzw=[
+                pose.pose.orientation.x,
+                pose.pose.orientation.y,
+                pose.pose.orientation.z,
+                pose.pose.orientation.w,
+            ],
+            frame_id=pose.header.frame_id,
+        )
+
+    def add_collision_sphere(self, id: str, radius: float, pose: PoseStamped) -> None:
+        self.moveit2.add_collision_sphere(
+            id=id,
+            radius=radius,
+            position=[pose.pose.position.x, pose.pose.position.y, pose.pose.position.z],
+            quat_xyzw=[
+                pose.pose.orientation.x,
+                pose.pose.orientation.y,
+                pose.pose.orientation.z,
+                pose.pose.orientation.w,
+            ],
+            frame_id=pose.header.frame_id,
         )
 
     def add_collision_mesh(
         self,
         id: str,
         filepath: str,
-        position: List[float],
-        quat_xyzw: List[float],
+        pose: PoseStamped,
         scale: float = 1.0,
     ) -> None:
         self.moveit2.add_collision_mesh(
             id=id,
             filepath=filepath,
-            position=tuple(position),
-            quat_xyzw=tuple(quat_xyzw),
+            position=[pose.pose.position.x, pose.pose.position.y, pose.pose.position.z],
+            quat_xyzw=[
+                pose.pose.orientation.x,
+                pose.pose.orientation.y,
+                pose.pose.orientation.z,
+                pose.pose.orientation.w,
+            ],
+            frame_id=pose.header.frame_id,
             scale=scale,
         )
 
