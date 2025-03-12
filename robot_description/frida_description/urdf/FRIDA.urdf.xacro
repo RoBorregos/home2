@@ -44,12 +44,11 @@
   <xacro:arg name="attach_rpy" default="0 0 1.57"/>
   <xacro:arg name="mesh_suffix" default="stl"/>
   <xacro:arg name="kinematics_suffix" default=""/>
-  <xacro:arg name="sim_mode" default="true"/>
 
 
   <xacro:include filename="robot.xacro"/>
 
-  <xacro:include filename="$(find xarm_description)/urdf/xarm_device_macro.xacro" />
+  <xacro:include filename="$(find frida_description)/urdf/xarm/xarm_device_macro.xacro" />
     <xacro:xarm_device prefix="$(arg prefix)" hw_ns="$(arg hw_ns)" limited="$(arg limited)" 
     effort_control="$(arg effort_control)" velocity_control="$(arg velocity_control)"
     add_gripper="$(arg add_gripper)" add_vacuum_gripper="$(arg add_vacuum_gripper)" 
@@ -69,11 +68,7 @@
     baud_checkset="$(arg baud_checkset)" default_gripper_baud="$(arg default_gripper_baud)"
     model1300="$(arg model1300)" attach_to="$(arg attach_to)" attach_xyz="$(arg attach_xyz)" attach_rpy="$(arg attach_rpy)"
     robot_sn="$(arg robot_sn)" use_gazebo_camera="$(arg use_gazebo_camera)" mesh_suffix="$(arg mesh_suffix)" kinematics_suffix="$(arg kinematics_suffix)" />
- <!-- Gripper -->
-  <xacro:include filename="gripper.xacro" />
-  <xacro:load_gripper attach_to="link_eef" xyz="0 0 0" rpy="0 -1.5708 0" />
 
-  <xacro:include filename="zed.xacro" />
-  <xacro:load_zed attach_to="gripper" xyz="0.030461 0 -0.050649" rpy="0 0.81804 0" />
+
 
 </robot>   
