@@ -50,6 +50,7 @@ def launch_setup(context, *args, **kwargs):
     geometry_mesh_origin_rpy = LaunchConfiguration('geometry_mesh_origin_rpy', default='"0 0 0"')
     geometry_mesh_tcp_xyz = LaunchConfiguration('geometry_mesh_tcp_xyz', default='"0 0 0"')
     geometry_mesh_tcp_rpy = LaunchConfiguration('geometry_mesh_tcp_rpy', default='"0 0 0"')
+    sensors_3d_path = FindPackageShare('arm_pkg/config/sensors_3d.yaml')
 
     no_gui_ctrl = LaunchConfiguration('no_gui_ctrl', default=False)
     ros_namespace = LaunchConfiguration('ros_namespace', default='').perform(context)
@@ -103,6 +104,7 @@ def launch_setup(context, *args, **kwargs):
         geometry_mesh_origin_rpy=geometry_mesh_origin_rpy,
         geometry_mesh_tcp_xyz=geometry_mesh_tcp_xyz,
         geometry_mesh_tcp_rpy=geometry_mesh_tcp_rpy,
+        sensors_3d = sensors_3d_path
     ).to_moveit_configs()
 
     moveit_config_dump = yaml.dump(moveit_config.to_dict())
@@ -110,7 +112,7 @@ def launch_setup(context, *args, **kwargs):
     # robot moveit common launch
     # xarm_moveit_config/launch/_robot_moveit_common2.launch.py
     robot_moveit_common_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(PathJoinSubstitution([FindPackageShare('xarm_moveit_config'), 'launch', '_robot_moveit_common2.launch.py'])),
+        PythonLaunchDescriptionSource(PathJoinSubstitution([FindPackageShare('arm_pkg'), 'launch', 'frida_moveit_common.launch.py'])),
         launch_arguments={
             'prefix': prefix,
             'attach_to': attach_to,
