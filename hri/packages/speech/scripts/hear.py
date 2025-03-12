@@ -58,6 +58,11 @@ class HearNode(Node):
             .get_parameter_value()
             .string_value
         )
+        hotword_service_name = (
+            self.declare_parameter("HOTWORD_SERVICE_NAME", "hotword_service")
+            .get_parameter_value()
+            .string_value
+        )
 
         # Initialize the Whisper gRPC client
         self.client = WhisperClient(server_ip)
@@ -100,7 +105,7 @@ class HearNode(Node):
 
         self.hotword_service = self.create_service(
             UpdateHotwords,
-            "set_hotwords",
+            hotword_service_name,
             self.set_hotwords_callback,
             callback_group=hotword_service_group,
         )

@@ -1,5 +1,6 @@
 SPEAK_SERVICE = "/hri/speech/speak"
 STT_SERVICE_NAME = "/hri/speech/STT"
+HOTWORD_SERVICE_NAME = "/hri/speech/hotword_service"
 KEYWORD_TOPIC = "/hri/speech/kws"
 WAKEWORD_TOPIC = "/hri/speech/oww"
 COMMAND_INTERPRETER_SERVICE = "/hri/nlp/command_interpreter"
