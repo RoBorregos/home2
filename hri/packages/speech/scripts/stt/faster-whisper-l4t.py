@@ -37,11 +37,14 @@ class WhisperServicer(speech_pb2_grpc.SpeechServiceServicer):
         # Generate a temporary WAV file from received audio data
         temp_file = WavUtils.generate_temp_wav(1, 2, 16000, request.audio_data)
 
+        # Get hotwords from request
+        curHotwords = request.hotwords if request.hotwords else ""
+
         # Perform transcription
         result = self.audio_model.transcribe(
             temp_file,
             language="en",
-            hotwords="Frida kitchen attendance RoBorregos",
+            hotwords=curHotwords,
             condition_on_previous_text=True,
         )
 
