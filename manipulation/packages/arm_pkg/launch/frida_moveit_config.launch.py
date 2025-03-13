@@ -157,9 +157,9 @@ def launch_setup(context, *args, **kwargs):
         PythonLaunchDescriptionSource(
             PathJoinSubstitution(
                 [
-                    FindPackageShare("xarm_moveit_config"),
+                    FindPackageShare("arm_pkg"),
                     "launch",
-                    "_robot_moveit_common2.launch.py",
+                    "frida_moveit_common.launch.py",
                 ]
             )
         ),

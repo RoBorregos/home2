@@ -15,12 +15,18 @@ ament_python_install_package(frida_motion_planning)
 # Install examples
 set(EXAMPLES_DIR examples)
 set(SCRIPTS_DIR frida_motion_planning)
-    
+  
+
+file(GLOB_RECURSE example_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "${EXAMPLES_DIR}/*.py")
+
 install(PROGRAMS
-    ${EXAMPLES_DIR}/call_joint_goal.py
-    ${EXAMPLES_DIR}/call_pose_goal.py
+    ${example_files}
+    ${EXAMPLES_DIR}/ds4_demo.py
     ${SCRIPTS_DIR}/motion_planning_server.py
     DESTINATION lib/${PROJECT_NAME}
 )
+
+install(DIRECTORY launch
+  DESTINATION share/${PROJECT_NAME})
 
 ament_package()
