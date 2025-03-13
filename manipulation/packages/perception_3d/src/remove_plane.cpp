@@ -1,29 +1,40 @@
+#include "rclcpp/rclcpp.hpp"
+#include <rclcpp/duration.hpp>
+#include <rclcpp/logging.hpp>
+
 #include <climits>
 #include <cstdint>
-#include <frida_interfaces/srv/detail/cluster_object_from_point__struct.hpp>
 #include <functional>
 #include <iostream>
 #include <memory>
-#include <pcl/filters/extract_indices.h>
-#include <pcl/filters/passthrough.h>
-#include <pcl/impl/point_types.hpp>
-#include <pcl/octree/octree.h>
-#include <pcl/point_cloud.h>
-#include <pcl/point_types.h>
-#include <pcl/segmentation/sac_segmentation.h>
-#include <pcl_conversions/pcl_conversions.h>
-#include <perception_3d/macros.hpp>
-#include <rclcpp/logging.hpp>
-#include <sensor_msgs/msg/detail/point_cloud2__struct.hpp>
-#include <sensor_msgs/msg/point_cloud2.hpp>
 #include <string>
 #include <variant>
 
-#include "frida_constants/manip_3d.hpp"
-#include "rclcpp/rclcpp.hpp"
+#include <sensor_msgs/msg/detail/point_cloud2__struct.hpp>
+#include <sensor_msgs/msg/point_cloud2.hpp>
+
+#include <pcl/filters/extract_indices.h>
+#include <pcl/filters/passthrough.h>
+#include <pcl/impl/point_types.hpp>
+#include <pcl/kdtree/kdtree_flann.h>
+#include <pcl/octree/octree.h>
+#include <pcl/point_cloud.h>
+#include <pcl/point_types.h>
+#include <pcl/search/kdtree.h>
+#include <pcl/segmentation/extract_clusters.h>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl_ros/transforms.hpp>
+
+#include <tf2_geometry_msgs/tf2_geometry_msgs.h>
+#include <tf2_ros/buffer.h>
+#include <tf2_ros/transform_listener.h>
 
 #include <frida_constants/manip_3d.hpp>
+#include <perception_3d/macros.hpp>
+
 #include <frida_interfaces/srv/cluster_object_from_point.hpp>
+#include <frida_interfaces/srv/detail/cluster_object_from_point__struct.hpp>
 #include <frida_interfaces/srv/remove_plane.hpp>
 #include <frida_interfaces/srv/test.hpp>
 
@@ -40,7 +51,14 @@ private:
 
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr cloud_sub_;
 
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener;
+  // std::shared_ptr<tf2_ros::Buffer> tf_buffer;
+  std::unique_ptr<tf2_ros::Buffer> tf_buffer;
+  // tf2_ros::Buffer tf_buffer;/
+
   std::string point_cloud_topic = POINT_CLOUD_TOPIC;
+
+  double cluster_size = 0.37;
 
 public:
   TableSegmentationNode() : Node("table_segmentation_node") {
@@ -48,6 +66,16 @@ public:
 
     this->point_cloud_topic =
         this->declare_parameter("point_cloud_topic", point_cloud_topic);
+
+    this->cluster_size = this->declare_parameter("cluster_size", cluster_size);
+
+    // this->tf_listener = std::make_shared<tf2_ros::TransformListener>(
+    //     this->shared_from_this(), this->get_clock());
+
+    this->tf_buffer = std::make_unique<tf2_ros::Buffer>(this->get_clock());
+
+    this->tf_listener =
+        std::make_shared<tf2_ros::TransformListener>(*tf_buffer);
 
     this->cloud_sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
         point_cloud_topic, rclcpp::SensorDataQoS(),
@@ -222,6 +250,20 @@ public:
                                       "pcl_debug/cluster/filtered_no_plane.pcd",
                                       cloud_out);
 
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out5_debug(
+        new pcl::PointCloud<pcl::PointXYZ>);
+
+    response->status = this->extractPlane(cloud_out, cloud_out5_debug, false);
+
+    ASSERT_AND_RETURN_CODE(response->status, OK,
+                           "Error extracting plane with code %d",
+                           response->status);
+
+    response->status = savePointCloud("/home/ivanromero/Desktop/home2/"
+                                      "manipulation/packages/perception_3d/"
+                                      "pcl_debug/cluster/filtered_plane.pcd",
+                                      cloud_out5_debug);
+
     response->status = savePointCloud("/home/ivanromero/Desktop/home2/"
                                       "manipulation/packages/perception_3d/"
                                       "pcl_debug/cluster/original.pcd",
@@ -262,8 +304,9 @@ public:
       return NO_POINTCLOUD;
     }
     uint32_t status = OK;
-    cloud_out =
-        pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
+    // cloud_out =
+    //     pcl::PointCloud<pcl::PointXYZ>::Ptr(new
+    //     pcl::PointCloud<pcl::PointXYZ>);
 
     status = copyPointCloud(last_, cloud_out);
 
@@ -297,6 +340,11 @@ public:
   savePointCloud(const std::string filename,
                  const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
                  const rclcpp::Logger logger = rclcpp::get_logger("save_pcd")) {
+    // first check if it pointcloud has any data
+    if (cloud->points.size() == 0) {
+      RCLCPP_WARN(logger, "Point cloud is empty, not saving");
+      return POINT_CLOUD_EMPTY;
+    }
     try {
       pcl::io::savePCDFile(filename, *cloud);
     } catch (const std::exception &e) {
@@ -309,9 +357,30 @@ public:
   uint32_t
   pointCloudCallback(const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
     try {
+      sensor_msgs::msg::PointCloud2 msg2;
+      // tf_listener->waitForTransform("base_link", msg->header.frame_id,
+      //                               msg->header.stamp, rclcpp::Time(0),
+      //                               rclcpp::Duration(5.0));
+
+      // tf_listener->lookupTransform("base_link", msg->header.frame_id,
+      //                              msg->header.stamp, rclcpp::Duration(5.0));
+      bool can_transform = this->tf_buffer->canTransform(
+          "base_link", msg->header.frame_id, tf2::TimePointZero);
+      if (!can_transform) {
+        RCLCPP_ERROR(this->get_logger(), "Could not transform point cloud");
+        return COULD_NOT_CONVERT_POINT_CLOUD;
+      }
+
+      pcl_ros::transformPointCloud("base_link", *msg, msg2, *this->tf_buffer);
+
       last_ = pcl::PointCloud<pcl::PointXYZ>::Ptr(
           new pcl::PointCloud<pcl::PointXYZ>);
-      pcl::fromROSMsg(*msg, *last_);
+
+      pcl::fromROSMsg(msg2, *last_);
+
+      // last_ = pcl::PointCloud<pcl::PointXYZ>::Ptr(
+      //     new pcl::PointCloud<pcl::PointXYZ>);
+      // pcl::fromROSMsg(*msg, *last_);
     } catch (const std::exception &e) {
       RCLCPP_ERROR(this->get_logger(), "Error converting point cloud: %s",
                    e.what());
@@ -442,16 +511,12 @@ public:
   clusterFromPoint(_IN_ const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
                    _IN_ const pcl::PointXYZ point,
                    _OUT_ pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out) {
-    // https://stackoverflow.com/questions/60379640
+    pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
+    kdtree.setInputCloud(cloud);
+    std::vector<int> pointIdxNKNSearch(1);
+    std::vector<float> pointNKNSquaredDistance(1);
 
-    pcl::octree::OctreePointCloudSearch<pcl::PointXYZ> octree(0.1);
-    octree.setInputCloud(cloud);
-    octree.addPointsFromInputCloud();
-
-    std::vector<int> pointIdxNKNSearch;
-    std::vector<float> pointNKNSquaredDistance;
-
-    if (octree.nearestKSearch(point, 1, pointIdxNKNSearch,
+    if (kdtree.nearestKSearch(point, 1, pointIdxNKNSearch,
                               pointNKNSquaredDistance) <= 0) {
       RCLCPP_WARN(this->get_logger(),
                   "No point detected at point x: %f y: %f z: %f", point.x,
@@ -459,24 +524,54 @@ public:
       return NO_POINT_DETECTED;
     }
 
-    cloud_out =
-        pcl::PointCloud<pcl::PointXYZ>::Ptr(new pcl::PointCloud<pcl::PointXYZ>);
-    std::vector<int> pointIdxVec;
+    pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(
+        new pcl::search::KdTree<pcl::PointXYZ>);
+    tree->setInputCloud(cloud);
 
-    if (octree.voxelSearch(cloud->points[pointIdxNKNSearch[0]], pointIdxVec) <=
-        0) {
+    std::vector<pcl::PointIndices> cluster_indices;
+    pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
+    ec.setClusterTolerance(0.02);
+    ec.setMinClusterSize(1);   // Minimum number of points in a cluster
+    ec.setMaxClusterSize(600); // Maximum number of points in a cluster
+    ec.setSearchMethod(tree);
+    ec.setInputCloud(cloud);
+    ec.extract(cluster_indices);
+
+    // Find which cluster our point belongs to
+    int targetPointIdx = pointIdxNKNSearch[0];
+    int targetClusterIdx = -1;
+
+    for (size_t i = 0; i < cluster_indices.size(); i++) {
+      for (const auto &idx : cluster_indices[i].indices) {
+        if (idx == targetPointIdx) {
+          targetClusterIdx = i;
+          break;
+        }
+      }
+      if (targetClusterIdx >= 0)
+        break;
+    }
+
+    if (targetClusterIdx < 0) {
       RCLCPP_WARN(this->get_logger(),
                   "No object to cluster at point x: %f y: %f z: %f", point.x,
                   point.y, point.z);
       return NO_OBJECT_TO_CLUSTER_AT_POINT;
     }
 
-    for (unsigned long i = 0; i < pointIdxVec.size(); ++i) {
-      cloud_out->points.push_back(cloud->points[pointIdxVec[i]]);
+    // Extract the cluster
+    cloud_out->points.clear();
+    for (const auto &idx : cluster_indices[targetClusterIdx].indices) {
+      cloud_out->points.push_back(cloud->points[idx]);
     }
 
-    RCLCPP_INFO(this->get_logger(), "Clustered %lu points",
-                cloud_out->points.size());
+    cloud_out->width = cloud_out->points.size();
+    cloud_out->height = 1;
+    cloud_out->is_dense = true;
+
+    RCLCPP_INFO(this->get_logger(),
+                "Original cloud size: %lu, clustered %lu points",
+                cloud->points.size(), cloud_out->points.size());
 
     return OK;
   }
