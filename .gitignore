@@ -14,3 +14,4 @@
 **.gz
 hri/packages/nlp/assets/**
 !hri/packages/nlp/assets/download-model.bash
+.cache
