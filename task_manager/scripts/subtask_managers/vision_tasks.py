@@ -215,7 +215,7 @@ class VisionTasks:
         Logger.success(self.node, f"Found drink: {drink}")
         return self.STATE["EXECUTION_SUCCESS"], ""
 
-    @mockable(return_value="tall person", delay=5, mock=True)
+    @mockable(return_value="tall person", delay=5, mock=False)
     @service_check("person_description_client", "No description generated", TIMEOUT)
     def describe_person(self):
         """Requests a description of a person and handles the response asynchronously."""

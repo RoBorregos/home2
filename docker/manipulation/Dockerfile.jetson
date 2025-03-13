@@ -1,0 +1,12 @@
+ARG BASE_IMAGE=dustynv/l4t-pytorch:r36.4.0
+FROM ${BASE_IMAGE}
+
+RUN mkdir -p /workspace
+
+# CV-bridge
+RUN apt update && apt install -y ros-humble-cv-bridge
+
+USER ros
+RUN sudo usermod -a -G video ros
+RUN newgrp video
+WORKDIR /workspace

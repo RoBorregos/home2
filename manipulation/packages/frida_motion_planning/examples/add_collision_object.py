@@ -10,7 +10,7 @@ from std_msgs.msg import Header
 Usage
 - ros2 run frida_motion_planning add_collision_object.py --ros-args -p type:="box" -p position:="[0.5, 0.0, 0.5]" -p dimensions:="[0.2, 0.2, 0.05]"
 - ros2 run frida_motion_planning add_collision_object.py --ros-args -p type:="cylinder" -p position:="[0.2, 0.0, 0.5]" -p quat_xyzw:="[0.0, 0.0, 0.0, 1.0]" -p dimensions:="[0.1, 0.4]"
-- ros2 run frida_motion_planning add_collision_object.py --ros-args -p type:="sphere -p position:="[0.2, 0.0, 0.5]" -p dimensions:="[0.15]"
+- ros2 run frida_motion_planning add_collision_object.py --ros-args -p type:="sphere" -p position:="[0.2, 0.0, 0.5]" -p dimensions:="[0.15]"
 - ros2 run frida_motion_planning add_collision_object.py --ros-args -p type:="mesh" -p position:="[0.2, 0.0, 0.5]" -p quat_xyzw:="[0.0, 0.0, 0.0, 1.0]" -p mesh_file:="package://frida_motion_planning/meshes/box.stl"
 """
 
@@ -39,10 +39,11 @@ def main():
     )
     mesh_file = node.get_parameter("mesh_file").get_parameter_value().string_value
 
-    print(f"Sending type: {type}")
-    print(f"Sending position: {position}")
-    print(f"Sending quat_xyzw: {quat_xyzw}")
-    print(f"Sending dimensions: {dimensions}")
+    node.get_logger().info("Adding collision object...")
+    node.get_logger().info(f"Sending type: {type}")
+    node.get_logger().info(f"Sending position: {position}")
+    node.get_logger().info(f"Sending quat_xyzw: {quat_xyzw}")
+    node.get_logger().info(f"Sending dimensions: {dimensions}")
     request = AddCollisionObject.Request()
     request.id = "object"
     request.type = type
@@ -73,7 +74,7 @@ def main():
     rclpy.spin_until_future_complete(node, future)
     response = future.result()
 
-    print(f"Response: {response.success}")
+    node.get_logger().info(f"Response: {response.success}")
 
     node.destroy_node()
     rclpy.shutdown()

@@ -168,21 +168,22 @@ class ManipulationTasks:
         Logger.success(self.node, "Arm Desactivated!")
         return self.STATE["EXECUTION_SUCCESS"]
 
-    def move_to(self, x: float, y: float):
-        Logger.info(self.node, "Moving arm with velocity")
-
+    def set_move_mode(self):
+        Logger.info(self.node, "Setting move  arm")
         mode_request = SetInt16.Request()
         mode_request.data = 4
-
         try:
             future_mode = self.mode_client.call_async(mode_request)
             rclpy.spin_until_future_complete(self.node, future_mode, timeout_sec=TIMEOUT)
-
         except Exception as e:
-            Logger.error(self.node, f"Error changing mode of arm: {e}")
+            Logger.error(self.node, f"Error moving arm: {e}")
             return self.STATE["EXECUTION_ERROR"]
 
-        Logger.success(self.node, "Mode changed!")
+        Logger.success(self.node, "Arm activated for moving!")
+        return self.STATE["EXECUTION_SUCCESS"]
+
+    def move_to(self, x: float, y: float):
+        Logger.info(self.node, "Moving arm with velocity")
 
         # Set motion
         x = x * -1

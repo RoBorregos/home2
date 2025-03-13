@@ -8,9 +8,11 @@
 
 <xacro:include filename="base.xacro"/>
 <xacro:include filename="wheels.xacro"/>
-<xacro:include filename="castwheelbraket.xacro"/>
 <xacro:include filename="castwheel.xacro"/>
 <xacro:include filename="lidar.xacro"/>
 <xacro:include filename="realsense.xacro"/>
+<xacro:include filename="imu.xacro"/>
+<xacro:include filename="gazebo.xacro"/>
+
 
 </robot>

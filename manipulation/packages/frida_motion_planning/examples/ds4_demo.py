@@ -10,6 +10,7 @@ from rclpy.qos import QoSDurabilityPolicy
 from rclpy.action import ActionClient
 from frida_interfaces.action import MoveJoints
 from frida_interfaces.srv import Speak
+from frida_constants.manipulation_constants import DEG2RAD
 from geometry_msgs.msg import TwistStamped
 from xarm_msgs.srv import SetDigitalIO
 import rclpy
@@ -17,8 +18,6 @@ import rclpy
 from frida_constants.hri_constants import (
     SPEAK_SERVICE,
 )
-
-DEG2RAD = 3.14159265359 / 180.0
 
 POS0 = [-90, -45, -90, -170, -45, -55]
 POS1 = [30, -10, -40, -170, 45, -55]
@@ -31,7 +30,7 @@ class ServoDS4(Node):
     def __init__(self):
         super().__init__("servo_ds4")
         self.create_subscription(Joy, "/joy", self.joy_callback, 1)
-        print("Initializing...")
+        self.get_logger().info("Servo DS4 node starting...")
         # Create a client for the service
         self.gripper_client = self.create_client(
             SetDigitalIO, "/xarm/set_tgpio_digital"
@@ -49,7 +48,7 @@ class ServoDS4(Node):
                 history=QoSHistoryPolicy.KEEP_ALL,
             ),
         )
-
+        self.get_logger().info("Servo DS4 node started")
         # self.start_service = self.create_client(ToggleServo, "/manipulation/toggle_servo")
         # self.start_service.wait_for_service()
         # future = self.start_service.call_async(ToggleServo.Request(enable=True))
@@ -137,7 +136,7 @@ class ServoDS4(Node):
 
     def get_result_callback(self, future):
         result = future.result().result
-        print("Result:", result)
+        self.get_logger().info("Result:", result)
         self.busy_planner = False
 
 

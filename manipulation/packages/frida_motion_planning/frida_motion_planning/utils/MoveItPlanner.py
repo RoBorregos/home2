@@ -96,9 +96,11 @@ class MoveItPlanner(Planner):
     def plan_pose_goal(
         self, pose: PoseStamped, cartesian: bool = False, wait: bool = True
     ) -> Union[bool, Future]:
+        self.node.get_logger().info("Planning pose goal")
         trajectory = self._plan(pose, cartesian)
         if not trajectory:
             return False
+        self.node.get_logger().info("Executing trajectory")
         self.moveit2.execute(trajectory)
         future = None
         while future is None:
@@ -106,7 +108,9 @@ class MoveItPlanner(Planner):
         if wait:
             while not future.done():
                 pass
-            self.node.get_logger().info(f"Execution status: {future.result().status}")
+            self.node.get_logger().info(
+                "Execution done witth status: " + str(future.result().status)
+            )
             return future.result().status == 4  # 4 is the status for success
 
         return self.moveit2.get_execution_future()

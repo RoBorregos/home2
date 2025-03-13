@@ -14,4 +14,4 @@ class SubtaskManager:
         # self.manipulation = ManipulationTasks(node, task=task, mock_data=("manipulation" in mock_areas))
         self.manipulation = None
 
-        self.nav = NavigationTasks(node, mock_data=("nav" in mock_areas))
+        self.nav = NavigationTasks(node, mock_data=("navigation" in mock_areas))
