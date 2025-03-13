@@ -9,9 +9,14 @@ from rclpy.qos import QoSHistoryPolicy
 from rclpy.qos import QoSDurabilityPolicy
 from rclpy.action import ActionClient
 from frida_interfaces.action import MoveJoints
+from frida_interfaces.srv import Speak
 from geometry_msgs.msg import TwistStamped
 from xarm_msgs.srv import SetDigitalIO
 import rclpy
+
+from frida_constants.hri_constants import (
+    SPEAK_SERVICE,
+)
 
 DEG2RAD = 3.14159265359 / 180.0
 
@@ -34,6 +39,7 @@ class ServoDS4(Node):
         self._move_joints_action_client = ActionClient(
             self, MoveJoints, "/manipulation/move_joints_action_server"
         )
+        self.speak_service = self.create_client(Speak, SPEAK_SERVICE)
         self.twist_pub = self.create_publisher(
             TwistStamped,
             "/servo_server/delta_twist_cmds",
@@ -50,6 +56,7 @@ class ServoDS4(Node):
         # rclpy.spin_until_future_complete(self, future)
         self.busy_planner = False
         self.busy_gripper = False
+        self.speak_busy = False
         print("Initialized")
 
     def joy_callback(self, msg):
@@ -65,6 +72,20 @@ class ServoDS4(Node):
         elif msg.buttons[3]:
             print("Setting joint state 1")
             self.send_goal(joint_positions=POS1)
+        elif msg.buttons[4]:
+            print("Saying Congratulations")
+            self.speak("Congratulations")
+
+    def speak(self, text):
+        if self.speak_busy:
+            return
+        request = Speak.Request(text=text)
+        future = self.speak_service.call_async(request)
+        self.speak_busy = True
+        future.add_done_callback(self.speak_callback)
+
+    def speak_callback(self, future):
+        self.speak_busy = False
 
     def set_gripper_state(self, state):
         if self.busy_gripper:
