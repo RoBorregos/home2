@@ -269,10 +269,36 @@ public:
                                       "pcl_debug/cluster/original.pcd",
                                       last_);
 
+    bool can_transform =
+        request->point.header.frame_id == "base_link" ||
+        this->tf_buffer->canTransform(
+            "base_link", request->point.header.frame_id, tf2::TimePointZero);
+
+    if (!can_transform) {
+      RCLCPP_ERROR(this->get_logger(), "Could not transform point cloud");
+      response->status = COULDNT_TRANSFORM_TO_BASE_LINK;
+      return;
+    }
+
+    if (request->point.header.frame_id != "base_link") {
+      geometry_msgs::msg::PointStamped point;
+      point.point = request->point.point;
+      point.header = request->point.header;
+      point.header.frame_id = "base_link";
+      try {
+        this->tf_buffer->transform(point, point, "base_link");
+      } catch (const std::exception &e) {
+        RCLCPP_ERROR(this->get_logger(), "Error transforming point: %s",
+                     e.what());
+        response->status = COULDNT_TRANSFORM_TO_BASE_LINK;
+        return;
+      }
+    }
+
     pcl::PointXYZ point;
-    point.x = request->point.x;
-    point.y = request->point.y;
-    point.z = request->point.z;
+    point.x = request->point.point.x;
+    point.y = request->point.point.y;
+    point.z = request->point.point.z;
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out2(
         new pcl::PointCloud<pcl::PointXYZ>);
@@ -293,6 +319,18 @@ public:
                            "Error saving cluster point cloud with code %d",
                            response->status);
 
+    response->cluster = sensor_msgs::msg::PointCloud2();
+    try {
+      pcl::toROSMsg(*cloud_out2, response->cluster);
+    } catch (const std::exception &e) {
+      RCLCPP_ERROR(this->get_logger(), "Error converting point cloud: %s",
+                   e.what());
+      response->status = COULD_NOT_CONVERT_POINT_CLOUD;
+      return;
+    }
+
+    response->cluster.header.frame_id = "base_link";
+    response->cluster.header.stamp = this->now();
     response->status = OK;
 
     return;
@@ -389,10 +427,18 @@ public:
     return OK;
   }
 
+  /**
+   * \brief Filter to get pointcloud within a certain range in the axis given
+   * @param cloud: IN Point cloud to filter
+   * @param cloud_out: OUT Point cloud to store the filtered point cloud
+   * @param min_val: Minimum value to filter *Optional*. Default is 0.0
+   * @param max_val: Maximum value to filter *Optional*. Default is 5.0
+   * @param filter: Axis to filter. *Optional*. Default is Z
+   */
   uint32_t passThroughPlane(
       _IN_ const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
       _OUT_ pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out,
-      const float min_z = 0.0, const float max_z = 5.0,
+      const float min_val = 0.0, const float max_val = 5.0,
       const PassThroughFilterType filter = PassThroughFilterType::Z) {
 
     std::string filter_field_name = "z";
@@ -413,7 +459,7 @@ public:
     pcl::PassThrough<pcl::PointXYZ> pass;
     pass.setInputCloud(cloud);
     pass.setFilterFieldName("z");
-    pass.setFilterLimits(min_z, max_z);
+    pass.setFilterLimits(min_val, max_val);
     pass.filter(*cloud_out);
 
     return OK;
@@ -471,6 +517,15 @@ public:
     return status;
   };
 
+  /**
+   * \brief Extracts the plane from a point cloud. If extract_negative is true,
+   * the plane is removed from the point cloud
+
+   * @param cloud: IN Point cloud to extract the plane from
+   * @param cloud_out: OUT Point cloud to store the extracted plane
+   * @param extract_negative: If true, the plane is removed from the point cloud
+   */
+
   uint32_t extractPlane(_IN_ const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
                         _OUT_ pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out,
                         bool extract_negative = false) {
@@ -479,12 +534,15 @@ public:
     pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
     pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
     pcl::SACSegmentation<pcl::PointXYZ> seg;
+
+    // set segmentation parameters
     seg.setOptimizeCoefficients(true);
     seg.setModelType(pcl::SACMODEL_PLANE);
     seg.setMethodType(pcl::SAC_RANSAC);
     seg.setMaxIterations(1000);
     seg.setDistanceThreshold(0.01);
 
+    // segment the largest planar component from the input cloud
     seg.setInputCloud(cloud);
     seg.segment(*inliers, *coefficients);
 
@@ -507,10 +565,20 @@ public:
     return status;
   };
 
+  /**
+   * \brief Extracts a pointcloud cluster given a point
+   * @param cloud: IN Point cloud to extract the cluster from
+   * @param point: IN Point to find the cluster from
+   * @param cloud_out: OUT Point cloud to store the extracted cluster
+   */
+
   uint32_t
   clusterFromPoint(_IN_ const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
                    _IN_ const pcl::PointXYZ point,
                    _OUT_ pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out) {
+
+    // Using kdTree to get the closest point FROM the pointcloud to the point
+    // given as input
     pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
     kdtree.setInputCloud(cloud);
     std::vector<int> pointIdxNKNSearch(1);
@@ -524,6 +592,9 @@ public:
       return NO_POINT_DETECTED;
     }
 
+    // Euclidean clustering (Make all clusters from the given point cloud)
+    // (Input point agnostic)
+
     pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(
         new pcl::search::KdTree<pcl::PointXYZ>);
     tree->setInputCloud(cloud);
@@ -531,8 +602,8 @@ public:
     std::vector<pcl::PointIndices> cluster_indices;
     pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
     ec.setClusterTolerance(0.02);
-    ec.setMinClusterSize(1);   // Minimum number of points in a cluster
-    ec.setMaxClusterSize(600); // Maximum number of points in a cluster
+    ec.setMinClusterSize(1);    // Minimum number of points in a cluster
+    ec.setMaxClusterSize(6000); // Maximum number of points in a cluster
     ec.setSearchMethod(tree);
     ec.setInputCloud(cloud);
     ec.extract(cluster_indices);
@@ -541,8 +612,11 @@ public:
     int targetPointIdx = pointIdxNKNSearch[0];
     int targetClusterIdx = -1;
 
+    // given the clusters resulting from the Euclidean clustering, find the
+    // cluster that is closest to the point
     for (size_t i = 0; i < cluster_indices.size(); i++) {
       for (const auto &idx : cluster_indices[i].indices) {
+        RCLCPP_INFO(this->get_logger(), "Cluster %lu, idx %d", i, idx);
         if (idx == targetPointIdx) {
           targetClusterIdx = i;
           break;
@@ -559,7 +633,7 @@ public:
       return NO_OBJECT_TO_CLUSTER_AT_POINT;
     }
 
-    // Extract the cluster
+    // Get cluster given
     cloud_out->points.clear();
     for (const auto &idx : cluster_indices[targetClusterIdx].indices) {
       cloud_out->points.push_back(cloud->points[idx]);

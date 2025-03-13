@@ -12,7 +12,8 @@ enum u32bStatusErrorCodes {
   INVALID_INPUT_FILTER = 5,
   NO_POINT_DETECTED = 6,
   NO_OBJECT_TO_CLUSTER_AT_POINT = 7,
-  POINT_CLOUD_EMPTY = 8
+  POINT_CLOUD_EMPTY = 8,
+  COULDNT_TRANSFORM_TO_BASE_LINK = 9,
 };
 
 #define ASSERT(var, val, message)                                              \
