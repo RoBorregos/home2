@@ -6,7 +6,11 @@ RUN mkdir -p /workspace/requirements
 # Requirements
 COPY vision/vision_general/requirements.txt /workspace/requirements/requirements.txt   
 RUN pip install -r requirements/requirements.txt
-# RUN pip install torch==1.11 torchvision==0.12.0
+RUN pip install torch==1.11 torchvision==0.12.0
+
+# Moondream TODO(@alecoeto): Establish model path
+# WORKDIR vision/vision_general
+# RUN wget https://huggingface.co/vikhyatk/moondream2/resolve/9dddae84d54db4ac56fe37817aeaeb502ed083e2/moondream-2b-int8.mf.gz
 
 # CV-bridge
 RUN apt update && apt install -y ros-humble-cv-bridge

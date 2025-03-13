@@ -1,8 +1,8 @@
-opencv-python
 pathlib
-tqdm
-numpy>=2.1.2
-face_recognition
-ultralytics
+tqdm 
+pillow 
+numpy==2.2.3
+opencv-python
 moondream==0.0.5
-pillow
+ultralytics==8.1.0
+face_recognition

@@ -62,6 +62,8 @@ case $ENV_TYPE in
         docker compose -f ../cuda.yaml build
     fi
 
+    echo "DOCKER_RUNTIME=nvidia" >> .env
+
     ;;
   "jetson")
     #_____Jetson_____
@@ -74,6 +76,9 @@ case $ENV_TYPE in
     if [ $? -eq 1 ]; then
         docker compose -f ../jetson.yaml build
     fi
+    
+    echo "DOCKER_RUNTIME=nvidia" >> .env
+
     ;;
   *)
     echo "Unknown environment type!"
