@@ -143,7 +143,7 @@ def launch_setup(context, *args, **kwargs):
 
     # gazebo launch
     # gazebo_ros/launch/gazebo.launch.py
-    xarm_gazebo_world = PathJoinSubstitution([FindPackageShare('frida_description'), 'worlds', 'empty_classic.world'])
+    xarm_gazebo_world = PathJoinSubstitution([FindPackageShare('frida_description'), 'worlds', 'table.world'])
     gazebo_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(PathJoinSubstitution([FindPackageShare('gazebo_ros'), 'launch', 'gazebo.launch.py'])),
         launch_arguments={
