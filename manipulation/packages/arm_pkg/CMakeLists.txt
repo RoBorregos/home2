@@ -73,7 +73,7 @@ install(
 
 ######################### Python  #########################
 #Python compatability
-# ament_python_install_package(${PROJECT_NAME})
+ament_python_install_package(${PROJECT_NAME})
 
 # Install python scripts
 install(PROGRAMS
@@ -91,7 +91,7 @@ install(DIRECTORY
 ###################### GPD #################################
 
 find_library(GPD_LIB NAMES gpd PATHS $ENV{GPD_INSTALL_DIR}/lib PATH_SUFFIXES lib NO_DEFAULT_PATH)
-target_link_libraries(gpd_test ${GPD_LIB})
+# target_link_libraries(gpd_test ${GPD_LIB})
 
 if (NOT GPD_LIB)
   message("ENV Variable: $ENV{GPD_INSTALL_DIR}")
