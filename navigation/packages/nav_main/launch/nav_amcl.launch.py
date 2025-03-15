@@ -20,7 +20,7 @@ def generate_launch_description():
     )
     declare_map_route = DeclareLaunchArgument(
     'map',
-    default_value=os.path.join(get_package_share_directory('nav_main'), 'maps', 'Lab01.yaml'),
+    default_value=os.path.join(get_package_share_directory('nav_main'), 'maps', 'Lab14marzo.yaml'),
     description='Path to the map file'
     )
     nav_main_package = get_package_share_directory('nav_main')
