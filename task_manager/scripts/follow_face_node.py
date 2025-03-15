@@ -86,6 +86,8 @@ class FollowFaceNode(Node):
 
         self.follow_face = {"x": 0, "y": 0}
 
+        self.flag_active_face = False
+
         self.create_timer(0.1, self.run)
 
     def set_state(self):
@@ -178,6 +180,8 @@ class FollowFaceNode(Node):
             Logger.error(self, f"move service call failed: {str(e)}")
 
     def run(self):
+        if not self.is_following_face_active:
+            return
         """Running main loop"""
         # Follow face task
         Logger.state(self, "Follow face task")
