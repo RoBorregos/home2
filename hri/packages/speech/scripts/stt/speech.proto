@@ -10,7 +10,8 @@ service SpeechService {
 
 // The message containing audio data
 message AudioRequest {
-  bytes audio_data = 1;
+    bytes audio_data = 1;
+    string hotwords = 2;
 }
 
 // The message containing the transcribed text

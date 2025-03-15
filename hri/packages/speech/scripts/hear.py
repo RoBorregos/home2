@@ -13,6 +13,7 @@ from std_msgs.msg import String
 
 from frida_interfaces.msg import AudioData
 from frida_interfaces.srv import STT
+from frida_interfaces.srv import UpdateHotwords
 
 # Add the directory containing the protos to the Python path
 sys.path.append(os.path.join(os.path.dirname(__file__), "stt"))
@@ -26,9 +27,9 @@ class WhisperClient:
         self.channel = grpc.insecure_channel(address)
         self.stub = speech_pb2_grpc.SpeechServiceStub(self.channel)
 
-    def transcribe(self, audio_data):
+    def transcribe(self, audio_data, hotwords):
         try:
-            request = speech_pb2.AudioRequest(audio_data=audio_data)
+            request = speech_pb2.AudioRequest(audio_data=audio_data, hotwords=hotwords)
             response = self.stub.Transcribe(request)
             return response.text
         except grpc.RpcError as e:
@@ -55,6 +56,19 @@ class HearNode(Node):
             .get_parameter_value()
             .string_value
         )
+        hotword_service_name = (
+            self.declare_parameter("HOTWORD_SERVICE_NAME", "hotword_service")
+            .get_parameter_value()
+            .string_value
+        )
+        default_hotwords = (
+            self.declare_parameter("DEFAULT_HOTWORDS", "Frida RoBorregos")
+            .get_parameter_value()
+            .string_value
+        )
+
+        # Initialize the hotwords
+        self.hotwords = default_hotwords
 
         # Initialize the Whisper gRPC client
         self.client = WhisperClient(server_ip)
@@ -67,6 +81,7 @@ class HearNode(Node):
         # Create groups for the subscription and service
         subscription_group = MutuallyExclusiveCallbackGroup()
         service_group = MutuallyExclusiveCallbackGroup()
+        hotword_service_group = MutuallyExclusiveCallbackGroup()
 
         # Subscribe to audio data
         self.audio_subscription = self.create_subscription(
@@ -94,6 +109,13 @@ class HearNode(Node):
                 callback_group=service_group,
             )
 
+        self.hotword_service = self.create_service(
+            UpdateHotwords,
+            hotword_service_name,
+            self.set_hotwords_callback,
+            callback_group=hotword_service_group,
+        )
+
         self.get_logger().info("*Hear Node is ready*")
 
     def callback_audio(self, data):
@@ -108,7 +130,7 @@ class HearNode(Node):
             audio_bytes = bytes(all_samples)
 
             # Send audio to Whisper gRPC server
-            transcription = self.client.transcribe(audio_bytes)
+            transcription = self.client.transcribe(audio_bytes, self.hotwords)
             self.get_logger().info(f"Transcription received: {transcription}")
 
             # Publish the transcription
@@ -137,6 +159,12 @@ class HearNode(Node):
         while self.service_active:
             pass
         response.text_heard = self.service_text
+        return response
+
+    def set_hotwords_callback(self, request, response):
+        self.hotwords = request.hotwords
+        response.success = True
+        self.get_logger().info(f"Updated hotwords: {self.hotwords}")
         return response
 
 
