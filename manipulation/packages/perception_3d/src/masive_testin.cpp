@@ -190,6 +190,11 @@ public:
         std::make_shared<frida_interfaces::srv::RemovePlane::Request>();
 
     req2table->extract_or_remove = false;
+    req2table->close_point.header.frame_id = point->header.frame_id;
+    req2table->close_point.header.stamp = point->header.stamp;
+    req2table->close_point.point.x = point->point.x;
+    req2table->close_point.point.y = point->point.y;
+    req2table->close_point.point.z = point->point.z;
 
     RCLCPP_INFO(this->get_logger(), "Sending request to remove plane");
 

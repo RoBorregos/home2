@@ -136,6 +136,36 @@ public:
 
     copyPointCloud(last_, cloud_out);
 
+    if (request->close_point.header.frame_id == "") {
+      // pcl::PointXYZ point;
+      // point.x = 0.0;
+      // point.y = 0.0;
+      // point.z = 0.0;
+      // response->health_response =
+      //     this->DistanceFilterFromPoint(cloud_out, point, cloud_out);
+    } else {
+      geometry_msgs::msg::PointStamped point;
+      if (request->close_point.header.frame_id != "base_link") {
+        try {
+          this->tf_buffer->transform(request->close_point, point, "base_link");
+        } catch (const std::exception &e) {
+          RCLCPP_ERROR(this->get_logger(), "Error transforming point: %s",
+                       e.what());
+          response->health_response = COULDNT_TRANSFORM_TO_BASE_LINK;
+          return;
+        }
+      } else {
+        point = request->close_point;
+      }
+      pcl::PointXYZ req_point;
+      req_point.x = point.point.x;
+      req_point.y = point.point.y;
+      req_point.z = point.point.z;
+
+      response->health_response =
+          this->DistanceFilterFromPoint(cloud_out, req_point, cloud_out);
+    }
+
     response->health_response =
         this->extractPlane(cloud_out, cloud_out, request->extract_or_remove);
 
@@ -334,6 +364,35 @@ public:
 
     RCLCPP_INFO(this->get_logger(),
                 "Clustered object, sending response with status OK");
+  }
+
+  STATUS_RESPONSE DistanceFilterFromPoint(
+      _IN_ const std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud,
+      _IN_ const pcl::PointXYZ point,
+      _OUT_ std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud_out) {
+
+    pcl::PassThrough<pcl::PointXYZ> pass;
+    pass.setInputCloud(cloud);
+    pass.setFilterFieldName("z");
+    pass.setFilterLimits(0.0, 1.5);
+
+    pass.filter(*cloud_out);
+
+    pcl::PassThrough<pcl::PointXYZ> pass2;
+    pass2.setInputCloud(cloud_out);
+    pass2.setFilterFieldName("x");
+    pass2.setFilterLimits(point.x - 1.0, point.x + 1.0);
+
+    pass2.filter(*cloud_out);
+
+    pcl::PassThrough<pcl::PointXYZ> pass3;
+    pass3.setInputCloud(cloud_out);
+
+    pass3.setFilterFieldName("y");
+    pass3.setFilterLimits(point.y - 1.0, point.y + 1.0);
+    pass3.filter(*cloud_out);
+
+    return OK;
   }
 
   uint32_t get_current_cloud_without_plane(
