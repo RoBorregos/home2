@@ -78,6 +78,7 @@ ament_python_install_package(${PROJECT_NAME})
 # Install python scripts
 install(PROGRAMS
  scripts/test_env.py
+ scripts/grasp_markers.py
  DESTINATION lib/${PROJECT_NAME}
 )
 
