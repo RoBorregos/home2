@@ -1,9 +1,18 @@
 import moondream as md
 from PIL import Image
 import cv2
+from enum import Enum
+
+
+class Position(Enum):
+    LEFT = "left"
+    CENTER = "center"
+    RIGHT = "right"
+    NOT_FOUND = "not found"
+
+
 # ===== STEP 1: Install Dependencies =====
 # pip install moondream  # Install dependencies in your project directory
-
 
 # ===== STEP 2: Download Model =====
 # Download model (593 MiB download size, 996 MiB memory usage)
@@ -27,24 +36,23 @@ class MoonDreamModel:
             print()
         else:
             answer = self.model.query(encoded_image, query)["answer"]
-            # print("Answer:", answer)
             return answer
 
     def find_beverage(self, encoded_image, subject):
         detect_result = self.model.detect(encoded_image, subject)
 
         if not detect_result["objects"]:
-            return "not found"
+            return Position.NOT_FOUND
         else:
             for obj in detect_result["objects"]:
                 x_center = (obj["x_min"] + obj["x_max"]) / 2
                 if x_center < 1 / 3:
-                    position = "left"
+                    return Position.LEFT
                 elif x_center > 2 / 3:
-                    position = "right"
+                    return Position.RIGHT
                 else:
-                    position = "center"
-                return position
+                    return Position.CENTER
+            return Position.NOT_FOUND
 
 
 # Test beverage location

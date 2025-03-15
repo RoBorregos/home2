@@ -8,7 +8,7 @@ commands.
 
 import cv2
 from ultralytics import YOLO
-from moondream_lib import MoonDreamModel
+from moondream_lib import MoonDreamModel, Position
 import pathlib
 import numpy as np
 import queue
@@ -168,21 +168,24 @@ class ReceptionistCommands(Node):
 
         if self.image is None:
             response.location = "No image received yet."
+            response.success = False
             return response
 
         frame = self.image
         encoded_image = self.moondream_model.encode_image(frame)
+        beverage_position = self.moondream_model.find_beverage(
+            encoded_image, request.beverage
+        )
 
-        if response.location == "not found":
+        if beverage_position == Position.NOT_FOUND:
             self.get_logger().warn("Beverage not found")
+            response.location = beverage_position.value
             response.success = False
-            return response
         else:
-            response.location = self.moondream_model.find_beverage(
-                encoded_image, request.beverage
-            )
-            self.success(f"Beverage location: {response.location}")
-            return response
+            response.location = beverage_position.value
+            response.success = True
+            self.get_logger().info(f"Beverage found at: {response.location}")
+        return response
 
     def person_posture_callback(self, request, response):
         """Callback to determine the position of the person in the image."""
