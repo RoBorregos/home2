@@ -5,6 +5,7 @@ EEF_CONTACT_LINKS = ["link_eef", "link_6"]
 
 DEG2RAD = PI / 180.0
 RAD2DEG = 180.0 / PI
+
 # xArm Constants
 XARM_SETMODE_SERVICE = "/xarm/set_mode"
 XARM_SETSTATE_SERVICE = "/xarm/set_state"
@@ -17,7 +18,10 @@ MOVE_TO_POSE_ACTION_SERVER = "/manipulation/move_to_pose_action_server"
 PICK_VELOCITY = 0.15
 PICK_ACCELERATION = 0.15
 PICK_PLANNER = "RRTConnect"
-PICK_ACTION_SERVER_NODE = "manipulation/pick_server"
+
+PICK_MOTION_ACTION_SERVER_NODE = "manipulation/pick_motion_server"
+PICK_MOTION_ACTION_SERVER = "/manipulation/pick_motion_action_server"
+
 PICK_ACTION_SERVER = "/manipulation/pick_action_server"
 
 ATTACH_COLLISION_OBJECT_SERVICE = "/manipulation/attach_collision_object"

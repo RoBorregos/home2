@@ -14,20 +14,21 @@ from frida_constants.manipulation_constants import (
     PICK_OBJECT_NAMESPACE,
     EEF_LINK_NAME,
     EEF_CONTACT_LINKS,
+    PICK_MOTION_ACTION_SERVER,
 )
 from frida_interfaces.srv import AttachCollisionObject, GetCollisionObjects
-from frida_interfaces.action import PickAction, MoveToPose
+from frida_interfaces.action import PickMotion, MoveToPose
 
 
-class PickActionServer(Node):
+class PickMotionServer(Node):
     def __init__(self):
         super().__init__("pick_server")
         self.callback_group = ReentrantCallbackGroup()
 
         self._action_server = ActionServer(
             self,
-            PickAction,
-            "pick_action_server",
+            PickMotion,
+            PICK_MOTION_ACTION_SERVER,
             self.execute_callback,
             callback_group=self.callback_group,
         )
@@ -57,8 +58,8 @@ class PickActionServer(Node):
         self.get_logger().info("Executing pick goal...")
 
         # Initialize result
-        feedback = PickAction.Feedback()
-        result = PickAction.Result()
+        feedback = PickMotion.Feedback()
+        result = PickMotion.Result()
         try:
             result.success = self.pick(goal_handle, feedback)
             goal_handle.succeed()
@@ -142,7 +143,7 @@ class PickActionServer(Node):
 def main(args=None):
     rclpy.init(args=args)
     executor = rclpy.executors.MultiThreadedExecutor(5)
-    pick_server = PickActionServer()
+    pick_server = PickMotionServer()
     executor.add_node(pick_server)
     executor.spin()
     rclpy.shutdown()

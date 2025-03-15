@@ -1,0 +1,9 @@
+#goal definition
+PointStamped object_point
+string object_name
+---
+#result definition
+int32 success
+---
+#feedback
+string execution_state
