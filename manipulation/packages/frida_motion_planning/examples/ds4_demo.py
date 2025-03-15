@@ -9,10 +9,15 @@ from rclpy.qos import QoSHistoryPolicy
 from rclpy.qos import QoSDurabilityPolicy
 from rclpy.action import ActionClient
 from frida_interfaces.action import MoveJoints
+from frida_interfaces.srv import Speak
 from frida_constants.manipulation_constants import DEG2RAD
 from geometry_msgs.msg import TwistStamped
 from xarm_msgs.srv import SetDigitalIO
 import rclpy
+
+from frida_constants.hri_constants import (
+    SPEAK_SERVICE,
+)
 
 POS0 = [-90, -45, -90, -170, -45, -55]
 POS1 = [30, -10, -40, -170, 45, -55]
@@ -33,6 +38,7 @@ class ServoDS4(Node):
         self._move_joints_action_client = ActionClient(
             self, MoveJoints, "/manipulation/move_joints_action_server"
         )
+        self.speak_service = self.create_client(Speak, SPEAK_SERVICE)
         self.twist_pub = self.create_publisher(
             TwistStamped,
             "/servo_server/delta_twist_cmds",
@@ -49,20 +55,36 @@ class ServoDS4(Node):
         # rclpy.spin_until_future_complete(self, future)
         self.busy_planner = False
         self.busy_gripper = False
+        self.speak_busy = False
+        print("Initialized")
 
     def joy_callback(self, msg):
         if msg.buttons[0]:
-            self.get_logger().info("Setting gripper state open")
+            print("Setting gripper state open")
             self.set_gripper_state("open")
         elif msg.buttons[2]:
-            self.get_logger().info("Setting gripper state close")
+            print("Setting gripper state close")
             self.set_gripper_state("close")
         elif msg.buttons[1]:
-            self.get_logger().info("Setting joint state 0")
+            print("Setting joint state 0")
             self.send_goal(joint_positions=POS0)
         elif msg.buttons[3]:
-            self.get_logger().info("Setting joint state 1")
+            print("Setting joint state 1")
             self.send_goal(joint_positions=POS1)
+        elif msg.buttons[4]:
+            print("Saying Congratulations")
+            self.speak("Congratulations")
+
+    def speak(self, text):
+        if self.speak_busy:
+            return
+        request = Speak.Request(text=text)
+        future = self.speak_service.call_async(request)
+        self.speak_busy = True
+        future.add_done_callback(self.speak_callback)
+
+    def speak_callback(self, future):
+        self.speak_busy = False
 
     def set_gripper_state(self, state):
         if self.busy_gripper:
