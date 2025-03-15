@@ -23,11 +23,6 @@ from uf_ros_lib.uf_robot_utils import generate_ros2_control_params_temp_file
 
 
 def launch_setup(context, *args, **kwargs):
-    robot_ip = LaunchConfiguration("robot_ip", default="192.168.31.180")
-    report_type = LaunchConfiguration("report_type", default="normal")
-    baud_checkset = LaunchConfiguration("baud_checkset", default=True)
-    default_gripper_baud = LaunchConfiguration("default_gripper_baud", default=2000000)
-
     dof = LaunchConfiguration("dof", default=6)
     robot_type = LaunchConfiguration("robot_type", default="xarm")
     prefix = LaunchConfiguration("prefix", default="")
@@ -72,8 +67,8 @@ def launch_setup(context, *args, **kwargs):
     no_gui_ctrl = LaunchConfiguration("no_gui_ctrl", default=False)
     ros_namespace = LaunchConfiguration("ros_namespace", default="").perform(context)
 
-    ros2_control_plugin = "uf_robot_hardware/UFRobotSystemHardware"
-    controllers_name = "controllers"
+    ros2_control_plugin = "uf_robot_hardware/UFRobotFakeSystemHardware"
+    controllers_name = "fake_controllers"
     xarm_type = "{}{}".format(
         robot_type.perform(context),
         dof.perform(context) if robot_type.perform(context) in ("xarm", "lite") else "",
@@ -95,10 +90,6 @@ def launch_setup(context, *args, **kwargs):
     moveit_config = MoveItConfigsBuilder(
         context=context,
         controllers_name=controllers_name,
-        robot_ip=robot_ip,
-        report_type=report_type,
-        baud_checkset=baud_checkset,
-        default_gripper_baud=default_gripper_baud,
         dof=dof,
         robot_type=robot_type,
         prefix=prefix,
@@ -157,9 +148,9 @@ def launch_setup(context, *args, **kwargs):
         PythonLaunchDescriptionSource(
             PathJoinSubstitution(
                 [
-                    FindPackageShare("arm_pkg"),
+                    FindPackageShare("xarm_moveit_config"),
                     "launch",
-                    "frida_moveit_common.launch.py",
+                    "_robot_moveit_common2.launch.py",
                 ]
             )
         ),
@@ -174,30 +165,23 @@ def launch_setup(context, *args, **kwargs):
         }.items(),
     )
 
-    # joint state publisher node
-    joint_state_publisher_node = Node(
-        package="joint_state_publisher",
-        executable="joint_state_publisher",
-        name="joint_state_publisher",
-        output="screen",
-        parameters=[
-            {
-                "source_list": [
-                    "{}{}/joint_states".format(
-                        prefix.perform(context), hw_ns.perform(context)
-                    )
-                ]
-            }
-        ],
-        remappings=[
-            (
-                "follow_joint_trajectory",
-                "{}{}_traj_controller/follow_joint_trajectory".format(
-                    prefix.perform(context), xarm_type
-                ),
-            ),
-        ],
-    )
+    controllers = ["{}{}_traj_controller".format(prefix.perform(context), xarm_type)]
+    if (
+        add_gripper.perform(context) in ("True", "true")
+        and robot_type.perform(context) != "lite"
+    ):
+        controllers.append(
+            "{}{}_gripper_traj_controller".format(
+                prefix.perform(context), robot_type.perform(context)
+            )
+        )
+    elif (
+        add_bio_gripper.perform(context) in ("True", "true")
+        and robot_type.perform(context) != "lite"
+    ):
+        controllers.append(
+            "{}bio_gripper_traj_controller".format(prefix.perform(context))
+        )
 
     # ros2 control launch
     # xarm_controller/launch/_ros2_control.launch.py
@@ -217,25 +201,39 @@ def launch_setup(context, *args, **kwargs):
         }.items(),
     )
 
-    control_node = Node(
+    joint_state_broadcaster = Node(
         package="controller_manager",
         executable="spawner",
         output="screen",
         arguments=[
-            "{}{}_traj_controller".format(prefix.perform(context), xarm_type),
+            "joint_state_broadcaster",
             "--controller-manager",
             "{}/controller_manager".format(ros_namespace),
         ],
     )
 
+    # Load controllers
+    controller_nodes = []
+    for controller in controllers:
+        controller_nodes.append(
+            Node(
+                package="controller_manager",
+                executable="spawner",
+                output="screen",
+                arguments=[
+                    controller,
+                    "--controller-manager",
+                    "{}/controller_manager".format(ros_namespace),
+                ],
+            )
+        )
+
     return [
         robot_description_launch,
         robot_moveit_common_launch,
-        joint_state_publisher_node,
+        joint_state_broadcaster,
         ros2_control_launch,
-        control_node,
-        # robot_driver_launch,
-    ]
+    ] + controller_nodes
 
 
 def generate_launch_description():
