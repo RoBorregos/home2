@@ -32,7 +32,7 @@ ARGS = {
     "DETECTIONS_3D_TOPIC" : "/detections_3d",
     "DETECTIONS_ACTIVE_TOPIC" : "/detections_active",
     "DEBUG_IMAGE_TOPIC" : "/debug_image",
-    "CAMERA_FRAME" :  "zed_left_camera_frame",
+    "CAMERA_FRAME" :  "zed_left_camera_optical_frame",
     "YOLO_MODEL_PATH" :  str(pathlib.Path(__file__).parent) + "/../models/yolov5s.pt",
     "USE_ACTIVE_FLAG" :  False,
     "DEPTH_ACTIVE" :  True,
