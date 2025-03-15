@@ -2,10 +2,15 @@
 
 import rclpy
 from rclpy.node import Node
-from rclpy.action import ActionServer
+from rclpy.action import ActionServer, ActionClient
 from rclpy.callback_groups import ReentrantCallbackGroup
-from frida_interfaces.action import PickAction
-from pick_and_place.utils.MoveItPlanner import MoveItPlanner
+from frida_constants.manipulation_constants import (
+    MOVE_TO_POSE_ACTION_SERVER,
+    PICK_VELOCITY,
+    PICK_ACCELERATION,
+    PICK_PLANNER,
+)
+from frida_interfaces.action import PickAction, MoveToPose
 
 
 class PickActionServer(Node):
@@ -20,10 +25,15 @@ class PickActionServer(Node):
             self.execute_callback,
             callback_group=self.callback_group,
         )
-        self.planner = MoveItPlanner(self, self.callback_group)
-        self.planner.set_velocity(0.15)
-        self.planner.set_acceleration(0.15)
-        self.planner.set_planner("RRTConnect")
+
+        self._move_to_pose_action_client = ActionClient(
+            self,
+            MoveToPose,
+            MOVE_TO_POSE_ACTION_SERVER,
+        )
+
+        self._move_to_pose_action_client.wait_for_server()
+
         self.get_logger().info("Pick Action Server has been started")
 
     async def execute_callback(self, goal_handle):
@@ -51,14 +61,38 @@ class PickActionServer(Node):
         grasping_poses = goal_handle.request.grasping_poses
         for i, pose in enumerate(grasping_poses):
             # Move to pre-grasp pose
-            result = self.planner.plan_pose_goal(
-                pose,
-                wait=True,
-            )
-            print(f"Grasp Pose {i} result: {result}")
-            if result:
+            grasp_pose_handler, grasp_pose_result = self.move_to_pose(pose)
+            print(f"Grasp Pose {i} result: {grasp_pose_result}")
+            if grasp_pose_result.result.success:
+                self.get_logger().info("Grasp pose reached")
+
                 return True
+        self.get_logger().error("Failed to reach any grasp pose")
         return False
+
+    def move_to_pose(self, pose):
+        """Move the robot to the given pose."""
+        self.get_logger().info(f"Moving to pose: {pose}")
+        request = MoveToPose.Goal()
+        request.pose = pose
+        request.velocity = PICK_VELOCITY
+        request.acceleration = PICK_ACCELERATION
+        request.planner_id = PICK_PLANNER
+        future = self._move_to_pose_action_client.send_goal_async(request)
+        self.wait_for_future(future)
+        action_result = future.result().get_result()
+        return future.result(), action_result
+
+    def wait_for_future(self, future):
+        print("Waiting future not none")
+        if future is None:
+            self.get_logger().error("Service call failed: future is None")
+            return False
+        print("Waiting future done")
+        while not future.done():
+            pass
+        self.get_logger().info("Execution done with status: " + str(future.result()))
+        return future  # 4 is the status for success
 
 
 def main(args=None):

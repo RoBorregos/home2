@@ -11,6 +11,7 @@ from frida_interfaces.srv import (
     AddCollisionObject,
     RemoveCollisionObject,
     ToggleServo,
+    AttachCollisionObject,
 )
 from frida_motion_planning.utils.MoveItPlanner import MoveItPlanner
 from frida_motion_planning.utils.MoveItServo import MoveItServo
@@ -64,6 +65,12 @@ class MotionPlanningServer(Node):
             RemoveCollisionObject,
             "/manipulation/remove_collision_object",
             self.remove_collision_object_callback,
+        )
+
+        self.attach_collision_object_service = self.create_service(
+            AttachCollisionObject,
+            "/manipulation/attach_collision_object",
+            self.attach_collision_object_callback,
         )
 
         self.toggle_servo_service = self.create_service(
@@ -257,6 +264,16 @@ class MotionPlanningServer(Node):
             self.get_logger().error(f"Failed to add collision object: {str(e)}")
             response.success = False
             return response
+
+    def attach_collision_object_callback(self, request, response):
+        """Handle requests to attach collision objects to the planning scene"""
+        attached_id = f"{request.id}"
+        attached_link = request.attached_link
+        touch_links = request.touch_links
+        self.planner.attach_collision_object(attached_id, attached_link, touch_links)
+        self.get_logger().info(f"Attached collision object: {attached_id}")
+        response.success = True
+        return response
 
     def remove_collision_object_callback(self, request, response):
         """Handle requests to remove collision objects from the planning scene"""
