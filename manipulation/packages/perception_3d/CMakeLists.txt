@@ -40,6 +40,7 @@ add_executable(publish_cloud src/publish_pcl.cpp)
 add_executable(plane_service src/remove_plane.cpp)
 add_executable(pick_primitives src/add_primitives.cpp)
 add_executable(test_only_orchestrator src/masive_testin.cpp)
+add_executable(read_pcd src/read_cluster.cpp)
 
 ament_target_dependencies(down_sample_pc
   frida_interfaces
@@ -66,6 +67,11 @@ ament_target_dependencies(test_only_orchestrator
   frida_constants
   rclcpp std_msgs geometry_msgs sensor_msgs tf2_ros tf2 pcl_ros pcl_conversions tf2_eigen PCL)
 
+ament_target_dependencies(read_pcd
+  frida_interfaces
+  frida_constants
+  rclcpp std_msgs geometry_msgs sensor_msgs tf2_ros tf2 pcl_ros pcl_conversions tf2_eigen PCL)
+
 install(TARGETS 
   plane_service
 
@@ -88,6 +94,11 @@ install(TARGETS
 
 install(TARGETS
   test_only_orchestrator
+
+  DESTINATION lib/${PROJECT_NAME})
+
+install(TARGETS
+  read_pcd
 
   DESTINATION lib/${PROJECT_NAME})
 
