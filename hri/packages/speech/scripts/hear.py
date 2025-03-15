@@ -41,8 +41,6 @@ class HearNode(Node):
         super().__init__("hear_node")
         self.get_logger().info("*Starting Hear Node*")
 
-        self.hotwords = ""
-
         server_ip = (
             self.declare_parameter("STT_SERVER_IP", "127.0.0.1:50051")
             .get_parameter_value()
@@ -63,6 +61,14 @@ class HearNode(Node):
             .get_parameter_value()
             .string_value
         )
+        default_hotwords = (
+            self.declare_parameter("DEFAULT_HOTWORDS", "Frida RoBorregos")
+            .get_parameter_value()
+            .string_value
+        )
+
+        # Initialize the hotwords
+        self.hotwords = default_hotwords
 
         # Initialize the Whisper gRPC client
         self.client = WhisperClient(server_ip)

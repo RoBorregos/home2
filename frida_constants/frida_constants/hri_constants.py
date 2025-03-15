@@ -22,3 +22,5 @@ USE_RESPEAKER = True
 # OpenWakeWord
 USE_OWW = True
 SENSITIVITY_THRESHOLD = 0.3
+
+DEFAULT_HOTWORDS = "Frida RoBorregos"
