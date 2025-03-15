@@ -18,7 +18,7 @@ from frida_motion_planning.utils.MoveItServo import MoveItServo
 
 class MotionPlanningServer(Node):
     def __init__(self):
-        super().__init__("pick_server")
+        super().__init__("motion_planning_server")
         self.callback_group = ReentrantCallbackGroup()
 
         # Here we can select other planner (if implemented)
