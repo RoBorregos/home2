@@ -1,5 +1,6 @@
 string id
 string attached_link
-string[] touched_links
+string[] touch_links
+bool detach
 ---
 bool success

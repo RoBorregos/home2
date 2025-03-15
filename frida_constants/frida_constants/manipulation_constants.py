@@ -1,5 +1,8 @@
 from math import pi as PI
 
+EEF_LINK_NAME = "link_eef"
+EEF_CONTACT_LINKS = ["link_eef", "link_6"]
+
 DEG2RAD = PI / 180.0
 RAD2DEG = 180.0 / PI
 # xArm Constants
@@ -16,3 +19,7 @@ PICK_ACCELERATION = 0.15
 PICK_PLANNER = "RRTConnect"
 PICK_ACTION_SERVER_NODE = "manipulation/pick_server"
 PICK_ACTION_SERVER = "/manipulation/pick_action_server"
+
+ATTACH_COLLISION_OBJECT_SERVICE = "/manipulation/attach_collision_object"
+GET_COLLISION_OBJECTS_SERVICE = "/manipulation/get_collision_objects"
+PICK_OBJECT_NAMESPACE = "frida_pick_object_"
