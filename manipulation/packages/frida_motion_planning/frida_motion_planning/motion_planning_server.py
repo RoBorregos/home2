@@ -8,9 +8,10 @@ from geometry_msgs.msg import TwistStamped
 from frida_interfaces.action import MoveToPose, MoveJoints
 from frida_interfaces.srv import (
     GetJoints,
-    AddCollisionObject,
+    AddCollisionObjects,
     RemoveCollisionObject,
     ToggleServo,
+    AttachCollisionObject,
 )
 from frida_motion_planning.utils.MoveItPlanner import MoveItPlanner
 from frida_motion_planning.utils.MoveItServo import MoveItServo
@@ -55,15 +56,21 @@ class MotionPlanningServer(Node):
         )
 
         self.add_collision_object_service = self.create_service(
-            AddCollisionObject,
-            "/manipulation/add_collision_object",
-            self.add_collision_object_callback,
+            AddCollisionObjects,
+            "/manipulation/add_collision_objects",
+            self.add_collision_objects_callback,
         )
 
         self.remove_collision_object_service = self.create_service(
             RemoveCollisionObject,
             "/manipulation/remove_collision_object",
             self.remove_collision_object_callback,
+        )
+
+        self.attach_collision_object_service = self.create_service(
+            AttachCollisionObject,
+            "/manipulation/attach_collision_object",
+            self.attach_collision_object_callback,
         )
 
         self.toggle_servo_service = self.create_service(
@@ -170,93 +177,114 @@ class MotionPlanningServer(Node):
             response.joint_names.append(joint_name)
         return response
 
-    def add_collision_object_callback(self, request, response):
+    def add_collision_objects_callback(self, request, response):
         """Handle requests to add collision objects to the planning scene"""
-        try:
-            # Generate a unique ID for the collision object
-            object_id = f"{request.id}"
+        for collision_object in request.collision_objects:
+            try:
+                # Generate a unique ID for the collision object
+                object_id = f"{collision_object.id}"
 
-            # Handle different collision object types
-            if request.type == "box":
-                self.planner.add_collision_box(
-                    id=object_id,
-                    size=(
-                        request.dimensions.x,
-                        request.dimensions.y,
-                        request.dimensions.z,
-                    ),
-                    pose=request.pose,
-                )
-                self.get_logger().info(f"Added collision box: {object_id}")
-
-            elif request.type == "sphere":
-                # For spheres, use the x component of dimensions as radius
-                self.planner.add_collision_sphere(
-                    id=object_id, radius=request.dimensions.x, pose=request.pose
-                )
-                self.get_logger().info(f"Added collision sphere: {object_id}")
-
-            elif request.type == "cylinder":
-                # For cylinders, use x as radius, z as height
-                self.planner.add_collision_cylinder(
-                    id=object_id,
-                    height=request.dimensions.z,
-                    radius=request.dimensions.x,
-                    pose=request.pose,
-                )
-                self.get_logger().info(f"Added collision cylinder: {object_id}")
-
-            elif request.type == "mesh":
-                # Add collision mesh from file path -> Priority to file path
-                if request.path_to_mesh:
-                    self.planner.add_collision_mesh(
+                # Handle different collision object types
+                if collision_object.type == "box":
+                    self.planner.add_collision_box(
                         id=object_id,
-                        filepath=request.path_to_mesh,
-                        pose=request.pose,
-                        scale=(
-                            request.dimensions.x if request.dimensions.x != 0.0 else 1.0
+                        size=(
+                            collision_object.dimensions.x,
+                            collision_object.dimensions.y,
+                            collision_object.dimensions.z,
                         ),
+                        pose=collision_object.pose,
                     )
-                    self.get_logger().info(
-                        f"Added collision mesh from file: {object_id}"
-                    )
-                # Or from mesh data
-                else:
-                    import trimesh
+                    self.get_logger().info(f"Added collision box: {object_id}")
 
-                    # Convert mesh data to trimesh object
-                    mesh = trimesh.Trimesh()
-                    mesh.vertices = [(v.x, v.y, v.z) for v in request.mesh.vertices]
-                    mesh.faces = [
-                        (t.vertex_indices[0], t.vertex_indices[1], t.vertex_indices[2])
-                        for t in request.mesh.triangles
-                    ]
-
-                    # transform from
-                    self.planner.add_collision_mesh(
+                elif collision_object.type == "sphere":
+                    # For spheres, use the x component of dimensions as radius
+                    self.planner.add_collision_sphere(
                         id=object_id,
-                        filepath=None,
-                        pose=request.pose,
-                        mesh=mesh,
-                        frame_id=request.pose.header.frame_id,
+                        radius=collision_object.dimensions.x,
+                        pose=collision_object.pose,
                     )
-                    self.get_logger().info(
-                        f"Added collision mesh from data: {object_id}"
+                    self.get_logger().info(f"Added collision sphere: {object_id}")
+
+                elif collision_object.type == "cylinder":
+                    # For cylinders, use x as radius, z as height
+                    self.planner.add_collision_cylinder(
+                        id=object_id,
+                        height=collision_object.dimensions.z,
+                        radius=collision_object.dimensions.x,
+                        pose=collision_object.pose,
                     )
-            else:
-                self.get_logger().error(
-                    f"Unsupported collision object type: {request.type}"
-                )
+                    self.get_logger().info(f"Added collision cylinder: {object_id}")
+
+                elif collision_object.type == "mesh":
+                    # Add collision mesh from file path -> Priority to file path
+                    if collision_object.path_to_mesh:
+                        self.planner.add_collision_mesh(
+                            id=object_id,
+                            filepath=collision_object.path_to_mesh,
+                            pose=collision_object.pose,
+                            scale=(
+                                collision_object.dimensions.x
+                                if collision_object.dimensions.x != 0.0
+                                else 1.0
+                            ),
+                        )
+                        self.get_logger().info(
+                            f"Added collision mesh from file: {object_id}"
+                        )
+                    # Or from mesh data
+                    else:
+                        import trimesh
+
+                        # Convert mesh data to trimesh object
+                        mesh = trimesh.Trimesh()
+                        mesh.vertices = [
+                            (v.x, v.y, v.z) for v in collision_object.mesh.vertices
+                        ]
+                        mesh.faces = [
+                            (
+                                t.vertex_indices[0],
+                                t.vertex_indices[1],
+                                t.vertex_indices[2],
+                            )
+                            for t in collision_object.mesh.triangles
+                        ]
+
+                        # transform from
+                        self.planner.add_collision_mesh(
+                            id=object_id,
+                            filepath=None,
+                            pose=collision_object.pose,
+                            mesh=mesh,
+                            frame_id=collision_object.pose.header.frame_id,
+                        )
+                        self.get_logger().info(
+                            f"Added collision mesh from data: {object_id}"
+                        )
+                else:
+                    self.get_logger().error(
+                        f"Unsupported collision object type: {collision_object.type}"
+                    )
+                    response.success = False
+                    return response
+
+                response.success = True
+
+            except Exception as e:
+                self.get_logger().error(f"Failed to add collision object: {str(e)}")
                 response.success = False
-                return response
+        self.get_logger().info("Finished adding objects")
+        return response
 
-            response.success = True
-            return response
-
-        except Exception as e:
-            self.get_logger().error(f"Failed to add collision object: {str(e)}")
-            response.success = False
-            return response
+    def attach_collision_object_callback(self, request, response):
+        """Handle requests to attach collision objects to the planning scene"""
+        attached_id = f"{request.id}"
+        attached_link = request.attached_link
+        touch_links = request.touch_links
+        self.planner.attach_collision_object(attached_id, attached_link, touch_links)
+        self.get_logger().info(f"Attached collision object: {attached_id}")
+        response.success = True
+        return response
 
     def remove_collision_object_callback(self, request, response):
         """Handle requests to remove collision objects from the planning scene"""
