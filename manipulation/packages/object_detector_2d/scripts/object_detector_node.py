@@ -1,6 +1,8 @@
 #! /usr/bin/env python3
 import rclpy
+import rclpy.duration
 import rclpy.node
+import rclpy.time
 import tf2_ros
 from cv_bridge import CvBridge, CvBridgeError
 from geometry_msgs.msg import Point, PointStamped, PoseArray, Pose
@@ -10,31 +12,31 @@ from visualization_msgs.msg import Marker, MarkerArray
 from frida_interfaces.msg import ObjectDetection, ObjectDetectionArray
 
 from imutils.video import FPS
-from YoloV5ObjectDetector import YoloV5ObjectDetector
-from ObjectDetector import ObjectDectectorParams, Detection, BBOX
 from dataclasses import dataclass
 import pathlib
 import threading
 import copy
 from typing import List
 import cv2 as cv
+from YoloV5ObjectDetector import YoloV5ObjectDetector
+from ObjectDetector import Detection, ObjectDectectorParams
 
 
 ARGS = {
-    "RGB_IMAGE_TOPIC" : "/raw_image",
-    "DEPTH_IMAGE_TOPIC" :  "/camera/depth/image_raw",
-    "CAMERA_INFO_TOPIC" :  "/camera/depth/camera_info",
+    "RGB_IMAGE_TOPIC" : "/zed/zed_node/rgb/image_rect_color",
+    "DEPTH_IMAGE_TOPIC" :  "/zed/zed_node/depth/depth_registered",
+    "CAMERA_INFO_TOPIC" :  "/zed/zed_node/depth/camera_info",
     "DETECTIONS_TOPIC" : "/detections",
     "DETECTIONS_IMAGE_TOPIC" : "/detections_image",
     "DETECTIONS_POSES_TOPIC" : "/test/detection_poses",
     "DETECTIONS_3D_TOPIC" : "/detections_3d",
     "DETECTIONS_ACTIVE_TOPIC" : "/detections_active",
     "DEBUG_IMAGE_TOPIC" : "/debug_image",
-    "CAMERA_FRAME" :  "xtion_rgb_optical_frame",
+    "CAMERA_FRAME" :  "zed_left_camera_frame",
     "YOLO_MODEL_PATH" :  str(pathlib.Path(__file__).parent) + "/../models/yolov5s.pt",
     "USE_ACTIVE_FLAG" :  False,
-    "DEPTH_ACTIVE" :  False,
-    "VERBOSE" :  False,
+    "DEPTH_ACTIVE" :  True,
+    "VERBOSE" :  True,
     "USE_YOLO8" :  False,
     "FLIP_IMAGE" :  False,
     "MIN_SCORE_THRESH" :  0.75,
@@ -83,16 +85,18 @@ class object_detector_node(rclpy.node.Node):
 
         self.handleSubcriptions()
         self.handlePublishers()
-        self.runThread = None
+        self.runThread = None    
 
-        # TFs
-        #self.tfBuffer = tf2_ros.Buffer()
-        #self.listener = tf2_ros.TransformListener(self.tfBuffer)
+        self.tfBuffer = tf2_ros.Buffer()
+        self.listener = tf2_ros.TransformListener(self.tfBuffer,self)
 
         # Frames per second throughput estimator
         self.fps = None
         callFpsThread = threading.Thread(target=self.callFps, args=(), daemon=True)
         callFpsThread.start()
+
+        if self.node_params.VERBOSE:
+            self.get_logger().info("Object Detector 2D Node has been started")
 
     def set_parameters(self): 
         self.object_detector_parameters = ObjectDectectorParams()
@@ -133,8 +137,17 @@ class object_detector_node(rclpy.node.Node):
         self.debug_image_publisher = self.create_publisher(
             Image, self.node_params.DEBUG_IMAGE_TOPIC, 5
         )
+
+        if self.node_params.VERBOSE:
+            self.get_logger().info("Publishers have been created with the followiong topics: ")
+            self.get_logger().info(self.node_params.DETECTIONS_TOPIC)
+            self.get_logger().info(self.node_params.DETECTIONS_POSES_TOPIC)
+            self.get_logger().info(self.node_params.DETECTIONS_3D_TOPIC)
+            self.get_logger().info(self.node_params.DETECTIONS_IMAGE_TOPIC)
+            self.get_logger().info(self.node_params.DEBUG_IMAGE_TOPIC)
         
     def handleSubcriptions(self):
+        
         self.rgb_image_sub = self.create_subscription(
             Image, self.node_params.RGB_IMAGE_TOPIC, self.rgbImageCallback, 5
         )
@@ -156,10 +169,11 @@ class object_detector_node(rclpy.node.Node):
     def activeFlagCallback(self, msg):
         self.activeFlag = msg.data
 
-    # Function to handle a ROS depth input.
+    # Function to handle a ROS depthPublishers have been created input.
     def depthImageCallback(self, data):
         try:
             self.depth_image = self.bridge.imgmsg_to_cv2(data, "32FC1")
+            print("Depth image recieved")
         except CvBridgeError as e:
             print(e)
 
@@ -240,7 +254,7 @@ class object_detector_node(rclpy.node.Node):
     def run(self, frame):
         copy_frame = copy.deepcopy(frame)
 
-        detected_objects, visual_detections, visual_image = self.object_detector_2d.inference(copy_frame)
+        detected_objects, visual_detections, visual_image = self.object_detector_2d.inference(copy_frame, self.depth_image, self.tfBuffer)
 
         self.detections_frame = self.visualize_detections(
             visual_image,
@@ -249,8 +263,35 @@ class object_detector_node(rclpy.node.Node):
             max_boxes_to_draw=200,
             agnostic_mode=False,
         )
-
         
+        if self.node_params.VERBOSE:
+            for index in range(len(detected_objects)):
+                self.get_logger().info(f'Detection #{str(index)}:   {detected_objects[index].__str__()}')
+        
+        marker_array = MarkerArray()
+
+        for index in range(len(detected_objects)):
+            marker = Marker()
+            marker.header.frame_id = self.object_detector_parameters.camera_frame
+            marker.header.stamp = self.get_clock().now().to_msg()
+            marker.type = Marker.SPHERE
+            marker.action = Marker.ADD
+            marker.id = index
+            marker.pose.position.x = detected_objects[index].point_stamped_.point.x
+            marker.pose.position.y = detected_objects[index].point_stamped_.point.y
+            marker.pose.position.z = detected_objects[index].point_stamped_.point.z
+            marker.pose.orientation.w = 1.0
+            marker.scale.x = 0.05
+            marker.scale.y = 0.05
+            marker.scale.z = 0.05
+            marker.color.a = 1.0
+            marker.color.r = 0.0
+            marker.color.g = 1.0
+            marker.color.b = 0.0
+            marker.lifetime = rclpy.duration.Duration(seconds=1).to_msg()
+            marker_array.markers.append(marker)
+
+        self.detections_3d.publish(marker_array)
         #self.detections_publisher.publish(ObjectDetectionArray(detections=detected_objects))
         self.fps.update()
 

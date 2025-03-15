@@ -11,12 +11,16 @@ import pathlib
 import numpy as np
 import threading
 from typing import List
+
+sys.path.append(str(pathlib.Path(__file__).parent) + "/../include")
+from vision_utils import get2DCentroid, get_depth, deproject_pixel_to_point
 import rclpy
 from cv_bridge import CvBridge, CvBridgeError
 from geometry_msgs.msg import Point, PointStamped, PoseArray, Pose
 import rclpy.time
 from std_msgs.msg import Header, Bool
 from sensor_msgs.msg import Image, CameraInfo
+import tf2_ros
 
 class ObjectDectectorParams:
     def __init__(self, 
@@ -38,6 +42,9 @@ class ObjectDectectorParams:
         self.flip_image = None
         self.camera_info = None
 
+    def __str__(self):
+        return "depth_active: " + str(self.depth_active) + " min_score_thresh: " + str(self.min_score_thresh) + " camera_frame: " + str(self.camera_frame) + " flip_image: " + str(self.flip_image) + " camera_info: " + str(self.camera_info)
+
 @dataclass
 class BBOX():
     x : float = 0
@@ -55,7 +62,11 @@ class Detection:
         self.label_ : str = label
         self.class_id_ : int = class_id
         self.confidence_ : float = confidence
-        self.point_stamped_ : PointStamped       
+        self.point_stamped_ : PointStamped
+
+    def __str__(self):
+        return "label: " + self.label_ + " class_id: " + str(self.class_id_) + " confidence: " + str(self.confidence_) + " bbox: " + str(self.bbox_) + " point_stamped: " + str(self.point_stamped_)
+
 
 class ObjectDectector(ABC): 
     def __init__(self, model_path : str, object_detector_params : ObjectDectectorParams):
@@ -68,7 +79,7 @@ class ObjectDectector(ABC):
     def _inference(self, frame):
         pass
 
-    def inference(self,frame, depth_image = None):
+    def inference(self,frame, depth_image = [], tfBuffer : tf2_ros = None):
         if self.object_detector_params_.flip_image:
             frame = imutils.rotate(frame, 180)
         
@@ -81,41 +92,44 @@ class ObjectDectector(ABC):
             for detection in self.detections_:
                 detection.bbox_.y2, detection.bbox_.x2, detection.bbox_.y1, detection.bbox_.x1 = 1 - detection.bbox_.y1, 1 - detection.bbox_.x1, 1 - detection.bbox_.y2, 1 - detection.bbox_.x2 
 
-        return (self.extract3D(depth_image), self.detections_, visual_frame)
+        return (self.extract3D(depth_image, tfBuffer), self.detections_, visual_frame)
         
 
-    def extract3D(self, depth_image):
+    def extract3D(self, depth_image, tfBuffer : tf2_ros):
         object_set = {}
 
-        if depth_image != None:
+        if len(depth_image) != 0:
+            # TFs
+            while not tfBuffer.can_transform(self.object_detector_params_.camera_frame, "base_link", rclpy.time.Time().to_msg()): 
+                continue
+
             pose_array = PoseArray()
             pose_array.header.frame_id = self.object_detector_params_.camera_frame
-            pose_array.header.stamp = rclpy.time.Time()
+            pose_array.header.stamp = rclpy.time.Time().to_msg()
 
         for detection in self.detections_:
             if not detection.class_id_ in object_set.keys() or object_set[detection.class_id_].confidence_ < detection.confidence_:
                 point_3D = PointStamped(
                     header=Header(frame_id=self.object_detector_params_.camera_frame), point=Point()
                 )
-
-                if self.object_detector_params_.depth_active and len(depth_image) != 0 and depth_image != None:
-                    point_2D = get2DCentroid(detection.bbox_, depth_image)
+                
+                if self.object_detector_params_.depth_active and len(depth_image) != 0:
+                    point_2D = get2DCentroid([detection.bbox_.y1, detection.bbox_.x1, detection.bbox_.y2, detection.bbox_.x2], depth_image)
                     depth = get_depth(depth_image, point_2D)
                     point_3D_ = deproject_pixel_to_point(self.object_detector_params_.camera_info, point_2D, depth)
 
-                    point_3D.point.x = point_3D_[0]
-                    point_3D.point.y = point_3D_[1]
-                    point_3D.point.z = point_3D_[2]
+                    point_3D.point.x = float(point_3D_[0])
+                    point_3D.point.y = float(point_3D_[1])
+                    point_3D.point.z = float(point_3D_[2])
 
                     pose_array.poses.append(Pose(position=point_3D.point))
                 
-                    detection.point_stamped_ = point_3D
+                detection.point_stamped_ = point_3D
                 
                 object_set[detection.class_id_] = detection
         # PUBLISH POINT ARRAY
-        
         #TODO: VISUALIZE MARKER
-        return object_set.values()
+        return list(object_set.values())
 
     def getDetections(self):
         return self.detections_

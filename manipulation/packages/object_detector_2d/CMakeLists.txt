@@ -52,9 +52,7 @@ install(PROGRAMS
   scripts/Detection2D.py
   scripts/DetectionPicker.py
   scripts/object_detector_node.py
-  # scripts/YoloV5ObjectDetector.py
-  # scripts/ObjectDetector.py
-  scripts/test/local_camera.py
+  scripts/local_camera.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

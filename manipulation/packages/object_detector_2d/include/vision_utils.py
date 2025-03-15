@@ -111,24 +111,21 @@ def deproject_pixel_to_point(cv_image_rgb_info, pixel, depth):
         intrinsics = {}
         intrinsics["width"] = cameraInfo.width
         intrinsics["height"] = cameraInfo.height
-        intrinsics["ppx"] = cameraInfo.K[2]
-        intrinsics["ppy"] = cameraInfo.K[5]
-        intrinsics["fx"] = cameraInfo.K[0]
-        intrinsics["fy"] = cameraInfo.K[4]
+        intrinsics["ppx"] = cameraInfo.k[2]
+        intrinsics["ppy"] = cameraInfo.k[5]
+        intrinsics["fx"] = cameraInfo.k[0]
+        intrinsics["fy"] = cameraInfo.k[4]
         if cameraInfo.distortion_model == "plumb_bob":
             intrinsics["model"] = "RS2_DISTORTION_BROWN_CONRADY"
         elif cameraInfo.distortion_model == "equidistant":
             intrinsics["model"] = "RS2_DISTORTION_KANNALA_BRANDT4"
-        intrinsics["coeffs"] = [i for i in cameraInfo.D]
+        elif cameraInfo.distortion_model == "rational_polynomial":
+            intrinsics["model"] = "RS2_DISTORTION_MODIFIED_BROWN_CONRADY"
+        intrinsics["coeffs"] = [i for i in cameraInfo.d]
         return intrinsics
 
     # Parse ROS CameraInfo msg to intrinsics dictionary.
     intrinsics = CameraInfoToIntrinsics(cv_image_rgb_info)
-
-    if (
-        intrinsics["model"] == "RS2_DISTORTION_MODIFIED_BROWN_CONRADY"
-    ):  # Cannot deproject from a forward-distorted image
-        return
 
     x = (pixel[0] - intrinsics["ppx"]) / intrinsics["fx"]
     y = (pixel[1] - intrinsics["ppy"]) / intrinsics["fy"]
@@ -136,6 +133,24 @@ def deproject_pixel_to_point(cv_image_rgb_info, pixel, depth):
     xo = x
     yo = y
 
+    if intrinsics["model"] == "RS2_DISTORTION_MODIFIED_BROWN_CONRADY":
+        r2 = float(x * x + y * y)
+        f = float(
+            1
+            + intrinsics["coeffs"][0] * r2
+            + intrinsics["coeffs"][1] * r2 * r2
+            + intrinsics["coeffs"][4] * r2 * r2 * r2
+        )
+        x *= f
+        y *= f
+        dx = x + 2 * intrinsics["coeffs"][2] * x * y + intrinsics["coeffs"][3] * (
+            r2 + 2 * x * x
+        )
+        dy = y + 2 * intrinsics["coeffs"][3] * x * y + intrinsics["coeffs"][2] * (
+            r2 + 2 * y * y
+        )
+        x = dx
+        y = dy
     if intrinsics["model"] == "RS2_DISTORTION_INVERSE_BROWN_CONRADY":
         # need to loop until convergence
         # 10 iterations determined empirically
