@@ -25,7 +25,7 @@ def get_extract_data_args(full_text, data_to_extract):
                 "role": "system",
                 "content": f"""You will be given a piece of text and a specific data item to extract. Your task is to return the requested information if it is present in the provided text.
 ### Extraction Rules:
-- DON'T overthink your response, go with common sense.
+- Your response may only contain words that are present in the full_text.
 - If the requested data is found within the text, return it as the output.
 - If the data is not present, return an empty string (`""`).
 - If `full_text` is missing or empty, return an empty string (`""`).  
@@ -164,3 +164,16 @@ def get_is_answer_positive_args(interpreted_text):
         ],
         IsAnswerPositive,
     )
+
+
+def format_response(response):
+    return [
+        {
+            "role": "system",
+            "content": "You will be presented with an output. Your task is to format the response according to the given format.",
+        },
+        {
+            "role": "user",
+            "content": response,
+        },
+    ]

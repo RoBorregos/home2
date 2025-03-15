@@ -6,7 +6,7 @@ import pytest
 from deepeval import assert_test
 from deepeval.dataset import EvaluationDataset
 from deepeval.test_case import LLMTestCase
-from nlp.assets.dialogs import get_extract_data_args
+from nlp.assets.dialogs import format_response, get_extract_data_args
 from nlp.assets.schemas import ExtractedData
 from openai import OpenAI
 
@@ -25,29 +25,41 @@ def generate_response(full_text, data_to_extract):
         messages=messages,
         # response_format=response_format,
     )
-    return response.choices[0].message.content
+
+    return structured_response(response.choices[0].message.content, response_format)
+
+
+def structured_response(response, response_format):
+    client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
+    formatted_response = client.beta.chat.completions.parse(
+        model=MODEL,
+        temperature=TEMPERATURE,
+        messages=format_response(response),
+        response_format=response_format,
+    )
+    return formatted_response.choices[0].message.content
 
 
 test_cases = [
-    # ("My name is Oscar and I like Fanta", "drink", ExtractedData(data="Fanta").model_dump_json()),
-    # ("My name is Oscar and I like Fanta", "name", ExtractedData(data="Oscar").model_dump_json()),
-    # ("", "drink", ExtractedData(data="").model_dump_json()),
-    # ("John enjoys eating pizza with his friends", "food", ExtractedData(data="pizza").model_dump_json()),
-    # ("John enjoys eating pizza with his friends", "name", ExtractedData(data="John").model_dump_json()),
-    # ("There is a dog in the backyard", "animal", ExtractedData(data="dog").model_dump_json()),
-    # ("She studies computer science at university", "major", ExtractedData(data="computer science").model_dump_json()),
-    # ("Maria's favorite fruit is mango", "fruit", ExtractedData(data="mango").model_dump_json()),
-    # ("The Eiffel Tower is located in Paris", "city", ExtractedData(data="Paris").model_dump_json()),
-    # ("We watched a great movie called Inception", "movie", ExtractedData(data="Inception").model_dump_json()),
-    # ("Carlos loves programming in Python", "language", ExtractedData(data="Python").model_dump_json()),
-    # ("The capital of France is Paris", "capital", ExtractedData(data="Paris").model_dump_json()),
-    # ("We traveled to Japan last summer", "country", ExtractedData(data="Japan").model_dump_json()),
-    # ("His favorite sport is basketball", "sport", ExtractedData(data="basketball").model_dump_json()),
-    # ("Sarah lives in New York City", "location", ExtractedData(data="New York City").model_dump_json()),
-    # ("My best friend’s name is Daniel", "friend", ExtractedData(data="Daniel").model_dump_json()),
-    # ("Lemonade", "drink", ExtractedData(data="Lemonade").model_dump_json()),
+    ("My name is Oscar and I like Fanta", "drink", ExtractedData(data="Fanta").model_dump_json()),
+    ("My name is Oscar and I like Fanta", "name", ExtractedData(data="Oscar").model_dump_json()),
+    ("", "drink", ExtractedData(data="").model_dump_json()),
+    ("John enjoys eating pizza with his friends", "food", ExtractedData(data="pizza").model_dump_json()),
+    ("John enjoys eating pizza with his friends", "name", ExtractedData(data="John").model_dump_json()),
+    ("There is a dog in the backyard", "animal", ExtractedData(data="dog").model_dump_json()),
+    ("She studies computer science at university", "major", ExtractedData(data="computer science").model_dump_json()),
+    ("Maria's favorite fruit is mango", "fruit", ExtractedData(data="mango").model_dump_json()),
+    ("The Eiffel Tower is located in Paris", "city", ExtractedData(data="Paris").model_dump_json()),
+    ("We watched a great movie called Inception", "movie", ExtractedData(data="Inception").model_dump_json()),
+    ("Carlos loves programming in Python", "language", ExtractedData(data="Python").model_dump_json()),
+    ("The capital of France is Paris", "capital", ExtractedData(data="Paris").model_dump_json()),
+    ("We traveled to Japan last summer", "country", ExtractedData(data="Japan").model_dump_json()),
+    ("His favorite sport is basketball", "sport", ExtractedData(data="basketball").model_dump_json()),
+    ("Sarah lives in New York City", "location", ExtractedData(data="New York City").model_dump_json()),
+    ("My best friend’s name is Daniel", "friend", ExtractedData(data="Daniel").model_dump_json()),
+    ("Lemonade", "drink", ExtractedData(data="Lemonade").model_dump_json()),
     ("Go to the kitchen", "place", ExtractedData(data="kitchen").model_dump_json()),
-    # ("Oscar", "name", ExtractedData(data="Oscar").model_dump_json()),
+    ("Oscar", "name", ExtractedData(data="Oscar").model_dump_json()),
 ]
 
 # Define test cases
@@ -59,8 +71,6 @@ test_cases = [
     )
     for test_case in test_cases
 ]
-
-print("Test case result:", test_cases[0].actual_output)
 
 
 dataset = EvaluationDataset(test_cases=test_cases)
