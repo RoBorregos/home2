@@ -10,7 +10,7 @@ from std_msgs.msg import Header
 Usage
 - ros2 run frida_motion_planning add_collision_object.py --ros-args -p type:="box" -p position:="[0.5, 0.0, 0.5]" -p dimensions:="[0.2, 0.2, 0.05]"
 - ros2 run frida_motion_planning add_collision_object.py --ros-args -p type:="cylinder" -p position:="[0.2, 0.0, 0.5]" -p quat_xyzw:="[0.0, 0.0, 0.0, 1.0]" -p dimensions:="[0.1, 0.4]"
-- ros2 run frida_motion_planning add_collision_object.py --ros-args -p type:="sphere" -p position:="[0.2, 0.0, 0.5]" -p dimensions:="[0.15]"
+- ros2 run frida_motion_planning add_collision_object.py --ros-args -p type:="sphere" -p position:="[0.35, 0.35, 0.35]" -p dimensions:="[0.05]"
 - ros2 run frida_motion_planning add_collision_object.py --ros-args -p type:="mesh" -p position:="[0.2, 0.0, 0.5]" -p quat_xyzw:="[0.0, 0.0, 0.0, 1.0]" -p mesh_file:="package://frida_motion_planning/meshes/box.stl"
 """
 

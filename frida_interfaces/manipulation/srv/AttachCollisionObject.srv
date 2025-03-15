@@ -1,0 +1,5 @@
+string id
+string attached_link
+string[] touched_links
+---
+bool success
