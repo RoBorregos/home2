@@ -126,6 +126,8 @@ class FollowFaceNode(Node):
         self.is_following_face_active = request.follow_face
         if not self.is_following_face_active:
             self.move_to(0.0, 0.0)
+        else:
+            self.set_state()
         response.success = True
         return response
 
