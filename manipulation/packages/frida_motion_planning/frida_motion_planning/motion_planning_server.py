@@ -12,8 +12,16 @@ from frida_interfaces.srv import (
     RemoveCollisionObject,
     ToggleServo,
 )
+from frida_constants.manipulation_constants import (
+    ALWAYS_SET_MODE,
+    MOVEIT_MODE,
+    JOINT_VELOCITY_MODE,
+    SET_JOINT_VELOCITY_SERVICE,
+)
+from xarm_msgs.srv import MoveVelocity
 from frida_motion_planning.utils.MoveItPlanner import MoveItPlanner
 from frida_motion_planning.utils.MoveItServo import MoveItServo
+from frida_motion_planning.utils.XArmServices import XArmServices
 
 
 class MotionPlanningServer(Node):
@@ -78,7 +86,24 @@ class MotionPlanningServer(Node):
             callback_group=self.callback_group,
         )
 
-        self.get_logger().info("Pick Action Server has been started")
+        # is MoveItPlanner could not spawn services, send None
+        # TODO: I changed my mind, set_mode goes in this script, not on the MoveItPlanner
+        if self.planner.mode_enabled:
+            self.xarm_services = XArmServices(
+                self, self.planner.mode_client, self.planner.state_client
+            )
+        else:
+            self.xarm_services = XArmServices(self, None, None)
+
+        self.xarm_joint_velocity_service = self.create_service(
+            MoveVelocity,
+            SET_JOINT_VELOCITY_SERVICE,
+            self.set_joint_velocity_callback,
+        )
+
+        self.current_mode = -1
+
+        self.get_logger().info("Motion Planning Server has been started")
 
     async def move_to_pose_execute_callback(self, goal_handle):
         """Execute the pick action when a goal is received."""
@@ -129,7 +154,10 @@ class MotionPlanningServer(Node):
         result = self.planner.plan_pose_goal(
             pose,
             wait=True,
+            set_mode=(self.current_mode != MOVEIT_MODE),
         )
+        if not ALWAYS_SET_MODE:
+            self.current_mode = MOVEIT_MODE
         return result
 
     def move_joints(self, goal_handle, feedback):
@@ -142,7 +170,10 @@ class MotionPlanningServer(Node):
             joint_positions,
             joint_names,
             wait=True,
+            set_mode=(self.current_mode != MOVEIT_MODE),
         )
+        if not ALWAYS_SET_MODE:
+            self.current_mode = MOVEIT_MODE
         return result
 
     def set_planning_settings(self, goal_handle):
@@ -301,6 +332,17 @@ class MotionPlanningServer(Node):
             angular=(msg.twist.angular.x, msg.twist.angular.y, msg.twist.angular.z),
             frame_id=msg.header.frame_id,
         )
+
+    def set_joint_velocity_callback(self, request, response):
+        velocities = request.speeds
+        success = self.xarm_services.set_joint_velocity(
+            velocities, set_mode=(self.current_mode != JOINT_VELOCITY_MODE)
+        )
+        # if we always want to change mode, never set it to joint velocity mode
+        if not ALWAYS_SET_MODE:
+            self.current_mode = JOINT_VELOCITY_MODE
+        response.success = success
+        return response
 
 
 def main(args=None):
