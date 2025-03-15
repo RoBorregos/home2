@@ -1,7 +1,6 @@
 #include "frida_constants/manip_3d.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include <cstdint>
-#include <frida_interfaces/srv/detail/add_collision_object__struct.hpp>
 #include <memory>
 #include <pcl/common/centroid.h>
 #include <pcl/common/common.h>
