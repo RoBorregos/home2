@@ -1,4 +1,4 @@
-from .schemas import ExtractedData
+from nlp.assets.schemas import ExtractedData
 
 
 def get_common_interests_dialog(
