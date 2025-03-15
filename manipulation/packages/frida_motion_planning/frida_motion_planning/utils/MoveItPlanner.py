@@ -250,6 +250,27 @@ class MoveItPlanner(Planner):
             scale=scale,
         )
 
+        """self,
+        id: str,
+        link_name: Optional[str] = None,
+        touch_links: List[str] = [],
+        weight: float = 0.0,"""
+
+    def attach_collision_object(
+        self,
+        id: str,
+        link_name: str,
+        touch_links: List[str] = [],
+        weight: float = 0.0,
+    ) -> bool:
+        self.moveit2.attach_collision_object(
+            id=id,
+            link_name=link_name,
+            touch_links=touch_links,
+            weight=weight,
+        )
+        return True
+
     def remove_collision_object(self, id: str) -> None:
         self.moveit2.remove_collision_object(id)
 

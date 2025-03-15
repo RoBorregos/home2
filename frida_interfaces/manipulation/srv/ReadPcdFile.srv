@@ -1,0 +1,4 @@
+string optional_filename
+---
+sensor_msgs/PointCloud2 cloud
+int32 status

@@ -1,4 +1,5 @@
 #include "rclcpp/rclcpp.hpp"
+#include <ament_index_cpp/get_package_share_directory.hpp>
 #include <rclcpp/duration.hpp>
 #include <rclcpp/logging.hpp>
 
@@ -58,16 +59,23 @@ private:
 
   std::string point_cloud_topic = POINT_CLOUD_TOPIC;
 
+  std::string package_path;
+
   double cluster_size = 0.37;
 
 public:
   TableSegmentationNode() : Node("table_segmentation_node") {
     RCLCPP_INFO(this->get_logger(), "Starting Table Segmentation Node");
-
     this->point_cloud_topic =
         this->declare_parameter("point_cloud_topic", point_cloud_topic);
 
     this->cluster_size = this->declare_parameter("cluster_size", cluster_size);
+
+    this->package_path =
+        ament_index_cpp::get_package_share_directory("perception_3d");
+
+    // RCLCPP_ERROR(this->get_logger(), "Package path: %s",
+    //              this->package_path.c_str());
 
     // this->tf_listener = std::make_shared<tf2_ros::TransformListener>(
     //     this->shared_from_this(), this->get_clock());
@@ -128,6 +136,36 @@ public:
 
     copyPointCloud(last_, cloud_out);
 
+    if (request->close_point.header.frame_id == "") {
+      // pcl::PointXYZ point;
+      // point.x = 0.0;
+      // point.y = 0.0;
+      // point.z = 0.0;
+      // response->health_response =
+      //     this->DistanceFilterFromPoint(cloud_out, point, cloud_out);
+    } else {
+      geometry_msgs::msg::PointStamped point;
+      if (request->close_point.header.frame_id != "base_link") {
+        try {
+          this->tf_buffer->transform(request->close_point, point, "base_link");
+        } catch (const std::exception &e) {
+          RCLCPP_ERROR(this->get_logger(), "Error transforming point: %s",
+                       e.what());
+          response->health_response = COULDNT_TRANSFORM_TO_BASE_LINK;
+          return;
+        }
+      } else {
+        point = request->close_point;
+      }
+      pcl::PointXYZ req_point;
+      req_point.x = point.point.x;
+      req_point.y = point.point.y;
+      req_point.z = point.point.z;
+
+      response->health_response =
+          this->DistanceFilterFromPoint(cloud_out, req_point, cloud_out);
+    }
+
     response->health_response =
         this->extractPlane(cloud_out, cloud_out, request->extract_or_remove);
 
@@ -154,8 +192,9 @@ public:
       return;
     }
 
-    std::string base_path = "/home/ivanromero/Desktop/home2/manipulation/"
-                            "packages/perception_3d/pcl_debug/";
+    // std::string base_path = "/home/ivanromero/Desktop/home2/manipulation/"
+    //                         "packages/perception_3d/pcl_debug/";
+    std::string base_path = this->package_path;
     std::string prefix = request->base_name;
     std::string filename_base = base_path + prefix;
 
@@ -245,10 +284,10 @@ public:
                            "Error getting current cloud with code %d",
                            response->status);
 
-    response->status = savePointCloud("/home/ivanromero/Desktop/home2/"
-                                      "manipulation/packages/perception_3d/"
-                                      "pcl_debug/cluster/filtered_no_plane.pcd",
-                                      cloud_out);
+    std::string base_path = this->package_path;
+
+    response->status =
+        savePointCloud(base_path + "/filtered_no_plane.pcd", cloud_out);
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out5_debug(
         new pcl::PointCloud<pcl::PointXYZ>);
@@ -259,15 +298,10 @@ public:
                            "Error extracting plane with code %d",
                            response->status);
 
-    response->status = savePointCloud("/home/ivanromero/Desktop/home2/"
-                                      "manipulation/packages/perception_3d/"
-                                      "pcl_debug/cluster/filtered_plane.pcd",
-                                      cloud_out5_debug);
+    response->status =
+        savePointCloud(base_path + "/filtered_plane.pcd", cloud_out5_debug);
 
-    response->status = savePointCloud("/home/ivanromero/Desktop/home2/"
-                                      "manipulation/packages/perception_3d/"
-                                      "pcl_debug/cluster/original.pcd",
-                                      last_);
+    response->status = savePointCloud(base_path + "/original.pcd", last_);
 
     bool can_transform =
         request->point.header.frame_id == "base_link" ||
@@ -282,11 +316,9 @@ public:
 
     if (request->point.header.frame_id != "base_link") {
       geometry_msgs::msg::PointStamped point;
-      point.point = request->point.point;
-      point.header = request->point.header;
-      point.header.frame_id = "base_link";
       try {
-        this->tf_buffer->transform(point, point, "base_link");
+        this->tf_buffer->transform(request->point, point, "base_link");
+        request->point = point;
       } catch (const std::exception &e) {
         RCLCPP_ERROR(this->get_logger(), "Error transforming point: %s",
                      e.what());
@@ -310,10 +342,7 @@ public:
                            "Error clustering point with code %d",
                            response->status);
 
-    response->status = savePointCloud("/home/ivanromero/Desktop/home2/"
-                                      "manipulation/packages/perception_3d/"
-                                      "pcl_debug/cluster.pcd",
-                                      cloud_out2);
+    response->status = savePointCloud(base_path + "/cluster.pcd", cloud_out2);
 
     ASSERT_AND_RETURN_CODE(response->status, OK,
                            "Error saving cluster point cloud with code %d",
@@ -333,7 +362,37 @@ public:
     response->cluster.header.stamp = this->now();
     response->status = OK;
 
-    return;
+    RCLCPP_INFO(this->get_logger(),
+                "Clustered object, sending response with status OK");
+  }
+
+  STATUS_RESPONSE DistanceFilterFromPoint(
+      _IN_ const std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud,
+      _IN_ const pcl::PointXYZ point,
+      _OUT_ std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud_out) {
+
+    pcl::PassThrough<pcl::PointXYZ> pass;
+    pass.setInputCloud(cloud);
+    pass.setFilterFieldName("z");
+    pass.setFilterLimits(0.0, 1.5);
+
+    pass.filter(*cloud_out);
+
+    pcl::PassThrough<pcl::PointXYZ> pass2;
+    pass2.setInputCloud(cloud_out);
+    pass2.setFilterFieldName("x");
+    pass2.setFilterLimits(point.x - 1.0, point.x + 1.0);
+
+    pass2.filter(*cloud_out);
+
+    pcl::PassThrough<pcl::PointXYZ> pass3;
+    pass3.setInputCloud(cloud_out);
+
+    pass3.setFilterFieldName("y");
+    pass3.setFilterLimits(point.y - 1.0, point.y + 1.0);
+    pass3.filter(*cloud_out);
+
+    return OK;
   }
 
   uint32_t get_current_cloud_without_plane(
@@ -510,9 +569,13 @@ public:
     extract.setNegative(false);
     extract.filter(*cloud_f);
 
-    this->savePointCloud("/home/ivanromero/Desktop/home2/manipulation/packages/"
-                         "perception_3d/pcl_debug/asdasd.pcd",
-                         cloud_f);
+    std::string base_path = this->package_path;
+
+    // this->savePointCloud("/home/ivanromero/Desktop/home2/manipulation/packages/"
+    //                      "perception_3d/pcl_debug/asdasd.pcd",
+    //                      cloud_f);
+
+    this->savePointCloud(base_path + "asdasd.pcd", cloud_f);
 
     return status;
   };
@@ -616,7 +679,7 @@ public:
     // cluster that is closest to the point
     for (size_t i = 0; i < cluster_indices.size(); i++) {
       for (const auto &idx : cluster_indices[i].indices) {
-        RCLCPP_INFO(this->get_logger(), "Cluster %lu, idx %d", i, idx);
+        // RCLCPP_INFO(this->get_logger(), "Cluster %lu, idx %d", i, idx);
         if (idx == targetPointIdx) {
           targetClusterIdx = i;
           break;
