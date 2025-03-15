@@ -4,7 +4,7 @@ KEYWORD_TOPIC = "/hri/speech/kws"
 WAKEWORD_TOPIC = "/hri/speech/oww"
 COMMAND_INTERPRETER_SERVICE = "/hri/nlp/command_interpreter"
 EXTRACT_DATA_SERVICE = "/hri/nlp/data_extractor"
-SENTENCE_BUILDER_SERVICE = "/hri/nlp/sentence_builder"
+IS_POSITIVE_SERVICE = "/hri/nlp/is_positive"
 ITEM_CATEGORIZATION_SERVICE = "/hri/nlp/item_categorization"
 CONVESATION_SERVICE = "/hri/nlp/conversation"
 GRAMMAR_SERVICE = "/hri/nlp/grammar"
@@ -15,7 +15,6 @@ REMOVE_ITEM_SERVICE = "/hri/nlp/embeddings/remove_item_service"
 UPDATE_ITEM_SERVICE = "/hri/nlp/embeddings/update_item_service"
 QUERY_ITEM_SERVICE = "/hri/nlp/embeddings/query_item_service"
 BUILD_EMBEDDINGS_SERVICE = "/hri/nlp/embeddings/build_embeddings_service"
-
 USE_RESPEAKER = True
 
 # OpenWakeWord

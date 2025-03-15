@@ -1,4 +1,4 @@
-from nlp.assets.schemas import ExtractedData
+from nlp.assets.schemas import ExtractedData, IsAnswerPositive
 
 
 def get_common_interests_dialog(
@@ -89,4 +89,52 @@ Ensure strict adherence to these rules. Do not infer or generate information bey
             },
         ],
         ExtractedData,
+    )
+
+
+def get_is_answer_positive_args(interpreted_text):
+    return (
+        [
+            {
+                "role": "system",
+                "content": f"""You will be given a statement, and your task is to determine whether it is a **positive confirmation** or not. A **positive confirmation** is an explicit or implicit agreement, affirmation, or confirmation (e.g., 'yes', 'that's right', 'correct', 'absolutely'). A **negative response** includes disagreement, uncertainty, negation, or lack of understanding (e.g., 'no', 'I don’t know', 'wrong', 'not sure'). If the statement is ambiguous or unclear, assume it is negative.
+                
+### Guidelines:
+- Only return a boolean value: **true** for positive confirmation, **false** otherwise.
+- Ignore irrelevant sentiment (e.g., 'I am happy' is **not** a confirmation, so return false).
+- Consider implicit confirmations like 'exactly' or 'of course' as positive.
+- Treat uncertain responses like 'maybe' or 'I guess' as negative.
+                
+### Examples:
+- **Input:** 'Yes'
+**Output:**
+{IsAnswerPositive(is_positive=True).model_dump_json()}
+
+**Input:** 'That's correct'
+**Output:**
+{IsAnswerPositive(is_positive=True).model_dump_json()}
+
+**Input:** 'I agree'
+**Output:**
+{IsAnswerPositive(is_positive=True).model_dump_json()}
+
+**Input:** 'Wrong'
+{IsAnswerPositive(is_positive=False).model_dump_json()}
+                
+**Input:** 'I don’t know'
+{IsAnswerPositive(is_positive=False).model_dump_json()}
+
+**Input:** 'Huh?'
+{IsAnswerPositive(is_positive=False).model_dump_json()}
+
+**Input:** 'Maybe'
+{IsAnswerPositive(is_positive=False).model_dump_json()}
+""",
+            },
+            {
+                "role": "user",
+                "content": interpreted_text,
+            },
+        ],
+        IsAnswerPositive,
     )

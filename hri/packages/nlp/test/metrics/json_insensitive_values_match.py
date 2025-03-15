@@ -23,7 +23,7 @@ class JsonInsensitiveValuesMatch(BaseMetric):
                 self.score = 0
             else:
                 for key in js1.keys():
-                    if format_string(js1[key]) != format_string(js2[key]):
+                    if format(js1[key]) != format(js2[key]):
                         self.score = 0
                         break
 
@@ -45,6 +45,17 @@ class JsonInsensitiveValuesMatch(BaseMetric):
     @property
     def __name__(self):
         return "Json case-insensitive exact match"
+
+
+def format(object):
+    if isinstance(object, dict):
+        return {format_string(key): format(value) for key, value in object.items()}
+    elif isinstance(object, list):
+        return [format(value) for value in object]
+    elif isinstance(object, str):
+        return format_string(object)
+    else:
+        return object
 
 
 def format_string(string: str) -> str:
