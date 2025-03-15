@@ -70,12 +70,13 @@ class ReceptionistTM(Node):
         """Get the current guest"""
         return self.guests[self.current_guest]
 
-    def navigate_to(self, location: str):
+    def navigate_to(self, location: str, sublocation: str = ""):
         self.subtask_manager.hri.say(f"I will now guide you to the {location}. Please follow me.")
         return
         self.subtask_manager.manipulation.follow_face(False)
         self.subtask_manager.manipulation.move_to_position("navigation")
-        self.subtask_manager.nav.navigate_to(location)
+        future = self.subtask_manager.nav.move_to_location(location, sublocation)
+        rclpy.spin_until_future_complete(self, future)
 
     def confirm(self, statement: str) -> bool:
         """Confirm the name is correct"""
@@ -152,7 +153,7 @@ class ReceptionistTM(Node):
 
         if self.current_state == ReceptionistTM.TASK_STATES["NAVIGATE_TO_BEVERAGES"]:
             Logger.state(self, "Navigating to beverages")
-            self.navigate_to("beverages")
+            self.navigate_to("kitchen", "beverages")
             # self.subtask_manager.manipulation.move_to_position("gaze")
             self.current_state = ReceptionistTM.TASK_STATES["ASK_FOR_DRINK"]
 
@@ -200,7 +201,7 @@ class ReceptionistTM(Node):
 
         if self.current_state == ReceptionistTM.TASK_STATES["NAVIGATE_TO_LEAVING_ROOM"]:
             Logger.state(self, "Navigating to leaving room")
-            self.navigate_to("leaving_room")
+            self.navigate_to("living_room", "couches")
             self.current_state = ReceptionistTM.TASK_STATES["FIND_SEAT"]
 
         if self.current_state == ReceptionistTM.TASK_STATES["FIND_SEAT"]:
