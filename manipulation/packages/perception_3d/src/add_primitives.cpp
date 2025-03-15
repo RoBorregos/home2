@@ -26,7 +26,7 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl_ros/transforms.hpp>
 
-#include <frida_interfaces/srv/add_collision_object.hpp>
+#include <frida_interfaces/msg/collision_object.h>
 #include <frida_interfaces/srv/add_collision_objects.hpp>
 #include <frida_interfaces/srv/add_pick_primitives.hpp>
 
