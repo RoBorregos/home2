@@ -10,12 +10,19 @@ from launch.conditions import IfCondition
 
 def generate_launch_description():
     publish_urdf = LaunchConfiguration('publish_tf')
-
+    enable_pointcloud_to_laserscan = LaunchConfiguration('enable_pointcloud_to_laserscan')
+    
     # Declare the launch argument
     declare_publish_tf = DeclareLaunchArgument(
         'publish_tf',
         default_value='true',  # LaunchConfiguration values are strings, so use 'true'/'false'
         description='Whether to publish URDF'
+    )
+    
+    declare_enable_pointcloud_to_laserscan = DeclareLaunchArgument(
+        'enable_pointcloud_to_laserscan',
+        default_value='false',  # Default value for activation is 'false'
+        description='Whether to enable the pointcloud to laserscan node'
     )
 
     dashgo_driver = IncludeLaunchDescription(
@@ -67,6 +74,19 @@ def generate_launch_description():
             )
         ))
     
+    pointcloud_to_laserscan_node = Node(
+        package='pointcloud_to_laserscan',
+        executable='pointcloud_to_laserscan_node',
+        name='pointcloud_to_laserscan_node',
+        output='screen',
+        parameters=[],
+        remappings=[
+            ('cloud_in', '/depth/color/points')  # Remap input topic
+        ],
+        arguments=['--ros-args', '-p', 'target_frame:=base_link'],  
+        condition=IfCondition(enable_pointcloud_to_laserscan)
+    )
+    
     joint_state = Node(
         package='joint_state_publisher',
         executable='joint_state_publisher',
@@ -74,7 +94,9 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
-        declare_publish_tf,  # Declare launch argument
+        declare_enable_pointcloud_to_laserscan, 
+        declare_publish_tf, 
+        pointcloud_to_laserscan_node,
         dashgo_driver,
         ekf_launch,
         robot_description_launch,
