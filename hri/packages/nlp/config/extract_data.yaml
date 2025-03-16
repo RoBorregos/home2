@@ -1,6 +1,6 @@
 extract_data:
   ros__parameters:
-    # base_url: "http://localhost:11434/v1"
-    # model: "llama3.2"
+    base_url: "http://localhost:11434/v1"
+    model: "deepseek-r1:7b"
     EXTRACT_DATA_SERVICE: REPLACE
     temperature: 0.0

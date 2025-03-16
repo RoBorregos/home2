@@ -11,6 +11,7 @@ from frida_constants.hri_constants import (
     COMMON_INTEREST_SERVICE,
     EXTRACT_DATA_SERVICE,
     GRAMMAR_SERVICE,
+    IS_POSITIVE_SERVICE,
     QUERY_ITEM_SERVICE,
     SPEAK_SERVICE,
     STT_SERVICE_NAME,
@@ -23,6 +24,7 @@ from frida_interfaces.srv import (
     CommonInterest,
     ExtractInfo,
     Grammar,
+    IsPositive,
     LLMWrapper,
     QueryItem,
     Speak,
@@ -58,6 +60,7 @@ class HRITasks(metaclass=SubtaskMeta):
         self.common_interest_service = self.node.create_client(
             CommonInterest, COMMON_INTEREST_SERVICE
         )
+        self.is_positive_service = self.node.create_client(IsPositive, IS_POSITIVE_SERVICE)
 
         self.query_item_client = self.node.create_client(QueryItem, QUERY_ITEM_SERVICE)
         self.add_item_client = self.node.create_client(AddItem, ADD_ITEM_SERVICE)
@@ -258,9 +261,15 @@ class HRITasks(metaclass=SubtaskMeta):
         request = CommonInterest.Request(
             person1=person1, interests1=interest1, person2=person2, interests2=interest2
         )
-        future = self.command_interpreter_client.call_async(request)
+        future = self.common_interest_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
         return future.result().common_interest
+
+    def is_positive(self, text):
+        request = IsPositive.Request(text=text)
+        future = self.is_positive_service.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+        return future.result().is_positive
 
 
 if __name__ == "__main__":

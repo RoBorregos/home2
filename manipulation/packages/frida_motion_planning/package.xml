@@ -12,6 +12,7 @@
 
   <depend>frida_interfaces</depend>
   <depend>frida_constants</depend>
+
   
   <exec_depend>action_msgs</exec_depend>
   <exec_depend>control_msgs</exec_depend>
@@ -24,6 +25,7 @@
   <exec_depend>trajectory_msgs</exec_depend>
   <exec_depend>pymoveit2</exec_depend>
   <exec_depend>frida_pymoveit2</exec_depend>
+  <exec_depend>xarm_msgs</exec_depend>
 
   <export>
     <build_type>ament_cmake</build_type>
