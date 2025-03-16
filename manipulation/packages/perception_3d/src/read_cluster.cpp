@@ -55,22 +55,23 @@ public:
       const std::shared_ptr<frida_interfaces::srv::ReadPcdFile::Response>
           response) {
     RCLCPP_INFO(this->get_logger(), "read_pcd_file");
-    response->status = OK;
+    RCLCPP_INFO(this->get_logger(), "PCD path: %s", request->pcd_path.c_str());
+    response->success = OK;
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(
         new pcl::PointCloud<pcl::PointXYZ>);
 
-    if (request->optional_filename != "") {
-      request->optional_filename =
+    if (request->pcd_path != "") {
+      request->pcd_path =
           ament_index_cpp::get_package_share_directory("perception_3d") +
-          "/cluster.pcd";
+          "/table_mug.pcd";
     }
-    pcl::io::loadPCDFile<pcl::PointXYZ>(request->optional_filename, *cloud);
+    pcl::io::loadPCDFile<pcl::PointXYZ>(request->pcd_path, *cloud);
 
     sensor_msgs::msg::PointCloud2 cloud_msg;
     pcl::toROSMsg(*cloud, cloud_msg);
     response->cloud = cloud_msg;
     response->cloud.header.frame_id = "base_link";
-    response->status = OK;
+    response->success = OK;
   }
 };
 
@@ -81,3 +82,60 @@ int main(int argc, char *argv[]) {
   rclcpp::shutdown();
   return 0;
 }
+
+
+// using namespace std::chrono_literals;
+
+// class PublishNode : public rclcpp::Node {
+// private:
+//   rclcpp::Service<frida_interfaces::srv::ReadPcdFile>::SharedPtr service;
+
+// public:
+//   PublishNode() : Node("publish_node") {
+//     service = this->create_service<frida_interfaces::srv::ReadPcdFile>(
+//         "/read_pcd_file",
+//         [this](const std::shared_ptr<rmw_request_id_t> request_header,
+//                const std::shared_ptr<frida_interfaces::srv::ReadPcdFile::Request> request,
+//                const std::shared_ptr<frida_interfaces::srv::ReadPcdFile::Response> response) {
+//             this->handle_service_request(request_header, request, response);
+//         });
+//   }
+
+// private:
+//   void handle_service_request(
+//       const std::shared_ptr<rmw_request_id_t> request_header,
+//       const std::shared_ptr<frida_interfaces::srv::ReadPcdFile::Request> request,
+//       const std::shared_ptr<frida_interfaces::srv::ReadPcdFile::Response> response) {
+    
+//     RCLCPP_INFO(this->get_logger(), "Recibida solicitud para: %s", request->pcd_path.c_str());
+    
+//     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
+    
+//     try {
+//         // Usar el campo correcto del request
+//         std::string file_path = request->pcd_path.empty() ? 
+//             ament_index_cpp::get_package_share_directory("perception_3d") + "/cluster.pcd" :
+//             request->pcd_path;
+
+//         if (pcl::io::loadPCDFile<pcl::PointXYZ>(file_path, *cloud) == -1) {
+//             throw std::runtime_error("Error cargando PCD");
+//         }
+
+//         pcl::toROSMsg(*cloud, response->cloud);
+//         response->cloud.header.frame_id = "base_link";
+//         response->success = true;
+        
+//     } catch (const std::exception& e) {
+//         RCLCPP_ERROR(this->get_logger(), "Error: %s", e.what());
+//         response->success = false;
+//     }
+//   }
+// };
+
+// int main(int argc, char *argv[]) {
+//   rclcpp::init(argc, argv);
+//   auto node = std::make_shared<PublishNode>();
+//   rclcpp::spin(node);
+//   rclcpp::shutdown();
+//   return 0;
+// }

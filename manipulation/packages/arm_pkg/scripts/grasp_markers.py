@@ -84,7 +84,7 @@
 #     node.call_service(
 #         cfg_path="/home/dominguez/roborregos/home_ws/src/manipulation/packages/gpd/cfg/eigen_params.cfg",
 #         # pcd_path="/home/dominguez/Downloads/cluster.pcd"
-#         pcd_path="/home/dominguez/roborregos/home_ws/src/manipulation/packages/gpd/tutorials/table_mug.pcd"
+#         pcd_path="/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/table_mug.pcd"
 #     )
 
 #     rclpy.spin(node)
@@ -100,43 +100,109 @@ import rclpy
 from rclpy.node import Node
 from visualization_msgs.msg import Marker, MarkerArray
 
-# from geometry_msgs.msg import Pose, PoseArray
-from frida_interfaces.srv import GraspDetection
+# from sensor_msgs.msg import PointCloud2, PointField
+from frida_interfaces.srv import GraspDetection  # , ReadPcdFile
 import colorsys
 import tf_transformations
 import numpy as np
+# from std_msgs.msg import Header
 
 
 class GraspVisualizer(Node):
     def __init__(self):
         super().__init__("grasp_visualizer")
+
+        # qos_profile = rclpy.qos.QoSProfile(
+        #     depth=10,
+        #     reliability=rclpy.qos.ReliabilityPolicy.RELIABLE,
+        #     durability=rclpy.qos.DurabilityPolicy.TRANSIENT_LOCAL
+        # )
+
+        # Publishers
         self.marker_pub = self.create_publisher(MarkerArray, "/grasp_markers", 10)
+        # self.pcd_pub = self.create_publisher(PointCloud2, "/grasp_pcl", qos_profile)
 
-        self.client = self.create_client(GraspDetection, "detect_grasps")
-        while not self.client.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info("Servicio no disponible, esperando...")
+        # Clients
+        self.grasp_client = self.create_client(GraspDetection, "detect_grasps")
+        # self.pcd_client = self.create_client(ReadPcdFile, "read_pcd_file")
 
+        # Esperar conexión con servicios
+        while not self.grasp_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info("Servicio detect_grasps no disponible...")
+        # while not self.pcd_client.wait_for_service(timeout_sec=1.0):
+        #     self.get_logger().info("Servicio read_pcd_file no disponible...")
+
+        # Parámetros y configuración
         self.gripper_dimensions = {
             "base": (0.1, 0.1, 0.02),
             "finger": (0.02, 0.02, 0.17),
             "separation": 0.08,
         }
 
+        # Almacenamiento de datos
+        self.current_cloud = None
+
+        # Iniciar proceso
+        # self.load_and_process_pcd(
+        #     "/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/table_mug.pcd",
+        #     "/home/dominguez/roborregos/home_ws/src/manipulation/packages/gpd/cfg/eigen_params.cfg"
+        # )
+
     def call_service(self, cfg_path, pcd_path):
         request = GraspDetection.Request()
         request.cfg_path = cfg_path
         request.pcd_path = pcd_path
+        future = self.grasp_client.call_async(request)
+        future.add_done_callback(self.grasp_response_callback)
 
-        future = self.client.call_async(request)
-        future.add_done_callback(self.handle_response)
+    def load_and_process_pcd(self, pcd_path, cfg_path):
+        """Secuencia completa: Cargar PCD -> Detectar grasps"""
+        # self.read_pcd_file(pcd_path)
+        self.call_grasp_service(cfg_path, pcd_path)
 
-    def handle_response(self, future):
+    # def read_pcd_file(self, pcd_path):
+    #     """Solicitar lectura del PCD"""
+    #     request = ReadPcdFile.Request()
+    #     request.pcd_path = pcd_path
+    #     future = self.pcd_client.call_async(request)
+    #     future.add_done_callback(self.pcd_response_callback)
+
+    def pcd_response_callback(self, future):
+        """Procesar respuesta del servicio de PCD"""
+        try:
+            response = future.result()
+            print(response)
+            if response.success:
+                self.current_cloud = response.cloud
+                self.publish_pcl()
+            else:
+                self.get_logger().error("Error leyendo PCD")
+        except Exception as e:
+            self.get_logger().error(f"Error en servicio PCD: {str(e)}")
+
+    def publish_pcl(self):
+        """Publicar nube de puntos actual"""
+        if self.current_cloud is not None:
+            self.pcd_pub.publish(self.current_cloud)
+
+    def call_grasp_service(self, cfg_path, pcd_path):
+        """Iniciar detección de grasps"""
+        request = GraspDetection.Request()
+        request.cfg_path = cfg_path
+        request.pcd_path = pcd_path
+        future = self.grasp_client.call_async(request)
+        future.add_done_callback(self.grasp_response_callback)
+
+    def grasp_response_callback(self, future):
+        """Procesar detección de grasps"""
         try:
             response = future.result()
             if response.success:
                 self.publish_gripper_markers(response.grasp_poses)
+            else:
+                self.get_logger().warn("Detección de grasps fallida")
         except Exception as e:
-            self.get_logger().error(f"Error: {str(e)}")
+            self.get_logger().error(f"Error en detección: {str(e)}")
 
     def publish_gripper_markers(self, pose_array):
         marker_array = MarkerArray()
@@ -244,7 +310,7 @@ def main(args=None):
 
     node.call_service(
         cfg_path="/home/dominguez/roborregos/home_ws/src/manipulation/packages/gpd/cfg/eigen_params.cfg",
-        pcd_path="/home/dominguez/roborregos/home_ws/src/manipulation/packages/gpd/tutorials/table_mug.pcd",
+        pcd_path="/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/table_mug.pcd",
     )
 
     rclpy.spin(node)
