@@ -314,6 +314,37 @@ class MoveItPlanner(Planner):
             scale=scale,
         )
 
+        """self,
+        id: str,
+        link_name: Optional[str] = None,
+        touch_links: List[str] = [],
+        weight: float = 0.0,"""
+
+    def attach_collision_object(
+        self,
+        id: str,
+        link_name: str,
+        touch_links: List[str] = [],
+        weight: float = 0.0,
+    ) -> bool:
+        self.moveit2.attach_collision_object(
+            id=id,
+            link_name=link_name,
+            touch_links=touch_links,
+            weight=weight,
+        )
+        return True
+
+    def detach_collision_object(self, id: str) -> bool:
+        self.moveit2.detach_collision_object(id)
+        return True
+
+    def update_planning_scene(self) -> None:
+        self.moveit2.update_planning_scene()
+
+    def get_planning_scene(self) -> None:
+        return self.moveit2.get_planning_scene()
+
     def remove_collision_object(self, id: str) -> None:
         self.moveit2.remove_collision_object(id)
 
