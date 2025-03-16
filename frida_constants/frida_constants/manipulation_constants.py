@@ -21,6 +21,7 @@ PICK_PLANNER = "RRTConnect"
 
 PICK_MOTION_ACTION_SERVER_NODE = "manipulation/pick_motion_server"
 PICK_MOTION_ACTION_SERVER = "/manipulation/pick_motion_action_server"
+CLUSTER_OBJECT_SERVICE = "/manip/cluster_object"
 
 PICK_ACTION_SERVER = "/manipulation/pick_action_server"
 
