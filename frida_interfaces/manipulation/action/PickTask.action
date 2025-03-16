@@ -1,5 +1,5 @@
 #goal definition
-PointStamped object_point
+geometry_msgs/PointStamped object_point
 string object_name
 ---
 #result definition
