@@ -1,136 +1,40 @@
 #!/usr/bin/env python3
-# import rclpy
-# from rclpy.node import Node
-# from visualization_msgs.msg import Marker, MarkerArray
-# from geometry_msgs.msg import PoseArray
-# from frida_interfaces.srv import GraspDetection
-# import colorsys
-
-# import sys
-
-# class GraspVisualizer(Node):
-#     def __init__(self):
-#         super().__init__('grasp_visualizer')
-#         self.marker_pub = self.create_publisher(MarkerArray, '/grasp_markers', 10)
-
-#         # Cliente para llamar al servicio
-#         self.client = self.create_client(GraspDetection, 'detect_grasps')
-#         while not self.client.wait_for_service(timeout_sec=1.0):
-#             self.get_logger().info('Servicio no disponible, esperando...')
-
-#         # Configurar marcadores
-#         self.marker_id = 0
-#         self.color = [0.0, 1.0, 0.0, 0.8]  # Verde
-
-#     def call_service(self, cfg_path, pcd_path):
-#         request = GraspDetection.Request()
-#         request.cfg_path = cfg_path
-#         request.pcd_path = pcd_path
-
-#         future = self.client.call_async(request)
-#         future.add_done_callback(self.handle_response)
-
-#     def handle_response(self, future):
-#         try:
-#             response = future.result()
-#             if response.success:
-#                 self.publish_markers(response.grasp_poses)
-#         except Exception as e:
-#             self.get_logger().error(f'Error: {e}')
-
-#     def publish_markers(self, pose_array):
-#         marker_array = MarkerArray()
-
-#         num_poses = len(pose_array.poses)
-#         for idx, pose in enumerate(pose_array.poses):
-
-#             marker = Marker()
-#             marker.header.frame_id = "link_base"  # ¡Asegúrate que este frame exista!
-#             marker.header.stamp = self.get_clock().now().to_msg()
-#             marker.ns = "grasps"
-#             marker.id = self.marker_id
-#             marker.type = Marker.ARROW
-#             marker.action = Marker.ADD
-#             marker.pose = pose
-#             marker.scale.x = 0.1 #Longitud
-#             marker.scale.y = 0.02  #  Grosor
-#             marker.scale.z = 0.02
-
-#             hue = idx / float(num_poses)  # Valor entre 0 y 1
-#             r, g, b = colorsys.hsv_to_rgb(hue, 1.0, 1.0)
-
-#             marker.color.r = r  #Rojo
-#             marker.color.g = g
-#             marker.color.b = b
-#             marker.color.a = 10.0  # Opacidad alta
-
-#             # marker.color.r = 1.0  #Rojo
-#             # marker.color.g = 0.0
-#             # marker.color.b = 0.0
-#             # marker.color.a = 10.0  # Opacidad alta
-
-
-#             marker_array.markers.extend([marker,])
-#             self.marker_id += 1
-
-#         self.marker_pub.publish(marker_array)
-
-
-# def main(args=None):
-#     rclpy.init(args=args)
-#     node = GraspVisualizer()
-
-#     # Llama al servicio con tus rutas
-#     node.call_service(
-#         cfg_path="/home/dominguez/roborregos/home_ws/src/manipulation/packages/gpd/cfg/eigen_params.cfg",
-#         # pcd_path="/home/dominguez/Downloads/cluster.pcd"
-#         pcd_path="/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/table_mug.pcd"
-#     )
-
-#     rclpy.spin(node)
-#     node.destroy_node()
-#     rclpy.shutdown()
-
-# if __name__ == '__main__':
-#     main()
-
-
-#!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
 from visualization_msgs.msg import Marker, MarkerArray
-
-# from sensor_msgs.msg import PointCloud2, PointField
-from frida_interfaces.srv import GraspDetection  # , ReadPcdFile
+from sensor_msgs.msg import PointCloud2
+from frida_interfaces.srv import GraspDetection, ReadPcdFile
 import colorsys
 import tf_transformations
 import numpy as np
-# from std_msgs.msg import Header
 
 
 class GraspVisualizer(Node):
     def __init__(self):
         super().__init__("grasp_visualizer")
 
-        # qos_profile = rclpy.qos.QoSProfile(
-        #     depth=10,
-        #     reliability=rclpy.qos.ReliabilityPolicy.RELIABLE,
-        #     durability=rclpy.qos.DurabilityPolicy.TRANSIENT_LOCAL
-        # )
+        # Configuración de QoS para sincronización con datos sensoriales
+        qos_profile = rclpy.qos.QoSProfile(
+            depth=10,
+            reliability=rclpy.qos.ReliabilityPolicy.RELIABLE,
+            durability=rclpy.qos.DurabilityPolicy.TRANSIENT_LOCAL,
+        )
 
         # Publishers
-        self.marker_pub = self.create_publisher(MarkerArray, "/grasp_markers", 10)
-        # self.pcd_pub = self.create_publisher(PointCloud2, "/grasp_pcl", qos_profile)
+        self.marker_pub = self.create_publisher(
+            MarkerArray, "/grasp_markers", qos_profile
+        )
+        self.pcd_pub = self.create_publisher(PointCloud2, "/grasp_pcl", qos_profile)
 
         # Clients
         self.grasp_client = self.create_client(GraspDetection, "detect_grasps")
-        # self.pcd_client = self.create_client(ReadPcdFile, "read_pcd_file")
+        self.pcd_client = self.create_client(ReadPcdFile, "read_pcd_file")
 
         # Esperar conexión con servicios
         while not self.grasp_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info("Servicio detect_grasps no disponible...")
-        # while not self.pcd_client.wait_for_service(timeout_sec=1.0):
-        #     self.get_logger().info("Servicio read_pcd_file no disponible...")
+        while not self.pcd_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info("Servicio read_pcd_file no disponible...")
 
         # Parámetros y configuración
         self.gripper_dimensions = {
@@ -143,10 +47,14 @@ class GraspVisualizer(Node):
         self.current_cloud = None
 
         # Iniciar proceso
-        # self.load_and_process_pcd(
-        #     "/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/table_mug.pcd",
-        #     "/home/dominguez/roborregos/home_ws/src/manipulation/packages/gpd/cfg/eigen_params.cfg"
-        # )
+        self.load_and_process_pcd(
+            # "/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/table_mug.pcd",
+            # "/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/cluster_(1).pcd",
+            # "/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/cluster.pcd",
+            # "/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/tuto.pcd",
+            "/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/krylon.pcd",
+            "/home/dominguez/roborregos/home_ws/src/manipulation/packages/gpd/cfg/eigen_params.cfg",
+        )
 
     def call_service(self, cfg_path, pcd_path):
         request = GraspDetection.Request()
@@ -157,32 +65,39 @@ class GraspVisualizer(Node):
 
     def load_and_process_pcd(self, pcd_path, cfg_path):
         """Secuencia completa: Cargar PCD -> Detectar grasps"""
-        # self.read_pcd_file(pcd_path)
+        self.read_pcd_file(pcd_path)
         self.call_grasp_service(cfg_path, pcd_path)
 
-    # def read_pcd_file(self, pcd_path):
-    #     """Solicitar lectura del PCD"""
-    #     request = ReadPcdFile.Request()
-    #     request.pcd_path = pcd_path
-    #     future = self.pcd_client.call_async(request)
-    #     future.add_done_callback(self.pcd_response_callback)
+    def read_pcd_file(self, pcd_path):
+        """Solicitar lectura del PCD"""
+        request = ReadPcdFile.Request()
+        request.pcd_path = pcd_path
+        future = self.pcd_client.call_async(request)
+        future.add_done_callback(self.pcd_response_callback)
 
     def pcd_response_callback(self, future):
         """Procesar respuesta del servicio de PCD"""
         try:
             response = future.result()
-            print(response)
             if response.success:
                 self.current_cloud = response.cloud
                 self.publish_pcl()
             else:
-                self.get_logger().error("Error leyendo PCD")
+                # Si el servicio devuelve un mensaje de error, úsalo
+                error_msg = (
+                    response.error_message
+                    if hasattr(response, "error_message")
+                    else "Error desconocido"
+                )
+                self.get_logger().error(f"Error leyendo PCD: {error_msg}")
         except Exception as e:
             self.get_logger().error(f"Error en servicio PCD: {str(e)}")
 
     def publish_pcl(self):
-        """Publicar nube de puntos actual"""
         if self.current_cloud is not None:
+            self.get_logger().info(
+                f"Frame ID de la nube: {self.current_cloud.header.frame_id}"
+            )  # 👈
             self.pcd_pub.publish(self.current_cloud)
 
     def call_grasp_service(self, cfg_path, pcd_path):
@@ -310,7 +225,11 @@ def main(args=None):
 
     node.call_service(
         cfg_path="/home/dominguez/roborregos/home_ws/src/manipulation/packages/gpd/cfg/eigen_params.cfg",
-        pcd_path="/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/table_mug.pcd",
+        # pcd_path="/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/table_mug.pcd",
+        # pcd_path="/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/cluster_(1).pcd",
+        # pcd_path="/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/cluster.pcd",
+        # pcd_path="/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/tuto.pcd",
+        pcd_path="/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/krylon.pcd",
     )
 
     rclpy.spin(node)

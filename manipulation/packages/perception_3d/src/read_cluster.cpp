@@ -32,6 +32,7 @@
 #include <frida_interfaces/srv/read_pcd_file.hpp>
 #include <frida_interfaces/srv/remove_plane.hpp>
 #include <frida_interfaces/srv/test.hpp>
+#include <filesystem>
 
 using namespace std::chrono_literals;
 
@@ -48,30 +49,31 @@ public:
                   std::placeholders::_2, std::placeholders::_3));
   };
 
-  void read_pcd_file(
-      const std::shared_ptr<rmw_request_id_t> request_header,
-      const std::shared_ptr<frida_interfaces::srv::ReadPcdFile::Request>
-          request,
-      const std::shared_ptr<frida_interfaces::srv::ReadPcdFile::Response>
-          response) {
-    RCLCPP_INFO(this->get_logger(), "read_pcd_file");
-    RCLCPP_INFO(this->get_logger(), "PCD path: %s", request->pcd_path.c_str());
-    response->success = OK;
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(
-        new pcl::PointCloud<pcl::PointXYZ>);
+  void read_pcd_file(const std::shared_ptr<rmw_request_id_t> request_header,
+    const std::shared_ptr<frida_interfaces::srv::ReadPcdFile::Request> request,
+    const std::shared_ptr<frida_interfaces::srv::ReadPcdFile::Response> response
+  ) {
+    RCLCPP_INFO(this->get_logger(), "Recibida solicitud para: %s", request->pcd_path.c_str());
+    std::string file_path = request->pcd_path;
 
-    if (request->pcd_path != "") {
-      request->pcd_path =
-          ament_index_cpp::get_package_share_directory("perception_3d") +
-          "/table_mug.pcd";
+    // Verificar si el archivo existe
+    if (!std::filesystem::exists(file_path)) {
+        response->success = false;
+        RCLCPP_INFO(this->get_logger(), "El archivo no existe");
+        return;
     }
-    pcl::io::loadPCDFile<pcl::PointXYZ>(request->pcd_path, *cloud);
 
-    sensor_msgs::msg::PointCloud2 cloud_msg;
-    pcl::toROSMsg(*cloud, cloud_msg);
-    response->cloud = cloud_msg;
-    response->cloud.header.frame_id = "base_link";
-    response->success = OK;
+    // Intentar cargar el PCD
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
+    if (pcl::io::loadPCDFile<pcl::PointXYZ>(file_path, *cloud) == -1) {
+        response->success = false;
+        RCLCPP_INFO(this->get_logger(), "Error cargando PCD");
+        return;
+    }
+
+    pcl::toROSMsg(*cloud, response->cloud);
+    response->cloud.header.frame_id = "link_base";
+    response->success = true;
   }
 };
 
