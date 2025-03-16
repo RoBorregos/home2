@@ -1,5 +1,5 @@
 #include "rclcpp/rclcpp.hpp"
-#include <geometry_msgs/msg/detail/point_stamped__struct.hpp>
+
 #include <rclcpp/callback_group.hpp>
 #include <rclcpp/client.hpp>
 #include <rclcpp/executors.hpp>

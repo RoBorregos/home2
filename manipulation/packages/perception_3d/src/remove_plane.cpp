@@ -11,7 +11,6 @@
 #include <string>
 #include <variant>
 
-#include <sensor_msgs/msg/detail/point_cloud2__struct.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 
 #include <pcl/filters/extract_indices.h>
@@ -35,7 +34,6 @@
 #include <perception_3d/macros.hpp>
 
 #include <frida_interfaces/srv/cluster_object_from_point.hpp>
-#include <frida_interfaces/srv/detail/cluster_object_from_point__struct.hpp>
 #include <frida_interfaces/srv/remove_plane.hpp>
 #include <frida_interfaces/srv/test.hpp>
 
