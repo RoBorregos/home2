@@ -10,6 +10,7 @@ endif()
 
 include_directories(
   ${CMAKE_CURRENT_SOURCE_DIR}/include
+  ${EIGEN3_INCLUDE_DIR}
 )
 # find dependencies
 find_package(ament_cmake REQUIRED)
