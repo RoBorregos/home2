@@ -4,13 +4,13 @@ import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
 from geometry_msgs.msg import PoseStamped
-from frida_interfaces.action import PickAction
+from frida_interfaces.action import PickMotion
 
 
-class PickActionClient(Node):
+class PickMotionClient(Node):
     def __init__(self):
         super().__init__("pick_action_client")
-        self._action_client = ActionClient(self, PickAction, "pick_action_server")
+        self._action_client = ActionClient(self, PickMotion, "pick_action_server")
         self.get_logger().info("Pick Action Client has been started")
 
     def send_goal(self, stamped_poses):
@@ -19,7 +19,7 @@ class PickActionClient(Node):
         self._action_client.wait_for_server()
 
         # Create goal
-        goal_msg = PickAction.Goal()
+        goal_msg = PickMotion.Goal()
         goal_msg.grasping_poses = stamped_poses
 
         # Send goal
@@ -45,7 +45,7 @@ class PickActionClient(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    action_client = PickActionClient()
+    action_client = PickMotionClient()
 
     # Create sample stamped poses
     stamped_poses = []
