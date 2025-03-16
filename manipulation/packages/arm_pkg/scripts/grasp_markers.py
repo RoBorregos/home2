@@ -46,15 +46,24 @@ class GraspVisualizer(Node):
         # Almacenamiento de datos
         self.current_cloud = None
 
-        # Iniciar proceso
-        self.load_and_process_pcd(
-            # "/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/table_mug.pcd",
-            # "/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/cluster_(1).pcd",
-            # "/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/cluster.pcd",
-            # "/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/tuto.pcd",
-            "/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/krylon.pcd",
+        # self.declare_parameter("pcd_path","/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/table_mug.pcd")
+        # self.declare_parameter("pcd_path","/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/cluster_(1).pcd")
+        # self.declare_parameter("pcd_path","/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/cluster.pcd")
+        self.declare_parameter(
+            "pcd_path",
+            "/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/tuto.pcd",
+        )
+        # self.declare_parameter("pcd_path","/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/krylon.pcd")
+        self.declare_parameter(
+            "cfg_path",
             "/home/dominguez/roborregos/home_ws/src/manipulation/packages/gpd/cfg/eigen_params.cfg",
         )
+
+        # Obtener valores de los parámetros
+        pcd_path = self.get_parameter("pcd_path").value
+        cfg_path = self.get_parameter("cfg_path").value
+
+        self.load_and_process_pcd(pcd_path, cfg_path)
 
     def call_service(self, cfg_path, pcd_path):
         request = GraspDetection.Request()
@@ -72,6 +81,7 @@ class GraspVisualizer(Node):
         """Solicitar lectura del PCD"""
         request = ReadPcdFile.Request()
         request.pcd_path = pcd_path
+        # request.viewpoint = [0.0, 0.0, 0.0]  # Ajusta según la posición real de la cámara
         future = self.pcd_client.call_async(request)
         future.add_done_callback(self.pcd_response_callback)
 
@@ -223,14 +233,15 @@ def main(args=None):
     rclpy.init(args=args)
     node = GraspVisualizer()
 
-    node.call_service(
-        cfg_path="/home/dominguez/roborregos/home_ws/src/manipulation/packages/gpd/cfg/eigen_params.cfg",
-        # pcd_path="/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/table_mug.pcd",
-        # pcd_path="/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/cluster_(1).pcd",
-        # pcd_path="/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/cluster.pcd",
-        # pcd_path="/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/tuto.pcd",
-        pcd_path="/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/krylon.pcd",
-    )
+    # node.call_service(
+    #     cfg_path="/home/dominguez/roborregos/home_ws/src/manipulation/packages/gpd/cfg/eigen_params.cfg",
+    #     # pcd_path="/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/table_mug.pcd",
+    #     # pcd_path="/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/cluster_(1).pcd",
+    #     # pcd_path="/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/cluster.pcd",
+    #     # pcd_path="/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/tuto.pcd",
+    #     pcd_path="/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/krylon.pcd",
+
+    # )
 
     rclpy.spin(node)
     node.destroy_node()

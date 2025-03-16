@@ -7,6 +7,7 @@
 #include <functional>
 #include <iostream>
 #include <memory>
+#include <pcl/features/normal_3d.h>
 #include <pcl/filters/extract_indices.h>
 #include <pcl/impl/point_types.hpp>
 #include <pcl/io/pcd_io.h>
@@ -63,6 +64,11 @@ public:
         return;
     }
 
+    // pcl::PointCloud<pcl::PointNormal>::Ptr cloud_with_normals;
+    // pcl::NormalEstimation<pcl::PointXYZ, pcl::Normal> ne;
+    // ne.setViewPoint(0.0, 0.0, 0.0);
+    // ne.compute(*cloud_with_normals);
+    
     // Intentar cargar el PCD
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZ>);
     if (pcl::io::loadPCDFile<pcl::PointXYZ>(file_path, *cloud) == -1) {
