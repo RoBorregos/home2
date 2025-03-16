@@ -271,6 +271,16 @@ class MoveItPlanner(Planner):
         )
         return True
 
+    def detach_collision_object(self, id: str) -> bool:
+        self.moveit2.detach_collision_object(id)
+        return True
+
+    def update_planning_scene(self) -> None:
+        self.moveit2.update_planning_scene()
+
+    def get_planning_scene(self) -> None:
+        return self.moveit2.get_planning_scene()
+
     def remove_collision_object(self, id: str) -> None:
         self.moveit2.remove_collision_object(id)
 

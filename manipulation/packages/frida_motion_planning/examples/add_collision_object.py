@@ -14,6 +14,8 @@ Usage
 - ros2 run frida_motion_planning add_collision_object.py --ros-args -p type:="cylinder" -p position:="[0.2, 0.0, 0.5]" -p quat_xyzw:="[0.0, 0.0, 0.0, 1.0]" -p dimensions:="[0.1, 0.4]"
 - ros2 run frida_motion_planning add_collision_object.py --ros-args -p type:="sphere" -p position:="[0.35, 0.35, 0.35]" -p dimensions:="[0.05]"
 - ros2 run frida_motion_planning add_collision_object.py --ros-args -p type:="mesh" -p position:="[0.2, 0.0, 0.5]" -p quat_xyzw:="[0.0, 0.0, 0.0, 1.0]" -p mesh_file:="package://frida_motion_planning/meshes/box.stl"
+# To add 2 (demo of multiple CollisionObjects)
+- ros2 run frida_motion_planning add_collision_object.py --ros-args -p type:="sphere" -p position:="[0.35, 0.35, 0.35]" -p dimensions:="[0.05] -p duplicate="true""
 """
 
 
@@ -26,6 +28,7 @@ def main():
     node.declare_parameter("quat_xyzw", [0.0, 0.0, 0.0, 1.0])
     node.declare_parameter("dimensions", [0.1, 0.1, 0.1])
     node.declare_parameter("mesh_file", "")
+    node.declare_parameter("duplicate", False)
 
     add_collision_object_client = node.create_client(
         AddCollisionObjects, "/manipulation/add_collision_objects"
@@ -40,6 +43,7 @@ def main():
         node.get_parameter("dimensions").get_parameter_value().double_array_value
     )
     mesh_file = node.get_parameter("mesh_file").get_parameter_value().string_value
+    duplicate = node.get_parameter("duplicate").get_parameter_value().bool_value
 
     node.get_logger().info("Adding collision object...")
     node.get_logger().info(f"Sending type: {type}")
@@ -48,7 +52,7 @@ def main():
     node.get_logger().info(f"Sending dimensions: {dimensions}")
     request = AddCollisionObjects.Request()
     collision_object = CollisionObject()
-    collision_object.id = "object"
+    collision_object.id = "frida_pick_object_1"
     collision_object.type = type
     collision_object.pose.header = Header()
     collision_object.pose.header.frame_id = "link_base"
@@ -75,12 +79,11 @@ def main():
     request.collision_objects.append(collision_object)
 
     ### SEND DUPLICATE
-    new_collision_object = copy.deepcopy(collision_object)
-    new_collision_object.id = "object_2"
-    new_collision_object.pose.pose.position.x = (
-        -new_collision_object.pose.pose.position.x
-    )
-    request.collision_objects.append(new_collision_object)
+    if duplicate:
+        new_collision_object = copy.deepcopy(collision_object)
+        new_collision_object.id = "frida_pick_object_2"
+        new_collision_object.pose.pose.position.x -= 0.1
+        request.collision_objects.append(new_collision_object)
 
     future = add_collision_object_client.call_async(request)
     rclpy.spin_until_future_complete(node, future)

@@ -6,20 +6,25 @@ from rclpy.action import ActionServer
 from rclpy.callback_groups import ReentrantCallbackGroup
 from geometry_msgs.msg import TwistStamped
 from frida_interfaces.action import MoveToPose, MoveJoints
+from frida_constants.manipulation_constants import (
+    GET_COLLISION_OBJECTS_SERVICE,
+)
 from frida_interfaces.srv import (
     GetJoints,
     AddCollisionObjects,
     RemoveCollisionObject,
     ToggleServo,
     AttachCollisionObject,
+    GetCollisionObjects,
 )
+from frida_interfaces.msg import CollisionObject
 from frida_motion_planning.utils.MoveItPlanner import MoveItPlanner
 from frida_motion_planning.utils.MoveItServo import MoveItServo
 
 
 class MotionPlanningServer(Node):
     def __init__(self):
-        super().__init__("pick_server")
+        super().__init__("motion_planning_server")
         self.callback_group = ReentrantCallbackGroup()
 
         # Here we can select other planner (if implemented)
@@ -85,11 +90,17 @@ class MotionPlanningServer(Node):
             callback_group=self.callback_group,
         )
 
-        self.get_logger().info("Pick Action Server has been started")
+        self.get_collision_objects_service = self.create_service(
+            GetCollisionObjects,
+            GET_COLLISION_OBJECTS_SERVICE,
+            self.get_collision_objects_callback,
+        )
+
+        self.get_logger().info("Motion Planning Action Server has been started")
 
     async def move_to_pose_execute_callback(self, goal_handle):
         """Execute the pick action when a goal is received."""
-        self.get_logger().info("Executing pick goal...")
+        self.get_logger().info("Executing pose goal...")
 
         # Initialize result
         feedback = MoveToPose.Feedback()
@@ -110,7 +121,7 @@ class MotionPlanningServer(Node):
 
     async def move_joints_execute_callback(self, goal_handle):
         """Execute the pick action when a goal is received."""
-        self.get_logger().info("Executing pick goal...")
+        self.get_logger().info("Executing joint goal...")
 
         # Initialize result
         feedback = MoveJoints.Feedback()
@@ -279,6 +290,11 @@ class MotionPlanningServer(Node):
     def attach_collision_object_callback(self, request, response):
         """Handle requests to attach collision objects to the planning scene"""
         attached_id = f"{request.id}"
+        if request.detach:
+            self.planner.detach_collision_object(attached_id)
+            self.get_logger().info(f"Detached collision object: {attached_id}")
+            response.success = True
+            return response
         attached_link = request.attached_link
         touch_links = request.touch_links
         self.planner.attach_collision_object(attached_id, attached_link, touch_links)
@@ -329,6 +345,23 @@ class MotionPlanningServer(Node):
             angular=(msg.twist.angular.x, msg.twist.angular.y, msg.twist.angular.z),
             frame_id=msg.header.frame_id,
         )
+
+    def get_collision_objects_callback(self, request, response):
+        """Handle requests to get the collision objects in the planning scene"""
+        response = GetCollisionObjects.Response()
+
+        self.planner.update_planning_scene()
+        planning_scene = self.planner.get_planning_scene()
+        print(planning_scene)
+        for collision_object in planning_scene.world.collision_objects:
+            new_collision_object = CollisionObject()
+            new_collision_object.id = collision_object.id
+            new_collision_object.pose.header = collision_object.header
+            new_collision_object.pose.pose = collision_object.pose
+            # TODO: send dimensions and type
+            response.collision_objects.append(new_collision_object)
+        response.success = True
+        return response
 
 
 def main(args=None):

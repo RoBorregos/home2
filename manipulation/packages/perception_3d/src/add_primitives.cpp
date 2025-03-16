@@ -1,7 +1,6 @@
 #include "frida_constants/manip_3d.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include <cstdint>
-#include <frida_interfaces/srv/detail/add_collision_object__struct.hpp>
 #include <memory>
 #include <pcl/common/centroid.h>
 #include <pcl/common/common.h>
@@ -27,7 +26,7 @@
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl_ros/transforms.hpp>
 
-#include <frida_interfaces/srv/add_collision_object.hpp>
+#include <frida_interfaces/msg/collision_object.h>
 #include <frida_interfaces/srv/add_collision_objects.hpp>
 #include <frida_interfaces/srv/add_pick_primitives.hpp>
 

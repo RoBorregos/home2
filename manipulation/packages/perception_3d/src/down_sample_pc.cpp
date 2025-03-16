@@ -14,7 +14,7 @@
 #include <rclcpp/logging.hpp>
 #include <rclcpp/qos.hpp>
 #include <rclcpp/timer.hpp>
-#include <sensor_msgs/msg/detail/point_cloud2__struct.hpp>
+
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <string>
 #include <variant>
