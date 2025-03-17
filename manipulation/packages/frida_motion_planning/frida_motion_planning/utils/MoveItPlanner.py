@@ -75,9 +75,14 @@ class MoveItPlanner(Planner):
         self.moveit2.planner_id = planner_id
 
     def plan_joint_goal(
-        self, joint_positions: List[float], joint_names: List[str], wait: bool = True
+        self,
+        joint_positions: List[float],
+        joint_names: List[str],
+        wait: bool = True,
+        set_mode: bool = True,
     ) -> Union[bool, Future]:
-        self.set_mode(MOVEIT_MODE)
+        if set_mode:
+            self.set_mode(MOVEIT_MODE)
         if joint_names is None or len(joint_names) == 0:
             joint_names = xarm6.joint_names()
         trajectory = self._plan_joint_goal(joint_positions, joint_names)
@@ -94,8 +99,14 @@ class MoveItPlanner(Planner):
         return future
 
     def plan_pose_goal(
-        self, pose: PoseStamped, cartesian: bool = False, wait: bool = True
+        self,
+        pose: PoseStamped,
+        cartesian: bool = False,
+        wait: bool = True,
+        set_mode: bool = True,
     ) -> Union[bool, Future]:
+        if set_mode:
+            self.set_mode(MOVEIT_MODE)
         self.node.get_logger().info("Planning pose goal")
         trajectory = self._plan(pose, cartesian)
         if not trajectory:
@@ -302,6 +313,37 @@ class MoveItPlanner(Planner):
             frame_id=pose.header.frame_id,
             scale=scale,
         )
+
+        """self,
+        id: str,
+        link_name: Optional[str] = None,
+        touch_links: List[str] = [],
+        weight: float = 0.0,"""
+
+    def attach_collision_object(
+        self,
+        id: str,
+        link_name: str,
+        touch_links: List[str] = [],
+        weight: float = 0.0,
+    ) -> bool:
+        self.moveit2.attach_collision_object(
+            id=id,
+            link_name=link_name,
+            touch_links=touch_links,
+            weight=weight,
+        )
+        return True
+
+    def detach_collision_object(self, id: str) -> bool:
+        self.moveit2.detach_collision_object(id)
+        return True
+
+    def update_planning_scene(self) -> None:
+        self.moveit2.update_planning_scene()
+
+    def get_planning_scene(self) -> None:
+        return self.moveit2.get_planning_scene()
 
     def remove_collision_object(self, id: str) -> None:
         self.moveit2.remove_collision_object(id)

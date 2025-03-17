@@ -1,0 +1,9 @@
+#goal definition
+string object_name
+int8 task_type
+---
+#result definition
+int32 success
+---
+#feedback
+string execution_state
