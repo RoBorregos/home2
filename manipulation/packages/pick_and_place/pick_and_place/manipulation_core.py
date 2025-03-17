@@ -51,16 +51,18 @@ class ManipulationCore(Node):
         # Call cloud extractor
         request = ClusterObjectFromPoint.Request()
         request.point = goal_handle.request.object_point
+        self._cluster_object_client.wait_for_service()
         future = self._cluster_object_client.call_async(request)
         future = wait_for_future(future)
 
-        # self.get_logger().info(f"Object Cloud size: {len(cloud.points)}")
+        self.get_logger().info(f"Object Cloud extracted: {future.result()}")
 
         # Save to PCD??
         # Call Grasp Pose Detection
         ##### FAKE #####
         object_point = goal_handle.request.object_point
         grasp_pose1 = PoseStamped()
+        grasp_pose1.header.frame_id = object_point.header.frame_id
         grasp_pose1.pose.position.x = object_point.point.x
         grasp_pose1.pose.position.y = object_point.point.y
         grasp_pose1.pose.position.z = object_point.point.z + 0.10
@@ -88,11 +90,11 @@ class ManipulationCore(Node):
         result = future.result()
         self.get_logger().info(f"Pick Motion Result: {result}")
 
-        if result.success:
+        if result:
             # Initialize result
             result = PickTask.Result()
             result.success = True
-            goal_handle.succeed(result)
+            goal_handle.succeed()
             return result
 
         self.get_logger().error("Pick Motion failed")

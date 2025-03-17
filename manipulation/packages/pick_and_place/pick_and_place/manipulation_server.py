@@ -65,10 +65,11 @@ class ManipulationServer(Node):
         if self.last_point is None:
             return
         print("Triggering pick task")
+
         a = PickTask.Goal()
         a.object_point = self.last_point
         a.object_name = "Clicked Point"
-
+        self._pick_action_client.wait_for_server()
         future = self._pick_action_client.send_goal_async(a)
         future = wait_for_future(future)
         self.get_logger().info(f"Received point: {self.last_point}")
