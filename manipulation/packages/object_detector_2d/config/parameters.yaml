@@ -1,13 +1,20 @@
 ros__parameters:
-  SOURCE: /zed2/zed_node/rgb/image_rect_color
-  DEPTH_INPUT: /zed2/zed_node/depth/depth_registered
-  CAMERA_INFO: /zed2/zed_node/depth/camera_info
-  ROS_INPUT: True
-  USE_ACTIVE_FLAG: False
-  VERBOSE: False
-  DEPTH_ACTIVE: True
-  USE_YOLO8: False
-  YOLO_MODEL_PATH: /path/to/models/yolo11classes.pt
-  MODELS_PATH: /path/to/models/gazebo/
-  LABELS_PATH: /path/to/models/gazebo/label_map.pbtxt
-  CAMERA_FRAME: zed2_left_camera_optical_frame
+  RGB_IMAGE_TOPIC : /zed/zed_node/rgb/image_rect_color
+  DEPTH_IMAGE_TOPIC :  /zed/zed_node/depth/depth_registered
+  CAMERA_INFO_TOPIC :  /zed/zed_node/depth/camera_info
+  DETECTIONS_TOPIC : /detections
+  DETECTIONS_IMAGE_TOPIC : /detections_image
+  DETECTIONS_POSES_TOPIC : /test/detection_poses
+  DETECTIONS_3D_TOPIC : /detections_3d
+  DETECTIONS_ACTIVE_TOPIC : /detections_active
+  DEBUG_IMAGE_TOPIC : /debug_image
+  CAMERA_FRAME :  zed_left_camera_optical_frame
+  YOLO_MODEL_PATH :  yolov5s.pt # FILE MOST BE IN MODEL FOLDER OF THE PACKAGE
+  USE_ACTIVE_FLAG :  False
+  DEPTH_ACTIVE :  True
+  VERBOSE :  FAlse
+  USE_YOLO8 :  False
+  FLIP_IMAGE :  False
+  USE_ZED_TRANSFORM : True
+  MIN_SCORE_THRESH :  0.75
+

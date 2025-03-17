@@ -14,6 +14,7 @@ from typing import List
 
 sys.path.append(str(pathlib.Path(__file__).parent) + "/../include")
 from vision_utils import get2DCentroid, get_depth, deproject_pixel_to_point
+from frida_interfaces.msg import ObjectDetection, ObjectDetectionArray
 import rclpy
 from cv_bridge import CvBridge, CvBridgeError
 from geometry_msgs.msg import Point, PointStamped, PoseArray, Pose
@@ -28,12 +29,14 @@ class ObjectDectectorParams:
                  min_score_thresh : float = None, 
                  camera_frame : str = None, 
                  flip_image : bool = None, 
-                 camera_info : CameraInfo = None):   
+                 camera_info : CameraInfo = None,
+                 use_zed_transfrom : bool = None):   
         self.depth_active = depth_active
         self.min_score_thresh = min_score_thresh
         self.camera_frame = camera_frame
         self.flip_image = flip_image
         self.camera_info = camera_info
+        self.use_zed_transfrom = use_zed_transfrom
     
     def __init__(self):
         self.depth_active= None
@@ -100,7 +103,7 @@ class ObjectDectector(ABC):
 
         if len(depth_image) != 0:
             # TFs
-            while not tfBuffer.can_transform(self.object_detector_params_.camera_frame, "base_link", rclpy.time.Time().to_msg()): 
+            while not self.object_detector_params_.use_zed_transfrom and not tfBuffer.can_transform(self.object_detector_params_.camera_frame, "base_link", rclpy.time.Time().to_msg()): 
                 continue
 
             pose_array = PoseArray()
@@ -134,5 +137,18 @@ class ObjectDectector(ABC):
     def getDetections(self):
         return self.detections_
     
-    
-0
+    def getFridaDetections(self, detections : List[Detection]):
+        object_detection_array = []
+        for detection in detections:
+            object_detection = ObjectDetection(
+                label = detection.class_id_,
+                label_text = detection.label_,
+                score = detection.confidence_,
+                ymin = float(detection.bbox_.x),
+                xmin = float(detection.bbox_.y),
+                ymax = float(detection.bbox_.w),
+                xmax = float(detection.bbox_.h),
+                point3d = detection.point_stamped_
+            )
+            object_detection_array.append(object_detection)
+        return object_detection_array
