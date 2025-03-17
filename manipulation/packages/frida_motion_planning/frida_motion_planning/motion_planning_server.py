@@ -387,6 +387,7 @@ class MotionPlanningServer(Node):
         if not ALWAYS_SET_MODE:
             self.current_mode = JOINT_VELOCITY_MODE
         response.success = success
+
     def get_collision_objects_callback(self, request, response):
         """Handle requests to get the collision objects in the planning scene"""
         response = GetCollisionObjects.Response()
