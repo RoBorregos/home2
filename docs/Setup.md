@@ -11,7 +11,7 @@ To install pre-commit and the repo's hooks, run the following commands:
 ```bash
 pip install pre-commit
 # pwd -> home2
-pre-commit install
+pip install pre-commit
 ```
 
 To run against all files (useful when adding new hooks), use:

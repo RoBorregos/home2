@@ -1,0 +1,2 @@
+moondream==0.0.5
+numpy<2
