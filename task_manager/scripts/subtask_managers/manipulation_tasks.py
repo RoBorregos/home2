@@ -12,8 +12,9 @@ from utils.logger import Logger
 from xarm_msgs.srv import SetInt16, SetInt16ById, MoveVelocity
 from frida_interfaces.action import MoveJoints
 from frida_interfaces.srv import GetJoints
+from frida_constants.xarm_configurations import XARM_CONFIGURATIONS
 from rclpy.action import ActionClient
-from typing import List
+from typing import List, Union
 # import time as t
 
 XARM_ENABLE_SERVICE = "/xarm/motion_enable"
@@ -85,10 +86,10 @@ class ManipulationTasks:
         self.move_client = self.node.create_client(MoveVelocity, XARM_MOVEVELOCITY_SERVICE)
 
         self._move_joints_action_client = ActionClient(
-            self.node, MoveJoints, "move_joints_action_server"
+            self.node, MoveJoints, "/manipulation/move_joints_action_server"
         )
 
-        self._get_joints_client = self.node.create_client(GetJoints, "get_joints")
+        self._get_joints_client = self.node.create_client(GetJoints, "/manipulation/get_joints")
 
         if not self.mock_data and not simulation:
             self.setup_services()
@@ -168,21 +169,22 @@ class ManipulationTasks:
         Logger.success(self.node, "Arm Desactivated!")
         return self.STATE["EXECUTION_SUCCESS"]
 
-    def move_to(self, x: float, y: float):
-        Logger.info(self.node, "Moving arm with velocity")
-
+    def set_move_mode(self):
+        Logger.info(self.node, "Setting move  arm")
         mode_request = SetInt16.Request()
         mode_request.data = 4
-
         try:
             future_mode = self.mode_client.call_async(mode_request)
             rclpy.spin_until_future_complete(self.node, future_mode, timeout_sec=TIMEOUT)
-
         except Exception as e:
-            Logger.error(self.node, f"Error changing mode of arm: {e}")
+            Logger.error(self.node, f"Error moving arm: {e}")
             return self.STATE["EXECUTION_ERROR"]
 
-        Logger.success(self.node, "Mode changed!")
+        Logger.success(self.node, "Arm activated for moving!")
+        return self.STATE["EXECUTION_SUCCESS"]
+
+    def move_to(self, x: float, y: float):
+        Logger.info(self.node, "Moving arm with velocity")
 
         # Set motion
         x = x * -1
@@ -229,33 +231,46 @@ class ManipulationTasks:
 
     def move_joint_positions(
         self,
-        joint_positions: List[float] = None,
+        joint_positions: Union[List[float], dict] = None,
         named_position: str = None,
         velocity: float = 0.1,
         degrees=False,  # set to true if joint_positions are in degrees
     ):
-        """Set position of joints"""
-        """ named_position has priority over joint_positions"""
-        # Send goal
+        """Set position of joints.
+        If joint_positions is a dict, keys are treated as joint_names
+        and values as joint positions.
+        Named position has priority over joint_positions.
+        """
         if named_position:
             joint_positions = self.get_named_target(named_position)
-        if degrees:
-            joint_positions = [x * DEG_TO_RAD for x in joint_positions]
-        future = self._send_joint_goal(joint_positions=joint_positions, velocity=velocity)
 
-        # Wait for goal to be accepted
+        # Determine format of joint_positions and apply degree conversion if needed.
+        if isinstance(joint_positions, dict):
+            joint_names = list(joint_positions.keys())
+            joint_vals = list(joint_positions.values())
+            if degrees:
+                joint_vals = [x * DEG_TO_RAD for x in joint_vals]
+        elif isinstance(joint_positions, list):
+            joint_names = []
+            joint_vals = joint_positions.copy()
+            if degrees:
+                joint_vals = [x * DEG_TO_RAD for x in joint_vals]
+        else:
+            Logger.error(self.node, "joint_positions must be a list or a dict")
+            return self.STATE["EXECUTION_ERROR"]
+
+        future = self._send_joint_goal(
+            joint_names=joint_names, joint_positions=joint_vals, velocity=velocity
+        )
+
+        # Wait for goal to be accepted.
         if not self._wait_for_future(future):
             return self.STATE["EXECUTION_ERROR"]
         return self.STATE["EXECUTION_SUCCESS"]
 
     def get_named_target(self, target_name: str):
         """Get named target"""
-        if target_name == "home":
-            return [-55.0, -3.0, -52.0, 0.0, 53.0, -55.0]
-        elif target_name == "zero":
-            return [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        else:
-            return None
+        return XARM_CONFIGURATIONS[target_name]
 
     def get_joint_positions(
         self,
@@ -279,6 +294,8 @@ class ManipulationTasks:
         acceleration=0.0,
         planner_id="",
     ):
+        print("Joint names: ", joint_names)
+        print("Joint positions: ", joint_positions)
         goal_msg = MoveJoints.Goal()
         goal_msg.joint_names = joint_names
         goal_msg.joint_positions = joint_positions

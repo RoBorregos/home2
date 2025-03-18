@@ -10,4 +10,9 @@
 	branch = humble
 [submodule "manipulation/packages/pymoveit2"]
 	path = manipulation/packages/pymoveit2
-	url = https://github.com/AndrejOrsula/pymoveit2
+	url = https://github.com/RoBorregos/pymoveit2
+  
+[submodule "navigation/packages/PlayStation-JoyInterface-ROS2"]
+	path = navigation/packages/PlayStation-JoyInterface-ROS2
+	url = https://github.com/HarvestX/PlayStation-JoyInterface-ROS2.git
+	branch = humble

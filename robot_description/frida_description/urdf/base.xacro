@@ -4,7 +4,7 @@
   <link name="base_link">
     <inertial>
       <origin xyz="-0.017897 -0.0059216 0.12557" rpy="0 0 0" />
-      <mass value="31.075" />
+      <mass value="131.075" />
       <inertia ixx="0.67537" ixy="-0.00030935" ixz="-0.0025852"
                iyy="0.61552" iyz="-0.0003748" izz="0.65918" />
     </inertial>
@@ -24,11 +24,14 @@
       </geometry>
     </collision>
   </link>
- <gazebo reference="base_link">
-    <mu1>200</mu1>
-    <mu2>200</mu2>
-    <kp>1000000</kp>
-    <kd>1</kd>
-    <material>Gazebo/Grey</material>
-  </gazebo>
+
+  <joint name = "base_footprint_joint" type="fixed">
+    <parent link="base_link"/>
+    <child link="base_footprint"/>
+    <origin xyz="0 0 0" rpy="0 0 0 "/>
+  </joint>
+
+  <link name="base_footprint">
+  </link>
+
 </robot>

@@ -8,8 +8,10 @@ import rclpy
 from frida_constants.hri_constants import (
     ADD_ITEM_SERVICE,
     COMMAND_INTERPRETER_SERVICE,
+    COMMON_INTEREST_SERVICE,
     EXTRACT_DATA_SERVICE,
     GRAMMAR_SERVICE,
+    IS_POSITIVE_SERVICE,
     QUERY_ITEM_SERVICE,
     SPEAK_SERVICE,
     STT_SERVICE_NAME,
@@ -19,8 +21,10 @@ from frida_interfaces.srv import (
     STT,
     AddItem,
     CommandInterpreter,
+    CommonInterest,
     ExtractInfo,
     Grammar,
+    IsPositive,
     LLMWrapper,
     QueryItem,
     Speak,
@@ -53,6 +57,10 @@ class HRITasks(metaclass=SubtaskMeta):
         )
         self.task = task
         self.grammar_service = self.node.create_client(Grammar, GRAMMAR_SERVICE)
+        self.common_interest_service = self.node.create_client(
+            CommonInterest, COMMON_INTEREST_SERVICE
+        )
+        self.is_positive_service = self.node.create_client(IsPositive, IS_POSITIVE_SERVICE)
 
         self.query_item_client = self.node.create_client(QueryItem, QUERY_ITEM_SERVICE)
         self.add_item_client = self.node.create_client(AddItem, ADD_ITEM_SERVICE)
@@ -75,6 +83,10 @@ class HRITasks(metaclass=SubtaskMeta):
                     "client": self.extract_data_service,
                     "type": "service",
                 },
+                "common_interest_service": {
+                    "client": self.common_interest_service,
+                    "type": "service",
+                },
             },
         }
 
@@ -95,7 +107,7 @@ class HRITasks(metaclass=SubtaskMeta):
                 if not service["client"].wait_for_server(timeout_sec=TIMEOUT):
                     Logger.warn(self.node, f"{key} action server not initialized. ({self.task})")
 
-    def say(self, text: str, wait: bool = False) -> None:
+    def say(self, text: str, wait: bool = True) -> None:
         """Method to publish directly text to the speech node"""
         self.node.get_logger().info(f"Sending to saying service: {text}")
         request = Speak.Request(text=text)
@@ -203,12 +215,61 @@ class HRITasks(metaclass=SubtaskMeta):
         rclpy.spin_until_future_complete(self.node, future)
         return future.result().answer
 
+    def add_item(self, document: list, item_id: list, collection: str, metadata: list) -> str:
+        """
+        Adds new items to the ChromaDB collection.
+
+        Args:
+            document (list): List of documents to be added.
+            item_id (list): List of item IDs corresponding to each document.
+            collection (str): The collection to add the items to.
+            metadata (list): List of metadata corresponding to each document.
+
+        Returns:
+            str: A message indicating the success or failure of the operation.
+        """
+        try:
+            # Prepare the request with the necessary arguments
+            request = AddItem.Request(
+                document=document,  # List of documents
+                id=item_id,  # List of item IDs
+                collection=collection,  # The collection to add the items to
+                metadata=metadata,  # Metadata as a JSON
+            )
+
+            # Make the service call
+            future = self.add_item_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future)
+
+            # Check if the operation was successful
+            if future.result().success:
+                return "Items added successfully"
+            else:
+                return f"Failed to add items: {future.result().message}"
+
+        except Exception as e:
+            return f"Error: {str(e)}"
+
     def command_interpreter(self, text: str) -> CommandInterpreter.Response:
         request = CommandInterpreter.Request(text=text)
         future = self.command_interpreter_client.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
 
         return future.result().commands
+
+    def common_interest(self, person1, interest1, person2, interest2):
+        request = CommonInterest.Request(
+            person1=person1, interests1=interest1, person2=person2, interests2=interest2
+        )
+        future = self.common_interest_service.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+        return future.result().common_interest
+
+    def is_positive(self, text):
+        request = IsPositive.Request(text=text)
+        future = self.is_positive_service.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+        return future.result().is_positive
 
 
 if __name__ == "__main__":

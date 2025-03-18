@@ -5,7 +5,7 @@
     <link name="${prefix}_wheel">
       <inertial>
         <origin xyz="-1.3878E-17 0 2.7756E-17" rpy="0 0 0" />
-        <mass value="0.52892" />
+        <mass value="100.52892" />
         <inertia ixx="0.00063131" ixy="${ixy}" ixz="${ixz}"
                  iyy="0.00063131" iyz="${iyz}" izz="0.0011216" />
       </inertial>
@@ -35,18 +35,5 @@
 
   <xacro:wheel_link prefix="right" ixy="-9.9049E-20" ixz="5.8265E-21" iyz="-2.2717E-21" joint_origin="-0.075244 -0.166 -0.0775" />
   <xacro:wheel_link prefix="left" ixy="4.5051E-20" ixz="1.2238E-21" iyz="7.2483E-21" joint_origin="-0.075244 0.166 -0.0775" />
-  <gazebo reference="left_wheel">
-    <mu1>200</mu1>
-    <mu2>200</mu2>
-    <kp>1000000</kp>
-    <kd>1</kd>
-    <material>Gazebo/Black</material>
-  </gazebo>
-  <gazebo reference="right_wheel">
-    <mu1>200</mu1>
-    <mu2>200</mu2>
-    <kp>1000000</kp>
-    <kd>1</kd>
-    <material>Gazebo/Black</material>
-  </gazebo>
+
 </robot>
