@@ -11,7 +11,7 @@ from frida_constants.manipulation_constants import (
 from typing import List, Union
 from concurrent.futures import Future
 from xarm_msgs.srv import SetInt16
-from pick_and_place.utils.Planner import Planner
+from frida_motion_planning.utils.Planner import Planner
 from geometry_msgs.msg import PoseStamped
 from sensor_msgs.msg import JointState
 import time
@@ -343,13 +343,18 @@ class MoveItPlanner(Planner):
         self.moveit2.update_planning_scene()
 
     def get_planning_scene(self) -> None:
+        self.update_planning_scene()
         return self.moveit2.get_planning_scene()
 
     def remove_collision_object(self, id: str) -> None:
         self.moveit2.remove_collision_object(id)
 
-    def clear_all_collision_objects(self) -> None:
-        self.moveit2.clear_all_collision_objects()
+    def remove_all_collision_objects(self) -> None:
+        planning_scene = self.get_planning_scene()
+        for collision_object in planning_scene.world.collision_objects:
+            print("Found collision object: ", collision_object.id)
+            time.sleep(1e-09)
+            self.remove_collision_object(collision_object.id)
 
     def cancel_execution(self) -> None:
         self.moveit2.cancel_execution()

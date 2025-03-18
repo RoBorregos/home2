@@ -339,6 +339,11 @@ class MotionPlanningServer(Node):
         try:
             # Generate a unique ID for the collision object
             object_id = f"{request.id}"
+            if object_id == "all":
+                self.planner.remove_all_collision_objects()
+                self.get_logger().info("Removed all collision objects")
+                response.success = True
+                return response
 
             # Remove the collision object
             self.planner.remove_collision_object(object_id)
