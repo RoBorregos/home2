@@ -4,6 +4,6 @@ tqdm
 numpy<2
 face_recognition
 ultralytics
-moondream
+# moondream
 pillow
 # pybind11>=2.12

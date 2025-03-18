@@ -11,14 +11,18 @@ services:
       - ../../:/workspace
       - /dev:/dev
       - /dev/video0:/dev/video0
+      - /tmp:/tmp
       - /tmp/.X11-unix:/tmp/.X11-unix
   
     network_mode: host
     user: 1000:1000
     privileged: true
+    runtime : nvidia
+    group_add: 
+      - video
 
     environment:
-      DISPLAY: ${DISPLAY}
+      DISPLAY: :0
       TERM: xterm-256color
       QT_X11_NO_MITSHM: 1
       QT_DEBUG_PLUGINS: 1
