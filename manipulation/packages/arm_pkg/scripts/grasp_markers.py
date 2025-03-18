@@ -51,7 +51,7 @@ class GraspVisualizer(Node):
         # self.declare_parameter("pcd_path","/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/cluster.pcd")
         self.declare_parameter(
             "pcd_path",
-            "/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/tuto.pcd",
+            "/home/dominguez/roborregos/home_ws/src/manipulation/packages/gpd/tutorials/table_mug.pcd",
         )
         # self.declare_parameter("pcd_path","/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/krylon.pcd")
         self.declare_parameter(
