@@ -21,7 +21,7 @@ def get_common_interests_dialog(
 def get_extract_data_args(full_text, data_to_extract, context=None):
     user_content = f"<full_text>{full_text}</full_text>\n<extract_data>{data_to_extract}</extract_data>"
 
-    if context:
+    if context and len(context) > 0:
         user_content += f"\n<explanation>{context}</explanation>"
 
     return (
