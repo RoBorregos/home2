@@ -18,12 +18,17 @@ def get_common_interests_dialog(
     }
 
 
-def get_extract_data_args(full_text, data_to_extract):
+def get_extract_data_args(full_text, data_to_extract, context=None):
+    user_content = f"<full_text>{full_text}</full_text>\n<extract_data>{data_to_extract}</extract_data>"
+
+    if context:
+        user_content += f"\n<explanation>{context}</explanation>"
+
     return (
         [
             {
                 "role": "system",
-                "content": f"""You will receive a text (`full_text`) and a specific target (`extract_data`). Your task is to extract and return the closest relevant word or phrase that directly answers the target.
+                "content": f"""You will receive a text (`full_text`) and a specific target (`extract_data`). (Optional) Additional explanation (`explanation`) to help clarify ambiguous cases. Your task is to extract and return the closest relevant word or phrase that directly answers the target.
 
 ### Extraction Rules:
 - Return the **most relevant word or phrase** that best corresponds to `extract_data`, considering its contextual meaning within the sentence.
@@ -31,6 +36,7 @@ def get_extract_data_args(full_text, data_to_extract):
 - If multiple possible matches exist, return the **most contextually relevant** one (e.g., a noun or phrase describing the requested information).
 - If no relevant match is found, return an empty string (`""`).
 - If `full_text` is missing, empty, or consists of only a single word or short phrase that directly corresponds to `extract_data`, return `full_text` as the result.
+- If present, use the `explanation` to help clarify ambiguous cases.
 
 ### Examples:
 
@@ -99,13 +105,7 @@ Ensure that the extracted data is always **the most contextually relevant** answ
             },
             {
                 "role": "user",
-                "content": "<full_text>"
-                + str(full_text)
-                + "</full_text>"
-                + "\n"
-                + "<extract_data>"
-                + (data_to_extract)
-                + "</extract_data>",
+                "content": user_content,
             },
         ],
         ExtractedData,
