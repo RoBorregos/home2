@@ -143,11 +143,15 @@ def deproject_pixel_to_point(cv_image_rgb_info, pixel, depth):
         )
         x *= f
         y *= f
-        dx = x + 2 * intrinsics["coeffs"][2] * x * y + intrinsics["coeffs"][3] * (
-            r2 + 2 * x * x
+        dx = (
+            x
+            + 2 * intrinsics["coeffs"][2] * x * y
+            + intrinsics["coeffs"][3] * (r2 + 2 * x * x)
         )
-        dy = y + 2 * intrinsics["coeffs"][3] * x * y + intrinsics["coeffs"][2] * (
-            r2 + 2 * y * y
+        dy = (
+            y
+            + 2 * intrinsics["coeffs"][3] * x * y
+            + intrinsics["coeffs"][2] * (r2 + 2 * y * y)
         )
         x = dx
         y = dy
@@ -229,7 +233,7 @@ def deproject_pixel_to_point(cv_image_rgb_info, pixel, depth):
                 )
                 - rd
             )
-            if fabs(f) < FLT_EPSILON:
+            if math.fabs(f) < FLT_EPSILON:
                 break
             df = float(
                 1

@@ -49,8 +49,6 @@ ament_python_install_package(${PROJECT_NAME})
 #file (GLOB NODES scripts/*.py)
 #Install python scripts
 install(PROGRAMS
-  scripts/Detection2D.py
-  scripts/DetectionPicker.py
   scripts/object_detector_node.py
   scripts/local_camera.py
   DESTINATION lib/${PROJECT_NAME}
