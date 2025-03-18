@@ -97,9 +97,9 @@ class FollowFaceNode(Node):
         state_request = SetInt16.Request()
         state_request.data = 0
         # Set mode
-        # 0: position control mode
+        # 4: velocity control mode
         mode_request = SetInt16.Request()
-        mode_request.data = 0
+        mode_request.data = 4
 
         try:
             future_mode = self.mode_client.call_async(mode_request)
