@@ -7,10 +7,7 @@
 #include <functional>
 #include <iostream>
 #include <memory>
-<<<<<<< HEAD
 #include <pcl/features/normal_3d.h>
-=======
->>>>>>> origin
 #include <pcl/filters/extract_indices.h>
 #include <pcl/impl/point_types.hpp>
 #include <pcl/io/pcd_io.h>
@@ -84,9 +81,6 @@ public:
     pcl::toROSMsg(*cloud, response->cloud);
     response->cloud.header.frame_id = "link_base";
     response->success = true;
-<<<<<<< HEAD
-=======
->>>>>>> origin
   }
 };
 
@@ -97,8 +91,3 @@ int main(int argc, char *argv[]) {
   rclcpp::shutdown();
   return 0;
 }
-
-
-=======
-
->>>>>>> origin
