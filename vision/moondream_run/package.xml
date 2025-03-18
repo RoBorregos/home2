@@ -18,6 +18,8 @@
   <depend>std_msgs</depend>
   <depend>sensor_msgs</depend>
   <depend>action_msgs</depend>
+  <depend>frida_interfaces</depend>
+
 
   <member_of_group>rosidl_interface_packages</member_of_group>
 
