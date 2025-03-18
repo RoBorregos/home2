@@ -1,9 +1,18 @@
 import moondream as md
-import cv2
 from PIL import Image
+import cv2
+from enum import Enum
+
+
+class Position(Enum):
+    LEFT = "left"
+    CENTER = "center"
+    RIGHT = "right"
+    NOT_FOUND = "not found"
+
+
 # ===== STEP 1: Install Dependencies =====
 # pip install moondream  # Install dependencies in your project directory
-
 
 # ===== STEP 2: Download Model =====
 # Download model (593 MiB download size, 996 MiB memory usage)
@@ -27,62 +36,29 @@ class MoonDreamModel:
             print()
         else:
             answer = self.model.query(encoded_image, query)["answer"]
-            # print("Answer:", answer)
             return answer
 
     def find_beverage(self, encoded_image, subject):
         detect_result = self.model.detect(encoded_image, subject)
-        print("Detected:", detect_result["objects"])
-        if detect_result["objects"]:
-            obj = detect_result["objects"][0]  # Consider the first detected object
-            xmin, ymin, xmax, ymax = (
-                obj["x_min"],
-                obj["y_min"],
-                obj["x_max"],
-                obj["y_max"],
-            )
-            print(f"xmin: {xmin}, ymin: {ymin}, xmax: {xmax}, ymax: {ymax}")
-            return int(xmin), int(ymin), int(xmax), int(ymax)
-        return None, None, None, None
 
-    def determine_position(self, image, xmin, ymin, xmax, ymax):
-        image_height, image_width, _ = image.shape
-        bbox_center_x = (xmin + xmax) / 2
-        bbox_center_y = (ymin + ymax) / 2
-        image_center_x = image_width / 2
-        image_center_y = image_height / 2
-
-        horizontal_position = "left" if bbox_center_x < image_center_x else "right"
-        vertical_position = "up" if bbox_center_y < image_center_y else "down"
-
-        return horizontal_position, vertical_position
+        if not detect_result["objects"]:
+            return Position.NOT_FOUND
+        else:
+            for obj in detect_result["objects"]:
+                x_center = (obj["x_min"] + obj["x_max"]) / 2
+                if x_center < 1 / 3:
+                    return Position.LEFT
+                elif x_center > 2 / 3:
+                    return Position.RIGHT
+                else:
+                    return Position.CENTER
+            return Position.NOT_FOUND
 
 
-# Example usage
+# Test beverage location
 if __name__ == "__main__":
     model_path = "vision/vision_general/scripts/moondream-2b-int8.mf.gz"
-    image_path = (
-        "/Users/jvelarde/Desktop/home2/vision/vision_general/scripts/beverage.jpeg"
-    )
-    image = cv2.imread(image_path)
-    moon_dream = MoonDreamModel(model_path)
-    prompt_person_desc = "Describe the clothing of the person in the image in a detailed and specific manner. Include the type of clothing, colors, patterns, and any notable accessories. Ensure that the description is clear and distinct."
-    object = "fanta"
-    encoded_image = moon_dream.encode_image(image_path)
-    moon_dream.generate_person_description(
-        encoded_image,
-        "What are the people wearing on the image, mention it as people1:, people2: and so on in json format, you can choose any keys and values",
-        stream=False,
-    )
-    xmin, ymin, xmax, ymax = moon_dream.find_beverage(encoded_image, object)
-    if xmin is not None:
-        cv2.rectangle(image, (xmin, ymin), (xmax, ymax), (255, 0, 0), 2)
-        horizontal_position, vertical_position = moon_dream.determine_position(
-            image, xmin, ymin, xmax, ymax
-        )
-        print(
-            f"The beverage is located at the {horizontal_position}-{vertical_position} of the image."
-        )
-        cv2.imshow("Detected Object", image)
-        cv2.waitKey(0)
-        cv2.destroyAllWindows()
+    md_model = MoonDreamModel(model_path)
+    img = cv2.imread("vision/vision_general/scripts/gatorade.jpg")
+    encoded_image = md_model.encode_image(img)
+    md_model.find_beverage(encoded_image, "purple gatorade")
