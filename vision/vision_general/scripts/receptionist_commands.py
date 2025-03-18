@@ -8,7 +8,7 @@ commands.
 
 import cv2
 from ultralytics import YOLO
-from moondream_lib import MoonDreamModel
+from moondream_lib import MoonDreamModel, Position
 import pathlib
 import numpy as np
 import queue
@@ -25,6 +25,7 @@ from frida_interfaces.action import DetectPerson
 from frida_interfaces.srv import FindSeat
 from frida_interfaces.srv import PersonDescription
 from frida_interfaces.srv import BeverageLocation
+from firda_interfaces.srv import PersonPosture
 
 from ament_index_python.packages import get_package_share_directory
 
@@ -34,15 +35,16 @@ package_share_dir = get_package_share_directory("vision_general")
 CAMERA_TOPIC = "/zed/zed_node/rgb/image_rect_color"
 CHECK_PERSON_TOPIC = "/vision/detect_person"
 PERSON_DESCRIPTION_TOPIC = "/vision/person_description"
+PERSON_POSTURE_TOPIC = "/vision/person_posture"
 BEVERAGE_TOPIC = "/vision/beverage_location"
 FIND_SEAT_TOPIC = "/vision/find_seat"
 IMAGE_TOPIC = "/vision/img_person_detecion"
-
 
 YOLO_LOCATION = str(pathlib.Path(__file__).parent) + "/Utils/yolov8n.pt"
 MOONDREAM_LOCATION = str(
     pathlib.Path(package_share_dir) / "Utils/moondream-2b-int8.mf.gz"
 )
+
 PERCENTAGE = 0.3
 MAX_DEGREE = 30
 AREA_PERCENTAGE_THRESHOLD = 0.2
@@ -69,6 +71,14 @@ class ReceptionistCommands(Node):
         )
         self.beverage_location_service = self.create_service(
             BeverageLocation, BEVERAGE_TOPIC, self.beverage_location_callback
+        )
+        self.person_description_service = self.create_service(
+            PersonDescription,
+            PERSON_DESCRIPTION_TOPIC,
+            self.person_description_callback,
+        )
+        self.person_posture_service = self.create_service(
+            PersonPosture, PERSON_POSTURE_TOPIC, self.person_posture_callback
         )
         self.image_publisher = self.create_publisher(Image, IMAGE_TOPIC, 10)
         self.person_detection_action_server = ActionServer(
@@ -155,21 +165,44 @@ class ReceptionistCommands(Node):
     def beverage_location_callback(self, request, response):
         """Callback to locate x,y bounding box in the image."""
         self.get_logger().info("Executing service Beverage Location")
-        beverage = request.beverage
 
         if self.image is None:
             response.location = "No image received yet."
+            response.success = False
             return response
 
         frame = self.image
         encoded_image = self.moondream_model.encode_image(frame)
-        result = self.moondream_model.find_beverage(encoded_image, beverage)
-
-        print(result)
-        response.location = (
-            "self.moondream_model.find_beverage(encoded_image, beverage)"
+        beverage_position = self.moondream_model.find_beverage(
+            encoded_image, request.beverage
         )
-        self.success(f"Beverage location: {response.location}")
+
+        if beverage_position == Position.NOT_FOUND:
+            self.get_logger().warn("Beverage not found")
+            response.location = beverage_position.value
+            response.success = False
+        else:
+            response.location = beverage_position.value
+            response.success = True
+            self.get_logger().info(f"Beverage found at: {response.location}")
+        return response
+
+    def person_posture_callback(self, request, response):
+        """Callback to determine the position of the person in the image."""
+        self.get_logger().info("Executing service Person Posture")
+
+        if self.image is None:
+            response.position = "No image received yet."
+            return response
+
+        query = "Determine if the person is sitting, standing, or lying down. Just mention the pose, no aditional information is needed."
+        cropped_frame = self.detect_and_crop_person()
+        encoded_image = self.moondream_model.encode_image(cropped_frame)
+
+        # Use same method for dperson_description but with different query
+        response.description = self.moondream_model.generate_person_description(
+            encoded_image, query, stream=False
+        )
         return response
 
     async def detect_person_callback(self, goal_handle):
@@ -294,7 +327,6 @@ class ReceptionistCommands(Node):
             cropped_frame = frame[
                 int(y - h / 2) : int(y + h / 2), int(x - w / 2) : int(x + w / 2)
             ]
-
             return cropped_frame
 
         return None
