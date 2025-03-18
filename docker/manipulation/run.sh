@@ -91,7 +91,7 @@ case $ENV_TYPE in
     "jetson")
     #_____Jetson_____
     echo "DOCKERFILE=docker/manipulation/Dockerfile.jetson" >> .env
-    echo "BASE_IMAGE=roborregos/home2:jetson_base" >> .env
+    echo "BASE_IMAGE=roborregos/home2:l4t_base" >> .env
     echo "IMAGE_NAME=roborregos/home2:manipulation-jetson" >> .env
     ;;
   *)
@@ -121,6 +121,7 @@ if [ -z "$EXISTING_CONTAINER" ]; then
         docker compose -f docker-compose-jetson.yaml up --build -d
     fi
     echo "Running prebuild script..."
+    docker start $CONTAINER_NAME
     docker exec -it $CONTAINER_NAME /bin/bash -c "./src/home2/prebuild.sh"
 fi
 
@@ -129,10 +130,12 @@ RUNNING_CONTAINER=$(docker ps -q -f "name=$CONTAINER_NAME")
 
 if [ -n "$RUNNING_CONTAINER" ]; then
     echo "Container $CONTAINER_NAME is already running. Executing bash..."
+    docker start $CONTAINER_NAME
     docker exec -it $CONTAINER_NAME /bin/bash
 else
     echo "Container $CONTAINER_NAME is stopped. Starting it now..."
     docker compose up --build -d
+    docker start $CONTAINER_NAME
     docker exec $CONTAINER_NAME /bin/bash
 fi
 

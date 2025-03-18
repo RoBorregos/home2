@@ -9,13 +9,15 @@ from typing import Optional
 
 import pytz
 import rclpy
+from nlp.assets.dialogs import get_is_answer_positive_args
+from nlp.assets.schemas import IsAnswerPositive
 from openai import OpenAI
 from pydantic import BaseModel
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from std_msgs.msg import Bool, String
 
-from frida_interfaces.srv import Grammar, LLMWrapper
+from frida_interfaces.srv import CommonInterest, Grammar, IsPositive, LLMWrapper
 
 SPEECH_COMMAND_TOPIC = "/speech/raw_command"
 OUT_COMMAND_TOPIC = "/stop_following"
@@ -57,14 +59,14 @@ class LLMUtils(Node):
         self.declare_parameter("OUT_COMMAND_TOPIC_NAME", OUT_COMMAND_TOPIC)
         self.declare_parameter("GRAMMAR_SERVICE", "/nlp/grammar")
         self.declare_parameter("LLM_WRAPPER_SERVICE", "/nlp/llm")
+        self.declare_parameter("COMMON_INTEREST_SERVICE", "/nlp/common_interest")
+        self.declare_parameter("IS_POSITIVE_SERVICE", "/nlp/is_positive")
 
         self.declare_parameter("temperature", 0.5)
         base_url = self.get_parameter("base_url").get_parameter_value().string_value
 
         if base_url == "None":
-            self.base_url = None
-        else:
-            self.base_url = base_url
+            base_url = None
 
         model = self.get_parameter("model").get_parameter_value().string_value
         self.model = model
@@ -95,9 +97,25 @@ class LLMUtils(Node):
             self.get_parameter("LLM_WRAPPER_SERVICE").get_parameter_value().string_value
         )
 
+        common_interest_service = (
+            self.get_parameter("COMMON_INTEREST_SERVICE")
+            .get_parameter_value()
+            .string_value
+        )
+
+        is_positive_service = (
+            self.get_parameter("IS_POSITIVE_SERVICE").get_parameter_value().string_value
+        )
+
         self.create_service(Grammar, grammar_service, self.grammar_service)
 
         self.create_service(LLMWrapper, llm_wrapper_service, self.llm_wrapper_service)
+
+        self.create_service(
+            CommonInterest, common_interest_service, self.common_interest
+        )
+
+        self.create_service(IsPositive, is_positive_service, self.is_positive)
 
         # publisher
         self.publisher = self.create_publisher(Bool, OUT_COMMAND_TOPIC, 10)
@@ -188,6 +206,61 @@ class LLMUtils(Node):
         res.answer = response
 
         return res
+
+    def common_interest(self, req, res):
+        response = (
+            self.client.beta.chat.completions.parse(
+                model=self.model,
+                temperature=self.temperature,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You will be presented with the interests of two people, your task is to get the common interests between them. Give a short answer with one common interest.",
+                    },
+                    {
+                        "role": "user",
+                        "content": f"{req.person1} likes {req.interests1} and {req.person2} likes {req.interests2}",
+                    },
+                ],
+            )
+            .choices[0]
+            .message.content
+        )
+
+        res.common_interest = response
+
+        return res
+
+    def is_positive(
+        self, request: IsPositive.Request, response: IsPositive.Response
+    ) -> IsPositive.Response:
+        """Service to extract information from text."""
+
+        self.get_logger().info("Determining if text is positive")
+        messages, response_format = get_is_answer_positive_args(request.text)
+
+        response_content = (
+            self.client.beta.chat.completions.parse(
+                model=self.model,
+                temperature=self.temperature,
+                messages=messages,
+                response_format=response_format,
+            )
+            .choices[0]
+            .message.content
+        )
+
+        self.get_logger().info(f"The text is: {response_content}")
+
+        try:
+            response_data = json.loads(response_content)
+            result = IsAnswerPositive(**response_data)
+        except Exception as e:
+            self.get_logger().error(f"Service error: {e}")
+            raise rclpy.exceptions.ServiceException(str(e))
+
+        response.is_positive = result.is_positive
+        return response
 
 
 def main(args=None):

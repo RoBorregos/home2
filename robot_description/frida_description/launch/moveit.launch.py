@@ -14,7 +14,7 @@ from launch.actions import OpaqueFunction, IncludeLaunchDescription, DeclareLaun
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
-from uf_ros_lib.moveit_configs_builder import MoveItConfigsBuilder
+from arm_pkg.moveit_configs_builder_sim import MoveItConfigsBuilder
 from uf_ros_lib.uf_robot_utils import generate_ros2_control_params_temp_file
 
 
@@ -28,12 +28,11 @@ def launch_setup(context, *args, **kwargs):
     velocity_control = LaunchConfiguration('velocity_control', default=False)
     model1300 = LaunchConfiguration('model1300', default=False)
     robot_sn = LaunchConfiguration('robot_sn', default='')
-    attach_to = LaunchConfiguration('attach_to', default='base_link')
-    attach_xyz = LaunchConfiguration('attach_xyz', default='"0.0049756 0 0.34"')
-    attach_rpy = LaunchConfiguration('attach_rpy', default='"0 0 1.57"')
+    attach_to = LaunchConfiguration("attach_to", default="base_link")
+    attach_xyz = LaunchConfiguration("attach_xyz", default='"0.0049756 0 0.34"')
+    attach_rpy = LaunchConfiguration("attach_rpy", default='"0 0 1.57"')
     mesh_suffix = LaunchConfiguration('mesh_suffix', default='stl')
     kinematics_suffix = LaunchConfiguration('kinematics_suffix', default='')
-    
     add_gripper = LaunchConfiguration('add_gripper', default=False)
     add_vacuum_gripper = LaunchConfiguration('add_vacuum_gripper', default=False)
     add_bio_gripper = LaunchConfiguration('add_bio_gripper', default=False)
@@ -51,6 +50,7 @@ def launch_setup(context, *args, **kwargs):
     geometry_mesh_origin_rpy = LaunchConfiguration('geometry_mesh_origin_rpy', default='"0 0 0"')
     geometry_mesh_tcp_xyz = LaunchConfiguration('geometry_mesh_tcp_xyz', default='"0 0 0"')
     geometry_mesh_tcp_rpy = LaunchConfiguration('geometry_mesh_tcp_rpy', default='"0 0 0"')
+    sensors_3d_path = FindPackageShare('arm_pkg/config/sensors_3d.yaml')
 
     no_gui_ctrl = LaunchConfiguration('no_gui_ctrl', default=False)
     ros_namespace = LaunchConfiguration('ros_namespace', default='').perform(context)
@@ -104,7 +104,7 @@ def launch_setup(context, *args, **kwargs):
         geometry_mesh_origin_rpy=geometry_mesh_origin_rpy,
         geometry_mesh_tcp_xyz=geometry_mesh_tcp_xyz,
         geometry_mesh_tcp_rpy=geometry_mesh_tcp_rpy,
-        
+        sensors_3d = sensors_3d_path
     ).to_moveit_configs()
 
     moveit_config_dump = yaml.dump(moveit_config.to_dict())
@@ -112,7 +112,7 @@ def launch_setup(context, *args, **kwargs):
     # robot moveit common launch
     # xarm_moveit_config/launch/_robot_moveit_common2.launch.py
     robot_moveit_common_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(PathJoinSubstitution([FindPackageShare('xarm_moveit_config'), 'launch', '_robot_moveit_common2.launch.py'])),
+        PythonLaunchDescriptionSource(PathJoinSubstitution([FindPackageShare('arm_pkg'), 'launch', 'frida_moveit_common.launch.py'])),
         launch_arguments={
             'prefix': prefix,
             'attach_to': attach_to,
@@ -128,7 +128,7 @@ def launch_setup(context, *args, **kwargs):
     # robot gazebo launch
     # xarm_gazebo/launch/_robot_beside_table_gazebo.launch.py
     robot_gazebo_launch = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(PathJoinSubstitution([FindPackageShare('frida_description'), 'launch', 'xarm_launch.launch.py'])),
+        PythonLaunchDescriptionSource(PathJoinSubstitution([FindPackageShare('frida_description'), 'launch', 'robot_sim.launch.py'])),
         launch_arguments={
             'dof': dof,
             'robot_type': robot_type,

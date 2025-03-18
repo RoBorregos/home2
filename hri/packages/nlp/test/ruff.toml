@@ -1,0 +1,2 @@
+line-length = 200
+lint.extend-ignore = ["E501"]

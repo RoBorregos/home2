@@ -68,7 +68,11 @@ ros2 launch speech hri_launch.py
 # Speech (Remember to start the stt docker before, this is done automatically if running the hri docker compose file)
 ros2 launch speech devices_launch.py
 
-ros2 service call /speech/speak frida_interfaces/srv/Speak "{text: \"Go to the kitchen and grab cookies\"}"
+# Say something
+ros2 service call /hri/speech/speak frida_interfaces/srv/Speak "{text: \"Go to the kitchen and grab cookies\"}"
+
+# Extract data from a sentence
+ros2 service call /hri/nlp/data_extractor frida_interfaces/srv/ExtractInfo "{full_text: 'Hello, my name is Oscar', data: 'name'}"
 
 # NLP
 ros2 launch nlp nlp_launch.py
@@ -171,6 +175,13 @@ pactl info | grep "Default Source"
 pactl set-default-source <index>
 # List all source
 pactl list short sources
+```
+
+### Speaker
+
+If the speaker isn't loud, make sure to increase the volume level in the device that controlls the speaker.
+```bash
+amixer -D pulse sset Master 100%
 ```
 
 ## Download openwakeword base model

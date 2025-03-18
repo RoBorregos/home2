@@ -1,0 +1,4 @@
+bool request
+---
+string posture
+bool success

@@ -1,5 +1,0 @@
-# sensor_msgs/PointCloud2 RemovePlane::Response::cloud
-bool extract_or_remove # true for returning the plane, false for removing. both from the point_cloud topic.
----
-sensor_msgs/PointCloud2 cloud
-int32 health_response

@@ -8,6 +8,8 @@ find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(action_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(shape_msgs REQUIRED)
 find_package(unique_identifier_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 
@@ -20,7 +22,7 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   ${action_files}
   ${srv_files}
   ${msg_files}
-  DEPENDENCIES std_msgs unique_identifier_msgs action_msgs geometry_msgs sensor_msgs
+  DEPENDENCIES std_msgs unique_identifier_msgs action_msgs geometry_msgs sensor_msgs shape_msgs
 )
 
 # Export dependencies for other packages
