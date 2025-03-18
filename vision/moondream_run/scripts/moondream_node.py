@@ -24,7 +24,7 @@ BEVERAGE_TOPIC = "/vision/beverage_location"
 
 
 YOLO_LOCATION = str(pathlib.Path(__file__).parent) + "/yolov8n.pt"
-MOONDREAM_LOCATION = "vision/moondream/moondream/moondream-2b-int8.mf.gz"
+# MOONDREAM_LOCATION = MOONDREAM_LOCATION = str(pathlib.Path(__file__).parent) + "/moondream-2b-int8.mf.gz"
 
 CONF_THRESHOLD = 0.5
 
@@ -50,7 +50,7 @@ class MoondreamNode(Node):
         )
 
         self.yolo_model = YOLO(YOLO_LOCATION)
-        self.moondream_model = MoonDreamModel(MOONDREAM_LOCATION)
+        self.moondream_model = MoonDreamModel()
 
         self.get_logger().info("MoondreamNode Ready.")
 
@@ -126,40 +126,6 @@ class MoondreamNode(Node):
             encoded_image, query, stream=False
         )
         return response
-
-    def detect_and_crop_person(self):
-        """Check if there is a person in the frame, crop the image to the person with the largest area, and return the cropped frame."""
-        if self.image is None:
-            self.get_logger().warn("No image received yet.")
-            return None
-
-        frame = self.image
-        self.output_image = frame.copy()
-
-        results = self.yolo_model(frame, verbose=False, classes=0)
-        largest_area = 0
-        largest_box = None
-
-        for out in results:
-            for box in out.boxes:
-                x, y, w, h = [round(i) for i in box.xywh[0].tolist()]
-                confidence = box.conf.item()
-                area = w * h
-
-                if confidence > CONF_THRESHOLD and area > largest_area:
-                    largest_area = area
-                    largest_box = (x, y, w, h)
-
-        if largest_box:
-            x, y, w, h = largest_box
-            self.person_found = True
-
-            cropped_frame = frame[
-                int(y - h / 2) : int(y + h / 2), int(x - w / 2) : int(x + w / 2)
-            ]
-            return cropped_frame
-
-        return None
 
 
 def main(args=None):
