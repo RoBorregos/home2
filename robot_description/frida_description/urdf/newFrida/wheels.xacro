@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+<xacro:macro name="wheel_link" params="prefix xyz joint_origin">
+  <link name="${prefix}_wheel">
+    <inertial>
+      <origin xyz="${xyz}" rpy="0 0 0" />
+      <mass value="0.52892" />
+      <inertia
+        ixx="0.00063131"
+        ixy="6.143E-41"
+        ixz="-1.7205E-18"
+        iyy="0.00063131"
+        iyz="1.3389E-36"
+        izz="0.0011216" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="${mesh_path}${prefix}_wheel.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.79216 0.81961 0.93333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="${mesh_path}${prefix}_wheel.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="${prefix}wheel" type="continuous">
+    <origin xyz="${joint_origin}" rpy="-1.5708 0 0" />
+    <parent link="base_link" />
+    <child link="${prefix}_wheel" />
+    <axis xyz="0 0 1" />
+  </joint>
+</xacro:macro>
+
+<xacro:wheel_link prefix="right" xyz="7.9103E-16 -6.1756E-16 -3.6082E-16" joint_origin="-0.075244 -0.166 -0.0775" />
+<xacro:wheel_link prefix="left" xyz="-3.3307E-16 -6.245E-16 -4.4409E-16" joint_origin="-0.075244 0.166 -0.0775" />
+
+</robot>

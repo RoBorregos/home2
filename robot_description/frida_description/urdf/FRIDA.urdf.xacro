@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <robot name="FRIDA" xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-
+<!-- XARM ARGUMENTS -->
   <xacro:arg name="prefix" default=""/>
   <xacro:arg name="hw_ns" default="xarm"/>
   <xacro:arg name="limited" default="false"/>

@@ -1,0 +1,189 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!--RIGHT-->
+  <link name="right_castwheel_bracket">
+    <inertial>
+      <origin xyz="2.7756E-17 -2.0817E-16 -0.031971" rpy="0 0 0" />
+      <mass value="0.045185" />
+      <inertia
+        ixx="1.9144E-05"
+        ixy="5.6529E-21"
+        ixz="-6.7972E-21"
+        iyy="2.0362E-05"
+        iyz="-1.1438E-20"
+        izz="1.5813E-05" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="${mesh_path}right_castwheel_bracket.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.89804 0.91765 0.92941 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="${mesh_path}right_castwheel_bracket.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="rightcastwheelbracket" type="continuous">
+    <origin xyz="0.11226 -0.09 -0.11242" rpy="3.1416 0 0" />
+    <parent link="base_link" />
+    <child link="right_castwheel_bracket" />
+    <axis xyz="0 0 -1" />
+  </joint>
+
+  <link name="right_cast_wheel">
+    <inertial>
+      <origin xyz="4.1633E-17 -1.3444E-17 1.3878E-17" rpy="0 0 0" />
+      <mass value="0.069429" />
+      <inertia
+        ixx="1.9515E-05"
+        ixy="-7.0513E-22"
+        ixz="-3.3087E-22"
+        iyy="1.9515E-05"
+        iyz="-3.419E-22"
+        izz="3.1799E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh filename="${mesh_path}right_cast_wheel.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.79216 0.81961 0.93333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="${mesh_path}right_cast_wheel.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="rightcastwheel" type="continuous">
+    <origin
+      xyz="0 0 0"
+      rpy="1.5708 0 0" />
+    <parent
+      link="right_castwheel_bracket" />
+    <child
+      link="right_cast_wheel" />
+    <axis
+      xyz="0 0 1" />
+  </joint>
+
+  <!--LEFT-->
+  <link name="left_castwheel_bracket">
+    <inertial>
+      <origin
+        xyz="-1.1102E-16 4.1633E-17 -0.031971"
+        rpy="0 0 0" />
+      <mass
+        value="0.045185" />
+      <inertia
+        ixx="1.9144E-05"
+        ixy="9.0325E-22"
+        ixz="-3.5423E-22"
+        iyy="2.0362E-05"
+        iyz="-9.6202E-21"
+        izz="1.5813E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://NewFridaURDF/meshes/left_castwheel_bracket.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.89804 0.91765 0.92941 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://NewFridaURDF/meshes/left_castwheel_bracket.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="leftcastwheelbracket" type="continuous">
+    <origin
+      xyz="0.11226 0.09 -0.11242"
+      rpy="3.1416 0 0" />
+    <parent
+      link="base_link" />
+    <child
+      link="left_castwheel_bracket" />
+    <axis
+      xyz="0 0 -1" />
+  </joint>
+
+  <link name="left_cast_wheel">
+    <inertial>
+      <origin
+        xyz="0 8.6736E-19 2.7756E-17"
+        rpy="0 0 0" />
+      <mass
+        value="0.069429" />
+      <inertia
+        ixx="1.9515E-05"
+        ixy="-7.4724E-22"
+        ixz="-3.299E-21"
+        iyy="1.9515E-05"
+        iyz="-3.0315E-21"
+        izz="3.1799E-05" />
+    </inertial>
+    <visual>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://NewFridaURDF/meshes/left_cast_wheel.STL" />
+      </geometry>
+      <material
+        name="">
+        <color
+          rgba="0.79216 0.81961 0.93333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin
+        xyz="0 0 0"
+        rpy="0 0 0" />
+      <geometry>
+        <mesh
+          filename="package://NewFridaURDF/meshes/left_cast_wheel.STL" />
+      </geometry>
+    </collision>
+  </link>
+
+  <joint name="leftcastwheel" type="continuous">
+    <origin
+      xyz="0 0 0"
+      rpy="1.5708 0 0" />
+    <parent
+      link="left_castwheel_bracket" />
+    <child
+      link="left_cast_wheel" />
+    <axis
+      xyz="0 0 1" />
+  </joint>
+
+</robot>
