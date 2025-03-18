@@ -17,6 +17,8 @@ set(SCRIPTS_DIR pick_and_place)
 set(TESTS_DIR ${SCRIPTS_DIR}/tests)
 install(PROGRAMS
     ${SCRIPTS_DIR}/pick_server.py
+    ${SCRIPTS_DIR}/manipulation_core.py
+    ${SCRIPTS_DIR}/manipulation_server.py
     ${TESTS_DIR}/call_pick_action.py
     DESTINATION lib/${PROJECT_NAME}
 )

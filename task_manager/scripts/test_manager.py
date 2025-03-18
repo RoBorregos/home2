@@ -59,15 +59,31 @@ class TestTaskManager(Node):
         # self.subtask_manager["hri"].say("I'm frida, Can you tell me where to go?")
         # location_hint = self.subtask_manager["hri"].hear()
 
+        # joint_positions = self.subtask_manager["manipulation"].get_joint_positions()
+        # joint_positions["joint1"] = joint_positions["joint1"] - 180
+        # print(joint_positions)
+        # new_joint_positions = [-55.0, -3.0, -52.0, 0.0, 53.0, -55.0]
+        # res = self.subtask_manager["manipulation"].move_joint_positions(
+        #     joint_positions=joint_positions, velocity=0.5, degrees=True
+        # )
+        # print("Move joint positions result: ", res)
+        # joint_positions = self.subtask_manager["manipulation"].get_joint_positions(degrees=True)
+        # print(joint_positions)
+
+        ####### EXAMPLE: Move to named position then move only the first joint #######
+        # Move to a named position
         joint_positions = self.subtask_manager["manipulation"].get_joint_positions()
         print(joint_positions)
-        new_joint_positions = [-55.0, -3.0, -52.0, 0.0, 53.0, -55.0]
         res = self.subtask_manager["manipulation"].move_joint_positions(
-            joint_positions=new_joint_positions, velocity=0.5, degrees=True
+            named_position="front_stare", velocity=0.5, degrees=True
+        )
+        print("Move to named position result: ", res)
+        joint_positions = self.subtask_manager["manipulation"].get_joint_positions(degrees=True)
+        joint_positions["joint1"] = joint_positions["joint1"] - 45
+        res = self.subtask_manager["manipulation"].move_joint_positions(
+            joint_positions=joint_positions, velocity=0.5, degrees=True
         )
         print("Move joint positions result: ", res)
-        joint_positions = self.subtask_manager["manipulation"].get_joint_positions(degrees=True)
-        print(joint_positions)
 
 
 def main(args=None):

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import time
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
@@ -10,14 +11,22 @@ class MoveToPoseClient(Node):
     def __init__(self):
         super().__init__("move_to_pose_client")
         self._action_client = ActionClient(
-            self, MoveToPose, "move_to_pose_action_server"
+            self, MoveToPose, "/manipulation/move_to_pose_action_server"
+        )
+        # Publisher for the debug PoseStamped topic
+        self._debug_pub = self.create_publisher(
+            PoseStamped, "/call_pose_goal/debug_pose", 10
         )
 
-    # let the server pick the default values
+    def publish_debug_pose(self, pose):
+        self._debug_pub.publish(pose)
+        self.get_logger().info("Published debug pose to /call_pose_goal/debug_pose")
+
+    # Let the server pick the default values
     def send_goal(
         self,
         pose=PoseStamped(),
-        velocity=0.0,
+        velocity=0.2,
         acceleration=0.0,
         planner_id="",
     ):
@@ -43,13 +52,19 @@ def main(args=None):
     pose_stamped.header.stamp = action_client.get_clock().now().to_msg()
 
     # Set the pose component
-    pose_stamped.pose.position.x = 0.5
-    pose_stamped.pose.position.y = 0.5
-    pose_stamped.pose.position.z = 0.4
-    pose_stamped.pose.orientation.x = 0.0
+    pose_stamped.pose.position.x = 0.0
+    pose_stamped.pose.position.y = 0.0
+    pose_stamped.pose.position.z = 0.7
+    # Quaternion for 90 degree roll (rotating around x-axis)
+    pose_stamped.pose.orientation.x = 0.7071
     pose_stamped.pose.orientation.y = 0.0
     pose_stamped.pose.orientation.z = 0.0
-    pose_stamped.pose.orientation.w = 1.0
+    pose_stamped.pose.orientation.w = -0.7071
+
+    # Publish debug pose
+    action_client.publish_debug_pose(pose_stamped)
+    # Give some time for the message to be sent
+    time.sleep(0.1)
 
     # Send goal
     future = action_client.send_goal(pose_stamped)
