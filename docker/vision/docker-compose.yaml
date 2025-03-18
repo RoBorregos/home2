@@ -17,7 +17,7 @@ services:
     network_mode: host
     user: 1000:1000
     privileged: true
-    runtime : nvidia
+    runtime: ${RUNTIME:-nvidia}
     group_add: 
       - video
 

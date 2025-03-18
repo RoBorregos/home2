@@ -6,6 +6,7 @@ RUN mkdir -p /workspace/requirements
 # Requirements
 COPY vision/vision_general/requirements.txt /workspace/requirements/requirements.txt   
 RUN pip install -r requirements/requirements.txt
+RUN pip install torch==1.11 torchvision==0.11.0 -f https://download.pytorch.org/whl/cu111/torch_stable.html
 
 # Download and extract dlib
 RUN wget http://dlib.net/files/dlib-19.21.tar.bz2 && \
