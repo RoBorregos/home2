@@ -11,15 +11,6 @@ class Position(Enum):
     NOT_FOUND = "not found"
 
 
-# ===== STEP 1: Install Dependencies =====
-# pip install moondream  # Install dependencies in your project directory
-
-# ===== STEP 2: Download Model =====
-# Download model (593 MiB download size, 996 MiB memory usage)
-# Use: wget (Linux and Mac) or curl.exe -O (Windows)
-# wget https://huggingface.co/vikhyatk/moondream2/resolve/9dddae84d54db4ac56fe37817aeaeb502ed083e2/moondream-2b-int8.mf.gz
-
-
 class MoonDreamModel:
     def __init__(self):
         self.model = AutoModelForCausalLM.from_pretrained(
