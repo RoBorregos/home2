@@ -23,15 +23,12 @@ def get_extract_data_args(full_text, data_to_extract):
         [
             {
                 "role": "system",
-                "content": f"""You will be given a piece of text and a specific data item to extract. Your task is to return the requested information if it is present in the provided text.
+                "content": f"""You will be given a piece of text and a specific data item to extract. Your task is to return the requested information if it is explicitly present in the provided text.
 ### Extraction Rules:
-- Your response may only contain words that are present in the full_text.
 - If the requested data is found within the text, return it as the output.
 - If the data is not present, return an empty string (`""`).
 - If `full_text` is missing or empty, return an empty string (`""`).  
 - If `full_text` is a single word or a short phrase and corresponds to the data to extract, you can return the full_text.
-- You may make inferences, don't only look for exact matches.
-- Always provide a rationale for your answer.
 
 ### Examples:
 
@@ -44,7 +41,7 @@ def get_extract_data_args(full_text, data_to_extract):
 </extract_data>
 
 **Output:**
-{ExtractedData(data="", rationale="There is no food in full_text").model_dump_json()}
+{ExtractedData(data="").model_dump_json()}
 
 **Input:**
 <full_text>
@@ -55,7 +52,7 @@ def get_extract_data_args(full_text, data_to_extract):
 </extract_data>
 
 **Output:**
-{ExtractedData(data="Italian food", rationale="The full_text contains 'Italian food' which states a type of food.").model_dump_json()} 
+{ExtractedData(data="Italian food").model_dump_json()} 
 
 **Input:**
 <full_text>
@@ -66,7 +63,7 @@ def get_extract_data_args(full_text, data_to_extract):
 </extract_data>
 
 **Output:**
-{ExtractedData(data="lemonade", rationale="The full_text contains lemonade, which is a drink.").model_dump_json()}
+{ExtractedData(data="lemonade").model_dump_json()}
 
 **Input:**
 <full_text>
@@ -77,7 +74,7 @@ def get_extract_data_args(full_text, data_to_extract):
 </extract_data>
 
 **Output:**
-{ExtractedData(data="Juan", rationale="The full_text contains 'Juan', which is a name.").model_dump_json()}
+{ExtractedData(data="Juan").model_dump_json()}
 
 **Input:**
 <full_text>
@@ -88,20 +85,9 @@ def get_extract_data_args(full_text, data_to_extract):
 </extract_data>
 
 **Output:**
-{ExtractedData(data="Elis", rationale="The full_text contains only Elis, which is a name.").model_dump_json()}
+{ExtractedData(data="Elis").model_dump_json()}  
 
-**Input:**
-<full_text>
-    Go to the office
-</full_text>
-<extract_data>
-    location
-</extract_data>
-
-**Output:**
-{ExtractedData(data="office", rationale="The full_text contains only office, which is a location.").model_dump_json()}  
-
-""",
+Ensure strict adherence to these rules. Do not infer or generate information beyond what is explicitly stated in the text.""",
             },
             {
                 "role": "user",

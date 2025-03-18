@@ -9,13 +9,14 @@ from deepeval.test_case import LLMTestCase
 from nlp.assets.dialogs import format_response, get_extract_data_args
 from nlp.assets.schemas import ExtractedData
 from openai import OpenAI
+from openai._types import NOT_GIVEN
 
 from config import API_KEY, BASE_URL, MODEL, TEMPERATURE
 from metrics.json_insensitive_values_match import JsonInsensitiveValuesMatch
 
 
 # Sample function to test
-def generate_response(full_text, data_to_extract):
+def generate_response(full_text, data_to_extract, two_steps=False):
     client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
     messages, response_format = get_extract_data_args(full_text, data_to_extract)
 
@@ -23,10 +24,12 @@ def generate_response(full_text, data_to_extract):
         model=MODEL,
         temperature=TEMPERATURE,
         messages=messages,
-        # response_format=response_format,
+        response_format=response_format if not two_steps else NOT_GIVEN,
     )
 
-    return structured_response(response.choices[0].message.content, response_format)
+    if two_steps:
+        return structured_response(response.choices[0].message.content, response_format)
+    return response.choices[0].message.content
 
 
 def structured_response(response, response_format):
