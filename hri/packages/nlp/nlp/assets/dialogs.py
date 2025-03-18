@@ -23,15 +23,19 @@ def get_extract_data_args(full_text, data_to_extract):
         [
             {
                 "role": "system",
-                "content": f"""You will be given a piece of text and a specific data item to extract. Your task is to return the requested information if it is explicitly present in the provided text.
+                "content": f"""You will receive a text (`full_text`) and a specific target (`extract_data`). Your task is to extract and return the closest relevant word or phrase that directly answers the target.
+
 ### Extraction Rules:
-- If the requested data is found within the text, return it as the output.
-- If the data is not present, return an empty string (`""`).
-- If `full_text` is missing or empty, return an empty string (`""`).  
-- If `full_text` is a single word or a short phrase and corresponds to the data to extract, you can return the full_text.
+- Return the **most relevant word or phrase** that best corresponds to `extract_data`, considering its contextual meaning within the sentence.
+- Do **not** return the target word (`extract_data`) itself unless it is the best available answer.
+- If multiple possible matches exist, return the **most contextually relevant** one (e.g., a noun or phrase describing the requested information).
+- If no relevant match is found, return an empty string (`""`).
+- If `full_text` is missing, empty, or consists of only a single word or short phrase that directly corresponds to `extract_data`, return `full_text` as the result.
 
 ### Examples:
 
+
+#### Example 1:
 **Input:**
 <full_text>
     There is a cat in the house.
@@ -43,6 +47,7 @@ def get_extract_data_args(full_text, data_to_extract):
 **Output:**
 {ExtractedData(data="").model_dump_json()}
 
+#### Example 2:
 **Input:**
 <full_text>
     The restaurant serves delicious Italian food.
@@ -54,6 +59,7 @@ def get_extract_data_args(full_text, data_to_extract):
 **Output:**
 {ExtractedData(data="Italian food").model_dump_json()} 
 
+#### Example 3:
 **Input:**
 <full_text>
     My name is Juan and I like lemonade.
@@ -65,6 +71,7 @@ def get_extract_data_args(full_text, data_to_extract):
 **Output:**
 {ExtractedData(data="lemonade").model_dump_json()}
 
+#### Example 4:
 **Input:**
 <full_text>
     Juan and I like to play basketball.
@@ -76,6 +83,7 @@ def get_extract_data_args(full_text, data_to_extract):
 **Output:**
 {ExtractedData(data="Juan").model_dump_json()}
 
+#### Example 5:
 **Input:**
 <full_text>
     Elis
@@ -87,7 +95,7 @@ def get_extract_data_args(full_text, data_to_extract):
 **Output:**
 {ExtractedData(data="Elis").model_dump_json()}  
 
-Ensure strict adherence to these rules. Do not infer or generate information beyond what is explicitly stated in the text.""",
+Ensure that the extracted data is always **the most contextually relevant** answer, not simply the target term itself.""",
             },
             {
                 "role": "user",

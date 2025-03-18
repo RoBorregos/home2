@@ -10,6 +10,7 @@ from nlp.assets.dialogs import format_response, get_extract_data_args
 from nlp.assets.schemas import ExtractedData
 from openai import OpenAI
 from openai._types import NOT_GIVEN
+from tqdm import tqdm
 
 from config import API_KEY, BASE_URL, MODEL, TEMPERATURE
 from metrics.json_insensitive_values_match import JsonInsensitiveValuesMatch
@@ -72,7 +73,7 @@ test_cases = [
         expected_output=test_case[2],
         actual_output=generate_response(test_case[0], test_case[1]),
     )
-    for test_case in test_cases
+    for test_case in tqdm(test_cases, desc="Generating test case responses")
 ]
 
 
