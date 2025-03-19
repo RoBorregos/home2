@@ -13,11 +13,7 @@ from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 
-# from frida_interfaces.srv import CountByGestures
-# from frida_interfaces.srv import CountByPose
-# from frida_interfaces.srv import CountByObjects
-from frida_interfaces.srv import CountByPerson
-# from frida_interfaces.srv import CountByColor
+from frida_interfaces.srv import CountBy
 
 from ament_index_python.packages import get_package_share_directory
 
@@ -57,27 +53,27 @@ class GPSRCommands(Node):
         # Define services for GPSR commands
 
         # self.count_by_gestures_service = self.create_service(
-        #     CountByGestures, COUNT_BY_GESTURES_TOPIC, self.count_by_gestures_callback
+        #     CountBy, COUNT_BY_GESTURES_TOPIC, self.count_by_gestures_callback
         # )
 
         # self.count_by_pose_service = self.create_service(
-        #     CountByPose, COUNT_BY_POSE_TOPIC, self.count_by_pose_callback
+        #     CountBy, COUNT_BY_POSE_TOPIC, self.count_by_pose_callback
         # )
 
         # self.count_by_objects_service = self.create_service(
-        #     CountByObjects, COUNT_BY_OBJECTS_TOPIC, self.count_by_objects_callback
+        #     CountBy, COUNT_BY_OBJECTS_TOPIC, self.count_by_objects_callback
         # )
 
         self.count_by_person_service = self.create_service(
-            CountByPerson, COUNT_BY_PERSON_TOPIC, self.count_by_person_callback
+            CountBy, COUNT_BY_PERSON_TOPIC, self.count_by_person_callback
         )
 
         # self.count_by_color_service = self.create_service(
-        #     CountByColor, COUNT_BY_COLOR_TOPIC, self.count_by_color_callback
+        #     CountBy, COUNT_BY_COLOR_TOPIC, self.count_by_color_callback
         # )
 
         # self.count_by_clothes_service = self.create_service(
-        #     CountByClothes, COUNT_BY_CLOTHES_TOPIC, self.count_by_clothes_callback
+        #     CountBy, COUNT_BY_CLOTHES_TOPIC, self.count_by_clothes_callback
         # )
 
         self.image_publisher = self.create_publisher(Image, IMAGE_TOPIC, 10)
