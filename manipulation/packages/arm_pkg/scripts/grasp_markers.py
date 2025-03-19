@@ -46,44 +46,52 @@ class GraspVisualizer(Node):
         # Almacenamiento de datos
         self.current_cloud = None
 
-        # self.declare_parameter("pcd_path","/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/table_mug.pcd")
-        # self.declare_parameter("pcd_path","/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/cluster_(1).pcd")
-        # self.declare_parameter("pcd_path","/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/cluster.pcd")
+        # Declarar parámetros
         self.declare_parameter(
             "pcd_path",
             "/home/dominguez/roborregos/home_ws/src/manipulation/packages/gpd/tutorials/table_mug.pcd",
         )
-        # self.declare_parameter("pcd_path","/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/krylon.pcd")
         self.declare_parameter(
             "cfg_path",
             "/home/dominguez/roborregos/home_ws/src/manipulation/packages/gpd/cfg/eigen_params.cfg",
         )
 
+        # Crear servicio para iniciar la detección
+        self.service = self.create_service(
+            GraspDetection,  # Tipo del servicio
+            "start_grasp_detection",  # Nombre del servicio
+            self.handle_service_callback,  # Callback
+        )
+
+        self.get_logger().info(
+            "Servicio de detección de agarres listo. Llama a /start_grasp_detection para iniciar."
+        )
+
+    async def handle_service_callback(self, request, response):
+        """Callback para el servicio start_grasp_detection"""
         # Obtener valores de los parámetros
         pcd_path = self.get_parameter("pcd_path").value
         cfg_path = self.get_parameter("cfg_path").value
 
-        self.load_and_process_pcd(pcd_path, cfg_path)
+        # Llamar a la secuencia de detección
+        await self.load_and_process_pcd(pcd_path, cfg_path)
 
-    def call_service(self, cfg_path, pcd_path):
-        request = GraspDetection.Request()
-        request.cfg_path = cfg_path
-        request.pcd_path = pcd_path
-        future = self.grasp_client.call_async(request)
-        future.add_done_callback(self.grasp_response_callback)
+        response.success = True
+        response.message = "Detección de agarres completada"
+        return response
 
-    def load_and_process_pcd(self, pcd_path, cfg_path):
+    async def load_and_process_pcd(self, pcd_path, cfg_path):
         """Secuencia completa: Cargar PCD -> Detectar grasps"""
-        self.read_pcd_file(pcd_path)
-        self.call_grasp_service(cfg_path, pcd_path)
+        await self.read_pcd_file(pcd_path)
+        await self.call_grasp_service(cfg_path, pcd_path)
 
-    def read_pcd_file(self, pcd_path):
+    async def read_pcd_file(self, pcd_path):
         """Solicitar lectura del PCD"""
         request = ReadPcdFile.Request()
         request.pcd_path = pcd_path
-        # request.viewpoint = [0.0, 0.0, 0.0]  # Ajusta según la posición real de la cámara
         future = self.pcd_client.call_async(request)
-        future.add_done_callback(self.pcd_response_callback)
+        await future
+        self.pcd_response_callback(future)
 
     def pcd_response_callback(self, future):
         """Procesar respuesta del servicio de PCD"""
@@ -93,7 +101,6 @@ class GraspVisualizer(Node):
                 self.current_cloud = response.cloud
                 self.publish_pcl()
             else:
-                # Si el servicio devuelve un mensaje de error, úsalo
                 error_msg = (
                     response.error_message
                     if hasattr(response, "error_message")
@@ -107,16 +114,17 @@ class GraspVisualizer(Node):
         if self.current_cloud is not None:
             self.get_logger().info(
                 f"Frame ID de la nube: {self.current_cloud.header.frame_id}"
-            )  # 👈
+            )
             self.pcd_pub.publish(self.current_cloud)
 
-    def call_grasp_service(self, cfg_path, pcd_path):
+    async def call_grasp_service(self, cfg_path, pcd_path):
         """Iniciar detección de grasps"""
         request = GraspDetection.Request()
         request.cfg_path = cfg_path
         request.pcd_path = pcd_path
         future = self.grasp_client.call_async(request)
-        future.add_done_callback(self.grasp_response_callback)
+        await future
+        self.grasp_response_callback(future)
 
     def grasp_response_callback(self, future):
         """Procesar detección de grasps"""
@@ -232,17 +240,6 @@ class GraspVisualizer(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = GraspVisualizer()
-
-    # node.call_service(
-    #     cfg_path="/home/dominguez/roborregos/home_ws/src/manipulation/packages/gpd/cfg/eigen_params.cfg",
-    #     # pcd_path="/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/table_mug.pcd",
-    #     # pcd_path="/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/cluster_(1).pcd",
-    #     # pcd_path="/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/cluster.pcd",
-    #     # pcd_path="/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/tuto.pcd",
-    #     pcd_path="/home/dominguez/roborregos/home_ws/install/perception_3d/share/perception_3d/krylon.pcd",
-
-    # )
-
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()
