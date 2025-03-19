@@ -6,6 +6,7 @@
 # Image names
 CPU_IMAGE="roborregos/home2:cpu_base"
 CUDA_IMAGE="roborregos/home2:gpu_base"
+JETSON_IMAGE="roborregos/home2:l4t_base"
 
 # Function to check if an image exists
 check_image_exists() {
@@ -61,12 +62,22 @@ case $ENV_TYPE in
         docker compose -f ../cuda.yaml build
     fi
 
+    echo "DOCKER_RUNTIME=nvidia" >> .env
     ;;
   "jetson")
     #_____Jetson_____
     echo "DOCKERFILE=docker/vision/Dockerfile.jetson" >> .env
     echo "BASE_IMAGE=roborregos/home2:l4t_base" >> .env
     echo "IMAGE_NAME=roborregos/home2:vision-jetson" >> .env
+
+    # Build the base image if it doesn't exist
+    check_image_exists "$JETSON_IMAGE"
+    if [ $? -eq 1 ]; then
+        docker compose -f ../jetson.yaml build
+    fi
+
+    echo "DOCKER_RUNTIME=nvidia" >> .env
+    echo "DISPLAY=:0" >> .env
     ;;
   *)
     echo "Unknown environment type!"
@@ -93,10 +104,10 @@ export LOCAL_GROUP_ID=$(id -g)
 # fi
 
 # Setup camera permissions
-if [ -e /dev/video0 ]; then
-    echo "Setting permissions for /dev/video0..."
-    sudo chmod 666 /dev/video0  # Allow the container to access the camera device
-fi
+# if [ -e /dev/video0 ]; then
+#     echo "Setting permissions for /dev/video0..."
+#     sudo chmod 666 /dev/video0  # Allow the container to access the camera device
+# fi
 
 #_________________________RUN_________________________
 

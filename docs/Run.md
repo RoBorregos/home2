@@ -15,3 +15,8 @@ If the script is not executable, run:
 ```bash
 chmod +x run.sh
 ```
+
+If the camera is not available run:
+```bash
+sudo chmod 666 /dev/video0
+```
