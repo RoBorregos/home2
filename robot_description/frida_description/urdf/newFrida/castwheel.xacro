@@ -70,15 +70,10 @@
   </link>
 
   <joint name="rightcastwheel" type="continuous">
-    <origin
-      xyz="0 0 0"
-      rpy="1.5708 0 0" />
-    <parent
-      link="right_castwheel_bracket" />
-    <child
-      link="right_cast_wheel" />
-    <axis
-      xyz="0 0 1" />
+    <origin xyz="0 0 0" rpy="1.5708 0 0" />
+    <parent link="right_castwheel_bracket" />
+    <child link="right_cast_wheel" />
+    <axis xyz="0 0 1" />
   </joint>
 
   <!--LEFT-->
@@ -103,7 +98,7 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://NewFridaURDF/meshes/left_castwheel_bracket.STL" />
+          filename="${mesh_path}left_castwheel_bracket.STL" />
       </geometry>
       <material
         name="">
@@ -117,21 +112,17 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://NewFridaURDF/meshes/left_castwheel_bracket.STL" />
+          filename="${mesh_path}left_castwheel_bracket.STL" />
       </geometry>
     </collision>
   </link>
 
   <joint name="leftcastwheelbracket" type="continuous">
-    <origin
-      xyz="0.11226 0.09 -0.11242"
-      rpy="3.1416 0 0" />
+    <origin xyz="0.11226 0.09 -0.11242" rpy="3.1416 0 0" />
     <parent
       link="base_link" />
-    <child
-      link="left_castwheel_bracket" />
-    <axis
-      xyz="0 0 -1" />
+    <child link="left_castwheel_bracket" />
+    <axis xyz="0 0 -1" />
   </joint>
 
   <link name="left_cast_wheel">
@@ -154,8 +145,7 @@
         xyz="0 0 0"
         rpy="0 0 0" />
       <geometry>
-        <mesh
-          filename="package://NewFridaURDF/meshes/left_cast_wheel.STL" />
+        <mesh filename="${mesh_path}left_cast_wheel.STL" />
       </geometry>
       <material
         name="">
@@ -169,21 +159,16 @@
         rpy="0 0 0" />
       <geometry>
         <mesh
-          filename="package://NewFridaURDF/meshes/left_cast_wheel.STL" />
+          filename="${mesh_path}left_cast_wheel.STL" />
       </geometry>
     </collision>
   </link>
 
   <joint name="leftcastwheel" type="continuous">
-    <origin
-      xyz="0 0 0"
-      rpy="1.5708 0 0" />
-    <parent
-      link="left_castwheel_bracket" />
-    <child
-      link="left_cast_wheel" />
-    <axis
-      xyz="0 0 1" />
+    <origin xyz="0 0 0" rpy="1.5708 0 0" />
+    <parent link="left_castwheel_bracket" />
+    <child link="left_cast_wheel" />
+    <axis xyz="0 0 1" />
   </joint>
 
 </robot>

@@ -46,7 +46,7 @@
   <xacro:arg name="baud_checkset" default="true"/>
   <xacro:arg name="default_gripper_baud" default="2000000"/>
   <xacro:arg name="attach_to" default="base_link"/>
-  <xacro:arg name="attach_xyz" default="0.0049756 0 0.34"/>
+  <xacro:arg name="attach_xyz" default="0.036255 0 0.44028"/>
   <xacro:arg name="attach_rpy" default="0 0 1.57"/>
   <xacro:arg name="mesh_suffix" default="stl"/>
   <xacro:arg name="kinematics_suffix" default=""/>
@@ -73,63 +73,9 @@
     robot_sn="$(arg robot_sn)" use_gazebo_camera="$(arg use_gazebo_camera)" mesh_suffix="$(arg mesh_suffix)" kinematics_suffix="$(arg kinematics_suffix)" />
   <!-- Gripper -->
   <xacro:include filename="gripper.xacro" />
-    <xacro:load_gripper attach_to="link_eef" xyz="0 0 0" rpy="2.3562 -1.5708 0" />
+    <xacro:load_gripper attach_to="link_eef" xyz="0 0 0" rpy="0 0 1.5708" />
    <!-- ZED MACRO -->
     <xacro:include filename="zed.xacro" />
-  <xacro:load_zed attach_to="gripper" xyz="0.030461 0 -0.050649" rpy="0 0.81804 0" />
+  <xacro:load_zed attach_to="base_gripper" xyz="-0.0045 -0.063576 0.033519" rpy="0 -0.7854 -1.5708" />
 
-
-  <link
-    name="xArm">
-    <inertial>
-      <origin
-        xyz="9.0513E-05 0.0014973 0.073511"
-        rpy="0 0 0" />
-      <mass
-        value="1.7836" />
-      <inertia
-        ixx="0.0049951"
-        ixy="-1.1431E-05"
-        ixz="7.4909E-06"
-        iyy="0.004841"
-        iyz="0.0001237"
-        izz="0.0022894" />
-    </inertial>
-    <visual>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
-      <geometry>
-        <mesh
-          filename="package://NewFridaURDF/meshes/xArm.STL" />
-      </geometry>
-      <material
-        name="">
-        <color
-          rgba="0.86667 0.86667 0.8902 1" />
-      </material>
-    </visual>
-    <collision>
-      <origin
-        xyz="0 0 0"
-        rpy="0 0 0" />
-      <geometry>
-        <mesh
-          filename="package://NewFridaURDF/meshes/xArm.STL" />
-      </geometry>
-    </collision>
-  </link>
-  <joint
-    name="xarm"
-    type="fixed">
-    <origin
-      xyz="0.036255 0 0.44028"
-      rpy="0 0 0" />
-    <parent
-      link="base_link" />
-    <child
-      link="xArm" />
-    <axis
-      xyz="0 0 0" />
-  </joint>
 </robot>
