@@ -1,6 +1,9 @@
+# Request
 string cfg_path
 string pcd_path
+sensor_msgs/PointCloud2 input_cloud
 ---
+# Response
 bool success
 string message
 geometry_msgs/PoseArray grasp_poses

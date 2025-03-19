@@ -1,10 +1,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include <gpd/grasp_detector.h>
 #include <gpd/util/cloud.h>
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <vector>
+#include <pcl_conversions/pcl_conversions.h>
 #include <frida_interfaces/srv/grasp_detection.hpp>
 #include <geometry_msgs/msg/pose_array.hpp>
 
@@ -12,91 +9,97 @@ namespace gpd_ros2 {
 class GraspDetection : public rclcpp::Node {
 public:
   GraspDetection() : Node("grasp_detection") {
-    grasp_detect_serv = this->create_service<frida_interfaces::srv::GraspDetection>(
-      "detect_grasps", std::bind(&GraspDetection::service_callback, this, std::placeholders::_1, std::placeholders::_2));
+    service_ = this->create_service<frida_interfaces::srv::GraspDetection>(
+      "detect_grasps", 
+      std::bind(&GraspDetection::handle_service, this, 
+                std::placeholders::_1, std::placeholders::_2));
 
-      RCLCPP_INFO(this->get_logger(), "Grasp pose detection server ready. Call /detect_grasps and provide the path to the PCD file to detect grasps.");
+    RCLCPP_INFO(this->get_logger(), "Grasp detection service ready");
   }
 
 private:
-  bool doFileExists(const std::string &file_name) {
-    std::ifstream file(file_name);
-    return file.good();
+  bool load_cloud_from_pcd(const std::string &pcd_path, pcl::PointCloud<pcl::PointXYZRGB> &cloud) {
+    if (pcl::io::loadPCDFile<pcl::PointXYZRGB>(pcd_path, cloud) == -1) return false;
+    return true;
   }
 
-  void service_callback(
-    const std::shared_ptr<frida_interfaces::srv::GraspDetection::Request> request,
-    std::shared_ptr<frida_interfaces::srv::GraspDetection::Response> response) {
+  pcl::PointCloud<pcl::PointXYZRGBA>::Ptr convert_to_rgba(const pcl::PointCloud<pcl::PointXYZRGB>::Ptr &cloud) {
+    pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_rgba(new pcl::PointCloud<pcl::PointXYZRGBA>);
+    pcl::copyPointCloud(*cloud, *cloud_rgba);
+    return cloud_rgba;
+  }
+
+  void handle_service(
+    const std::shared_ptr<frida_interfaces::srv::GraspDetection::Request> req,
+    std::shared_ptr<frida_interfaces::srv::GraspDetection::Response> res) {
     
-    std::string cfg_path = request->cfg_path;
-    std::string pcd_filename = request->pcd_path;
-
-    if (!doFileExists(cfg_path)) {
-        RCLCPP_ERROR(this->get_logger(), "Configuration file not found: %s", cfg_path.c_str());
-        response->success = false;
-        response->message = "Configuration file not found";
+    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+    
+    // PCD file mode
+    if (!req->pcd_path.empty()) {
+      if (!load_cloud_from_pcd(req->pcd_path, *cloud)) {
+        res->success = false;
+        res->message = "Error loading PCD file";
         return;
+      }
+    }
+    // PointCloud2 mode
+    else if (!req->input_cloud.data.empty()) {
+      pcl::fromROSMsg(req->input_cloud, *cloud);
+    }
+    else {
+      res->success = false;
+      res->message = "No input data provided";
+      return;
     }
 
-    if (!doFileExists(pcd_filename)) {
-        RCLCPP_ERROR(this->get_logger(), "PCD file not found: %s", pcd_filename.c_str());
-        response->success = false;
-        response->message = "PCD file not found";
-        return;
-    }
+    // Convert to PointXYZRGBA
+    auto cloud_rgba = convert_to_rgba(cloud);
 
-    gpd::util::Cloud cloud(pcd_filename, Eigen::Matrix3Xd::Zero(3, 1));
-    if (cloud.getCloudOriginal()->size() == 0) {
-        RCLCPP_ERROR(this->get_logger(), "Point cloud is empty or could not be loaded");
-        response->success = false;
-        response->message = "Point cloud is empty or invalid";
-        return;
-    }
+    // Create camera source and view points matrices
+    Eigen::MatrixXi camera_source = Eigen::MatrixXi::Zero(1, cloud_rgba->size());
+    Eigen::Matrix3Xd view_points = Eigen::Matrix3Xd::Zero(3, 1);
 
-    gpd::GraspDetector detector(cfg_path);
-    detector.preprocessPointCloud(cloud);
+    // Create gpd::util::Cloud object
+    gpd::util::Cloud gpd_cloud(cloud_rgba, camera_source, view_points);
+    gpd::GraspDetector detector(req->cfg_path);
+    
+    try {
+      detector.preprocessPointCloud(gpd_cloud);
+      auto grasps = detector.detectGrasps(gpd_cloud);
 
-    geometry_msgs::msg::PoseArray grasp_poses_msg;
-    auto grasps = detector.detectGrasps(cloud);
-
-    if (grasps.empty()) {
-        RCLCPP_WARN(this->get_logger(), "No grasp poses detected.");
-        response->success = false;
-        response->message = "No grasp poses found.";
-        return;
-    }
-
-    for (const auto &grasp : grasps) {
+      geometry_msgs::msg::PoseArray poses;
+      for (const auto &grasp : grasps) {
         geometry_msgs::msg::Pose pose;
+        Eigen::Vector3d pos = grasp->getPosition();
+        Eigen::Quaterniond quat(grasp->getOrientation());
+        
+        pose.position.x = pos.x();
+        pose.position.y = pos.y();
+        pose.position.z = pos.z();
+        pose.orientation.x = quat.x();
+        pose.orientation.y = quat.y();
+        pose.orientation.z = quat.z();
+        pose.orientation.w = quat.w();
+        
+        poses.poses.push_back(pose);
+      }
 
-        Eigen::Vector3d position = grasp->getPosition();
-        pose.position.x = position.x();
-        pose.position.y = position.y();
-        pose.position.z = position.z();
-
-        Eigen::Matrix3d orientation_matrix = grasp->getOrientation();
-        Eigen::Quaterniond orientation(orientation_matrix);
-        pose.orientation.x = orientation.x();
-        pose.orientation.y = orientation.y();
-        pose.orientation.z = orientation.z();
-        pose.orientation.w = orientation.w();
-
-        grasp_poses_msg.poses.push_back(pose);
+      res->success = true;
+      res->grasp_poses = poses;
     }
-
-    response->success = true;
-    response->message = "Grasp poses detected successfully";
-    response->grasp_poses = grasp_poses_msg;
+    catch (const std::exception& e) {
+      res->success = false;
+      res->message = std::string("Detection error: ") + e.what();
+    }
   }
 
-  // rclcpp::Service<arm_pkg::srv::GraspDetection>::SharedPtr grasp_detect_serv;
-  rclcpp::Service<frida_interfaces::srv::GraspDetection>::SharedPtr grasp_detect_serv;
+  rclcpp::Service<frida_interfaces::srv::GraspDetection>::SharedPtr service_;
 };
 } // namespace gpd_ros2
 
 int main(int argc, char **argv) {
   rclcpp::init(argc, argv);
-  // rclcpp::spin(std::make_shared<GraspDetection>());
   rclcpp::spin(std::make_shared<gpd_ros2::GraspDetection>());
   rclcpp::shutdown();
   return 0;
