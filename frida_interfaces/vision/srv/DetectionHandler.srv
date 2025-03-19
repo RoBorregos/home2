@@ -1,0 +1,4 @@
+string label
+---
+frida_interfaces/ObjectDetection
+bool success
