@@ -206,14 +206,14 @@ class VisionTasks:
 
             if not result.success:
                 Logger.warn(self.node, "No drink found")
-                return self.STATE["TARGET_NOT_FOUND"], ""
+                return "not found", self.STATE["TARGET_NOT_FOUND"]
 
         except Exception as e:
             Logger.error(self.node, f"Error finding drink: {e}")
-            return self.STATE["EXECUTION_ERROR"]
+            return "not found", self.STATE["EXECUTION_ERROR"]
 
         Logger.success(self.node, f"Found drink: {drink}")
-        return self.STATE["EXECUTION_SUCCESS"], ""
+        return "center", self.STATE["EXECUTION_SUCCESS"]
 
     @mockable(return_value="tall person", delay=5, mock=False)
     @service_check("person_description_client", "No description generated", TIMEOUT)
