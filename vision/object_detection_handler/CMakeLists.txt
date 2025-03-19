@@ -22,4 +22,18 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
+
+install(DIRECTORY launch config
+  DESTINATION share/${PROJECT_NAME})
+
+add_executable(object_detection_handler src/object_detection_handler.cpp)
+
+ament_target_dependencies(object_detection_handler 
+  frida_interfaces 
+  rclcpp)
+
+install(TARGETS
+  object_detection_handler
+  DESTINATION lib/${PROJECT_NAME})
+
 ament_package()

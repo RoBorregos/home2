@@ -176,8 +176,6 @@ class ObjectDectector(ABC):
                 detection.point_stamped_ = point_3D
 
                 object_set[detection.class_id_] = detection
-        # PUBLISH POINT ARRAY
-        # TODO: VISUALIZE MARKER
         return list(object_set.values())
 
     def getDetections(self):

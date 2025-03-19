@@ -1,0 +1,5 @@
+ros__parameters:
+  DETECTIONS_TOPIC : /detections
+  TRAGET_FRAME : BASE_LINK
+  IOU_THRESHOLD : 0.9
+  RECORDED_SECONDS : 5
