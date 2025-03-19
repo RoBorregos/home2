@@ -28,6 +28,7 @@ def get_extract_data_args(full_text, data_to_extract):
 - If the requested data is found within the text, return it as the output.
 - If the data is not present, return an empty string (`""`).
 - If `full_text` is missing or empty, return an empty string (`""`).  
+- If `full_text` is a single word or a short phrase and corresponds to the data to extract, you can return the full_text.
 
 ### Examples:
 
@@ -73,7 +74,18 @@ def get_extract_data_args(full_text, data_to_extract):
 </extract_data>
 
 **Output:**
-{ExtractedData(data="Juan").model_dump_json()}  
+{ExtractedData(data="Juan").model_dump_json()}
+
+**Input:**
+<full_text>
+    Elis
+</full_text>
+<extract_data>
+    name
+</extract_data>
+
+**Output:**
+{ExtractedData(data="Elis").model_dump_json()}  
 
 Ensure strict adherence to these rules. Do not infer or generate information beyond what is explicitly stated in the text.""",
             },
