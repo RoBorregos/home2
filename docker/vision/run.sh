@@ -77,6 +77,7 @@ case $ENV_TYPE in
     fi
 
     echo "DOCKER_RUNTIME=nvidia" >> .env
+    echo "DISPLAY=:0" >> .env
     ;;
   *)
     echo "Unknown environment type!"

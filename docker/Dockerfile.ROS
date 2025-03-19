@@ -38,9 +38,6 @@ RUN groupadd --gid $USER_GID $USERNAME \
     && chmod 0440 /etc/sudoers.d/$USERNAME \
     && rm -rf /var/lib/apt/lists/*
 
-RUN groupadd -r video || true \
-    && usermod -aG video $USERNAME
-
 RUN apt-get update && apt-get install -y \
     curl \
     software-properties-common
@@ -64,7 +61,7 @@ RUN apt-get update && apt-get install -y git-core bash-completion \
     && rm -rf /var/lib/apt/lists/* 
 
 # Source ROS workspace
-# RUN echo "source /workspace/install/setup.bash" >> /home/$USERNAME/.bashrc
+RUN echo "source /workspace/install/setup.bash" >> /home/$USERNAME/.bashrc
 
 # Install general utilities
 RUN apt-get update -qq && apt-get install -y  build-essential \
