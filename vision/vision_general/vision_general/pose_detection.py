@@ -13,10 +13,48 @@ class PoseDetection:
         self.mp_drawing = mp.solutions.drawing_utils
 
     def detectPose(self, image):
-        pass
+        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        results = self.pose.process(image_rgb)
+        if results.pose_landmarks:
+            landmarks = results.pose_landmarks.landmark
+            left_hip = landmarks[mp_pose.PoseLandmark.LEFT_HIP]
+            right_hip = landmarks[mp_pose.PoseLandmark.RIGHT_HIP]
+            left_knee = landmarks[mp_pose.PoseLandmark.LEFT_KNEE]
+            right_knee = landmarks[mp_pose.PoseLandmark.RIGHT_KNEE]
+            left_ankle = landmarks[mp_pose.PoseLandmark.LEFT_ANKLE]
+            right_ankle = landmarks[mp_pose.PoseLandmark.RIGHT_ANKLE]
+            
+            if left_hip.y < left_knee.y and right_hip.y < right_knee.y:
+                return "Standing"
+            elif left_hip.y > left_knee.y and right_hip.y > right_knee.y:
+                return "Sitting"
+            elif left_knee.y > left_ankle.y and right_knee.y > right_ankle.y:
+                return "Lying Down"
+        return "Unknown Pose"
 
-    def detectGesture(self):
-        pass
+    def detectGesture(self, image):
+        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        results = self.pose.process(image_rgb)
+        if results.pose_landmarks:
+            landmarks = results.pose_landmarks.landmark
+            left_wrist = landmarks[mp_pose.PoseLandmark.LEFT_WRIST]
+            right_wrist = landmarks[mp_pose.PoseLandmark.RIGHT_WRIST]
+            left_elbow = landmarks[mp_pose.PoseLandmark.LEFT_ELBOW]
+            right_elbow = landmarks[mp_pose.PoseLandmark.RIGHT_ELBOW]
+            left_shoulder = landmarks[mp_pose.PoseLandmark.LEFT_SHOULDER]
+            right_shoulder = landmarks[mp_pose.PoseLandmark.RIGHT_SHOULDER]
+            
+            if left_wrist.y < left_shoulder.y and right_wrist.y < right_shoulder.y:
+                return "Waving"
+            elif left_wrist.y < left_shoulder.y:
+                return "Raising Left Arm"
+            elif right_wrist.y < right_shoulder.y:
+                return "Raising Right Arm"
+            elif left_wrist.x < left_elbow.x and left_elbow.x < left_shoulder.x:
+                return "Pointing Left"
+            elif right_wrist.x > right_elbow.x and right_elbow.x > right_shoulder.x:
+                return "Pointing Right"
+        return "No Gesture"
 
     def detectClothes(self):
         pass
