@@ -1,9 +1,8 @@
 opencv-python
 pathlib
 tqdm
-numpy<2
+numpy>=2.1.2
 face_recognition
 ultralytics
-moondream
 pillow
 # pybind11>=2.12

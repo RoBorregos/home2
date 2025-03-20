@@ -2,6 +2,4 @@ ARG BASE_IMAGE=dustynv/l4t-pytorch:r36.4.0
 FROM ${BASE_IMAGE}
 
 USER ros
-RUN sudo usermod -a -G video ros
-RUN newgrp video
 WORKDIR /workspace
