@@ -7,3 +7,7 @@ class ExtractedData(BaseModel):
 
 class IsAnswerPositive(BaseModel):
     is_positive: bool
+
+
+class RoomIdentification(BaseModel):
+    room: str

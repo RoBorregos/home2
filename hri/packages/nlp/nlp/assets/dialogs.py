@@ -1,4 +1,4 @@
-from nlp.assets.schemas import ExtractedData, IsAnswerPositive
+from nlp.assets.schemas import ExtractedData, IsAnswerPositive, RoomIdentification
 
 
 def get_common_interests_dialog(
@@ -150,3 +150,19 @@ def get_is_answer_positive_args(interpreted_text):
         ],
         IsAnswerPositive,
     )
+
+
+def get_room_identification_dialog(comment):
+    return {
+        "messages": [
+            {
+                "role": "system",
+                "content": "You will be given a comment or question. Your task is to identify which room is being referred to. The possible rooms are: Living room, Dining room, Kitchen, Bedroom, Entrance. Provide the name of the room as the answer.",
+            },
+            {
+                "role": "user",
+                "content": comment,
+            },
+        ],
+        "schema": RoomIdentification,
+    }
