@@ -9,6 +9,8 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(frida_interfaces REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -30,7 +32,9 @@ add_executable(object_detection_handler src/object_detection_handler.cpp)
 
 ament_target_dependencies(object_detection_handler 
   frida_interfaces 
-  rclcpp)
+  rclcpp
+  tf2_ros
+  tf2_geometry_msgs)
 
 install(TARGETS
   object_detection_handler

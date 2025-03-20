@@ -26,6 +26,7 @@ class ObjectDectectorParams:
         depth_active: bool = None,
         min_score_thresh: float = None,
         camera_frame: str = None,
+        target_frame: str = None,
         flip_image: bool = None,
         camera_info: CameraInfo = None,
         use_zed_transfrom: bool = None,
@@ -33,6 +34,7 @@ class ObjectDectectorParams:
         self.depth_active = depth_active
         self.min_score_thresh = min_score_thresh
         self.camera_frame = camera_frame
+        self.target_frame = target_frame
         self.flip_image = flip_image
         self.camera_info = camera_info
         self.use_zed_transfrom = use_zed_transfrom
@@ -43,6 +45,8 @@ class ObjectDectectorParams:
             + str(self.depth_active)
             + " min_score_thresh: "
             + str(self.min_score_thresh)
+            + " target_frame: "
+            + str(self.target_frame)
             + " camera_frame: "
             + str(self.camera_frame)
             + " flip_image: "
@@ -132,7 +136,7 @@ class ObjectDectector(ABC):
                 not self.object_detector_params_.use_zed_transfrom
                 and not tfBuffer.can_transform(
                     self.object_detector_params_.camera_frame,
-                    "base_link",
+                    self.object_detector_params_.target_frame,
                     rclpy.time.Time().to_msg(),
                 )
             ):
@@ -188,10 +192,10 @@ class ObjectDectector(ABC):
                 label=detection.class_id_,
                 label_text=detection.label_,
                 score=detection.confidence_,
-                ymin=float(detection.bbox_.x),
-                xmin=float(detection.bbox_.y),
-                ymax=float(detection.bbox_.w),
-                xmax=float(detection.bbox_.h),
+                ymin=float(detection.bbox_.y1),
+                xmin=float(detection.bbox_.x1),
+                ymax=float(detection.bbox_.y2),
+                xmax=float(detection.bbox_.x2),
                 point3d=detection.point_stamped_,
             )
             object_detection_array.append(object_detection)
