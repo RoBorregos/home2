@@ -139,7 +139,7 @@ public:
 
     box_params.width = max_pt2.x - min_pt.x;
     box_params.depth = max_pt2.y - min_pt.y;
-    box_params.height = max_pt2.z - min_pt.z - 0.01;
+    box_params.height = std::max(max_pt2.z - min_pt.z - 0.01, 0.01);
 
     return status;
   }
@@ -205,10 +205,6 @@ public:
       ASSERT_AND_RETURN_CODE(
           status, OK, "Error computing box primitive with code %d", status);
 
-      // std::shared_ptr<frida_interfaces::srv::AddCollisionObject::Request> req
-      // =
-      //     std::make_shared<
-      //         frida_interfaces::srv::AddCollisionObject::Request>();
       std::shared_ptr<frida_interfaces::srv::AddCollisionObjects::Request>
           req2 = std::make_shared<
               frida_interfaces::srv::AddCollisionObjects::Request>();
@@ -230,12 +226,6 @@ public:
       req2->collision_objects[0].dimensions.x = box_params.width;
       req2->collision_objects[0].dimensions.y = box_params.depth;
       req2->collision_objects[0].dimensions.z = box_params.height;
-      // auto res = this->add_collision_object_client->async_send_request(
-      //     req,
-      //     [this](rclcpp::Client<frida_interfaces::srv::AddCollisionObjects>::
-      //                SharedFuture future) {
-      //       RCLCPP_INFO(this->get_logger(), "add_collision_object");
-      //     });
 
       auto res = this->add_collision_object_client->async_send_request(
           req2,
@@ -258,14 +248,9 @@ public:
       ASSERT_AND_RETURN_CODE(status, OK,
                              "Error downsampling object with code %d", status);
 
-      //   std::vector<rclcpp::Client<
-      //       frida_interfaces::srv::AddCollisionObject>::FutureAndRequestId>
-      //       responses;
       std::shared_ptr<frida_interfaces::srv::AddCollisionObjects::Request>
           req2 = std::make_shared<
               frida_interfaces::srv::AddCollisionObjects::Request>();
-
-      // req2->collision_objects.resize(cloud_downsampled->points.size());
 
       for (pcl::PointXYZ point : cloud_downsampled->points) {
 
@@ -290,35 +275,6 @@ public:
         req2->collision_objects.back().pose.pose.orientation.y = 0;
         req2->collision_objects.back().pose.pose.orientation.z = 0;
         req2->collision_objects.back().pose.pose.orientation.w = 1;
-
-        // auto req = std::make_shared<
-        //     frida_interfaces::srv::AddCollisionObject::Request>();
-
-        // req->id = "object " + std::to_string(point.x) + " " +
-        //           std::to_string(point.y) + " " + std::to_string(point.z);
-        // req->type = "sphere";
-
-        // req->pose.header.frame_id = "base_link";
-        // req->pose.header.stamp = this->now();
-
-        // req->pose.pose.position.x = point.x;
-        // req->pose.pose.position.y = point.y;
-        // req->pose.pose.position.z = point.z;
-
-        // req->dimensions.x = 0.02;
-
-        // req->pose.pose.orientation.x = 0;
-        // req->pose.pose.orientation.y = 0;
-        // req->pose.pose.orientation.z = 0;
-        // req->pose.pose.orientation.w = 1;
-
-        // // AQUI
-        // auto res = this->add_collision_object_client->async_send_request(
-        //     req,
-        //     [this](rclcpp::Client<frida_interfaces::srv::AddCollisionObject>::
-        //                SharedFuture future) {
-        //       RCLCPP_INFO(this->get_logger(), "add_collision_object");
-        //     });
       }
 
       auto res = this->add_collision_object_client->async_send_request(
@@ -327,10 +283,6 @@ public:
                      SharedFuture future) {
             RCLCPP_INFO(this->get_logger(), "add_collision_object");
           });
-
-      //   for (auto &res : responses) {
-      //     res.wait();
-      //   }
 
       RCLCPP_INFO(this->get_logger(), "Object primitives added");
     }
@@ -345,14 +297,6 @@ int main(int argc, _IN_ char *argv[]) {
               "Starting Add Primitives Node");
 
   rclcpp::spin(std::make_shared<AddPrimitivesNode>());
-
-  // auto node = std::make_shared<AddPrimitivesNode>();
-
-  // rclcpp::executors::MultiThreadedExecutor::SharedPtr multithreaded_executor
-  // =
-  //     std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
-
-  // multithreaded_executor->add_node(node);
 
   rclcpp::shutdown();
   return 0;
