@@ -31,9 +31,9 @@ def get_extract_data_args(full_text, data_to_extract, context=None):
                 "content": f"""You will receive a text (`full_text`) and a specific target (`extract_data`). (Optional) Additional explanation (`explanation`) to help clarify ambiguous cases. Your task is to extract and return the closest relevant word or phrase that directly answers the target.
 
 ### Extraction Rules:
-- Return the **most relevant word or phrase** that best corresponds to `extract_data`, considering its contextual meaning within the sentence.
-- Do **not** return the target word (`extract_data`) itself unless it is the best available answer.
-- If multiple possible matches exist, return the **most contextually relevant** one (e.g., a noun or phrase describing the requested information).
+- Return the MOST RELEVANT WORD OR PHRASE that best corresponds to `extract_data`, considering its contextual meaning within the sentence.
+- Do NOT return the target word (`extract_data`) itself unless it is the best available answer.
+- If multiple possible matches exist, return the MOST CONTEXTUALLY RELEVANT one (e.g., a noun or phrase describing the requested information).
 - If no relevant match is found, return an empty string (`""`).
 - If `full_text` is missing, empty, or consists of only a single word or short phrase that directly corresponds to `extract_data`, return `full_text` as the result.
 - If present, use the `explanation` to help clarify ambiguous cases.
@@ -42,7 +42,7 @@ def get_extract_data_args(full_text, data_to_extract, context=None):
 
 
 #### Example 1:
-**Input:**
+**INPUT:**
 <full_text>
     There is a cat in the house.
 </full_text>
@@ -50,11 +50,11 @@ def get_extract_data_args(full_text, data_to_extract, context=None):
     food
 </extract_data>
 
-**Output:**
+**OUTPUT:**
 {ExtractedData(data="").model_dump_json()}
 
 #### Example 2:
-**Input:**
+**INPUT:**
 <full_text>
     The restaurant serves delicious Italian food.
 </full_text>
@@ -62,11 +62,11 @@ def get_extract_data_args(full_text, data_to_extract, context=None):
     food
 </extract_data>
 
-**Output:**
+**OUTPUT:**
 {ExtractedData(data="Italian food").model_dump_json()} 
 
 #### Example 3:
-**Input:**
+**INPUT:**
 <full_text>
     My name is Juan and I like lemonade.
 </full_text>
@@ -74,11 +74,11 @@ def get_extract_data_args(full_text, data_to_extract, context=None):
     drink
 </extract_data>
 
-**Output:**
+**OUTPUT:**
 {ExtractedData(data="lemonade").model_dump_json()}
 
 #### Example 4:
-**Input:**
+**INPUT:**
 <full_text>
     Juan and I like to play basketball.
 </full_text>
@@ -86,11 +86,11 @@ def get_extract_data_args(full_text, data_to_extract, context=None):
     name
 </extract_data>
 
-**Output:**
+**OUTPUT:**
 {ExtractedData(data="Juan").model_dump_json()}
 
 #### Example 5:
-**Input:**
+**INPUT:**
 <full_text>
     Elis
 </full_text>
@@ -98,7 +98,7 @@ def get_extract_data_args(full_text, data_to_extract, context=None):
     name
 </extract_data>
 
-**Output:**
+**OUTPUT:**
 {ExtractedData(data="Elis").model_dump_json()}  
 
 Ensure that the extracted data is always **the most contextually relevant** answer, not simply the target term itself.""",
