@@ -6,4 +6,5 @@ sensor_msgs/PointCloud2 input_cloud
 # Response
 bool success
 string message
-geometry_msgs/PoseArray grasp_poses
+geometry_msgs/PoseStamped[] grasp_poses
+float32[] grasp_scores

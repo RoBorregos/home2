@@ -29,7 +29,7 @@ class GraspVisualizer(Node):
         )
 
         self.gripper_dimensions = {
-            "base": (0.1, 0.1, 0.02),
+            "base": (0.1, 0.1, 0.05),
             "finger": (0.02, 0.02, 0.17),
             "separation": 0.08,
         }
@@ -119,22 +119,29 @@ class GraspVisualizer(Node):
         try:
             response = future.result()
             if response.success:
-                self.publish_gripper_markers(response.grasp_poses)
+                self.publish_gripper_markers(
+                    response.grasp_poses, response.grasp_scores
+                )
         except Exception as e:
             self.get_logger().error(f"Detection error: {str(e)}")
 
-    def publish_gripper_markers(self, pose_array):
+    def publish_gripper_markers(self, pose_stamped_array, scores):
         marker_array = MarkerArray()
 
-        for idx, pose in enumerate(pose_array.poses):
+        for idx, (pose_stamped, score) in enumerate(zip(pose_stamped_array, scores)):
+            # Use score for visualization
+            color_factor = max(0.2, score)  # Ensure minimum visibility
             gripper_markers = self.create_gripper(
-                pose, f"grasp_{idx}", idx / len(pose_array.poses)
+                pose_stamped.pose,
+                f"grasp_{idx}",
+                frame_id=pose_stamped.header.frame_id,  # Use frame from pose
+                hue=color_factor,
             )
             marker_array.markers.extend(gripper_markers)
 
         self.marker_pub.publish(marker_array)
 
-    def create_gripper(self, base_pose, ns, hue):
+    def create_gripper(self, base_pose, ns, frame_id, hue=0.5):
         markers = []
         r, g, b = colorsys.hsv_to_rgb(hue, 1.0, 1.0)
 
@@ -153,20 +160,20 @@ class GraspVisualizer(Node):
         rot = tf_transformations.quaternion_matrix(q)
         yaw_rot = tf_transformations.euler_matrix(0, 0, np.pi / 2)
         transform = trans @ rot @ yaw_rot
-
+        translation = tf_transformations.translation_from_matrix(transform)
         # Gripper base
         base_quat = tf_transformations.quaternion_from_matrix(transform)
         base_marker = self._create_marker(
-            frame_id="link_base",
+            frame_id=frame_id,
             ns=ns,
             marker_id=0,
             marker_type=Marker.CUBE,
-            position=tf_transformations.translation_from_matrix(transform),
+            position=translation,
             orientation=base_quat,
             scale=self.gripper_dimensions["base"],
             color=(r * 0.5, g * 0.5, b * 0.5, 0.8),
         )
-        base_marker.pose.position.z += self.gripper_dimensions["base"][2] / 2
+        # base_marker.pose.position.z += self.gripper_dimensions["base"][2] / 2
         markers.append(base_marker)
 
         # Fingers
@@ -177,7 +184,7 @@ class GraspVisualizer(Node):
             )
 
             finger_marker = self._create_marker(
-                frame_id="link_base",
+                frame_id=frame_id,
                 ns=ns,
                 marker_id=i + 1,
                 marker_type=Marker.CUBE,

@@ -1,6 +1,0 @@
-string cfg_path
-string pcd_path
----
-bool success
-string message
-geometry_msgs/PoseArray grasp_poses

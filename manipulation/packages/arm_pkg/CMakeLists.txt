@@ -19,6 +19,14 @@ find_package(pcl_conversions REQUIRED)
 find_package(pcl_msgs REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(Eigen3 REQUIRED)
+find_package(tf2_eigen REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2 REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(pcl_ros REQUIRED)
+find_package(PCL REQUIRED)
 find_package(std_srvs REQUIRED)
 find_package(unique_identifier_msgs REQUIRED)
 find_package(action_msgs REQUIRED)
@@ -38,7 +46,9 @@ else()
 endif()
 
 # Include directories
-include_directories(include
+include_directories(
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
+  ${PCL_INCLUDE_DIRS}
 )
 
 # Create executable
@@ -51,6 +61,7 @@ ament_target_dependencies(gpd_test
                           pcl_conversions 
                           pcl_msgs 
                           OpenCV
+                          rclcpp std_msgs geometry_msgs sensor_msgs tf2_ros tf2 pcl_ros pcl_conversions tf2_eigen PCL
                           )
 
 # Link libraries
