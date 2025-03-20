@@ -15,8 +15,9 @@ class JsonInsensitiveValuesMatch(BaseMetric):
 
     def measure(self, test_case: LLMTestCase) -> float:
         try:
-            js1 = json.loads(test_case.expected_output)
-            js2 = json.loads(test_case.actual_output)
+            js1 = remove_key(json.loads(test_case.expected_output), "rationale")
+            js2 = remove_key(json.loads(test_case.actual_output), "rationale")
+
             self.score = 1
 
             if js1.keys() != js2.keys():
@@ -45,6 +46,18 @@ class JsonInsensitiveValuesMatch(BaseMetric):
     @property
     def __name__(self):
         return "Json case-insensitive exact match"
+
+
+def remove_key(object, erase_key):
+    """
+    Remove keys from dicts recursively.
+    """
+    if isinstance(object, dict):
+        return {key: remove_key(value, erase_key) for key, value in object.items() if key != erase_key}
+    elif isinstance(object, list):
+        return [remove_key(value, erase_key) for value in object]
+    else:
+        return object
 
 
 def format(object):
