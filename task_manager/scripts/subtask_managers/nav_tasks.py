@@ -103,7 +103,7 @@ class NavigationTasks:
         self.node.get_logger().info("Goal accepted! Waiting for result...")
         self._get_result_future = goal_handle.get_result_async()
         self._get_result_future.add_done_callback(
-            lambda future_result: self.result_callback(future_result, result_future)
+            lambda future_result: self.result_callback(result_future)
         )
 
     def result_callback(self, result_future):

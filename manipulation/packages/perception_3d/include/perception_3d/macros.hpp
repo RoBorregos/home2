@@ -1,5 +1,6 @@
 #ifndef MACROS_HPP
 #define MACROS_HPP
+#include <cstdint>
 #define _IN_
 #define _OUT_
 
@@ -14,6 +15,7 @@ enum u32bStatusErrorCodes {
   NO_OBJECT_TO_CLUSTER_AT_POINT = 7,
   POINT_CLOUD_EMPTY = 8,
   COULDNT_TRANSFORM_TO_BASE_LINK = 9,
+  INVALID_INPUT = 10,
 };
 
 #define ASSERT(var, val, message)                                              \
@@ -37,5 +39,7 @@ enum u32bStatusErrorCodes {
     RCLCPP_ERROR(this->get_logger(), message, code);                           \
     return code;                                                               \
   }
+
+typedef uint32_t STATUS_RESPONSE;
 
 #endif

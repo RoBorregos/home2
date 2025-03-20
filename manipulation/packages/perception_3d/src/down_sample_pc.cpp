@@ -14,7 +14,7 @@
 #include <rclcpp/logging.hpp>
 #include <rclcpp/qos.hpp>
 #include <rclcpp/timer.hpp>
-#include <sensor_msgs/msg/detail/point_cloud2__struct.hpp>
+
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <string>
 #include <variant>
@@ -70,8 +70,11 @@ public:
 
     sensor_msgs::msg::PointCloud2 response;
     pcl::toROSMsg(*sampled_cloud, response);
-    response.header.frame_id = msg->header.frame_id;
-    response.header.stamp = msg->header.stamp;
+    // response.header.frame_id = msg->header.frame_id;
+    // response.header.stamp = msg->header.stamp;
+    response.header.set__frame_id(msg->header.frame_id);
+    response.header.set__stamp(msg->header.stamp);
+    // response.header.stamp = this->now();
 
     publisher->publish(response);
   }
