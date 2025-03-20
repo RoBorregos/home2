@@ -68,12 +68,6 @@ public:
         this->create_client<frida_interfaces::srv::AddCollisionObjects>(
             ADD_COLLISION_SERVICE);
 
-    // this->cloud_sub_ =
-    // this->create_subscription<sensor_msgs::msg::PointCloud2>(
-    //     POINT_CLOUD_TOPIC, rclcpp::SensorDataQoS(),
-    //     std::bind(&AddPrimitivesNode::pointCloudCallback, this,
-    //               std::placeholders::_1));
-
     RCLCPP_INFO(this->get_logger(), "Service created");
   }
 
@@ -96,10 +90,6 @@ public:
     box_params.centroid.y = min_pt2.y + (max_pt.y - min_pt2.y) / 2;
     box_params.centroid.z = min_pt2.z + (max_pt.z - min_pt2.z) / 2;
 
-    // box_params.centroid.x = centroid[0];
-    // box_params.centroid.y = centroid[1];
-    // box_params.centroid.z = centroid[2];
-
     Eigen::Vector3f center;
     center[0] = box_params.centroid.x;
     center[1] = box_params.centroid.y;
@@ -110,17 +100,6 @@ public:
         covariance_matrix);
     Eigen::Matrix3f eigenvectors = eigen_solver.eigenvectors();
     Eigen::Vector3f eigenvalues = eigen_solver.eigenvalues();
-
-    // Sort eigenvectors based on eigenvalues (ascending)
-    // The eigenvectors form the basis for the box orientation
-    // for (int i = 0; i < 2; ++i) {
-    //   for (int j = 0; j < 2 - i; ++j) {
-    //     if (eigenvalues(j) > eigenvalues(j + 1)) {
-    //       std::swap(eigenvalues(j), eigenvalues(j + 1));
-    //       eigenvectors.col(j).swap(eigenvectors.col(j + 1));
-    //     }
-    //   }
-    // }
 
     eigenvectors.col(2) = eigenvectors.col(0).cross(eigenvectors.col(1));
     eigenvectors.col(0) = eigenvectors.col(1).cross(eigenvectors.col(2));
@@ -133,16 +112,14 @@ public:
     eigenvectors = eigenVectorsPCA1;
 
     Eigen::Vector3f ea = (eigenvectors).eulerAngles(2, 1, 0);
-    Eigen::AngleAxisf keep_Z_Rot(ea[0], Eigen::Vector3f::UnitZ());
+    // Eigen::AngleAxisf keep_Z_Rot(ea[0], Eigen::Vector3f::UnitZ());
     Eigen::Affine3f transform = Eigen::Affine3f::Identity();
 
     transform.translate(center);
-    transform.rotate(keep_Z_Rot);
-
-    // Ensure the eigenvectors form a right-handed coordinate system
-    // if (eigenvectors.determinant() < 0) {
-    //   eigenvectors.col(0) *= -1.0f;
-    // }
+    // transform.rotate(keep_Z_Rot);
+    transform.rotate(Eigen::AngleAxisf(ea[0], Eigen::Vector3f::UnitZ()));
+    transform.rotate(Eigen::AngleAxisf(ea[2], Eigen::Vector3f::UnitY()));
+    transform.rotate(Eigen::AngleAxisf(ea[1], Eigen::Vector3f::UnitX()));
 
     // Convert eigenvectors (rotation matrix) to quaternion
     Eigen::Quaternionf quat(eigenvectors);
@@ -153,28 +130,16 @@ public:
     box_params.orientation.z = quat.z();
     box_params.orientation.w = quat.w();
 
-    // // get euclidean angles
-    // double roll, pitch, yaw;
-    // pcl::getEulerAngles(eigenvectors, roll, pitch, yaw);
-
-    // // Compute box dimensions based on point cloud extents along the
-    // principal
-    // // axes
     pcl::PointCloud<pcl::PointXYZ> transformed_cloud;
     pcl::transformPointCloud(*cloud, transformed_cloud, transform);
-    // pcl::transformPointCloud(
-    //     *cloud, transformed_cloud,
-    //     Eigen::Vector3f(centroid[0], centroid[1], centroid[2]));
 
     // // Find min and max points in the transformed space
     pcl::PointXYZ min_pt, max_pt2;
     pcl::getMinMax3D(transformed_cloud, min_pt, max_pt2);
 
-    box_params.width = abs(max_pt2.x - min_pt.x);
-    box_params.depth = abs(max_pt2.y - min_pt.y);
-    box_params.height = abs(max_pt2.z - min_pt.z);
-
-    std::swap(box_params.width, box_params.depth);
+    box_params.width = max_pt2.x - min_pt.x;
+    box_params.depth = max_pt2.y - min_pt.y;
+    box_params.height = max_pt2.z - min_pt.z - 0.01;
 
     return status;
   }
