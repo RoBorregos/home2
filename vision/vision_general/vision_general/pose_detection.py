@@ -23,7 +23,7 @@ class PoseDetection:
             right_knee = landmarks[self.mp_pose.PoseLandmark.RIGHT_KNEE]
             left_ankle = landmarks[self.mp_pose.PoseLandmark.LEFT_ANKLE]
             right_ankle = landmarks[self.mp_pose.PoseLandmark.RIGHT_ANKLE]
-            
+
             if left_hip.y < left_knee.y and right_hip.y < right_knee.y:
                 return "Standing"
             elif left_hip.y > left_knee.y and right_hip.y > right_knee.y:
@@ -43,7 +43,7 @@ class PoseDetection:
             right_elbow = landmarks[self.mp_pose.PoseLandmark.RIGHT_ELBOW]
             left_shoulder = landmarks[self.mp_pose.PoseLandmark.LEFT_SHOULDER]
             right_shoulder = landmarks[self.mp_pose.PoseLandmark.RIGHT_SHOULDER]
-            
+
             if left_wrist.y < left_shoulder.y and right_wrist.y < right_shoulder.y:
                 return "Waving"
             elif left_wrist.y < left_shoulder.y:
