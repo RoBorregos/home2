@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0cspeech.proto\x12\x06speech\"\"\n\x0c\x41udioRequest\x12\x12\n\naudio_data\x18\x01 \x01(\x0c\"\x1c\n\x0cTextResponse\x12\x0c\n\x04text\x18\x01 \x01(\t2I\n\rSpeechService\x12\x38\n\nTranscribe\x12\x14.speech.AudioRequest\x1a\x14.speech.TextResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0cspeech.proto\x12\x06speech\"4\n\x0c\x41udioRequest\x12\x12\n\naudio_data\x18\x01 \x01(\x0c\x12\x10\n\x08hotwords\x18\x02 \x01(\t\"\x1c\n\x0cTextResponse\x12\x0c\n\x04text\x18\x01 \x01(\t2I\n\rSpeechService\x12\x38\n\nTranscribe\x12\x14.speech.AudioRequest\x1a\x14.speech.TextResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -32,9 +32,9 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'speech_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
   _globals['_AUDIOREQUEST']._serialized_start=24
-  _globals['_AUDIOREQUEST']._serialized_end=58
-  _globals['_TEXTRESPONSE']._serialized_start=60
-  _globals['_TEXTRESPONSE']._serialized_end=88
-  _globals['_SPEECHSERVICE']._serialized_start=90
-  _globals['_SPEECHSERVICE']._serialized_end=163
+  _globals['_AUDIOREQUEST']._serialized_end=76
+  _globals['_TEXTRESPONSE']._serialized_start=78
+  _globals['_TEXTRESPONSE']._serialized_end=106
+  _globals['_SPEECHSERVICE']._serialized_start=108
+  _globals['_SPEECHSERVICE']._serialized_end=181
 # @@protoc_insertion_point(module_scope)
