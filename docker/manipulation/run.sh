@@ -93,6 +93,7 @@ case $ENV_TYPE in
     echo "DOCKERFILE=docker/manipulation/Dockerfile.jetson" >> .env
     echo "BASE_IMAGE=roborregos/home2:l4t_base" >> .env
     echo "IMAGE_NAME=roborregos/home2:manipulation-jetson" >> .env
+    echo "DISPLAY=:0" >> .env
     ;;
   *)
     echo "Unknown environment type!"

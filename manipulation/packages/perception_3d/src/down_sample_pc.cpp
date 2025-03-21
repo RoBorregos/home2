@@ -70,8 +70,11 @@ public:
 
     sensor_msgs::msg::PointCloud2 response;
     pcl::toROSMsg(*sampled_cloud, response);
-    response.header.frame_id = msg->header.frame_id;
-    response.header.stamp = msg->header.stamp;
+    // response.header.frame_id = msg->header.frame_id;
+    // response.header.stamp = msg->header.stamp;
+    response.header.set__frame_id(msg->header.frame_id);
+    response.header.set__stamp(msg->header.stamp);
+    // response.header.stamp = this->now();
 
     publisher->publish(response);
   }
