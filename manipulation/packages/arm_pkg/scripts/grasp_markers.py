@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+# !/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
 from visualization_msgs.msg import Marker, MarkerArray
@@ -46,7 +46,7 @@ class GraspVisualizer(Node):
         """PCD file mode"""
         self.declare_parameter(
             "pcd_path",
-            "/home/dominguez/roborregos/home_ws/src/manipulation/packages/gpd/tutorials/table_mug.pcd",
+            "/home/dominguez/roborregos/home_ws/src/manipulation/packages/gpd/tutorials/krylon.pcd",
         )
         self.declare_parameter(
             "cfg_path",
@@ -145,7 +145,6 @@ class GraspVisualizer(Node):
         markers = []
         r, g, b = colorsys.hsv_to_rgb(hue, 1.0, 1.0)
 
-        # Extract quaternion components correctly
         q = [
             base_pose.orientation.x,
             base_pose.orientation.y,
@@ -153,16 +152,22 @@ class GraspVisualizer(Node):
             base_pose.orientation.w,
         ]
 
-        # Translation
         trans = tf_transformations.translation_matrix(
             [base_pose.position.x, base_pose.position.y, base_pose.position.z]
         )
         rot = tf_transformations.quaternion_matrix(q)
         yaw_rot = tf_transformations.euler_matrix(0, 0, np.pi / 2)
         transform = trans @ rot @ yaw_rot
+
+        offset_distance = -0.08  # 8 cm in direction of the gripper
+        offset_transform = tf_transformations.translation_matrix(
+            [0, 0, offset_distance]
+        )
+        transform = transform @ offset_transform
+
         translation = tf_transformations.translation_from_matrix(transform)
-        # Gripper base
         base_quat = tf_transformations.quaternion_from_matrix(transform)
+
         base_marker = self._create_marker(
             frame_id=frame_id,
             ns=ns,
@@ -173,7 +178,6 @@ class GraspVisualizer(Node):
             scale=self.gripper_dimensions["base"],
             color=(r * 0.5, g * 0.5, b * 0.5, 0.8),
         )
-        # base_marker.pose.position.z += self.gripper_dimensions["base"][2] / 2
         markers.append(base_marker)
 
         # Fingers
@@ -182,7 +186,6 @@ class GraspVisualizer(Node):
             finger_transform = transform @ tf_transformations.translation_matrix(
                 [x_offset, 0, self.gripper_dimensions["finger"][2] / 2]
             )
-
             finger_marker = self._create_marker(
                 frame_id=frame_id,
                 ns=ns,

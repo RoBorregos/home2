@@ -32,6 +32,7 @@ find_package(unique_identifier_msgs REQUIRED)
 find_package(action_msgs REQUIRED)
 find_package(frida_interfaces REQUIRED)
 find_package(frida_constants REQUIRED)
+find_package(visualization_msgs REQUIRED)
 
 # --------------------- GPD Configuration ---------------------
 # Use find_library as in your original CMake
@@ -53,6 +54,7 @@ include_directories(
 
 # Create executable
 add_executable(gpd_test src/gpd_test.cpp)
+add_executable(gpd_service src/gpd_service.cpp)
 
 ament_target_dependencies(gpd_test
                           frida_interfaces
@@ -64,6 +66,16 @@ ament_target_dependencies(gpd_test
                           rclcpp std_msgs geometry_msgs sensor_msgs tf2_ros tf2 pcl_ros pcl_conversions tf2_eigen PCL
                           )
 
+ament_target_dependencies(gpd_service
+                          frida_interfaces
+                          std_srvs 
+                          rclcpp 
+                          pcl_conversions 
+                          pcl_msgs 
+                          OpenCV
+                          rclcpp std_msgs geometry_msgs sensor_msgs tf2_ros tf2 pcl_ros pcl_conversions tf2_eigen PCL visualization_msgs
+                          )
+
 # Link libraries
 target_link_libraries(gpd_test
   ${OpenCV_LIBS}
@@ -71,8 +83,15 @@ target_link_libraries(gpd_test
   Eigen3::Eigen
 )
 
+target_link_libraries(gpd_service
+  ${OpenCV_LIBS}
+  ${GPD_LIB}
+  Eigen3::Eigen
+)
+
 # Install targets
 install(TARGETS gpd_test DESTINATION lib/${PROJECT_NAME})
+install(TARGETS gpd_service DESTINATION lib/${PROJECT_NAME})
 install(DIRECTORY include/${PROJECT_NAME}/ DESTINATION include/${PROJECT_NAME})
 install(DIRECTORY worlds DESTINATION share/${PROJECT_NAME})
 

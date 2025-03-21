@@ -91,7 +91,7 @@ private:
           res->message = "PCD load failed";
           return;
         }
-        source_frame = pcd_default_frame; // Use default frame
+        source_frame = this->get_parameter("pcd_default_frame").as_string(); // Use default frame
         stamp = this->now();
       }
       else {
