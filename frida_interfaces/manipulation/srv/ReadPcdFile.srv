@@ -1,4 +1,4 @@
-string optional_filename
+string pcd_path
 ---
+bool success
 sensor_msgs/PointCloud2 cloud
-int32 status
