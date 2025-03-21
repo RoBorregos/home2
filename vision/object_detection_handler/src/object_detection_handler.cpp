@@ -31,6 +31,7 @@ struct HandlerParams
   std::string TARGET_FRAME;
   std::string DETECTIONS_TOPIC;
   bool TRANSFROM_POINTS;
+  bool VERBOSE;
 };
 
 class DetectionsHandlerNode : public rclcpp::Node
@@ -65,8 +66,9 @@ class DetectionsHandlerNode : public rclcpp::Node
 
     void declare_parameters(){
       this->declare_parameter("DETECTIONS_TOPIC", "/detections");
-      this->declare_parameter("TRANSFROM_POINTS", false);
       this->declare_parameter("TARGET_FRAME", "BASE_LINK");
+      this->declare_parameter("TRANSFROM_POINTS", false);
+      this->declare_parameter("VERBOSE", false);
       this->declare_parameter("IOU_THRESHOLD", 0.75);
       this->declare_parameter("RECORDED_SECONDS", 5);
     }
@@ -77,6 +79,7 @@ class DetectionsHandlerNode : public rclcpp::Node
       params_.IOU_THRESHOLD = this->get_parameter("IOU_THRESHOLD").as_double();
       params_.RECORDED_SECONDS = this->get_parameter("RECORDED_SECONDS").as_int();
       params_.TRANSFROM_POINTS = this->get_parameter("TRANSFROM_POINTS").as_bool();
+      params_.VERBOSE = this->get_parameter("VERBOSE").as_bool();
     }
 
     float getIoU(frida_interfaces::msg::ObjectDetection detection1, frida_interfaces::msg::ObjectDetection detection2){
@@ -84,11 +87,17 @@ class DetectionsHandlerNode : public rclcpp::Node
       float yA = std::max(detection1.ymax, detection2.ymax);
       float xB = std::min(detection1.xmin, detection2.xmin);
       float yB = std::min(detection1.ymin, detection2.ymin);
-
-      float interArea = std::max(float(0), xB - xA + 1) * std::max(float(0), yB - yA + 1);
+      
+      float interArea = std::max(float(0), xA - xB) * std::max(float(0), yA - yB);
 
       float box1Area = (detection1.xmax - detection1.xmin) * (detection1.ymax - detection1.ymin);
       float box2Area = (detection2.xmax - detection2.xmin) * (detection2.ymax - detection2.ymin);
+
+      
+      RCLCPP_INFO(this->get_logger(), "xA: %f, yA: %f, xB: %f, yB: %f", xA, yA, xB, yB);
+      RCLCPP_INFO(this->get_logger(), "InterArea: %f", interArea);
+      RCLCPP_INFO(this->get_logger(), "Box1Area: %f", box1Area);
+      RCLCPP_INFO(this->get_logger(), "Box2Area: %f", box2Area);
 
       float iou = interArea / (box1Area + box2Area - interArea);
       return iou;
@@ -106,10 +115,13 @@ class DetectionsHandlerNode : public rclcpp::Node
     }
 
     void oda_callback(frida_interfaces::msg::ObjectDetectionArray::SharedPtr msg){
-      RCLCPP_INFO(this->get_logger(), "Received ObjectDetectionArray %ld", frame_id_);
+      if (params_.VERBOSE){
+        RCLCPP_INFO(this->get_logger(), "Received ObjectDetectionArray message");
+      }
+
       object_detection_vector_ = msg->detections;
 
-      if (object_detection_vector_.empty()){
+      if (object_detection_vector_.empty() && params_.VERBOSE){
         RCLCPP_INFO(this->get_logger(), "Empty object detection array received");
         return;
       }
@@ -121,7 +133,9 @@ class DetectionsHandlerNode : public rclcpp::Node
         dr.timestamp = std::chrono::system_clock::now();
         if (umm_.find(object_detection_vector_[i].label_text) != umm_.end()){
           for (auto it = umm_.equal_range(object_detection_vector_[i].label_text).first; it != umm_.equal_range(object_detection_vector_[i].label_text).second; ++it){
+            RCLCPP_INFO(this->get_logger(), "IoU: %f", getIoU(it->second.detection,dr.detection));
             if (getIoU(it->second.detection,dr.detection) > params_.IOU_THRESHOLD){
+              RCLCPP_INFO(this->get_logger(), "SAME OBJECT DETECTED");
               umm_.erase(it);
               break;
             }
@@ -154,7 +168,7 @@ class DetectionsHandlerNode : public rclcpp::Node
     
     void detection_handler_callback( const std::shared_ptr<frida_interfaces::srv::DetectionHandler::Request> request,
                                      const std::shared_ptr<frida_interfaces::srv::DetectionHandler::Response> response){
-        RCLCPP_INFO(this->get_logger(), "Detection handler request received");
+        RCLCPP_INFO(this->get_logger(), "Detection handler request received label: %s", request->label.c_str());
         
         if (object_detection_vector_.empty() || umm_.empty()){
           RCLCPP_INFO(this->get_logger(), "No object detection array received yet");
@@ -168,7 +182,7 @@ class DetectionsHandlerNode : public rclcpp::Node
           return;
         }
         
-        if (request->closest_point){
+        if (request->closest_object){
           frida_interfaces::msg::ObjectDetection closest_detection;
           float min_distance = std::numeric_limits<float>::max();
           for (auto it = umm_.equal_range(request->label).first; it != umm_.equal_range(request->label).second; ++it){
@@ -185,9 +199,13 @@ class DetectionsHandlerNode : public rclcpp::Node
             }
           }
 
-          response->detection = closest_detection;
+          response->detection_array.detections = {closest_detection};
         } else {
-          response->detection = umm_.equal_range(request->label).first->second.detection;
+          std::vector<frida_interfaces::msg::ObjectDetection> detections;
+          for (auto it = umm_.equal_range(request->label).first; it != umm_.equal_range(request->label).second; ++it){
+            detections.push_back(it->second.detection);
+          }
+          response->detection_array.detections = detections;
         }
         response->success = true;
     }

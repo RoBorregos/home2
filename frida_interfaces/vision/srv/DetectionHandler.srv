@@ -1,5 +1,5 @@
 string label
 bool closest_object
 ---
-frida_interfaces/ObjectDetection detection
+frida_interfaces/ObjectDetectionArray detection_array
 bool success

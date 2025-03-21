@@ -1,5 +1,6 @@
 ros__parameters:
   TRANSFROM_POINTS : False
+  VERBOSE : False
   DETECTIONS_TOPIC : /detections
   TRAGET_FRAME : BASE_LINK
   IOU_THRESHOLD : 0.9

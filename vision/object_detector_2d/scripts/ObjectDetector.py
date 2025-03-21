@@ -192,10 +192,10 @@ class ObjectDectector(ABC):
                 label=detection.class_id_,
                 label_text=detection.label_,
                 score=detection.confidence_,
-                ymin=float(detection.bbox_.y1),
-                xmin=float(detection.bbox_.x1),
-                ymax=float(detection.bbox_.y2),
-                xmax=float(detection.bbox_.x2),
+                ymin=float(min(detection.bbox_.y1,detection.bbox_.y2)),
+                xmin=float(min(detection.bbox_.x1,detection.bbox_.x2)),
+                ymax=float(max(detection.bbox_.y1,detection.bbox_.y2)),
+                xmax=float(max(detection.bbox_.x1,detection.bbox_.x2)),
                 point3d=detection.point_stamped_,
             )
             object_detection_array.append(object_detection)
