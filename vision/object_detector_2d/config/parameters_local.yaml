@@ -1,6 +1,6 @@
 object_detector_node:
   ros__parameters:
-    RGB_IMAGE_TOPIC : /zed/zed_node/rgb/image_rect_color
+    RGB_IMAGE_TOPIC : /raw_image
     DEPTH_IMAGE_TOPIC :  /zed/zed_node/depth/depth_registered
     CAMERA_INFO_TOPIC :  /zed/zed_node/depth/camera_info
     DETECTIONS_TOPIC : /detections
@@ -13,10 +13,10 @@ object_detector_node:
     TARGET_FRAME :  base_link
     YOLO_MODEL_PATH :  yolov5s.pt # FILE MOST BE IN MODEL FOLDER OF THE PACKAGE
     USE_ACTIVE_FLAG :  False
-    DEPTH_ACTIVE :  False
+    DEPTH_ACTIVE :  True
     VERBOSE :  False
     USE_YOLO8 :  False
     FLIP_IMAGE :  False
-    USE_ZED_TRANSFORM : False
+    USE_ZED_TRANSFORM : True
     MIN_SCORE_THRESH :  0.75
 
