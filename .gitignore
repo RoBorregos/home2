@@ -13,5 +13,6 @@
 **.pth
 **.gz
 hri/packages/nlp/assets/**
+.cache
 !hri/packages/nlp/assets/download-model.sh
 **.bag
