@@ -97,7 +97,7 @@ install(DIRECTORY worlds DESTINATION share/${PROJECT_NAME})
 
 # Python components
 ament_python_install_package(${PROJECT_NAME})
-install(PROGRAMS scripts/test_env.py scripts/grasp_markers.py DESTINATION lib/${PROJECT_NAME})
+install(PROGRAMS scripts/test_env.py scripts/grasp_markers.py examples/grasp_detection_example.py DESTINATION lib/${PROJECT_NAME})
 install(DIRECTORY config launch DESTINATION share/${PROJECT_NAME})
 
 ament_package()
