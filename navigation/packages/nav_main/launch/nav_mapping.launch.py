@@ -17,6 +17,14 @@ def generate_launch_description():
         description='Whether to publish URDF'
     )
 
+    use_sim = LaunchConfiguration('use_sim')
+
+    declare_use_sim = DeclareLaunchArgument(
+        'use_sim',
+        default_value='false',
+        description='Whether to use simulation time'
+    )
+
     nav_main_package = get_package_share_directory('nav_main')
     params_file = os.path.join(nav_main_package, 'config', 'mapper_params_online_async.yaml')
 
@@ -29,7 +37,8 @@ def generate_launch_description():
                     "nav_basics.launch.py",
                 ]
             )),
-        launch_arguments={'publish_tf': publish_urdf }.items()
+        #launch_arguments={'publish_tf': publish_urdf }.items()
+        launch_arguments={'publish_tf': publish_urdf, 'use_sim': use_sim}.items()
         )
 
     slam_toolbox = IncludeLaunchDescription(
@@ -41,13 +50,14 @@ def generate_launch_description():
                     "online_async_launch.py",
                 ]
             )),
-            launch_arguments={'params_file': params_file,
-                              'use_sim_time': 'false'}.items()
+            #launch_arguments={'params_file': params_file,
+            #                  'use_sim': 'false'}.items()
+            launch_arguments={'params_file': params_file, 'use_sim_time': use_sim}.items()
         )
     
     return LaunchDescription([
         declare_publish_tf,
+        declare_use_sim,
         nav_basics,
         slam_toolbox
-
     ])

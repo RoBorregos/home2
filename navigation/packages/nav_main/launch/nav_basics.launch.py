@@ -18,6 +18,13 @@ def generate_launch_description():
         description='Whether to publish URDF'
     )
 
+    use_sim = LaunchConfiguration('use_sim')
+    declare_use_sim = DeclareLaunchArgument(
+        'use_sim',
+        default_value='false',
+        description='Whether to use simulation time'
+    )
+
     dashgo_driver = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution(
@@ -27,7 +34,8 @@ def generate_launch_description():
                     "dashgo_driver.launch.py",
                 ]
             )
-        ))
+            ), condition=IfCondition(use_sim),
+        )
     ekf_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution(
@@ -75,6 +83,7 @@ def generate_launch_description():
 
     return LaunchDescription([
         declare_publish_tf,  # Declare launch argument
+        declare_use_sim,
         dashgo_driver,
         ekf_launch,
         robot_description_launch,
