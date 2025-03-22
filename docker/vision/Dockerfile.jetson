@@ -4,11 +4,9 @@ FROM ${BASE_IMAGE}
 RUN mkdir -p /workspace/requirements
 
 # Requirements
-COPY vision/requirements/vision_general.txt /workspace/requirements/requirements.txt  
-COPY vision/requirements/moondream.txt /workspace/requirements/moondream.txt 
+COPY vision/requirements/vision_general.txt /workspace/requirements/requirements.txt   
 RUN pip install -r requirements/requirements.txt
-RUN pip install -r requirements/moondream.txt
-# RUN pip install torch==1.11 torchvision==0.11.0 -f https://download.pytorch.org/whl/cu111/torch_stable.html
+RUN pip install torch==1.11 torchvision==0.12.0 -f https://download.pytorch.org/whl/cu111/torch_stable.html
 
 # Download and extract dlib
 RUN wget http://dlib.net/files/dlib-19.21.tar.bz2 && \

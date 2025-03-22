@@ -44,7 +44,7 @@ if [ "$build" = true ]; then
     else
         read -p "Do you want to build using colcon? [Y/n]: " response
         if [[ "$response" =~ ^([yY][eE][sS]|[yY])+$ ]]; then
-            colcon build --build-base build --install-base install --base-path . --event-handlers console_cohesion+ --cmake-args -DCMAKE_EXPORT_COMPILE_COMMANDS=true
+            colcon build --build-base build --install-base install --base-path . --event-handlers console_cohesion+ --cmake-args -DCMAKE_EXPORT_COMPILE_COMMANDS=true --parallel-workers 1
         fi
     fi
 fi

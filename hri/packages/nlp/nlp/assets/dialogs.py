@@ -18,21 +18,31 @@ def get_common_interests_dialog(
     }
 
 
-def get_extract_data_args(full_text, data_to_extract):
+def get_extract_data_args(full_text, data_to_extract, context=None):
+    user_content = f"<full_text>{full_text}</full_text>\n<extract_data>{data_to_extract}</extract_data>"
+
+    if context and len(context) > 0:
+        user_content += f"\n<explanation>{context}</explanation>"
+
     return (
         [
             {
                 "role": "system",
-                "content": f"""You will be given a piece of text and a specific data item to extract. Your task is to return the requested information if it is explicitly present in the provided text.
+                "content": f"""You will receive a text (`full_text`) and a specific target (`extract_data`). (Optional) Additional explanation (`explanation`) to help clarify ambiguous cases. Your task is to extract and return the closest relevant word or phrase that directly answers the target.
+
 ### Extraction Rules:
-- If the requested data is found within the text, return it as the output.
-- If the data is not present, return an empty string (`""`).
-- If `full_text` is missing or empty, return an empty string (`""`).  
-- If `full_text` is a single word or a short phrase and corresponds to the data to extract, you can return the full_text.
+- Return the MOST RELEVANT WORD OR PHRASE that best corresponds to `extract_data`, considering its contextual meaning within the sentence.
+- Do NOT return the target word (`extract_data`) itself unless it is the best available answer.
+- If multiple possible matches exist, return the MOST CONTEXTUALLY RELEVANT one (e.g., a noun or phrase describing the requested information).
+- If no relevant match is found, return an empty string (`""`).
+- If `full_text` is missing, empty, or consists of only a single word or short phrase that directly corresponds to `extract_data`, return `full_text` as the result.
+- If present, use the `explanation` to help clarify ambiguous cases.
 
 ### Examples:
 
-**Input:**
+
+#### Example 1:
+**INPUT:**
 <full_text>
     There is a cat in the house.
 </full_text>
@@ -40,10 +50,11 @@ def get_extract_data_args(full_text, data_to_extract):
     food
 </extract_data>
 
-**Output:**
+**OUTPUT:**
 {ExtractedData(data="").model_dump_json()}
 
-**Input:**
+#### Example 2:
+**INPUT:**
 <full_text>
     The restaurant serves delicious Italian food.
 </full_text>
@@ -51,10 +62,11 @@ def get_extract_data_args(full_text, data_to_extract):
     food
 </extract_data>
 
-**Output:**
+**OUTPUT:**
 {ExtractedData(data="Italian food").model_dump_json()} 
 
-**Input:**
+#### Example 3:
+**INPUT:**
 <full_text>
     My name is Juan and I like lemonade.
 </full_text>
@@ -62,10 +74,11 @@ def get_extract_data_args(full_text, data_to_extract):
     drink
 </extract_data>
 
-**Output:**
+**OUTPUT:**
 {ExtractedData(data="lemonade").model_dump_json()}
 
-**Input:**
+#### Example 4:
+**INPUT:**
 <full_text>
     Juan and I like to play basketball.
 </full_text>
@@ -73,10 +86,11 @@ def get_extract_data_args(full_text, data_to_extract):
     name
 </extract_data>
 
-**Output:**
+**OUTPUT:**
 {ExtractedData(data="Juan").model_dump_json()}
 
-**Input:**
+#### Example 5:
+**INPUT:**
 <full_text>
     Elis
 </full_text>
@@ -84,20 +98,14 @@ def get_extract_data_args(full_text, data_to_extract):
     name
 </extract_data>
 
-**Output:**
+**OUTPUT:**
 {ExtractedData(data="Elis").model_dump_json()}  
 
-Ensure strict adherence to these rules. Do not infer or generate information beyond what is explicitly stated in the text.""",
+Ensure that the extracted data is always **the most contextually relevant** answer, not simply the target term itself.""",
             },
             {
                 "role": "user",
-                "content": "<full_text>"
-                + str(full_text)
-                + "</full_text>"
-                + "\n"
-                + "<extract_data>"
-                + (data_to_extract)
-                + "</extract_data>",
+                "content": user_content,
             },
         ],
         ExtractedData,
@@ -150,3 +158,16 @@ def get_is_answer_positive_args(interpreted_text):
         ],
         IsAnswerPositive,
     )
+
+
+def format_response(response):
+    return [
+        {
+            "role": "system",
+            "content": "You will be presented with an output. Your task is to format the response according to the given format.",
+        },
+        {
+            "role": "user",
+            "content": response,
+        },
+    ]
