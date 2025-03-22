@@ -41,7 +41,7 @@ private:
     void scanCallback(const sensor_msgs::msg::LaserScan::SharedPtr scan)
     {
         auto new_scan = *scan;
-        int count = static_cast<int>(scan->scan_time / scan->time_increment);
+        int count = static_cast<int>(ceil((scan->angle_max - scan->angle_min) / scan->time_increment));
 
         for (int i = 0; i < count; ++i) {
             float degree = RAD2DEG(scan->angle_min + scan->angle_increment * i);
