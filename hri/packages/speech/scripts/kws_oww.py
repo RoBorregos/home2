@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 import os
+import shutil
 import time
 
 import numpy as np
+import openwakeword
 import openwakeword.utils as utils
 import rclpy
 from openwakeword.model import Model
@@ -10,6 +12,13 @@ from rclpy.node import Node
 from std_msgs.msg import String
 
 from frida_interfaces.msg import AudioData
+
+CURRENT_FILE_PATH = os.path.abspath(__file__)
+
+FILE_DIR = CURRENT_FILE_PATH[: CURRENT_FILE_PATH.index("install")]
+ASSETS_DIR = os.path.join(
+    FILE_DIR, "src", "hri", "packages", "speech", "assets", "downloads"
+)
 
 
 class OpenWakeWordNode(Node):
@@ -48,9 +57,7 @@ class OpenWakeWordNode(Node):
             .get_parameter_value()
             .double_value
         )
-
-        utils.download_models()
-
+        self.download_models()
         # Handle model loading dynamically from a directory
         if model_path:
             self.get_logger().info(f"Loading models from {model_path}")
@@ -98,6 +105,59 @@ class OpenWakeWordNode(Node):
                     self.publisher.publish(String(data=str(detection_info)))
                     self.last_detection_time = current_time
                 break
+
+    def download_models(self):
+        # Download melospectogram
+
+        melospectogram_download_path = os.path.join(ASSETS_DIR, "melspectrogram.onnx")
+        melospectogram_execution_path = openwakeword.FEATURE_MODELS["melspectrogram"][
+            "model_path"
+        ].replace(".tflite", ".onnx")
+
+        embedding_download_path = os.path.join(ASSETS_DIR, "embedding_model.onnx")
+        embedding_execution_path = openwakeword.FEATURE_MODELS["embedding"][
+            "model_path"
+        ].replace(".tflite", ".onnx")
+
+        # Download models if they do not exist
+
+        if not os.path.exists(melospectogram_download_path):
+            self.get_logger().info("Downloading melospectogram model.")
+
+            utils.download_file(
+                openwakeword.FEATURE_MODELS["melspectrogram"]["download_url"].replace(
+                    ".tflite", ".onnx"
+                ),
+                ASSETS_DIR,
+            )
+
+        if not os.path.exists(embedding_download_path):
+            self.get_logger().info("Downloading embedding model.")
+
+            utils.download_file(
+                openwakeword.FEATURE_MODELS["embedding"]["download_url"].replace(
+                    ".tflite", ".onnx"
+                ),
+                ASSETS_DIR,
+            )
+
+        # Copy models to execution path if they do not exist
+
+        if not os.path.exists(melospectogram_execution_path):
+            self.get_logger().info("Copying model to execution path.")
+            self.get_logger().info(
+                f"model_download {melospectogram_download_path}. model_execution {melospectogram_execution_path}"
+            )
+            os.makedirs(os.path.dirname(melospectogram_execution_path), exist_ok=True)
+            shutil.copyfile(melospectogram_download_path, melospectogram_execution_path)
+
+        if not os.path.exists(embedding_execution_path):
+            self.get_logger().info("Copying model to execution path.")
+            self.get_logger().info(
+                f"model_download {embedding_download_path}. model_execution {embedding_execution_path}"
+            )
+            os.makedirs(os.path.dirname(embedding_execution_path), exist_ok=True)
+            shutil.copyfile(embedding_download_path, embedding_execution_path)
 
 
 def main(args=None):
