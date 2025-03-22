@@ -145,6 +145,7 @@ class UsefulAudio(Node):
         return sound
 
     def is_speech_silero_vad(self, audio_data: np.ndarray) -> bool:
+        self.debug("STARTING SILENCE VAD")
         input_data = {
             "input": audio_data.reshape(1, -1),
             "sr": np.array([self.sampling_rate], dtype=np.int64),
@@ -156,6 +157,7 @@ class UsefulAudio(Node):
         return out > self.threshold
 
     def vad_collector(self, chunk):
+        self.debug("STARTING VAD COLLECTOR")
         is_speech = False
 
         if self.use_silero_vad:
@@ -205,10 +207,13 @@ class UsefulAudio(Node):
                 num_unvoiced > TRIGGER_THRESHOLD * self.ring_buffer.maxlen
                 or time_delta > self.max_audio_duration
             ):
+                self.debug("UNTRIGGERING")
                 self.triggered = False
-                self.compute_audio_state()
                 self.publish_audio()
+                self.compute_audio_state()
                 self.timer = None
+
+        self.debug("FINISHED VAD COLLECTOR")
 
     def callback_raw_audio(self, msg):
         if self.audio_state == "saying":
@@ -230,20 +235,13 @@ class UsefulAudio(Node):
         if data["keyword"] != "frida":
             return
 
-        self.triggered = True
-
-        self.discard_audio()
-        self.compute_audio_state()
-
-        # if not self.service_active:
-        #     self.discardAudio()
-        #     self.computeAudioState()
-        # if self.audio_state == "idle":
-        #     self.triggered = True
-        #     self.discard_audio()
-        #     self.compute_audio_state()
+        if self.audio_state == "idle":
+            self.triggered = True
+            self.discard_audio()
+            self.compute_audio_state()
 
     def compute_audio_state(self):
+        self.debug("COMPUTING AUDIO STATE")
         new_state = (
             "saying" if self.is_saying else "listening" if self.triggered else "idle"
         )
