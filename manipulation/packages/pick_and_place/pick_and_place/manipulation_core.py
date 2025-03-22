@@ -5,12 +5,12 @@ from rclpy.node import Node
 from rclpy.action import ActionClient, ActionServer
 from rclpy.callback_groups import ReentrantCallbackGroup
 from frida_interfaces.action import PickMotion, PickTask
-from frida_interfaces.srv import ClusterObjectFromPoint
+from frida_interfaces.srv import PerceptionService
 from frida_motion_planning.utils.ros_utils import wait_for_future
 from frida_constants.manipulation_constants import (
     PICK_MOTION_ACTION_SERVER,
     PICK_ACTION_SERVER,
-    CLUSTER_OBJECT_SERVICE,
+    PERCEPTION_SERVICE,
 )
 import copy
 from geometry_msgs.msg import PoseStamped
@@ -35,8 +35,8 @@ class ManipulationCore(Node):
             PICK_MOTION_ACTION_SERVER,
         )
 
-        self._cluster_object_client = self.create_client(
-            ClusterObjectFromPoint, CLUSTER_OBJECT_SERVICE
+        self.perception_3d_client = self.create_client(
+            PerceptionService, PERCEPTION_SERVICE
         )
 
         # self._gpd_client = self.create_client(self, GPDCloudRequest, GPD_CLOUD_SERVICE)
@@ -49,10 +49,11 @@ class ManipulationCore(Node):
         self.get_logger().info("Extracting object cloud")
 
         # Call cloud extractor
-        request = ClusterObjectFromPoint.Request()
+        request = PerceptionService.Request()
         request.point = goal_handle.request.object_point
-        self._cluster_object_client.wait_for_service()
-        future = self._cluster_object_client.call_async(request)
+        request.add_collision_objects = True
+        self.perception_3d_client.wait_for_service()
+        future = self.perception_3d_client.call_async(request)
         future = wait_for_future(future)
 
         self.get_logger().info(f"Object Cloud extracted: {future.result()}")
