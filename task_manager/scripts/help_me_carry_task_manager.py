@@ -90,24 +90,32 @@ class HelpMeCarryTM(Node):
 
         if self.current_state == HelpMeCarryTM.TASK_STATES["CONFIRM_FOLLOWING"]:
             Logger.state(self, "Confirming following to guest")
-            self.subtask_manager.hri.say("I will follow you now")
+            self.subtask_manager.hri.say("I will follow you now, say NO once you need me to stop")
             self.current_state = HelpMeCarryTM.TASK_STATES["FOLLOWING_TO_DESTINATION"]
 
         if self.current_state == HelpMeCarryTM.TASK_STATES["FOLLOWING_TO_DESTINATION"]:
             Logger.state(self, "Following to destination")
-            while not self.subtask_manager.hri.hear("STOP"):
-                # MOCK: self.subtask_manager.vision.follow_person() /It must return the person pose and the person position towards the center of the camera
-                # to enable the arm to rotate towards the person
-                # MOCK: self.subtask_manager.manipulation.pan_to(person_pose)
-                # MOCK: self.subtask_manager.navigation.follow_pose_slam(person_pose)
-                pass
+            # MOCK: self.subtask_manager.vision.follow_person() /It must return the person pose and the person position towards the center of the camera
+            # to enable the arm to rotate towards the person
+            # MOCK: self.subtask_manager.manipulation.pan_to(person_pose)
+            # MOCK: self.subtask_manager.navigation.follow_pose_slam(person_pose)
+            while True:
+                confirmation = self.subtask_manager.hri.interpret_keyword(["NO"], int(5))
+                if confirmation:
+                    break
+                else:
+                    Logger.state(self, "WAITING FOR STOP SIGNAL")
 
             self.subtask_manager.hri.say("I heard STOP, stopping now")
-            self.subtask_manager.hri.say("Please hand me the bag and confirm saying BAG PLACED")
-            while not self.subtask_manager.hri.hear("BAG PLACED"):
-                pass
-
-            self.subtask_manager.hri.say("Thank you for handing me the bag")
+            self.subtask_manager.hri.say("Please hand me the bag and confirm saying YES")
+            while self.current_attempts < ATTEMPT_LIMIT:
+                confirmation = self.subtask_manager.hri.interpret_keyword(["yes"], int(10))
+                if confirmation:
+                    self.subtask_manager.hri.say("Thank you for handing me the bag")
+                    break
+                else:
+                    self.subtask_manager.hri.say("Please confirm the handover by saying YES")
+                    self.current_attempts += 1
 
             # TODO: Only if the bag picking will be done: self.current_state = HelpMeCarryTM.TASK_STATES["ASK_TO_POINT_THE_BAG"]
             self.current_state = HelpMeCarryTM.TASK_STATES["RETURN_TO_STARTING_LOCATION"]
