@@ -1,19 +1,25 @@
 #include "rclcpp/rclcpp.hpp"
 
+#include <future>
+#include <pcl/point_cloud.h>
+#include <pcl_conversions/pcl_conversions.h>
 #include <rclcpp/callback_group.hpp>
 #include <rclcpp/client.hpp>
 #include <rclcpp/executors.hpp>
 #include <rclcpp/future_return_code.hpp>
 #include <rclcpp/logger.hpp>
 #include <rclcpp/logging.hpp>
+#include <sensor_msgs/msg/point_cloud2.hpp>
 
 #include <chrono>
 #include <functional>
 #include <memory>
+#include <rclcpp/service.hpp>
 #include <variant>
 
 #include <frida_interfaces/srv/add_pick_primitives.hpp>
 #include <frida_interfaces/srv/cluster_object_from_point.hpp>
+#include <frida_interfaces/srv/perception_service.hpp>
 #include <frida_interfaces/srv/remove_plane.hpp>
 
 #include <frida_constants/manip_3d.hpp>
@@ -23,8 +29,27 @@
 
 using namespace std::chrono_literals;
 
-class TestsNode : public rclcpp::Node {
-private:
+template <typename T>
+std::future_status wait_for_future_with_timeout(
+    typename rclcpp::Client<T>::FutureAndRequestId &future,
+    rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node,
+    std::chrono::milliseconds timeout = 5s) {
+  auto status = future.wait_for(timeout);
+  auto start_time = std::chrono::steady_clock::now();
+  while (status != std::future_status::ready) {
+    rclcpp::spin_some(node);
+    std::this_thread::sleep_for(10ms);
+    status = future.wait_for(10ms);
+    auto current_time = std::chrono::steady_clock::now();
+    if (current_time - start_time > timeout) {
+      return status;
+    }
+  }
+  return status;
+}
+
+class CallServicesNode : public rclcpp::Node {
+public:
   rclcpp::Client<frida_interfaces::srv::AddPickPrimitives>::SharedPtr
       add_pick_primitives_client;
   rclcpp::Client<frida_interfaces::srv::RemovePlane>::SharedPtr
@@ -32,26 +57,7 @@ private:
   rclcpp::Client<frida_interfaces::srv::ClusterObjectFromPoint>::SharedPtr
       cluster_object_from_point_client;
 
-  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr cloud_sub;
-  rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr point_sub;
-
-  bool cloud_received = false;
-  geometry_msgs::msg::PointStamped::SharedPtr last_point;
-  geometry_msgs::msg::PointStamped::SharedPtr point;
-
-  rclcpp::TimerBase::SharedPtr timer;
-
-public:
-  TestsNode() : Node("tests_node") {
-    this->cloud_sub = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-        POINT_CLOUD_TOPIC, rclcpp::SensorDataQoS(),
-        std::bind(&TestsNode::cloud_callback, this, std::placeholders::_1));
-
-    this->point_sub =
-        this->create_subscription<geometry_msgs::msg::PointStamped>(
-            "/clicked_point", rclcpp::SensorDataQoS(),
-            std::bind(&TestsNode::point_callback, this, std::placeholders::_1));
-
+  CallServicesNode() : Node("callservicesnode") {
     this->add_pick_primitives_client =
         this->create_client<frida_interfaces::srv::AddPickPrimitives>(
             ADD_PICK_PRIMITIVES_SERVICE);
@@ -64,19 +70,74 @@ public:
         this->create_client<frida_interfaces::srv::ClusterObjectFromPoint>(
             CLUSTER_OBJECT_SERVICE);
 
+    RCLCPP_INFO(this->get_logger(), "Clients created, waiting for services");
+
+    this->add_pick_primitives_client->wait_for_service(
+        std::chrono::seconds(30));
+    RCLCPP_INFO(this->get_logger(), "Service add_pick_primitives ready");
+    this->remove_plane_client->wait_for_service(std::chrono::seconds(30));
+    RCLCPP_INFO(this->get_logger(), "Service remove_plane ready");
+    this->cluster_object_from_point_client->wait_for_service(
+        std::chrono::seconds(30));
+    RCLCPP_INFO(this->get_logger(), "callservicesnode ready");
+  }
+};
+
+class TestsNode : public rclcpp::Node {
+private:
+  rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr cloud_sub;
+  rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr point_sub;
+  rclcpp::Service<frida_interfaces::srv::PerceptionService>::SharedPtr
+      perception_service;
+
+  bool cloud_received = false;
+  geometry_msgs::msg::PointStamped::SharedPtr last_point;
+  geometry_msgs::msg::PointStamped::SharedPtr point;
+
+  std::shared_ptr<CallServicesNode> call_services_node;
+
+  rclcpp::TimerBase::SharedPtr timer;
+
+public:
+  bool testing = false;
+  TestsNode(std::shared_ptr<CallServicesNode> call_services_node)
+      : Node("tests_node") {
+
+    if (call_services_node == nullptr) {
+      RCLCPP_ERROR(this->get_logger(), "CallServicesNode is null");
+      throw std::runtime_error("CallServicesNode is null");
+    }
+
+    this->cloud_sub = this->create_subscription<sensor_msgs::msg::PointCloud2>(
+        POINT_CLOUD_TOPIC, rclcpp::SensorDataQoS(),
+        std::bind(&TestsNode::cloud_callback, this, std::placeholders::_1));
+
+    this->testing = this->declare_parameter("testing", testing);
+
+    if (testing) {
+      RCLCPP_INFO(this->get_logger(), "Testing mode enabled");
+      this->point_sub =
+          this->create_subscription<geometry_msgs::msg::PointStamped>(
+              "/clicked_point", rclcpp::SensorDataQoS(),
+              std::bind(&TestsNode::point_callback, this,
+                        std::placeholders::_1));
+    }
+
+    this->call_services_node = call_services_node;
+
     RCLCPP_INFO(this->get_logger(), "Clients created");
 
     this->point = std::make_shared<geometry_msgs::msg::PointStamped>();
 
     this->last_point = std::make_shared<geometry_msgs::msg::PointStamped>();
 
-    // this->timer = this->create_wall_timer(
-    //     500ms, std::bind(&TestsNode::timer_callback, this));
+    this->perception_service =
+        this->create_service<frida_interfaces::srv::PerceptionService>(
+            PERCEPTION_SERVICE,
+            std::bind(&TestsNode::service_callback, this, std::placeholders::_1,
+                      std::placeholders::_2, std::placeholders::_3));
 
-    RCLCPP_INFO(this->get_logger(), "Timer created");
-
-    // wait for first point cloud
-    // while(!this->cloud_sub->return_message().get()) {
+    RCLCPP_INFO(this->get_logger(), "Main Service created");
   }
 
   void cloud_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
@@ -89,88 +150,24 @@ public:
     RCLCPP_INFO(this->get_logger(), "Received point");
   }
 
-  void run() {
-    // RCLCPP_INFO(this->get_logger(), "Timer callback");
-    if (point == last_point) {
-      RCLCPP_INFO(this->get_logger(), "Same point, skiping processing");
-      return;
-    }
-
-    point = last_point;
-
-    if (!cloud_received) {
-      // RCLCPP_INFO(this->get_logger(), "No point cloud received yet");
-      return;
-    }
+  STATUS_RESPONSE
+  service_from_point(geometry_msgs::msg::PointStamped point,
+                     sensor_msgs::msg::PointCloud2::SharedPtr cloud) {
 
     auto request = std::make_shared<
         frida_interfaces::srv::ClusterObjectFromPoint::Request>();
-    request->point = *point;
+    request->point = point;
 
     RCLCPP_INFO(this->get_logger(), "Sending request");
 
-    // auto res = this->cluster_object_from_point_client->
+    auto response = this->call_services_node->cluster_object_from_point_client
+                        ->async_send_request(request);
 
-    auto response =
-        this->cluster_object_from_point_client->async_send_request(request);
+    RCLCPP_INFO(this->get_logger(), "Waiting for response");
 
-    auto start_time = this->now();
-
-    while (rclcpp::ok()) {
-      auto status = response.wait_for(std::chrono::milliseconds(100));
-      // rclcpp::executors::spin_node_until_future_complete(this, response);
-
-      if (status == std::future_status::ready) {
-        break;
-      }
-
-      RCLCPP_INFO(this->get_logger(),
-                  "Waiting for response, current time waited: %f",
-                  (this->now() - start_time).seconds());
-
-      // Check for timeout (e.g., 5 seconds)
-      if ((this->now() - start_time).seconds() > 60.0) {
-        RCLCPP_ERROR(this->get_logger(), "Service call timed out");
-        return;
-      }
-    }
-
-    // auto response =
-    //     this->cluster_object_from_point_client->async_send_request(request);
-
-    // RCLCPP_INFO(this->get_logger(), "Waiting for response");
-
-    // // if
-    // (rclcpp::spin_until_future_complete(this->get_node_base_interface(),
-    // //                                        response) !=
-    // //     rclcpp::FutureReturnCode::SUCCESS) {
-    // //   RCLCPP_ERROR(this->get_logger(), "Error waiting for response");
-    // //   return;
-    // // }
-
-    // auto start_time = this->now();
-    // while (rclcpp::ok()) {
-    //   auto status = response.future.wait_for(std::chrono::milliseconds(100));
-    //   if (status == std::future_status::ready) {
-    //     break;
-    //   }
-    //   RCLCPP_INFO(this->get_logger(),
-    //               "Waiting for response, current time waited: %f",
-    //               (this->now() - start_time).seconds());
-    //   RCLCPP_INFO(this->get_logger(), "Waiting for response status %d",
-    //   status);
-    //   // if (response.get()->status == OK) {
-    //   //   RCLCPP_INFO(this->get_logger(), "Clustered object AAAAAA");
-    //   //   break;
-    //   // }
-    //   // RCLCPP_INFO(this->get_logger(), "Waiting for response status %d
-
-    //   // Check for timeout (e.g., 5 seconds)
-    //   if ((this->now() - start_time).seconds() > 60.0) {
-    //     RCLCPP_ERROR(this->get_logger(), "Service call timed out");
-    //     return;
-    //   }
-    // }
+    auto status = wait_for_future_with_timeout<
+        frida_interfaces::srv::ClusterObjectFromPoint>(
+        response, this->call_services_node->get_node_base_interface(), 5s);
 
     RCLCPP_INFO(this->get_logger(), "Response received");
 
@@ -183,41 +180,32 @@ public:
     } else {
       RCLCPP_ERROR(this->get_logger(), "Error clustering object with code %d",
                    result->status);
-      return;
+      return result->status;
     }
+
+    *cloud = result->cluster;
 
     auto req2table =
         std::make_shared<frida_interfaces::srv::RemovePlane::Request>();
 
     req2table->extract_or_remove = false;
-    req2table->close_point.header.frame_id = point->header.frame_id;
-    req2table->close_point.header.stamp = point->header.stamp;
-    req2table->close_point.point.x = point->point.x;
-    req2table->close_point.point.y = point->point.y;
-    req2table->close_point.point.z = point->point.z;
+    req2table->close_point.header.frame_id = point.header.frame_id;
+    req2table->close_point.header.stamp = point.header.stamp;
+    req2table->close_point.point.x = point.point.x;
+    req2table->close_point.point.y = point.point.y;
+    req2table->close_point.point.z = point.point.z;
 
     RCLCPP_INFO(this->get_logger(), "Sending request to remove plane");
 
-    auto res2table = this->remove_plane_client->async_send_request(req2table);
+    auto res2table =
+        this->call_services_node->remove_plane_client->async_send_request(
+            req2table);
 
     RCLCPP_INFO(this->get_logger(), "Waiting for response");
 
-    start_time = this->now();
-
-    while (rclcpp::ok()) {
-      auto status = res2table.wait_for(std::chrono::milliseconds(100));
-      if (status == std::future_status::ready) {
-        break;
-      }
-      RCLCPP_INFO(this->get_logger(), "Waiting for response status %d, time %f",
-                  status, (this->now() - start_time).seconds());
-
-      // Check for timeout (e.g., 5 seconds)
-      if ((this->now() - start_time).seconds() > 60.0) {
-        RCLCPP_ERROR(this->get_logger(), "Service call timed out");
-        return;
-      }
-    }
+    auto status2 =
+        wait_for_future_with_timeout<frida_interfaces::srv::RemovePlane>(
+            res2table, this->call_services_node->get_node_base_interface(), 5s);
 
     RCLCPP_INFO(this->get_logger(), "Response received");
 
@@ -244,27 +232,14 @@ public:
 
     RCLCPP_INFO(this->get_logger(), "Sending request to add plane");
 
-    auto res3 = this->add_pick_primitives_client->async_send_request(req3);
+    auto res3 = this->call_services_node->add_pick_primitives_client
+                    ->async_send_request(req3);
 
     RCLCPP_INFO(this->get_logger(), "Waiting for response");
 
-    start_time = this->now();
-
-    while (rclcpp::ok()) {
-      auto status = res3.wait_for(std::chrono::milliseconds(100));
-      if (status == std::future_status::ready) {
-        break;
-      }
-
-      RCLCPP_INFO(this->get_logger(), "Waiting for response status %d, time %f",
-                  status, (this->now() - start_time).seconds());
-
-      // Check for timeout (e.g., 5 seconds)
-      if ((this->now() - start_time).seconds() > 60.0) {
-        RCLCPP_ERROR(this->get_logger(), "Service call timed out");
-        return;
-      }
-    }
+    auto status3 =
+        wait_for_future_with_timeout<frida_interfaces::srv::AddPickPrimitives>(
+            res3, this->call_services_node->get_node_base_interface(), 5s);
 
     RCLCPP_INFO(this->get_logger(), "Response received");
 
@@ -279,31 +254,55 @@ public:
 
     RCLCPP_INFO(this->get_logger(), "Sending request to add object");
 
-    auto res4 = this->add_pick_primitives_client->async_send_request(req4);
+    auto res4 = this->call_services_node->add_pick_primitives_client
+                    ->async_send_request(req4);
 
     RCLCPP_INFO(this->get_logger(), "Waiting for response");
 
-    start_time = this->now();
-
-    while (rclcpp::ok()) {
-      auto status = res4.wait_for(std::chrono::milliseconds(100));
-      if (status == std::future_status::ready) {
-        break;
-      }
-
-      RCLCPP_INFO(this->get_logger(), "Waiting for response status %d, time %f",
-                  status, (this->now() - start_time).seconds());
-
-      // Check for timeout (e.g., 5 seconds)
-      if ((this->now() - start_time).seconds() > 60.0) {
-        RCLCPP_ERROR(this->get_logger(), "Service call timed out");
-        return;
-      }
-    }
+    auto status4 =
+        wait_for_future_with_timeout<frida_interfaces::srv::AddPickPrimitives>(
+            res4, this->call_services_node->get_node_base_interface(), 5s);
 
     RCLCPP_INFO(this->get_logger(), "Response: %d", res4.get()->status);
 
-    return;
+    return OK;
+  }
+
+  void run() {
+    // RCLCPP_INFO(this->get_logger(), "Timer callback");
+    if (this->point == this->last_point) {
+      RCLCPP_INFO(this->get_logger(), "Same point, skiping processing");
+      return;
+    }
+
+    this->point = this->last_point;
+
+    if (!cloud_received) {
+      return;
+    }
+
+    std::shared_ptr<sensor_msgs::msg::PointCloud2> cloud =
+        std::make_shared<sensor_msgs::msg::PointCloud2>();
+
+    this->service_from_point(*this->point, cloud);
+  }
+
+  void service_callback(
+      const std::shared_ptr<rmw_request_id_t> request_header,
+      const std::shared_ptr<frida_interfaces::srv::PerceptionService::Request>
+          request,
+      std::shared_ptr<frida_interfaces::srv::PerceptionService::Response>
+          response) {
+    RCLCPP_INFO(this->get_logger(), "Service callback");
+    // response->cluster_result = OK;
+
+    std::shared_ptr<sensor_msgs::msg::PointCloud2> cloud =
+        std::make_shared<sensor_msgs::msg::PointCloud2>();
+
+    auto res = this->service_from_point(request->point, cloud);
+
+    response->cluster_result = *cloud;
+    // response->status = res;
   }
 
   void loop() {
@@ -313,126 +312,6 @@ public:
       std::this_thread::sleep_for(std::chrono::seconds(1));
     }
   }
-
-  // void point_callback(const geometry_msgs::msg::PointStamped::SharedPtr msg)
-  // {
-  //   RCLCPP_INFO(this->get_logger(), "Received point");
-  //   auto request = std::make_shared<
-  //       frida_interfaces::srv::ClusterObjectFromPoint::Request>();
-  //   request->point = *msg;
-
-  //   RCLCPP_INFO(this->get_logger(), "Sending request");
-
-  //   auto response =
-  //       this->cluster_object_from_point_client->async_send_request(request);
-
-  //   RCLCPP_INFO(this->get_logger(), "Waiting for response");
-  //   try {
-
-  //     if (rclcpp::spin_until_future_complete(this->get_node_base_interface(),
-  //                                            response) !=
-  //         rclcpp::FutureReturnCode::SUCCESS) {
-  //       RCLCPP_ERROR(this->get_logger(), "Error waitin");
-  //       return;
-  //     }
-
-  //     RCLCPP_INFO(this->get_logger(), "Response received");
-
-  //     auto result = response.get();
-
-  //     RCLCPP_INFO(this->get_logger(), "Response: %d", result->status);
-
-  //     if (result->status == OK) {
-  //       RCLCPP_INFO(this->get_logger(), "Clustered object");
-  //     } else {
-  //       RCLCPP_ERROR(this->get_logger(), "Error clustering object with code
-  //       %d",
-  //                    result->status);
-  //       return;
-  //     }
-
-  //     auto req2table =
-  //         std::make_shared<frida_interfaces::srv::RemovePlane::Request>();
-
-  //     req2table->extract_or_remove = false;
-
-  //     RCLCPP_INFO(this->get_logger(), "Sending request to remove plane");
-
-  //     auto res2table =
-  //     this->remove_plane_client->async_send_request(req2table);
-
-  //     RCLCPP_INFO(this->get_logger(), "Waiting for response");
-
-  //     if (rclcpp::spin_until_future_complete(this->get_node_base_interface(),
-  //                                            res2table) !=
-  //         rclcpp::FutureReturnCode::SUCCESS) {
-  //       RCLCPP_ERROR(this->get_logger(), "Error removing plane");
-  //       return;
-  //     }
-
-  //     RCLCPP_INFO(this->get_logger(), "Response received");
-
-  //     auto result2table = res2table.get();
-
-  //     RCLCPP_INFO(this->get_logger(), "Response: %d",
-  //                 result2table->health_response);
-
-  //     if (result2table->health_response == OK) {
-  //       RCLCPP_INFO(this->get_logger(), "Removed plane");
-  //     } else {
-  //       RCLCPP_ERROR(this->get_logger(), "Error removing plane");
-  //       //   return;
-  //     }
-
-  //     auto req3 =
-  //         std::make_shared<frida_interfaces::srv::AddPickPrimitives::Request>();
-
-  //     req3->is_plane = true;
-  //     req3->is_object = false;
-  //     req3->cloud = result2table->cloud;
-
-  //     RCLCPP_INFO(this->get_logger(), "Sending request to add plane");
-
-  //     auto res3 = this->add_pick_primitives_client->async_send_request(req3);
-
-  //     RCLCPP_INFO(this->get_logger(), "Waiting for response");
-
-  //     if (rclcpp::spin_until_future_complete(this->get_node_base_interface(),
-  //                                            res3) !=
-  //         rclcpp::FutureReturnCode::SUCCESS) {
-  //       RCLCPP_ERROR(this->get_logger(), "Error adding plane");
-  //       return;
-  //     }
-
-  //     RCLCPP_INFO(this->get_logger(), "Response received");
-
-  //     auto req4 =
-  //         std::make_shared<frida_interfaces::srv::AddPickPrimitives::Request>();
-
-  //     req4->is_plane = false;
-  //     req4->is_object = true;
-
-  //     req4->cloud = result->cluster;
-
-  //     RCLCPP_INFO(this->get_logger(), "Sending request to add object");
-
-  //     auto res4 = this->add_pick_primitives_client->async_send_request(req4);
-
-  //     RCLCPP_INFO(this->get_logger(), "Waiting for response");
-
-  //     if (rclcpp::spin_until_future_complete(this->get_node_base_interface(),
-  //                                            res4) !=
-  //         rclcpp::FutureReturnCode::SUCCESS) {
-  //       RCLCPP_ERROR(this->get_logger(), "Error adding object");
-  //       return;
-  //     }
-
-  //     RCLCPP_INFO(this->get_logger(), "Response: %d", res4.get()->status);
-  //   } catch (const std::exception &e) {
-  //     RCLCPP_ERROR(this->get_logger(), "Error %s ", e.what());
-  //     return;
-  //   }
-  // }
 };
 
 int main(int argc, char *argv[]) {
@@ -443,16 +322,21 @@ int main(int argc, char *argv[]) {
   rclcpp::executors::MultiThreadedExecutor::SharedPtr multithreaded_executor =
       std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
 
-  std::shared_ptr<TestsNode> node = std::make_shared<TestsNode>();
+  std::shared_ptr<CallServicesNode> call_services_node =
+      std::make_shared<CallServicesNode>();
+
+  std::shared_ptr<TestsNode> node =
+      std::make_shared<TestsNode>(call_services_node);
 
   multithreaded_executor->add_node(node);
-
-  std::thread thread(&TestsNode::loop, node);
-
-  multithreaded_executor->spin();
-
-  if (thread.joinable()) {
-    thread.join();
+  if (node->testing) {
+    std::thread thread(&TestsNode::loop, node);
+    multithreaded_executor->spin();
+    if (thread.joinable()) {
+      thread.join();
+    }
+    rclcpp::shutdown();
+    return 0;
   }
 
   rclcpp::shutdown();

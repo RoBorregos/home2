@@ -9,6 +9,7 @@ commands.
 import rclpy
 from rclpy.node import Node
 from utils.logger import Logger
+
 from xarm_msgs.srv import SetInt16, SetInt16ById, MoveVelocity
 from frida_interfaces.action import MoveJoints
 from frida_interfaces.srv import GetJoints
@@ -77,13 +78,13 @@ class ManipulationTasks:
         self.node = task_manager
         self.mock_data = mock_data
         self.task = task
-        simulation = 1
+        # simulation = 1
         self.node.declare_parameter("cancel_after_secs", 5.0)
 
-        self.motion_enable_client = self.node.create_client(SetInt16ById, XARM_ENABLE_SERVICE)
-        self.mode_client = self.node.create_client(SetInt16, XARM_SETMODE_SERVICE)
-        self.state_client = self.node.create_client(SetInt16, XARM_SETSTATE_SERVICE)
-        self.move_client = self.node.create_client(MoveVelocity, XARM_MOVEVELOCITY_SERVICE)
+        # self.motion_enable_client = self.node.create_client(SetInt16ById, XARM_ENABLE_SERVICE)
+        # self.mode_client = self.node.create_client(SetInt16, XARM_SETMODE_SERVICE)
+        # self.state_client = self.node.create_client(SetInt16, XARM_SETSTATE_SERVICE)
+        # self.move_client = self.node.create_client(MoveVelocity, XARM_MOVEVELOCITY_SERVICE)
 
         self._move_joints_action_client = ActionClient(
             self.node, MoveJoints, "/manipulation/move_joints_action_server"
@@ -91,30 +92,30 @@ class ManipulationTasks:
 
         self._get_joints_client = self.node.create_client(GetJoints, "/manipulation/get_joints")
 
-        if not self.mock_data and not simulation:
-            self.setup_services()
+    #     if not self.mock_data and not simulation:
+    #         self.setup_services()
 
-    def setup_services(self):
-        """Initialize services and actions"""
-        if self.task not in ManipulationTasks.SUBTASKS:
-            Logger.error(self.node, "Task not available")
-            return
+    # def setup_services(self):
+    #     """Initialize services and actions"""
+    #     if self.task not in ManipulationTasks.SUBTASKS:
+    #         Logger.error(self.node, "Task not available")
+    #         return
 
-        if ManipulationTasks.SERVICES["activate_arm"] in ManipulationTasks.SUBTASKS[self.task]:
-            if not self.motion_enable_client.wait_for_service(timeout_sec=TIMEOUT):
-                Logger.warn(self.node, "Motion enable client not initialized")
-            if not self.mode_client.wait_for_service(timeout_sec=TIMEOUT):
-                Logger.warn(self.node, "Motion enable client not initialized")
-            if not self.state_client.wait_for_service(timeout_sec=TIMEOUT):
-                Logger.warn(self.node, "Motion enable client not initialized")
+    #     if ManipulationTasks.SERVICES["activate_arm"] in ManipulationTasks.SUBTASKS[self.task]:
+    #         if not self.motion_enable_client.wait_for_service(timeout_sec=TIMEOUT):
+    #             Logger.warn(self.node, "Motion enable client not initialized")
+    #         if not self.mode_client.wait_for_service(timeout_sec=TIMEOUT):
+    #             Logger.warn(self.node, "Motion enable client not initialized")
+    #         if not self.state_client.wait_for_service(timeout_sec=TIMEOUT):
+    #             Logger.warn(self.node, "Motion enable client not initialized")
 
-        if ManipulationTasks.SERVICES["deactivate_arm"] in ManipulationTasks.SUBTASKS[self.task]:
-            if not self.motion_enable_client.wait_for_service(timeout_sec=TIMEOUT):
-                Logger.warn(self.node, "Motion enable client not initialized")
+    #     if ManipulationTasks.SERVICES["deactivate_arm"] in ManipulationTasks.SUBTASKS[self.task]:
+    #         if not self.motion_enable_client.wait_for_service(timeout_sec=TIMEOUT):
+    #             Logger.warn(self.node, "Motion enable client not initialized")
 
-        if ManipulationTasks.SERVICES["move_arm_velocity"] in ManipulationTasks.SUBTASKS[self.task]:
-            if not self.move_client.wait_for_service(timeout_sec=TIMEOUT):
-                Logger.warn(self.node, "Move client not initialized")
+    #     if ManipulationTasks.SERVICES["move_arm_velocity"] in ManipulationTasks.SUBTASKS[self.task]:
+    #         if not self.move_client.wait_for_service(timeout_sec=TIMEOUT):
+    #             Logger.warn(self.node, "Move client not initialized")
 
     def activate_arm(self):
         """Activate arm"""

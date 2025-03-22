@@ -76,8 +76,9 @@ class DataExtractor(Node):
         """Service to extract information from text."""
 
         self.get_logger().info("Extracting information from text")
+
         messages, response_format = get_extract_data_args(
-            request.full_text, request.data
+            request.full_text, request.data, request.context
         )
 
         response_content = (

@@ -50,9 +50,14 @@ echo "The path is $LIB_DIR"
 cd $SCRIPT_DIR
 
 # ROSDEP INSTALLING DEPENDENCIES
+sudo rosdep init
 rosdep update
-rosdep install --from-paths . --ignore-src --skip-keys gpd
-
+if [[ -f /etc/nv_tegra_release ]]; then
+    echo "Using rosdep jetson"
+    rosdep install --from-paths . --ignore-src --skip-keys "gpd gazebo_ros gazebo_plugins gazebo_ros2_control" -y
+else
+    rosdep install --from-paths . --ignore-src --skip-keys gpd -y 
+fi
 #Checking GPD 
 GPD_DIR=$SCRIPT_DIR/manipulation/packages/gpd
 
