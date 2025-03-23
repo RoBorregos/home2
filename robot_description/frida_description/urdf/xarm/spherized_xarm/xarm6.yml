@@ -16,13 +16,31 @@ robot_cfg:
         extra_links: null
 
 
-        collision_link_names: null # List[str]
-        collision_spheres: null #
+        collision_link_names: 
+        [
+            "link_base",
+            "link1",
+            "link2",
+            "link3",
+            "link4",
+            "link5",
+            "link6",
+            "link_eef"
+        ]
+        collision_spheres: "xarm6_collision_spheres.yml"
         collision_sphere_buffer: 0.005
         extra_collision_spheres: {}
-        self_collision_ignore: null # Dict[str, List[str]]
+        self_collision_ignore: {
+            "link_base": ["link1", "link2", "link3"],
+            "link1": ["link2", "link3"],
+            "link2": ["link3"],
+            "link3": ["link4", "link5", "link6"],
+            "link4": ["link5", "link6"],
+            "link5": ["link6"],
+            "link6": []
+        } # Dict[str, List[str]]
         self_collision_buffer: null # Dict[str, float]
-
+        
         use_global_cumul: True
         mesh_link_names: null # List[str]
 
