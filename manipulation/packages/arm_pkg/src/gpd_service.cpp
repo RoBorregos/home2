@@ -28,13 +28,13 @@ public:
 
     // Create service
     service_ = this->create_service<frida_interfaces::srv::GraspDetection>(
-      "detect_grasps", 
+      "/manipulation/detect_grasps", 
       std::bind(&GraspDetectionService::handle_service, this, 
                 std::placeholders::_1, std::placeholders::_2));
 
     // Create publishers
     pcd_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/grasp_pcl", 10);
-    marker_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>("/grasp_markers", 10);
+    marker_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>("/manipulation/grasp_markers", 10);
 
     RCLCPP_INFO(this->get_logger(), "Grasp detection service ready");
   }

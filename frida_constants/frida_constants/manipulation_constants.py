@@ -29,6 +29,7 @@ PICK_MOTION_ACTION_SERVER_NODE = "manipulation/pick_motion_server"
 PICK_MOTION_ACTION_SERVER = "/manipulation/pick_motion_action_server"
 CLUSTER_OBJECT_SERVICE = "/manipulation/cluster_object"
 PERCEPTION_SERVICE = "/manipulation/perception_service"
+GRASP_DETECTION_SERVICE = "/manipulation/detect_grasps"
 
 PICK_ACTION_SERVER = "/manipulation/pick_action_server"
 

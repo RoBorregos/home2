@@ -4,7 +4,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionServer
 from rclpy.callback_groups import ReentrantCallbackGroup
-from geometry_msgs.msg import TwistStamped
+from geometry_msgs.msg import TwistStamped, PoseStamped
 from frida_interfaces.action import MoveToPose, MoveJoints
 from frida_constants.manipulation_constants import (
     GET_COLLISION_OBJECTS_SERVICE,
@@ -54,6 +54,10 @@ class MotionPlanningServer(Node):
             "/manipulation/move_to_pose_action_server",
             self.move_to_pose_execute_callback,
             callback_group=self.callback_group,
+        )
+
+        self._debug_pose_publisher = self.create_publisher(
+            PoseStamped, "/manipulation/debug_pose_goal", 10
         )
 
         self._move_joints_server = ActionServer(
@@ -129,6 +133,7 @@ class MotionPlanningServer(Node):
         self.get_logger().info("Executing pose goal...")
 
         # Initialize result
+        self._debug_pose_publisher.publish(goal_handle.request.pose)
         feedback = MoveToPose.Feedback()
         result = MoveToPose.Result()
         self.set_planning_settings(goal_handle)
