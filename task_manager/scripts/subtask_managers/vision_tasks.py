@@ -57,9 +57,7 @@ class VisionTasks:
             PersonDescription, DESCRIPTION_TOPIC
         )
         self.beverage_location_client = self.node.create_client(BeverageLocation, BEVERAGE_TOPIC)
-        self.detect_person_action_client = ActionClient(
-            self.node, DetectPerson, CHECK_PERSON_TOPIC
-        )
+        self.detect_person_action_client = ActionClient(self.node, DetectPerson, CHECK_PERSON_TOPIC)
 
         self.services = {
             Task.RECEPTIONIST: {

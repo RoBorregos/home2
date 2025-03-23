@@ -33,7 +33,6 @@ from frida_constants.vision_constants import (
     PERSON_LIST_TOPIC,
     PERSON_NAME_TOPIC,
     VISION_FRAME_TOPIC,
-    FOLLOW_BY_TOPIC,
 )
 
 DEFAULT_NAME = "ale"

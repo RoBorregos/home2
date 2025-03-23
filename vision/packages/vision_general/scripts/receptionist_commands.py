@@ -23,7 +23,10 @@ from rclpy.task import Future
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.srv import FindSeat
 from frida_constants.vision_constants import (
-    CAMERA_TOPIC, CHECK_PERSON_TOPIC, FIND_SEAT_TOPIC, IMAGE_TOPIC,
+    CAMERA_TOPIC,
+    CHECK_PERSON_TOPIC,
+    FIND_SEAT_TOPIC,
+    IMAGE_TOPIC,
 )
 
 from ament_index_python.packages import get_package_share_directory

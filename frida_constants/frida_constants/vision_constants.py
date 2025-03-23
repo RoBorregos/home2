@@ -4,7 +4,7 @@ CAMERA_TOPIC = "/zed/zed_node/rgb/image_rect_color"
 SET_TARGET_TOPIC = "/vision/set_tracking_target"
 RESULTS_TOPIC = "/vision/tracking_results"
 
-# Moondream 
+# Moondream
 PERSON_DESCRIPTION_TOPIC = "/vision/moondream/person_description"
 BEVERAGE_TOPIC = "/vision/moondream/beverage"
 
