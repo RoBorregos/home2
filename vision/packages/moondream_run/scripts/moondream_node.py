@@ -7,6 +7,7 @@ Node for Moondream functions
 import rclpy
 import pathlib
 from ultralytics import YOLO
+import cv2
 from moondream_run.moondream_lib import MoonDreamModel, Position
 from rclpy.node import Node
 from cv_bridge import CvBridge
@@ -126,6 +127,46 @@ class MoondreamNode(Node):
             encoded_image, query, stream=False
         )
         return response
+
+    def detect_and_crop_person(self):
+        """Check if there is a person in the frame, crop the image to the person with the largest area, and return the cropped frame."""
+        if self.image is None:
+            self.get_logger().warn("No image received yet.")
+            return None
+
+        frame = self.image
+        self.output_image = frame.copy()
+
+        results = self.yolo_model(frame, verbose=False, classes=0)
+        largest_area = 0
+        largest_box = None
+
+        for out in results:
+            for box in out.boxes:
+                x, y, w, h = [round(i) for i in box.xywh[0].tolist()]
+                confidence = box.conf.item()
+                area = w * h
+
+                if confidence > CONF_THRESHOLD and area > largest_area:
+                    largest_area = area
+                    largest_box = (x, y, w, h)
+
+        if largest_box:
+            x, y, w, h = largest_box
+            self.person_found = True
+            cv2.rectangle(
+                self.output_image,
+                (int(x - w / 2), int(y - h / 2)),
+                (int(x + w / 2), int(y + h / 2)),
+                (0, 255, 0),
+                2,
+            )
+            cropped_frame = frame[
+                int(y - h / 2) : int(y + h / 2), int(x - w / 2) : int(x + w / 2)
+            ]
+            return cropped_frame
+
+        return None
 
 
 def main(args=None):

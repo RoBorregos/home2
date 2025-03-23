@@ -22,6 +22,8 @@ class MoonDreamModel:
         )
 
     def encode_image(self, image):
+        if image is None or image.size == 0:
+            raise ValueError("Empty image provided")
         img = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
         return self.model.encode_image(img)
 
