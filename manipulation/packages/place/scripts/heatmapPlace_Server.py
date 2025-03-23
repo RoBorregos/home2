@@ -8,6 +8,7 @@ import os
 from sensor_msgs_py import point_cloud2
 from geometry_msgs.msg import Point
 from frida_interfaces.srv import HeatmapPlace
+from scipy.signal import convolve2d
 
 
 class HeatmapServer(Node):
@@ -81,7 +82,6 @@ class HeatmapServer(Node):
         cool_kernel *= cool_multiplier
 
         # Apply convolution
-        from scipy.signal import convolve2d
 
         heat_map = convolve2d(binary_map.astype(float), heat_kernel, mode="same")
         cool_map = convolve2d((~binary_map).astype(float), cool_kernel, mode="same")
