@@ -26,11 +26,13 @@ from vision_general.utils.reid_model import (
 
 from std_srvs.srv import SetBool
 from vision_general.pose_detection import PoseDetection
+from frida_constants.vision_constants import (
+    CAMERA_TOPIC, SET_TARGET_TOPIC, RESULTS_TOPIC
+)
 
-
-CAMERA_TOPIC = "/zed/zed_node/rgb/image_rect_color"
-SET_TARGET_TOPIC = "/vision/set_tracking_target"
-RESULTS_TOPIC = "/vision/tracking_results"
+# CAMERA_TOPIC = "/zed/zed_node/rgb/image_rect_color"
+# SET_TARGET_TOPIC = "/vision/set_tracking_target"
+# RESULTS_TOPIC = "/vision/tracking_results"
 
 CONF_THRESHOLD = 0.6
 

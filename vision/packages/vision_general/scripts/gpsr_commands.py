@@ -16,19 +16,18 @@ from sensor_msgs.msg import Image
 from frida_interfaces.srv import CountBy
 
 from ament_index_python.packages import get_package_share_directory
+from frida_constants.vision_constants import (
+    CAMERA_TOPIC,
+    COUNT_BY_COLOR_TOPIC,
+    COUNT_BY_CLOTHES_TOPIC,
+    COUNT_BY_PERSON_TOPIC,
+    COUNT_BY_OBJECTS_TOPIC,
+    COUNT_BY_GESTURES_TOPIC,
+    COUNT_BY_POSE_TOPIC,
+    IMAGE_TOPIC,
+)
 
 package_share_dir = get_package_share_directory("vision_general")
-
-# Topics
-CAMERA_TOPIC = "/zed/zed_node/rgb/image_rect_color"
-
-COUNT_BY_COLOR_TOPIC = "/gpsr/count_by_color"
-COUNT_BY_CLOTHES_TOPIC = "/gpsr/count_by_clothes"
-COUNT_BY_PERSON_TOPIC = "/gpsr/count_by_person"
-COUNT_BY_OBJECTS_TOPIC = "/gpsr/count_by_objects"
-COUNT_BY_GESTURES_TOPIC = "/gpsr/count_by_gestures"
-COUNT_BY_POSE_TOPIC = "/gpsr/count_by_pose"
-IMAGE_TOPIC = "/gpsr/img_detection"
 
 YOLO_LOCATION = str(pathlib.Path(__file__).parent) + "/Utils/yolov8n.pt"
 # MOONDREAM_LOCATION = str(

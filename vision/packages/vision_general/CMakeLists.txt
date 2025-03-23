@@ -10,6 +10,7 @@ find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(frida_interfaces REQUIRED)
+find_package(frida_constants REQUIRED)
 
 #Install directories
 install(DIRECTORY launch Utils

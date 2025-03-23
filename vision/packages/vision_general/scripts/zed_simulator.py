@@ -6,13 +6,12 @@ import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
+from frida_constants.vision_constants import CAMERA_TOPIC
 
 """
     Node that simulates the Zed camera by capturing 
     frames from the webcam and publishing them.
 """
-
-PUBLISHER_TOPIC = "/zed/zed_node/rgb/image_rect_color"
 
 
 class ZedSimulator(Node):
@@ -21,7 +20,7 @@ class ZedSimulator(Node):
         super().__init__("zed_simulator")
         self.bridge = CvBridge()
 
-        self.publisher_ = self.create_publisher(Image, PUBLISHER_TOPIC, 10)
+        self.publisher_ = self.create_publisher(Image, CAMERA_TOPIC, 10)
 
         self.get_logger().info("ZedSimulator has started.")
         self.cap = cv2.VideoCapture(0)

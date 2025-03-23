@@ -25,15 +25,16 @@ from ament_index_python.packages import get_package_share_directory
 
 from frida_interfaces.srv import SaveName
 from frida_interfaces.msg import Person, PersonList
-
-
-CAMERA_TOPIC = "/zed/zed_node/rgb/image_rect_color"
-NEW_NAME_TOPIC = "/vision/new_name"
-FOLLOW_TOPIC = "/vision/follow_face"
-PERSON_LIST_TOPIC = "/vision/person_list"
-PERSON_NAME_TOPIC = "/vision/person_detected_name"
-VISION_FRAME_TOPIC = "/vision/person_frame"
-FOLLOW_BY_TOPIC = "/vision/follow_by_name"
+from frida_constants.vision_constants import (
+    CAMERA_TOPIC,
+    SAVE_NAME_TOPIC,
+    FOLLOW_BY_TOPIC,
+    FOLLOW_TOPIC,
+    PERSON_LIST_TOPIC,
+    PERSON_NAME_TOPIC,
+    VISION_FRAME_TOPIC,
+    FOLLOW_BY_TOPIC,
+)
 
 DEFAULT_NAME = "ale"
 TRACK_THRESHOLD = 50
@@ -55,7 +56,7 @@ class FaceRecognition(Node):
             Image, CAMERA_TOPIC, self.image_callback, 10
         )
         self.new_name_service = self.create_service(
-            SaveName, NEW_NAME_TOPIC, self.new_name_callback
+            SaveName, SAVE_NAME_TOPIC, self.new_name_callback
         )
         self.follow_by_service = self.create_service(
             SaveName, FOLLOW_BY_TOPIC, self.follow_by_name_callback
