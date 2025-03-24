@@ -1,6 +1,6 @@
 object_detector_node:
   ros__parameters:
-    RGB_IMAGE_TOPIC : /raw_image
+    RGB_IMAGE_TOPIC : /vision/local_rbg_image
     DEPTH_IMAGE_TOPIC :  /zed/zed_node/depth/depth_registered
     CAMERA_INFO_TOPIC :  /zed/zed_node/depth/camera_info
     DETECTIONS_TOPIC : /vision/detections
@@ -9,7 +9,7 @@ object_detector_node:
     DETECTIONS_3D_TOPIC : /vision/detections_3d
     DETECTIONS_ACTIVE_TOPIC : /detections_active
     DEBUG_IMAGE_TOPIC : /vision/debug_image
-    CAMERA_FRAME :  zed_left_camera_optical_frame
+    CAMERA_FRAME :  camera_frame
     TARGET_FRAME :  base_link
     YOLO_MODEL_PATH :  yolov5s.pt # FILE MOST BE IN MODEL FOLDER OF THE PACKAGE
     USE_ACTIVE_FLAG :  False

@@ -20,20 +20,32 @@ from typing import List
 import cv2 as cv
 from YoloV5ObjectDetector import YoloV5ObjectDetector
 from ObjectDetector import Detection, ObjectDectectorParams
+from frida_constants.vision_constants import (
+    CAMERA_TOPIC,
+    DEPTH_IMAGE_TOPIC,
+    CAMERA_INFO_TOPIC,
+    DETECTIONS_TOPIC,
+    DETECTIONS_IMAGE_TOPIC,
+    DETECTIONS_POSES_TOPIC,
+    DETECTIONS_3D_TOPIC,
+    DETECTIONS_ACTIVE_TOPIC,
+    DEBUG_IMAGE_TOPIC,
+    CAMERA_FRAME
+)
 
 MODELS_PATH = str(pathlib.Path(__file__).parent) + "/../models/"
 
 ARGS = {
-    "RGB_IMAGE_TOPIC": "/zed/zed_node/rgb/image_rect_color",
-    "DEPTH_IMAGE_TOPIC": "/zed/zed_node/depth/depth_registered",
-    "CAMERA_INFO_TOPIC": "/zed/zed_node/depth/camera_info",
-    "DETECTIONS_TOPIC": "/vision/detections",
-    "DETECTIONS_IMAGE_TOPIC": "/vision/detections_image",
-    "DETECTIONS_POSES_TOPIC": "/vision/detection_poses",
-    "DETECTIONS_3D_TOPIC": "/vision/detections_3d",
-    "DETECTIONS_ACTIVE_TOPIC": "/detections_active",
-    "DEBUG_IMAGE_TOPIC": "/vision/debug_image",
-    "CAMERA_FRAME": "zed_left_camera_optical_frame",
+    "RGB_IMAGE_TOPIC": CAMERA_TOPIC,
+    "DEPTH_IMAGE_TOPIC": DEPTH_IMAGE_TOPIC,
+    "CAMERA_INFO_TOPIC": CAMERA_INFO_TOPIC,
+    "DETECTIONS_TOPIC": DETECTIONS_TOPIC,
+    "DETECTIONS_IMAGE_TOPIC": DETECTIONS_IMAGE_TOPIC,
+    "DETECTIONS_POSES_TOPIC": DETECTIONS_POSES_TOPIC,
+    "DETECTIONS_3D_TOPIC": DETECTIONS_3D_TOPIC,
+    "DETECTIONS_ACTIVE_TOPIC": DETECTIONS_ACTIVE_TOPIC,
+    "DEBUG_IMAGE_TOPIC": DEBUG_IMAGE_TOPIC,
+    "CAMERA_FRAME": CAMERA_FRAME,
     "TARGET_FRAME": "base_link",
     "YOLO_MODEL_PATH": MODELS_PATH + "yolov5s.pt",
     "USE_ACTIVE_FLAG": False,

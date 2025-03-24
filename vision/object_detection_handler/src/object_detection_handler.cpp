@@ -7,6 +7,7 @@
 #include "tf2/exceptions.h"
 #include "tf2_ros/transform_listener.h"
 #include "tf2_ros/buffer.h"
+#include <frida_constants/vision_constants_cpp.hpp>
 
 #include <unordered_map>
 #include <chrono>
@@ -56,7 +57,7 @@ class DetectionsHandlerNode : public rclcpp::Node
       oda_subscriber_ = this->create_subscription<frida_interfaces::msg::ObjectDetectionArray>(
         params_.DETECTIONS_TOPIC, 10, std::bind(&DetectionsHandlerNode::oda_callback, this, std::placeholders::_1));
       service_ = this->create_service<frida_interfaces::srv::DetectionHandler>(
-        "detection_handler", std::bind(&DetectionsHandlerNode::detection_handler_callback, this, std::placeholders::_1, std::placeholders::_2));
+        DETECTION_HANDLER_TOPIC_SV, std::bind(&DetectionsHandlerNode::detection_handler_callback, this, std::placeholders::_1, std::placeholders::_2));
       timer_ = this->create_wall_timer(std::chrono::milliseconds(100), std::bind(&DetectionsHandlerNode::timer_callback, this));
 
       
