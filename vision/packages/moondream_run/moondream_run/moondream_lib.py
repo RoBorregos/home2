@@ -1,4 +1,4 @@
-import moondream as md
+from transformers import AutoModelForCausalLM
 from PIL import Image
 import cv2
 from enum import Enum
@@ -11,20 +11,19 @@ class Position(Enum):
     NOT_FOUND = "not found"
 
 
-# ===== STEP 1: Install Dependencies =====
-# pip install moondream  # Install dependencies in your project directory
-
-# ===== STEP 2: Download Model =====
-# Download model (593 MiB download size, 996 MiB memory usage)
-# Use: wget (Linux and Mac) or curl.exe -O (Windows)
-# wget https://huggingface.co/vikhyatk/moondream2/resolve/9dddae84d54db4ac56fe37817aeaeb502ed083e2/moondream-2b-int8.mf.gz
-
-
 class MoonDreamModel:
-    def __init__(self, model_path):
-        self.model = md.vl(model=model_path)
+    def __init__(self):
+        self.model = AutoModelForCausalLM.from_pretrained(
+            "vikhyatk/moondream2",
+            revision="2025-01-09",
+            trust_remote_code=True,
+            # Uncomment for GPU acceleration & pip install accelerate
+            # device_map={"": "cuda"}
+        )
 
     def encode_image(self, image):
+        if image is None or image.size == 0:
+            raise ValueError("Empty image provided")
         img = Image.fromarray(cv2.cvtColor(image, cv2.COLOR_BGR2RGB))
         return self.model.encode_image(img)
 

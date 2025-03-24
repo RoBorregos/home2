@@ -68,12 +68,6 @@ public:
         this->create_client<frida_interfaces::srv::AddCollisionObjects>(
             ADD_COLLISION_SERVICE);
 
-    // this->cloud_sub_ =
-    // this->create_subscription<sensor_msgs::msg::PointCloud2>(
-    //     POINT_CLOUD_TOPIC, rclcpp::SensorDataQoS(),
-    //     std::bind(&AddPrimitivesNode::pointCloudCallback, this,
-    //               std::placeholders::_1));
-
     RCLCPP_INFO(this->get_logger(), "Service created");
   }
 
@@ -96,10 +90,6 @@ public:
     box_params.centroid.y = min_pt2.y + (max_pt.y - min_pt2.y) / 2;
     box_params.centroid.z = min_pt2.z + (max_pt.z - min_pt2.z) / 2;
 
-    // box_params.centroid.x = centroid[0];
-    // box_params.centroid.y = centroid[1];
-    // box_params.centroid.z = centroid[2];
-
     Eigen::Vector3f center;
     center[0] = box_params.centroid.x;
     center[1] = box_params.centroid.y;
@@ -110,17 +100,6 @@ public:
         covariance_matrix);
     Eigen::Matrix3f eigenvectors = eigen_solver.eigenvectors();
     Eigen::Vector3f eigenvalues = eigen_solver.eigenvalues();
-
-    // Sort eigenvectors based on eigenvalues (ascending)
-    // The eigenvectors form the basis for the box orientation
-    // for (int i = 0; i < 2; ++i) {
-    //   for (int j = 0; j < 2 - i; ++j) {
-    //     if (eigenvalues(j) > eigenvalues(j + 1)) {
-    //       std::swap(eigenvalues(j), eigenvalues(j + 1));
-    //       eigenvectors.col(j).swap(eigenvectors.col(j + 1));
-    //     }
-    //   }
-    // }
 
     eigenvectors.col(2) = eigenvectors.col(0).cross(eigenvectors.col(1));
     eigenvectors.col(0) = eigenvectors.col(1).cross(eigenvectors.col(2));
@@ -133,16 +112,14 @@ public:
     eigenvectors = eigenVectorsPCA1;
 
     Eigen::Vector3f ea = (eigenvectors).eulerAngles(2, 1, 0);
-    Eigen::AngleAxisf keep_Z_Rot(ea[0], Eigen::Vector3f::UnitZ());
+    // Eigen::AngleAxisf keep_Z_Rot(ea[0], Eigen::Vector3f::UnitZ());
     Eigen::Affine3f transform = Eigen::Affine3f::Identity();
 
     transform.translate(center);
-    transform.rotate(keep_Z_Rot);
-
-    // Ensure the eigenvectors form a right-handed coordinate system
-    // if (eigenvectors.determinant() < 0) {
-    //   eigenvectors.col(0) *= -1.0f;
-    // }
+    // transform.rotate(keep_Z_Rot);
+    transform.rotate(Eigen::AngleAxisf(ea[0], Eigen::Vector3f::UnitZ()));
+    transform.rotate(Eigen::AngleAxisf(ea[2], Eigen::Vector3f::UnitY()));
+    transform.rotate(Eigen::AngleAxisf(ea[1], Eigen::Vector3f::UnitX()));
 
     // Convert eigenvectors (rotation matrix) to quaternion
     Eigen::Quaternionf quat(eigenvectors);
@@ -153,28 +130,16 @@ public:
     box_params.orientation.z = quat.z();
     box_params.orientation.w = quat.w();
 
-    // // get euclidean angles
-    // double roll, pitch, yaw;
-    // pcl::getEulerAngles(eigenvectors, roll, pitch, yaw);
-
-    // // Compute box dimensions based on point cloud extents along the
-    // principal
-    // // axes
     pcl::PointCloud<pcl::PointXYZ> transformed_cloud;
     pcl::transformPointCloud(*cloud, transformed_cloud, transform);
-    // pcl::transformPointCloud(
-    //     *cloud, transformed_cloud,
-    //     Eigen::Vector3f(centroid[0], centroid[1], centroid[2]));
 
     // // Find min and max points in the transformed space
     pcl::PointXYZ min_pt, max_pt2;
     pcl::getMinMax3D(transformed_cloud, min_pt, max_pt2);
 
-    box_params.width = abs(max_pt2.x - min_pt.x);
-    box_params.depth = abs(max_pt2.y - min_pt.y);
-    box_params.height = abs(max_pt2.z - min_pt.z);
-
-    std::swap(box_params.width, box_params.depth);
+    box_params.width = max_pt2.x - min_pt.x;
+    box_params.depth = max_pt2.y - min_pt.y;
+    box_params.height = std::max(max_pt2.z - min_pt.z - 0.01, 0.01);
 
     return status;
   }
@@ -240,10 +205,6 @@ public:
       ASSERT_AND_RETURN_CODE(
           status, OK, "Error computing box primitive with code %d", status);
 
-      // std::shared_ptr<frida_interfaces::srv::AddCollisionObject::Request> req
-      // =
-      //     std::make_shared<
-      //         frida_interfaces::srv::AddCollisionObject::Request>();
       std::shared_ptr<frida_interfaces::srv::AddCollisionObjects::Request>
           req2 = std::make_shared<
               frida_interfaces::srv::AddCollisionObjects::Request>();
@@ -265,12 +226,6 @@ public:
       req2->collision_objects[0].dimensions.x = box_params.width;
       req2->collision_objects[0].dimensions.y = box_params.depth;
       req2->collision_objects[0].dimensions.z = box_params.height;
-      // auto res = this->add_collision_object_client->async_send_request(
-      //     req,
-      //     [this](rclcpp::Client<frida_interfaces::srv::AddCollisionObjects>::
-      //                SharedFuture future) {
-      //       RCLCPP_INFO(this->get_logger(), "add_collision_object");
-      //     });
 
       auto res = this->add_collision_object_client->async_send_request(
           req2,
@@ -293,14 +248,9 @@ public:
       ASSERT_AND_RETURN_CODE(status, OK,
                              "Error downsampling object with code %d", status);
 
-      //   std::vector<rclcpp::Client<
-      //       frida_interfaces::srv::AddCollisionObject>::FutureAndRequestId>
-      //       responses;
       std::shared_ptr<frida_interfaces::srv::AddCollisionObjects::Request>
           req2 = std::make_shared<
               frida_interfaces::srv::AddCollisionObjects::Request>();
-
-      // req2->collision_objects.resize(cloud_downsampled->points.size());
 
       for (pcl::PointXYZ point : cloud_downsampled->points) {
 
@@ -325,35 +275,6 @@ public:
         req2->collision_objects.back().pose.pose.orientation.y = 0;
         req2->collision_objects.back().pose.pose.orientation.z = 0;
         req2->collision_objects.back().pose.pose.orientation.w = 1;
-
-        // auto req = std::make_shared<
-        //     frida_interfaces::srv::AddCollisionObject::Request>();
-
-        // req->id = "object " + std::to_string(point.x) + " " +
-        //           std::to_string(point.y) + " " + std::to_string(point.z);
-        // req->type = "sphere";
-
-        // req->pose.header.frame_id = "base_link";
-        // req->pose.header.stamp = this->now();
-
-        // req->pose.pose.position.x = point.x;
-        // req->pose.pose.position.y = point.y;
-        // req->pose.pose.position.z = point.z;
-
-        // req->dimensions.x = 0.02;
-
-        // req->pose.pose.orientation.x = 0;
-        // req->pose.pose.orientation.y = 0;
-        // req->pose.pose.orientation.z = 0;
-        // req->pose.pose.orientation.w = 1;
-
-        // // AQUI
-        // auto res = this->add_collision_object_client->async_send_request(
-        //     req,
-        //     [this](rclcpp::Client<frida_interfaces::srv::AddCollisionObject>::
-        //                SharedFuture future) {
-        //       RCLCPP_INFO(this->get_logger(), "add_collision_object");
-        //     });
       }
 
       auto res = this->add_collision_object_client->async_send_request(
@@ -362,10 +283,6 @@ public:
                      SharedFuture future) {
             RCLCPP_INFO(this->get_logger(), "add_collision_object");
           });
-
-      //   for (auto &res : responses) {
-      //     res.wait();
-      //   }
 
       RCLCPP_INFO(this->get_logger(), "Object primitives added");
     }
@@ -380,14 +297,6 @@ int main(int argc, _IN_ char *argv[]) {
               "Starting Add Primitives Node");
 
   rclcpp::spin(std::make_shared<AddPrimitivesNode>());
-
-  // auto node = std::make_shared<AddPrimitivesNode>();
-
-  // rclcpp::executors::MultiThreadedExecutor::SharedPtr multithreaded_executor
-  // =
-  //     std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
-
-  // multithreaded_executor->add_node(node);
 
   rclcpp::shutdown();
   return 0;
