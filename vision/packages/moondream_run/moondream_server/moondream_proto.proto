@@ -1,20 +1,35 @@
 syntax = "proto3";
 
-package image_service;
+package moondream;
 
-// Service definition
-service HelloWorldService {
-  // Sends an image and receives a response
-  rpc HelloWorld (HelloWorldRequest) returns (HelloWorldResponse) {}
+service MoonDreamService {
+  rpc EncodeImage (ImageRequest) returns (EncodedImageResponse);
+  rpc FindBeverage (FindBeverageRequest) returns (BeveragePositionResponse);
+  rpc GeneratePersonDescription (DescriptionRequest) returns (DescriptionResponse);
 }
 
-// Request message 
-message HelloWorldRequest {
-  bytes image_data = 1;  // Image data as bytes
+message ImageRequest {
+  bytes image_data = 1;
 }
 
-// The response message containing the result
-message HelloWorldResponse {
-  bool success = 1;
-  string message = 2;
+message EncodedImageResponse {
+  bytes encoded_image = 1;
+}
+
+message FindBeverageRequest {
+  bytes encoded_image = 1;
+  string subject = 2;
+}
+
+message BeveragePositionResponse {
+  string position = 1;
+}
+
+message DescriptionRequest {
+  bytes encoded_image = 1;
+  string query = 2;
+}
+
+message DescriptionResponse {
+  string answer = 1;
 }

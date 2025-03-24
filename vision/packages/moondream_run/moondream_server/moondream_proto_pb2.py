@@ -24,17 +24,25 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x15moondream_proto.proto\x12\rimage_service\"\'\n\x11HelloWorldRequest\x12\x12\n\nimage_data\x18\x01 \x01(\x0c\"6\n\x12HelloWorldResponse\x12\x0f\n\x07success\x18\x01 \x01(\x08\x12\x0f\n\x07message\x18\x02 \x01(\t2h\n\x11HelloWorldService\x12S\n\nHelloWorld\x12 .image_service.HelloWorldRequest\x1a!.image_service.HelloWorldResponse\"\x00\x62\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x15moondream_proto.proto\x12\tmoondream\"\"\n\x0cImageRequest\x12\x12\n\nimage_data\x18\x01 \x01(\x0c\"-\n\x14\x45ncodedImageResponse\x12\x15\n\rencoded_image\x18\x01 \x01(\x0c\"=\n\x13\x46indBeverageRequest\x12\x15\n\rencoded_image\x18\x01 \x01(\x0c\x12\x0f\n\x07subject\x18\x02 \x01(\t\",\n\x18\x42\x65veragePositionResponse\x12\x10\n\x08position\x18\x01 \x01(\t\":\n\x12\x44\x65scriptionRequest\x12\x15\n\rencoded_image\x18\x01 \x01(\x0c\x12\r\n\x05query\x18\x02 \x01(\t\"%\n\x13\x44\x65scriptionResponse\x12\x0e\n\x06\x61nswer\x18\x01 \x01(\t2\x8c\x02\n\x10MoonDreamService\x12G\n\x0b\x45ncodeImage\x12\x17.moondream.ImageRequest\x1a\x1f.moondream.EncodedImageResponse\x12S\n\x0c\x46indBeverage\x12\x1e.moondream.FindBeverageRequest\x1a#.moondream.BeveragePositionResponse\x12Z\n\x19GeneratePersonDescription\x12\x1d.moondream.DescriptionRequest\x1a\x1e.moondream.DescriptionResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
 _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'moondream_proto_pb2', _globals)
 if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
-  _globals['_HELLOWORLDREQUEST']._serialized_start=40
-  _globals['_HELLOWORLDREQUEST']._serialized_end=79
-  _globals['_HELLOWORLDRESPONSE']._serialized_start=81
-  _globals['_HELLOWORLDRESPONSE']._serialized_end=135
-  _globals['_HELLOWORLDSERVICE']._serialized_start=137
-  _globals['_HELLOWORLDSERVICE']._serialized_end=241
+  _globals['_IMAGEREQUEST']._serialized_start=36
+  _globals['_IMAGEREQUEST']._serialized_end=70
+  _globals['_ENCODEDIMAGERESPONSE']._serialized_start=72
+  _globals['_ENCODEDIMAGERESPONSE']._serialized_end=117
+  _globals['_FINDBEVERAGEREQUEST']._serialized_start=119
+  _globals['_FINDBEVERAGEREQUEST']._serialized_end=180
+  _globals['_BEVERAGEPOSITIONRESPONSE']._serialized_start=182
+  _globals['_BEVERAGEPOSITIONRESPONSE']._serialized_end=226
+  _globals['_DESCRIPTIONREQUEST']._serialized_start=228
+  _globals['_DESCRIPTIONREQUEST']._serialized_end=286
+  _globals['_DESCRIPTIONRESPONSE']._serialized_start=288
+  _globals['_DESCRIPTIONRESPONSE']._serialized_end=325
+  _globals['_MOONDREAMSERVICE']._serialized_start=328
+  _globals['_MOONDREAMSERVICE']._serialized_end=596
 # @@protoc_insertion_point(module_scope)

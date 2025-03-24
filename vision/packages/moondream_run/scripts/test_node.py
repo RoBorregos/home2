@@ -4,10 +4,13 @@
 Node for Moondream functions
 """
 
+# Import the generated gRPC modules
+import moondream_proto_pb2
+import moondream_proto_pb2_grpc
 import grpc
 import os
 import sys
-# import cv2
+import cv2
 
 import rclpy
 from rclpy.node import Node
@@ -27,9 +30,6 @@ sys.path.append(os.path.join(PATH, "moondream_server"))
 # Print the current path for debugging
 # print("Current PATH:", sys.__file__)
 
-# Import the generated gRPC modules
-import moondream_proto_pb2
-import moondream_proto_pb2_grpc
 
 TEST_TOPIC = "/vision/test"
 
@@ -63,11 +63,10 @@ class TestNode(Node):
             response.description = "No image received"
             return response
 
-        # _, image_bytes = cv2.imencode(
-        #     ".jpg", self.image
-        # )  # You can use ".png" for PNG format
-        image_bytes = bytes([0x10, 0x20, 0x30, 0x40, 0x50])
-        # image_bytes = image_bytes.tobytes()
+        _, image_bytes = cv2.imencode(
+            ".jpg", self.image
+        )  # You can use ".png" for PNG format
+        image_bytes = image_bytes.tobytes()
 
         res = ""
         # Send the bytes to the server
