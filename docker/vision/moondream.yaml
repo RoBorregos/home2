@@ -9,6 +9,6 @@ services:
     ports:
       - "50052:50052"
     volumes:
-      - ../../vision/packages/moondream_run/:/app
-    working_dir: /app/moondream_server
-    command: ["bash", "-c", "python3 -u server.py"]
+      - ../../vision/packages/moondream_run/:/workspace
+    working_dir: /workspace/moondream_server
+    command: ["bash", "-c", "python3 -u server.py --model_path '../../app/moondream-2b-int8.mf.gz'"]

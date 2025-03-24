@@ -7,7 +7,8 @@ import io
 import moondream as md
 import pickle
 from enum import Enum
-
+import os
+import argparse
 
 
 class Position(Enum):
@@ -75,15 +76,13 @@ class MoonDreamServicer(moondream_proto_pb2_grpc.MoonDreamServiceServicer):
 
 
 # Run the gRPC server
-def serve():
+def serve(model_path):
     # Increase max message size for both request and response to 200MB
     options = [
         ("grpc.max_receive_message_length", 200 * 1024 * 1024),
         ("grpc.max_send_message_length", 200 * 1024 * 1024),
     ]
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10), options=options)
-
-    model_path = "moondream-2b-int8.mf.gz"
     md_model = MoonDreamModel(model_path)
     moondream_proto_pb2_grpc.add_MoonDreamServiceServicer_to_server(
         MoonDreamServicer(md_model), server
@@ -95,4 +94,12 @@ def serve():
 
 
 if __name__ == "__main__":
-    serve()
+    parser = argparse.ArgumentParser(description="MoonDream Server")
+    parser.add_argument(
+        "--model_path",
+        type=str,
+        default="moondream-2b-int8.mf.gz",
+        help="Path to the MoonDream model file",
+    )
+    args = parser.parse_args()
+    serve(args.model_path)
