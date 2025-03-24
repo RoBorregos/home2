@@ -1,0 +1,16 @@
+services:
+  display:
+    container_name: home2-hri-display
+    image: roborregos/home2:hri-display
+    build:
+      context: ../..
+      dockerfile: docker/hri/Dockerfile.display
+      args:
+        BASE_IMAGE: roborregos/home2:cpu_base
+    volumes:
+      - ../../hri/display/:/app
+    ports:
+      - "3000:3000"
+    command:
+      # ["/bin/bash", "-l", "-c", "source ~/.bashrc && npm i && npm run dev"]
+      ["/bin/bash", "-l", "-c", "tail -f /dev/null"]
