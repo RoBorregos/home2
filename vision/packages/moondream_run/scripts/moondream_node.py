@@ -9,15 +9,21 @@ import rclpy
 import pathlib
 from ultralytics import YOLO
 import cv2
-from moondream_run.moondream_lib import MoonDreamModel, Position
+import sys
+import os
+# from moondream_run.moondream_lib import MoonDreamModel, Position
 from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
+from enum import Enum
 
 from frida_interfaces.srv import PersonDescription
 from frida_interfaces.srv import BeverageLocation
 from frida_interfaces.srv import PersonPosture
 
+from ament_index_python.packages import get_package_share_directory
+PATH = get_package_share_directory("moondream_run")
+sys.path.append(os.path.join(PATH, "moondream_server"))
 # Import the generated gRPC modules
 import moondream_proto_pb2
 import moondream_proto_pb2_grpc
@@ -26,6 +32,12 @@ CAMERA_TOPIC = "/zed/zed_node/rgb/image_rect_color"
 PERSON_DESCRIPTION_TOPIC = "/vision/person_description"
 PERSON_POSTURE_TOPIC = "/vision/person_posture"
 BEVERAGE_TOPIC = "/vision/beverage_location"
+
+class Position(Enum):
+    LEFT = "left"
+    CENTER = "center"
+    RIGHT = "right"
+    NOT_FOUND = "not found"
 
 YOLO_LOCATION = str(pathlib.Path(__file__).parent) + "/yolov8n.pt"
 # MOONDREAM_LOCATION = MOONDREAM_LOCATION = str(pathlib.Path(__file__).parent) + "/moondream-2b-int8.mf.gz"
@@ -54,7 +66,7 @@ class MoondreamNode(Node):
         )
 
         self.yolo_model = YOLO(YOLO_LOCATION)
-        self.moondream_model = MoonDreamModel()
+        # self.moondream_model = MoonDreamModel()
 
         # gRPC client setup
         options = [
