@@ -6,10 +6,12 @@ from launch_ros.actions import Node
 
 def generate_launch_description():
     config = os.path.join(
-        get_package_share_directory("object_detector_2d"), "config", "parameters_local.yaml"
+        get_package_share_directory("object_detector_2d"),
+        "config",
+        "parameters_local.yaml",
     )
     return LaunchDescription(
-        [   
+        [
             Node(
                 package="object_detector_2d",
                 executable="local_camera.py",
@@ -25,7 +27,7 @@ def generate_launch_description():
                 respawn=True,
                 output="screen",
                 emulate_tty=True,
-                parameters=[config],    
+                parameters=[config],
             ),
         ]
     )
