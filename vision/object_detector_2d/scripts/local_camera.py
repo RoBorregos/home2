@@ -5,20 +5,15 @@ from rclpy.node import Node
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from dataclasses import dataclass
-from frida_constants.vision_constants import (
-    LOCAL_CAMERA_TOPIC
-)
+from frida_constants.vision_constants import LOCAL_CAMERA_TOPIC
 
-ARGS = {
-    "ROS_TOPIC" : LOCAL_CAMERA_TOPIC,
-    "HZ" : 30
-}
+ARGS = {"ROS_TOPIC": LOCAL_CAMERA_TOPIC, "HZ": 30}
+
 
 @dataclass
-class NodeParams : 
-    ROS_TOPIC : str = ""
-    HZ : int = 0
-
+class NodeParams:
+    ROS_TOPIC: str = ""
+    HZ: int = 0
 
 
 class Camera(Node):
@@ -50,9 +45,12 @@ class Camera(Node):
     def get_params(self):
         self.node_params = NodeParams()
 
-        self.node_params.ROS_TOPIC = self.get_parameter("ROS_TOPIC").get_parameter_value().string_value
-        self.node_params.HZ = self.get_parameter("HZ").get_parameter_value().integer_value
-
+        self.node_params.ROS_TOPIC = (
+            self.get_parameter("ROS_TOPIC").get_parameter_value().string_value
+        )
+        self.node_params.HZ = (
+            self.get_parameter("HZ").get_parameter_value().integer_value
+        )
 
 
 def main(args=None):

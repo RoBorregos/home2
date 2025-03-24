@@ -30,7 +30,7 @@ from frida_constants.vision_constants import (
     DETECTIONS_3D_TOPIC,
     DETECTIONS_ACTIVE_TOPIC,
     DEBUG_IMAGE_TOPIC,
-    CAMERA_FRAME
+    CAMERA_FRAME,
 )
 
 MODELS_PATH = str(pathlib.Path(__file__).parent) + "/../models/"

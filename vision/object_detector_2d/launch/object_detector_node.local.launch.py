@@ -13,7 +13,9 @@ def generate_launch_description():
         "parameters_local.yaml",
     )
     handler_launch_file = os.path.join(
-        get_package_share_directory("object_detection_handler"), "launch", "objectDetectionHandler.local.launch.py"
+        get_package_share_directory("object_detection_handler"),
+        "launch",
+        "objectDetectionHandler.local.launch.py",
     )
     return LaunchDescription(
         [
