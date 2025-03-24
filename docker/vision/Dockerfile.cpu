@@ -14,5 +14,14 @@ RUN pip install -r models.txt
 RUN pip install -r utils.txt
 
 WORKDIR /workspace
+
 # CV-bridge
-RUN apt update && apt install -y ros-humble-cv-bridge
+RUN apt update 
+RUN apt install -y python3-venv
+# RUN python3 -m venv /workspace/moondream_env
+# RUN source /workspace/vision/moondream_env/bin/activate
+# RUN pip install -r /workspace/requirements/.txt
+#deactivate env
+# RUN deactivate
+
+RUN apt install -y ros-humble-cv-bridge
