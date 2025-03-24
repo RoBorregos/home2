@@ -8,19 +8,29 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 
 def generate_launch_description():
     config = os.path.join(
-        get_package_share_directory("object_detector_2d"), "config", "parameters.yaml"
+        get_package_share_directory("object_detector_2d"),
+        "config",
+        "parameters_local.yaml",
     )
     handler_launch_file = os.path.join(
         get_package_share_directory("object_detection_handler"),
         "launch",
-        "objectDetectionHandler.launch.py",
+        "objectDetectionHandler.local.launch.py",
     )
     return LaunchDescription(
         [
             Node(
                 package="object_detector_2d",
+                executable="local_camera.py",
+                name="local_camera_node",
+                respawn=True,
+                output="screen",
+                emulate_tty=True,
+            ),
+            Node(
+                package="object_detector_2d",
                 executable="object_detector_node.py",
-                name="ObjectDetect2D",
+                name="object_detector_node",
                 respawn=True,
                 output="screen",
                 emulate_tty=True,

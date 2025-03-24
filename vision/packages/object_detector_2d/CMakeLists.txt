@@ -24,6 +24,7 @@ find_package(tf2_geometry_msgs REQUIRED)
 find_package(laser_geometry REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(frida_interfaces REQUIRED)
+find_package(frida_constants REQUIRED)
 
 #Install directories
 install(DIRECTORY launch config
@@ -35,10 +36,6 @@ include_directories(include)
 
 ######################### Message Generation #########################
 # Generate message and service interfaces
-# rosidl_generate_interfaces(${PROJECT_NAME}
-#   "msg/ObjectDetection.msg"
-#   "msg/ObjectDetectionArray.msg"
-#   DEPENDENCIES std_msgs geometry_msgs sensor_msgs shape_msgs tf2_geometry_msgs # Add any dependencies required by your message files
 # )
 
 ######################### Python  #########################
