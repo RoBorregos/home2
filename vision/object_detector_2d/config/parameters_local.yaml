@@ -14,7 +14,7 @@ object_detector_node:
     YOLO_MODEL_PATH :  yolov5s.pt # FILE MOST BE IN MODEL FOLDER OF THE PACKAGE
     USE_ACTIVE_FLAG :  False
     DEPTH_ACTIVE :  True
-    VERBOSE :  False
+    VERBOSE :  True
     USE_YOLO8 :  False
     FLIP_IMAGE :  False
     USE_ZED_TRANSFORM : True

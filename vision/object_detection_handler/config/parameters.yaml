@@ -1,7 +1,8 @@
-ros__parameters:
-  TRANSFROM_POINTS : True
-  VERBOSE : False
-  DETECTIONS_TOPIC : /detections
-  TRAGET_FRAME : BASE_LINK
-  IOU_THRESHOLD : 0.9
-  RECORDED_SECONDS : 0.5
+object_detection_handler:
+  ros__parameters:
+    TRANSFROM_POINTS : True
+    VERBOSE : False
+    DETECTIONS_TOPIC : /detections
+    TRAGET_FRAME : BASE_LINK
+    IOU_THRESHOLD : 0.9
+    RECORDED_SECONDS : 0.5
