@@ -26,11 +26,11 @@ struct DetectionRecord
 
 struct HandlerParams
 {
-  int RECORDED_SECONDS;
+  double RECORDED_SECONDS;
   double IOU_THRESHOLD;
   std::string TARGET_FRAME;
   std::string DETECTIONS_TOPIC;
-  bool TRANSFROM_POINTS;
+  bool TRANSFORM;
   bool VERBOSE;
 };
 
@@ -65,20 +65,20 @@ class DetectionsHandlerNode : public rclcpp::Node
     }
 
     void declare_parameters(){
-      this->declare_parameter("DETECTIONS_TOPIC", "/detections");
+      this->declare_parameter("DETECTIONS_TOPIC", "/vision/detections");
       this->declare_parameter("TARGET_FRAME", "BASE_LINK");
-      this->declare_parameter("TRANSFROM_POINTS", false);
+      this->declare_parameter("TRANSFORM", false);
       this->declare_parameter("VERBOSE", false);
-      this->declare_parameter("IOU_THRESHOLD", 0.75);
-      this->declare_parameter("RECORDED_SECONDS", 5);
+      this->declare_parameter("IOU_THRESHOLD", 0.95);
+      this->declare_parameter("RECORDED_SECONDS", 5.0);
     }
 
     void get_parameters(){
       params_.TARGET_FRAME = this->get_parameter("TARGET_FRAME").as_string();
       params_.DETECTIONS_TOPIC = this->get_parameter("DETECTIONS_TOPIC").as_string();
       params_.IOU_THRESHOLD = this->get_parameter("IOU_THRESHOLD").as_double();
-      params_.RECORDED_SECONDS = this->get_parameter("RECORDED_SECONDS").as_int();
-      params_.TRANSFROM_POINTS = this->get_parameter("TRANSFROM_POINTS").as_bool();
+      params_.RECORDED_SECONDS = this->get_parameter("RECORDED_SECONDS").as_double();
+      params_.TRANSFORM = this->get_parameter("TRANSFORM").as_bool();
       params_.VERBOSE = this->get_parameter("VERBOSE").as_bool();
     }
 
@@ -93,11 +93,13 @@ class DetectionsHandlerNode : public rclcpp::Node
       float box1Area = (detection1.xmax - detection1.xmin) * (detection1.ymax - detection1.ymin);
       float box2Area = (detection2.xmax - detection2.xmin) * (detection2.ymax - detection2.ymin);
 
-      
-      RCLCPP_INFO(this->get_logger(), "xA: %f, yA: %f, xB: %f, yB: %f", xA, yA, xB, yB);
-      RCLCPP_INFO(this->get_logger(), "InterArea: %f", interArea);
-      RCLCPP_INFO(this->get_logger(), "Box1Area: %f", box1Area);
-      RCLCPP_INFO(this->get_logger(), "Box2Area: %f", box2Area);
+      if (params_.VERBOSE){
+        RCLCPP_INFO(this->get_logger(), "xA: %f, yA: %f, xB: %f, yB: %f", xA, yA, xB, yB);
+        RCLCPP_INFO(this->get_logger(), "InterArea: %f", interArea);
+        RCLCPP_INFO(this->get_logger(), "Box1Area: %f", box1Area);
+        RCLCPP_INFO(this->get_logger(), "Box2Area: %f", box2Area);
+      }
+     
 
       float iou = interArea / (box1Area + box2Area - interArea);
       return iou;
@@ -133,9 +135,10 @@ class DetectionsHandlerNode : public rclcpp::Node
         dr.timestamp = std::chrono::system_clock::now();
         if (umm_.find(object_detection_vector_[i].label_text) != umm_.end()){
           for (auto it = umm_.equal_range(object_detection_vector_[i].label_text).first; it != umm_.equal_range(object_detection_vector_[i].label_text).second; ++it){
-            RCLCPP_INFO(this->get_logger(), "IoU: %f", getIoU(it->second.detection,dr.detection));
             if (getIoU(it->second.detection,dr.detection) > params_.IOU_THRESHOLD){
-              RCLCPP_INFO(this->get_logger(), "SAME OBJECT DETECTED");
+              if (params_.VERBOSE){
+                RCLCPP_INFO(this->get_logger(), "SAME OBJECT DETECTED WITH LABEL %s", object_detection_vector_[i].label_text.c_str());
+              }
               umm_.erase(it);
               break;
             }
@@ -208,6 +211,7 @@ class DetectionsHandlerNode : public rclcpp::Node
           response->detection_array.detections = detections;
         }
         response->success = true;
+        RCLCPP_INFO(this->get_logger(), "SUCCESS: Detection handler response sent");
     }
 };
 
