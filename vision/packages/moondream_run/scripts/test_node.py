@@ -4,6 +4,9 @@
 Node for Moondream functions
 """
 
+# Import the generated gRPC modules
+import moondream_proto_pb2
+import moondream_proto_pb2_grpc
 import grpc
 import os
 import sys
@@ -26,11 +29,9 @@ sys.path.append(os.path.join(PATH, "moondream_server"))
 # Print the current path for debugging
 # print("Current PATH:", sys.__file__)
 
-# Import the generated gRPC modules
-import moondream_proto_pb2
-import moondream_proto_pb2_grpc
 
 TEST_TOPIC = "/vision/test"
+
 
 class TestNode(Node):
     def __init__(self):
@@ -46,13 +47,12 @@ class TestNode(Node):
             TEST_TOPIC,
             self.person_description_callback,
         )
-     
+
         self.get_logger().info("MoondreamNode Ready.")
 
     def image_callback(self, data):
         """Callback to receive the image from the camera."""
         self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
-        
 
     def person_description_callback(self, request, response):
         """Callback to describe the person in the image."""
@@ -61,24 +61,29 @@ class TestNode(Node):
             response.success = False
             response.description = "No image received"
             return response
-        
-        _, image_bytes = cv2.imencode(".jpg", self.image)  # You can use ".png" for PNG format
+
+        _, image_bytes = cv2.imencode(
+            ".jpg", self.image
+        )  # You can use ".png" for PNG format
         image_bytes = image_bytes.tobytes()
 
         res = ""
         # Send the bytes to the server
         with grpc.insecure_channel("localhost:50052") as channel:
             stub = moondream_proto_pb2_grpc.HelloWorldServiceStub(channel)
-            server_response = stub.HelloWorld(moondream_proto_pb2.HelloWorldRequest(
-                image_data=image_bytes  # Pass the bytes here
-            ))
+            server_response = stub.HelloWorld(
+                moondream_proto_pb2.HelloWorldRequest(
+                    image_data=image_bytes  # Pass the bytes here
+                )
+            )
             print("Server response:", server_response.message)
             res = server_response.message
 
         response.description = res
         response.success = True
         return response
-    
+
+
 def main(args=None):
     rclpy.init(args=args)
     node = TestNode()
