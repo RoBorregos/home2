@@ -1,0 +1,15 @@
+ARG BASE_IMAGE=ubuntu:22.04
+FROM ${BASE_IMAGE}
+
+RUN mkdir -p /workspace/requirements
+
+# Requirements
+COPY vision/requirements/moondream.txt /workspace/requirements/moondream.txt
+RUN pip install -r requirements/moondream.txt
+
+# Model
+WORKDIR /workspace/vision/moondream_run/moondream_run
+RUN wget https://huggingface.co/vikhyatk/moondream2/resolve/9dddae84d54db4ac56fe37817aeaeb502ed083e2/moondream-2b-int8.mf.gz
+# RUN mv /workspace/moondream-2b-int8.mf.gz /workspace/vision/moondream_run/moondream_run/moondream-2b-int8.mf.gz
+
+RUN apt update && apt install -y ros-humble-cv-bridge

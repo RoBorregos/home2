@@ -1,24 +1,25 @@
+
 services:
-  vision:
-    container_name: home2-vision
+  moondream:
+    container_name: home2-moondream
     build:
       context: ../..
-      dockerfile: ${DOCKERFILE:-docker/vision/Dockerfile.cpu}
+      dockerfile: docker/vision/Dockerfile.moondream
       args:
-        BASE_IMAGE: ${BASE_IMAGE:-roborregos/home2:cpu_base} 
-    image: ${IMAGE_NAME:-roborregos/home2:vision-cpu}
+        BASE_IMAGE: ${BASE_IMAGE:-roborregos/home2:cpu_base}
+    image: roborregos/home2:moondream
     volumes:
       - ../../:/workspace
       - /dev:/dev
       - /dev/video0:/dev/video0
       - /tmp:/tmp
       - /tmp/.X11-unix:/tmp/.X11-unix
-  
+
     network_mode: host
     user: 1000:1000
     privileged: true
     runtime: ${RUNTIME:-}
-    group_add: 
+    group_add:
       - video
 
     environment:
@@ -27,6 +28,6 @@ services:
       QT_X11_NO_MITSHM: 1
       QT_DEBUG_PLUGINS: 1
     tty: true
-    stdin_open: true    
+    stdin_open: true
     working_dir: /workspace
     command: ["/bin/bash", "-i", "-l"]

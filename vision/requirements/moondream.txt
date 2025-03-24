@@ -1,5 +1,6 @@
-transformers==4.48.3
-einops==0.8.1
-pyvips==2.2.3
+# transformers==4.48.3
+# einops==0.8.1
+# pyvips==2.2.3  4.6.0
+numpy==2.1.2
 moondream==0.0.6
-numpy<2
+ultralytics==8.1.0
