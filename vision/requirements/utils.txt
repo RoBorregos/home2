@@ -1,5 +1,7 @@
 pathlib
 tqdm
 pillow
-ultralytics
 timm
+grpcio
+grpcio==1.71.0
+protobuf==6.30.1

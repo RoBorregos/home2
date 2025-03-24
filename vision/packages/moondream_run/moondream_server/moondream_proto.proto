@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package image_service;
+
+// Service definition
+service HelloWorldService {
+  // Sends an image and receives a response
+  rpc HelloWorld (HelloWorldRequest) returns (HelloWorldResponse) {}
+}
+
+// Request message 
+message HelloWorldRequest {
+  bytes image_data = 1;  // Image data as bytes
+}
+
+// The response message containing the result
+message HelloWorldResponse {
+  bool success = 1;
+  string message = 2;
+}

@@ -58,6 +58,7 @@ class MoondreamNode(Node):
     def image_callback(self, data):
         """Callback to receive the image from the camera."""
         self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
+        
 
     def person_description_callback(self, request, response):
         """Callback to describe the person in the image."""

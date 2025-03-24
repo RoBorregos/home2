@@ -1,0 +1,96 @@
+#!/usr/bin/env python3
+
+"""
+Node for Moondream functions
+"""
+
+import grpc
+import os
+import sys
+import cv2
+
+import rclpy
+from rclpy.node import Node
+from cv_bridge import CvBridge
+from sensor_msgs.msg import Image
+
+from frida_interfaces.srv import PersonDescription
+from frida_constants.vision_constants import CAMERA_TOPIC
+from ament_index_python.packages import get_package_share_directory
+
+PATH = get_package_share_directory("moondream_run")
+
+# Add the moondream_server directory to sys.path
+sys.path.append(os.path.join(PATH, "moondream_server"))
+
+# Print the current path for debugging
+# print("Current PATH:", sys.__file__)
+
+# Import the generated gRPC modules
+import moondream_proto_pb2
+import moondream_proto_pb2_grpc
+
+TEST_TOPIC = "/vision/test"
+
+class TestNode(Node):
+    def __init__(self):
+        super().__init__("receptionist_commands")
+        self.bridge = CvBridge()
+        self.image = None
+
+        self.image_subscriber = self.create_subscription(
+            Image, CAMERA_TOPIC, self.image_callback, 10
+        )
+        self.person_description_service = self.create_service(
+            PersonDescription,
+            TEST_TOPIC,
+            self.person_description_callback,
+        )
+     
+        self.get_logger().info("MoondreamNode Ready.")
+
+    def image_callback(self, data):
+        """Callback to receive the image from the camera."""
+        self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
+        
+
+    def person_description_callback(self, request, response):
+        """Callback to describe the person in the image."""
+        self.get_logger().info("Executing service Person Description")
+        if self.image is None:
+            response.success = False
+            response.description = "No image received"
+            return response
+        
+        _, image_bytes = cv2.imencode(".jpg", self.image)  # You can use ".png" for PNG format
+        image_bytes = image_bytes.tobytes()
+
+        res = ""
+        # Send the bytes to the server
+        with grpc.insecure_channel("localhost:50052") as channel:
+            stub = moondream_proto_pb2_grpc.HelloWorldServiceStub(channel)
+            server_response = stub.HelloWorld(moondream_proto_pb2.HelloWorldRequest(
+                image_data=image_bytes  # Pass the bytes here
+            ))
+            print("Server response:", server_response.message)
+            res = server_response.message
+
+        response.description = res
+        response.success = True
+        return response
+    
+def main(args=None):
+    rclpy.init(args=args)
+    node = TestNode()
+
+    try:
+        rclpy.spin(node)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+
+if __name__ == "__main__":
+    main()

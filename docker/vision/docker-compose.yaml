@@ -30,3 +30,6 @@ services:
     stdin_open: true    
     working_dir: /workspace
     command: ["/bin/bash", "-i", "-l"]
+
+include:
+  - path: moondream.yaml
