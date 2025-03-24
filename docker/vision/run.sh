@@ -139,20 +139,31 @@ fi
 
 # Commands to run inside the container
 SOURCE_ROS="source /opt/ros/humble/setup.bash"
-COLCON="colcon build --packages-up-to vision_general"
+COLCON="colcon build --packages-up-to "
 SOURCE="source install/setup.bash"
-SETUP="$SOURCE_ROS && $COLCON && $SOURCE"
+SETUP="$SOURCE_ROS && $COLCON vision_general && $SOURCE"
 RUN=""
+MOONDREAM=false
 
 case $TASK in
     "--receptionist")
         RUN="ros2 launch vision_general receptionist_launch.py"
+        MOONDREAM=true
         ;;
 
     *)
         RUN=""
         ;;
 esac
+
+MOONDREAM_SETUP="$SOURCE_ROS && $COLCON moondream_run && $SOURCE"
+USE_ENV="source vision/moondream_env/bin/activate"
+RUN_MOONDREAM="ros2 run moondream_run moondream_run.py"
+echo $MOONDREAM
+if [ "$MOONDREAM" = true ]; then
+    echo "Running Moondream..."
+    docker compose exec -d $SERVICE_NAME bash -c "$MOONDREAM_SETUP && $USE_ENV && $RUN_MOONDREAM"
+fi
 
 # check if TASK is not empty
 if [ -z "$TASK" ]; then

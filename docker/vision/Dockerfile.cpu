@@ -18,11 +18,7 @@ WORKDIR /workspace
 # CV-bridge
 RUN apt update 
 RUN apt install -y python3-venv
-# RUN python3 -m venv /workspace/vision/moondream_env
 RUN apt install -y ros-humble-cv-bridge
 
-# Moondream
-# RUN source /workspace/vision/moondream_env/bin/activate
-# RUN pip install -r moondream.txt 
-# RUN deactivate
+
 
