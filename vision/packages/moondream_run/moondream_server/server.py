@@ -9,7 +9,6 @@ import pickle
 from enum import Enum
 
 
-
 class Position(Enum):
     LEFT = "left"
     CENTER = "center"
@@ -71,7 +70,6 @@ class MoonDreamServicer(moondream_proto_pb2_grpc.MoonDreamServiceServicer):
         print("Generating description...")
         answer = self.model.generate_description(request.encoded_image, request.query)
         return moondream_proto_pb2.DescriptionResponse(answer=answer)
-
 
 
 # Run the gRPC server

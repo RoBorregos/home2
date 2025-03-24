@@ -9,6 +9,8 @@ import grpc
 import os
 import sys
 import cv2
+import moondream_proto_pb2
+import moondream_proto_pb2_grpc
 
 import rclpy
 from rclpy.node import Node
@@ -16,6 +18,7 @@ from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 
 from frida_interfaces.srv import PersonDescription
+
 # from frida_constants.vision_constants import CAMERA_TOPIC
 from ament_index_python.packages import get_package_share_directory
 
@@ -26,8 +29,6 @@ CAMERA_TOPIC = "/zed/zed_node/rgb/image_rect_color"
 # Add the moondream_server directory to sys.path
 sys.path.append(os.path.join(PATH, "moondream_server"))
 
-import moondream_proto_pb2
-import moondream_proto_pb2_grpc
 # Print the current path for debugging
 # print("Current PATH:", sys.__file__)
 
