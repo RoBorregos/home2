@@ -22,16 +22,16 @@ from rclpy.task import Future
 
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.srv import FindSeat
+from frida_constants.vision_constants import (
+    CAMERA_TOPIC,
+    CHECK_PERSON_TOPIC,
+    FIND_SEAT_TOPIC,
+    IMAGE_TOPIC,
+)
 
 from ament_index_python.packages import get_package_share_directory
 
 package_share_dir = get_package_share_directory("vision_general")
-
-
-CAMERA_TOPIC = "/zed/zed_node/rgb/image_rect_color"
-CHECK_PERSON_TOPIC = "/vision/detect_person"
-FIND_SEAT_TOPIC = "/vision/find_seat"
-IMAGE_TOPIC = "/vision/img_person_detecion"
 
 YOLO_LOCATION = str(pathlib.Path(__file__).parent) + "/Utils/yolov8n.pt"
 

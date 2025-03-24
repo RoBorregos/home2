@@ -1,5 +1,13 @@
 #!/bin/bash
-
+ARGS=("$@")  # Save all arguments in an array
+TASK=${ARGS[0]}
+detached=""
+# check if one of the arguments is --detached
+for arg in "${ARGS[@]}"; do
+  if [ "$arg" == "-d" ]; then
+    detached="-d"
+  fi
+done
 
 #_________________________BUILD_________________________
 
@@ -123,11 +131,37 @@ fi
 # Check if the container is running
 RUNNING_CONTAINER=$(docker ps -q -f name=$SERVICE_NAME)
 
-if [ -n "$RUNNING_CONTAINER" ]; then
-    echo "Container $SERVICE_NAME is already running. Executing bash..."
-    docker compose exec -it $SERVICE_NAME /bin/bash
-else
-    echo "Container $SERVICE_NAME is stopped. Starting it now..."
+# If the container is not running, start it
+if [ -z "$RUNNING_CONTAINER" ]; then
+    echo "Container $SERVICE_NAME is not running. Starting it now..."
     docker compose up --build -d
+fi
+
+# Commands to run inside the container
+SOURCE_ROS="source /opt/ros/humble/setup.bash"
+COLCON="colcon build --packages-up-to vision_general"
+SOURCE="source install/setup.bash"
+SETUP="$SOURCE_ROS && $COLCON && $SOURCE"
+RUN=""
+
+case $TASK in
+    "--receptionist")
+        RUN="ros2 launch vision_general receptionist_launch.py"
+        ;;
+
+    *)
+        RUN=""
+        ;;
+esac
+
+# check if TASK is not empty
+if [ -z "$TASK" ]; then
     docker compose exec $SERVICE_NAME /bin/bash
+else
+    if [ -z "$detached" ]; then
+        docker compose exec $SERVICE_NAME bash -c "$SETUP && $RUN"
+    else
+        echo "Running in detached mode..."
+        docker compose exec -d $SERVICE_NAME bash -c "$SETUP && $RUN"
+    fi
 fi
