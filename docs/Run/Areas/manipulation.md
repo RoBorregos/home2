@@ -40,6 +40,22 @@ To test on the real robot, run the launch to bring up the robot and MoveIt plann
 ros2 launch arm_pkg frida_moveit_config.launch.py robot_ip:=192.168.31.180
 ```
 
+### Perception 3d
+To run the downsample for the pointcloud.
+```bash
+ros2 run perception_3d down_sample_pc
+```
+
+Simulation:
+```bash
+ros2 run perception_3d down_sample_pc --ros-args -p input_topic:="/depth/color/points" -p leaf_size:=0.01
+```
+
+Perception service (Cluster and plane remove/extraction)
+```bash
+ros2 launch perception_3d test.launch.py
+```
+
 ### Motion Planning
 Check that the motion planning interface is running:
 ```bash
