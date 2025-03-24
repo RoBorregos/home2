@@ -31,14 +31,12 @@ class YoloV5ObjectDetector(ObjectDectector):
             if confidence < self.object_detector_params_.min_score_thresh:
                 continue
 
-            # print(f"Detection: {names}, class: {_class}, confidence: {confidence}, xyxy: {xyxy}, height: {height}, width: {width}")
-
             detection_ = Detection(names, _class, confidence)
             detection_.bbox_.h, detection_.bbox_.w = height, width
-            detection_.bbox_.y1 = xyxy[1] / width
-            detection_.bbox_.x1 = xyxy[0] / height
-            detection_.bbox_.y2 = xyxy[3] / width
-            detection_.bbox_.x2 = xyxy[2] / height
+            detection_.bbox_.y1 = float(xyxy[1] / width)
+            detection_.bbox_.x1 = float(xyxy[0] / height)
+            detection_.bbox_.y2 = float(xyxy[3] / width)
+            detection_.bbox_.x2 = float(xyxy[2] / height)
             self.detections_.append(detection_)
 
         return self.detections_
