@@ -10,7 +10,8 @@ services:
       - "50052:50052"
     volumes:
       - ../../vision/packages/moondream_run/:/app
-    command: ["bash", "-c", "python3 -u moondream_server/server.py"]
+    working_dir: /app/moondream_server
+    command: ["bash", "-c", "python3 -u server.py"]
 
   # moondream-node:
   #   container_name: home2-moondream-node

@@ -2,5 +2,3 @@ pathlib
 tqdm
 pillow
 timm
-grpcio==1.71.0
-protobuf==6.30.1

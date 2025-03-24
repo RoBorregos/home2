@@ -13,7 +13,7 @@ class Position(Enum):
 
 class MoonDreamModel:
     def __init__(self):
-        self.model = md.vl(model="./moondream-2b-int8.mf.gz")
+        self.model = md.vl(model="moondream-2b-int8.mf.gz")
 
     def encode_image(self, image):
         if image is None or image.size == 0:

@@ -5,8 +5,6 @@ Node for Moondream functions
 """
 
 # Import the generated gRPC modules
-import moondream_proto_pb2
-import moondream_proto_pb2_grpc
 import grpc
 import os
 import sys
@@ -21,12 +19,15 @@ from frida_interfaces.srv import PersonDescription
 # from frida_constants.vision_constants import CAMERA_TOPIC
 from ament_index_python.packages import get_package_share_directory
 
+
 PATH = get_package_share_directory("moondream_run")
 CAMERA_TOPIC = "/zed/zed_node/rgb/image_rect_color"
 
 # Add the moondream_server directory to sys.path
 sys.path.append(os.path.join(PATH, "moondream_server"))
 
+import moondream_proto_pb2
+import moondream_proto_pb2_grpc
 # Print the current path for debugging
 # print("Current PATH:", sys.__file__)
 
@@ -48,6 +49,12 @@ class TestNode(Node):
             TEST_TOPIC,
             self.person_description_callback,
         )
+        options = [
+            ("grpc.max_receive_message_length", 200 * 1024 * 1024),
+            ("grpc.max_send_message_length", 200 * 1024 * 1024),
+        ]
+        channel = grpc.insecure_channel("localhost:50052", options=options)
+        self.stub = moondream_proto_pb2_grpc.MoonDreamServiceStub(channel)
 
         self.get_logger().info("MoondreamNode Ready.")
 
@@ -70,16 +77,21 @@ class TestNode(Node):
 
         res = ""
         # Send the bytes to the server
-        with grpc.insecure_channel("localhost:50052") as channel:
-            stub = moondream_proto_pb2_grpc.HelloWorldServiceStub(channel)
-            server_response = stub.HelloWorld(
-                moondream_proto_pb2.HelloWorldRequest(
-                    image_data=image_bytes  # Pass the bytes here
-                )
-            )
-            print("Server response:", server_response.message)
-            res = server_response.message
+        # beverage_response = stub.FindBeverage(
+        #     moondream_proto_pb2.FindBeverageRequest(
+        #         encoded_image=image_bytes, subject="purple gatorade"
+        #     )
+        # )
 
+        encoded = self.stub.EncodeImage(
+            moondream_proto_pb2.ImageRequest(image_data=image_bytes)
+        )
+        description_response = self.stub.GeneratePersonDescription(
+            moondream_proto_pb2.DescriptionRequest(
+                encoded_image=encoded.encoded_image, query="Describe the image"
+            )
+        )
+        print(f"Description: {description_response.answer}")
         response.description = res
         response.success = True
         return response

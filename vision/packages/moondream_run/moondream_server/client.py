@@ -10,7 +10,7 @@ def run():
         ("grpc.max_receive_message_length", 200 * 1024 * 1024),
         ("grpc.max_send_message_length", 200 * 1024 * 1024),
     ]
-    channel = grpc.insecure_channel("127.0.0.1:50052", options=options)
+    channel = grpc.insecure_channel("localhost:50052", options=options)
     stub = moondream_proto_pb2_grpc.MoonDreamServiceStub(channel)
 
     # Load image

@@ -9,6 +9,7 @@ import pickle
 from enum import Enum
 
 
+
 class Position(Enum):
     LEFT = "left"
     CENTER = "center"
@@ -58,6 +59,7 @@ class MoonDreamServicer(moondream_proto_pb2_grpc.MoonDreamServiceServicer):
         self.model = model
 
     def EncodeImage(self, request, context):
+        print("Encoding image...")
         encoded_data = self.model.encode_image(request.image_data)
         return moondream_proto_pb2.EncodedImageResponse(encoded_image=encoded_data)
 
@@ -66,6 +68,7 @@ class MoonDreamServicer(moondream_proto_pb2_grpc.MoonDreamServiceServicer):
         return moondream_proto_pb2.BeveragePositionResponse(position=position)
 
     def GeneratePersonDescription(self, request, context):
+        print("Generating description...")
         answer = self.model.generate_description(request.encoded_image, request.query)
         return moondream_proto_pb2.DescriptionResponse(answer=answer)
 
