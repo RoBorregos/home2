@@ -11,6 +11,7 @@ from ultralytics import YOLO
 import cv2
 import sys
 import os
+
 # from moondream_run.moondream_lib import MoonDreamModel, Position
 from rclpy.node import Node
 from cv_bridge import CvBridge
@@ -36,11 +37,13 @@ PERSON_DESCRIPTION_TOPIC = "/vision/person_description"
 PERSON_POSTURE_TOPIC = "/vision/person_posture"
 BEVERAGE_TOPIC = "/vision/beverage_location"
 
+
 class Position(Enum):
     LEFT = "left"
     CENTER = "center"
     RIGHT = "right"
     NOT_FOUND = "not found"
+
 
 # MOONDREAM_LOCATION = MOONDREAM_LOCATION = str(pathlib.Path(__file__).parent) + "/moondream-2b-int8.mf.gz"
 

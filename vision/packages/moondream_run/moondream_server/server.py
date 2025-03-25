@@ -7,8 +7,8 @@ import io
 import moondream as md
 import pickle
 from enum import Enum
-import os
 import argparse
+
 
 class Position(Enum):
     LEFT = "left"
