@@ -8,10 +8,14 @@ services:
       args:
         BASE_IMAGE: roborregos/home2:cpu_base
     volumes:
-      - ../../hri/display2/:/app
+      - ../../hri/display/:/app
     ports:
-      - '3000:3000'
-      - '3001:3001'
+      - "3000:3000"
+      - "8000:8000"
     command:
-      # ["/bin/bash", "-l", "-c", "source ~/.bashrc && npm i && npm run dev"]
-      ['/bin/bash', '-l', '-c', 'tail -f /dev/null']
+      [
+        "/bin/bash",
+        "-l",
+        "-c",
+        "source ~/.bashrc && source /opt/ros/humble/setup.bash && npm i && npm run dev",
+      ]

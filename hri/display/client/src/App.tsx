@@ -1,22 +1,22 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState } from "react";
 
 const App: React.FC = () => {
   const [messages, setMessages] = useState<string[]>([]);
 
   useEffect(() => {
-    const socket = new WebSocket('ws://localhost:3001');
+    const socket = new WebSocket("ws://localhost:8000");
 
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      if (data.type === 'heard') {
+      if (data.type === "heard") {
         setMessages((prev) => [...prev, `Heard: ${data.data}`]);
-      } else if (data.type === 'spoken') {
+      } else if (data.type === "spoken") {
         setMessages((prev) => [...prev, `Spoken: ${data.data}`]);
       }
     };
 
-    socket.onclose = () => console.log('WebSocket disconnected');
-    socket.onerror = (error) => console.error('WebSocket error:', error);
+    socket.onclose = () => console.log("WebSocket disconnected");
+    socket.onerror = (error) => console.error("WebSocket error:", error);
 
     return () => {
       socket.close();

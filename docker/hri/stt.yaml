@@ -6,7 +6,7 @@ services:
       context: ../..
       dockerfile: docker/hri/Dockerfile.stt
     ports:
-      - "50052:50052"
+      - "50051:50051"
     volumes:
       - ../../hri/packages/speech/scripts/stt/:/app
       - ../../hri/packages/speech/speech/:/app/speech
@@ -14,5 +14,5 @@ services:
       [
         "bash",
         "-c",
-        "python3 -u faster-whisper.py --port 50052 --model_size base.en",
+        "python3 -u faster-whisper.py --port 50051 --model_size base.en",
       ]
