@@ -3,8 +3,14 @@ from rclpy.node import Node
 
 from pymoveit2 import MoveIt2, MoveIt2State, GripperInterface
 from frida_pymoveit2.robots import xarm6
+from frida_constants.manipulation_constants import (
+    XARM_SETMODE_SERVICE,
+    XARM_SETSTATE_SERVICE,
+    MOVEIT_MODE,
+)
 from typing import List, Union
 from concurrent.futures import Future
+from xarm_msgs.srv import SetInt16
 from pick_and_place.utils.Planner import Planner
 from geometry_msgs.msg import PoseStamped
 from sensor_msgs.msg import JointState
@@ -39,6 +45,20 @@ class MoveItPlanner(Planner):
         self.joint_states_sub = self.node.create_subscription(
             JointState, self.joint_states_topic, self.joint_states_callback, 10
         )
+        # Wait for set mode service, timeout if we use fake controller
+        self.mode_client = self.node.create_client(SetInt16, XARM_SETMODE_SERVICE)
+        self.state_client = self.node.create_client(SetInt16, XARM_SETSTATE_SERVICE)
+        self.mode_enabled = True
+        if self.mode_client.wait_for_service(
+            timeout_sec=3
+        ) and self.state_client.wait_for_service(timeout_sec=3):
+            self.mode_enabled = True
+        else:
+            self.node.get_logger().warn(
+                "Motion enable client not initialized, \
+                        if using fake controller, ignore this message"
+            )
+            self.mode_enabled = False
         self.joint_states = None
         # Set initial parameters
         self.moveit2.max_velocity = max_velocity
@@ -55,8 +75,14 @@ class MoveItPlanner(Planner):
         self.moveit2.planner_id = planner_id
 
     def plan_joint_goal(
-        self, joint_positions: List[float], joint_names: List[str], wait: bool = True
+        self,
+        joint_positions: List[float],
+        joint_names: List[str],
+        wait: bool = True,
+        set_mode: bool = True,
     ) -> Union[bool, Future]:
+        if set_mode:
+            self.set_mode(MOVEIT_MODE)
         if joint_names is None or len(joint_names) == 0:
             joint_names = xarm6.joint_names()
         trajectory = self._plan_joint_goal(joint_positions, joint_names)
@@ -73,8 +99,14 @@ class MoveItPlanner(Planner):
         return future
 
     def plan_pose_goal(
-        self, pose: PoseStamped, cartesian: bool = False, wait: bool = True
+        self,
+        pose: PoseStamped,
+        cartesian: bool = False,
+        wait: bool = True,
+        set_mode: bool = True,
     ) -> Union[bool, Future]:
+        if set_mode:
+            self.set_mode(MOVEIT_MODE)
         self.node.get_logger().info("Planning pose goal")
         trajectory = self._plan(pose, cartesian)
         if not trajectory:
@@ -136,6 +168,38 @@ class MoveItPlanner(Planner):
             tolerance_joint_position=tolerance,
             weight_joint_position=weight,
         )
+
+    def set_mode(self, mode: int = 0) -> bool:
+        if not self.mode_enabled:
+            return True
+        self.mode_client.wait_for_service()
+        request = SetInt16.Request()
+        request.data = mode
+        future = self.mode_client.call_async(request)
+        while rclpy.ok() and not future.done():
+            pass
+        if future.result() is not None:
+            self.node.get_logger().info(
+                f"Set mode service response: {future.result().message}"
+            )
+        else:
+            self.node.get_logger().error("Failed to call set mode service")
+            return False
+
+        self.state_client.wait_for_service()
+        request = SetInt16.Request()
+        request.data = 0
+        future = self.state_client.call_async(request)
+        while rclpy.ok() and not future.done():
+            pass
+        if future.result() is not None:
+            self.node.get_logger().info(
+                f"Set state service response: {future.result().message}"
+            )
+        else:
+            self.node.get_logger().error("Failed to call set state service")
+            return False
+        return True
 
     def get_current_operation_state(self) -> MoveIt2State:
         return self.moveit2.query_state()
@@ -249,6 +313,37 @@ class MoveItPlanner(Planner):
             frame_id=pose.header.frame_id,
             scale=scale,
         )
+
+        """self,
+        id: str,
+        link_name: Optional[str] = None,
+        touch_links: List[str] = [],
+        weight: float = 0.0,"""
+
+    def attach_collision_object(
+        self,
+        id: str,
+        link_name: str,
+        touch_links: List[str] = [],
+        weight: float = 0.0,
+    ) -> bool:
+        self.moveit2.attach_collision_object(
+            id=id,
+            link_name=link_name,
+            touch_links=touch_links,
+            weight=weight,
+        )
+        return True
+
+    def detach_collision_object(self, id: str) -> bool:
+        self.moveit2.detach_collision_object(id)
+        return True
+
+    def update_planning_scene(self) -> None:
+        self.moveit2.update_planning_scene()
+
+    def get_planning_scene(self) -> None:
+        return self.moveit2.get_planning_scene()
 
     def remove_collision_object(self, id: str) -> None:
         self.moveit2.remove_collision_object(id)

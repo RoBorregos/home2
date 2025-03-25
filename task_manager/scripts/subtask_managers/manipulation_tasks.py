@@ -9,11 +9,13 @@ commands.
 import rclpy
 from rclpy.node import Node
 from utils.logger import Logger
+
 from xarm_msgs.srv import SetInt16, SetInt16ById, MoveVelocity
 from frida_interfaces.action import MoveJoints
 from frida_interfaces.srv import GetJoints
+from frida_constants.xarm_configurations import XARM_CONFIGURATIONS
 from rclpy.action import ActionClient
-from typing import List
+from typing import List, Union
 # import time as t
 
 XARM_ENABLE_SERVICE = "/xarm/motion_enable"
@@ -76,44 +78,44 @@ class ManipulationTasks:
         self.node = task_manager
         self.mock_data = mock_data
         self.task = task
-        simulation = 1
+        # simulation = 1
         self.node.declare_parameter("cancel_after_secs", 5.0)
 
-        self.motion_enable_client = self.node.create_client(SetInt16ById, XARM_ENABLE_SERVICE)
-        self.mode_client = self.node.create_client(SetInt16, XARM_SETMODE_SERVICE)
-        self.state_client = self.node.create_client(SetInt16, XARM_SETSTATE_SERVICE)
-        self.move_client = self.node.create_client(MoveVelocity, XARM_MOVEVELOCITY_SERVICE)
+        # self.motion_enable_client = self.node.create_client(SetInt16ById, XARM_ENABLE_SERVICE)
+        # self.mode_client = self.node.create_client(SetInt16, XARM_SETMODE_SERVICE)
+        # self.state_client = self.node.create_client(SetInt16, XARM_SETSTATE_SERVICE)
+        # self.move_client = self.node.create_client(MoveVelocity, XARM_MOVEVELOCITY_SERVICE)
 
         self._move_joints_action_client = ActionClient(
-            self.node, MoveJoints, "move_joints_action_server"
+            self.node, MoveJoints, "/manipulation/move_joints_action_server"
         )
 
-        self._get_joints_client = self.node.create_client(GetJoints, "get_joints")
+        self._get_joints_client = self.node.create_client(GetJoints, "/manipulation/get_joints")
 
-        if not self.mock_data and not simulation:
-            self.setup_services()
+    #     if not self.mock_data and not simulation:
+    #         self.setup_services()
 
-    def setup_services(self):
-        """Initialize services and actions"""
-        if self.task not in ManipulationTasks.SUBTASKS:
-            Logger.error(self.node, "Task not available")
-            return
+    # def setup_services(self):
+    #     """Initialize services and actions"""
+    #     if self.task not in ManipulationTasks.SUBTASKS:
+    #         Logger.error(self.node, "Task not available")
+    #         return
 
-        if ManipulationTasks.SERVICES["activate_arm"] in ManipulationTasks.SUBTASKS[self.task]:
-            if not self.motion_enable_client.wait_for_service(timeout_sec=TIMEOUT):
-                Logger.warn(self.node, "Motion enable client not initialized")
-            if not self.mode_client.wait_for_service(timeout_sec=TIMEOUT):
-                Logger.warn(self.node, "Motion enable client not initialized")
-            if not self.state_client.wait_for_service(timeout_sec=TIMEOUT):
-                Logger.warn(self.node, "Motion enable client not initialized")
+    #     if ManipulationTasks.SERVICES["activate_arm"] in ManipulationTasks.SUBTASKS[self.task]:
+    #         if not self.motion_enable_client.wait_for_service(timeout_sec=TIMEOUT):
+    #             Logger.warn(self.node, "Motion enable client not initialized")
+    #         if not self.mode_client.wait_for_service(timeout_sec=TIMEOUT):
+    #             Logger.warn(self.node, "Motion enable client not initialized")
+    #         if not self.state_client.wait_for_service(timeout_sec=TIMEOUT):
+    #             Logger.warn(self.node, "Motion enable client not initialized")
 
-        if ManipulationTasks.SERVICES["deactivate_arm"] in ManipulationTasks.SUBTASKS[self.task]:
-            if not self.motion_enable_client.wait_for_service(timeout_sec=TIMEOUT):
-                Logger.warn(self.node, "Motion enable client not initialized")
+    #     if ManipulationTasks.SERVICES["deactivate_arm"] in ManipulationTasks.SUBTASKS[self.task]:
+    #         if not self.motion_enable_client.wait_for_service(timeout_sec=TIMEOUT):
+    #             Logger.warn(self.node, "Motion enable client not initialized")
 
-        if ManipulationTasks.SERVICES["move_arm_velocity"] in ManipulationTasks.SUBTASKS[self.task]:
-            if not self.move_client.wait_for_service(timeout_sec=TIMEOUT):
-                Logger.warn(self.node, "Move client not initialized")
+    #     if ManipulationTasks.SERVICES["move_arm_velocity"] in ManipulationTasks.SUBTASKS[self.task]:
+    #         if not self.move_client.wait_for_service(timeout_sec=TIMEOUT):
+    #             Logger.warn(self.node, "Move client not initialized")
 
     def activate_arm(self):
         """Activate arm"""
@@ -230,33 +232,46 @@ class ManipulationTasks:
 
     def move_joint_positions(
         self,
-        joint_positions: List[float] = None,
+        joint_positions: Union[List[float], dict] = None,
         named_position: str = None,
         velocity: float = 0.1,
         degrees=False,  # set to true if joint_positions are in degrees
     ):
-        """Set position of joints"""
-        """ named_position has priority over joint_positions"""
-        # Send goal
+        """Set position of joints.
+        If joint_positions is a dict, keys are treated as joint_names
+        and values as joint positions.
+        Named position has priority over joint_positions.
+        """
         if named_position:
             joint_positions = self.get_named_target(named_position)
-        if degrees:
-            joint_positions = [x * DEG_TO_RAD for x in joint_positions]
-        future = self._send_joint_goal(joint_positions=joint_positions, velocity=velocity)
 
-        # Wait for goal to be accepted
+        # Determine format of joint_positions and apply degree conversion if needed.
+        if isinstance(joint_positions, dict):
+            joint_names = list(joint_positions.keys())
+            joint_vals = list(joint_positions.values())
+            if degrees:
+                joint_vals = [x * DEG_TO_RAD for x in joint_vals]
+        elif isinstance(joint_positions, list):
+            joint_names = []
+            joint_vals = joint_positions.copy()
+            if degrees:
+                joint_vals = [x * DEG_TO_RAD for x in joint_vals]
+        else:
+            Logger.error(self.node, "joint_positions must be a list or a dict")
+            return self.STATE["EXECUTION_ERROR"]
+
+        future = self._send_joint_goal(
+            joint_names=joint_names, joint_positions=joint_vals, velocity=velocity
+        )
+
+        # Wait for goal to be accepted.
         if not self._wait_for_future(future):
             return self.STATE["EXECUTION_ERROR"]
         return self.STATE["EXECUTION_SUCCESS"]
 
     def get_named_target(self, target_name: str):
         """Get named target"""
-        if target_name == "home":
-            return [-55.0, -3.0, -52.0, 0.0, 53.0, -55.0]
-        elif target_name == "zero":
-            return [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        else:
-            return None
+        return XARM_CONFIGURATIONS[target_name]
 
     def get_joint_positions(
         self,
@@ -280,6 +295,8 @@ class ManipulationTasks:
         acceleration=0.0,
         planner_id="",
     ):
+        print("Joint names: ", joint_names)
+        print("Joint positions: ", joint_positions)
         goal_msg = MoveJoints.Goal()
         goal_msg.joint_names = joint_names
         goal_msg.joint_positions = joint_positions

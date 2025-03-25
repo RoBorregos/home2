@@ -4,13 +4,14 @@ import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
 from frida_interfaces.action import MoveJoints
+from frida_constants.manipulation_constants import DEG2RAD
 
 
 class MoveJointsClient(Node):
     def __init__(self):
         super().__init__("move_joints_client")
         self._action_client = ActionClient(
-            self, MoveJoints, "move_joints_action_server"
+            self, MoveJoints, "/manipulation/move_joints_action_server"
         )
 
     # let the server pick the default values
@@ -43,7 +44,8 @@ def main(args=None):
     # commented so it goes through default
     # req.joint_names = ["joint1", "joint2", "joint3", "joint4", "joint5", "joint6"]
     joint_names = []
-    joint_positions = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    joint_positions = [90.0, -70.0, -75.0, 0.0, 60.0, 50.0]
+    joint_positions = [joint_position * DEG2RAD for joint_position in joint_positions]
 
     # Send goal
     future = action_client.send_goal(joint_names, joint_positions)

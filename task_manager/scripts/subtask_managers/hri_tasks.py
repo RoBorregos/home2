@@ -11,6 +11,8 @@ from frida_constants.hri_constants import (
     COMMON_INTEREST_SERVICE,
     EXTRACT_DATA_SERVICE,
     GRAMMAR_SERVICE,
+    IS_POSITIVE_SERVICE,
+    LLM_WRAPPER_SERVICE,
     QUERY_ITEM_SERVICE,
     SPEAK_SERVICE,
     STT_SERVICE_NAME,
@@ -23,12 +25,14 @@ from frida_interfaces.srv import (
     CommonInterest,
     ExtractInfo,
     Grammar,
+    IsPositive,
     LLMWrapper,
     QueryItem,
     Speak,
 )
 from rclpy.node import Node
 from std_msgs.msg import String
+from utils.decorators import service_check
 from utils.logger import Logger
 from utils.task import Task
 
@@ -36,13 +40,12 @@ from subtask_managers.subtask_meta import SubtaskMeta
 
 TIMEOUT = 5.0
 
+STATE = {"TERMINAL_ERROR": -1, "EXECUTION_ERROR": 0, "EXECUTION_SUCCESS": 1, "SERVICE_CHECK": 2}
+
 
 class HRITasks(metaclass=SubtaskMeta):
     """Class to manage the vision tasks"""
 
-    STATE = {"TERMINAL_ERROR": -1, "EXECUTION_ERROR": 0, "EXECUTION_SUCCESS": 1}
-
-    # TODO: perform service checks using config.topic_config
     def __init__(self, task_manager, config=None, task=Task.RECEPTIONIST) -> None:
         self.node = task_manager
         self.keyword = ""
@@ -58,10 +61,11 @@ class HRITasks(metaclass=SubtaskMeta):
         self.common_interest_service = self.node.create_client(
             CommonInterest, COMMON_INTEREST_SERVICE
         )
+        self.is_positive_service = self.node.create_client(IsPositive, IS_POSITIVE_SERVICE)
 
         self.query_item_client = self.node.create_client(QueryItem, QUERY_ITEM_SERVICE)
         self.add_item_client = self.node.create_client(AddItem, ADD_ITEM_SERVICE)
-        self.llm_wrapper_service = self.node.create_client(LLMWrapper, "/nlp/llm")
+        self.llm_wrapper_service = self.node.create_client(LLMWrapper, LLM_WRAPPER_SERVICE)
         self.keyword_client = self.node.create_subscription(
             String, WAKEWORD_TOPIC, self._get_keyword, 10
         )
@@ -104,6 +108,7 @@ class HRITasks(metaclass=SubtaskMeta):
                 if not service["client"].wait_for_server(timeout_sec=TIMEOUT):
                     Logger.warn(self.node, f"{key} action server not initialized. ({self.task})")
 
+    @service_check("speak_service", STATE["SERVICE_CHECK"], TIMEOUT)
     def say(self, text: str, wait: bool = True) -> None:
         """Method to publish directly text to the speech node"""
         self.node.get_logger().info(f"Sending to saying service: {text}")
@@ -116,13 +121,12 @@ class HRITasks(metaclass=SubtaskMeta):
             rclpy.spin_until_future_complete(self.node, future)
             self.node.get_logger().info("after future complete")
             return (
-                HRITasks.STATE["EXECUTION_SUCCESS"]
-                if future.result().success
-                else HRITasks.STATE["EXECUTION_ERROR"]
+                STATE["EXECUTION_SUCCESS"] if future.result().success else STATE["EXECUTION_ERROR"]
             )
-        return HRITasks.STATE["EXECUTION_SUCCESS"]
+        return STATE["EXECUTION_SUCCESS"]
 
-    def extract_data(self, query, complete_text) -> str:
+    @service_check("extract_data_service", STATE["SERVICE_CHECK"], TIMEOUT)
+    def extract_data(self, query, complete_text, context="") -> str:
         """
         Extracts data from the given query and complete text.
 
@@ -137,7 +141,7 @@ class HRITasks(metaclass=SubtaskMeta):
             f"Sending to extract data service: query={query}, text={complete_text}"
         )
 
-        request = ExtractInfo.Request(data=query, full_text=complete_text)
+        request = ExtractInfo.Request(data=query, full_text=complete_text, context=context)
         future = self.extract_data_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
         return future.result().result
@@ -148,7 +152,6 @@ class HRITasks(metaclass=SubtaskMeta):
         elif command == "clarification":
             self.say("Sorry, I don't undestand your command.")
             self.say(command.complement)
-
         else:
             return self.say(f"Sorry, I don't know how to {command}")
 
@@ -160,6 +163,7 @@ class HRITasks(metaclass=SubtaskMeta):
             self.node.get_logger().error(f"Error: {e}")
             self.keyword = ""
 
+    @service_check("hear_service", STATE["SERVICE_CHECK"], TIMEOUT)
     def hear(self) -> str:
         self.node.get_logger().info("Hearing from user")
         request = STT.Request()
@@ -181,12 +185,14 @@ class HRITasks(metaclass=SubtaskMeta):
 
         return self.keyword
 
+    @service_check("grammar_service", STATE["SERVICE_CHECK"], TIMEOUT)
     def refactor_text(self, text: str) -> str:
         request = Grammar.Request(text=text)
         future = self.grammar_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
         return future.result().corrected_text
 
+    @service_check("query_item_client", STATE["SERVICE_CHECK"], TIMEOUT)
     def find_closest(self, query: str, collection: str, top_k: int = 1) -> list[str]:
         """
         Finds the closest matching item in a specified collection based on the given query.
@@ -205,13 +211,14 @@ class HRITasks(metaclass=SubtaskMeta):
 
         return future.result().results
 
+    @service_check("llm_wrapper_service", STATE["SERVICE_CHECK"], TIMEOUT)
     def ask(self, question: str) -> str:
-        self.llm_wrapper_service
         request = LLMWrapper.Request(question=question)
-        future = self.extract_data_service.call_async(request)
+        future = self.llm_wrapper_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
         return future.result().answer
 
+    @service_check("add_item_client", STATE["SERVICE_CHECK"], TIMEOUT)
     def add_item(self, document: list, item_id: list, collection: str, metadata: list) -> str:
         """
         Adds new items to the ChromaDB collection.
@@ -247,6 +254,7 @@ class HRITasks(metaclass=SubtaskMeta):
         except Exception as e:
             return f"Error: {str(e)}"
 
+    @service_check("command_interpreter_client", STATE["SERVICE_CHECK"], TIMEOUT)
     def command_interpreter(self, text: str) -> CommandInterpreter.Response:
         request = CommandInterpreter.Request(text=text)
         future = self.command_interpreter_client.call_async(request)
@@ -254,13 +262,21 @@ class HRITasks(metaclass=SubtaskMeta):
 
         return future.result().commands
 
+    @service_check("common_interest_service", STATE["SERVICE_CHECK"], TIMEOUT)
     def common_interest(self, person1, interest1, person2, interest2):
         request = CommonInterest.Request(
             person1=person1, interests1=interest1, person2=person2, interests2=interest2
         )
-        future = self.command_interpreter_client.call_async(request)
+        future = self.common_interest_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
         return future.result().common_interest
+
+    @service_check("is_positive_service", STATE["SERVICE_CHECK"], TIMEOUT)
+    def is_positive(self, text):
+        request = IsPositive.Request(text=text)
+        future = self.is_positive_service.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+        return future.result().is_positive
 
 
 if __name__ == "__main__":

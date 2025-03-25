@@ -3,24 +3,24 @@
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
-from geometry_msgs.msg import Pose
-from frida_interfaces.action import PickAction
+from geometry_msgs.msg import PoseStamped
+from frida_interfaces.action import PickMotion
 
 
-class PickActionClient(Node):
+class PickMotionClient(Node):
     def __init__(self):
         super().__init__("pick_action_client")
-        self._action_client = ActionClient(self, PickAction, "pick_action_server")
+        self._action_client = ActionClient(self, PickMotion, "pick_action_server")
         self.get_logger().info("Pick Action Client has been started")
 
-    def send_goal(self, poses):
+    def send_goal(self, stamped_poses):
         # Wait for action server
         self.get_logger().info("Waiting for action server...")
         self._action_client.wait_for_server()
 
         # Create goal
-        goal_msg = PickAction.Goal()
-        goal_msg.grasping_poses = poses
+        goal_msg = PickMotion.Goal()
+        goal_msg.grasping_poses = stamped_poses
 
         # Send goal
         self.get_logger().info("Sending goal...")
@@ -45,39 +45,48 @@ class PickActionClient(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    action_client = PickActionClient()
+    action_client = PickMotionClient()
 
-    # Create sample poses
-    sample_poses = []
+    # Create sample stamped poses
+    stamped_poses = []
+
+    # Get current time for stamping
+    stamp = action_client.get_clock().now().to_msg()
 
     # Pose 1 - Above table
-    pose1 = Pose()
-    pose1.position.x = 0.4
-    pose1.position.y = 0.0
-    pose1.position.z = 0.3
-    pose1.orientation.w = 1.0
+    pose1 = PoseStamped()
+    pose1.header.stamp = stamp
+    pose1.header.frame_id = "link_base"
+    pose1.pose.position.x = 0.4
+    pose1.pose.position.y = 0.0
+    pose1.pose.position.z = 0.3
+    pose1.pose.orientation.w = 1.0
 
     # Pose 2 - Left side
-    pose2 = Pose()
-    pose2.position.x = 0.4
-    pose2.position.y = 0.2
-    pose2.position.z = 0.3
-    pose2.orientation.w = 1.0
+    pose2 = PoseStamped()
+    pose2.header.stamp = stamp
+    pose2.header.frame_id = "link_base"
+    pose2.pose.position.x = 0.4
+    pose2.pose.position.y = 0.2
+    pose2.pose.position.z = 0.3
+    pose2.pose.orientation.w = 1.0
 
     # Pose 3 - Right side
-    pose3 = Pose()
-    pose3.position.x = 0.5
-    pose3.position.y = 0.5
-    pose3.position.z = 0.4
-    pose3.orientation.x = 0.0
-    pose3.orientation.y = 0.0
-    pose3.orientation.z = 0.0
-    pose3.orientation.w = 1.0
+    pose3 = PoseStamped()
+    pose3.header.stamp = stamp
+    pose3.header.frame_id = "link_base"
+    pose3.pose.position.x = 0.35
+    pose3.pose.position.y = 0.35
+    pose3.pose.position.z = 0.4
+    pose3.pose.orientation.x = 1.0
+    pose3.pose.orientation.y = 0.0
+    pose3.pose.orientation.z = 0.0
+    pose3.pose.orientation.w = 0.0
 
-    sample_poses = [pose1, pose2, pose3]
+    stamped_poses = [pose1, pose2, pose3]
 
-    # Send the goal with sample poses
-    action_client.send_goal(sample_poses)
+    # Send the goal with sample stamped poses
+    action_client.send_goal(stamped_poses)
 
     rclpy.spin(action_client)
 

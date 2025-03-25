@@ -2,6 +2,13 @@ ARG BASE_IMAGE=dustynv/l4t-pytorch:r36.4.0
 FROM ${BASE_IMAGE}
 
 USER ros
-RUN sudo usermod -a -G video ros
-RUN newgrp video
+SHELL ["/bin/bash", "-c"]
+RUN mkdir /home/ros/ros_packages
+WORKDIR /home/ros/ros_packages
+RUN git clone https://github.com/introlab/rtabmap.git src/rtabmap
+RUN git clone --branch ros2 https://github.com/introlab/rtabmap_ros.git src/rtabmap_ros
+RUN sudo apt update
+RUN sudo rosdep init && rosdep update && rosdep install --from-paths src --ignore-src -r -y
+RUN source /opt/ros/humble/setup.bash && colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
+RUN echo "source /home/ros/ros_packages/install/setup.bash" >> /home/ros/.bashrc
 WORKDIR /workspace
