@@ -17,7 +17,6 @@ WORKDIR /workspace
 
 # CV-bridge
 RUN apt update 
-RUN apt install -y python3-venv
 RUN apt install -y ros-humble-cv-bridge
 
 

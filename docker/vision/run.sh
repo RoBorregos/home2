@@ -156,13 +156,13 @@ case $TASK in
         ;;
 esac
 
-MOONDREAM_SETUP="$SOURCE_ROS && $COLCON moondream_run && $SOURCE"
-USE_ENV="source vision/moondream_env/bin/activate"
-RUN_MOONDREAM="ros2 run moondream_run moondream_run.py"
 
 if [ "$MOONDREAM" = true ]; then
     echo "Running Moondream..."
-    docker compose exec -d $SERVICE_NAME bash -c "$MOONDREAM_SETUP && $USE_ENV && $RUN_MOONDREAM"
+    RUNNING_CONTAINER=$(docker ps -q -f name=moondream-node)
+    if [ -z "$RUNNING_CONTAINER" ]; then
+        docker compose -f moondream.yaml up -d --build
+    fi
 fi
 
 # check if TASK is not empty

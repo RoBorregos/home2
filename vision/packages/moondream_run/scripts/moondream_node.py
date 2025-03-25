@@ -22,11 +22,14 @@ from frida_interfaces.srv import BeverageLocation
 from frida_interfaces.srv import PersonPosture
 
 from ament_index_python.packages import get_package_share_directory
+
 PATH = get_package_share_directory("moondream_run")
 sys.path.append(os.path.join(PATH, "moondream_server"))
 # Import the generated gRPC modules
 import moondream_proto_pb2
 import moondream_proto_pb2_grpc
+
+YOLO_LOCATION = str(pathlib.Path(__file__).parent) + "/yolov8n.pt"
 
 CAMERA_TOPIC = "/zed/zed_node/rgb/image_rect_color"
 PERSON_DESCRIPTION_TOPIC = "/vision/person_description"
@@ -39,7 +42,6 @@ class Position(Enum):
     RIGHT = "right"
     NOT_FOUND = "not found"
 
-YOLO_LOCATION = str(pathlib.Path(__file__).parent) + "/yolov8n.pt"
 # MOONDREAM_LOCATION = MOONDREAM_LOCATION = str(pathlib.Path(__file__).parent) + "/moondream-2b-int8.mf.gz"
 
 CONF_THRESHOLD = 0.5
