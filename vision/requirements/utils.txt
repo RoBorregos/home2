@@ -1,5 +1,4 @@
 pathlib
 tqdm
 pillow
-ultralytics
 timm
