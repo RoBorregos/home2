@@ -1,38 +1,32 @@
-name,category
-chips_can,food
-cereal_box,food
-tuna_can,food
-milk,food
-tomato_soup,food
-mustard_bottle,food
-red_bowl,kitchen
-spoon,kitchen
-fork,kitchen
-knife,kitchen
-plate,kitchen
-mug,kitchen
-blue_bowl,kitchen
-rubik_cube,tools
-sponge,tools
-wood_block,tools
-screrwdriver,tools
-tweezer,tools
-baseball,balls
-tennis_ball,balls
-big_tennis_ball,balls
-apple,fruits
-banana,fruits
-lemmon,fruits
-orange,fruits
-peach,fruits
-pear,fruits
-cocacola,food
-galletas,food
-leche,food
-pringles,food
-lysol,tools
-zucaritas,food
-harpic,tools
-manzana_roja,fruits
-manzana_verde,fruits
-zote,tools
+documents,metadata
+chips_can, "{\"context\": \"items for household use\"}"
+cereal_box, "{\"context\": \"household items\"}"
+tuna_can, "{\"context\": \"household items\"}"
+milk, "{\"context\": \"household items\"}"
+tomato_soup, "{\"context\": \"household items\"}"
+mustard_bottle, "{\"context\": \"household items\"}"
+red_bowl, "{\"context\": \"household items\"}"
+spoon, "{\"context\": \"household items\"}"
+fork, "{\"context\": \"household items\"}"
+knife, "{\"context\": \"household items\"}"
+plate, "{\"context\": \"household items\"}"
+mug, "{\"context\": \"household items\"}"
+blue_bowl, "{\"context\": \"household items\"}"
+rubik_cube, "{\"context\": \"household items\"}"
+sponge, "{\"context\": \"household items\"}"
+wood_block, "{\"context\": \"household items\"}"
+screrwdriver, "{\"context\": \"household items\"}"
+tweezer, "{\"context\": \"household items\"}"
+baseball, "{\"context\": \"household items\"}"
+tennis_ball, "{\"context\": \"household items\"}"
+big_tennis_ball, "{\"context\": \"household items\"}"
+apple, "{\"context\": \"household items\"}"
+banana, "{\"context\": \"household items\"}"
+lemmon, "{\"context\": \"household items\"}"
+orange, "{\"context\": \"household items\"}"
+peach, "{\"context\": \"household items\"}"
+pear, "{\"context\": \"household items\"}"
+cocacola, "{\"context\": \"household items\"}"
+galletas, "{\"context\": \"household items\"}"
+leche, "{\"context\": \"household items\"}"
+pringles, "{\"context\": \"household items\"}"

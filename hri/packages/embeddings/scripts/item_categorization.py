@@ -67,13 +67,13 @@ class Embeddings(Node):
                 # If metadata is provided and not empty, validate and parse it
                 metadata_parsed = MetadataModel.model_validate_json(request.metadata)
                 metadata_parsed = metadata_parsed.model_dump()
-                self.chroma_adapter.add_entry(
+                self.chroma_adapter.add_entries_with_metadata(
                     request.collection, request.document, metadata_parsed
                 )
             else:
                 # If metadata is empty (either empty string or only whitespace), set it to an empty dictionary
                 metadata_parsed = {}
-                self.chroma_adapter.add_entry(request.collection, request.document)
+                self.chroma_adapter.add_entries(request.collection, request.document)
             # Delegate to ChromaAdapter to handle the actual ChromaDB interaction
             response.success = True
             response.message = "Item added successfully"
