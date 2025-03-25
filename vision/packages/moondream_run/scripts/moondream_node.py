@@ -26,9 +26,10 @@ from ament_index_python.packages import get_package_share_directory
 
 PATH = get_package_share_directory("moondream_run")
 sys.path.append(os.path.join(PATH, "moondream_server"))
+
 # Import the generated gRPC modules
-import moondream_proto_pb2
-import moondream_proto_pb2_grpc
+import moondream_proto_pb2  # noqa
+import moondream_proto_pb2_grpc  # noqa
 
 YOLO_LOCATION = str(pathlib.Path(__file__).parent) + "/yolov8n.pt"
 
