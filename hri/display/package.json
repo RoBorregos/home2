@@ -5,7 +5,7 @@
   "scripts": {
     "build": "npx tsc",
     "start": "node dist/index.js",
-    "dev": "concurrently \"npx tsc --watch \" \"nodemon -q dist/index.js\" \"cd client && npm run start\"",
+    "dev": "concurrently \"npx tsc --watch \" \"nodemon -q dist/index.js\" \"cd web-ui && npm run dev\"",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

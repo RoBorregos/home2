@@ -12,7 +12,7 @@
     "skipLibCheck": true
   },
   "exclude": [
-    "client",
+    "web-ui",
     "dist",
     "node_modules"
   ]

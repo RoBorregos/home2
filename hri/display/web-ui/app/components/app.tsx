@@ -1,22 +1,24 @@
-import React, { useEffect, useState } from "react";
+'use client';
+
+import React, { useEffect, useState } from 'react';
 
 const App: React.FC = () => {
   const [messages, setMessages] = useState<string[]>([]);
 
   useEffect(() => {
-    const socket = new WebSocket("ws://localhost:8000");
+    const socket = new WebSocket('ws://localhost:8000');
 
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
-      if (data.type === "heard") {
+      if (data.type === 'heard') {
         setMessages((prev) => [...prev, `Heard: ${data.data}`]);
-      } else if (data.type === "spoken") {
+      } else if (data.type === 'spoken') {
         setMessages((prev) => [...prev, `Spoken: ${data.data}`]);
       }
     };
 
-    socket.onclose = () => console.log("WebSocket disconnected");
-    socket.onerror = (error) => console.error("WebSocket error:", error);
+    socket.onclose = () => console.log('WebSocket disconnected');
+    socket.onerror = (error) => console.error('WebSocket error:', error);
 
     return () => {
       socket.close();
@@ -24,7 +26,7 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <div className="p-4 text-black">
+    <div className="p-4 text-white">
       <h1 className="text-2xl font-bold mb-4">ROS2 Messages</h1>
       <ul className="list-disc pl-5">
         {messages.map((msg, index) => (
