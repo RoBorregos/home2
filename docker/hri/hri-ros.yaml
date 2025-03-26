@@ -27,7 +27,7 @@ services:
     env_file:
       - .env
     tty: true
-    entrypoint: [ "bash", "-il", "-c"]
+    entrypoint: ["bash", "-il", "-c"]
     command: [
       # "colcon build --symlink-install --packages-select task_manager frida_interfaces frida_constants speech nlp embeddings && source ~/.bashrc && bash"
       "colcon build --symlink-install --packages-select task_manager frida_interfaces frida_constants speech nlp embeddings && source ~/.bashrc && ros2 launch speech hri_launch.py"
