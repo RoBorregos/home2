@@ -361,7 +361,7 @@ class FaceRecognition(Node):
         if detected:
             self.publish_follow_face(xc, yc, largest_face_name)
         if self.verbose:
-            cv2.imshow("Face detection", annotated_frame)
+            cv2.imshow("Face recognition", annotated_frame)
         self.image_view = annotated_frame
         self.view_pub.publish(self.bridge.cv2_to_imgmsg(annotated_frame, "bgr8"))
 
