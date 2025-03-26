@@ -31,6 +31,7 @@ from frida_constants.vision_constants import (
 
 TIMEOUT = 5.0
 
+
 class VisionTasks:
     """Class to manage the vision tasks"""
 
@@ -78,7 +79,7 @@ class VisionTasks:
                     "client": self.track_person_client,
                     "type": "service",
                 }
-            }
+            },
         }
 
         if not self.mock_data:
@@ -112,7 +113,7 @@ class VisionTasks:
             return self.follow_face["x"], self.follow_face["y"]
         else:
             return None, None
-        
+
     @mockable(return_value=100)
     @service_check(client="save_name_client", return_value=Status.TERMINAL_ERROR, timeout=TIMEOUT)
     def save_face_name(self, name: str) -> int:
@@ -276,7 +277,7 @@ class VisionTasks:
 
         Logger.success(self.node, f"Following face success: {name}")
         return Status.EXECUTION_SUCCESS
-    
+
     @mockable(return_value=Status.EXECUTION_SUCCESS, delay=2)
     @service_check("track_person_client", Status.EXECUTION_ERROR, TIMEOUT)
     def track_person(self):

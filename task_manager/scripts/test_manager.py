@@ -14,6 +14,7 @@ from rclpy.node import Node
 from subtask_managers.vision_tasks import VisionTasks
 from utils.task import Task
 
+
 class TestTaskManager(Node):
     def __init__(self):
         super().__init__("test_task_manager")
