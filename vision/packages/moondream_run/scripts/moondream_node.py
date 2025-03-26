@@ -125,7 +125,7 @@ class MoondreamNode(Node):
             response.location = "No image received yet."
             response.success = False
             return response
-        
+
         _, image_bytes = cv2.imencode(".jpg", self.image)
         image_bytes = image_bytes.tobytes()
 
@@ -141,14 +141,13 @@ class MoondreamNode(Node):
 
             response.location = beverage_position.position
             response.success = True
-            
+
         except Exception as e:
             self.get_logger().error(f"Error locating beverage: {e}")
             response.location = ""
             response.success = False
-        
-        return response
 
+        return response
 
         # frame = self.image
         # encoded_image = self.moondream_model.encode_image(frame)
