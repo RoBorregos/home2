@@ -16,7 +16,9 @@ from frida_constants.manipulation_constants import (
 import copy
 from geometry_msgs.msg import PoseStamped
 
-CFG_PATH = "/workspace/src/home2/manipulation/packages/arm_pkg/config/eigen_params.cfg"
+CFG_PATH = (
+    "/workspace/src/home2/manipulation/packages/arm_pkg/config/frida_eigen_params.cfg"
+)
 
 
 class ManipulationCore(Node):
