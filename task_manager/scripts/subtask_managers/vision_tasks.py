@@ -16,13 +16,16 @@ from utils.decorators import mockable, service_check
 from utils.logger import Logger
 from utils.task import Task
 
-SAVE_NAME_TOPIC = "/vision/new_name"
-FIND_SEAT_TOPIC = "/vision/find_seat"
-DETECT_PERSON_TOPIC = "/vision/detect_person"
-FOLLOW_TOPIC = "/vision/follow_face"
-FOLLOW_BY_TOPIC = "/vision/follow_by_name"
-DESCRIPTION_TOPIC = "/vision/person_description"
-BEVERAGE_TOPIC = "/vision/beverage_location"
+from frida_constants.vision_constants import (
+    SAVE_NAME_TOPIC,
+    FIND_SEAT_TOPIC,
+    CHECK_PERSON_TOPIC,
+    FOLLOW_TOPIC,
+    FOLLOW_BY_TOPIC,
+    DESCRIPTION_TOPIC,
+    BEVERAGE_TOPIC,
+)
+
 TIMEOUT = 5.0
 
 
@@ -54,9 +57,7 @@ class VisionTasks:
             PersonDescription, DESCRIPTION_TOPIC
         )
         self.beverage_location_client = self.node.create_client(BeverageLocation, BEVERAGE_TOPIC)
-        self.detect_person_action_client = ActionClient(
-            self.node, DetectPerson, DETECT_PERSON_TOPIC
-        )
+        self.detect_person_action_client = ActionClient(self.node, DetectPerson, CHECK_PERSON_TOPIC)
 
         self.services = {
             Task.RECEPTIONIST: {

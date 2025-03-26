@@ -2,7 +2,7 @@ useful_audio:
   ros__parameters:
     debug: False
     USE_SILERO_VAD: True
-    threshold: 0.1
+    threshold: 0.7
     DISABLE_KWS: False
     MAX_AUDIO_DURATION: 10
     WAKEWORD_TOPIC: REPLACE

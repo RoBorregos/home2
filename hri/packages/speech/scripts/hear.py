@@ -82,6 +82,7 @@ class HearNode(Node):
         subscription_group = MutuallyExclusiveCallbackGroup()
         service_group = MutuallyExclusiveCallbackGroup()
         hotword_service_group = MutuallyExclusiveCallbackGroup()
+        audio_state_group = MutuallyExclusiveCallbackGroup()
 
         # Subscribe to audio data
         self.audio_subscription = self.create_subscription(
@@ -96,6 +97,7 @@ class HearNode(Node):
         self.service_active = False
         if start_service:
             self.service_text = ""
+            self.is_transcribing = False
             wakeword_topic = (
                 self.declare_parameter("WAKEWORD_TOPIC", "/wakeword_detected")
                 .get_parameter_value()
@@ -108,6 +110,13 @@ class HearNode(Node):
                 self.stt_service_callback,
                 callback_group=service_group,
             )
+            self.audio_state_subscriber = self.create_subscription(
+                String,
+                "AudioState",
+                self.audio_state_callback,
+                10,
+                callback_group=audio_state_group,
+            )
 
         self.hotword_service = self.create_service(
             UpdateHotwords,
@@ -119,6 +128,8 @@ class HearNode(Node):
         self.get_logger().info("*Hear Node is ready*")
 
     def callback_audio(self, data):
+        if self.service_active:
+            self.is_transcribing = True
         self.get_logger().info("Received audio data, sending to Whisper gRPC server...")
 
         try:
@@ -141,6 +152,7 @@ class HearNode(Node):
                 # If the service is active, store the transcription
                 self.service_text = transcription
                 self.service_active = False
+                self.is_transcribing = False
             else:
                 # If the service is not active, publish the transcription
                 self.transcription_publisher.publish(msg)
@@ -156,10 +168,15 @@ class HearNode(Node):
 
         detection_info = {"keyword": "frida", "score": 1}
         self.KWS_publisher_mock.publish(String(data=str(detection_info)))
+        self.service_text = ""
         while self.service_active:
             pass
         response.text_heard = self.service_text
         return response
+
+    def audio_state_callback(self, msg):
+        if msg.data == "idle" and not self.is_transcribing:
+            self.service_active = False
 
     def set_hotwords_callback(self, request, response):
         self.hotwords = request.hotwords
