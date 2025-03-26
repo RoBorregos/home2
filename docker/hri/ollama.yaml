@@ -10,4 +10,3 @@ services:
       - OLLAMA_MODELS=/ollama
     stdin_open: true
     tty: true
-    restart: unless-stopped
