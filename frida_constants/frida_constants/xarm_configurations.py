@@ -10,7 +10,7 @@ FRONT_STARE = {
 TABLE_STARE = {
     "joint1": -90.0,
     "joint2": -45.0,
-    "joint3": -90.0,
+    "joint3": -100.0,
     "joint4": 0.0,
     "joint5": 45.0,
     "joint6": 45.0,
