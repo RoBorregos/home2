@@ -54,7 +54,7 @@ class VisionTasks:
         self.find_seat_client = self.node.create_client(FindSeat, FIND_SEAT_TOPIC)
         self.follow_by_name_client = self.node.create_client(SaveName, FOLLOW_BY_TOPIC)
         self.person_description_client = self.node.create_client(
-            PersonDescription, DESCRIPTION_TOPIC
+            PersonDescription, PERSON_DESCRIPTION_TOPIC
         )
         self.beverage_location_client = self.node.create_client(BeverageLocation, BEVERAGE_TOPIC)
         self.detect_person_action_client = ActionClient(self.node, DetectPerson, CHECK_PERSON_TOPIC)
