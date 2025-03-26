@@ -125,22 +125,46 @@ class MoondreamNode(Node):
             response.location = "No image received yet."
             response.success = False
             return response
+        
+        _, image_bytes = cv2.imencode(".jpg", self.image)
+        image_bytes = image_bytes.tobytes()
 
-        frame = self.image
-        encoded_image = self.moondream_model.encode_image(frame)
-        beverage_position = self.moondream_model.find_beverage(
-            encoded_image, request.beverage
-        )
+        try:
+            encoded = self.stub.EncodeImage(
+                moondream_proto_pb2.ImageRequest(image_data=image_bytes)
+            )
+            beverage_position = self.stub.FindBeverage(
+                moondream_proto_pb2.FindBeverageRequest(
+                    encoded_image=encoded.encoded_image, subject=request.beverage
+                )
+            )
 
-        if beverage_position == Position.NOT_FOUND:
-            self.get_logger().warn("Beverage not found")
-            response.location = beverage_position.value
-            response.success = False
-        else:
-            response.location = beverage_position.value
+            response.location = beverage_position.position
             response.success = True
-            self.get_logger().info(f"Beverage found at: {response.location}")
+            
+        except Exception as e:
+            self.get_logger().error(f"Error locating beverage: {e}")
+            response.location = ""
+            response.success = False
+        
         return response
+
+
+        # frame = self.image
+        # encoded_image = self.moondream_model.encode_image(frame)
+        # beverage_position = self.moondream_model.find_beverage(
+        #     encoded_image, request.beverage
+        # )
+
+        # if beverage_position == Position.NOT_FOUND:
+        #     self.get_logger().warn("Beverage not found")
+        #     response.location = beverage_position.value
+        #     response.success = False
+        # else:
+        #     response.location = beverage_position.value
+        #     response.success = True
+        #     self.get_logger().info(f"Beverage found at: {response.location}")
+        # return response
 
     def person_posture_callback(self, request, response):
         """Callback to determine the position of the person in the image."""
