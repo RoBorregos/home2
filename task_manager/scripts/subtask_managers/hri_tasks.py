@@ -4,6 +4,9 @@
 HRI Subtask manager
 """
 
+import re
+from enum import Enum
+
 import rclpy
 from frida_constants.hri_constants import (
     ADD_ITEM_SERVICE,
@@ -11,6 +14,7 @@ from frida_constants.hri_constants import (
     COMMON_INTEREST_SERVICE,
     EXTRACT_DATA_SERVICE,
     GRAMMAR_SERVICE,
+    IS_NEGATIVE_SERVICE,
     IS_POSITIVE_SERVICE,
     LLM_WRAPPER_SERVICE,
     QUERY_ITEM_SERVICE,
@@ -25,6 +29,7 @@ from frida_interfaces.srv import (
     CommonInterest,
     ExtractInfo,
     Grammar,
+    IsNegative,
     IsPositive,
     LLMWrapper,
     QueryItem,
@@ -39,6 +44,15 @@ from utils.task import Task
 from subtask_managers.subtask_meta import SubtaskMeta
 
 TIMEOUT = 5.0
+
+
+class ReturnStates(Enum):
+    TERMINAL_ERROR = -1
+    EXECUTION_ERROR = 0
+    EXECUTION_SUCCESS = 1
+    SERVICE_CHECK = 2
+    TIMEOUT = 3
+
 
 STATE = {"TERMINAL_ERROR": -1, "EXECUTION_ERROR": 0, "EXECUTION_SUCCESS": 1, "SERVICE_CHECK": 2}
 
@@ -62,6 +76,7 @@ class HRITasks(metaclass=SubtaskMeta):
             CommonInterest, COMMON_INTEREST_SERVICE
         )
         self.is_positive_service = self.node.create_client(IsPositive, IS_POSITIVE_SERVICE)
+        self.is_negative_service = self.node.create_client(IsNegative, IS_NEGATIVE_SERVICE)
 
         self.query_item_client = self.node.create_client(QueryItem, QUERY_ITEM_SERVICE)
         self.add_item_client = self.node.create_client(AddItem, ADD_ITEM_SERVICE)
@@ -174,6 +189,45 @@ class HRITasks(metaclass=SubtaskMeta):
 
         return future.result().text_heard
 
+    def confirm(
+        self,
+        question: str,
+        use_hotwords: bool = True,
+        retries: int = 5,
+        wait_between_retries: float = 5,
+    ):
+        """
+        Method to confirm a specific question.
+
+        Args:
+            question: the inquiry to confirm
+            use_hotwords: if True, the robot will only react if 'yes' or 'no' is mentioned. Otherwise, it will hear any type of answer and interpret it with an llm.
+            retries: the amount of times to try before returning false
+        """
+        current_attempt = 0
+        while current_attempt < retries:
+            current_attempt += 1
+            # Say the question
+            self.say(question)
+
+            if use_hotwords:
+                self.say("Please confirm by saying yes or no")
+
+                keyword = self.interpret_keyword(["yes", "no"], timeout=wait_between_retries)
+                if keyword != "":
+                    return ReturnStates.EXECUTION_SUCCESS, keyword
+            else:
+                start_time = self.node.get_clock().now()
+                while (
+                    (self.node.get_clock().now() - start_time).nanoseconds / 1e9
+                ) < wait_between_retries:
+                    # interpret_text = self.hear()
+                    pass
+
+                pass
+
+        return ReturnStates.TIMEOUT, ""
+
     def interpret_keyword(self, keywords: list[str], timeout: float) -> str:
         start_time = self.node.get_clock().now()
         self.keyword = ""
@@ -263,12 +317,15 @@ class HRITasks(metaclass=SubtaskMeta):
         return future.result().commands
 
     @service_check("common_interest_service", STATE["SERVICE_CHECK"], TIMEOUT)
-    def common_interest(self, person1, interest1, person2, interest2):
+    def common_interest(self, person1, interest1, person2, interest2, remove_thinking=True):
         request = CommonInterest.Request(
             person1=person1, interests1=interest1, person2=person2, interests2=interest2
         )
         future = self.common_interest_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
+
+        if remove_thinking:
+            return re.sub(r"<think>.*?</think>", "", future.result().common_interest)
         return future.result().common_interest
 
     @service_check("is_positive_service", STATE["SERVICE_CHECK"], TIMEOUT)
@@ -277,6 +334,13 @@ class HRITasks(metaclass=SubtaskMeta):
         future = self.is_positive_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
         return future.result().is_positive
+
+    @service_check("is_negative_service", STATE["SERVICE_CHECK"], TIMEOUT)
+    def is_negative(self, text):
+        request = IsPositive.Request(text=text)
+        future = self.is_negative_service.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+        return future.result().is_negative
 
 
 if __name__ == "__main__":

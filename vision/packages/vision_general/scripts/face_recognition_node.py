@@ -67,9 +67,10 @@ class FaceRecognition(Node):
             PersonList, PERSON_LIST_TOPIC, 10
         )
         self.verbose = self.declare_parameter("verbose", True)
-
+        self.annotated_frame = []
         self.setup()
         self.create_timer(0.1, self.run)
+        self.create_timer(0.1, self.publish_image)
 
     def setup(self):
         """Setup face recognition, reset variables and load models"""
@@ -112,6 +113,13 @@ class FaceRecognition(Node):
     def success(self, message) -> None:
         """Print success message"""
         self.get_logger().info(f"\033[92mSUCCESS:\033[0m {message}")
+
+    def publish_image(self) -> None:
+        """Publish image with annotations"""
+        if len(self.annotated_frame) > 0:
+            self.view_pub.publish(
+                self.bridge.cv2_to_imgmsg(self.annotated_frame, "bgr8")
+            )
 
     def process_imgs(self) -> None:
         """Make encodings of known people images"""
@@ -177,7 +185,7 @@ class FaceRecognition(Node):
             if face["x"] == xc and face["y"] == yc:
                 index = i
 
-            # cv2.circle(annotated_frame, (int(face["x"]), int(face["y"])), 5, (0, 255, 0), -1)
+            # cv2.circle(self.annotated_frame, (int(face["x"]), int(face["y"])), 5, (0, 255, 0), -1)
 
         self.curr_faces[index]["name"] = self.new_name
         self.face_list.list[index].name = self.new_name
@@ -227,7 +235,7 @@ class FaceRecognition(Node):
         largest_area_params = None
         largest_face_name = ""
 
-        annotated_frame = self.frame.copy()
+        self.annotated_frame = self.frame.copy()
         self.curr_faces = []
         self.face_list = PersonList()
         detected = False
@@ -292,30 +300,30 @@ class FaceRecognition(Node):
             # Show results
             if flag:
                 cv2.rectangle(
-                    annotated_frame,
+                    self.annotated_frame,
                     (left, bottom - 35),
                     (right, bottom),
                     (255, 0, 0),
                     cv2.FILLED,
                 )
                 cv2.rectangle(
-                    annotated_frame, (left, top), (right, bottom), (255, 0, 0), 2
+                    self.annotated_frame, (left, top), (right, bottom), (255, 0, 0), 2
                 )
             else:
                 cv2.rectangle(
-                    annotated_frame,
+                    self.annotated_frame,
                     (left, bottom - 35),
                     (right, bottom),
                     (0, 0, 255),
                     cv2.FILLED,
                 )
                 cv2.rectangle(
-                    annotated_frame, (left, top), (right, bottom), (0, 0, 255), 2
+                    self.annotated_frame, (left, top), (right, bottom), (0, 0, 255), 2
                 )
 
             font = cv2.FONT_HERSHEY_DUPLEX
             cv2.putText(
-                annotated_frame,
+                self.annotated_frame,
                 name,
                 (left + 6, bottom - 6),
                 font,
@@ -361,9 +369,11 @@ class FaceRecognition(Node):
         if detected:
             self.publish_follow_face(xc, yc, largest_face_name)
         if self.verbose:
-            cv2.imshow("Face detection", annotated_frame)
-        self.image_view = annotated_frame
-        self.view_pub.publish(self.bridge.cv2_to_imgmsg(annotated_frame, "bgr8"))
+            cv2.imshow("Face recognition", self.annotated_frame)
+        # self.image_view = self.annotated_frame
+        # self.view_pub.publish(
+        #     self.bridge.cv2_to_imgmsg(self.self.annotated_frame, "bgr8")
+        # )
 
         if cv2.waitKey(1) & 0xFF == ord("q"):
             self.prev_faces = []
