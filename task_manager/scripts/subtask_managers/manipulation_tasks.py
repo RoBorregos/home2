@@ -10,7 +10,7 @@ import rclpy
 from rclpy.node import Node
 from utils.logger import Logger
 
-from xarm_msgs.srv import SetInt16, SetInt16ById, MoveVelocity
+# from xarm_msgs.srv import SetInt16, SetInt16ById, MoveVelocity
 from frida_interfaces.action import MoveJoints
 from frida_interfaces.srv import GetJoints
 from frida_constants.xarm_configurations import XARM_CONFIGURATIONS

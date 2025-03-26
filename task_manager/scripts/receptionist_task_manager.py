@@ -92,8 +92,12 @@ class ReceptionistTM(Node):
             name = statement
         return name
 
-    # TODO (@alecoeto): Check nav positions and manipulation positions
     # TODO (@alecoeto): Confirm drink and interest
+    # TODO (@alecoeto): use constants in moondream node
+    # TODO (@alecoeto): send robot to entrance as first step
+    # TODO (@alecoeto): publish face recognition for rqt
+    # TODO (@alecoeto): test beverage moondream 
+
     def run(self):
         """State machine"""
 
@@ -112,7 +116,6 @@ class ReceptionistTM(Node):
                 self.subtask_manager.manipulation.move_joint_positions(
                     named_position="front_stare", velocity=0.5, degrees=True
                 )
-                # self.subtask_manager.manipulation.move_to_position("gaze")
                 # self.subtask_manager.manipulation.follow_face(True)
                 self.subtask_manager.hri.say("Hello, I am FRIDA, your receptionist today.")
                 self.current_state = ReceptionistTM.TASK_STATES["GREETING"]
@@ -161,7 +164,6 @@ class ReceptionistTM(Node):
             self.subtask_manager.manipulation.move_joint_positions(
                 named_position="front_stare", velocity=0.5, degrees=True
             )
-            # self.subtask_manager.manipulation.move_to_position("gaze")
             self.current_state = ReceptionistTM.TASK_STATES["ASK_FOR_DRINK"]
 
         if self.current_state == ReceptionistTM.TASK_STATES["ASK_FOR_DRINK"]:
@@ -170,12 +172,15 @@ class ReceptionistTM(Node):
             self.subtask_manager.hri.say("What is your favorite drink?")
             self.get_guest().drink = self.hear_word("drink")
             self.current_attempts += 1
+
             if self.get_guest().drink is not None or self.current_attempts >= ATTEMPT_LIMIT:
-                self.current_attempts = 0
-                self.subtask_manager.hri.say(
-                    f"Great! I will check if we have {self.get_guest().drink}."
-                )
-                self.current_state = ReceptionistTM.TASK_STATES["DRINK_AVAILABLE"]
+                # self.current_attempts = 0
+                if self.confirm(self.get_guest().drink):
+                    self.current_attempts = 0
+                    self.subtask_manager.hri.say(
+                        f"Great! I will check if we have {self.get_guest().drink}."
+                    )
+                    self.current_state = ReceptionistTM.TASK_STATES["DRINK_AVAILABLE"]
 
         if self.current_state == ReceptionistTM.TASK_STATES["DRINK_AVAILABLE"]:
             Logger.state(self, "Checking drink availability")
@@ -257,10 +262,10 @@ class ReceptionistTM(Node):
                 self.subtask_manager.hri.say(
                     f"Hello {guest.name}. This is {self.get_guest().name}. {self.get_guest().description} and they like {self.get_guest().drink}."
                 )
-                common_message = "Nada"
-                # common_message = self.subtask_manager.hri.common_interest(
-                #     self.get_guest().name, self.get_guest().interest, guest.name, guest.interest
-                # )
+                # common_message = "Nada"
+                common_message = self.subtask_manager.hri.common_interest(
+                    self.get_guest().name, self.get_guest().interest, guest.name, guest.interest
+                )
                 self.subtask_manager.hri.say(common_message)
 
             self.current_state = ReceptionistTM.TASK_STATES["NAVIGATE_TO_ENTRANCE"]
