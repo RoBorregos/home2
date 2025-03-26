@@ -9,12 +9,14 @@ commands.
 import rclpy
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.srv import FindSeat, SaveName, PersonDescription, BeverageLocation
+from std_srvs.srv import SetBool
 from geometry_msgs.msg import Point
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from utils.decorators import mockable, service_check
 from utils.logger import Logger
 from utils.task import Task
+from utils.status import Status
 
 from frida_constants.vision_constants import (
     SAVE_NAME_TOPIC,
@@ -24,20 +26,13 @@ from frida_constants.vision_constants import (
     FOLLOW_BY_TOPIC,
     PERSON_DESCRIPTION_TOPIC,
     BEVERAGE_TOPIC,
+    SET_TARGET_TOPIC,
 )
 
 TIMEOUT = 5.0
 
-
 class VisionTasks:
     """Class to manage the vision tasks"""
-
-    STATE = {
-        "TERMINAL_ERROR": -1,
-        "EXECUTION_ERROR": 0,
-        "EXECUTION_SUCCESS": 1,
-        "TARGET_NOT_FOUND": 2,
-    }
 
     def __init__(self, task_manager, task: Task, mock_data=False) -> None:
         """Initialize the class"""
@@ -56,6 +51,7 @@ class VisionTasks:
         self.person_description_client = self.node.create_client(
             PersonDescription, PERSON_DESCRIPTION_TOPIC
         )
+        self.track_person_client = self.node.create_client(SetBool, SET_TARGET_TOPIC)
         self.beverage_location_client = self.node.create_client(BeverageLocation, BEVERAGE_TOPIC)
         self.detect_person_action_client = ActionClient(self.node, DetectPerson, CHECK_PERSON_TOPIC)
 
@@ -77,6 +73,12 @@ class VisionTasks:
                 "beverage_location": {"client": self.beverage_location_client, "type": "service"},
                 "follow_by_name": {"client": self.follow_by_name_client, "type": "service"},
             },
+            Task.HELP_ME_CARRY: {
+                "track_person": {
+                    "client": self.track_person_client,
+                    "type": "service",
+                }
+            }
         }
 
         if not self.mock_data:
@@ -103,8 +105,16 @@ class VisionTasks:
         self.follow_face["y"] = msg.y
         self.flag_active_face = True
 
+    def get_follow_face(self):
+        """Get the face to follow"""
+        if self.flag_active_face:
+            self.flag_active_face = False
+            return self.follow_face["x"], self.follow_face["y"]
+        else:
+            return None, None
+        
     @mockable(return_value=100)
-    @service_check("save_name_client", -1, TIMEOUT)
+    @service_check(client="save_name_client", return_value=Status.TERMINAL_ERROR, timeout=TIMEOUT)
     def save_face_name(self, name: str) -> int:
         """Save the name of the person detected"""
 
@@ -122,13 +132,13 @@ class VisionTasks:
 
         except Exception as e:
             Logger.error(self.node, f"Error saving name: {e}")
-            return self.STATE["EXECUTION_ERROR"]
+            return Status.EXECUTION_ERROR
 
         Logger.success(self.node, f"Name saved: {name}")
-        return self.STATE["EXECUTION_SUCCESS"]
+        return Status.EXECUTION_SUCCESS
 
     @mockable(return_value=100)
-    @service_check("find_seat_client", 300, TIMEOUT)
+    @service_check("find_seat_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
     def find_seat(self) -> tuple[int, float]:
         """Find an available seat and get the angle for the camera to point at"""
 
@@ -143,17 +153,17 @@ class VisionTasks:
 
             if not result.success:
                 Logger.warn(self.node, "No seat found")
-                return self.STATE["TARGET_NOT_FOUND"], 300
+                return Status.TARGET_NOT_FOUND, 300
 
         except Exception as e:
             Logger.error(self.node, f"Error finding seat: {e}")
-            return self.STATE["EXECUTION_ERROR"], 300
+            return Status.EXECUTION_ERROR, 300
 
         Logger.success(self.node, f"Seat found: {result.angle}")
-        return self.STATE["EXECUTION_SUCCESS"], result.angle
+        return Status.EXECUTION_SUCCESS, result.angle
 
-    @mockable(return_value=True, delay=2, mock=False)
-    @service_check("detect_person_action_client", False, TIMEOUT)
+    @mockable(return_value=Status.EXECUTION_SUCCESS, delay=2, mock=False)
+    @service_check("detect_person_action_client", Status.EXECUTION_ERROR, TIMEOUT)
     def detect_person(self, timeout: float = TIMEOUT) -> int:
         """Returns true when a person is detected"""
 
@@ -180,13 +190,13 @@ class VisionTasks:
 
             if result and result.result.success:
                 Logger.success(self.node, "Person detected")
-                return self.STATE["EXECUTION_SUCCESS"]
+                return Status.EXECUTION_SUCCESS
             else:
                 Logger.warn(self.node, "No person detected")
-                return self.STATE["EXECUTION_ERROR"]
+                return Status.TARGET_NOT_FOUND
         except Exception as e:
             Logger.error(self.node, f"Error detecting person: {e}")
-            return self.STATE["EXECUTION_ERROR"]
+            return Status.EXECUTION_ERROR
 
     @mockable(return_value=True, delay=2)
     def detect_guest(self, name: str, timeout: float = TIMEOUT):
@@ -194,8 +204,9 @@ class VisionTasks:
         pass
 
     @mockable(return_value=True, delay=2)
-    def find_drink(self, drink: str, timeout: float = TIMEOUT):
-        """Returns true when a person is detected"""
+    @service_check("beverage_location_client", [Status.EXECUTION_ERROR, ""], TIMEOUT)
+    def find_drink(self, drink: str, timeout: float = TIMEOUT) -> tuple[int, str]:
+        """Find if a drink is available and location"""
         Logger.info(self.node, f"Finding drink: {drink}")
         request = BeverageLocation.Request()
         request.beverage = drink
@@ -207,17 +218,17 @@ class VisionTasks:
 
             if not result.success:
                 Logger.warn(self.node, "No drink found")
-                return "not found", self.STATE["TARGET_NOT_FOUND"]
+                return Status.TARGET_NOT_FOUND, "not found"
 
         except Exception as e:
             Logger.error(self.node, f"Error finding drink: {e}")
-            return "not found", self.STATE["EXECUTION_ERROR"]
+            return Status.EXECUTION_ERROR, "not found"
 
         Logger.success(self.node, f"Found drink: {drink}")
-        return "center", self.STATE["EXECUTION_SUCCESS"]
+        return Status.EXECUTION_SUCCESS, result.location
 
     @mockable(return_value="tall person", delay=5, mock=False)
-    @service_check("person_description_client", "No description generated", TIMEOUT)
+    @service_check("person_description_client", Status.EXECUTION_ERROR, TIMEOUT)
     def describe_person(self):
         """Requests a description of a person and handles the response asynchronously."""
         Logger.info(self.node, "Requesting description of a person")
@@ -229,9 +240,22 @@ class VisionTasks:
             future.add_done_callback(self._handle_description_response)
         except Exception as e:
             Logger.error(self.node, f"Error requesting description: {e}")
-            return self.STATE["EXECUTION_ERROR"]
+            return Status.EXECUTION_ERROR
+
+    def _handle_description_response(self, future):
+        """Callback to handle the response from the description service."""
+        try:
+            result = future.result()
+            if result.success:
+                Logger.success(self.node, f"Description: {result.description}")
+                self.node.get_guest().description = result.description
+            else:
+                Logger.warn(self.node, "No description generated")
+        except Exception as e:
+            Logger.error(self.node, f"Error processing description response: {e}")
 
     @mockable(return_value=None, delay=2)
+    @service_check("follow_by_name_client", Status.EXECUTION_ERROR, TIMEOUT)
     def follow_by_name(self, name: str):
         """Follow a person by name or area"""
         Logger.info(self.node, f"Following face by: {name}")
@@ -248,30 +272,33 @@ class VisionTasks:
 
         except Exception as e:
             Logger.error(self.node, f"Error following face by: {e}")
-            return self.STATE["EXECUTION_ERROR"]
+            return Status.EXECUTION_ERROR
 
         Logger.success(self.node, f"Following face success: {name}")
-        return self.STATE["EXECUTION_SUCCESS"]
+        return Status.EXECUTION_SUCCESS
+    
+    @mockable(return_value=Status.EXECUTION_SUCCESS, delay=2)
+    @service_check("track_person_client", Status.EXECUTION_ERROR, TIMEOUT)
+    def track_person(self):
+        """Track the person in the image"""
+        Logger.info(self.node, "Tracking person")
+        request = SetBool.Request()
+        request.data = True
 
-    def _handle_description_response(self, future):
-        """Callback to handle the response from the description service."""
         try:
+            future = self.track_person_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
             result = future.result()
-            if result.success:
-                Logger.success(self.node, f"Description: {result.description}")
-                self.node.get_guest().description = result.description
-            else:
-                Logger.warn(self.node, "No description generated")
-        except Exception as e:
-            Logger.error(self.node, f"Error processing description response: {e}")
 
-    def get_follow_face(self):
-        """Get the face to follow"""
-        if self.flag_active_face:
-            self.flag_active_face = False
-            return self.follow_face["x"], self.follow_face["y"]
-        else:
-            return None, None
+            if not result.success:
+                raise Exception("Service call failed")
+
+        except Exception as e:
+            Logger.error(self.node, f"Error tracking person: {e}")
+            return Status.EXECUTION_ERROR
+
+        Logger.success(self.node, "Person tracking success")
+        return Status.EXECUTION_SUCCESS
 
 
 if __name__ == "__main__":
