@@ -54,10 +54,10 @@ class ReceptionistTM(Node):
         super().__init__("receptionist_task_manager")
         self.subtask_manager = SubtaskManager(self, task=Task.RECEPTIONIST)
         self.current_state = ReceptionistTM.TASK_STATES[START]
-        self.current_guest = 0
-        self.seat_angles = [-90, 0, 90]
+        self.current_guest = 1
+        self.seat_angles = [0]
 
-        self.guests = [Guest() for _ in range(2)]
+        self.guests = [Guest() for _ in range(3)]
         self.guests[0] = Guest("John", "Beer", "Football")
 
         self.current_attempts = 0
@@ -97,6 +97,7 @@ class ReceptionistTM(Node):
     # TODO (@alecoeto): send robot to entrance as first step
     # TODO (@alecoeto): publish face recognition for rqt
     # TODO (@alecoeto): test beverage moondream 
+    # TODO (@alecoeto): detect guest
 
     def run(self):
         """State machine"""
@@ -169,12 +170,15 @@ class ReceptionistTM(Node):
         if self.current_state == ReceptionistTM.TASK_STATES["ASK_FOR_DRINK"]:
             Logger.state(self, "Asking for drink")
             # self.subtask_manager.manipulation.follow_face(True)
-            self.subtask_manager.hri.say("What is your favorite drink?")
-            self.get_guest().drink = self.hear_word("drink")
-            self.current_attempts += 1
+            if self.current_attempts >= ATTEMPT_LIMIT:
+                self.get_guest().drink = "Water"
+            else:
+                self.subtask_manager.hri.say("What is your favorite drink?")
+                self.get_guest().drink = self.hear_word("drink")
+                self.current_attempts += 1
 
-            if self.get_guest().drink is not None or self.current_attempts >= ATTEMPT_LIMIT:
-                # self.current_attempts = 0
+            if self.get_guest().drink is not None:
+                Logger.info(self, f"Guest drink: {self.get_guest().drink}")
                 if self.confirm(self.get_guest().drink):
                     self.current_attempts = 0
                     self.subtask_manager.hri.say(
@@ -203,16 +207,23 @@ class ReceptionistTM(Node):
 
         if self.current_state == ReceptionistTM.TASK_STATES["ASK_FOR_INTEREST"]:
             Logger.state(self, "Asking for interest")
+
+            if self.current_attempts >= ATTEMPT_LIMIT:
+                self.get_guest().interest = "Nothing"
+            else:
             # self.subtask_manager.manipulation.follow_face(True)
-            self.subtask_manager.hri.say("What is your main interest?")
-            self.get_guest().interest = self.hear_word("interest")
-            self.current_attempts += 1
-            if self.get_guest().interest is not None or self.current_attempts >= ATTEMPT_LIMIT:
-                self.current_attempts = 0
-                self.subtask_manager.hri.say(
-                    f"Thank you for sharing your interest in {self.get_guest().interest}."
-                )
-                self.current_state = ReceptionistTM.TASK_STATES["NAVIGATE_TO_LEAVING_ROOM"]
+                self.subtask_manager.hri.say("What is your main interest?")
+                self.get_guest().interest = self.hear_word("interest")
+                self.current_attempts += 1
+
+            if self.get_guest().interest is not None:
+                Logger.info(self, f"Interest: {self.get_guest().interest}")
+                if self.confirm(self.get_guest().interest):
+                    self.current_attempts = 0
+                    self.subtask_manager.hri.say(
+                        f"Thank you for sharing your interest in {self.get_guest().interest}."
+                    )
+                    self.current_state = ReceptionistTM.TASK_STATES["NAVIGATE_TO_LEAVING_ROOM"]
 
         if self.current_state == ReceptionistTM.TASK_STATES["NAVIGATE_TO_LEAVING_ROOM"]:
             Logger.state(self, "Navigating to leaving room")
@@ -247,7 +258,7 @@ class ReceptionistTM(Node):
                 joint_positions=joint_positions, velocity=0.5, degrees=True
             )
 
-            self.subtask_manager.vision.detect_guest(self.get_guest().name, timeout=5)
+            # self.subtask_manager.vision.detect_guest(self.get_guest().name, timeout=5)
             self.current_state = ReceptionistTM.TASK_STATES["INTRODUCTION"]
 
         if self.current_state == ReceptionistTM.TASK_STATES["INTRODUCTION"]:
@@ -274,7 +285,7 @@ class ReceptionistTM(Node):
             Logger.state(self, "Navigating to entrance")
             self.navigate_to("entrance")
             self.current_guest += 1
-            if self.current_guest == 2:
+            if self.current_guest == 3:
                 self.current_state = ReceptionistTM.TASK_STATES["END"]
             else:
                 self.current_state = ReceptionistTM.TASK_STATES["WAIT_FOR_GUEST"]
