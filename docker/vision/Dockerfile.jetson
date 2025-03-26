@@ -22,7 +22,6 @@ RUN python3 setup.py install --set DLIB_USE_CUDA=1
 WORKDIR /workspace/requirements
 
 RUN pip install -r opencv.txt
-RUN pip install -r torch-gpu.txt
 RUN pip install -r face_recognition.txt
 RUN pip install -r models.txt
 RUN pip install -r utils.txt

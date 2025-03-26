@@ -31,5 +31,5 @@ services:
     working_dir: /workspace
     command: ["/bin/bash", "-i", "-l"]
 
-include:
-  - path: moondream.yaml
+# include:
+#   - path: moondream.yaml
