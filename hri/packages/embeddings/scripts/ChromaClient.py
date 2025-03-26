@@ -37,9 +37,14 @@ class ChromaClient:
 
     def build_embeddings(self):
         """
-        Method to build embeddings for the household use.
-        If a 'context' column is present, the first row is used as the context
-        and appended to each entry in the 'name' column.
+        Method to build embeddings for household use.
+        Reads CSV files from the designated dataframes folder,
+        and for each file:
+        - Reads documents and (if available) metadata.
+        - Gets or creates a corresponding collection.
+        - Adds entries to the collection via the add_entries method,
+            which will process documents and metadata (adding "original_name",
+            appending "context", and cleaning metadata) automatically.
         """
         # Get the directory of the current script
         script_dir = Path(__file__).resolve().parent
@@ -47,59 +52,42 @@ class ChromaClient:
         dataframes_folder = script_dir / "../embeddings/dataframes"
 
         # Ensure the folder exists
-        if dataframes_folder.exists() and dataframes_folder.is_dir():
-            # Get all .csv files in the folder dynamically
-            dataframes = [
-                file.resolve()
-                for file in dataframes_folder.iterdir()
-                if file.suffix == ".csv"
-            ]
-        else:
+        if not (dataframes_folder.exists() and dataframes_folder.is_dir()):
             raise FileNotFoundError(
                 f"The folder {dataframes_folder} does not exist or is not a directory."
             )
+
+        # Get all CSV files in the folder
+        dataframes = [
+            file.resolve()
+            for file in dataframes_folder.iterdir()
+            if file.suffix == ".csv"
+        ]
 
         collections = {}
         for file in dataframes:
             print("Processing file:", file)
             # Read the CSV file into a pandas DataFrame
             df = pd.read_csv(file)
-            # Check if the csv has a 'document' column
+
+            # Ensure that the 'documents' column exists
             if "documents" not in df.columns:
                 raise ValueError(f"The 'documents' column is missing in {file}")
-            documents = df["documents"]
-            metadatas_ = []
-            if "metadata" not in df.columns:
-                print("metadata not detected")
-                for doc in df["documents"]:
-                    metadatas_.append(
-                        {"original_name": doc}
-                    )  # Append a new dictionary to the list
-            else:
-                metadatas_ = self.json2dict(df["metadata"])
-                cleaned_metadata = (
-                    [remove_empty_lists(remove_nulls(meta)) for meta in metadatas_]
-                    if metadatas_
-                    else None
-                )
-                for i, (row, metadata) in enumerate(
-                    zip(df["documents"], cleaned_metadata)
-                ):
-                    metadata["original_name"] = (
-                        row  # Add "original_name" to each metadata dictionary
-                    )
-                    if "context" in metadata.keys():
-                        documents[i] = df.at[i, "documents"] + " " + metadata["context"]
-                metadatas_ = cleaned_metadata
 
-            # Get or create collection
-            collection_name = file.stem
-            collection_name = self._sanitize_collection_name(collection_name)
+            documents = df["documents"].tolist()
+
+            # Process metadata if available; otherwise, use None
+            metadatas_ = None
+            if "metadata" in df.columns:
+                metadatas_ = self.json2dict(df["metadata"])
+
+            # Sanitize and get or create the collection
+            collection_name = self._sanitize_collection_name(file.stem)
             collections[collection_name] = self._get_or_create_collection(
                 collection_name
             )
-            # Add entries to the collection
-            self.add_entries(collection_name, documents.tolist(), metadatas_)
+
+            self.add_entries(collection_name, documents, metadatas_)
 
         return
 
@@ -150,27 +138,59 @@ class ChromaClient:
             raise ValueError(f"Invalid collection name: {collection}")
         return collection
 
-    # def remove_item_by_id(self, collection_name, id):
-    #     """Method to remove an item from a collection"""
-    #     collection_ = self.get_collection(collection_name)
-    #     collection_.delete(ids=[id])
-    #     return
+    def remove_item_by_id(self, collection_name, id):
+        """Method to remove an item from a collection"""
+        collection_ = self.get_collection(collection_name)
+        collection_.delete(ids=[id])
+        return
 
     def add_entries(self, collection_name, documents, metadatas=None):
-        """Method to add multiple entries with optional metadata"""
+        """Method to add multiple entries with optional metadata.
 
+        This function processes each document and its associated metadata:
+        - Ensures documents is a list.
+        - Normalizes metadatas to a list of dictionaries.
+        - Sets 'original_name' in each metadata dictionary from the document.
+        - Appends the 'context' from metadata to the document text, if available.
+        - Cleans metadata with remove_empty_lists and remove_nulls.
+        """
         collection_ = self.get_collection(collection_name)
+
+        # Ensure documents is always a list
+        if isinstance(documents, str):
+            documents = [documents]
+
+        # Ensure metadatas is always a list of dictionaries
+        if metadatas is None:
+            metadatas = [{} for _ in documents]
+        elif isinstance(metadatas, dict):
+            metadatas = [metadatas] * len(documents)
+
+        # Process each document/metadata pair
+        for i, (doc, meta) in enumerate(zip(documents, metadatas)):
+            # Add "original_name" to each metadata dictionary
+            meta["original_name"] = doc
+            # If a "context" is provided, append it to the document
+            if "context" in meta and meta["context"]:
+                documents[i] = f"{doc} {meta['context']}"
+
+        # Clean each metadata dictionary
+        cleaned_metadatas = [
+            remove_nulls(remove_empty_lists(meta)) for meta in metadatas
+        ]
+
+        # Generate a unique id for each document
         ids = [str(uuid4()) for _ in range(len(documents))]
-        cleaned_metadatas = (
-            [remove_nulls(remove_empty_lists(meta)) for meta in metadatas]
-            if metadatas
-            else None
-        )
 
         # Add documents and metadata to the collection
         return collection_.add(
             ids=ids, documents=documents, metadatas=cleaned_metadatas
         )
+
+    def remove_item_by_document(self, collection_name, document):
+        """Method to remove an item by document"""
+        collection_ = self.get_collection(collection_name)
+        return collection_.delete(where={"original_name": document})
 
     # def get_entry_by_id(self, collection_name, id_):
     #     """Method to get an entry by id"""
@@ -182,12 +202,12 @@ class ChromaClient:
     #     collection_ = self.get_collection(collection_name)
     #     return collection_.get(where=metadata, include=["metadatas", "documents"])
 
-    # def get_entry_by_document(self, collection_name, document):
-    #     """Method to get an entry by document (returns all of the entries that contain the string)"""
-    #     collection_ = self.get_collection(collection_name)
-    #     return collection_.get(
-    #         where_document={"$contains": document}, include=["metadatas", "documents"]
-    #     )
+    def get_entry_by_document(self, collection_name, document):
+        """Method to get an entry by document (returns all of the entries that contain the string)"""
+        collection_ = self.get_collection(collection_name)
+        return collection_.get(
+            where={"original_name": document}, include=["metadatas", "documents"]
+        )
 
     def json2dict(self, json_str):
         """Method to convert a JSON string to a dictionary"""
@@ -203,12 +223,16 @@ def main():
     client_.build_embeddings()
     # print(client_.list_collections())
     # collection = client_.get_collection("items")
-    print(client_.query("items", "apple", 5))
-    print(client_.query("locations", "kitchen", 5, "household locations"))
-    print(client_.query("actions", "move", 5, "household actions"))
-    print(client_.query("categories", "drinks", 5))
-    print(client_.query("names", "Luis", 5))
-    # print(collection.get())
+    # print(client_.query("items", "apple", 5))
+    # print(client_.query("locations", "kitchen", 5, "household locations"))
+    # print(client_.query("actions", "move", 5, "household actions"))
+    # print(client_.query("categories", "drinks", 5))
+    # print(client_.query("names", "Luis", 5))
+    client_.add_entries("items", "chocomilk", {"context": "household items"})
+    print(client_.get_entry_by_document("items", "chocomilk"))
+
+    client_.remove_item_by_document("items", "chocomilk")
+    print(client_.get_entry_by_document("items", "chocomilk"))
 
 
 if __name__ == "__main__":
