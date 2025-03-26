@@ -1,0 +1,5 @@
+sensor_msgs/PointCloud2 pointcloud
+---
+float64 x_center
+float64 y_center
+bool success

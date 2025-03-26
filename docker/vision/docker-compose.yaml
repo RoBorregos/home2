@@ -17,7 +17,7 @@ services:
     network_mode: host
     user: 1000:1000
     privileged: true
-    runtime: ${RUNTIME:-nvidia}
+    runtime: ${RUNTIME:-}
     group_add: 
       - video
 
@@ -30,3 +30,6 @@ services:
     stdin_open: true    
     working_dir: /workspace
     command: ["/bin/bash", "-i", "-l"]
+
+# include:
+#   - path: moondream.yaml

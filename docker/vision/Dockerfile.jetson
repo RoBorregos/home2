@@ -2,11 +2,7 @@ ARG BASE_IMAGE=dustynv/l4t-pytorch:r36.4.0
 FROM ${BASE_IMAGE}
 
 RUN mkdir -p /workspace/requirements
-
-# Requirements
-COPY vision/requirements/vision_general.txt /workspace/requirements/requirements.txt   
-RUN pip install -r requirements/requirements.txt
-RUN pip install torch==1.11 torchvision==0.12.0 -f https://download.pytorch.org/whl/cu111/torch_stable.html
+COPY vision/requirements /workspace/requirements
 
 # Download and extract dlib
 RUN wget http://dlib.net/files/dlib-19.21.tar.bz2 && \
@@ -16,14 +12,19 @@ WORKDIR /workspace/dlib-19.21
 RUN mkdir build
 WORKDIR /workspace/dlib-19.21/build
 
-# Configure and build dlib
 RUN cmake .. && \
     cmake --build .
 
 WORKDIR /workspace/dlib-19.21
+RUN python3 setup.py install 
 
-# Install dlib
-RUN python3 setup.py install --set DLIB_USE_CUDA=1
+# Requirements
+WORKDIR /workspace/requirements
+
+RUN pip install -r opencv.txt
+RUN pip install -r face_recognition.txt
+RUN pip install -r models.txt
+RUN pip install -r utils.txt
 
 # CV-bridge
 RUN apt update && apt install -y ros-humble-cv-bridge

@@ -1,1 +1,5 @@
-transformers==4.48.3
+numpy==1.26.4
+opencv-python
+grpcio==1.71.0
+protobuf==5.29.1
+ultralytics==8.3.96

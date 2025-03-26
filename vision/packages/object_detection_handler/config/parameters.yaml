@@ -1,0 +1,8 @@
+object_detection_handler:
+  ros__parameters:
+    TRANSFORM : True
+    VERBOSE : False
+    DETECTIONS_TOPIC : /vision/detections
+    TRAGET_FRAME : BASE_LINK
+    IOU_THRESHOLD : 0.95
+    RECORDED_SECONDS : 0.5
