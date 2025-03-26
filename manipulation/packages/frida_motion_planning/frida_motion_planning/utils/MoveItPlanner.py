@@ -350,6 +350,8 @@ class MoveItPlanner(Planner):
         self.moveit2.remove_collision_object(id)
 
     def remove_all_collision_objects(self) -> None:
+        self.moveit2.detach_all_collision_objects()
+        time.sleep(1e-03)
         planning_scene = self.get_planning_scene()
         for collision_object in planning_scene.world.collision_objects:
             print("Found collision object: ", collision_object.id)
