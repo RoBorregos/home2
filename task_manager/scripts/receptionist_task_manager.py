@@ -194,7 +194,7 @@ class ReceptionistTM(Node):
                 named_position="front_stare", velocity=0.5, degrees=True
             )
             # self.subtask_manager.manipulation.move_to_position("table")
-            position, status = self.subtask_manager.vision.find_drink(
+            status, position = self.subtask_manager.vision.find_drink(
                 self.get_guest().drink, timeout=40
             )
             # self.subtask_manager.manipulation.move_to_position("gaze")
