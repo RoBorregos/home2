@@ -1,2 +1,3 @@
 pretrainedmodels
-mediapipe
+# mediapipe
+ultralytics

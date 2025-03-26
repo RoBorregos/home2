@@ -1,7 +1,7 @@
-from transformers import AutoModelForCausalLM
 from PIL import Image
 import cv2
 from enum import Enum
+import moondream as md
 
 
 class Position(Enum):
@@ -13,13 +13,7 @@ class Position(Enum):
 
 class MoonDreamModel:
     def __init__(self):
-        self.model = AutoModelForCausalLM.from_pretrained(
-            "vikhyatk/moondream2",
-            revision="2025-01-09",
-            trust_remote_code=True,
-            # Uncomment for GPU acceleration & pip install accelerate
-            # device_map={"": "cuda"}
-        )
+        self.model = md.vl(model="moondream-2b-int8.mf.gz")
 
     def encode_image(self, image):
         if image is None or image.size == 0:
