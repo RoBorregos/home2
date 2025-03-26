@@ -56,9 +56,11 @@ private:
       const std::string& source_frame,
       const builtin_interfaces::msg::Time& stamp,
       const std::string& target_frame) {
+    
     try {
       if (source_frame == target_frame) return true;
-
+      RCLCPP_INFO(this->get_logger(), "Transforming cloud from %s to %s", source_frame.c_str(), target_frame.c_str());
+      RCLCPP_INFO(this->get_logger(), "Stamp for cloud tf: %d", stamp.sec);
       const double timeout = this->get_parameter("transform_timeout").as_double();
       auto transform = tf_buffer_->lookupTransform(
         target_frame, 
@@ -300,7 +302,21 @@ private:
 
       auto cloud_rgba = convert_to_rgba(cloud);
       Eigen::MatrixXi camera_source = Eigen::MatrixXi::Zero(1, cloud_rgba->size());
-      Eigen::Matrix3Xd view_points = Eigen::Matrix3Xd::Zero(3, 1);
+
+      Eigen::Matrix3Xd view_points(3, 1);
+      // // get view point from transform to cam
+      // auto camera_frame = "camera_depth_optical_frame";
+      // auto base_frame = "link_base";
+      // RCLCPP_INFO(this->get_logger(), "Looking up transform from %s to %s", base_frame, camera_frame);
+      // RCLCPP_INFO(this->get_logger(), "Stamp for view point tf: %d", stamp.sec);
+      // TODO: This is failing due to sim giving me wrong tf timestamps I believe
+      // auto transform = tf_buffer_->lookupTransform(
+      //   base_frame, camera_frame, req->input_cloud.header.stamp, rclcpp::Duration::from_seconds(1.0));
+      // view_points.col(0) = Eigen::Vector3d(
+      //   transform.transform.translation.x,
+      //   transform.transform.translation.y,
+      //   transform.transform.translation.z
+      // );
 
       gpd::util::Cloud gpd_cloud(cloud_rgba, camera_source, view_points);
       gpd::GraspDetector detector(req->cfg_path);
@@ -315,15 +331,44 @@ private:
         pose.header.frame_id = target_frame;
         
         Eigen::Vector3d pos = grasp->getPosition();
-        Eigen::Quaterniond quat(grasp->getOrientation());
         
         pose.pose.position.x = pos.x();
         pose.pose.position.y = pos.y();
         pose.pose.position.z = pos.z();
-        pose.pose.orientation.x = quat.x();
-        pose.pose.orientation.y = quat.y();
-        pose.pose.orientation.z = quat.z();
-        pose.pose.orientation.w = quat.w();
+
+
+        auto approach = grasp->getApproach();
+        auto binormal = grasp->getBinormal();
+        auto axis = grasp->getAxis();
+
+        Eigen::Matrix3d rot;
+        rot << approach.x(), binormal.x(), axis.x(),
+               approach.y(), binormal.y(), axis.y(),
+               approach.z(), binormal.z(), axis.z();
+
+        Eigen::Matrix4d R = Eigen::Matrix4d::Identity();
+        R.block<3, 3>(0, 0) = rot;
+        // to quat
+        Eigen::Quaterniond quat(R.block<3, 3>(0, 0));
+
+        
+
+        // TODO: tempfix, I (Emiliano) believe TFs here are all messed up,
+        // basically the grasp pose is (or should be) in the standard frame +X front +Y left +Z up
+        // meanwhile the ee_link (the one we actually send the grasp to) is +Z front ??? up ???
+        // gpd_ros and the old manip repo did some ugly stuff to make it work, but I'm not even sure if it did work or it was coincidentally working
+        // so I'm just rotating the grasp pose to make our grasp X aim to Z -> X front to Z front
+        // I'd advise not to lose more time on this and just move on to a new grasp detection method
+        
+        Eigen::Quaterniond q = quat * Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitY());
+
+        
+        pose.pose.orientation.x = q.x();
+        pose.pose.orientation.y = q.y();
+        pose.pose.orientation.z = q.z();
+        pose.pose.orientation.w = q.w();
+
+
 
         res->grasp_poses.push_back(pose);
         res->grasp_scores.push_back(grasp->getScore());
