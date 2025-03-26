@@ -22,7 +22,7 @@ from frida_constants.vision_constants import (
     CHECK_PERSON_TOPIC,
     FOLLOW_TOPIC,
     FOLLOW_BY_TOPIC,
-    DESCRIPTION_TOPIC,
+    PERSON_DESCRIPTION_TOPIC,
     BEVERAGE_TOPIC,
 )
 
