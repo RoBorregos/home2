@@ -147,6 +147,10 @@ RUN=""
 MOONDREAM=false
 
 case $TASK in
+    "--moondream")
+        RUN=""
+        MOONDREAM=true
+        ;;
     "--receptionist")
         RUN="ros2 launch vision_general receptionist_launch.py"
         MOONDREAM=true
