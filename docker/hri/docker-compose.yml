@@ -3,9 +3,3 @@ include:
   - path: l4t-devices.yaml
   - path: stt-l4t.yaml
   - path: ollama-jetson.yaml
-  # - path: chromadb.yaml
-
-  # Laptop
-  # - path: hri-ros.yaml
-  # - path: chromadb.yaml
-  # - path: stt.yaml

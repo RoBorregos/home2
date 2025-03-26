@@ -1,0 +1,5 @@
+include:
+  # Laptop
+  - path: hri-ros.yaml
+  - path: chromadb.yaml
+  - path: stt.yaml
