@@ -132,12 +132,5 @@ fi
 
 # check if TASK is not empty
 if [ -z "$TASK" ]; then
-    docker exec $SERVICE_NAME /bin/bash
-# else
-#     if [ -z "$detached" ]; then
-#         docker compose exec $SERVICE_NAME bash -c "$SETUP && $RUN"
-#     else
-#         echo "Running in detached mode..."
-#         docker compose exec -d $SERVICE_NAME bash -c "$SETUP && $RUN"
-#     fi
+    docker exec -it $SERVICE_NAME /bin/bash
 fi
