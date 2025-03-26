@@ -25,8 +25,8 @@ SET_TARGET_TOPIC = "/vision/set_tracking_target"
 RESULTS_TOPIC = "/vision/tracking_results"
 
 # Moondream
-PERSON_DESCRIPTION_TOPIC = "/vision/moondream/person_description"
-BEVERAGE_TOPIC = "/vision/moondream/beverage"
+PERSON_DESCRIPTION_TOPIC = "/vision/person_description"
+BEVERAGE_TOPIC = "/vision/beverage"
 
 # Face recognition
 SAVE_NAME_TOPIC = "/vision/new_name"

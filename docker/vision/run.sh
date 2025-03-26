@@ -51,6 +51,7 @@ case $ENV_TYPE in
     echo "DOCKERFILE=docker/vision/Dockerfile.cpu" >> .env
     echo "BASE_IMAGE=roborregos/home2:cpu_base" >> .env
     echo "IMAGE_NAME=roborregos/home2:vision-cpu" >> .env
+    echo "DOCKER_RUNTIME=''" >> .env
     
     # Build the base image if it doesn't exist
     check_image_exists "$CPU_IMAGE"
@@ -146,6 +147,10 @@ RUN=""
 MOONDREAM=false
 
 case $TASK in
+    "--moondream")
+        RUN=""
+        MOONDREAM=true
+        ;;
     "--receptionist")
         RUN="ros2 launch vision_general receptionist_launch.py"
         MOONDREAM=true

@@ -1,4 +1,4 @@
-from nlp.assets.schemas import ExtractedData, IsAnswerPositive
+from nlp.assets.schemas import ExtractedData, IsAnswerNegative, IsAnswerPositive
 
 
 def get_common_interests_dialog(
@@ -157,6 +157,56 @@ def get_is_answer_positive_args(interpreted_text):
             },
         ],
         IsAnswerPositive,
+    )
+
+
+def get_is_answer_negative_args(interpreted_text):
+    return (
+        [
+            {
+                "role": "system",
+                "content": f"""You will be given a statement, and your task is to determine whether it is a **negative confirmation** or not. A **negative confirmation** is an explicit or implicit agreement, affirmation, or confirmation (e.g., 'no', 'that's incorrect', 'incorrect', 'absolutely not'). A **negative confirmation** includes disagreement, uncertainty, negation, or lack of understanding (e.g., 'no', 'I don’t know', 'wrong', 'not sure'). If the statement is ambiguous or unclear, don't assume it is negative.
+                
+### Guidelines:
+- Only return a boolean value: **true** for negative confirmation, **false** otherwise.
+- Ignore irrelevant sentiment (e.g., 'I am happy' is **not** a confirmation, so return false).
+- Consider implicit negative confirmations as negative.
+                
+### Examples:
+- **Input:** 'Yes'
+**Output:**
+{IsAnswerNegative(is_negative=False).model_dump_json()}
+
+**Input:** 'That's not correct'
+**Output:**
+{IsAnswerNegative(is_negative=True).model_dump_json()}
+
+**Input:** 'I don't agree'
+**Output:**
+{IsAnswerNegative(is_negative=True).model_dump_json()}
+
+**Input:** 'Wrong'
+{IsAnswerNegative(is_negative=True).model_dump_json()}
+                
+**Input:** 'I don’t know'
+{IsAnswerNegative(is_negative=True).model_dump_json()}
+
+**Input:** 'Huh?'
+{IsAnswerNegative(is_negative=False).model_dump_json()}
+
+**Input:** 'Maybe'
+{IsAnswerNegative(is_negative=False).model_dump_json()}
+
+**Input:** 'No'
+{IsAnswerNegative(is_negative=True).model_dump_json()}
+""",
+            },
+            {
+                "role": "user",
+                "content": interpreted_text,
+            },
+        ],
+        IsAnswerNegative,
     )
 
 
