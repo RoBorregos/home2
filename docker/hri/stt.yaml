@@ -1,7 +1,7 @@
 services:
   stt:
-    container_name: home2-hri-stt-prod
-    image: roborregos/home2:hri-stt-prod
+    container_name: home2-hri-stt
+    image: roborregos/home2:hri-stt
     build:
       context: ../..
       dockerfile: docker/hri/Dockerfile.stt
