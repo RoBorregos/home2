@@ -15,7 +15,7 @@ app.get('/', (req: Request, res: Response) => {
   res.send('Hello World From the Typescript Server!');
 });
 
-const port = process.env.PORT || 8000;
+const port = 8000;
 
 const server = app.listen(port, () => {
   console.log(`ROS2 websocket running on port ${port}`);
@@ -51,6 +51,19 @@ rclnodejs.init().then(() => {
       });
     },
   );
+
+  node.createSubscription(
+    'std_msgs/msg/String',
+    '/hri/speech/oww',
+    (msg: { data: string }) => {
+      console.log(`I detected: [${msg.data}]`);
+      wss.clients.forEach((client: any) => {
+        if (client.readyState === 1) {
+          client.send(JSON.stringify({ type: 'keyword', data: msg.data }));
+        }
+      });
+    },
+  )
 
   // Gracefully handle SIGINT (Ctrl+C)
   process.on('SIGINT', () => {

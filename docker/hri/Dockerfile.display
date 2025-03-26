@@ -16,7 +16,4 @@ RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.2/install.sh | b
     nvm use ${NODE_VERSION} && \
     nvm alias default ${NODE_VERSION}
 
-# Verify installation
-RUN node --version && npm --version
-
 WORKDIR /app

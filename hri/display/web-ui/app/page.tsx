@@ -1,5 +1,6 @@
-import App from './components/app';
+import RosMessagesDisplay from "./components/ros-messages";
 
-export default function Home() {
-  return <App />;
+
+export default function Page() {
+  return <RosMessagesDisplay />;
 }
