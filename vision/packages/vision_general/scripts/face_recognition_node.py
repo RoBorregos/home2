@@ -120,6 +120,7 @@ class FaceRecognition(Node):
             self.view_pub.publish(
                 self.bridge.cv2_to_imgmsg(self.annotated_frame, "bgr8")
             )
+
     def process_imgs(self) -> None:
         """Make encodings of known people images"""
         self.get_logger().info("Processing images")

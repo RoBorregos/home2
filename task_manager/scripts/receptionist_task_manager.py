@@ -96,7 +96,7 @@ class ReceptionistTM(Node):
     # TODO (@alecoeto): use constants in moondream node
     # TODO (@alecoeto): send robot to entrance as first step
     # TODO (@alecoeto): publish face recognition for rqt
-    # TODO (@alecoeto): test beverage moondream 
+    # TODO (@alecoeto): test beverage moondream
     # TODO (@alecoeto): detect guest
     # TODO (@joce): improve prompt for person description
 
@@ -212,7 +212,7 @@ class ReceptionistTM(Node):
             if self.current_attempts >= ATTEMPT_LIMIT:
                 self.get_guest().interest = "Nothing"
             else:
-            # self.subtask_manager.manipulation.follow_face(True)
+                # self.subtask_manager.manipulation.follow_face(True)
                 self.subtask_manager.hri.say("What is your main interest?")
                 self.get_guest().interest = self.hear_word("interest")
                 self.current_attempts += 1
