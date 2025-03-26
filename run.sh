@@ -34,6 +34,10 @@ case $AREA in
     echo "Running manipulation"
     area="navigation"
     ;;
+  hri)
+    echo "Running hri"
+    area="hri"
+    ;;
   *)
     echo "Invalid service name provided. Valid args are: vision, hri, etc"
     exit 1

@@ -125,7 +125,7 @@ class SingleTracker(Node):
 
                 # Get class name
                 try:
-                    track_id = box.id[0].item()
+                    track_id = 1
                 except Exception as e:
                     print("Track id exception: ", e)
                     track_id = -1
