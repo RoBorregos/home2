@@ -15,6 +15,8 @@ from frida_interfaces.srv import GetJoints
 from frida_constants.xarm_configurations import XARM_CONFIGURATIONS
 from rclpy.action import ActionClient
 from typing import List, Union
+from utils.decorators import service_check
+
 # import time as t
 
 XARM_ENABLE_SERVICE = "/xarm/motion_enable"
@@ -62,6 +64,7 @@ class ManipulationTasks:
 
         self._get_joints_client = self.node.create_client(GetJoints, "/manipulation/get_joints")
 
+    @service_check("move_joint_positions", -1, TIMEOUT)
     def move_joint_positions(
         self,
         joint_positions: Union[List[float], dict] = None,
@@ -105,6 +108,7 @@ class ManipulationTasks:
         """Get named target"""
         return XARM_CONFIGURATIONS[target_name]
 
+    @service_check("get_joints_positions", -1, TIMEOUT)
     def get_joint_positions(
         self,
         degrees=False,  # set to true to return in degrees
