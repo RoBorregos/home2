@@ -98,6 +98,7 @@ class ReceptionistTM(Node):
     # TODO (@alecoeto): publish face recognition for rqt
     # TODO (@alecoeto): test beverage moondream 
     # TODO (@alecoeto): detect guest
+    # TODO (@joce): improve prompt for person description
 
     def run(self):
         """State machine"""
