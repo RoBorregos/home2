@@ -10,7 +10,9 @@ import rclpy
 from rclpy.node import Node
 
 # from subtask_managers.hri_tasks import HRITasks
-from subtask_managers.manipulation_tasks import ManipulationTasks
+# from subtask_managers.manipulation_tasks import ManipulationTasks
+from subtask_managers.vision_tasks import VisionTasks
+from utils.task import Task
 
 
 class TestTaskManager(Node):
@@ -19,7 +21,8 @@ class TestTaskManager(Node):
         self.subtask_manager = {}
         # self.subtask_manager["hri"] = HRITasks(self, config=test_hri_config)
 
-        self.subtask_manager["manipulation"] = ManipulationTasks(self, task="DEMO", mock_data=False)
+        # self.subtask_manager["manipulation"] = ManipulationTasks(self, task="DEMO", mock_data=False)
+        self.subtask_manager["vision"] = VisionTasks(self, task=Task.HELP_ME_CARRY, mock_data=False)
 
         # wait for a bit
         rclpy.spin_once(self, timeout_sec=1.0)
@@ -28,6 +31,7 @@ class TestTaskManager(Node):
 
     def run(self):
         """testing vision tasks"""
+        self.subtask_manager["vision"].track_person()
 
         # self.subtask_manager["hri"].say(
         #     "Hi, my name is frida. What is your favorite drink?", wait=True
@@ -72,18 +76,18 @@ class TestTaskManager(Node):
 
         ####### EXAMPLE: Move to named position then move only the first joint #######
         # Move to a named position
-        joint_positions = self.subtask_manager["manipulation"].get_joint_positions()
-        print(joint_positions)
-        res = self.subtask_manager["manipulation"].move_joint_positions(
-            named_position="front_stare", velocity=0.5, degrees=True
-        )
-        print("Move to named position result: ", res)
-        joint_positions = self.subtask_manager["manipulation"].get_joint_positions(degrees=True)
-        joint_positions["joint1"] = joint_positions["joint1"] - 45
-        res = self.subtask_manager["manipulation"].move_joint_positions(
-            joint_positions=joint_positions, velocity=0.5, degrees=True
-        )
-        print("Move joint positions result: ", res)
+        # joint_positions = self.subtask_manager["manipulation"].get_joint_positions()
+        # print(joint_positions)
+        # res = self.subtask_manager["manipulation"].move_joint_positions(
+        #     named_position="front_stare", velocity=0.5, degrees=True
+        # )
+        # print("Move to named position result: ", res)
+        # joint_positions = self.subtask_manager["manipulation"].get_joint_positions(degrees=True)
+        # joint_positions["joint1"] = joint_positions["joint1"] - 45
+        # res = self.subtask_manager["manipulation"].move_joint_positions(
+        #     joint_positions=joint_positions, velocity=0.5, degrees=True
+        # )
+        # print("Move joint positions result: ", res)
 
 
 def main(args=None):
