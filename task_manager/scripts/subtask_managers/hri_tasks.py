@@ -48,11 +48,11 @@ TIMEOUT = 5.0
 
 
 def confirm_query(interpreted_text, target_info):
-    return f"Did you said {target_info}?"
+    return f"Did you say {target_info}?"
 
 
 def confirm_interpretation(interpreted_text, target_info):
-    return f"Did you said {interpreted_text}?"
+    return f"Did you say {interpreted_text}?"
 
 
 class HRITasks(metaclass=SubtaskMeta):
