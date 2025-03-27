@@ -163,9 +163,9 @@ def launch_setup(context, *args, **kwargs):
             # '-entity', '{}'.format(xarm_type),
             '-entity', 'UF_ROBOT',
             '-x', '0.0',
-            '-y', '0.0',
+            '-y', '-0.85',
             '-z', '0.2',
-            '-Y', '0.0' ,
+            '-Y', '-1.57' ,
         ],
         parameters=[{'use_sim_time': True}],
     )

@@ -145,7 +145,7 @@ class Planner(ABC):
         pass
 
     @abstractmethod
-    def clear_all_collision_objects(self) -> None:
+    def remove_all_collision_objects(self) -> None:
         """Remove all collision objects from planning scene"""
         pass
 

@@ -30,7 +30,7 @@
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
-#include <frida_constants/manip_3d.hpp>
+#include <frida_constants/manipulation_constants_cpp.hpp>
 #include <perception_3d/macros.hpp>
 
 #include <frida_interfaces/srv/cluster_object_from_point.hpp>

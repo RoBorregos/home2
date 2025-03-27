@@ -24,7 +24,7 @@
 // #include <frida_interfaces/action/detect_objects3_d.hpp>
 
 #include "rclcpp/rclcpp.hpp"
-#include <frida_constants/manip_3d.hpp>
+#include <frida_constants/manipulation_constants_cpp.hpp>
 #include <frida_interfaces/srv/remove_plane.hpp>
 #include <frida_interfaces/srv/test.hpp>
 

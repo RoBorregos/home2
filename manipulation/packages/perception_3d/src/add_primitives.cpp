@@ -1,4 +1,4 @@
-#include "frida_constants/manip_3d.hpp"
+#include "frida_constants/manipulation_constants_cpp.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include <cstdint>
 #include <memory>
@@ -16,7 +16,7 @@
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
-#include <frida_constants/manip_3d.hpp>
+#include <frida_constants/manipulation_constants_cpp.hpp>
 #include <perception_3d/macros.hpp>
 
 #include <pcl/filters/voxel_grid.h>
@@ -101,9 +101,9 @@ public:
     Eigen::Matrix3f eigenvectors = eigen_solver.eigenvectors();
     Eigen::Vector3f eigenvalues = eigen_solver.eigenvalues();
 
-    eigenvectors.col(2) = eigenvectors.col(0).cross(eigenvectors.col(1));
-    eigenvectors.col(0) = eigenvectors.col(1).cross(eigenvectors.col(2));
-    eigenvectors.col(1) = eigenvectors.col(2).cross(eigenvectors.col(0));
+    eigenvectors.col(2) = (eigenvectors.col(0).cross(eigenvectors.col(1))).normalized();
+    eigenvectors.col(0) = (eigenvectors.col(1).cross(eigenvectors.col(2))).normalized();
+    eigenvectors.col(1) = (eigenvectors.col(2).cross(eigenvectors.col(0))).normalized();
 
     Eigen::Matrix3f eigenVectorsPCA1;
     eigenVectorsPCA1.col(0) = eigenvectors.col(2);
@@ -117,12 +117,12 @@ public:
 
     transform.translate(center);
     // transform.rotate(keep_Z_Rot);
-    transform.rotate(Eigen::AngleAxisf(ea[0], Eigen::Vector3f::UnitZ()));
-    transform.rotate(Eigen::AngleAxisf(ea[2], Eigen::Vector3f::UnitY()));
-    transform.rotate(Eigen::AngleAxisf(ea[1], Eigen::Vector3f::UnitX()));
-
-    // Convert eigenvectors (rotation matrix) to quaternion
+    // Convert eigenvectors (rotation matrix) to quaternion and normalize it
     Eigen::Quaternionf quat(eigenvectors);
+    quat.normalize();
+
+    // Rotate using the quaternion directly
+    transform.rotate(quat);
 
     // Set the orientation in the box parameters
     box_params.orientation.x = quat.x();
