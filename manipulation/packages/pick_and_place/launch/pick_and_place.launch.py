@@ -30,7 +30,11 @@ def generate_launch_description():
                 name="pick_server",
                 output="screen",
                 emulate_tty=True,
-                parameters=[],
+                parameters=[
+                    {
+                        "ee_link_offset": -0.125,  # based on distance between end-effector link and contact point with objects e.g. where you grip
+                    }
+                ],
             ),
         ]
     )

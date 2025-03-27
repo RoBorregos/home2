@@ -28,6 +28,10 @@ class PickMotionServer(Node):
         super().__init__("pick_server")
         self.callback_group = ReentrantCallbackGroup()
 
+        # Declare and retrieve the parameter for the end-effector link offset
+        self.declare_parameter("ee_link_offset", -0.125)
+        self.ee_link_offset = self.get_parameter("ee_link_offset").value
+
         self._action_server = ActionServer(
             self,
             PickMotion,
@@ -85,7 +89,7 @@ class PickMotionServer(Node):
             ee_link_pose = copy.deepcopy(pose)
 
             offset_distance = (
-                -0.125
+                self.ee_link_offset
             )  # Desired distance in meters along the local z-axis
 
             # Compute the offset along the local z-axis
