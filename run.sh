@@ -34,6 +34,9 @@ case $AREA in
     echo "Running manipulation"
     area="navigation"
     ;;
+  integration)
+    echo "Running integration"
+    area="integration"
   hri)
     echo "Running hri"
     area="hri"
