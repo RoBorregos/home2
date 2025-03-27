@@ -5,9 +5,3 @@ include:
   - path: ollama-jetson.yaml
   # - path: chromadb.yaml
   - path: display-l4t.yaml
-
-  # Laptop
-  # - path: hri-ros.yaml
-  # - path: chromadb.yaml
-  # - path: stt.yaml
-  # - path: display.yaml

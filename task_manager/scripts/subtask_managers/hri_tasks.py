@@ -5,6 +5,7 @@ HRI Subtask manager
 """
 
 import re
+from typing import Union
 
 import rclpy
 from frida_constants.hri_constants import (
@@ -191,7 +192,9 @@ class HRITasks(metaclass=SubtaskMeta):
         rclpy.spin_until_future_complete(self.node, future)
 
         execution_status = (
-            Status.EXECUTION_SUCCESS if future.result().success else Status.TARGET_NOT_FOUND
+            Status.EXECUTION_SUCCESS
+            if len(future.result().text_heard) > 0
+            else Status.TARGET_NOT_FOUND
         )
 
         return execution_status, future.result().text_heard
@@ -247,7 +250,7 @@ class HRITasks(metaclass=SubtaskMeta):
         question: str,
         query: str,
         context: str = "",
-        confirm_question: str | callable = confirm_query,
+        confirm_question: Union[str, callable] = confirm_query,
         use_hotwords: bool = True,
         retries: int = 3,
         min_wait_between_retries: float = 5,
@@ -292,7 +295,7 @@ class HRITasks(metaclass=SubtaskMeta):
                 s, confirmation = self.confirm(confirmation_text, use_hotwords, 1)
 
                 if confirmation == "yes":
-                    return Status.EXECUTION_SUCCESS, interpreted_text
+                    return Status.EXECUTION_SUCCESS, target_info
 
             # Wait for the minimum time between retries
             while (
