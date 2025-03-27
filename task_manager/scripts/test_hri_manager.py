@@ -8,19 +8,23 @@ import rclpy
 from config.hri.debug import config as test_hri_config
 from rclpy.node import Node
 from subtask_managers.hri_tasks import HRITasks
+from utils.task import Task
 
 
 def confirm_preference(interpreted_text, extracted_data):
     return "I heard you like " + extracted_data + ". Is that correct?"
 
 
+TEST_TASK = Task.RECEPTIONIST
+TEST_COMPOUND = True
+TEST_INDIVIDUAL_FUNCTIONS = False
+
+
 class TestHriManager(Node):
     def __init__(self):
         super().__init__("test_hri_task_manager")
         self.subtask_manager = {}
-        self.hri_manager = HRITasks(self, config=test_hri_config)
-
-        # wait for a bit
+        self.hri_manager = HRITasks(self, config=test_hri_config, task=TEST_TASK)
         rclpy.spin_once(self, timeout_sec=1.0)
         self.get_logger().info("TestTaskManager has started.")
         self.run()
@@ -28,20 +32,28 @@ class TestHriManager(Node):
     def run(self):
         # Testing compound commands
 
-        # Test ask
+        if TEST_COMPOUND:
+            self.compound_functions()
 
-        # s, favorite_drink = self.hri_manager.ask_and_confirm(
-        #     "What is your favorite drink?",
-        #     "drink",
-        #     "The question 'What is your favorite drink?' was asked, full_text corresponds to the response.",
-        #     confirm_preference,
-        #     False,
-        #     3,
-        #     5,
-        # )
+        if TEST_INDIVIDUAL_FUNCTIONS:
+            self.individual_functions()
 
-        # self.hri_manager.say(f"I undestood your favorite drink is {favorite_drink}")
+    def individual_functions(self):
+        # Test say
+        self.subtask_manager["hri"].say(
+            "Hi, my name is frida. What is your favorite drink?", wait=True
+        )
+        self.get_logger().info("Hearing from the user...")
 
+        # Test hear
+        user_request = self.subtask_manager["hri"].hear()
+        self.get_logger().info(f"Heard: {user_request}")
+
+        # Test extract_data
+        drink = self.subtask_manager["hri"].extract_data("Drink", user_request)
+        self.get_logger().info(f"Extracted data: {drink}")
+
+    def compound_functions(self):
         s, interest1 = self.hri_manager.ask_and_confirm(
             "What is your favorite main interest?",
             "interest",
@@ -67,37 +79,6 @@ class TestHriManager(Node):
         )
 
         self.hri_manager.say(common_interest)
-
-        # Testing atomic commands
-
-        # self.subtask_manager["hri"].say(
-        #     "Hi, my name is frida. What is your favorite drink?", wait=True
-        # )
-        # self.get_logger().info("Hearing from the user...")
-
-        # user_request = self.subtask_manager["hri"].hear()
-
-        # self.get_logger().info(f"Heard: {user_request}")
-
-        # drink = self.subtask_manager["hri"].extract_data("Drink", user_request)
-
-        # self.get_logger().info(f"Extracted data: {drink}")
-
-        # commands = self.subtask_manager["hri"].command_interpreter(user_request)
-
-        # self.get_logger().info(f"Interpreted commands: {commands}")
-
-        # command_strs = [
-        #     f"I will do action:{command.action}, ({command.complement}), ({command.characteristic})"
-        #     for command in commands
-        # ]
-        # command_str = " and ".join(command_strs)
-
-        # fixed_text = self.subtask_manager["hri"].refactor_text(command_str)
-        # self.subtask_manager["hri"].say(fixed_text)
-
-        # self.subtask_manager["hri"].say("I'm frida, Can you tell me where to go?")
-        # location_hint = self.subtask_manager["hri"].hear()
 
 
 def main(args=None):
