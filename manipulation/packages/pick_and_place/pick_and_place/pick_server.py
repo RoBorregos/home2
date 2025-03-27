@@ -19,7 +19,8 @@ from frida_constants.manipulation_constants import (
 from frida_interfaces.srv import AttachCollisionObject, GetCollisionObjects
 from frida_interfaces.action import PickMotion, MoveToPose
 import copy
-import transforms3d
+import numpy as np
+from transforms3d.quaternions import quat2mat
 
 
 class PickMotionServer(Node):
@@ -83,22 +84,35 @@ class PickMotionServer(Node):
 
             ee_link_pose = copy.deepcopy(pose)
 
-            offset_distance = -0.15  # Desired distance in meters along the local z-axis
-            # Extract quaternion from the current pose
-            q = [
+            offset_distance = (
+                -0.125
+            )  # Desired distance in meters along the local z-axis
+
+            # Compute the offset along the local z-axis
+            quat = [
+                ee_link_pose.pose.orientation.w,
                 ee_link_pose.pose.orientation.x,
                 ee_link_pose.pose.orientation.y,
                 ee_link_pose.pose.orientation.z,
-                ee_link_pose.pose.orientation.w,
             ]
-            # Calculate the rotation matrix from the quaternion
-            rot_mat = transforms3d.quaternions.quat2mat(q)
-            # The local z-axis unit vector (third column of the rotation matrix)
-            local_z = [rot_mat[0, 2], rot_mat[1, 2], rot_mat[2, 2]]
-            # Move the pose along its local z-axis by the offset distance
-            ee_link_pose.pose.position.x += offset_distance * local_z[0]
-            ee_link_pose.pose.position.y += offset_distance * local_z[1]
-            ee_link_pose.pose.position.z += offset_distance * local_z[2]
+            rotation_matrix = quat2mat(quat)
+            # Extract local Z-axis (third column of the rotation matrix)
+            z_axis = rotation_matrix[:, 2]
+
+            # Translate along the local Z-axis
+            new_position = (
+                np.array(
+                    [
+                        ee_link_pose.pose.position.x,
+                        ee_link_pose.pose.position.y,
+                        ee_link_pose.pose.position.z,
+                    ]
+                )
+                + z_axis * offset_distance
+            )
+            ee_link_pose.pose.position.x = new_position[0]
+            ee_link_pose.pose.position.y = new_position[1]
+            ee_link_pose.pose.position.z = new_position[2]
 
             grasp_pose_handler, grasp_pose_result = self.move_to_pose(ee_link_pose)
             print(f"Grasp Pose {i} result: {grasp_pose_result}")
