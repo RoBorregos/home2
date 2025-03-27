@@ -46,6 +46,14 @@ from subtask_managers.subtask_meta import SubtaskMeta
 TIMEOUT = 5.0
 
 
+def confirm_query(interpreted_text, target_info):
+    return f"Did you said {target_info}?"
+
+
+def confirm_interpretation(interpreted_text, target_info):
+    return f"Did you said {interpreted_text}?"
+
+
 class HRITasks(metaclass=SubtaskMeta):
     """Class to manage the vision tasks"""
 
@@ -192,38 +200,105 @@ class HRITasks(metaclass=SubtaskMeta):
         self,
         question: str,
         use_hotwords: bool = True,
-        retries: int = 5,
+        retries: int = 3,
         wait_between_retries: float = 5,
     ):
         """
-        Method to confirm a specific question.
+        Method to confirm a specific question. Could be used for deus ex machina, to confirm a specific action.
 
         Args:
             question: the inquiry to confirm
             use_hotwords: if True, the robot will only react if 'yes' or 'no' is mentioned. Otherwise, it will hear any type of answer and interpret it with an llm.
             retries: the amount of times to try before returning false
+            wait_between_retries: the amount of time to wait between retries
+        Returns:
+            Status: the status of the execution
+            str: "yes" (user confirms), "no" (user doesn't confirm), or "" (no response interpreted).
         """
         current_attempt = 0
         while current_attempt < retries:
             current_attempt += 1
+
             # Say the question
             self.say(question)
 
             if use_hotwords:
                 self.say("Please confirm by saying yes or no")
 
-                keyword = self.interpret_keyword(["yes", "no"], timeout=wait_between_retries)
-                if keyword != "":
+                s, keyword = self.interpret_keyword(["yes", "no"], timeout=wait_between_retries)
+                if s == Status.EXECUTION_SUCCESS:
                     return Status.EXECUTION_SUCCESS, keyword
             else:
                 start_time = self.node.get_clock().now()
                 while (
                     (self.node.get_clock().now() - start_time).nanoseconds / 1e9
                 ) < wait_between_retries:
-                    # interpret_text = self.hear()
-                    pass
+                    s, interpret_text = self.hear()
+                    if s == Status.EXECUTION_SUCCESS:
+                        if self.is_positive(interpret_text)[1]:
+                            return Status.EXECUTION_SUCCESS, "yes"
+                        elif self.is_negative(interpret_text)[1]:
+                            return Status.EXECUTION_SUCCESS, "no"
 
-                pass
+        return Status.TIMEOUT, ""
+
+    def ask_and_confirm(
+        self,
+        question: str,
+        query: str,
+        context: str = "",
+        confirm_question: str | callable = confirm_query,
+        use_hotwords: bool = True,
+        retries: int = 3,
+        min_wait_between_retries: float = 5,
+    ):
+        """
+        Method to confirm a specific question.
+
+        Args:
+            question: the inquiry to ask
+            query: the data to extract from the interpreted text
+            context: the context of the question. It could be used to help the extraction.
+            confirm_question: a string or a callable function that returns a string used confirm the answer
+            use_hotwords: if True, the robot will only react if 'yes' or 'no' is the confirmations. Otherwise, it will hear any type of answer and interpret it with an llm.
+            retries: the amount of times to try before returning false
+            min_wait_between_retries: the minimum amount of time to wait between retries
+
+        Returns:
+            Status: the status of the execution
+            str: answer to the question
+        """
+        current_attempt = 0
+        while current_attempt < retries:
+            current_attempt += 1
+
+            start_time = self.node.get_clock().now()
+
+            self.say(question)
+            s, interpreted_text = self.hear()
+
+            if s == Status.EXECUTION_SUCCESS:
+                s, target_info = self.extract_data(query, interpreted_text, context)
+
+                if s == Status.TARGET_NOT_FOUND:
+                    target_info = interpreted_text
+
+                # Determine the confirmation question
+                if callable(confirm_question):
+                    confirmation_text = confirm_question(interpreted_text, target_info)
+                else:
+                    confirmation_text = confirm_question
+
+                s, confirmation = self.confirm(confirmation_text, use_hotwords, 1)
+
+                if confirmation == "yes":
+                    return Status.EXECUTION_SUCCESS, interpreted_text
+
+            # Wait for the minimum time between retries
+            while (
+                (self.node.get_clock().now() - start_time).nanoseconds / 1e9
+            ) < min_wait_between_retries:
+                rclpy.spin_once(self.node, timeout_sec=0.1)
 
         return Status.TIMEOUT, ""
 
@@ -344,7 +419,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
     @service_check("is_negative_service", (Status.SERVICE_CHECK, False), TIMEOUT)
     def is_negative(self, text):
-        request = IsPositive.Request(text=text)
+        request = IsNegative.Request(text=text)
         future = self.is_negative_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
         return Status.EXECUTION_SUCCESS, future.result().is_negative
