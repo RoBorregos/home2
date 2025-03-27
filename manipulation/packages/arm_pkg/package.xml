@@ -17,11 +17,7 @@
   <depend>rclpy</depend>
   <depend>frida_interfaces</depend>
   <depend>frida_constants</depend>
-  <depend>opencv</depend>
-  <depend>eigen3</depend>
-  <!-- <depend>gpd</depend> -->
-  <depend>pcl-ros</depend> 
-  <depend>libpcl-dev</depend> 
+  <!-- <depend>gpd</depend> -->  
 
 
   <build_depend>pcl_conversions</build_depend>
