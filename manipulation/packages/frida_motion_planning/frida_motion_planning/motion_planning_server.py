@@ -30,7 +30,7 @@ from frida_constants.manipulation_constants import (
     ADD_COLLISION_OBJECT_SERVICE,
     REMOVE_COLLISION_OBJECT_SERVICE,
     ATTACH_COLLISION_OBJECT_SERVICE,
-    TOGGLE_SERVO_SERVICE
+    TOGGLE_SERVO_SERVICE,
 )
 from xarm_msgs.srv import MoveVelocity
 from frida_interfaces.msg import CollisionObject
