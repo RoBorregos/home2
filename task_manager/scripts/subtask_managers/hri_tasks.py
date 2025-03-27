@@ -409,7 +409,7 @@ class HRITasks(metaclass=SubtaskMeta):
         result = future.result().common_interest
 
         if remove_thinking:
-            result = re.sub(r"<think>.*?</think>", "", result)
+            result = re.sub(r"<think>.*?</think>", "", result, flags=re.DOTALL)
 
         return Status.EXECUTION_SUCCESS, result
 

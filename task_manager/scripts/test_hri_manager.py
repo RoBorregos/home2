@@ -10,7 +10,7 @@ from rclpy.node import Node
 from subtask_managers.hri_tasks import HRITasks
 
 
-def confirm_favorite_drink(interpreted_text, extracted_data):
+def confirm_preference(interpreted_text, extracted_data):
     return "I heard you like " + extracted_data + ". Is that correct?"
 
 
@@ -30,17 +30,43 @@ class TestHriManager(Node):
 
         # Test ask
 
-        s, favorite_drink = self.hri_manager.ask_and_confirm(
-            "What is your favorite drink?",
-            "drink",
-            "The question 'What is your favorite drink?' was asked, full_text corresponds to the response.",
-            confirm_favorite_drink,
+        # s, favorite_drink = self.hri_manager.ask_and_confirm(
+        #     "What is your favorite drink?",
+        #     "drink",
+        #     "The question 'What is your favorite drink?' was asked, full_text corresponds to the response.",
+        #     confirm_preference,
+        #     False,
+        #     3,
+        #     5,
+        # )
+
+        # self.hri_manager.say(f"I undestood your favorite drink is {favorite_drink}")
+
+        s, interest1 = self.hri_manager.ask_and_confirm(
+            "What is your favorite main interest?",
+            "interest",
+            "The question 'What is your favorite main interest?' was asked, full_text corresponds to the response.",
+            confirm_preference,
             False,
             3,
             5,
         )
 
-        self.hri_manager.say(f"I undestood your favorite drink is {favorite_drink}")
+        s, interest2 = self.hri_manager.ask_and_confirm(
+            "What is your favorite second interest?",
+            "interest",
+            "The question 'What is your favorite main interest?' was asked, full_text corresponds to the response.",
+            confirm_preference,
+            False,
+            3,
+            5,
+        )
+
+        s, common_interest = self.hri_manager.common_interest(
+            "mike", interest1, "rodrigo", interest2
+        )
+
+        self.hri_manager.say(common_interest)
 
         # Testing atomic commands
 
