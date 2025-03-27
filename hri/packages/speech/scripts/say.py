@@ -10,7 +10,7 @@ from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from speech.speech_api_utils import SpeechApiUtils
 from speech.wav_utils import WavUtils
-from std_msgs.msg import Bool
+from std_msgs.msg import Bool, String
 
 from frida_constants.hri_constants import SPEAK_SERVICE
 from frida_interfaces.srv import Speak
@@ -34,6 +34,7 @@ class Say(Node):
 
         self.connected = False
         self.declare_parameter("speaking_topic", "/saying")
+        self.declare_parameter("text_spoken", "/speech/text_spoken")
 
         self.declare_parameter("SPEAK_SERVICE", SPEAK_SERVICE)
         self.declare_parameter("model", "en_US-amy-medium")
@@ -68,6 +69,9 @@ class Say(Node):
         speaking_topic = (
             self.get_parameter("speaking_topic").get_parameter_value().string_value
         )
+        text_spoken = (
+            self.get_parameter("text_spoken").get_parameter_value().string_value
+        )
 
         self.model = self.get_parameter("model").get_parameter_value().string_value
         self.offline = self.get_parameter("offline").get_parameter_value().bool_value
@@ -77,18 +81,21 @@ class Say(Node):
 
         self.create_service(Speak, speak_service, self.speak_service)
         self.publisher_ = self.create_publisher(Bool, speaking_topic, 10)
+        self.text_publisher_ = self.create_publisher(String, text_spoken, 10)
 
         self.get_logger().info("Say node initialized.")
 
     def speak_service(self, req, res):
         self.get_logger().info("[Service] I will say: " + req.text)
         if req.text:
+            msg = String()
+            msg.data = req.text
+            self.text_publisher_.publish(msg)
             self.say(req.text)
             res.success = True
         else:
             res.success = False
             self.get_logger().info("[Service] Nothing to say.")
-
         return res
 
     def say(self, text):

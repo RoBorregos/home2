@@ -1,5 +1,7 @@
 ARGS=("$@")  # Save all arguments in an array
 AREA=${ARGS[0]}  # Get the first argument
+TASK=${ARGS[1]}  # Get the second argument
+
 # Check if the parameter is passed, if not, set a default value (e.g., "vision")
 if [ -z "$AREA" ]; then
   echo "No service name provided or invalid. Valid args are: vision, hri, etc"
@@ -32,6 +34,10 @@ case $AREA in
     echo "Running manipulation"
     area="navigation"
     ;;
+  hri)
+    echo "Running hri"
+    area="hri"
+    ;;
   *)
     echo "Invalid service name provided. Valid args are: vision, hri, etc"
     exit 1
@@ -46,6 +52,14 @@ for arg in "${ARGS[@]}"; do
   fi
 done
 
+detached=""
+# check if one of the arguments is --detached
+for arg in "${ARGS[@]}"; do
+  if [ "$arg" == "-d" ]; then
+    detached="-d"
+  fi
+done
+
 if [ -z "$area" ]; then
   echo "Invalid service name provided. Valid args are: vision, hri, etc"
   exit 1
@@ -54,8 +68,8 @@ fi
 cd docker/$area
 if [ $rebuild -eq 1 ]; then
   echo "Rebuilding image from area: $area"
-  ./run.sh --rebuild
+  ./run.sh $TASK --rebuild $detached
 else
   echo "Running image from area: $area"
-  ./run.sh
+  ./run.sh $TASK $detached
 fi
