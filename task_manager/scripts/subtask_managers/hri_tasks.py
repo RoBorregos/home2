@@ -5,7 +5,6 @@ HRI Subtask manager
 """
 
 import re
-from enum import Enum
 
 import rclpy
 from frida_constants.hri_constants import (
@@ -39,22 +38,12 @@ from rclpy.node import Node
 from std_msgs.msg import String
 from utils.decorators import service_check
 from utils.logger import Logger
+from utils.status import Status
 from utils.task import Task
 
 from subtask_managers.subtask_meta import SubtaskMeta
 
 TIMEOUT = 5.0
-
-
-class ReturnStates(Enum):
-    TERMINAL_ERROR = -1
-    EXECUTION_ERROR = 0
-    EXECUTION_SUCCESS = 1
-    SERVICE_CHECK = 2
-    TIMEOUT = 3
-
-
-STATE = {"TERMINAL_ERROR": -1, "EXECUTION_ERROR": 0, "EXECUTION_SUCCESS": 1, "SERVICE_CHECK": 2}
 
 
 class HRITasks(metaclass=SubtaskMeta):
@@ -123,7 +112,7 @@ class HRITasks(metaclass=SubtaskMeta):
                 if not service["client"].wait_for_server(timeout_sec=TIMEOUT):
                     Logger.warn(self.node, f"{key} action server not initialized. ({self.task})")
 
-    @service_check("speak_service", STATE["SERVICE_CHECK"], TIMEOUT)
+    @service_check("speak_service", Status.SERVICE_CHECK, TIMEOUT)
     def say(self, text: str, wait: bool = True) -> None:
         """Method to publish directly text to the speech node"""
         self.node.get_logger().info(f"Sending to saying service: {text}")
@@ -135,12 +124,10 @@ class HRITasks(metaclass=SubtaskMeta):
             self.node.get_logger().info("in wait")
             rclpy.spin_until_future_complete(self.node, future)
             self.node.get_logger().info("after future complete")
-            return (
-                STATE["EXECUTION_SUCCESS"] if future.result().success else STATE["EXECUTION_ERROR"]
-            )
-        return STATE["EXECUTION_SUCCESS"]
+            return Status.EXECUTION_SUCCESS if future.result().success else Status.EXECUTION_ERROR
+        return Status.EXECUTION_SUCCESS
 
-    @service_check("extract_data_service", STATE["SERVICE_CHECK"], TIMEOUT)
+    @service_check("extract_data_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def extract_data(self, query, complete_text, context="") -> str:
         """
         Extracts data from the given query and complete text.
@@ -159,16 +146,24 @@ class HRITasks(metaclass=SubtaskMeta):
         request = ExtractInfo.Request(data=query, full_text=complete_text, context=context)
         future = self.extract_data_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
-        return future.result().result
+
+        execution_status = (
+            Status.EXECUTION_SUCCESS if len(future.result().result) > 0 else Status.TARGET_NOT_FOUND
+        )
+
+        return execution_status, future.result().result
 
     def execute_command(self, command: str, complement: str, characteristic: str) -> None:
         if command == "speak":
-            return self.say(complement)
+            self.say(complement)
+            return Status.EXECUTION_SUCCESS
         elif command == "clarification":
             self.say("Sorry, I don't undestand your command.")
             self.say(command.complement)
+            return Status.EXECUTION_SUCCESS
         else:
-            return self.say(f"Sorry, I don't know how to {command}")
+            self.say(f"Sorry, I don't know how to {command}")
+            return Status.TARGET_NOT_FOUND
 
     def _get_keyword(self, msg: String) -> None:
         try:
@@ -178,7 +173,7 @@ class HRITasks(metaclass=SubtaskMeta):
             self.node.get_logger().error(f"Error: {e}")
             self.keyword = ""
 
-    @service_check("hear_service", STATE["SERVICE_CHECK"], TIMEOUT)
+    @service_check("hear_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def hear(self) -> str:
         self.node.get_logger().info("Hearing from user")
         request = STT.Request()
@@ -187,7 +182,11 @@ class HRITasks(metaclass=SubtaskMeta):
 
         rclpy.spin_until_future_complete(self.node, future)
 
-        return future.result().text_heard
+        execution_status = (
+            Status.EXECUTION_SUCCESS if future.result().success else Status.TARGET_NOT_FOUND
+        )
+
+        return execution_status, future.result().text_heard
 
     def confirm(
         self,
@@ -215,7 +214,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
                 keyword = self.interpret_keyword(["yes", "no"], timeout=wait_between_retries)
                 if keyword != "":
-                    return ReturnStates.EXECUTION_SUCCESS, keyword
+                    return Status.EXECUTION_SUCCESS, keyword
             else:
                 start_time = self.node.get_clock().now()
                 while (
@@ -226,7 +225,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
                 pass
 
-        return ReturnStates.TIMEOUT, ""
+        return Status.TIMEOUT, ""
 
     def interpret_keyword(self, keywords: list[str], timeout: float) -> str:
         start_time = self.node.get_clock().now()
@@ -237,16 +236,20 @@ class HRITasks(metaclass=SubtaskMeta):
         ):
             rclpy.spin_once(self.node, timeout_sec=0.1)
 
-        return self.keyword
+        execution_status = (
+            Status.EXECUTION_SUCCESS if self.keyword in keywords else Status.TARGET_NOT_FOUND
+        )
 
-    @service_check("grammar_service", STATE["SERVICE_CHECK"], TIMEOUT)
+        return execution_status, self.keyword
+
+    @service_check("grammar_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def refactor_text(self, text: str) -> str:
         request = Grammar.Request(text=text)
         future = self.grammar_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
-        return future.result().corrected_text
+        return Status.EXECUTION_SUCCESS, future.result().corrected_text
 
-    @service_check("query_item_client", STATE["SERVICE_CHECK"], TIMEOUT)
+    @service_check("query_item_client", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def find_closest(self, query: str, collection: str, top_k: int = 1) -> list[str]:
         """
         Finds the closest matching item in a specified collection based on the given query.
@@ -263,16 +266,16 @@ class HRITasks(metaclass=SubtaskMeta):
         future = self.query_item_client.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
 
-        return future.result().results
+        return Status.EXECUTION_SUCCESS, future.result().results
 
-    @service_check("llm_wrapper_service", STATE["SERVICE_CHECK"], TIMEOUT)
+    @service_check("llm_wrapper_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def ask(self, question: str) -> str:
         request = LLMWrapper.Request(question=question)
         future = self.llm_wrapper_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
-        return future.result().answer
+        return Status.EXECUTION_SUCCESS, future.result().answer
 
-    @service_check("add_item_client", STATE["SERVICE_CHECK"], TIMEOUT)
+    @service_check("add_item_client", Status.SERVICE_CHECK, TIMEOUT)
     def add_item(self, document: list, item_id: list, collection: str, metadata: list) -> str:
         """
         Adds new items to the ChromaDB collection.
@@ -301,22 +304,23 @@ class HRITasks(metaclass=SubtaskMeta):
 
             # Check if the operation was successful
             if future.result().success:
-                return "Items added successfully"
+                return Status.EXECUTION_SUCCESS
             else:
-                return f"Failed to add items: {future.result().message}"
+                self.node.get_logger().error(f"Failed to add items: {future.result().message}")
+                return Status.EXECUTION_ERROR
 
-        except Exception as e:
-            return f"Error: {str(e)}"
+        except Exception:
+            return Status.EXECUTION_ERROR
 
-    @service_check("command_interpreter_client", STATE["SERVICE_CHECK"], TIMEOUT)
+    @service_check("command_interpreter_client", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def command_interpreter(self, text: str) -> CommandInterpreter.Response:
         request = CommandInterpreter.Request(text=text)
         future = self.command_interpreter_client.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
 
-        return future.result().commands
+        return Status.EXECUTION_SUCCESS, future.result().commands
 
-    @service_check("common_interest_service", STATE["SERVICE_CHECK"], TIMEOUT)
+    @service_check("common_interest_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def common_interest(self, person1, interest1, person2, interest2, remove_thinking=True):
         request = CommonInterest.Request(
             person1=person1, interests1=interest1, person2=person2, interests2=interest2
@@ -324,23 +328,26 @@ class HRITasks(metaclass=SubtaskMeta):
         future = self.common_interest_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
 
-        if remove_thinking:
-            return re.sub(r"<think>.*?</think>", "", future.result().common_interest)
-        return future.result().common_interest
+        result = future.result().common_interest
 
-    @service_check("is_positive_service", STATE["SERVICE_CHECK"], TIMEOUT)
+        if remove_thinking:
+            result = re.sub(r"<think>.*?</think>", "", result)
+
+        return Status.EXECUTION_SUCCESS, result
+
+    @service_check("is_positive_service", (Status.SERVICE_CHECK, False), TIMEOUT)
     def is_positive(self, text):
         request = IsPositive.Request(text=text)
         future = self.is_positive_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
-        return future.result().is_positive
+        return Status.EXECUTION_SUCCESS, future.result().is_positive
 
-    @service_check("is_negative_service", STATE["SERVICE_CHECK"], TIMEOUT)
+    @service_check("is_negative_service", (Status.SERVICE_CHECK, False), TIMEOUT)
     def is_negative(self, text):
         request = IsPositive.Request(text=text)
         future = self.is_negative_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
-        return future.result().is_negative
+        return Status.EXECUTION_SUCCESS, future.result().is_negative
 
 
 if __name__ == "__main__":
