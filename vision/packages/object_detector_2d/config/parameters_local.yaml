@@ -18,6 +18,6 @@ object_detector_node:
     VERBOSE :  False
     USE_YOLO8 :  False
     FLIP_IMAGE :  False
-    USE_ZED_TRANSFORM : True
+    WAIT_FOR_TRANSFROM : True
     MIN_SCORE_THRESH :  0.75
 
