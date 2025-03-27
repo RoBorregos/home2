@@ -24,25 +24,29 @@ class ObjectDectectorParams:
     def __init__(
         self,
         depth_active: bool = None,
+        milimetric_depth: bool = None,
         min_score_thresh: float = None,
         camera_frame: str = None,
         target_frame: str = None,
         flip_image: bool = None,
         camera_info: CameraInfo = None,
-        use_zed_transfrom: bool = None,
+        wait_for_transfrom: bool = None,
     ):
         self.depth_active = depth_active
+        self.milimetric_depth = milimetric_depth
         self.min_score_thresh = min_score_thresh
         self.camera_frame = camera_frame
         self.target_frame = target_frame
         self.flip_image = flip_image
         self.camera_info = camera_info
-        self.use_zed_transfrom = use_zed_transfrom
+        self.wait_for_transfrom = wait_for_transfrom
 
     def __str__(self):
         return (
             "depth_active: "
             + str(self.depth_active)
+            + " milimetric_depth: "
+            + str(self.milimetric_depth)
             + " min_score_thresh: "
             + str(self.min_score_thresh)
             + " target_frame: "
@@ -133,7 +137,7 @@ class ObjectDectector(ABC):
         if len(depth_image) != 0:
             # TFs
             while (
-                not self.object_detector_params_.use_zed_transfrom
+                not self.object_detector_params_.wait_for_transfrom
                 and not tfBuffer.can_transform(
                     self.object_detector_params_.camera_frame,
                     self.object_detector_params_.target_frame,
@@ -174,6 +178,11 @@ class ObjectDectector(ABC):
                     point_3D.point.x = float(point_3D_[0])
                     point_3D.point.y = float(point_3D_[1])
                     point_3D.point.z = float(point_3D_[2])
+
+                    if self.object_detector_params_.milimetric_depth:
+                        point_3D.point.x = point_3D.point.x / 1000
+                        point_3D.point.y = point_3D.point.y / 1000
+                        point_3D.point.z = point_3D.point.z / 1000
 
                     pose_array.poses.append(Pose(position=point_3D.point))
 

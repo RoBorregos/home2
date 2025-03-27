@@ -1,0 +1,21 @@
+object_detector_node:
+  ros__parameters:
+    RGB_IMAGE_TOPIC : /color/image_raw
+    DEPTH_IMAGE_TOPIC :  /aligned_depth_to_color/image_raw
+    CAMERA_INFO_TOPIC :  /aligned_depth_to_color/camera_info
+    DETECTIONS_TOPIC : /detections
+    DETECTIONS_IMAGE_TOPIC : /detections_image
+    DETECTIONS_POSES_TOPIC : /test/detection_poses
+    DETECTIONS_3D_TOPIC : /detections_3d
+    DETECTIONS_ACTIVE_TOPIC : /detections_active
+    DEBUG_IMAGE_TOPIC : /debug_image
+    CAMERA_FRAME :  camera_color_optical_frame
+    YOLO_MODEL_PATH :  yolov5s.pt # FILE MOST BE IN MODEL FOLDER OF THE PACKAGE
+    USE_ACTIVE_FLAG :  False
+    DEPTH_ACTIVE :  True
+    MILIMETRIC_DEPTH :  True
+    VERBOSE :  False
+    USE_YOLO8 :  False
+    FLIP_IMAGE :  True
+    WAIT_FOR_TRANSFROM : True
+    MIN_SCORE_THRESH :  0.3

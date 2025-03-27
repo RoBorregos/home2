@@ -115,13 +115,18 @@ def deproject_pixel_to_point(cv_image_rgb_info, pixel, depth):
         intrinsics["ppy"] = cameraInfo.k[5]
         intrinsics["fx"] = cameraInfo.k[0]
         intrinsics["fy"] = cameraInfo.k[4]
-        if cameraInfo.distortion_model == "plumb_bob":
+        intrinsics["coeffs"] = [i for i in cameraInfo.d]
+
+
+        if len(intrinsics["coeffs"]) == 0:
+            intrinsics["model"] = "RS2_DISTORTION_NONE"
+        elif cameraInfo.distortion_model == "plumb_bob":
             intrinsics["model"] = "RS2_DISTORTION_BROWN_CONRADY"
         elif cameraInfo.distortion_model == "equidistant":
             intrinsics["model"] = "RS2_DISTORTION_KANNALA_BRANDT4"
         elif cameraInfo.distortion_model == "rational_polynomial":
             intrinsics["model"] = "RS2_DISTORTION_MODIFIED_BROWN_CONRADY"
-        intrinsics["coeffs"] = [i for i in cameraInfo.d]
+        
         return intrinsics
 
     # Parse ROS CameraInfo msg to intrinsics dictionary.

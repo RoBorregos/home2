@@ -50,10 +50,11 @@ ARGS = {
     "YOLO_MODEL_PATH": MODELS_PATH + "yolov5s.pt",
     "USE_ACTIVE_FLAG": False,
     "DEPTH_ACTIVE": True,
+    "MILIMETRIC_DEPTH": True,
     "VERBOSE": True,
     "USE_YOLO8": False,
     "FLIP_IMAGE": False,
-    "USE_ZED_TRANSFORM": True,
+    "WAIT_FOR_TRANSFROM": True,
     "MIN_SCORE_THRESH": 0.75,
 }
 
@@ -121,6 +122,9 @@ class object_detector_node(rclpy.node.Node):
         self.object_detector_parameters.depth_active = (
             self.get_parameter("DEPTH_ACTIVE").get_parameter_value().bool_value
         )
+        self.object_detector_parameters.milimetric_depth = (
+            self.get_parameter("MILIMETRIC_DEPTH").get_parameter_value().bool_value
+        )
         self.object_detector_parameters.min_score_thresh = (
             self.get_parameter("MIN_SCORE_THRESH").get_parameter_value().double_value
         )
@@ -133,8 +137,8 @@ class object_detector_node(rclpy.node.Node):
         self.object_detector_parameters.flip_image = (
             self.get_parameter("FLIP_IMAGE").get_parameter_value().bool_value
         )
-        self.object_detector_parameters.use_zed_transfrom = (
-            self.get_parameter("USE_ZED_TRANSFORM").get_parameter_value().bool_value
+        self.object_detector_parameters.wait_for_transfrom = (
+            self.get_parameter("WAIT_FOR_TRANSFROM").get_parameter_value().bool_value
         )
 
         self.node_params = NodeParams()
@@ -310,6 +314,7 @@ class object_detector_node(rclpy.node.Node):
         use_normalized_coordinates=True,
         max_boxes_to_draw=200,
         agnostic_mode=False,
+        bbox_flipped=False,
     ):
         """Visualize detections on an input image."""
 
@@ -324,6 +329,15 @@ class object_detector_node(rclpy.node.Node):
                 detection.bbox_.y2,
                 detection.bbox_.x2,
             )
+
+            if bbox_flipped:
+                (xmin, xmax, ymin, ymax) = (
+                    1  - xmax,
+                    1 - xmin,
+                    1 - ymax,
+                    1 - ymin,
+                )
+
             if use_normalized_coordinates:
                 (left, right, top, bottom) = (xmin, xmax, ymin, ymax)
             else:
@@ -399,6 +413,7 @@ class object_detector_node(rclpy.node.Node):
             use_normalized_coordinates=True,
             max_boxes_to_draw=200,
             agnostic_mode=False,
+            bbox_flipped=self.object_detector_parameters.flip_image,
         )
 
         if self.node_params.VERBOSE:
