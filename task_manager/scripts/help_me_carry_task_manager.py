@@ -10,7 +10,7 @@ from rclpy.node import Node
 from utils.logger import Logger
 from utils.subtask_manager import SubtaskManager, Task
 from subtask_managers.vision_tasks import VisionTasks
-
+from subtask_managers.generic_tasks import Generic_Tasks
 ATTEMPT_LIMIT = 3
 
 
@@ -36,6 +36,7 @@ class HelpMeCarryTM(Node):
             self, task=Task.HELP_ME_CARRY, mock_areas=["manipulation", "navigation"]
         )
         self.current_state = HelpMeCarryTM.TASK_STATES["START"]
+        self.generic_manager = Generic_Tasks
         self.current_attempts = 0
         self.running_task = True
 
@@ -55,6 +56,9 @@ class HelpMeCarryTM(Node):
         response = self.subtask_manager.hri.hear()
         return True
         return self.subtask_manager.hri.is_positive(response)
+    
+    def something(self):
+        self.generic_manager.
 
     def hear_word(self, word: str) -> bool:
         """Check if the word is heard"""
