@@ -59,7 +59,6 @@ ament_target_dependencies(gpd_test
                           rclcpp 
                           pcl_conversions 
                           pcl_msgs 
-                          OpenCV
                           rclcpp std_msgs geometry_msgs sensor_msgs tf2_ros tf2 pcl_ros pcl_conversions tf2_eigen PCL
                           )
 
@@ -69,7 +68,6 @@ ament_target_dependencies(gpd_service
                           rclcpp 
                           pcl_conversions 
                           pcl_msgs 
-                          OpenCV
                           rclcpp std_msgs geometry_msgs sensor_msgs tf2_ros tf2 pcl_ros pcl_conversions tf2_eigen PCL visualization_msgs
                           )
 
