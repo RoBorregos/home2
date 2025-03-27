@@ -1,4 +1,4 @@
-#include "frida_constants/manip_3d.hpp"
+#include "frida_constants/manipulation_constants_cpp.hpp"
 #include "rclcpp/rclcpp.hpp"
 #include <cstdint>
 #include <memory>
@@ -16,7 +16,7 @@
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
-#include <frida_constants/manip_3d.hpp>
+#include <frida_constants/manipulation_constants_cpp.hpp>
 #include <perception_3d/macros.hpp>
 
 #include <pcl/filters/voxel_grid.h>

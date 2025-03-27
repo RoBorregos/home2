@@ -22,7 +22,7 @@
 #include <frida_interfaces/srv/perception_service.hpp>
 #include <frida_interfaces/srv/remove_plane.hpp>
 
-#include <frida_constants/manip_3d.hpp>
+#include <frida_constants/manipulation_constants_cpp.hpp>
 #include <geometry_msgs/msg/point_stamped.hpp>
 #include <perception_3d/macros.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>

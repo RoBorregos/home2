@@ -1,6 +1,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include <gpd/grasp_detector.h>
 #include <gpd/util/cloud.h>
+#include <frida_constants/manipulation_constants_cpp.hpp>
 #include <pcl_conversions/pcl_conversions.h>
 #include <frida_interfaces/srv/grasp_detection.hpp>
 #include <geometry_msgs/msg/pose_array.hpp>
@@ -28,13 +29,13 @@ public:
 
     // Create service
     service_ = this->create_service<frida_interfaces::srv::GraspDetection>(
-      "/manipulation/detect_grasps", 
+      GRASP_DETECTION_SERVICE, 
       std::bind(&GraspDetectionService::handle_service, this, 
                 std::placeholders::_1, std::placeholders::_2));
 
     // Create publishers
-    pcd_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>("/grasp_pcl", 10);
-    marker_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>("/manipulation/grasp_markers", 10);
+    pcd_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(GRASP_POINTCLOUD_TOPIC, 10);
+    marker_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(GRASP_MARKER_TOPIC, 10);
 
     RCLCPP_INFO(this->get_logger(), "Grasp detection service ready");
   }
