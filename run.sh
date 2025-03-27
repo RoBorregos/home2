@@ -37,6 +37,9 @@ case $AREA in
   integration)
     echo "Running integration"
     area="integration"
+  hri)
+    echo "Running hri"
+    area="hri"
     ;;
   *)
     echo "Invalid service name provided. Valid args are: vision, hri, etc"
