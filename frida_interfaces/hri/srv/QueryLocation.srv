@@ -1,9 +1,9 @@
 # QueryItem.srv
 string query  # The search query
 int16 topk #number of results 
-bool return_location #return location?
+bool return_coord #return location?
 ---
 string[] results  # List of results (documents) that match the query, top k
-string[] locations 
+string[] coords 
 bool success  # Whether the operation was successful
 string message  # A message describing the result

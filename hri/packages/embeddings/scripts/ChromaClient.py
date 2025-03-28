@@ -4,6 +4,7 @@ import pandas as pd
 from pathlib import Path
 import json
 from uuid import uuid4
+from filter import remove_empty_lists, remove_nulls
 
 
 class ChromaClient:
@@ -16,161 +17,223 @@ class ChromaClient:
             )
         )
 
+    def remove_all_collections(self):
+        """Method to remove all collections"""
+        collections = self.client.list_collections()
+        for collection in collections:
+            self.client.delete_collection(name=collection)
+        return
+
     def list_collections(self):
         """Method to list all collections"""
         return self.client.list_collections()
 
     def get_collection(self, collection_name):
-        """Method to get a collection, it retunrsn a collection object"""
-        return self.client.get_collection(collection_name)
+        """Method to get a collection; returns a collection object"""
+        try:
+            return self.client.get_collection(collection_name)
+        except Exception:
+            raise ValueError(f"The collection is missing {collection_name}")
 
-    def build_embeddings_callback(self):
-        """Method to build embeddings for the household items data"""
+    def build_embeddings(self):
+        """
+        Method to build embeddings for household use.
+        Reads CSV files from the designated dataframes folder,
+        and for each file:
+        - Reads documents and (if available) metadata.
+        - Gets or creates a corresponding collection.
+        - Adds entries to the collection via the add_entries method,
+            which will process documents and metadata (adding "original_name",
+            appending "context", and cleaning metadata) automatically.
+        """
+        # Get the directory of the current script
         script_dir = Path(__file__).resolve().parent
+        # Define the folder where the CSV files are located
+        dataframes_folder = script_dir / "../embeddings/dataframes"
+
+        # Ensure the folder exists
+        if not (dataframes_folder.exists() and dataframes_folder.is_dir()):
+            raise FileNotFoundError(
+                f"The folder {dataframes_folder} does not exist or is not a directory."
+            )
+
+        # Get all CSV files in the folder
         dataframes = [
-            (
-                script_dir / "../embeddings/dataframes/items.csv",
-                "Household items context",
-            ),
-            (
-                script_dir / "../embeddings/dataframes/locations.csv",
-                "Household locations context",
-            ),
-            (
-                script_dir / "../embeddings/dataframes/categories.csv",
-                "Household categories context",
-            ),
-            (
-                script_dir / "../embeddings/dataframes/actions.csv",
-                "Household actions context",
-            ),
+            file.resolve()
+            for file in dataframes_folder.iterdir()
+            if file.suffix == ".csv"
         ]
 
         collections = {}
-        for file, context in dataframes:
-            # Get the absolute path of the file and create a pandas data frame
-            file = file.resolve()
+        for file in dataframes:
+            print("Processing file:", file)
+            # Read the CSV file into a pandas DataFrame
             df = pd.read_csv(file)
 
-            # Check if the csv has a name column
-            if "name" not in df.columns:
-                raise ValueError(f"The 'name' column is missing in {file}")
+            # Ensure that the 'documents' column exists
+            if "documents" not in df.columns:
+                raise ValueError(f"The 'documents' column is missing in {file}")
 
-            # Add context to each row
-            df["name"] = df["name"].apply(lambda x: f"{x} {context}")
+            documents = df["documents"].tolist()
 
-            # Check if the collection already exists and has the correct name format
-            collection_name = file.stem
-            collection_name = self._sanitize_collection_name(collection_name)
+            # Process metadata if available; otherwise, use None
+            metadatas_ = None
+            if "metadata" in df.columns:
+                metadatas_ = self.json2dict(df["metadata"])
+
+            # Sanitize and get or create the collection
+            collection_name = self._sanitize_collection_name(file.stem)
             collections[collection_name] = self._get_or_create_collection(
                 collection_name
             )
 
-            # There is metadata
-            if "metadata" in df.columns:
-                # Add the entries in the collection
-                collections[collection_name].add(
-                    documents=df["name"].tolist(),
-                    metadatas=[
-                        json.loads(row["metadata"])
-                        if "metadata" in row and row["metadata"]
-                        else {}
-                        for _, row in df.iterrows()
-                    ],
-                    ids=[str(uuid4()) for _ in range(len(df))],
-                )
-            # There is no metadata
-            else:
-                collections[collection_name].add(
-                    documents=df["name"].tolist(),
-                    ids=[str(uuid4()) for _ in range(len(df))],
-                )
+            self.add_entries(collection_name, documents, metadatas_)
+
         return
 
-    def remove_collection(self, collection_name):
+    def remove_collection(self, collection_name: str):
         """Method to remove a collection"""
-        try:
-            self.client.delete_collection(collection_name)
-        except Exception:
-            raise ValueError(f"The collection is missing {collection_name}")
+        _ = self.get_collection(collection_name)
+        self.client.delete_collection(name=collection_name)
         return
 
-    def _get_or_create_collection(self, collection_name):
+    def _get_or_create_collection(self, collection_name: str):
         """Helper method to get or create a collection"""
         try:
             return self.client.get_or_create_collection(name=collection_name)
         except Exception:
             raise ValueError(f"The collection is missing {collection_name}")
 
-    def get_entry_by_id(self, collection_name, id_):
-        """Method to get an entry by id"""
-        try:
-            collection_ = self.client.get_collection(name=collection_name)
-        except Exception:
-            raise ValueError(f"The collection is missing {collection_name}")
-        return collection_.get(ids=id_, include=["metadatas", "documents"])
-
-    def get_entry_by_metadata(self, collection_name, metadata):
-        """Method to get an entry by metadata"""
-        try:
-            collection_ = self.client.get_collection(name=collection_name)
-        except Exception:
-            raise ValueError(f"The collection is missing {collection_name}")
-
-        return collection_.get(where=metadata, include=["metadatas", "documents"])
-
-    def get_entry_by_document(self, collection_name, document):
-        """Method to get an entry by document"""
-        try:
-            collection_ = self.client.get_collection(name=collection_name)
-        except Exception:
-            raise ValueError(f"The collection is missing {collection_name}")
-
-        return collection_.get(
-            where_document={"$contains": document}, include=["metadatas", "documents"]
-        )
-
-    def add_entry(self, collection_name, document):
-        """Method to add an entry to a collection"""
-        try:
-            collection_ = self.client.get_collection(name=collection_name)
-        except Exception:
-            raise ValueError(f"The collection is missing {collection_name}")
-
-        return collection_.add(ids=str(uuid4()), documents=[document])
-
-    def add_entry_with_metadata(self, collection_name, document, metadata):
-        """Method to add an entry with metadata to a collection"""
-        try:
-            collection_ = self.client.get_collection(name=collection_name)
-        except Exception:
-            raise ValueError(f"The collection is missing {collection_name}")
-
-        return collection_.add(
-            ids=str(uuid4()), documents=[document], metadatas=[metadata]
-        )
-
-    def query(self, collection_name, query, top_k):
-        """Method to query the collection"""
-        try:
-            collection_ = self.client.get_collection(name=collection_name)
-        except Exception:
-            raise ValueError(f"Does not exist collection: {collection_name}")
-
-        return collection_.query(
-            query_texts=query,
+    def query(self, collection_name: str, query, top_k, context: str = ""):
+        """Method to query the collection and return only the original names from metadata"""
+        collection_ = self.get_collection(collection_name)
+        results = collection_.query(
+            query_texts=query + context,
             n_results=top_k,
             include=["metadatas", "documents", "distances"],
         )
+        if results["metadatas"]:  # Ensure "metadatas" is not empty
+            results = [
+                meta.get("original_name", doc)
+                for meta, doc in zip(results["metadatas"][0], results["documents"][0])
+            ]
+        else:
+            results = results["documents"][
+                0
+            ]  # Access first (and only) list inside "documents"
+
+        return results  # Return only the extracted names
 
     def _sanitize_collection_name(self, collection):
-        """Ensures collection name is a valid string due to the constraints of the ChromaDB API https://docs.trychroma.com/docs/collections/create-get-delete"""
+        """
+        Ensures collection name is a valid string due to the constraints of the ChromaDB API.
+        The name must be 3 to 63 characters long and only contain alphanumeric characters,
+        hyphens, or underscores.
+        """
         collection = str(collection).strip()
-
         if not (
             3 <= len(collection) <= 63
             and collection.replace("-", "").replace("_", "").isalnum()
         ):
             raise ValueError(f"Invalid collection name: {collection}")
-
         return collection
+
+    def remove_item_by_id(self, collection_name, id):
+        """Method to remove an item from a collection"""
+        collection_ = self.get_collection(collection_name)
+        collection_.delete(ids=[id])
+        return
+
+    def add_entries(self, collection_name, documents, metadatas=None):
+        """Method to add multiple entries with optional metadata.
+
+        This function processes each document and its associated metadata:
+        - Ensures documents is a list.
+        - Normalizes metadatas to a list of dictionaries.
+        - Sets 'original_name' in each metadata dictionary from the document.
+        - Appends the 'context' from metadata to the document text, if available.
+        - Cleans metadata with remove_empty_lists and remove_nulls.
+        """
+        collection_ = self.get_collection(collection_name)
+
+        # Ensure documents is always a list
+        if isinstance(documents, str):
+            documents = [documents]
+
+        # Ensure metadatas is always a list of dictionaries
+        if metadatas is None:
+            metadatas = [{} for _ in documents]
+        elif isinstance(metadatas, dict):
+            metadatas = [metadatas] * len(documents)
+
+        # Process each document/metadata pair
+        for i, (doc, meta) in enumerate(zip(documents, metadatas)):
+            # Add "original_name" to each metadata dictionary
+            meta["original_name"] = doc
+            # If a "context" is provided, append it to the document
+            if "context" in meta and meta["context"]:
+                documents[i] = f"{doc} {meta['context']}"
+
+        # Clean each metadata dictionary
+        cleaned_metadatas = [
+            remove_nulls(remove_empty_lists(meta)) for meta in metadatas
+        ]
+
+        # Generate a unique id for each document
+        ids = [str(uuid4()) for _ in range(len(documents))]
+
+        # Add documents and metadata to the collection
+        return collection_.add(
+            ids=ids, documents=documents, metadatas=cleaned_metadatas
+        )
+
+    def remove_item_by_document(self, collection_name, document):
+        """Method to remove an item by document"""
+        collection_ = self.get_collection(collection_name)
+        return collection_.delete(where={"original_name": document})
+
+    # def get_entry_by_id(self, collection_name, id_):
+    #     """Method to get an entry by id"""
+    #     collection_ = self.get_collection(collection_name)
+    #     return collection_.get(ids=id_, include=["metadatas", "documents"])
+
+    # def get_entry_by_metadata(self, collection_name, metadata):
+    #     """Method to get an entry by metadata (input -----> key:value)"""
+    #     collection_ = self.get_collection(collection_name)
+    #     return collection_.get(where=metadata, include=["metadatas", "documents"])
+
+    def get_entry_by_document(self, collection_name, document):
+        """Method to get an entry by document (returns all of the entries that contain the string)"""
+        collection_ = self.get_collection(collection_name)
+        return collection_.get(
+            where={"original_name": document}, include=["metadatas", "documents"]
+        )
+
+    def json2dict(self, json_str):
+        """Method to convert a JSON string to a dictionary"""
+        metadatas_ = json_str.tolist()
+        metadatas_ = [json.loads(meta) for meta in metadatas_]
+        metadatas_ = [json.loads(meta) for meta in metadatas_]
+        return metadatas_
+
+
+def main():
+    client_ = ChromaClient()
+    client_.remove_all_collections()
+    client_.build_embeddings()
+    # print(client_.list_collections())
+    # collection = client_.get_collection("items")
+    # print(client_.query("items", "apple", 5))
+    # print(client_.query("locations", "kitchen", 5, "household locations"))
+    # print(client_.query("actions", "move", 5, "household actions"))
+    # print(client_.query("categories", "drinks", 5))
+    # print(client_.query("names", "Luis", 5))
+    client_.add_entries("items", "chocomilk", {"context": "household items"})
+    print(client_.get_entry_by_document("items", "chocomilk"))
+
+    client_.remove_item_by_document("items", "chocomilk")
+    print(client_.get_entry_by_document("items", "chocomilk"))
+
+
+if __name__ == "__main__":
+    main()
