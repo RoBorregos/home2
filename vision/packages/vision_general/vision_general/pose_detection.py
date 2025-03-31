@@ -3,6 +3,7 @@
 import cv2
 import mediapipe as mp
 import numpy as np
+from frida_constants.vision_enums import Poses, Gestures
 
 
 class PoseDetection:
@@ -25,12 +26,12 @@ class PoseDetection:
             right_ankle = landmarks[self.mp_pose.PoseLandmark.RIGHT_ANKLE]
 
             if left_hip.y < left_knee.y and right_hip.y < right_knee.y:
-                return "Standing"
+                return Poses.STANDING
             elif left_hip.y > left_knee.y and right_hip.y > right_knee.y:
-                return "Sitting"
+                return Poses.SITTING
             elif left_knee.y > left_ankle.y and right_knee.y > right_ankle.y:
-                return "Lying Down"
-        return "Unknown Pose"
+                return Poses.LYING_DOWN
+        return Poses.UNKNWON
 
     def detectGesture(self, image):
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -45,16 +46,16 @@ class PoseDetection:
             right_shoulder = landmarks[self.mp_pose.PoseLandmark.RIGHT_SHOULDER]
 
             if left_wrist.y < left_shoulder.y and right_wrist.y < right_shoulder.y:
-                return "Waving"
+                return Gestures.WAVING
             elif left_wrist.y < left_shoulder.y:
-                return "Raising Left Arm"
+                return Gestures.RAISING_LEFT_ARM
             elif right_wrist.y < right_shoulder.y:
-                return "Raising Right Arm"
+                return Gestures.RAISING_RIGHT_ARM
             elif left_wrist.x < left_elbow.x and left_elbow.x < left_shoulder.x:
-                return "Pointing Left"
+                return Gestures.POINTING_LEFT
             elif right_wrist.x > right_elbow.x and right_elbow.x > right_shoulder.x:
-                return "Pointing Right"
-        return "No Gesture"
+                return Gestures.POINTING_RIGHT
+        return Gestures.UNKNOWN
 
     def detectClothes(self):
         pass

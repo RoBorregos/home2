@@ -37,6 +37,7 @@ case $AREA in
   integration)
     echo "Running integration"
     area="integration"
+    ;;
   hri)
     echo "Running hri"
     area="hri"
