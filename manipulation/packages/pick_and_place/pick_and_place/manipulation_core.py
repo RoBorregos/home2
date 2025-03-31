@@ -5,15 +5,20 @@ from rclpy.node import Node
 from rclpy.action import ActionClient, ActionServer
 from rclpy.callback_groups import ReentrantCallbackGroup
 from frida_interfaces.action import PickMotion, PickTask
-from frida_interfaces.srv import ClusterObjectFromPoint
+from frida_interfaces.srv import PerceptionService, GraspDetection
 from frida_motion_planning.utils.ros_utils import wait_for_future
 from frida_constants.manipulation_constants import (
     PICK_MOTION_ACTION_SERVER,
     PICK_ACTION_SERVER,
-    CLUSTER_OBJECT_SERVICE,
+    PERCEPTION_SERVICE,
+    GRASP_DETECTION_SERVICE,
 )
 import copy
 from geometry_msgs.msg import PoseStamped
+
+CFG_PATH = (
+    "/workspace/src/home2/manipulation/packages/arm_pkg/config/frida_eigen_params.cfg"
+)
 
 
 class ManipulationCore(Node):
@@ -35,8 +40,12 @@ class ManipulationCore(Node):
             PICK_MOTION_ACTION_SERVER,
         )
 
-        self._cluster_object_client = self.create_client(
-            ClusterObjectFromPoint, CLUSTER_OBJECT_SERVICE
+        self.perception_3d_client = self.create_client(
+            PerceptionService, PERCEPTION_SERVICE
+        )
+
+        self.grasp_detection_service = self.create_client(
+            GraspDetection, GRASP_DETECTION_SERVICE
         )
 
         # self._gpd_client = self.create_client(self, GPDCloudRequest, GPD_CLOUD_SERVICE)
@@ -49,32 +58,28 @@ class ManipulationCore(Node):
         self.get_logger().info("Extracting object cloud")
 
         # Call cloud extractor
-        request = ClusterObjectFromPoint.Request()
+        request = PerceptionService.Request()
         request.point = goal_handle.request.object_point
-        self._cluster_object_client.wait_for_service()
-        future = self._cluster_object_client.call_async(request)
+        request.add_collision_objects = True
+        self.perception_3d_client.wait_for_service()
+        future = self.perception_3d_client.call_async(request)
         future = wait_for_future(future)
 
-        self.get_logger().info(f"Object Cloud extracted: {future.result()}")
-
+        pcl_result = future.result().cluster_result
+        if len(pcl_result.data) == 0:
+            self.get_logger().error("No object cluster detected")
+            goal_handle.abort()
+            result = PickTask.Result()
+            result.success = False
+            return result
+        self.get_logger().info(
+            f"Object cluster detected: {len(pcl_result.data)} points"
+        )
         # Save to PCD??
         # Call Grasp Pose Detection
+        grasp_poses, grasp_scores = self.get_grasps(pcl_result)
         ##### FAKE #####
-        object_point = goal_handle.request.object_point
-        grasp_pose1 = PoseStamped()
-        grasp_pose1.header.frame_id = object_point.header.frame_id
-        grasp_pose1.pose.position.x = object_point.point.x
-        grasp_pose1.pose.position.y = object_point.point.y
-        grasp_pose1.pose.position.z = object_point.point.z + 0.10
-        grasp_pose1.pose.orientation.x = 1.0
-        grasp_pose1.pose.orientation.y = 0.0
-        grasp_pose1.pose.orientation.z = 0.0
-        grasp_pose1.pose.orientation.w = 0.0
-
-        grasp_pose2 = copy.deepcopy(grasp_pose1)
-        grasp_pose2.pose.position.z = object_point.point.z + 0.25
-
-        grasp_poses = [grasp_pose1, grasp_pose2]
+        # grasp_poses = self.fake_grasps(goal_handle.request.object_point)
 
         # Call Pick Motion Action
         # Create goal
@@ -102,6 +107,43 @@ class ManipulationCore(Node):
         result = PickTask.Result()
         result.success = False
         return result
+
+    def get_grasps(self, object_cloud):
+        request = GraspDetection.Request()
+        request.input_cloud = object_cloud
+        request.cfg_path = CFG_PATH
+        self.get_logger().info("Sending Grasp Detection Request")
+        self.grasp_detection_service.wait_for_service()
+        future = self.grasp_detection_service.call_async(request)
+        future = wait_for_future(future)
+
+        response = future.result()
+        if len(response.grasp_poses) == 0:
+            self.get_logger().error("No grasps found")
+            return []
+        for i, (pose, score) in enumerate(
+            zip(response.grasp_poses, response.grasp_scores)
+        ):
+            self.get_logger().info(f"\nGrip {i + 1} - Score: {score:.3f}")
+        return response.grasp_poses, response.grasp_scores
+
+    def fake_grasps(object_point):
+        grasp_pose1 = PoseStamped()
+        grasp_pose1.header.frame_id = object_point.header.frame_id
+        grasp_pose1.pose.position.x = object_point.point.x
+        grasp_pose1.pose.position.y = object_point.point.y
+        grasp_pose1.pose.position.z = object_point.point.z + 0.10
+        grasp_pose1.pose.orientation.x = 1.0
+        grasp_pose1.pose.orientation.y = 0.0
+        grasp_pose1.pose.orientation.z = 0.0
+        grasp_pose1.pose.orientation.w = 0.0
+
+        grasp_pose2 = copy.deepcopy(grasp_pose1)
+        grasp_pose2.pose.position.z = object_point.point.z + 0.25
+
+        grasp_poses = [grasp_pose1, grasp_pose2]
+
+        return grasp_poses
 
 
 def main(args=None):
