@@ -18,12 +18,19 @@ from frida_constants.manipulation_constants import (
 )
 from frida_interfaces.srv import AttachCollisionObject, GetCollisionObjects
 from frida_interfaces.action import PickMotion, MoveToPose
+import copy
+import numpy as np
+from transforms3d.quaternions import quat2mat
 
 
 class PickMotionServer(Node):
     def __init__(self):
         super().__init__("pick_server")
         self.callback_group = ReentrantCallbackGroup()
+
+        # Declare and retrieve the parameter for the end-effector link offset
+        self.declare_parameter("ee_link_offset", -0.125)
+        self.ee_link_offset = self.get_parameter("ee_link_offset").value
 
         self._action_server = ActionServer(
             self,
@@ -78,7 +85,40 @@ class PickMotionServer(Node):
         grasping_poses = goal_handle.request.grasping_poses
         for i, pose in enumerate(grasping_poses):
             # Move to pre-grasp pose
-            grasp_pose_handler, grasp_pose_result = self.move_to_pose(pose)
+
+            ee_link_pose = copy.deepcopy(pose)
+
+            offset_distance = (
+                self.ee_link_offset
+            )  # Desired distance in meters along the local z-axis
+
+            # Compute the offset along the local z-axis
+            quat = [
+                ee_link_pose.pose.orientation.w,
+                ee_link_pose.pose.orientation.x,
+                ee_link_pose.pose.orientation.y,
+                ee_link_pose.pose.orientation.z,
+            ]
+            rotation_matrix = quat2mat(quat)
+            # Extract local Z-axis (third column of the rotation matrix)
+            z_axis = rotation_matrix[:, 2]
+
+            # Translate along the local Z-axis
+            new_position = (
+                np.array(
+                    [
+                        ee_link_pose.pose.position.x,
+                        ee_link_pose.pose.position.y,
+                        ee_link_pose.pose.position.z,
+                    ]
+                )
+                + z_axis * offset_distance
+            )
+            ee_link_pose.pose.position.x = new_position[0]
+            ee_link_pose.pose.position.y = new_position[1]
+            ee_link_pose.pose.position.z = new_position[2]
+
+            grasp_pose_handler, grasp_pose_result = self.move_to_pose(ee_link_pose)
             print(f"Grasp Pose {i} result: {grasp_pose_result}")
             if grasp_pose_result.result.success:
                 self.get_logger().info("Grasp pose reached")

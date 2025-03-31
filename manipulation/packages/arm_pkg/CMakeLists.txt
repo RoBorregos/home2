@@ -68,6 +68,7 @@ ament_target_dependencies(gpd_test
 
 ament_target_dependencies(gpd_service
                           frida_interfaces
+                          frida_constants
                           std_srvs 
                           rclcpp 
                           pcl_conversions 
