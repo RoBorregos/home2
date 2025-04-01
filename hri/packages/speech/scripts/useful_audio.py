@@ -11,7 +11,7 @@ import webrtcvad
 from ament_index_python.packages import get_package_share_directory
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
-from std_msgs.msg import Bool, String
+from std_msgs.msg import Bool, String, Float32
 
 from frida_interfaces.msg import AudioData
 
@@ -85,6 +85,7 @@ class UsefulAudio(Node):
         self.respeaker_light_publisher = self.create_publisher(
             String, "/ReSpeaker/light", 10
         )
+        self.vad_output_publisher = self.create_publisher(Float32, "hri/speech/vad", 10)
 
         self.create_subscription(
             AudioData, "rawAudioChunk", self.callback_raw_audio, 10
@@ -145,7 +146,6 @@ class UsefulAudio(Node):
         return sound
 
     def is_speech_silero_vad(self, audio_data: np.ndarray) -> bool:
-        self.debug("STARTING SILENCE VAD")
         input_data = {
             "input": audio_data.reshape(1, -1),
             "sr": np.array([self.sampling_rate], dtype=np.int64),
@@ -154,6 +154,10 @@ class UsefulAudio(Node):
         }
         out, h, c = self.inference_session.run(None, input_data)
         self.h, self.c = h, c
+        out = float(out.item())
+        self.debug(f"VAD output: {out}")
+        self.vad_output_publisher.publish(Float32(data=out))
+
         return out > self.threshold
 
     def vad_collector(self, chunk):
