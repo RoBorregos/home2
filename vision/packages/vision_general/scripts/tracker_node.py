@@ -260,10 +260,12 @@ class SingleTracker(Node):
         """Main loop to run the tracker"""
         if self.target_set:
             self.frame = self.image
-            self.output_image = self.frame.copy()
-
+            
             if self.frame is None or self.person_data["id"] is None:
                 return
+            
+            self.output_image = self.frame.copy()
+
 
             results = self.model.track(
                 self.frame,
