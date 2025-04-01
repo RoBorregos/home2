@@ -260,7 +260,7 @@ class SingleTracker(Node):
         """Main loop to run the tracker"""
         if self.target_set:
             self.frame = self.image
-            
+
             if self.frame is None or self.person_data["id"] is None:
                 return
             
@@ -316,7 +316,7 @@ class SingleTracker(Node):
                     # Check if person is in frame:
                     if track_id == self.person_data["id"]:
                         person_in_frame = True
-                        self.person_data["coordinates"].append((x1, y1, x2, y2))
+                        self.person_data["coordinates"] = (x1, y1, x2, y2)
                         cv2.rectangle(
                             self.output_image, (x1, y1), (x2, y2), (0, 255, 0), 2
                         )
@@ -375,13 +375,11 @@ class SingleTracker(Node):
                                 embedding, self.person_data[person_angle], threshold=0.7
                             ):
                                 self.person_data["id"] = person["track_id"]
-                                self.person_data["coordinates"].append(
-                                    (
-                                        person["x1"],
-                                        person["y1"],
-                                        person["x2"],
-                                        person["y2"],
-                                    )
+                                self.person_data["coordinates"] = (
+                                    person["x1"],
+                                    person["y1"],
+                                    person["x2"],
+                                    person["y2"],
                                 )
                                 self.success(
                                     f"Person re-identified: {person['track_id']} with angle {person_angle}"
@@ -400,6 +398,7 @@ class SingleTracker(Node):
             if person_in_frame:
                 if len(self.depth_image) > 0:
                     coords = Point()
+                    print("COORDS", self.person_data["coordinates"])
                     point2D = get2DCentroid(self.person_data["coordinates"], self.frame)
                     depth = get_depth(self.depth_image, point2D)
                     point3D = deproject_pixel_to_point(self.imageInfo, point2D, depth)
