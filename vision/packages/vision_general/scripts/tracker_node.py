@@ -263,9 +263,8 @@ class SingleTracker(Node):
 
             if self.frame is None or self.person_data["id"] is None:
                 return
-            
-            self.output_image = self.frame.copy()
 
+            self.output_image = self.frame.copy()
 
             results = self.model.track(
                 self.frame,
