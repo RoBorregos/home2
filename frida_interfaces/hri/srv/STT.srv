@@ -1,2 +1,4 @@
+float32 min_audio_duration
+float32 max_audio_duration
 ---
 string text_heard

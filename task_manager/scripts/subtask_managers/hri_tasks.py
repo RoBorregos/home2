@@ -183,9 +183,12 @@ class HRITasks(metaclass=SubtaskMeta):
             self.keyword = ""
 
     @service_check("hear_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
-    def hear(self) -> str:
+    def hear(self, min_audio_length=0.5, max_audio_length=5.0) -> str:
         self.node.get_logger().info("Hearing from user")
-        request = STT.Request()
+        request = STT.Request(
+            min_audio_duration=float(min_audio_length), max_audio_duration=float(max_audio_length)
+        )
+        self.node.get_logger().info("Request made to hear")
 
         future = self.hear_service.call_async(request)
 

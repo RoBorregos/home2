@@ -5,10 +5,10 @@ import os
 
 import numpy as np
 import onnxruntime
-import pyaudio
 import rclpy
 import webrtcvad
 from ament_index_python.packages import get_package_share_directory
+from rcl_interfaces.msg import SetParametersResult
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from std_msgs.msg import Bool, String
@@ -16,17 +16,9 @@ from std_msgs.msg import Bool, String
 from frida_interfaces.msg import AudioData
 
 # Constants
-FORMAT = pyaudio.paInt16  # Audio format (16-bit PCM)
-CHANNELS = 1  # Number of audio channels (1 = mono)
 CHUNK_SIZE = 512  # Number of audio frames per chunk
 RATE = 16000  # Sampling rate in Hz (16 kHz)
 CHUNK_DURATION = CHUNK_SIZE / RATE  # Duration of each chunk in seconds
-TIME_FOR_CHANGE = 0.25  # Time in seconds for state change detection
-COUNT_FOR_CHANGE = TIME_FOR_CHANGE / CHUNK_DURATION  # Number of chunks for state change
-MIN_AUDIO_LENGTH = 0.50  # Minimum audio length in seconds
-MIN_CHUNKS_AUDIO_LENGTH = (
-    MIN_AUDIO_LENGTH / CHUNK_DURATION
-)  # Minimum chunks for valid audio
 PADDING_DURATION = 0.50  # Duration of padding audio in seconds
 NUM_PADDING_CHUNKS = int(
     PADDING_DURATION / CHUNK_DURATION
@@ -46,7 +38,9 @@ class UsefulAudio(Node):
         self.declare_parameter("USE_SILERO_VAD", True)
         self.declare_parameter("threshold", 0.1)
         self.declare_parameter("DISABLE_KWS", False)
+        self.declare_parameter("MIN_AUDIO_DURATION", 0.5)
         self.declare_parameter("MAX_AUDIO_DURATION", 10)
+
         self.declare_parameter("WAKEWORD_TOPIC", "/speech/oww")
 
         self.debug_mode = self.get_parameter("debug").get_parameter_value().bool_value
@@ -62,6 +56,13 @@ class UsefulAudio(Node):
         self.max_audio_duration = (
             self.get_parameter("MAX_AUDIO_DURATION").get_parameter_value().integer_value
         )
+
+        self.min_audio_duration = (
+            self.get_parameter("MIN_AUDIO_DURATION").get_parameter_value().double_value
+        )
+        self.MIN_CHUNKS_AUDIO_LENGTH = (
+            self.min_audio_duration / CHUNK_DURATION
+        )  # Minimum chunks for valid audio
 
         self.wakeword_topic = (
             self.get_parameter("WAKEWORD_TOPIC").get_parameter_value().string_value
@@ -91,6 +92,8 @@ class UsefulAudio(Node):
         )
         self.create_subscription(Bool, "saying", self.callback_saying, 10)
         self.create_subscription(String, self.wakeword_topic, self.callback_keyword, 10)
+
+        self.add_on_set_parameters_callback(self.parameter_callback)
 
         if not self.use_silero_vad:
             self.vad = webrtcvad.Vad()
@@ -126,14 +129,29 @@ class UsefulAudio(Node):
             self.voiced_frames += data
         self.chunk_count += 1
 
+    def parameter_callback(self, params):
+        self.get_logger().info("Parameter callback triggered.")
+        # for param in params:
+        #     self.get_logger().info(f"Parameter: {param.name} = {param.value}")
+
+        #     if param.name == "MIN_AUDIO_DURATION":
+        #         self.min_audio_duration = param.value
+        #         self.MIN_CHUNKS_AUDIO_LENGTH = self.min_audio_duration / CHUNK_DURATION
+        #     elif param.name == "MAX_AUDIO_DURATION":
+        #         self.max_audio_duration = param.value
+
+        return SetParametersResult(successful=True)
+
     def discard_audio(self):
         self.ring_buffer.clear()
         self.voiced_frames = None
         self.chunk_count = 0
 
     def publish_audio(self):
-        if self.chunk_count > MIN_CHUNKS_AUDIO_LENGTH:
+        if self.chunk_count > self.MIN_CHUNKS_AUDIO_LENGTH:
             self.publisher.publish(AudioData(data=self.voiced_frames))
+        else:
+            self.log("Audio too short, not publishing!!!!!")
         self.discard_audio()
 
     def int2float(self, sound):
@@ -203,10 +221,14 @@ class UsefulAudio(Node):
             current_time = self.get_clock().now()
             time_delta = (current_time - self.timer).nanoseconds / NANOSECONDS_IN_SECOND
 
-            if (
+            # If the audio is long enough (min_audio_duration) and there is silence
+            self.log("Chunk count: " + str(self.chunk_count))
+            self.log("min chunks: " + str(self.MIN_CHUNKS_AUDIO_LENGTH))
+            if self.chunk_count > self.MIN_CHUNKS_AUDIO_LENGTH and (
                 num_unvoiced > TRIGGER_THRESHOLD * self.ring_buffer.maxlen
                 or time_delta > self.max_audio_duration
             ):
+                self.log("PUBLISH!!!")
                 self.debug("UNTRIGGERING")
                 self.triggered = False
                 self.publish_audio()
