@@ -1,3 +1,4 @@
+import json
 from nlp.assets.schemas import ExtractedData, IsAnswerPositive, RoomIdentification
 
 
@@ -152,12 +153,23 @@ def get_is_answer_positive_args(interpreted_text):
     )
 
 
-def get_room_identification_dialog(comment):
+def get_room_identification_dialog(comment, areas_file="areas.json"):
+    with open(areas_file, "r") as file:
+        areas = json.load(file)
+
+    rooms_and_sub_areas = []
+    for room, sub_areas in areas.items():
+        rooms_and_sub_areas.append(room.replace("_", " ").title())
+        for sub_area in sub_areas.keys():
+            rooms_and_sub_areas.append(
+                f"{room.replace('_', ' ').title()} - {sub_area.replace('_', ' ').title()}"
+            )
+
     return {
         "messages": [
             {
                 "role": "system",
-                "content": "You will be given a comment or question. Your task is to identify which room is being referred to. The possible rooms are: Living room, Dining room, Kitchen, Bedroom, Entrance. Provide the name of the room as the answer.",
+                "content": f"You will be given a comment or question. Your task is to identify which room or sub-area is being referred to. The possible options are: {', '.join(rooms_and_sub_areas)}. Provide the name of the room or sub-area as the answer.",
             },
             {
                 "role": "user",
