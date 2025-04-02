@@ -1,8 +1,7 @@
-category_id,name
-1,beverages
-2, food
-3, kitchen tools
-4, tools
-5, balls
-6, balls
-
+documents,metadata
+beverages, "{\"context\":\"household object categories\"}"
+food, "{\"context\":\"household object categories\"}"
+kitchen tools, "{\"context\":\"household object categories\"}"
+tools, "{\"context\":\"household object categories\"}"
+balls, "{\"context\":\"household object categories\"}"
+balls, "{\"context\":\"household object categories\"}"

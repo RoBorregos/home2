@@ -1,5 +1,6 @@
-# BuildEmbeddings.srv
-bool rebuild
+# AddLocation.srv
+string document 
+string coords
 ---
 bool success  # Whether the operation was successful
 string message  # A message describing the result
