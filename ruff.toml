@@ -34,4 +34,3 @@ exclude = [
     "manipulation/packages/gpd",
     "manipulation/packages/arm_pkg/arm_pkg"
 ]
-

@@ -19,7 +19,7 @@
 #include <string>
 #include <variant>
 
-#include <frida_constants/manip_3d.hpp>
+#include <frida_constants/manipulation_constants_cpp.hpp>
 
 using namespace std::chrono_literals;
 
@@ -70,8 +70,11 @@ public:
 
     sensor_msgs::msg::PointCloud2 response;
     pcl::toROSMsg(*sampled_cloud, response);
-    response.header.frame_id = msg->header.frame_id;
-    response.header.stamp = msg->header.stamp;
+    // response.header.frame_id = msg->header.frame_id;
+    // response.header.stamp = msg->header.stamp;
+    response.header.set__frame_id(msg->header.frame_id);
+    response.header.set__stamp(msg->header.stamp);
+    // response.header.stamp = this->now();
 
     publisher->publish(response);
   }

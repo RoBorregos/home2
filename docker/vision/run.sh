@@ -1,11 +1,20 @@
 #!/bin/bash
-
+ARGS=("$@")  # Save all arguments in an array
+TASK=${ARGS[0]}
+detached=""
+# check if one of the arguments is --detached
+for arg in "${ARGS[@]}"; do
+  if [ "$arg" == "-d" ]; then
+    detached="-d"
+  fi
+done
 
 #_________________________BUILD_________________________
 
 # Image names
 CPU_IMAGE="roborregos/home2:cpu_base"
-CUDA_IMAGE="roborregos/home2:gpu_base"
+CUDA_IMAGE="roborregos/home2:cuda_base"
+JETSON_IMAGE="roborregos/home2:l4t_base"
 
 # Function to check if an image exists
 check_image_exists() {
@@ -42,6 +51,7 @@ case $ENV_TYPE in
     echo "DOCKERFILE=docker/vision/Dockerfile.cpu" >> .env
     echo "BASE_IMAGE=roborregos/home2:cpu_base" >> .env
     echo "IMAGE_NAME=roborregos/home2:vision-cpu" >> .env
+    echo "DOCKER_RUNTIME=''" >> .env
     
     # Build the base image if it doesn't exist
     check_image_exists "$CPU_IMAGE"
@@ -52,7 +62,7 @@ case $ENV_TYPE in
   "gpu")
     #_____GPU_____
     echo "DOCKERFILE=docker/vision/Dockerfile.gpu" >> .env
-    echo "BASE_IMAGE=roborregos/home2:gpu_base" >> .env
+    echo "BASE_IMAGE=roborregos/home2:cuda_base" >> .env
     echo "IMAGE_NAME=roborregos/home2:vision-gpu" >> .env
 
     # Build the base image if it doesn't exist
@@ -61,12 +71,22 @@ case $ENV_TYPE in
         docker compose -f ../cuda.yaml build
     fi
 
+    echo "DOCKER_RUNTIME=nvidia" >> .env
     ;;
   "jetson")
     #_____Jetson_____
     echo "DOCKERFILE=docker/vision/Dockerfile.jetson" >> .env
     echo "BASE_IMAGE=roborregos/home2:l4t_base" >> .env
     echo "IMAGE_NAME=roborregos/home2:vision-jetson" >> .env
+
+    # Build the base image if it doesn't exist
+    check_image_exists "$JETSON_IMAGE"
+    if [ $? -eq 1 ]; then
+        docker compose -f ../jetson.yaml build
+    fi
+
+    echo "DOCKER_RUNTIME=nvidia" >> .env
+    echo "DISPLAY=:0" >> .env
     ;;
   *)
     echo "Unknown environment type!"
@@ -93,10 +113,10 @@ export LOCAL_GROUP_ID=$(id -g)
 # fi
 
 # Setup camera permissions
-if [ -e /dev/video0 ]; then
-    echo "Setting permissions for /dev/video0..."
-    sudo chmod 666 /dev/video0  # Allow the container to access the camera device
-fi
+# if [ -e /dev/video0 ]; then
+#     echo "Setting permissions for /dev/video0..."
+#     sudo chmod 666 /dev/video0  # Allow the container to access the camera device
+# fi
 
 #_________________________RUN_________________________
 
@@ -112,11 +132,52 @@ fi
 # Check if the container is running
 RUNNING_CONTAINER=$(docker ps -q -f name=$SERVICE_NAME)
 
-if [ -n "$RUNNING_CONTAINER" ]; then
-    echo "Container $SERVICE_NAME is already running. Executing bash..."
-    docker compose exec -it $SERVICE_NAME /bin/bash
-else
-    echo "Container $SERVICE_NAME is stopped. Starting it now..."
+# If the container is not running, start it
+if [ -z "$RUNNING_CONTAINER" ]; then
+    echo "Container $SERVICE_NAME is not running. Starting it now..."
     docker compose up --build -d
+fi
+
+# Commands to run inside the container
+SOURCE_ROS="source /opt/ros/humble/setup.bash"
+COLCON="colcon build --packages-up-to "
+SOURCE="source install/setup.bash"
+SETUP="$SOURCE_ROS && $COLCON vision_general && $SOURCE"
+RUN=""
+MOONDREAM=false
+
+case $TASK in
+    "--moondream")
+        RUN=""
+        MOONDREAM=true
+        ;;
+    "--receptionist")
+        RUN="ros2 launch vision_general receptionist_launch.py"
+        MOONDREAM=true
+        ;;
+
+    *)
+        RUN=""
+        ;;
+esac
+
+
+if [ "$MOONDREAM" = true ]; then
+    echo "Running Moondream..."
+    RUNNING_CONTAINER=$(docker ps -q -f name=moondream-node)
+    if [ -z "$RUNNING_CONTAINER" ]; then
+        docker compose -f moondream.yaml up -d --build
+    fi
+fi
+
+# check if TASK is not empty
+if [ -z "$TASK" ]; then
     docker compose exec $SERVICE_NAME /bin/bash
+else
+    if [ -z "$detached" ]; then
+        docker compose exec $SERVICE_NAME bash -c "$SETUP && $RUN"
+    else
+        echo "Running in detached mode..."
+        docker compose exec -d $SERVICE_NAME bash -c "$SETUP && $RUN"
+    fi
 fi

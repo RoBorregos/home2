@@ -74,6 +74,10 @@ ros2 service call /hri/speech/speak frida_interfaces/srv/Speak "{text: \"Go to t
 # Extract data from a sentence
 ros2 service call /hri/nlp/data_extractor frida_interfaces/srv/ExtractInfo "{full_text: 'Hello, my name is Oscar', data: 'name'}"
 
+# Is positive
+ros2 service call /hri/nlp/is_positive frida_interfaces/srv/IsPositive "{text: 'I confirm'}"
+ros2 service call /hri/speech/STT frida_interfaces/srv/STT {}
+
 # NLP
 ros2 launch nlp nlp_launch.py
 

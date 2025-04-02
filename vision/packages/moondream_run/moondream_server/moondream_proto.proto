@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package moondream;
+
+service MoonDreamService {
+  rpc EncodeImage (ImageRequest) returns (EncodedImageResponse);
+  rpc FindBeverage (FindBeverageRequest) returns (BeveragePositionResponse);
+  rpc GeneratePersonDescription (DescriptionRequest) returns (DescriptionResponse);
+}
+
+message ImageRequest {
+  bytes image_data = 1;
+}
+
+message EncodedImageResponse {
+  bytes encoded_image = 1;
+}
+
+message FindBeverageRequest {
+  bytes encoded_image = 1;
+  string subject = 2;
+}
+
+message BeveragePositionResponse {
+  string position = 1;
+}
+
+message DescriptionRequest {
+  bytes encoded_image = 1;
+  string query = 2;
+}
+
+message DescriptionResponse {
+  string answer = 1;
+}

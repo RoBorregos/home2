@@ -1,10 +1,13 @@
 SPEAK_SERVICE = "/hri/speech/speak"
 STT_SERVICE_NAME = "/hri/speech/STT"
+HOTWORD_SERVICE_NAME = "/hri/speech/hotword_service"
 KEYWORD_TOPIC = "/hri/speech/kws"
 WAKEWORD_TOPIC = "/hri/speech/oww"
 COMMAND_INTERPRETER_SERVICE = "/hri/nlp/command_interpreter"
+LLM_WRAPPER_SERVICE = "/hri/nlp/llm"
 EXTRACT_DATA_SERVICE = "/hri/nlp/data_extractor"
 IS_POSITIVE_SERVICE = "/hri/nlp/is_positive"
+IS_NEGATIVE_SERVICE = "/hri/nlp/is_negative"
 ITEM_CATEGORIZATION_SERVICE = "/hri/nlp/item_categorization"
 CONVESATION_SERVICE = "/hri/nlp/conversation"
 GRAMMAR_SERVICE = "/hri/nlp/grammar"
@@ -19,4 +22,7 @@ USE_RESPEAKER = True
 
 # OpenWakeWord
 USE_OWW = True
-SENSITIVITY_THRESHOLD = 0.3
+SENSITIVITY_THRESHOLD = 0.15
+threshold = 0.4
+
+DEFAULT_HOTWORDS = "Frida RoBorregos"

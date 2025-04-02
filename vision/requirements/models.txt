@@ -1,0 +1,3 @@
+pretrainedmodels
+mediapipe
+ultralytics
