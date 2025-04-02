@@ -3,7 +3,7 @@
 # from speech.speech_api_utils import SpeechApiUtils
 import sounddevice as sd
 from pygame import mixer
-from speech.wav_utils import WavUtils
+from wav_utils import WavUtils
 
 # import os
 
