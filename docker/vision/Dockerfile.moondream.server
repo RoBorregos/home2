@@ -9,7 +9,7 @@
 # COPY ../../vision/requirements/moondream_server.txt .
 # RUN pip install -r moondream_server.txt
 
-    
+
 # WORKDIR /app
 # RUN wget -P /app "https://huggingface.co/vikhyatk/moondream2/resolve/9dddae84d54db4ac56fe37817aeaeb502ed083e2/moondream-2b-int8.mf.gz"
 
@@ -45,6 +45,7 @@ RUN pip install accelerate
 # grpcio==1.71.0
 # protobuf==5.29.1
 RUN pip install grpcio
+RUN pip install protobuf
 
 WORKDIR /workspace
 # CV-bridge
