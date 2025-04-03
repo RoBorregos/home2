@@ -35,8 +35,8 @@ def get_depth(depthframe_, pixel):
     """
     heightDEPTH, widthDEPTH = (depthframe_.shape[0], depthframe_.shape[1])
 
-    x = pixel[0]
-    y = pixel[1]
+    x = pixel[1]
+    y = pixel[0]
 
     print("height", heightDEPTH, "width", widthDEPTH)
     print("x", x, "y", y)
