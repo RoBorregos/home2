@@ -334,6 +334,7 @@ class SingleTracker(Node):
 
                         angle = self.pose_detection.personAngle(cropped_image)
                         if angle is not None and self.person_data[angle] is None:
+                            print("Added angle: ", angle)
                             if embedding is None:
                                 pil_image = PILImage.fromarray(cropped_image)
                                 with torch.no_grad():
