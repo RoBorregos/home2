@@ -31,12 +31,7 @@ services:
     tty: true
     stdin_open: true
     # working_dir: /workspace
-    command:
-      [
-        "bash",
-        "-c",
-        "python3 -u server.py --model_path '../../app/moondream-2b-int8.mf.gz'",
-      ]
+    command: ["bash", "-c", "python3 -u server.py"]
 
   moondream-node:
     container_name: home2-moondream-node

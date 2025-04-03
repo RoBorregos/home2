@@ -137,4 +137,4 @@ if __name__ == "__main__":
     elif args.device_map == "cuda":
         args.device_map = {"": "cuda"}
 
-    serve(args.model_name, args.revision, device_map=args.device_map)
+    serve(args.model_name, args.revision, args.device_map)
