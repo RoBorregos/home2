@@ -38,9 +38,6 @@ def get_depth(depthframe_, pixel):
     x = pixel[1]
     y = pixel[0]
 
-    print("height", heightDEPTH, "width", widthDEPTH)
-    print("x", x, "y", y)
-
     def medianCalculation(x, y, width, height, depthframe_):
         medianArray = []
         requiredValidValues = 20
@@ -56,7 +53,6 @@ def get_depth(depthframe_, pixel):
             width,
             height,
         ):
-            print("startX, startY, endX, endY", startX, startY, endX, endY)
             if startX < 0 and startY < 0 and endX > width and endY > height:
                 return
             # Check first and last row of the square spiral.
