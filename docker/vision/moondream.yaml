@@ -6,7 +6,8 @@ services:
       context: ../..
       dockerfile: docker/vision/Dockerfile.moondream.server
       args:
-        BASE_IMAGE: ${BASE_IMAGE:-roborregos/home2:cuda_base}
+        # BASE_IMAGE: ${BASE_IMAGE:-roborregos/home2:cuda_base}
+        BASE_IMAGE: roborregos/home2:l4t_base
     ports:
       - "50052:50052"
     volumes:
