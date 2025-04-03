@@ -1,6 +1,16 @@
 ARG BASE_IMAGE=ubuntu:22.04
 FROM ${BASE_IMAGE}
 
+# RUN mkdir -p /workspace/requirements
+# RUN apt update && apt install -y ros-humble-cv-bridge
+
+# Requirements
+# COPY vision/requirements /workspace/requirements
+# WORKDIR /workspace/requirements
+
+# RUN pip install -r moondream.txt
+
+# if BASE_IMAGE = roborregos/home2:cuda_base then run pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 RUN echo "${BASE_IMAGE}"
 # RUN if [ "${BASE_IMAGE}" = "docker.io/roborregos/home2:cuda_base" ]; then \
 #     echo "Installing PyTorch with CUDA support"; \
@@ -17,10 +27,6 @@ RUN apt install libvips-dev --no-install-recommends -y
 RUN pip install pyvips
 RUN pip install einops
 RUN pip install accelerate
-# grpcio==1.71.0
-# protobuf==5.29.1
-RUN pip install grpcio==1.71.0
-RUN pip install protobuf==5.29.1
 
 WORKDIR /workspace
 # CV-bridge
