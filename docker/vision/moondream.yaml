@@ -17,7 +17,7 @@ services:
       - /tmp:/tmp
       - /tmp/.X11-unix:/tmp/.X11-unix
     working_dir: /workspace/moondream_server
-    network_mode: host
+    # network_mode: host
     user: 1000:1000
     privileged: true
     runtime: nvidia
@@ -66,3 +66,4 @@ services:
     working_dir: /workspace
     # command: ["/bin/bash", "-i", "-l"]
     command: bash -c "source /opt/ros/humble/setup.bash && colcon build --packages-up-to moondream_run && source install/setup.bash && ros2 run moondream_run moondream_node.py"
+    # command: bash -c "source /opt/ros/humble/setup.bash && source install/setup.bash && ros2 run moondream_run moondream_node.py"
