@@ -1,4 +1,4 @@
-from transformers import AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModelForCausalLM
 from PIL import Image
 
 # Initialize the model
@@ -7,7 +7,7 @@ model = AutoModelForCausalLM.from_pretrained(
     revision="2025-01-09",
     trust_remote_code=True,
     # Uncomment for GPU acceleration & pip install accelerate
-    device_map={"": 0}
+    device_map={"": 0},
 )
 
 # Load your image
