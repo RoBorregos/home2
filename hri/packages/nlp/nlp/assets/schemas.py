@@ -8,11 +8,14 @@ class ExtractedData(BaseModel):
         default="",
     )
 
+
 class IsAnswerPositive(BaseModel):
     is_positive: bool
-      
+
+
 class IsAnswerNegative(BaseModel):
     is_negative: bool
+
 
 class RoomIdentification(BaseModel):
     room: str

@@ -1,5 +1,10 @@
 import json
-from nlp.assets.schemas import ExtractedData, IsAnswerPositive, RoomIdentification
+from nlp.assets.schemas import (
+    ExtractedData,
+    IsAnswerPositive,
+    RoomIdentification,
+    IsAnswerNegative,
+)
 
 
 def get_common_interests_dialog(
@@ -159,7 +164,8 @@ def get_is_answer_positive_args(interpreted_text):
         ],
         IsAnswerPositive,
     )
-  
+
+
 def get_is_answer_negative_args(interpreted_text):
     return (
         [
@@ -221,7 +227,8 @@ def format_response(response):
             "content": response,
         },
     ]
-  
+
+
 def get_room_identification_dialog(comment, areas_file="areas.json"):
     with open(areas_file, "r") as file:
         areas = json.load(file)
