@@ -43,7 +43,7 @@ class MoonDreamModel:
             img_bytes = img_io.getvalue()
 
         encoded = Image.open(io.BytesIO(img_bytes))
-        # encoded = self.model.encode_image(Image.open(io.BytesIO(img_bytes)))
+        # encoded = self.model.encode_image(Image.open(io.BytesIO(img_bytes))) # dont remove this in case of interoperability
         return pickle.dumps(encoded)
 
     def find_beverage(self, encoded_image_data, subject):

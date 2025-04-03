@@ -21,7 +21,6 @@ services:
     user: 1000:1000
     privileged: true
     runtime: nvidia
-    # runtime: ${RUNTIME:-}
     group_add:
       - video
     environment:
@@ -31,7 +30,6 @@ services:
       QT_DEBUG_PLUGINS: 1
     tty: true
     stdin_open: true
-    # working_dir: /workspace
     command: ["bash", "-c", "python3 -u server.py"]
 
   moondream-node:
