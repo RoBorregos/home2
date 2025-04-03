@@ -38,7 +38,8 @@ def get_depth(depthframe_, pixel):
     x = pixel[0]
     y = pixel[1]
 
-    print
+    print("height", heightDEPTH, "width", widthDEPTH)
+    print("x", x, "y", y)
 
     def medianCalculation(x, y, width, height, depthframe_):
         medianArray = []
