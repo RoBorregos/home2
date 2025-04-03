@@ -399,6 +399,7 @@ class SingleTracker(Node):
                     coords = Point()
                     print("COORDS", self.person_data["coordinates"])
                     point2D = get2DCentroid(self.person_data["coordinates"], self.frame)
+                    print("PPoint2d", point2D)
                     depth = get_depth(self.depth_image, point2D)
                     point3D = deproject_pixel_to_point(self.imageInfo, point2D, depth)
                     point3D = float(point3D[0]), float(point3D[1]), float(point3D[2])
