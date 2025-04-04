@@ -10,13 +10,20 @@ from frida_constants.manipulation_constants import (
     PICK_ACCELERATION,
     PICK_PLANNER,
     ATTACH_COLLISION_OBJECT_SERVICE,
+    REMOVE_COLLISION_OBJECT_SERVICE,
     GET_COLLISION_OBJECTS_SERVICE,
     PICK_OBJECT_NAMESPACE,
+    PLANE_NAMESPACE,
     EEF_LINK_NAME,
     EEF_CONTACT_LINKS,
     PICK_MOTION_ACTION_SERVER,
+    PLANE_OBJECT_COLLISION_TOLERANCE,
 )
-from frida_interfaces.srv import AttachCollisionObject, GetCollisionObjects
+from frida_interfaces.srv import (
+    AttachCollisionObject,
+    GetCollisionObjects,
+    RemoveCollisionObject,
+)
 from frida_interfaces.action import PickMotion, MoveToPose
 import copy
 import numpy as np
@@ -54,6 +61,11 @@ class PickMotionServer(Node):
         self._get_collision_objects_client = self.create_client(
             GetCollisionObjects,
             GET_COLLISION_OBJECTS_SERVICE,
+        )
+
+        self._remove_collision_object_client = self.create_client(
+            RemoveCollisionObject,
+            REMOVE_COLLISION_OBJECT_SERVICE,
         )
 
         self._move_to_pose_action_client.wait_for_server()
@@ -155,11 +167,20 @@ class PickMotionServer(Node):
         """Attach the pick object to the robot."""
         collision_objects = self.get_collision_objects()
         print(collision_objects)
+        # find plane object
+        plane = None
         for obj in collision_objects:
-            print("Found object: ", obj.id)
+            if PLANE_NAMESPACE in obj.id:
+                self.get_logger().info(f"Plane object found: {obj.id}")
+                plane = obj
+        for obj in collision_objects:
             if PICK_OBJECT_NAMESPACE in obj.id:
                 request = AttachCollisionObject.Request()
                 request.id = obj.id
+                if plane is not None and self.object_in_plane(obj, plane):
+                    self.remove_collision_object(obj.id)
+                    self.get_logger().info(f"Object {obj.id} removed from scene")
+                    continue
                 request.attached_link = EEF_LINK_NAME
                 request.touch_links = EEF_CONTACT_LINKS
                 request.detach = False
@@ -178,6 +199,26 @@ class PickMotionServer(Node):
         future = self._get_collision_objects_client.call_async(request)
         self.wait_for_future(future)
         return future.result().collision_objects
+
+    def object_in_plane(self, obj, plane):
+        """Check if the object is in the plane."""
+        plane_top_height = plane.pose.pose.position.z + plane.dimensions.z / 2
+        self.get_logger().info(
+            f"Plane top height: {plane_top_height} vs {obj.pose.pose.position.z}"
+        )
+        return (
+            obj.pose.pose.position.z
+            < plane_top_height + PLANE_OBJECT_COLLISION_TOLERANCE
+        )
+
+    def remove_collision_object(self, id):
+        """Remove the collision object from the scene."""
+        request = RemoveCollisionObject.Request()
+        request.id = id
+        self._remove_collision_object_client.wait_for_service()
+        future = self._remove_collision_object_client.call_async(request)
+        self.wait_for_future(future)
+        return future.result().success
 
 
 def main(args=None):

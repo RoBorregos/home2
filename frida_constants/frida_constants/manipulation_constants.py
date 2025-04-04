@@ -20,6 +20,8 @@ JOINTN_VELOCITY_MODE = 4
 
 MOVE_JOINTS_ACTION_SERVER = "/manipulation/move_joints_action_server"
 MOVE_TO_POSE_ACTION_SERVER = "/manipulation/move_to_pose_action_server"
+GET_JOINT_SERVICE = "/manipulation/get_joints"
+TOGGLE_SERVO_SERVICE = "/manipulation/toggle_servo"
 
 PICK_VELOCITY = 0.15
 PICK_ACCELERATION = 0.15
@@ -38,6 +40,10 @@ ADD_COLLISION_OBJECT_SERVICE = "/manipulation/add_collision_objects"
 GET_COLLISION_OBJECTS_SERVICE = "/manipulation/get_collision_objects"
 REMOVE_COLLISION_OBJECT_SERVICE = "/manipulation/remove_collision_object"
 PICK_OBJECT_NAMESPACE = "frida_pick_object_"
+PLANE_NAMESPACE = "plane"
+PLANE_OBJECT_COLLISION_TOLERANCE = (
+    0.025  # Tolerance to delete collision objects if they are too close to the plane
+)
 
 DEBUG_POSE_GOAL_TOPIC = "/manipulation/debug_pose_goal"
 GET_JOINT_TOPIC = "/manipulation/get_joints"
