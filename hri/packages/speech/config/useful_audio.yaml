@@ -4,5 +4,6 @@ useful_audio:
     USE_SILERO_VAD: True
     threshold: REPLACE
     DISABLE_KWS: False
+    MIN_AUDIO_DURATION: 0.5
     MAX_AUDIO_DURATION: 10
     WAKEWORD_TOPIC: REPLACE

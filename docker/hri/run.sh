@@ -46,6 +46,7 @@ fi
 echo "Detected environment: $ENV_TYPE"
 
 # Build base image
+
 case $ENV_TYPE in
   "gpu")
     ;&
@@ -69,26 +70,9 @@ case $ENV_TYPE in
     ;;
 esac
 
-EXISTING_CONTAINER=$(docker ps -a -q -f "name=$CONTAINER_NAME")
-if [ -z "$EXISTING_CONTAINER" ]; then
-    echo "No container with the name $CONTAINER_NAME exists. Building and starting the container now..."
-    if [ $ENV_TYPE == "cpu" ]; then
-        docker compose -f docker-compose-cpu.yaml up --build -d
-    elif [ $ENV_TYPE == "gpu" ]; then
-        docker compose -f docker-compose-cpu.yaml up --build -d
-    elif [ $ENV_TYPE == "jetson" ]; then
-        docker compose -f docker-compose-jetson.yaml up --build -d
-    fi
-    echo "Running prebuild script..."
-    docker start $CONTAINER_NAME
-    docker exec -it $CONTAINER_NAME /bin/bash -c "./src/home2/prebuild.sh"
-fi
-
-
 #_________________________SETUP_________________________
 
-# Run hri setup script
-sudo bash setup.bash
+bash setup.bash
 
 #_________________________RUN_________________________
 
@@ -104,11 +88,11 @@ EXISTING_CONTAINER=$(docker ps -q -f name=$SERVICE_NAME)
 if [ -z "$EXISTING_CONTAINER" ]; then
     echo "No container with the name $SERVICE_NAME exists. Building and starting the container now..."
     if [ $ENV_TYPE == "cpu" ]; then
-        docker compose -f docker-compose-cpu.yml up --build -d
+        docker compose -f docker-compose-cpu.yml up -d
     elif [ $ENV_TYPE == "gpu" ]; then
-        docker compose -f docker-compose-cpu.yml up --build -d
+        docker compose -f docker-compose-cpu.yml up -d
     elif [ $ENV_TYPE == "jetson" ]; then
-        docker compose up --build -d
+        docker compose up -d
     fi
 fi
 
