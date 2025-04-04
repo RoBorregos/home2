@@ -12,6 +12,14 @@ Run container. From the root directory (home2), run:
 ./run.sh manipulation
 ```
 
+## HRI
+Run containers. From `docker/hri` run:
+```bash
+docker compose up
+```
+
+Note: ollama models are downloaded and mounted on the repo. Run the repo at the path `/home/orin/home2` to avoid having to re-download the models.
+
 ### Arm bringup
 To test on the real robot, run the launch to bring up the robot and MoveIt planning:
 ```bash
