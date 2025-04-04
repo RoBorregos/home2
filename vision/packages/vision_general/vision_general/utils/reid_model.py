@@ -200,8 +200,12 @@ def compare_images(features1, features2, threshold=0.55):
 
     # Compare with threshold
     if features1.ndim != 1 or features2.ndim != 1:
-        print("error comparing images")
-        return False
+        if use_gpu:
+            features1 = features1.squeeze()
+            features2 = features2.squeeze()
+        else:
+            print("error comparing images")
+            return False
 
     # Compute cosine similarity between feature vectors
     # features1 = features1.reshape(features1.shape[0], -1)
