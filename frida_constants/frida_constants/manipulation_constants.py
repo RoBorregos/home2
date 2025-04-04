@@ -41,7 +41,9 @@ GET_COLLISION_OBJECTS_SERVICE = "/manipulation/get_collision_objects"
 REMOVE_COLLISION_OBJECT_SERVICE = "/manipulation/remove_collision_object"
 PICK_OBJECT_NAMESPACE = "frida_pick_object_"
 PLANE_NAMESPACE = "plane"
-PLANE_OBJECT_COLLISION_TOLERANCE = 0.025 # Tolerance to delete collision objects if they are too close to the plane
+PLANE_OBJECT_COLLISION_TOLERANCE = (
+    0.025  # Tolerance to delete collision objects if they are too close to the plane
+)
 
 DEBUG_POSE_GOAL_TOPIC = "/manipulation/debug_pose_goal"
 GET_JOINT_TOPIC = "/manipulation/get_joints"

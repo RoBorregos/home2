@@ -17,9 +17,13 @@ from frida_constants.manipulation_constants import (
     EEF_LINK_NAME,
     EEF_CONTACT_LINKS,
     PICK_MOTION_ACTION_SERVER,
-    PLANE_OBJECT_COLLISION_TOLERANCE
+    PLANE_OBJECT_COLLISION_TOLERANCE,
 )
-from frida_interfaces.srv import AttachCollisionObject, GetCollisionObjects, RemoveCollisionObject
+from frida_interfaces.srv import (
+    AttachCollisionObject,
+    GetCollisionObjects,
+    RemoveCollisionObject,
+)
 from frida_interfaces.action import PickMotion, MoveToPose
 import copy
 import numpy as np
@@ -58,7 +62,7 @@ class PickMotionServer(Node):
             GetCollisionObjects,
             GET_COLLISION_OBJECTS_SERVICE,
         )
-        
+
         self._remove_collision_object_client = self.create_client(
             RemoveCollisionObject,
             REMOVE_COLLISION_OBJECT_SERVICE,
@@ -199,9 +203,14 @@ class PickMotionServer(Node):
     def object_in_plane(self, obj, plane):
         """Check if the object is in the plane."""
         plane_top_height = plane.pose.pose.position.z + plane.dimensions.z / 2
-        self.get_logger().info(f"Plane top height: {plane_top_height} vs {obj.pose.pose.position.z}")
-        return obj.pose.pose.position.z < plane_top_height + PLANE_OBJECT_COLLISION_TOLERANCE
-    
+        self.get_logger().info(
+            f"Plane top height: {plane_top_height} vs {obj.pose.pose.position.z}"
+        )
+        return (
+            obj.pose.pose.position.z
+            < plane_top_height + PLANE_OBJECT_COLLISION_TOLERANCE
+        )
+
     def remove_collision_object(self, id):
         """Remove the collision object from the scene."""
         request = RemoveCollisionObject.Request()
@@ -210,6 +219,7 @@ class PickMotionServer(Node):
         future = self._remove_collision_object_client.call_async(request)
         self.wait_for_future(future)
         return future.result().success
+
 
 def main(args=None):
     rclpy.init(args=args)
