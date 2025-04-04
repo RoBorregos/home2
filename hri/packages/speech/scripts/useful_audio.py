@@ -130,15 +130,12 @@ class UsefulAudio(Node):
         self.chunk_count += 1
 
     def parameter_callback(self, params):
-        self.get_logger().info("Parameter callback triggered.")
-        # for param in params:
-        #     self.get_logger().info(f"Parameter: {param.name} = {param.value}")
-
-        #     if param.name == "MIN_AUDIO_DURATION":
-        #         self.min_audio_duration = param.value
-        #         self.MIN_CHUNKS_AUDIO_LENGTH = self.min_audio_duration / CHUNK_DURATION
-        #     elif param.name == "MAX_AUDIO_DURATION":
-        #         self.max_audio_duration = param.value
+        for param in params:
+            if param.name == "MIN_AUDIO_DURATION":
+                self.min_audio_duration = param.value
+                self.MIN_CHUNKS_AUDIO_LENGTH = self.min_audio_duration / CHUNK_DURATION
+            elif param.name == "MAX_AUDIO_DURATION":
+                self.max_audio_duration = param.value
 
         return SetParametersResult(successful=True)
 
@@ -151,7 +148,7 @@ class UsefulAudio(Node):
         if self.chunk_count > self.MIN_CHUNKS_AUDIO_LENGTH:
             self.publisher.publish(AudioData(data=self.voiced_frames))
         else:
-            self.log("Audio too short, not publishing!!!!!")
+            self.log("Audio too short, not publishing")
         self.discard_audio()
 
     def int2float(self, sound):
@@ -222,13 +219,10 @@ class UsefulAudio(Node):
             time_delta = (current_time - self.timer).nanoseconds / NANOSECONDS_IN_SECOND
 
             # If the audio is long enough (min_audio_duration) and there is silence
-            self.log("Chunk count: " + str(self.chunk_count))
-            self.log("min chunks: " + str(self.MIN_CHUNKS_AUDIO_LENGTH))
             if self.chunk_count > self.MIN_CHUNKS_AUDIO_LENGTH and (
                 num_unvoiced > TRIGGER_THRESHOLD * self.ring_buffer.maxlen
                 or time_delta > self.max_audio_duration
             ):
-                self.log("PUBLISH!!!")
                 self.debug("UNTRIGGERING")
                 self.triggered = False
                 self.publish_audio()

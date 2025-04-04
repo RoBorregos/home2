@@ -5,15 +5,12 @@ import sys
 
 import grpc
 import rclpy
-from rcl_interfaces.msg import Parameter, ParameterType, ParameterValue
-from rcl_interfaces.srv import SetParameters
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.executors import ExternalShutdownException, MultiThreadedExecutor
 from rclpy.node import Node
 from speech.speech_api_utils import SpeechApiUtils
 from std_msgs.msg import String
 
-from frida_constants.hri_constants import USEFUL_AUDIO_NODE_NAME
 from frida_interfaces.msg import AudioData
 from frida_interfaces.srv import STT, UpdateHotwords
 
@@ -67,10 +64,6 @@ class HearNode(Node):
             self.declare_parameter("DEFAULT_HOTWORDS", "Frida RoBorregos")
             .get_parameter_value()
             .string_value
-        )
-
-        self.useful_audio_params = self.create_client(
-            SetParameters, f"/{USEFUL_AUDIO_NODE_NAME}/set_parameters"
         )
 
         # Initialize the hotwords
@@ -169,17 +162,6 @@ class HearNode(Node):
             self.get_logger().error(f"Error during transcription: {str(ex)}")
 
     def stt_service_callback(self, request, response):
-        # Set minimum audio length and maximum audio length
-        self.get_logger().info("setting min_audio_length")
-
-        if request.min_audio_duration is not None and request.min_audio_duration > 0:
-            self.set_double_param("MIN_AUDIO_DURATION", request.min_audio_duration)
-
-        self.get_logger().info("min_audio_length setted!")
-
-        if request.max_audio_duration is not None and request.max_audio_duration > 0:
-            self.set_double_param("MAX_AUDIO_DURATION", request.max_audio_duration)
-
         self.get_logger().info("Keyword mock service activated, recording audio...")
         self.service_active = True
 
@@ -188,28 +170,8 @@ class HearNode(Node):
         self.service_text = ""
         while self.service_active:
             pass
-            # rclpy.spin_once(self, timeout_sec=0.1)
         response.text_heard = self.service_text
         return response
-
-    def set_double_param(self, name, value):
-        # Set a double parameter on the useful audio node
-        param = Parameter()
-        param.name = name
-        param.value = ParameterValue(type=ParameterType.PARAMETER_DOUBLE)
-        param.value.double_value = value
-        request = SetParameters.Request()
-        request.parameters = [param]
-        future = self.useful_audio_params.call_async(request)
-
-        while not future.done():
-            self.get_logger().info(f"Setting parameter {name} to {value}")
-            rclpy.spin_once(self, timeout_sec=0.1)
-
-        if future.result() is not None:
-            self.get_logger().info(f"Parameter {name} set to {value}")
-        else:
-            self.get_logger().error(f"Failed to set parameter {name}")
 
     def audio_state_callback(self, msg):
         if msg.data == "idle" and not self.is_transcribing:

@@ -43,7 +43,7 @@ class TestHriManager(Node):
         self.get_logger().info("Hearing from the user...")
 
         # Test hear
-        s, user_request = self.hri_manager.hear()
+        s, user_request = self.hri_manager.hear(min_audio_length=10.0)
         self.get_logger().info(f"Heard: {user_request}")
 
         # Test extract_data
