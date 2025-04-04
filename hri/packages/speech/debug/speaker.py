@@ -1,10 +1,10 @@
-# python3 debug/speaker.py
-
-# from speech.speech_api_utils import SpeechApiUtils
 import sounddevice as sd
 from pygame import mixer
-from wav_utils import WavUtils
+from speech.wav_utils import WavUtils
 
+# Note: if the above import fails, make sure to build the ros packages and source the workspace
+
+# from speech.speech_api_utils import SpeechApiUtils
 # import os
 
 
@@ -16,9 +16,6 @@ def get_devices():
             f"Device [{num_dev}]: [{device_info['name']}], [{device_info['max_input_channels']}] input channels, [{device_info['max_output_channels']}] output channels"
         )
         num_dev = num_dev + 1
-
-    # print("Original order:")
-    # print(devices)
 
 
 def play_audio(file_path):
@@ -34,14 +31,11 @@ if __name__ == "__main__":
     get_devices()
 
     # mp3_path = "play.mp3"
-    # WavUtils.play_mp3(mp3_path, device_index=4)
-    # play_audio("../recorded_audio.wav")
+    wav_path = "1_recorded_audio.wav"
 
-    # wav_path = "recorded_audio.wav"
-    wav_path = "last_run_audio.wav"
-    # wav_path = "play_temp.wav"
-    # WavUtils.play_mp3(mp3_path, device_index=12)
+    # WavUtils.play_mp3(mp3_path, device_index=4)
     WavUtils.play_wav(wav_path, device_index=None)
+
     # SPEAKER_DEVICE_NAME = os.getenv("SPEAKER_DEVICE_NAME", default=None)
     # SPEAKER_INPUT_CHANNELS = int(
     #     os.getenv("SPEAKER_INPUT_CHANNELS", default=2))
