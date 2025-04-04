@@ -19,7 +19,7 @@ REMOVE_ITEM_SERVICE = "/hri/nlp/embeddings/remove_item_service"
 UPDATE_ITEM_SERVICE = "/hri/nlp/embeddings/update_item_service"
 QUERY_ITEM_SERVICE = "/hri/nlp/embeddings/query_item_service"
 BUILD_EMBEDDINGS_SERVICE = "/hri/nlp/embeddings/build_embeddings_service"
-USE_RESPEAKER = False
+USE_RESPEAKER = True
 
 USEFUL_AUDIO_NODE_NAME = "useful_audio_node"
 
