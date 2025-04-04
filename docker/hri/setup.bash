@@ -14,10 +14,11 @@ load-module module-native-protocol-unix socket=/home/$USER/.config/pulse/pulseau
 
 echo "Added pulseaudio socket config to /etc/pulse/default.pa.d/speech_sound.pa"
 
-# Restart pulseaudio
-echo "Restarting pulseaudio for user."
-
-systemctl --user restart pulseaudio
+# Restart pulseaudio if socket is not present
+if [ ! -S /home/$USER/.config/pulse/pulseaudio.socket ]; then
+    echo "Pulseaudio socket not found. Restarting pulseaudio..."
+    systemctl --user restart pulseaudio
+fi
 
 sudo usermod -aG audio $USER # Make sure current user has access to audio resources.
 
@@ -26,7 +27,7 @@ BASHRC="$HOME/.bashrc"
 SCRIPT_CMD="source $SCRIPT_PATH"
 SOURCE_SCRIPT="./mic_script.bash"
 
-# Si el archivo ya existe, saltar la creación
+# Check if the script already exists, otherwise copy it
 if [ ! -f "$SCRIPT_PATH" ]; then
     echo "Copying $SOURCE_SCRIPT to $SCRIPT_PATH"
     mkdir -p "$(dirname "$SCRIPT_PATH")"
@@ -34,11 +35,14 @@ if [ ! -f "$SCRIPT_PATH" ]; then
     chmod u+x "$SCRIPT_PATH"
 fi
 
+# Source the script in .bashrc if it isn't sourced already
 grep -qxF "$SCRIPT_CMD" "$BASHRC" || echo "$SCRIPT_CMD" >> "$BASHRC"
 
 bash -i $BASHRC
 
+# If the usb rules file doesn't exist, create it and reload rules
 if [ ! -f /etc/udev/rules.d/99-usb.rules ]; then
+    # Access respeaker usb device
     echo "SUBSYSTEM==\"usb\", ATTR{idVendor}==\"2886\", ATTR{idProduct}==\"0018\", MODE=\"0666\"" | sudo tee -a /etc/udev/rules.d/99-usb.rules
     sudo udevadm control --reload-rules
     sudo udevadm trigger
