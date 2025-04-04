@@ -32,6 +32,7 @@ if __name__ == "__main__":
         video_id = int(sys.argv[1])
         print("Video ID:", video_id)
     else:
+        video_id = 0
         print("No video ID provided, using default 0")
 
     simulator = ZedSimulator(video_id)
