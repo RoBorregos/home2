@@ -15,3 +15,7 @@ class IsAnswerPositive(BaseModel):
 
 class IsAnswerNegative(BaseModel):
     is_negative: bool
+
+
+class RoomIdentification(BaseModel):
+    room: str
