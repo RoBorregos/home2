@@ -6,7 +6,8 @@ services:
       context: ../..
       dockerfile: docker/hri/Dockerfile.display
       args:
-        BASE_IMAGE: roborregos/home2:cpu_base
+        # BASE_IMAGE: roborregos/home2:cpu_base
+        BASE_IMAGE: roborregos/home2:cuda_base
     volumes:
       - ../../hri/display/:/app
     ports:
