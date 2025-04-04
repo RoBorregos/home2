@@ -15,7 +15,9 @@ from frida_interfaces.srv import GetJoints
 from frida_constants.xarm_configurations import XARM_CONFIGURATIONS
 from rclpy.action import ActionClient
 from typing import List, Union
-from utils.decorators import service_check
+
+# from utils.decorators import service_check
+from xarm_msgs.srv import SetDigitalIO
 
 # import time as t
 
@@ -52,6 +54,9 @@ class ManipulationTasks:
     def __init__(self, task_manager, task, mock_data=False) -> None:
         """Initialize the class"""
 
+        if not isinstance(task_manager, Node):
+            raise ValueError("task_manager must be a Node")
+
         self.node = task_manager
         self.mock_data = mock_data
         self.task = task
@@ -62,9 +67,47 @@ class ManipulationTasks:
             self.node, MoveJoints, "/manipulation/move_joints_action_server"
         )
 
+        self.gripper_client = self.node.create_client(SetDigitalIO, "/xarm/set_tgpio_digital")
+
         self._get_joints_client = self.node.create_client(GetJoints, "/manipulation/get_joints")
 
-    @service_check("move_joint_positions", -1, TIMEOUT)
+    def open_gripper(self):
+        """Opens the gripper"""
+        return self._set_gripper_state("open")
+
+    def close_gripper(self):
+        """Closes the gripper"""
+        return self._set_gripper_state("close")
+
+    def _set_gripper_state(self, state: str):
+        """
+        Controls the gripper state.
+        State: 'open' o 'close'
+        """
+        try:
+            if not self.gripper_client.wait_for_service(timeout_sec=TIMEOUT):
+                Logger.error(self.node, "Gripper service not available")
+                return self.STATE["EXECUTION_ERROR"]
+
+            req = SetDigitalIO.Request()
+            req.ionum = 0
+            req.value = 0 if state == "open" else 1  # 0=Open, 1=close
+
+            future = self.gripper_client.call_async(req)
+            rclpy.spin_until_future_complete(self.node, future, TIMEOUT)
+
+            if future.result() is not None:
+                Logger.info(self.node, f"Gripper {state} successfully")
+                return self.STATE["EXECUTION_SUCCESS"]
+
+            Logger.error(self.node, "Failure in gripper service")
+            return self.STATE["EXECUTION_ERROR"]
+
+        except Exception as e:
+            Logger.error(self.node, f"Error gripper: {str(e)}")
+            return self.STATE["TERMINAL_ERROR"]
+
+    # @service_check("move_joint_positions", -1, TIMEOUT)
     def move_joint_positions(
         self,
         joint_positions: Union[List[float], dict] = None,
@@ -108,7 +151,7 @@ class ManipulationTasks:
         """Get named target"""
         return XARM_CONFIGURATIONS[target_name]
 
-    @service_check("get_joints_positions", -1, TIMEOUT)
+    # @service_check("get_joints_positions", -1, TIMEOUT)
     def get_joint_positions(
         self,
         degrees=False,  # set to true to return in degrees
