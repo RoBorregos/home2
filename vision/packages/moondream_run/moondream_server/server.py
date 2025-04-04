@@ -4,7 +4,9 @@ import moondream_proto_pb2
 import moondream_proto_pb2_grpc
 from PIL import Image
 import io
-import moondream as md
+from transformers import AutoModelForCausalLM
+
+# import moondream as md
 import pickle
 from enum import Enum
 import argparse
@@ -18,8 +20,20 @@ class Position(Enum):
 
 
 class MoonDreamModel:
-    def __init__(self, model_path):
-        self.model = md.vl(model=model_path)
+    def __init__(
+        self,
+        model_name="vikhyatk/moondream2",
+        revision="2025-01-09",
+        device_map={"": 0},
+        **kwargs,
+    ):
+        self.model = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            revision=revision,
+            trust_remote_code=True,
+            device_map=device_map,
+            **kwargs,
+        )
 
     def encode_image(self, image_data):
         image = Image.open(io.BytesIO(image_data))
@@ -28,7 +42,8 @@ class MoonDreamModel:
             image.save(img_io, format="JPEG", quality=90)
             img_bytes = img_io.getvalue()
 
-        encoded = self.model.encode_image(Image.open(io.BytesIO(img_bytes)))
+        encoded = Image.open(io.BytesIO(img_bytes))
+        # encoded = self.model.encode_image(Image.open(io.BytesIO(img_bytes))) # dont remove this in case of interoperability
         return pickle.dumps(encoded)
 
     def find_beverage(self, encoded_image_data, subject):
@@ -74,14 +89,14 @@ class MoonDreamServicer(moondream_proto_pb2_grpc.MoonDreamServiceServicer):
 
 
 # Run the gRPC server
-def serve(model_path):
+def serve(**kwargs):
     # Increase max message size for both request and response to 200MB
     options = [
         ("grpc.max_receive_message_length", 200 * 1024 * 1024),
         ("grpc.max_send_message_length", 200 * 1024 * 1024),
     ]
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10), options=options)
-    md_model = MoonDreamModel(model_path)
+    md_model = MoonDreamModel(**kwargs)
     moondream_proto_pb2_grpc.add_MoonDreamServiceServicer_to_server(
         MoonDreamServicer(md_model), server
     )
@@ -94,10 +109,34 @@ def serve(model_path):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="MoonDream Server")
     parser.add_argument(
-        "--model_path",
+        "--model_name",
         type=str,
-        default="moondream-2b-int8.mf.gz",
-        help="Path to the MoonDream model file",
+        default="vikhyatk/moondream2",
+        help="Name of the MoonDream model to load from Hugging Face Hub",
+    )
+    parser.add_argument(
+        "--revision",
+        type=str,
+        default="2025-01-09",
+        help="Revision of the MoonDream model to load from Hugging Face Hub",
+    )
+
+    parser.add_argument(
+        "--device_map",
+        type=str,
+        default="jetson",
+        help="Device map for loading the model (e.g., 'jetson', 'cpu', 'cuda')",
     )
     args = parser.parse_args()
-    serve(args.model_path)
+
+    # oddly specific but this is how it works lol
+    if args.device_map == "jetson":
+        args.device_map = {"": 0}
+    elif args.device_map == "cpu":
+        args.device_map = None
+    elif args.device_map == "cuda":
+        args.device_map = {"": "cuda"}
+
+    serve(
+        model_name=args.model_name, revision=args.revision, device_map=args.device_map
+    )
