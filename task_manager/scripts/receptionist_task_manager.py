@@ -9,7 +9,7 @@ import rclpy
 from rclpy.node import Node
 from utils.logger import Logger
 from utils.subtask_manager import SubtaskManager, Task
-from subtask_managers.vision_tasks import VisionTasks
+from utils.status import Status
 
 ATTEMPT_LIMIT = 3
 START = "START"
@@ -86,8 +86,8 @@ class ReceptionistTM(Node):
 
     def hear_word(self, word: str) -> bool:
         """Check if the word is heard"""
-        statement = self.subtask_manager.hri.hear()
-        name = self.subtask_manager.hri.extract_data(word, statement)
+        status, statement = self.subtask_manager.hri.hear()
+        status, name = self.subtask_manager.hri.extract_data(word, statement)
         if name is None:
             name = statement
         return name
@@ -114,7 +114,7 @@ class ReceptionistTM(Node):
                 "I am ready to receive guests, please open the door.", wait=True
             )
             result = self.subtask_manager.vision.detect_person(timeout=10)
-            if result == 1:
+            if result == Status.EXECUTION_SUCCESS:
                 self.subtask_manager.manipulation.move_joint_positions(
                     named_position="front_stare", velocity=0.5, degrees=True
                 )
@@ -150,7 +150,7 @@ class ReceptionistTM(Node):
             self.get_guest().description = self.subtask_manager.vision.describe_person()
 
             if (
-                result == 1 
+                result == Status.EXECUTION_SUCCESS
                 or self.current_attempts >= ATTEMPT_LIMIT
             ):
                 self.subtask_manager.hri.say("I have saved your face.")
@@ -198,7 +198,7 @@ class ReceptionistTM(Node):
                 self.get_guest().drink, timeout=40
             )
             # self.subtask_manager.manipulation.move_to_position("gaze")
-            if status == 1:
+            if status == Status.EXECUTION_SUCCESS:
                 self.subtask_manager.hri.say(
                     f"There is {self.get_guest().drink} at the table in the {position}."
                 )
@@ -248,7 +248,7 @@ class ReceptionistTM(Node):
                 )
                 # self.subtask_manager.manipulation.pan_to(seat_angle)
                 status, angle = self.subtask_manager.vision.find_seat()
-                if status == 1:
+                if status == Status.EXECUTION_SUCCESS:
                     target = angle
                     break
 
@@ -275,7 +275,7 @@ class ReceptionistTM(Node):
                     f"Hello {guest.name}. This is {self.get_guest().name}. {self.get_guest().description} and they like {self.get_guest().drink}."
                 )
                 # common_message = "Nada"
-                common_message = self.subtask_manager.hri.common_interest(
+                status, common_message = self.subtask_manager.hri.common_interest(
                     self.get_guest().name, self.get_guest().interest, guest.name, guest.interest
                 )
                 self.subtask_manager.hri.say(common_message)

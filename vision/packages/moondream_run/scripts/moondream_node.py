@@ -39,12 +39,6 @@ import moondream_proto_pb2_grpc  # noqa
 
 YOLO_LOCATION = str(pathlib.Path(__file__).parent) + "/yolov8n.pt"
 
-# CAMERA_TOPIC = "/zed/zed_node/rgb/image_rect_color"
-# PERSON_DESCRIPTION_TOPIC = "/vision/person_description"
-# PERSON_POSTURE_TOPIC = "/vision/person_posture"
-# BEVERAGE_TOPIC = "/vision/beverage_location"
-
-
 class Position(Enum):
     LEFT = "left"
     CENTER = "center"
