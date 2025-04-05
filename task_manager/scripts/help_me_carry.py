@@ -10,7 +10,7 @@ from utils.status import Status
 from rclpy.node import Node
 from utils.logger import Logger
 from utils.subtask_manager import SubtaskManager, Task
-from subtask_managers.vision_tasks import VisionTasks
+# from subtask_managers.vision_tasks import VisionTasks
 
 ATTEMPT_LIMIT = 3
 
@@ -116,8 +116,14 @@ class HelpMeCarryTM(Node):
         if self.current_state == HelpMeCarryTM.TASK_STATES["ASK_TO_POINT_THE_BAG"]:
             Logger.state(self, "Asking to point the bag")
             self.subtask_manager.hri.say("Please point to the bag you want me to carry")
-            # MOCK: self.subtask_manager.vision.detect_pointed_bag() /Must return the approximated pose of the bag
-            # MOCK: self.subtask_mananger.nav.approach_table(pose) /aPPPPROACHIN
+            # TODO: Vision detects bag, returns bounding box for moondream, and returns the estimated bag pose in 2D plane
+            # bounding_box, bag_pose = self.subtask_manager.vision.detect_pointed_bag()
+            # TODO: Vision receives a bounding box and gives it to moondream to describe the bag
+            # bag_description = self.subtask_manager.vision.describe(bounding_box)
+            # TODO: Manipulation receives the bag pose and aims the arm towards the pose
+            # self.subtask_manager.manipulation.pan_to(bag_pose)
+            # TODO: HRI says the bag description
+            # self.subtask_manager.hri.say(bag_description)
             self.current_state = HelpMeCarryTM.TASK_STATES["GRASP_THE_BAG"]
 
         if self.current_state == HelpMeCarryTM.TASK_STATES["GRASP_THE_BAG"]:
