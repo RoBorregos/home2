@@ -31,6 +31,8 @@ class ZedSimulator(Node):
         """Get frames from the webcam and publish them."""
         while rclpy.ok():
             ret, frame = self.cap.read()
+            frame = frame[:, :frame.shape[1] // 2]
+            
             if not ret:
                 self.get_logger().info("No frame")
                 continue
