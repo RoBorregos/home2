@@ -5,6 +5,7 @@ Task Manager for Carry my luggage task of Robocup @Home 2025
 """
 
 import rclpy
+from utils.status import Status
 
 from rclpy.node import Node
 from utils.logger import Logger
@@ -76,7 +77,7 @@ class HelpMeCarryTM(Node):
                 "Please stand in front of me and wait for following confirmation", wait=True
             )
             result = self.subtask_manager.vision.detect_person(timeout=10)
-            if result == VisionTasks.STATE["EXECUTION_SUCCESS"]:
+            if result == Status.EXECUTION_SUCCESS:
                 # self.subtask_manager.manipulation.move_to_position("gaze")
                 # self.subtask_manager.manipulation.follow_face(True)
                 self.subtask_manager.hri.say(
