@@ -114,7 +114,7 @@ class ReceptionistTM(Node):
                 "I am ready to receive guests, please open the door.", wait=True
             )
             result = self.subtask_manager.vision.detect_person(timeout=10)
-            if result == VisionTasks.STATE["EXECUTION_SUCCESS"]:
+            if result == 1:
                 self.subtask_manager.manipulation.move_joint_positions(
                     named_position="front_stare", velocity=0.5, degrees=True
                 )
@@ -150,7 +150,7 @@ class ReceptionistTM(Node):
             self.get_guest().description = self.subtask_manager.vision.describe_person()
 
             if (
-                result == VisionTasks.STATE["EXECUTION_SUCCESS"]
+                result == 1 
                 or self.current_attempts >= ATTEMPT_LIMIT
             ):
                 self.subtask_manager.hri.say("I have saved your face.")
@@ -198,7 +198,7 @@ class ReceptionistTM(Node):
                 self.get_guest().drink, timeout=40
             )
             # self.subtask_manager.manipulation.move_to_position("gaze")
-            if status == VisionTasks.STATE["EXECUTION_SUCCESS"]:
+            if status == 1:
                 self.subtask_manager.hri.say(
                     f"There is {self.get_guest().drink} at the table in the {position}."
                 )
@@ -248,7 +248,7 @@ class ReceptionistTM(Node):
                 )
                 # self.subtask_manager.manipulation.pan_to(seat_angle)
                 status, angle = self.subtask_manager.vision.find_seat()
-                if status == VisionTasks.STATE["EXECUTION_SUCCESS"]:
+                if status == 1:
                     target = angle
                     break
 
