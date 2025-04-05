@@ -2,8 +2,8 @@ import cv2
 import sys
 
 
-class ZedSimulator():
-    def __init__(self, video_id:int=0):
+class ZedSimulator:
+    def __init__(self, video_id: int = 0):
         """Initialize the node and the camera source."""
         print(f"ZedSimulator has started with video ID: {video_id}")
         self.cap = cv2.VideoCapture(video_id)
@@ -24,9 +24,8 @@ class ZedSimulator():
 
 
 if __name__ == "__main__":
-    
     print("Arguments passed:", sys.argv)
-    
+
     if len(sys.argv) > 1:
         video_id = int(sys.argv[1])
         print("Video ID:", video_id)
