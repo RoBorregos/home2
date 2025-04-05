@@ -4,7 +4,7 @@
   <xacro:macro name="zed_gazebo" params="prefix:='zed' ">
     <!-- Depth camera sensor -->
     <gazebo reference="${prefix}_left_camera_frame">
-      <sensor name="zed_left_camera_frame_camera" type="depth">
+      <sensor name="zed" type="depth">
         <update_rate>20</update_rate>
         <camera>
           <horizontal_fov>1.047198</horizontal_fov>
@@ -18,29 +18,16 @@
             <far>3</far>
           </clip>
         </camera>
-        <plugin name="zed__left_camera_frame_controller" filename="libgazebo_ros_openni_kinect.so">
-          <baseline>0.2</baseline>
-          <alwaysOn>true</alwaysOn>
-          <updateRate>1.0</updateRate>
-          <cameraName>zed_depth</cameraName>
-          <imageTopicName>/zed/zed_node/rgb/image_rect_color</imageTopicName>
-          <cameraInfoTopicName>/zed/zed_node/rgb/camera_info</cameraInfoTopicName>
-          <depthImageTopicName>/zed/zed_node/depth/depth_registered</depthImageTopicName>
-          <depthImageInfoTopicName>/zed/zed_node/depth/camera_info</depthImageInfoTopicName>
-          <pointCloudTopicName>/depth/color/points</pointCloudTopicName>
-          <frameName>zed_left_camera_optical_frame</frameName>
-          <pointCloudCutoff>0.5</pointCloudCutoff>
-          <pointCloudCutoffMax>3.0</pointCloudCutoffMax>
-          <distortionK1>0.00000001</distortionK1>
-          <distortionK2>0.00000001</distortionK2>
-          <distortionK3>0.00000001</distortionK3>
-          <distortionT1>0.00000001</distortionT1>
-          <distortionT2>0.00000001</distortionT2>
-          <CxPrime>0</CxPrime>
-          <Cx>0</Cx>
-          <Cy>0</Cy>
-          <focalLength>0</focalLength>
-          <hackBaseline>0</hackBaseline>
+        <plugin name="zed_left_camera_frame_controller" filename="libgazebo_ros_camera.so">
+          <visualize>true</visualize>
+              <imageTopicName>/zed/zed_node/rgb/image_rect_color</imageTopicName>
+              <cameraInfoTopicName>/zed/zed_node/rgb/camera_info</cameraInfoTopicName>
+              <depthImageTopicName>/zed/zed_node/depth/depth_registered</depthImageTopicName>
+              <depthImageCameraInfoTopicName>/zed/zed_node/depth/camera_info</depthImageCameraInfoTopicName>
+              <pointCloudTopicName>depth/color/points</pointCloudTopicName>
+              <frame_name>zed_left_camera_optical_frame</frame_name>
+              <min_depth>0.1</min_depth>
+              <max_depth>5.0</max_depth>
         </plugin>
       </sensor>
     </gazebo>

@@ -50,7 +50,7 @@ ARGS = {
     "YOLO_MODEL_PATH": MODELS_PATH + "yolov5s.pt",
     "USE_ACTIVE_FLAG": False,
     "DEPTH_ACTIVE": True,
-    "VERBOSE": True,
+    "VERBOSE": False,
     "USE_YOLO8": False,
     "FLIP_IMAGE": False,
     "USE_ZED_TRANSFORM": True,
@@ -109,6 +109,7 @@ class object_detector_node(rclpy.node.Node):
         self.listener = tf2_ros.TransformListener(self.tfBuffer, self)
 
         # Frames per second throughput estimator
+        self.curr_clock = 0
         self.fps = None
         callFpsThread = threading.Thread(target=self.callFps, args=(), daemon=True)
         callFpsThread.start()
@@ -271,6 +272,7 @@ class object_detector_node(rclpy.node.Node):
 
     def rgbImageCallback(self, data):
         self.rgb_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
+        self.curr_clock = data.header.stamp
         if not self.active_flag:
             self.detections_frame = self.rgb_image
         elif (
@@ -365,7 +367,7 @@ class object_detector_node(rclpy.node.Node):
         for index in range(len(detections)):
             marker = Marker()
             marker.header.frame_id = self.object_detector_parameters.camera_frame
-            marker.header.stamp = self.get_clock().now().to_msg()
+            marker.header.stamp = self.curr_clock
             marker.type = Marker.SPHERE
             marker.action = Marker.ADD
             marker.id = index
