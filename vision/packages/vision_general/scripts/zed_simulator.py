@@ -33,7 +33,7 @@ class ZedSimulator(Node):
         while rclpy.ok():
             ret, frame = self.cap.read()
             if self.use_zed:
-                frame = frame[:, :frame.shape[1] // 2]
+                frame = frame[:, : frame.shape[1] // 2]
 
             if not ret:
                 self.get_logger().info("No frame")
