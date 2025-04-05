@@ -26,7 +26,7 @@ Once in the docker workspace or using ROS2 in the home2 directory, run the follo
 Run the following command for each package or packages that should be built:
 
 ```bash
-colcon build --packages-up-to vision_general moondream_run
+colcon build --packages-up-to vision_general 
 ```
 
 Then source:
@@ -40,11 +40,35 @@ Run a node using the following command:
 
 ```bash
 ros2 run <package> <node_name>
+ros2 run vision_general zed_simulator.py
 ```
 
 # Structure
 Vision is divided into the following packages:
-- moondream_run
 - vision_general
+- moondream_run
 - object_detector_2d
+- object_detection_handler
 
+# Camera
+To use de zed camera run the following command in orin:
+
+```bash
+ros2 launch zed_wrapper zed_camera.launch.py camera_model:=zed2 publish_tf:=false
+```
+
+If no zed camera is available you can run the zed simulator with an alternative camera with the following command:
+
+
+```bash
+ros2 run vision_general zed_simulator.py --ros-args -p video_id:=1
+```
+
+The video_id parameter is the id of the camera. To test camera ids and find the id or simply test the camera, run the following command:
+
+```bash
+python3 vision/packages/vision_general/Utils/camera_test.py <video_id>
+python3 vision/packages/vision_general/Utils/camera_test.py 2
+```
+
+Test different ids by passing the argument. Default is 0.

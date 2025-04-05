@@ -23,7 +23,8 @@ class ZedSimulator(Node):
         self.publisher_ = self.create_publisher(Image, CAMERA_TOPIC, 10)
 
         self.get_logger().info("ZedSimulator has started.")
-        self.cap = cv2.VideoCapture(0)
+        self.video_id = self.declare_parameter("video_id", 0)
+        self.cap = cv2.VideoCapture(self.video_id.value)
         self.run()
 
     def run(self):
