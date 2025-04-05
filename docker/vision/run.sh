@@ -13,7 +13,7 @@ done
 
 # Image names
 CPU_IMAGE="roborregos/home2:cpu_base"
-CUDA_IMAGE="roborregos/home2:cuda_base"
+CUDA_IMAGE="roborregos/home2:gpu_base"
 JETSON_IMAGE="roborregos/home2:l4t_base"
 
 # Function to check if an image exists
@@ -51,7 +51,6 @@ case $ENV_TYPE in
     echo "DOCKERFILE=docker/vision/Dockerfile.cpu" >> .env
     echo "BASE_IMAGE=roborregos/home2:cpu_base" >> .env
     echo "IMAGE_NAME=roborregos/home2:vision-cpu" >> .env
-    echo "DOCKER_RUNTIME=''" >> .env
     
     # Build the base image if it doesn't exist
     check_image_exists "$CPU_IMAGE"
@@ -62,7 +61,7 @@ case $ENV_TYPE in
   "gpu")
     #_____GPU_____
     echo "DOCKERFILE=docker/vision/Dockerfile.gpu" >> .env
-    echo "BASE_IMAGE=roborregos/home2:cuda_base" >> .env
+    echo "BASE_IMAGE=roborregos/home2:gpu_base" >> .env
     echo "IMAGE_NAME=roborregos/home2:vision-gpu" >> .env
 
     # Build the base image if it doesn't exist
@@ -140,35 +139,20 @@ fi
 
 # Commands to run inside the container
 SOURCE_ROS="source /opt/ros/humble/setup.bash"
-COLCON="colcon build --packages-up-to "
+COLCON="colcon build --packages-up-to vision_general"
 SOURCE="source install/setup.bash"
-SETUP="$SOURCE_ROS && $COLCON vision_general && $SOURCE"
+SETUP="$SOURCE_ROS && $COLCON && $SOURCE"
 RUN=""
-MOONDREAM=false
 
 case $TASK in
-    "--moondream")
-        RUN=""
-        MOONDREAM=true
-        ;;
     "--receptionist")
         RUN="ros2 launch vision_general receptionist_launch.py"
-        MOONDREAM=true
         ;;
 
     *)
         RUN=""
         ;;
 esac
-
-
-if [ "$MOONDREAM" = true ]; then
-    echo "Running Moondream..."
-    RUNNING_CONTAINER=$(docker ps -q -f name=moondream-node)
-    if [ -z "$RUNNING_CONTAINER" ]; then
-        docker compose -f moondream.yaml up -d --build
-    fi
-fi
 
 # check if TASK is not empty
 if [ -z "$TASK" ]; then
