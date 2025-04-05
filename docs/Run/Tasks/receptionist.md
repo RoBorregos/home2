@@ -6,16 +6,16 @@ Run container. From the root directory (home2), run:
 ./run.sh vision --receptionist
 ```
 
-## Manipulation
-Run container. From the root directory (home2), run:
-```bash
-./run.sh manipulation
-```
-
 ## HRI
 Run containers. From `docker/hri` run:
 ```bash
 docker compose up
+```
+
+## Manipulation
+Run container. From the root directory (home2), run:
+```bash
+./run.sh manipulation
 ```
 
 Note: ollama models are downloaded and mounted on the repo. Run the repo at the path `/home/orin/home2` to avoid having to re-download the models.
