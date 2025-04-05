@@ -24,12 +24,14 @@ class HelpMeCarryTM(Node):
         "CONFIRM_FOLLOWING": 2,
         "FOLLOWING_TO_DESTINATION": 3,
         "ASK_TO_POINT_THE_BAG": 4,
-        "GRASP_THE_BAG": 5,
-        "RETURN_TO_STARTING_LOCATION": 6,
-        "PLACE_THE_BAG": 7,
-        "END": 8,
+        "DETECT_THE_BAG": 5,
+        "RECEIVE_THE_BAG": 6,
+        "GRASP_THE_BAG": 7,
+        "RETURN_TO_STARTING_LOCATION": 8,
+        "PLACE_THE_BAG": 9,
+        "END": 10,
     }
-        
+
     def __init__(self):
         """Initialize the node"""
         super().__init__("Help_me_carry_task_manager")
@@ -104,14 +106,14 @@ class HelpMeCarryTM(Node):
                 pass
 
             self.subtask_manager.hri.say("I heard STOP, stopping now")
-#            self.current_state = HelpMeCarryTM.TASK_STATES["RETURN_TO_STARTING_LOCATION"]
+            #            self.current_state = HelpMeCarryTM.TASK_STATES["RETURN_TO_STARTING_LOCATION"]
             self.current_state = HelpMeCarryTM.TASK_STATES["ASK_TO_POINT_THE_BAG"]
 
         if self.current_state == HelpMeCarryTM.TASK_STATES["ASK_TO_POINT_THE_BAG"]:
             Logger.state(self, "Asking to point the bag")
             self.subtask_manager.hri.say("Please point to the bag you want me to carry")
             self.current_state = HelpMeCarryTM.TASK_STATES["DETECT_THE_BAG"]
-            
+
         if self.current_state == HelpMeCarryTM.TASK_STATES["DETECT_THE_BAG"]:
             Logger.state(self, "Detecting the bag")
             self.subtask_manager.hri.say("I will now detect the bag")
@@ -125,18 +127,22 @@ class HelpMeCarryTM(Node):
             # TODO: HRI says the bag description
             # self.subtask_manager.hri.say(bag_description)
             self.current_state = HelpMeCarryTM.TASK_STATES["RECEIVE_THE_BAG"]
-                # TODO: Manipulation grasp the bag (Not to be implemented yey)
-                # self.current_state = HelpMeCarryTM.TASK_STATES["GRASP_THE_BAG"]
+            # TODO: Manipulation grasp the bag (Not to be implemented yey)
+            # self.current_state = HelpMeCarryTM.TASK_STATES["GRASP_THE_BAG"]
 
         if self.current_state == HelpMeCarryTM.TASK_STATES["RECEIVE_THE_BAG"]:
             Logger.state(self, "Receiving the bag")
             self.subtask_manager.hri.say("I will now receive the bag")
             # TODO: self.subtask_manager.manipulation.move_joint_positions(dict,"bag_recieving_pose")
             self.subtask_manager.manipulation.open_gripper()
-            self.subtask_manager.hri.say("I have opened my gripper, please put the bag in it and say YES when it is done")
+            self.subtask_manager.hri.say(
+                "I have opened my gripper, please put the bag in it and say YES when it is done"
+            )
             # TODO: self.subtask_manager.hri.wait_for_keywood("YES")
             self.subtask_manager.manipulation.close_gripper()
-            self.subtask_manager.hri.say("I have received the bag, now I will return to the starting location")
+            self.subtask_manager.hri.say(
+                "I have received the bag, now I will return to the starting location"
+            )
             self.current_state = HelpMeCarryTM.TASK_STATES["RETURN_TO_STARTING_LOCATION"]
 
         if self.current_state == HelpMeCarryTM.TASK_STATES["GRASP_THE_BAG"]:
