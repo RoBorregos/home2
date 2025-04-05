@@ -271,6 +271,7 @@ class MoveItConfigsBuilder(ParameterBuilder):
         geometry_mesh_origin_rpy = get_list_param_str('geometry_mesh_origin_rpy', '0 0 0')
         geometry_mesh_tcp_xyz = get_list_param_str('geometry_mesh_tcp_xyz', '0 0 0')
         geometry_mesh_tcp_rpy = get_list_param_str('geometry_mesh_tcp_rpy', '0 0 0')
+        load_zed = get_param_str('load_zed', False)
 
         self.__prefix = prefix
         self.__robot_dof = dof
@@ -318,6 +319,8 @@ class MoveItConfigsBuilder(ParameterBuilder):
             'geometry_mesh_origin_rpy': geometry_mesh_origin_rpy,
             'geometry_mesh_tcp_xyz': geometry_mesh_tcp_xyz,
             'geometry_mesh_tcp_rpy': geometry_mesh_tcp_rpy,
+            'load_zed': load_zed,
+            'simulation': "True",
         }
         self.__srdf_xacro_args = {
             'prefix': prefix,
@@ -331,7 +334,10 @@ class MoveItConfigsBuilder(ParameterBuilder):
 
         self.__urdf_package = Path(get_package_share_directory("frida_description"))
         self.__urdf_file_path = Path("urdf/FRIDA.urdf.xacro")
-        self.__srdf_file_path = Path("srdf/xarm.srdf.sim.xacro")
+        if load_zed:
+            self.__srdf_file_path = Path("srdf/xarm.srdf.xacro")
+        else:
+            self.__srdf_file_path = Path("srdf/xarm.srdf.sim.xacro")
 
         self.__robot_description = 'robot_description'
 
