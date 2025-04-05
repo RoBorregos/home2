@@ -24,6 +24,7 @@ class ZedSimulator(Node):
 
         self.get_logger().info("ZedSimulator has started.")
         self.video_id = self.declare_parameter("video_id", 0)
+        self.use_zed = self.declare_parameter("use_zed", True)
         self.cap = cv2.VideoCapture(self.video_id.value)
         self.run()
 
@@ -31,8 +32,9 @@ class ZedSimulator(Node):
         """Get frames from the webcam and publish them."""
         while rclpy.ok():
             ret, frame = self.cap.read()
-            frame = frame[:, :frame.shape[1] // 2]
-            
+            if self.use_zed:
+                frame = frame[:, :frame.shape[1] // 2]
+
             if not ret:
                 self.get_logger().info("No frame")
                 continue
