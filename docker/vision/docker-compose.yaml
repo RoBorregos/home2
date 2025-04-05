@@ -29,6 +29,7 @@ services:
     tty: true
     stdin_open: true    
     working_dir: /workspace
+    # command: ${COMMAND:-bash} 
     command: ["/bin/bash", "-i", "-l"]
 
 # include:

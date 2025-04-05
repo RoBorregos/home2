@@ -21,6 +21,12 @@ from enum import Enum
 from frida_interfaces.srv import PersonDescription
 from frida_interfaces.srv import BeverageLocation
 from frida_interfaces.srv import PersonPosture
+from frida_constants.vision_constants import (
+    CAMERA_TOPIC,
+    PERSON_DESCRIPTION_TOPIC,
+    PERSON_POSTURE_TOPIC,
+    BEVERAGE_TOPIC,
+)
 
 from ament_index_python.packages import get_package_share_directory
 
@@ -33,10 +39,10 @@ import moondream_proto_pb2_grpc  # noqa
 
 YOLO_LOCATION = str(pathlib.Path(__file__).parent) + "/yolov8n.pt"
 
-CAMERA_TOPIC = "/zed/zed_node/rgb/image_rect_color"
-PERSON_DESCRIPTION_TOPIC = "/vision/person_description"
-PERSON_POSTURE_TOPIC = "/vision/person_posture"
-BEVERAGE_TOPIC = "/vision/beverage_location"
+# CAMERA_TOPIC = "/zed/zed_node/rgb/image_rect_color"
+# PERSON_DESCRIPTION_TOPIC = "/vision/person_description"
+# PERSON_POSTURE_TOPIC = "/vision/person_posture"
+# BEVERAGE_TOPIC = "/vision/beverage_location"
 
 
 class Position(Enum):
