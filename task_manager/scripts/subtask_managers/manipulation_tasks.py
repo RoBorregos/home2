@@ -168,7 +168,7 @@ class ManipulationTasks:
         return dict(zip(result.joint_names, result.joint_positions))
 
     # let the server pick the default values
-    @service_check("move_joints_action_client", -1, TIMEOUT)
+    @service_check("_move_joints_action_client", -1, TIMEOUT)
     def _send_joint_goal(
         self,
         joint_names=[],
