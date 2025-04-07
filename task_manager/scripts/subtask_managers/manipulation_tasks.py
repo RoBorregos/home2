@@ -108,7 +108,7 @@ class ManipulationTasks:
         except Exception as e:
             Logger.error(self.node, f"Error gripper: {str(e)}")
             return self.STATE["TERMINAL_ERROR"]
-    
+
     @mockable(return_value=Status.EXECUTION_SUCCESS, delay=2)
     def move_joint_positions(
         self,
@@ -117,6 +117,9 @@ class ManipulationTasks:
         velocity: float = 0.1,
         degrees=False,  # set to true if joint_positions are in degrees
     ):
+        # Print joint_positions
+        Logger.info("In move_joint_positions")
+        Logger.info(f"joint_positions: {joint_positions}")
         """Set position of joints.
         If joint_positions is a dict, keys are treated as joint_names
         and values as joint positions.
