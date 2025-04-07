@@ -29,8 +29,8 @@ services:
     tty: true
     stdin_open: true    
     working_dir: /workspace
-    command: ["/bin/sh", "-c", "$${COMMAND:-/bin/bash -i -l}"]
-    # command: ["/bin/bash", "-i", "-l"]
+    # command: ["/bin/sh", "-c", "$${COMMAND:-/bin/bash -i -l}"]
+    command: ["/bin/bash", "-i", "-l"]
 
 # include:
 #   - path: moondream.yaml

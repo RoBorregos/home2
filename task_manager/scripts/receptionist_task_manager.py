@@ -147,9 +147,9 @@ class ReceptionistTM(Node):
             #     self.current_attempts += 1
 
             # if self.get_guest().name is not None:
-                # if self.get_guest().name == f"Guest {self.current_guest}" or self.confirm(
-                #     self.get_guest().name
-                # ):
+            # if self.get_guest().name == f"Guest {self.current_guest}" or self.confirm(
+            #     self.get_guest().name
+            # ):
             self.subtask_manager.hri.say(f"Nice to meet you, {self.get_guest().name}.")
             self.current_attempts = 0
             self.current_state = ReceptionistTM.TASK_STATES["SAVE_FACE"]
@@ -159,10 +159,7 @@ class ReceptionistTM(Node):
             result = self.subtask_manager.vision.save_face_name(self.get_guest().name)
             self.get_guest().description = self.subtask_manager.vision.describe_person()
 
-            if (
-                result == Status.EXECUTION_SUCCESS
-                or self.current_attempts >= ATTEMPT_LIMIT
-            ):
+            if result == Status.EXECUTION_SUCCESS or self.current_attempts >= ATTEMPT_LIMIT:
                 self.subtask_manager.hri.say("I have saved your face.")
                 self.current_attempts = 0
                 self.current_state = ReceptionistTM.TASK_STATES["NAVIGATE_TO_BEVERAGES"]
@@ -198,9 +195,9 @@ class ReceptionistTM(Node):
                 self.get_guest().drink = drink
             else:
                 self.get_guest().drink = "Water"
-            
+
             Logger.info(self, f"Guest drink: {self.get_guest().drink}")
-        
+
             self.subtask_manager.hri.say(
                 f"Great! I will check if we have {self.get_guest().drink}."
             )
@@ -246,7 +243,7 @@ class ReceptionistTM(Node):
                 self.get_guest().interest = interest
             else:
                 self.get_guest().interest = "Nothing"
-                
+
             Logger.info(self, f"Interest: {self.get_guest().interest}")
             if self.confirm(self.get_guest().interest):
                 self.current_attempts = 0

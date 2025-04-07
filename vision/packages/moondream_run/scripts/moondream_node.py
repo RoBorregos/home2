@@ -39,6 +39,7 @@ import moondream_proto_pb2_grpc  # noqa
 
 YOLO_LOCATION = str(pathlib.Path(__file__).parent) + "/yolov8n.pt"
 
+
 class Position(Enum):
     LEFT = "left"
     CENTER = "center"
