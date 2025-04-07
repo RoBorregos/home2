@@ -219,7 +219,7 @@ class ReceptionistTM(Node):
             Logger.state(self, "Checking drink availability")
             # self.subtask_manager.manipulation.follow_face(False)
             self.subtask_manager.manipulation.move_joint_positions(
-                named_position="front_stare", velocity=0.5, degrees=True
+                named_position="front_stare", velocity=0.5, degrees=False
             )
             # self.subtask_manager.manipulation.move_to_position("table")
             status, position = self.subtask_manager.vision.find_drink(
