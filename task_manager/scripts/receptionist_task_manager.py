@@ -12,7 +12,7 @@ from utils.subtask_manager import SubtaskManager, Task
 from utils.status import Status
 
 ATTEMPT_LIMIT = 3
-START = "START"
+START = "DEBUG"
 
 
 class Guest:
@@ -47,6 +47,7 @@ class ReceptionistTM(Node):
         "INTRODUCTION": 10,
         "NAVIGATE_TO_ENTRANCE": 11,
         "END": 12,
+        "DEBUG": 13,
     }
 
     def __init__(self):
