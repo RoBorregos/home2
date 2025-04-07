@@ -190,6 +190,7 @@ class ReceptionistTM(Node):
             status, drink = self.subtask_manager.hri.ask_and_confirm(
                 question="What is your favorite drink?",
                 query="drink",
+                use_hotwords=False
             )
 
             # if self.current_attempts >= ATTEMPT_LIMIT:
@@ -236,7 +237,7 @@ class ReceptionistTM(Node):
             status, interest = self.subtask_manager.hri.ask_and_confirm(
                 question="What is your main interest?",
                 query="interest",
-                use_hotwords=True
+                use_hotwords=False
             )
 
             # if self.current_attempts >= ATTEMPT_LIMIT:
