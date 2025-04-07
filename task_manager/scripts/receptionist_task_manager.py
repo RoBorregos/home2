@@ -76,7 +76,8 @@ class ReceptionistTM(Node):
             named_position="front_stare", velocity=0.5, degrees=True
         )
         future = self.subtask_manager.nav.move_to_location(location, sublocation)
-        rclpy.spin_until_future_complete(self, future)
+        if "navigation" not in self.subtask_manager.get_mocked_areas():
+            rclpy.spin_until_future_complete(self, future)
 
     def confirm(self, statement: str) -> bool:
         """Confirm the name is correct"""
