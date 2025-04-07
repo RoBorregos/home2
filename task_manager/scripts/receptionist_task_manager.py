@@ -106,6 +106,7 @@ class ReceptionistTM(Node):
 
         if self.current_state == ReceptionistTM.TASK_STATES["START"]:
             Logger.state(self, "Starting task")
+            self.navigate_to("entrance")
             self.subtask_manager.hri.say("I am ready to start my task.")
             self.current_state = ReceptionistTM.TASK_STATES["WAIT_FOR_GUEST"]
 
@@ -230,7 +231,7 @@ class ReceptionistTM(Node):
             status, interest = self.subtask_manager.hri.ask_and_confirm(
                 question="What is your main interest?",
                 query="interest",
-                use_hotwords=False
+                use_hotwords=True
             )
 
             # if self.current_attempts >= ATTEMPT_LIMIT:
