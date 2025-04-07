@@ -15,6 +15,8 @@ from frida_interfaces.srv import GetJoints
 from frida_constants.xarm_configurations import XARM_CONFIGURATIONS
 from rclpy.action import ActionClient
 from typing import List, Union
+from utils.decorators import mockable, service_check
+from utils.status import Status
 
 # from utils.decorators import service_check
 from xarm_msgs.srv import SetDigitalIO
@@ -106,8 +108,8 @@ class ManipulationTasks:
         except Exception as e:
             Logger.error(self.node, f"Error gripper: {str(e)}")
             return self.STATE["TERMINAL_ERROR"]
-
-    # @service_check("move_joint_positions", -1, TIMEOUT)
+    
+    @mockable(return_value=Status.EXECUTION_SUCCESS, delay=2)
     def move_joint_positions(
         self,
         joint_positions: Union[List[float], dict] = None,
@@ -166,6 +168,7 @@ class ManipulationTasks:
         return dict(zip(result.joint_names, result.joint_positions))
 
     # let the server pick the default values
+    @service_check("move_joints_action_client", -1, TIMEOUT)
     def _send_joint_goal(
         self,
         joint_names=[],
