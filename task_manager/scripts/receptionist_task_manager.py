@@ -130,6 +130,7 @@ class ReceptionistTM(Node):
             status, name = self.subtask_manager.hri.ask_and_confirm(
                 question="What is your name?",
                 query="name",
+                use_hotwords=False
             )
 
             if status == Status.EXECUTION_SUCCESS:
