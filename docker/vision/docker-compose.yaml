@@ -1,5 +1,5 @@
 services:
-  vision:
+  vision-dev:
     container_name: home2-vision-dev
     build:
       context: ../..
