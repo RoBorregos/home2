@@ -115,11 +115,13 @@ class ReceptionistTM(Node):
             self.subtask_manager.hri.say(
                 "I am ready to receive guests, please open the door.", wait=True
             )
+
+            self.subtask_manager.manipulation.move_joint_positions(
+                named_position="front_stare", velocity=0.5, degrees=True
+            )
+            
             result = self.subtask_manager.vision.detect_person(timeout=10)
             if result == Status.EXECUTION_SUCCESS:
-                self.subtask_manager.manipulation.move_joint_positions(
-                    named_position="front_stare", velocity=0.5, degrees=True
-                )
                 # self.subtask_manager.manipulation.follow_face(True)
                 self.subtask_manager.hri.say("Hello, I am FRIDA, your receptionist today.")
                 self.current_state = ReceptionistTM.TASK_STATES["GREETING"]
