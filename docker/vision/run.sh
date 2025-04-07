@@ -161,7 +161,7 @@ if [ "$MOONDREAM" = true ]; then
     echo "Running Moondream..."
     RUNNING_CONTAINER_NODE=$(docker ps -q -f name=moondream-node)
     RUNNING_CONTAINER_SERVER=$(docker ps -q -f name=moondream-server)
-    if [ -z "$RUNNING_CONTAINER"]; then
+    if [ -z "$RUNNING_CONTAINER_NODE"]; then
         docker compose -f moondream.yaml up -d --build
     fi
 fi
