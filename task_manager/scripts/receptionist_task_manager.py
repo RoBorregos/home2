@@ -114,12 +114,13 @@ class ReceptionistTM(Node):
 
         if self.current_state == ReceptionistTM.TASK_STATES["WAIT_FOR_GUEST"]:
             Logger.state(self, "Waiting for guest")
-            self.subtask_manager.hri.say(
-                "I am ready to receive guests, please open the door.", wait=True
-            )
 
             self.subtask_manager.manipulation.move_joint_positions(
                 named_position="front_stare", velocity=0.5, degrees=True
+            )
+
+            self.subtask_manager.hri.say(
+                "I am ready to receive guests, please open the door.", wait=True
             )
 
             result = self.subtask_manager.vision.detect_person(timeout=10)
@@ -253,12 +254,12 @@ class ReceptionistTM(Node):
                 self.get_guest().interest = "Nothing"
 
             Logger.info(self, f"Interest: {self.get_guest().interest}")
-            if self.confirm(self.get_guest().interest):
-                self.current_attempts = 0
-                self.subtask_manager.hri.say(
-                    f"Thank you for sharing your interest in {self.get_guest().interest}."
-                )
-                self.current_state = ReceptionistTM.TASK_STATES["NAVIGATE_TO_LEAVING_ROOM"]
+            # if self.confirm(self.get_guest().interest):
+            #     self.current_attempts = 0
+            self.subtask_manager.hri.say(
+                f"Thank you for sharing your interest in {self.get_guest().interest}."
+            )
+            self.current_state = ReceptionistTM.TASK_STATES["NAVIGATE_TO_LEAVING_ROOM"]
 
         if self.current_state == ReceptionistTM.TASK_STATES["NAVIGATE_TO_LEAVING_ROOM"]:
             Logger.state(self, "Navigating to leaving room")
