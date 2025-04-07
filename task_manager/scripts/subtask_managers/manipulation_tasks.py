@@ -118,8 +118,6 @@ class ManipulationTasks:
         degrees=False,  # set to true if joint_positions are in degrees
     ):
         # Print joint_positions
-        Logger.info("In move_joint_positions")
-        Logger.info(f"joint_positions: {joint_positions}")
         print("In move_joint_positions")
         """Set position of joints.
         If joint_positions is a dict, keys are treated as joint_names
