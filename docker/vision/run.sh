@@ -143,16 +143,27 @@ COLCON="colcon build --packages-up-to vision_general"
 SOURCE="source install/setup.bash"
 SETUP="$SOURCE_ROS && $COLCON && $SOURCE"
 RUN=""
+MOONDREAM=false
 
 case $TASK in
     "--receptionist")
         RUN="ros2 launch vision_general receptionist_launch.py"
+        MOONDREAM=true
         ;;
 
     *)
         RUN=""
         ;;
 esac
+
+# if moondream run dockercompose
+if [ "$MOONDREAM" = true ]; then
+    echo "Running Moondream..."
+    RUNNING_CONTAINER=$(docker ps -q -f name=moondream-node)
+    if [ -z "$RUNNING_CONTAINER" ]; then
+        docker compose -f moondream.yaml up -d --build
+    fi
+fi
 
 # check if TASK is not empty
 if [ -z "$TASK" ]; then
