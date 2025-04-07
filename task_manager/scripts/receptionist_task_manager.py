@@ -69,12 +69,14 @@ class ReceptionistTM(Node):
         """Get the current guest"""
         return self.guests[self.current_guest]
 
-    def navigate_to(self, location: str, sublocation: str = ""):
-        self.subtask_manager.hri.say(f"I will now guide you to the {location}. Please follow me.")
+    def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
+        """Navigate to the location"""
+        if say:
+            self.subtask_manager.hri.say(f"I will now guide you to the {location}. Please follow me.")
         # self.subtask_manager.manipulation.follow_face(False)
-        self.subtask_manager.manipulation.move_joint_positions(
-            named_position="front_stare", velocity=0.5, degrees=True
-        )
+            self.subtask_manager.manipulation.move_joint_positions(
+                named_position="front_stare", velocity=0.5, degrees=True
+            )
         future = self.subtask_manager.nav.move_to_location(location, sublocation)
         if "navigation" not in self.subtask_manager.get_mocked_areas():
             rclpy.spin_until_future_complete(self, future)
@@ -106,7 +108,7 @@ class ReceptionistTM(Node):
 
         if self.current_state == ReceptionistTM.TASK_STATES["START"]:
             Logger.state(self, "Starting task")
-            self.navigate_to("entrance")
+            self.navigate_to("entrance", say=False)
             self.subtask_manager.hri.say("I am ready to start my task.")
             self.current_state = ReceptionistTM.TASK_STATES["WAIT_FOR_GUEST"]
 
@@ -119,7 +121,7 @@ class ReceptionistTM(Node):
             self.subtask_manager.manipulation.move_joint_positions(
                 named_position="front_stare", velocity=0.5, degrees=True
             )
-            
+
             result = self.subtask_manager.vision.detect_person(timeout=10)
             if result == Status.EXECUTION_SUCCESS:
                 # self.subtask_manager.manipulation.follow_face(True)
