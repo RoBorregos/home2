@@ -7,6 +7,7 @@ from detectron2.config import get_cfg
 from detectron2.utils.visualizer import Visualizer
 from detectron2.data import MetadataCatalog
 sys.path.insert(0, 'Detic/third_party/CenterNet2/')
+sys.path.insert(0, 'Detic/')
 from centernet.config import add_centernet_config
 from detic.config import add_detic_config
 from detic.modeling.utils import reset_cls_test
