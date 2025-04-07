@@ -59,9 +59,9 @@ class DeticModel:
 
 
 detic = DeticModel(
-    config_path="configs/Detic_LCOCOI21k_CLIP_SwinB_896b32_4x_ft4x_max-size.yaml",
+    config_path="Detic/configs/Detic_LCOCOI21k_CLIP_SwinB_896b32_4x_ft4x_max-size.yaml",
     weights_path="Detic_LCOCOI21k_CLIP_SwinB_896b32_4x_ft4x_max-size.pth",
-    classifier_path="datasets/metadata/lvis_v1_clip_a+cname.npy",
+    classifier_path="Detic/datasets/metadata/lvis_v1_clip_a+cname.npy",
     metadata_key="lvis_v1_val",
 )
 image = detic.load_image("path/to/image.jpg")
