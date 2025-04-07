@@ -52,7 +52,7 @@ class ReceptionistTM(Node):
     def __init__(self):
         """Initialize the node"""
         super().__init__("receptionist_task_manager")
-        self.subtask_manager = SubtaskManager(self, task=Task.RECEPTIONIST, mock_areas=["navigation", "manipulation"])
+        self.subtask_manager = SubtaskManager(self, task=Task.RECEPTIONIST, mock_areas=["navigation"])
         self.current_state = ReceptionistTM.TASK_STATES[START]
         self.current_guest = 1
         self.seat_angles = [0]
@@ -230,6 +230,7 @@ class ReceptionistTM(Node):
             status, interest = self.subtask_manager.hri.ask_and_confirm(
                 question="What is your main interest?",
                 query="interest",
+                use_hotwords=False
             )
 
             # if self.current_attempts >= ATTEMPT_LIMIT:
