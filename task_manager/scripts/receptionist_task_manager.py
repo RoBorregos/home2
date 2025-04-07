@@ -55,7 +55,7 @@ class ReceptionistTM(Node):
         self.subtask_manager = SubtaskManager(self, task=Task.RECEPTIONIST, mock_areas=["navigation"])
         self.current_state = ReceptionistTM.TASK_STATES[START]
         self.current_guest = 1
-        self.seat_angles = [0]
+        self.seat_angles = [0, 90]
 
         self.guests = [Guest() for _ in range(3)]
         self.guests[0] = Guest("John", "Beer", "Football")
@@ -95,16 +95,19 @@ class ReceptionistTM(Node):
             name = statement
         return name
 
-    # TODO (@alecoeto): Confirm drink and interest
-    # TODO (@alecoeto): use constants in moondream node
-    # TODO (@alecoeto): send robot to entrance as first step
-    # TODO (@alecoeto): publish face recognition for rqt
-    # TODO (@alecoeto): test beverage moondream
     # TODO (@alecoeto): detect guest
     # TODO (@joce): improve prompt for person description
 
     def run(self):
         """State machine"""
+
+        if self.current_state == ReceptionistTM.TASK_STATES["DEBUG"]:
+            Logger.state(self, "Debugging task")
+            self.subtask_manager.hri.say("Debugging task.")
+            self.subtask_manager.manipulation.move_joint_positions(
+                named_position="front_stare", velocity=0.5, degrees=True
+            )
+
 
         if self.current_state == ReceptionistTM.TASK_STATES["START"]:
             Logger.state(self, "Starting task")
