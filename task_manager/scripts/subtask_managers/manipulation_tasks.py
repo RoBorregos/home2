@@ -120,6 +120,7 @@ class ManipulationTasks:
         # Print joint_positions
         Logger.info("In move_joint_positions")
         Logger.info(f"joint_positions: {joint_positions}")
+        print("In move_joint_positions")
         """Set position of joints.
         If joint_positions is a dict, keys are treated as joint_names
         and values as joint positions.
@@ -130,25 +131,32 @@ class ManipulationTasks:
 
         # Determine format of joint_positions and apply degree conversion if needed.
         if isinstance(joint_positions, dict):
+            print("joint_positions is a dict")
             joint_names = list(joint_positions.keys())
             joint_vals = list(joint_positions.values())
             if degrees:
                 joint_vals = [x * DEG_TO_RAD for x in joint_vals]
         elif isinstance(joint_positions, list):
+            print("joint_positions is a list")
             joint_names = []
             joint_vals = joint_positions.copy()
             if degrees:
                 joint_vals = [x * DEG_TO_RAD for x in joint_vals]
         else:
+            print("joint_positions is not a list or dict")
             Logger.error(self.node, "joint_positions must be a list or a dict")
             return self.STATE["EXECUTION_ERROR"]
 
         future = self._send_joint_goal(
-            joint_names=joint_names, joint_positions=joint_vals, velocity=velocity
+            joint_names=joint_names,
+            joint_positions=joint_vals,
+            velocity=velocity,
         )
+        print("future: ", future)
 
         # Wait for goal to be accepted.
         if not self._wait_for_future(future):
+            print("goal not accepted")
             return self.STATE["EXECUTION_ERROR"]
         return self.STATE["EXECUTION_SUCCESS"]
 
