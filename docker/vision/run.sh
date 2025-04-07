@@ -159,8 +159,9 @@ esac
 # if moondream run dockercompose
 if [ "$MOONDREAM" = true ]; then
     echo "Running Moondream..."
-    RUNNING_CONTAINER=$(docker ps -q -f name=moondream-node)
-    if [ -z "$RUNNING_CONTAINER" ]; then
+    RUNNING_CONTAINER_NODE=$(docker ps -q -f name=moondream-node)
+    RUNNING_CONTAINER_SERVER=$(docker ps -q -f name=moondream-server)
+    if [ -z "$RUNNING_CONTAINER"]; then
         docker compose -f moondream.yaml up -d --build
     fi
 fi
