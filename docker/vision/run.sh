@@ -156,7 +156,8 @@ esac
 
 # check if TASK is not empty
 if [ -z "$TASK" ]; then
-    docker compose exec $SERVICE_NAME /bin/bash
+    echo "COMMAND= $SETUP && $RUN" >> .env
+    # docker compose exec $SERVICE_NAME /bin/bash
 else
     if [ -z "$detached" ]; then
         docker compose exec $SERVICE_NAME bash -c "$SETUP && $RUN"

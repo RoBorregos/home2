@@ -127,22 +127,32 @@ class ReceptionistTM(Node):
         if self.current_state == ReceptionistTM.TASK_STATES["GREETING"]:
             Logger.state(self, "Greeting guest")
 
-            if self.current_attempts >= ATTEMPT_LIMIT:
-                self.get_guest().name = f"Guest {self.current_guest}"
-            else:
-                self.subtask_manager.hri.say("What is your name?", wait=True)
-                self.get_guest().name = self.hear_word("name")
-                Logger.info(self, f"Heard name: {self.get_guest().name}")
-                self.current_attempts += 1
+            status, name = self.subtask_manager.hri.ask_and_confirm(
+                question="What is your name?",
+                query="name",
+            )
 
-            if self.get_guest().name is not None:
-                Logger.info(self, f"Guest name: {self.get_guest().name}")
-                if self.get_guest().name == f"Guest {self.current_guest}" or self.confirm(
-                    self.get_guest().name
-                ):
-                    self.subtask_manager.hri.say(f"Nice to meet you, {self.get_guest().name}.")
-                    self.current_attempts = 0
-                    self.current_state = ReceptionistTM.TASK_STATES["SAVE_FACE"]
+            if status == Status.EXECUTION_SUCCESS:
+                self.get_guest().name = name
+            else:
+                self.get_guest().name = f"Guest {self.current_guest}"
+
+            Logger.info(self, f"Guest name: {self.get_guest().name}")
+            # if self.current_attempts >= ATTEMPT_LIMIT:
+            #     self.get_guest().name = f"Guest {self.current_guest}"
+            # else:
+            #     self.subtask_manager.hri.say("What is your name?", wait=True)
+            #     self.get_guest().name = self.hear_word("name")
+            #     Logger.info(self, f"Heard name: {self.get_guest().name}")
+            #     self.current_attempts += 1
+
+            # if self.get_guest().name is not None:
+                # if self.get_guest().name == f"Guest {self.current_guest}" or self.confirm(
+                #     self.get_guest().name
+                # ):
+            self.subtask_manager.hri.say(f"Nice to meet you, {self.get_guest().name}.")
+            self.current_attempts = 0
+            self.current_state = ReceptionistTM.TASK_STATES["SAVE_FACE"]
 
         if self.current_state == ReceptionistTM.TASK_STATES["SAVE_FACE"]:
             Logger.state(self, "Saving face")
@@ -171,21 +181,30 @@ class ReceptionistTM(Node):
         if self.current_state == ReceptionistTM.TASK_STATES["ASK_FOR_DRINK"]:
             Logger.state(self, "Asking for drink")
             # self.subtask_manager.manipulation.follow_face(True)
-            if self.current_attempts >= ATTEMPT_LIMIT:
-                self.get_guest().drink = "Water"
-            else:
-                self.subtask_manager.hri.say("What is your favorite drink?")
-                self.get_guest().drink = self.hear_word("drink")
-                self.current_attempts += 1
 
-            if self.get_guest().drink is not None:
-                Logger.info(self, f"Guest drink: {self.get_guest().drink}")
-                if self.confirm(self.get_guest().drink):
-                    self.current_attempts = 0
-                    self.subtask_manager.hri.say(
-                        f"Great! I will check if we have {self.get_guest().drink}."
-                    )
-                    self.current_state = ReceptionistTM.TASK_STATES["DRINK_AVAILABLE"]
+            status, drink = self.subtask_manager.hri.ask_and_confirm(
+                question="What is your favorite drink?",
+                query="drink",
+            )
+
+            # if self.current_attempts >= ATTEMPT_LIMIT:
+            #     self.get_guest().drink = "Water"
+            # else:
+            #     self.subtask_manager.hri.say("What is your favorite drink?")
+            #     self.get_guest().drink = self.hear_word("drink")
+            #     self.current_attempts += 1
+
+            if status == Status.EXECUTION_SUCCESS:
+                self.get_guest().drink = drink
+            else:
+                self.get_guest().drink = "Water"
+            
+            Logger.info(self, f"Guest drink: {self.get_guest().drink}")
+        
+            self.subtask_manager.hri.say(
+                f"Great! I will check if we have {self.get_guest().drink}."
+            )
+            self.current_state = ReceptionistTM.TASK_STATES["DRINK_AVAILABLE"]
 
         if self.current_state == ReceptionistTM.TASK_STATES["DRINK_AVAILABLE"]:
             Logger.state(self, "Checking drink availability")
@@ -209,22 +228,32 @@ class ReceptionistTM(Node):
         if self.current_state == ReceptionistTM.TASK_STATES["ASK_FOR_INTEREST"]:
             Logger.state(self, "Asking for interest")
 
-            if self.current_attempts >= ATTEMPT_LIMIT:
-                self.get_guest().interest = "Nothing"
-            else:
-                # self.subtask_manager.manipulation.follow_face(True)
-                self.subtask_manager.hri.say("What is your main interest?")
-                self.get_guest().interest = self.hear_word("interest")
-                self.current_attempts += 1
+            status, interest = self.subtask_manager.hri.ask_and_confirm(
+                question="What is your main interest?",
+                query="interest",
+            )
 
-            if self.get_guest().interest is not None:
-                Logger.info(self, f"Interest: {self.get_guest().interest}")
-                if self.confirm(self.get_guest().interest):
-                    self.current_attempts = 0
-                    self.subtask_manager.hri.say(
-                        f"Thank you for sharing your interest in {self.get_guest().interest}."
-                    )
-                    self.current_state = ReceptionistTM.TASK_STATES["NAVIGATE_TO_LEAVING_ROOM"]
+            # if self.current_attempts >= ATTEMPT_LIMIT:
+            #     self.get_guest().interest = "Nothing"
+            # else:
+            #     # self.subtask_manager.manipulation.follow_face(True)
+            #     self.subtask_manager.hri.say("What is your main interest?")
+            #     self.get_guest().interest = self.hear_word("interest")
+            #     self.current_attempts += 1
+
+            # if self.get_guest().interest is not None:
+            if status == Status.EXECUTION_SUCCESS:
+                self.get_guest().interest = interest
+            else:
+                self.get_guest().interest = "Nothing"
+                
+            Logger.info(self, f"Interest: {self.get_guest().interest}")
+            if self.confirm(self.get_guest().interest):
+                self.current_attempts = 0
+                self.subtask_manager.hri.say(
+                    f"Thank you for sharing your interest in {self.get_guest().interest}."
+                )
+                self.current_state = ReceptionistTM.TASK_STATES["NAVIGATE_TO_LEAVING_ROOM"]
 
         if self.current_state == ReceptionistTM.TASK_STATES["NAVIGATE_TO_LEAVING_ROOM"]:
             Logger.state(self, "Navigating to leaving room")
