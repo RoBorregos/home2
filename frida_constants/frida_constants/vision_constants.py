@@ -54,3 +54,4 @@ IMAGE_TOPIC = "/vision/gpsr/img_detection"
 
 QUERY_TOPIC = "/vision/query"
 PERSON_POSTURE_TOPIC = "/vision/person_posture"
+CROP_QUERY = "/vision/crop_query"

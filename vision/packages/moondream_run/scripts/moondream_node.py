@@ -19,13 +19,14 @@ from sensor_msgs.msg import Image
 from enum import Enum
 
 from frida_interfaces.srv import BeverageLocation
-from frida_interfaces.srv import PersonPosture, Query
+from frida_interfaces.srv import PersonPosture, Query, CropQuery
 
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
     PERSON_POSTURE_TOPIC,
     BEVERAGE_TOPIC,
     QUERY_TOPIC,
+    CROP_QUERY,
 )
 
 from ament_index_python.packages import get_package_share_directory
@@ -73,6 +74,10 @@ class MoondreamNode(Node):
             Query, QUERY_TOPIC, self.query_callback
         )
 
+        self.crop_query_service = self.create_service(
+            CropQuery, CROP_QUERY, self.crop_query_callback
+        )
+
         self.yolo_model = YOLO(YOLO_LOCATION)
         # self.moondream_model = MoonDreamModel()
 
@@ -95,11 +100,16 @@ class MoondreamNode(Node):
         self.get_logger().info("Executing service Query")
         if self.image is None:
             response.result= "No image received yet."
+            response.success = False
             self.get_logger().warn("No image received yet.")
             return response
         
         if request.person:
-            self.image = self.detect_and_crop_person()
+            crop = self.detect_and_crop_person()
+            if crop is not None:
+                self.image = crop
+            else:
+                self.get_logger().warn("No person detected. Describing general image.")
         
         _, image_bytes = cv2.imencode(".jpg", self.image)
         image_bytes = image_bytes.tobytes()
@@ -119,6 +129,45 @@ class MoondreamNode(Node):
             self.get_logger().error(f"Error querying image: {e}")
             response.result = ""
             response.success = False
+        return response
+    
+    def crop_query_callback(self, request, response):
+        """Callback to describe the bag."""
+        self.get_logger().info("Executing service Bag Description")
+        if self.image is None:
+            response.description = "No image received yet."
+            response.success = False
+            self.get_logger().warn("No image received yet.")
+            return response
+
+        xmin = request.xmin
+        ymin = request.ymin
+        xmax = request.xmax
+        ymax = request.ymax
+        if xmin < 0 or ymin < 0 or xmax > self.image.shape[1] or ymax > self.image.shape[0]:
+            self.image = self.image[int(ymin):int(ymax), int(xmin):int(xmax)]
+
+        _, image_bytes = cv2.imencode(".jpg", self.image)
+        image_bytes = image_bytes.tobytes()
+
+        try:
+            encoded = self.stub.EncodeImage(
+                moondream_proto_pb2.ImageRequest(image_data=image_bytes)
+            )
+            bag_description = self.stub.Query(
+                moondream_proto_pb2.QueryRequest(
+                    encoded_image=encoded.encoded_image, query=request.query
+                )
+            )
+
+            response.description = bag_description.answer
+            response.success = True
+
+        except Exception as e:
+            self.get_logger().error(f"Error describing bag: {e}")
+            response.description = ""
+            response.success = False
+
         return response
 
     def beverage_location_callback(self, request, response):
