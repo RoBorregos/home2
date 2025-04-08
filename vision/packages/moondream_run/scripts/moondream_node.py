@@ -99,18 +99,18 @@ class MoondreamNode(Node):
         """Callback to query the image."""
         self.get_logger().info("Executing service Query")
         if self.image is None:
-            response.result= "No image received yet."
+            response.result = "No image received yet."
             response.success = False
             self.get_logger().warn("No image received yet.")
             return response
-        
+
         if request.person:
             crop = self.detect_and_crop_person()
             if crop is not None:
                 self.image = crop
             else:
                 self.get_logger().warn("No person detected. Describing general image.")
-        
+
         _, image_bytes = cv2.imencode(".jpg", self.image)
         image_bytes = image_bytes.tobytes()
 
@@ -130,7 +130,7 @@ class MoondreamNode(Node):
             response.result = ""
             response.success = False
         return response
-    
+
     def crop_query_callback(self, request, response):
         """Callback to describe the bag."""
         self.get_logger().info("Executing service Bag Description")
@@ -144,8 +144,13 @@ class MoondreamNode(Node):
         ymin = request.ymin
         xmax = request.xmax
         ymax = request.ymax
-        if xmin < 0 or ymin < 0 or xmax > self.image.shape[1] or ymax > self.image.shape[0]:
-            self.image = self.image[int(ymin):int(ymax), int(xmin):int(xmax)]
+        if (
+            xmin < 0
+            or ymin < 0
+            or xmax > self.image.shape[1]
+            or ymax > self.image.shape[0]
+        ):
+            self.image = self.image[int(ymin) : int(ymax), int(xmin) : int(xmax)]
 
         _, image_bytes = cv2.imencode(".jpg", self.image)
         image_bytes = image_bytes.tobytes()
