@@ -106,6 +106,6 @@ if __name__ == "__main__":
     image.save(buffer, format="JPEG")
     image_bytes = buffer.getvalue()
     encoded_image = model.encode_image(image_bytes)
-    test_query = "What is the beverage in the image?"
+    test_query = "Describe the person"
     result = model.query(encoded_image, test_query)
     print(f"Query result: {result}")
