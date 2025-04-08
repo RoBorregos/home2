@@ -98,6 +98,10 @@ if __name__ == "__main__":
         model_name=args.model_name, revision=args.revision, device_map=args.device_map
     )
     image = image = Image.open("test_img.png")
+
+    if image.mode == "RGBA":
+        image = image.convert("RGB")
+
     buffer = io.BytesIO()
     image.save(buffer, format="JPEG")
     image_bytes = buffer.getvalue()
