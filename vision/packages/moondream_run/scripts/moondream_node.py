@@ -125,10 +125,14 @@ class MoondreamNode(Node):
             )
             response.result = query_response.answer
             response.success = True
+            self.success(
+                f"Query executed successfully. Result: {response.result}"
+            )
         except Exception as e:
             self.get_logger().error(f"Error querying image: {e}")
             response.result = ""
             response.success = False
+
         return response
 
     def crop_query_callback(self, request, response):
@@ -167,6 +171,9 @@ class MoondreamNode(Node):
 
             response.result = bag_description.answer
             response.success = True
+            self.success(
+                f"Query executed successfully. Result: {response.result}"
+            )
 
         except Exception as e:
             self.get_logger().error(f"Error describing bag: {e}")
@@ -200,6 +207,9 @@ class MoondreamNode(Node):
 
             response.location = beverage_position.position
             response.success = True
+            self.success(
+                f"Beverage location found at: {response.location}"
+            )
 
         except Exception as e:
             self.get_logger().error(f"Error locating beverage: {e}")
@@ -240,6 +250,10 @@ class MoondreamNode(Node):
             encoded_image, query, stream=False
         )
         return response
+
+    def success(self, message):
+        """Log a success message."""
+        self.get_logger().info(f"\033[92mSUCCESS:\033[0m {message}")
 
     def detect_and_crop_person(self):
         """Check if there is a person in the frame, crop the image to the person with the largest area, and return the cropped frame."""
