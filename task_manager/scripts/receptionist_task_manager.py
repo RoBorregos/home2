@@ -12,7 +12,7 @@ from utils.subtask_manager import SubtaskManager, Task
 from utils.status import Status
 
 ATTEMPT_LIMIT = 3
-START = "DEBUG"
+START = "START"
 
 
 class Guest:
