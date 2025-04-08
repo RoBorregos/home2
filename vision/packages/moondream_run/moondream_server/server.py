@@ -27,10 +27,10 @@ class MoonDreamServicer(moondream_proto_pb2_grpc.MoonDreamServiceServicer):
         position = self.model.find_beverage(request.encoded_image, request.subject)
         return moondream_proto_pb2.BeveragePositionResponse(position=position)
 
-    def GeneratePersonDescription(self, request, context):
-        print("Generating description...")
+    def Query(self, request, context):
+        print("Querying image...")
         answer = self.model.query(request.encoded_image, request.query)
-        return moondream_proto_pb2.DescriptionResponse(answer=answer)
+        return moondream_proto_pb2.QueryResponse(answer=answer)
 
 
 # Run the gRPC server
