@@ -125,6 +125,7 @@ class MoondreamNode(Node):
         if self.image is None:
             response.location = "No image received yet."
             response.success = False
+            self.get_logger().warn("No image received yet.")
             return response
 
         _, image_bytes = cv2.imencode(".jpg", self.image)
