@@ -44,6 +44,7 @@ else
 fi
 echo "Detected environment: $ENV_TYPE"
 > .env
+
 # Write environment variables to .env file for Docker Compose and build base images
 case $ENV_TYPE in
   "cpu")
@@ -101,17 +102,6 @@ esac
 export LOCAL_USER_ID=$(id -u)
 export LOCAL_GROUP_ID=$(id -g)
 
-# Remove current install, build and log directories if they exist 
-# if [ -d "../../install" ] || [ -d "../../log" ] || [ -d "../../build" ]; then
-#   read -p "Do you want to delete 'install', 'log', and 'build' directories (Recommended for first build)? (y/n): " confirmation
-#   if [[ "$confirmation" == "y" ]]; then
-#     rm -rf ../../install/ ../../log/ ../../build/
-#     echo "Directories deleted."
-#   else
-#     echo "Operation cancelled."
-#   fi
-# fi
-
 # Setup camera permissions
 # if [ -e /dev/video0 ]; then
 #     echo "Setting permissions for /dev/video0..."
@@ -120,31 +110,13 @@ export LOCAL_GROUP_ID=$(id -g)
 
 #_________________________RUN_________________________
 
-SERVICE_NAME="vision"  # Change this to your service name in docker-compose.yml
 
-# Check if the container exists
-EXISTING_CONTAINER=$(docker ps -a -q -f name=$SERVICE_NAME)
-if [ -z "$EXISTING_CONTAINER" ]; then
-    echo "No container with the name $SERVICE_NAME exists. Building and starting the container now..."
-    docker compose up --build -d
-fi
-
-# Check if the container is running
-RUNNING_CONTAINER=$(docker ps -q -f name=$SERVICE_NAME)
-
-# If the container is not running, start it
-if [ -z "$RUNNING_CONTAINER" ]; then
-    echo "Container $SERVICE_NAME is not running. Starting it now..."
-    docker compose up --build -d
-fi
-
-# Commands to run inside the container
-SOURCE_ROS="source /opt/ros/humble/setup.bash"
-COLCON="colcon build --packages-up-to "
-SOURCE="source install/setup.bash"
-SETUP="$SOURCE_ROS && $COLCON vision_general && $SOURCE"
-RUN=""
+# Check which commands and services to run
 MOONDREAM=false
+VISION=true
+SETUP="colcon build --symlink-install "
+PROFILES=()
+SERVICES=()
 
 case $TASK in
     "--moondream")
@@ -152,32 +124,59 @@ case $TASK in
         MOONDREAM=true
         ;;
     "--receptionist")
+        PACKAGES="vision_general"
         RUN="ros2 launch vision_general receptionist_launch.py"
-        MOONDREAM=true
+        PROFILES=("vision" "moondream")
+        SERVICES=("vision" "moondream-node" "moondream-server")
         ;;
-
+    "--moondream")
+        PROFILES=("moondream")
+        SERVICES=("moondream-node" "moondream-server")
+        ;;
     *)
-        RUN=""
+        PROFILES=("vision")
+        SERVICES=("vision")
         ;;
 esac
 
-
-if [ "$MOONDREAM" = true ]; then
-    echo "Running Moondream..."
-    RUNNING_CONTAINER=$(docker ps -q -f name=moondream-node)
-    if [ -z "$RUNNING_CONTAINER" ]; then
-        docker compose -f moondream.yaml up -d --build
-    fi
+# Add command to env if TASK is not empty, otherwise it will run bash
+if [ -n "$TASK" ]; then
+    COMMAND="source /opt/ros/humble/setup.bash && colcon build --packages-up-to $PACKAGES && source install/setup.bash && $RUN"
+    echo "COMMAND= $COMMAND " >> .env
 fi
 
-# check if TASK is not empty
+# Add services to compose profiles
+COMPOSE_PROFILES=$(IFS=, ; echo "${PROFILES[*]}")
+echo "COMPOSE_PROFILES=$COMPOSE_PROFILES" >> .env
+
+NEEDS_BUILD=false
+
+# Check if any enabled service is missing a container
+for SERVICE in "${SERVICES[@]}"; do
+    CONTAINER=$(docker ps -a --filter "name=${SERVICE}" --format "{{.ID}}")
+    if [ -z "$CONTAINER" ]; then
+        echo "No container found for service '$SERVICE'."
+        NEEDS_BUILD=true
+        break 
+    fi
+done
+
+# If no task set, enter with bash
 if [ -z "$TASK" ]; then
-    docker compose exec $SERVICE_NAME /bin/bash
-else
-    if [ -z "$detached" ]; then
-        docker compose exec $SERVICE_NAME bash -c "$SETUP && $RUN"
+    if [ "$NEEDS_BUILD" = true ]; then
+        docker compose up -d
     else
-        echo "Running in detached mode..."
-        docker compose exec -d $SERVICE_NAME bash -c "$SETUP && $RUN"
+        echo "Building vision"
+        docker compose up --build -d
+    fi
+    docker compose exec vision /bin/bash
+
+else
+    if [ "$NEEDS_BUILD" = true ]; then
+        echo "Building and starting containers..."
+        docker compose up --build -d
+    else
+        echo "All containers exist. Starting without build..."
+        docker compose up
     fi
 fi
