@@ -94,7 +94,7 @@ class MoondreamNode(Node):
         """Callback to query the image."""
         self.get_logger().info("Executing service Query")
         if self.image is None:
-            response.answer = "No image received yet."
+            response.result= "No image received yet."
             self.get_logger().warn("No image received yet.")
             return response
         
@@ -113,11 +113,11 @@ class MoondreamNode(Node):
                     encoded_image=encoded.encoded_image, query=request.query
                 )
             )
-            response.answer = query_response.answer
+            response.result = query_response.answer
             response.success = True
         except Exception as e:
             self.get_logger().error(f"Error querying image: {e}")
-            response.answer = ""
+            response.result = ""
             response.success = False
         return response
 
