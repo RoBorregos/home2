@@ -180,4 +180,3 @@ else
         docker compose up
     fi
 fi
-
