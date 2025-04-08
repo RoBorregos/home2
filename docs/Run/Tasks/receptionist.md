@@ -11,6 +11,41 @@ Run containers. From `docker/hri` run:
 ```bash
 docker compose up
 ```
+## Navigation
+
+## Running AMCL Localization
+
+The AMCL launch includes the following components:
+- Nav Basics launch (**Do not** launch `nav_basics` in another terminal if AMCL launch is running)
+- Nav2 Map Server
+- Nav2 AMCL
+- Nav2 Lifecycle Manager
+
+### Arguments
+- `publish_tf` (default: `true`): Active URDF publish state.
+  - **WARNING:** Set to `false` if MoveIt config is active.
+- `map` (default: Path for lab map): Provide an **absolute path** to import the map.
+
+### Run Command
+```bash
+ros2 launch nav_main nav_amcl.launch.py
+```
+
+---
+## Running Navigation Node
+
+> **IMPORTANT:** You must run a SLAM before. Examples include `nav_amcl` or `rtabmap` (in development).
+
+The Navigation Node includes the following components:
+- Nav2 Server
+
+### Arguments
+- `Custom yaml config`
+
+### Run Command
+```bash
+ros2 launch nav_main navigation_launch.py
+```
 
 ## Manipulation
 Run container. From the root directory (home2), run:
