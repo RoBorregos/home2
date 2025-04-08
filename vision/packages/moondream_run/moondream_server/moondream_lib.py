@@ -5,11 +5,13 @@ import pickle
 from enum import Enum
 import argparse
 
+
 class Position(Enum):
     LEFT = "left"
     CENTER = "center"
     RIGHT = "right"
     NOT_FOUND = "not found"
+
 
 class MoonDreamModel:
     def __init__(
@@ -59,7 +61,8 @@ class MoonDreamModel:
         encoded_image = pickle.loads(encoded_image_data)
         answer = self.model.query(encoded_image, query)["answer"]
         return answer
-    
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="MoonDream Server")
     parser.add_argument(
@@ -91,8 +94,10 @@ if __name__ == "__main__":
     elif args.device_map == "cuda":
         args.device_map = {"": "cuda"}
 
-    model = MoonDreamModel(model_name=args.model_name, revision=args.revision, device_map=args.device_map)
-    image = image = Image.open("path/to/your/image.jpg")
+    model = MoonDreamModel(
+        model_name=args.model_name, revision=args.revision, device_map=args.device_map
+    )
+    image = image = Image.open("test_img.png")
     encoded_image = model.encode_image(image)
     test_query = "What is the beverage in the image?"
     result = model.query(encoded_image, test_query)
