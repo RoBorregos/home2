@@ -15,7 +15,7 @@ export default function RosMessagesDisplay() {
   const messagesStartRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const socket = new WebSocket('ws://192.168.31.10:8000/');
+    const socket = new WebSocket('ws://192.168.31.10:8001/');
 
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);

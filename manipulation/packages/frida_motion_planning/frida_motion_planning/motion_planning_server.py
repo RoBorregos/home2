@@ -232,6 +232,7 @@ class MotionPlanningServer(Node):
         for joint_name in joint_dict:
             response.joint_positions.append(float(joint_dict[joint_name]))
             response.joint_names.append(joint_name)
+        print(f"Returning joint positions: {response.joint_positions}")
         return response
 
     def add_collision_objects_callback(self, request, response):
