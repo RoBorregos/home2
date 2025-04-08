@@ -11,6 +11,7 @@ import pickle
 from enum import Enum
 import argparse
 
+
 class Position(Enum):
     LEFT = "left"
     CENTER = "center"
