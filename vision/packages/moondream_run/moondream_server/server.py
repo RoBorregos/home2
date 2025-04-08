@@ -10,64 +10,13 @@ from transformers import AutoModelForCausalLM
 import pickle
 from enum import Enum
 import argparse
-
+from moondream_lib import MoonDreamModel
 
 class Position(Enum):
     LEFT = "left"
     CENTER = "center"
     RIGHT = "right"
     NOT_FOUND = "not found"
-
-
-class MoonDreamModel:
-    def __init__(
-        self,
-        model_name="vikhyatk/moondream2",
-        revision="2025-01-09",
-        device_map={"": 0},
-        **kwargs,
-    ):
-        self.model = AutoModelForCausalLM.from_pretrained(
-            model_name,
-            revision=revision,
-            trust_remote_code=True,
-            device_map=device_map,
-            **kwargs,
-        )
-
-    def encode_image(self, image_data):
-        image = Image.open(io.BytesIO(image_data))
-
-        with io.BytesIO() as img_io:
-            image.save(img_io, format="JPEG", quality=90)
-            img_bytes = img_io.getvalue()
-
-        encoded = Image.open(io.BytesIO(img_bytes))
-        # encoded = self.model.encode_image(Image.open(io.BytesIO(img_bytes))) # dont remove this in case of interoperability
-        return pickle.dumps(encoded)
-
-    def find_beverage(self, encoded_image_data, subject):
-        encoded_image = pickle.loads(encoded_image_data)
-        detect_result = self.model.detect(encoded_image, subject)
-
-        if not detect_result["objects"]:
-            return Position.NOT_FOUND.value
-        else:
-            for obj in detect_result["objects"]:
-                x_center = (obj["x_min"] + obj["x_max"]) / 2
-                if x_center < 1 / 3:
-                    return Position.LEFT.value
-                elif x_center > 2 / 3:
-                    return Position.RIGHT.value
-                else:
-                    return Position.CENTER.value
-            return Position.NOT_FOUND.value
-
-    def generate_description(self, encoded_image_data, query):
-        encoded_image = pickle.loads(encoded_image_data)
-        answer = self.model.query(encoded_image, query)["answer"]
-        return answer
-
 
 class MoonDreamServicer(moondream_proto_pb2_grpc.MoonDreamServiceServicer):
     def __init__(self, model):
@@ -84,7 +33,7 @@ class MoonDreamServicer(moondream_proto_pb2_grpc.MoonDreamServiceServicer):
 
     def GeneratePersonDescription(self, request, context):
         print("Generating description...")
-        answer = self.model.generate_description(request.encoded_image, request.query)
+        answer = self.model.query(request.encoded_image, request.query)
         return moondream_proto_pb2.DescriptionResponse(answer=answer)
 
 
