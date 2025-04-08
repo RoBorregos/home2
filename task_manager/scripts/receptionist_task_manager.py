@@ -13,7 +13,7 @@ from utils.status import Status
 from frida_constants.xarm_configurations import XARM_CONFIGURATIONS
 
 ATTEMPT_LIMIT = 3
-START = "DEBUG"
+START = "START"
 
 
 class Guest:
