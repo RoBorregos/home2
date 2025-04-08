@@ -13,7 +13,7 @@ from utils.status import Status
 from frida_constants.xarm_configurations import XARM_CONFIGURATIONS
 
 ATTEMPT_LIMIT = 3
-START = "START"
+START = "DEBUG"
 
 
 class Guest:
@@ -112,6 +112,10 @@ class ReceptionistTM(Node):
             self.subtask_manager.hri.say("Debugging task.")
             self.subtask_manager.manipulation.move_joint_positions(
                 named_position="front_stare", velocity=0.5, degrees=True
+            )
+
+            self.subtask_manager.manipulation.move_joint_positions(
+                named_position="table_stare", velocity=0.5, degrees=True
             )
 
         if self.current_state == ReceptionistTM.TASK_STATES["START"]:
@@ -280,6 +284,7 @@ class ReceptionistTM(Node):
             self.subtask_manager.manipulation.move_joint_positions(
                 named_position="front_stare", velocity=0.5, degrees=True
             )
+            print("Finding seat")
             for seat_angle in self.seat_angles:
                 joint_positions = self.subtask_manager.manipulation.get_joint_positions(
                     degrees=True
