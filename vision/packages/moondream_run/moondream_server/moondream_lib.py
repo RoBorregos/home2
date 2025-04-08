@@ -98,7 +98,10 @@ if __name__ == "__main__":
         model_name=args.model_name, revision=args.revision, device_map=args.device_map
     )
     image = image = Image.open("test_img.png")
-    encoded_image = model.encode_image(image)
+    buffer = io.BytesIO()
+    image.save(buffer, format="JPEG")
+    image_bytes = buffer.getvalue()
+    encoded_image = model.encode_image(image_bytes)
     test_query = "What is the beverage in the image?"
     result = model.query(encoded_image, test_query)
     print(f"Query result: {result}")
