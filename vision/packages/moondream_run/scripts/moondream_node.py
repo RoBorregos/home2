@@ -135,7 +135,7 @@ class MoondreamNode(Node):
         """Callback to describe the bag."""
         self.get_logger().info("Executing service Bag Description")
         if self.image is None:
-            response.description = "No image received yet."
+            response.result = "No image received yet."
             response.success = False
             self.get_logger().warn("No image received yet.")
             return response
@@ -160,7 +160,7 @@ class MoondreamNode(Node):
                 )
             )
 
-            response.description = bag_description.answer
+            response.result = bag_description.answer
             response.success = True
 
         except Exception as e:
