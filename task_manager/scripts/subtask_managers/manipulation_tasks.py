@@ -108,7 +108,7 @@ class ManipulationTasks:
         except Exception as e:
             Logger.error(self.node, f"Error gripper: {str(e)}")
             return self.STATE["TERMINAL_ERROR"]
-    
+
     @mockable(return_value=Status.EXECUTION_SUCCESS, delay=2)
     def move_joint_positions(
         self,
