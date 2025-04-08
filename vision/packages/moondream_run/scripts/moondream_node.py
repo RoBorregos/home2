@@ -55,6 +55,7 @@ class MoondreamNode(Node):
     def __init__(self):
         super().__init__("receptionist_commands")
         self.bridge = CvBridge()
+        self.image = None
 
         self.image_subscriber = self.create_subscription(
             Image, CAMERA_TOPIC, self.image_callback, 10
