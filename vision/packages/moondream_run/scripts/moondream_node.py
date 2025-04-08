@@ -95,9 +95,11 @@ class MoondreamNode(Node):
         if self.image is None:
             response.success = False
             response.description = "No image received"
+            self.get_logger().warn("No image received yet.")
             return response
 
-        _, image_bytes = cv2.imencode(".jpg", self.image)
+        cropped_frame = self.detect_and_crop_person()
+        _, image_bytes = cv2.imencode(".jpg", cropped_frame)
         image_bytes = image_bytes.tobytes()
 
         try:
