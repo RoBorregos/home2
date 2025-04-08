@@ -110,21 +110,21 @@ class ReceptionistTM(Node):
         if self.current_state == ReceptionistTM.TASK_STATES["DEBUG"]:
             Logger.state(self, "Debugging task")
             self.subtask_manager.hri.say("Debugging task.")
-            # self.subtask_manager.manipulation.move_joint_positions(
-            #     named_position="front_stare", velocity=0.5, degrees=True
-            # )
-
-            # self.subtask_manager.manipulation.move_joint_positions(
-            #     named_position="table_stare", velocity=0.5, degrees=True
-            # )
-
-            joint_positions = self.subtask_manager.manipulation.get_joint_positions(
-                    degrees=True
-            )
-            joint_positions["joint1"] = joint_positions["joint1"] - 50
             self.subtask_manager.manipulation.move_joint_positions(
-                joint_positions=joint_positions, velocity=0.5, degrees=True
+                named_position="front_stare", velocity=0.5, degrees=True
             )
+
+            self.subtask_manager.manipulation.move_joint_positions(
+                named_position="table_stare", velocity=0.5, degrees=True
+            )
+
+            # joint_positions = self.subtask_manager.manipulation.get_joint_positions(
+            #         degrees=True
+            # )
+            # joint_positions["joint1"] = joint_positions["joint1"] - 50
+            # self.subtask_manager.manipulation.move_joint_positions(
+            #     joint_positions=joint_positions, velocity=0.5, degrees=True
+            # )
             self.current_state = ReceptionistTM.TASK_STATES["END"]
 
         if self.current_state == ReceptionistTM.TASK_STATES["START"]:
