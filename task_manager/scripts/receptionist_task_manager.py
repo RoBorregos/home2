@@ -10,6 +10,7 @@ from rclpy.node import Node
 from utils.logger import Logger
 from utils.subtask_manager import SubtaskManager, Task
 from utils.status import Status
+from frida_constants.xarm_configurations import XARM_CONFIGURATIONS
 
 ATTEMPT_LIMIT = 3
 START = "START"
@@ -219,7 +220,7 @@ class ReceptionistTM(Node):
             Logger.state(self, "Checking drink availability")
             # self.subtask_manager.manipulation.follow_face(False)
             self.subtask_manager.manipulation.move_joint_positions(
-                named_position="front_stare", velocity=0.5, degrees=True
+                named_position="table_stare", velocity=0.5, degrees=True
             )
             # self.subtask_manager.manipulation.move_to_position("table")
             status, position = self.subtask_manager.vision.find_drink(
@@ -236,6 +237,10 @@ class ReceptionistTM(Node):
 
         if self.current_state == ReceptionistTM.TASK_STATES["ASK_FOR_INTEREST"]:
             Logger.state(self, "Asking for interest")
+
+            self.subtask_manager.manipulation.move_joint_positions(
+                named_position="front_stare", velocity=0.5, degrees=True
+            )
 
             status, interest = self.subtask_manager.hri.ask_and_confirm(
                 question="What is your main interest?", query="interest", use_hotwords=False
@@ -311,7 +316,7 @@ class ReceptionistTM(Node):
                 self.subtask_manager.hri.say(
                     f"Hello {guest.name}. This is {self.get_guest().name}. {self.get_guest().description} and they like {self.get_guest().drink}."
                 )
-                # common_message = "Nada"
+
                 status, common_message = self.subtask_manager.hri.common_interest(
                     self.get_guest().name, self.get_guest().interest, guest.name, guest.interest
                 )
