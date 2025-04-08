@@ -13,7 +13,7 @@ done
 
 # Image names
 CPU_IMAGE="roborregos/home2:cpu_base"
-CUDA_IMAGE="roborregos/home2:gpu_base"
+CUDA_IMAGE="roborregos/home2:cuda_base"
 JETSON_IMAGE="roborregos/home2:l4t_base"
 
 # Function to check if an image exists
@@ -62,7 +62,7 @@ case $ENV_TYPE in
   "gpu")
     #_____GPU_____
     echo "DOCKERFILE=docker/vision/Dockerfile.gpu" >> .env
-    echo "BASE_IMAGE=roborregos/home2:gpu_base" >> .env
+    echo "BASE_IMAGE=roborregos/home2:cuda_base" >> .env
     echo "IMAGE_NAME=roborregos/home2:vision-gpu" >> .env
 
     # Build the base image if it doesn't exist
