@@ -51,3 +51,5 @@ COUNT_BY_OBJECTS_TOPIC = "/vision/gpsr/count_by_objects"
 COUNT_BY_GESTURES_TOPIC = "/vision/gpsr/count_by_gestures"
 COUNT_BY_POSE_TOPIC = "/vision/gpsr/count_by_pose"
 IMAGE_TOPIC = "/vision/gpsr/img_detection"
+
+QUERY_TOPIC = "/vision/query"
