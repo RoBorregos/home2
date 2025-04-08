@@ -53,7 +53,9 @@ class ReceptionistTM(Node):
     def __init__(self):
         """Initialize the node"""
         super().__init__("receptionist_task_manager")
-        self.subtask_manager = SubtaskManager(self, task=Task.RECEPTIONIST, mock_areas=["navigation"])
+        self.subtask_manager = SubtaskManager(
+            self, task=Task.RECEPTIONIST, mock_areas=["navigation"]
+        )
         self.current_state = ReceptionistTM.TASK_STATES[START]
         self.current_guest = 1
         self.seat_angles = [0, 90]
@@ -73,8 +75,10 @@ class ReceptionistTM(Node):
     def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
         """Navigate to the location"""
         if say:
-            self.subtask_manager.hri.say(f"I will now guide you to the {location}. Please follow me.")
-        # self.subtask_manager.manipulation.follow_face(False)
+            self.subtask_manager.hri.say(
+                f"I will now guide you to the {location}. Please follow me."
+            )
+            # self.subtask_manager.manipulation.follow_face(False)
             self.subtask_manager.manipulation.move_joint_positions(
                 named_position="front_stare", velocity=0.5, degrees=True
             )
@@ -109,7 +113,6 @@ class ReceptionistTM(Node):
                 named_position="front_stare", velocity=0.5, degrees=True
             )
 
-
         if self.current_state == ReceptionistTM.TASK_STATES["START"]:
             Logger.state(self, "Starting task")
             self.navigate_to("entrance", say=False)
@@ -139,9 +142,7 @@ class ReceptionistTM(Node):
             Logger.state(self, "Greeting guest")
 
             status, name = self.subtask_manager.hri.ask_and_confirm(
-                question="What is your name?",
-                query="name",
-                use_hotwords=False
+                question="What is your name?", query="name", use_hotwords=False
             )
 
             if status == Status.EXECUTION_SUCCESS:
@@ -192,9 +193,7 @@ class ReceptionistTM(Node):
             # self.subtask_manager.manipulation.follow_face(True)
 
             status, drink = self.subtask_manager.hri.ask_and_confirm(
-                question="What is your favorite drink?",
-                query="drink",
-                use_hotwords=False
+                question="What is your favorite drink?", query="drink", use_hotwords=False
             )
 
             # if self.current_attempts >= ATTEMPT_LIMIT:
@@ -239,9 +238,7 @@ class ReceptionistTM(Node):
             Logger.state(self, "Asking for interest")
 
             status, interest = self.subtask_manager.hri.ask_and_confirm(
-                question="What is your main interest?",
-                query="interest",
-                use_hotwords=False
+                question="What is your main interest?", query="interest", use_hotwords=False
             )
 
             # if self.current_attempts >= ATTEMPT_LIMIT:
