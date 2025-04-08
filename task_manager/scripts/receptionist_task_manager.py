@@ -306,9 +306,7 @@ class ReceptionistTM(Node):
                 named_position="table_stare", velocity=0.5, degrees=True
             )
 
-            joint_positions = self.subtask_manager.manipulation.get_joint_positions(
-                    degrees=True
-            )
+            joint_positions = self.subtask_manager.manipulation.get_joint_positions(degrees=True)
             joint_positions["joint1"] = joint_positions["joint1"] - 50
             self.subtask_manager.manipulation.move_joint_positions(
                 joint_positions=joint_positions, velocity=0.5, degrees=True
