@@ -165,6 +165,7 @@ class ManipulationTasks:
         result = future.result()
         if degrees:
             result.joint_positions = [x * RAD_TO_DEG for x in result.joint_positions]
+        print("Joint positions from service: ", result.joint_positions)
         return dict(zip(result.joint_names, result.joint_positions))
 
     # let the server pick the default values
