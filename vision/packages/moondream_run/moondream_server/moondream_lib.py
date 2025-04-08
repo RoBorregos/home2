@@ -49,6 +49,7 @@ class MoonDreamModel:
         else:
             for obj in detect_result["objects"]:
                 x_center = (obj["x_min"] + obj["x_max"]) / 2
+                print(x_center)
                 if x_center < 1 / 3:
                     return Position.LEFT.value
                 elif x_center > 2 / 3:
