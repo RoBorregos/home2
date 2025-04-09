@@ -125,9 +125,7 @@ class MoondreamNode(Node):
             )
             response.result = query_response.answer
             response.success = True
-            self.success(
-                f"Query executed successfully. Result: {response.result}"
-            )
+            self.success(f"Query executed successfully. Result: {response.result}")
         except Exception as e:
             self.get_logger().error(f"Error querying image: {e}")
             response.result = ""
@@ -171,9 +169,7 @@ class MoondreamNode(Node):
 
             response.result = bag_description.answer
             response.success = True
-            self.success(
-                f"Query executed successfully. Result: {response.result}"
-            )
+            self.success(f"Query executed successfully. Result: {response.result}")
 
         except Exception as e:
             self.get_logger().error(f"Error describing bag: {e}")
@@ -207,9 +203,7 @@ class MoondreamNode(Node):
 
             response.location = beverage_position.position
             response.success = True
-            self.success(
-                f"Beverage location found at: {response.location}"
-            )
+            self.success(f"Beverage location found at: {response.location}")
 
         except Exception as e:
             self.get_logger().error(f"Error locating beverage: {e}")
