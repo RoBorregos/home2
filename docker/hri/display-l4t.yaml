@@ -12,6 +12,7 @@ services:
     ports:
       - "3000:3000"
       - "8000:8000"
+    network_mode: host
     command:
       [
         "/bin/bash",
