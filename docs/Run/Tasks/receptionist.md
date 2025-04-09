@@ -7,10 +7,11 @@ Run container. From the root directory (home2), run:
 ```
 
 ## HRI
-Run containers. From `docker/hri` run:
+Run containers. From the root directory (home2), run:
 ```bash
-docker compose up
+./run.sh hri --receptionist
 ```
+
 ## Navigation
 
 ## Running AMCL Localization

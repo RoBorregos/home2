@@ -1,5 +1,7 @@
 services:
   display:
+    profiles: [receptionist]
+
     container_name: home2-hri-display
     image: roborregos/home2:hri-display
     build:

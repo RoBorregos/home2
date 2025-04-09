@@ -289,6 +289,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
             self.say(question)
             s, interpreted_text = self.hear()
+            print(f"Interpreted text: {interpreted_text}")
 
             if s == Status.EXECUTION_SUCCESS:
                 s, target_info = self.extract_data(query, interpreted_text, context)

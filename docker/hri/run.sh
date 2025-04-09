@@ -2,6 +2,7 @@
 
 ARGS=("$@")  # Save all arguments in an array
 TASK=${ARGS[0]}
+
 detached=""
 # check if one of the arguments is --detached
 for arg in "${ARGS[@]}"; do
@@ -26,6 +27,22 @@ check_image_exists() {
     else
         echo "Image $image_name already exists. Skipping build."
         return 0  # Image exists
+    fi
+}
+
+# Function to add or update a variable in a file
+add_or_update_variable() {
+    local file=$1
+    local variable=$2
+    local value=$3
+
+    local escaped_value
+    escaped_value=$(printf '%s\n' "$value" | sed -e 's/[&/\]/\\&/g')
+
+    if grep -q "^${variable}=" "$file"; then
+        sed -i "s|^${variable}=.*|${variable}=${escaped_value}|" "$file"
+    else
+        echo "${variable}=${value}" >> "$file"
     fi
 }
 
@@ -73,48 +90,49 @@ esac
 #_________________________SETUP_________________________
 
 bash setup.bash
+bash ../../hri/packages/nlp/assets/download-model.sh
 
 #_________________________RUN_________________________
 
-SERVICE_NAME="home2-hri-cpu-devices"  # Change this to your service name in docker-compose.yml
+PROFILES=()
+RUN=""
 
-if [ $ENV_TYPE == "jetson" ]; then
-    SERVICE_NAME="home2-hri-l4t-devices"
-fi
+case $TASK in
+    "--receptionist")
+        RUN="ros2 launch speech hri_launch.py"
+        PROFILES=("receptionist")
+        ;;
+    "--carry")
+        PROFILES=("carry")
+        RUN="ros2 launch speech hri_launch.py"
+        ;;
+    "--storing-groceries")
+        PROFILES=("storing-groceries")
+        RUN="ros2 launch speech hri_launch.py"
+        ;;
+    "--gpsr")
+        PROFILES=("gpsr")
+        RUN="ros2 launch speech hri_launch.py"
+        ;;
+    *)
+        PROFILES=("*")
+        RUN="bash"
+        ;;
+esac
 
+COMPOSE_PROFILES=$(IFS=, ; echo "${PROFILES[*]}")
+add_or_update_variable .env "COMPOSE_PROFILES" "$COMPOSE_PROFILES"
+
+COMMAND="source /opt/ros/humble/setup.bash && colcon build --symlink-install --packages-select frida_interfaces frida_constants speech nlp embeddings && source ~/.bashrc && $RUN"
+
+# echo "COMMAND= $COMMAND " >> .env
+add_or_update_variable .env "COMMAND" "$COMMAND"
 
 # Check if the container exists
-EXISTING_CONTAINER=$(docker ps -q -f name=$SERVICE_NAME)
-if [ -z "$EXISTING_CONTAINER" ]; then
-    echo "No container with the name $SERVICE_NAME exists. Building and starting the container now..."
-    if [ $ENV_TYPE == "cpu" ]; then
-        docker compose -f docker-compose-cpu.yml up -d
+if [ $ENV_TYPE == "cpu" ]; then
+        docker compose -f docker-compose-cpu.yml up $detached
     elif [ $ENV_TYPE == "gpu" ]; then
-        docker compose -f docker-compose-cpu.yml up -d
+        docker compose -f docker-compose-cpu.yml up $detached
     elif [ $ENV_TYPE == "jetson" ]; then
-        docker compose up -d
-    fi
-fi
-
-
-# TODO: implement task option
-# case $TASK in
-#     "--moondream")
-#         RUN=""
-#         MOONDREAM=true
-#         ;;
-#     "--receptionist")
-#         RUN="ros2 launch vision_general receptionist_launch.py"
-#         MOONDREAM=true
-#         ;;
-
-#     *)
-#         RUN=""
-#         ;;
-# esac
-
-
-# check if TASK is not empty
-if [ -z "$TASK" ]; then
-    docker exec -it $SERVICE_NAME /bin/bash
+        docker compose up $detached
 fi

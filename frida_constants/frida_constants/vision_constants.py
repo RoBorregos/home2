@@ -27,8 +27,12 @@ RESULTS_TOPIC = "/vision/tracking_results"
 TRACKER_IMAGE_TOPIC = "/vision/tracker_image"
 
 # Moondream
-PERSON_DESCRIPTION_TOPIC = "/vision/person_description"
-BEVERAGE_TOPIC = "/vision/beverage"
+BEVERAGE_TOPIC = "/vision/beverage_location"
+# PERSON_DESCRIPTION_TOPIC = "/vision/person_description"
+PERSON_POSTURE_TOPIC = "/vision/person_posture"
+QUERY_TOPIC = "/vision/query"
+PERSON_POSTURE_TOPIC = "/vision/person_posture"
+CROP_QUERY = "/vision/crop_query"
 
 # Face recognition
 SAVE_NAME_TOPIC = "/vision/new_name"
