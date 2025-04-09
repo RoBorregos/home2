@@ -5,7 +5,7 @@ package moondream;
 service MoonDreamService {
   rpc EncodeImage (ImageRequest) returns (EncodedImageResponse);
   rpc FindBeverage (FindBeverageRequest) returns (BeveragePositionResponse);
-  rpc GeneratePersonDescription (DescriptionRequest) returns (DescriptionResponse);
+  rpc Query (QueryRequest) returns (QueryResponse);
 }
 
 message ImageRequest {
@@ -25,11 +25,11 @@ message BeveragePositionResponse {
   string position = 1;
 }
 
-message DescriptionRequest {
+message QueryRequest {
   bytes encoded_image = 1;
   string query = 2;
 }
 
-message DescriptionResponse {
+message QueryResponse {
   string answer = 1;
 }

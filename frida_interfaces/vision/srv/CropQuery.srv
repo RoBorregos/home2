@@ -1,0 +1,8 @@
+float32 ymin
+float32 xmin
+float32 ymax
+float32 xmax
+string query
+---
+string result
+bool success
