@@ -1,7 +1,6 @@
 include:
-  # Laptop
   - path: hri-ros.yaml
   - path: stt.yaml
   - path: ollama.yaml
-  # - path: chromadb.yaml
+  - path: chromadb.yaml
   - path: display.yaml

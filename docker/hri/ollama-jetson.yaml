@@ -1,5 +1,7 @@
 services:
   ollama:
+    profiles: [receptionist]
+    
     container_name: home2-hri-ollama
     image: dustynv/ollama:r36.4.0
     runtime: nvidia

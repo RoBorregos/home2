@@ -1,5 +1,7 @@
 services:
   stt:
+    profiles: [receptionist]
+
     container_name: home2-hri-stt
     image: roborregos/home2:hri-stt
     build:
