@@ -128,8 +128,6 @@ class ObjectDectector(ABC):
         return (self.extract3D(depth_image, tfBuffer), self.detections_, visual_frame)
 
     def extract3D(self, depth_image, tfBuffer: tf2_ros):
-        object_set = {}
-
         if len(depth_image) != 0:
             # TFs
             while (
@@ -147,40 +145,34 @@ class ObjectDectector(ABC):
             pose_array.header.stamp = rclpy.time.Time().to_msg()
 
         for detection in self.detections_:
-            if (
-                detection.class_id_ not in object_set.keys()
-                or object_set[detection.class_id_].confidence_ < detection.confidence_
-            ):
-                point_3D = PointStamped(
-                    header=Header(frame_id=self.object_detector_params_.camera_frame),
-                    point=Point(),
+            point_3D = PointStamped(
+                header=Header(frame_id=self.object_detector_params_.camera_frame),
+                point=Point(),
+            )
+
+            if self.object_detector_params_.depth_active and len(depth_image) != 0:
+                point_2D = get2DCentroid(
+                    [
+                        detection.bbox_.y1,
+                        detection.bbox_.x1,
+                        detection.bbox_.y2,
+                        detection.bbox_.x2,
+                    ],
+                    depth_image,
+                )
+                depth = get_depth(depth_image, point_2D)
+                point_3D_ = deproject_pixel_to_point(
+                    self.object_detector_params_.camera_info, point_2D, depth
                 )
 
-                if self.object_detector_params_.depth_active and len(depth_image) != 0:
-                    point_2D = get2DCentroid(
-                        [
-                            detection.bbox_.y1,
-                            detection.bbox_.x1,
-                            detection.bbox_.y2,
-                            detection.bbox_.x2,
-                        ],
-                        depth_image,
-                    )
-                    depth = get_depth(depth_image, point_2D)
-                    point_3D_ = deproject_pixel_to_point(
-                        self.object_detector_params_.camera_info, point_2D, depth
-                    )
+                point_3D.point.x = float(point_3D_[0])
+                point_3D.point.y = float(point_3D_[1])
+                point_3D.point.z = float(point_3D_[2])
 
-                    point_3D.point.x = float(point_3D_[0])
-                    point_3D.point.y = float(point_3D_[1])
-                    point_3D.point.z = float(point_3D_[2])
+                pose_array.poses.append(Pose(position=point_3D.point))
 
-                    pose_array.poses.append(Pose(position=point_3D.point))
-
-                detection.point_stamped_ = point_3D
-
-                object_set[detection.class_id_] = detection
-        return list(object_set.values())
+            detection.point_stamped_ = point_3D
+        return self.detections_
 
     def getDetections(self):
         return self.detections_
