@@ -19,7 +19,7 @@ case $choice in
     rosdep update
     if [[ -f /etc/nv_tegra_release ]]; then
         echo "Rosdep for jetson"
-        rosdep install --from-paths . --ignore-src --skip-keys "gpd gazebo_ros gazebo_plugins gazebo_ros2_control" -y
+        rosdep install --from-paths . --ignore-src --skip-keys "gpd opencv message_package eigen3 pcl-ros gazebo_ros gazebo_plugins libpcl-dev gazebo_ros2_control" -y
     else
         rosdep install --from-paths . --ignore-src --skip-keys gpd -y
     fi
