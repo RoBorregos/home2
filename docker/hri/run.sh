@@ -90,6 +90,7 @@ esac
 #_________________________SETUP_________________________
 
 bash setup.bash
+bash ../../hri/packages/nlp/assets/download-model.sh
 
 #_________________________RUN_________________________
 
