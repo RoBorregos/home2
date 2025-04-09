@@ -2,49 +2,28 @@
 To run or test the modules it is necessary to have Ubuntu 22.04. Alternatively, you can use the docker setup provided in this repository.
 
 ## Docker setup
-Run the setup script in `docker/hri/setup.bash`. This should be runned at least once per machine.
-
-### Jetson Orin
-
-In `docker/hri/` run:
+### Quick start using run.sh
+In root directory (home2), run:
 ```bash
-docker compose up
+./run.sh hri
 ```
 
-Note: it is recommended to run the compose attached to see the logs of the services (e.g. stt, ollama, etc.)
+This will:
+- Build the base image according to your system (cpu, cuda or jetson) as well as the image for the hri module.
+- Run the device setup script.
+- Download the needed LLM models.
 
-### Laptop
-
-For gpu or cpu, in `docker/hri/`, run:
+To run a specific task, specify it with the flag `--task`:
 ```bash
-docker compose -f docker-compose-cpu.yml up
+./run.sh hri --receptionist
 ```
 
-# Running the hri module
-Once in the docker workspace or using ROS2 in the home2 directory, run the following commands:
+### Respeaker
 
-### Download llm models
-
-Run the script found at `hri/packages/nlp/assets/download-model.sh` once. This will download the models, which will be mounted in the docker container. In addition, you may need to pull the deepseek model inside the container. To do this, run the following commands:
-
-```bash
-docker exec -it <container_id> bash # enter the container
-ollama run deepseek-r1:7b # pull the model
-```
-
-### Build
-```bash
-colcon build --symlink-install --packages-select task_manager frida_interfaces frida_constants speech nlp embeddings
-
-# Source the workspace
-source ~/.bashrc
-```
-
-### Launch the module
-```bash
-ros2 launch speech hri_launch.py
-```
+When running using a microphone other than the ReSpeaker, you need to modify the variable `USE_RESPEAKER` in the `frida_constants/frida_constants/hri_constants.py` file to `False`.
 
 # Additional Information
+
+You may want to only launch some of the services. For example, running the module without the LLM, etc. To do so, please check the docker-compose files in the `hri` folder, and disable the services you do not want to run.
 
 For more detailed information, see HRI's [README.md](../../../hri/README.md).
