@@ -13,8 +13,7 @@ def get_grasps(grasp_detection_client, object_cloud, cgf_path: str):
     future = wait_for_future(future)
 
     response = future.result()
-    if len(response.grasp_poses) == 0:
-        return []
+
     return response.grasp_poses, response.grasp_scores
 
 

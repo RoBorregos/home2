@@ -19,11 +19,16 @@ class PickManager:
 
     def execute(self, object_name: str, point: PointStamped) -> bool:
         self.node.get_logger().info("Executing Pick Task")
-        if point is not None:
-            self.node.get_logger().info(f"Point: {point}")
-        if object_name is not None:
-            self.node.get_logger().info(f"Object: {object_name}")
+        if point is not None and (
+            point.point.x != 0 and point.point.y != 0 and point.point.z != 0
+        ):
+            self.node.get_logger().info(f"Going for point: {point}")
+        elif object_name is not None and object_name != "":
+            self.node.get_logger().info(f"Going for object name: {object_name}")
             point = self.get_object_point(object_name)
+        else:
+            self.node.get_logger().error("No object name or point provided")
+            return False
 
         # Call Perception Service to get object cluster and generate collision objects
         object_cluster = self.get_object_cluster(point)
@@ -35,6 +40,10 @@ class PickManager:
         grasp_poses, grasp_scores = get_grasps(
             self.node.grasp_detection_client, object_cluster, CFG_PATH
         )
+
+        if len(grasp_poses) == 0:
+            self.node.get_logger().error("No grasp poses detected")
+            return False
 
         # Call Pick Motion Action
         # Create goal

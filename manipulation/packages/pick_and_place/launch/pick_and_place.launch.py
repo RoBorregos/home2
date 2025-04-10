@@ -18,8 +18,8 @@ def generate_launch_description():
             ),
             Node(
                 package="pick_and_place",
-                executable="manipulation_server.py",
-                name="manipulation_server",
+                executable="manipulation_client.py",
+                name="manipulation_client",
                 output="screen",
                 emulate_tty=True,
                 parameters=[],
