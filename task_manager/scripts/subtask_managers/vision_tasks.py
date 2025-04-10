@@ -258,24 +258,27 @@ class VisionTasks:
 
         try:
             future = self.moondream_query_client.call_async(request)
-            future.add_done_callback(self._handle_description_response)
+            future.add_done_callback(lambda fut: self._handle_moondream_response(fut, callback))
+
         except Exception as e:
             Logger.error(self.node, f"Error requesting description: {e}")
 
-    def _handle_description_response(self, future):
+    def _handle_moondream_response(self, future, callback):
         """Callback to handle the response from the description service."""
         try:
             result = future.result()
             if result.success:
-                Logger.success(self.node, f"Description: {result.result}")
-                # self.node.get_guest().result = result.result
-                return Status.EXECUTION_SUCCESS, result.result
+                Logger.success(self.node, f"Result: {result.result}")
+                if callback:
+                    callback(Status.EXECUTION_SUCCESS, result.result)
             else:
-                Logger.warn(self.node, "No description generated")
-                return Status.EXECUTION_ERROR, ""
+                Logger.warn(self.node, "No result generated")
+                if callback:
+                    callback(Status.EXECUTION_ERROR, "")
         except Exception as e:
-            Logger.error(self.node, f"Error processing description response: {e}")
-            return Status.EXECUTION_ERROR, ""
+            Logger.error(self.node, f"Error processing response: {e}")
+            if callback:
+                callback(Status.EXECUTION_ERROR, "")
 
     @mockable(return_value=None, delay=2)
     @service_check("follow_by_name_client", Status.EXECUTION_ERROR, TIMEOUT)
