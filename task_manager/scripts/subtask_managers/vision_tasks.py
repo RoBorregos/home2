@@ -66,11 +66,12 @@ class VisionTasks:
                 "follow_by_name": {"client": self.follow_by_name_client, "type": "service"},
             },
             Task.HELP_ME_CARRY: {
-                "track_person": { "client": self.track_person_client, "type": "service",
-                }
+                "track_person": { "client": self.track_person_client, "type": "service" },
+                "moondream_crop_query": {"client": self.moondream_crop_query_client, "type": "service"},
             },
             Task.DEBUG: {
                 "moondream_query": {"client": self.moondream_query_client, "type": "service"},
+                "moondream_crop_query": {"client": self.moondream_crop_query_client, "type": "service"},
             }
         }
 
@@ -247,7 +248,7 @@ class VisionTasks:
     
     @mockable(return_value=(Status.EXECUTION_ERROR, ""), delay=5, mock=False)
     @service_check("moondream_crop_query_client", Status.EXECUTION_ERROR, TIMEOUT)
-    def moondream_crop_query(self, prompt: str, bbox) -> tuple[int, str]:
+    def moondream_crop_query(self, prompt: str, bbox: list[float]) -> tuple[int, str]:
         """Makes a query of the current image using moondream."""
         Logger.info(self.node, f"Querying image with prompt: {prompt}")
         request = CropQuery.Request()
@@ -358,11 +359,11 @@ class VisionTasks:
         prompt = "Describe the person in the image"
         self.moondream_query_async(prompt, query_person=True, callback=callback)
 
-    def describe_bag(self, bbox):
+    def describe_bag(self, bbox: list[float]) -> tuple[int, str]:
         """Describe the person in the image"""
         Logger.info(self.node, "Describing the bag")
         prompt = "Describe the bag in the image"
-        self.moondream_crop_query(prompt, bbox)
+        return self.moondream_crop_query(prompt, bbox)
 
 
 if __name__ == "__main__":

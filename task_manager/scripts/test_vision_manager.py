@@ -43,7 +43,7 @@ class TestVision(Node):
             Logger.info(self, f"Vision task result: {self.response}")
 
         
-        description = self.manager.describe_bag([0,0,1,1])
+        status, description = self.manager.describe_bag([0,0,1,1])
         print(description)
 
         if self.response != "aaa":

@@ -125,6 +125,12 @@ case $TASK in
         PROFILES=("vision" "moondream")
         SERVICES=("vision" "moondream-node" "moondream-server")
         ;;
+    "--help_me_carry")
+        PACKAGES="vision_general"
+        RUN="ros2 launch vision_general help_me_carry_launch.py"
+        PROFILES=("vision" "moondream")
+        SERVICES=("vision" "moondream-node" "moondream-server")
+        ;;
     "--moondream")
         PROFILES=("moondream")
         SERVICES=("moondream-node" "moondream-server")
