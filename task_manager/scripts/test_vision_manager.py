@@ -35,8 +35,8 @@ class TestVision(Node):
             else:
                 Logger.info(self, f"Vision task result: {self.response}")
 
-            status, description = self.manager.describe_bag([0, 0, 1, 1])
-            print(description)
+            # status, description = self.manager.describe_bag([0, 0, 1, 1])
+            # print(description)
 
             if self.response != "test":
                 self.get_logger().info(f"Vision task result: {self.response}")
