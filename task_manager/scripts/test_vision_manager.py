@@ -32,12 +32,17 @@ class TestVision(Node):
         self.response = response
         print("RECEIVED RESPONSE")
 
+    
+
     def run(self):
         if self.done == False:
-            self.subtask_manager.vision.moondream_query_async("Describe image", False, self.setResponse)
+            self.subtask_manager.vision.describe_person(self.setResponse)
+            # self.subtask_manager.vision.moondream_query_async("Describe image", False, self.setResponse)
             self.done = True
         else:
             Logger.info(self, f"Vision task result: {self.response}")
+
+
 
         if self.response != "aaa":
             self.get_logger().info(f"Vision task result: {self.response}")

@@ -280,6 +280,12 @@ class VisionTasks:
             if callback:
                 callback(Status.EXECUTION_ERROR, "")
 
+    def describe_person(self, callback):
+        """Describe the person in the image"""
+        Logger.info(self.node, "Describing person")
+        prompt = "Describe the person in the image"
+        self.moondream_query_async(prompt, query_person=True, callback=callback)
+
     @mockable(return_value=None, delay=2)
     @service_check("follow_by_name_client", Status.EXECUTION_ERROR, TIMEOUT)
     def follow_by_name(self, name: str):

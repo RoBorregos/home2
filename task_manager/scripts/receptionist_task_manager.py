@@ -97,6 +97,9 @@ class ReceptionistTM(Node):
         if name is None:
             name = statement
         return name
+    
+    def set_description(self, status, description: str):
+        self.get_guest().description = description
 
     # TODO (@alecoeto): wait to detect guest
 
@@ -148,7 +151,7 @@ class ReceptionistTM(Node):
         if self.current_state == ReceptionistTM.TASK_STATES["SAVE_FACE"]:
             Logger.state(self, "Saving face")
             result = self.subtask_manager.vision.save_face_name(self.get_guest().name)
-            self.get_guest().description = self.subtask_manager.vision.describe_person()
+            self.subtask_manager.vision.describe_person(self.set_description)
 
             if result == Status.EXECUTION_SUCCESS or self.current_attempts >= ATTEMPT_LIMIT:
                 self.subtask_manager.hri.say("I have saved your face.")
