@@ -11,7 +11,7 @@ read -p "Enter your choice (1-4): " choice
 case $choice in
   1)
     echo "Running setup..."
-    ./prebuld.sh
+    ./prebuild.sh
     ;;
   2)
     echo "Installing dependencies..."
