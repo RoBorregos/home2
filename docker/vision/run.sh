@@ -171,7 +171,7 @@ if [ -z "$TASK" ]; then
         echo "Building vision"
         docker compose up --build -d
     fi
-    docker compose exec vision-dev /bin/bash
+    docker compose exec vision /bin/bash
 
 else
     if [ "$NEEDS_BUILD" = true ]; then
