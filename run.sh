@@ -42,6 +42,10 @@ case $AREA in
     echo "Running hri"
     area="hri"
     ;;
+  zed)
+    echo "Running zed"
+    area="zed"
+    ;;
   *)
     echo "Invalid service name provided. Valid args are: vision, hri, etc"
     exit 1
@@ -64,10 +68,18 @@ for arg in "${ARGS[@]}"; do
   fi
 done
 
+if [ "$area" == "zed" ]; then
+  echo "Running zed2"
+  cd docker/integration
+  docker compose -f zed.yml up $detached
+  exit 0
+fi
+
 if [ -z "$area" ]; then
   echo "Invalid service name provided. Valid args are: vision, hri, etc"
   exit 1
 fi
+
 
 cd docker/$area
 if [ $rebuild -eq 1 ]; then
