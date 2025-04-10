@@ -10,8 +10,11 @@
 # ROS packages
 
 /frida_interfaces/ @RoBorregos/home-integracion
+/frida_constants/ @RoBorregos/home-integracion
+
 /hri/ @RoBorregos/home-hri
 /navigation/ @RoBorregos/home-nav
 /robot_description/ @RoBorregos/home-mecanica
 /task_manager/ @RoBorregos/home-integracion
 /vision/ @RoBorregos/home-vision
+/manipulation/ @RoBorregos/home-manipulacion
