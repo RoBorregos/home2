@@ -13,6 +13,7 @@ from utils.logger import Logger
 
 task = Task.DEBUG
 
+
 class TestVision(Node):
     def __init__(self):
         super().__init__("test_task_manager")
@@ -25,18 +26,16 @@ class TestVision(Node):
     def setResponse(self, status, response):
         self.response = response
         print("RECEIVED RESPONSE")
-    
-    def run(self):
 
+    def run(self):
         if task == Task.DEBUG:
-            if self.done == False:
+            if not self.done:
                 self.manager.describe_person(self.setResponse)
                 self.done = True
             else:
                 Logger.info(self, f"Vision task result: {self.response}")
 
-            
-            status, description = self.manager.describe_bag([0,0,1,1])
+            status, description = self.manager.describe_bag([0, 0, 1, 1])
             print(description)
 
             if self.response != "test":
@@ -63,4 +62,3 @@ def main(args=None):
 
 if __name__ == "__main__":
     main()
-

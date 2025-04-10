@@ -35,10 +35,9 @@ class ZedSimulator(Node):
             if not ret:
                 self.get_logger().info("No frame")
                 continue
-            
+
             if self.use_zed:
                 frame = frame[:, : frame.shape[1] // 2]
-
 
             image = self.bridge.cv2_to_imgmsg(frame, encoding="bgr8")
             self.publisher_.publish(image)

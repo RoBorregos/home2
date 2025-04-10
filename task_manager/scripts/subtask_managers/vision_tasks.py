@@ -58,21 +58,30 @@ class VisionTasks:
 
         self.services = {
             Task.RECEPTIONIST: {
-                "detect_person": { "client": self.detect_person_action_client, "type": "action"},
+                "detect_person": {"client": self.detect_person_action_client, "type": "action"},
                 "find_seat": {"client": self.find_seat_client, "type": "service"},
-                "save_face_name": {"client": self.save_name_client, "type": "service",},
+                "save_face_name": {
+                    "client": self.save_name_client,
+                    "type": "service",
+                },
                 "moondream_query": {"client": self.moondream_query_client, "type": "service"},
                 "beverage_location": {"client": self.beverage_location_client, "type": "service"},
                 "follow_by_name": {"client": self.follow_by_name_client, "type": "service"},
             },
             Task.HELP_ME_CARRY: {
-                "track_person": { "client": self.track_person_client, "type": "service" },
-                "moondream_crop_query": {"client": self.moondream_crop_query_client, "type": "service"},
+                "track_person": {"client": self.track_person_client, "type": "service"},
+                "moondream_crop_query": {
+                    "client": self.moondream_crop_query_client,
+                    "type": "service",
+                },
             },
             Task.DEBUG: {
                 "moondream_query": {"client": self.moondream_query_client, "type": "service"},
-                "moondream_crop_query": {"client": self.moondream_crop_query_client, "type": "service"},
-            }
+                "moondream_crop_query": {
+                    "client": self.moondream_crop_query_client,
+                    "type": "service",
+                },
+            },
         }
 
         if not self.mock_data:
@@ -220,7 +229,7 @@ class VisionTasks:
 
         Logger.success(self.node, f"Found drink: {drink}")
         return Status.EXECUTION_SUCCESS, result.location
-    
+
     @mockable(return_value=(Status.EXECUTION_ERROR, ""), delay=5, mock=False)
     @service_check("moondream_query_client", Status.EXECUTION_ERROR, TIMEOUT)
     def moondream_query(self, prompt: str, query_person: bool = False) -> tuple[int, str]:
@@ -238,14 +247,14 @@ class VisionTasks:
             if not result.success:
                 Logger.warn(self.node, "No result generated")
                 return Status.EXECUTION_ERROR, ""
-            
+
         except Exception as e:
             Logger.error(self.node, f"Error requesting description: {e}")
             return Status.EXECUTION_ERROR, ""
-        
+
         Logger.success(self.node, f"Result: {result.result}")
         return Status.EXECUTION_SUCCESS, result.result
-    
+
     @mockable(return_value=(Status.EXECUTION_ERROR, ""), delay=5, mock=False)
     @service_check("moondream_crop_query_client", Status.EXECUTION_ERROR, TIMEOUT)
     def moondream_crop_query(self, prompt: str, bbox: list[float]) -> tuple[int, str]:
@@ -266,11 +275,11 @@ class VisionTasks:
             if not result.success:
                 Logger.warn(self.node, "No result generated")
                 return Status.EXECUTION_ERROR, ""
-            
+
         except Exception as e:
             Logger.error(self.node, f"Error requesting description: {e}")
             return Status.EXECUTION_ERROR, ""
-        
+
         Logger.success(self.node, f"Result: {result.result}")
         return Status.EXECUTION_SUCCESS, result.result
 
@@ -352,7 +361,7 @@ class VisionTasks:
 
         Logger.success(self.node, "Person tracking success")
         return Status.EXECUTION_SUCCESS
-    
+
     def describe_person(self, callback):
         """Describe the person in the image"""
         Logger.info(self.node, "Describing person")

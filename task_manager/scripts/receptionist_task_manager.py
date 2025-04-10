@@ -97,7 +97,7 @@ class ReceptionistTM(Node):
         if name is None:
             name = statement
         return name
-    
+
     def set_description(self, status, description: str):
         self.get_guest().description = description
 
