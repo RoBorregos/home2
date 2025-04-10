@@ -18,7 +18,7 @@ from utils.task import Task
 from utils.logger import Logger
 
 
-class TestTaskManager(Node):
+class TestVision(Node):
     def __init__(self):
         super().__init__("test_task_manager")
         # self.subtask_manager["hri"] = HRITasks(self, config=test_hri_config)
@@ -30,7 +30,7 @@ class TestTaskManager(Node):
         self.get_logger().info("TestTaskManager has started.")
         self.response = "aaa"
         self.done = False
-        self.run()
+        self.running_task = True
 
     def run(self):
         if not self.done:
@@ -38,63 +38,24 @@ class TestTaskManager(Node):
             self.done = True
         else:
             Logger.info(self, f"Vision task result: {self.response}")
-        # """testing vision tasks"""
-        # self.subtask_manager["vision"].track_person()
 
-        # self.subtask_manager["hri"].say(
-        #     "Hi, my name is frida. What is your favorite drink?", wait=True
-        # )
-        # self.get_logger().info("Hearing from the user...")
-
-        # # This line does run
-        # user_request = self.subtask_manager["hri"].hear()
-
-        # self.get_logger().info(f"Heard: {user_request}")
-
-        # drink = self.subtask_manager["hri"].extract_data("Drink", user_request)
-
-        # self.get_logger().info(f"Extracted data: {drink}")
-
-        # commands = self.subtask_manager["hri"].command_interpreter(user_request)
-
-        # self.get_logger().info(f"Interpreted commands: {commands}")
-
-        # command_strs = [
-        #     f"I will do action:{command.action}, ({command.complement}), ({command.characteristic})"
-        #     for command in commands
-        # ]
-        # command_str = " and ".join(command_strs)
-
-        # fixed_text = self.subtask_manager["hri"].refactor_text(command_str)
-        # self.subtask_manager["hri"].say(fixed_text)
-
-        # self.subtask_manager["hri"].say("I'm frida, Can you tell me where to go?")
-        # location_hint = self.subtask_manager["hri"].hear()
-
-        # joint_positions = self.subtask_manager["manipulation"].get_joint_positions()
-        # joint_positions["joint1"] = joint_positions["joint1"] - 180
-        # print(joint_positions)
-
-        # new_joint_positions = [-55.0, -3.0, -52.0, 0.0, 53.0, -55.0]
-        # res = self.subtask_manager["manipulation"].move_joint_positions(
-        #     joint_positions=joint_positions, velocity=0.5, degrees=True
-        # )
-        # print("Move joint positions result: ", res)
-        # joint_positions = self.subtask_manager["manipulation"].get_joint_positions(degrees=True)
-        # print(joint_positions)
-
-        # self.subtask_manager["manipulation"].close_gripper()
+        if self.response != "aaa":
+            self.get_logger().info(f"Vision task result: {self.response}")
+            self.done = True
 
 
 
 
 
 def main(args=None):
+    """Main function"""
     rclpy.init(args=args)
-    node = TestTaskManager()
+    node = TestVision()
 
     try:
-        rclpy.spin_once(node)
+        while rclpy.ok() and node.running_task:
+            rclpy.spin_once(node, timeout_sec=0.1)
+            node.run()
     except KeyboardInterrupt:
         pass
     finally:
@@ -104,3 +65,4 @@ def main(args=None):
 
 if __name__ == "__main__":
     main()
+
