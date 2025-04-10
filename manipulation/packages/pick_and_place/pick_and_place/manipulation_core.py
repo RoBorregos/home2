@@ -6,12 +6,15 @@ from rclpy.action import ActionClient, ActionServer
 from rclpy.callback_groups import ReentrantCallbackGroup
 from frida_interfaces.msg import ManipulationTask
 from frida_interfaces.action import PickMotion, ManipulationAction
-from frida_interfaces.srv import PerceptionService, GraspDetection
+from frida_interfaces.srv import PerceptionService, GraspDetection, DetectionHandler
 from frida_constants.manipulation_constants import (
     PICK_MOTION_ACTION_SERVER,
     MANIPULATION_ACTION_SERVER,
     PERCEPTION_SERVICE,
     GRASP_DETECTION_SERVICE,
+)
+from frida_constants.vision_constants import (
+    DETECTION_HANDLER_TOPIC_SRV,
 )
 from pick_and_place.managers.PickManager import PickManager
 
@@ -35,6 +38,10 @@ class ManipulationCore(Node):
             PICK_MOTION_ACTION_SERVER,
         )
 
+        self.detection_handler_client = self.create_client(
+            DetectionHandler, DETECTION_HANDLER_TOPIC_SRV
+        )
+
         self.perception_3d_client = self.create_client(
             PerceptionService, PERCEPTION_SERVICE
         )
@@ -56,7 +63,7 @@ class ManipulationCore(Node):
             point=object_point,
         )
 
-        return result.success
+        return result
 
     def manipulation_server_callback(self, goal_handle):
         task_type = goal_handle.request.task_type

@@ -67,7 +67,7 @@ class DetectionsHandlerNode : public rclcpp::Node
 
     void declare_parameters(){
       this->declare_parameter("DETECTIONS_TOPIC", "/vision/detections");
-      this->declare_parameter("TARGET_FRAME", "BASE_LINK");
+      this->declare_parameter("TARGET_FRAME", "base_link");
       this->declare_parameter("TRANSFORM", false);
       this->declare_parameter("VERBOSE", false);
       this->declare_parameter("IOU_THRESHOLD", 0.95);

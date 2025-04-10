@@ -1,5 +1,5 @@
 from frida_motion_planning.utils.ros_utils import wait_for_future
-from frida_interfaces.srv import PerceptionService
+from frida_interfaces.srv import PerceptionService, DetectionHandler
 from geometry_msgs.msg import PointStamped
 from pick_and_place.utils.grasp_utils import get_grasps
 from frida_interfaces.action import PickMotion
@@ -26,6 +26,11 @@ class PickManager:
         elif object_name is not None and object_name != "":
             self.node.get_logger().info(f"Going for object name: {object_name}")
             point = self.get_object_point(object_name)
+            if point is None:
+                self.node.get_logger().error(
+                    f"Object {object_name} not found, please provide a point"
+                )
+                return False
         else:
             self.node.get_logger().error("No object name or point provided")
             return False
@@ -59,10 +64,43 @@ class PickManager:
         # Check result
         result = future.result()
         self.node.get_logger().info(f"Pick Motion Result: {result}")
-        return result
+        return result.success
 
     def get_object_point(self, object_name: str) -> PointStamped:
-        return PointStamped()
+        request = DetectionHandler.Request()
+        request.label = object_name
+        request.closest_object = False
+        print("Request:", request)
+        print("waiting for service")
+        self.node.detection_handler_client.wait_for_service()
+        future = self.node.detection_handler_client.call_async(request)
+        print("waiting for future")
+        future = wait_for_future(future)
+
+        point = PointStamped()
+
+        if len(future.result().detection_array.detections) == 1:
+            self.node.get_logger().info(f"Object {object_name} found")
+            point = future.result().detection_array.detections[0].point3d
+        elif len(future.result().detection_array.detections) > 1:
+            self.get_logger().info("Multiple objects found, selecting the closest one")
+            closest_object = future.result().detection_array.detections[0]
+            closest_distance = float("inf")
+            for detection in future.result().detection_array.detections:
+                distance = (
+                    detection.point3d.point.x**2
+                    + detection.point3d.point.y**2
+                    + detection.point3d.point.z**2
+                ) ** 0.5
+                if distance < closest_distance:
+                    closest_distance = distance
+                    closest_object = detection
+            point = closest_object.point3d
+        else:
+            self.node.get_logger().error(f"Object {object_name} not found")
+
+        self.node.get_logger().info(f"Object {object_name} found at: {point}")
+        return point
 
     def get_object_cluster(self, point: PointStamped):
         request = PerceptionService.Request()

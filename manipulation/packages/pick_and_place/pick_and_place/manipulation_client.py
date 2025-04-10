@@ -46,7 +46,10 @@ class ManipulationClient(Node):
 
         self.get_logger().info("Manipulation Client is ready")
 
-        self.create_timer(0.1, self.timer_callback)
+        self.pick_object_name = None
+        self.active = True
+
+        self.create_timer(0.1, self.point_timer_callback)
 
     def point_callback(self, msg):
         print("Received point")
@@ -59,7 +62,7 @@ class ManipulationClient(Node):
     def result_callback(self, result):
         self.get_logger().info(f"Result: {result}")
 
-    def timer_callback(self):
+    def point_timer_callback(self):
         if self.last_point == self.last_process_point:
             return
         self.last_process_point = self.last_point
@@ -81,9 +84,10 @@ class ManipulationClient(Node):
 def main(args=None):
     rclpy.init(args=args)
     executor = rclpy.executors.MultiThreadedExecutor(5)
-    pick_server = ManipulationClient()
-    executor.add_node(pick_server)
+    manipulation_client = ManipulationClient()
+    executor.add_node(manipulation_client)
     executor.spin()
+    manipulation_client.stop()
     rclpy.shutdown()
 
 
