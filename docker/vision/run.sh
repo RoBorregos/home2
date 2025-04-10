@@ -165,13 +165,18 @@ done
 
 # If no task set, enter with bash
 if [ -z "$TASK" ]; then
-    # if [ "$NEEDS_BUILD" = true ]; then
-    #     docker compose up --build -d
-    # else
-    #     echo "Building vision"
-    #     docker compose up -d
-    # fi
-    docker compose exec vision /bin/bash
+    if [ "$NEEDS_BUILD" = true ]; then
+        docker compose up --build -d
+    else
+       RUNNING=$(docker ps --filter "name=vision" --format "{{.ID}}")
+        
+        if [ -z "$RUNNING" ]; then
+            echo "Starting vision service..."
+            docker compose up -d
+        fi 
+        
+        docker compose exec vision /bin/bash
+    fi
 
 else
     if [ "$NEEDS_BUILD" = true ]; then
