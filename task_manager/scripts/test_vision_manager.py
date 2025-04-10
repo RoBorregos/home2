@@ -17,11 +17,13 @@ from utils.subtask_manager import SubtaskManager
 from utils.task import Task
 from utils.logger import Logger
 
+task = Task.DEBUG
 
 class TestVision(Node):
     def __init__(self):
         super().__init__("test_task_manager")
-        self.subtask_manager = SubtaskManager(self, task=Task.DEBUG, mock_areas=["navigation", "manipulation"])
+        self.manager = VisionTasks(self, task=task, mock_data=False)
+        # self.subtask_manager = SubtaskManager(self, task=task, mock_areas=["navigation", "manipulation"])
         self.subtask_manager.vision
         self.get_logger().info("TestTaskManager has started.")
         self.response = "aaa"
@@ -33,16 +35,17 @@ class TestVision(Node):
         print("RECEIVED RESPONSE")
 
     
-
     def run(self):
         if self.done == False:
-            self.subtask_manager.vision.describe_person(self.setResponse)
+            self.manager.describe_person(self.setResponse)
             # self.subtask_manager.vision.moondream_query_async("Describe image", False, self.setResponse)
             self.done = True
         else:
             Logger.info(self, f"Vision task result: {self.response}")
 
-
+        
+        description = self.manager.describe_bag([0,0,1,1])
+        print(description)
 
         if self.response != "aaa":
             self.get_logger().info(f"Vision task result: {self.response}")
