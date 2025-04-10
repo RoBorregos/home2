@@ -60,28 +60,20 @@ class VisionTasks:
 
         self.services = {
             Task.RECEPTIONIST: {
-                "detect_person": {
-                    "client": self.detect_person_action_client,
-                    "type": "action",
-                },
-                "find_seat": {
-                    "client": self.find_seat_client,
-                    "type": "service",
-                },
-                "save_face_name": {
-                    "client": self.save_name_client,
-                    "type": "service",
-                },
+                "detect_person": { "client": self.detect_person_action_client, "type": "action"},
+                "find_seat": {"client": self.find_seat_client, "type": "service"},
+                "save_face_name": {"client": self.save_name_client, "type": "service",},
                 "moondream_query": {"client": self.moondream_query_client, "type": "service"},
                 "beverage_location": {"client": self.beverage_location_client, "type": "service"},
                 "follow_by_name": {"client": self.follow_by_name_client, "type": "service"},
             },
             Task.HELP_ME_CARRY: {
-                "track_person": {
-                    "client": self.track_person_client,
-                    "type": "service",
+                "track_person": { "client": self.track_person_client, "type": "service",
                 }
             },
+            Task.DEBUG: {
+                "moondream_query": {"client": self.moondream_query_client, "type": "service"},
+            }
         }
 
         if not self.mock_data:

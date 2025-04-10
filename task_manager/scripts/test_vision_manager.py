@@ -24,7 +24,7 @@ class TestTaskManager(Node):
         # self.subtask_manager["hri"] = HRITasks(self, config=test_hri_config)
 
         # self.subtask_manager["manipulation"] = ManipulationTasks(self, task="DEMO", mock_data=False)
-        self.subtask_manager = SubtaskManager(self, task=Task.RECEPTIONIST, mock_areas=["navigation", "manipulation"])
+        self.subtask_manager = SubtaskManager(self, task=Task.DEBUG, mock_areas=["navigation", "manipulation"])
         self.subtask_manager.vision
         rclpy.spin_once(self, timeout_sec=1.0)
         self.get_logger().info("TestTaskManager has started.")
