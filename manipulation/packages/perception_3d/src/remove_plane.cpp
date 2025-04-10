@@ -83,10 +83,15 @@ public:
     this->tf_listener =
         std::make_shared<tf2_ros::TransformListener>(*tf_buffer);
 
+    auto qos = rclcpp::QoS(rclcpp::SensorDataQoS());
+    qos.reliability(rclcpp::ReliabilityPolicy::BestEffort);
+    qos.durability(rclcpp::DurabilityPolicy::Volatile);
+    qos.keep_last(1);
+    RCLCPP_INFO(this->get_logger(), "Creating subscription to point cloud WITH BEST EFFORT");
     this->cloud_sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-        point_cloud_topic, rclcpp::SensorDataQoS(),
-        std::bind(&TableSegmentationNode::pointCloudCallback, this,
-                  std::placeholders::_1));
+      point_cloud_topic, qos,
+      std::bind(&TableSegmentationNode::pointCloudCallback, this,
+            std::placeholders::_1));
 
     RCLCPP_INFO(this->get_logger(), "Subscribed to point cloud topic");
 

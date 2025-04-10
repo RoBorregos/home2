@@ -213,24 +213,29 @@ class object_detector_node(rclpy.node.Node):
             self.get_logger().info(self.node_params.DEBUG_IMAGE_TOPIC)
 
     def handleSubcriptions(self):
+        qos = rclpy.qos.QoSProfile(
+            depth=5,
+            reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
+            durability=rclpy.qos.DurabilityPolicy.VOLATILE,
+        )
         if self.node_params.VERBOSE:
             self.get_logger().info(
                 "Subcribers have been created with the following topics: "
             )
             self.get_logger().info(self.node_params.RGB_IMAGE_TOPIC)
         self.rgb_image_sub = self.create_subscription(
-            Image, self.node_params.RGB_IMAGE_TOPIC, self.rgbImageCallback, 5
+            Image, self.node_params.RGB_IMAGE_TOPIC, self.rgbImageCallback, qos
         )
         if self.object_detector_parameters.depth_active:
             self.depth_subscriber = self.create_subscription(
-                Image, self.node_params.DEPTH_IMAGE_TOPIC, self.depthImageCallback, 5
+                Image, self.node_params.DEPTH_IMAGE_TOPIC, self.depthImageCallback, qos
             )
             self.recieved_camera_info = False
             self.camera_info_subscriber = self.create_subscription(
                 CameraInfo,
                 self.node_params.CAMERA_INFO_TOPIC,
                 self.cameraInfoCallback,
-                5,
+                qos,
             )
 
             if self.node_params.VERBOSE:
@@ -272,6 +277,7 @@ class object_detector_node(rclpy.node.Node):
     def rgbImageCallback(self, data):
         self.rgb_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
         self.curr_clock = data.header.stamp
+        print("got image")
         if not self.active_flag:
             self.detections_frame = self.rgb_image
         elif (
