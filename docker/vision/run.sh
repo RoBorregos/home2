@@ -136,8 +136,8 @@ case $TASK in
         SERVICES=("moondream-node" "moondream-server")
         ;;
     *)
-        PROFILES=("")
-        SERVICES=("")
+        PROFILES=("vision")
+        SERVICES=("vision")
         ;;
 esac
 
