@@ -1,0 +1,19 @@
+services:
+  zed_ros2:
+    image: zed_ros2_l4t_36.4.0_sdk_4.2.5
+    runtime: nvidia
+    privileged: true
+    network_mode: host
+    ipc: host
+    pid: host
+    environment:
+      - NVIDIA_DRIVER_CAPABILITIES=all
+      - DISPLAY=${DISPLAY}
+    volumes:
+      - /tmp/.X11-unix/:/tmp/.X11-unix
+      - /dev:/dev
+      - /dev/shm:/dev/shm
+      - /usr/local/zed/resources/:/usr/local/zed/resources/
+      - /usr/local/zed/settings/:/usr/local/zed/settings/
+    stdin_open: true
+    tty: true
