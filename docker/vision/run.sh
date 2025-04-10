@@ -125,7 +125,7 @@ case $TASK in
         PROFILES=("vision" "moondream")
         SERVICES=("vision" "moondream-node" "moondream-server")
         ;;
-    "--help_me_carry")
+    "--help-me-carry")
         PACKAGES="vision_general"
         RUN="ros2 launch vision_general help_me_carry_launch.py"
         PROFILES=("vision" "moondream")
@@ -136,8 +136,8 @@ case $TASK in
         SERVICES=("moondream-node" "moondream-server")
         ;;
     *)
-        PROFILES=("vision")
-        SERVICES=("vision")
+        PROFILES=("vision-dev")
+        SERVICES=("vision-dev")
         ;;
 esac
 
