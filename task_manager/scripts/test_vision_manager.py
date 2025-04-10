@@ -24,7 +24,6 @@ class TestVision(Node):
         super().__init__("test_task_manager")
         self.manager = VisionTasks(self, task=task, mock_data=False)
         # self.subtask_manager = SubtaskManager(self, task=task, mock_areas=["navigation", "manipulation"])
-        self.subtask_manager.vision
         self.get_logger().info("TestTaskManager has started.")
         self.response = "aaa"
         self.done = False
