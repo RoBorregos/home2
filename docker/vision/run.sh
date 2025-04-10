@@ -136,8 +136,8 @@ case $TASK in
         SERVICES=("moondream-node" "moondream-server")
         ;;
     *)
-        PROFILES=("vision-dev")
-        SERVICES=("vision-dev")
+        PROFILES=("")
+        SERVICES=("")
         ;;
 esac
 
@@ -165,12 +165,12 @@ done
 
 # If no task set, enter with bash
 if [ -z "$TASK" ]; then
-    if [ "$NEEDS_BUILD" = true ]; then
-        docker compose up -d
-    else
-        echo "Building vision"
-        docker compose up --build -d
-    fi
+    # if [ "$NEEDS_BUILD" = true ]; then
+    #     docker compose up --build -d
+    # else
+    #     echo "Building vision"
+    #     docker compose up -d
+    # fi
     docker compose exec vision /bin/bash
 
 else
