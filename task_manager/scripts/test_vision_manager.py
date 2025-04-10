@@ -32,8 +32,8 @@ class TestVision(Node):
             if not self.done:
                 self.manager.describe_person(self.setResponse)
                 self.done = True
-            else:
-                Logger.info(self, f"Vision task result: {self.response}")
+            
+            noasync = self.manager.moondream_query("is there anyone in the image?", False)
 
             # status, description = self.manager.describe_bag([0, 0, 1, 1])
             # print(description)
