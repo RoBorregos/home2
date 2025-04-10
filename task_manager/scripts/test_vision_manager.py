@@ -21,9 +21,6 @@ from utils.logger import Logger
 class TestVision(Node):
     def __init__(self):
         super().__init__("test_task_manager")
-        # self.subtask_manager["hri"] = HRITasks(self, config=test_hri_config)
-
-        # self.subtask_manager["manipulation"] = ManipulationTasks(self, task="DEMO", mock_data=False)
         self.subtask_manager = SubtaskManager(self, task=Task.DEBUG, mock_areas=["navigation", "manipulation"])
         self.subtask_manager.vision
         self.get_logger().info("TestTaskManager has started.")
@@ -33,6 +30,7 @@ class TestVision(Node):
 
     def setResponse(self, status, response):
         self.response = response
+        print("RECEIVED RESPONSE")
 
     def run(self):
         if self.done == False:
