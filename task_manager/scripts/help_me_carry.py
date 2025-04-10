@@ -56,7 +56,6 @@ class HelpMeCarryTM(Node):
         """Confirm the name is correct"""
         self.subtask_manager.hri.say(f"I heard {statement}, is that correct?")
         response = self.subtask_manager.hri.hear()
-        return True
         return self.subtask_manager.hri.is_positive(response)
 
     def hear_word(self, word: str) -> bool:
