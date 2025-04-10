@@ -26,7 +26,6 @@ class TestTaskManager(Node):
         # self.subtask_manager["manipulation"] = ManipulationTasks(self, task="DEMO", mock_data=False)
         self.subtask_manager = SubtaskManager(self, task=Task.RECEPTIONIST, mock_areas=["navigation", "manipulation"])
         self.subtask_manager.vision
-        # wait for a bit
         rclpy.spin_once(self, timeout_sec=1.0)
         self.get_logger().info("TestTaskManager has started.")
         self.run()
@@ -81,7 +80,7 @@ class TestTaskManager(Node):
 
         # self.subtask_manager["manipulation"].close_gripper()
 
-        self.subtask_manager["manipulation"].open_gripper()
+
 
 
 
