@@ -8,7 +8,7 @@ commands.
 
 import rclpy
 from frida_interfaces.action import DetectPerson
-from frida_interfaces.srv import FindSeat, SaveName, PersonDescription, BeverageLocation
+from frida_interfaces.srv import FindSeat, SaveName, BeverageLocation, Query, CropQuery
 from std_srvs.srv import SetBool
 from geometry_msgs.msg import Point
 from rclpy.action import ActionClient
@@ -24,7 +24,8 @@ from frida_constants.vision_constants import (
     CHECK_PERSON_TOPIC,
     FOLLOW_TOPIC,
     FOLLOW_BY_TOPIC,
-    PERSON_DESCRIPTION_TOPIC,
+    QUERY_TOPIC,
+    CROP_QUERY_TOPIC,
     BEVERAGE_TOPIC,
     SET_TARGET_TOPIC,
 )
@@ -49,9 +50,10 @@ class VisionTasks:
         self.save_name_client = self.node.create_client(SaveName, SAVE_NAME_TOPIC)
         self.find_seat_client = self.node.create_client(FindSeat, FIND_SEAT_TOPIC)
         self.follow_by_name_client = self.node.create_client(SaveName, FOLLOW_BY_TOPIC)
-        self.person_description_client = self.node.create_client(
-            PersonDescription, PERSON_DESCRIPTION_TOPIC
-        )
+        self.moondream_query_client = self.node.create_client(Query, QUERY_TOPIC)
+        # self.person_description_client = self.node.create_client(
+        #     PersonDescription, PERSON_DESCRIPTION_TOPIC
+        # )
         self.track_person_client = self.node.create_client(SetBool, SET_TARGET_TOPIC)
         self.beverage_location_client = self.node.create_client(BeverageLocation, BEVERAGE_TOPIC)
         self.detect_person_action_client = ActionClient(self.node, DetectPerson, CHECK_PERSON_TOPIC)
@@ -70,7 +72,7 @@ class VisionTasks:
                     "client": self.save_name_client,
                     "type": "service",
                 },
-                "person_description": {"client": self.person_description_client, "type": "service"},
+                "moondream_query": {"client": self.moondream_query_client, "type": "service"},
                 "beverage_location": {"client": self.beverage_location_client, "type": "service"},
                 "follow_by_name": {"client": self.follow_by_name_client, "type": "service"},
             },
@@ -227,33 +229,61 @@ class VisionTasks:
 
         Logger.success(self.node, f"Found drink: {drink}")
         return Status.EXECUTION_SUCCESS, result.location
-
-    @mockable(return_value="tall person", delay=5, mock=False)
-    @service_check("person_description_client", Status.EXECUTION_ERROR, TIMEOUT)
-    def describe_person(self):
-        """Requests a description of a person and handles the response asynchronously."""
-        Logger.info(self.node, "Requesting description of a person")
-        request = PersonDescription.Request()
-        request.request = True
+    
+    @mockable(return_value=(Status.EXECUTION_ERROR, ""), delay=5, mock=False)
+    @service_check("moondream_query_client", Status.EXECUTION_ERROR, TIMEOUT)
+    def moondream_query(self, prompt: str, query_person: bool = False) -> tuple[int, str]:
+        """Makes a query of the current image using moondream."""
+        Logger.info(self.node, f"Querying image with prompt: {prompt}")
+        request = Query.Request()
+        request.query = prompt
+        request.person = query_person
 
         try:
-            future = self.person_description_client.call_async(request)
+            future = self.moondream_query_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+            result = future.result()
+
+            if not result.success:
+                Logger.warn(self.node, "No result generated")
+                return Status.EXECUTION_ERROR, ""
+            
+        except Exception as e:
+            Logger.error(self.node, f"Error requesting description: {e}")
+            return Status.EXECUTION_ERROR, ""
+        
+        Logger.success(self.node, f"Result: {result.result}")
+        return Status.EXECUTION_SUCCESS, result.result
+
+    @mockable(return_value=(Status.EXECUTION_ERROR, ""), delay=5, mock=False)
+    @service_check("moondream_query_client", Status.EXECUTION_ERROR, TIMEOUT)
+    def moondream_query_async(self, prompt: str, query_person: bool = False, callback=None):
+        """Makes a query of the current image using moondream. Runs asynchronously."""
+        Logger.info(self.node, f"Querying image with prompt: {prompt}")
+        request = Query.Request()
+        request.query = prompt
+        request.person = query_person
+
+        try:
+            future = self.moondream_query_client.call_async(request)
             future.add_done_callback(self._handle_description_response)
         except Exception as e:
             Logger.error(self.node, f"Error requesting description: {e}")
-            return Status.EXECUTION_ERROR
 
     def _handle_description_response(self, future):
         """Callback to handle the response from the description service."""
         try:
             result = future.result()
             if result.success:
-                Logger.success(self.node, f"Description: {result.description}")
-                self.node.get_guest().description = result.description
+                Logger.success(self.node, f"Description: {result.result}")
+                # self.node.get_guest().result = result.result
+                return Status.EXECUTION_SUCCESS, result.result
             else:
                 Logger.warn(self.node, "No description generated")
+                return Status.EXECUTION_ERROR, ""
         except Exception as e:
             Logger.error(self.node, f"Error processing description response: {e}")
+            return Status.EXECUTION_ERROR, ""
 
     @mockable(return_value=None, delay=2)
     @service_check("follow_by_name_client", Status.EXECUTION_ERROR, TIMEOUT)
