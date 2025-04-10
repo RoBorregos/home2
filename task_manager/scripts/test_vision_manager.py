@@ -26,13 +26,18 @@ class TestTaskManager(Node):
         # self.subtask_manager["manipulation"] = ManipulationTasks(self, task="DEMO", mock_data=False)
         self.subtask_manager = SubtaskManager(self, task=Task.DEBUG, mock_areas=["navigation", "manipulation"])
         self.subtask_manager.vision
-        rclpy.spin_once(self, timeout_sec=1.0)
+        rclpy.spin(self, timeout_sec=1.0)
         self.get_logger().info("TestTaskManager has started.")
+        self.response = "aaa"
+        self.done = False
         self.run()
 
     def run(self):
-        status, result = self.subtask_manager.vision.moondream_query("Describe image", False)
-        Logger.info(self, f"Vision task result: {result}")
+        if not self.done:
+            status, self.response = self.subtask_manager.vision.moondream_query("Describe image", False)
+            self.done = True
+        else:
+            Logger.info(self, f"Vision task result: {self.response}")
         # """testing vision tasks"""
         # self.subtask_manager["vision"].track_person()
 
