@@ -32,7 +32,7 @@ class TestVision(Node):
         self.running_task = True
 
     def run(self):
-        if not self.done:
+        if self.done == False:
             status, self.response = self.subtask_manager.vision.moondream_query("Describe image", False)
             self.done = True
         else:
@@ -41,6 +41,7 @@ class TestVision(Node):
         if self.response != "aaa":
             self.get_logger().info(f"Vision task result: {self.response}")
             self.done = True
+            self.running_task = False
 
 
 
