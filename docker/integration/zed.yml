@@ -17,3 +17,4 @@ services:
       - /usr/local/zed/settings/:/usr/local/zed/settings/
     stdin_open: true
     tty: true
+    command: "ros2 launch zed_wrapper zed_camera.launch.py camera_model:=zed2 publish_tf:=true"
