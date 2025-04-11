@@ -1,14 +1,12 @@
 import chromadb
 from chromadb.utils import embedding_functions
-import pandas as pd
-from pathlib import Path
 import json
 from uuid import uuid4
 from filter import remove_empty_lists, remove_nulls
 from datetime import datetime
 
 
-class ChromaClient:
+class ChromaAdapter:
     def __init__(self):
         self.client = chromadb.HttpClient(host="localhost", port=8000)
         # Configure the embedding function
@@ -36,66 +34,6 @@ class ChromaClient:
         except Exception:
             raise ValueError(f"The collection is missing {collection_name}")
 
-    def build_embeddings(self):
-        """
-        Method to build embeddings for household use.
-        Reads CSV files from the designated dataframes folder,
-        and for each file:
-        - Reads documents and (if available) metadata.
-        - Gets or creates a corresponding collection.
-        - Adds entries to the collection via the add_entries method,
-            which will process documents and metadata (adding "original_name",
-            appending "context", and cleaning metadata) automatically.
-        """
-        # Get the directory of the current script
-        script_dir = Path(__file__).resolve().parent
-        # Define the folder where the CSV files are located
-        dataframes_folder = script_dir / "../embeddings/dataframes"
-
-        # Ensure the folder exists
-        if not (dataframes_folder.exists() and dataframes_folder.is_dir()):
-            raise FileNotFoundError(
-                f"The folder {dataframes_folder} does not exist or is not a directory."
-            )
-
-        # Get all CSV files in the folder
-        dataframes = [
-            file.resolve()
-            for file in dataframes_folder.iterdir()
-            if file.suffix == ".csv"
-        ]
-        # Check if there are any CSV files
-        if not dataframes:
-            raise FileNotFoundError(
-                f"No CSV files found in the folder {dataframes_folder}."
-            )
-        collections = {}
-        for file in dataframes:
-            print("Processing file:", file)
-            # Read the CSV file into a pandas DataFrame
-            df = pd.read_csv(file)
-
-            # Ensure that the 'documents' column exists
-            if "documents" not in df.columns:
-                raise ValueError(f"The 'documents' column is missing in {file}")
-
-            documents = df["documents"].tolist()
-
-            # Process metadata if available; otherwise, use None
-            metadatas_ = None
-            if "metadata" in df.columns:
-                metadatas_ = self.json2dict(df["metadata"])
-
-            # Sanitize and get or create the collection
-            collection_name = self._sanitize_collection_name(file.stem)
-            collections[collection_name] = self._get_or_create_collection(
-                collection_name
-            )
-
-            self.add_entries(collection_name, documents, metadatas_)
-
-        return
-
     def remove_collection(self, collection_name: str):
         """Method to remove a collection"""
         _ = self.get_collection(collection_name)
@@ -117,15 +55,6 @@ class ChromaClient:
             n_results=top_k,
             include=["metadatas", "documents", "distances"],
         )
-        if results["metadatas"]:  # Ensure "metadatas" is not empty
-            results = [
-                meta.get("original_name", doc)
-                for meta, doc in zip(results["metadatas"][0], results["documents"][0])
-            ]
-        else:
-            results = results["documents"][
-                0
-            ]  # Access first (and only) list inside "documents"
 
         return results  # Return only the extracted names
 
@@ -206,19 +135,9 @@ class ChromaClient:
 
 
 def main():
-    client_ = ChromaClient()
-    # client_.remove_all_collections()
-    # client_.build_embeddings()
-    # print(client_.list_collections())
+    client_ = ChromaAdapter()
     collection = client_.get_collection("items")
-    # print(client_.query("items", "apple", 5))
-    # print(client_.query("locations", "kitchen", 5, "household locations"))
-    # print(client_.query("actions", "move", 5, "household actions"))
-    # print(client_.query("categories", "drinks", 5))
-    # print(client_.query("names", "Luis", 5))
     print(collection.get())
-    # client_.add_entries("items", "chocomilk", {"context": "household items"})
-    # print(client_.get_entry_by_document("items", "chocomilk"))
 
 
 if __name__ == "__main__":

@@ -5,6 +5,8 @@ from pydantic import BaseModel, ValidationError
 from typing import Optional
 from enum import Enum
 import json
+import pandas as pd
+from pathlib import Path
 from frida_interfaces.srv import (
     AddEntry,
     BuildEmbeddings,
@@ -12,7 +14,7 @@ from frida_interfaces.srv import (
 )
 
 # Assuming ChromaAdapter handles Chroma client and embedding functions
-from ChromaClient import ChromaClient
+from ChromaAdapter import ChromaAdapter
 
 
 class MetadataProfile(str, Enum):
@@ -79,7 +81,7 @@ class Embeddings(Node):
         )
 
         # Initialize ChromaAdapter (handles Chroma client and embedding functions)
-        self.chroma_adapter = ChromaClient()
+        self.chroma_adapter = ChromaAdapter()
 
         # Create services
         self.build_embeddings_service = self.create_service(
@@ -146,21 +148,28 @@ class Embeddings(Node):
     def query_entry_callback(self, request, response):
         """Service callback to query items from ChromaDB"""
         try:
-            # Delegate to ChromaAdapter to handle the actual ChromaDB interaction
-            results = self.chroma_adapter.query(
+            results_raw = self.chroma_adapter.query(
                 request.collection, request.query, request.topk
             )
+
+            docs = results_raw.get("documents", [[]])[0]
+            metas = results_raw.get("metadatas", [[]])[0]
+
             response.results = [
-                str(doc) for doc in results
-            ]  # Just loop through the list directly
-            response.success = True if response.results else False
+                meta.get("original_name", doc) if isinstance(meta, dict) else doc
+                for doc, meta in zip(docs, metas)
+            ]
+
+            response.success = bool(response.results)
             response.message = (
                 "Query successful" if response.results else "No matching items found"
             )
+
         except Exception as e:
             response.success = False
             response.message = f"Failed to query items: {str(e)}"
             self.get_logger().error(response.message)
+
         return response
 
     def build_embeddings_callback(self, request, response):
@@ -171,9 +180,9 @@ class Embeddings(Node):
             if request.rebuild:
                 self.get_logger().info("Rebuilding embeddings")
                 self.chroma_adapter.remove_all_collections()
-                self.chroma_adapter.build_embeddings()
+                self.build_embeddings()
             else:
-                self.chroma_adapter.build_embeddings()
+                self.build_embeddings()
             response.success = True
             response.message = "Embeddings built successfully"
             self.get_logger().info("Build request handled successfully")
@@ -184,6 +193,77 @@ class Embeddings(Node):
             self.get_logger().error(f"Error while building embeddings: {str(e)}")
 
         return response
+
+    def build_embeddings(self):
+        """
+        Method to build embeddings for household use.
+        Reads CSV files from the designated dataframes folder,
+        and for each file:
+        - Reads documents and (if available) metadata.
+        - Gets or creates a corresponding collection.
+        - Adds entries to the collection via the add_entries method,
+            which will process documents and metadata (adding "original_name",
+            appending "context", and cleaning metadata) automatically.
+        """
+        # Get the directory of the current script
+        script_dir = Path(__file__).resolve().parent
+        # Define the folder where the CSV files are located
+        dataframes_folder = script_dir / "../embeddings/dataframes"
+
+        # Ensure the folder exists
+        if not (dataframes_folder.exists() and dataframes_folder.is_dir()):
+            raise FileNotFoundError(
+                f"The folder {dataframes_folder} does not exist or is not a directory."
+            )
+
+        # Get all CSV files in the folder
+        dataframes = [
+            file.resolve()
+            for file in dataframes_folder.iterdir()
+            if file.suffix == ".csv"
+        ]
+        # Check if there are any CSV files
+        if not dataframes:
+            raise FileNotFoundError(
+                f"No CSV files found in the folder {dataframes_folder}."
+            )
+        collections = {}
+        for file in dataframes:
+            print("Processing file:", file)
+            # Read the CSV file into a pandas DataFrame
+            df = pd.read_csv(file)
+
+            # Ensure that the 'documents' column exists
+            if "documents" not in df.columns:
+                raise ValueError(f"The 'documents' column is missing in {file}")
+
+            documents = df["documents"].tolist()
+
+            # Process metadata if available; otherwise, use None
+            metadatas_ = None
+            if "metadata" in df.columns:
+                metadatas_ = self.chroma_adapter.json2dict(df["metadata"])
+                # Process each document/metadata pair
+                [documents, metadatas_] = self.add_basics(documents, metadatas_)
+
+            # Sanitize and get or create the collection
+            collection_name = self.chroma_adapter._sanitize_collection_name(file.stem)
+            collections[collection_name] = (
+                self.chroma_adapter._get_or_create_collection(collection_name)
+            )
+
+            self.chroma_adapter.add_entries(collection_name, documents, metadatas_)
+
+        return
+
+    def add_basics(self, documents, metadatas):
+        for i, (doc, meta) in enumerate(zip(documents, metadatas)):
+            # Add "original_name" to each metadata dictionary
+            meta["original_name"] = doc
+            # If a "context" is provided, append it to the document
+            if "context" in meta and meta["context"]:
+                documents[i] = f"{doc} {meta['context']}"
+        return documents, metadatas
 
 
 def main():
