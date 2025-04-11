@@ -5,6 +5,7 @@ from pathlib import Path
 import json
 from uuid import uuid4
 from filter import remove_empty_lists, remove_nulls
+from datetime import datetime
 
 
 class ChromaClient:
@@ -63,7 +64,11 @@ class ChromaClient:
             for file in dataframes_folder.iterdir()
             if file.suffix == ".csv"
         ]
-
+        # Check if there are any CSV files
+        if not dataframes:
+            raise FileNotFoundError(
+                f"No CSV files found in the folder {dataframes_folder}."
+            )
         collections = {}
         for file in dataframes:
             print("Processing file:", file)
@@ -150,8 +155,6 @@ class ChromaClient:
         This function processes each document and its associated metadata:
         - Ensures documents is a list.
         - Normalizes metadatas to a list of dictionaries.
-        - Sets 'original_name' in each metadata dictionary from the document.
-        - Appends the 'context' from metadata to the document text, if available.
         - Cleans metadata with remove_empty_lists and remove_nulls.
         """
         collection_ = self.get_collection(collection_name)
@@ -163,25 +166,20 @@ class ChromaClient:
         # Ensure metadatas is always a list of dictionaries
         if metadatas is None:
             metadatas = [{} for _ in documents]
+
         elif isinstance(metadatas, dict):
             metadatas = [metadatas] * len(documents)
-
-        # Process each document/metadata pair
-        for i, (doc, meta) in enumerate(zip(documents, metadatas)):
-            # Add "original_name" to each metadata dictionary
-            meta["original_name"] = doc
-            # If a "context" is provided, append it to the document
-            if "context" in meta and meta["context"]:
-                documents[i] = f"{doc} {meta['context']}"
 
         # Clean each metadata dictionary
         cleaned_metadatas = [
             remove_nulls(remove_empty_lists(meta)) for meta in metadatas
         ]
-
         # Generate a unique id for each document
         ids = [str(uuid4()) for _ in range(len(documents))]
-
+        # Add a timestamp to each metadata dictionary
+        for meta in cleaned_metadatas:
+            if "timestamp" not in meta:
+                meta["timestamp"] = datetime.now().isoformat()
         # Add documents and metadata to the collection
         return collection_.add(
             ids=ids, documents=documents, metadatas=cleaned_metadatas
@@ -191,16 +189,6 @@ class ChromaClient:
         """Method to remove an item by document"""
         collection_ = self.get_collection(collection_name)
         return collection_.delete(where={"original_name": document})
-
-    # def get_entry_by_id(self, collection_name, id_):
-    #     """Method to get an entry by id"""
-    #     collection_ = self.get_collection(collection_name)
-    #     return collection_.get(ids=id_, include=["metadatas", "documents"])
-
-    # def get_entry_by_metadata(self, collection_name, metadata):
-    #     """Method to get an entry by metadata (input -----> key:value)"""
-    #     collection_ = self.get_collection(collection_name)
-    #     return collection_.get(where=metadata, include=["metadatas", "documents"])
 
     def get_entry_by_document(self, collection_name, document):
         """Method to get an entry by document (returns all of the entries that contain the string)"""
@@ -219,20 +207,18 @@ class ChromaClient:
 
 def main():
     client_ = ChromaClient()
-    client_.remove_all_collections()
-    client_.build_embeddings()
+    # client_.remove_all_collections()
+    # client_.build_embeddings()
     # print(client_.list_collections())
-    # collection = client_.get_collection("items")
+    collection = client_.get_collection("items")
     # print(client_.query("items", "apple", 5))
     # print(client_.query("locations", "kitchen", 5, "household locations"))
     # print(client_.query("actions", "move", 5, "household actions"))
     # print(client_.query("categories", "drinks", 5))
     # print(client_.query("names", "Luis", 5))
-    client_.add_entries("items", "chocomilk", {"context": "household items"})
-    print(client_.get_entry_by_document("items", "chocomilk"))
-
-    client_.remove_item_by_document("items", "chocomilk")
-    print(client_.get_entry_by_document("items", "chocomilk"))
+    print(collection.get())
+    # client_.add_entries("items", "chocomilk", {"context": "household items"})
+    # print(client_.get_entry_by_document("items", "chocomilk"))
 
 
 if __name__ == "__main__":

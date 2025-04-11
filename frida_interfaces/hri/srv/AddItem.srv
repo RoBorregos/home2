@@ -1,6 +1,0 @@
-# AddItem.srv
-string document 
-string location
----
-bool success  # Whether the operation was successful
-string message  # A message describing the result

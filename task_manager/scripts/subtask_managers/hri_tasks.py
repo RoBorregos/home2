@@ -219,25 +219,25 @@ class HRITasks(metaclass=SubtaskMeta):
         return future.result().answer
 
     @service_check("add_item_client", STATE["SERVICE_CHECK"], TIMEOUT)
-    def add_item(self, document: list, item_id: list, collection: str, metadata: list) -> str:
+    def add_item(self, document: list, metadata: list) -> str:
         """
         Adds new items to the ChromaDB collection.
 
         Args:
             document (list): List of documents to be added.
-            item_id (list): List of item IDs corresponding to each document.
-            collection (str): The collection to add the items to.
-            metadata (list): List of metadata corresponding to each document.
+            collection (str): "items"
+            metadata (list): List of metadata corresponding to each document Ex: {"default_location": "kitchen", "context": "household_items", }.
 
         Returns:
             str: A message indicating the success or failure of the operation.
         """
         try:
+            # Prepare the metadata with default values
+
             # Prepare the request with the necessary arguments
             request = AddItem.Request(
                 document=document,  # List of documents
-                id=item_id,  # List of item IDs
-                collection=collection,  # The collection to add the items to
+                collection="items",  # The collection to add the items to
                 metadata=metadata,  # Metadata as a JSON
             )
 
