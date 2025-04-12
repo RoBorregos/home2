@@ -9,11 +9,13 @@ services:
     image: ${IMAGE_NAME:-roborregos/home2:manipulation-jetson}
     volumes:
       - ../../:/workspace
+      - /tmp:/tmp
       - /dev:/dev
       - /dev/video0:/dev/video0
       - /tmp:/tmp
       - /tmp/.X11-unix:/tmp/.X11-unix
-  
+    group_add: 
+      - video  
     network_mode: host
     user: 1000:1000
     privileged: true
