@@ -362,6 +362,9 @@ class VisionTasks:
         Logger.success(self.node, "Person tracking success")
         return Status.EXECUTION_SUCCESS
 
+    # TODO: Add function to find person by name
+    # TODO: Add function to find 
+
     def describe_person(self, callback):
         """Describe the person in the image"""
         Logger.info(self.node, "Describing person")
