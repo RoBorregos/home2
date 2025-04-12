@@ -18,8 +18,8 @@ import threading
 import copy
 from typing import List
 import cv2 as cv
-from YoloV5ObjectDetector import YoloV5ObjectDetector
-from ObjectDetector import Detection, ObjectDectectorParams
+from detectors.YoloV5ObjectDetector import YoloV5ObjectDetector
+from detectors.ObjectDetector import Detection, ObjectDectectorParams
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
     DEPTH_IMAGE_TOPIC,
