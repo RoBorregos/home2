@@ -136,10 +136,14 @@ class HelpMeCarryTM(Node):
             self.subtask_manager.hri.say("I will now receive the bag")
             # TODO: self.subtask_manager.manipulation.move_joint_positions(dict,"bag_recieving_pose")
             self.subtask_manager.manipulation.open_gripper()
-            self.subtask_manager.hri.say(
-                "I have opened my gripper, please put the bag in it and say YES when it is done"
-            )
-            # TODO: self.subtask_manager.hri.wait_for_keywood("YES")
+            self.subtask_manager.hri.say("I have opened my gripper, please put the bag in it.")
+            while (
+                self.subtask_manager.hri.confirm(
+                    "Have you put the bag in my gripper?", True, retries=8, wait_between_retries=4
+                )
+                != "yes"
+            ):
+                self.subtask_manager.hri.say("I have opened my gripper, please put the bag in it.")
 
             self.subtask_manager.manipulation.close_gripper()
             self.subtask_manager.hri.say(
