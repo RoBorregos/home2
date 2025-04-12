@@ -47,6 +47,7 @@ ament_python_install_package(${PROJECT_NAME})
 #Install python scripts
 install(PROGRAMS
   scripts/object_detector_node.py
+  scripts/zero_shot_object_detector_node.py
   scripts/local_camera.py
   DESTINATION lib/${PROJECT_NAME}
 )

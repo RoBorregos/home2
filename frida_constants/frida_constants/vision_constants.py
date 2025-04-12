@@ -14,6 +14,14 @@ DETECTIONS_3D_TOPIC = "/vision/detections_3d"
 DETECTIONS_ACTIVE_TOPIC = "/detections_active"
 DEBUG_IMAGE_TOPIC = "/vision/debug_image"
 
+# ZERO SHOT OBJECT DETECTOR TOPICS
+ZERO_SHOT_DETECTIONS_TOPIC = "/vision/zero_shot_detections"
+ZERO_SHOT_DETECTIONS_IMAGE_TOPIC = "/vision/zero_shot_detections_image"
+ZERO_SHOT_DETECTIONS_POSES_TOPIC = "/vision/zero_shot_detections_poses"
+ZERO_SHOT_DETECTIONS_3D_TOPIC = "/vision/zero_shot_detections_3d"
+ZERO_SHOT_DETECTIONS_ACTIVE_TOPIC = "/vision/zero_shot_detections_active"
+SET_DETECTOR_CLASSES_SERVICE = "/vision/set_detector_classes"
+
 # LOCAL CAMERA TOPICS
 LOCAL_CAMERA_TOPIC = "/vision/local_rbg_image"
 
