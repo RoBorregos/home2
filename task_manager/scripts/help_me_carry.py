@@ -5,11 +5,11 @@ Task Manager for Carry my luggage task of Robocup @Home 2025
 """
 
 import rclpy
-from utils.status import Status
-
 from rclpy.node import Node
 from utils.logger import Logger
+from utils.status import Status
 from utils.subtask_manager import SubtaskManager, Task
+
 # from subtask_managers.vision_tasks import VisionTasks
 
 ATTEMPT_LIMIT = 3
@@ -45,24 +45,12 @@ class HelpMeCarryTM(Node):
         Logger.info(self, "HelpMeCarryTaskManager has started.")
 
     def navigate_to(self, location: str, sublocation: str = ""):
-        self.subtask_manager.hri.say(f"I will follow you now{location}")
+        self.subtask_manager.hri.say(f"I will follow you now to {location}")
         return
         self.subtask_manager.manipulation.follow_face(False)
         self.subtask_manager.manipulation.move_to_position("navigation")
         future = self.subtask_manager.nav.move_to_location(location, sublocation)
         rclpy.spin_until_future_complete(self, future)
-
-    def confirm(self, statement: str) -> bool:
-        """Confirm the name is correct"""
-        self.subtask_manager.hri.say(f"I heard {statement}, is that correct?")
-        response = self.subtask_manager.hri.hear()
-        return self.subtask_manager.hri.is_positive(response)
-
-    def hear_word(self, word: str) -> bool:
-        """Check if the word is heard"""
-        statement = self.subtask_manager.hri.hear()
-        return statement
-        return self.subtask_manager.hri.extract_data(word, statement)
 
     def run(self):
         """State machine"""
@@ -98,12 +86,22 @@ class HelpMeCarryTM(Node):
 
         if self.current_state == HelpMeCarryTM.TASK_STATES["FOLLOWING_TO_DESTINATION"]:
             Logger.state(self, "Following to destination")
-            while not self.subtask_manager.hri.hear("STOP"):
-                # TODO: person_pose = self.subtask_manager.vision.follow_person() /It must return the person pose and the person position towards the center of the camera
-                # to enable the arm to rotate towards the person
-                # TODO: self.subtask_manager.manipulation.pan_to(person_pose)
-                # TODO: self.subtask_manager.navigation.follow_pose_slam(person_pose)
-                pass
+            while True:
+                s, result = self.subtask_manager.hri.interpret_keyword(["stop"])
+                if result == "stop":
+                    self.subtask_manager.hri.say("I will stop following you now")
+                    break
+                else:
+                    self.subtask_manager.hri.say(
+                        "I will keep following you. Please say stop when you want me to stop"
+                    )
+
+            # while not self.subtask_manager.hri.interpret_keyword("STOP"):
+            #     # TODO: person_pose = self.subtask_manager.vision.follow_person() /It must return the person pose and the person position towards the center of the camera
+            #     # to enable the arm to rotate towards the person
+            #     # TODO: self.subtask_manager.manipulation.pan_to(person_pose)
+            #     # TODO: self.subtask_manager.navigation.follow_pose_slam(person_pose)
+            #     pass
 
             self.subtask_manager.hri.say("I heard STOP, stopping now")
             #            self.current_state = HelpMeCarryTM.TASK_STATES["RETURN_TO_STARTING_LOCATION"]
@@ -142,6 +140,7 @@ class HelpMeCarryTM(Node):
                 "I have opened my gripper, please put the bag in it and say YES when it is done"
             )
             # TODO: self.subtask_manager.hri.wait_for_keywood("YES")
+
             self.subtask_manager.manipulation.close_gripper()
             self.subtask_manager.hri.say(
                 "I have received the bag, now I will return to the starting location"
