@@ -13,7 +13,7 @@ find_package(rclpy REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(frida_interfaces REQUIRED)
 
-install(DIRECTORY launch config maps
+install(DIRECTORY launch config maps bt
   DESTINATION share/${PROJECT_NAME})
 
 # instalar el json
