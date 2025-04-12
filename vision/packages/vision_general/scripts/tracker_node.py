@@ -234,6 +234,7 @@ class SingleTracker(Node):
                     elif track_by == DetectBy.POSES.value:
                         pose = self.pose_detection.detectPose(cropped_image)
 
+                    print(f"pose: {pose.value}, value: {value}")
                     if pose.value == value:
                         largest_person["id"] = track_id
                         largest_person["area"] = area
@@ -414,8 +415,8 @@ class SingleTracker(Node):
                     coords.y = point3D[1]
                     coords.z = point3D[2]
                     self.results_publisher.publish(coords)
-                else:
-                    self.get_logger().warn("Depth image not available")
+                # else:
+                    # self.get_logger().warn("Depth image not available")
 
 
 def main(args=None):
