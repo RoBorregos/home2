@@ -36,14 +36,14 @@ class ZedSimulator(Node):
                 self.get_logger().info("No frame")
                 continue
 
-            if self.use_zed:
-                frame = frame[:, : frame.shape[1] // 2]
+            # if self.use_zed:
+            #     frame = frame[:, : frame.shape[1] // 2]
 
             image = self.bridge.cv2_to_imgmsg(frame, encoding="bgr8")
             self.publisher_.publish(image)
-            cv2.imshow("frame", frame)
-            if cv2.waitKey(1) & 0xFF == ord("q"):
-                break
+            # cv2.imshow("frame", frame)
+            # if cv2.waitKey(1) & 0xFF == ord("q"):
+            #     break
 
         self.cap.release()
         cv2.destroyAllWindows()
