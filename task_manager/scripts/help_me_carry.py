@@ -84,6 +84,7 @@ class HelpMeCarryTM(Node):
                 self.subtask_manager.hri.say(
                     "Thank you, I can see you now, wait for following confirmation"
                 )
+                self.subtask_manager.vision.track_person()
                 # MOCK: self.subtask_manager.vision.save_person()
                 # if slef.subtask_manager.vision.save_person() == VisionTasks.STATE["EXECUTION_SUCCESS"]:
                 self.current_state = HelpMeCarryTM.TASK_STATES["CONFIRM_FOLLOWING"]
@@ -121,7 +122,7 @@ class HelpMeCarryTM(Node):
             desription = self.subtask_manager.vision.describe_bag_moondream()
             self.subtask_manager.hri.say("I have detected the bag, now I will describe it")
             self.subtask_manager.hri.say(desription)
-            
+
             # TODO: Vision receives a bounding box and gives it to moondream to describe the bag
             # bag_description = self.subtask_manager.vision.describe(bounding_box)
             # TODO: Manipulation receives the bag pose and aims the arm towards the pose
