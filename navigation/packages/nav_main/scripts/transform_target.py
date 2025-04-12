@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
-from geometry_msgs.msg import Point, PointStamped
+from geometry_msgs.msg import Point, PointStamped,PoseStamped
 from visualization_msgs.msg import Marker
 import math as m
 from tf2_ros import Buffer, TransformListener
@@ -19,6 +19,7 @@ class PointTransformer(Node):
         # Marker publisher
         self.marker_pub = self.create_publisher(Marker, 'visualization_marker', 10)
         self.point_pub = self.create_publisher(PointStamped, 'point_visualize', 10)
+        self.gual_pub = self.create_publisher(PoseStamped, 'goal_update', 10)
         self.accumulated_points = []
         # Subscribe to the vision/tracking_results topic
         self.point_sub = self.create_subscription(
@@ -27,6 +28,19 @@ class PointTransformer(Node):
             self.point_callback,
             10
         )
+        #send initial goal 
+        # self.initial_goal = PoseStamped()
+        # self.initial_goal.header.frame_id = 'map'
+        # self.initial_goal.header.stamp = self.get_clock().now().to_msg()
+        # self.initial_goal.pose.position.x = 0.0
+        # self.initial_goal.pose.position.y = 0.0
+        # self.initial_goal.pose.position.z = 0.0
+        # self.initial_goal.pose.orientation.w = 1.0
+        # self.initial_goal.pose.orientation.x = 0.0
+        # self.initial_goal.pose.orientation.y = 0.0
+        # self.initial_goal.pose.orientation.z = 0.0
+        # self.gual_pub.publish(self.initial_goal)
+        # self.get_logger().info('Point Transformer Node Initialized')
 
     def median_filter(self, data):
         '''From a given list of data, return the median value'''
@@ -86,26 +100,42 @@ class PointTransformer(Node):
         stamped_point.point.x = median_x
         stamped_point.point.y = median_y
         stamped_point.point.z = 0.0
-        self.point_pub.publish(stamped_point)
+        
 
+        try:
+            # Transform the point to base_link
+            transform = self.tf_buffer.lookup_transform(
+                'map',
+                stamped_point.header.frame_id,
+                rclpy.time.Time()
+            )
+            transformed_point = do_transform_point(stamped_point, transform)
+            # Publish on goal update
 
-        # try:
-        #     # Transform the point to base_link
-        #     transform = self.tf_buffer.lookup_transform(
-        #         'base_link',
-        #         stamped_point.header.frame_id,
-        #         rclpy.time.Time()
-        #     )
-        #     transformed_point = do_transform_point(stamped_point, transform)
-        #     self.get_logger().info(f'Transformed point: {transformed_point.point}')
-        #     self.publish_marker(transformed_point.point)
+            self.point_pub.publish(transformed_point)
+            
+            #publish on goal update
+            goal_update = PoseStamped()
+            goal_update.header.frame_id = 'map'
+            goal_update.header.stamp = self.get_clock().now().to_msg()
+            goal_update.pose.position.x = transformed_point.point.x
+            goal_update.pose.position.y = transformed_point.point.y
+            goal_update.pose.position.z = 0.0
+            goal_update.pose.orientation.w = 1.0
+            goal_update.pose.orientation.x = 0.0
+            goal_update.pose.orientation.y = 0.0
+            goal_update.pose.orientation.z = 0.0
+            self.gual_pub.publish(goal_update)
 
-        # except Exception as e:
-        #     self.get_logger().warn(f'Failed to transform point: {e}')
+            self.get_logger().info(f'Transformed point: {transformed_point.point}')
+            # self.publish_marker(transformed_point.point)
+
+        except Exception as e:
+            self.get_logger().warn(f'Failed to transform point: {e}')
 
     def publish_marker(self, point):
         marker = Marker()
-        marker.header.frame_id = 'base_link'
+        marker.header.frame_id = 'map'
         marker.header.stamp = self.get_clock().now().to_msg()
         marker.ns = 'zed_point'
         marker.id = 0

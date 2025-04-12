@@ -20,7 +20,7 @@ amcl:
     max_beams: 60
     max_particles: 2000
     min_particles: 500
-    odom_frame_id: "icp_odom"
+    odom_frame_id: "odom"
     pf_err: 0.05
     pf_z: 0.99
     recovery_alpha_fast: 0.0
@@ -51,7 +51,7 @@ bt_navigator:
     # 'default_nav_through_poses_bt_xml' and 'default_nav_to_pose_bt_xml' are use defaults:
     # nav2_bt_navigator/navigate_to_pose_w_replanning_and_recovery.xml
     # nav2_bt_navigator/navigate_through_poses_w_replanning_and_recovery.xml
-    default_nav_to_pose_bt_xml: "$(find-pkg-share nav_main)/bt/follow_dynamic_point.xml"
+    # default_nav_to_pose_bt_xml: "$(find-pkg-share nav_main)/bt/follow_dynamic_point.xml"
     # They can be set here or via a RewrittenYaml remap from a parent launch file to Nav2.
     plugin_lib_names:
       - nav2_compute_path_to_pose_action_bt_node
@@ -186,7 +186,7 @@ local_costmap:
     ros__parameters:
       update_frequency: 5.0
       publish_frequency: 2.0
-      global_frame: icp_odom
+      global_frame: odom
       robot_base_frame: base_link
       use_sim_time: True
       rolling_window: true
@@ -208,33 +208,13 @@ local_costmap:
         z_voxels: 16
         max_obstacle_height: 2.0
         mark_threshold: 0
-        observation_sources: scan ground obstacles
+        observation_sources: scan
         scan:
           topic: /scan
           max_obstacle_height: 2.0
           clearing: True
           marking: True
           data_type: "LaserScan"
-          raytrace_max_range: 3.0
-          raytrace_min_range: 0.0
-          obstacle_max_range: 2.5
-          obstacle_min_range: 0.0
-        ground:
-          topic: /camera/ground
-          max_obstacle_height: 0.4
-          clearing: True
-          marking: False
-          data_type: "PointCloud2"
-          raytrace_max_range: 3.0
-          raytrace_min_range: 0.0
-          obstacle_max_range: 2.5
-          obstacle_min_range: 0.0
-        obstacles:
-          topic: /camera/obstacles
-          max_obstacle_height: 0.4
-          clearing: True
-          marking: True
-          data_type: "PointCloud2"
           raytrace_max_range: 3.0
           raytrace_min_range: 0.0
           obstacle_max_range: 2.5
@@ -331,7 +311,7 @@ behavior_server:
       plugin: "nav2_behaviors/Wait"
     assisted_teleop:
       plugin: "nav2_behaviors/AssistedTeleop"
-    global_frame: icp_odom
+    global_frame: odom
     robot_base_frame: base_link
     transform_tolerance: 0.1
     use_sim_time: true
