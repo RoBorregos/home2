@@ -115,12 +115,15 @@ class HelpMeCarryTM(Node):
 
         if self.current_state == HelpMeCarryTM.TASK_STATES["DETECT_THE_BAG"]:
             Logger.state(self, "Detecting the bag")
-            self.subtask_manager.hri.say("I will now detect the bag")
+            self.subtask_manager.hri.say("Please point at the bag you want me to carry")
+            # wait for the user to point at the bag
             # TODO: Vision detects bag, returns bounding box for moondream, and returns the estimated bag pose in 2D plane
             # bounding_box, bag_pose = self.subtask_manager.vision.detect("bag")
-            self.subtask_manager.hri.say("I have detected the bag, now I will describe it")
             # TODO: Vision receives a bounding box and gives it to moondream to describe the bag
-            # bag_description = self.subtask_manager.vision.describe(bounding_box)
+            bag_description = self.subtask_manager.vision.describe_bag()
+            self.subtask_manager.hri.say(
+                f"I have detected the bag, it is {bag_description}, please confirm if this is correct"
+            )
             # TODO: Manipulation receives the bag pose and aims the arm towards the pose
             # self.subtask_manager.manipulation.pan_to(bag_pose)
             # TODO: HRI says the bag description

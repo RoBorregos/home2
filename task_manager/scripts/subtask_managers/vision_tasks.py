@@ -368,11 +368,13 @@ class VisionTasks:
         prompt = "Describe the person in the image"
         self.moondream_query_async(prompt, query_person=True, callback=callback)
 
+    @mockable(return_value="Red leather", delay=2)
+    @service_check("moondream_query_client", Status.EXECUTION_ERROR, TIMEOUT)
     def describe_bag(self, bbox: list[float]) -> tuple[int, str]:
         """Describe the person in the image"""
         Logger.info(self.node, "Describing the bag")
-        prompt = "Describe the bag in the image"
-        return self.moondream_crop_query(prompt, bbox)
+        prompt = "Describe in 3 words the object the person is pointing to"
+        return self.moondream_query(prompt=prompt, query_person=False)
 
 
 if __name__ == "__main__":
