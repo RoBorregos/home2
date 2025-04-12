@@ -1,6 +1,9 @@
 # ROBORREGOS @HOME
 
 
+[![Ros Build](https://github.com/RoBorregos/home2/actions/workflows/ros2-build.yml/badge.svg)](https://github.com/RoBorregos/home2/actions/workflows/ros2-build.yml)
+[![Pre-commit](https://github.com/RoBorregos/home2/actions/workflows/pre-commit.yml/badge.svg)](https://github.com/RoBorregos/home2/actions/workflows/pre-commit.yml)
+
 # Steps to Run the Repository  
 
 ## Prerequisites  

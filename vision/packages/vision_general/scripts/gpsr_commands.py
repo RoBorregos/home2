@@ -13,9 +13,10 @@ from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 
-from frida_interfaces.srv import CountBy
+from frida_interfaces.srv import CountBy, CountByGesture, CountByPose
 
 from ament_index_python.packages import get_package_share_directory
+
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
     COUNT_BY_PERSON_TOPIC,
@@ -23,9 +24,13 @@ from frida_constants.vision_constants import (
     # COUNT_BY_COLOR_TOPIC,
     # COUNT_BY_CLOTHES_TOPIC,
     # COUNT_BY_OBJECTS_TOPIC,
-    # COUNT_BY_GESTURES_TOPIC,
-    # COUNT_BY_POSE_TOPIC,
+    COUNT_BY_GESTURES_TOPIC,
+    COUNT_BY_POSE_TOPIC,
 )
+
+from frida_constants.vision_enums import Poses, Gestures
+
+from pose_detection import PoseDetection
 
 package_share_dir = get_package_share_directory("vision_general")
 
@@ -51,13 +56,13 @@ class GPSRCommands(Node):
 
         # Define services for GPSR commands
 
-        # self.count_by_gestures_service = self.create_service(
-        #     CountBy, COUNT_BY_GESTURES_TOPIC, self.count_by_gestures_callback
-        # )
+        self.count_by_gestures_service = self.create_service(
+            CountByGesture, COUNT_BY_GESTURES_TOPIC, self.count_by_gestures_callback
+        )
 
-        # self.count_by_pose_service = self.create_service(
-        #     CountBy, COUNT_BY_POSE_TOPIC, self.count_by_pose_callback
-        # )
+        self.count_by_pose_service = self.create_service(
+            CountByPose, COUNT_BY_POSE_TOPIC, self.count_by_pose_callback
+        )
 
         # self.count_by_objects_service = self.create_service(
         #     CountBy, COUNT_BY_OBJECTS_TOPIC, self.count_by_objects_callback
@@ -79,6 +84,7 @@ class GPSRCommands(Node):
 
         self.image = None
         self.yolo_model = YOLO(YOLO_LOCATION)
+        self.pose_detection = PoseDetection()
         self.output_image = []
 
         self.get_logger().info("GPSRCommands Ready.")
@@ -109,18 +115,31 @@ class GPSRCommands(Node):
         frame = self.image
         self.output_image = frame.copy()
 
-        # Function for counting gestures, still not implemented
-        # self.count_gestures(frame, gesture)
+        gesture_requested = request.gesture_requested
 
-        gesture_count = 0
+        # Convert gesture_requested to Enum Gestures
+        try:
+            gesture_requested_enum = Gestures[gesture_requested]
+        except KeyError:
+            self.get_logger().warn(f"Pose {gesture_requested} is not valid.")
+            response.success = False
+            response.count = 0
+            return response
+
+        # Detect people using YOLO
+        self.get_detections(frame, 0)
+
+        gesture = self.count_gestures(frame)
+
+        gesture_count = gesture.get(gesture_requested_enum, 0)
 
         response.success = True
         response.count = gesture_count
-        self.get_logger().info(f"Gestures counted: {gesture_count}")
+        self.get_logger().info(f"Gesture {gesture_requested} counted: {gesture_count}")
         return response
 
     def count_by_pose_callback(self, request, response):
-        """Callback to count poses in the image."""
+        """Callback to count a specific pose in the image."""
         self.get_logger().info("Executing service Count By Pose")
 
         if self.image is None:
@@ -131,14 +150,27 @@ class GPSRCommands(Node):
         frame = self.image
         self.output_image = frame.copy()
 
-        # Function for counting poses, still not implemented
-        # self.count_poses(frame, pose)
+        pose_requested = request.pose_requested
 
-        pose_count = 0
+        # Convert pose_requested to Enum Poses
+        try:
+            pose_requested_enum = Poses[pose_requested]
+        except KeyError:
+            self.get_logger().warn(f"Pose {pose_requested} is not valid.")
+            response.success = False
+            response.count = 0
+            return response
+
+        # Detect people using YOLO
+        self.get_detections(frame, 0)
+
+        pose = self.count_poses(frame)
+
+        pose_count = pose.get(pose_requested_enum, 0)
 
         response.success = True
         response.count = pose_count
-        self.get_logger().info(f"Poses counted: {pose_count}")
+        self.get_logger().info(f"Pose {pose_requested} counted: {pose_count}")
         return response
 
     def count_by_objects_callback(self, request, response):
@@ -223,6 +255,51 @@ class GPSRCommands(Node):
             self.image_publisher.publish(
                 self.bridge.cv2_to_imgmsg(self.output_image, "bgr8")
             )
+
+    def count_poses(self, frame):
+        """Count the poses in the image and return a dictionary."""
+        pose_count = {
+            Poses.UNKNWON: 0,
+            Poses.STANDING: 0,
+            Poses.SITTING: 0,
+            Poses.LYING_DOWN: 0,
+        }
+
+        # Detect poses for each detected person
+        for person in self.people:
+            x, y, w, h = person["bbox"]
+            cropped_frame = frame[y : y + h, x : x + w]
+
+            pose = self.pose_detection.detectPose(cropped_frame)
+
+            # Increment the pose count based on detected pose
+            if pose in pose_count:
+                pose_count[pose] += 1
+
+        return pose_count
+
+    def count_gestures(self, frame):
+        """Count the gestures in the image and return a dictionary."""
+        gesture_count = {
+            Gestures.WAVING: 0,
+            Gestures.RAISING_LEFT_ARM: 0,
+            Gestures.RAISING_RIGHT_ARM: 0,
+            Gestures.POINTING_LEFT: 0,
+            Gestures.POINTING_RIGHT: 0,
+        }
+
+        # Detect gestures for each detected person
+        for person in self.people:
+            x, y, w, h = person["bbox"]
+            cropped_frame = frame[y : y + h, x : x + w]
+
+            gesture = self.pose_detection.detectGesture(cropped_frame)
+
+            # Increment the gesture count based on detected gesture
+            if gesture in gesture_count:
+                gesture_count[gesture] += 1
+
+        return gesture_count
 
     def get_detections(self, frame, comp_class) -> None:
         """Obtain YOLO detections for people."""

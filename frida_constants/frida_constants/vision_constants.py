@@ -18,18 +18,24 @@ DETECTIONS_ACTIVE_TOPIC = "/detections_active"
 DEBUG_IMAGE_TOPIC = "/vision/debug_image"
 
 # LOCAL CAMERA TOPICS
-LOCAL_CAMERA_TOPIC = "vision/local_rbg_image"
+LOCAL_CAMERA_TOPIC = "/vision/local_rbg_image"
 
 # OBJECT DETECTION HANDLER TOPICS
 DETECTION_HANDLER_TOPIC_SRV = "/vision/detection_handler"
 
 # Tracker node
 SET_TARGET_TOPIC = "/vision/set_tracking_target"
+SET_TARGET_BY_TOPIC = "/vision/set_tracking_target_by"
 RESULTS_TOPIC = "/vision/tracking_results"
+TRACKER_IMAGE_TOPIC = "/vision/tracker_image"
 
 # Moondream
-PERSON_DESCRIPTION_TOPIC = "/vision/person_description"
-BEVERAGE_TOPIC = "/vision/beverage"
+BEVERAGE_TOPIC = "/vision/beverage_location"
+# PERSON_DESCRIPTION_TOPIC = "/vision/person_description"
+PERSON_POSTURE_TOPIC = "/vision/person_posture"
+QUERY_TOPIC = "/vision/query"
+PERSON_POSTURE_TOPIC = "/vision/person_posture"
+CROP_QUERY = "/vision/crop_query"
 
 # Face recognition
 SAVE_NAME_TOPIC = "/vision/new_name"

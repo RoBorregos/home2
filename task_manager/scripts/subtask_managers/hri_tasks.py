@@ -20,6 +20,7 @@ from frida_constants.hri_constants import (
     QUERY_ITEM_SERVICE,
     SPEAK_SERVICE,
     STT_SERVICE_NAME,
+    USEFUL_AUDIO_NODE_NAME,
     WAKEWORD_TOPIC,
 )
 from frida_interfaces.srv import (
@@ -35,6 +36,8 @@ from frida_interfaces.srv import (
     QueryItem,
     Speak,
 )
+from rcl_interfaces.msg import Parameter, ParameterType, ParameterValue
+from rcl_interfaces.srv import SetParameters
 from rclpy.node import Node
 from std_msgs.msg import String
 from utils.decorators import service_check
@@ -81,6 +84,10 @@ class HRITasks(metaclass=SubtaskMeta):
         self.llm_wrapper_service = self.node.create_client(LLMWrapper, LLM_WRAPPER_SERVICE)
         self.keyword_client = self.node.create_subscription(
             String, WAKEWORD_TOPIC, self._get_keyword, 10
+        )
+
+        self.useful_audio_params = self.node.create_client(
+            SetParameters, f"/{USEFUL_AUDIO_NODE_NAME}/set_parameters"
         )
 
         self.services = {
@@ -130,9 +137,7 @@ class HRITasks(metaclass=SubtaskMeta):
         future = self.speak_service.call_async(request)
 
         if wait:
-            self.node.get_logger().info("in wait")
             rclpy.spin_until_future_complete(self.node, future)
-            self.node.get_logger().info("after future complete")
             return Status.EXECUTION_SUCCESS if future.result().success else Status.EXECUTION_ERROR
         return Status.EXECUTION_SUCCESS
 
@@ -183,12 +188,17 @@ class HRITasks(metaclass=SubtaskMeta):
             self.keyword = ""
 
     @service_check("hear_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
-    def hear(self) -> str:
-        self.node.get_logger().info("Hearing from user")
+    def hear(self, min_audio_length=0.0, max_audio_length=0.0) -> str:
+        if min_audio_length > 0:
+            self.set_double_param("MIN_AUDIO_DURATION", min_audio_length)
+
+        if max_audio_length > 0:
+            self.set_double_param("MAX_AUDIO_DURATION", max_audio_length)
+
         request = STT.Request()
 
         future = self.hear_service.call_async(request)
-
+        self.node.get_logger().info("Hearing from the user...")
         rclpy.spin_until_future_complete(self.node, future)
 
         execution_status = (
@@ -279,6 +289,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
             self.say(question)
             s, interpreted_text = self.hear()
+            print(f"Interpreted text: {interpreted_text}")
 
             if s == Status.EXECUTION_SUCCESS:
                 s, target_info = self.extract_data(query, interpreted_text, context)
@@ -389,6 +400,25 @@ class HRITasks(metaclass=SubtaskMeta):
 
         except Exception:
             return Status.EXECUTION_ERROR
+
+    @service_check("useful_audio_params", (Status.SERVICE_CHECK, ""), TIMEOUT)
+    def set_double_param(self, name, value):
+        param = Parameter()
+        param.name = name
+        param.value = ParameterValue(type=ParameterType.PARAMETER_DOUBLE)
+        param.value.double_value = value
+        request = SetParameters.Request()
+        request.parameters = [param]
+        future = self.useful_audio_params.call_async(request)
+
+        while not future.done():
+            self.node.get_logger().info(f"Setting parameter {name} to {value}")
+            rclpy.spin_once(self.node, timeout_sec=0.1)
+
+        if future.result() is not None:
+            self.node.get_logger().info(f"Parameter {name} set to {value}")
+        else:
+            self.node.get_logger().error(f"Failed to set parameter {name}")
 
     @service_check("command_interpreter_client", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def command_interpreter(self, text: str) -> CommandInterpreter.Response:

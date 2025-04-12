@@ -277,7 +277,6 @@ class object_detector_node(rclpy.node.Node):
     def rgbImageCallback(self, data):
         self.rgb_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
         self.curr_clock = data.header.stamp
-        print("got image")
         if not self.active_flag:
             self.detections_frame = self.rgb_image
         elif (

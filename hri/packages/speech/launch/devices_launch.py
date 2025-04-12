@@ -5,7 +5,7 @@ from launch import LaunchDescription
 from launch_ros.actions import Node
 
 from frida_constants import ModuleNames, parse_ros_config
-from frida_constants.hri_constants import USE_OWW, USE_RESPEAKER
+from frida_constants.hri_constants import USE_OWW, USE_RESPEAKER, USEFUL_AUDIO_NODE_NAME
 
 
 def generate_launch_description():
@@ -75,7 +75,7 @@ def generate_launch_description():
         Node(
             package="speech",
             executable="useful_audio.py",
-            name="useful_audio",
+            name=USEFUL_AUDIO_NODE_NAME,
             output="screen",
             emulate_tty=True,
             parameters=[useful_audio_config],

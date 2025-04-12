@@ -12,8 +12,7 @@ from speech.speech_api_utils import SpeechApiUtils
 from std_msgs.msg import String
 
 from frida_interfaces.msg import AudioData
-from frida_interfaces.srv import STT
-from frida_interfaces.srv import UpdateHotwords
+from frida_interfaces.srv import STT, UpdateHotwords
 
 # Add the directory containing the protos to the Python path
 sys.path.append(os.path.join(os.path.dirname(__file__), "stt"))

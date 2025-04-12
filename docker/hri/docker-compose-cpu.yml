@@ -1,5 +1,4 @@
 include:
-  # Laptop
   - path: hri-ros.yaml
   - path: stt.yaml
   - path: ollama.yaml
