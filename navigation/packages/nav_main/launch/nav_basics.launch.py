@@ -10,6 +10,8 @@ from launch.conditions import IfCondition
 
 def generate_launch_description():
     publish_urdf = LaunchConfiguration('publish_tf')
+    use_sim = LaunchConfiguration('use_sim')
+    use_dualshock = LaunchConfiguration('use_dualshock')
 
     # Declare the launch argument
     declare_publish_tf = DeclareLaunchArgument(
@@ -18,7 +20,13 @@ def generate_launch_description():
         description='Whether to publish URDF'
     )
 
-    use_sim = LaunchConfiguration('use_sim')
+    declare_dualshock = DeclareLaunchArgument(
+        'use_dualshock',
+        default_value='false',  # LaunchConfiguration values are strings, so use 'true'/'false'
+        description='Whether to use dualshock'
+    )
+
+    
     declare_use_sim = DeclareLaunchArgument(
         'use_sim',
         default_value='false',
@@ -34,7 +42,7 @@ def generate_launch_description():
                     "dashgo_driver.launch.py",
                 ]
             )
-            ), condition=IfCondition(use_sim),
+            )
         )
     ekf_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -80,6 +88,17 @@ def generate_launch_description():
         executable='joint_state_publisher',
         condition=IfCondition(publish_urdf),  # Only launch joint_state if publish_tf is true
     )
+    dualshock_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution(
+                [
+                    FindPackageShare("nav_main"),
+                    "launch",
+                    "dualshock_cmd_vel.launch.py",
+                ]
+            )
+        ),
+        condition=IfCondition(use_dualshock),)
 
     return LaunchDescription([
         declare_publish_tf,  # Declare launch argument
@@ -88,5 +107,6 @@ def generate_launch_description():
         ekf_launch,
         robot_description_launch,
         joint_state,
-        laser_launch
+        laser_launch,
+        dualshock_launch
     ])

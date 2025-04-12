@@ -225,7 +225,7 @@ public:
 
       req2->collision_objects[0].dimensions.x = box_params.width;
       req2->collision_objects[0].dimensions.y = box_params.depth;
-      req2->collision_objects[0].dimensions.z = box_params.height;
+      req2->collision_objects[0].dimensions.z = 0.025;
 
       auto res = this->add_collision_object_client->async_send_request(
           req2,

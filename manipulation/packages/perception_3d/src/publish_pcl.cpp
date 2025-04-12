@@ -66,7 +66,7 @@ public:
     RCLCPP_INFO(this->get_logger(), "Loaded point cloud");
 
     auto qos = rclcpp::QoS(rclcpp::SensorDataQoS());
-    qos.reliability(rclcpp::ReliabilityPolicy::Reliable);
+    qos.reliability(rclcpp::ReliabilityPolicy::BestEffort);
 
     subscriber = this->create_subscription<sensor_msgs::msg::PointCloud2>(
         "/point_cloud", qos,
