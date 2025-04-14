@@ -158,6 +158,7 @@ class MoondreamNode(Node):
             and 0 < xmax <= self.image.shape[1]
             and 0 < ymax <= self.image.shape[0]
         ):
+            print(f"Crop coordinates: {xmin}, {ymin}, {xmax}, {ymax}")
             self.image = self.image[int(ymin):int(ymax), int(xmin):int(xmax)]
         else:
             response.result = "Crop coordinates are out of bounds."
