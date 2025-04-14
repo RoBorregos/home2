@@ -158,7 +158,7 @@ class DetectPointingObjectServer(Node):
                 self.last_inference_time = self.get_clock().now()
 
     def image_callback(self, data):
-        self.bgr_img = self.bridge.imgmsg_to_cv2(data)
+        self.bgr_img = self.bridge.imgmsg_to_cv2(data, "bgr8")
         if self.active_flag and self.runThread is None or not self.runThread.is_alive():
             self.runThread = threading.Thread(
                 target=self.run_inference, args=(), daemon=True
