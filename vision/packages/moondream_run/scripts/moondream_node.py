@@ -153,12 +153,16 @@ class MoondreamNode(Node):
         ymax = ymax * self.image.shape[0]
 
         if (
-            xmin >= 0
-            or ymin >= 0
-            or xmax < self.image.shape[1]
-            or ymax < self.image.shape[0]
+            0 <= xmin < self.image.shape[1]
+            and 0 <= ymin < self.image.shape[0]
+            and 0 < xmax <= self.image.shape[1]
+            and 0 < ymax <= self.image.shape[0]
         ):
-            self.image = self.image[int(ymin) : int(ymax), int(xmin) : int(xmax)]
+            self.image = self.image[int(ymin):int(ymax), int(xmin):int(xmax)]
+        else:
+            response.result = "Crop coordinates are out of bounds."
+            response.success = False
+            return response
 
         _, image_bytes = cv2.imencode(".jpg", self.image)
         image_bytes = image_bytes.tobytes()
