@@ -152,7 +152,7 @@ private:
         trans.translation(),
         Eigen::Quaterniond(trans.rotation()),
         {gripper_dims_.base[0], gripper_dims_.base[1], gripper_dims_.base[2]},
-        {r * 0.5f, g * 0.5f, b * 0.5f, 0.8f} // Base más oscura
+        {r * 0.5f, g * 0.5f, b * 0.5f, 0.6f} // Base más oscura
     );
     markers.push_back(base_marker);
 
@@ -173,7 +173,7 @@ private:
           finger_trans.translation(),
           Eigen::Quaterniond(trans.rotation()),
           {gripper_dims_.finger[0], gripper_dims_.finger[1], gripper_dims_.finger[2]},
-          {r, g, b, 0.8f}
+          {r, g, b, 0.6f}
       );
       markers.push_back(finger_marker);
     }
@@ -234,6 +234,8 @@ private:
     marker.color.g = color[1];
     marker.color.b = color[2];
     marker.color.a = color[3];
+
+    marker.lifetime = rclcpp::Duration(10, 0);
 
     return marker;
   }

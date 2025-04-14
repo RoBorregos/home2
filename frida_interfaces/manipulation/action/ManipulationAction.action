@@ -1,6 +1,7 @@
 #goal definition
 string object_name
 int8 task_type
+geometry_msgs/PointStamped object_point
 ---
 #result definition
 int32 success
