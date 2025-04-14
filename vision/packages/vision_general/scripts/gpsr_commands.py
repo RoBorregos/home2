@@ -247,7 +247,7 @@ class GPSRCommands(Node):
         response.count = clothes_count
         self.get_logger().info(f"Clothes counted: {clothes_count}")
         return response
-    
+
     def detect_pose_gesture_callback(self, request, response):
         """Callback to detect a specific pose or gesture in the image."""
         self.get_logger().info("Executing service Pose Detection")
@@ -274,7 +274,7 @@ class GPSRCommands(Node):
             response.success = False
             response.result = ""
             return response
-        
+
         response.success = True
         self.get_logger().info(f"{type_requested} detected: {response.result}")
         return response
@@ -305,15 +305,15 @@ class GPSRCommands(Node):
         biggest_person = max(self.people, key=lambda p: p["area"], default=None)
         x1, y1, x2, y2 = biggest_person["bbox"]
 
-       # Crop the frame to the bounding box of the person
-        cropped_frame = frame[y1 : y2, x1 : x2]
+        # Crop the frame to the bounding box of the person
+        cropped_frame = frame[y1:y2, x1:x2]
         pose = self.pose_detection.detectPose(cropped_frame)
 
         if pose in poses:
             return pose.value
-        
+
         return Poses.UNKNOWN.value
-        
+
     def count_poses(self, frame):
         """Count the poses in the image and return a dictionary."""
         pose_count = {
@@ -328,7 +328,7 @@ class GPSRCommands(Node):
             x1, y1, x2, y2 = person["bbox"]
 
             # Crop the frame to the bounding box of the person
-            cropped_frame = frame[y1 : y2, x1 : x2]
+            cropped_frame = frame[y1:y2, x1:x2]
             pose = self.pose_detection.detectPose(cropped_frame)
 
             # Increment the pose count based on detected pose
@@ -338,29 +338,29 @@ class GPSRCommands(Node):
         return pose_count
 
     def detect_gesture(self, frame):
-            """Detect the pose in the image."""
-            gestures = [
-                Gestures.UNKNOWN,
-                Gestures.WAVING,
-                Gestures.RAISING_LEFT_ARM,
-                Gestures.RAISING_RIGHT_ARM,
-                Gestures.POINTING_LEFT,
-                Gestures.POINTING_RIGHT
-            ]
+        """Detect the pose in the image."""
+        gestures = [
+            Gestures.UNKNOWN,
+            Gestures.WAVING,
+            Gestures.RAISING_LEFT_ARM,
+            Gestures.RAISING_RIGHT_ARM,
+            Gestures.POINTING_LEFT,
+            Gestures.POINTING_RIGHT,
+        ]
 
-            # Detect gesture for the person with the biggest bounding box
-            biggest_person = max(self.people, key=lambda p: p["area"], default=None)
-            x1, y1, x2, y2 = biggest_person["bbox"]
+        # Detect gesture for the person with the biggest bounding box
+        biggest_person = max(self.people, key=lambda p: p["area"], default=None)
+        x1, y1, x2, y2 = biggest_person["bbox"]
 
-            # Crop the frame to the bounding box of the person
-            cropped_frame = frame[y1 : y2, x1 : x2]
-            gesture = self.pose_detection.detectGesture(cropped_frame)
+        # Crop the frame to the bounding box of the person
+        cropped_frame = frame[y1:y2, x1:x2]
+        gesture = self.pose_detection.detectGesture(cropped_frame)
 
-            if gesture in gestures:
-                return gesture.value
-            
-            return Gestures.UNKNOWN.value
-            
+        if gesture in gestures:
+            return gesture.value
+
+        return Gestures.UNKNOWN.value
+
     def count_gestures(self, frame):
         """Count the gestures in the image and return a dictionary."""
         gesture_count = {
@@ -377,7 +377,7 @@ class GPSRCommands(Node):
             x1, y1, x2, y2 = person["bbox"]
 
             # Crop the frame to the bounding box of the person
-            cropped_frame = frame[y1 : y2, x1 : x2]
+            cropped_frame = frame[y1:y2, x1:x2]
 
             gesture = self.pose_detection.detectGesture(cropped_frame)
 
@@ -400,7 +400,11 @@ class GPSRCommands(Node):
 
                     if confidence > CONF_THRESHOLD:
                         self.people.append(
-                            {"bbox": (x1, y1, x2, y2), "confidence": confidence, "area": (x2 - x1) * (y2 - y1)}
+                            {
+                                "bbox": (x1, y1, x2, y2),
+                                "confidence": confidence,
+                                "area": (x2 - x1) * (y2 - y1),
+                            }
                         )
 
                     cv2.rectangle(self.output_image, (x1, y1), (x2, y2), (0, 255, 0), 2)
