@@ -169,7 +169,6 @@ class DetectPointingObjectServer(Node):
         self.objects = copy.deepcopy(self.detected_objects)
         self.object_centroids = copy.deepcopy(self.detected_object_centroids)
         visualize_img = self.bgr_img.copy()
-        print(f"Image shape: {self.bgr_img.shape}")
         self.bgr_img.flags.writeable = False
         results = self.pose.process(self.bgr_img)
 
@@ -300,7 +299,7 @@ class DetectPointingObjectServer(Node):
 
         # visualize points
         for i, point in enumerate(self.object_centroids):
-            color = (0, 255, 0) if i == closest_object else (255, 0, 0)
+            color = (0, 255, 0) if i == closest_object else (0, 0, 255)
             visualize_img = cv2.drawMarker(
                 visualize_img,
                 (
@@ -321,6 +320,19 @@ class DetectPointingObjectServer(Node):
                 ),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 0.5,
+                color,
+                2,
+            )
+            visualize_img = cv2.rectangle(
+                visualize_img,
+                (
+                    int(self.objects[i].xmin * img.shape[1]),
+                    int(self.objects[i].ymin * img.shape[0]),
+                ),
+                (
+                    int(self.objects[i].xmax * img.shape[1]),
+                    int(self.objects[i].ymax * img.shape[0]),
+                ),
                 color,
                 2,
             )
