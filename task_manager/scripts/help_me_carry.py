@@ -87,7 +87,7 @@ class HelpMeCarryTM(Node):
         if self.current_state == HelpMeCarryTM.TASK_STATES["FOLLOWING_TO_DESTINATION"]:
             Logger.state(self, "Following to destination")
             while True:
-                s, result = self.subtask_manager.hri.interpret_keyword(["stop"])
+                s, result = self.subtask_manager.hri.interpret_keyword(["stop"],10.0)
                 if result == "stop":
                     self.subtask_manager.hri.say("I will stop following you now")
                     break
