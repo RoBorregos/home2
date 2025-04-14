@@ -68,6 +68,7 @@ COUNT_BY_OBJECTS_TOPIC = "/vision/gpsr/count_by_objects"
 COUNT_BY_GESTURES_TOPIC = "/vision/gpsr/count_by_gestures"
 COUNT_BY_POSE_TOPIC = "/vision/gpsr/count_by_pose"
 IMAGE_TOPIC = "/vision/gpsr/img_detection"
+POSE_GESTURE_TOPIC = "/vision/gpsr/pose_gesture_detection"
 
 # Storing Groceries Commands node
 SHELF_DETECTION_TOPIC = "/vision/storing_groceries/shelf_detection"

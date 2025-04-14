@@ -31,7 +31,7 @@ class PoseDetection:
                 return Poses.SITTING
             elif left_knee.y > left_ankle.y and right_knee.y > right_ankle.y:
                 return Poses.LYING_DOWN
-        return Poses.UNKNWON
+        return Poses.UNKNOWN
 
     def detectGesture(self, image):
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)

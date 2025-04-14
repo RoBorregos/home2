@@ -6,7 +6,7 @@ from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument, Grou
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
-from launch.conditions import IfCondition
+from launch.conditions import IfCondition, UnlessCondition
 
 def generate_launch_description():
     publish_urdf = LaunchConfiguration('publish_tf')
@@ -42,7 +42,8 @@ def generate_launch_description():
                     "dashgo_driver.launch.py",
                 ]
             )
-            )
+            ),
+    condition=UnlessCondition(use_sim),
         )
     ekf_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -53,7 +54,8 @@ def generate_launch_description():
                     "ekf.launch.py",
                 ]
             )
-        ))
+        ), 
+        )
     
     robot_description_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -98,7 +100,7 @@ def generate_launch_description():
                 ]
             )
         ),
-        condition=IfCondition(use_dualshock),)
+        condition=UnlessCondition(use_dualshock),)
 
     return LaunchDescription([
         declare_publish_tf,  # Declare launch argument
