@@ -96,11 +96,9 @@ class DetectPointingObjectServer(Node):
             self.cleanup_detections,
         )
 
-        print(f"subscribed to: {ZERO_SHOT_DETECTIONS_TOPIC} , {CAMERA_TOPIC}")
         self.get_logger().info("Detect Pointing Object Server Initialized")
 
     def cleanup_detections(self):
-        print("running timer")
         current_time = self.get_clock().now()
         if (
             current_time - self.last_inference_time
@@ -146,7 +144,6 @@ class DetectPointingObjectServer(Node):
         ):
             self.detected_objects = []
             return
-        print(f"Received {len(data.detections)} detections")
         if len(data.detections) > 0:
             self.detected_objects = []
             j = 0
@@ -163,7 +160,6 @@ class DetectPointingObjectServer(Node):
                 )
                 self.last_inference_time = self.get_clock().now()
                 j += 1
-            print(print(f"Detecting: {len(data.detections)} objects"))
 
     def image_callback(self, data):
         self.bgr_img = self.bridge.imgmsg_to_cv2(data, "bgr8")
@@ -269,7 +265,6 @@ class DetectPointingObjectServer(Node):
                 )
 
             if closest_object is not None:
-                print(f"Closest Object: {closest_object}, Distance: {closest_distance}")
                 # publish marker
                 marker = Marker()
                 marker.header.frame_id = CAMERA_FRAME
@@ -304,7 +299,6 @@ class DetectPointingObjectServer(Node):
                 )
                 > INFERENCE_TIMEOUT
             ):
-                print("No Closest Object Found")
                 self.closest_object = None
 
         # visualize points

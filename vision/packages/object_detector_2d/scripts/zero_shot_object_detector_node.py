@@ -51,9 +51,7 @@ ARGS = {
     "FLIP_IMAGE": False,
     "USE_ZED_TRANSFORM": True,
     "MIN_SCORE_THRESH": 0.25,
-    "CLASSES": [
-        "handbag",
-    ],
+    "CLASSES": ["handbag", "bag"],
 }
 
 
