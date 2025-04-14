@@ -118,14 +118,13 @@ class HelpMeCarryTM(Node):
             # bounding_box, bag_pose = self.subtask_manager.vision.detect("bag")
             status, bbox, bag_point = self.subtask_manager.vision.get_pointing_bag(5)
             description = ""
-            if status:
+            if status == Status.EXECUTION_SUCCESS:
                 self.get_logger().info(f"Vision task result bbox: {bbox}")
                 self.get_logger().info(f"Vision task result point: {bag_point}")
                 self.running_task = False
                 description = self.subtask_manager.vision.describe_bag(bbox)
                 # self.subtask_manager.manipulation.pan_to(bag_point)
             else:
-
                 self.get_logger().info("Vision task failed")
                 description = self.subtask_manager.vision.describe_bag_moondream()
             # desription = self.subtask_manager.vision.describe_bag_moondream()
