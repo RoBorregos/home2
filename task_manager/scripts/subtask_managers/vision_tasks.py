@@ -7,16 +7,25 @@ commands.
 """
 
 import rclpy
+from frida_interfaces.msg import ObjectDetection
 from frida_interfaces.action import DetectPerson
-from frida_interfaces.srv import FindSeat, SaveName, BeverageLocation, Query, CropQuery
+from frida_interfaces.srv import (
+    FindSeat,
+    SaveName,
+    BeverageLocation,
+    Query,
+    CropQuery,
+    DetectPointingObject,
+)
 from std_srvs.srv import SetBool
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import Point, PointStamped
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from utils.decorators import mockable, service_check
 from utils.logger import Logger
 from utils.task import Task
 from utils.status import Status
+import time
 
 from frida_constants.vision_constants import (
     SAVE_NAME_TOPIC,
@@ -28,6 +37,10 @@ from frida_constants.vision_constants import (
     CROP_QUERY_TOPIC,
     BEVERAGE_TOPIC,
     SET_TARGET_TOPIC,
+    POINTING_OBJECT_SERVICE,
+)
+from frida_constants.vision_classes import (
+    BBOX,
 )
 
 TIMEOUT = 5.0
@@ -53,6 +66,9 @@ class VisionTasks:
         self.moondream_query_client = self.node.create_client(Query, QUERY_TOPIC)
         self.moondream_crop_query_client = self.node.create_client(CropQuery, CROP_QUERY_TOPIC)
         self.track_person_client = self.node.create_client(SetBool, SET_TARGET_TOPIC)
+        self.pointing_object_client = self.node.create_client(
+            DetectPointingObject, POINTING_OBJECT_SERVICE
+        )
         self.beverage_location_client = self.node.create_client(BeverageLocation, BEVERAGE_TOPIC)
         self.detect_person_action_client = ActionClient(self.node, DetectPerson, CHECK_PERSON_TOPIC)
 
@@ -69,9 +85,15 @@ class VisionTasks:
                 "follow_by_name": {"client": self.follow_by_name_client, "type": "service"},
             },
             Task.HELP_ME_CARRY: {
-                "track_person": {"client": self.track_person_client, "type": "service"},
-                "moondream_crop_query": {
-                    "client": self.moondream_crop_query_client,
+                # "track_person": {"client": self.track_person_client, "type": "service"},
+                # "moondream_crop_query": {
+                #     "client": self.moondream_crop_query_client,
+                #     "type": "service",
+                # },
+                "pointing_object": {
+                    "client": self.node.create_client(
+                        DetectPointingObject, POINTING_OBJECT_SERVICE
+                    ),
                     "type": "service",
                 },
             },
@@ -367,6 +389,31 @@ class VisionTasks:
         Logger.info(self.node, "Describing person")
         prompt = "Describe the person in the image"
         self.moondream_query_async(prompt, query_person=True, callback=callback)
+
+    def get_pointing_bag(self, timeout: float = TIMEOUT) -> tuple[int, ObjectDetection]:
+        time.sleep(TIMEOUT)
+        """Get the bag in the image"""
+        Logger.info(self.node, "Getting bag in the image")
+        request = DetectPointingObject.Request()
+
+        try:
+            future = self.pointing_object_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=timeout)
+            result = future.result()
+
+            if not result.success:
+                Logger.warn(self.node, "No bag found")
+                return Status.TARGET_NOT_FOUND, BBOX(), PointStamped()
+        except Exception as e:
+            Logger.error(self.node, f"Error getting bag: {e}")
+            return Status.EXECUTION_ERROR, BBOX(), PointStamped
+        Logger.success(self.node, f"Bag found: {result.detection}")
+        bbox = BBOX()
+        bbox.x1 = result.detection.xmin
+        bbox.x2 = result.detection.xmax
+        bbox.y1 = result.detection.ymin
+        bbox.y2 = result.detection.ymax
+        return Status.EXECUTION_SUCCESS, bbox, result.detection.point3d
 
     def describe_bag(self, bbox: list[float]) -> tuple[int, str]:
         """Describe the person in the image"""
