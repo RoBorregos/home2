@@ -11,7 +11,7 @@ from subtask_managers.vision_tasks import VisionTasks
 from utils.task import Task
 from utils.logger import Logger
 
-task = Task.DEBUG
+task = Task.HELP_ME_CARRY
 
 
 class TestVision(Node):
@@ -42,6 +42,14 @@ class TestVision(Node):
                 self.get_logger().info(f"Vision task result: {self.response}")
                 self.done = True
                 self.running_task = False
+        elif task == Task.HELP_ME_CARRY:
+            status, bbox, point3d = self.manager.get_pointing_bag(5)
+            if status:
+                self.get_logger().info(f"Vision task result: {bbox}")
+                self.get_logger().info(f"Vision task result: {point3d}")
+                self.running_task = False
+            else:
+                self.get_logger().info("Vision task failed")
 
 
 def main(args=None):
