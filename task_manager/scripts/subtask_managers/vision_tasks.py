@@ -279,15 +279,15 @@ class VisionTasks:
 
     @mockable(return_value=(Status.EXECUTION_ERROR, ""), delay=5, mock=False)
     @service_check("moondream_crop_query_client", Status.EXECUTION_ERROR, TIMEOUT)
-    def moondream_crop_query(self, prompt: str, bbox: list[float]) -> tuple[int, str]:
+    def moondream_crop_query(self, prompt: str, bbox: BBOX) -> tuple[int, str]:
         """Makes a query of the current image using moondream."""
         Logger.info(self.node, f"Querying image with prompt: {prompt}")
         request = CropQuery.Request()
         request.query = prompt
-        request.ymin = bbox[0]
-        request.xmin = bbox[1]
-        request.ymax = bbox[2]
-        request.xmax = bbox[3]
+        request.ymin = bbox.y1
+        request.xmin = bbox.x1
+        request.ymax = bbox.y2
+        request.xmax = bbox.x2
 
         try:
             future = self.moondream_crop_query_client.call_async(request)
@@ -415,7 +415,7 @@ class VisionTasks:
         bbox.y2 = result.detection.ymax
         return Status.EXECUTION_SUCCESS, bbox, result.detection.point3d
 
-    def describe_bag(self, bbox: list[float]) -> tuple[int, str]:
+    def describe_bag(self, bbox: BBOX) -> tuple[int, str]:
         """Describe the person in the image"""
         Logger.info(self.node, "Describing the bag")
         prompt = "Describe the bag in the image"

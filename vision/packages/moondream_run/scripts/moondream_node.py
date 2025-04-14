@@ -146,6 +146,12 @@ class MoondreamNode(Node):
         ymin = request.ymin
         xmax = request.xmax
         ymax = request.ymax
+
+        xmin = xmin * self.image.shape[1]
+        ymin = ymin * self.image.shape[0]
+        xmax = xmax * self.image.shape[1]
+        ymax = ymax * self.image.shape[0]
+
         if (
             xmin < 0
             or ymin < 0

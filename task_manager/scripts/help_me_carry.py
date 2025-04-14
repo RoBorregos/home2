@@ -117,7 +117,16 @@ class HelpMeCarryTM(Node):
             self.subtask_manager.hri.say("I will now detect the bag")
             # TODO: Vision detects bag, returns bounding box for moondream, and returns the estimated bag pose in 2D plane
             # bounding_box, bag_pose = self.subtask_manager.vision.detect("bag")
-            desription = self.subtask_manager.vision.describe_bag_moondream()
+            status, bbox, point3d = self.subtask_manager.vision.get_pointing_bag(5)
+            if status:
+                self.get_logger().info(f"Vision task result: {bbox}")
+                self.get_logger().info(f"Vision task result: {point3d}")
+                self.running_task = False
+                description = self.subtask_manager.vision.moondream_crop_query(bbox)
+            else:
+
+                self.get_logger().info("Vision task failed")
+            # desription = self.subtask_manager.vision.describe_bag_moondream()
             self.subtask_manager.hri.say("I have detected the bag, now I will describe it")
             self.subtask_manager.hri.say(desription)
 
