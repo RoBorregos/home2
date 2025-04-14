@@ -2,7 +2,7 @@
 import rclpy
 from rclpy.node import Node
 from pydantic import BaseModel, ValidationError
-from typing import Optional
+from typing import Optional, ClassVar, Dict
 from enum import Enum
 import json
 import pandas as pd
@@ -28,25 +28,20 @@ class MetadataModel(BaseModel):
     shelve: Optional[str] = None
     category: Optional[str] = None
     default_location: Optional[str] = None
-    context: Optional[str] = None
+    context: Optional[str] = ""
 
-    # other metadata fields can be defined here
+    # move profiles out of the method
+    PROFILES: ClassVar[Dict[MetadataProfile, Dict[str, str]]] = {
+        MetadataProfile.ITEMS: {"context": "item for household use"},
+        MetadataProfile.LOCATIONS: {"context": "house locations"},
+        MetadataProfile.ACTIONS: {"context": "human actions"},
+    }
+
     @classmethod
     def with_profile(
         cls, profile: MetadataProfile = MetadataProfile.ITEMS, **overrides
     ):
-        profiles = {
-            MetadataProfile.ITEMS: {
-                "context": "household items",
-            },
-            MetadataProfile.LOCATIONS: {
-                "context": "house locations",
-            },
-            MetadataProfile.ACTIONS: {
-                "context": "human actions",
-            },
-        }
-        base = profiles.get(profile, {})
+        base = cls.PROFILES.get(profile, {})
         data = {**base, **overrides}
         return cls(**data)
 
@@ -148,22 +143,44 @@ class Embeddings(Node):
     def query_entry_callback(self, request, response):
         """Service callback to query items from ChromaDB"""
         try:
-            results_raw = self.chroma_adapter.query(
-                request.collection, request.query, request.topk
-            )
+            if request.collection == "items":
+                context = MetadataModel.PROFILES[MetadataProfile.ITEMS]["context"]
+            elif request.collection == "locations":
+                context = MetadataModel.PROFILES[MetadataProfile.LOCATIONS]["context"]
+            elif request.collection == "actions":
+                context = MetadataModel.PROFILES[MetadataProfile.ACTIONS]["context"]
+            else:
+                context = ""
 
-            docs = results_raw.get("documents", [[]])[0]
-            metas = results_raw.get("metadatas", [[]])[0]
+            grouped_results = []
 
-            response.results = [
-                meta.get("original_name", doc) if isinstance(meta, dict) else doc
-                for doc, meta in zip(docs, metas)
-            ]
+            for query in request.query:
+                query_with_context = query + context
+                results_raw = self.chroma_adapter.query(
+                    request.collection, [query_with_context], request.topk
+                )
+                # #Test with no context
+                # results_raw = self.chroma_adapter.query(
+                #     request.collection, query, request.topk
+                # )
+                docs = results_raw.get("documents", [[]])[0]
+                metas = results_raw.get("metadatas", [[]])[0]
 
-            response.success = bool(response.results)
+                formatted_results = [
+                    meta.get("original_name", doc) if isinstance(meta, dict) else doc
+                    for doc, meta in zip(docs, metas)
+                ]
+
+                grouped_results.append({"query": query, "results": formatted_results})
+
+            # Convert each result group to JSON string
+            response.results = [json.dumps(entry) for entry in grouped_results]
+
+            response.success = bool(grouped_results)
             response.message = (
-                "Query successful" if response.results else "No matching items found"
+                "Query successful" if grouped_results else "No matching items found"
             )
+            self.get_logger().info("Query request handled successfully")
 
         except Exception as e:
             response.success = False
@@ -248,6 +265,7 @@ class Embeddings(Node):
 
             # Sanitize and get or create the collection
             collection_name = self.chroma_adapter._sanitize_collection_name(file.stem)
+
             collections[collection_name] = (
                 self.chroma_adapter._get_or_create_collection(collection_name)
             )
@@ -257,12 +275,25 @@ class Embeddings(Node):
         return
 
     def add_basics(self, documents, metadatas):
+        # Inject context and sanitize document content
         for i, (doc, meta) in enumerate(zip(documents, metadatas)):
-            # Add "original_name" to each metadata dictionary
+            # Try to clean stringified list (e.g., "['apple', 'banana']") into "apple banana"
+            if (
+                isinstance(doc, str)
+                and doc.strip().startswith("[")
+                and doc.strip().endswith("]")
+            ):
+                try:
+                    parsed = json.loads(doc.replace("'", '"'))  # Handle single quotes
+                    if isinstance(parsed, list):
+                        doc = " ".join(str(x) for x in parsed)
+                except json.JSONDecodeError:
+                    pass  # Keep as-is if it fails
+
             meta["original_name"] = doc
-            # If a "context" is provided, append it to the document
-            if "context" in meta and meta["context"]:
-                documents[i] = f"{doc} {meta['context']}"
+            context = meta.get("context", "")
+            documents[i] = f"{doc} {context}" if context else doc
+
         return documents, metadatas
 
 

@@ -47,11 +47,11 @@ class ChromaAdapter:
         except Exception:
             raise ValueError(f"The collection is missing {collection_name}")
 
-    def query(self, collection_name: str, query, top_k, context: str = ""):
+    def query(self, collection_name: str, query, top_k):
         """Method to query the collection and return only the original names from metadata"""
         collection_ = self.get_collection(collection_name)
         results = collection_.query(
-            query_texts=query + context,
+            query_texts=query,
             n_results=top_k,
             include=["metadatas", "documents", "distances"],
         )

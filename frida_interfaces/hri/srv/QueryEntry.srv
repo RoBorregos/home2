@@ -1,5 +1,5 @@
 # QueryItem.srv
-string query  # The search query
+string[] query  # The search query
 int16 topk #number of results 
 string collection #return
 ---
