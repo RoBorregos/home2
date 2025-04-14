@@ -141,6 +141,8 @@ class MoondreamNode(Node):
             response.success = False
             self.get_logger().warn("No image received yet.")
             return response
+        
+        frame = self.image.copy()
 
         xmin = request.xmin
         ymin = request.ymin
@@ -159,7 +161,7 @@ class MoondreamNode(Node):
             and 0 < ymax <= self.image.shape[0]
         ):
             print(f"Crop coordinates: {xmin}, {ymin}, {xmax}, {ymax}")
-            self.image = self.image[int(ymin):int(ymax), int(xmin):int(xmax)]
+            frame = frame[int(ymin):int(ymax), int(xmin):int(xmax)]
             #save image
             # cv2.imshow("Cropped Image", self.image)
             # cv2.waitKey(0)
@@ -169,7 +171,7 @@ class MoondreamNode(Node):
             response.success = False
             return response
 
-        _, image_bytes = cv2.imencode(".jpg", self.image)
+        _, image_bytes = cv2.imencode(".jpg", frame)
         image_bytes = image_bytes.tobytes()
 
         try:
