@@ -33,7 +33,7 @@ CLUSTER_OBJECT_SERVICE = "/manipulation/cluster_object"
 PERCEPTION_SERVICE = "/manipulation/perception_service"
 GRASP_DETECTION_SERVICE = "/manipulation/detect_grasps"
 
-PICK_ACTION_SERVER = "/manipulation/pick_action_server"
+MANIPULATION_ACTION_SERVER = "/manipulation/manipulation_action_server"
 
 ATTACH_COLLISION_OBJECT_SERVICE = "/manipulation/attach_collision_object"
 ADD_COLLISION_OBJECT_SERVICE = "/manipulation/add_collision_objects"

@@ -113,8 +113,7 @@ class object_detector_node(rclpy.node.Node):
         callFpsThread = threading.Thread(target=self.callFps, args=(), daemon=True)
         callFpsThread.start()
 
-        if self.node_params.VERBOSE:
-            self.get_logger().info("Object Detector 2D Node has been started")
+        self.get_logger().info("Object Detector 2D Node has been started")
 
     def set_parameters(self):
         self.object_detector_parameters = ObjectDectectorParams()
@@ -430,6 +429,9 @@ class object_detector_node(rclpy.node.Node):
             )
         )
 
+        # update time
+        for detection in self.object_detector_2d.getFridaDetections(detected_objects):
+            detection.point3d.header.stamp = self.curr_clock
         self.detections_publisher.publish(
             ObjectDetectionArray(
                 detections=self.object_detector_2d.getFridaDetections(detected_objects)

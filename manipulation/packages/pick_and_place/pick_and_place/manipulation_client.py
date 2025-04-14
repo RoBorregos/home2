@@ -10,24 +10,25 @@ from rclpy.action import ActionClient
 from rclpy.callback_groups import ReentrantCallbackGroup
 from frida_motion_planning.utils.ros_utils import wait_for_future
 from frida_constants.manipulation_constants import (
-    PICK_ACTION_SERVER,
+    MANIPULATION_ACTION_SERVER,
 )
-from frida_interfaces.action import PickTask
+from frida_interfaces.action import ManipulationAction
+from frida_interfaces.msg import ManipulationTask
 from geometry_msgs.msg import PointStamped
 
 
-class ManipulationServer(Node):
+class ManipulationClient(Node):
     def __init__(self):
-        super().__init__("manipulation_server")
+        super().__init__("manipulation_client")
         self.callback_group = ReentrantCallbackGroup()
 
         # This is on manipulation core node
-        self._pick_action_client = ActionClient(
+        self._manipulation_action_client = ActionClient(
             self,
-            PickTask,
-            PICK_ACTION_SERVER,
+            ManipulationAction,
+            MANIPULATION_ACTION_SERVER,
         )
-        self._pick_action_client.wait_for_server()
+        self._manipulation_action_client.wait_for_server()
 
         # Server here, which is the interface between manipulation tasks and the task managers
         # Point Subscriber for debug here
@@ -43,9 +44,12 @@ class ManipulationServer(Node):
         self.last_point = None
         self.last_process_point = None
 
-        self.get_logger().info("Manipulation Server is ready")
+        self.get_logger().info("Manipulation Client is ready")
 
-        self.create_timer(0.1, self.timer_callback)
+        self.pick_object_name = None
+        self.active = True
+
+        self.create_timer(0.1, self.point_timer_callback)
 
     def point_callback(self, msg):
         print("Received point")
@@ -58,7 +62,7 @@ class ManipulationServer(Node):
     def result_callback(self, result):
         self.get_logger().info(f"Result: {result}")
 
-    def timer_callback(self):
+    def point_timer_callback(self):
         if self.last_point == self.last_process_point:
             return
         self.last_process_point = self.last_point
@@ -66,11 +70,12 @@ class ManipulationServer(Node):
             return
         print("Triggering pick task")
 
-        a = PickTask.Goal()
-        a.object_point = self.last_point
-        a.object_name = "Clicked Point"
-        self._pick_action_client.wait_for_server()
-        future = self._pick_action_client.send_goal_async(a)
+        manipulation_goal = ManipulationAction.Goal()
+        manipulation_goal.task_type = ManipulationTask.PICK
+        manipulation_goal.object_name = "clicked_object"
+        manipulation_goal.object_point = self.last_point
+        self._manipulation_action_client.wait_for_server()
+        future = self._manipulation_action_client.send_goal_async(manipulation_goal)
         future = wait_for_future(future)
         self.get_logger().info(f"Received point: {self.last_point}")
         self.get_logger().info("Sending to manipulation core")
@@ -79,9 +84,10 @@ class ManipulationServer(Node):
 def main(args=None):
     rclpy.init(args=args)
     executor = rclpy.executors.MultiThreadedExecutor(5)
-    pick_server = ManipulationServer()
-    executor.add_node(pick_server)
+    manipulation_client = ManipulationClient()
+    executor.add_node(manipulation_client)
     executor.spin()
+    manipulation_client.stop()
     rclpy.shutdown()
 
 

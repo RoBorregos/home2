@@ -7,10 +7,10 @@
       <sensor name="zed" type="depth">
         <update_rate>20</update_rate>
         <camera>
-          <horizontal_fov>1.047198</horizontal_fov>
+          <horizontal_fov>1.91986218</horizontal_fov>
           <image>
-            <width>640</width>
-            <height>480</height>
+            <width>1280</width>
+            <height>720</height>
             <format>R8G8B8</format>
           </image>
           <clip>

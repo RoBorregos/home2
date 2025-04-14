@@ -8,6 +8,15 @@ from launch_ros.actions import Node
 def generate_launch_description():
     return LaunchDescription(
         [
+            # gpd
+            Node(
+                package="arm_pkg",
+                executable="gpd_service",
+                name="gpd_service",
+                output="screen",
+                emulate_tty=True,
+                parameters=[],
+            ),
             Node(
                 package="pick_and_place",
                 executable="manipulation_core.py",
@@ -18,8 +27,8 @@ def generate_launch_description():
             ),
             Node(
                 package="pick_and_place",
-                executable="manipulation_server.py",
-                name="manipulation_server",
+                executable="manipulation_client.py",
+                name="manipulation_client",
                 output="screen",
                 emulate_tty=True,
                 parameters=[],

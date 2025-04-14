@@ -2,6 +2,8 @@
 from detectors.ObjectDetector import ObjectDectector, Detection, ObjectDectectorParams
 import torch
 import warnings
+import cv2
+import copy
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 
@@ -16,11 +18,13 @@ class YoloV5ObjectDetector(ObjectDectector):
             "ultralytics/yolov5",
             "custom",
             path=self.model_path_,
-            force_reload=False,
+            force_reload=True,
         )
 
     def _inference(self, frame):
-        detections = self.model(frame)
+        det_frame = copy.deepcopy(frame)
+        det_frame = cv2.cvtColor(det_frame, cv2.COLOR_BGR2RGB)
+        detections = self.model(det_frame)
 
         for *xyxy, confidence, _class, names in (
             detections.pandas().xyxy[0].itertuples(index=False)
