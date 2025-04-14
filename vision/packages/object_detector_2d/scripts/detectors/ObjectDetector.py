@@ -18,6 +18,7 @@ import rclpy.time
 from std_msgs.msg import Header
 from sensor_msgs.msg import CameraInfo
 import tf2_ros
+from numpy import ndarray as NDArray
 
 
 class ObjectDectectorParams:
@@ -75,6 +76,7 @@ class Detection:
         self.class_id_: int = class_id
         self.confidence_: float = confidence
         self.point_stamped_: PointStamped
+        self.mask: NDArray = None
 
     def __str__(self):
         return (
