@@ -160,6 +160,9 @@ class MoondreamNode(Node):
         ):
             print(f"Crop coordinates: {xmin}, {ymin}, {xmax}, {ymax}")
             self.image = self.image[int(ymin):int(ymax), int(xmin):int(xmax)]
+            #save image
+            cv2.imwrite("cropped_image.jpg", self.image)
+
         else:
             response.result = "Crop coordinates are out of bounds."
             response.success = False
