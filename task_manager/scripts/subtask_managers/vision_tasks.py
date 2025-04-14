@@ -284,10 +284,10 @@ class VisionTasks:
         Logger.info(self.node, f"Querying image with prompt: {prompt}")
         request = CropQuery.Request()
         request.query = prompt
-        request.ymin = bbox.y1
-        request.xmin = bbox.x1
-        request.ymax = bbox.y2
-        request.xmax = bbox.x2
+        request.ymin = float(bbox.y1)
+        request.xmin = float(bbox.x1)
+        request.ymax = float(bbox.y2)
+        request.xmax = float(bbox.x2)
 
         try:
             future = self.moondream_crop_query_client.call_async(request)

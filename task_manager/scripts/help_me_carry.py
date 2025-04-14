@@ -89,11 +89,10 @@ class HelpMeCarryTM(Node):
             while True:
                 s, result = self.subtask_manager.hri.interpret_keyword(["stop"],10.0)
                 if result == "stop":
-                    self.subtask_manager.hri.say("I will stop following you now")
                     break
                 else:
                     self.subtask_manager.hri.say(
-                        "I will keep following you. Please say stop when you want me to stop"
+                        "Please say stop when you want me to stop"
                     )
 
             # while not self.subtask_manager.hri.interpret_keyword("STOP"):
@@ -124,7 +123,7 @@ class HelpMeCarryTM(Node):
                 self.get_logger().info(f"Vision task result point: {bag_point}")
                 self.running_task = False
                 description = self.subtask_manager.vision.describe_bag(bbox)
-                self.subtask_manager.manipulation.pan_to(bag_point)
+                # self.subtask_manager.manipulation.pan_to(bag_point)
             else:
 
                 self.get_logger().info("Vision task failed")
