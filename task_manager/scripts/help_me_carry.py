@@ -122,7 +122,7 @@ class HelpMeCarryTM(Node):
                 self.get_logger().info(f"Vision task result bbox: {bbox}")
                 self.get_logger().info(f"Vision task result point: {bag_point}")
                 self.running_task = False
-                description = self.subtask_manager.vision.describe_bag(bbox)
+                description = self.subtask_manager.vision.describe_bag(bbox, 10.0)
                 # self.subtask_manager.manipulation.pan_to(bag_point)
             else:
 
