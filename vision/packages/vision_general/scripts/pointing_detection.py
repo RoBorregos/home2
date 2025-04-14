@@ -169,6 +169,7 @@ class DetectPointingObjectServer(Node):
         self.objects = copy.deepcopy(self.detected_objects)
         self.object_centroids = copy.deepcopy(self.detected_object_centroids)
         visualize_img = self.bgr_img.copy()
+        print(f"Image shape: {self.bgr_img.shape}")
         self.bgr_img.flags.writeable = False
         results = self.pose.process(self.bgr_img)
 
