@@ -373,7 +373,7 @@ class VisionTasks:
         Logger.info(self.node, "Describing the bag")
         prompt = "Describe the bag in the image"
         return self.moondream_crop_query(prompt, bbox)
-    
+
     def describe_bag_moondream(self):
         """Describe the bag using only moondream"""
         Logger.info(self.node, "Describing bag")
