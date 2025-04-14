@@ -82,6 +82,9 @@ class HelpMeCarryTM(Node):
         if self.current_state == HelpMeCarryTM.TASK_STATES["CONFIRM_FOLLOWING"]:
             Logger.state(self, "Confirming following to guest")
             self.subtask_manager.hri.say("I will follow you now")
+            self.is_following = True
+            # self.subtask_manager.vision.
+            # self.subtask_manager.nav.follow_person(self.is_following,)
             self.current_state = HelpMeCarryTM.TASK_STATES["FOLLOWING_TO_DESTINATION"]
 
         if self.current_state == HelpMeCarryTM.TASK_STATES["FOLLOWING_TO_DESTINATION"]:
@@ -122,7 +125,7 @@ class HelpMeCarryTM(Node):
                 self.get_logger().info(f"Vision task result bbox: {bbox}")
                 self.get_logger().info(f"Vision task result point: {bag_point}")
                 self.running_task = False
-                status, description = self.subtask_manager.vision.describe_bag(bbox, 10.0)
+                status, description = self.subtask_manager.vision.describe_bag(bbox, 60.0)
                 # self.subtask_manager.manipulation.pan_to(bag_point)
             else:
                 self.get_logger().info("Vision task failed")
