@@ -85,11 +85,11 @@ class VisionTasks:
                 "follow_by_name": {"client": self.follow_by_name_client, "type": "service"},
             },
             Task.HELP_ME_CARRY: {
-                # "track_person": {"client": self.track_person_client, "type": "service"},
-                # "moondream_crop_query": {
-                #     "client": self.moondream_crop_query_client,
-                #     "type": "service",
-                # },
+                "track_person": {"client": self.track_person_client, "type": "service"},
+                "moondream_crop_query": {
+                    "client": self.moondream_crop_query_client,
+                    "type": "service",
+                },
                 "pointing_object": {
                     "client": self.node.create_client(
                         DetectPointingObject, POINTING_OBJECT_SERVICE
