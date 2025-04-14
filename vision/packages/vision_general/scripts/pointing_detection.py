@@ -140,7 +140,8 @@ class DetectPointingObjectServer(Node):
         # get the detections
         if (
             len(data.detections) == 0
-            and rclpy.time.Time() - self.last_inference_time > INFERENCE_TIMEOUT
+            and ((self.get_clock().now() - self.last_inference_time).nanoseconds / 1e9)
+            > INFERENCE_TIMEOUT
         ):
             self.detected_objects = []
             return
