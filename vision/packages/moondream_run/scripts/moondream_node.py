@@ -170,9 +170,6 @@ class MoondreamNode(Node):
             response.success = False
             return response
 
-        print(f"prompt: {request.query}")
-        cv2.imshow("Cropped Image", cropped)
-        cv2.waitKey(0)
         _, image_bytes = cv2.imencode(".jpg", cropped)
         image_bytes = image_bytes.tobytes()
 
