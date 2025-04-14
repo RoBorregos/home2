@@ -13,5 +13,12 @@ def generate_launch_description():
                 emulate_tty=True,
                 # parameters=[config],
             ),
+            Node(
+                package="vision_general",
+                executable="receptionist_commands.py",
+                name="receptionist_commands",
+                output="screen",
+                emulate_tty=True,
+            )
         ]
     )
