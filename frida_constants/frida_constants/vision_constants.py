@@ -17,6 +17,14 @@ DETECTIONS_3D_TOPIC = "/vision/detections_3d"
 DETECTIONS_ACTIVE_TOPIC = "/detections_active"
 DEBUG_IMAGE_TOPIC = "/vision/debug_image"
 
+# ZERO SHOT OBJECT DETECTOR TOPICS
+ZERO_SHOT_DETECTIONS_TOPIC = "/vision/zero_shot_detections"
+ZERO_SHOT_DETECTIONS_IMAGE_TOPIC = "/vision/zero_shot_detections_image"
+ZERO_SHOT_DETECTIONS_POSES_TOPIC = "/vision/zero_shot_detections_poses"
+ZERO_SHOT_DETECTIONS_3D_TOPIC = "/vision/zero_shot_detections_3d"
+ZERO_SHOT_DETECTIONS_ACTIVE_TOPIC = "/vision/zero_shot_detections_active"
+SET_DETECTOR_CLASSES_SERVICE = "/vision/set_detector_classes"
+
 # LOCAL CAMERA TOPICS
 LOCAL_CAMERA_TOPIC = "/vision/local_rbg_image"
 
@@ -28,6 +36,11 @@ SET_TARGET_TOPIC = "/vision/set_tracking_target"
 SET_TARGET_BY_TOPIC = "/vision/set_tracking_target_by"
 RESULTS_TOPIC = "/vision/tracking_results"
 TRACKER_IMAGE_TOPIC = "/vision/tracker_image"
+
+# Pointing
+POINTING_OBJECT_SERVICE = "/vision/pointing_object_service"
+POINTING_DETECTION_IMAGE_TOPIC = "/vision/pointing_detection_image"
+SET_POINTING_OBJECT_CLASSES_SERVICE = "/vision/set_pointing_object_classes"
 
 # Moondream
 BEVERAGE_TOPIC = "/vision/beverage_location"

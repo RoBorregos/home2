@@ -1,5 +1,5 @@
 #! /usr/bin/env python3
-from ObjectDetector import ObjectDectector, Detection, ObjectDectectorParams
+from detectors.ObjectDetector import ObjectDectector, Detection, ObjectDectectorParams
 import torch
 import warnings
 import cv2

@@ -10,7 +10,6 @@ from std_msgs.msg import Bool
 from sensor_msgs.msg import Image, CameraInfo
 from visualization_msgs.msg import Marker, MarkerArray
 from frida_interfaces.msg import ObjectDetectionArray
-
 from imutils.video import FPS
 from dataclasses import dataclass
 import pathlib
@@ -18,8 +17,8 @@ import threading
 import copy
 from typing import List
 import cv2 as cv
-from YoloV5ObjectDetector import YoloV5ObjectDetector
-from ObjectDetector import Detection, ObjectDectectorParams
+from detectors.YoloV5ObjectDetector import YoloV5ObjectDetector
+from detectors.ObjectDetector import Detection, ObjectDectectorParams
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
     DEPTH_IMAGE_TOPIC,
@@ -79,8 +78,8 @@ class NodeParams:
 
 
 class object_detector_node(rclpy.node.Node):
-    def __init__(self):
-        super().__init__("object_detector_2D_node")
+    def __init__(self, node_name: str = "object_detector_2D_node"):
+        super().__init__(node_name)
 
         for key, value in ARGS.items():
             self.declare_parameter(key, value)
@@ -443,7 +442,7 @@ class object_detector_node(rclpy.node.Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    object_detector_2d = object_detector_node()
+    object_detector_2d = object_detector_node("object_detector_2D_node")
     rclpy.spin(object_detector_2d)
     rclpy.shutdown()
 
