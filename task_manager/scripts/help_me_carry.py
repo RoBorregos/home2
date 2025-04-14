@@ -89,11 +89,10 @@ class HelpMeCarryTM(Node):
             while True:
                 s, result = self.subtask_manager.hri.interpret_keyword(["stop"],10.0)
                 if result == "stop":
-                    self.subtask_manager.hri.say("I will stop following you now")
                     break
                 else:
                     self.subtask_manager.hri.say(
-                        "I will keep following you. Please say stop when you want me to stop"
+                        "Please say stop when you want me to stop"
                     )
 
             # while not self.subtask_manager.hri.interpret_keyword("STOP"):
