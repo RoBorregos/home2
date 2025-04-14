@@ -19,6 +19,13 @@ def generate_launch_description():
                 name="receptionist_commands",
                 output="screen",
                 emulate_tty=True,
+            ),
+            Node(
+                package="vision_general",
+                executable="pointing_detection.py",
+                name="detect_pointing_object_server",
+                output="screen",
+                emulate_tty=True,
             )
         ]
     )

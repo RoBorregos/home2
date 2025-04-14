@@ -117,23 +117,24 @@ class HelpMeCarryTM(Node):
             self.subtask_manager.hri.say("I will now detect the bag")
             # TODO: Vision detects bag, returns bounding box for moondream, and returns the estimated bag pose in 2D plane
             # bounding_box, bag_pose = self.subtask_manager.vision.detect("bag")
-            status, bbox, point3d = self.subtask_manager.vision.get_pointing_bag(5)
+            status, bbox, bag_point = self.subtask_manager.vision.get_pointing_bag(5)
+            description = ""
             if status:
-                self.get_logger().info(f"Vision task result: {bbox}")
-                self.get_logger().info(f"Vision task result: {point3d}")
+                self.get_logger().info(f"Vision task result bbox: {bbox}")
+                self.get_logger().info(f"Vision task result point: {bag_point}")
                 self.running_task = False
-                description = self.subtask_manager.vision.moondream_crop_query(bbox)
+                description = self.subtask_manager.vision.describe_bag(bbox)
+                self.subtask_manager.manipulation.pan_to(bag_point)
             else:
 
                 self.get_logger().info("Vision task failed")
+                description = self.subtask_manager.vision.describe_bag_moondream()
             # desription = self.subtask_manager.vision.describe_bag_moondream()
             self.subtask_manager.hri.say("I have detected the bag, now I will describe it")
-            self.subtask_manager.hri.say(desription)
+            self.subtask_manager.hri.say(description)
 
-            # TODO: Vision receives a bounding box and gives it to moondream to describe the bag
-            # bag_description = self.subtask_manager.vision.describe(bounding_box)
             # TODO: Manipulation receives the bag pose and aims the arm towards the pose
-            # self.subtask_manager.manipulation.pan_to(bag_pose)
+            # 
             # TODO: HRI says the bag description
             # self.subtask_manager.hri.say(bag_description)
             self.current_state = HelpMeCarryTM.TASK_STATES["RECEIVE_THE_BAG"]

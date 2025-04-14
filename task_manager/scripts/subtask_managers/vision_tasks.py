@@ -418,7 +418,7 @@ class VisionTasks:
     def describe_bag(self, bbox: BBOX) -> tuple[int, str]:
         """Describe the person in the image"""
         Logger.info(self.node, "Describing the bag")
-        prompt = "Describe the bag in the image"
+        prompt = "Please describe the bag in the image"
         return self.moondream_crop_query(prompt, bbox)
 
     def describe_bag_moondream(self):
