@@ -43,7 +43,7 @@ ARGS = {
     "SET_DETECTOR_CLASSES_SERVICE": SET_DETECTOR_CLASSES_SERVICE,
     "CAMERA_FRAME": CAMERA_FRAME,
     "TARGET_FRAME": "base_link",
-    "YOLO_MODEL_PATH": MODELS_PATH + "yoloe-11s-seg.pt",
+    "YOLO_MODEL_PATH": MODELS_PATH + "yoloe-11l-seg.pt",
     "USE_ACTIVE_FLAG": False,
     "DEPTH_ACTIVE": True,
     "VERBOSE": False,
@@ -52,10 +52,7 @@ ARGS = {
     "USE_ZED_TRANSFORM": True,
     "MIN_SCORE_THRESH": 0.25,
     "CLASSES": [
-        "person",
-        "chair",
-        "bottle",
-        "headphones",
+        "handbag",
     ],
 }
 
