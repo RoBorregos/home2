@@ -125,6 +125,12 @@ case $TASK in
         PROFILES=("vision" "moondream")
         SERVICES=("vision" "moondream-node" "moondream-server")
         ;;
+    "--help-me-carry")
+        PACKAGES="vision_general"
+        RUN="ros2 launch vision_general help_me_carry_launch.py"
+        PROFILES=("vision" "moondream")
+        SERVICES=("vision" "moondream-node" "moondream-server")
+        ;;
     "--moondream")
         PROFILES=("moondream")
         SERVICES=("moondream-node" "moondream-server")
@@ -160,12 +166,17 @@ done
 # If no task set, enter with bash
 if [ -z "$TASK" ]; then
     if [ "$NEEDS_BUILD" = true ]; then
-        docker compose up -d
-    else
-        echo "Building vision"
         docker compose up --build -d
+    else
+       RUNNING=$(docker ps --filter "name=vision" --format "{{.ID}}")
+        
+        if [ -z "$RUNNING" ]; then
+            echo "Starting vision service..."
+            docker compose up -d
+        fi 
+        
+        docker compose exec vision /bin/bash
     fi
-    docker compose exec vision /bin/bash
 
 else
     if [ "$NEEDS_BUILD" = true ]; then

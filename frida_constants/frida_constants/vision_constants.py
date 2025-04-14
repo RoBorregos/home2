@@ -35,7 +35,7 @@ BEVERAGE_TOPIC = "/vision/beverage_location"
 PERSON_POSTURE_TOPIC = "/vision/person_posture"
 QUERY_TOPIC = "/vision/query"
 PERSON_POSTURE_TOPIC = "/vision/person_posture"
-CROP_QUERY = "/vision/crop_query"
+CROP_QUERY_TOPIC = "/vision/crop_query"
 
 # Face recognition
 SAVE_NAME_TOPIC = "/vision/new_name"
@@ -58,3 +58,6 @@ COUNT_BY_OBJECTS_TOPIC = "/vision/gpsr/count_by_objects"
 COUNT_BY_GESTURES_TOPIC = "/vision/gpsr/count_by_gestures"
 COUNT_BY_POSE_TOPIC = "/vision/gpsr/count_by_pose"
 IMAGE_TOPIC = "/vision/gpsr/img_detection"
+
+# Storing Groceries Commands node
+SHELF_DETECTION_TOPIC = "/vision/storing_groceries/shelf_detection"

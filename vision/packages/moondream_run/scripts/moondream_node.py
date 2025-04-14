@@ -26,7 +26,7 @@ from frida_constants.vision_constants import (
     PERSON_POSTURE_TOPIC,
     BEVERAGE_TOPIC,
     QUERY_TOPIC,
-    CROP_QUERY,
+    CROP_QUERY_TOPIC,
 )
 
 from ament_index_python.packages import get_package_share_directory
@@ -75,7 +75,7 @@ class MoondreamNode(Node):
         )
 
         self.crop_query_service = self.create_service(
-            CropQuery, CROP_QUERY, self.crop_query_callback
+            CropQuery, CROP_QUERY_TOPIC, self.crop_query_callback
         )
 
         self.yolo_model = YOLO(YOLO_LOCATION)
