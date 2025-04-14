@@ -34,6 +34,11 @@ SET_TARGET_BY_TOPIC = "/vision/set_tracking_target_by"
 RESULTS_TOPIC = "/vision/tracking_results"
 TRACKER_IMAGE_TOPIC = "/vision/tracker_image"
 
+# Pointing
+POINTING_OBJECT_SERVICE = "/vision/pointing_object_service"
+POINTING_DETECTION_IMAGE_TOPIC = "/vision/pointing_detection_image"
+SET_POINTING_OBJECT_CLASSES_SERVICE = "/vision/set_pointing_object_classes"
+
 # Moondream
 BEVERAGE_TOPIC = "/vision/beverage_location"
 # PERSON_DESCRIPTION_TOPIC = "/vision/person_description"
