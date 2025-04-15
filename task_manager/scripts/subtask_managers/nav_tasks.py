@@ -122,10 +122,13 @@ class NavigationTasks:
     def follow_person(self, activate: bool):
         """Activate or deactivate the follow person mode"""
         self.activate_follow = activate
+        print("Entering follow person mode")
         if activate:
             self.node.get_logger().info("Follow person activated")
+            print("Follow person activated")
         else:
             self.node.get_logger().info("Follow person deactivated")
+            print("Follow person deactivated")
 
     def point_callback(self, msg: Point):
         def median_filter(self, data):

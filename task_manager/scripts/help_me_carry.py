@@ -82,7 +82,9 @@ class HelpMeCarryTM(Node):
         if self.current_state == HelpMeCarryTM.TASK_STATES["CONFIRM_FOLLOWING"]:
             Logger.state(self, "Confirming following to guest")
             self.subtask_manager.hri.say("I will follow you now")
-            self.is_following = True
+            Logger.state(self, "Following to guest")
+            self.subtask_manager.nav.follow_person(True)
+            Logger.state(self, "Executing following to guest")
             # self.subtask_manager.vision.
             # self.subtask_manager.nav.follow_person(self.is_following,)
             self.current_state = HelpMeCarryTM.TASK_STATES["FOLLOWING_TO_DESTINATION"]
@@ -92,6 +94,7 @@ class HelpMeCarryTM(Node):
             while True:
                 s, result = self.subtask_manager.hri.interpret_keyword(["stop"],10.0)
                 if result == "stop":
+                    self.subtask_manager.nav.follow_person(False)
                     break
                 else:
                     self.subtask_manager.hri.say(
@@ -146,17 +149,17 @@ class HelpMeCarryTM(Node):
             Logger.state(self, "Receiving the bag")
             self.subtask_manager.hri.say("I will now receive the bag")
             # TODO: self.subtask_manager.manipulation.move_joint_positions(dict,"bag_recieving_pose")
-            self.subtask_manager.manipulation.open_gripper()
+            # self.subtask_manager.manipulation.open_gripper()
             self.subtask_manager.hri.say("I have opened my gripper, please put the bag in it.")
             while (
                 self.subtask_manager.hri.confirm(
-                    "Have you put the bag in my gripper?", True, retries=8, wait_between_retries=4
+                    "Have you put the bag in my gripper?", False, retries=8, wait_between_retries=4
                 )
                 != "yes"
             ):
                 self.subtask_manager.hri.say("I have opened my gripper, please put the bag in it.")
 
-            self.subtask_manager.manipulation.close_gripper()
+            # self.subtask_manager.manipulation.close_gripper()
             self.subtask_manager.hri.say(
                 "I have received the bag, now I will return to the starting location"
             )
@@ -168,9 +171,10 @@ class HelpMeCarryTM(Node):
 
         if self.current_state == HelpMeCarryTM.TASK_STATES["RETURN_TO_STARTING_LOCATION"]:
             Logger.state(self, "Returning to starting location")
-
+            self.subtask_manager.hri.say("I will now return to the starting location")
+            # self.subtask_manager.vision.
             # TODO Define the starting location as the 0,0 coordinate for SLAM mode
-            self.subtask_manager.nav.move_to_location("starting_location,starting_location")
+            # self.subtask_manager.nav.move_to_location("starting_location,starting_location")
             # Wait until the nav module returns true
             self.current_state = HelpMeCarryTM.TASK_STATES["PLACE_THE_BAG"]
 
