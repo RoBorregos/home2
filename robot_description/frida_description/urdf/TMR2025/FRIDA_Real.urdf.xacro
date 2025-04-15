@@ -66,7 +66,7 @@
     robot_sn="$(arg robot_sn)" use_gazebo_camera="$(arg use_gazebo_camera)" mesh_suffix="$(arg mesh_suffix)" kinematics_suffix="$(arg kinematics_suffix)" />
   <!-- Gripper -->
   <xacro:include filename="$(find frida_description)/urdf/Gripper/Custom/gripper.xacro" />
-  <xacro:load_gripper attach_to="link_eef" xyz="0 0 0.045" rpy="0 0 1.57" />
+  <xacro:load_gripper attach_to="link_eef" xyz="0 0 0.046" rpy="0 0 1.57" />
    <!-- ZED MACRO -->
   <xacro:include filename="$(find frida_description)/urdf/RoboCup2024/zed.xacro" />
   <xacro:load_zed attach_to="zed" xyz="0 0 0" rpy="0 0 0" />
