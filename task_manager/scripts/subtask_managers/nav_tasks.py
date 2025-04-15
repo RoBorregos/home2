@@ -11,15 +11,13 @@ from utils.decorators import mockable, service_check
 from geometry_msgs.msg import PoseStamped
 from ament_index_python.packages import get_package_share_directory
 from nav2_msgs.action import NavigateToPose
-from geometry_msgs.msg import Point, PointStamped
-import math as m
-from tf2_geometry_msgs import do_transform_point
 import os
 import json
 from rclpy.task import Future
+from std_srvs.srv import SetBool
 
 MOVE_TOPIC = "/navigate_to_pose"
-FOLLOWING_SERVICE = "/vision/set_tracking_target"
+FOLLOWING_SERVICE = "/navigation/activate_following"
 
 TIMEOUT = 5.0
 
@@ -33,16 +31,12 @@ class NavigationTasks:
         self.node = task_manager
         self.mock_data = mock_data
         self.goal_state = None
-        self.activate_follow = False
         if not self.mock_data:
             self.setup_services()
 
     def setup_services(self):
         self.pose_client = ActionClient(self.node, NavigateToPose, MOVE_TOPIC)
-        self.point_sub = self.create_subscription(
-            Point, "/vision/tracking_results", self.point_callback, 10
-        )
-        self.point_pub = self.create_publisher(PointStamped, "point_visualize", 10)
+        self.activate_follow = self.create_client(SetBool, FOLLOWING_SERVICE)
         if not self.pose_client.wait_for_server(timeout_sec=TIMEOUT):
             self.node.get_logger().warn("Move service not initialized.")
 
@@ -121,90 +115,20 @@ class NavigationTasks:
 
     def follow_person(self, activate: bool):
         """Activate or deactivate the follow person mode"""
-        self.activate_follow = activate
-        print("Entering follow person mode")
+        try:
+            future = self.activate_follow.call_async(SetBool.Request(data=activate))
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+            result = future.result()
+            if not result.success:
+                raise Exception("Service call failed")
+        except Exception:
+            self.node.get_logger().info("Error sending follow person mode")
+            return self.STATE["EXECUTION_ERROR"]
         if activate:
             self.node.get_logger().info("Follow person activated")
-            print("Follow person activated")
         else:
             self.node.get_logger().info("Follow person deactivated")
-            print("Follow person deactivated")
-
-    def point_callback(self, msg: Point):
-        def median_filter(self, data):
-            """From a given list of data, return the median value"""
-            # Sort the data
-            sorted_data = sorted(data)
-            # Calculate the median
-            n = len(sorted_data)
-            mid = n // 2
-            if n % 2 == 0:
-                median = (sorted_data[mid - 1] + sorted_data[mid]) / 2
-            else:
-                median = sorted_data[mid]
-            return median
-
-        # Wrap the raw Point into a PointStamped
-        if not self.activate_follow:
-            return
-
-        point_to_be_filtered = Point()
-
-        original_point_x = msg.x
-        original_point_y = msg.y
-
-        original_orientation = m.atan2(original_point_y, original_point_x)
-        original_distance = m.sqrt(original_point_x**2 + original_point_y**2)
-        transformed_orientation = original_orientation + m.pi * (1.25)
-        transformed_x = original_distance * m.cos(transformed_orientation)
-        transformed_y = original_distance * m.sin(transformed_orientation)
-
-        point_to_be_filtered.x = transformed_x
-        point_to_be_filtered.y = transformed_y
-        point_to_be_filtered.z = 0.0
-
-        # Append the new point to the list
-        self.accumulated_points.append(point_to_be_filtered)
-        # Limit the number of points to the last 5
-        if len(self.accumulated_points) > 5:
-            self.accumulated_points.pop(0)
-        # Calculate the median of the accumulated points
-        median_x = median_filter([p.x for p in self.accumulated_points])
-        median_y = median_filter([p.y for p in self.accumulated_points])
-        # Create a PointStamped message
-        stamped_point = PointStamped()
-        stamped_point.header.frame_id = "base_link"  # Adjust to match your actual camera frame
-        stamped_point.header.stamp = self.get_clock().now().to_msg()
-        stamped_point.point.x = median_x
-        stamped_point.point.y = median_y
-        stamped_point.point.z = 0.0
-
-        try:
-            # Transform the point to base_link
-            transform = self.tf_buffer.lookup_transform(
-                "map", stamped_point.header.frame_id, rclpy.time.Time()
-            )
-            transformed_point = do_transform_point(stamped_point, transform)
-            # Publish on goal update
-
-            self.point_pub.publish(transformed_point)
-
-            # publish on goal update
-            goal_update = PoseStamped()
-            goal_update.header.frame_id = "map"
-            goal_update.header.stamp = self.get_clock().now().to_msg()
-            goal_update.pose.position.x = transformed_point.point.x
-            goal_update.pose.position.y = transformed_point.point.y
-            goal_update.pose.position.z = 0.0
-            goal_update.pose.orientation.w = 1.0
-            goal_update.pose.orientation.x = 0.0
-            goal_update.pose.orientation.y = 0.0
-            goal_update.pose.orientation.z = 0.0
-            self.gual_pub.publish(goal_update)
-            self.node.logger().info("Sending transformed point to update goal.")
-
-        except Exception as e:
-            self.get_logger().warn(f"Failed to transform point: {e}")
+        return self.STATE["EXECUTION_SUCCESS"]
 
 
 if __name__ == "__main__":
