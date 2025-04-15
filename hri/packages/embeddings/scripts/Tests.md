@@ -49,3 +49,7 @@ It expects a bool for rebuilding: eliminate every collection and rebuild(!THIS P
 ```bash
 ros2 service call /hri/nlp/embeddings/build_embeddings_service frida_interfaces/srv/BuildEmbeddings "{rebuild: true}"
 ```
+### **Runnning automated testing for subtask manager
+```bash
+ros2 run task_manager test_manager.py 
+```

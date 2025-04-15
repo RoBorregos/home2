@@ -12,11 +12,9 @@ CONVESATION_SERVICE = "/hri/nlp/conversation"
 GRAMMAR_SERVICE = "/hri/nlp/grammar"
 COMMON_INTEREST_SERVICE = "/hri/nlp/common_interest"
 
-ADD_ITEM_SERVICE = "/hri/nlp/embeddings/add_item_service"
-QUERY_ITEM_SERVICE = "/hri/nlp/embeddings/query_item_service"
+ADD_ENTRY_SERVICE = "/hri/nlp/embeddings/add_entry_service"
+QUERY_ENTRY_SERVICE = "/hri/nlp/embeddings/query_entry_service"
 BUILD_EMBEDDINGS_SERVICE = "/hri/nlp/embeddings/build_embeddings_service"
-ADD_LOCATION_SERVICE = "/hri/nlp/embeddings/add_location_service"
-QUERY_LOCATION_SERVICE = "/hri/nlp/embeddings/query_location_service"
 USE_RESPEAKER = True
 
 # OpenWakeWord

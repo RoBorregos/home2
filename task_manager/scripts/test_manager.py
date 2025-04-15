@@ -5,12 +5,14 @@ Task Manager for testing the subtask managers
 """
 
 import rclpy
+import json
 
 # from config.hri.debug import config as test_hri_config
 from rclpy.node import Node
 
 # from subtask_managers.hri_tasks import HRITasks
-from subtask_managers.manipulation_tasks import ManipulationTasks
+# from subtask_managers.manipulation_tasks import ManipulationTasks
+from subtask_managers.hri_tasks import HRITasks
 
 
 class TestTaskManager(Node):
@@ -19,12 +21,45 @@ class TestTaskManager(Node):
         self.subtask_manager = {}
         # self.subtask_manager["hri"] = HRITasks(self, config=test_hri_config)
 
-        self.subtask_manager["manipulation"] = ManipulationTasks(self, task="DEMO", mock_data=False)
+        # self.subtask_manager["manipulation"] = ManipulationTasks(self, task="DEMO", mock_data=False)
 
+        self.subtask_manager["hri"] = HRITasks(self, task="DEMO")
         # wait for a bit
         rclpy.spin_once(self, timeout_sec=1.0)
         self.get_logger().info("TestTaskManager has started.")
         self.run()
+
+    def test_embeddings(self):
+        """Testing the embeddings service via HRITasks"""
+
+        hri = self.subtask_manager["hri"]
+        self.get_logger().info("Adding single item: rotten_potatoes")
+        result = hri.add_item(["rotten_potatoes"], json.dumps([{}]))
+        self.get_logger().info(f"Result: {result}")
+
+        self.get_logger().info("Adding multiple items with metadata")
+        documents = ["apple pie with cinnamon", "banana_pie", "mango_pie_with milk"]
+        metadata = [{"price": "500"}, {"price": "400"}, {"price": "450"}]
+        result = hri.add_item(documents, json.dumps(metadata))
+        self.get_logger().info(f"Result: {result}")
+
+        self.get_logger().info("Querying 'potatoes' from item collection")
+        results = hri.query_item("potatoes", top_k=3)
+        self.get_logger().info(f"Query results: {results}")
+
+        self.get_logger().info("Querying 'cinnamon' from item collection")
+        results = hri.query_item("cinnamon", top_k=3)
+        self.get_logger().info(f"Query results: {results}")
+
+        self.get_logger().info("Adding single location with metadata")
+        location_doc = ["kitchen"]
+        location_metadata = [{"floor": "1", "type": "room"}]
+        result = hri.add_location(location_doc, json.dumps(location_metadata))
+        self.get_logger().info(f"Result: {result}")
+
+        self.get_logger().info("Querying 'kitchen' from location collection")
+        results = hri.query_location("kitchen", top_k=1)
+        self.get_logger().info(f"Query results: {results}")
 
     def run(self):
         """testing vision tasks"""
@@ -72,18 +107,18 @@ class TestTaskManager(Node):
 
         ####### EXAMPLE: Move to named position then move only the first joint #######
         # Move to a named position
-        joint_positions = self.subtask_manager["manipulation"].get_joint_positions()
-        print(joint_positions)
-        res = self.subtask_manager["manipulation"].move_joint_positions(
-            named_position="front_stare", velocity=0.5, degrees=True
-        )
-        print("Move to named position result: ", res)
-        joint_positions = self.subtask_manager["manipulation"].get_joint_positions(degrees=True)
-        joint_positions["joint1"] = joint_positions["joint1"] - 45
-        res = self.subtask_manager["manipulation"].move_joint_positions(
-            joint_positions=joint_positions, velocity=0.5, degrees=True
-        )
-        print("Move joint positions result: ", res)
+        # joint_positions = self.subtask_manager["manipulation"].get_joint_positions()
+        # print(joint_positions)
+        # res = self.subtask_manager["manipulation"].move_joint_positions(
+        #     named_position="front_stare", velocity=0.5, degrees=True
+        # )
+        # print("Move to named position result: ", res)
+        # joint_positions = self.subtask_manager["manipulation"].get_joint_positions(degrees=True)
+        # joint_positions["joint1"] = joint_positions["joint1"] - 45
+        # res = self.subtask_manager["manipulation"].move_joint_positions(
+        #     joint_positions=joint_positions, velocity=0.5, degrees=True
+        # )
+        # print("Move joint positions result: ", res)
 
 
 def main(args=None):
@@ -91,6 +126,7 @@ def main(args=None):
     node = TestTaskManager()
 
     try:
+        node.test_embeddings()
         rclpy.spin_once(node)
     except KeyboardInterrupt:
         pass

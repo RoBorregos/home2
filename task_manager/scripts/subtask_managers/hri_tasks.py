@@ -6,28 +6,28 @@ HRI Subtask manager
 
 import rclpy
 from frida_constants.hri_constants import (
-    ADD_ITEM_SERVICE,
+    ADD_ENTRY_SERVICE,
     COMMAND_INTERPRETER_SERVICE,
     COMMON_INTEREST_SERVICE,
     EXTRACT_DATA_SERVICE,
     GRAMMAR_SERVICE,
     IS_POSITIVE_SERVICE,
     LLM_WRAPPER_SERVICE,
-    QUERY_ITEM_SERVICE,
+    QUERY_ENTRY_SERVICE,
     SPEAK_SERVICE,
     STT_SERVICE_NAME,
     WAKEWORD_TOPIC,
 )
 from frida_interfaces.srv import (
     STT,
-    AddItem,
+    AddEntry,
     CommandInterpreter,
     CommonInterest,
     ExtractInfo,
     Grammar,
     IsPositive,
     LLMWrapper,
-    QueryItem,
+    QueryEntry,
     Speak,
 )
 from rclpy.node import Node
@@ -63,8 +63,8 @@ class HRITasks(metaclass=SubtaskMeta):
         )
         self.is_positive_service = self.node.create_client(IsPositive, IS_POSITIVE_SERVICE)
 
-        self.query_item_client = self.node.create_client(QueryItem, QUERY_ITEM_SERVICE)
-        self.add_item_client = self.node.create_client(AddItem, ADD_ITEM_SERVICE)
+        self.query_item_client = self.node.create_client(QueryEntry, QUERY_ENTRY_SERVICE)
+        self.add_item_client = self.node.create_client(AddEntry, ADD_ENTRY_SERVICE)
         self.llm_wrapper_service = self.node.create_client(LLMWrapper, LLM_WRAPPER_SERVICE)
         self.keyword_client = self.node.create_subscription(
             String, WAKEWORD_TOPIC, self._get_keyword, 10
@@ -192,67 +192,12 @@ class HRITasks(metaclass=SubtaskMeta):
         rclpy.spin_until_future_complete(self.node, future)
         return future.result().corrected_text
 
-    @service_check("query_item_client", STATE["SERVICE_CHECK"], TIMEOUT)
-    def find_closest(self, query: str, collection: str, top_k: int = 1) -> list[str]:
-        """
-        Finds the closest matching item in a specified collection based on the given query.
-
-        Args:
-            query (str): The search query to find the closest match for.
-            collection (str): The name of the collection to search within.
-            top_k (int, optional): The number of top matches to return. Defaults to 1.
-
-        Returns:
-            list[str]: The closest matching item(s) from the collection.
-        """
-        request = QueryItem.Request(query=query, collection=collection, topk=top_k)
-        future = self.query_item_client.call_async(request)
-        rclpy.spin_until_future_complete(self.node, future)
-
-        return future.result().results
-
     @service_check("llm_wrapper_service", STATE["SERVICE_CHECK"], TIMEOUT)
     def ask(self, question: str) -> str:
         request = LLMWrapper.Request(question=question)
         future = self.llm_wrapper_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
         return future.result().answer
-
-    @service_check("add_item_client", STATE["SERVICE_CHECK"], TIMEOUT)
-    def add_item(self, document: list, metadata: list) -> str:
-        """
-        Adds new items to the ChromaDB collection.
-
-        Args:
-            document (list): List of documents to be added.
-            collection (str): "items"
-            metadata (list): List of metadata corresponding to each document Ex: {"default_location": "kitchen", "context": "household_items", }.
-
-        Returns:
-            str: A message indicating the success or failure of the operation.
-        """
-        try:
-            # Prepare the metadata with default values
-
-            # Prepare the request with the necessary arguments
-            request = AddItem.Request(
-                document=document,  # List of documents
-                collection="items",  # The collection to add the items to
-                metadata=metadata,  # Metadata as a JSON
-            )
-
-            # Make the service call
-            future = self.add_item_client.call_async(request)
-            rclpy.spin_until_future_complete(self.node, future)
-
-            # Check if the operation was successful
-            if future.result().success:
-                return "Items added successfully"
-            else:
-                return f"Failed to add items: {future.result().message}"
-
-        except Exception as e:
-            return f"Error: {str(e)}"
 
     @service_check("command_interpreter_client", STATE["SERVICE_CHECK"], TIMEOUT)
     def command_interpreter(self, text: str) -> CommandInterpreter.Response:
@@ -277,6 +222,31 @@ class HRITasks(metaclass=SubtaskMeta):
         future = self.is_positive_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
         return future.result().is_positive
+
+    def _add_to_collection(self, document: list, metadata: str, collection: str) -> str:
+        request = AddEntry.Request(document=document, metadata=metadata, collection=collection)
+        future = self.add_item_client.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+        return "Success" if future.result().success else f"Failed: {future.result().message}"
+
+    def add_item(self, document: list, metadata: str) -> str:
+        return self._add_to_collection(document, metadata, "items")
+
+    def add_location(self, document: list, metadata: str) -> str:
+        return self._add_to_collection(document, metadata, "locations")
+
+    def _query_(self, query: str, collection: str, top_k: int = 1) -> list[str]:
+        # Wrap the query in a list so that the field receives a sequence of strings.
+        request = QueryEntry.Request(query=[query], collection=collection, topk=top_k)
+        future = self.query_item_client.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+        return future.result().results
+
+    def query_item(self, query: str, top_k: int = 1) -> list[str]:
+        return self._query_(query, "items", top_k)
+
+    def query_location(self, query: str, top_k: int = 1) -> list[str]:
+        return self._query_(query, "locations", top_k)
 
 
 if __name__ == "__main__":
