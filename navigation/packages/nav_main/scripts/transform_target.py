@@ -27,7 +27,7 @@ class PointTransformer(Node):
         self.point_pub = self.create_publisher(PointStamped, 'point_visualize', 10)
         self.gual_pub = self.create_publisher(PoseStamped, 'goal_update', 10)
         self.set_target_service = self.create_service(
-            SetBool, ACTIVATE_FOLLOWING_TOPIC, self.activate_callback
+            SetBool, ACTIVATE_FOLLOWING_TOPIC, self.set_target_callback
         )
 
         self.accumulated_points = []
