@@ -209,6 +209,20 @@ class MotionPlanningServer(Node):
         )
         joint_names = goal_handle.request.joint_names
         joint_positions = list(goal_handle.request.joint_positions)
+        joint_dict = self.planner.get_joint_positions()
+
+        configuration_distance = 0
+        for i, joint_name in enumerate(joint_names):
+            joint_curr_pos = joint_dict[joint_name]
+            joint_target_pos = joint_positions[i]
+            configuration_distance += (joint_curr_pos - joint_target_pos) ** 2
+        configuration_distance = configuration_distance**0.5
+        if configuration_distance < 0.2:
+            self.get_logger().info(
+                f"Joint positions are already close to target: {configuration_distance}"
+            )
+            return True
+
         result = self.planner.plan_joint_goal(
             joint_positions,
             joint_names,
