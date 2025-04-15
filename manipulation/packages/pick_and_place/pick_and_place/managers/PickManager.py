@@ -1,11 +1,13 @@
 from frida_motion_planning.utils.ros_utils import wait_for_future
 from frida_interfaces.srv import PerceptionService, DetectionHandler
 from geometry_msgs.msg import PointStamped
+from std_srvs.srv import SetBool
 from pick_and_place.utils.grasp_utils import get_grasps
 from frida_interfaces.action import PickMotion
 from frida_motion_planning.utils.service_utils import (
     move_joint_positions as send_joint_goal,
 )
+import time
 
 CFG_PATH = (
     "/workspace/src/home2/manipulation/packages/arm_pkg/config/frida_eigen_params.cfg"
@@ -70,10 +72,19 @@ class PickManager:
         self.node.get_logger().info("Sending pick motion goal...")
         future = self.node._pick_motion_action_client.send_goal_async(goal_msg)
         future = wait_for_future(future)
-        future = wait_for_future(future)
         # Check result
         result = future.result()
         self.node.get_logger().info(f"Pick Motion Result: {result}")
+
+        # close gripper
+        gripper_request = SetBool.Request()
+        gripper_request.data = True
+        self.node.get_logger().info("Closing gripper")
+        future = self.node._gripper_set_state_client.call_async(gripper_request)
+        future = wait_for_future(future)
+        result = future.result()
+        self.node.get_logger().info(f"Gripper Result: {result}")
+        time.sleep(3)
         self.node.get_logger().info("Returning to position")
 
         # return to configured position
