@@ -1,15 +1,9 @@
 #!/usr/bin/env python3
 
-import rclpy
-from rclpy.node import Node
-from utils.logger import Logger
-from subtask_managers.vision_tasks import VisionTasks
-from subtask_managers.hri_tasks import HRITasks
-from subtask_managers.manipulation_tasks import ManipulationTasks
-from subtask_managers.nav_tasks import NavigationTasks
 from utils.subtask_manager import SubtaskManager
 
-class GenericTask():
+
+class GenericTask:
     """Class to manage the generic tasks"""
 
     STATE = {
@@ -27,8 +21,8 @@ class GenericTask():
         "STICKLER_RULES": [],
         "DEMO": [],
     }
-    
-    def __init__(self,SubtaskManager: SubtaskManager, n):
+
+    def __init__(self, SubtaskManager: SubtaskManager):
         """Initialize the class"""
 
         self.subtask = SubtaskManager
@@ -38,8 +32,14 @@ class GenericTask():
         """Test function"""
         self.logger.info("Test function")
         return True
-    
+
     def talk(self):
-        print("Hello, I am a generic task manager.")
-        self.subtask.hri.say("Hello, I am a generic task manager.")        
+        i = 0
+        while i < 5:
+            print("Hello, I am a generic task manager.")
+            self.subtask.hri.say("Hello, I am a generic task manager.")
+            i += 1
+            import time
+
+            time.sleep(1)
         return True
