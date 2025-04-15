@@ -1,10 +1,5 @@
-item_categorization:
+launch:
   ros__parameters:
     Embeddings_model: all-MiniLM-L12-v2
     collections_built: 0
 
-    ADD_ITEM_SERVICE: REPLACE
-    REMOVE_ITEM_SERVICE: REPLACE
-    UPDATE_ITEM_SERVICE: REPLACE
-    QUERY_ITEM_SERVICE: REPLACE
-    BUILD_EMBEDDINGS_SERVICE: REPLACE
