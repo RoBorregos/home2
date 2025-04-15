@@ -38,7 +38,7 @@ class HelpMeCarryTM(Node):
         self.subtask_manager = SubtaskManager(
             self,
             task=Task.HELP_ME_CARRY,
-            mock_areas=["manipulation", "navigation", "vision", "hri"],
+            mock_areas=["manipulation", "navigation", "vision"],
         )
         self.current_state = HelpMeCarryTM.TASK_STATES["START"]
         self.current_attempts = 0
@@ -94,12 +94,18 @@ class HelpMeCarryTM(Node):
         if self.current_state == HelpMeCarryTM.TASK_STATES["FOLLOWING_TO_DESTINATION"]:
             Logger.state(self, "Following to destination")
             while True:
-                s, result = self.subtask_manager.hri.interpret_keyword(["stop"], 10.0)
-                if result == "stop":
+                self.subtask_manager.hri.say("Please say stop when you want me to stop")
+                attempt = 0
+                while attempt < 5:
+                    s, result = self.subtask_manager.hri.hear()
+                    if "stop" in result.lower():
+                        break
+
+                    attempt += 1
+
+                if "stop" in result.lower():
                     self.subtask_manager.nav.follow_person(False)
                     break
-                else:
-                    self.subtask_manager.hri.say("Please say stop when you want me to stop")
 
             # while not self.subtask_manager.hri.interpret_keyword("STOP"):
             #     # TODO: person_pose = self.subtask_manager.vision.follow_person() /It must return the person pose and the person position towards the center of the camera

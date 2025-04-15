@@ -188,12 +188,12 @@ class HRITasks(metaclass=SubtaskMeta):
             self.keyword = ""
 
     @service_check("hear_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
-    def hear(self, min_audio_length=0.0, max_audio_length=0.0) -> str:
+    def hear(self, min_audio_length=0.5, max_audio_length=10.0) -> str:
         if min_audio_length > 0:
-            self.set_double_param("MIN_AUDIO_DURATION", min_audio_length)
+            self.set_double_param("MIN_AUDIO_DURATION", float(min_audio_length))
 
         if max_audio_length > 0:
-            self.set_double_param("MAX_AUDIO_DURATION", max_audio_length)
+            self.set_double_param("MAX_AUDIO_DURATION", float(max_audio_length))
 
         request = STT.Request()
 
@@ -412,11 +412,12 @@ class HRITasks(metaclass=SubtaskMeta):
         future = self.useful_audio_params.call_async(request)
 
         while not future.done():
-            self.node.get_logger().info(f"Setting parameter {name} to {value}")
+            # self.node.get_logger().info(f"Setting parameter {name} to {value}")
             rclpy.spin_once(self.node, timeout_sec=0.1)
 
         if future.result() is not None:
-            self.node.get_logger().info(f"Parameter {name} set to {value}")
+            pass
+            # self.node.get_logger().info(f"Parameter {name} set to {value}")
         else:
             self.node.get_logger().error(f"Failed to set parameter {name}")
 
