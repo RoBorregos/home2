@@ -6,11 +6,10 @@ Task Manager for Carry my luggage task of Robocup @Home 2025
 
 import rclpy
 from rclpy.node import Node
+from subtask_managers.generic_tasks import GenericTask
 from utils.logger import Logger
 from utils.status import Status
 from utils.subtask_manager import SubtaskManager, Task
-
-# from subtask_managers.vision_tasks import VisionTasks
 
 ATTEMPT_LIMIT = 3
 
@@ -40,10 +39,11 @@ class HelpMeCarryTM(Node):
             task=Task.HELP_ME_CARRY,
             mock_areas=["manipulation", "navigation", "vision"],
         )
+        self.generic = GenericTask(self.subtask_manager)
+        self.generic.talk()
         self.current_state = HelpMeCarryTM.TASK_STATES["START"]
         self.current_attempts = 0
         self.running_task = True
-
         Logger.info(self, "HelpMeCarryTaskManager has started.")
 
     def navigate_to(self, location: str, sublocation: str = ""):
