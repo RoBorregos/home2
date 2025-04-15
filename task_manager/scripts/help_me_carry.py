@@ -36,7 +36,9 @@ class HelpMeCarryTM(Node):
         """Initialize the node"""
         super().__init__("Help_me_carry_task_manager")
         self.subtask_manager = SubtaskManager(
-            self, task=Task.HELP_ME_CARRY, mock_areas=["manipulation", "navigation"]
+            self,
+            task=Task.HELP_ME_CARRY,
+            mock_areas=["manipulation", "navigation", "vision", "hri"],
         )
         self.current_state = HelpMeCarryTM.TASK_STATES["START"]
         self.current_attempts = 0
@@ -148,14 +150,15 @@ class HelpMeCarryTM(Node):
             self.subtask_manager.hri.say("I will now receive the bag")
             # TODO: self.subtask_manager.manipulation.move_joint_positions(dict,"bag_recieving_pose")
             # self.subtask_manager.manipulation.open_gripper()
-            self.subtask_manager.hri.say("I have opened my gripper, please put the bag in it.")
-            while (
-                self.subtask_manager.hri.confirm(
+
+            while True:
+                self.subtask_manager.hri.say("I have opened my gripper, please put the bag in it.")
+                s, confirmation = self.subtask_manager.hri.confirm(
                     "Have you put the bag in my gripper?", False, retries=8, wait_between_retries=4
                 )
-                != "yes"
-            ):
-                self.subtask_manager.hri.say("I have opened my gripper, please put the bag in it.")
+
+                if confirmation == "yes":
+                    break
 
             # self.subtask_manager.manipulation.close_gripper()
             self.subtask_manager.hri.say(
