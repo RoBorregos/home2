@@ -13,7 +13,14 @@ from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 
-from frida_interfaces.srv import CountBy, CountByGesture, CountByPose, PersonPoseGesture
+from frida_interfaces.srv import (
+    CountBy,
+    CountByGesture,
+    CountByPose,
+    PersonPoseGesture,
+    CropQuery,
+    CountByColor
+)
 
 from ament_index_python.packages import get_package_share_directory
 
@@ -21,12 +28,12 @@ from frida_constants.vision_constants import (
     CAMERA_TOPIC,
     COUNT_BY_PERSON_TOPIC,
     IMAGE_TOPIC,
-    # COUNT_BY_COLOR_TOPIC,
-    # COUNT_BY_CLOTHES_TOPIC,
+    COUNT_BY_COLOR_TOPIC,
     # COUNT_BY_OBJECTS_TOPIC,
     COUNT_BY_GESTURES_TOPIC,
     COUNT_BY_POSE_TOPIC,
     POSE_GESTURE_TOPIC,
+    CROP_QUERY_TOPIC,
 )
 
 from frida_constants.vision_enums import Poses, Gestures
@@ -36,15 +43,11 @@ from pose_detection import PoseDetection
 package_share_dir = get_package_share_directory("vision_general")
 
 YOLO_LOCATION = str(pathlib.Path(__file__).parent) + "/Utils/yolov8n.pt"
-# MOONDREAM_LOCATION = str(
-#     pathlib.Path(package_share_dir) / "Utils/moondream-2b-int8.mf.gz"
-# )
 PERCENTAGE = 0.3
 MAX_DEGREE = 30
 AREA_PERCENTAGE_THRESHOLD = 0.2
 CONF_THRESHOLD = 0.5
-CHECK_TIMEOUT = 5
-
+TIMEOUT = 5.0
 
 class GPSRCommands(Node):
     def __init__(self):
@@ -73,13 +76,9 @@ class GPSRCommands(Node):
             CountBy, COUNT_BY_PERSON_TOPIC, self.count_by_person_callback
         )
 
-        # self.count_by_color_service = self.create_service(
-        #     CountBy, COUNT_BY_COLOR_TOPIC, self.count_by_color_callback
-        # )
-
-        # self.count_by_clothes_service = self.create_service(
-        #     CountBy, COUNT_BY_CLOTHES_TOPIC, self.count_by_clothes_callback
-        # )
+        self.count_by_color_service = self.create_service(
+            CountByColor, COUNT_BY_COLOR_TOPIC, self.count_by_color_callback
+        )
 
         self.pose_gesture_detection_service = self.create_service(
             PersonPoseGesture, POSE_GESTURE_TOPIC, self.detect_pose_gesture_callback
@@ -94,6 +93,8 @@ class GPSRCommands(Node):
 
         self.get_logger().info("GPSRCommands Ready.")
         self.create_timer(0.1, self.publish_image)
+
+        self.moondream_crop_query_client = self.create_client(CropQuery, CROP_QUERY_TOPIC)
 
     def image_callback(self, data):
         """Callback to receive the image from the camera."""
@@ -221,31 +222,40 @@ class GPSRCommands(Node):
         return response
 
     def count_by_color_callback(self, request, response):
-        """Callback to count by color in the image."""
+        """Callback to count people wearing a specific color and clothing."""
         self.get_logger().info("Executing service Count By Color")
 
-        # Function to count by color - to implement
-        # self.count_color(frame, color)
+        if self.image is None:
+            response.success = False
+            response.count = 0
+            return response
 
-        color_count = 0
+        frame = self.image
+        self.output_image = frame.copy()
 
+        clothing = request.clothing 
+        color = request.color 
+
+        self.get_detections(frame, 0)
+
+        count = 0
+
+        for person in self.people:
+            x1, y1, x2, y2 = person["bbox"]
+
+            prompt = f"Reply only with 1 if the person is wearing a {color} {clothing}. Otherwise, reply only with 0."
+            status, response_q = self.moondream_crop_query(prompt, [float(y1), float(x1), float(y2), float(x2)])
+            if status:
+                print(response_q)
+                response_clean = response_q.strip()
+                if response_clean == "1":
+                    count += 1
+                elif response_clean != "0":
+                    self.get_logger().warn(f"Unexpected response: {response_clean}")
+        
         response.success = True
-        response.count = color_count
-        self.get_logger().info(f"Color counted: {color_count}")
-        return response
-
-    def count_by_clothes_callback(self, request, response):
-        """Callback to count by clothes in the image."""
-        self.get_logger().info("Executing service Count By Color")
-
-        # Function to count by color - to implement
-        # self.count_clothes(frame, clothes)
-
-        clothes_count = 0
-
-        response.success = True
-        response.count = clothes_count
-        self.get_logger().info(f"Clothes counted: {clothes_count}")
+        response.count = count
+        self.get_logger().info(f"People wearing a {clothing} of color {color}: {count}")
         return response
 
     def detect_pose_gesture_callback(self, request, response):
@@ -419,6 +429,31 @@ class GPSRCommands(Node):
                         cv2.LINE_AA,
                     )
 
+    def moondream_crop_query(self, prompt: str, bbox: list[float]) -> tuple[int, str]:
+        """Makes a query of the current image using moondream."""
+        self.get_logger().info(f"Querying image with prompt: {prompt}")
+        request = CropQuery.Request()
+        request.query = prompt
+        request.ymin = bbox[0]
+        request.xmin = bbox[1]
+        request.ymax = bbox[2]
+        request.xmax = bbox[3]
+
+        try:
+            future = self.moondream_crop_query_client.call_async(request)
+            rclpy.spin_until_future_complete(self, future, timeout_sec=TIMEOUT)
+            result = future.result()
+
+            if not result or not result.success:
+                self.get_logger().warn("No result generated")
+                return False, ""
+
+            self.get_logger().info(f"Result: {result.result}")
+            return True, result.result
+
+        except Exception as e:
+            self.get_logger().error(f"Error requesting description: {e}")
+            return False, ""
 
 def main(args=None):
     rclpy.init(args=args)
