@@ -7,16 +7,25 @@ commands.
 """
 
 import rclpy
+from frida_interfaces.msg import ObjectDetection
 from frida_interfaces.action import DetectPerson
-from frida_interfaces.srv import FindSeat, SaveName, PersonDescription, BeverageLocation
+from frida_interfaces.srv import (
+    FindSeat,
+    SaveName,
+    BeverageLocation,
+    Query,
+    CropQuery,
+    DetectPointingObject,
+)
 from std_srvs.srv import SetBool
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import Point, PointStamped
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from utils.decorators import mockable, service_check
 from utils.logger import Logger
 from utils.task import Task
 from utils.status import Status
+import time
 
 from frida_constants.vision_constants import (
     SAVE_NAME_TOPIC,
@@ -24,9 +33,14 @@ from frida_constants.vision_constants import (
     CHECK_PERSON_TOPIC,
     FOLLOW_TOPIC,
     FOLLOW_BY_TOPIC,
-    PERSON_DESCRIPTION_TOPIC,
+    QUERY_TOPIC,
+    CROP_QUERY_TOPIC,
     BEVERAGE_TOPIC,
     SET_TARGET_TOPIC,
+    POINTING_OBJECT_SERVICE,
+)
+from frida_constants.vision_classes import (
+    BBOX,
 )
 
 TIMEOUT = 5.0
@@ -49,36 +63,46 @@ class VisionTasks:
         self.save_name_client = self.node.create_client(SaveName, SAVE_NAME_TOPIC)
         self.find_seat_client = self.node.create_client(FindSeat, FIND_SEAT_TOPIC)
         self.follow_by_name_client = self.node.create_client(SaveName, FOLLOW_BY_TOPIC)
-        self.person_description_client = self.node.create_client(
-            PersonDescription, PERSON_DESCRIPTION_TOPIC
-        )
+        self.moondream_query_client = self.node.create_client(Query, QUERY_TOPIC)
+        self.moondream_crop_query_client = self.node.create_client(CropQuery, CROP_QUERY_TOPIC)
         self.track_person_client = self.node.create_client(SetBool, SET_TARGET_TOPIC)
+        self.pointing_object_client = self.node.create_client(
+            DetectPointingObject, POINTING_OBJECT_SERVICE
+        )
         self.beverage_location_client = self.node.create_client(BeverageLocation, BEVERAGE_TOPIC)
         self.detect_person_action_client = ActionClient(self.node, DetectPerson, CHECK_PERSON_TOPIC)
 
         self.services = {
             Task.RECEPTIONIST: {
-                "detect_person": {
-                    "client": self.detect_person_action_client,
-                    "type": "action",
-                },
-                "find_seat": {
-                    "client": self.find_seat_client,
-                    "type": "service",
-                },
+                "detect_person": {"client": self.detect_person_action_client, "type": "action"},
+                "find_seat": {"client": self.find_seat_client, "type": "service"},
                 "save_face_name": {
                     "client": self.save_name_client,
                     "type": "service",
                 },
-                "person_description": {"client": self.person_description_client, "type": "service"},
+                "moondream_query": {"client": self.moondream_query_client, "type": "service"},
                 "beverage_location": {"client": self.beverage_location_client, "type": "service"},
                 "follow_by_name": {"client": self.follow_by_name_client, "type": "service"},
             },
             Task.HELP_ME_CARRY: {
-                "track_person": {
-                    "client": self.track_person_client,
+                # "track_person": {"client": self.track_person_client, "type": "service"},
+                # "moondream_crop_query": {
+                #     "client": self.moondream_crop_query_client,
+                #     "type": "service",
+                # },
+                "pointing_object": {
+                    "client": self.node.create_client(
+                        DetectPointingObject, POINTING_OBJECT_SERVICE
+                    ),
                     "type": "service",
-                }
+                },
+            },
+            Task.DEBUG: {
+                "moondream_query": {"client": self.moondream_query_client, "type": "service"},
+                "moondream_crop_query": {
+                    "client": self.moondream_crop_query_client,
+                    "type": "service",
+                },
             },
         }
 
@@ -228,32 +252,91 @@ class VisionTasks:
         Logger.success(self.node, f"Found drink: {drink}")
         return Status.EXECUTION_SUCCESS, result.location
 
-    @mockable(return_value="tall person", delay=5, mock=False)
-    @service_check("person_description_client", Status.EXECUTION_ERROR, TIMEOUT)
-    def describe_person(self):
-        """Requests a description of a person and handles the response asynchronously."""
-        Logger.info(self.node, "Requesting description of a person")
-        request = PersonDescription.Request()
-        request.request = True
+    @mockable(return_value=(Status.EXECUTION_ERROR, ""), delay=5, mock=False)
+    @service_check("moondream_query_client", Status.EXECUTION_ERROR, TIMEOUT)
+    def moondream_query(self, prompt: str, query_person: bool = False) -> tuple[int, str]:
+        """Makes a query of the current image using moondream."""
+        Logger.info(self.node, f"Querying image with prompt: {prompt}")
+        request = Query.Request()
+        request.query = prompt
+        request.person = query_person
 
         try:
-            future = self.person_description_client.call_async(request)
-            future.add_done_callback(self._handle_description_response)
+            future = self.moondream_query_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+            result = future.result()
+
+            if not result.success:
+                Logger.warn(self.node, "No result generated")
+                return Status.EXECUTION_ERROR, ""
+
         except Exception as e:
             Logger.error(self.node, f"Error requesting description: {e}")
-            return Status.EXECUTION_ERROR
+            return Status.EXECUTION_ERROR, ""
 
-    def _handle_description_response(self, future):
+        Logger.success(self.node, f"Result: {result.result}")
+        return Status.EXECUTION_SUCCESS, result.result
+
+    @mockable(return_value=(Status.EXECUTION_ERROR, ""), delay=5, mock=False)
+    @service_check("moondream_crop_query_client", Status.EXECUTION_ERROR, TIMEOUT)
+    def moondream_crop_query(self, prompt: str, bbox: list[float]) -> tuple[int, str]:
+        """Makes a query of the current image using moondream."""
+        Logger.info(self.node, f"Querying image with prompt: {prompt}")
+        request = CropQuery.Request()
+        request.query = prompt
+        request.ymin = bbox[0]
+        request.xmin = bbox[1]
+        request.ymax = bbox[2]
+        request.xmax = bbox[3]
+
+        try:
+            future = self.moondream_crop_query_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+            result = future.result()
+
+            if not result.success:
+                Logger.warn(self.node, "No result generated")
+                return Status.EXECUTION_ERROR, ""
+
+        except Exception as e:
+            Logger.error(self.node, f"Error requesting description: {e}")
+            return Status.EXECUTION_ERROR, ""
+
+        Logger.success(self.node, f"Result: {result.result}")
+        return Status.EXECUTION_SUCCESS, result.result
+
+    @mockable(return_value=(Status.EXECUTION_ERROR, ""), delay=5, mock=False)
+    @service_check("moondream_query_client", Status.EXECUTION_ERROR, TIMEOUT)
+    def moondream_query_async(self, prompt: str, query_person: bool = False, callback=None):
+        """Makes a query of the current image using moondream. Runs asynchronously."""
+        Logger.info(self.node, f"Querying image with prompt: {prompt}")
+        request = Query.Request()
+        request.query = prompt
+        request.person = query_person
+
+        try:
+            future = self.moondream_query_client.call_async(request)
+            future.add_done_callback(lambda fut: self._handle_moondream_response(fut, callback))
+
+        except Exception as e:
+            Logger.error(self.node, f"Error requesting description: {e}")
+
+    def _handle_moondream_response(self, future, callback):
         """Callback to handle the response from the description service."""
         try:
             result = future.result()
             if result.success:
-                Logger.success(self.node, f"Description: {result.description}")
-                self.node.get_guest().description = result.description
+                Logger.success(self.node, f"Result: {result.result}")
+                if callback:
+                    callback(Status.EXECUTION_SUCCESS, result.result)
             else:
-                Logger.warn(self.node, "No description generated")
+                Logger.warn(self.node, "No result generated")
+                if callback:
+                    callback(Status.EXECUTION_ERROR, "")
         except Exception as e:
-            Logger.error(self.node, f"Error processing description response: {e}")
+            Logger.error(self.node, f"Error processing response: {e}")
+            if callback:
+                callback(Status.EXECUTION_ERROR, "")
 
     @mockable(return_value=None, delay=2)
     @service_check("follow_by_name_client", Status.EXECUTION_ERROR, TIMEOUT)
@@ -300,6 +383,43 @@ class VisionTasks:
 
         Logger.success(self.node, "Person tracking success")
         return Status.EXECUTION_SUCCESS
+
+    def describe_person(self, callback):
+        """Describe the person in the image"""
+        Logger.info(self.node, "Describing person")
+        prompt = "Describe the person in the image"
+        self.moondream_query_async(prompt, query_person=True, callback=callback)
+
+    def get_pointing_bag(self, timeout: float = TIMEOUT) -> tuple[int, ObjectDetection]:
+        time.sleep(TIMEOUT)
+        """Get the bag in the image"""
+        Logger.info(self.node, "Getting bag in the image")
+        request = DetectPointingObject.Request()
+
+        try:
+            future = self.pointing_object_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=timeout)
+            result = future.result()
+
+            if not result.success:
+                Logger.warn(self.node, "No bag found")
+                return Status.TARGET_NOT_FOUND, BBOX(), PointStamped()
+        except Exception as e:
+            Logger.error(self.node, f"Error getting bag: {e}")
+            return Status.EXECUTION_ERROR, BBOX(), PointStamped
+        Logger.success(self.node, f"Bag found: {result.detection}")
+        bbox = BBOX()
+        bbox.x1 = result.detection.xmin
+        bbox.x2 = result.detection.xmax
+        bbox.y1 = result.detection.ymin
+        bbox.y2 = result.detection.ymax
+        return Status.EXECUTION_SUCCESS, bbox, result.detection.point3d
+
+    def describe_bag(self, bbox: list[float]) -> tuple[int, str]:
+        """Describe the person in the image"""
+        Logger.info(self.node, "Describing the bag")
+        prompt = "Describe the bag in the image"
+        return self.moondream_crop_query(prompt, bbox)
 
 
 if __name__ == "__main__":

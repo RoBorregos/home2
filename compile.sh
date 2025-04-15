@@ -11,7 +11,7 @@ read -p "Enter your choice (1-4): " choice
 case $choice in
   1)
     echo "Running setup..."
-    ./prebuld.sh
+    ./prebuild.sh
     ;;
   2)
     echo "Installing dependencies..."
@@ -29,7 +29,7 @@ case $choice in
     echo "Compiling..."
     if [[ -f /etc/nv_tegra_release ]]; then
         echo "Compiling for jetson"
-        colcon build --packages-ignore realsense_gazebo_plugin xarm_gazebo
+        colcon build --packages-ignore realsense_gazebo_plugin xarm_gazebo nan
     else
         colcon build
     fi

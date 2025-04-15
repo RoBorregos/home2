@@ -166,7 +166,6 @@ class PickMotionServer(Node):
     def attach_pick_object(self):
         """Attach the pick object to the robot."""
         collision_objects = self.get_collision_objects()
-        print(collision_objects)
         # find plane object
         plane = None
         for obj in collision_objects:
@@ -203,9 +202,6 @@ class PickMotionServer(Node):
     def object_in_plane(self, obj, plane):
         """Check if the object is in the plane."""
         plane_top_height = plane.pose.pose.position.z + plane.dimensions.z / 2
-        self.get_logger().info(
-            f"Plane top height: {plane_top_height} vs {obj.pose.pose.position.z}"
-        )
         return (
             obj.pose.pose.position.z
             < plane_top_height + PLANE_OBJECT_COLLISION_TOLERANCE

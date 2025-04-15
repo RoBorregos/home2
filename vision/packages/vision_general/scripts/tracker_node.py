@@ -49,7 +49,7 @@ CONF_THRESHOLD = 0.6
 
 class SingleTracker(Node):
     def __init__(self):
-        super().__init__("single_tracker")
+        super().__init__("tracker_node")
         self.bridge = CvBridge()
 
         self.image_subscriber = self.create_subscription(
