@@ -18,20 +18,34 @@ ros2 run embeddings item_categorization.py
 You can test the services using `ros2 service call`.
 
 #### **Add Entry Service**
+It expects document: list of strings, collection: string and optionally metadata: string json
+Single entry
 ```bash
-ros2 service call /hri/nlp/embeddings/add_entry_service frida_interfaces/srv/AddEntry "{document: 'rotten_potatoes', collection: 'items'}"
+ros2 service call /hri/nlp/embeddings/add_entry_service frida_interfaces/srv/AddEntry "{document: ['rotten_potatoes'], collection: 'items'}"
 ```
-
+Multiple entry
 ```bash
 ros2 service call /hri/nlp/embeddings/add_entry_service frida_interfaces/srv/AddEntry "{document: ['rotten_tomatoes', 'apple_pie', 'banana_bread'], collection: 'items'}"
 
 ```
-#### **Query Entry Service**
+Entry with metadata
 ```bash
-ros2 service call /hri/nlp/embeddings/query_entry_service frida_interfaces/srv/QueryEntry "{query: 'potatoes', topk: 5, collection: 'items'}"
+ros2 service call /hri/nlp/embeddings/add_entry_service frida_interfaces/srv/AddEntry \
+"{document: ['apple pie with cinnamon', 'banana_pie', 'mango_pie_with milk'], metadata: '[{\"price\": \"500\"}, {\"price\": \"400\"}, {\"price\": \"450\"}]', collection: 'items'}"
 ```
 
+#### **Query Entry Service**
+It expects query: list of strings, topk: int, collection: string 
+Single query
+```bash
+ros2 service call /hri/nlp/embeddings/query_entry_service frida_interfaces/srv/QueryEntry "{query: ['potatoes'], topk: 5, collection: 'items'}"
+```
+Multiple query
+```bash
+ros2 service call /hri/nlp/embeddings/add_entry_service frida_interfaces/srv/AddEntry "{document: ['apple pie with cinnamon', 'banana_pie', 'mango_pie_with milk'], metadata: '{}', collection: 'items'}"
+```
 #### **Build Embeddings Service**
+It expects a bool for rebuilding: eliminate every collection and rebuild(!THIS PROCESS WILL ELIMINATE ALL NEW ADDED ENTRYS)
 ```bash
 ros2 service call /hri/nlp/embeddings/build_embeddings_service frida_interfaces/srv/BuildEmbeddings "{rebuild: true}"
 ```

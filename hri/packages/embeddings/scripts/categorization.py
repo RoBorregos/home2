@@ -30,7 +30,6 @@ class MetadataModel(BaseModel):
     default_location: Optional[str] = None
     context: Optional[str] = ""
 
-    # move profiles out of the method
     PROFILES: ClassVar[Dict[MetadataProfile, Dict[str, str]]] = {
         MetadataProfile.ITEMS: {"context": "item for household use"},
         MetadataProfile.LOCATIONS: {"context": "house locations"},
@@ -100,6 +99,7 @@ class Embeddings(Node):
                 metadatas_ = json.loads(request.metadata)
             else:
                 metadatas_ = request.metadata
+
             documents = (
                 request.document
                 if isinstance(request.document, list)
@@ -114,21 +114,26 @@ class Embeddings(Node):
                 metadata_parsed = MetadataModel.with_profile(request.collection, **meta)
                 metadata_objects.append(metadata_parsed.model_dump())
 
+            print("lenght of documents", len(documents), len(metadatas))
+            documents = self.clean(documents)
             # Inject context into documents and preserve original names
+
+            print("documents before the context added", documents)
+
             for i, (doc, meta) in enumerate(zip(documents, metadata_objects)):
                 meta["original_name"] = doc
                 context = meta.get("context")
                 if context:
                     documents[i] = f"{doc} {context}"
+            print("documents after the context added", documents)
 
-            # Send to Chroma
             self.chroma_adapter.add_entries(
                 request.collection, documents, metadata_objects
             )
 
             response.success = True
             response.message = "Item(s) added successfully"
-
+            self.get_logger().info("Add Entry request handled successfully")
         except ValidationError as e:
             response.success = False
             response.message = f"Invalid metadata: {str(e)}"
@@ -277,24 +282,31 @@ class Embeddings(Node):
     def add_basics(self, documents, metadatas):
         # Inject context and sanitize document content
         for i, (doc, meta) in enumerate(zip(documents, metadatas)):
-            # Try to clean stringified list (e.g., "['apple', 'banana']") into "apple banana"
-            if (
-                isinstance(doc, str)
-                and doc.strip().startswith("[")
-                and doc.strip().endswith("]")
-            ):
-                try:
-                    parsed = json.loads(doc.replace("'", '"'))  # Handle single quotes
-                    if isinstance(parsed, list):
-                        doc = " ".join(str(x) for x in parsed)
-                except json.JSONDecodeError:
-                    pass  # Keep as-is if it fails
-
             meta["original_name"] = doc
             context = meta.get("context", "")
             documents[i] = f"{doc} {context}" if context else doc
 
         return documents, metadatas
+
+    def clean(self, documents):
+        # If it's a list, clean each element
+        print("document before cleaning:", documents)
+        # If it's a string that looks like a list -> try parsing it
+        if (
+            isinstance(documents, str)
+            and documents.strip().startswith("[")
+            and documents.strip().endswith("]")
+        ):
+            try:
+                parsed = json.loads(documents.replace("'", '"'))  # Handle single quotes
+                if isinstance(parsed, list):
+                    print("document after cleaning:", documents)
+                    return " ".join(str(x) for x in parsed)
+            except json.JSONDecodeError:
+                pass  # Leave it as-is if it fails to parse
+
+        # Default case: just return the string
+        return documents
 
 
 def main():

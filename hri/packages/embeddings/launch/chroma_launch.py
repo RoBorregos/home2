@@ -12,7 +12,7 @@ def generate_launch_description():
         os.path.join(
             get_package_share_directory("embeddings"),
             "config",
-            "item_categorization.yaml",
+            "categorization.yaml",
         ),
         [ModuleNames.HRI.value],
     )["item_categorization"]["ros__parameters"]
@@ -21,7 +21,7 @@ def generate_launch_description():
         [
             Node(
                 package="embeddings",
-                executable="item_categorization.py",  # Your ROS 2 node executable
+                executable="categorization.py",
                 name="embeddings",
                 output="screen",
                 parameters=[
