@@ -1,5 +1,11 @@
 # Receptionist
 
+## Integration
+Run container. From the root directory (home2), run:
+```bash
+./run.sh integration --receptionist
+``` 
+
 ## Vision
 Run container. From the root directory (home2), run:
 ```bash
