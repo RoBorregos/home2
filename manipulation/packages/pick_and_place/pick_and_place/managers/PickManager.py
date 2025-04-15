@@ -70,6 +70,11 @@ class PickManager:
         self.node.get_logger().info("Sending pick motion goal...")
         future = self.node._pick_motion_action_client.send_goal_async(goal_msg)
         future = wait_for_future(future)
+        future = wait_for_future(future)
+        # Check result
+        result = future.result()
+        self.node.get_logger().info(f"Pick Motion Result: {result}")
+        self.node.get_logger().info("Returning to position")
 
         # return to configured position
         send_joint_goal(
@@ -79,7 +84,7 @@ class PickManager:
         )
         # Check result
         result = future.result().get_result().result
-        self.node.get_logger().info(f"Pick Motion Result: {result}")
+
         return result.success
 
     def get_object_point(self, object_name: str) -> PointStamped:

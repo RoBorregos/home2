@@ -5,6 +5,7 @@ from rclpy.node import Node
 from rclpy.action import ActionClient, ActionServer
 from rclpy.callback_groups import ReentrantCallbackGroup
 from frida_motion_planning.utils.ros_utils import wait_for_future
+from std_srvs.srv import SetBool
 from frida_interfaces.action import MoveJoints
 from frida_interfaces.msg import ManipulationTask
 from frida_interfaces.action import PickMotion, ManipulationAction
@@ -21,6 +22,7 @@ from frida_constants.manipulation_constants import (
     GRASP_DETECTION_SERVICE,
     MOVE_JOINTS_ACTION_SERVER,
     REMOVE_COLLISION_OBJECT_SERVICE,
+    GRIPPER_SET_STATE_SERVICE,
 )
 from frida_constants.vision_constants import (
     DETECTION_HANDLER_TOPIC_SRV,
@@ -68,6 +70,11 @@ class ManipulationCore(Node):
         self._remove_collision_object_client = self.create_client(
             RemoveCollisionObject,
             REMOVE_COLLISION_OBJECT_SERVICE,
+        )
+
+        self._gripper_set_state_client = self.create_client(
+            SetBool,
+            GRIPPER_SET_STATE_SERVICE,
         )
 
         self.pick_manager = PickManager(self)

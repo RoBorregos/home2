@@ -68,7 +68,6 @@ def move_joint_positions(
     # Check result
     future = wait_for_future(future)
     result = future.result().get_result().result
-    print(f"Pick Motion Result: {result}")
     return result.success
 
 
