@@ -1,8 +1,9 @@
 import rclpy
-from xarm_msgs.srv import SetInt16, MoveVelocity
+from xarm_msgs.srv import SetInt16, MoveVelocity, SetDigitalIO
 from frida_constants.manipulation_constants import (
     XARM_MOVEVELOCITY_SERVICE,
     JOINT_VELOCITY_MODE,
+    XARM_SET_DIGITAL_TGPIO_SERVICE,
 )
 from frida_motion_planning.utils.ros_utils import wait_for_future
 from typing import List
@@ -25,6 +26,9 @@ class XArmServices:
             MoveVelocity, XARM_MOVEVELOCITY_SERVICE
         )
         self.move_velocity_client.wait_for_service()
+        self.gripper_io_client = self.node.create_client(
+            SetDigitalIO, XARM_SET_DIGITAL_TGPIO_SERVICE
+        )
 
     def set_joint_velocity(
         self, velocities: List[float], set_mode: bool = True
@@ -78,4 +82,40 @@ class XArmServices:
         else:
             self.node.get_logger().error("Failed to call set state service")
             return False
+        return True
+
+    def set_gripper_state(self, state: str) -> bool:
+        if self.move_velocity_client is None:
+            self.node.get_logger().warn(
+                "Cannot set gripper state as move velocity service is not available"
+            )
+            return False
+        request = SetInt16.Request()
+        request.data = 1 if state == "open" else 0
+        future = self.move_velocity_client.call_async(request)
+        future = wait_for_future(future)
+        if future:
+            self.node.get_logger().info(
+                f"Set gripper state service response: {future.result().get_result()}"
+            )
+            return True
+        return False
+
+    def open_gripper(self) -> bool:
+        return self.set_gripper_tgpio_digital_state(0)
+
+    def close_gripper(self) -> bool:
+        return self.set_gripper_tgpio_digital_state(1)
+
+    def set_gripper_tgpio_digital_state(self, state: int) -> bool:
+        if self.gripper_io_client is None:
+            self.node.get_logger().warn(
+                "Cannot set gripper state as gripper io service is not available"
+            )
+            return False
+        request = SetDigitalIO.Request()
+        request.ionum = 0
+        request.value = int(state)
+        future = self.gripper_io_client.call_async(request)
+        future = wait_for_future(future)
         return True
