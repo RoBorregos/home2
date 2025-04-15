@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 
 from utils.subtask_manager import SubtaskManager
-
+import math as m
+import numpy as np
 
 class GenericTask:
     """Class to manage the generic tasks"""
@@ -43,3 +44,18 @@ class GenericTask:
 
             time.sleep(1)
         return True
+    
+    def follow_person(self):
+        KP = 0.5
+        while True:
+            dashgo_cmd_vel = self.subtask.nav.node.cmd_vel
+            dashgo_rotation_vel = np.sign(dashgo_cmd_vel.angular.z)
+            
+            # base_rotational_velocitiy_sign = np.sign(cmd_vel_subscriptor_value)
+            # arm_rotational_velocity = person_bounding_box_center_x * KP
+            # arm_rotation_velocity_sign = np.sign(arm_rotational_velocity)
+            
+            # person_pose = self.subtask.vision.detect_person()
+            # person_camera_point = self.subtask.vision.get_person_camera_point()
+            # self.subtask.nav.follow_person(True,person_pose)
+            # self.subtask.manipulation.pan_to()
