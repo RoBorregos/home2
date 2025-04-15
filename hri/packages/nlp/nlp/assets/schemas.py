@@ -15,3 +15,9 @@ class IsAnswerPositive(BaseModel):
 
 class IsAnswerNegative(BaseModel):
     is_negative: bool
+
+
+class CommonInterest(BaseModel):
+    response: str = Field(
+        description="The common interest of the 2 people. Including the names.",
+    )

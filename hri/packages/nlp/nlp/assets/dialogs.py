@@ -1,21 +1,28 @@
-from nlp.assets.schemas import ExtractedData, IsAnswerNegative, IsAnswerPositive
+from nlp.assets.schemas import (
+    CommonInterest,
+    ExtractedData,
+    IsAnswerNegative,
+    IsAnswerPositive,
+)
 
 
-def get_common_interests_dialog(
+def get_common_interest_args(
     person1Name, person2Name, person1Interests, person2Interests
 ):
-    return {
-        "messages": [
+    return (
+        [
             {
                 "role": "system",
-                "content": "You will be presented with the interests of two people, your task is to get the common interests between them. Give a short answer with one common interest.",
+                "content": """You will be presented with the interests of two people, your task is to get the common interests between them. Give a short answer with one common interest, include their names.
+""",
             },
             {
                 "role": "user",
                 "content": f"{person1Name} likes {person1Interests} and {person2Name} likes {person2Interests}",
             },
-        ]
-    }
+        ],
+        CommonInterest,
+    )
 
 
 def get_extract_data_args(full_text, data_to_extract, context=None):
