@@ -3,6 +3,9 @@ from frida_interfaces.srv import PerceptionService, DetectionHandler
 from geometry_msgs.msg import PointStamped
 from pick_and_place.utils.grasp_utils import get_grasps
 from frida_interfaces.action import PickMotion
+from frida_motion_planning.utils.service_utils import (
+    move_joint_positions as send_joint_goal,
+)
 
 CFG_PATH = (
     "/workspace/src/home2/manipulation/packages/arm_pkg/config/frida_eigen_params.cfg"
@@ -19,6 +22,13 @@ class PickManager:
 
     def execute(self, object_name: str, point: PointStamped) -> bool:
         self.node.get_logger().info("Executing Pick Task")
+        self.node.get_logger().info("Setting initial joint positions")
+        # Set initial joint positions
+        send_joint_goal(
+            move_joints_action_client=self.node._move_joints_client,
+            named_position="table_stare",
+            velocity=0.3,
+        )
         if point is not None and (
             point.point.x != 0 and point.point.y != 0 and point.point.z != 0
         ):
@@ -61,8 +71,14 @@ class PickManager:
         future = self.node._pick_motion_action_client.send_goal_async(goal_msg)
         future = wait_for_future(future)
 
+        # return to configured position
+        send_joint_goal(
+            move_joints_action_client=self.node._move_joints_client,
+            named_position="table_stare",
+            velocity=0.3,
+        )
         # Check result
-        result = future.result()
+        result = future.result().get_result().result
         self.node.get_logger().info(f"Pick Motion Result: {result}")
         return result.success
 
