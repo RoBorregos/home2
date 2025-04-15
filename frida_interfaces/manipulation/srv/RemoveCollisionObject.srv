@@ -1,3 +1,4 @@
 string id
+bool include_attached
 ---
 bool success

@@ -291,7 +291,7 @@ class VisionTasks:
 
         try:
             future = self.moondream_crop_query_client.call_async(request)
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=60.0)
             result = future.result()
 
             if not result.success:

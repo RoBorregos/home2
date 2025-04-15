@@ -28,6 +28,8 @@ def main():
     request.id = id
 
     node.get_logger().info(f"Sending id: {id}")
+    if id == "all":
+        request.include_attached = True
 
     future = remove_collision_object_client.call_async(request)
     rclpy.spin_until_future_complete(node, future)

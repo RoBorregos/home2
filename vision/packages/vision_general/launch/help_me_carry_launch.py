@@ -26,6 +26,6 @@ def generate_launch_description():
                 name="detect_pointing_object_server",
                 output="screen",
                 emulate_tty=True,
-            )
+            ),
         ]
     )

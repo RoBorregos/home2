@@ -141,7 +141,7 @@ class MoondreamNode(Node):
             response.success = False
             self.get_logger().warn("No image received yet.")
             return response
-        
+
         frame = self.image.copy()
 
         xmin = request.xmin
@@ -161,9 +161,8 @@ class MoondreamNode(Node):
             and 0 < ymax <= self.image.shape[0]
         ):
             print(f"Crop coordinates: {xmin}, {ymin}, {xmax}, {ymax}")
-            cropped = frame[int(ymin):int(ymax), int(xmin):int(xmax)]
-            #save image
-            
+            cropped = frame[int(ymin) : int(ymax), int(xmin) : int(xmax)]
+            # save image
 
         else:
             response.result = "Crop coordinates are out of bounds."

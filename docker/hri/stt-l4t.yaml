@@ -1,6 +1,6 @@
 services:
   stt-l4t:
-    profiles: [receptionist]
+    profiles: [receptionist, carry]
     
     container_name: home2-hri-stt-l4t
     image: roborregos/home2:hri-stt-l4t

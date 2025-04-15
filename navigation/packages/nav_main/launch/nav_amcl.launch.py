@@ -11,19 +11,33 @@ def generate_launch_description():
     lifecycle_nodes = ['map_server', 'amcl']
 
     publish_urdf = LaunchConfiguration('publish_tf')
+    use_sim = LaunchConfiguration('use_sim')
+    use_dualshock = LaunchConfiguration('use_dualshock')
     map_route = LaunchConfiguration('map')
 
     declare_publish_tf = DeclareLaunchArgument(
         'publish_tf',
-        default_value='true', 
+        default_value='true',  # LaunchConfiguration values are strings, so use 'true'/'false'
         description='Whether to publish URDF'
     )
-    declare_map_route = DeclareLaunchArgument(
-    'map',
-    default_value=os.path.join(get_package_share_directory('nav_main'), 'maps', 'Lab14marzo.yaml'),
-    description='Path to the map file'
+
+    declare_dualshock = DeclareLaunchArgument(
+        'use_dualshock',
+        default_value='false',  # LaunchConfiguration values are strings, so use 'true'/'false'
+        description='Whether to use dualshock'
     )
-    nav_main_package = get_package_share_directory('nav_main')
+
+    declare_use_sim = DeclareLaunchArgument(
+        'use_sim',
+        default_value='false',
+        description='Whether to use simulation time'
+    )
+
+    declare_map_route = DeclareLaunchArgument(
+        'map',
+        default_value=os.path.join(get_package_share_directory('nav_main'), 'maps', 'Lab14marzo.yaml'),
+        description='Path to the map file'
+    )
 
     nav_basics = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -34,7 +48,7 @@ def generate_launch_description():
                     "nav_basics.launch.py",
                 ]
             )),
-        launch_arguments={'publish_tf': publish_urdf }.items()
+        launch_arguments={'publish_tf': publish_urdf, 'use_sim': use_sim, 'use_dualshock' : use_dualshock}.items()
         )
 
     map_server = Node(
@@ -42,15 +56,15 @@ def generate_launch_description():
             executable='map_server',
             name='map_server',
             output='screen',
-            parameters=[{'yaml_filename': LaunchConfiguration('map'),
-                         'use_sim_time' : False}],
+            parameters=[{'yaml_filename': map_route,
+                         'use_sim_time': use_sim}],
     )
     amcl_server = Node(
          package='nav2_amcl',
             executable='amcl',
             name='amcl',
             output='screen',
-            parameters=[{'use_sim_time' : False}],
+            parameters=[{'use_sim_time': use_sim}],
     )
     
     lifecycle_node = Node(
@@ -58,7 +72,7 @@ def generate_launch_description():
             executable='lifecycle_manager',
             name='lifecycle_manager_localization',
             output='screen',
-            parameters=[{'use_sim_time': False},
+            parameters=[{'use_sim_time': use_sim},
                         {'autostart': True},
                         {'node_names': lifecycle_nodes}])
     
@@ -68,6 +82,8 @@ def generate_launch_description():
         declare_map_route,
         map_server,
         amcl_server,
-        lifecycle_node
+        lifecycle_node,
+        declare_dualshock,
+        declare_use_sim
 
     ])

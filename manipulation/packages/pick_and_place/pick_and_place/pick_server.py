@@ -153,11 +153,9 @@ class PickMotionServer(Node):
         return future.result(), action_result
 
     def wait_for_future(self, future):
-        print("Waiting future not none")
         if future is None:
             self.get_logger().error("Service call failed: future is None")
             return False
-        print("Waiting future done")
         while not future.done():
             pass
         # self.get_logger().info("Execution done with status: " + str(future.result()))
@@ -178,7 +176,6 @@ class PickMotionServer(Node):
                 request.id = obj.id
                 if plane is not None and self.object_in_plane(obj, plane):
                     self.remove_collision_object(obj.id)
-                    self.get_logger().info(f"Object {obj.id} removed from scene")
                     continue
                 request.attached_link = EEF_LINK_NAME
                 request.touch_links = EEF_CONTACT_LINKS
@@ -186,10 +183,10 @@ class PickMotionServer(Node):
                 self._attach_collision_object_client.wait_for_service()
                 future = self._attach_collision_object_client.call_async(request)
                 self.wait_for_future(future)
-                if future.result().success:
-                    self.get_logger().info(f"Object {obj.id} attached to robot")
-                else:
-                    self.get_logger().error(f"Failed to attach object {obj.id}")
+                # if future.result().success:
+                #     self.get_logger().info(f"Object {obj.id} attached to robot")
+                # else:
+                #     self.get_logger().error(f"Failed to attach object {obj.id}")
         return True
 
     def get_collision_objects(self):
