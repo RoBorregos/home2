@@ -8,12 +8,11 @@ from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
 
 def generate_launch_description():
-    lifecycle_nodes = ['map_server', 'amcl']
 
     publish_urdf = LaunchConfiguration('publish_tf')
     use_sim = LaunchConfiguration('use_sim')
     use_dualshock = LaunchConfiguration('use_dualshock')
-    map_route = LaunchConfiguration('map')
+
 
     declare_publish_tf = DeclareLaunchArgument(
         'publish_tf',
@@ -33,11 +32,6 @@ def generate_launch_description():
         description='Whether to use simulation time'
     )
 
-    declare_map_route = DeclareLaunchArgument(
-        'map',
-        default_value=os.path.join(get_package_share_directory('nav_main'), 'maps', 'Lab14marzo.yaml'),
-        description='Path to the map file'
-    )
 
     nav_basics = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -50,40 +44,29 @@ def generate_launch_description():
             )),
         launch_arguments={'publish_tf': publish_urdf, 'use_sim': use_sim, 'use_dualshock' : use_dualshock}.items()
         )
-
-    map_server = Node(
-         package='nav2_map_server',
-            executable='map_server',
-            name='map_server',
-            output='screen',
-            parameters=[{'yaml_filename': map_route,
-                         'use_sim_time': use_sim}],
-    )
-    amcl_server = Node(
-         package='nav2_amcl',
-            executable='amcl',
-            name='amcl',
-            output='screen',
-            parameters=[{'use_sim_time': use_sim}],
-    )
-    
-    lifecycle_node = Node(
-            package='nav2_lifecycle_manager',
-            executable='lifecycle_manager',
-            name='lifecycle_manager_localization',
-            output='screen',
-            parameters=[{'use_sim_time': use_sim},
-                        {'autostart': True},
-                        {'node_names': lifecycle_nodes}])
+    nav2_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution(
+                [
+                    FindPackageShare("nav_main"),
+                    "launch",
+                    "navigation.launch.py",
+                ]
+            )),
+        launch_arguments={'use_sim': use_sim}.items()
+        )
+    pose_transform = Node(
+                package='nav_main',
+                executable='transform_target.py',
+                name='transform_target',
+                output='screen',
+                ),
     
     return LaunchDescription([
         declare_publish_tf,
         nav_basics,
-        declare_map_route,
-        map_server,
-        amcl_server,
-        lifecycle_node,
         declare_dualshock,
-        declare_use_sim
-
+        declare_use_sim,
+        nav2_launch,
+        pose_transform,
     ])

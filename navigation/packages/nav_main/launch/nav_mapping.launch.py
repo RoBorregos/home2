@@ -8,25 +8,32 @@ from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
 
 def generate_launch_description():
+    nav_main_package = get_package_share_directory('nav_main')
+    params_file = os.path.join(nav_main_package, 'config', 'mapper_params_online_async.yaml')
+    
     publish_urdf = LaunchConfiguration('publish_tf')
-
-    # Declare the launch argument
+    use_sim = LaunchConfiguration('use_sim')
+    use_dualshock = LaunchConfiguration('use_dualshock')
+    
     declare_publish_tf = DeclareLaunchArgument(
         'publish_tf',
         default_value='true',  # LaunchConfiguration values are strings, so use 'true'/'false'
         description='Whether to publish URDF'
     )
 
-    use_sim = LaunchConfiguration('use_sim')
+    declare_dualshock = DeclareLaunchArgument(
+        'use_dualshock',
+        default_value='false',  # LaunchConfiguration values are strings, so use 'true'/'false'
+        description='Whether to use dualshock'
+    )
 
+    
     declare_use_sim = DeclareLaunchArgument(
         'use_sim',
         default_value='false',
         description='Whether to use simulation time'
     )
-
-    nav_main_package = get_package_share_directory('nav_main')
-    params_file = os.path.join(nav_main_package, 'config', 'mapper_params_online_async.yaml')
+    
 
     nav_basics = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -38,7 +45,7 @@ def generate_launch_description():
                 ]
             )),
         #launch_arguments={'publish_tf': publish_urdf }.items()
-        launch_arguments={'publish_tf': publish_urdf, 'use_sim': use_sim}.items()
+        launch_arguments={'publish_tf': publish_urdf, 'use_sim': use_sim, 'use_dualshock' : use_dualshock}.items()
         )
 
     slam_toolbox = IncludeLaunchDescription(
@@ -50,8 +57,6 @@ def generate_launch_description():
                     "online_async_launch.py",
                 ]
             )),
-            #launch_arguments={'params_file': params_file,
-            #                  'use_sim': 'false'}.items()
             launch_arguments={'params_file': params_file, 'use_sim_time': use_sim}.items()
         )
     
@@ -59,5 +64,6 @@ def generate_launch_description():
         declare_publish_tf,
         declare_use_sim,
         nav_basics,
-        slam_toolbox
+        slam_toolbox,
+        declare_dualshock
     ])

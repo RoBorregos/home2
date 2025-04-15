@@ -36,7 +36,9 @@ class HelpMeCarryTM(Node):
         """Initialize the node"""
         super().__init__("Help_me_carry_task_manager")
         self.subtask_manager = SubtaskManager(
-            self, task=Task.HELP_ME_CARRY, mock_areas=["manipulation", "navigation"]
+            self,
+            task=Task.HELP_ME_CARRY,
+            mock_areas=["manipulation", "navigation", "vision"],
         )
         self.current_state = HelpMeCarryTM.TASK_STATES["START"]
         self.current_attempts = 0
@@ -92,12 +94,18 @@ class HelpMeCarryTM(Node):
         if self.current_state == HelpMeCarryTM.TASK_STATES["FOLLOWING_TO_DESTINATION"]:
             Logger.state(self, "Following to destination")
             while True:
-                s, result = self.subtask_manager.hri.interpret_keyword(["stop"], 10.0)
-                if result == "stop":
+                self.subtask_manager.hri.say("Please say stop when you want me to stop")
+                attempt = 0
+                while attempt < 5:
+                    s, result = self.subtask_manager.hri.hear()
+                    if "stop" in result.lower():
+                        break
+
+                    attempt += 1
+
+                if "stop" in result.lower():
                     self.subtask_manager.nav.follow_person(False)
                     break
-                else:
-                    self.subtask_manager.hri.say("Please say stop when you want me to stop")
 
             # while not self.subtask_manager.hri.interpret_keyword("STOP"):
             #     # TODO: person_pose = self.subtask_manager.vision.follow_person() /It must return the person pose and the person position towards the center of the camera
@@ -148,14 +156,15 @@ class HelpMeCarryTM(Node):
             self.subtask_manager.hri.say("I will now receive the bag")
             # TODO: self.subtask_manager.manipulation.move_joint_positions(dict,"bag_recieving_pose")
             # self.subtask_manager.manipulation.open_gripper()
-            self.subtask_manager.hri.say("I have opened my gripper, please put the bag in it.")
-            while (
-                self.subtask_manager.hri.confirm(
+
+            while True:
+                self.subtask_manager.hri.say("I have opened my gripper, please put the bag in it.")
+                s, confirmation = self.subtask_manager.hri.confirm(
                     "Have you put the bag in my gripper?", False, retries=8, wait_between_retries=4
                 )
-                != "yes"
-            ):
-                self.subtask_manager.hri.say("I have opened my gripper, please put the bag in it.")
+
+                if confirmation == "yes":
+                    break
 
             # self.subtask_manager.manipulation.close_gripper()
             self.subtask_manager.hri.say(
