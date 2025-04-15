@@ -1,6 +1,7 @@
 services:
   display:
-    profiles: [receptionist]
+    
+    profiles: [receptionist, carry]
 
     container_name: home2-hri-display-l4t
     image: roborregos/home2:hri-display-l4t
