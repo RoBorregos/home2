@@ -50,6 +50,9 @@ private:
 
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr cloud_sub_;
 
+  // debug point pub
+  rclcpp::Publisher<geometry_msgs::msg::PointStamped>::SharedPtr point_pub_;
+
   std::shared_ptr<tf2_ros::TransformListener> tf_listener;
   // std::shared_ptr<tf2_ros::Buffer> tf_buffer;
   std::unique_ptr<tf2_ros::Buffer> tf_buffer;
@@ -66,6 +69,9 @@ public:
     RCLCPP_INFO(this->get_logger(), "Starting Table Segmentation Node");
     this->point_cloud_topic =
         this->declare_parameter("point_cloud_topic", point_cloud_topic);
+  
+    this->point_pub_ = this->create_publisher<geometry_msgs::msg::PointStamped>(
+        "/manipulation/perception_3d_debug/point", 10);
 
     this->cluster_size = this->declare_parameter("cluster_size", cluster_size);
 
@@ -225,7 +231,7 @@ public:
                            response->success);
 
     response->success =
-        savePointCloud(filename_base + "_height_filtered.pcd", cloud_out);
+        savePointCloud("/height_filtered.pcd", cloud_out);
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out2(
         new pcl::PointCloud<pcl::PointXYZ>);
@@ -236,7 +242,7 @@ public:
                            response->success);
 
     response->success =
-        savePointCloud(filename_base + "_filtered_no_plane.pcd", cloud_out2);
+        savePointCloud("/filtered_no_plane.pcd", cloud_out2);
 
     ASSERT_AND_RETURN_CODE(response->success, OK,
                            "Error saving filtered point cloud with code %d",
@@ -263,6 +269,34 @@ public:
     return;
   }
 
+  uint32_t radialFilter(_IN_ const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
+              _OUT_ pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out,
+              const float x, const float y, const float z,
+              const float radius) {
+    cloud_out->points.clear();
+    
+    for (const auto& point : cloud->points) {
+      float dx = point.x - x;
+      float dy = point.y - y;
+      float dz = point.z - z;
+      float distance = std::sqrt(dx*dx + dy*dy + dz*dz);
+      
+      if (distance <= radius) {
+        cloud_out->points.push_back(point);
+      }
+    }
+
+    cloud_out->width = cloud_out->points.size();
+    cloud_out->height = 1;
+    cloud_out->is_dense = true;
+
+    if (cloud_out->points.empty()) {
+      return POINT_CLOUD_EMPTY;
+    }
+    
+    return OK;
+  }
+
   void test_cluster(const std::shared_ptr<rmw_request_id_t> request_header,
                     const std::shared_ptr<
                         frida_interfaces::srv::ClusterObjectFromPoint::Request>
@@ -278,33 +312,6 @@ public:
       return;
     }
 
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out(
-        new pcl::PointCloud<pcl::PointXYZ>);
-
-    response->status = this->get_current_cloud_without_plane(cloud_out);
-
-    ASSERT_AND_RETURN_CODE(response->status, OK,
-                           "Error getting current cloud with code %d",
-                           response->status);
-
-    std::string base_path = this->package_path;
-
-    response->status =
-        savePointCloud(base_path + "/filtered_no_plane.pcd", cloud_out);
-
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out5_debug(
-        new pcl::PointCloud<pcl::PointXYZ>);
-
-    response->status = this->extractPlane(cloud_out, cloud_out5_debug, false);
-
-    ASSERT_AND_RETURN_CODE(response->status, OK,
-                           "Error extracting plane with code %d",
-                           response->status);
-
-    response->status =
-        savePointCloud(base_path + "/filtered_plane.pcd", cloud_out5_debug);
-
-    response->status = savePointCloud(base_path + "/original.pcd", last_);
 
     bool can_transform =
         request->point.header.frame_id == "base_link" ||
@@ -329,11 +336,52 @@ public:
         return;
       }
     }
-
+    this->point_pub_->publish(request->point);
     pcl::PointXYZ point;
     point.x = request->point.point.x;
     point.y = request->point.point.y;
     point.z = request->point.point.z;
+
+
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_radius_out(
+        new pcl::PointCloud<pcl::PointXYZ>);
+
+    // radial filter, to eliminate chance of error by planes far from the point
+    response->status =
+        this->radialFilter(last_, cloud_radius_out, point.x, point.y, point.z, 0.3);
+    std::string base_path = this->package_path;
+
+    response->status = 
+          savePointCloud(base_path + "/radial_filtered.pcd", cloud_radius_out);
+
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out(
+        new pcl::PointCloud<pcl::PointXYZ>);
+    
+    response->status = this->get_cloud_without_plane(
+        cloud_radius_out, cloud_out);
+
+    ASSERT_AND_RETURN_CODE(response->status, OK,
+                           "Error getting current cloud with code %d",
+                           response->status);
+
+    response->status =
+        savePointCloud(base_path + "/filtered_no_plane.pcd", cloud_out);
+
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out5_debug(
+        new pcl::PointCloud<pcl::PointXYZ>);
+
+    response->status = this->extractPlane(cloud_out, cloud_out5_debug, false);
+
+    ASSERT_AND_RETURN_CODE(response->status, OK,
+                           "Error extracting plane with code %d",
+                           response->status);
+
+    response->status =
+        savePointCloud(base_path + "/filtered_plane.pcd", cloud_out5_debug);
+
+    response->status = savePointCloud(base_path + "/original.pcd", last_);
+
+    
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out2(
         new pcl::PointCloud<pcl::PointXYZ>);
@@ -398,17 +446,16 @@ public:
     return OK;
   }
 
-  uint32_t get_current_cloud_without_plane(
+  uint32_t get_cloud_without_plane(
+      _IN_ pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_in, 
       _OUT_ pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out) {
-    if (this->last_ == nullptr) {
-      return NO_POINTCLOUD;
-    }
+
     uint32_t status = OK;
     // cloud_out =
     //     pcl::PointCloud<pcl::PointXYZ>::Ptr(new
     //     pcl::PointCloud<pcl::PointXYZ>);
 
-    status = copyPointCloud(last_, cloud_out);
+    status = copyPointCloud(cloud_in, cloud_out);
 
     ASSERT_AND_RETURN_CODE_VALUE(
         status, OK, "Error copying point cloud with code %d", status);
@@ -667,8 +714,8 @@ public:
 
     std::vector<pcl::PointIndices> cluster_indices;
     pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
-    ec.setClusterTolerance(0.02);
-    ec.setMinClusterSize(20);    // Minimum number of points in a cluster
+    ec.setClusterTolerance(0.05);
+    ec.setMinClusterSize(10);    // Minimum number of points in a cluster
     ec.setMaxClusterSize(6000); // Maximum number of points in a cluster
     ec.setSearchMethod(tree);
     ec.setInputCloud(cloud);
