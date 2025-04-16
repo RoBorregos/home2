@@ -231,6 +231,9 @@ class MoveItPlanner(Planner):
         return dict(zip(self.joint_states.name, self.joint_states.position))
 
     def joint_states_callback(self, msg: JointState):
+        for joint_name in msg.name:
+            if joint_name not in xarm6.joint_names():
+                return
         self.joint_states = msg
 
     def get_fk(self, links: List[str]) -> List[PoseStamped]:
