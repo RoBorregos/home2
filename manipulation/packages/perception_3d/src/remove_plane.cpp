@@ -144,14 +144,21 @@ public:
         new pcl::PointCloud<pcl::PointXYZ>);
 
     copyPointCloud(last_, cloud_out);
+    
+    // defaults
+    if (request->min_height == 0.0 and request->max_height == 0.0) {
+      request->min_height = 0.1;
+      request->max_height = 1.5;
+    }
 
     if (request->close_point.header.frame_id == "") {
-      // pcl::PointXYZ point;
-      // point.x = 0.0;
-      // point.y = 0.0;
-      // point.z = 0.0;
-      // response->health_response =
-      //     this->DistanceFilterFromPoint(cloud_out, point, cloud_out);
+      // only filter too far from the robot
+      pcl::PointXYZ req_point;
+      req_point.x = 0.0;
+      req_point.y = 0.0;
+      req_point.z = 0.0;
+      response->health_response =
+          this->DistanceFilterFromPoint(cloud_out, req_point, cloud_out, 2.0, request->min_height, request->max_height);
     } else {
       geometry_msgs::msg::PointStamped point;
       if (request->close_point.header.frame_id != "base_link") {
@@ -170,11 +177,6 @@ public:
       req_point.x = point.point.x;
       req_point.y = point.point.y;
       req_point.z = point.point.z;
-
-      if (request->min_height == 0.0 and request->max_height == 0.0) {
-        request->min_height = 0.1;
-        request->max_height = 1.5;
-      }
 
       response->health_response =
           this->DistanceFilterFromPoint(cloud_out, req_point, cloud_out, 1.5, request->min_height, request->max_height);
