@@ -1,7 +1,9 @@
 services:
   stt:
-    container_name: home2-hri-stt-prod
-    image: roborregos/home2:hri-stt-prod
+    profiles: [receptionist, carry]
+
+    container_name: home2-hri-stt
+    image: roborregos/home2:hri-stt
     build:
       context: ../..
       dockerfile: docker/hri/Dockerfile.stt
@@ -10,4 +12,9 @@ services:
     volumes:
       - ../../hri/packages/speech/scripts/stt/:/app
       - ../../hri/packages/speech/speech/:/app/speech
-    command: ["bash", "-c", "python3 -u faster-whisper.py --port 50051 --model_size base.en"]
+    command:
+      [
+        "bash",
+        "-c",
+        "python3 -u faster-whisper.py --port 50051 --model_size base.en",
+      ]

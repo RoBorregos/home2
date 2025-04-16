@@ -11,11 +11,17 @@ from PIL import Image as PILImage
 import tqdm
 import torch.nn as nn
 import torch
+from vision_general.utils.calculations import (
+    get2DCentroid,
+    get_depth,
+    deproject_pixel_to_point,
+)
 
 import rclpy
 from rclpy.node import Node
 from cv_bridge import CvBridge
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import Image, CameraInfo
+from geometry_msgs.msg import Point
 
 from vision_general.utils.reid_model import (
     load_network,
@@ -25,30 +31,55 @@ from vision_general.utils.reid_model import (
 )
 
 from std_srvs.srv import SetBool
+from frida_interfaces.srv import TrackBy
 from vision_general.pose_detection import PoseDetection
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
     SET_TARGET_TOPIC,
+    SET_TARGET_BY_TOPIC,
+    TRACKER_IMAGE_TOPIC,
+    DEPTH_IMAGE_TOPIC,
+    RESULTS_TOPIC,
+    CAMERA_INFO_TOPIC,
 )
+from frida_constants.vision_enums import DetectBy
 
 CONF_THRESHOLD = 0.6
 
 
 class SingleTracker(Node):
     def __init__(self):
-        super().__init__("single_tracker")
+        super().__init__("tracker_node")
         self.bridge = CvBridge()
 
         self.image_subscriber = self.create_subscription(
             Image, CAMERA_TOPIC, self.image_callback, 10
         )
 
+        self.depth_subscriber = self.create_subscription(
+            Image, DEPTH_IMAGE_TOPIC, self.depth_callback, 10
+        )
+
+        self.image_info_subscriber = self.create_subscription(
+            CameraInfo, CAMERA_INFO_TOPIC, self.image_info_callback, 10
+        )
+
         self.set_target_service = self.create_service(
             SetBool, SET_TARGET_TOPIC, self.set_target_callback
         )
 
+        self.set_target_by_service = self.create_service(
+            TrackBy, SET_TARGET_BY_TOPIC, self.set_target_by_callback
+        )
+
+        self.results_publisher = self.create_publisher(Point, RESULTS_TOPIC, 10)
+
+        self.image_publisher = self.create_publisher(Image, TRACKER_IMAGE_TOPIC, 10)
+
+        self.verbose = self.declare_parameter("verbose", True)
         self.setup()
         self.create_timer(0.1, self.run)
+        self.create_timer(0.1, self.publish_image)
 
     def setup(self):
         """Load models and initial variables"""
@@ -61,6 +92,7 @@ class SingleTracker(Node):
             "backward": None,
             "left": None,
             "right": None,
+            "coordinates": [],
         }
 
         pbar = tqdm.tqdm(total=1, desc="Loading models")
@@ -80,12 +112,27 @@ class SingleTracker(Node):
             self.model_reid = self.model_reid.cuda()
         pbar.update(1)
 
+        self.output_image = []
+        self.depth_image = []
+
         pbar.close()
         self.get_logger().info("Single Tracker Ready")
 
     def image_callback(self, data):
         """Callback to receive image from camera"""
         self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
+
+    def depth_callback(self, data):
+        """Callback to receive depth image from camera"""
+        try:
+            depth_image = self.bridge.imgmsg_to_cv2(data, "32FC1")
+            self.depth_image = depth_image
+        except Exception as e:
+            print(f"Error: {e}")
+
+    def image_info_callback(self, data):
+        """Callback to receive camera info"""
+        self.imageInfo = data
 
     def set_target_callback(self, request, response):
         """Callback to set the target to track"""
@@ -98,13 +145,42 @@ class SingleTracker(Node):
             self.get_logger().info("Tracking disabled")
         return response
 
+    def set_target_by_callback(self, request, response):
+        """Callback to set target by pose, gesture, clothes, etc"""
+        self.target_set = request.track_enabled
+        if self.target_set:
+            response.success = self.set_target(request.track_by, request.value)
+            self.get_logger().info(
+                f"Tracking enabled: Target set by {request.track_by}"
+            )
+        else:
+            response.success = True
+            self.get_logger().info("Tracking disabled")
+        return response
+
+    def publish_image(self):
+        """Publish the image to the camera topic"""
+        if len(self.output_image) != 0:
+            if self.verbose:
+                cv2.imshow("Tracking", self.output_image)
+                if cv2.waitKey(1) & 0xFF == ord("q"):
+                    cv2.destroyAllWindows()
+            self.image_publisher.publish(
+                self.bridge.cv2_to_imgmsg(self.output_image, "bgr8")
+            )
+
     def success(self, message) -> None:
         """Print success message"""
         self.get_logger().info(f"\033[92mSUCCESS:\033[0m {message}")
 
-    def set_target(self):
+    def set_target(self, track_by="largest_person", value=""):
         """Set the target to track (Default: Largest person in frame)"""
+        if self.image is None:
+            self.get_logger().warn("No image available")
+            return False
+
         self.frame = self.image
+        self.output_image = self.frame.copy()
         results = self.model.track(
             self.frame,
             persist=True,
@@ -116,6 +192,7 @@ class SingleTracker(Node):
         largest_person = {
             "id": None,
             "area": 0,
+            "bbox": None,
         }
 
         # Check each detection
@@ -125,7 +202,7 @@ class SingleTracker(Node):
 
                 # Get class name
                 try:
-                    track_id = box.id[0].item()
+                    track_id = 1
                 except Exception as e:
                     print("Track id exception: ", e)
                     track_id = -1
@@ -137,14 +214,43 @@ class SingleTracker(Node):
                 if prob < CONF_THRESHOLD:
                     continue
 
+                cv2.rectangle(self.output_image, (x1, y1), (x2, y2), (0, 0, 255), 2)
+
                 area = (x2 - x1) * (y2 - y1)
-                if area > largest_person["area"]:
-                    largest_person["id"] = track_id
-                    largest_person["area"] = area
+                if track_by == "largest_person":
+                    if area > largest_person["area"]:
+                        largest_person["id"] = track_id
+                        largest_person["area"] = area
+                        largest_person["bbox"] = (x1, y1, x2, y2)
+                elif track_by == DetectBy.GESTURES.value:
+                    print("Gesture detection")
+                    cropped_image = self.frame[y1:y2, x1:x2]
+                    pose = self.pose_detection.detectGesture(cropped_image)
+                    if pose.value == value:
+                        largest_person["id"] = track_id
+                        largest_person["area"] = area
+                        largest_person["bbox"] = (x1, y1, x2, y2)
 
         if largest_person["id"] is not None:
             self.person_data["id"] = largest_person["id"]
             self.success(f"Target set: {largest_person['id']}")
+            cv2.rectangle(
+                self.output_image,
+                largest_person["bbox"][:2],
+                largest_person["bbox"][2:],
+                (0, 255, 0),
+                2,
+            )
+            cv2.putText(
+                self.output_image,
+                f"Target by {track_by}: {largest_person['id']}",
+                largest_person["bbox"][:2],
+                cv2.FONT_HERSHEY_SIMPLEX,
+                1,
+                (0, 255, 0),
+                2,
+                cv2.LINE_AA,
+            )
             return True
         else:
             self.get_logger().warn("No person found")
@@ -157,6 +263,8 @@ class SingleTracker(Node):
 
             if self.frame is None or self.person_data["id"] is None:
                 return
+
+            self.output_image = self.frame.copy()
 
             results = self.model.track(
                 self.frame,
@@ -207,7 +315,10 @@ class SingleTracker(Node):
                     # Check if person is in frame:
                     if track_id == self.person_data["id"]:
                         person_in_frame = True
-                        cv2.rectangle(self.frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                        self.person_data["coordinates"] = (x1, y1, x2, y2)
+                        cv2.rectangle(
+                            self.output_image, (x1, y1), (x2, y2), (0, 255, 0), 2
+                        )
                         cropped_image = self.frame[y1:y2, x1:x2]
                         embedding = None
 
@@ -223,6 +334,7 @@ class SingleTracker(Node):
 
                         angle = self.pose_detection.personAngle(cropped_image)
                         if angle is not None and self.person_data[angle] is None:
+                            print("Added angle: ", angle)
                             if embedding is None:
                                 pil_image = PILImage.fromarray(cropped_image)
                                 with torch.no_grad():
@@ -233,10 +345,12 @@ class SingleTracker(Node):
                             self.person_data[angle] = embedding
 
                     else:
-                        cv2.rectangle(self.frame, (x1, y1), (x2, y2), (255, 0, 0), 2)
+                        cv2.rectangle(
+                            self.output_image, (x1, y1), (x2, y2), (255, 0, 0), 2
+                        )
 
                     cv2.putText(
-                        self.frame,
+                        self.output_image,
                         f"{label} {track_id}, Prob: {prob}, Angle: {angle}",
                         (x1, y1 - 10),
                         cv2.FONT_HERSHEY_SIMPLEX,
@@ -261,9 +375,16 @@ class SingleTracker(Node):
                                 embedding, self.person_data[person_angle], threshold=0.7
                             ):
                                 self.person_data["id"] = person["track_id"]
+                                self.person_data["coordinates"] = (
+                                    person["x1"],
+                                    person["y1"],
+                                    person["x2"],
+                                    person["y2"],
+                                )
                                 self.success(
                                     f"Person re-identified: {person['track_id']} with angle {person_angle}"
                                 )
+                                person_in_frame = True
                                 break
                         else:
                             if compare_images(
@@ -274,10 +395,19 @@ class SingleTracker(Node):
                                     f"Person re-identified: {person['track_id']} without angle"
                                 )
                                 break
-
-            cv2.imshow("Tracking", self.frame)
-            if cv2.waitKey(1) & 0xFF == ord("q"):
-                cv2.destroyAllWindows()
+            if person_in_frame:
+                if len(self.depth_image) > 0:
+                    coords = Point()
+                    point2D = get2DCentroid(self.person_data["coordinates"], self.frame)
+                    depth = get_depth(self.depth_image, point2D)
+                    point3D = deproject_pixel_to_point(self.imageInfo, point2D, depth)
+                    point3D = float(point3D[0]), float(point3D[1]), float(point3D[2])
+                    coords.x = point3D[0]
+                    coords.y = point3D[1]
+                    coords.z = point3D[2]
+                    self.results_publisher.publish(coords)
+                else:
+                    self.get_logger().warn("Depth image not available")
 
 
 def main(args=None):

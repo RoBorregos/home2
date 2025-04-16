@@ -1,0 +1,25 @@
+services:
+  display:
+    
+    profiles: [receptionist, carry]
+
+    container_name: home2-hri-display-l4t
+    image: roborregos/home2:hri-display-l4t
+    build:
+      context: ../..
+      dockerfile: docker/hri/Dockerfile.display
+      args:
+        BASE_IMAGE: roborregos/home2:l4t_base
+    volumes:
+      - ../../hri/display/:/app
+    ports:
+      - "3000:3000"
+      - "8000:8000"
+    network_mode: host
+    command:
+      [
+        "/bin/bash",
+        "-l",
+        "-c",
+        "source ~/.bashrc && source /opt/ros/humble/setup.bash && npm i && npm run dev",
+      ]

@@ -3,7 +3,7 @@
 
 <xacro:property name="mesh_path" value="file://$(find frida_description)/urdf/meshes/" />
 
-<xacro:macro name="load_gripper" params="attach_to:='' xyz:='0 0 0' rpy:='0 0 0'">
+<xacro:macro name="load_gripper" params="attach_to:='' xyz:='0 0 0' rpy:='0 0 0' fixed_joints:='false'">
     <xacro:unless value="${attach_to == ''}">
       <joint name="gripper_fix" type="fixed">
         <parent link="${attach_to}"/>
@@ -66,8 +66,15 @@
 <xacro:finger prefix="right" inertial_origin="0.031796 -0.039646 -4.3517E-05" ixx="7.5207E-06" ixy="5.702E-06" ixz="2.7442E-21" iyy="1.0341E-05" iyz="-9.9772E-22" izz="1.4333E-05" />
 <xacro:finger prefix="left" inertial_origin="0.031901 0.039833 -2.5479E-17" ixx="7.4373E-06" ixy="-5.6549E-06" ixz="9.4292E-21" iyy="1.0294E-05" iyz="6.0945E-21" izz="1.4202E-05"/>
 
+  
+  <xacro:if value="${fixed_joints}">
+    <xacro:property name="finger_joint_type" value="fixed" />
+  </xacro:if>
+  <xacro:unless value="${fixed_joints}"> 
+    <xacro:property name="finger_joint_type" value="revolute" />
+  </xacro:unless>
 
-  <joint name="rightfinger" type="revolute">
+  <joint name="rightfinger" type="${finger_joint_type}">
     <origin xyz="0.087 -0.01054 0.0008" rpy="0 0 0" />
     <parent link="gripper" />
     <child link="right_finger" />
@@ -77,7 +84,7 @@
   </joint>
 
   <joint
-    name="leftfinger" type="revolute">
+    name="leftfinger" type="${finger_joint_type}">
     <origin xyz="0.087 0.01346 0.0008" rpy="0 0 0" />
     <parent link="gripper" />
     <child link="left_finger" />

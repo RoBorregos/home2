@@ -30,7 +30,7 @@
 #include <tf2_ros/buffer.h>
 #include <tf2_ros/transform_listener.h>
 
-#include <frida_constants/manip_3d.hpp>
+#include <frida_constants/manipulation_constants_cpp.hpp>
 #include <perception_3d/macros.hpp>
 
 #include <frida_interfaces/srv/cluster_object_from_point.hpp>
@@ -83,10 +83,15 @@ public:
     this->tf_listener =
         std::make_shared<tf2_ros::TransformListener>(*tf_buffer);
 
+    auto qos = rclcpp::QoS(rclcpp::SensorDataQoS());
+    qos.reliability(rclcpp::ReliabilityPolicy::BestEffort);
+    qos.durability(rclcpp::DurabilityPolicy::Volatile);
+    qos.keep_last(1);
+    RCLCPP_INFO(this->get_logger(), "Creating subscription to point cloud WITH BEST EFFORT");
     this->cloud_sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-        point_cloud_topic, rclcpp::SensorDataQoS(),
-        std::bind(&TableSegmentationNode::pointCloudCallback, this,
-                  std::placeholders::_1));
+      point_cloud_topic, qos,
+      std::bind(&TableSegmentationNode::pointCloudCallback, this,
+            std::placeholders::_1));
 
     RCLCPP_INFO(this->get_logger(), "Subscribed to point cloud topic");
 
@@ -663,7 +668,7 @@ public:
     std::vector<pcl::PointIndices> cluster_indices;
     pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
     ec.setClusterTolerance(0.02);
-    ec.setMinClusterSize(1);    // Minimum number of points in a cluster
+    ec.setMinClusterSize(20);    // Minimum number of points in a cluster
     ec.setMaxClusterSize(6000); // Maximum number of points in a cluster
     ec.setSearchMethod(tree);
     ec.setInputCloud(cloud);

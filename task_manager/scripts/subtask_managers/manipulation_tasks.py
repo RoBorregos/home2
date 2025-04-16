@@ -10,12 +10,17 @@ import rclpy
 from rclpy.node import Node
 from utils.logger import Logger
 
-from xarm_msgs.srv import SetInt16, SetInt16ById, MoveVelocity
 from frida_interfaces.action import MoveJoints
 from frida_interfaces.srv import GetJoints
 from frida_constants.xarm_configurations import XARM_CONFIGURATIONS
 from rclpy.action import ActionClient
 from typing import List, Union
+from utils.decorators import mockable, service_check
+from utils.status import Status
+
+# from utils.decorators import service_check
+from xarm_msgs.srv import SetDigitalIO
+
 # import time as t
 
 XARM_ENABLE_SERVICE = "/xarm/motion_enable"
@@ -38,42 +43,21 @@ class ManipulationTasks:
         "EXECUTION_SUCCESS": 1,
         "TARGET_NOT_FOUND": 2,
     }
-    SERVICES = {"activate_arm": 0, "deactivate_arm": 1, "move_arm_velocity": 2}
+
     SUBTASKS = {
-        "RECEPTIONIST": [
-            SERVICES["activate_arm"],
-            SERVICES["deactivate_arm"],
-            SERVICES["move_arm_velocity"],
-        ],
-        "RESTAURANT": [
-            # SERVICES["activate_arm"],
-            # SERVICES["deactivate_arm"],
-            # SERVICES["move_arm_velocity"],
-        ],
-        "SERVE_BREAKFAST": [
-            # SERVICES["activate_arm"],
-            # SERVICES["deactivate_arm"],
-            # SERVICES["move_arm_velocity"],
-        ],
-        "STORING_GROCERIES": [
-            # SERVICES["activate_arm"],
-            # SERVICES["deactivate_arm"],
-            # SERVICES["move_arm_velocity"],
-        ],
-        "STICKLER_RULES": [
-            # SERVICES["activate_arm"],
-            # SERVICES["deactivate_arm"],
-            # SERVICES["move_arm_velocity"],
-        ],
-        "DEMO": [
-            SERVICES["activate_arm"],
-            SERVICES["deactivate_arm"],
-            SERVICES["move_arm_velocity"],
-        ],
+        "RECEPTIONIST": [],
+        "RESTAURANT": [],
+        "SERVE_BREAKFAST": [],
+        "STORING_GROCERIES": [],
+        "STICKLER_RULES": [],
+        "DEMO": [],
     }
 
     def __init__(self, task_manager, task, mock_data=False) -> None:
         """Initialize the class"""
+
+        if not isinstance(task_manager, Node):
+            raise ValueError("task_manager must be a Node")
 
         self.node = task_manager
         self.mock_data = mock_data
@@ -81,155 +65,51 @@ class ManipulationTasks:
         # simulation = 1
         self.node.declare_parameter("cancel_after_secs", 5.0)
 
-        # self.motion_enable_client = self.node.create_client(SetInt16ById, XARM_ENABLE_SERVICE)
-        # self.mode_client = self.node.create_client(SetInt16, XARM_SETMODE_SERVICE)
-        # self.state_client = self.node.create_client(SetInt16, XARM_SETSTATE_SERVICE)
-        # self.move_client = self.node.create_client(MoveVelocity, XARM_MOVEVELOCITY_SERVICE)
-
         self._move_joints_action_client = ActionClient(
             self.node, MoveJoints, "/manipulation/move_joints_action_server"
         )
 
+        self.gripper_client = self.node.create_client(SetDigitalIO, "/xarm/set_tgpio_digital")
+
         self._get_joints_client = self.node.create_client(GetJoints, "/manipulation/get_joints")
 
-    #     if not self.mock_data and not simulation:
-    #         self.setup_services()
+    def open_gripper(self):
+        """Opens the gripper"""
+        return self._set_gripper_state("open")
 
-    # def setup_services(self):
-    #     """Initialize services and actions"""
-    #     if self.task not in ManipulationTasks.SUBTASKS:
-    #         Logger.error(self.node, "Task not available")
-    #         return
+    def close_gripper(self):
+        """Closes the gripper"""
+        return self._set_gripper_state("close")
 
-    #     if ManipulationTasks.SERVICES["activate_arm"] in ManipulationTasks.SUBTASKS[self.task]:
-    #         if not self.motion_enable_client.wait_for_service(timeout_sec=TIMEOUT):
-    #             Logger.warn(self.node, "Motion enable client not initialized")
-    #         if not self.mode_client.wait_for_service(timeout_sec=TIMEOUT):
-    #             Logger.warn(self.node, "Motion enable client not initialized")
-    #         if not self.state_client.wait_for_service(timeout_sec=TIMEOUT):
-    #             Logger.warn(self.node, "Motion enable client not initialized")
-
-    #     if ManipulationTasks.SERVICES["deactivate_arm"] in ManipulationTasks.SUBTASKS[self.task]:
-    #         if not self.motion_enable_client.wait_for_service(timeout_sec=TIMEOUT):
-    #             Logger.warn(self.node, "Motion enable client not initialized")
-
-    #     if ManipulationTasks.SERVICES["move_arm_velocity"] in ManipulationTasks.SUBTASKS[self.task]:
-    #         if not self.move_client.wait_for_service(timeout_sec=TIMEOUT):
-    #             Logger.warn(self.node, "Move client not initialized")
-
-    def activate_arm(self):
-        """Activate arm"""
-
-        Logger.info(self.node, "Activating arm")
-        # Set motion
-        motion_request = SetInt16ById.Request()
-        motion_request.id = 8
-        motion_request.data = 1
-        # Set state
-        state_request = SetInt16.Request()
-        state_request.data = 0
-        # Set mode
-        # 0: position control mode
-        mode_request = SetInt16.Request()
-        mode_request.data = 0
-
+    def _set_gripper_state(self, state: str):
+        """
+        Controls the gripper state.
+        State: 'open' o 'close'
+        """
         try:
-            future_motion = self.motion_enable_client.call_async(motion_request)
-            rclpy.spin_until_future_complete(self.node, future_motion, timeout_sec=TIMEOUT)
+            if not self.gripper_client.wait_for_service(timeout_sec=TIMEOUT):
+                Logger.error(self.node, "Gripper service not available")
+                return self.STATE["EXECUTION_ERROR"]
 
-            future_mode = self.mode_client.call_async(mode_request)
-            rclpy.spin_until_future_complete(self.node, future_mode, timeout_sec=TIMEOUT)
+            req = SetDigitalIO.Request()
+            req.ionum = 0
+            req.value = 0 if state == "open" else 1  # 0=Open, 1=close
 
-            future_state = self.state_client.call_async(state_request)
-            rclpy.spin_until_future_complete(self.node, future_state, timeout_sec=TIMEOUT)
+            future = self.gripper_client.call_async(req)
+            rclpy.spin_until_future_complete(self.node, future, TIMEOUT)
 
-        except Exception as e:
-            Logger.error(self.node, f"Error Activating arm: {e}")
+            if future.result() is not None:
+                Logger.info(self.node, f"Gripper {state} successfully")
+                return self.STATE["EXECUTION_SUCCESS"]
+
+            Logger.error(self.node, "Failure in gripper service")
             return self.STATE["EXECUTION_ERROR"]
 
-        Logger.success(self.node, "Arm Activated!")
-        return self.STATE["EXECUTION_SUCCESS"]
-
-    def deactivate_arm(self):
-        """Desactivate arm"""
-
-        Logger.info(self.node, "Desactivating arm")
-        # Set motion
-        motion_request = SetInt16ById.Request()
-        motion_request.id = 8
-        motion_request.data = 0
-
-        try:
-            future_motion = self.motion_enable_client.call_async(motion_request)
-            rclpy.spin_until_future_complete(self.node, future_motion, timeout_sec=TIMEOUT)
-
         except Exception as e:
-            Logger.error(self.node, f"Error desactivating arm: {e}")
-            return self.STATE["EXECUTION_ERROR"]
+            Logger.error(self.node, f"Error gripper: {str(e)}")
+            return self.STATE["TERMINAL_ERROR"]
 
-        Logger.success(self.node, "Arm Desactivated!")
-        return self.STATE["EXECUTION_SUCCESS"]
-
-    def set_move_mode(self):
-        Logger.info(self.node, "Setting move  arm")
-        mode_request = SetInt16.Request()
-        mode_request.data = 4
-        try:
-            future_mode = self.mode_client.call_async(mode_request)
-            rclpy.spin_until_future_complete(self.node, future_mode, timeout_sec=TIMEOUT)
-        except Exception as e:
-            Logger.error(self.node, f"Error moving arm: {e}")
-            return self.STATE["EXECUTION_ERROR"]
-
-        Logger.success(self.node, "Arm activated for moving!")
-        return self.STATE["EXECUTION_SUCCESS"]
-
-    def move_to(self, x: float, y: float):
-        Logger.info(self.node, "Moving arm with velocity")
-
-        # Set motion
-        x = x * -1
-        if x > 0.1:
-            x_vel = 0.1
-        elif x < -0.1:
-            x_vel = -0.1
-        else:
-            x_vel = x
-        if y > 0.1:
-            y_vel = 0.1
-        elif y < -0.1:
-            y_vel = -0.1
-        else:
-            y_vel = y
-
-        motion_msg = MoveVelocity.Request()
-        motion_msg.is_sync = True
-        motion_msg.speeds = [x_vel, 0.0, 0.0, 0.0, y_vel, 0.0, 0.0]
-
-        try:
-            print(f"mock moving to {x} {y}")
-            future_move = self.move_client.call_async(motion_msg)
-            future_move.add_done_callback(self.state_response_callback)  # Fire-and-forget
-
-        except Exception as e:
-            Logger.error(self.node, f"Error desactivating arm: {e}")
-            return self.STATE["EXECUTION_ERROR"]
-
-        Logger.success(self.node, "Arm moved")
-        return self.STATE["EXECUTION_SUCCESS"]
-
-    ## CALLBACKS FOR FORGET SERVICE STATE
-    def state_response_callback(self, future):
-        """Callback for state service response"""
-        try:
-            result = future.result()
-            if result:
-                Logger.info(self.node, "Arm moved")
-            else:
-                Logger.error(self.node, "Failed to move arm")
-        except Exception as e:
-            self.Logger.error(self.node, f"move service call failed: {str(e)}")
-
+    @mockable(return_value=Status.EXECUTION_SUCCESS, delay=2)
     def move_joint_positions(
         self,
         joint_positions: Union[List[float], dict] = None,
@@ -273,6 +153,7 @@ class ManipulationTasks:
         """Get named target"""
         return XARM_CONFIGURATIONS[target_name]
 
+    # @service_check("get_joints_positions", -1, TIMEOUT)
     def get_joint_positions(
         self,
         degrees=False,  # set to true to return in degrees
@@ -284,9 +165,11 @@ class ManipulationTasks:
         result = future.result()
         if degrees:
             result.joint_positions = [x * RAD_TO_DEG for x in result.joint_positions]
+        print("Joint positions from service: ", result.joint_positions)
         return dict(zip(result.joint_names, result.joint_positions))
 
     # let the server pick the default values
+    @service_check("_move_joints_action_client", -1, TIMEOUT)
     def _send_joint_goal(
         self,
         joint_names=[],

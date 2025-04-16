@@ -22,7 +22,7 @@
 #include <frida_interfaces/srv/perception_service.hpp>
 #include <frida_interfaces/srv/remove_plane.hpp>
 
-#include <frida_constants/manip_3d.hpp>
+#include <frida_constants/manipulation_constants_cpp.hpp>
 #include <geometry_msgs/msg/point_stamped.hpp>
 #include <perception_3d/macros.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
@@ -108,8 +108,13 @@ public:
       throw std::runtime_error("CallServicesNode is null");
     }
 
+    auto qos = rclcpp::QoS(rclcpp::SensorDataQoS());
+    qos.reliability(rclcpp::ReliabilityPolicy::BestEffort);
+    qos.durability(rclcpp::DurabilityPolicy::Volatile);
+    qos.keep_last(1);
+
     this->cloud_sub = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-        POINT_CLOUD_TOPIC, rclcpp::SensorDataQoS(),
+        POINT_CLOUD_TOPIC, qos,
         std::bind(&TestsNode::cloud_callback, this, std::placeholders::_1));
 
     this->testing = this->declare_parameter("testing", testing);
@@ -337,6 +342,8 @@ int main(int argc, char *argv[]) {
     }
     rclcpp::shutdown();
     return 0;
+  } else {
+    multithreaded_executor->spin();
   }
 
   rclcpp::shutdown();

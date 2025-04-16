@@ -1,0 +1,26 @@
+ARG BASE_IMAGE=ubuntu:22.04
+FROM ${BASE_IMAGE}
+
+RUN echo "${BASE_IMAGE}"
+# RUN if [ "${BASE_IMAGE}" = "docker.io/roborregos/home2:cuda_base" ]; then \
+#     echo "Installing PyTorch with CUDA support"; \
+#     pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118; \
+#     fi
+# RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118 
+
+RUN pip install transformers
+RUN pip install numpy==1.24
+RUN pip install opencv-python
+RUN pip install Pillow
+RUN apt update
+RUN apt install libvips-dev --no-install-recommends -y
+RUN pip install pyvips
+RUN pip install einops
+RUN pip install accelerate
+# grpcio==1.71.0
+# protobuf==5.29.1
+RUN pip install grpcio==1.71.0
+RUN pip install protobuf==5.29.1
+
+WORKDIR /workspace
+# CV-bridge

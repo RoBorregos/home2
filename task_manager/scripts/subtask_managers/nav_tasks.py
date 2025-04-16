@@ -14,8 +14,10 @@ from nav2_msgs.action import NavigateToPose
 import os
 import json
 from rclpy.task import Future
+from std_srvs.srv import SetBool
 
 MOVE_TOPIC = "/navigate_to_pose"
+FOLLOWING_SERVICE = "/navigation/activate_following"
 
 TIMEOUT = 5.0
 
@@ -34,6 +36,7 @@ class NavigationTasks:
 
     def setup_services(self):
         self.pose_client = ActionClient(self.node, NavigateToPose, MOVE_TOPIC)
+        self.activate_follow = self.create_client(SetBool, FOLLOWING_SERVICE)
         if not self.pose_client.wait_for_server(timeout_sec=TIMEOUT):
             self.node.get_logger().warn("Move service not initialized.")
 
@@ -109,6 +112,23 @@ class NavigationTasks:
     def result_callback(self, result_future):
         self.node.get_logger().info("Goal execution completed!")
         result_future.set_result(self.STATE["EXECUTION_SUCCESS"])
+
+    def follow_person(self, activate: bool):
+        """Activate or deactivate the follow person mode"""
+        try:
+            future = self.activate_follow.call_async(SetBool.Request(data=activate))
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+            result = future.result()
+            if not result.success:
+                raise Exception("Service call failed")
+        except Exception:
+            self.node.get_logger().info("Error sending follow person mode")
+            return self.STATE["EXECUTION_ERROR"]
+        if activate:
+            self.node.get_logger().info("Follow person activated")
+        else:
+            self.node.get_logger().info("Follow person deactivated")
+        return self.STATE["EXECUTION_SUCCESS"]
 
 
 if __name__ == "__main__":

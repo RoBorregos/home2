@@ -4,7 +4,8 @@ import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionServer
 from rclpy.callback_groups import ReentrantCallbackGroup
-from geometry_msgs.msg import TwistStamped
+from geometry_msgs.msg import TwistStamped, PoseStamped
+from std_srvs.srv import SetBool
 from frida_interfaces.action import MoveToPose, MoveJoints
 from frida_constants.manipulation_constants import (
     GET_COLLISION_OBJECTS_SERVICE,
@@ -22,6 +23,16 @@ from frida_constants.manipulation_constants import (
     MOVEIT_MODE,
     JOINT_VELOCITY_MODE,
     SET_JOINT_VELOCITY_SERVICE,
+    PICK_PLANNER,
+    MOVE_TO_POSE_ACTION_SERVER,
+    DEBUG_POSE_GOAL_TOPIC,
+    MOVE_JOINTS_ACTION_SERVER,
+    GET_JOINT_SERVICE,
+    ADD_COLLISION_OBJECT_SERVICE,
+    REMOVE_COLLISION_OBJECT_SERVICE,
+    ATTACH_COLLISION_OBJECT_SERVICE,
+    TOGGLE_SERVO_SERVICE,
+    GRIPPER_SET_STATE_SERVICE,
 )
 from xarm_msgs.srv import MoveVelocity
 from frida_interfaces.msg import CollisionObject
@@ -39,7 +50,7 @@ class MotionPlanningServer(Node):
         self.planner = MoveItPlanner(self, self.callback_group)
         self.planner.set_velocity(0.15)
         self.planner.set_acceleration(0.15)
-        self.planner.set_planner("RRTConnect")
+        self.planner.set_planner(PICK_PLANNER)
 
         self.servo = MoveItServo(
             self,
@@ -51,43 +62,53 @@ class MotionPlanningServer(Node):
         self._move_to_pose_server = ActionServer(
             self,
             MoveToPose,
-            "/manipulation/move_to_pose_action_server",
+            MOVE_TO_POSE_ACTION_SERVER,
             self.move_to_pose_execute_callback,
             callback_group=self.callback_group,
+        )
+
+        self._debug_pose_publisher = self.create_publisher(
+            PoseStamped, DEBUG_POSE_GOAL_TOPIC, 10
         )
 
         self._move_joints_server = ActionServer(
             self,
             MoveJoints,
-            "/manipulation/move_joints_action_server",
+            MOVE_JOINTS_ACTION_SERVER,
             self.move_joints_execute_callback,
             callback_group=self.callback_group,
         )
 
         self.get_joints_service = self.create_service(
-            GetJoints, "/manipulation/get_joints", self.get_joints_callback
+            GetJoints, GET_JOINT_SERVICE, self.get_joints_callback
         )
 
         self.add_collision_object_service = self.create_service(
             AddCollisionObjects,
-            "/manipulation/add_collision_objects",
+            ADD_COLLISION_OBJECT_SERVICE,
             self.add_collision_objects_callback,
         )
 
         self.remove_collision_object_service = self.create_service(
             RemoveCollisionObject,
-            "/manipulation/remove_collision_object",
+            REMOVE_COLLISION_OBJECT_SERVICE,
             self.remove_collision_object_callback,
         )
 
         self.attach_collision_object_service = self.create_service(
             AttachCollisionObject,
-            "/manipulation/attach_collision_object",
+            ATTACH_COLLISION_OBJECT_SERVICE,
             self.attach_collision_object_callback,
         )
 
+        self.gripper_set_state_service = self.create_service(
+            SetBool,
+            GRIPPER_SET_STATE_SERVICE,
+            self.set_gripper_state_callback,
+        )
+
         self.toggle_servo_service = self.create_service(
-            ToggleServo, "/manipulation/toggle_servo", self.toggle_servo_callback
+            ToggleServo, TOGGLE_SERVO_SERVICE, self.toggle_servo_callback
         )
 
         self.servo_speed_subscriber = self.create_subscription(
@@ -104,8 +125,10 @@ class MotionPlanningServer(Node):
             self.xarm_services = XArmServices(
                 self, self.planner.mode_client, self.planner.state_client
             )
+            self.real_xarm = True
         else:
             self.xarm_services = XArmServices(self, None, None)
+            self.real_xarm = False
 
         self.xarm_joint_velocity_service = self.create_service(
             MoveVelocity,
@@ -129,6 +152,7 @@ class MotionPlanningServer(Node):
         self.get_logger().info("Executing pose goal...")
 
         # Initialize result
+        self._debug_pose_publisher.publish(goal_handle.request.pose)
         feedback = MoveToPose.Feedback()
         result = MoveToPose.Result()
         self.set_planning_settings(goal_handle)
@@ -185,6 +209,20 @@ class MotionPlanningServer(Node):
         )
         joint_names = goal_handle.request.joint_names
         joint_positions = list(goal_handle.request.joint_positions)
+        joint_dict = self.planner.get_joint_positions()
+
+        configuration_distance = 0
+        for i, joint_name in enumerate(joint_names):
+            joint_curr_pos = joint_dict[joint_name]
+            joint_target_pos = joint_positions[i]
+            configuration_distance += (joint_curr_pos - joint_target_pos) ** 2
+        configuration_distance = configuration_distance**0.5
+        if configuration_distance < 0.2:
+            self.get_logger().info(
+                f"Joint positions are already close to target: {configuration_distance}"
+            )
+            return True
+
         result = self.planner.plan_joint_goal(
             joint_positions,
             joint_names,
@@ -207,7 +245,7 @@ class MotionPlanningServer(Node):
         planner_id = (
             goal_handle.request.planner_id
             if len(goal_handle.request.planner_id) != 0
-            else "RRTConnect"
+            else PICK_PLANNER
         )
         self.planner.set_velocity(velocity)
         self.planner.set_acceleration(acceleration)
@@ -339,6 +377,13 @@ class MotionPlanningServer(Node):
         try:
             # Generate a unique ID for the collision object
             object_id = f"{request.id}"
+            if object_id == "all":
+                self.planner.remove_all_collision_objects(
+                    include_attached=request.include_attached
+                )
+                self.get_logger().info("Removed all collision objects")
+                response.success = True
+                return response
 
             # Remove the collision object
             self.planner.remove_collision_object(object_id)
@@ -403,6 +448,18 @@ class MotionPlanningServer(Node):
             # TODO: send dimensions and type
             response.collision_objects.append(new_collision_object)
         response.success = True
+        return response
+
+    def set_gripper_state_callback(self, request, response):
+        """Handle requests to set the gripper state"""
+
+        # 0 open, 1 closed
+        if request.data:
+            self.xarm_services.open_gripper()
+        else:
+            self.xarm_services.close_gripper()
+        response.success = True
+
         return response
 
 

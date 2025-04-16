@@ -9,9 +9,10 @@ find_package(cv_bridge REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(frida_interfaces REQUIRED)
+find_package(frida_constants REQUIRED)
 
 #Install directories
-install(DIRECTORY launch
+install(DIRECTORY launch moondream_server
   DESTINATION share/${PROJECT_NAME})
 
 

@@ -4,16 +4,30 @@ import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient, ActionServer
 from rclpy.callback_groups import ReentrantCallbackGroup
-from frida_interfaces.action import PickMotion, PickTask
-from frida_interfaces.srv import ClusterObjectFromPoint
 from frida_motion_planning.utils.ros_utils import wait_for_future
+from std_srvs.srv import SetBool
+from frida_interfaces.action import MoveJoints
+from frida_interfaces.msg import ManipulationTask
+from frida_interfaces.action import PickMotion, ManipulationAction
+from frida_interfaces.srv import (
+    PerceptionService,
+    GraspDetection,
+    DetectionHandler,
+    RemoveCollisionObject,
+)
 from frida_constants.manipulation_constants import (
     PICK_MOTION_ACTION_SERVER,
-    PICK_ACTION_SERVER,
-    CLUSTER_OBJECT_SERVICE,
+    MANIPULATION_ACTION_SERVER,
+    PERCEPTION_SERVICE,
+    GRASP_DETECTION_SERVICE,
+    MOVE_JOINTS_ACTION_SERVER,
+    REMOVE_COLLISION_OBJECT_SERVICE,
+    GRIPPER_SET_STATE_SERVICE,
 )
-import copy
-from geometry_msgs.msg import PoseStamped
+from frida_constants.vision_constants import (
+    DETECTION_HANDLER_TOPIC_SRV,
+)
+from pick_and_place.managers.PickManager import PickManager
 
 
 class ManipulationCore(Node):
@@ -21,11 +35,11 @@ class ManipulationCore(Node):
         super().__init__("manipulation_core")
         self.callback_group = ReentrantCallbackGroup()
 
-        self._pick_action_client = ActionServer(
+        self._manipulation_server = ActionServer(
             self,
-            PickTask,
-            PICK_ACTION_SERVER,
-            self.pick_execute_callback,
+            ManipulationAction,
+            MANIPULATION_ACTION_SERVER,
+            self.manipulation_server_callback,
             callback_group=self.callback_group,
         )
 
@@ -35,73 +49,93 @@ class ManipulationCore(Node):
             PICK_MOTION_ACTION_SERVER,
         )
 
-        self._cluster_object_client = self.create_client(
-            ClusterObjectFromPoint, CLUSTER_OBJECT_SERVICE
+        self._move_joints_client = ActionClient(
+            self,
+            MoveJoints,
+            MOVE_JOINTS_ACTION_SERVER,
         )
 
-        # self._gpd_client = self.create_client(self, GPDCloudRequest, GPD_CLOUD_SERVICE)
+        self.detection_handler_client = self.create_client(
+            DetectionHandler, DETECTION_HANDLER_TOPIC_SRV
+        )
+
+        self.perception_3d_client = self.create_client(
+            PerceptionService, PERCEPTION_SERVICE
+        )
+
+        self.grasp_detection_client = self.create_client(
+            GraspDetection, GRASP_DETECTION_SERVICE
+        )
+
+        self._remove_collision_object_client = self.create_client(
+            RemoveCollisionObject,
+            REMOVE_COLLISION_OBJECT_SERVICE,
+        )
+
+        self._gripper_set_state_client = self.create_client(
+            SetBool,
+            GRIPPER_SET_STATE_SERVICE,
+        )
+
+        self.pick_manager = PickManager(self)
 
         self.get_logger().info("Manipulation Core has been started")
 
-    def pick_execute_callback(self, goal_handle):
-        self.get_logger().info("Received object pose")
-        self.get_logger().info(f"Goal: {goal_handle.request.object_point}")
+    def pick_execute(self, object_name=None, object_point=None):
+        self.get_logger().info(f"Goal: {object_point}")
         self.get_logger().info("Extracting object cloud")
 
-        # Call cloud extractor
-        request = ClusterObjectFromPoint.Request()
-        request.point = goal_handle.request.object_point
-        self._cluster_object_client.wait_for_service()
-        future = self._cluster_object_client.call_async(request)
-        future = wait_for_future(future)
+        result = self.pick_manager.execute(
+            object_name=object_name,
+            point=object_point,
+        )
 
-        self.get_logger().info(f"Object Cloud extracted: {future.result()}")
+        if not result:
+            self.get_logger().error("Pick failed")
+            self.remove_all_collision_object()
+            return False
 
-        # Save to PCD??
-        # Call Grasp Pose Detection
-        ##### FAKE #####
-        object_point = goal_handle.request.object_point
-        grasp_pose1 = PoseStamped()
-        grasp_pose1.header.frame_id = object_point.header.frame_id
-        grasp_pose1.pose.position.x = object_point.point.x
-        grasp_pose1.pose.position.y = object_point.point.y
-        grasp_pose1.pose.position.z = object_point.point.z + 0.10
-        grasp_pose1.pose.orientation.x = 1.0
-        grasp_pose1.pose.orientation.y = 0.0
-        grasp_pose1.pose.orientation.z = 0.0
-        grasp_pose1.pose.orientation.w = 0.0
-
-        grasp_pose2 = copy.deepcopy(grasp_pose1)
-        grasp_pose2.pose.position.z = object_point.point.z + 0.25
-
-        grasp_poses = [grasp_pose1, grasp_pose2]
-
-        # Call Pick Motion Action
-        # Create goal
-        goal_msg = PickMotion.Goal()
-        goal_msg.grasping_poses = grasp_poses
-
-        # Send goal
-        self.get_logger().info("Sending pick motion goal...")
-        future = self._pick_motion_action_client.send_goal_async(goal_msg)
-        future = wait_for_future(future)
-
-        # Check result
-        result = future.result()
-        self.get_logger().info(f"Pick Motion Result: {result}")
-
-        if result:
-            # Initialize result
-            result = PickTask.Result()
-            result.success = True
-            goal_handle.succeed()
-            return result
-
-        self.get_logger().error("Pick Motion failed")
-        goal_handle.abort()
-        result = PickTask.Result()
-        result.success = False
         return result
+
+    def manipulation_server_callback(self, goal_handle):
+        task_type = goal_handle.request.task_type
+        object_name = goal_handle.request.object_name
+        object_point = goal_handle.request.object_point
+        self.get_logger().info(f"Task Type: {task_type}")
+        self.get_logger().info(f"Object Name: {object_name}")
+        response = ManipulationAction.Result()
+        if task_type == ManipulationTask.PICK:
+            self.get_logger().info("Executing Pick Task")
+            result = self.pick_execute(
+                object_name=object_name, object_point=object_point
+            )
+            goal_handle.succeed()
+            response.success = result
+        elif task_type == ManipulationTask.PICK_CLOSEST:
+            self.get_logger().info("Executing Pick Closest Task")
+            goal_handle.succeed()
+            response.success = result
+        elif task_type == ManipulationTask.PLACE:
+            self.get_logger().info("Executing Place Task")
+            goal_handle.succeed()
+            response.success = result.success
+        else:
+            self.get_logger().error("Unknown task type")
+            goal_handle.abort()
+            response = ManipulationAction.Result()
+            response.success = False
+
+        return response
+
+    def remove_all_collision_object(self):
+        """Remove the collision object from the scene."""
+        request = RemoveCollisionObject.Request()
+        request.id = "all"
+        request.include_attached = True
+        self._remove_collision_object_client.wait_for_service()
+        future = self._remove_collision_object_client.call_async(request)
+        wait_for_future(future)
+        return future.result().success
 
 
 def main(args=None):

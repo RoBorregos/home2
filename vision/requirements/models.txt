@@ -1,2 +1,4 @@
 pretrainedmodels
 mediapipe
+ultralytics
+lap

@@ -20,6 +20,8 @@ JOINTN_VELOCITY_MODE = 4
 
 MOVE_JOINTS_ACTION_SERVER = "/manipulation/move_joints_action_server"
 MOVE_TO_POSE_ACTION_SERVER = "/manipulation/move_to_pose_action_server"
+GET_JOINT_SERVICE = "/manipulation/get_joints"
+TOGGLE_SERVO_SERVICE = "/manipulation/toggle_servo"
 
 PICK_VELOCITY = 0.15
 PICK_ACCELERATION = 0.15
@@ -27,10 +29,26 @@ PICK_PLANNER = "RRTConnect"
 
 PICK_MOTION_ACTION_SERVER_NODE = "manipulation/pick_motion_server"
 PICK_MOTION_ACTION_SERVER = "/manipulation/pick_motion_action_server"
-CLUSTER_OBJECT_SERVICE = "/manip/cluster_object"
+CLUSTER_OBJECT_SERVICE = "/manipulation/cluster_object"
+PERCEPTION_SERVICE = "/manipulation/perception_service"
+GRASP_DETECTION_SERVICE = "/manipulation/detect_grasps"
+GRIPPER_SET_STATE_SERVICE = "/manipulation/gripper/set_state"
+XARM_SET_DIGITAL_TGPIO_SERVICE = "/xarm/set_digital_tgpio"
 
-PICK_ACTION_SERVER = "/manipulation/pick_action_server"
+
+MANIPULATION_ACTION_SERVER = "/manipulation/manipulation_action_server"
 
 ATTACH_COLLISION_OBJECT_SERVICE = "/manipulation/attach_collision_object"
+ADD_COLLISION_OBJECT_SERVICE = "/manipulation/add_collision_objects"
 GET_COLLISION_OBJECTS_SERVICE = "/manipulation/get_collision_objects"
+REMOVE_COLLISION_OBJECT_SERVICE = "/manipulation/remove_collision_object"
 PICK_OBJECT_NAMESPACE = "frida_pick_object_"
+PLANE_NAMESPACE = "plane"
+PLANE_OBJECT_COLLISION_TOLERANCE = (
+    0.025  # Tolerance to delete collision objects if they are too close to the plane
+)
+
+DEBUG_POSE_GOAL_TOPIC = "/manipulation/debug_pose_goal"
+GET_JOINT_TOPIC = "/manipulation/get_joints"
+
+TOGGLE_SERVO_TOPIC = "/manipulation/toggle_servo"

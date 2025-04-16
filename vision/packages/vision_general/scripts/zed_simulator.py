@@ -23,7 +23,9 @@ class ZedSimulator(Node):
         self.publisher_ = self.create_publisher(Image, CAMERA_TOPIC, 10)
 
         self.get_logger().info("ZedSimulator has started.")
-        self.cap = cv2.VideoCapture(0)
+        self.video_id = self.declare_parameter("video_id", 0)
+        self.use_zed = self.declare_parameter("use_zed", False)
+        self.cap = cv2.VideoCapture(self.video_id.value)
         self.run()
 
     def run(self):
@@ -33,6 +35,9 @@ class ZedSimulator(Node):
             if not ret:
                 self.get_logger().info("No frame")
                 continue
+
+            if self.use_zed:
+                frame = frame[:, : frame.shape[1] // 2]
 
             image = self.bridge.cv2_to_imgmsg(frame, encoding="bgr8")
             self.publisher_.publish(image)

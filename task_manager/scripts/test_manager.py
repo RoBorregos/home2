@@ -11,8 +11,8 @@ import json
 from rclpy.node import Node
 
 # from subtask_managers.hri_tasks import HRITasks
-# from subtask_managers.manipulation_tasks import ManipulationTasks
-from subtask_managers.hri_tasks import HRITasks
+
+from subtask_managers.manipulation_tasks import ManipulationTasks
 
 
 class TestTaskManager(Node):
@@ -21,9 +21,9 @@ class TestTaskManager(Node):
         self.subtask_manager = {}
         # self.subtask_manager["hri"] = HRITasks(self, config=test_hri_config)
 
-        # self.subtask_manager["manipulation"] = ManipulationTasks(self, task="DEMO", mock_data=False)
+        self.subtask_manager["manipulation"] = ManipulationTasks(self, task="DEMO", mock_data=False)
 
-        self.subtask_manager["hri"] = HRITasks(self, task="DEMO")
+        # self.subtask_manager["hri"] = HRITasks(self, task="DEMO")
         # wait for a bit
         rclpy.spin_once(self, timeout_sec=1.0)
         self.get_logger().info("TestTaskManager has started.")
@@ -62,7 +62,8 @@ class TestTaskManager(Node):
         self.get_logger().info(f"Query results: {results}")
 
     def run(self):
-        """testing vision tasks"""
+        # """testing vision tasks"""
+        # self.subtask_manager["vision"].track_person()
 
         # self.subtask_manager["hri"].say(
         #     "Hi, my name is frida. What is your favorite drink?", wait=True
@@ -97,6 +98,7 @@ class TestTaskManager(Node):
         # joint_positions = self.subtask_manager["manipulation"].get_joint_positions()
         # joint_positions["joint1"] = joint_positions["joint1"] - 180
         # print(joint_positions)
+
         # new_joint_positions = [-55.0, -3.0, -52.0, 0.0, 53.0, -55.0]
         # res = self.subtask_manager["manipulation"].move_joint_positions(
         #     joint_positions=joint_positions, velocity=0.5, degrees=True
@@ -104,6 +106,10 @@ class TestTaskManager(Node):
         # print("Move joint positions result: ", res)
         # joint_positions = self.subtask_manager["manipulation"].get_joint_positions(degrees=True)
         # print(joint_positions)
+
+        # self.subtask_manager["manipulation"].close_gripper()
+
+        self.subtask_manager["manipulation"].open_gripper()
 
         ####### EXAMPLE: Move to named position then move only the first joint #######
         # Move to a named position
