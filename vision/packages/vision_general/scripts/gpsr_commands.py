@@ -441,14 +441,14 @@ class GPSRCommands(Node):
 
         try:
             future = self.moondream_crop_query_client.call_async(request)
-            rclpy.spin_until_future_complete(self, future, timeout_sec=TIMEOUT)
+            rclpy.spin_until_future_complete(self, future, timeout_sec=10.0)
             result = future.result()
 
             print(f"Result: {result}")
             print(f"Result success: {result.success}")
             print(f"Result message: {result.message}")
             print(f"Result result: {result.result}")
-            
+
             if not result or not result.success:
                 self.get_logger().warn("No result generated")
                 return False, ""
