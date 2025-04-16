@@ -11,7 +11,7 @@ from subtask_managers.vision_tasks import VisionTasks
 from utils.task import Task
 from utils.logger import Logger
 
-task = Task.HELP_ME_CARRY
+task = Task.GPSR
 
 
 class TestVision(Node):
@@ -50,6 +50,13 @@ class TestVision(Node):
                 self.running_task = False
             else:
                 self.get_logger().info("Vision task failed")
+
+        elif task == Task.GPSR:
+            name = self.manager.get_person_name()
+            if name:
+                Logger.info(self, f"Vision task result: {name}")
+            else:
+                Logger.warn(self, "No person")
 
 
 def main(args=None):
