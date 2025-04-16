@@ -11,3 +11,11 @@ class BBOX:
     x2: float = 0
     y1: float = 0
     y2: float = 0
+
+@dataclass
+class ShelfDetection:
+    level: int = 0
+    x1: float = 0
+    y1: float = 0
+    x2: float = 0
+    y2: float = 0

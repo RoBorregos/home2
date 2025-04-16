@@ -16,6 +16,7 @@ from frida_interfaces.srv import (
     Query,
     CropQuery,
     DetectPointingObject,
+    ShelfDetectionHandler,
 )
 from std_srvs.srv import SetBool
 from std_msgs.msg import String
@@ -41,9 +42,11 @@ from frida_constants.vision_constants import (
     POINTING_OBJECT_SERVICE,
     PERSON_LIST_TOPIC,
     PERSON_NAME_TOPIC,
+    SHELF_DETECTION_TOPIC,
 )
 from frida_constants.vision_classes import (
     BBOX,
+    ShelfDetection
 )
 
 TIMEOUT = 5.0
@@ -80,6 +83,9 @@ class VisionTasks:
         self.pointing_object_client = self.node.create_client(
             DetectPointingObject, POINTING_OBJECT_SERVICE
         )
+        self.shelf_detections_client = self.node.create_client(
+            ShelfDetectionHandler, SHELF_DETECTION_TOPIC
+        )
         self.beverage_location_client = self.node.create_client(BeverageLocation, BEVERAGE_TOPIC)
         self.detect_person_action_client = ActionClient(self.node, DetectPerson, CHECK_PERSON_TOPIC)
 
@@ -114,6 +120,10 @@ class VisionTasks:
                     "client": self.save_name_client,
                     "type": "service",
                 },
+            },
+            Task.STORING_GROCERIES: {
+                "moondream_query": {"client": self.moondream_query_client, "type": "service"},
+                "shelf_detections": {"client": self.shelf_detections_client, "type": "service"},
             },
             Task.DEBUG: {
                 "moondream_query": {"client": self.moondream_query_client, "type": "service"},
@@ -167,8 +177,8 @@ class VisionTasks:
     def get_person_name(self):
         """Get the name of the person detected"""
         if self.person_name != "":
-            return self.person_name
-        return None
+            return Status.EXECUTION_SUCCESS, self.person_name
+        return Status.TARGET_NOT_FOUND, None
 
     @mockable(return_value=100)
     @service_check(client="save_name_client", return_value=Status.TERMINAL_ERROR, timeout=TIMEOUT)
@@ -218,6 +228,41 @@ class VisionTasks:
 
         Logger.success(self.node, f"Seat found: {result.angle}")
         return Status.EXECUTION_SUCCESS, result.angle
+    
+    @mockable(return_value=Status.EXECUTION_SUCCESS, delay=2)
+    @service_check("shelf_detections_client", Status.EXECUTION_ERROR, TIMEOUT)
+    def detect_shelf(self, timeout: float = TIMEOUT):
+        """Detect the shelf in the image"""
+        Logger.info(self.node, "Waiting for shelf detection")
+        request = ShelfDetectionHandler.Request()
+        detections = []
+
+        try:
+            future = self.shelf_detections_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=timeout)
+            result = future.result()
+
+            if not result.success:
+                Logger.warn(self.node, "No shelf detected")
+                return Status.TARGET_NOT_FOUND, detections
+            
+            results = result.shelf_array.shelf_detections
+            # for each result
+            for detection in results:
+                shelf_detection = ShelfDetection()
+                shelf_detection.x1 = detection.xmin
+                shelf_detection.x2 = detection.xmax
+                shelf_detection.y1 = detection.ymin
+                shelf_detection.y2 = detection.ymax
+                shelf_detection.level = detection.level
+                detections.append(shelf_detection)
+
+        except Exception as e:
+            Logger.error(self.node, f"Error detecting shelf: {e}")
+            return Status.EXECUTION_ERROR, detections
+
+        Logger.success(self.node, "Shelf detected")
+        return Status.EXECUTION_SUCCESS, detections
 
     @mockable(return_value=Status.EXECUTION_SUCCESS, delay=2, mock=False)
     @service_check("detect_person_action_client", Status.EXECUTION_ERROR, TIMEOUT)
@@ -450,14 +495,20 @@ class VisionTasks:
     def describe_bag(self, bbox: BBOX, timeout=TIMEOUT) -> tuple[int, str]:
         """Describe the person in the image"""
         Logger.info(self.node, "Describing the bag")
-        prompt = "Please describe the image"
+        prompt = "Please briefly describe the bag"
         return self.moondream_crop_query(prompt, bbox, timeout=timeout)
 
     def describe_bag_moondream(self):
         """Describe the bag using only moondream"""
         Logger.info(self.node, "Describing bag")
         prompt = "Describe the bag that the person is pointing at using the folling format: the bag on your left is small and green"
-        return Status.EXECUTION_SUCCESS, self.moondream_query(prompt, query_person=False)
+        return self.moondream_query(prompt, query_person=False)
+    
+    def describe_shelf(self):
+        """Describe the shelf using only moondream"""
+        Logger.info(self.node, "Describing shelf")
+        prompt = "You are watching a shelf level with several items. Please give me a list of the items in the shelf"
+        return self.moondream_query(prompt, query_person=False)
 
 
 if __name__ == "__main__":
