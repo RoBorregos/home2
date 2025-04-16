@@ -46,11 +46,6 @@ from frida_constants.vision_constants import (
     POINTING_OBJECT_SERVICE,
     PERSON_LIST_TOPIC,
     PERSON_NAME_TOPIC,
-
-    # gpsr
-    CAMERA_TOPIC,
-    COUNT_BY_PERSON_TOPIC,
-    IMAGE_TOPIC,
     COUNT_BY_GESTURES_TOPIC,
     COUNT_BY_POSE_TOPIC,
     POSE_GESTURE_TOPIC,
@@ -143,10 +138,10 @@ class VisionTasks:
                     "client": self.count_by_gesture_client,
                     "type": "service",
                 },
-                "count_by_color": {
-                    "client": self.count_by_color,
-                    "type": "service",
-                },
+                # "count_by_color": {
+                #     "client": self.count_by_color,
+                #     "type": "service",
+                # },
             },
             Task.DEBUG: {
                 "moondream_query": {"client": self.moondream_query_client, "type": "service"},
@@ -501,32 +496,32 @@ class VisionTasks:
         Logger.success(self.node, f"People with gesture {gesture}: {result.count}")
         return Status.EXECUTION_SUCCESS, result.count
     
-    @mockable(return_value=100)
-    @service_check("count_by_color_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
-    def count_by_color(self, color: str, clothing: str) -> tuple[int, int]:
-        """Count the number of people with the requested color and clothing"""
+    # @mockable(return_value=100)
+    # @service_check("count_by_color_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
+    # def count_by_color(self, color: str, clothing: str) -> tuple[int, int]:
+    #     """Count the number of people with the requested color and clothing"""
 
-        Logger.info(self.node, "Counting people by pose")
-        request = CountByColor.Request()
-        request.color = color
-        request.clothing = clothing
-        request.request = True
+    #     Logger.info(self.node, "Counting people by pose")
+    #     request = CountByColor.Request()
+    #     request.color = color
+    #     request.clothing = clothing
+    #     request.request = True
 
-        try:
-            future = self.count_by_color_client.call_async(request)
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
-            result = future.result()
+    #     try:
+    #         future = self.count_by_color_client.call_async(request)
+    #         rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+    #         result = future.result()
 
-            if not result.success:
-                Logger.warn(self.node, f"No {color} {clothing} found")
-                return Status.TARGET_NOT_FOUND, 300
+    #         if not result.success:
+    #             Logger.warn(self.node, f"No {color} {clothing} found")
+    #             return Status.TARGET_NOT_FOUND, 300
 
-        except Exception as e:
-            Logger.error(self.node, f"Error counting people by color: {e}")
-            return Status.EXECUTION_ERROR, 300
+    #     except Exception as e:
+    #         Logger.error(self.node, f"Error counting people by color: {e}")
+    #         return Status.EXECUTION_ERROR, 300
 
-        Logger.success(self.node, f"People with {clothing} {color}: {result.count}")
-        return Status.EXECUTION_SUCCESS, result.count
+    #     Logger.success(self.node, f"People with {clothing} {color}: {result.count}")
+    #     return Status.EXECUTION_SUCCESS, result.count
     
     @mockable(return_value=100)
     @service_check("find_person_info_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
@@ -545,11 +540,11 @@ class VisionTasks:
 
             if not result.success:
                 Logger.warn(self.node, f"No {type_requested} detected")
-                return Status.TARGET_NOT_FOUND, 300
+                return Status.TARGET_NOT_FOUND, ""
 
         except Exception as e:
             Logger.error(self.node, f"Error detecting {type_requested}: {e}")
-            return Status.EXECUTION_ERROR, 300
+            return Status.EXECUTION_ERROR, ""
 
         Logger.success(self.node, f"The person is: {result.result}")
         return Status.EXECUTION_SUCCESS, result.result
@@ -558,7 +553,7 @@ class VisionTasks:
         """Return the object matching the description"""
         Logger.info(self.node, "Detecting object matching description")
         prompt = f"What is the {description} {object} in the image?"
-        self.moondream_query_async(prompt, query_person=False)
+        self.moondream_query(prompt, query_person=False)
 
     def describe_person(self, callback):
         """Describe the person in the image"""
