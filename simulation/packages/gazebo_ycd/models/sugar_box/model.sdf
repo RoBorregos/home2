@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<sdf version="1.6">
+  <model name="sugar_box">
+    <link name="link">
+      <inertial>
+        <mass>0.514</mass>
+        <inertia>
+          <ixx>0.001651054</ixx> <!-- 1/12*0.514*(0.089^2+0.175^2) -->
+          <ixy>0.0</ixy>
+          <ixz>0.0</ixz>
+          <iyy>0.001373622</iyy> <!-- 1/12*0.514*(0.038^2+0.175^2) -->
+          <iyz>0.0</iyz>
+          <izz>0.000401134</izz> <!-- 1/12*0.514*(0.038^2+0.089^2) -->
+        </inertia>
+        <pose>0 0 0.0875 0 0 0</pose>
+      </inertial>
+      <collision name="collision">
+        <pose>0 0 0.0875 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.038 0.089 0.175</size>
+          </box>
+        </geometry>
+      </collision>
+      <visual name="visual">
+        <pose>0 0.015 0 0 0.05 0</pose>
+        <geometry>
+          <mesh>
+            <uri>model://sugar_box/meshes/textured.dae</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>

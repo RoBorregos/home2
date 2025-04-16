@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<sdf version="1.6">
+  <model name="tuna_fish_can">
+    <link name="link">
+      <inertial>
+        <mass>0.171</mass>
+        <inertia>
+          <ixx>0.000092735</ixx> <!-- 1/12*0.171*(3*0.0425^2+0.033^2) -->
+          <ixy>0.0</ixy>
+          <ixz>0.0</ixz>
+          <iyy>0.000092735</iyy> <!-- same as ixx -->
+          <iyz>0.0</iyz>
+          <izz>0.000154434</izz> <!-- 1/2*0.171*0.0425^2 -->
+        </inertia>
+        <pose>0 0 0.0165 0 0 0</pose>
+      </inertial>
+      <collision name="collision">
+        <pose>0 0 0.0165 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.0425</radius>
+            <length>0.033</length>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="visual">
+        <pose>0.027 0.022 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>model://tuna_fish_can/meshes/textured.dae</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>

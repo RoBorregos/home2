@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<sdf version="1.6">
+  <model name="mustard_bottle">
+    <link name="link">
+      <inertial>
+        <mass>0.603</mass>
+        <inertia>
+          <!-- these formulas are for a box/cuboid, but an ellipsoid might be a better approximation -->
+          <ixx>0.002267531</ixx> <!-- 1/12*0.603*(0.095^2+0.190^2) -->
+          <ixy>0.0</ixy>
+          <ixz>0.0</ixz>
+          <iyy>0.001983066</iyy> <!-- 1/12*0.603*(0.058^2+0.190^2) -->
+          <iyz>0.0</iyz>
+          <izz>0.000622547</izz> <!-- 1/12*0.603*(0.058^2+0.095^2) -->
+        </inertia>
+        <pose>0 0 0.095 0 0 0</pose>
+      </inertial>
+      <collision name="collision">
+        <!--<pose>0 0 0.095 0 0 0</pose>
+        <geometry>
+          <box>
+            <size>0.058 0.095 0.190</size>
+          </box>
+        </geometry>-->
+        <pose>0.025 -0.005 0 0 0 -1.15</pose>
+        <geometry>
+          <mesh>
+            <uri>model://mustard_bottle/meshes/collision.dae</uri>
+          </mesh>
+        </geometry>
+      </collision>
+      <visual name="visual">
+        <pose>0.025 -0.005 0 0 0 -1.15</pose>
+        <geometry>
+          <mesh>
+            <uri>model://mustard_bottle/meshes/textured.dae</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>

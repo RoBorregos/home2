@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<sdf version="1.6">
+  <model name="tomato_soup_can">
+    <link name="link">
+      <inertial>
+        <mass>0.349</mass>
+        <inertia>
+          <ixx>0.000391694</ixx> <!-- 1/12*0.349*(3*0.033^2+0.101^2) -->
+          <ixy>0.0</ixy>
+          <ixz>0.0</ixz>
+          <iyy>0.000391694</iyy> <!-- same as ixx -->
+          <iyz>0.0</iyz>
+          <izz>0.00019003</izz> <!-- 1/2*0.349*0.033^2 -->
+        </inertia>
+        <pose>0 0 0.0505 0 0 0</pose>
+      </inertial>
+      <collision name="collision">
+        <pose>0 0 0.0505 0 0 0</pose>
+        <geometry>
+          <cylinder>
+            <radius>0.033</radius>
+            <length>0.101</length>
+          </cylinder>
+        </geometry>
+      </collision>
+      <visual name="visual">
+        <pose>0.01 -0.085 0 0 0 0</pose>
+        <geometry>
+          <mesh>
+            <uri>model://tomato_soup_can/meshes/textured.dae</uri>
+          </mesh>
+        </geometry>
+      </visual>
+    </link>
+  </model>
+</sdf>

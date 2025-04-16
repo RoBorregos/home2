@@ -1,0 +1,1 @@
+#export GAZEBO_MODEL_PATH=$(rospack find gazebo_ycb)/models:${GAZEBO_MODEL_PATH}
