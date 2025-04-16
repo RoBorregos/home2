@@ -27,6 +27,7 @@ TIMEOUT = 5.0
 MAX_ERROR = 0.2
 MAX_ROTATIONAL_VEL = 0.8
 
+
 class FollowPersonNode(Node):
     """Class to manage demo tasks"""
 
@@ -41,7 +42,7 @@ class FollowPersonNode(Node):
         self.follow_face_sub = self.create_subscription(
             Point, "/vision/follow_face", self.follow_callback, 10
         )
-        
+
         self.dashgo_cmd_vel_sub = self.create_subscription(
             PoseStamped, DASHGO_CMD_VEL, self.get_dashgo_cmd_vel_callback, 10
         )
@@ -60,7 +61,7 @@ class FollowPersonNode(Node):
         self.prevy = 0.0
         self.counter_move = t()
         self.dashg_cmd_vel = 0.0
-        
+
         self.x_delta_multiplier = self.Multiplier
         self.y_delta_multiplier = self.Multiplier / 2
 
@@ -194,7 +195,7 @@ class FollowPersonNode(Node):
                 Logger.error(self, "Failed to move arm")
         except Exception as e:
             Logger.error(self, f"move service call failed: {str(e)}")
-            
+
     def run(self):
         if not self.is_following_face_active:
             return
@@ -206,8 +207,7 @@ class FollowPersonNode(Node):
             return
         elif x is not None:
             self.send_joint_velocity(self.error_to_velocity(x, y))
-            
-        
+
     def error_to_velocity(self, x: float, y: float):
         """Convert error to velocity"""
         KP = 0.5
@@ -221,7 +221,8 @@ class FollowPersonNode(Node):
             return 0.0
 
         return x_vel
-        
+
+
 def main(args=None):
     """Main function"""
 
