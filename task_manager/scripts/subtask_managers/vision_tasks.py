@@ -7,7 +7,7 @@ commands.
 """
 
 import rclpy
-from frida_interfaces.msg import ObjectDetection
+from frida_interfaces.msg import ObjectDetection, PersonList
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.srv import (
     FindSeat,
@@ -18,6 +18,7 @@ from frida_interfaces.srv import (
     DetectPointingObject,
 )
 from std_srvs.srv import SetBool
+from std_msgs.msg import String
 from geometry_msgs.msg import Point, PointStamped
 from rclpy.action import ActionClient
 from rclpy.node import Node
@@ -38,6 +39,8 @@ from frida_constants.vision_constants import (
     BEVERAGE_TOPIC,
     SET_TARGET_TOPIC,
     POINTING_OBJECT_SERVICE,
+    PERSON_LIST_TOPIC,
+    PERSON_NAME_TOPIC
 )
 from frida_constants.vision_classes import (
     BBOX,
@@ -56,9 +59,17 @@ class VisionTasks:
         self.task = task
         self.follow_face = {"x": None, "y": None}
         self.flag_active_face = False
+        self.person_list = []
+        self.person_name = ""
 
         self.face_subscriber = self.node.create_subscription(
             Point, FOLLOW_TOPIC, self.follow_callback, 10
+        )
+        self.face_list_subscriber = self.node.create_subscription(
+            PersonList, PERSON_LIST_TOPIC, self.person_list_callback, 10
+        )
+        self.face_name_subscriber = self.node.create_subscription(
+            String, PERSON_NAME_TOPIC, self.person_name_callback, 10
         )
         self.save_name_client = self.node.create_client(SaveName, SAVE_NAME_TOPIC)
         self.find_seat_client = self.node.create_client(FindSeat, FIND_SEAT_TOPIC)
@@ -97,6 +108,13 @@ class VisionTasks:
                     "type": "service",
                 },
             },
+            Task.GPSR: {
+                "detect_person": {"client": self.detect_person_action_client, "type": "action"},
+                "save_face_name": {
+                    "client": self.save_name_client,
+                    "type": "service",
+                },
+            },
             Task.DEBUG: {
                 "moondream_query": {"client": self.moondream_query_client, "type": "service"},
                 "moondream_crop_query": {
@@ -130,6 +148,14 @@ class VisionTasks:
         self.follow_face["y"] = msg.y
         self.flag_active_face = True
 
+    def person_list_callback(self, msg: PersonList):
+        """Callback for the face list subscriber"""
+        self.person_list = msg.list
+
+    def person_name_callback(self, msg: String):
+        """Callback for the face name subscriber"""
+        self.person_name = msg.data
+
     def get_follow_face(self):
         """Get the face to follow"""
         if self.flag_active_face:
@@ -137,6 +163,12 @@ class VisionTasks:
             return self.follow_face["x"], self.follow_face["y"]
         else:
             return None, None
+    
+    def get_person_name(self):
+        """Get the name of the person detected"""
+        if self.person_name != "":
+            return self.person_name
+        return None
 
     @mockable(return_value=100)
     @service_check(client="save_name_client", return_value=Status.TERMINAL_ERROR, timeout=TIMEOUT)
