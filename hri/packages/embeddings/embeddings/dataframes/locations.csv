@@ -1,12 +1,13 @@
-name
-living_room
-living_room couches
-dinning_room
-dinning_room entrance
-dinning_room table
-kitchen
-kitchen small_table
-kitchen big_table
-kitchen shelve
-bedroom
-bedroom bed
+documents,metadata
+living_room, "{\"context\":\"household locations\"}"
+living_room couches, "{\"context\":\"household locations\"}"
+dinning_room, "{\"context\":\"household locations\"}"
+dinning_room entrance, "{\"context\":\"household locations\"}"
+bathroom, "{\"context\":\"household locations\"}"
+dinning_room table, "{\"context\":\"household locations\"}"
+kitchen, "{\"context\":\"household locations\"}"
+kitchen small_table, "{\"context\":\"household locations\"}"
+kitchen big_table, "{\"context\":\"household locations\"}"
+kitchen shelve, "{\"context\":\"household locations\"}"
+bedroom, "{\"context\":\"household locations\"}"
+bedroom bed, "{\"context\":\"household locations\"}"

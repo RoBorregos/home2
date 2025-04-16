@@ -1,5 +1,5 @@
 # AddItem.srv
-string document 
+string[] document
 string collection
 string metadata
 ---
