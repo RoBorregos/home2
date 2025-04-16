@@ -95,6 +95,7 @@ class GPSRCommands(Node):
         self.create_timer(0.1, self.publish_image)
 
         self.moondream_crop_query_client = self.create_client(CropQuery, CROP_QUERY_TOPIC)
+        self.moondream_crop_query_client.wait_for_service(timeout_sec=TIMEOUT)
 
     def image_callback(self, data):
         """Callback to receive the image from the camera."""
@@ -441,14 +442,15 @@ class GPSRCommands(Node):
 
         try:
             future = self.moondream_crop_query_client.call_async(request)
-            rclpy.spin_until_future_complete(self, future, timeout_sec=10.0)
+            rclpy.spin_until_future_complete(self, future, timeout_sec=TIMEOUT)
             result = future.result()
 
+            print(future.done())
             print(f"Result: {result}")
             print(f"Result success: {result.success}")
             print(f"Result message: {result.message}")
             print(f"Result result: {result.result}")
-
+            
             if not result or not result.success:
                 self.get_logger().warn("No result generated")
                 return False, ""
