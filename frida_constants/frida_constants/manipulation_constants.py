@@ -52,3 +52,5 @@ DEBUG_POSE_GOAL_TOPIC = "/manipulation/debug_pose_goal"
 GET_JOINT_TOPIC = "/manipulation/get_joints"
 
 TOGGLE_SERVO_TOPIC = "/manipulation/toggle_servo"
+
+ZED_POINT_CLOUD_TOPIC = "/zed/zed_node/point_cloud/cloud_registered"
