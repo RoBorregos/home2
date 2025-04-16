@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os
 from sensor_msgs_py import point_cloud2
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import PointStamped
 from frida_interfaces.srv import HeatmapPlace
 from scipy.signal import convolve2d
 
@@ -39,7 +39,7 @@ class HeatmapServer(Node):
         # If no points found, return zero point
         if len(cloud_points) == 0:
             self.get_logger().warn("Empty pointcloud received")
-            response.point = Point()
+            response.point = PointStamped()
             return response
 
         grid_size = 0.02  # meters
@@ -99,11 +99,22 @@ class HeatmapServer(Node):
         x_center = (min_x_mm + (max_idx[0] + 0.5) * grid_size_mm) / 1000.0
         y_center = (min_y_mm + (max_idx[1] + 0.5) * grid_size_mm) / 1000.0
 
+        # get the closest point to this one and extract its z coordinate
+        closest_point = None
+        min_distance = float("inf")
+        for point in cloud_points:
+            distance = np.sqrt((point[0] - x_center) ** 2 + (point[1] - y_center) ** 2)
+            if distance < min_distance:
+                min_distance = distance
+                closest_point = point
+        z_center = closest_point[2]
+
         # Create response
-        response.point = Point()
-        response.point.x = float(x_center)
-        response.point.y = float(y_center)
-        response.point.z = 0.0  # Assuming planar surface
+        response.place_point = PointStamped()
+        response.place_point.header = point_cloud.header
+        response.place_point.point.x = x_center
+        response.place_point.point.y = y_center
+        response.place_point.point.z = z_center
 
         # Save visualization
         if self.save_image:
@@ -157,7 +168,7 @@ class HeatmapServer(Node):
             plt.plot(x_center, y_center, "g+", markersize=15)
             plt.title("Heatmap with Optimal Position")
 
-            output_dir = os.path.join(os.getcwd(), "heatmap_images")
+            output_dir = "/workspace/heatmap_results"
             os.makedirs(output_dir, exist_ok=True)
             plt.savefig(os.path.join(output_dir, "heatmap_result.png"))
             plt.close()
