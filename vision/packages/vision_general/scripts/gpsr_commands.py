@@ -432,9 +432,6 @@ class GPSRCommands(Node):
     def moondream_crop_query(self, prompt: str, bbox: list[float]) -> tuple[int, str]:
         """Makes a query of the current image using moondream."""
         self.get_logger().info(f"Querying image with prompt: {prompt}")
-        if not self.moondream_crop_query_client.wait_for_service(timeout_sec=5.0):
-            self.get_logger().error('CropQuery service not available after waiting')
-            return
 
         request = CropQuery.Request()
         request.query = prompt
@@ -445,7 +442,7 @@ class GPSRCommands(Node):
 
         try:
             future = self.moondream_crop_query_client.call_async(request)
-            rclpy.spin_until_future_complete(self, future, timeout_sec=TIMEOUT)
+            rclpy.spin_until_future_complete(self, future)
             result = future.result()
 
             print(future.done())
