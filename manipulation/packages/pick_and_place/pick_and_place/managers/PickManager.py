@@ -73,7 +73,7 @@ class PickManager:
         future = self.node._pick_motion_action_client.send_goal_async(goal_msg)
         future = wait_for_future(future)
         # Check result
-        result = future.result()
+        result = future.result().get_result().result
         self.node.get_logger().info(f"Pick Motion Result: {result}")
 
         if not result.success:

@@ -25,14 +25,14 @@ def generate_launch_description():
                 emulate_tty=True,
                 parameters=[],
             ),
-            # Node(
-            #     package="pick_and_place",
-            #     executable="manipulation_client.py",
-            #     name="manipulation_client",
-            #     output="screen",
-            #     emulate_tty=True,
-            #     parameters=[],
-            # ),
+            Node(
+                package="pick_and_place",
+                executable="manipulation_client.py",
+                name="manipulation_client",
+                output="screen",
+                emulate_tty=True,
+                parameters=[],
+            ),
             Node(
                 package="pick_and_place",
                 executable="pick_server.py",
