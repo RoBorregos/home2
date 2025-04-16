@@ -45,7 +45,7 @@ class KeyboardInput(Node):
 
         goal_msg = ManipulationAction.Goal()
         goal_msg.task_type = ManipulationTask.PICK
-        goal_msg.object_name = object_name
+        goal_msg.pick_params.object_name = object_name
 
         self.get_logger().info(f"Sending pick request for: {object_name}")
         self._action_client.send_goal_async(
