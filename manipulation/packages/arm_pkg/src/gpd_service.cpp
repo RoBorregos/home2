@@ -152,7 +152,7 @@ private:
         trans.translation(),
         Eigen::Quaterniond(trans.rotation()),
         {gripper_dims_.base[0], gripper_dims_.base[1], gripper_dims_.base[2]},
-        {r * 0.5f, g * 0.5f, b * 0.5f, 0.6f} // Base más oscura
+        {r * 0.5f, g * 0.5f, b * 0.5f, 0.3f} // Base más oscura
     );
     markers.push_back(base_marker);
 
@@ -173,7 +173,7 @@ private:
           finger_trans.translation(),
           Eigen::Quaterniond(trans.rotation()),
           {gripper_dims_.finger[0], gripper_dims_.finger[1], gripper_dims_.finger[2]},
-          {r, g, b, 0.6f}
+          {r, g, b, 0.3f}
       );
       markers.push_back(finger_marker);
     }
@@ -268,6 +268,7 @@ private:
     pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
     std::string source_frame;
     builtin_interfaces::msg::Time stamp;
+    res->success = false;
 
     try {
 
@@ -371,15 +372,16 @@ private:
         pose.pose.orientation.z = q.z();
         pose.pose.orientation.w = q.w();
 
-
-
         res->grasp_poses.push_back(pose);
         res->grasp_scores.push_back(grasp->getScore());
+        RCLCPP_INFO(this->get_logger(), "Grasp detected: %f", grasp->getScore());
       }
 
       auto marker_array = create_gripper_markers(res->grasp_poses, res->grasp_scores);      
       marker_pub_->publish(marker_array);
+      RCLCPP_INFO(this->get_logger(), "Returning success");
       res->success = true;
+      return;
     }
     catch (const std::exception& e) {
       res->success = false;
