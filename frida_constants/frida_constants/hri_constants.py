@@ -14,10 +14,8 @@ CONVESATION_SERVICE = "/hri/nlp/conversation"
 GRAMMAR_SERVICE = "/hri/nlp/grammar"
 COMMON_INTEREST_SERVICE = "/hri/nlp/common_interest"
 
-ADD_ITEM_SERVICE = "/hri/nlp/embeddings/add_item_service"
-REMOVE_ITEM_SERVICE = "/hri/nlp/embeddings/remove_item_service"
-UPDATE_ITEM_SERVICE = "/hri/nlp/embeddings/update_item_service"
-QUERY_ITEM_SERVICE = "/hri/nlp/embeddings/query_item_service"
+ADD_ENTRY_SERVICE = "/hri/nlp/embeddings/add_entry_service"
+QUERY_ENTRY_SERVICE = "/hri/nlp/embeddings/query_entry_service"
 BUILD_EMBEDDINGS_SERVICE = "/hri/nlp/embeddings/build_embeddings_service"
 USE_RESPEAKER = True
 

@@ -1,10 +1,8 @@
 # QueryItem.srv
-string query  # The search query
-string collection
+string[] query  # The search query
 int16 topk #number of results 
-string where
+string collection #return
 ---
 string[] results  # List of results (documents) that match the query, top k
-string[] metadata 
 bool success  # Whether the operation was successful
 string message  # A message describing the result

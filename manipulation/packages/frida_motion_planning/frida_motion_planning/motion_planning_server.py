@@ -211,8 +211,6 @@ class MotionPlanningServer(Node):
         joint_positions = list(goal_handle.request.joint_positions)
         joint_dict = self.planner.get_joint_positions()
 
-        print("joint_dict: ", joint_dict)
-
         try:
             configuration_distance = 0
             for i, joint_name in enumerate(joint_names):

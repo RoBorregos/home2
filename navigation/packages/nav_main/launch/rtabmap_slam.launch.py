@@ -35,8 +35,8 @@ def generate_launch_description():
           'Reg/Force3DoF':'true',
           'Mem/NotLinkedNodesKept':'false',
           'Icp/PointToPlaneMinComplexity':'0.04', # to be more robust to long corridors with low geometry
-          'Grid/MaxGroundHeight':'0.04', # All points above 5 cm are obstacles
-          'Grid/MaxObstacleHeight':'1',  # All points over 1 meter are ignored
+          'Grid/MaxGroundHeight':'0.2', # All points above 5 cm are obstacles
+          'Grid/MaxObstacleHeight':'1.2',  # All points over 1 meter are ignored
     }
 
     remappings=[
