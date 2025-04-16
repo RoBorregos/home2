@@ -12,6 +12,7 @@ class BBOX:
     y1: float = 0
     y2: float = 0
 
+
 @dataclass
 class ShelfDetection:
     level: int = 0

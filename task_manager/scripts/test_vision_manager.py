@@ -63,6 +63,7 @@ class TestVision(Node):
             print(results)
             self.running_task = False
 
+
 def main(args=None):
     """Main function"""
     rclpy.init(args=args)

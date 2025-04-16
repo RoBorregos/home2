@@ -44,10 +44,7 @@ from frida_constants.vision_constants import (
     PERSON_NAME_TOPIC,
     SHELF_DETECTION_TOPIC,
 )
-from frida_constants.vision_classes import (
-    BBOX,
-    ShelfDetection
-)
+from frida_constants.vision_classes import BBOX, ShelfDetection
 
 TIMEOUT = 5.0
 
@@ -228,7 +225,7 @@ class VisionTasks:
 
         Logger.success(self.node, f"Seat found: {result.angle}")
         return Status.EXECUTION_SUCCESS, result.angle
-    
+
     @mockable(return_value=Status.EXECUTION_SUCCESS, delay=2)
     @service_check("shelf_detections_client", Status.EXECUTION_ERROR, TIMEOUT)
     def detect_shelf(self, timeout: float = TIMEOUT):
@@ -245,7 +242,7 @@ class VisionTasks:
             if not result.success:
                 Logger.warn(self.node, "No shelf detected")
                 return Status.TARGET_NOT_FOUND, detections
-            
+
             results = result.shelf_array.shelf_detections
             # for each result
             for detection in results:
@@ -503,7 +500,7 @@ class VisionTasks:
         Logger.info(self.node, "Describing bag")
         prompt = "Describe the bag that the person is pointing at using the folling format: the bag on your left is small and green"
         return self.moondream_query(prompt, query_person=False)
-    
+
     def describe_shelf(self):
         """Describe the shelf using only moondream"""
         Logger.info(self.node, "Describing shelf")
