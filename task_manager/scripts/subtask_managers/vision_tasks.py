@@ -226,7 +226,7 @@ class VisionTasks:
         Logger.success(self.node, f"Seat found: {result.angle}")
         return Status.EXECUTION_SUCCESS, result.angle
 
-    @mockable(return_value=Status.EXECUTION_SUCCESS, delay=2)
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, []), delay=2)
     @service_check("shelf_detections_client", Status.EXECUTION_ERROR, TIMEOUT)
     def detect_shelf(self, timeout: float = TIMEOUT):
         """Detect the shelf in the image"""
