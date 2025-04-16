@@ -19,7 +19,7 @@
 
 #include <frida_interfaces/srv/add_pick_primitives.hpp>
 #include <frida_interfaces/srv/cluster_object_from_point.hpp>
-#include <frida_interfaces/srv/perception_service.hpp>
+#include <frida_interfaces/srv/pick_perception_service.hpp>
 #include <frida_interfaces/srv/remove_plane.hpp>
 
 #include <frida_constants/manipulation_constants_cpp.hpp>
@@ -87,8 +87,8 @@ class TestsNode : public rclcpp::Node {
 private:
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr cloud_sub;
   rclcpp::Subscription<geometry_msgs::msg::PointStamped>::SharedPtr point_sub;
-  rclcpp::Service<frida_interfaces::srv::PerceptionService>::SharedPtr
-      perception_service;
+  rclcpp::Service<frida_interfaces::srv::PickPerceptionService>::SharedPtr
+      pick_perception_service;
 
   bool cloud_received = false;
   geometry_msgs::msg::PointStamped::SharedPtr last_point;
@@ -136,9 +136,9 @@ public:
 
     this->last_point = std::make_shared<geometry_msgs::msg::PointStamped>();
 
-    this->perception_service =
-        this->create_service<frida_interfaces::srv::PerceptionService>(
-            PERCEPTION_SERVICE,
+    this->pick_perception_service =
+        this->create_service<frida_interfaces::srv::PickPerceptionService>(
+            PICK_PERCEPTION_SERVICE,
             std::bind(&TestsNode::service_callback, this, std::placeholders::_1,
                       std::placeholders::_2, std::placeholders::_3));
 
@@ -293,9 +293,9 @@ public:
 
   void service_callback(
       const std::shared_ptr<rmw_request_id_t> request_header,
-      const std::shared_ptr<frida_interfaces::srv::PerceptionService::Request>
+      const std::shared_ptr<frida_interfaces::srv::PickPerceptionService::Request>
           request,
-      std::shared_ptr<frida_interfaces::srv::PerceptionService::Response>
+      std::shared_ptr<frida_interfaces::srv::PickPerceptionService::Response>
           response) {
     RCLCPP_INFO(this->get_logger(), "Service callback");
     // response->cluster_result = OK;

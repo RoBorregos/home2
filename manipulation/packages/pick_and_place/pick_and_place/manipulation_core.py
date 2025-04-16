@@ -10,7 +10,7 @@ from frida_interfaces.action import MoveJoints
 from frida_interfaces.msg import ManipulationTask
 from frida_interfaces.action import PickMotion, ManipulationAction
 from frida_interfaces.srv import (
-    PerceptionService,
+    PickPerceptionService,
     GraspDetection,
     DetectionHandler,
     RemoveCollisionObject,
@@ -18,7 +18,7 @@ from frida_interfaces.srv import (
 from frida_constants.manipulation_constants import (
     PICK_MOTION_ACTION_SERVER,
     MANIPULATION_ACTION_SERVER,
-    PERCEPTION_SERVICE,
+    PICK_PERCEPTION_SERVICE,
     GRASP_DETECTION_SERVICE,
     MOVE_JOINTS_ACTION_SERVER,
     REMOVE_COLLISION_OBJECT_SERVICE,
@@ -60,7 +60,7 @@ class ManipulationCore(Node):
         )
 
         self.perception_3d_client = self.create_client(
-            PerceptionService, PERCEPTION_SERVICE
+            PickPerceptionService, PICK_PERCEPTION_SERVICE
         )
 
         self.grasp_detection_client = self.create_client(

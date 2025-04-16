@@ -1,5 +1,5 @@
 from frida_motion_planning.utils.ros_utils import wait_for_future
-from frida_interfaces.srv import PerceptionService, DetectionHandler
+from frida_interfaces.srv import PickPerceptionService, DetectionHandler
 from geometry_msgs.msg import PointStamped
 from std_srvs.srv import SetBool
 from pick_and_place.utils.grasp_utils import get_grasps
@@ -137,7 +137,7 @@ class PickManager:
         return point
 
     def get_object_cluster(self, point: PointStamped):
-        request = PerceptionService.Request()
+        request = PickPerceptionService.Request()
         request.point = point
         request.add_collision_objects = True
         self.node.perception_3d_client.wait_for_service()
