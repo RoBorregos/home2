@@ -95,7 +95,6 @@ class GPSRCommands(Node):
         self.create_timer(0.1, self.publish_image)
 
         self.moondream_crop_query_client = self.create_client(CropQuery, CROP_QUERY_TOPIC)
-        self.moondream_crop_query_client.wait_for_service(timeout_sec=TIMEOUT)
 
     def image_callback(self, data):
         """Callback to receive the image from the camera."""
@@ -433,6 +432,10 @@ class GPSRCommands(Node):
     def moondream_crop_query(self, prompt: str, bbox: list[float]) -> tuple[int, str]:
         """Makes a query of the current image using moondream."""
         self.get_logger().info(f"Querying image with prompt: {prompt}")
+        if not self.moondream_crop_query_client.wait_for_service(timeout_sec=5.0):
+            self.get_logger().error('CropQuery service not available after waiting')
+            return
+
         request = CropQuery.Request()
         request.query = prompt
         request.ymin = bbox[0]
