@@ -100,8 +100,7 @@ class FaceRecognition(Node):
         self.depth_image = []
         self.follow_name = "area"
 
-        self.default_name = self.declare_parameter(
-            "default_name", DEFAULT_NAME)
+        self.default_name = self.declare_parameter("default_name", DEFAULT_NAME)
         self.default_name = self.default_name.value
 
         self.people = [[random_encodings, "random"]]
@@ -245,8 +244,6 @@ class FaceRecognition(Node):
 
         target.x = move_x
         target.y = move_y
-        
-
 
         self.follow_publisher.publish(target)
 
@@ -437,4 +434,3 @@ def main(args=None):
 
 if __name__ == "__main__":
     main()
-

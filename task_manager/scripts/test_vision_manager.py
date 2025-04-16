@@ -50,7 +50,7 @@ class TestVision(Node):
                 self.running_task = False
             else:
                 self.get_logger().info("Vision task failed")
-        
+
         elif task == Task.GPSR:
             name = self.manager.get_person_name()
             if name:

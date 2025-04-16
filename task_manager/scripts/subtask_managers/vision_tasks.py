@@ -40,7 +40,7 @@ from frida_constants.vision_constants import (
     SET_TARGET_TOPIC,
     POINTING_OBJECT_SERVICE,
     PERSON_LIST_TOPIC,
-    PERSON_NAME_TOPIC
+    PERSON_NAME_TOPIC,
 )
 from frida_constants.vision_classes import (
     BBOX,
@@ -163,7 +163,7 @@ class VisionTasks:
             return self.follow_face["x"], self.follow_face["y"]
         else:
             return None, None
-    
+
     def get_person_name(self):
         """Get the name of the person detected"""
         if self.person_name != "":
