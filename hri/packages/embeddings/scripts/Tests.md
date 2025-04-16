@@ -42,7 +42,13 @@ ros2 service call /hri/nlp/embeddings/query_entry_service frida_interfaces/srv/Q
 ```
 Multiple query
 ```bash
-ros2 service call /hri/nlp/embeddings/add_entry_service frida_interfaces/srv/AddEntry "{document: ['apple pie with cinnamon', 'banana_pie', 'mango_pie_with milk'], metadata: '{}', collection: 'items'}"
+ros2 service call /hri/nlp/embeddings/query_entry_service frida_interfaces/srv/QueryEntry "{query: ['cinnamon','apple','candy'], topk: 5, collection: 'items'
+}"
+```
+this is the format of the output, a dictionary with the key of query and results
+```bash
+response:
+frida_interfaces.srv.QueryEntry_Response(results=['{"query": "cinnamon", "results": ["apple pie with cinnamon", "apple pie with cinnamon", "apple pie with cinnamon", "cocacola", "cocacola"]}', '{"query": "apple", "results": ["apple", "apple", "apple", "pear", "pear"]}', '{"query": "candy", "results": ["cereal_box", "cereal_box", "cereal_box", "cocacola", "cocacola"]}'], success=True, message='Query successful')
 ```
 #### **Build Embeddings Service**
 It expects a bool for rebuilding: eliminate every collection and rebuild(!THIS PROCESS WILL ELIMINATE ALL NEW ADDED ENTRYS)
