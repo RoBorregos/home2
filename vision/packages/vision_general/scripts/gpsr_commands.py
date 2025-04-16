@@ -329,7 +329,6 @@ class GPSRCommands(Node):
                         cv2.LINE_AA,
                     )
 
-
 def main(args=None):
     rclpy.init(args=args)
     node = GPSRCommands()
