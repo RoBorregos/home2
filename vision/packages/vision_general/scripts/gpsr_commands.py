@@ -444,6 +444,11 @@ class GPSRCommands(Node):
             rclpy.spin_until_future_complete(self, future, timeout_sec=TIMEOUT)
             result = future.result()
 
+            print(f"Result: {result}")
+            print(f"Result success: {result.success}")
+            print(f"Result message: {result.message}")
+            print(f"Result result: {result.result}")
+            
             if not result or not result.success:
                 self.get_logger().warn("No result generated")
                 return False, ""
