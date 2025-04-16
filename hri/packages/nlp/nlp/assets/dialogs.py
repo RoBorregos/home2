@@ -175,7 +175,9 @@ A negative confirmation includes:
 - disagreement or rejection (e.g., "no", "that's wrong")
 - uncertainty or lack of understanding (e.g., "maybe", "I'm not sure", "I don't know")
 
-If the input confirms, agrees, or affirms something, it is **not** a negative confirmation.
+A positive confirmation incluse:
+- explicit affirmation (e.g. "yes", "correct", "sure", "absolutely")
+- if the input confirms, agrees, or affirms something, it is **not** a negative confirmation.
 
 **Always respond with a single JSON object with one field `is_negative` (boolean).**
                 
