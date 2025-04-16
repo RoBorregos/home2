@@ -171,8 +171,13 @@ public:
       req_point.y = point.point.y;
       req_point.z = point.point.z;
 
+      if (request->min_height == 0.0 and request->max_height == 0.0) {
+        request->min_height = 0.1;
+        request->max_height = 1.5;
+      }
+
       response->health_response =
-          this->DistanceFilterFromPoint(cloud_out, req_point, cloud_out);
+          this->DistanceFilterFromPoint(cloud_out, req_point, cloud_out, 1.5, request->min_height, request->max_height);
     }
 
     response->health_response =
@@ -348,9 +353,8 @@ public:
 
     // radial filter, to eliminate chance of error by planes far from the point
     response->status =
-        this->radialFilter(last_, cloud_radius_out, point.x, point.y, point.z, 0.3);
+        this->DistanceFilterFromPoint(last_, point, cloud_radius_out, 0.5, 0.1);
     std::string base_path = this->package_path;
-
     response->status = 
           savePointCloud(base_path + "/radial_filtered.pcd", cloud_radius_out);
 
@@ -420,19 +424,22 @@ public:
   STATUS_RESPONSE DistanceFilterFromPoint(
       _IN_ const std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud,
       _IN_ const pcl::PointXYZ point,
-      _OUT_ std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud_out) {
-
+      _OUT_ std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud_out,
+      const float distance = 0.5,
+      const float min_height = 0.1,
+      const float max_height = 2.0) {
+    
     pcl::PassThrough<pcl::PointXYZ> pass;
     pass.setInputCloud(cloud);
     pass.setFilterFieldName("z");
-    pass.setFilterLimits(0.0, 1.5);
+    pass.setFilterLimits(std::max(float(point.z - distance), min_height), 
+                         std::min(float(point.z + distance), max_height));
 
     pass.filter(*cloud_out);
-
     pcl::PassThrough<pcl::PointXYZ> pass2;
     pass2.setInputCloud(cloud_out);
     pass2.setFilterFieldName("x");
-    pass2.setFilterLimits(point.x - 1.0, point.x + 1.0);
+    pass2.setFilterLimits(point.x - distance, point.x + distance);
 
     pass2.filter(*cloud_out);
 
@@ -440,8 +447,25 @@ public:
     pass3.setInputCloud(cloud_out);
 
     pass3.setFilterFieldName("y");
-    pass3.setFilterLimits(point.y - 1.0, point.y + 1.0);
+    pass3.setFilterLimits(point.y - distance, point.y + distance);
     pass3.filter(*cloud_out);
+
+    // filter points closest to the robot arm
+    pcl::PassThrough<pcl::PointXYZ> pass4;
+    pass4.setInputCloud(cloud_out);
+
+    pass4.setFilterFieldName("x");
+    pass4.setFilterLimits(-0.15, 0.15);
+    pass4.setNegative(true);
+    pass4.filter(*cloud_out);
+
+    // filter points closest to the robot arm
+    pcl::PassThrough<pcl::PointXYZ> pass5;
+    pass5.setInputCloud(cloud_out);
+    pass5.setFilterFieldName("y");
+    pass5.setFilterLimits(-0.15, 0.15);
+    pass5.setNegative(true);
+    pass5.filter(*cloud_out);
 
     return OK;
   }
