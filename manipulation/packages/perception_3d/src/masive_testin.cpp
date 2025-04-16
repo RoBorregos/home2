@@ -146,7 +146,6 @@ public:
   }
 
   void cloud_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
-    RCLCPP_INFO(this->get_logger(), "Received point cloud");
     cloud_received = true;
   }
 
