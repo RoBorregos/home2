@@ -9,14 +9,14 @@ def generate_launch_description():
     return LaunchDescription(
         [
             # gpd
-            Node(
-                package="arm_pkg",
-                executable="gpd_service",
-                name="gpd_service",
-                output="screen",
-                emulate_tty=True,
-                parameters=[],
-            ),
+            # Node(
+            #     package="arm_pkg",
+            #     executable="gpd_service",
+            #     name="gpd_service",
+            #     output="screen",
+            #     emulate_tty=True,
+            #     parameters=[],
+            # ),
             Node(
                 package="pick_and_place",
                 executable="manipulation_core.py",
@@ -25,14 +25,14 @@ def generate_launch_description():
                 emulate_tty=True,
                 parameters=[],
             ),
-            Node(
-                package="pick_and_place",
-                executable="manipulation_client.py",
-                name="manipulation_client",
-                output="screen",
-                emulate_tty=True,
-                parameters=[],
-            ),
+            # Node(
+            #     package="pick_and_place",
+            #     executable="manipulation_client.py",
+            #     name="manipulation_client",
+            #     output="screen",
+            #     emulate_tty=True,
+            #     parameters=[],
+            # ),
             Node(
                 package="pick_and_place",
                 executable="pick_server.py",
@@ -41,7 +41,7 @@ def generate_launch_description():
                 emulate_tty=True,
                 parameters=[
                     {
-                        "ee_link_offset": -0.125,  # based on distance between end-effector link and contact point with objects e.g. where you grip
+                        "ee_link_offset": -0.12,  # based on distance between end-effector link and contact point with objects e.g. where you grip
                     }
                 ],
             ),

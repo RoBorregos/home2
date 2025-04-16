@@ -85,11 +85,11 @@ class VisionTasks:
                 "follow_by_name": {"client": self.follow_by_name_client, "type": "service"},
             },
             Task.HELP_ME_CARRY: {
-                # "track_person": {"client": self.track_person_client, "type": "service"},
-                # "moondream_crop_query": {
-                #     "client": self.moondream_crop_query_client,
-                #     "type": "service",
-                # },
+                "track_person": {"client": self.track_person_client, "type": "service"},
+                "moondream_crop_query": {
+                    "client": self.moondream_crop_query_client,
+                    "type": "service",
+                },
                 "pointing_object": {
                     "client": self.node.create_client(
                         DetectPointingObject, POINTING_OBJECT_SERVICE
@@ -279,19 +279,19 @@ class VisionTasks:
 
     @mockable(return_value=(Status.EXECUTION_ERROR, ""), delay=5, mock=False)
     @service_check("moondream_crop_query_client", Status.EXECUTION_ERROR, TIMEOUT)
-    def moondream_crop_query(self, prompt: str, bbox: list[float]) -> tuple[int, str]:
+    def moondream_crop_query(self, prompt: str, bbox: BBOX, timeout=TIMEOUT) -> tuple[int, str]:
         """Makes a query of the current image using moondream."""
         Logger.info(self.node, f"Querying image with prompt: {prompt}")
         request = CropQuery.Request()
         request.query = prompt
-        request.ymin = bbox[0]
-        request.xmin = bbox[1]
-        request.ymax = bbox[2]
-        request.xmax = bbox[3]
+        request.ymin = float(bbox.y1)
+        request.xmin = float(bbox.x1)
+        request.ymax = float(bbox.y2)
+        request.xmax = float(bbox.x2)
 
         try:
             future = self.moondream_crop_query_client.call_async(request)
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=60.0)
             result = future.result()
 
             if not result.success:
@@ -415,11 +415,17 @@ class VisionTasks:
         bbox.y2 = result.detection.ymax
         return Status.EXECUTION_SUCCESS, bbox, result.detection.point3d
 
-    def describe_bag(self, bbox: list[float]) -> tuple[int, str]:
+    def describe_bag(self, bbox: BBOX, timeout=TIMEOUT) -> tuple[int, str]:
         """Describe the person in the image"""
         Logger.info(self.node, "Describing the bag")
-        prompt = "Describe the bag in the image"
-        return self.moondream_crop_query(prompt, bbox)
+        prompt = "Please describe the image"
+        return self.moondream_crop_query(prompt, bbox, timeout=timeout)
+
+    def describe_bag_moondream(self):
+        """Describe the bag using only moondream"""
+        Logger.info(self.node, "Describing bag")
+        prompt = "Describe the bag that the person is pointing at using the folling format: the bag on your left is small and green"
+        return Status.EXECUTION_SUCCESS, self.moondream_query(prompt, query_person=False)
 
 
 if __name__ == "__main__":

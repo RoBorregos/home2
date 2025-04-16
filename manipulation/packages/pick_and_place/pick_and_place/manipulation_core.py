@@ -4,14 +4,25 @@ import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient, ActionServer
 from rclpy.callback_groups import ReentrantCallbackGroup
+from frida_motion_planning.utils.ros_utils import wait_for_future
+from std_srvs.srv import SetBool
+from frida_interfaces.action import MoveJoints
 from frida_interfaces.msg import ManipulationTask
 from frida_interfaces.action import PickMotion, ManipulationAction
-from frida_interfaces.srv import PerceptionService, GraspDetection, DetectionHandler
+from frida_interfaces.srv import (
+    PerceptionService,
+    GraspDetection,
+    DetectionHandler,
+    RemoveCollisionObject,
+)
 from frida_constants.manipulation_constants import (
     PICK_MOTION_ACTION_SERVER,
     MANIPULATION_ACTION_SERVER,
     PERCEPTION_SERVICE,
     GRASP_DETECTION_SERVICE,
+    MOVE_JOINTS_ACTION_SERVER,
+    REMOVE_COLLISION_OBJECT_SERVICE,
+    GRIPPER_SET_STATE_SERVICE,
 )
 from frida_constants.vision_constants import (
     DETECTION_HANDLER_TOPIC_SRV,
@@ -38,6 +49,12 @@ class ManipulationCore(Node):
             PICK_MOTION_ACTION_SERVER,
         )
 
+        self._move_joints_client = ActionClient(
+            self,
+            MoveJoints,
+            MOVE_JOINTS_ACTION_SERVER,
+        )
+
         self.detection_handler_client = self.create_client(
             DetectionHandler, DETECTION_HANDLER_TOPIC_SRV
         )
@@ -48,6 +65,16 @@ class ManipulationCore(Node):
 
         self.grasp_detection_client = self.create_client(
             GraspDetection, GRASP_DETECTION_SERVICE
+        )
+
+        self._remove_collision_object_client = self.create_client(
+            RemoveCollisionObject,
+            REMOVE_COLLISION_OBJECT_SERVICE,
+        )
+
+        self._gripper_set_state_client = self.create_client(
+            SetBool,
+            GRIPPER_SET_STATE_SERVICE,
         )
 
         self.pick_manager = PickManager(self)
@@ -62,6 +89,11 @@ class ManipulationCore(Node):
             object_name=object_name,
             point=object_point,
         )
+
+        if not result:
+            self.get_logger().error("Pick failed")
+            self.remove_all_collision_object()
+            return False
 
         return result
 
@@ -94,6 +126,16 @@ class ManipulationCore(Node):
             response.success = False
 
         return response
+
+    def remove_all_collision_object(self):
+        """Remove the collision object from the scene."""
+        request = RemoveCollisionObject.Request()
+        request.id = "all"
+        request.include_attached = True
+        self._remove_collision_object_client.wait_for_service()
+        future = self._remove_collision_object_client.call_async(request)
+        wait_for_future(future)
+        return future.result().success
 
 
 def main(args=None):
