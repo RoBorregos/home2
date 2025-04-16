@@ -24,6 +24,8 @@ class YoloEObjectDetector(ZeroShotObjectDetector):
 
     def _generate_detections(self, outs, frame):
         for out in outs:
+            if out.boxes is None or out.masks is None:
+                continue
             for box, mask in zip(out.boxes, out.masks):
                 confidence = box.conf[0].item()
                 if confidence < self.object_detector_params_.min_score_thresh:
