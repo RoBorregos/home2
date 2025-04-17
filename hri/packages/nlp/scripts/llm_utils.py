@@ -23,7 +23,7 @@ from frida_interfaces.srv import (
     IsNegative,
     IsPositive,
     LLMWrapper,
-    CategorizeShelves
+    CategorizeShelves,
 )
 
 SPEECH_COMMAND_TOPIC = "/speech/raw_command"
@@ -71,21 +71,17 @@ class LLMUtils(Node):
 
         self.declare_parameter("base_url", "None")
         self.declare_parameter("model", "gpt-4o-2024-08-06")
-        self.declare_parameter(
-            "SPEECH_COMMAND_TOPIC_NAME", SPEECH_COMMAND_TOPIC)
+        self.declare_parameter("SPEECH_COMMAND_TOPIC_NAME", SPEECH_COMMAND_TOPIC)
         self.declare_parameter("OUT_COMMAND_TOPIC_NAME", OUT_COMMAND_TOPIC)
         self.declare_parameter("GRAMMAR_SERVICE", "/nlp/grammar")
         self.declare_parameter("LLM_WRAPPER_SERVICE", "/nlp/llm")
-        self.declare_parameter("COMMON_INTEREST_SERVICE",
-                               "/nlp/common_interest")
+        self.declare_parameter("COMMON_INTEREST_SERVICE", "/nlp/common_interest")
         self.declare_parameter("IS_POSITIVE_SERVICE", "/nlp/is_positive")
         self.declare_parameter("IS_NEGATIVE_SERVICE", "/nlp/is_negative")
-        self.declare_parameter("CATEGORIZE_SERVICE",
-                               "/nlp/categorize_shelves")
+        self.declare_parameter("CATEGORIZE_SERVICE", "/nlp/categorize_shelves")
 
         self.declare_parameter("temperature", 0.5)
-        base_url = self.get_parameter(
-            "base_url").get_parameter_value().string_value
+        base_url = self.get_parameter("base_url").get_parameter_value().string_value
 
         if base_url == "None":
             base_url = None
@@ -96,8 +92,7 @@ class LLMUtils(Node):
             api_key=os.getenv("OPENAI_API_KEY", "ollama"), base_url=base_url
         )
         self.temperature = (
-            self.get_parameter(
-                "temperature").get_parameter_value().double_value
+            self.get_parameter("temperature").get_parameter_value().double_value
         )
 
         SPEECH_COMMAND_TOPIC = (
@@ -113,13 +108,11 @@ class LLMUtils(Node):
         )
 
         grammar_service = (
-            self.get_parameter(
-                "GRAMMAR_SERVICE").get_parameter_value().string_value
+            self.get_parameter("GRAMMAR_SERVICE").get_parameter_value().string_value
         )
 
         llm_wrapper_service = (
-            self.get_parameter(
-                "LLM_WRAPPER_SERVICE").get_parameter_value().string_value
+            self.get_parameter("LLM_WRAPPER_SERVICE").get_parameter_value().string_value
         )
 
         common_interest_service = (
@@ -129,24 +122,19 @@ class LLMUtils(Node):
         )
 
         is_positive_service = (
-            self.get_parameter(
-                "IS_POSITIVE_SERVICE").get_parameter_value().string_value
+            self.get_parameter("IS_POSITIVE_SERVICE").get_parameter_value().string_value
         )
         is_negative_service = (
-            self.get_parameter(
-                "IS_NEGATIVE_SERVICE").get_parameter_value().string_value
+            self.get_parameter("IS_NEGATIVE_SERVICE").get_parameter_value().string_value
         )
 
         categorize_shelves_service = (
-            self.get_parameter("CATEGORIZE_SERVICE")
-            .get_parameter_value()
-            .string_value
+            self.get_parameter("CATEGORIZE_SERVICE").get_parameter_value().string_value
         )
 
         self.create_service(Grammar, grammar_service, self.grammar_service)
 
-        self.create_service(LLMWrapper, llm_wrapper_service,
-                            self.llm_wrapper_service)
+        self.create_service(LLMWrapper, llm_wrapper_service, self.llm_wrapper_service)
 
         self.create_service(
             CommonInterest, common_interest_service, self.common_interest
@@ -274,7 +262,7 @@ class LLMUtils(Node):
         return res
 
     def generic_structured_output(
-            self, system_prompt: str, user_prompt: str, response_format
+        self, system_prompt: str, user_prompt: str, response_format
     ):
         self.get_logger().info("Generating structured output")
         # self.get_logger().info(f"System prompt: {system_prompt}")
@@ -317,22 +305,23 @@ class LLMUtils(Node):
         self.get_logger().info(f"Table objects: {table_objects}")
 
         result: CategorizeShelvesResult = self.generic_structured_output(
-            system_prompt="Categorize the objects into different categories each category should correspond to a shelf and given the shelfs with the objects in them and the objects on the table you should" +
-            " categorize the objects into the shelfs. The output should be a dictionary with the shelf number as the key and the objects TO ADD that are in the table, as well as the category of the shelf. " +
-            "example: shelves = {1: ['milk', 'buttermilk'], 2: [], 3: ['apple', 'banana']}, table_objects = ['butter', 'orange', 'cookies', 'cheese', 'watermelon' , 'pringles']" +
-            " the output should be {1: ['butter', 'cheese'], 2: ['cookies', 'pringles'], 3: ['orange', 'watermelon']} {1: 'dairy', 2: 'snacks',  3: 'fruit'}",
+            system_prompt="Categorize the objects into different categories each category should correspond to a shelf and given the shelfs with the objects in them and the objects on the table you should"
+            + " categorize the objects into the shelfs. The output should be a dictionary with the shelf number as the key and the objects TO ADD that are in the table, as well as the category of the shelf. "
+            + "example: shelves = {1: ['milk', 'buttermilk'], 2: [], 3: ['apple', 'banana']}, table_objects = ['butter', 'orange', 'cookies', 'cheese', 'watermelon' , 'pringles']"
+            + " the output should be {1: ['butter', 'cheese'], 2: ['cookies', 'pringles'], 3: ['orange', 'watermelon']} {1: 'dairy', 2: 'snacks',  3: 'fruit'}",
             user_prompt=f"Shelves: {shelves}, Table objects: {table_objects}",
             response_format=CategorizeShelvesResult,
         )
 
-        response.objects_to_add = String({k: [i for i in v.objects_to_add]
-                                          for k, v in result.shelves.items()})
-        response.categorized_shelves = String({
-            k: v.classification_tag for k, v in result.shelves.items()})
+        response.objects_to_add = String(
+            {k: [i for i in v.objects_to_add] for k, v in result.shelves.items()}
+        )
+        response.categorized_shelves = String(
+            {k: v.classification_tag for k, v in result.shelves.items()}
+        )
 
         self.get_logger().info(f"Response: {response.objects_to_add}")
-        self.get_logger().info(
-            f"Categorized shelves: {response.categorized_shelves}")
+        self.get_logger().info(f"Categorized shelves: {response.categorized_shelves}")
 
         return response
 

@@ -22,7 +22,7 @@ from frida_constants.hri_constants import (
     STT_SERVICE_NAME,
     USEFUL_AUDIO_NODE_NAME,
     WAKEWORD_TOPIC,
-    CATEGORIZE_SERVICE
+    CATEGORIZE_SERVICE,
 )
 from frida_interfaces.srv import (
     STT,
@@ -36,7 +36,7 @@ from frida_interfaces.srv import (
     LLMWrapper,
     QueryEntry,
     Speak,
-    CategorizeShelves
+    CategorizeShelves,
 )
 
 from rcl_interfaces.srv import SetParameters
@@ -68,32 +68,23 @@ class HRITasks(metaclass=SubtaskMeta):
         self.keyword = ""
         self.speak_service = self.node.create_client(Speak, SPEAK_SERVICE)
         self.hear_service = self.node.create_client(STT, STT_SERVICE_NAME)
-        self.extract_data_service = self.node.create_client(
-            ExtractInfo, EXTRACT_DATA_SERVICE)
+        self.extract_data_service = self.node.create_client(ExtractInfo, EXTRACT_DATA_SERVICE)
 
         self.command_interpreter_client = self.node.create_client(
             CommandInterpreter, COMMAND_INTERPRETER_SERVICE
         )
         self.task = task
-        self.grammar_service = self.node.create_client(
-            Grammar, GRAMMAR_SERVICE)
+        self.grammar_service = self.node.create_client(Grammar, GRAMMAR_SERVICE)
         self.common_interest_service = self.node.create_client(
             CommonInterest, COMMON_INTEREST_SERVICE
         )
-        self.is_positive_service = self.node.create_client(
-            IsPositive, IS_POSITIVE_SERVICE)
-        self.is_negative_service = self.node.create_client(
-            IsNegative, IS_NEGATIVE_SERVICE)
+        self.is_positive_service = self.node.create_client(IsPositive, IS_POSITIVE_SERVICE)
+        self.is_negative_service = self.node.create_client(IsNegative, IS_NEGATIVE_SERVICE)
 
-        self.query_item_client = self.node.create_client(
-            QueryEntry, QUERY_ENTRY_SERVICE)
-        self.add_item_client = self.node.create_client(
-            AddEntry, ADD_ENTRY_SERVICE)
-        self.llm_wrapper_service = self.node.create_client(
-            LLMWrapper, LLM_WRAPPER_SERVICE)
-        self.categorize_service = self.node.create_client(
-            CategorizeShelves, CATEGORIZE_SERVICE
-        )
+        self.query_item_client = self.node.create_client(QueryEntry, QUERY_ENTRY_SERVICE)
+        self.add_item_client = self.node.create_client(AddEntry, ADD_ENTRY_SERVICE)
+        self.llm_wrapper_service = self.node.create_client(LLMWrapper, LLM_WRAPPER_SERVICE)
+        self.categorize_service = self.node.create_client(CategorizeShelves, CATEGORIZE_SERVICE)
         self.keyword_client = self.node.create_subscription(
             String, WAKEWORD_TOPIC, self._get_keyword, 10
         )
@@ -135,12 +126,10 @@ class HRITasks(metaclass=SubtaskMeta):
         for key, service in self.services[self.task].items():
             if service["type"] == "service":
                 if not service["client"].wait_for_service(timeout_sec=TIMEOUT):
-                    Logger.warn(
-                        self.node, f"{key} service not initialized. ({self.task})")
+                    Logger.warn(self.node, f"{key} service not initialized. ({self.task})")
             elif service["type"] == "action":
                 if not service["client"].wait_for_server(timeout_sec=TIMEOUT):
-                    Logger.warn(
-                        self.node, f"{key} action server not initialized. ({self.task})")
+                    Logger.warn(self.node, f"{key} action server not initialized. ({self.task})")
 
     @service_check("speak_service", Status.SERVICE_CHECK, TIMEOUT)
     def say(self, text: str, wait: bool = True) -> None:
@@ -171,14 +160,12 @@ class HRITasks(metaclass=SubtaskMeta):
             f"Sending to extract data service: query={query}, text={complete_text}"
         )
 
-        request = ExtractInfo.Request(
-            data=query, full_text=complete_text, context=context)
+        request = ExtractInfo.Request(data=query, full_text=complete_text, context=context)
         future = self.extract_data_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
 
         execution_status = (
-            Status.EXECUTION_SUCCESS if len(
-                future.result().result) > 0 else Status.TARGET_NOT_FOUND
+            Status.EXECUTION_SUCCESS if len(future.result().result) > 0 else Status.TARGET_NOT_FOUND
         )
 
         return execution_status, future.result().result
@@ -206,12 +193,10 @@ class HRITasks(metaclass=SubtaskMeta):
     @service_check("hear_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def hear(self, min_audio_length=0.5, max_audio_length=10.0) -> str:
         if min_audio_length > 0:
-            self.set_double_param("MIN_AUDIO_DURATION",
-                                  float(min_audio_length))
+            self.set_double_param("MIN_AUDIO_DURATION", float(min_audio_length))
 
         if max_audio_length > 0:
-            self.set_double_param("MAX_AUDIO_DURATION",
-                                  float(max_audio_length))
+            self.set_double_param("MAX_AUDIO_DURATION", float(max_audio_length))
 
         request = STT.Request()
 
@@ -256,8 +241,7 @@ class HRITasks(metaclass=SubtaskMeta):
             if use_hotwords:
                 self.say("Please confirm by saying yes or no")
 
-                s, keyword = self.interpret_keyword(
-                    ["yes", "no"], timeout=wait_between_retries)
+                s, keyword = self.interpret_keyword(["yes", "no"], timeout=wait_between_retries)
                 if s == Status.EXECUTION_SUCCESS:
                     return Status.EXECUTION_SUCCESS, keyword
             else:
@@ -311,21 +295,18 @@ class HRITasks(metaclass=SubtaskMeta):
             print(f"Interpreted text: {interpreted_text}")
 
             if s == Status.EXECUTION_SUCCESS:
-                s, target_info = self.extract_data(
-                    query, interpreted_text, context)
+                s, target_info = self.extract_data(query, interpreted_text, context)
 
                 if s == Status.TARGET_NOT_FOUND:
                     target_info = interpreted_text
 
                 # Determine the confirmation question
                 if callable(confirm_question):
-                    confirmation_text = confirm_question(
-                        interpreted_text, target_info)
+                    confirmation_text = confirm_question(interpreted_text, target_info)
                 else:
                     confirmation_text = confirm_question
 
-                s, confirmation = self.confirm(
-                    confirmation_text, use_hotwords, 1)
+                s, confirmation = self.confirm(confirmation_text, use_hotwords, 1)
 
                 if confirmation == "yes":
                     return Status.EXECUTION_SUCCESS, target_info
@@ -398,8 +379,7 @@ class HRITasks(metaclass=SubtaskMeta):
         return future.result().is_positive
 
     def _add_to_collection(self, document: list, metadata: str, collection: str) -> str:
-        request = AddEntry.Request(
-            document=document, metadata=metadata, collection=collection)
+        request = AddEntry.Request(document=document, metadata=metadata, collection=collection)
         future = self.add_item_client.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
         return "Success" if future.result().success else f"Failed: {future.result().message}"
@@ -412,8 +392,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
     def _query_(self, query: str, collection: str, top_k: int = 1) -> list[str]:
         # Wrap the query in a list so that the field receives a sequence of strings.
-        request = QueryEntry.Request(
-            query=[query], collection=collection, topk=top_k)
+        request = QueryEntry.Request(query=[query], collection=collection, topk=top_k)
         future = self.query_item_client.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
         return future.result().results
@@ -424,7 +403,9 @@ class HRITasks(metaclass=SubtaskMeta):
     def query_location(self, query: str, top_k: int = 1) -> list[str]:
         return self._query_(query, "locations", top_k)
 
-    def categorize_objects(self, table_objects: list[str], shelves: dict[int, list[str]]) -> tuple[Status, dict[int, list[str]], dict[int, list[str]]]:
+    def categorize_objects(
+        self, table_objects: list[str], shelves: dict[int, list[str]]
+    ) -> tuple[Status, dict[int, list[str]], dict[int, list[str]]]:
         """
         Categorize objects based on their shelf levels.
 
@@ -436,18 +417,14 @@ class HRITasks(metaclass=SubtaskMeta):
             dict[int, list[str]]: Dictionary mapping shelf levels to categorized objects.
         """
         try:
-
-            request = CategorizeShelves.Request(
-                table_objects=table_objects, shelves=shelves)
+            request = CategorizeShelves.Request(table_objects=table_objects, shelves=shelves)
             future = self.categorize_service.call_async(request)
             rclpy.spin_until_future_complete(self.node, future)
             res: CategorizeShelves.Response = future.result()
             categorized_shelves = eval(res.categorized_shelves)
-            categorized_shelves = {
-                int(k): v for k, v in categorized_shelves.items()}
+            categorized_shelves = {int(k): v for k, v in categorized_shelves.items()}
             objects_to_add = eval(res.objects_to_add)
-            objects_to_add = {
-                int(k): v for k, v in objects_to_add.items()}
+            objects_to_add = {int(k): v for k, v in objects_to_add.items()}
         except Exception as e:
             self.node.get_logger().error(f"Error: {e}")
             return Status.EXECUTION_ERROR, {}, {}
