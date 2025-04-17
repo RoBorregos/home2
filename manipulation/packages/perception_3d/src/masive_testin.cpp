@@ -20,6 +20,7 @@
 #include <frida_interfaces/srv/add_pick_primitives.hpp>
 #include <frida_interfaces/srv/cluster_object_from_point.hpp>
 #include <frida_interfaces/srv/pick_perception_service.hpp>
+#include <frida_interfaces/srv/place_perception_service.hpp>
 #include <frida_interfaces/srv/remove_plane.hpp>
 
 #include <frida_constants/manipulation_constants_cpp.hpp>
@@ -90,6 +91,10 @@ private:
   rclcpp::Service<frida_interfaces::srv::PickPerceptionService>::SharedPtr
       pick_perception_service;
 
+  rclcpp::Service<frida_interfaces::srv::PlacePerceptionService>::SharedPtr
+      place_perception_service;
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr
+      place_cloud_publisher;
   bool cloud_received = false;
   geometry_msgs::msg::PointStamped::SharedPtr last_point;
   geometry_msgs::msg::PointStamped::SharedPtr point;
@@ -117,6 +122,9 @@ public:
         POINT_CLOUD_TOPIC, qos,
         std::bind(&TestsNode::cloud_callback, this, std::placeholders::_1));
 
+    this->place_cloud_publisher = this->create_publisher<sensor_msgs::msg::PointCloud2>(
+        PLACE_CLOUD_TOPIC_PUBLISHER, rclcpp::SensorDataQoS());
+
     this->testing = this->declare_parameter("testing", testing);
 
     if (testing) {
@@ -139,7 +147,13 @@ public:
     this->pick_perception_service =
         this->create_service<frida_interfaces::srv::PickPerceptionService>(
             PICK_PERCEPTION_SERVICE,
-            std::bind(&TestsNode::service_callback, this, std::placeholders::_1,
+            std::bind(&TestsNode::pick_service_callback, this, std::placeholders::_1,
+                      std::placeholders::_2, std::placeholders::_3));
+    
+    this->place_perception_service =
+        this->create_service<frida_interfaces::srv::PlacePerceptionService>(
+            PLACE_PERCEPTION_SERVICE,
+            std::bind(&TestsNode::place_service_callback, this, std::placeholders::_1,
                       std::placeholders::_2, std::placeholders::_3));
 
     RCLCPP_INFO(this->get_logger(), "Main Service created");
@@ -272,6 +286,74 @@ public:
     return OK;
   }
 
+  STATUS_RESPONSE
+  place_service(
+      const std::shared_ptr<frida_interfaces::srv::PlacePerceptionService::Request>
+          request,
+      sensor_msgs::msg::PointCloud2::SharedPtr cloud) {
+
+        auto req_extract_table =
+            std::make_shared<frida_interfaces::srv::RemovePlane::Request>();
+
+        req_extract_table->extract_or_remove = false;
+        auto place_params = request->place_params;
+        req_extract_table->min_height = place_params.table_height - place_params.table_height_tolerance;
+        req_extract_table->max_height = place_params.table_height + place_params.table_height_tolerance;
+
+        RCLCPP_INFO(this->get_logger(), "Sending request to remove plane");
+
+        auto res_extract_table =
+            this->call_services_node->remove_plane_client->async_send_request(
+              req_extract_table);
+
+        RCLCPP_INFO(this->get_logger(), "Waiting for response");
+
+        auto status2 =
+            wait_for_future_with_timeout<frida_interfaces::srv::RemovePlane>(
+              res_extract_table, this->call_services_node->get_node_base_interface(), 500ms);
+
+        RCLCPP_INFO(this->get_logger(), "Response received");
+
+        auto result_extract_table = res_extract_table.get();
+
+        RCLCPP_INFO(this->get_logger(), "Response: %d",
+          result_extract_table->health_response);
+
+        if (result_extract_table->health_response == OK) {
+          RCLCPP_INFO(this->get_logger(), "Removed plane");
+        } else {
+          RCLCPP_ERROR(this->get_logger(), "Error removing plane");
+          //   return;
+        }
+
+        auto req3 =
+            std::make_shared<frida_interfaces::srv::AddPickPrimitives::Request>();
+
+        req3->is_plane = true;
+
+        req3->is_object = false;
+
+        req3->cloud = result_extract_table->cloud;
+
+        RCLCPP_INFO(this->get_logger(), "Sending request to add plane");
+
+        auto res3 = this->call_services_node->add_pick_primitives_client
+                        ->async_send_request(req3);
+
+        RCLCPP_INFO(this->get_logger(), "Waiting for response");
+
+        auto status3 =
+            wait_for_future_with_timeout<frida_interfaces::srv::AddPickPrimitives>(
+                res3, this->call_services_node->get_node_base_interface(), 500ms);
+
+        RCLCPP_INFO(this->get_logger(), "Response received");
+        
+        // return plane cloud
+        *cloud = result_extract_table->cloud;
+
+        return OK;
+  }
+
   void run() {
     // RCLCPP_INFO(this->get_logger(), "Timer callback");
     if (this->point == this->last_point) {
@@ -291,13 +373,13 @@ public:
     this->service_from_point(*this->point, cloud);
   }
 
-  void service_callback(
+  void pick_service_callback(
       const std::shared_ptr<rmw_request_id_t> request_header,
       const std::shared_ptr<frida_interfaces::srv::PickPerceptionService::Request>
           request,
       std::shared_ptr<frida_interfaces::srv::PickPerceptionService::Response>
           response) {
-    RCLCPP_INFO(this->get_logger(), "Service callback");
+    RCLCPP_INFO(this->get_logger(), "Pick service callback");
     // response->cluster_result = OK;
 
     std::shared_ptr<sensor_msgs::msg::PointCloud2> cloud =
@@ -307,6 +389,22 @@ public:
 
     response->cluster_result = *cloud;
     // response->status = res;
+  }
+
+  void place_service_callback(
+      const std::shared_ptr<rmw_request_id_t> request_header,
+      const std::shared_ptr<frida_interfaces::srv::PlacePerceptionService::Request>
+          request,
+      std::shared_ptr<frida_interfaces::srv::PlacePerceptionService::Response>
+          response) {
+    RCLCPP_INFO(this->get_logger(), "Place service callback");
+    
+    std::shared_ptr<sensor_msgs::msg::PointCloud2> cloud =
+        std::make_shared<sensor_msgs::msg::PointCloud2>();
+    auto res = this->place_service(request, cloud);
+    RCLCPP_INFO(this->get_logger(), "Returning plane cloud");
+    this->place_cloud_publisher->publish(*cloud);
+    response->cluster_result = *cloud;
   }
 
   void loop() {

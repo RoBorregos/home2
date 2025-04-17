@@ -1,11 +1,9 @@
 #goal definition
-geometry_msgs/PoseStamped[] grasping_poses
-float64[] grasping_scores
+geometry_msgs/PoseStamped place_pose
 string object_name
 ---
 #result definition
 int32 success
-PickResult pick_result
 ---
 #feedback
 string execution_state
