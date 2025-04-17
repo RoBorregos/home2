@@ -196,6 +196,8 @@ class Say(Node):
             output_path,
         ]
 
+        self.get_logger().info("Command: " + str(command))
+
         subprocess.run(" ".join(command), shell=True)
 
 

@@ -17,8 +17,8 @@ class YoloV5ObjectDetector(ObjectDectector):
         self.model = torch.hub.load(
             "ultralytics/yolov5",
             "custom",
-            path=self.model_path_,
-            force_reload=True,
+            path="/workspace/vision/packages/object_detector_2d/yolo11classes.pt",
+            force_reload=False,
         )
 
     def _inference(self, frame):

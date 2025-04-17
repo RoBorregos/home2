@@ -3,7 +3,7 @@
 # Download model and Modelfile to the directory where this script is located
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 [ ! -f "$SCRIPT_DIR/Modelfile" ] && curl -L https://huggingface.co/diegohc/robollm/resolve/main/Modelfile -o "$SCRIPT_DIR/Modelfile"
-[ ! -f "$SCRIPT_DIR/rbrgs-finetuned.F16.gguf" ] && curl -L https://huggingface.co/diegohc/robollm/resolve/main/rbrgs-finetuned-unsloth.F16.gguf -o "$SCRIPT_DIR/rbrgs-finetuned.F16.gguf"
+[ ! -f "$SCRIPT_DIR/rbrgs-finetuned.F16.gguf" ] && curl -L https://huggingface.co/diegohc/finetuning-tests/resolve/main/unsloth.F16.gguf -o "$SCRIPT_DIR/rbrgs-finetuned.F16.gguf"
 
 # Detect available image
 if docker images | grep -q "dustynv/ollama"; then
