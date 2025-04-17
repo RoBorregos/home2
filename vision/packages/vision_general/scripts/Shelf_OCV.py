@@ -23,12 +23,12 @@ class ShelfDetection:
 
 
 class ShelfDetector(ABC):
-    def __init__(self, image):
-        self.image = image
+    def __init__(self):
+        # self.image = image
         self.shelves_ = []
 
     @abstractmethod
-    def detect_shelves(self):
+    def detect_shelves(self, image):
         pass
 
     def get_shelf_detections(
@@ -62,13 +62,13 @@ class ShelfDetector(ABC):
 
 
 class OpenCVShelfDetector(ShelfDetector):
-    def detect_shelves(self):
+    def detect_shelves(self, image):
         THRESHOLD_MIN_VERTICAL = 20
         THRESHOLD_MAX_Y = 10
         THRESHOLD_MIN_HORIZONTAL = 50
         MIN_X_DISTANCE = 200
 
-        src = self.image
+        src = image
         dst = cv.Canny(src, 45, 302, None, 3)
         linesP = cv.HoughLinesP(dst, 1, np.pi / 180, 50, None, 50, 10)
 
