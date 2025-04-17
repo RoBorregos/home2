@@ -108,8 +108,7 @@ class TestTaskManager(Node):
         # print(joint_positions)
 
         # self.subtask_manager["manipulation"].close_gripper()
-
-        self.subtask_manager["manipulation"].open_gripper()
+        self.subtask_manager.open_gripper()
 
         ####### EXAMPLE: Move to named position then move only the first joint #######
         # Move to a named position
