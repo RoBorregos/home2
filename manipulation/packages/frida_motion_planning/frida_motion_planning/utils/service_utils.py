@@ -28,8 +28,6 @@ def move_joint_positions(
         acceleration=0.0,
         planner_id="",
     ):
-        print("Joint names: ", joint_names)
-        print("Joint positions: ", joint_positions)
         goal_msg = MoveJoints.Goal()
         goal_msg.joint_names = joint_names
         goal_msg.joint_positions = joint_positions
@@ -83,5 +81,4 @@ def get_joint_positions(
     result = future.result()
     if degrees:
         result.joint_positions = [x * RAD2DEG for x in result.joint_positions]
-    print("Joint positions from service: ", result.joint_positions)
     return dict(zip(result.joint_names, result.joint_positions))

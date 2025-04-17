@@ -126,7 +126,6 @@ public:
   }
 
   void pointcloud_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
-    RCLCPP_INFO(this->get_logger(), "Received point cloud");
     // pcl::fromROSMsg(*msg, *cloud);
     // if (cloud == nullptr || cloud->points.size() > 0) {
     //   cloud->points.clear();

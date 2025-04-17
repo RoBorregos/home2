@@ -1,0 +1,2 @@
+float32 table_height
+float32 table_height_tolerance

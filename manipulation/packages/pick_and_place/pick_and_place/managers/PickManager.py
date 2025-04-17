@@ -73,8 +73,12 @@ class PickManager:
         future = self.node._pick_motion_action_client.send_goal_async(goal_msg)
         future = wait_for_future(future)
         # Check result
-        result = future.result()
+        result = future.result().get_result().result
         self.node.get_logger().info(f"Pick Motion Result: {result}")
+
+        if not result.success:
+            self.node.get_logger().error("Pick motion failed")
+            return False
 
         # close gripper
         gripper_request = SetBool.Request()
@@ -93,8 +97,6 @@ class PickManager:
             named_position="table_stare",
             velocity=0.3,
         )
-        # Check result
-        result = future.result().get_result().result
 
         return result.success
 
@@ -106,7 +108,7 @@ class PickManager:
         print("waiting for service")
         self.node.detection_handler_client.wait_for_service()
         future = self.node.detection_handler_client.call_async(request)
-        print("waiting for future")
+        print("waiting for future on detection_handler")
         future = wait_for_future(future)
 
         point = PointStamped()
