@@ -178,7 +178,7 @@ class FollowPersonNode(Node):
         # Set motion
         motion_msg = MoveVelocity.Request()
         motion_msg.is_sync = True
-        motion_msg.speeds = [-velo_rotation,0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        motion_msg.speeds = [-velo_rotation, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
         try:
             future_move = self.move_client.call_async(motion_msg)

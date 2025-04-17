@@ -178,7 +178,7 @@ class HelpMeCarryTM(Node):
             t.sleep(3)
             self.subtask_manager.manipulation.close_gripper()
             self.substask_manager.hri.say("I have grasped the bag")
-            
+
             # MOCK: Self.subtask_manager.manipulation.pick(pose)
 
         if self.current_state == HelpMeCarryTM.TASK_STATES["RETURN_TO_STARTING_LOCATION"]:

@@ -15,7 +15,6 @@ from vision_general.utils.calculations import (
     get2DCentroid,
     get_depth,
     deproject_pixel_to_point,
-    get2DCentroidNormalized
 )
 
 import rclpy
@@ -404,12 +403,14 @@ class SingleTracker(Node):
                     coords = Point()
                     point2D = get2DCentroid(self.person_data["coordinates"], self.frame)
                     point2D_x_coord = float(point2D[1])
-                    point2D_x_coord_normalized = ((point2D_x_coord / (self.frame.shape[1]/2))-1)
+                    point2D_x_coord_normalized = (
+                        point2D_x_coord / (self.frame.shape[1] / 2)
+                    ) - 1
                     point2Dpoint = Point()
                     point2Dpoint.x = float(point2D_x_coord_normalized)
                     point2Dpoint.y = 0.0
                     point2Dpoint.z = 0.0
-                    #self.get_logger().info(f"frame_shape: {self.frame.shape[1]} Point2D: {point2D[1]} normalized_point2D: {point2D_x_coord_normalized}")
+                    # self.get_logger().info(f"frame_shape: {self.frame.shape[1]} Point2D: {point2D[1]} normalized_point2D: {point2D_x_coord_normalized}")
                     self.centroid_publisher.publish(point2Dpoint)
                     depth = get_depth(self.depth_image, point2D)
                     point3D = deproject_pixel_to_point(self.imageInfo, point2D, depth)

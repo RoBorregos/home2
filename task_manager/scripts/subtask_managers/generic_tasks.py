@@ -1,14 +1,13 @@
 #!/usr/bin/env python3
 
 from utils.subtask_manager import SubtaskManager
-import numpy as np
+
 
 class GenericTask:
     """Class to manage the generic tasks"""
 
     def __init__(self, subtask_manager: SubtaskManager):
         """Initialize the class"""
-
 
         self.subtask_manager = SubtaskManager
 
@@ -29,19 +28,17 @@ class GenericTask:
 
             time.sleep(1)
         return True
-    
+
     def pan_to_person(self):
         """Pan to the person"""
         self.subtask_manager.hri.say("Please say stop when you want me to stop")
         KP = 0.5
         MAX_ERROR = 0.2
-        MAX_VELOCITY = 0.5
         while True:
             # This function should return the x coordinate of the person, -1 being
             # the leftmost and 1 being the rightmost, and 0 the center
             person_center_bounding_box = self.subtask_manager.vision.person_bounding_box
             # This function should return the current cmd_vel topic value
-            dashgo_cmd_vel_sign = np.sign(self.subtask_manager.nav.cmd_vel)
             # This function will convert the person_center_bounding_box to a
             # joint_velocity value
             joint_velocity = person_center_bounding_box * KP
@@ -49,7 +46,6 @@ class GenericTask:
                 joint_velocity = 0
                 self.subtask_manager.manipulation._send_joint_velocity(joint_velocity)
             else:
-                if
                 self.subtask_manager.manipulation._send_joint_velocity(joint_velocity)
             _, result = self.subtask_manager.hri.hear()
             if "stop" in result.lower():
@@ -57,16 +53,16 @@ class GenericTask:
                 break
 
         # while True:
-            
-        #     # This function should return the x coordinate of the person, -1 being 
+
+        #     # This function should return the x coordinate of the person, -1 being
         #     # the leftmost and 1 being the rightmost, and 0 the center
         #     person_center_bounding_box = self.subtask.vision.person_bounding_box
         #     # This function should return the current cmd_vel topic value
         #     dashgo_cmd_vel_sign = np.sign(self.subtask.nav.cmd_vel)
-            
-        #     # This function will convert the person_center_bounding_box to a 
+
+        #     # This function will convert the person_center_bounding_box to a
         #     # joint_velocitry value
         #     joint_velocity = person_center_bounding_box * KP
         #     self.subtask.manipulation._send_joint_velocity(joint_velocity)
-            
+
         #     return True
