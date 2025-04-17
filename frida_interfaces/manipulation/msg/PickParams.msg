@@ -1,0 +1,4 @@
+geometry_msgs/PointStamped object_point
+string object_name
+bool closest
+bool largest

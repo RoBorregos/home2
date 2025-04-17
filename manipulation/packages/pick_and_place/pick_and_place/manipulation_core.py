@@ -85,6 +85,7 @@ class ManipulationCore(Node):
         self.get_logger().info(f"Goal: {object_point}")
         self.get_logger().info("Extracting object cloud")
 
+        self.remove_all_collision_object(attached=True)
         result = self.pick_manager.execute(
             object_name=object_name,
             point=object_point,
@@ -92,15 +93,16 @@ class ManipulationCore(Node):
 
         if not result:
             self.get_logger().error("Pick failed")
-            self.remove_all_collision_object()
+            self.remove_all_collision_object(attached=True)
             return False
-
+        self.remove_all_collision_object(attached=False)
+        self.get_logger().info("Pick succeeded")
         return result
 
     def manipulation_server_callback(self, goal_handle):
         task_type = goal_handle.request.task_type
-        object_name = goal_handle.request.object_name
-        object_point = goal_handle.request.object_point
+        object_name = goal_handle.request.pick_params.object_name
+        object_point = goal_handle.request.pick_params.object_point
         self.get_logger().info(f"Task Type: {task_type}")
         self.get_logger().info(f"Object Name: {object_name}")
         response = ManipulationAction.Result()
@@ -127,11 +129,11 @@ class ManipulationCore(Node):
 
         return response
 
-    def remove_all_collision_object(self):
+    def remove_all_collision_object(self, attached=False):
         """Remove the collision object from the scene."""
         request = RemoveCollisionObject.Request()
         request.id = "all"
-        request.include_attached = True
+        request.include_attached = attached
         self._remove_collision_object_client.wait_for_service()
         future = self._remove_collision_object_client.call_async(request)
         wait_for_future(future)

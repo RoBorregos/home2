@@ -72,8 +72,8 @@ class ManipulationClient(Node):
 
         manipulation_goal = ManipulationAction.Goal()
         manipulation_goal.task_type = ManipulationTask.PICK
-        manipulation_goal.object_name = "clicked_object"
-        manipulation_goal.object_point = self.last_point
+        manipulation_goal.pick_params.object_name = "clicked_object"
+        manipulation_goal.pick_params.object_point = self.last_point
         self._manipulation_action_client.wait_for_server()
         future = self._manipulation_action_client.send_goal_async(manipulation_goal)
         future = wait_for_future(future)

@@ -1,7 +1,7 @@
 #goal definition
-string object_name
 int8 task_type
-geometry_msgs/PointStamped object_point
+PickParams pick_params
+PlaceParams place_params
 ---
 #result definition
 int32 success

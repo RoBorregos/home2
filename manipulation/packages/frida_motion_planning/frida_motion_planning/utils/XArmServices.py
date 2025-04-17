@@ -21,6 +21,7 @@ class XArmServices:
                 "Cannot initialize XArmServices as no xArm services are available"
             )
             self.move_velocity_client = None
+            self.gripper_io_client = None
             return
         self.move_velocity_client = self.node.create_client(
             MoveVelocity, XARM_MOVEVELOCITY_SERVICE
