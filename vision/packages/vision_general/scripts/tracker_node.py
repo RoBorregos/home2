@@ -41,6 +41,7 @@ from frida_constants.vision_constants import (
     DEPTH_IMAGE_TOPIC,
     RESULTS_TOPIC,
     CAMERA_INFO_TOPIC,
+    CENTROID_TOIC,
 )
 from frida_constants.vision_enums import DetectBy
 
@@ -75,6 +76,8 @@ class SingleTracker(Node):
         self.results_publisher = self.create_publisher(Point, RESULTS_TOPIC, 10)
 
         self.image_publisher = self.create_publisher(Image, TRACKER_IMAGE_TOPIC, 10)
+
+        self.centroid_publisher = self.create_publisher(Point, CENTROID_TOIC, 10)
 
         self.verbose = self.declare_parameter("verbose", True)
         self.setup()

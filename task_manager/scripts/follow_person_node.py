@@ -17,7 +17,7 @@ import numpy as np
 XARM_MOVEVELOCITY_SERVICE = "/xarm/vc_set_joint_velocity"
 XARM_SETMODE_SERVICE = "/xarm/set_mode"
 XARM_SETSTATE_SERVICE = "/xarm/set_state"
-DASHGO_CMD_VEL = "cmd_vel"
+DASHGO_CMD_VEL = "/cmd_vel"
 
 # class subtask_manager:
 #     vision: VisionTasks
@@ -26,6 +26,7 @@ DASHGO_CMD_VEL = "cmd_vel"
 TIMEOUT = 5.0
 MAX_ERROR = 0.2
 MAX_ROTATIONAL_VEL = 0.8
+CENTROID_TOIC = "/vision/tracker_centroid"
 
 
 class FollowPersonNode(Node):
@@ -37,10 +38,10 @@ class FollowPersonNode(Node):
 
     def __init__(self):
         """Initialize the node"""
-        super().__init__("demo_task_manager")
+        super().__init__("follow_person_node_started")
 
         self.follow_face_sub = self.create_subscription(
-            Point, "/vision/follow_face", self.follow_callback, 10
+            Point, CENTROID_TOIC, self.follow_callback, 10
         )
 
         self.dashgo_cmd_vel_sub = self.create_subscription(
@@ -76,9 +77,11 @@ class FollowPersonNode(Node):
         if not self.move_client.wait_for_service(timeout_sec=TIMEOUT):
             Logger.warn(self, "Move client not initialized")
 
-        self.service = self.create_service(FollowFace, "/follow_face", self.follow_face_callback)
+        self.service = self.create_service(
+            FollowFace, "/follow_person", self.follow_person_callback
+        )
 
-        self.is_following_face_active = False
+        self.is_following_person = False
 
         self.follow_face = {"x": 0, "y": 0}
 
@@ -124,9 +127,9 @@ class FollowPersonNode(Node):
         else:
             return None, None
 
-    def follow_face_callback(self, request: FollowFace.Request, response: FollowFace.Response):
-        self.is_following_face_active = request.follow_face
-        if not self.is_following_face_active:
+    def follow_person_callback(self, request: FollowFace.Request, response: FollowFace.Response):
+        self.is_following_person = request.follow_face
+        if not self.is_following_person:
             self.move_to(0.0, 0.0)
         else:
             self.set_state()
@@ -197,12 +200,13 @@ class FollowPersonNode(Node):
             Logger.error(self, f"move service call failed: {str(e)}")
 
     def run(self):
-        if not self.is_following_face_active:
+        if not self.is_following_person:
             return
         """Running main loop"""
         # Follow face task
         Logger.state(self, "Follow face task")
         x, y = self.get_follow_face()
+        print(x, y)
         if x is None:
             return
         elif x is not None:
