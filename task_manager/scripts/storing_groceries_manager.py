@@ -94,7 +94,7 @@ class StoringGroceriesManager(Node):
         elif self.state == ExecutionStates.SUCCEDED_NAV_TO_SHELF:
             self.state = ExecutionStates.VIEW_SHELF_AND_SAVE_OBJECTS
         elif self.state == ExecutionStates.VIEW_SHELF_AND_SAVE_OBJECTS:
-            status, results = self.subtask_manager.vision.detect_shelfs(timeout=10)
+            status, results = self.subtask_manager.vision.detect_shelf(timeout=10)
             results: list[ShelfDetection]
             self.shelves_count = max([i.level for i in results]) + (
                 1 if len(0 in [i.level for i in results]) > 0 else 0
