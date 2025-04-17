@@ -8,26 +8,33 @@ from frida_motion_planning.utils.ros_utils import wait_for_future
 from std_srvs.srv import SetBool
 from frida_interfaces.action import MoveJoints
 from frida_interfaces.msg import ManipulationTask
-from frida_interfaces.action import PickMotion, ManipulationAction
+from frida_interfaces.action import PickMotion, PlaceMotion, ManipulationAction
 from frida_interfaces.srv import (
     PickPerceptionService,
     GraspDetection,
     DetectionHandler,
     RemoveCollisionObject,
+    PlacePerceptionService,
+    HeatmapPlace,
 )
 from frida_constants.manipulation_constants import (
     PICK_MOTION_ACTION_SERVER,
+    PLACE_MOTION_ACTION_SERVER,
     MANIPULATION_ACTION_SERVER,
     PICK_PERCEPTION_SERVICE,
     GRASP_DETECTION_SERVICE,
     MOVE_JOINTS_ACTION_SERVER,
     REMOVE_COLLISION_OBJECT_SERVICE,
     GRIPPER_SET_STATE_SERVICE,
+    PLACE_PERCEPTION_SERVICE,
+    HEATMAP_PLACE_SERVICE,
 )
 from frida_constants.vision_constants import (
     DETECTION_HANDLER_TOPIC_SRV,
 )
 from pick_and_place.managers.PickManager import PickManager
+from pick_and_place.managers.PlaceManager import PlaceManager
+from frida_interfaces.msg import PickResult
 
 
 class ManipulationCore(Node):
@@ -49,6 +56,12 @@ class ManipulationCore(Node):
             PICK_MOTION_ACTION_SERVER,
         )
 
+        self._place_motion_action_client = ActionClient(
+            self,
+            PlaceMotion,
+            PLACE_MOTION_ACTION_SERVER,
+        )
+
         self._move_joints_client = ActionClient(
             self,
             MoveJoints,
@@ -59,9 +72,15 @@ class ManipulationCore(Node):
             DetectionHandler, DETECTION_HANDLER_TOPIC_SRV
         )
 
-        self.perception_3d_client = self.create_client(
+        self.pick_perception_3d_client = self.create_client(
             PickPerceptionService, PICK_PERCEPTION_SERVICE
         )
+
+        self.place_perception_3d_client = self.create_client(
+            PlacePerceptionService, PLACE_PERCEPTION_SERVICE
+        )
+
+        self.place_pose_client = self.create_client(HeatmapPlace, HEATMAP_PLACE_SERVICE)
 
         self.grasp_detection_client = self.create_client(
             GraspDetection, GRASP_DETECTION_SERVICE
@@ -78,6 +97,9 @@ class ManipulationCore(Node):
         )
 
         self.pick_manager = PickManager(self)
+        self.pick_result = PickResult()
+
+        self.place_manager = PlaceManager(self)
 
         self.get_logger().info("Manipulation Core has been started")
 
@@ -86,7 +108,7 @@ class ManipulationCore(Node):
         self.get_logger().info("Extracting object cloud")
 
         self.remove_all_collision_object(attached=True)
-        result = self.pick_manager.execute(
+        result, pick_result = self.pick_manager.execute(
             object_name=object_name,
             point=object_point,
         )
@@ -95,9 +117,10 @@ class ManipulationCore(Node):
             self.get_logger().error("Pick failed")
             self.remove_all_collision_object(attached=True)
             return False
+
         self.remove_all_collision_object(attached=False)
         self.get_logger().info("Pick succeeded")
-        return result
+        return result, pick_result
 
     def manipulation_server_callback(self, goal_handle):
         task_type = goal_handle.request.task_type
@@ -108,7 +131,7 @@ class ManipulationCore(Node):
         response = ManipulationAction.Result()
         if task_type == ManipulationTask.PICK:
             self.get_logger().info("Executing Pick Task")
-            result = self.pick_execute(
+            result, self.pick_result = self.pick_execute(
                 object_name=object_name, object_point=object_point
             )
             goal_handle.succeed()
@@ -120,7 +143,11 @@ class ManipulationCore(Node):
         elif task_type == ManipulationTask.PLACE:
             self.get_logger().info("Executing Place Task")
             goal_handle.succeed()
-            response.success = result.success
+            result = self.place_manager.execute(
+                place_params=goal_handle.request.place_params,
+                pick_result=self.pick_result,
+            )
+            response.success = result
         else:
             self.get_logger().error("Unknown task type")
             goal_handle.abort()
