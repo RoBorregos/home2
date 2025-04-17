@@ -8,46 +8,8 @@ from utils.subtask_manager import SubtaskManager, Task
 from enum import Enum
 from pydantic import BaseModel
 from collections import defaultdict
-from frida_constants.vision_classes import BBOX
+from frida_constants.vision_classes import BBOX, ShelfDetection
 
-# ######### change to the frida interfaces vision thingi
-from dataclasses import dataclass
-
-
-# @dataclass
-# class BBOX:
-#     x: float = 0
-#     y: float = 0
-#     w: float = 0
-#     h: float = 0
-#     x1: float = 0
-#     x2: float = 0
-#     y1: float = 0
-#     y2: float = 0
-#     distance: float = 0
-#     classname: str = ""
-
-
-@dataclass
-class ShelfDetection:
-    level: int = 0
-    x1: float = 0
-    y1: float = 0
-    x2: float = 0
-    y2: float = 0
-
-# ############################################
-# ######## todo implement in hri ###########
-# ############################################
-
-
-class ShelfObjectsClassification(BaseModel):
-    shelf_id: int
-    objects_to_add: list[str] = []
-    classification_tag: str
-
-
-# ############################################
 
 class ExecutionStates(Enum):
     START = 0
