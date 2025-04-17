@@ -34,9 +34,16 @@ def generate_launch_description():
           'Reg/Strategy':'1',
           'Reg/Force3DoF':'true',
           'Mem/NotLinkedNodesKept':'false',
-          'Icp/PointToPlaneMinComplexity':'0.04', # to be more robust to long corridors with low geometry
-          'Grid/MaxGroundHeight':'0.2', # All points above 5 cm are obstacles
-          'Grid/MaxObstacleHeight':'1.2',  # All points over 1 meter are ignored
+          'Icp/PointToPlaneMinComplexity':'0.04',
+          'Grid/MaxGroundHeight':'0.1', 
+          'Grid/MaxObstacleHeight':'2',  
+          'RGBD/NeighborLinkRefining':'True',
+        #   'Grid/RayTracing':'true', # Fill empty space
+          'Grid/3D':'false', # Use 2D occupancy
+          'Grid/RangeMax':'3',
+          'Grid/NormalsSegmentation':'false', # Use passthrough filter to detect obstacles
+        #   'Grid/Sensor':'2', # Use both laser scan and camera for obstacle detection in global map
+          'Optimizer/GravitySigma':'0' # Disable imu constraints (we are already in 2D)
     }
 
     remappings=[
