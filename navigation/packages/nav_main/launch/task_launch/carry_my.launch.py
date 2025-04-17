@@ -10,6 +10,7 @@ from launch_ros.substitutions import FindPackageShare
 def launch_setup(context, *args, **kwargs):
     use_sim = LaunchConfiguration('use_sim', default='false')
     localization = LaunchConfiguration('localization', default='false')
+    rtabmap_viz = LaunchConfiguration('rtabmap_viz', default='false')
     
     nav_basics = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -33,11 +34,11 @@ def launch_setup(context, *args, **kwargs):
             )),
         launch_arguments={'use_sim_time': use_sim}.items()
         )
-    pose_transform = Node(
-                package='nav_main',
-                executable='transform_target.py',
-                output='screen',
-                )
+    # pose_transform = Node(
+    #             package='nav_main',
+    #             executable='transform_target.py',
+    #             output='screen',
+    #             )
     rtabmap = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution(
@@ -47,14 +48,14 @@ def launch_setup(context, *args, **kwargs):
                     "rtabmap_slam.launch.py",
                 ]
             )),
-        launch_arguments={'use_sim_time': use_sim, 'localization': localization}.items()
+        launch_arguments={'use_sim_time': use_sim, 'localization': localization, 'rtabmap_viz': rtabmap_viz}.items()
         )
     
     return [
         nav_basics,
         rtabmap,
         nav2_launch,
-        pose_transform
+        # pose_transform
     ]
 
 def generate_launch_description():

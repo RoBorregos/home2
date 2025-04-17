@@ -41,6 +41,7 @@ from frida_constants.vision_constants import (
     DEPTH_IMAGE_TOPIC,
     RESULTS_TOPIC,
     CAMERA_INFO_TOPIC,
+    CENTROID_TOIC,
 )
 from frida_constants.vision_enums import DetectBy
 
@@ -75,6 +76,8 @@ class SingleTracker(Node):
         self.results_publisher = self.create_publisher(Point, RESULTS_TOPIC, 10)
 
         self.image_publisher = self.create_publisher(Image, TRACKER_IMAGE_TOPIC, 10)
+
+        self.centroid_publisher = self.create_publisher(Point, CENTROID_TOIC, 10)
 
         self.verbose = self.declare_parameter("verbose", True)
         self.setup()
@@ -399,6 +402,16 @@ class SingleTracker(Node):
                 if len(self.depth_image) > 0:
                     coords = Point()
                     point2D = get2DCentroid(self.person_data["coordinates"], self.frame)
+                    point2D_x_coord = float(point2D[1])
+                    point2D_x_coord_normalized = (
+                        point2D_x_coord / (self.frame.shape[1] / 2)
+                    ) - 1
+                    point2Dpoint = Point()
+                    point2Dpoint.x = float(point2D_x_coord_normalized)
+                    point2Dpoint.y = 0.0
+                    point2Dpoint.z = 0.0
+                    # self.get_logger().info(f"frame_shape: {self.frame.shape[1]} Point2D: {point2D[1]} normalized_point2D: {point2D_x_coord_normalized}")
+                    self.centroid_publisher.publish(point2Dpoint)
                     depth = get_depth(self.depth_image, point2D)
                     point3D = deproject_pixel_to_point(self.imageInfo, point2D, depth)
                     point3D = float(point3D[0]), float(point3D[1]), float(point3D[2])

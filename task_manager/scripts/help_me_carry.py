@@ -10,6 +10,7 @@ from subtask_managers.generic_tasks import GenericTask
 from utils.logger import Logger
 from utils.status import Status
 from utils.subtask_manager import SubtaskManager, Task
+import time as t
 
 ATTEMPT_LIMIT = 3
 
@@ -37,10 +38,9 @@ class HelpMeCarryTM(Node):
         self.subtask_manager = SubtaskManager(
             self,
             task=Task.HELP_ME_CARRY,
-            mock_areas=["manipulation", "navigation", "vision"],
+            mock_areas=[],
         )
         self.generic = GenericTask(self.subtask_manager)
-        self.generic.talk()
         self.current_state = HelpMeCarryTM.TASK_STATES["START"]
         self.current_attempts = 0
         self.running_task = True
@@ -174,6 +174,11 @@ class HelpMeCarryTM(Node):
 
         if self.current_state == HelpMeCarryTM.TASK_STATES["GRASP_THE_BAG"]:
             Logger.state(self, "Grasping the bag")
+            self.subtask_manager.manipulation.open_gripper()
+            t.sleep(3)
+            self.subtask_manager.manipulation.close_gripper()
+            self.substask_manager.hri.say("I have grasped the bag")
+
             # MOCK: Self.subtask_manager.manipulation.pick(pose)
 
         if self.current_state == HelpMeCarryTM.TASK_STATES["RETURN_TO_STARTING_LOCATION"]:
