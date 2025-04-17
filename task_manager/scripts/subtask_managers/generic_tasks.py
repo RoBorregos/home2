@@ -6,26 +6,12 @@ import numpy as np
 class GenericTask:
     """Class to manage the generic tasks"""
 
-    STATE = {
-        "TERMINAL_ERROR": -1,
-        "EXECUTION_ERROR": 0,
-        "EXECUTION_SUCCESS": 1,
-        "TARGET_NOT_FOUND": 2,
-    }
-
-    SUBTASKS = {
-        "RECEPTIONIST": [],
-        "RESTAURANT": [],
-        "SERVE_BREAKFAST": [],
-        "STORING_GROCERIES": [],
-        "STICKLER_RULES": [],
-        "DEMO": [],
-    }
-
-    def __init__(self, SubtaskManager: SubtaskManager):
+    def __init__(self, subtask_manager: SubtaskManager):
         """Initialize the class"""
 
+
         self.subtask_manager = SubtaskManager
+
         # Initialize the subtask managers
 
     def test_function(self):
