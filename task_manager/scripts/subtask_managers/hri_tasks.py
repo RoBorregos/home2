@@ -38,7 +38,7 @@ from frida_interfaces.srv import (
     Speak,
     CategorizeShelves,
 )
-
+from rcl_interfaces.msg import Parameter, ParameterType, ParameterValue
 from rcl_interfaces.srv import SetParameters
 from rclpy.node import Node
 from std_msgs.msg import String
@@ -54,10 +54,6 @@ TIMEOUT = 5.0
 
 def confirm_query(interpreted_text, target_info):
     return f"Did you say {target_info}?"
-
-
-def confirm_interpretation(interpreted_text, target_info):
-    return f"Did you say {interpreted_text}?"
 
 
 class HRITasks(metaclass=SubtaskMeta):
@@ -93,25 +89,30 @@ class HRITasks(metaclass=SubtaskMeta):
             SetParameters, f"/{USEFUL_AUDIO_NODE_NAME}/set_parameters"
         )
 
-        self.services = {
-            Task.RECEPTIONIST: {
-                "hear": {
-                    "client": self.hear_service,
-                    "type": "service",
-                },
-                "say": {
-                    "client": self.speak_service,
-                    "type": "service",
-                },
-                "extract_data_service": {
-                    "client": self.extract_data_service,
-                    "type": "service",
-                },
-                "common_interest_service": {
-                    "client": self.common_interest_service,
-                    "type": "service",
-                },
+        all_services = {
+            "hear": {
+                "client": self.hear_service,
+                "type": "service",
             },
+            "say": {
+                "client": self.speak_service,
+                "type": "service",
+            },
+            "extract_data_service": {
+                "client": self.extract_data_service,
+                "type": "service",
+            },
+            "common_interest_service": {
+                "client": self.common_interest_service,
+                "type": "service",
+            },
+        }
+
+        self.services = {
+            Task.RECEPTIONIST: all_services,
+            Task.GPSR: all_services,
+            Task.HELP_ME_CARRY: all_services,
+            Task.STORING_GROCERIES: all_services,
         }
 
         self.setup_services()
@@ -356,6 +357,32 @@ class HRITasks(metaclass=SubtaskMeta):
 
         return Status.EXECUTION_SUCCESS, future.result().commands
 
+    @service_check("useful_audio_params", (Status.SERVICE_CHECK, ""), TIMEOUT)
+    def set_double_param(self, name, value):
+        param = Parameter()
+
+        param.name = name
+
+        param.value = ParameterValue(type=ParameterType.PARAMETER_DOUBLE)
+
+        param.value.double_value = value
+
+        request = SetParameters.Request()
+
+        request.parameters = [param]
+
+        future = self.useful_audio_params.call_async(request)
+
+        while not future.done():
+            # self.node.get_logger().info(f"Setting parameter {name} to {value}")
+            rclpy.spin_once(self.node, timeout_sec=0.1)
+
+        if future.result() is not None:
+            pass
+            # self.node.get_logger().info(f"Parameter {name} set to {value}")
+        else:
+            self.node.get_logger().error(f"Failed to set parameter {name}")
+
     @service_check("common_interest_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def common_interest(self, person1, interest1, person2, interest2, remove_thinking=True):
         request = CommonInterest.Request(
@@ -376,7 +403,7 @@ class HRITasks(metaclass=SubtaskMeta):
         request = IsPositive.Request(text=text)
         future = self.is_positive_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
-        return future.result().is_positive
+        return Status.EXECUTION_SUCCESS, future.result().is_positive
 
     def _add_to_collection(self, document: list, metadata: str, collection: str) -> str:
         request = AddEntry.Request(document=document, metadata=metadata, collection=collection)
