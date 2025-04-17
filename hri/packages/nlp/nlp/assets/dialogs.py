@@ -1,4 +1,10 @@
-from nlp.assets.schemas import ExtractedData, IsAnswerNegative, IsAnswerPositive
+import json
+from nlp.assets.schemas import (
+    ExtractedData,
+    IsAnswerPositive,
+    RoomIdentification,
+    IsAnswerNegative,
+)
 
 
 def get_common_interests_dialog(
@@ -221,3 +227,30 @@ def format_response(response):
             "content": response,
         },
     ]
+
+
+def get_room_identification_dialog(comment, areas_file="areas.json"):
+    with open(areas_file, "r") as file:
+        areas = json.load(file)
+
+    rooms_and_sub_areas = []
+    for room, sub_areas in areas.items():
+        rooms_and_sub_areas.append(room.replace("_", " ").title())
+        for sub_area in sub_areas.keys():
+            rooms_and_sub_areas.append(
+                f"{room.replace('_', ' ').title()} - {sub_area.replace('_', ' ').title()}"
+            )
+
+    return {
+        "messages": [
+            {
+                "role": "system",
+                "content": f"You will be given a comment or question. Your task is to identify which room or sub-area is being referred to. The possible options are: {', '.join(rooms_and_sub_areas)}. Provide the name of the room or sub-area as the answer.",
+            },
+            {
+                "role": "user",
+                "content": comment,
+            },
+        ],
+        "schema": RoomIdentification,
+    }
