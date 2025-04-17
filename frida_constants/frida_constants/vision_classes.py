@@ -11,6 +11,8 @@ class BBOX:
     x2: float = 0
     y1: float = 0
     y2: float = 0
+    distance: float = 0
+    classname: str = ""
 
 
 @dataclass
