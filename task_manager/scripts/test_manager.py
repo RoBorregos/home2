@@ -22,9 +22,11 @@ class TestTaskManager(Node):
         self.subtask_manager = {}
         # self.subtask_manager["hri"] = HRITasks(self, config=test_hri_config)
 
-        self.subtask_manager["manipulation"] = ManipulationTasks(self, task="DEMO", mock_data=False)
+        # self.subtask_manager["manipulation"] = ManipulationTasks(self, task="DEMO", mock_data=False)
         # self.subtask_manager["vision"] = VisionTasks(self, task=Task.HELP_ME_CARRY, mock_data=False)
-
+        self.subtask_manager = ManipulationTasks(
+            self, task="DEMO", mock_data=False
+        )  # , config=test_hri_config
         # wait for a bit
         rclpy.spin_once(self, timeout_sec=1.0)
         self.get_logger().info("TestTaskManager has started.")
@@ -77,8 +79,7 @@ class TestTaskManager(Node):
         # print(joint_positions)
 
         # self.subtask_manager["manipulation"].close_gripper()
-
-        self.subtask_manager["manipulation"].open_gripper()
+        self.subtask_manager.open_gripper()
 
         ####### EXAMPLE: Move to named position then move only the first joint #######
         # Move to a named position
