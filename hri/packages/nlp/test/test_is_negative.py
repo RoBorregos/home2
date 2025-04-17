@@ -34,6 +34,7 @@ test_cases = [
     ("That's wrong", IsAnswerNegative(is_negative=True).model_dump_json()),
     ("Incorrect", IsAnswerNegative(is_negative=True).model_dump_json()),
     ("Not at all", IsAnswerNegative(is_negative=True).model_dump_json()),
+    ("I don't think so", IsAnswerNegative(is_negative=True).model_dump_json()),
     # Positive test cases
     ("Yes", IsAnswerNegative(is_negative=False).model_dump_json()),
     ("That's right", IsAnswerNegative(is_negative=False).model_dump_json()),
@@ -45,13 +46,12 @@ test_cases = [
     ("I agree", IsAnswerNegative(is_negative=False).model_dump_json()),
     ("Indeed", IsAnswerNegative(is_negative=False).model_dump_json()),
     ("Affirmative", IsAnswerNegative(is_negative=False).model_dump_json()),
-    # Uncertain test cases should also be negative
-    ("I don’t think so", IsAnswerNegative(is_negative=True).model_dump_json()),
-    ("I don't know", IsAnswerNegative(is_negative=True).model_dump_json()),
-    ("Maybe", IsAnswerNegative(is_negative=True).model_dump_json()),
-    ("I'm not sure", IsAnswerNegative(is_negative=True).model_dump_json()),
-    ("Huh?", IsAnswerNegative(is_negative=True).model_dump_json()),
-    ("What do you mean?", IsAnswerNegative(is_negative=True).model_dump_json()),
+    # Uncertain test cases
+    ("I don't know", IsAnswerNegative(is_negative=False).model_dump_json()),
+    ("Maybe", IsAnswerNegative(is_negative=False).model_dump_json()),
+    ("I'm not sure", IsAnswerNegative(is_negative=False).model_dump_json()),
+    ("Huh?", IsAnswerNegative(is_negative=False).model_dump_json()),
+    ("What do you mean?", IsAnswerNegative(is_negative=False).model_dump_json()),
 ]
 
 # Define test cases
