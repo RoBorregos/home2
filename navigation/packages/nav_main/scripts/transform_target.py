@@ -185,7 +185,7 @@ class PointTransformer(Node):
         median_y = self.median_filter([p.y for p in self.accumulated_points])
 
         stamped_point = PointStamped()
-        stamped_point.header.frame_id = 'base_link'  # Adjust to match your actual camera frame
+        stamped_point.header.frame_id = 'zed_camera_link'  # Adjust to match your actual camera frame
         stamped_point.header.stamp = self.get_clock().now().to_msg()
         stamped_point.point.x = median_x
         stamped_point.point.y = median_y
@@ -199,7 +199,6 @@ class PointTransformer(Node):
                 rclpy.time.Time()
             )
             transformed_point = do_transform_point(stamped_point, transform)
-            
             # Publish for visualization
             self.point_pub.publish(transformed_point)
             

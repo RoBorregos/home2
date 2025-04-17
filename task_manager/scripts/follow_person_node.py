@@ -25,7 +25,7 @@ DASHGO_CMD_VEL = "/cmd_vel"
 
 TIMEOUT = 5.0
 MAX_ERROR = 0.2
-MAX_ROTATIONAL_VEL = 0.8
+MAX_ROTATIONAL_VEL = 1.0
 CENTROID_TOIC = "/vision/tracker_centroid"
 
 
@@ -174,11 +174,11 @@ class FollowPersonNode(Node):
     def send_joint_velocity(self, velo_rotation: float):
         """Send joint velocity to the arm"""
         Logger.info(self, "Sending joint velocity")
-
+        print(f"velocity : {velo_rotation}")
         # Set motion
         motion_msg = MoveVelocity.Request()
         motion_msg.is_sync = True
-        motion_msg.speeds = [0.0, 0.0, 0.0, 0.0, velo_rotation, 0.0, 0.0]
+        motion_msg.speeds = [-velo_rotation,0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
         try:
             future_move = self.move_client.call_async(motion_msg)
@@ -214,7 +214,7 @@ class FollowPersonNode(Node):
 
     def error_to_velocity(self, x: float, y: float):
         """Convert error to velocity"""
-        KP = 0.5
+        KP = 2.0
         x_vel = KP * x
         x_vel = max(min(x_vel, MAX_ROTATIONAL_VEL), -MAX_ROTATIONAL_VEL)
 
