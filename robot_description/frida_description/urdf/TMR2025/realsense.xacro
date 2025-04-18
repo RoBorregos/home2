@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+ 
+ 
+ <link name="intel_realsense">
+    <inertial>
+      <origin xyz="-0.000276500325472787 -3.68172093455318E-07 -6.47494519674385E-05" rpy="0 0 0" />
+      <mass value="0.048201" />
+      <inertia ixx="2.7391E-05" ixy="-4.2599E-07" ixz="5.14365274506557E-08"
+               iyy="3.3506E-06" iyz="-2.32499967543505E-08" izz="2.6652E-05" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="${mesh_path}intel_realsense.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="${intel_rgba}" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="${mesh_path}intel_realsense.STL" />
+      </geometry>
+    </collision>
+  </link>
+  <joint name="intelrealsense" type="fixed">
+    <origin xyz="0.140953490988428 0 0.428947355746093" rpy="0 0 0" />
+    <parent link="base_link" />
+    <child link="intel_realsense" />
+    <axis xyz="0 0 0" />
+  </joint>
+
+</robot>
