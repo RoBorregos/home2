@@ -1,6 +1,6 @@
 services:
   ollama:
-    profiles: [receptionist]
+    profiles: [receptionist, carry]
 
     container_name: home2-hri-ollama
     image: ollama/ollama

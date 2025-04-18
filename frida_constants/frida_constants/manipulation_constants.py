@@ -32,6 +32,9 @@ PICK_MOTION_ACTION_SERVER = "/manipulation/pick_motion_action_server"
 CLUSTER_OBJECT_SERVICE = "/manipulation/cluster_object"
 PERCEPTION_SERVICE = "/manipulation/perception_service"
 GRASP_DETECTION_SERVICE = "/manipulation/detect_grasps"
+GRIPPER_SET_STATE_SERVICE = "/manipulation/gripper/set_state"
+XARM_SET_DIGITAL_TGPIO_SERVICE = "/xarm/set_digital_tgpio"
+
 
 MANIPULATION_ACTION_SERVER = "/manipulation/manipulation_action_server"
 
@@ -49,3 +52,5 @@ DEBUG_POSE_GOAL_TOPIC = "/manipulation/debug_pose_goal"
 GET_JOINT_TOPIC = "/manipulation/get_joints"
 
 TOGGLE_SERVO_TOPIC = "/manipulation/toggle_servo"
+
+ZED_POINT_CLOUD_TOPIC = "/zed/zed_node/point_cloud/cloud_registered"

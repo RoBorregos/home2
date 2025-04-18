@@ -14,11 +14,15 @@ import face_recognition
 import tqdm
 import os
 import numpy as np
+from vision_general.utils.calculations import (
+    get_depth,
+    deproject_pixel_to_point,
+)
 
 import rclpy
 from rclpy.node import Node
 from cv_bridge import CvBridge
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import Point
 from std_msgs.msg import String
 from ament_index_python.packages import get_package_share_directory
@@ -33,6 +37,8 @@ from frida_constants.vision_constants import (
     PERSON_LIST_TOPIC,
     PERSON_NAME_TOPIC,
     VISION_FRAME_TOPIC,
+    DEPTH_IMAGE_TOPIC,
+    CAMERA_INFO_TOPIC,
 )
 
 DEFAULT_NAME = "ale"
@@ -66,6 +72,15 @@ class FaceRecognition(Node):
         self.person_list_publisher = self.create_publisher(
             PersonList, PERSON_LIST_TOPIC, 10
         )
+
+        self.depth_subscriber = self.create_subscription(
+            Image, DEPTH_IMAGE_TOPIC, self.depth_callback, 10
+        )
+
+        self.image_info_subscriber = self.create_subscription(
+            CameraInfo, CAMERA_INFO_TOPIC, self.image_info_callback, 10
+        )
+
         self.verbose = self.declare_parameter("verbose", True)
         self.annotated_frame = []
         self.setup()
@@ -82,7 +97,11 @@ class FaceRecognition(Node):
         self.image = None
         self.prev_faces = []
         self.curr_faces = []
+        self.depth_image = []
         self.follow_name = "area"
+
+        self.default_name = self.declare_parameter("default_name", DEFAULT_NAME)
+        self.default_name = self.default_name.value
 
         self.people = [[random_encodings, "random"]]
         self.people_encodings = [random_encodings]
@@ -95,6 +114,18 @@ class FaceRecognition(Node):
     def image_callback(self, data):
         """Callback to get image from camera"""
         self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
+
+    def depth_callback(self, data):
+        """Callback to receive depth image from camera"""
+        try:
+            depth_image = self.bridge.imgmsg_to_cv2(data, "32FC1")
+            self.depth_image = depth_image
+        except Exception as e:
+            print(f"Error: {e}")
+
+    def image_info_callback(self, data):
+        """Callback to receive camera info"""
+        self.imageInfo = data
 
     def new_name_callback(self, req, res):
         """Callback to add a new face to the known faces"""
@@ -136,7 +167,7 @@ class FaceRecognition(Node):
             if (
                 filename == ".DS_Store"
                 or filename == "random.png"
-                or filename == DEFAULT_NAME + ".png"
+                or filename == self.default_name + ".png"
             ):
                 continue
 
@@ -203,6 +234,13 @@ class FaceRecognition(Node):
         move_y = dify * MAX_DEGREE / self.center[1]
 
         target = Point()
+
+        if len(self.depth_image) > 0:
+            point2D = (xc, yc)
+            depth = get_depth(self.depth_image, point2D)
+            point3D = deproject_pixel_to_point(self.imageInfo, point2D, depth)
+            point3D = float(point3D[0]), float(point3D[1]), float(point3D[2])
+            target.z = point3D[2]
 
         target.x = move_x
         target.y = move_y
@@ -368,6 +406,8 @@ class FaceRecognition(Node):
         # Calculate the joint degrees for the arm to follow the face
         if detected:
             self.publish_follow_face(xc, yc, largest_face_name)
+        else:
+            self.name_publisher.publish(String(data=""))
         if self.verbose:
             cv2.imshow("Face recognition", self.annotated_frame)
         # self.image_view = self.annotated_frame

@@ -1,8 +1,0 @@
-# UpdateItem.srv
-string[] item_id  # The ID of the item to update
-string[] field  # The to update
-string[] new_data
-string collection
----
-bool success  # Whether the operation was successful
-string message  # A message describing the result

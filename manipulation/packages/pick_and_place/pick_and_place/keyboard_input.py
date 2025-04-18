@@ -45,7 +45,7 @@ class KeyboardInput(Node):
 
         goal_msg = ManipulationAction.Goal()
         goal_msg.task_type = ManipulationTask.PICK
-        goal_msg.object_name = object_name
+        goal_msg.pick_params.object_name = object_name
 
         self.get_logger().info(f"Sending pick request for: {object_name}")
         self._action_client.send_goal_async(
@@ -81,16 +81,21 @@ def main(args=None):
             if choice.lower() == "q":
                 break
 
-            try:
-                choice_num = int(choice)
-                if choice_num == -2:
-                    node.refresh_objects()
-                elif 0 <= choice_num - 1 < len(node.objects):
-                    node.send_pick_request(node.objects[choice_num - 1])
-                else:
-                    print("Invalid choice. Please try again.")
-            except ValueError:
-                print("Invalid input. Please enter a number.")
+            if choice.lower() == "q":
+                break
+            elif choice == "-2":
+                node.refresh_objects()
+            elif choice.isdigit():
+                try:
+                    choice_num = int(choice)
+                    if 0 <= choice_num - 1 < len(node.objects):
+                        node.send_pick_request(node.objects[choice_num - 1])
+                    else:
+                        print("Invalid choice. Please try again.")
+                except ValueError:
+                    print("Invalid input. Please enter a number.")
+            else:
+                node.send_pick_request(choice)
 
     except KeyboardInterrupt:
         pass

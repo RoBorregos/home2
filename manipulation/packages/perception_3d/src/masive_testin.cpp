@@ -33,7 +33,7 @@ template <typename T>
 std::future_status wait_for_future_with_timeout(
     typename rclcpp::Client<T>::FutureAndRequestId &future,
     rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node,
-    std::chrono::milliseconds timeout = 5s) {
+    std::chrono::milliseconds timeout = 500ms) {
   auto status = future.wait_for(timeout);
   auto start_time = std::chrono::steady_clock::now();
   while (status != std::future_status::ready) {
@@ -146,7 +146,6 @@ public:
   }
 
   void cloud_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
-    RCLCPP_INFO(this->get_logger(), "Received point cloud");
     cloud_received = true;
   }
 
@@ -172,7 +171,7 @@ public:
 
     auto status = wait_for_future_with_timeout<
         frida_interfaces::srv::ClusterObjectFromPoint>(
-        response, this->call_services_node->get_node_base_interface(), 5s);
+        response, this->call_services_node->get_node_base_interface(), 500ms);
 
     RCLCPP_INFO(this->get_logger(), "Response received");
 
@@ -210,7 +209,7 @@ public:
 
     auto status2 =
         wait_for_future_with_timeout<frida_interfaces::srv::RemovePlane>(
-            res2table, this->call_services_node->get_node_base_interface(), 5s);
+            res2table, this->call_services_node->get_node_base_interface(), 500ms);
 
     RCLCPP_INFO(this->get_logger(), "Response received");
 
@@ -244,7 +243,7 @@ public:
 
     auto status3 =
         wait_for_future_with_timeout<frida_interfaces::srv::AddPickPrimitives>(
-            res3, this->call_services_node->get_node_base_interface(), 5s);
+            res3, this->call_services_node->get_node_base_interface(), 500ms);
 
     RCLCPP_INFO(this->get_logger(), "Response received");
 
@@ -266,7 +265,7 @@ public:
 
     auto status4 =
         wait_for_future_with_timeout<frida_interfaces::srv::AddPickPrimitives>(
-            res4, this->call_services_node->get_node_base_interface(), 5s);
+            res4, this->call_services_node->get_node_base_interface(), 500ms);
 
     RCLCPP_INFO(this->get_logger(), "Response: %d", res4.get()->status);
 

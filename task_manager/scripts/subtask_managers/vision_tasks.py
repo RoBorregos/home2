@@ -7,7 +7,7 @@ commands.
 """
 
 import rclpy
-from frida_interfaces.msg import ObjectDetection
+from frida_interfaces.msg import ObjectDetection, PersonList
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.srv import (
     FindSeat,
@@ -16,8 +16,10 @@ from frida_interfaces.srv import (
     Query,
     CropQuery,
     DetectPointingObject,
+    ShelfDetectionHandler,
 )
 from std_srvs.srv import SetBool
+from std_msgs.msg import String
 from geometry_msgs.msg import Point, PointStamped
 from rclpy.action import ActionClient
 from rclpy.node import Node
@@ -38,10 +40,11 @@ from frida_constants.vision_constants import (
     BEVERAGE_TOPIC,
     SET_TARGET_TOPIC,
     POINTING_OBJECT_SERVICE,
+    PERSON_LIST_TOPIC,
+    PERSON_NAME_TOPIC,
+    SHELF_DETECTION_TOPIC,
 )
-from frida_constants.vision_classes import (
-    BBOX,
-)
+from frida_constants.vision_classes import BBOX, ShelfDetection
 
 TIMEOUT = 5.0
 
@@ -56,9 +59,17 @@ class VisionTasks:
         self.task = task
         self.follow_face = {"x": None, "y": None}
         self.flag_active_face = False
+        self.person_list = []
+        self.person_name = ""
 
         self.face_subscriber = self.node.create_subscription(
             Point, FOLLOW_TOPIC, self.follow_callback, 10
+        )
+        self.face_list_subscriber = self.node.create_subscription(
+            PersonList, PERSON_LIST_TOPIC, self.person_list_callback, 10
+        )
+        self.face_name_subscriber = self.node.create_subscription(
+            String, PERSON_NAME_TOPIC, self.person_name_callback, 10
         )
         self.save_name_client = self.node.create_client(SaveName, SAVE_NAME_TOPIC)
         self.find_seat_client = self.node.create_client(FindSeat, FIND_SEAT_TOPIC)
@@ -68,6 +79,9 @@ class VisionTasks:
         self.track_person_client = self.node.create_client(SetBool, SET_TARGET_TOPIC)
         self.pointing_object_client = self.node.create_client(
             DetectPointingObject, POINTING_OBJECT_SERVICE
+        )
+        self.shelf_detections_client = self.node.create_client(
+            ShelfDetectionHandler, SHELF_DETECTION_TOPIC
         )
         self.beverage_location_client = self.node.create_client(BeverageLocation, BEVERAGE_TOPIC)
         self.detect_person_action_client = ActionClient(self.node, DetectPerson, CHECK_PERSON_TOPIC)
@@ -85,17 +99,28 @@ class VisionTasks:
                 "follow_by_name": {"client": self.follow_by_name_client, "type": "service"},
             },
             Task.HELP_ME_CARRY: {
-                # "track_person": {"client": self.track_person_client, "type": "service"},
-                # "moondream_crop_query": {
-                #     "client": self.moondream_crop_query_client,
-                #     "type": "service",
-                # },
+                "track_person": {"client": self.track_person_client, "type": "service"},
+                "moondream_crop_query": {
+                    "client": self.moondream_crop_query_client,
+                    "type": "service",
+                },
                 "pointing_object": {
                     "client": self.node.create_client(
                         DetectPointingObject, POINTING_OBJECT_SERVICE
                     ),
                     "type": "service",
                 },
+            },
+            Task.GPSR: {
+                "detect_person": {"client": self.detect_person_action_client, "type": "action"},
+                "save_face_name": {
+                    "client": self.save_name_client,
+                    "type": "service",
+                },
+            },
+            Task.STORING_GROCERIES: {
+                "moondream_query": {"client": self.moondream_query_client, "type": "service"},
+                "shelf_detections": {"client": self.shelf_detections_client, "type": "service"},
             },
             Task.DEBUG: {
                 "moondream_query": {"client": self.moondream_query_client, "type": "service"},
@@ -130,6 +155,14 @@ class VisionTasks:
         self.follow_face["y"] = msg.y
         self.flag_active_face = True
 
+    def person_list_callback(self, msg: PersonList):
+        """Callback for the face list subscriber"""
+        self.person_list = msg.list
+
+    def person_name_callback(self, msg: String):
+        """Callback for the face name subscriber"""
+        self.person_name = msg.data
+
     def get_follow_face(self):
         """Get the face to follow"""
         if self.flag_active_face:
@@ -137,6 +170,12 @@ class VisionTasks:
             return self.follow_face["x"], self.follow_face["y"]
         else:
             return None, None
+
+    def get_person_name(self):
+        """Get the name of the person detected"""
+        if self.person_name != "":
+            return Status.EXECUTION_SUCCESS, self.person_name
+        return Status.TARGET_NOT_FOUND, None
 
     @mockable(return_value=100)
     @service_check(client="save_name_client", return_value=Status.TERMINAL_ERROR, timeout=TIMEOUT)
@@ -186,6 +225,41 @@ class VisionTasks:
 
         Logger.success(self.node, f"Seat found: {result.angle}")
         return Status.EXECUTION_SUCCESS, result.angle
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, []), delay=2)
+    @service_check("shelf_detections_client", Status.EXECUTION_ERROR, TIMEOUT)
+    def detect_shelf(self, timeout: float = TIMEOUT):
+        """Detect the shelf in the image"""
+        Logger.info(self.node, "Waiting for shelf detection")
+        request = ShelfDetectionHandler.Request()
+        detections = []
+
+        try:
+            future = self.shelf_detections_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=timeout)
+            result = future.result()
+
+            if not result.success:
+                Logger.warn(self.node, "No shelf detected")
+                return Status.TARGET_NOT_FOUND, detections
+
+            results = result.shelf_array.shelf_detections
+            # for each result
+            for detection in results:
+                shelf_detection = ShelfDetection()
+                shelf_detection.x1 = detection.xmin
+                shelf_detection.x2 = detection.xmax
+                shelf_detection.y1 = detection.ymin
+                shelf_detection.y2 = detection.ymax
+                shelf_detection.level = detection.level
+                detections.append(shelf_detection)
+
+        except Exception as e:
+            Logger.error(self.node, f"Error detecting shelf: {e}")
+            return Status.EXECUTION_ERROR, detections
+
+        Logger.success(self.node, "Shelf detected")
+        return Status.EXECUTION_SUCCESS, detections
 
     @mockable(return_value=Status.EXECUTION_SUCCESS, delay=2, mock=False)
     @service_check("detect_person_action_client", Status.EXECUTION_ERROR, TIMEOUT)
@@ -279,19 +353,19 @@ class VisionTasks:
 
     @mockable(return_value=(Status.EXECUTION_ERROR, ""), delay=5, mock=False)
     @service_check("moondream_crop_query_client", Status.EXECUTION_ERROR, TIMEOUT)
-    def moondream_crop_query(self, prompt: str, bbox: list[float]) -> tuple[int, str]:
+    def moondream_crop_query(self, prompt: str, bbox: BBOX, timeout=TIMEOUT) -> tuple[int, str]:
         """Makes a query of the current image using moondream."""
         Logger.info(self.node, f"Querying image with prompt: {prompt}")
         request = CropQuery.Request()
         request.query = prompt
-        request.ymin = bbox[0]
-        request.xmin = bbox[1]
-        request.ymax = bbox[2]
-        request.xmax = bbox[3]
+        request.ymin = float(bbox.y1)
+        request.xmin = float(bbox.x1)
+        request.ymax = float(bbox.y2)
+        request.xmax = float(bbox.x2)
 
         try:
             future = self.moondream_crop_query_client.call_async(request)
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=60.0)
             result = future.result()
 
             if not result.success:
@@ -415,11 +489,23 @@ class VisionTasks:
         bbox.y2 = result.detection.ymax
         return Status.EXECUTION_SUCCESS, bbox, result.detection.point3d
 
-    def describe_bag(self, bbox: list[float]) -> tuple[int, str]:
+    def describe_bag(self, bbox: BBOX, timeout=TIMEOUT) -> tuple[int, str]:
         """Describe the person in the image"""
         Logger.info(self.node, "Describing the bag")
-        prompt = "Describe the bag in the image"
-        return self.moondream_crop_query(prompt, bbox)
+        prompt = "Please briefly describe the bag"
+        return self.moondream_crop_query(prompt, bbox, timeout=timeout)
+
+    def describe_bag_moondream(self):
+        """Describe the bag using only moondream"""
+        Logger.info(self.node, "Describing bag")
+        prompt = "Describe the bag that the person is pointing at using the folling format: the bag on your left is small and green"
+        return self.moondream_query(prompt, query_person=False)
+
+    def describe_shelf(self):
+        """Describe the shelf using only moondream"""
+        Logger.info(self.node, "Describing shelf")
+        prompt = "You are watching a shelf level with several items. Please give me a list of the items in the shelf"
+        return self.moondream_query(prompt, query_person=False)
 
 
 if __name__ == "__main__":

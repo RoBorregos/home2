@@ -1,10 +1,10 @@
 # ZED CAMERA TOPICS
-# CAMERA_TOPIC = "/zed/image_raw"
-# DEPTH_IMAGE_TOPIC = "/zed/depth/image_raw"
-# CAMERA_INFO_TOPIC = "/zed/depth/camera_info"
-CAMERA_TOPIC = "/zed/zed_node/rgb/image_rect_color"
-DEPTH_IMAGE_TOPIC = "/zed/zed_node/depth/depth_registered"
-CAMERA_INFO_TOPIC = "/zed/zed_node/depth/camera_info"
+CAMERA_TOPIC = "/zed/image_raw"
+DEPTH_IMAGE_TOPIC = "/zed/depth/image_raw"
+CAMERA_INFO_TOPIC = "/zed/depth/camera_info"
+# CAMERA_TOPIC = "/zed/zed_node/rgb/image_rect_color"
+# DEPTH_IMAGE_TOPIC = "/zed/zed_node/depth/depth_registered"
+# CAMERA_INFO_TOPIC = "/zed/zed_node/depth/camera_info"
 
 # ZED CAMERA FRAME
 CAMERA_FRAME = "zed_left_camera_optical_frame"
@@ -25,6 +25,14 @@ ZERO_SHOT_DETECTIONS_3D_TOPIC = "/vision/zero_shot_detections_3d"
 ZERO_SHOT_DETECTIONS_ACTIVE_TOPIC = "/vision/zero_shot_detections_active"
 SET_DETECTOR_CLASSES_SERVICE = "/vision/set_detector_classes"
 
+ZERO_SHOT_DEFAULT_CLASSES = [
+    "red_can",
+    "grey_box",
+    "white_can",
+]
+
+ZERO_SHOT_MODEL = "yoloe-11l-seg.pt"
+
 # LOCAL CAMERA TOPICS
 LOCAL_CAMERA_TOPIC = "/vision/local_rbg_image"
 
@@ -36,6 +44,7 @@ SET_TARGET_TOPIC = "/vision/set_tracking_target"
 SET_TARGET_BY_TOPIC = "/vision/set_tracking_target_by"
 RESULTS_TOPIC = "/vision/tracking_results"
 TRACKER_IMAGE_TOPIC = "/vision/tracker_image"
+CENTROID_TOIC = "/vision/tracker_centroid"
 
 # Pointing
 POINTING_OBJECT_SERVICE = "/vision/pointing_object_service"

@@ -47,29 +47,33 @@ class DetectPointingObjectServer(Node):
         self.LEFT_SHOULDER = 11
         self.LEFT_HAND = 19
 
-        self.object_centroids = {}
-        self.objects = {}
+        self.objects = []
         self.closest_object = None
-        self.detected_objects = {}
-        self.detected_object_centroids = {}
+        self.detected_objects = []
+        self.detected_object_centroids = []
 
         self.last_inference_time = self.get_clock().now()
 
         self.bridge = CvBridge()
 
+        qos = rclpy.qos.QoSProfile(
+            depth=5,
+            reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
+            durability=rclpy.qos.DurabilityPolicy.VOLATILE,
+        )
         self.detections_sub = self.create_subscription(
             ObjectDetectionArray,
             ZERO_SHOT_DETECTIONS_TOPIC,
             self.detections_callback,
-            10,
+            qos,
         )
 
         self.image_sub = self.create_subscription(
-            Image, CAMERA_TOPIC, self.image_callback, 10
+            Image, CAMERA_TOPIC, self.image_callback, qos
         )
 
         self.visualizer_pub = self.create_publisher(
-            Image, POINTING_DETECTION_IMAGE_TOPIC, 10
+            Image, POINTING_DETECTION_IMAGE_TOPIC, qos
         )
 
         self._pointing_classes_server = self.create_service(
@@ -92,17 +96,14 @@ class DetectPointingObjectServer(Node):
             self.cleanup_detections,
         )
 
-        print(f"subscribed to: {ZERO_SHOT_DETECTIONS_TOPIC} , {CAMERA_TOPIC}")
         self.get_logger().info("Detect Pointing Object Server Initialized")
 
     def cleanup_detections(self):
-        print("running timer")
         current_time = self.get_clock().now()
         if (
             current_time - self.last_inference_time
         ).nanoseconds / 1e9 > INFERENCE_TIMEOUT:
-            self.objects = {}
-            self.object_centroids = {}
+            self.objects = []
             self.closest_object = None
 
     def execute_callback(self, request, response):
@@ -139,26 +140,30 @@ class DetectPointingObjectServer(Node):
         # get the detections
         if (
             len(data.detections) == 0
-            and rclpy.time.Time() - self.last_inference_time > INFERENCE_TIMEOUT
+            and ((self.get_clock().now() - self.last_inference_time).nanoseconds / 1e9)
+            > INFERENCE_TIMEOUT
         ):
-            self.detected_object_centroids = {}
+            self.detected_objects = []
             return
         if len(data.detections) > 0:
-            self.detected_object_centroids = {}
-            self.detected_objects = {}
+            self.detected_objects = []
             j = 0
             for i, detection in enumerate(data.detections):
                 if detection.label_text not in self.class_names:
                     continue
                 centroid_x = (detection.xmin + detection.xmax) / 2
                 centroid_y = (detection.ymin + detection.ymax) / 2
-                self.detected_object_centroids[j] = (centroid_x, centroid_y)
-                self.detected_objects[j] = detection
-                j += 1
+                self.detected_objects.append(
+                    {
+                        "detection": detection,
+                        "centroid": (centroid_x, centroid_y),
+                    }
+                )
                 self.last_inference_time = self.get_clock().now()
+                j += 1
 
     def image_callback(self, data):
-        self.bgr_img = self.bridge.imgmsg_to_cv2(data)
+        self.bgr_img = self.bridge.imgmsg_to_cv2(data, "bgr8")
         if self.active_flag and self.runThread is None or not self.runThread.is_alive():
             self.runThread = threading.Thread(
                 target=self.run_inference, args=(), daemon=True
@@ -167,7 +172,6 @@ class DetectPointingObjectServer(Node):
 
     def run_inference(self):
         self.objects = copy.deepcopy(self.detected_objects)
-        self.object_centroids = copy.deepcopy(self.detected_object_centroids)
         visualize_img = self.bgr_img.copy()
         self.bgr_img.flags.writeable = False
         results = self.pose.process(self.bgr_img)
@@ -222,9 +226,6 @@ class DetectPointingObjectServer(Node):
                 if i == self.LEFT_SHOULDER and self.check_visible(point, img):
                     hand_base_left = point
 
-            print("-------------------")
-            # generate the linear equations for the points
-
             if (
                 finger_tip_right is not None and hand_base_right is not None
             ) and USE_RIGHT_HAND:
@@ -265,16 +266,21 @@ class DetectPointingObjectServer(Node):
                 )
 
             if closest_object is not None:
-                print(f"Closest Object: {closest_object}, Distance: {closest_distance}")
                 # publish marker
                 marker = Marker()
                 marker.header.frame_id = CAMERA_FRAME
                 marker.header.stamp = self.get_clock().now().to_msg()
                 marker.type = Marker.SPHERE
                 marker.action = Marker.ADD
-                marker.pose.position.x = self.objects[closest_object].point3d.point.x
-                marker.pose.position.y = self.objects[closest_object].point3d.point.y
-                marker.pose.position.z = self.objects[closest_object].point3d.point.z
+                marker.pose.position.x = self.objects[closest_object][
+                    "detection"
+                ].point3d.point.x
+                marker.pose.position.y = self.objects[closest_object][
+                    "detection"
+                ].point3d.point.y
+                marker.pose.position.z = self.objects[closest_object][
+                    "detection"
+                ].point3d.point.z
                 marker.scale.x = 0.1
                 marker.scale.y = 0.1
                 marker.scale.z = 0.1
@@ -284,7 +290,7 @@ class DetectPointingObjectServer(Node):
                 marker.color.b = 0.0
                 # self.pointed_object_marker.publish(marker)
 
-                self.closest_object = self.objects[closest_object]
+                self.closest_object = self.objects[closest_object]["detection"]
 
             elif (
                 closest_object is None
@@ -294,61 +300,51 @@ class DetectPointingObjectServer(Node):
                 )
                 > INFERENCE_TIMEOUT
             ):
-                print("No Closest Object Found")
                 self.closest_object = None
 
         # visualize points
-        for i, point in enumerate(self.object_centroids):
-            color = (0, 255, 0) if i == closest_object else (255, 0, 0)
-            visualize_img = cv2.drawMarker(
-                visualize_img,
-                (
-                    int(self.object_centroids[point][0] * img.shape[1]),
-                    int(self.object_centroids[point][1] * img.shape[0]),
-                ),
-                color,
-                cv2.MARKER_CROSS,
-                10,
-                2,
-            )
-            visualize_img = cv2.putText(
-                visualize_img,
-                str(i),
-                (
-                    int(self.object_centroids[point][0] * img.shape[1]),
-                    int(self.object_centroids[point][1] * img.shape[0]),
-                ),
-                cv2.FONT_HERSHEY_SIMPLEX,
-                0.5,
-                color,
-                2,
-            )
+        for i, point in enumerate(self.objects):
+            color = (0, 255, 0) if i == closest_object else (0, 0, 255)
             if i == closest_object:
-                visualize_img = cv2.putText(
+                visualize_img = cv2.rectangle(
                     visualize_img,
-                    f"{closest_distance:.2f}",
                     (
-                        int(self.object_centroids[point][0] * img.shape[1]),
-                        int(self.object_centroids[point][1] * img.shape[0] + 20),
+                        int(self.objects[i]["detection"].xmin * img.shape[1]),
+                        int(self.objects[i]["detection"].ymin * img.shape[0]),
                     ),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.5,
+                    (
+                        int(self.objects[i]["detection"].xmax * img.shape[1]),
+                        int(self.objects[i]["detection"].ymax * img.shape[0]),
+                    ),
                     color,
+                    2,
+                )
+            else:
+                visualize_img = cv2.drawMarker(
+                    visualize_img,
+                    (
+                        int(self.objects[i]["centroid"][0] * img.shape[1]),
+                        int(self.objects[i]["centroid"][1] * img.shape[0]),
+                    ),
+                    color,
+                    cv2.MARKER_CROSS,
+                    10,
                     2,
                 )
                 visualize_img = cv2.rectangle(
                     visualize_img,
                     (
-                        int(self.objects[i].xmin * img.shape[1]),
-                        int(self.objects[i].ymin * img.shape[0]),
+                        int(self.objects[i]["detection"].xmin * img.shape[1]),
+                        int(self.objects[i]["detection"].ymin * img.shape[0]),
                     ),
                     (
-                        int(self.objects[i].xmax * img.shape[1]),
-                        int(self.objects[i].ymax * img.shape[0]),
+                        int(self.objects[i]["detection"].xmax * img.shape[1]),
+                        int(self.objects[i]["detection"].ymax * img.shape[0]),
                     ),
                     color,
                     2,
                 )
+
         img_msg = self.bridge.cv2_to_imgmsg(visualize_img, encoding="bgr8")
         self.visualizer_pub.publish(img_msg)
 
@@ -360,9 +356,8 @@ class DetectPointingObjectServer(Node):
     def check_closest_object(self, m, intercept, visualize_img):
         closest_object = None
         closest_distance = 100000
-        print(self.object_centroids)
-        print(self.objects)
-        for i, centroid in self.object_centroids.items():
+        for i, object in enumerate(self.objects):
+            centroid = object["centroid"]
             # visualize_img = self.draw_orthogonal_distance(m, intercept, centroid, visualize_img)
             distance = abs(centroid[1] - m * centroid[0] - intercept) / np.sqrt(
                 m**2 + 1

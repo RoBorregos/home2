@@ -5,6 +5,7 @@ from rclpy.node import Node
 from rclpy.action import ActionServer
 from rclpy.callback_groups import ReentrantCallbackGroup
 from geometry_msgs.msg import TwistStamped, PoseStamped
+from std_srvs.srv import SetBool
 from frida_interfaces.action import MoveToPose, MoveJoints
 from frida_constants.manipulation_constants import (
     GET_COLLISION_OBJECTS_SERVICE,
@@ -31,6 +32,7 @@ from frida_constants.manipulation_constants import (
     REMOVE_COLLISION_OBJECT_SERVICE,
     ATTACH_COLLISION_OBJECT_SERVICE,
     TOGGLE_SERVO_SERVICE,
+    GRIPPER_SET_STATE_SERVICE,
 )
 from xarm_msgs.srv import MoveVelocity
 from frida_interfaces.msg import CollisionObject
@@ -99,6 +101,12 @@ class MotionPlanningServer(Node):
             self.attach_collision_object_callback,
         )
 
+        self.gripper_set_state_service = self.create_service(
+            SetBool,
+            GRIPPER_SET_STATE_SERVICE,
+            self.set_gripper_state_callback,
+        )
+
         self.toggle_servo_service = self.create_service(
             ToggleServo, TOGGLE_SERVO_SERVICE, self.toggle_servo_callback
         )
@@ -117,8 +125,10 @@ class MotionPlanningServer(Node):
             self.xarm_services = XArmServices(
                 self, self.planner.mode_client, self.planner.state_client
             )
+            self.real_xarm = True
         else:
             self.xarm_services = XArmServices(self, None, None)
+            self.real_xarm = False
 
         self.xarm_joint_velocity_service = self.create_service(
             MoveVelocity,
@@ -195,10 +205,30 @@ class MotionPlanningServer(Node):
 
     def move_joints(self, goal_handle, feedback):
         self.get_logger().info(
-            f"Moving joints: {goal_handle.request.joint_names} to joints: {list(goal_handle.request.joint_positions)}"
+            f"Moving joints: {goal_handle.request.joint_names} to : {list(goal_handle.request.joint_positions)}"
         )
         joint_names = goal_handle.request.joint_names
         joint_positions = list(goal_handle.request.joint_positions)
+        joint_dict = self.planner.get_joint_positions()
+
+        try:
+            configuration_distance = 0
+            for i, joint_name in enumerate(joint_names):
+                joint_curr_pos = joint_dict[joint_name]
+                joint_target_pos = joint_positions[i]
+                configuration_distance += (joint_curr_pos - joint_target_pos) ** 2
+            configuration_distance = configuration_distance**0.5
+            if configuration_distance < 0.2:
+                self.get_logger().info(
+                    f"Joint positions are already close to target: {configuration_distance}"
+                )
+                return True
+        except Exception as e:
+            print(e)
+            self.get_logger().error(
+                f"Joint names are not in the current joint positions: {joint_names}"
+            )
+            return False
         result = self.planner.plan_joint_goal(
             joint_positions,
             joint_names,
@@ -354,7 +384,9 @@ class MotionPlanningServer(Node):
             # Generate a unique ID for the collision object
             object_id = f"{request.id}"
             if object_id == "all":
-                self.planner.remove_all_collision_objects()
+                self.planner.remove_all_collision_objects(
+                    include_attached=request.include_attached
+                )
                 self.get_logger().info("Removed all collision objects")
                 response.success = True
                 return response
@@ -422,6 +454,18 @@ class MotionPlanningServer(Node):
             # TODO: send dimensions and type
             response.collision_objects.append(new_collision_object)
         response.success = True
+        return response
+
+    def set_gripper_state_callback(self, request, response):
+        """Handle requests to set the gripper state"""
+
+        # 0 open, 1 closed
+        if request.data:
+            self.xarm_services.open_gripper()
+        else:
+            self.xarm_services.close_gripper()
+        response.success = True
+
         return response
 
 
