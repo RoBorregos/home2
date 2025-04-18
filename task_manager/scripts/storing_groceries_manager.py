@@ -53,7 +53,7 @@ class StoringGroceriesManager(Node):
         super().__init__("storing_groceries_manager")
         self.logger = Logger()
         self.subtask_manager = SubtaskManager(
-            self, task=Task.STORING_GROCERIES, mock_areas=["manipulation", "navigation"]
+            self, task=Task.STORING_GROCERIES, mock_areas=["manipulation"]
         )
         self.state = ExecutionStates.START
         self.state_data = {}
@@ -64,29 +64,31 @@ class StoringGroceriesManager(Node):
         self.object_to_placing_shelf: dict[str, list[int]]
         self.current_object: str = None
 
+        self.retry_count = 0
+
     def nav_to(self, location: str, sub_location: str = "", say: bool = True) -> Status:
-        self.logger.info(f"Navigating to {location} {sub_location}")
+        Logger.info(self, f"Navigating to {location} {sub_location}")
         try:
             if say:
-                self.subtask_manager.hri.say(text=f"Going to {location} {sub_location}", wait=False)
+                self.subtask_manager.hri.say(text=f"Going to {location} {sub_location}", wait=True)
             future = self.subtask_manager.nav.move_to_location(location, sub_location)
             rclpy.spin_until_future_complete(self, future)
-            hres: Status = future.result()
-            return hres
+            hres = future.result()
+            return Status.EXECUTION_SUCCESS if hres == 1 else Status.EXECUTION_ERROR
         except Exception as e:
-            self.logger.error(f"Error navigating to {location}: {e}")
+            Logger.error(self, f"Error navigating to {location}: {e}")
         return Status.EXECUTION_ERROR
 
     def exec_state(self):
-        self.logger.info(f"Executing state: {self.state.name}")
+        Logger.info(self, f"Executing state: {self.state.name}")
         if self.state == ExecutionStates.START:
             self.state = ExecutionStates.INIT_NAV_TO_SHELF
         elif self.state == ExecutionStates.END:
-            self.logger.info("Ending Storing Groceries Manager...")
-            self.subtask_manager.hri.say(text="Ending Storing Groceries Manager...", wait=False)
+            Logger.info(self, "Ending Storing Groceries Manager...")
+            self.subtask_manager.hri.say(text="Ending Storing Groceries Manager...", wait=True)
             return
         elif self.state == ExecutionStates.INIT_NAV_TO_SHELF:
-            hres: Status = self.subtask_manager.nav.move_to_location("table")
+            hres: Status = self.nav_to("kitchen", "shelve")
             if hres == Status.EXECUTION_SUCCESS:
                 self.state = ExecutionStates.SUCCEDED_NAV_TO_SHELF
             else:
@@ -105,20 +107,20 @@ class StoringGroceriesManager(Node):
             elif status == Status.EXECUTION_SUCCESS:
                 pass  # rn todo
             else:
-                self.logger.error("Unknown status")
+                Logger.error(self, "Unknown status")
                 return
 
             status, res = self.subtask_manager.vision.detect_objects()
 
             if status == Status.EXECUTION_SUCCESS:
-                self.logger.info(f"Detected objects: {res}")
+                Logger.info(self, f"Detected objects: {res}")
                 res: list[BBOX]
             else:
-                self.logger.error("Unknown status")
+                Logger.error(self, "Unknown status")
                 return
 
             for det in res:
-                # self.logger.info(f"Detected object: {det.classname}")
+                # Logger.info(self, f"Detected object: {det.classname}")
                 detected_shelf: ShelfDetection = None
                 center_x = det.x1 + det.w / 2
                 center_y = det.y1 + det.h / 2
@@ -127,24 +129,26 @@ class StoringGroceriesManager(Node):
                         detected_shelf = shelf
                         break
                 if detected_shelf is None:
-                    self.logger.error(f"Detected object {det.classname} not in any shelf")
+                    Logger.error(self, f"Detected object {det.classname} not in any shelf")
                     continue
-                self.logger.info(f"Detected object {det.classname} in shelf {detected_shelf.level}")
+                Logger.info(
+                    self, f"Detected object {det.classname} in shelf {detected_shelf.level}"
+                )
                 self.shelves[detected_shelf.level].id = detected_shelf.level
                 self.shelves[detected_shelf.level].objects.append(det.classname)
 
-            self.logger.info("Shelves: %s", self.shelves)
+            Logger.info(self, "Shelves: %s", self.shelves)
             self.state = ExecutionStates.INIT_NAV_TO_TABLE
 
             len(self.shelves)
 
         elif self.state == ExecutionStates.INIT_NAV_TO_TABLE:
-            hres: Status = self.nav_to("table")
+            hres: Status = self.nav_to("kitchen", "table")
             if hres == Status.EXECUTION_SUCCESS:
                 self.state = ExecutionStates.VIEW_AND_SAVE_OBJECTS_ON_TABLE
             else:
                 self.state = ExecutionStates.FAILED_NAV_TO_SHELF
-                self.logger.error("Failed to navigate to table")
+                Logger.error(self, "Failed to navigate to table")
         elif self.state == ExecutionStates.VIEW_AND_SAVE_OBJECTS_ON_TABLE:
             status, result = self.subtask_manager.vision.detect_objects(timeout=10)
             if status == Status.TIMEOUT:
@@ -153,9 +157,9 @@ class StoringGroceriesManager(Node):
             elif status == Status.EXECUTION_SUCCESS:
                 pass
             else:
-                self.logger.error("Unknown status")
+                Logger.error(self, "Unknown status")
                 return
-            self.logger.info(f"Detected objects: {result}")
+            Logger.info(self, f"Detected objects: {result}")
             result: list[BBOX]
             self.objects_on_table = result
             self.object_names_on_table = [i.classname for i in result]
@@ -171,20 +175,20 @@ class StoringGroceriesManager(Node):
                 self.subtask_manager.hri.categorize_objects(self.object_names_on_table, shelfs)
             )
             if not status == Status.EXECUTION_SUCCESS:
-                self.logger.error("Failed to categorize objects")
+                Logger.error(self, "Failed to categorize objects")
                 return
-            self.logger.info(f"Categorized shelfs: {categorized_shelfs}")
-            self.logger.info(f"Objects to add: {objects_to_add}")
+            Logger.info(self, f"Categorized shelfs: {categorized_shelfs}")
+            Logger.info(self, f"Objects to add: {objects_to_add}")
             for i in categorized_shelfs:
                 self.shelves[i].tag = categorized_shelfs[i]
             for i in objects_to_add:
                 for j in objects_to_add[i]:
                     self.object_to_placing_shelf[j].append(i)
-            self.logger.info(f"Shelves: {self.shelves}")
-            self.logger.info(f"Objects to place: {self.object_to_placing_shelf}")
+            Logger.info(self, f"Shelves: {self.shelves}")
+            Logger.info(self, f"Objects to place: {self.object_to_placing_shelf}")
             self.state = ExecutionStates.SAY_5_OBJECTS_CATEGORIZED
             self.subtask_manager.hri.say(
-                text=f"Categorized {len(self.object_names_on_table)} objects", wait=False
+                text=f"Categorized {len(self.object_names_on_table)} objects", wait=True
             )
         elif self.state == ExecutionStates.SAY_5_OBJECTS_CATEGORIZED:
             for i in list(set(self.object_names_on_table))[
@@ -192,7 +196,7 @@ class StoringGroceriesManager(Node):
             ]:
                 self.subtask_manager.hri.say(
                     text=f"Categorized object: {i} as {self.shelves[self.object_to_placing_shelf[i]].tag}",
-                    wait=False,
+                    wait=True,
                 )
             self.state = ExecutionStates.PLAN_NEXT
         elif self.state == ExecutionStates.PLAN_NEXT:
@@ -201,7 +205,7 @@ class StoringGroceriesManager(Node):
                 return
             self.state = ExecutionStates.NAV_TO_TABLE
         elif self.state == ExecutionStates.NAV_TO_TABLE:
-            hres: Status = self.nav_to("table")
+            hres: Status = self.nav_to("kitchen", "table")
             if not hres == Status.EXECUTION_SUCCESS:
                 self.state = ExecutionStates.FAILED_NAV_TO_SHELF
                 return
@@ -212,15 +216,15 @@ class StoringGroceriesManager(Node):
                 # pass
                 return
             elif not status == Status.EXECUTION_SUCCESS:
-                self.logger.error("Unknown status")
+                Logger.error(self, "Unknown status")
                 return
             objs: list[BBOX]
-            self.logger.info(f"Detected objects: {objs}")
+            Logger.info(self, f"Detected objects: {objs}")
             if len(objs) == 0:
-                self.logger.error("No objects detected")
-                self.subtask_manager.hri.say(text="No objects detected", wait=False)
+                Logger.error(self, "No objects detected")
+                self.subtask_manager.hri.say(text="No objects detected", wait=True)
                 return
-            self.logger.info(f"Detected objects: {objs}")
+            Logger.info(self, f"Detected objects: {objs}")
             min_distance = 1000000000
             min_distance_obj: BBOX = None
             for obj in objs:
@@ -228,19 +232,20 @@ class StoringGroceriesManager(Node):
                     min_distance = obj.distance
                     min_distance_obj = obj
             if min_distance_obj is None:
-                # self.logger.error("No objects detected")
+                # Logger.error(self, "No objects detected")
                 # self.subtask_manager.hri.say(
-                #     text="No objects detected", wait=False)
-                self.logger.error("AAAAASADQWEQWEASDQWEQWEQWEQWEQWE")
+                #     text="No objects detected", wait=True)
+                Logger.error(self, "AAAAASADQWEQWEASDQWEQWEQWEQWEQWE")
                 return
-            self.logger.info(
-                f"Detected object: {min_distance_obj.classname} at distance {min_distance_obj.distance}"
+            Logger.info(
+                self,
+                f"Detected object: {min_distance_obj.classname} at distance {min_distance_obj.distance}",
             )
 
-            # self.logger.info(
+            # Logger.info(self,
             #     f"Detected object: {min_distance_obj.classname}")
             self.subtask_manager.hri.say(
-                text=f"I'm going to pick the object: {min_distance_obj.classname}", wait=False
+                text=f"I'm going to pick the object: {min_distance_obj.classname}", wait=True
             )
             self.current_object = min_distance_obj.classname
             hres: Status = self.subtask_manager.manipulation.pick_object(
@@ -248,11 +253,11 @@ class StoringGroceriesManager(Node):
             )
             if not hres == Status.EXECUTION_SUCCESS:
                 # self.state = ExecutionStates.FAILED_NAV_TO_SHELF
-                self.logger.error("Failed to pick object")
+                Logger.error(self, "Failed to pick object")
                 return
             self.state = ExecutionStates.NAV_TO_SHELF
         elif self.state == ExecutionStates.NAV_TO_SHELF:
-            hres: Status = self.nav_to("shelf", str(self.shelves_count))
+            hres: Status = self.nav_to("kitchen", "shelve")
             if not hres == Status.EXECUTION_SUCCESS:
                 self.state = ExecutionStates.FAILED_NAV_TO_SHELF
                 return
@@ -262,17 +267,45 @@ class StoringGroceriesManager(Node):
                 self.object_to_placing_shelf[self.current_object].pop(0), self.current_object
             )
             if not status == Status.EXECUTION_SUCCESS:
-                self.logger.error("Failed to place object")
+                Logger.error(self, "Failed to place object")
                 return
-            self.logger.info(
-                f"Placed object: {self.current_object} in shelf {self.object_to_placing_shelf[self.current_object]}"
+            Logger.info(
+                self,
+                f"Placed object: {self.current_object} in shelf {self.object_to_placing_shelf[self.current_object]}",
             )
             self.current_object = None
             self.state = ExecutionStates.PLAN_NEXT
         else:
-            self.logger.error(f"Unknown state: {self.state}")
+            Logger.error(self, f"Unknown state: {self.state}")
             return
 
     def run(self):
-        self.logger.info("Starting Storing Groceries Manager...")
-        self.logger.info("Starting Storing Groceries Manager...")
+        Logger.info(self, "Starting Storing Groceries Manager...")
+        if self.state != ExecutionStates.END:
+            self.exec_state()
+            if self.state == ExecutionStates.END:
+                Logger.info(self, "Ending Storing Groceries Manager...")
+                self.subtask_manager.hri.say(text="Ending Storing Groceries Manager...", wait=True)
+                return
+        Logger.info(self, "Starting Storing Groceries Manager...")
+
+
+def main(args=None):
+    """Main function"""
+    print("Starting Storing Groceries Manager...")
+    rclpy.init(args=args)
+    node = StoringGroceriesManager()
+
+    try:
+        while rclpy.ok():
+            rclpy.spin_once(node, timeout_sec=0.1)
+            node.run()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+
+if __name__ == "__main__":
+    main()

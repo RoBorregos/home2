@@ -17,7 +17,7 @@ def generate_launch_description():
         Node(
             package='nav_main',
             executable='ignore_laser',
-            parameters = [{'ignore_array': '-176 ,-166, -129,-119, -85, -67, -56, -46, -10,5, 31,49, 131,149'}],
+            parameters = [{'ignore_array': '-176 ,-166, -129,-119, -85, -67, -56, -46, -10,5, 25,60, 131,149'}],
             condition=UnlessCondition(use_sim)
         ),
         Node(
