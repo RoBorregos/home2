@@ -28,9 +28,9 @@ from frida_interfaces.action import PlaceMotion, MoveToPose
 import copy
 
 
-class PickMotionServer(Node):
+class PlaceMotionServer(Node):
     def __init__(self):
-        super().__init__("pick_server")
+        super().__init__("place_server")
         self.callback_group = ReentrantCallbackGroup()
 
         self._action_server = ActionServer(
@@ -64,29 +64,29 @@ class PickMotionServer(Node):
 
         self._move_to_pose_action_client.wait_for_server()
 
-        self.get_logger().info("Pick Action Server has been started")
+        self.get_logger().info("Place Action Server has been started")
 
     async def execute_callback(self, goal_handle):
-        """Execute the pick action when a goal is received."""
-        self.get_logger().info("Executing pick goal...")
+        """Execute the place action when a goal is received."""
+        self.get_logger().info("Executing place goal...")
 
         # Initialize result
         feedback = PlaceMotion.Feedback()
         result = PlaceMotion.Result()
         try:
-            result.success, result.pick_result = self.place(goal_handle, feedback)
+            result.success = self.place(goal_handle, feedback)
             goal_handle.succeed()
             return result
         except Exception as e:
-            self.get_logger().error(f"Pick failed: {str(e)}")
+            self.get_logger().error(f"Place failed: {str(e)}")
             goal_handle.abort()
             result.success = False
             return result
 
-    def pick(self, goal_handle, feedback):
-        """Perform the pick operation."""
+    def place(self, goal_handle, feedback):
+        """Perform the place operation."""
         self.get_logger().info(
-            f"Trying to pick up object: {goal_handle.request.object_name}"
+            f"Trying to place up object: {goal_handle.request.object_name}"
         )
         place_pose = goal_handle.request.place_pose
 
@@ -208,8 +208,8 @@ class PickMotionServer(Node):
 def main(args=None):
     rclpy.init(args=args)
     executor = rclpy.executors.MultiThreadedExecutor(5)
-    pick_server = PickMotionServer()
-    executor.add_node(pick_server)
+    place_server = PlaceMotionServer()
+    executor.add_node(place_server)
     executor.spin()
     rclpy.shutdown()
 
