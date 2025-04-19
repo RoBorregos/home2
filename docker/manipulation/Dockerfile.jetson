@@ -9,7 +9,7 @@ RUN rm -r /workspace/requirements
 
 # CV-bridge
 
-RUN apt update && apt install -y ros-humble-cv-bridge
+RUN apt update && apt install -y ros-humble-cv-bridge ros-humble-laser-geometry
 
 USER ros
 WORKDIR /workspace
