@@ -96,8 +96,6 @@ class GPSRCommands(Node):
         self.create_timer(0.1, self.publish_image)
 
         self.moondream_crop_query_client = self.create_client(CropQuery, CROP_QUERY_TOPIC)
-        self.futures = []  
-        self.responses = []  
 
     def image_callback(self, data):
         """Callback to receive the image from the camera."""
@@ -250,26 +248,16 @@ class GPSRCommands(Node):
             status, response_q = self.moondream_crop_query(prompt, [float(y1), float(x1), float(y2), float(x2)])
             if status:
                 print(response_q)
-
-        self.wait_for_all_futures()
-
-        for response_q in self.responses:
-            if response_q is not None:
                 response_clean = response_q.strip()
                 if response_clean == "1":
                     count += 1
                 elif response_clean != "0":
                     self.get_logger().warn(f"Unexpected response: {response_clean}")
-
+        
         response.success = True
         response.count = count
         self.get_logger().info(f"People wearing a {clothing} of color {color}: {count}")
         return response
-
-    def wait_for_all_futures(self):
-        """Espera a que todos los futuros hayan terminado."""
-        for future in self.futures:
-            rclpy.spin_until_future_complete(self, future)
 
     def detect_pose_gesture_callback(self, request, response):
         """Callback to detect a specific pose or gesture in the image."""
@@ -442,22 +430,22 @@ class GPSRCommands(Node):
                         cv2.LINE_AA,
                     )
 
-    def wait_for_future(self, future, timeout=TIMEOUT):
+    def wait_for_future(self, future, timeout=5.0):
         start_time = time.time()
         self.get_logger().info("Waiting for future to complete")
 
         if future is None:
             self.get_logger().warn("Future is None")
-            return None  
+            return None
 
         while not future.done() and (time.time() - start_time) < timeout:
-            time.sleep(0.01)
+            rclpy.spin_once(self, timeout_sec=0.1)
 
         if not future.done():
             self.get_logger().warn("Timeout reached, future did not complete")
-            return None 
+            return None
 
-        return future  
+        return future.result()
 
     def moondream_crop_query(self, prompt: str, bbox: list[float]) -> tuple[int, str]:
         """Makes a query of the current image using moondream."""
@@ -471,23 +459,18 @@ class GPSRCommands(Node):
         request.xmax = bbox[3]
 
         future = self.moondream_crop_query_client.call_async(request)
-        def handle_response(fut):
-            try:
-                result = fut.result()
-                if result.success:
-                    self.get_logger().info(f"Moondream result: {result.result}")
-                    self.responses.append(result.result)  
-                else:
-                    self.get_logger().warn(f"Moondream failed: {result.message}")
-                    self.responses.append(None)
-            except Exception as e:
-                self.get_logger().error(f"Moondream exception: {e}")
-                self.responses.append(None)
+        result = self.wait_for_future(future)
 
-        future.add_done_callback(handle_response)
-        self.futures.append(future)
+        if result is None:
+            self.get_logger().error("Future timed out or failed")
+            return False, ""
 
-        return True, "Waiting for async response"
+        if not result.success:
+            self.get_logger().warn(f"Moondream failed: {result.message}")
+            return False, ""
+
+        self.get_logger().info(f"Moondream result: {result.result}")
+        return True, result.result
 
 def main(args=None):
     rclpy.init(args=args)
