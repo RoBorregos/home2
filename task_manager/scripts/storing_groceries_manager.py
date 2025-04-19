@@ -31,7 +31,9 @@ class ExecutionStates(Enum):
     NAV_TO_SHELF = 70
 
     PICK_OBJECT = 60
+    DEUX_PICK_OBJECT = 61
     PLACE_OBJECT = 70
+    DEUX_PLACE_OBJECT = 71
 
     CEREAL_ANALYSIS = 100
     CEREAL_PICK = 110
@@ -40,6 +42,12 @@ class ExecutionStates(Enum):
     END = 200
 
     # TRY_HEAL = 500
+
+
+STATE_TO_DEUX = {
+    [ExecutionStates.PICK_OBJECT]: ExecutionStates.DEUX_PICK_OBJECT,
+    [ExecutionStates.PLACE_OBJECT]: ExecutionStates.DEUX_PLACE_OBJECT,
+}
 
 
 class Shelf(BaseModel):
@@ -65,6 +73,7 @@ class StoringGroceriesManager(Node):
         self.current_object: str = None
 
         self.retry_count = 0
+        self.prev_state = None
 
     def nav_to(self, location: str, sub_location: str = "", say: bool = True) -> Status:
         Logger.info(self, f"Navigating to {location} {sub_location}")
@@ -266,6 +275,9 @@ class StoringGroceriesManager(Node):
             status = self.subtask_manager.manipulation.place_in_shelf(
                 self.object_to_placing_shelf[self.current_object].pop(0), self.current_object
             )
+            self.shelves[self.object_to_placing_shelf[self.current_object]].objects.append(
+                self.current_object
+            )
             if not status == Status.EXECUTION_SUCCESS:
                 Logger.error(self, "Failed to place object")
                 return
@@ -275,6 +287,46 @@ class StoringGroceriesManager(Node):
             )
             self.current_object = None
             self.state = ExecutionStates.PLAN_NEXT
+        elif self.state == ExecutionStates.DEUX_PICK_OBJECT:
+            Logger.info(self, "DEUX_PICK_OBJECT")
+            status = self.subtask_manager.manipulation.open_gripper()
+            self.subtask_manager.hri.say(
+                f"Please hand me the {self.current_object} object", wait=True
+            )
+            # wait 2 seconds
+            tries = 0
+            while not self.subtask_manager.hri.confirm(
+                "Have you handed me the object?", timeout=30
+            ):
+                self.subtask_manager.hri.say("Please hand me the object when ready.")
+                tries += 1
+                if tries > 5:
+                    Logger.error(self, "Failed to pick object")
+                    return
+            status = self.subtask_manager.manipulation.close_gripper()
+            self.state = ExecutionStates.NAV_TO_SHELF
+        elif self.state == ExecutionStates.DEUX_PLACE_OBJECT:
+            Logger.info(self, "DEUX_PLACE_OBJECT")
+            shelf = self.object_to_placing_shelf[self.current_object][0]
+            self.subtask_manager.hri.say(
+                f"Please place the {self.current_object} object in the shelf number {shelf}",
+                wait=True,
+            )
+            self.subtask_manager.hri.say("Other objects in the shelf are:")
+            for i in self.shelves[shelf].objects:
+                self.subtask_manager.hri.say(f"{i}", wait=True)
+            tries = 0
+            self.subtask_manager.manipulation.open_gripper()
+            while not self.subtask_manager.hri.confirm("Have you placed the object?", timeout=30):
+                self.subtask_manager.hri.say("Please place the object when ready.")
+                tries += 1
+                if tries > 5:
+                    Logger.error(self, "Failed to place object")
+                    return
+            status = self.subtask_manager.manipulation.close_gripper()
+            self.shelves[shelf].objects.append(self.current_object)
+            self.object_to_placing_shelf[self.current_object].pop(0)
+            self.state = ExecutionStates.PLAN_NEXT
         else:
             Logger.error(self, f"Unknown state: {self.state}")
             return
@@ -282,7 +334,24 @@ class StoringGroceriesManager(Node):
     def run(self):
         Logger.info(self, "Starting Storing Groceries Manager...")
         if self.state != ExecutionStates.END:
-            self.exec_state()
+            if self.prev_state == self.state:
+                self.retry_count += 1
+                if self.retry_count > 10:
+                    Logger.error(self, "Retry count exceeded")
+                    if self.state in STATE_TO_DEUX:
+                        self.prev_state = self.state
+                        self.state = STATE_TO_DEUX[self.state]
+                        self.retry_count = 0
+                    else:
+                        self.state = ExecutionStates.END
+                        return
+            else:
+                self.retry_count = 0
+                self.prev_state = self.state
+            try:
+                self.exec_state()
+            except Exception as e:
+                self.logger.error("Error executing state: %s", e)
             if self.state == ExecutionStates.END:
                 Logger.info(self, "Ending Storing Groceries Manager...")
                 self.subtask_manager.hri.say(text="Ending Storing Groceries Manager...", wait=True)
