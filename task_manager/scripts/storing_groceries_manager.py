@@ -45,8 +45,8 @@ class ExecutionStates(Enum):
 
 
 STATE_TO_DEUX = {
-    [ExecutionStates.PICK_OBJECT]: ExecutionStates.DEUX_PICK_OBJECT,
-    [ExecutionStates.PLACE_OBJECT]: ExecutionStates.DEUX_PLACE_OBJECT,
+    ExecutionStates.PICK_OBJECT: ExecutionStates.DEUX_PICK_OBJECT,
+    ExecutionStates.PLACE_OBJECT: ExecutionStates.DEUX_PLACE_OBJECT,
 }
 
 
@@ -108,7 +108,7 @@ class StoringGroceriesManager(Node):
             status, results = self.subtask_manager.vision.detect_shelf(timeout=10)
             results: list[ShelfDetection]
             self.shelves_count = max([i.level for i in results]) + (
-                1 if len(0 in [i.level for i in results]) > 0 else 0
+                1 if 0 in [i.level for i in results] > 0 else 0
             )
             if status == Status.TIMEOUT:
                 pass  # should retry
@@ -146,7 +146,7 @@ class StoringGroceriesManager(Node):
                 self.shelves[detected_shelf.level].id = detected_shelf.level
                 self.shelves[detected_shelf.level].objects.append(det.classname)
 
-            Logger.info(self, "Shelves: %s", self.shelves)
+            Logger.info(self, f"Shelves: {self.shelves}")
             self.state = ExecutionStates.INIT_NAV_TO_TABLE
 
             len(self.shelves)
