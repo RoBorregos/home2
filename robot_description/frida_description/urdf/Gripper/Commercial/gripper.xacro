@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+<xacro:property name="mesh_path" value="file://$(find frida_description)/urdf/meshes/Gripper/Commercial/" />
+
+<xacro:macro name="load_gripper" params="attach_to:='' xyz:='0 0 0' rpy:='0 0 0' fixed_joints:='false'">
+    <xacro:unless value="${attach_to == ''}">
+      <joint name="gripper_fix" type="fixed">
+        <parent link="${attach_to}"/>
+        <child link="gripper"/>
+        <origin xyz="${xyz}" rpy="${rpy}"/>
+      </joint>
+    </xacro:unless>
+
+<link name="gripper">
+    <inertial>
+      <origin xyz="0.045477 -1.6103E-05 -0.010134" rpy="0 0 0" />
+      <mass value="0.15635" />
+      <inertia ixx="0.00014586" ixy="-8.4098E-09" ixz="-4.3506E-06"
+               iyy="5.2421E-05" iyz="-2.0981E-07" izz="0.00012676" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="${mesh_path}gripper.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="0.79216 0.81961 0.93333 1" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="${mesh_path}gripper.STL" />
+      </geometry>
+    </collision>
+</link>
+
+<!-- Fingers -->
+<xacro:macro name="finger" params="prefix inertial_origin ixx ixy ixz iyy iyz izz">
+  <link name="${prefix}_finger">
+    <inertial>
+      <origin xyz="${inertial_origin}" rpy="0 0 0" />
+      <mass value="0.021556" />
+      <inertia ixx="${ixx}" ixy="${ixy}" ixz="${ixz}"
+               iyy="${iyy}" iyz="${iyz}" izz="${izz}" />
+    </inertial>
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="${mesh_path}${prefix}_finger.STL" />
+      </geometry>
+      <material name="">
+        <color rgba="${lidar_rgba}" />
+      </material>
+    </visual>
+    <collision>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="${mesh_path}${prefix}_finger.STL" />
+      </geometry>
+    </collision>
+  </link>
+</xacro:macro>
+
+<xacro:finger prefix="right" inertial_origin="0.031796 -0.039646 -4.3517E-05" ixx="7.5207E-06" ixy="5.702E-06" ixz="2.7442E-21" iyy="1.0341E-05" iyz="-9.9772E-22" izz="1.4333E-05" />
+<xacro:finger prefix="left" inertial_origin="0.031901 0.039833 -2.5479E-17" ixx="7.4373E-06" ixy="-5.6549E-06" ixz="9.4292E-21" iyy="1.0294E-05" iyz="6.0945E-21" izz="1.4202E-05"/>
+
+  
+  <xacro:if value="${fixed_joints}">
+    <xacro:property name="finger_joint_type" value="fixed" />
+  </xacro:if>
+  <xacro:unless value="${fixed_joints}"> 
+    <xacro:property name="finger_joint_type" value="revolute" />
+  </xacro:unless>
+
+  <joint name="rightfinger" type="${finger_joint_type}">
+    <origin xyz="0.087 -0.01054 0.0008" rpy="0 0 0" />
+    <parent link="gripper" />
+    <child link="right_finger" />
+    <axis xyz="0 0 1" />
+    <limit lower="-0.6" upper="0.68"
+           effort="1" velocity="8" />
+  </joint>
+
+  <joint
+    name="leftfinger" type="${finger_joint_type}">
+    <origin xyz="0.087 0.01346 0.0008" rpy="0 0 0" />
+    <parent link="gripper" />
+    <child link="left_finger" />
+    <axis xyz="0 0 -1" />
+    <limit lower="-0.6" upper="0.68"
+           effort="1" velocity="8" />
+    <mimic joint="rightfinger" multiplier="1" />
+  </joint>
+
+  </xacro:macro>
+
+</robot>

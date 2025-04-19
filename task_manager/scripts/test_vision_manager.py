@@ -11,7 +11,7 @@ from subtask_managers.vision_tasks import VisionTasks
 from utils.task import Task
 from utils.logger import Logger
 
-task = Task.GPSR
+task = Task.STORING_GROCERIES
 
 
 class TestVision(Node):
@@ -57,6 +57,11 @@ class TestVision(Node):
                 Logger.info(self, f"Vision task result: {name}")
             else:
                 Logger.warn(self, "No person")
+
+        elif task == Task.STORING_GROCERIES:
+            results = self.manager.detect_shelf()
+            print(results)
+            self.running_task = False
 
 
 def main(args=None):
