@@ -1,10 +1,10 @@
 # ZED CAMERA TOPICS
-# CAMERA_TOPIC = "/zed/image_raw"
-# DEPTH_IMAGE_TOPIC = "/zed/depth/image_raw"
-# CAMERA_INFO_TOPIC = "/zed/depth/camera_info"
-CAMERA_TOPIC = "/zed/zed_node/rgb/image_rect_color"
-DEPTH_IMAGE_TOPIC = "/zed/zed_node/depth/depth_registered"
-CAMERA_INFO_TOPIC = "/zed/zed_node/depth/camera_info"
+CAMERA_TOPIC = "/zed/image_raw"
+DEPTH_IMAGE_TOPIC = "/zed/depth/image_raw"
+CAMERA_INFO_TOPIC = "/zed/depth/camera_info"
+# CAMERA_TOPIC = "/zed/zed_node/rgb/image_rect_color"
+# DEPTH_IMAGE_TOPIC = "/zed/zed_node/depth/depth_registered"
+# CAMERA_INFO_TOPIC = "/zed/zed_node/depth/camera_info"
 
 # ZED CAMERA FRAME
 CAMERA_FRAME = "zed_left_camera_optical_frame"

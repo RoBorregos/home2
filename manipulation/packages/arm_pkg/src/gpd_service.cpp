@@ -23,8 +23,8 @@ public:
     tf_listener_(*tf_buffer_) {
 
     // Declare parameters
-    this->declare_parameter("target_frame", "link_base");
-    this->declare_parameter("pcd_default_frame", "link_base");
+    this->declare_parameter("target_frame", "base_link");
+    this->declare_parameter("pcd_default_frame", "base_link");
     this->declare_parameter("transform_timeout", 1.0);
 
     // Create service
