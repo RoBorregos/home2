@@ -231,10 +231,16 @@ class MoveItPlanner(Planner):
         return dict(zip(self.joint_states.name, self.joint_states.position))
 
     def joint_states_callback(self, msg: JointState):
-        for joint_name in msg.name:
-            if joint_name not in xarm6.joint_names():
-                return
-        self.joint_states = msg
+        # self.joint_states = JointState()  # Crea un nuevo mensaje
+        relevant_indices = []
+        for i, joint_name in enumerate(msg.name):
+            if joint_name in xarm6.joint_names():
+                relevant_indices.append(i)
+        # Filtra solo los joints del brazo
+        if len(relevant_indices) == 0:
+            return
+        self.joint_states.name = [msg.name[i] for i in relevant_indices]
+        self.joint_states.position = [msg.position[i] for i in relevant_indices]
 
     def get_fk(self, links: List[str]) -> List[PoseStamped]:
         # Get forward kinematics for current joint state and specified links
