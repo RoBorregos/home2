@@ -9,7 +9,7 @@ from typing import Union
 
 import rclpy
 from frida_constants.hri_constants import (
-    ADD_ITEM_SERVICE,
+    ADD_ENTRY_SERVICE,
     COMMAND_INTERPRETER_SERVICE,
     COMMON_INTEREST_SERVICE,
     EXTRACT_DATA_SERVICE,
@@ -17,15 +17,16 @@ from frida_constants.hri_constants import (
     IS_NEGATIVE_SERVICE,
     IS_POSITIVE_SERVICE,
     LLM_WRAPPER_SERVICE,
-    QUERY_ITEM_SERVICE,
+    QUERY_ENTRY_SERVICE,
     SPEAK_SERVICE,
     STT_SERVICE_NAME,
     USEFUL_AUDIO_NODE_NAME,
     WAKEWORD_TOPIC,
+    CATEGORIZE_SERVICE,
 )
 from frida_interfaces.srv import (
     STT,
-    AddItem,
+    AddEntry,
     CommandInterpreter,
     CommonInterest,
     ExtractInfo,
@@ -33,8 +34,9 @@ from frida_interfaces.srv import (
     IsNegative,
     IsPositive,
     LLMWrapper,
-    QueryItem,
+    QueryEntry,
     Speak,
+    CategorizeShelves,
 )
 from rcl_interfaces.msg import Parameter, ParameterType, ParameterValue
 from rcl_interfaces.srv import SetParameters
@@ -54,14 +56,10 @@ def confirm_query(interpreted_text, target_info):
     return f"Did you say {target_info}?"
 
 
-def confirm_interpretation(interpreted_text, target_info):
-    return f"Did you say {interpreted_text}?"
-
-
 class HRITasks(metaclass=SubtaskMeta):
     """Class to manage the vision tasks"""
 
-    def __init__(self, task_manager, config=None, task=Task.RECEPTIONIST) -> None:
+    def __init__(self, task_manager: Node, config=None, task=Task.RECEPTIONIST) -> None:
         self.node = task_manager
         self.keyword = ""
         self.speak_service = self.node.create_client(Speak, SPEAK_SERVICE)
@@ -79,9 +77,10 @@ class HRITasks(metaclass=SubtaskMeta):
         self.is_positive_service = self.node.create_client(IsPositive, IS_POSITIVE_SERVICE)
         self.is_negative_service = self.node.create_client(IsNegative, IS_NEGATIVE_SERVICE)
 
-        self.query_item_client = self.node.create_client(QueryItem, QUERY_ITEM_SERVICE)
-        self.add_item_client = self.node.create_client(AddItem, ADD_ITEM_SERVICE)
+        self.query_item_client = self.node.create_client(QueryEntry, QUERY_ENTRY_SERVICE)
+        self.add_item_client = self.node.create_client(AddEntry, ADD_ENTRY_SERVICE)
         self.llm_wrapper_service = self.node.create_client(LLMWrapper, LLM_WRAPPER_SERVICE)
+        self.categorize_service = self.node.create_client(CategorizeShelves, CATEGORIZE_SERVICE)
         self.keyword_client = self.node.create_subscription(
             String, WAKEWORD_TOPIC, self._get_keyword, 10
         )
@@ -90,25 +89,30 @@ class HRITasks(metaclass=SubtaskMeta):
             SetParameters, f"/{USEFUL_AUDIO_NODE_NAME}/set_parameters"
         )
 
-        self.services = {
-            Task.RECEPTIONIST: {
-                "hear": {
-                    "client": self.hear_service,
-                    "type": "service",
-                },
-                "say": {
-                    "client": self.speak_service,
-                    "type": "service",
-                },
-                "extract_data_service": {
-                    "client": self.extract_data_service,
-                    "type": "service",
-                },
-                "common_interest_service": {
-                    "client": self.common_interest_service,
-                    "type": "service",
-                },
+        all_services = {
+            "hear": {
+                "client": self.hear_service,
+                "type": "service",
             },
+            "say": {
+                "client": self.speak_service,
+                "type": "service",
+            },
+            "extract_data_service": {
+                "client": self.extract_data_service,
+                "type": "service",
+            },
+            "common_interest_service": {
+                "client": self.common_interest_service,
+                "type": "service",
+            },
+        }
+
+        self.services = {
+            Task.RECEPTIONIST: all_services,
+            Task.GPSR: all_services,
+            Task.HELP_ME_CARRY: all_services,
+            Task.STORING_GROCERIES: all_services,
         }
 
         self.setup_services()
@@ -188,12 +192,12 @@ class HRITasks(metaclass=SubtaskMeta):
             self.keyword = ""
 
     @service_check("hear_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
-    def hear(self, min_audio_length=0.0, max_audio_length=0.0) -> str:
+    def hear(self, min_audio_length=0.5, max_audio_length=10.0) -> str:
         if min_audio_length > 0:
-            self.set_double_param("MIN_AUDIO_DURATION", min_audio_length)
+            self.set_double_param("MIN_AUDIO_DURATION", float(min_audio_length))
 
         if max_audio_length > 0:
-            self.set_double_param("MAX_AUDIO_DURATION", max_audio_length)
+            self.set_double_param("MAX_AUDIO_DURATION", float(max_audio_length))
 
         request = STT.Request()
 
@@ -338,87 +342,12 @@ class HRITasks(metaclass=SubtaskMeta):
         rclpy.spin_until_future_complete(self.node, future)
         return Status.EXECUTION_SUCCESS, future.result().corrected_text
 
-    @service_check("query_item_client", (Status.SERVICE_CHECK, ""), TIMEOUT)
-    def find_closest(self, query: str, collection: str, top_k: int = 1) -> list[str]:
-        """
-        Finds the closest matching item in a specified collection based on the given query.
-
-        Args:
-            query (str): The search query to find the closest match for.
-            collection (str): The name of the collection to search within.
-            top_k (int, optional): The number of top matches to return. Defaults to 1.
-
-        Returns:
-            list[str]: The closest matching item(s) from the collection.
-        """
-        request = QueryItem.Request(query=query, collection=collection, topk=top_k)
-        future = self.query_item_client.call_async(request)
-        rclpy.spin_until_future_complete(self.node, future)
-
-        return Status.EXECUTION_SUCCESS, future.result().results
-
     @service_check("llm_wrapper_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def ask(self, question: str) -> str:
         request = LLMWrapper.Request(question=question)
         future = self.llm_wrapper_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
         return Status.EXECUTION_SUCCESS, future.result().answer
-
-    @service_check("add_item_client", Status.SERVICE_CHECK, TIMEOUT)
-    def add_item(self, document: list, item_id: list, collection: str, metadata: list) -> str:
-        """
-        Adds new items to the ChromaDB collection.
-
-        Args:
-            document (list): List of documents to be added.
-            item_id (list): List of item IDs corresponding to each document.
-            collection (str): The collection to add the items to.
-            metadata (list): List of metadata corresponding to each document.
-
-        Returns:
-            str: A message indicating the success or failure of the operation.
-        """
-        try:
-            # Prepare the request with the necessary arguments
-            request = AddItem.Request(
-                document=document,  # List of documents
-                id=item_id,  # List of item IDs
-                collection=collection,  # The collection to add the items to
-                metadata=metadata,  # Metadata as a JSON
-            )
-
-            # Make the service call
-            future = self.add_item_client.call_async(request)
-            rclpy.spin_until_future_complete(self.node, future)
-
-            # Check if the operation was successful
-            if future.result().success:
-                return Status.EXECUTION_SUCCESS
-            else:
-                self.node.get_logger().error(f"Failed to add items: {future.result().message}")
-                return Status.EXECUTION_ERROR
-
-        except Exception:
-            return Status.EXECUTION_ERROR
-
-    @service_check("useful_audio_params", (Status.SERVICE_CHECK, ""), TIMEOUT)
-    def set_double_param(self, name, value):
-        param = Parameter()
-        param.name = name
-        param.value = ParameterValue(type=ParameterType.PARAMETER_DOUBLE)
-        param.value.double_value = value
-        request = SetParameters.Request()
-        request.parameters = [param]
-        future = self.useful_audio_params.call_async(request)
-
-        while not future.done():
-            self.node.get_logger().info(f"Setting parameter {name} to {value}")
-            rclpy.spin_once(self.node, timeout_sec=0.1)
-
-        if future.result() is not None:
-            self.node.get_logger().info(f"Parameter {name} set to {value}")
-        else:
-            self.node.get_logger().error(f"Failed to set parameter {name}")
 
     @service_check("command_interpreter_client", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def command_interpreter(self, text: str) -> CommandInterpreter.Response:
@@ -427,6 +356,32 @@ class HRITasks(metaclass=SubtaskMeta):
         rclpy.spin_until_future_complete(self.node, future)
 
         return Status.EXECUTION_SUCCESS, future.result().commands
+
+    @service_check("useful_audio_params", (Status.SERVICE_CHECK, ""), TIMEOUT)
+    def set_double_param(self, name, value):
+        param = Parameter()
+
+        param.name = name
+
+        param.value = ParameterValue(type=ParameterType.PARAMETER_DOUBLE)
+
+        param.value.double_value = value
+
+        request = SetParameters.Request()
+
+        request.parameters = [param]
+
+        future = self.useful_audio_params.call_async(request)
+
+        while not future.done():
+            # self.node.get_logger().info(f"Setting parameter {name} to {value}")
+            rclpy.spin_once(self.node, timeout_sec=0.1)
+
+        if future.result() is not None:
+            pass
+            # self.node.get_logger().info(f"Parameter {name} set to {value}")
+        else:
+            self.node.get_logger().error(f"Failed to set parameter {name}")
 
     @service_check("common_interest_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def common_interest(self, person1, interest1, person2, interest2, remove_thinking=True):
@@ -450,12 +405,57 @@ class HRITasks(metaclass=SubtaskMeta):
         rclpy.spin_until_future_complete(self.node, future)
         return Status.EXECUTION_SUCCESS, future.result().is_positive
 
-    @service_check("is_negative_service", (Status.SERVICE_CHECK, False), TIMEOUT)
-    def is_negative(self, text):
-        request = IsNegative.Request(text=text)
-        future = self.is_negative_service.call_async(request)
+    def _add_to_collection(self, document: list, metadata: str, collection: str) -> str:
+        request = AddEntry.Request(document=document, metadata=metadata, collection=collection)
+        future = self.add_item_client.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
-        return Status.EXECUTION_SUCCESS, future.result().is_negative
+        return "Success" if future.result().success else f"Failed: {future.result().message}"
+
+    def add_item(self, document: list, metadata: str) -> str:
+        return self._add_to_collection(document, metadata, "items")
+
+    def add_location(self, document: list, metadata: str) -> str:
+        return self._add_to_collection(document, metadata, "locations")
+
+    def _query_(self, query: str, collection: str, top_k: int = 1) -> list[str]:
+        # Wrap the query in a list so that the field receives a sequence of strings.
+        request = QueryEntry.Request(query=[query], collection=collection, topk=top_k)
+        future = self.query_item_client.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+        return future.result().results
+
+    def query_item(self, query: str, top_k: int = 1) -> list[str]:
+        return self._query_(query, "items", top_k)
+
+    def query_location(self, query: str, top_k: int = 1) -> list[str]:
+        return self._query_(query, "locations", top_k)
+
+    def categorize_objects(
+        self, table_objects: list[str], shelves: dict[int, list[str]]
+    ) -> tuple[Status, dict[int, list[str]], dict[int, list[str]]]:
+        """
+        Categorize objects based on their shelf levels.
+
+        Args:
+            table_objects (list[str]): List of objects on the table.
+            shelves (dict[int, list[str]]): Dictionary mapping shelf levels to object names.
+
+        Returns:
+            dict[int, list[str]]: Dictionary mapping shelf levels to categorized objects.
+        """
+        try:
+            request = CategorizeShelves.Request(table_objects=table_objects, shelves=shelves)
+            future = self.categorize_service.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future)
+            res: CategorizeShelves.Response = future.result()
+            categorized_shelves = eval(res.categorized_shelves)
+            categorized_shelves = {int(k): v for k, v in categorized_shelves.items()}
+            objects_to_add = eval(res.objects_to_add)
+            objects_to_add = {int(k): v for k, v in objects_to_add.items()}
+        except Exception as e:
+            self.node.get_logger().error(f"Error: {e}")
+            return Status.EXECUTION_ERROR, {}, {}
+        return Status.EXECUTION_SUCCESS, categorized_shelves, objects_to_add
 
 
 if __name__ == "__main__":

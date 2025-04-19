@@ -23,8 +23,8 @@ public:
     tf_listener_(*tf_buffer_) {
 
     // Declare parameters
-    this->declare_parameter("target_frame", "link_base");
-    this->declare_parameter("pcd_default_frame", "link_base");
+    this->declare_parameter("target_frame", "base_link");
+    this->declare_parameter("pcd_default_frame", "base_link");
     this->declare_parameter("transform_timeout", 1.0);
 
     // Create service
@@ -37,10 +37,28 @@ public:
     pcd_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(GRASP_POINTCLOUD_TOPIC, 10);
     marker_pub_ = this->create_publisher<visualization_msgs::msg::MarkerArray>(GRASP_MARKER_TOPIC, 10);
 
+    // create timer -> This timer kills the node when the service runs once, as I have not found a way to properly use GPD more than once on a single runtime
+    timer_ = this->create_wall_timer(
+      std::chrono::milliseconds(1000),
+      [this]() {
+        if (exit_) {
+          kill_timer();
+        }
+      });
+
     RCLCPP_INFO(this->get_logger(), "Grasp detection service ready");
   }
 
 private:
+
+  void kill_timer() {
+    if (exit_) {
+      RCLCPP_INFO(this->get_logger(), "Killing node");
+      // wait for the service to finish
+      rclcpp::sleep_for(std::chrono::milliseconds(100));
+      rclcpp::shutdown();
+    }
+  }
   bool load_cloud_from_pcd(const std::string &pcd_path, pcl::PointCloud<pcl::PointXYZRGB> &cloud) {
     if (pcl::io::loadPCDFile<pcl::PointXYZRGB>(pcd_path, cloud) == -1) return false;
     return true;
@@ -152,7 +170,7 @@ private:
         trans.translation(),
         Eigen::Quaterniond(trans.rotation()),
         {gripper_dims_.base[0], gripper_dims_.base[1], gripper_dims_.base[2]},
-        {r * 0.5f, g * 0.5f, b * 0.5f, 0.8f} // Base más oscura
+        {r * 0.5f, g * 0.5f, b * 0.5f, 0.6f} // Base más oscura
     );
     markers.push_back(base_marker);
 
@@ -173,7 +191,7 @@ private:
           finger_trans.translation(),
           Eigen::Quaterniond(trans.rotation()),
           {gripper_dims_.finger[0], gripper_dims_.finger[1], gripper_dims_.finger[2]},
-          {r, g, b, 0.8f}
+          {r, g, b, 0.6f}
       );
       markers.push_back(finger_marker);
     }
@@ -196,6 +214,24 @@ private:
         pose.orientation.z
     ).toRotationMatrix();
     return transform;
+  }
+
+  std::vector<std::unique_ptr<gpd::candidate::Hand>> get_grasps(
+    pcl::PointCloud<pcl::PointXYZRGBA>::Ptr& rgba_cloud,
+    Eigen::MatrixXi& camera_source,
+    Eigen::Matrix3Xd& view_points,
+    std::string& cfg_path
+  ) {
+    
+    gpd::util::Cloud gpd_cloud(
+        rgba_cloud,
+        camera_source,
+        view_points
+    );
+    auto new_detector = std::make_unique<gpd::GraspDetector>(cfg_path);
+    gpd::GraspDetector& detector = *new_detector;
+    detector.preprocessPointCloud(gpd_cloud);
+    return detector.detectGrasps(gpd_cloud);
   }
 
 
@@ -235,6 +271,8 @@ private:
     marker.color.b = color[2];
     marker.color.a = color[3];
 
+    marker.lifetime = rclcpp::Duration(10, 0);
+
     return marker;
   }
 
@@ -263,11 +301,13 @@ private:
     const std::string target_frame = this->get_parameter("target_frame").as_string();
     const std::string pcd_default_frame = this->get_parameter("pcd_default_frame").as_string();
     
-    pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
-    std::string source_frame;
-    builtin_interfaces::msg::Time stamp;
+    tf_buffer_->clear();
 
     try {
+      pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZRGB>);
+      pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud_rgba(new pcl::PointCloud<pcl::PointXYZRGBA>);
+      std::string source_frame;
+      builtin_interfaces::msg::Time stamp;
 
       if (!req->input_cloud.data.empty()) {
         pcl::fromROSMsg(req->input_cloud, *cloud);
@@ -301,10 +341,11 @@ private:
       cloud_msg.header.frame_id = target_frame;
       pcd_pub_->publish(cloud_msg);
 
-      auto cloud_rgba = convert_to_rgba(cloud);
+      cloud_rgba = convert_to_rgba(cloud);
       Eigen::MatrixXi camera_source = Eigen::MatrixXi::Zero(1, cloud_rgba->size());
 
       Eigen::Matrix3Xd view_points(3, 1);
+
       // // get view point from transform to cam
       // auto camera_frame = "camera_depth_optical_frame";
       // auto base_frame = "link_base";
@@ -319,13 +360,10 @@ private:
       //   transform.transform.translation.z
       // );
 
-      gpd::util::Cloud gpd_cloud(cloud_rgba, camera_source, view_points);
-      gpd::GraspDetector detector(req->cfg_path);
-      
-      detector.preprocessPointCloud(gpd_cloud);
-      auto grasps = detector.detectGrasps(gpd_cloud);
+      auto grasps = get_grasps(cloud_rgba, camera_source, view_points, req->cfg_path);
 
       res->grasp_scores.reserve(grasps.size());
+
       for (const auto &grasp : grasps) {
         geometry_msgs::msg::PoseStamped pose;
         pose.header.stamp = stamp;
@@ -378,6 +416,8 @@ private:
       auto marker_array = create_gripper_markers(res->grasp_poses, res->grasp_scores);      
       marker_pub_->publish(marker_array);
       res->success = true;
+      exit_ = true;
+      return;
     }
     catch (const std::exception& e) {
       res->success = false;
@@ -391,6 +431,8 @@ private:
   rclcpp::Service<frida_interfaces::srv::GraspDetection>::SharedPtr service_;
   rclcpp::Publisher<visualization_msgs::msg::MarkerArray>::SharedPtr marker_pub_;
   rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pcd_pub_;
+  rclcpp::TimerBase::SharedPtr timer_;
+  bool exit_ = false;
 };
 
 } // namespace gpd_ros2

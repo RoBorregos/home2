@@ -1,0 +1,10 @@
+#goal definition
+int8 task_type
+PickParams pick_params
+PlaceParams place_params
+---
+#result definition
+int32 success
+---
+#feedback
+string execution_state

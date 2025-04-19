@@ -66,7 +66,7 @@ public:
     RCLCPP_INFO(this->get_logger(), "Loaded point cloud");
 
     auto qos = rclcpp::QoS(rclcpp::SensorDataQoS());
-    qos.reliability(rclcpp::ReliabilityPolicy::Reliable);
+    qos.reliability(rclcpp::ReliabilityPolicy::BestEffort);
 
     subscriber = this->create_subscription<sensor_msgs::msg::PointCloud2>(
         "/point_cloud", qos,
@@ -126,7 +126,6 @@ public:
   }
 
   void pointcloud_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
-    RCLCPP_INFO(this->get_logger(), "Received point cloud");
     // pcl::fromROSMsg(*msg, *cloud);
     // if (cloud == nullptr || cloud->points.size() > 0) {
     //   cloud->points.clear();

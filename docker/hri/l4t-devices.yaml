@@ -5,8 +5,6 @@ x-speech-devices: &speech-devices
 
 services:
   speech_devices:
-    profiles: [receptionist]
-    
     container_name: home2-hri-l4t-devices
     build:
       context: ../..

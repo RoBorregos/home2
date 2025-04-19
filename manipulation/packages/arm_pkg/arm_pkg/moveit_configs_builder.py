@@ -330,7 +330,7 @@ class MoveItConfigsBuilder(ParameterBuilder):
         }
 
         self.__urdf_package = Path(get_package_share_directory("frida_description"))
-        self.__urdf_file_path = Path("urdf/FRIDA_Real.urdf.xacro")
+        self.__urdf_file_path = Path("urdf/TMR2025/FRIDA_Real.urdf.xacro")
         self.__srdf_file_path = Path("srdf/xarm.srdf.xacro")
 
         self.__robot_description = 'robot_description'

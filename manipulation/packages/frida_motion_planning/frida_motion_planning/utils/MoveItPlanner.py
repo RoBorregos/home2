@@ -17,6 +17,8 @@ from sensor_msgs.msg import JointState
 import time
 import rclpy
 
+PYMOVEIT_FUTURE_TIMEOUT = 3
+
 
 # A class to handle planning with MoveIt
 # Abstracts from pymoveit2, in case we want to change the library in the future
@@ -90,13 +92,20 @@ class MoveItPlanner(Planner):
             return False
         self.moveit2.execute(trajectory)
         future = None
-        while future is None:
+        start_time = time.time()
+        while future is None and time.time() - start_time < PYMOVEIT_FUTURE_TIMEOUT:
             future = self.moveit2.get_execution_future()
+        if future is None:
+            self.node.get_logger().error(
+                "Failed to get execution future, \
+                        probably due to timeout, check if MoveIt is running"
+            )
+            return False
         if wait:
             while not future.done():
                 pass
             return future.result().status == 4
-        return future
+        return True
 
     def plan_pose_goal(
         self,
@@ -114,8 +123,15 @@ class MoveItPlanner(Planner):
         self.node.get_logger().info("Executing trajectory")
         self.moveit2.execute(trajectory)
         future = None
-        while future is None:
+        start_time = time.time()
+        while future is None and time.time() - start_time < PYMOVEIT_FUTURE_TIMEOUT:
             future = self.moveit2.get_execution_future()
+        if future is None:
+            self.node.get_logger().error(
+                "Failed to get execution future, \
+                        probably due to timeout, check if MoveIt is running"
+            )
+            return False
         if wait:
             while not future.done():
                 pass
@@ -215,7 +231,16 @@ class MoveItPlanner(Planner):
         return dict(zip(self.joint_states.name, self.joint_states.position))
 
     def joint_states_callback(self, msg: JointState):
-        self.joint_states = msg
+        # self.joint_states = JointState()  # Crea un nuevo mensaje
+        relevant_indices = []
+        for i, joint_name in enumerate(msg.name):
+            if joint_name in xarm6.joint_names():
+                relevant_indices.append(i)
+        # Filtra solo los joints del brazo
+        if len(relevant_indices) == 0:
+            return
+        self.joint_states.name = [msg.name[i] for i in relevant_indices]
+        self.joint_states.position = [msg.position[i] for i in relevant_indices]
 
     def get_fk(self, links: List[str]) -> List[PoseStamped]:
         # Get forward kinematics for current joint state and specified links
@@ -349,8 +374,9 @@ class MoveItPlanner(Planner):
     def remove_collision_object(self, id: str) -> None:
         self.moveit2.remove_collision_object(id)
 
-    def remove_all_collision_objects(self) -> None:
-        self.moveit2.detach_all_collision_objects()
+    def remove_all_collision_objects(self, include_attached: bool = False) -> None:
+        if include_attached:
+            self.moveit2.detach_all_collision_objects()
         time.sleep(1e-03)
         planning_scene = self.get_planning_scene()
         for collision_object in planning_scene.world.collision_objects:

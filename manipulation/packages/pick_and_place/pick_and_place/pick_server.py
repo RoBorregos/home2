@@ -25,6 +25,7 @@ from frida_interfaces.srv import (
     RemoveCollisionObject,
 )
 from frida_interfaces.action import PickMotion, MoveToPose
+from frida_interfaces.msg import PickResult
 import copy
 import numpy as np
 from transforms3d.quaternions import quat2mat
@@ -80,7 +81,7 @@ class PickMotionServer(Node):
         feedback = PickMotion.Feedback()
         result = PickMotion.Result()
         try:
-            result.success = self.pick(goal_handle, feedback)
+            result.success, result.pick_result = self.pick(goal_handle, feedback)
             goal_handle.succeed()
             return result
         except Exception as e:
@@ -94,6 +95,7 @@ class PickMotionServer(Node):
         self.get_logger().info(
             f"Trying to pick up object: {goal_handle.request.object_name}"
         )
+        pick_result = PickResult()
         grasping_poses = goal_handle.request.grasping_poses
         for i, pose in enumerate(grasping_poses):
             # Move to pre-grasp pose
@@ -134,10 +136,20 @@ class PickMotionServer(Node):
             print(f"Grasp Pose {i} result: {grasp_pose_result}")
             if grasp_pose_result.result.success:
                 self.get_logger().info("Grasp pose reached")
-                self.attach_pick_object()
-                return True
+                result, lowest_obj = self.attach_pick_object()
+                if result:
+                    self.get_logger().info("Object attached")
+                    # Save object details
+                    pick_result.pick_pose = ee_link_pose
+                    pick_result.grasp_score = goal_handle.request.grasping_scores[i]
+                    pick_result.object_pick_height = self.calculate_object_pick_height(
+                        lowest_obj, ee_link_pose
+                    )
+                else:
+                    self.get_logger().error("Failed to attach object")
+                return True, pick_result
         self.get_logger().error("Failed to reach any grasp pose")
-        return False
+        return False, pick_result
 
     def move_to_pose(self, pose):
         """Move the robot to the given pose."""
@@ -153,11 +165,9 @@ class PickMotionServer(Node):
         return future.result(), action_result
 
     def wait_for_future(self, future):
-        print("Waiting future not none")
         if future is None:
             self.get_logger().error("Service call failed: future is None")
             return False
-        print("Waiting future done")
         while not future.done():
             pass
         # self.get_logger().info("Execution done with status: " + str(future.result()))
@@ -166,32 +176,32 @@ class PickMotionServer(Node):
     def attach_pick_object(self):
         """Attach the pick object to the robot."""
         collision_objects = self.get_collision_objects()
-        print(collision_objects)
         # find plane object
         plane = None
         for obj in collision_objects:
             if PLANE_NAMESPACE in obj.id:
                 self.get_logger().info(f"Plane object found: {obj.id}")
                 plane = obj
+        obj_lowest = None
         for obj in collision_objects:
             if PICK_OBJECT_NAMESPACE in obj.id:
                 request = AttachCollisionObject.Request()
                 request.id = obj.id
                 if plane is not None and self.object_in_plane(obj, plane):
                     self.remove_collision_object(obj.id)
-                    self.get_logger().info(f"Object {obj.id} removed from scene")
                     continue
+                if obj_lowest is None:
+                    obj_lowest = obj
+                else:
+                    if obj.pose.pose.position.z < obj_lowest.pose.pose.position.z:
+                        obj_lowest = obj
                 request.attached_link = EEF_LINK_NAME
                 request.touch_links = EEF_CONTACT_LINKS
                 request.detach = False
                 self._attach_collision_object_client.wait_for_service()
                 future = self._attach_collision_object_client.call_async(request)
                 self.wait_for_future(future)
-                if future.result().success:
-                    self.get_logger().info(f"Object {obj.id} attached to robot")
-                else:
-                    self.get_logger().error(f"Failed to attach object {obj.id}")
-        return True
+        return True, obj_lowest
 
     def get_collision_objects(self):
         """Get the collision objects in the scene."""
@@ -203,9 +213,6 @@ class PickMotionServer(Node):
     def object_in_plane(self, obj, plane):
         """Check if the object is in the plane."""
         plane_top_height = plane.pose.pose.position.z + plane.dimensions.z / 2
-        self.get_logger().info(
-            f"Plane top height: {plane_top_height} vs {obj.pose.pose.position.z}"
-        )
         return (
             obj.pose.pose.position.z
             < plane_top_height + PLANE_OBJECT_COLLISION_TOLERANCE
@@ -219,6 +226,21 @@ class PickMotionServer(Node):
         future = self._remove_collision_object_client.call_async(request)
         self.wait_for_future(future)
         return future.result().success
+
+    def calculate_object_pick_height(self, obj, pose):
+        """Calculate the height of the object, measured from where it was picked
+        e.g. if a 30cm tall object is picked at 10cm, the height is 10cm
+        -> Reason for this is to know how high we should be to place the object, basically repeat same height"""
+        if obj.pose.header.frame_id != pose.header.frame_id:
+            self.get_logger().error(
+                "Object and pose frames do not match, cannot calculate height"
+            )
+            return 0.0
+        obj_z = obj.pose.pose.position.z
+        grasp_height = pose.pose.position.z
+        height = grasp_height - obj_z
+        self.get_logger().info(f"Object pick height: {height}")
+        return height
 
 
 def main(args=None):

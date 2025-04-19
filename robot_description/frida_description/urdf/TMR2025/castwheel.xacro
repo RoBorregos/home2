@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+    <xacro:macro name="caster_wheel_bracket" params="prefix xyz ixy ixz iyz joint_origin">
+      <link name="${prefix}_castwheel_bracket">
+        <inertial>
+        <origin
+            xyz="${xyz}"
+            rpy="0 0 0" />
+        <mass
+            value="0.0451852451728102" />
+        <inertia
+            ixx="1.91437440179204E-05" ixy="${ixy}" ixz="${ixz}"
+            iyy="2.03620552975365E-05" iyz="${iyz}" izz="1.58126328123224E-05" />
+        </inertial>
+        <visual>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+            <mesh filename="${mesh_path}${prefix}_castwheel_bracket.STL" />
+        </geometry>
+        <material name="">
+            <color rgba="${black_rgba}" />
+        </material>
+        </visual>
+        <collision>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <geometry>
+            <mesh filename="${mesh_path}${prefix}_castwheel_bracket.STL" />
+        </geometry>
+        </collision>
+    </link>
+    <joint name="${prefix}castwheelbracket" type="continuous">
+        <origin xyz="${joint_origin}" rpy="3.1416 0 0" />
+        <parent link="base_link" />
+        <child link="${prefix}_castwheel_bracket" />
+        <axis xyz="0 0 -1" />
+    </joint>
+    </xacro:macro>
+
+    <xacro:caster_wheel_bracket prefix="right" xyz="2.77555756156289E-17 -2.08166817117217E-16 -0.0319709734767012" ixy="5.65290697905272E-21" ixz="-6.79719081628809E-21" iyz="-1.18762790839083E-20" joint_origin="0.112255613 -0.09 -0.112416320504547"/>
+    <xacro:caster_wheel_bracket prefix="left" xyz="-1.11022302462516E-16 4.16333634234434E-17 -0.0319709734767013" ixy="9.03249326780732E-22" ixz="-4.43903476297829E-22" iyz="-9.72493121445985E-21" joint_origin="0.112255613 0.09 -0.112416320504547"/>
+
+
+    <xacro:macro name="caster_wheel" params="prefix xyz ixy ixz iyz">
+      <link
+        name="${prefix}_cast_wheel">
+        <inertial>
+        <origin
+            xyz="xyz"
+            rpy="0 0 0" />
+        <mass
+            value="0.0694291976443345" />
+        <inertia ixx="1.95153903045283E-05" ixy="${ixy}" ixz="${ixz}"
+                 iyy="1.95153903045283E-05" iyz="${iyz}" izz="3.17985725211052E-05" />
+        </inertial>
+        <visual>
+        <origin
+            xyz="0 0 0"
+            rpy="0 0 0" />
+        <geometry>
+            <mesh
+            filename="${mesh_path}${prefix}_cast_wheel.STL" />
+        </geometry>
+        <material name="">
+            <color rgba="${black_rgba}" />
+        </material>
+        </visual>
+        <collision>
+        <origin
+            xyz="0 0 0"
+            rpy="0 0 0" />
+        <geometry>
+            <mesh filename="${mesh_path}${prefix}_cast_wheel.STL" />
+        </geometry>
+        </collision>
+      </link>
+      <joint name="${prefix}castwheel" type="continuous">
+        <origin xyz="0 0 0" rpy="1.5707963267949 0 0" />
+        <parent link="${prefix}_castwheel_bracket" />
+        <child link="${prefix}_cast_wheel" />
+        <axis xyz="0 0 1" />
+      </joint>
+    </xacro:macro>
+
+    <xacro:caster_wheel prefix="right" xyz="4.16333634234434E-17 -1.34441069388203E-17 1.38777878078145E-17" ixy="-7.05128389877886E-22" ixz="-3.30872245021211E-22" iyz="-3.41901319855252E-22"/>
+    <xacro:caster_wheel prefix="left" xyz="0 8.67361737988404E-19 2.77555756156289E-17" ixy="-7.4724136116802E-22" ixz="-3.29900618130813E-21" iyz="-3.03150518992427E-21"/>
+
+</robot>

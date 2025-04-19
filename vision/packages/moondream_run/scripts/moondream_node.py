@@ -142,19 +142,34 @@ class MoondreamNode(Node):
             self.get_logger().warn("No image received yet.")
             return response
 
+        frame = self.image.copy()
+
         xmin = request.xmin
         ymin = request.ymin
         xmax = request.xmax
         ymax = request.ymax
-        if (
-            xmin < 0
-            or ymin < 0
-            or xmax > self.image.shape[1]
-            or ymax > self.image.shape[0]
-        ):
-            self.image = self.image[int(ymin) : int(ymax), int(xmin) : int(xmax)]
 
-        _, image_bytes = cv2.imencode(".jpg", self.image)
+        xmin = xmin * self.image.shape[1]
+        ymin = ymin * self.image.shape[0]
+        xmax = xmax * self.image.shape[1]
+        ymax = ymax * self.image.shape[0]
+
+        if (
+            0 <= xmin < self.image.shape[1]
+            and 0 <= ymin < self.image.shape[0]
+            and 0 < xmax <= self.image.shape[1]
+            and 0 < ymax <= self.image.shape[0]
+        ):
+            print(f"Crop coordinates: {xmin}, {ymin}, {xmax}, {ymax}")
+            cropped = frame[int(ymin) : int(ymax), int(xmin) : int(xmax)]
+            # save image
+
+        else:
+            response.result = "Crop coordinates are out of bounds."
+            response.success = False
+            return response
+
+        _, image_bytes = cv2.imencode(".jpg", cropped)
         image_bytes = image_bytes.tobytes()
 
         try:
@@ -167,6 +182,7 @@ class MoondreamNode(Node):
                 )
             )
 
+            print(bag_description.answer)
             response.result = bag_description.answer
             response.success = True
             self.success(f"Query executed successfully. Result: {response.result}")

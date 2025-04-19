@@ -1,37 +1,16 @@
-import os
-from ament_index_python.packages import get_package_share_directory
-from launch import LaunchDescription
 from launch_ros.actions import Node
-from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument, GroupAction
+from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument,OpaqueFunction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
-from launch.conditions import IfCondition, UnlessCondition
+from launch.conditions import UnlessCondition, IfCondition
+from launch.substitutions import PythonExpression
+from launch import LaunchDescription
 
-def generate_launch_description():
-    publish_urdf = LaunchConfiguration('publish_tf')
-    use_sim = LaunchConfiguration('use_sim')
-    use_dualshock = LaunchConfiguration('use_dualshock')
-
-    # Declare the launch argument
-    declare_publish_tf = DeclareLaunchArgument(
-        'publish_tf',
-        default_value='true',  # LaunchConfiguration values are strings, so use 'true'/'false'
-        description='Whether to publish URDF'
-    )
-
-    declare_dualshock = DeclareLaunchArgument(
-        'use_dualshock',
-        default_value='false',  # LaunchConfiguration values are strings, so use 'true'/'false'
-        description='Whether to use dualshock'
-    )
-
-    
-    declare_use_sim = DeclareLaunchArgument(
-        'use_sim',
-        default_value='false',
-        description='Whether to use simulation time'
-    )
+def launch_setup(context, *args, **kwargs):
+    publish_urdf = LaunchConfiguration('publish_tf', default='false')
+    use_sim = LaunchConfiguration('use_sim', default='false')
+    use_dualshock = LaunchConfiguration('use_dualshock', default='true')
 
     dashgo_driver = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -43,8 +22,9 @@ def generate_launch_description():
                 ]
             )
             ),
-    condition=UnlessCondition(use_sim),
+        condition=UnlessCondition(use_sim)
         )
+    
     ekf_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution(
@@ -71,7 +51,6 @@ def generate_launch_description():
             'urdf_package': 'frida_description',
             'urdf_package_path': PathJoinSubstitution(['urdf','FRIDA_Real.urdf.xacro'])
         }.items(),
-        condition=IfCondition(publish_urdf),  # Condition to include this launch file only if publish_tf is true
     )
 
     laser_launch = IncludeLaunchDescription(
@@ -83,13 +62,15 @@ def generate_launch_description():
                     "rplidar_fixed.launch.py",
                 ]
             )
-        ))
+        ),
+        condition=UnlessCondition(use_sim)
+        )
     
     joint_state = Node(
         package='joint_state_publisher',
         executable='joint_state_publisher',
-        condition=IfCondition(publish_urdf),  # Only launch joint_state if publish_tf is true
     )
+
     dualshock_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution(
@@ -100,15 +81,30 @@ def generate_launch_description():
                 ]
             )
         ),
-        condition=UnlessCondition(use_dualshock),)
-
-    return LaunchDescription([
-        declare_publish_tf,  # Declare launch argument
-        declare_use_sim,
+        condition=IfCondition(use_dualshock)
+        )
+    
+    if(publish_urdf.perform(context) == 'true' and use_sim.perform(context) == 'false'):
+        print("entre papu")
+        return_launch = [
         dashgo_driver,
         ekf_launch,
         robot_description_launch,
         joint_state,
         laser_launch,
-        dualshock_launch
-    ])
+        dualshock_launch,
+        
+    ]
+    else:
+        print("no entre papu")
+        return_launch = [
+        dashgo_driver,
+        ekf_launch,
+        laser_launch,
+        dualshock_launch,
+        
+    ]
+    return return_launch
+
+def generate_launch_description():
+    return LaunchDescription([OpaqueFunction(function=launch_setup)])

@@ -27,7 +27,7 @@ class StoringGroceriesCommands(Node):
         super().__init__("storing_groceries_commands")
         self.bridge = CvBridge()
         self.image = None
-        self.detector = None  # OpenCVShelfDetector instance
+        self.detector = OpenCVShelfDetector()  # OpenCVShelfDetector instance
 
         # Subscription to the camera image topic
         self.image_subscriber = self.create_subscription(
@@ -44,13 +44,13 @@ class StoringGroceriesCommands(Node):
 
         self.get_logger().info("StoringGroceriesCommands Ready.")
 
-    def create_shelf_detector(self, image=None):
-        """Helper function to create and return an OpenCVShelfDetector."""
-        if image is not None:
-            self.detector = OpenCVShelfDetector(
-                image
-            )  # Create the detector with the current image
-        return self.detector
+    # def create_shelf_detector(self, image=None):
+    #     """Helper function to create and return an OpenCVShelfDetector."""
+    #     if image is not None:
+    #         self.detector = OpenCVShelfDetector(
+    #             image
+    #         )  # Create the detector with the current image
+    #     return self.detector
 
     def image_callback(self, data):
         """Callback to receive the image from the camera."""
@@ -69,12 +69,14 @@ class StoringGroceriesCommands(Node):
             self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
 
             # Process the image with OpenCVShelfDetector
-            detector = OpenCVShelfDetector(self.image)
-            final_horizontal, filtered_vertical = detector.detect_shelves()
+            # detector = OpenCVShelfDetector(self.image)
+            final_horizontal, filtered_vertical = self.detector.detect_shelves(
+                self.image
+            )
 
             if not final_horizontal or not filtered_vertical:
-                self.get_logger().info("No shelves or lines detected.")
-                return
+                # self.get_logger().info("No shelves or lines detected.")
+                pass
 
             # Reset the image before drawing new lines
             self.image = self.bridge.imgmsg_to_cv2(
@@ -82,7 +84,7 @@ class StoringGroceriesCommands(Node):
             )  # Reset image before drawing
 
             # Draw bounding boxes for each detected shelf
-            shelf_detections = detector.get_shelves()
+            shelf_detections = self.detector.get_shelves()
             for detection in shelf_detections:
                 cv2.rectangle(
                     self.image,
@@ -127,7 +129,7 @@ class StoringGroceriesCommands(Node):
     #     annotated_image_path = f'./tests/shelf_detection_{timestamp}.jpg'
 
     #     # Create test folder if it doesn't exist
-    #     if not os.path.exists('./tests'):
+    #     if not os.path.exists('./tests'):f
     #         os.makedirs('./tests')
 
     #     # Save the annotated image
@@ -145,18 +147,24 @@ class StoringGroceriesCommands(Node):
             img_msg = self.bridge.cv2_to_imgmsg(self.image, "bgr8")
             self.image_publisher.publish(img_msg)
 
+    def success(self, message):
+        """Log a success message."""
+        self.get_logger().info(f"\033[92mSUCCESS:\033[0m {message}")
+
     def detect_shelf_callback(self, request, response):
         """Service callback to handle shelf detection."""
+        self.get_logger().info("Executing service detect shelf")
         if self.image is None:
             response.success = False
             return response
 
-        self.detector = self.create_shelf_detector(self.image)
-        self.detector.detect_shelves()
+        # self.detector = self.create_shelf_detector(self.image)
+        self.detector.detect_shelves(self.image)
 
         # Get shelf detections and prepare the response
         shelf_detections = self.detector.get_shelves()
         shelf_array = ShelfArray()
+        response.success = False
 
         for detection in shelf_detections:
             shelf_detection = ShelfDetection(
@@ -167,10 +175,16 @@ class StoringGroceriesCommands(Node):
                 xmax=detection.bbox_.x2,
             )
             shelf_array.shelf_detections.append(shelf_detection)
-
+            response.success = True
         # Save the image only when the service is called
         # self.save_annotated_image()
 
+        if response.success is False:
+            self.get_logger().warn("No shelves detected.")
+            response.success = False
+            return response
+
+        self.success("Detected shelves successfully")
         response.shelf_array = shelf_array
         response.success = True
         return response
