@@ -9,6 +9,7 @@ from config.hri.debug import config as test_hri_config
 from rclpy.node import Node
 from subtask_managers.hri_tasks import HRITasks
 from utils.task import Task
+import json
 
 
 def confirm_preference(interpreted_text, extracted_data):
@@ -26,6 +27,7 @@ class TestHriManager(Node):
         self.hri_manager = HRITasks(self, config=test_hri_config, task=TEST_TASK)
         rclpy.spin_once(self, timeout_sec=1.0)
         self.get_logger().info("TestTaskManager has started.")
+        self.test_embeddings()
         self.run()
 
     def run(self):
@@ -88,11 +90,62 @@ class TestHriManager(Node):
 
         self.hri_manager.say(common_interest)
 
+    def test_embeddings(self):
+        """Testing the embeddings service via HRITasks"""
+
+        hri = self.hri_manager
+
+        # Adding single item
+        self.get_logger().info("Adding single item: rotten_potatoes")
+        result = hri.add_item(["rotten_potatoes"], json.dumps([{}]))
+        self.get_logger().info(f"Result: {result}")
+
+        # Adding multiple items with metadata
+        self.get_logger().info("Adding multiple items with metadata")
+        documents = ["apple pie with cinnamon", "banana_pie", "mango_pie_with milk"]
+        metadata = [{"price": "500"}, {"price": "400"}, {"price": "450"}]
+        result = hri.add_item(documents, json.dumps(metadata))
+        self.get_logger().info(f"Result: {result}")
+
+        # Querying items
+        self.get_logger().info("Querying 'potatoes' from item collection")
+        results = hri.query_item("potatoes", top_k=3)
+        self.get_logger().info(f"Query results: {results}")
+
+        self.get_logger().info("Querying 'cinnamon' from item collection")
+        results = hri.query_item("cinnamon", top_k=3)
+        self.get_logger().info(f"Query results: {results}")
+
+        # Adding and querying location
+        self.get_logger().info("Adding single location with metadata")
+        location_doc = ["kitchen"]
+        location_metadata = [{"floor": "1", "type": "room"}]
+        result = hri.add_location(location_doc, json.dumps(location_metadata))
+        self.get_logger().info(f"Result: {result}")
+
+        self.get_logger().info("Querying 'kitchen' from location collection")
+        results = hri.query_location("kitchen", top_k=1)
+        self.get_logger().info(f"Query results: {results}")
+
+        # ---- save_command_history ----
+        self.get_logger().info("Saving command history for add_item command")
+        hri.save_command_history(
+            command="add_item",
+            complement=documents,
+            characteristic="items",
+            result="Success",
+            status=1,
+        )
+
+        self.get_logger().info("Querying command_history collection for the saved command")
+        history = hri._query_("add_item", "command_history", top_k=1)
+        self.get_logger().info(f"Command history query results: {history}")
+        assert any("add_item" in entry for entry in history), "Command history entry not found"
+
 
 def main(args=None):
     rclpy.init(args=args)
     node = TestHriManager()
-
     try:
         rclpy.spin_once(node)
     except KeyboardInterrupt:

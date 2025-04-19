@@ -6,8 +6,9 @@ HRI Subtask manager
 
 import re
 from typing import Union
-
 import rclpy
+import json
+from datetime import datetime
 from frida_constants.hri_constants import (
     ADD_ENTRY_SERVICE,
     COMMAND_INTERPRETER_SERVICE,
@@ -406,7 +407,10 @@ class HRITasks(metaclass=SubtaskMeta):
         request = AddEntry.Request(document=document, metadata=metadata, collection=collection)
         future = self.add_item_client.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
-        return "Success" if future.result().success else f"Failed: {future.result().message}"
+        return (
+            Status.EXECUTION_SUCCESS,
+            "Success" if future.result().success else f"Failed: {future.result().message}",
+        )
 
     def add_item(self, document: list, metadata: str) -> str:
         return self._add_to_collection(document, metadata, "items")
@@ -419,13 +423,45 @@ class HRITasks(metaclass=SubtaskMeta):
         request = QueryEntry.Request(query=[query], collection=collection, topk=top_k)
         future = self.query_item_client.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
-        return future.result().results
+
+        return Status.EXECUTION_SUCCESS, future.result().results
 
     def query_item(self, query: str, top_k: int = 1) -> list[str]:
         return self._query_(query, "items", top_k)
 
     def query_location(self, query: str, top_k: int = 1) -> list[str]:
         return self._query_(query, "locations", top_k)
+
+    def save_command_history(
+        self, command: str, complement: str, characteristic: str, result: str, status
+    ) -> None:
+        collection = "command_history"
+
+        document = f"Command: {command}"
+
+        metadata = {
+            "command": command,
+            "complement": complement,
+            "characteristic": characteristic,
+            "result": result,
+            "status": status,
+            "timestamp": datetime.now().isoformat(),
+        }
+
+        # Prepare the service request
+
+        metadata = [json.dumps(metadata)]
+        request = AddEntry.Request(document=document, metadata=metadata, collection=collection)
+        future = self.add_item_client.call_async(request)
+
+        def callback(fut):
+            try:
+                response = fut.result()
+                self.get_logger().info(f"Command history saved: {response}")
+            except Exception as e:
+                self.get_logger().error(f"Failed to save command history: {e}")
+
+        future.add_done_callback(callback)
 
 
 if __name__ == "__main__":
