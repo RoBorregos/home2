@@ -96,6 +96,8 @@ class GPSRCommands(Node):
         self.create_timer(0.1, self.publish_image)
 
         self.moondream_crop_query_client = self.create_client(CropQuery, CROP_QUERY_TOPIC)
+        self.futures = []  
+        self.responses = []  
 
     def image_callback(self, data):
         """Callback to receive the image from the camera."""
@@ -248,16 +250,26 @@ class GPSRCommands(Node):
             status, response_q = self.moondream_crop_query(prompt, [float(y1), float(x1), float(y2), float(x2)])
             if status:
                 print(response_q)
+
+        self.wait_for_all_futures()
+
+        for response_q in self.responses:
+            if response_q is not None:
                 response_clean = response_q.strip()
                 if response_clean == "1":
                     count += 1
                 elif response_clean != "0":
                     self.get_logger().warn(f"Unexpected response: {response_clean}")
-        
+
         response.success = True
         response.count = count
         self.get_logger().info(f"People wearing a {clothing} of color {color}: {count}")
         return response
+
+    def wait_for_all_futures(self):
+        """Espera a que todos los futuros hayan terminado."""
+        for future in self.futures:
+            rclpy.spin_until_future_complete(self, future)
 
     def detect_pose_gesture_callback(self, request, response):
         """Callback to detect a specific pose or gesture in the image."""
@@ -458,31 +470,24 @@ class GPSRCommands(Node):
         request.ymax = bbox[2]
         request.xmax = bbox[3]
 
-        try:
-            future = self.moondream_crop_query_client.call_async(request)
-            future =self.wait_for_future(future)
-            
-            if future is None:
-                self.get_logger().error("Future timed out or failed")
-                return False, ""
-            result = future.result()
+        future = self.moondream_crop_query_client.call_async(request)
+        def handle_response(fut):
+            try:
+                result = fut.result()
+                if result.success:
+                    self.get_logger().info(f"Moondream result: {result.result}")
+                    self.responses.append(result.result)  
+                else:
+                    self.get_logger().warn(f"Moondream failed: {result.message}")
+                    self.responses.append(None)
+            except Exception as e:
+                self.get_logger().error(f"Moondream exception: {e}")
+                self.responses.append(None)
 
-            print(future.done())
-            print(f"Result: {result}")
-            print(f"Result success: {result.success}")
-            print(f"Result message: {result.message}")
-            print(f"Result result: {result.result}")
-            
-            if not result or not result.success:
-                self.get_logger().warn("No result generated")
-                return False, ""
+        future.add_done_callback(handle_response)
+        self.futures.append(future)
 
-            self.get_logger().info(f"Result: {result.result}")
-            return True, result.result
-
-        except Exception as e:
-            self.get_logger().error(f"Error requesting description: {e}")
-            return False, ""
+        return True, "Waiting for async response"
 
 def main(args=None):
     rclpy.init(args=args)
