@@ -1,13 +1,15 @@
 from frida_motion_planning.utils.ros_utils import wait_for_future
-from frida_interfaces.srv import PerceptionService, DetectionHandler
+from frida_interfaces.srv import PickPerceptionService, DetectionHandler
 from geometry_msgs.msg import PointStamped
 from std_srvs.srv import SetBool
 from pick_and_place.utils.grasp_utils import get_grasps
 from frida_interfaces.action import PickMotion
+from frida_interfaces.msg import PickResult
 from frida_motion_planning.utils.service_utils import (
     move_joint_positions as send_joint_goal,
 )
 import time
+from typing import Tuple
 
 CFG_PATH = (
     "/workspace/src/home2/manipulation/packages/arm_pkg/config/frida_eigen_params.cfg"
@@ -18,11 +20,9 @@ class PickManager:
     node = None
 
     def __init__(self, node):
-        print("Init pickmanager")
         self.node = node
-        print("node:", self.node)
 
-    def execute(self, object_name: str, point: PointStamped) -> bool:
+    def execute(self, object_name: str, point: PointStamped) -> Tuple[bool, PickResult]:
         self.node.get_logger().info("Executing Pick Task")
         self.node.get_logger().info("Setting initial joint positions")
         # Set initial joint positions
@@ -73,10 +73,10 @@ class PickManager:
         future = self.node._pick_motion_action_client.send_goal_async(goal_msg)
         future = wait_for_future(future)
         # Check result
-        result = future.result().get_result().result
-        self.node.get_logger().info(f"Pick Motion Result: {result}")
+        pick_result = future.result().get_result().result
+        self.node.get_logger().info(f"Pick Motion Result: {pick_result}")
 
-        if not result.success:
+        if not pick_result.success:
             self.node.get_logger().error("Pick motion failed")
             return False
 
@@ -98,7 +98,7 @@ class PickManager:
             velocity=0.3,
         )
 
-        return result.success
+        return result.success, pick_result.pick_result
 
     def get_object_point(self, object_name: str) -> PointStamped:
         request = DetectionHandler.Request()
@@ -137,11 +137,11 @@ class PickManager:
         return point
 
     def get_object_cluster(self, point: PointStamped):
-        request = PerceptionService.Request()
+        request = PickPerceptionService.Request()
         request.point = point
         request.add_collision_objects = True
-        self.node.perception_3d_client.wait_for_service()
-        future = self.node.perception_3d_client.call_async(request)
+        self.node.pick_perception_3d_client.wait_for_service()
+        future = self.node.pick_perception_3d_client.call_async(request)
         future = wait_for_future(future)
 
         pcl_result = future.result().cluster_result

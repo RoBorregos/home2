@@ -50,6 +50,13 @@ def generate_launch_description():
                     }
                 ],
             ),
+            Node(
+                package="pick_and_place",
+                executable="place_server.py",
+                name="place_server",
+                output="screen",
+                emulate_tty=True,
+            ),
             # perception_3d.launch.py
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
@@ -61,6 +68,10 @@ def generate_launch_description():
                         ]
                     )
                 ),
+            ),
+            Node(
+                package="place",
+                executable="heatmapPlace_Server.py",
             ),
             Node(
                 package="frida_motion_planning",
