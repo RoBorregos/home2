@@ -455,7 +455,7 @@ class GPSRCommands(Node):
 
         try:
             future = self.moondream_crop_query_client.call_async(request)
-            future =self. wait_for_future(future)
+            future =self.wait_for_future(future)
             result = future.result()
 
             print(future.done())
