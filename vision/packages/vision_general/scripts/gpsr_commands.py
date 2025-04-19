@@ -430,17 +430,22 @@ class GPSRCommands(Node):
                         cv2.LINE_AA,
                     )
 
-    def wait_for_future(future, timeout=1):
+    def wait_for_future(self, future, timeout=TIMEOUT):
         start_time = time.time()
-        print("waiting for future not none")
-        while future is None and (time.time() - start_time) < timeout:
-            pass
+        self.get_logger().info("Waiting for future to complete")
+
         if future is None:
-            print("timeout reached")
-            return False
-        while not future.done():
-            pass
-        return future
+            self.get_logger().warn("Future is None")
+            return None  
+
+        while not future.done() and (time.time() - start_time) < timeout:
+            time.sleep(0.01)
+
+        if not future.done():
+            self.get_logger().warn("Timeout reached, future did not complete")
+            return None 
+
+        return future  
 
     def moondream_crop_query(self, prompt: str, bbox: list[float]) -> tuple[int, str]:
         """Makes a query of the current image using moondream."""
@@ -456,6 +461,10 @@ class GPSRCommands(Node):
         try:
             future = self.moondream_crop_query_client.call_async(request)
             future =self.wait_for_future(future)
+            
+            if future is None:
+                self.get_logger().error("Future timed out or failed")
+                return False, ""
             result = future.result()
 
             print(future.done())
