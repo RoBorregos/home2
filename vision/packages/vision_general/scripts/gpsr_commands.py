@@ -12,6 +12,7 @@ import rclpy
 from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
+import time
 
 from frida_interfaces.srv import (
     CountBy,
@@ -429,6 +430,18 @@ class GPSRCommands(Node):
                         cv2.LINE_AA,
                     )
 
+    def wait_for_future(future, timeout=1):
+        start_time = time.time()
+        print("waiting for future not none")
+        while future is None and (time.time() - start_time) < timeout:
+            pass
+        if future is None:
+            print("timeout reached")
+            return False
+        while not future.done():
+            pass
+        return future
+
     def moondream_crop_query(self, prompt: str, bbox: list[float]) -> tuple[int, str]:
         """Makes a query of the current image using moondream."""
         self.get_logger().info(f"Querying image with prompt: {prompt}")
@@ -442,7 +455,7 @@ class GPSRCommands(Node):
 
         try:
             future = self.moondream_crop_query_client.call_async(request)
-            rclpy.spin_until_future_complete(self, future)
+            future =self. wait_for_future(future)
             result = future.result()
 
             print(future.done())
