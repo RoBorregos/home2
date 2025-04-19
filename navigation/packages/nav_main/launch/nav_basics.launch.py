@@ -48,7 +48,7 @@ def launch_setup(context, *args, **kwargs):
         ),
         launch_arguments={
             'urdf_package': 'frida_description',
-            'urdf_package_path': PathJoinSubstitution(['urdf','FRIDA_Real.urdf.xacro'])
+            'urdf_package_path': PathJoinSubstitution(['urdf','TMR2025','FRIDA_Real.urdf.xacro'])
         }.items(),
     )
 
