@@ -444,7 +444,11 @@ class HRITasks(metaclass=SubtaskMeta):
             dict[int, list[str]]: Dictionary mapping shelf levels to categorized objects.
         """
         try:
-            request = CategorizeShelves.Request(table_objects=table_objects, shelves=shelves)
+            request = CategorizeShelves.Request()
+            for i, obj in enumerate(table_objects):
+                request.table_objects.append(obj)
+            request.shelves = str(shelves)
+            # request = CategorizeShelves.Request(table_objects=table_objects, shelves=shelves)
             future = self.categorize_service.call_async(request)
             rclpy.spin_until_future_complete(self.node, future)
             res: CategorizeShelves.Response = future.result()

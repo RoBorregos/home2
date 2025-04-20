@@ -2,6 +2,7 @@
 
 from collections import defaultdict
 from enum import Enum
+from typing_extensions import Buffer
 
 import rclpy
 from frida_constants.vision_classes import BBOX, ShelfDetection
@@ -10,6 +11,9 @@ from rclpy.node import Node
 from utils.logger import Logger
 from utils.status import Status
 from utils.subtask_manager import SubtaskManager, Task
+from geometry_msgs.msg import PointStamped
+# from tf2_ros import TransformListener, Buffer
+# import tf2_geometry_msgs.tf2_geometry_msgs
 
 
 class ExecutionStates(Enum):
@@ -51,7 +55,7 @@ STATE_TO_DEUX = {
 
 
 class Shelf(BaseModel):
-    id: int
+    id: int = 0
     tag: str = None
     objects: list[str] = []
 
@@ -71,9 +75,11 @@ class StoringGroceriesManager(Node):
         self.shelves_count = 0
         self.object_to_placing_shelf: dict[str, list[int]]
         self.current_object: str = None
-
+        self.point_pub = self.create_publisher(PointStamped, "point_visualize", 10)
         self.retry_count = 0
         self.prev_state = None
+        self.tf_buffer = Buffer()
+        self.check_manual_levels = True
 
     def nav_to(self, location: str, sub_location: str = "", say: bool = True) -> Status:
         Logger.info(self, f"Navigating to {location} {sub_location}")
@@ -91,7 +97,7 @@ class StoringGroceriesManager(Node):
     def exec_state(self):
         Logger.info(self, f"Executing state: {self.state.name}")
         if self.state == ExecutionStates.START:
-            self.state = ExecutionStates.INIT_NAV_TO_SHELF
+            self.state = ExecutionStates.VIEW_SHELF_AND_SAVE_OBJECTS
         elif self.state == ExecutionStates.END:
             Logger.info(self, "Ending Storing Groceries Manager...")
             self.subtask_manager.hri.say(text="Ending Storing Groceries Manager...", wait=True)
@@ -105,51 +111,70 @@ class StoringGroceriesManager(Node):
         elif self.state == ExecutionStates.SUCCEDED_NAV_TO_SHELF:
             self.state = ExecutionStates.VIEW_SHELF_AND_SAVE_OBJECTS
         elif self.state == ExecutionStates.VIEW_SHELF_AND_SAVE_OBJECTS:
-            status, results = self.subtask_manager.vision.detect_shelf(timeout=10)
-            results: list[ShelfDetection]
-            self.shelves_count = max([i.level for i in results]) + (
-                1 if 0 in [i.level for i in results] > 0 else 0
-            )
-            if status == Status.TIMEOUT:
-                pass  # should retry
-                return
-            elif status == Status.EXECUTION_SUCCESS:
-                pass  # rn todo
-            else:
-                Logger.error(self, "Unknown status")
-                return
-
-            status, res = self.subtask_manager.vision.detect_objects()
-
-            if status == Status.EXECUTION_SUCCESS:
-                Logger.info(self, f"Detected objects: {res}")
-                res: list[BBOX]
-            else:
-                Logger.error(self, "Unknown status")
-                return
-
-            for det in res:
-                # Logger.info(self, f"Detected object: {det.classname}")
-                detected_shelf: ShelfDetection = None
-                center_x = det.x1 + det.w / 2
-                center_y = det.y1 + det.h / 2
-                for shelf in results:
-                    if shelf.x1 < center_x < shelf.x2 and shelf.y1 < center_y < shelf.y2:
-                        detected_shelf = shelf
-                        break
-                if detected_shelf is None:
-                    Logger.error(self, f"Detected object {det.classname} not in any shelf")
-                    continue
-                Logger.info(
-                    self, f"Detected object {det.classname} in shelf {detected_shelf.level}"
+            if not self.check_manual_levels:
+                status, results = self.subtask_manager.vision.detect_shelf(timeout=10)
+                results: list[ShelfDetection]
+                self.shelves_count = max([i.level for i in results]) + (
+                    1 if 0 in [i.level for i in results] > 0 else 0
                 )
-                self.shelves[detected_shelf.level].id = detected_shelf.level
-                self.shelves[detected_shelf.level].objects.append(det.classname)
+                if status == Status.TIMEOUT:
+                    pass  # should retry
+                    return
+                elif status == Status.EXECUTION_SUCCESS:
+                    pass  # rn todo
+                else:
+                    Logger.error(self, "Unknown status")
+                    return
 
-            Logger.info(self, f"Shelves: {self.shelves}")
-            self.state = ExecutionStates.INIT_NAV_TO_TABLE
+                status, res = self.subtask_manager.vision.detect_objects()
 
-            len(self.shelves)
+                if status == Status.EXECUTION_SUCCESS:
+                    Logger.info(self, f"Detected objects: {res}")
+                    res: list[BBOX]
+                else:
+                    Logger.error(self, "Unknown status")
+                    return
+
+                # for det in res:
+                #     # Logger.info(self, f"Detected object: {det.classname}")
+                #     detected_shelf: ShelfDetection = None
+                #     center_x = det.x1 + det.w / 2
+                #     center_y = det.y1 + det.h / 2
+                #     for shelf in results:
+                #         if shelf.x1 < center_x < shelf.x2 and shelf.y1 < center_y < shelf.y2:
+                #             detected_shelf = shelf
+                #             break
+                #     if detected_shelf is None:
+                #         Logger.error(self, f"Detected object {det.classname} not in any shelf")
+                #         continue
+                #     Logger.info(
+                #         self, f"Detected object {det.classname} in shelf {detected_shelf.level}"
+                #     )
+                #     self.shelves[detected_shelf.level].id = detected_shelf.level
+                #     self.shelves[detected_shelf.level].objects.append(det.classname)
+                Logger.info(self, f"Shelves: {self.shelves}")
+                self.state = ExecutionStates.INIT_NAV_TO_TABLE
+
+                len(self.shelves)
+            else:
+                status, res = self.subtask_manager.vision.detect_objects()
+                print(f"results: {res}")
+                print(f"cagadota test: {res[1].px}")
+                stamped_point = PointStamped()
+                stamped_point.header.frame_id = (
+                    "zed_left_camera_optical_frame"  # Adjust to match your actual camera frame
+                )
+                stamped_point.header.stamp = self.get_clock().now().to_msg()
+                stamped_point.point.x = res[0].px
+                stamped_point.point.y = res[0].py
+                stamped_point.point.z = res[0].pz
+
+                transformed_point = self.tf_buffer.transform(
+                    stamped_point, "base_link", timeout=rclpy.duration.Duration(seconds=1.0)
+                )
+                self.point_pub.publish(transformed_point)
+                if status == Status.EXECUTION_SUCCESS:
+                    self.state = ExecutionStates.END
 
         elif self.state == ExecutionStates.INIT_NAV_TO_TABLE:
             hres: Status = self.nav_to("kitchen", "table")
@@ -171,7 +196,10 @@ class StoringGroceriesManager(Node):
             Logger.info(self, f"Detected objects: {result}")
             result: list[BBOX]
             self.objects_on_table = result
+            self.object_names_on_table = []
             self.object_names_on_table = [i.classname for i in result]
+            Logger.info(self, f"Detected objects: {self.object_names_on_table}")
+            self.object_to_placing_shelf = defaultdict(list)
             self.state = ExecutionStates.CATEGORIZE_OBJECTS
         elif self.state == ExecutionStates.CATEGORIZE_OBJECTS:
             missing_shelves = [i for i in range(self.shelves_count) if i not in self.shelves]
@@ -344,18 +372,19 @@ class StoringGroceriesManager(Node):
                         self.retry_count = 0
                     else:
                         self.state = ExecutionStates.END
-                        return
+                        return ExecutionStates.END
             else:
                 self.retry_count = 0
                 self.prev_state = self.state
             try:
                 self.exec_state()
             except Exception as e:
-                self.logger.error("Error executing state: %s", e)
+                # self.logger.error("Error executing state: %s", e)
+                Logger.error(self, f"Error executing state: {str(e)}")
             if self.state == ExecutionStates.END:
                 Logger.info(self, "Ending Storing Groceries Manager...")
                 self.subtask_manager.hri.say(text="Ending Storing Groceries Manager...", wait=True)
-                return
+                return ExecutionStates.END
         Logger.info(self, "Starting Storing Groceries Manager...")
 
 
@@ -368,7 +397,9 @@ def main(args=None):
     try:
         while rclpy.ok():
             rclpy.spin_once(node, timeout_sec=0.1)
-            node.run()
+            if node.run() == ExecutionStates.END:
+                break
+        node.subtask_manager.hri.say(text="Ending Storing Groceries Manager...", wait=True)
     except KeyboardInterrupt:
         pass
     finally:

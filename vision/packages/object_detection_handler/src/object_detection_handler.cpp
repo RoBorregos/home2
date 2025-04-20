@@ -209,7 +209,8 @@ public:
       response->success = false;
       return;
     }
-    if (umm_.find(request->label) == umm_.end()) {
+    if (umm_.find(request->label) == umm_.end() &&
+        request->label != "all") {
 
       RCLCPP_INFO(this->get_logger(), "No detection with label %s found",
                   request->label.c_str());

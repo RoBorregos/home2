@@ -311,7 +311,11 @@ class VisionTasks:
                 object_detection.y = (detection.ymin + detection.ymax) / 2
 
                 # TODO transorm if the frame_id is not 'zed...camera_frame'
-                object_detection.distance = detection.point3d.z
+                object_detection.distance = detection.point3d.point.z
+                object_detection.px = detection.point3d.point.x
+                object_detection.py = detection.point3d.point.y
+                object_detection.pz = detection.point3d.point.z
+                print(f"example_detection: {detection}")
                 detections.append(object_detection)
         except Exception as e:
             Logger.error(self.node, f"Error detecting objects: {e}")
