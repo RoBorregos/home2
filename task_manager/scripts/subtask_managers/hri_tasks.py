@@ -433,14 +433,12 @@ class HRITasks(metaclass=SubtaskMeta):
         return self._query_(query, "locations", top_k)
 
     def save_command_history(
-        self, command: str, complement: str, characteristic: str, result: str, status
+        self, command: str, complement: str, characteristic: str, result, status
     ) -> None:
         collection = "command_history"
 
-        document = f"Command: {command}"
-
+        document = [command]
         metadata = {
-            "command": command,
             "complement": complement,
             "characteristic": characteristic,
             "result": result,
@@ -449,17 +447,17 @@ class HRITasks(metaclass=SubtaskMeta):
         }
 
         # Prepare the service request
-
         metadata = [json.dumps(metadata)]
-        request = AddEntry.Request(document=document, metadata=metadata, collection=collection)
+
+        request = AddEntry.Request(document=document, metadata=metadata[0], collection=collection)
         future = self.add_item_client.call_async(request)
 
         def callback(fut):
             try:
                 response = fut.result()
-                self.get_logger().info(f"Command history saved: {response}")
+                self.node.get_logger().info(f"Command history saved: {response}")
             except Exception as e:
-                self.get_logger().error(f"Failed to save command history: {e}")
+                self.node.get_logger().error(f"Failed to save command history: {e}")
 
         future.add_done_callback(callback)
 

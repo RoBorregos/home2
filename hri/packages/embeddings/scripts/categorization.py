@@ -92,14 +92,15 @@ class Embeddings(Node):
         self.get_logger().info("Categorization node initialized.")
 
     def add_entry_callback(self, request, response):
+        self.get_logger().info(str(type(request.metadata)))
+
         """Service callback to add items to ChromaDB"""
         try:
-            # Ensure documents is a list
             if request.metadata:
                 metadatas_ = json.loads(request.metadata)
             else:
                 metadatas_ = request.metadata
-
+            # Ensure documents is a list
             documents = (
                 request.document
                 if isinstance(request.document, list)
@@ -111,21 +112,19 @@ class Embeddings(Node):
 
             # Normalize and validate all metadata entries using the profile
             for meta in metadatas:
+                if isinstance(meta, str):
+                    meta = json.loads(meta)
                 metadata_parsed = MetadataModel.with_profile(request.collection, **meta)
                 metadata_objects.append(metadata_parsed.model_dump())
 
-            print("lenght of documents", len(documents), len(metadatas))
             documents = self.clean(documents)
             # Inject context into documents and preserve original names
-
-            print("documents before the context added", documents)
 
             for i, (doc, meta) in enumerate(zip(documents, metadata_objects)):
                 meta["original_name"] = doc
                 context = meta.get("context")
                 if context:
                     documents[i] = f"{doc} {context}"
-            print("documents after the context added", documents)
 
             self.chroma_adapter.add_entries(
                 request.collection, documents, metadata_objects
