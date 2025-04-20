@@ -89,6 +89,10 @@ class MoveItPlanner(Planner):
             joint_names = xarm6.joint_names()
         trajectory = self._plan_joint_goal(joint_positions, joint_names)
         if not trajectory:
+            self.node.get_logger().error(
+                "Failed to plan joint goal, \
+                        probably due to timeout, check if MoveIt is running"
+            )
             return False
         self.moveit2.execute(trajectory)
         future = None
@@ -146,8 +150,8 @@ class MoveItPlanner(Planner):
         self,
         pose: PoseStamped,
         cartesian: bool = False,
-        tolerance_position: float = 0.001,
-        tolerance_orientation: float = 0.001,
+        tolerance_position: float = 0.025,
+        tolerance_orientation: float = 0.1,
         weight_position: float = 1.0,
         weight_orientation: float = 1.0,
         cartesian_max_step: float = 0.01,
@@ -175,7 +179,7 @@ class MoveItPlanner(Planner):
         self,
         joint_positions: List[float],
         joint_names: List[str],
-        tolerance: float = 0.001,
+        tolerance: float = 0.05,
         weight: float = 1.0,
     ):
         return self.moveit2.plan(
@@ -231,7 +235,6 @@ class MoveItPlanner(Planner):
         return dict(zip(self.joint_states.name, self.joint_states.position))
 
     def joint_states_callback(self, msg: JointState):
-        # self.joint_states = JointState()  # Crea un nuevo mensaje
         relevant_indices = []
         for i, joint_name in enumerate(msg.name):
             if joint_name in xarm6.joint_names():
@@ -239,6 +242,7 @@ class MoveItPlanner(Planner):
         # Filtra solo los joints del brazo
         if len(relevant_indices) == 0:
             return
+        self.joint_states = JointState()
         self.joint_states.name = [msg.name[i] for i in relevant_indices]
         self.joint_states.position = [msg.position[i] for i in relevant_indices]
 
@@ -253,19 +257,19 @@ class MoveItPlanner(Planner):
         return self.moveit2.compute_fk(joint_state=joint_positions)
 
     def set_joint_constraints(
-        self, joint_positions: List[float], tolerance: float = 0.001
+        self, joint_positions: List[float], tolerance: float = 0.05
     ) -> None:
         self.moveit2.set_joint_goal(
             joint_positions=joint_positions, tolerance=tolerance
         )
 
     def set_position_constraints(
-        self, position: List[float], tolerance: float = 0.001
+        self, position: List[float], tolerance: float = 0.05
     ) -> None:
         self.moveit2.set_position_goal(position=position, tolerance=tolerance)
 
     def set_orientation_constraints(
-        self, quat_xyzw: List[float], tolerance: float = 0.001
+        self, quat_xyzw: List[float], tolerance: float = 0.05
     ) -> None:
         self.moveit2.set_orientation_goal(quat_xyzw=quat_xyzw, tolerance=tolerance)
 

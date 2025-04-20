@@ -42,16 +42,16 @@ class PickManager:
                 self.node.get_logger().error(
                     f"Object {object_name} not found, please provide a point"
                 )
-                return False
+                return False, None
         else:
             self.node.get_logger().error("No object name or point provided")
-            return False
+            return False, None
 
         # Call Perception Service to get object cluster and generate collision objects
         object_cluster = self.get_object_cluster(point)
         if object_cluster is None:
             self.node.get_logger().error("No object cluster detected")
-            return False
+            return False, None
 
         # Call Grasp Pose Detection
         grasp_poses, grasp_scores = get_grasps(
@@ -60,9 +60,21 @@ class PickManager:
 
         if len(grasp_poses) == 0:
             self.node.get_logger().error("No grasp poses detected")
-            return False
+            return False, None
 
         # Call Pick Motion Action
+
+        # open gripper
+        gripper_request = SetBool.Request()
+        gripper_request.data = True
+        self.node.get_logger().info("Closing gripper")
+        future = self.node._gripper_set_state_client.call_async(gripper_request)
+        future = wait_for_future(future)
+        result = future.result()
+        self.node.get_logger().info(f"Gripper Result: {result}")
+        time.sleep(3)
+        self.node.get_logger().info("Returning to position")
+
         # Create goal
         goal_msg = PickMotion.Goal()
         goal_msg.grasping_poses = grasp_poses
@@ -82,7 +94,7 @@ class PickManager:
 
         # close gripper
         gripper_request = SetBool.Request()
-        gripper_request.data = True
+        gripper_request.data = False
         self.node.get_logger().info("Closing gripper")
         future = self.node._gripper_set_state_client.call_async(gripper_request)
         future = wait_for_future(future)
@@ -117,7 +129,9 @@ class PickManager:
             self.node.get_logger().info(f"Object {object_name} found")
             point = future.result().detection_array.detections[0].point3d
         elif len(future.result().detection_array.detections) > 1:
-            self.get_logger().info("Multiple objects found, selecting the closest one")
+            self.node.get_logger().info(
+                "Multiple objects found, selecting the closest one"
+            )
             closest_object = future.result().detection_array.detections[0]
             closest_distance = float("inf")
             for detection in future.result().detection_array.detections:

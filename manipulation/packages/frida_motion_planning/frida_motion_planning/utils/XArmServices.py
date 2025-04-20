@@ -114,9 +114,14 @@ class XArmServices:
                 "Cannot set gripper state as gripper io service is not available"
             )
             return False
+        self.node.get_logger().info(
+            f"Setting gripper state to {state} using SetDigitalIO service"
+        )
+        self.gripper_io_client.wait_for_service()
+        self.node.get_logger().info("Gripper IO service is available")
         request = SetDigitalIO.Request()
         request.ionum = 0
         request.value = int(state)
-        future = self.gripper_io_client.call_async(request)
-        future = wait_for_future(future)
+        self.gripper_io_client.call_async(request)
+        # future = wait_for_future(future)
         return True

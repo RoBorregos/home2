@@ -197,7 +197,7 @@ class MotionPlanningServer(Node):
         result = self.planner.plan_pose_goal(
             pose,
             wait=True,
-            set_mode=(self.current_mode != MOVEIT_MODE),
+            set_mode=True,
         )
         if not ALWAYS_SET_MODE:
             self.current_mode = MOVEIT_MODE
@@ -233,9 +233,6 @@ class MotionPlanningServer(Node):
                 return True
         except Exception as e:
             self.get_logger().error(str(e))
-            self.get_logger().error(
-                f"Joint names are not in the current joint positions: {joint_names}"
-            )
             return False
 
         self.get_logger().info("Planning joint goal...")
@@ -245,7 +242,7 @@ class MotionPlanningServer(Node):
             wait=True,
             set_mode=(self.current_mode != MOVEIT_MODE),
         )
-        self.get_logger().info(f"Result: {result}")
+        self.get_logger().info(f"Move Joints Result: {result}")
         if not ALWAYS_SET_MODE:
             self.current_mode = MOVEIT_MODE
         return result
@@ -469,7 +466,7 @@ class MotionPlanningServer(Node):
 
     def set_gripper_state_callback(self, request, response):
         """Handle requests to set the gripper state"""
-
+        self.get_logger().info(f"Setting gripper state: {request.data}")
         # 0 open, 1 closed
         if request.data:
             self.xarm_services.open_gripper()
