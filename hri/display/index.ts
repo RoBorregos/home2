@@ -15,7 +15,7 @@ app.get("/", (req: Request, res: Response) => {
   res.send("Hello World From the Typescript Server!");
 });
 
-const port = 8000;
+const port = 8001;
 
 const server = app.listen(port, () => {
   console.log(`ROS2 websocket running on port ${port}`);

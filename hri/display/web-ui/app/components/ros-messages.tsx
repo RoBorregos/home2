@@ -25,7 +25,7 @@ export default function RosMessagesDisplay() {
   const animationRef = useRef<number | null>(null);
 
   useEffect(() => {
-    const socket = new WebSocket("ws://localhost:8000/");
+    const socket = new WebSocket("ws://localhost:8001/");
 
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);

@@ -19,6 +19,5 @@ services:
         '/bin/bash',
         '-l',
         '-c',
-        # 'source /opt/ros/humble/setup.bash && npm i && npm run dev',
-        'tail -f /dev/null',
+        'source /opt/ros/humble/setup.bash && npm i && npm run dev',
       ]
