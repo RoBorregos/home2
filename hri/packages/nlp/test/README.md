@@ -1,8 +1,11 @@
 # Testing using Deepeval
 
+As a recommendation, you should use a python3 venv.
+
 1. Install the deepeval package
 ```bash
-pip install deepeval
+# pwd -> hri/packages/nlp/test
+pip install -r requirements.txt
 ```
 
 2. Run the ollama server
@@ -22,5 +25,5 @@ deepeval set-local-embeddings --model-name=nomic-embed-text:latest \
 
 4. Run the tests
 ```bash
-deepeval test run test_data_extractor.py
+deepeval test run test_<script>.py
 ```

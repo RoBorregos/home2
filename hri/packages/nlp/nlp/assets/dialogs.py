@@ -139,15 +139,19 @@ def get_is_answer_positive_args(interpreted_text):
 {IsAnswerPositive(is_positive=True).model_dump_json()}
 
 **Input:** 'Wrong'
+**Output:**
 {IsAnswerPositive(is_positive=False).model_dump_json()}
                 
 **Input:** 'I don’t know'
+**Output:**
 {IsAnswerPositive(is_positive=False).model_dump_json()}
 
 **Input:** 'Huh?'
+**Output:**
 {IsAnswerPositive(is_positive=False).model_dump_json()}
 
 **Input:** 'Maybe'
+**Output:**
 {IsAnswerPositive(is_positive=False).model_dump_json()}
 """,
             },
@@ -165,12 +169,16 @@ def get_is_answer_negative_args(interpreted_text):
         [
             {
                 "role": "system",
-                "content": f"""You will be given a statement, and your task is to determine whether it is a **negative confirmation** or not. A **negative confirmation** is an explicit or implicit agreement, affirmation, or confirmation (e.g., 'no', 'that's incorrect', 'incorrect', 'absolutely not'). A **negative confirmation** includes disagreement, uncertainty, negation, or lack of understanding (e.g., 'no', 'I don’t know', 'wrong', 'not sure'). If the statement is ambiguous or unclear, don't assume it is negative.
-                
-### Guidelines:
-- Only return a boolean value: **true** for negative confirmation, **false** otherwise.
-- Ignore irrelevant sentiment (e.g., 'I am happy' is **not** a confirmation, so return false).
-- Consider implicit negative confirmations as negative.
+                "content": f"""You will receive a short statement. Your task is to determine if the statement is a **negative confirmation**.
+
+A negative confirmation includes:
+- explicit disagreement or rejection (e.g., "no", "that's wrong", "incorrect")
+
+But does **not** include:
+- expressions of uncertainty or lack of confidence (e.g., "maybe", "I'm not sure", "I don't think so", "I doubt it")
+- explicit affirmation (e.g. "yes", "correct", "sure", "absolutely", "of course")
+
+**Always respond with a single JSON object with one field `is_negative` (boolean).**
                 
 ### Examples:
 - **Input:** 'Yes'
@@ -186,19 +194,28 @@ def get_is_answer_negative_args(interpreted_text):
 {IsAnswerNegative(is_negative=True).model_dump_json()}
 
 **Input:** 'Wrong'
+**Output:**
 {IsAnswerNegative(is_negative=True).model_dump_json()}
                 
-**Input:** 'I don’t know'
-{IsAnswerNegative(is_negative=True).model_dump_json()}
+**Input:** 'I don't know'
+**Output:**
+{IsAnswerNegative(is_negative=False).model_dump_json()}
 
-**Input:** 'Huh?'
+**Input:** 'That's right'
+**Output:**
 {IsAnswerNegative(is_negative=False).model_dump_json()}
 
 **Input:** 'Maybe'
+**Output:**
 {IsAnswerNegative(is_negative=False).model_dump_json()}
 
 **Input:** 'No'
+**Output:**
 {IsAnswerNegative(is_negative=True).model_dump_json()}
+
+**Input:** 'Absolutely'
+**Output:**
+{IsAnswerNegative(is_negative=False).model_dump_json()}
 """,
             },
             {
