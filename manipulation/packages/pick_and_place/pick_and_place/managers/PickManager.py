@@ -102,6 +102,7 @@ class PickManager:
         self.node.get_logger().info(f"Gripper Result: {result}")
         time.sleep(3)
         self.node.get_logger().info("Returning to position")
+        time.sleep(3)
 
         # return to configured position
         send_joint_goal(

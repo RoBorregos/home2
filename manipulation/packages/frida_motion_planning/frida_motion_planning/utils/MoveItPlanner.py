@@ -14,6 +14,7 @@ from xarm_msgs.srv import SetInt16
 from frida_motion_planning.utils.Planner import Planner
 from geometry_msgs.msg import PoseStamped
 from sensor_msgs.msg import JointState
+from controller_manager_msgs.srv import SwitchController
 import time
 import rclpy
 
@@ -47,14 +48,32 @@ class MoveItPlanner(Planner):
         self.joint_states_sub = self.node.create_subscription(
             JointState, self.joint_states_topic, self.joint_states_callback, 10
         )
+
+        """ 
+        For some reason, controller may stop working when using moveit2
+        This ensures the controller is active before sending a new plan
+        ros2 service call /controller_manager/switch_controller controller_manager_msgs/srv/SwitchController {"activate_controllers : [xarm6_traj_controller]}"
+        
+        """
+
         # Wait for set mode service, timeout if we use fake controller
         self.mode_client = self.node.create_client(SetInt16, XARM_SETMODE_SERVICE)
         self.state_client = self.node.create_client(SetInt16, XARM_SETSTATE_SERVICE)
+        self.switch_controller_client = None
         self.mode_enabled = True
         if self.mode_client.wait_for_service(
             timeout_sec=3
         ) and self.state_client.wait_for_service(timeout_sec=3):
             self.mode_enabled = True
+            self.switch_controller_client = self.node.create_client(
+                SwitchController, "/controller_manager/switch_controller"
+            )
+            self.switch_controller_client.wait_for_service(timeout_sec=3)
+            if not self.switch_controller_client.service_is_ready():
+                self.node.get_logger().warn(
+                    "Switch controller service not available, \
+                            if using fake controller, ignore this message"
+                )
         else:
             self.node.get_logger().warn(
                 "Motion enable client not initialized, \
@@ -154,7 +173,7 @@ class MoveItPlanner(Planner):
         tolerance_orientation: float = 0.1,
         weight_position: float = 1.0,
         weight_orientation: float = 1.0,
-        cartesian_max_step: float = 0.01,
+        cartesian_max_step: float = 0.05,
         cartesian_fraction_threshold: float = 0.8,
     ) -> Union[bool, Future]:
         return self.moveit2.plan(
@@ -205,7 +224,6 @@ class MoveItPlanner(Planner):
         else:
             self.node.get_logger().error("Failed to call set mode service")
             return False
-
         self.state_client.wait_for_service()
         request = SetInt16.Request()
         request.data = 0
@@ -219,6 +237,21 @@ class MoveItPlanner(Planner):
         else:
             self.node.get_logger().error("Failed to call set state service")
             return False
+        time.sleep(0.1)
+        # Activate controller
+        if self.switch_controller_client is not None:
+            request = SwitchController.Request()
+            request.start_controllers = ["xarm6_traj_controller"]
+            future = self.switch_controller_client.call_async(request)
+            while rclpy.ok() and not future.done():
+                pass
+            if future.result() is not None:
+                self.node.get_logger().info(
+                    f"Switch controller service response: {future.result().ok}"
+                )
+            else:
+                self.node.get_logger().error("Failed to call switch controller service")
+                return False
         return True
 
     def get_current_operation_state(self) -> MoveIt2State:
