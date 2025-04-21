@@ -438,18 +438,23 @@ class HRITasks(metaclass=SubtaskMeta):
         collection = "command_history"
 
         document = [command]
-        metadata = {
-            "complement": complement,
-            "characteristic": characteristic,
-            "result": result,
-            "status": status,
-            "timestamp": datetime.now().isoformat(),
-        }
+        metadata = [
+            {
+                "complement": complement,
+                "characteristic": characteristic,
+                "result": result,
+                "status": status,
+                "timestamp": datetime.now().isoformat(),
+            }
+        ]
+        self.node.get_logger().info(f"Saving command history: {document}, {metadata}")
 
         # Prepare the service request
         metadata = [json.dumps(metadata)]
+        self.node.get_logger().info(f"Saving command history: {type(metadata[0])}")
 
         request = AddEntry.Request(document=document, metadata=metadata[0], collection=collection)
+
         future = self.add_item_client.call_async(request)
 
         def callback(fut):

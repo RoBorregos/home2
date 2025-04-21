@@ -92,14 +92,13 @@ class Embeddings(Node):
         self.get_logger().info("Categorization node initialized.")
 
     def add_entry_callback(self, request, response):
-        self.get_logger().info(str(type(request.metadata)))
-
         """Service callback to add items to ChromaDB"""
         try:
             if request.metadata:
                 metadatas_ = json.loads(request.metadata)
             else:
                 metadatas_ = request.metadata
+
             # Ensure documents is a list
             documents = (
                 request.document
@@ -111,21 +110,28 @@ class Embeddings(Node):
             metadata_objects = []
 
             # Normalize and validate all metadata entries using the profile
+
             for meta in metadatas:
-                if isinstance(meta, str):
-                    meta = json.loads(meta)
-                metadata_parsed = MetadataModel.with_profile(request.collection, **meta)
-                metadata_objects.append(metadata_parsed.model_dump())
+                try:
+                    metadata_parsed = MetadataModel.with_profile(
+                        request.collection, **meta
+                    )
+                    metadata_objects.append(metadata_parsed.model_dump())
+                except Exception as e:
+                    self.get_logger().error(
+                        f"Failed to process metadata entry: {meta} — {str(e)}"
+                    )
+                    raise
 
             documents = self.clean(documents)
             # Inject context into documents and preserve original names
-
             for i, (doc, meta) in enumerate(zip(documents, metadata_objects)):
                 meta["original_name"] = doc
                 context = meta.get("context")
                 if context:
                     documents[i] = f"{doc} {context}"
-
+            # self.get_logger().info(f"This is the request that is reaching{(request.collection, documents, metadata_objects)}")
+            # self.get_logger().info("Adding entries to ChromaDB")
             self.chroma_adapter.add_entries(
                 request.collection, documents, metadata_objects
             )
@@ -163,21 +169,23 @@ class Embeddings(Node):
                 results_raw = self.chroma_adapter.query(
                     request.collection, [query_with_context], request.topk
                 )
-                # #Test with no context
-                # results_raw = self.chroma_adapter.query(
-                #     request.collection, query, request.topk
-                # )
                 docs = results_raw.get("documents", [[]])[0]
                 metas = results_raw.get("metadatas", [[]])[0]
 
-                formatted_results = [
-                    meta.get("original_name", doc) if isinstance(meta, dict) else doc
-                    for doc, meta in zip(docs, metas)
-                ]
+                formatted_results = []
+                for doc, meta in zip(docs, metas):
+                    entry = {
+                        "document": doc,
+                        "metadata": meta if isinstance(meta, dict) else {},
+                    }
+
+                    if isinstance(meta, dict) and "original_name" in meta:
+                        entry["document"] = meta["original_name"]
+
+                    formatted_results.append(entry)
 
                 grouped_results.append({"query": query, "results": formatted_results})
 
-            # Convert each result group to JSON string
             response.results = [json.dumps(entry) for entry in grouped_results]
 
             response.success = bool(grouped_results)
@@ -275,7 +283,7 @@ class Embeddings(Node):
             )
 
             self.chroma_adapter.add_entries(collection_name, documents, metadatas_)
-
+        self.chroma_adapter._get_or_create_collection("command_history")
         return
 
     def add_basics(self, documents, metadatas):
