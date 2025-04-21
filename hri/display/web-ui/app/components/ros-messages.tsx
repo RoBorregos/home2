@@ -22,7 +22,6 @@ export default function RosMessagesDisplay() {
     vadLevel: 0,
   });
   const messagesStartRef = useRef<HTMLDivElement>(null);
-  const animationRef = useRef<number | null>(null);
 
   useEffect(() => {
     const socket = new WebSocket("ws://localhost:8001/");
