@@ -31,6 +31,7 @@ struct HandlerParams
   double IOU_THRESHOLD;
   std::string TARGET_FRAME;
   std::string DETECTIONS_TOPIC;
+  std::string ZERO_SHOT_DETECTIONS_TOPIC;
   bool TRANSFORM;
   bool VERBOSE;
 };
@@ -40,6 +41,7 @@ class DetectionsHandlerNode : public rclcpp::Node
   private:
     rclcpp::Service<frida_interfaces::srv::DetectionHandler>::SharedPtr service_;
     rclcpp::Subscription<frida_interfaces::msg::ObjectDetectionArray>::SharedPtr oda_subscriber_;
+    rclcpp::Subscription<frida_interfaces::msg::ObjectDetectionArray>::SharedPtr oda_zero_shot_subscriber;
     rclcpp::TimerBase::SharedPtr timer_;
     std::vector<frida_interfaces::msg::ObjectDetection> object_detection_vector_;
     std::unordered_multimap<std::string, DetectionRecord> umm_; 
@@ -56,6 +58,8 @@ class DetectionsHandlerNode : public rclcpp::Node
 
       oda_subscriber_ = this->create_subscription<frida_interfaces::msg::ObjectDetectionArray>(
         params_.DETECTIONS_TOPIC, 10, std::bind(&DetectionsHandlerNode::oda_callback, this, std::placeholders::_1));
+      oda_zero_shot_subscriber = this->create_subscription<frida_interfaces::msg::ObjectDetectionArray>(
+        params_.ZERO_SHOT_DETECTIONS_TOPIC, 10, std::bind(&DetectionsHandlerNode::oda_callback, this, std::placeholders::_1));
       service_ = this->create_service<frida_interfaces::srv::DetectionHandler>(
         DETECTION_HANDLER_TOPIC_SV, std::bind(&DetectionsHandlerNode::detection_handler_callback, this, std::placeholders::_1, std::placeholders::_2));
       timer_ = this->create_wall_timer(std::chrono::milliseconds(100), std::bind(&DetectionsHandlerNode::timer_callback, this));
@@ -67,6 +71,7 @@ class DetectionsHandlerNode : public rclcpp::Node
 
     void declare_parameters(){
       this->declare_parameter("DETECTIONS_TOPIC", "/vision/detections");
+      this->declare_parameter("ZERO_SHOT_DETECTIONS_TOPIC", "/vision/zero_shot_detections");
       this->declare_parameter("TARGET_FRAME", "base_link");
       this->declare_parameter("TRANSFORM", false);
       this->declare_parameter("VERBOSE", false);
@@ -77,6 +82,7 @@ class DetectionsHandlerNode : public rclcpp::Node
     void get_parameters(){
       params_.TARGET_FRAME = this->get_parameter("TARGET_FRAME").as_string();
       params_.DETECTIONS_TOPIC = this->get_parameter("DETECTIONS_TOPIC").as_string();
+      params_.ZERO_SHOT_DETECTIONS_TOPIC = this->get_parameter("ZERO_SHOT_DETECTIONS_TOPIC").as_string();
       params_.IOU_THRESHOLD = this->get_parameter("IOU_THRESHOLD").as_double();
       params_.RECORDED_SECONDS = this->get_parameter("RECORDED_SECONDS").as_double();
       params_.TRANSFORM = this->get_parameter("TRANSFORM").as_bool();
@@ -179,6 +185,39 @@ class DetectionsHandlerNode : public rclcpp::Node
           response->success = false;
           return;
         }
+
+        if (request->label.empty()){
+          RCLCPP_INFO(this->get_logger(), "Empty label received, returning all detections");
+
+          if (request->closest_object){
+          frida_interfaces::msg::ObjectDetection closest_detection;
+          float min_distance = std::numeric_limits<float>::max();
+          for (auto it = umm_.begin(); it != umm_.end(); ++it){
+            geometry_msgs::msg::PointStamped::SharedPtr transformed_point = transform_point(it->second.detection.point3d, params_.TARGET_FRAME);
+            if (transformed_point == nullptr){
+              RCLCPP_INFO(this->get_logger(), "Transform error");
+              response->success = false;
+              return;
+            }
+            float distance = sqrt(pow(transformed_point->point.x, 2) + pow(transformed_point->point.y, 2) + pow(transformed_point->point.z, 2));
+            if (distance < min_distance){
+              min_distance = distance;
+              closest_detection = it->second.detection;
+            }
+          }
+
+          response->detection_array.detections = {closest_detection};
+        } else {
+          std::vector<frida_interfaces::msg::ObjectDetection> detections;
+          for (auto it = umm_.begin(); it != umm_.end(); ++it){
+            detections.push_back(it->second.detection);
+          }
+          response->detection_array.detections = detections;
+        }
+          response->success = true;
+          return;
+        }
+
         if (umm_.find(request->label) == umm_.end()){
           
           RCLCPP_INFO(this->get_logger(), "No detection with label %s found", request->label.c_str());
