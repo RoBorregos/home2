@@ -254,7 +254,8 @@ class HRITasks(metaclass=SubtaskMeta):
                     if s == Status.EXECUTION_SUCCESS:
                         if self.is_positive(interpret_text)[1]:
                             return Status.EXECUTION_SUCCESS, "yes"
-                        elif self.is_negative(interpret_text)[1]:
+                        else:
+                        # elif self.is_negative(interpret_text)[1]:
                             return Status.EXECUTION_SUCCESS, "no"
 
         return Status.TIMEOUT, ""
