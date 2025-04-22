@@ -11,7 +11,7 @@ from rclpy.node import Node
 from utils.logger import Logger
 
 from frida_interfaces.action import MoveJoints
-from frida_interfaces.srv import GetJoints
+from frida_interfaces.srv import GetJoints, FollowFace
 from frida_constants.xarm_configurations import XARM_CONFIGURATIONS
 from rclpy.action import ActionClient
 from typing import List, Union
@@ -72,6 +72,7 @@ class ManipulationTasks:
         self.gripper_client = self.node.create_client(SetDigitalIO, "/xarm/set_tgpio_digital")
 
         self._get_joints_client = self.node.create_client(GetJoints, "/manipulation/get_joints")
+        self.follow_face_client = self.node.create_client(FollowFace, '/follow_face')
 
     def open_gripper(self):
         """Opens the gripper"""
@@ -208,6 +209,33 @@ class ManipulationTasks:
         if not result.success:
             return False
         return True
+    
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
+    @service_check(client="follow_face_client", return_value=Status.TERMINAL_ERROR, timeout=TIMEOUT)
+    def follow_face(self, follow) -> int:
+        """Save the name of the person detected"""
+
+        if follow:
+            Logger.info(self.node, "Following face")
+        else:
+            Logger.info(self.node, "Stopping following face")
+        request = FollowFace.Request()
+        request.follow_face = follow
+
+        try:
+            future = self.save_name_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+            result = future.result()
+
+            if not result.success:
+                raise Exception("Service call failed")
+
+        except Exception as e:
+            Logger.error(self.node, f"Error following face: {e}")
+            return Status.EXECUTION_ERROR
+
+        Logger.success(self.node, "Following face request successful")
+        return Status.EXECUTION_SUCCESS
 
 
 if __name__ == "__main__":
