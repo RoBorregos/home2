@@ -7,29 +7,16 @@ using the fine-tuned model to send the actions to the Task Manager
 
 import json
 import os
-from typing import List, Optional
 
 import rclpy
 from nlp.assets.prompts import get_system_prompt_expo
+from nlp.assets.schemas import CommandListShape
 from openai import OpenAI
-from pydantic import BaseModel, Field
 from rclpy.node import Node
 from std_msgs.msg import String
 
 from frida_interfaces.msg import Command, CommandList
 from frida_interfaces.srv import CommandInterpreter as CommandInterpreterSrv
-
-
-class CommandShape(BaseModel):
-    action: str = Field(description="The action to be performed")
-    characteristic: Optional[str] = Field(
-        description="A characteristic related to the action"
-    )
-    complement: Optional[str] = Field(description="A complement related to the action")
-
-
-class CommandListShape(BaseModel):
-    commands: List[CommandShape]
 
 
 class CommandInterpreter(Node):

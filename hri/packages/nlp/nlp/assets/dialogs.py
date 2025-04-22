@@ -238,3 +238,66 @@ def format_response(response):
             "content": response,
         },
     ]
+
+
+def get_command_interpreter_args(full_text):
+    return [
+        {
+            "role": "user",
+            "content": """
+Respond in the following format:
+<think>
+...
+</think>
+<answer>
+...
+</answer>
+
+For the answer it should be a json that can be parsed as a CommandListShape.
+
+class CommandShape(BaseModel):
+    action: str
+    characteristic: str = ""
+    complement: str = ""
+
+class CommandListShape(BaseModel):
+    commands: List[CommandShape]
+
+These are the actions that you can use:
+
+1. go (complement = location_to_go, characteristic = "")
+2. pick(complement = "object to pick", characteristic = "")
+3. place(complement = "", characteristic = "")
+4. contextual_say(complement = complete_command, characteristic = previous_command | information_to_answer)
+5. say(complement = text, characteristic = "")
+6. ask_answer_question(complement = "", characteristic = "")
+7. visual_info(complement = ("biggest" | "largest" | "smallest" | "heaviest" | "lightest" | "thinnest") + " object" | "describe the person name" | "describe the person posture", characteristic = object_category | "")
+8. give(complement = "", characteristic = "")
+9. follow_person_until(complement = room | location | 'canceled', characteristic = name | "")
+10. guide_to(complement = "person" | name, characteristic = loc_room)
+11. find_person_info(complement = "name" | "pose" | "gesture", characteristic = "")
+12. find_object(complement = placement_location | room, characteristic = object_to_find)
+13. count(complement = placement_location | room, characteristic = object | "person with " + cloth + color | "person with " + posture | "person with " + gesture)
+14. find_person(complement = gesture | posture | cloth + color | "", characteristic = "clothes" | "gesture" | "posture" | "")
+15. find_person_by_name(complement = name, characteristic = "")
+
+For example, for the prompt "fetch a pringles from the kitchen table and deliver it to the person pointing to the left in the bedroom", your answer should be:
+
+<think>
+Okay, let me break down the user's task step by step. The user wants the robot to fetch a Pringles from the kitchen table and deliver it to a person in the bedroom who's pointing to the left.
+
+First, the robot needs to navigate to the kitchen table. So the first action would be 'go' with the complement 'kitchen table'. Then, it needs to find the Pringles there. Since Pringles is a specific object, the action is 'find' with 'pringles' as the complement. Once located, the robot should grab it, so 'grab' and 'pringles' next.
+
+Now, the robot needs to go to the bedroom. So another 'go' action with 'bedroom' as the complement. In the bedroom, the robot has to identify the person. The user mentioned the person is pointing to the left. Here, the robot should use person recognition with the property 'pointing to the left'. So 'find' action, complement 'person', and property 'pointing to the left'.
+
+After locating the person, the robot should approach them. Then deliver the Pringles. So 'approach' and 'person', followed by 'give' and 'pringles'.
+
+Wait, but in the previous examples, when delivering to a named person, they used 'find' with the person's name. Here, since the person isn't named but identified by a gesture, the complement remains 'person' with the property specifying the gesture. That makes sense. Also, the robot doesn't need to return to a previous location here because the task ends after delivering. So no 'remember location' steps unless necessary. In the example where they went to the bedroom, they didn't have to go back. So the steps would be: go to kitchen table, find pringles, grab, go to bedroom, find person (with property), approach, give. That should be it.
+</think>
+<answer>
+{\"commands\":[{\"action\":\"go\",\"complement\":\"kitchen table\",\"characteristic\":\"\"},{\"action\":\"find_object\",\"complement\":\"kitchen table\",\"characteristic\":\"pringles\"},{\"action\":\"pick\",\"complement\":\"pringles\",\"characteristic\":\"\"},{\"action\":\"go\",\"complement\":\"bedroom\",\"characteristic\":\"\"},{\"action\":\"find_person\",\"complement\":\"person pointing to the left\",\"characteristic\":\"\"},{\"action\":\"give\",\"complement\":\"\",\"characteristic\":\"\"}]}
+</answer>
+            """,
+        },
+        {"role": "user", "content": full_text},
+    ]
