@@ -18,12 +18,12 @@ from rclpy.node import Node
 from std_msgs.msg import Bool, String
 
 from frida_interfaces.srv import (
+    CategorizeShelves,
     CommonInterest,
     Grammar,
     IsNegative,
     IsPositive,
     LLMWrapper,
-    CategorizeShelves,
 )
 
 SPEECH_COMMAND_TOPIC = "/speech/raw_command"
@@ -149,49 +149,7 @@ class LLMUtils(Node):
 
         # publisher
         self.publisher = self.create_publisher(Bool, OUT_COMMAND_TOPIC, 10)
-        self.subscription = self.create_subscription(
-            String, SPEECH_COMMAND_TOPIC, self.callback, 10
-        )
         self.logger.info("Initialized llm_utils node")
-
-    def callback(self, data: String) -> None:
-        if data.data == "" or len(data.data) == 0:
-            self.logger.debug("Empty command received")
-            return
-
-        for key in exit_keys:
-            if key in data.data.lower():
-                self.logger.info("Stop command received")
-                msg = Bool()
-                msg.data = True
-                self.publisher.publish(msg)
-                return
-
-        response = self.client.beta.chat.completions.parse(
-            model=self.model,
-            temperature=self.temperature,
-            messages=[
-                {
-                    "role": "system",
-                    "content": f"Please determine if the command is a stop command, here is a sample of stop commands: {exit_keys}",
-                },
-                {"role": "user", "content": data.data},
-            ],
-            response_format=ResponseFormat,
-        )
-
-        response = response.choices[0].message.content
-
-        parse = json.loads(response)
-
-        parsed = ResponseFormat(**parse)
-
-        if parsed.is_stop:
-            self.logger.info("Stop command received")
-            msg = Bool()
-            msg.data = True
-            self.publisher.publish(msg)
-        return
 
     def grammar_service(self, req, res):
         response = (
