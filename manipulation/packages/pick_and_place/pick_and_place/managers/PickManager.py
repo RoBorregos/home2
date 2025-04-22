@@ -71,7 +71,7 @@ class PickManager:
         )
         # open gripper
         gripper_request = SetBool.Request()
-        gripper_request.data = True
+        gripper_request.data = False
         self.node.get_logger().info(
             "Open gripper ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
         )
@@ -101,7 +101,7 @@ class PickManager:
 
         # close gripper
         gripper_request = SetBool.Request()
-        gripper_request.data = False
+        # gripper_request.data = False
         self.node.get_logger().info(
             "Closing gripper :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
         )
