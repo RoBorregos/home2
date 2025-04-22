@@ -124,14 +124,15 @@ class ManipulationTasks:
         Named position has priority over joint_positions.
         """
         if named_position:
-            # joint_positions = self.get_named_target(named_position)
-            joint_positions = joint_positions["joints"]
-            degrees = joint_positions.get("degrees", False)
+            joint_positions = self.get_named_target(named_position)
+            # joint_positions = joint_positions["joints"]
+            # degrees = joint_positions.get("degrees", False)
             # joint_positions = joint_positions["positions"].keys()
 
         # Determine format of joint_positions and apply degree conversion if needed.
         if isinstance(joint_positions, dict):
-            joint_names = list(joint_positions.keys())
+            # joint_names = list(joint_positions.keys())
+            joint_names = list(joint_positions["positions"].keys())
             joint_vals = list(joint_positions.values())
             if degrees:
                 joint_vals = [x * DEG_TO_RAD for x in joint_vals]
