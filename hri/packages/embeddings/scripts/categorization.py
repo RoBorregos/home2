@@ -29,6 +29,11 @@ class MetadataModel(BaseModel):
     category: Optional[str] = None
     default_location: Optional[str] = None
     context: Optional[str] = ""
+    complement: Optional[str] = None
+    characteristic: Optional[str] = None
+    result: Optional[str] = None
+    status: Optional[int] = None
+    timestamp: Optional[str] = None
 
     PROFILES: ClassVar[Dict[MetadataProfile, Dict[str, str]]] = {
         MetadataProfile.ITEMS: {"context": "item for household use"},
@@ -94,6 +99,9 @@ class Embeddings(Node):
     def add_entry_callback(self, request, response):
         """Service callback to add items to ChromaDB"""
         try:
+            self.get_logger().info(
+                f"This is the metadata in categorization{(request.metadata)}"
+            )
             if request.metadata:
                 metadatas_ = json.loads(request.metadata)
             else:
@@ -122,7 +130,9 @@ class Embeddings(Node):
                         f"Failed to process metadata entry: {meta} — {str(e)}"
                     )
                     raise
-
+            self.get_logger().info(
+                f"This is the metadata after models are applied: {(metadata_objects)}"
+            )
             documents = self.clean(documents)
             # Inject context into documents and preserve original names
             for i, (doc, meta) in enumerate(zip(documents, metadata_objects)):

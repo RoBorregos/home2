@@ -432,7 +432,7 @@ class HRITasks(metaclass=SubtaskMeta):
     def query_location(self, query: str, top_k: int = 1) -> list[str]:
         return self._query_(query, "locations", top_k)
 
-    def save_command_history(
+    def add_command_history(
         self, command: str, complement: str, characteristic: str, result, status
     ) -> None:
         collection = "command_history"
@@ -451,7 +451,6 @@ class HRITasks(metaclass=SubtaskMeta):
 
         # Prepare the service request
         metadata = [json.dumps(metadata)]
-        self.node.get_logger().info(f"Saving command history: {type(metadata[0])}")
 
         request = AddEntry.Request(document=document, metadata=metadata[0], collection=collection)
 
@@ -465,6 +464,88 @@ class HRITasks(metaclass=SubtaskMeta):
                 self.node.get_logger().error(f"Failed to save command history: {e}")
 
         future.add_done_callback(callback)
+
+    def query_command_history(self, query: str, top_k: int = 1):
+        """
+        Method to query the command history collection.
+        Args:
+            query: the query to search for
+        Returns:
+            Status: the status of the execution
+            list[str]: the results of the query
+        """
+        return self._query_(query, "command_history", top_k)
+
+    def get_context(self, query_result):
+        """
+        Extracts the 'context' from the metadata of a query result.
+
+        Args:
+            query_result (tuple): The query result tuple (status, list of JSON strings)
+
+        Returns:
+            str: The 'context' field from metadata, or empty string if not found
+        """
+        try:
+            parsed_result = json.loads(query_result[1][0])  # parse the first JSON string
+            metadata = parsed_result["results"][0]["metadata"]  # go into metadata
+            context = metadata.get("context", "")  # safely get 'context'
+            return context
+        except (IndexError, KeyError, json.JSONDecodeError) as e:
+            self.get_logger().error(f"Failed to extract context: {str(e)}")
+            return ""
+
+    def get_complement(self, dict):
+        """
+        Method to get the complement of a dictionary. It could be used to help the extraction.
+        Args:
+            dict: the dictionary to extract the complement from
+        Returns:
+            str: the complement of the dictionary
+        """
+        return (
+            getattr(self, dict["complement"], dict["complement"])
+            if hasattr(self, dict["complement"])
+            else ""
+        )
+
+    def get_characteristic(self, dict):
+        """
+        Method to get the characteristic of a dictionary. It could be used to help the extraction.
+        Args:
+            dict: the dictionary to extract the characteristic from
+        Returns:
+            str: the characteristic of the dictionary
+        """
+        return (
+            getattr(self, dict["characteristic"], dict["characteristic"])
+            if hasattr(self, dict["characteristic"])
+            else ""
+        )
+
+    def get_result(self, dict):
+        """
+        Method to get the result of a dictionary. It could be used to help the extraction.
+        Args:
+            dict: the dictionary to extract the result from
+        Returns:
+            str: the result of the dictionary
+        """
+        return (
+            getattr(self, dict["result"], dict["result"]) if hasattr(self, dict["result"]) else ""
+        )
+
+    def get_status(self, dict):
+        """
+        Method to get the status of a dictionary. It could be used to help the extraction.
+        Args:
+            dict: the dictionary to extract the status from
+        Returns:
+            int: the status of the dictionary
+        """
+        return (
+            getattr(self, dict["status"], dict["status"]) if hasattr(self, dict["status"]) else ""
+        )
 
 
 if __name__ == "__main__":

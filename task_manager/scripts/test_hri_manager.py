@@ -130,7 +130,7 @@ class TestHriManager(Node):
         # ---- save_command_history ----
         self.get_logger().info("Saving command history for add_item command")
 
-        hri.save_command_history(
+        hri.add_command_history(
             command="add_item",
             complement="complement for testing",
             characteristic="items",
@@ -139,8 +139,10 @@ class TestHriManager(Node):
         )
 
         self.get_logger().info("Querying command_history collection for the saved command")
-        history = hri._query_("add_item", "command_history", top_k=1)
-        self.get_logger().info(f"Command history query results: {history}")
+        history = hri.query_command_history("add_item")
+        context = hri.get_context(history)
+
+        self.get_logger().info(f"context history query results: {context}")
 
 
 def main(args=None):

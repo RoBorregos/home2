@@ -86,6 +86,7 @@ class ChromaAdapter:
         - Normalizes metadatas to a list of dictionaries.
         - Cleans metadata with remove_empty_lists and remove_nulls.
         """
+
         collection_ = self.get_collection(collection_name)
 
         # Ensure documents is always a list
