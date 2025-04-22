@@ -92,6 +92,9 @@ esac
 bash setup.bash
 bash ../../hri/packages/nlp/assets/download-model.sh
 
+# Directories to persist hri ros2 build. Create here to avoid permission issues
+mkdir install build log 
+
 #_________________________RUN_________________________
 
 PROFILES=()
