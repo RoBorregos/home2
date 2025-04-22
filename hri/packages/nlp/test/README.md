@@ -19,7 +19,7 @@ docker compose -f ollama.yaml up
 ```bash
 # Set local embeddings for evaluations
 deepeval set-local-embeddings --model-name=nomic-embed-text:latest \
-    --base-url="http://localhost:11434/v1/" \
+    --base-url="http://localhost:11434/" \
     --api-key="ollama"
 ```
 
