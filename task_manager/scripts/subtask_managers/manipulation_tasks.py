@@ -72,7 +72,7 @@ class ManipulationTasks:
         self.gripper_client = self.node.create_client(SetDigitalIO, "/xarm/set_tgpio_digital")
 
         self._get_joints_client = self.node.create_client(GetJoints, "/manipulation/get_joints")
-        self.follow_face_client = self.node.create_client(FollowFace, '/follow_face')
+        self.follow_face_client = self.node.create_client(FollowFace, "/follow_face")
 
     def open_gripper(self):
         """Opens the gripper"""
@@ -124,7 +124,10 @@ class ManipulationTasks:
         Named position has priority over joint_positions.
         """
         if named_position:
-            joint_positions = self.get_named_target(named_position)
+            # joint_positions = self.get_named_target(named_position)
+            joint_positions = joint_positions["joints"]
+            degrees = joint_positions.get("degrees", False)
+            # joint_positions = joint_positions["positions"].keys()
 
         # Determine format of joint_positions and apply degree conversion if needed.
         if isinstance(joint_positions, dict):
@@ -209,7 +212,7 @@ class ManipulationTasks:
         if not result.success:
             return False
         return True
-    
+
     @mockable(return_value=Status.EXECUTION_SUCCESS)
     @service_check(client="follow_face_client", return_value=Status.TERMINAL_ERROR, timeout=TIMEOUT)
     def follow_face(self, follow) -> int:
