@@ -211,32 +211,32 @@ class MoveItPlanner(Planner):
     def set_mode(self, mode: int = 0) -> bool:
         if not self.mode_enabled:
             return True
-        self.mode_client.wait_for_service()
-        request = SetInt16.Request()
-        request.data = mode
-        future = self.mode_client.call_async(request)
-        while rclpy.ok() and not future.done():
-            pass
-        if future.result() is not None:
-            self.node.get_logger().info(
-                f"Set mode service response: {future.result().message}"
-            )
-        else:
-            self.node.get_logger().error("Failed to call set mode service")
-            return False
-        self.state_client.wait_for_service()
-        request = SetInt16.Request()
-        request.data = 0
-        future = self.state_client.call_async(request)
-        while rclpy.ok() and not future.done():
-            pass
-        if future.result() is not None:
-            self.node.get_logger().info(
-                f"Set state service response: {future.result().message}"
-            )
-        else:
-            self.node.get_logger().error("Failed to call set state service")
-            return False
+        # self.mode_client.wait_for_service()
+        # request = SetInt16.Request()
+        # request.data = mode
+        # future = self.mode_client.call_async(request)
+        # while rclpy.ok() and not future.done():
+        #     pass
+        # if future.result() is not None:
+        #     self.node.get_logger().info(
+        #         f"Set mode service response: {future.result().message}"
+        #     )
+        # else:
+        #     self.node.get_logger().error("Failed to call set mode service")
+        #     return False
+        # self.state_client.wait_for_service()
+        # request = SetInt16.Request()
+        # request.data = 0
+        # future = self.state_client.call_async(request)
+        # while rclpy.ok() and not future.done():
+        #     pass
+        # if future.result() is not None:
+        #     self.node.get_logger().info(
+        #         f"Set state service response: {future.result().message}"
+        #     )
+        # else:
+        #     self.node.get_logger().error("Failed to call set state service")
+        #     return False
         time.sleep(0.1)
         # Activate controller
         if self.switch_controller_client is not None:

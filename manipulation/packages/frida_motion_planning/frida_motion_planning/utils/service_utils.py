@@ -28,7 +28,6 @@ def move_joint_positions(
         acceleration=0.0,
         planner_id="",
     ):
-        # print(" QUE PEDOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO")
         # time.sleep(5)
         goal_msg = MoveJoints.Goal()
         # print("MoveJoints goal message created")
@@ -46,7 +45,6 @@ def move_joint_positions(
         # print("Acceleration set")
         # time.sleep(5)
         goal_msg.planner_id = planner_id
-        # print(" QUE PEDIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII")
         # time.sleep(5)
         move_joints_action_client.wait_for_server()
 
