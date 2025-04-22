@@ -1,10 +1,7 @@
 # ZED CAMERA TOPICS
-CAMERA_TOPIC = "/zed/image_raw"
-DEPTH_IMAGE_TOPIC = "/zed/depth/image_raw"
-CAMERA_INFO_TOPIC = "/zed/depth/camera_info"
-# CAMERA_TOPIC = "/zed/zed_node/rgb/image_rect_color"
-# DEPTH_IMAGE_TOPIC = "/zed/zed_node/depth/depth_registered"
-# CAMERA_INFO_TOPIC = "/zed/zed_node/depth/camera_info"
+CAMERA_TOPIC = "/zed/zed_node/rgb/image_rect_color"
+DEPTH_IMAGE_TOPIC = "/zed/zed_node/depth/depth_registered"
+CAMERA_INFO_TOPIC = "/zed/zed_node/depth/camera_info"
 
 # ZED CAMERA FRAME
 CAMERA_FRAME = "zed_left_camera_optical_frame"
@@ -29,6 +26,8 @@ ZERO_SHOT_DEFAULT_CLASSES = [
     "red_can",
     "grey_box",
     "white_can",
+    "cereal_box",
+    "blue_box",
 ]
 
 ZERO_SHOT_MODEL = "yoloe-11l-seg.pt"
@@ -80,6 +79,7 @@ COUNT_BY_OBJECTS_TOPIC = "/vision/gpsr/count_by_objects"
 COUNT_BY_GESTURES_TOPIC = "/vision/gpsr/count_by_gestures"
 COUNT_BY_POSE_TOPIC = "/vision/gpsr/count_by_pose"
 IMAGE_TOPIC = "/vision/gpsr/img_detection"
+POSE_GESTURE_TOPIC = "/vision/gpsr/pose_gesture_detection"
 
 # Storing Groceries Commands node
 SHELF_DETECTION_TOPIC = "/vision/storing_groceries/shelf_detection"

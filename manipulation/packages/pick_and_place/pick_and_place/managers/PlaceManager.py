@@ -57,10 +57,10 @@ class PlaceManager:
             self.node.get_logger().error("Pick motion failed")
             return False
 
-        # close gripper
+        # open gripper
         gripper_request = SetBool.Request()
         gripper_request.data = True
-        self.node.get_logger().info("Closing gripper")
+        self.node.get_logger().info("Opening gripper")
         future = self.node._gripper_set_state_client.call_async(gripper_request)
         future = wait_for_future(future)
         result = future.result()

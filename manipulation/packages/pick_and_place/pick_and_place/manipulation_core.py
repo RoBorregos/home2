@@ -107,20 +107,34 @@ class ManipulationCore(Node):
         self.get_logger().info(f"Goal: {object_point}")
         self.get_logger().info("Extracting object cloud")
 
-        self.remove_all_collision_object(attached=True)
-        result, pick_result = self.pick_manager.execute(
-            object_name=object_name,
-            point=object_point,
-        )
+        # self.remove_all_collision_object(attached=True)
+        # result, pick_result = self.pick_manager.execute(
+        #     object_name=object_name,
+        #     point=object_point,
+        # )
 
-        if not result:
-            self.get_logger().error("Pick failed")
+        # if not result:
+        #     self.get_logger().error("Pick failed")
+        #     self.remove_all_collision_object(attached=True)
+        #     return False
+
+        # self.remove_all_collision_object(attached=False)
+        # self.get_logger().info("Pick succeeded")
+        # return result, pick_result
+
+        try:
             self.remove_all_collision_object(attached=True)
-            return False
-
-        self.remove_all_collision_object(attached=False)
-        self.get_logger().info("Pick succeeded")
-        return result, pick_result
+            result, pick_result = self.pick_manager.execute(
+                object_name=object_name,
+                point=object_point,
+            )
+            if not result:
+                self.get_logger().error("Pick failed")
+                self.remove_all_collision_object(attached=True)
+                return (False, PickResult())
+            return (result, pick_result)
+        except Exception:
+            return (False, PickResult())
 
     def manipulation_server_callback(self, goal_handle):
         task_type = goal_handle.request.task_type

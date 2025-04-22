@@ -39,6 +39,7 @@ class PickMotionServer(Node):
         # Declare and retrieve the parameter for the end-effector link offset
         self.declare_parameter("ee_link_offset", -0.125)
         self.ee_link_offset = self.get_parameter("ee_link_offset").value
+        self.get_logger().info(f"End-effector link offset: {self.ee_link_offset} m")
 
         self._action_server = ActionServer(
             self,
@@ -148,6 +149,7 @@ class PickMotionServer(Node):
                 else:
                     self.get_logger().error("Failed to attach object")
                 return True, pick_result
+
         self.get_logger().error("Failed to reach any grasp pose")
         return False, pick_result
 

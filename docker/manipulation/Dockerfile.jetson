@@ -9,7 +9,14 @@ RUN rm -r /workspace/requirements
 
 # CV-bridge
 
-RUN apt update && apt install -y ros-humble-cv-bridge
+RUN apt update && apt install -y ros-humble-cv-bridge ros-humble-laser-geometry
 
-USER ros
-WORKDIR /workspace
+RUN mkdir -p /workspace/src/home2
+RUN chown -R ros:ros /workspace
+
+# prebuild and more
+RUN git clone https://github.com/RoBorregos/home2 --recursive /workspace/src/home2
+RUN rosdep init && rosdep update && rosdep install --from-paths /workspace/src/home2 --ignore-src -r --skip-keys "gpd opencv message_package eigen3 pcl-ros gazebo_ros gazebo_plugins libpcl-dev gazebo_ros2_control" -y
+RUN rosdep fix-permissions
+
+ENTRYPOINT [ "/bin/bash", "-l", "-c" ]
