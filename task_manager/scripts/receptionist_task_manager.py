@@ -301,7 +301,7 @@ class ReceptionistTM(Node):
         if self.current_state == ReceptionistTM.TASK_STATES["DEBUG"]:
             Logger.state(self, "Debugging task")
             self.subtask_manager.hri.say("Debugging task.")
-            self.subtask_manager.manipulation.follow_face(True)
+            self.subtask_manager.manipulation.follow_face(False)
             # self.subtask_manager.manipulation.move_joint_positions(
             #     named_position="front_stare", velocity=0.5, degrees=True
             # )
@@ -315,7 +315,7 @@ class ReceptionistTM(Node):
             # self.subtask_manager.manipulation.move_joint_positions(
             #     joint_positions=joint_positions, velocity=0.5, degrees=True
             # )
-            # self.current_state = ReceptionistTM.TASK_STATES["END"]
+            self.current_state = ReceptionistTM.TASK_STATES["END"]
         
 
 
