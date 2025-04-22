@@ -4,6 +4,7 @@ object_detector_node:
     DEPTH_IMAGE_TOPIC :  /zed/zed_node/depth/depth_registered
     CAMERA_INFO_TOPIC :  /zed/zed_node/depth/camera_info
     DETECTIONS_TOPIC : /vision/detections
+    ZERO_SHOT_DETECTIONS_TOPIC : /vision/zero_shot_detections
     DETECTIONS_IMAGE_TOPIC : //visiondetections_image
     DETECTIONS_POSES_TOPIC : /vision/detection_poses
     DETECTIONS_3D_TOPIC : /vision/detections_3d
