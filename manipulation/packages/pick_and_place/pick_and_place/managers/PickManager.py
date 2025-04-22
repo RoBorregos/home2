@@ -25,6 +25,8 @@ class PickManager:
     def execute(self, object_name: str, point: PointStamped) -> Tuple[bool, PickResult]:
         self.node.get_logger().info("Executing Pick Task")
         self.node.get_logger().info("Setting initial joint positions")
+
+        # time.sleep(10)
         # Set initial joint positions
         send_joint_goal(
             move_joints_action_client=self.node._move_joints_client,
@@ -64,14 +66,19 @@ class PickManager:
 
         # Call Pick Motion Action
 
+        self.node.get_logger().info(
+            "Grasp poses detected next step is to pick them with the gripper/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////"
+        )
         # open gripper
         gripper_request = SetBool.Request()
         gripper_request.data = True
-        self.node.get_logger().info("Closing gripper")
+        self.node.get_logger().info(
+            "Open gripper ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
+        )
         future = self.node._gripper_set_state_client.call_async(gripper_request)
         future = wait_for_future(future)
         result = future.result()
-        self.node.get_logger().info(f"Gripper Result: {result}")
+        self.node.get_logger().info(f"Gripper Result: {str(gripper_request.data)}")
         time.sleep(3)
         self.node.get_logger().info("Returning to position")
 
@@ -95,14 +102,18 @@ class PickManager:
         # close gripper
         gripper_request = SetBool.Request()
         gripper_request.data = False
-        self.node.get_logger().info("Closing gripper")
+        self.node.get_logger().info(
+            "Closing gripper :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
+        )
         future = self.node._gripper_set_state_client.call_async(gripper_request)
         future = wait_for_future(future)
         result = future.result()
-        self.node.get_logger().info(f"Gripper Result: {result}")
-        time.sleep(3)
-        self.node.get_logger().info("Returning to position")
-        time.sleep(3)
+        self.node.get_logger().info(f"Gripper Result: {str(gripper_request.data)}")
+
+        self.node.get_logger().info(
+            "Returning to position............................................."
+        )
+        time.sleep(5)
 
         # return to configured position
         send_joint_goal(
@@ -110,7 +121,8 @@ class PickManager:
             named_position="table_stare",
             velocity=0.3,
         )
-
+        # self.node.get_logger().info("Waiting for 10 seconds")
+        # time.sleep(10)
         return result.success, pick_result.pick_result
 
     def get_object_point(self, object_name: str) -> PointStamped:

@@ -216,16 +216,16 @@ class MotionPlanningServer(Node):
         try:
             configuration_distance = 0
             for i, joint_name in enumerate(joint_names):
-                self.get_logger().info(
-                    f"Joint name: {joint_name}, position: {joint_positions[i]}, index: {i}"
-                )
+                # self.get_logger().info(
+                #     f"Joint name: {joint_name}, position: {joint_positions[i]}, index: {i}"
+                # )
                 joint_curr_pos = joint_dict[joint_name]
                 joint_target_pos = joint_positions[i]
                 configuration_distance += (joint_curr_pos - joint_target_pos) ** 2
             configuration_distance = configuration_distance**0.5
-            self.get_logger().info(
-                f"Joint configuration distance: {configuration_distance}"
-            )
+            # self.get_logger().info(
+            #     f"Joint configuration distance: {configuration_distance}"
+            # )
             if configuration_distance < 0.2:
                 self.get_logger().info(
                     f"Joint positions are already close to target: {configuration_distance}"

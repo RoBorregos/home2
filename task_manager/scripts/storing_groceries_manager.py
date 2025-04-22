@@ -2,7 +2,6 @@
 
 from collections import defaultdict
 from enum import Enum
-from typing_extensions import Buffer
 
 import rclpy
 from frida_constants.vision_classes import BBOX, ShelfDetection
@@ -12,8 +11,9 @@ from utils.logger import Logger
 from utils.status import Status
 from utils.subtask_manager import SubtaskManager, Task
 from geometry_msgs.msg import PointStamped
-# from tf2_ros import TransformListener, Buffer
-# import tf2_geometry_msgs.tf2_geometry_msgs
+from frida_interfaces.srv import PointTransformation
+
+POINT_TRANSFORMER_TOPIC = "/integration/point_transformer"
 
 
 class ExecutionStates(Enum):
@@ -78,8 +78,24 @@ class StoringGroceriesManager(Node):
         self.point_pub = self.create_publisher(PointStamped, "point_visualize", 10)
         self.retry_count = 0
         self.prev_state = None
-        self.tf_buffer = Buffer()
         self.check_manual_levels = True
+        self.manual_heights = [
+            0.445,
+            0.805,
+            1.165,
+            1.525,
+        ]  # remember rest 15cm from the base_link and the measure is in m
+        self.shelf_level_threshold = 0.30
+        self.shelf_level_down_threshold = 0.05
+        self.transform_tf = self.create_client(PointTransformation, POINT_TRANSFORMER_TOPIC)
+
+    def generate_manual_levels(self):
+        """Generate manual levels"""
+        self.shelves_count = 0
+        self.shelves = {}
+        for i in range(len(self.manual_heights)):
+            self.shelves[i] = Shelf(id=i, tag="", objects=[])
+            self.shelves_count += 1
 
     def nav_to(self, location: str, sub_location: str = "", say: bool = True) -> Status:
         Logger.info(self, f"Navigating to {location} {sub_location}")
@@ -94,10 +110,37 @@ class StoringGroceriesManager(Node):
             Logger.error(self, f"Error navigating to {location}: {e}")
         return Status.EXECUTION_ERROR
 
+    def convert_to_height(self, detection: BBOX) -> float:
+        """Convert the object to height"""
+        try:
+            stamped_point = PointStamped()
+            stamped_point.header.frame_id = "zed_left_camera_optical_frame"
+            stamped_point.header.stamp = self.get_clock().now().to_msg()
+            stamped_point.point.x = detection.px
+            stamped_point.point.y = detection.py
+            stamped_point.point.z = detection.pz
+            transform_message = PointTransformation.Request()
+            transform_message.target_frame = "base_link"
+            transform_message.point = stamped_point
+            transform_frame = self.transform_tf.call_async(transform_message)
+            rclpy.spin_until_future_complete(self, transform_frame)
+            transformed_point = transform_frame.result()
+            if not transformed_point.success:
+                Logger.error(self, f"{transformed_point.error_message}")
+                return None
+            transformed_point = transformed_point.transformed_point
+            Logger.info(self, f"Actual height: {transformed_point.point.z}")
+            return transformed_point.point.z
+        except Exception as e:
+            Logger.error(self, f"Error converting to height: {e}")
+            return None
+
     def exec_state(self):
         Logger.info(self, f"Executing state: {self.state.name}")
         if self.state == ExecutionStates.START:
-            self.state = ExecutionStates.VIEW_SHELF_AND_SAVE_OBJECTS
+            self.get_logger().info("Waiting for TF system to initialize...")
+            rclpy.spin_once(self, timeout_sec=2.0)
+            self.state = ExecutionStates.INIT_NAV_TO_SHELF
         elif self.state == ExecutionStates.END:
             Logger.info(self, "Ending Storing Groceries Manager...")
             self.subtask_manager.hri.say(text="Ending Storing Groceries Manager...", wait=True)
@@ -157,25 +200,32 @@ class StoringGroceriesManager(Node):
 
                 len(self.shelves)
             else:
+                # Manual levels
+                self.generate_manual_levels()
                 status, res = self.subtask_manager.vision.detect_objects()
-                print(f"results: {res}")
-                print(f"cagadota test: {res[1].px}")
-                stamped_point = PointStamped()
-                stamped_point.header.frame_id = (
-                    "zed_left_camera_optical_frame"  # Adjust to match your actual camera frame
-                )
-                stamped_point.header.stamp = self.get_clock().now().to_msg()
-                stamped_point.point.x = res[0].px
-                stamped_point.point.y = res[0].py
-                stamped_point.point.z = res[0].pz
+                for count, det in enumerate(res):
+                    if det is not None:
+                        height = self.convert_to_height(det)
+                        while height is None:
+                            height = self.convert_to_height(det)
+                        for i in self.shelves:
+                            distance_check = height - self.manual_heights[i]
+                            if (
+                                distance_check < 0
+                                and abs(distance_check) < self.shelf_level_down_threshold
+                            ) or (
+                                distance_check >= 0 and distance_check < self.shelf_level_threshold
+                            ):
+                                self.shelves[i].objects.append(det.classname)
+                                self.shelves[i].id = i
+                                Logger.info(
+                                    self,
+                                    f"Detected object {det.classname} in shelf {self.shelves[i].tag}",
+                                )
+                                break
 
-                transformed_point = self.tf_buffer.transform(
-                    stamped_point, "base_link", timeout=rclpy.duration.Duration(seconds=1.0)
-                )
-                self.point_pub.publish(transformed_point)
                 if status == Status.EXECUTION_SUCCESS:
-                    self.state = ExecutionStates.END
-
+                    self.state = ExecutionStates.INIT_NAV_TO_TABLE
         elif self.state == ExecutionStates.INIT_NAV_TO_TABLE:
             hres: Status = self.nav_to("kitchen", "table")
             if hres == Status.EXECUTION_SUCCESS:
@@ -223,7 +273,8 @@ class StoringGroceriesManager(Node):
                     self.object_to_placing_shelf[j].append(i)
             Logger.info(self, f"Shelves: {self.shelves}")
             Logger.info(self, f"Objects to place: {self.object_to_placing_shelf}")
-            self.state = ExecutionStates.SAY_5_OBJECTS_CATEGORIZED
+            # self.state = ExecutionStates.SAY_5_OBJECTS_CATEGORIZED
+            self.state = ExecutionStates.END
             self.subtask_manager.hri.say(
                 text=f"Categorized {len(self.object_names_on_table)} objects", wait=True
             )
