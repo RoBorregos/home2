@@ -189,7 +189,7 @@ class MoondreamNode(Node):
 
         except Exception as e:
             self.get_logger().error(f"Error describing bag: {e}")
-            response.description = ""
+            response.result = ""
             response.success = False
 
         return response

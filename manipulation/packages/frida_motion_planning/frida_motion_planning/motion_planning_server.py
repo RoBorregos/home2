@@ -197,7 +197,7 @@ class MotionPlanningServer(Node):
         result = self.planner.plan_pose_goal(
             pose,
             wait=True,
-            set_mode=(self.current_mode != MOVEIT_MODE),
+            set_mode=True,
         )
         if not ALWAYS_SET_MODE:
             self.current_mode = MOVEIT_MODE
@@ -210,31 +210,39 @@ class MotionPlanningServer(Node):
         joint_names = goal_handle.request.joint_names
         joint_positions = list(goal_handle.request.joint_positions)
         joint_dict = self.planner.get_joint_positions()
-
+        if len(list(joint_dict.keys())) == 0:
+            self.get_logger().error("No joints available")
+            return False
         try:
             configuration_distance = 0
             for i, joint_name in enumerate(joint_names):
+                # self.get_logger().info(
+                #     f"Joint name: {joint_name}, position: {joint_positions[i]}, index: {i}"
+                # )
                 joint_curr_pos = joint_dict[joint_name]
                 joint_target_pos = joint_positions[i]
                 configuration_distance += (joint_curr_pos - joint_target_pos) ** 2
             configuration_distance = configuration_distance**0.5
+            # self.get_logger().info(
+            #     f"Joint configuration distance: {configuration_distance}"
+            # )
             if configuration_distance < 0.2:
                 self.get_logger().info(
                     f"Joint positions are already close to target: {configuration_distance}"
                 )
                 return True
         except Exception as e:
-            print(e)
-            self.get_logger().error(
-                f"Joint names are not in the current joint positions: {joint_names}"
-            )
+            self.get_logger().error(str(e))
             return False
+
+        self.get_logger().info("Planning joint goal...")
         result = self.planner.plan_joint_goal(
             joint_positions,
             joint_names,
             wait=True,
             set_mode=(self.current_mode != MOVEIT_MODE),
         )
+        self.get_logger().info(f"Move Joints Result: {result}")
         if not ALWAYS_SET_MODE:
             self.current_mode = MOVEIT_MODE
         return result
@@ -458,7 +466,7 @@ class MotionPlanningServer(Node):
 
     def set_gripper_state_callback(self, request, response):
         """Handle requests to set the gripper state"""
-
+        self.get_logger().info(f"Setting gripper state: {request.data}")
         # 0 open, 1 closed
         if request.data:
             self.xarm_services.open_gripper()

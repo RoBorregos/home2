@@ -15,7 +15,7 @@ class Gestures(Enum):
 class Poses(Enum):
     """Enum for poses"""
 
-    UNKNWON = "unknown"
+    UNKNOWN = "unknown"
     STANDING = "standing"
     SITTING = "sitting"
     LYING_DOWN = "lying_down"
