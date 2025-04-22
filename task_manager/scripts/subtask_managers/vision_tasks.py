@@ -570,7 +570,7 @@ class VisionTasks:
         prompt = '''Check if there is an available seat in the image. 
         This could be an empty chair (the largest empty chair) or a space in a couch. 
         If there is no available seat, please return 300. 
-        Else return the estimated angle of the person, where -1 is the image on the left and 1 is right.
+        Else return the estimated angle of the person decimal from -1 to 1, where -1 is the image on the left and 1 is right.
         '''
         return self.moondream_query(prompt, query_person=False)
 
