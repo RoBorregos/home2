@@ -130,7 +130,6 @@ class ManipulationTasks:
         if isinstance(joint_positions, dict):
             joint_names = list(joint_positions.keys())
             joint_vals = list(joint_positions.values())
-            print(joint_vals)
             if degrees:
                 joint_vals = [x * DEG_TO_RAD for x in joint_vals]
         elif isinstance(joint_positions, list):
