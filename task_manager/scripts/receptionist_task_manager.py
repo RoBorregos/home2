@@ -115,9 +115,9 @@ class ReceptionistTM(Node):
         if self.current_state == ReceptionistTM.TASK_STATES["WAIT_FOR_GUEST"]:
             Logger.state(self, "Waiting for guest")
 
-            # self.subtask_manager.manipulation.move_joint_positions(
-            #     named_position="front_stare", velocity=0.5, degrees=True
-            # )
+            self.subtask_manager.manipulation.move_joint_positions(
+                named_position="front_stare", velocity=0.5, degrees=True
+            )
 
             self.subtask_manager.hri.say(
                 "I am ready to receive guests, please open the door.", wait=True
