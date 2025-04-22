@@ -14,7 +14,10 @@ class EmbeddingSimilarity(BaseMetric):
 
     def measure(self, test_case: LLMTestCase) -> float:
         # Use threshold from test case metadata if available, otherwise use default
-        threshold = test_case.additional_metadata.get("threshold", self.threshold)
+        if test_case.additional_metadata:
+            threshold = test_case.additional_metadata.get("threshold", self.threshold)
+        else:
+            threshold = self.threshold
         emb = self.embedding_model.embed_text
         self.score = cosine_similarity(emb(test_case.actual_output), emb(test_case.expected_output))
         self.success = self.score > threshold

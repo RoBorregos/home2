@@ -8,7 +8,7 @@ def get_common_interests_dialog(
         "messages": [
             {
                 "role": "system",
-                "content": "You will be presented with the interests of two people, your task is to get the common interests between them. Give a short answer with one common interest.",
+                "content": f"You will be presented with the interests of two people, your task is to get the common interests between them. Give me an answer in the format similar to '{person1Name} and {person2Name}'s common interest is movies' or '{person1Name} and {person2Name} don't have a common interest between them' in case they don't share one",
             },
             {
                 "role": "user",
