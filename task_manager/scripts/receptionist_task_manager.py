@@ -77,9 +77,9 @@ class ReceptionistTM(Node):
                 f"I will now guide you to the {location}. Please follow me."
             )
             self.subtask_manager.manipulation.follow_face(False)
-            self.subtask_manager.manipulation.move_joint_positions(
-                named_position="front_stare", velocity=0.5, degrees=True
-            )
+            # self.subtask_manager.manipulation.move_joint_positions(
+            #     named_position="front_stare", velocity=0.5, degrees=True
+            # )
         future = self.subtask_manager.nav.move_to_location(location, sublocation)
         if "navigation" not in self.subtask_manager.get_mocked_areas():
             rclpy.spin_until_future_complete(self, future)
@@ -115,9 +115,9 @@ class ReceptionistTM(Node):
         if self.current_state == ReceptionistTM.TASK_STATES["WAIT_FOR_GUEST"]:
             Logger.state(self, "Waiting for guest")
 
-            self.subtask_manager.manipulation.move_joint_positions(
-                named_position="front_stare", velocity=0.5, degrees=True
-            )
+            # self.subtask_manager.manipulation.move_joint_positions(
+            #     named_position="front_stare", velocity=0.5, degrees=True
+            # )
 
             self.subtask_manager.hri.say(
                 "I am ready to receive guests, please open the door.", wait=True
@@ -248,9 +248,9 @@ class ReceptionistTM(Node):
                     degrees=True
                 )
                 joint_positions["joint1"] = joint_positions["joint1"] - seat_angle
-                self.subtask_manager.manipulation.move_joint_positions(
-                    joint_positions=joint_positions, velocity=0.5, degrees=True
-                )
+                # self.subtask_manager.manipulation.move_joint_positions(
+                #     joint_positions=joint_positions, velocity=0.5, degrees=True
+                # )
                 status, angle = self.subtask_manager.vision.find_seat()
                 print(self.subtask_manager.vision.find_seat_moondream())
                 if status == Status.EXECUTION_SUCCESS:
@@ -258,11 +258,11 @@ class ReceptionistTM(Node):
                     break
 
             self.subtask_manager.hri.say("Please take a seat where my arm points at.")
-            joint_positions = self.subtask_manager.manipulation.get_joint_positions(degrees=True)
-            joint_positions["joint1"] = joint_positions["joint1"] - target
-            self.subtask_manager.manipulation.move_joint_positions(
-                joint_positions=joint_positions, velocity=0.5, degrees=True
-            )
+            # joint_positions = self.subtask_manager.manipulation.get_joint_positions(degrees=True)
+            # joint_positions["joint1"] = joint_positions["joint1"] - target
+            # self.subtask_manager.manipulation.move_joint_positions(
+            #     joint_positions=joint_positions, velocity=0.5, degrees=True
+            # )
 
             # self.subtask_manager.vision.detect_guest(self.get_guest().name, timeout=5)
             self.current_state = ReceptionistTM.TASK_STATES["INTRODUCTION"]
