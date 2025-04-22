@@ -223,7 +223,7 @@ class ManipulationTasks:
         request.follow_face = follow
 
         try:
-            future = self.save_name_client.call_async(request)
+            future = self.follow_face_client.call_async(request)
             rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
             result = future.result()
 
