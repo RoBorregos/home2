@@ -1,5 +1,6 @@
 import sys
-sys.path.append(".."),
+
+sys.path.append("..")
 
 import pytest
 from deepeval import assert_test
@@ -7,7 +8,6 @@ from deepeval.dataset import EvaluationDataset
 from deepeval.test_case import LLMTestCase
 from nlp.assets.dialogs import get_common_interests_dialog, format_response
 from openai import OpenAI
-from openai._types import NOT_GIVEN
 from tqdm import tqdm
 
 from config import API_KEY, BASE_URL, MODEL, TEMPERATURE
@@ -61,7 +61,7 @@ test_cases = [
     ("Grace", "John", "singing and dancing", "dancing and acting", "Grace and John's common interest is dancing."),
     ("Chloe", "Luke", "gardening and plants", "cooking and baking", "Chloe and Luke don't have a common interest between them"),
     ("Victoria", "Andrew", "movies and theater", "theater and concerts", "Victoria and Andrew's common interest is theater."),
-    ("Riley", "Jack", "football and basketball", "basketball and baseball", "Riley and Jack's common interest is basketball.")
+    ("Riley", "Jack", "football and basketball", "basketball and baseball", "Riley and Jack's common interest is basketball."),
 ]
 
 # Define test cases
