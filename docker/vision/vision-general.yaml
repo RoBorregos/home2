@@ -1,6 +1,6 @@
 services:
-  vision2:
-    container_name: home2-vision2
+  vision:
+    container_name: home2-vision
     build:
       context: ../..
       dockerfile: ${DOCKERFILE:-docker/vision/Dockerfile.cpu}
