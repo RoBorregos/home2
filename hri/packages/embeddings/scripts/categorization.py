@@ -98,10 +98,8 @@ class Embeddings(Node):
 
     def add_entry_callback(self, request, response):
         """Service callback to add items to ChromaDB"""
+
         try:
-            self.get_logger().info(
-                f"This is the metadata in categorization{(request.metadata)}"
-            )
             if request.metadata:
                 metadatas_ = json.loads(request.metadata)
             else:
@@ -130,9 +128,7 @@ class Embeddings(Node):
                         f"Failed to process metadata entry: {meta} — {str(e)}"
                     )
                     raise
-            self.get_logger().info(
-                f"This is the metadata after models are applied: {(metadata_objects)}"
-            )
+
             documents = self.clean(documents)
             # Inject context into documents and preserve original names
             for i, (doc, meta) in enumerate(zip(documents, metadata_objects)):
@@ -142,6 +138,8 @@ class Embeddings(Node):
                     documents[i] = f"{doc} {context}"
             # self.get_logger().info(f"This is the request that is reaching{(request.collection, documents, metadata_objects)}")
             # self.get_logger().info("Adding entries to ChromaDB")
+            if request.collection == "closest_items":
+                self.chroma_adapter._get_or_create_collection("closest_items")
             self.chroma_adapter.add_entries(
                 request.collection, documents, metadata_objects
             )
@@ -157,7 +155,6 @@ class Embeddings(Node):
             response.success = False
             response.message = f"Failed to add item: {str(e)}"
             self.get_logger().error(response.message)
-
         return response
 
     def query_entry_callback(self, request, response):
@@ -208,7 +205,8 @@ class Embeddings(Node):
             response.success = False
             response.message = f"Failed to query items: {str(e)}"
             self.get_logger().error(response.message)
-
+        if request.collection == "closest_items":
+            self.chroma_adapter.delete_collection("closest_items")
         return response
 
     def build_embeddings_callback(self, request, response):
@@ -306,8 +304,6 @@ class Embeddings(Node):
         return documents, metadatas
 
     def clean(self, documents):
-        # If it's a list, clean each element
-        print("document before cleaning:", documents)
         # If it's a string that looks like a list -> try parsing it
         if (
             isinstance(documents, str)

@@ -172,14 +172,14 @@ class HRITasks(metaclass=SubtaskMeta):
     def execute_command(self, command: str, complement: str, characteristic: str) -> None:
         if command == "speak":
             self.say(complement)
-            return Status.EXECUTION_SUCCESS
         elif command == "clarification":
             self.say("Sorry, I don't undestand your command.")
             self.say(command.complement)
-            return Status.EXECUTION_SUCCESS
         else:
             self.say(f"Sorry, I don't know how to {command}")
             return Status.TARGET_NOT_FOUND
+        self.add_command_history(command, complement, characteristic, "", Status.EXECUTION_SUCCESS)
+        return Status.EXECUTION_SUCCESS
 
     def _get_keyword(self, msg: String) -> None:
         try:
@@ -403,38 +403,10 @@ class HRITasks(metaclass=SubtaskMeta):
         rclpy.spin_until_future_complete(self.node, future)
         return Status.EXECUTION_SUCCESS, future.result().is_positive
 
-    def _add_to_collection(self, document: list, metadata: str, collection: str) -> str:
-        request = AddEntry.Request(document=document, metadata=metadata, collection=collection)
-        future = self.add_item_client.call_async(request)
-        rclpy.spin_until_future_complete(self.node, future)
-        return (
-            Status.EXECUTION_SUCCESS,
-            "Success" if future.result().success else f"Failed: {future.result().message}",
-        )
-
-    def add_item(self, document: list, metadata: str) -> str:
-        return self._add_to_collection(document, metadata, "items")
-
-    def add_location(self, document: list, metadata: str) -> str:
-        return self._add_to_collection(document, metadata, "locations")
-
-    def _query_(self, query: str, collection: str, top_k: int = 1) -> list[str]:
-        # Wrap the query in a list so that the field receives a sequence of strings.
-        request = QueryEntry.Request(query=[query], collection=collection, topk=top_k)
-        future = self.query_item_client.call_async(request)
-        rclpy.spin_until_future_complete(self.node, future)
-
-        return Status.EXECUTION_SUCCESS, future.result().results
-
-    def query_item(self, query: str, top_k: int = 1) -> list[str]:
-        return self._query_(query, "items", top_k)
-
-    def query_location(self, query: str, top_k: int = 1) -> list[str]:
-        return self._query_(query, "locations", top_k)
-
+    # /////////////////embeddings services/////
     def add_command_history(
         self, command: str, complement: str, characteristic: str, result, status
-    ) -> None:
+    ):
         collection = "command_history"
 
         document = [command]
@@ -464,6 +436,35 @@ class HRITasks(metaclass=SubtaskMeta):
                 self.node.get_logger().error(f"Failed to save command history: {e}")
 
         future.add_done_callback(callback)
+        return Status.EXECUTION_SUCCESS
+
+    def add_item(self, document: list, metadata: str) -> list[str]:
+        return self._add_to_collection(document, metadata, "items")
+
+    def add_location(self, document: list, metadata: str) -> list[str]:
+        return self._add_to_collection(document, metadata, "locations")
+
+    def query_item(self, query: str, top_k: int = 1) -> list[str]:
+        return self._query_(query, "items", top_k)
+
+    def query_location(self, query: str, top_k: int = 1) -> list[str]:
+        return self._query_(query, "locations", top_k)
+
+    def find_closest(self, documents: list, query: str, top_k: int = 1) -> list[str]:
+        """
+        Method to find the closest item to the query.
+        Args:
+            documents: the documents to search among
+            query: the query to search for
+        Returns:
+            Status: the status of the execution
+            list[str]: the results of the query
+        """
+        self._add_to_collection(document=documents, metadata="", collection="closest_items")
+        self.node.get_logger().info(f"Adding closest items: {documents}")
+        Results = self._query_(query, "closest_items")
+        Results = self.get_name(Results)
+        return Status.EXECUTION_SUCCESS, Results
 
     def query_command_history(self, query: str, top_k: int = 1):
         """
@@ -475,6 +476,25 @@ class HRITasks(metaclass=SubtaskMeta):
             list[str]: the results of the query
         """
         return self._query_(query, "command_history", top_k)
+
+    # /////////////////helpers/////
+    def _query_(self, query: str, collection: str, top_k: int = 1) -> list[str]:
+        # Wrap the query in a list so that the field receives a sequence of strings.
+        request = QueryEntry.Request(query=[query], collection=collection, topk=top_k)
+        future = self.query_item_client.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+
+        return Status.EXECUTION_SUCCESS, future.result().results
+
+    def _add_to_collection(self, document: list, metadata: str, collection: str) -> str:
+        request = AddEntry.Request(document=document, metadata=metadata, collection=collection)
+        future = self.add_item_client.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+
+        return (
+            Status.EXECUTION_SUCCESS,
+            "Success" if future.result().success else f"Failed: {future.result().message}",
+        )
 
     def get_context(self, query_result):
         """
@@ -495,57 +515,100 @@ class HRITasks(metaclass=SubtaskMeta):
             self.get_logger().error(f"Failed to extract context: {str(e)}")
             return ""
 
-    def get_complement(self, dict):
+    def get_complement(self, query_result):
         """
-        Method to get the complement of a dictionary. It could be used to help the extraction.
-        Args:
-            dict: the dictionary to extract the complement from
-        Returns:
-            str: the complement of the dictionary
-        """
-        return (
-            getattr(self, dict["complement"], dict["complement"])
-            if hasattr(self, dict["complement"])
-            else ""
-        )
+        Extracts the 'complement' from the metadata of a query result.
 
-    def get_characteristic(self, dict):
-        """
-        Method to get the characteristic of a dictionary. It could be used to help the extraction.
         Args:
-            dict: the dictionary to extract the characteristic from
-        Returns:
-            str: the characteristic of the dictionary
-        """
-        return (
-            getattr(self, dict["characteristic"], dict["characteristic"])
-            if hasattr(self, dict["characteristic"])
-            else ""
-        )
+            query_result (tuple): The query result tuple (status, list of JSON strings)
 
-    def get_result(self, dict):
-        """
-        Method to get the result of a dictionary. It could be used to help the extraction.
-        Args:
-            dict: the dictionary to extract the result from
         Returns:
-            str: the result of the dictionary
+            str: The 'context' field from metadata, or empty string if not found
         """
-        return (
-            getattr(self, dict["result"], dict["result"]) if hasattr(self, dict["result"]) else ""
-        )
+        try:
+            parsed_result = json.loads(query_result[1][0])  # parse the first JSON string
+            metadata = parsed_result["results"][0]["metadata"]  # go into metadata
+            context = metadata.get("complement", "")  # safely get 'context'
+            return context
+        except (IndexError, KeyError, json.JSONDecodeError) as e:
+            self.get_logger().error(f"Failed to extract context: {str(e)}")
+            return ""
 
-    def get_status(self, dict):
+    def get_characteristic(self, query_result):
         """
-        Method to get the status of a dictionary. It could be used to help the extraction.
+        Extracts the 'characteristic' from the metadata of a query result.
+
         Args:
-            dict: the dictionary to extract the status from
+            query_result (tuple): The query result tuple (status, list of JSON strings)
+
         Returns:
-            int: the status of the dictionary
+            str: The 'context' field from metadata, or empty string if not found
         """
-        return (
-            getattr(self, dict["status"], dict["status"]) if hasattr(self, dict["status"]) else ""
-        )
+        try:
+            parsed_result = json.loads(query_result[1][0])  # parse the first JSON string
+            metadata = parsed_result["results"][0]["metadata"]  # go into metadata
+            context = metadata.get("characteristic", "")  # safely get 'context'
+            return context
+        except (IndexError, KeyError, json.JSONDecodeError) as e:
+            self.get_logger().error(f"Failed to extract context: {str(e)}")
+            return ""
+
+    def get_result(self, query_result):
+        """
+        Extracts the 'result' from the metadata of a query result.
+
+        Args:
+            query_result (tuple): The query result tuple (status, list of JSON strings)
+
+        Returns:
+            str: The 'context' field from metadata, or empty string if not found
+        """
+        try:
+            parsed_result = json.loads(query_result[1][0])  # parse the first JSON string
+            metadata = parsed_result["results"][0]["metadata"]  # go into metadata
+            context = metadata.get("status", "")  # safely get 'context'
+            return context
+        except (IndexError, KeyError, json.JSONDecodeError) as e:
+            self.get_logger().error(f"Failed to extract context: {str(e)}")
+            return ""
+
+    def get_status(self, query_result):
+        """
+        Extracts the 'status' from the metadata of a query result.
+
+        Args:
+            query_result (tuple): The query result tuple (status, list of JSON strings)
+
+        Returns:
+            str: The 'context' field from metadata, or empty string if not found
+        """
+        try:
+            parsed_result = json.loads(query_result[1][0])  # parse the first JSON string
+            metadata = parsed_result["results"][0]["metadata"]  # go into metadata
+            context = metadata.get("result", "")  # safely get 'context'
+            return context
+        except (IndexError, KeyError, json.JSONDecodeError) as e:
+            self.get_logger().error(f"Failed to extract context: {str(e)}")
+            return ""
+
+    def get_name(self, query_result):
+        """
+        Extracts the 'status' from the metadata of a query result.
+
+        Args:
+            query_result (tuple): The query result tuple (status, list of JSON strings)
+
+        Returns:
+            str: The 'context' field from metadata, or empty string if not found
+        """
+        try:
+            parsed_result = json.loads(query_result[1][0])  # parse the first JSON string
+            metadata = parsed_result["results"][0]["metadata"]  # go into metadata
+            context = metadata.get("original_name", "")  # safely get 'context'
+            return context
+        except (IndexError, KeyError, json.JSONDecodeError) as e:
+            self.node.get_logger().error(f"Failed to extract context: {str(e)}")
+            return ""
 
 
 if __name__ == "__main__":

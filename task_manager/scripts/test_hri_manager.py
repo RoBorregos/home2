@@ -141,8 +141,21 @@ class TestHriManager(Node):
         self.get_logger().info("Querying command_history collection for the saved command")
         history = hri.query_command_history("add_item")
         context = hri.get_context(history)
+        complement = hri.get_complement(history)
+        characteristic = hri.get_characteristic(history)
+        result = hri.get_result(history)
+        status = hri.get_status(history)
 
         self.get_logger().info(f"context history query results: {context}")
+        self.get_logger().info(f"complement history query results: {complement}")
+        self.get_logger().info(f"characteristic history query results: {characteristic}")
+        self.get_logger().info(f"result history query results: {result}")
+        self.get_logger().info(f"status history query results: {status}")
+
+        self.get_logger().info("TESTING THE FIND CLOSEST FUNCTION")
+        # Test find_closest
+        result_closest = hri.find_closest(documents, "milk")
+        self.get_logger().info(f"Closest result: {result_closest}")
 
 
 def main(args=None):
