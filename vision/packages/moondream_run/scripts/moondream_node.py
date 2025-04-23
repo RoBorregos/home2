@@ -135,7 +135,7 @@ class MoondreamNode(Node):
 
     def crop_query_callback(self, request, response):
         """Callback to describe the bag."""
-        self.get_logger().info("Executing service Bag Description")
+        self.get_logger().info("Executing service Crop query")
         if self.image is None:
             response.result = "No image received yet."
             response.success = False
