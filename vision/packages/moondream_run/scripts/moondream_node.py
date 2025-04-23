@@ -166,6 +166,7 @@ class MoondreamNode(Node):
 
         else:
             response.result = "Crop coordinates are out of bounds."
+            self.get_logger().warn("Crop coordinates are out of bounds.")
             response.success = False
             return response
 
