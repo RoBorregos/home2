@@ -192,7 +192,7 @@ class HRITasks(metaclass=SubtaskMeta):
             self.keyword = ""
 
     @service_check("hear_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
-    def hear(self, min_audio_length=0.5, max_audio_length=10.0) -> str:
+    def hear(self, min_audio_length=2, max_audio_length=10.0) -> str:
         if min_audio_length > 0:
             self.set_double_param("MIN_AUDIO_DURATION", float(min_audio_length))
 
