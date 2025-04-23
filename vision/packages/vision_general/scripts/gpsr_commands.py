@@ -29,7 +29,6 @@ from frida_constants.vision_constants import (
     COUNT_BY_PERSON_TOPIC,
     IMAGE_TOPIC,
     COUNT_BY_COLOR_TOPIC,
-    # COUNT_BY_OBJECTS_TOPIC,
     COUNT_BY_GESTURES_TOPIC,
     COUNT_BY_POSE_TOPIC,
     POSE_GESTURE_TOPIC,
@@ -68,10 +67,6 @@ class GPSRCommands(Node):
             CountByPose, COUNT_BY_POSE_TOPIC, self.count_by_pose_callback
         )
 
-        # self.count_by_objects_service = self.create_service(
-        #     CountBy, COUNT_BY_OBJECTS_TOPIC, self.count_by_objects_callback
-        # )
-
         self.count_by_person_service = self.create_service(
             CountBy, COUNT_BY_PERSON_TOPIC, self.count_by_person_callback
         )
@@ -94,7 +89,13 @@ class GPSRCommands(Node):
         self.get_logger().info("GPSRCommands Ready.")
         self.create_timer(0.1, self.publish_image)
 
+<<<<<<< Updated upstream
         self.moondream_crop_query_client = self.create_client(CropQuery, CROP_QUERY_TOPIC)
+=======
+        self.moondream_client = self.create_client(
+            CropQuery, CROP_QUERY_TOPIC
+        )
+>>>>>>> Stashed changes
 
     def image_callback(self, data):
         """Callback to receive the image from the camera."""
@@ -179,27 +180,6 @@ class GPSRCommands(Node):
         self.get_logger().info(f"Pose {pose_requested} counted: {pose_count}")
         return response
 
-    def count_by_objects_callback(self, request, response):
-        """Callback to count objects in the image."""
-        self.get_logger().info("Executing service Count By Objects")
-        if self.image is None:
-            response.success = False
-            return response
-
-        frame = self.image
-        self.output_image = frame.copy()
-
-        # Detect objects using YOLO
-        # self.get_detections(frame, comp)
-
-        # Update objects_count
-        objects_count = 0
-
-        response.success = True
-        response.count = objects_count
-        self.get_logger().info(f"Objects counted: {objects_count}")
-        return response
-
     def count_by_person_callback(self, request, response):
         """Callback to count people in the image."""
         self.get_logger().info("Executing service Count By Person")
@@ -255,7 +235,7 @@ class GPSRCommands(Node):
         
         response.success = True
         response.count = count
-        self.get_logger().info(f"People wearing a {clothing} of color {color}: {count}")
+        self.get_logger().info(f"People wearing a {color} {clothing}: {count}")
         return response
 
     def detect_pose_gesture_callback(self, request, response):
@@ -440,6 +420,7 @@ class GPSRCommands(Node):
         request.ymax = bbox[2]
         request.xmax = bbox[3]
 
+<<<<<<< Updated upstream
         try:
             future = self.moondream_crop_query_client.call_async(request)
             rclpy.spin_until_future_complete(self, future)
@@ -461,6 +442,28 @@ class GPSRCommands(Node):
         except Exception as e:
             self.get_logger().error(f"Error requesting description: {e}")
             return False, ""
+=======
+        future = self.moondream_client.call_async(request)
+        result = future.add_done_callback(self.moondream_response_callback)
+
+        if result is None:
+            self.get_logger().error("Moondream service not available.")
+            return 0, ""
+
+        self.get_logger().info(f"Moondream result: {result}")
+        return 1, result
+    
+    def moondream_response_callback(self, future):
+        """Process the response from the Moondream service."""
+        try:
+            response = future.result()
+            if response.success:
+                return response.result
+            else:
+                return None
+        except Exception as e:
+            self.get_logger().error(f"Error getting response from Moondream service: {str(e)}")
+>>>>>>> Stashed changes
 
 def main(args=None):
     rclpy.init(args=args)
