@@ -43,6 +43,7 @@ class TestVision(Node):
                 self.done = True
                 self.running_task = False
         elif task == Task.HELP_ME_CARRY:
+            
             status, bbox, point3d = self.manager.get_pointing_bag(5)
             if status:
                 self.get_logger().info(f"Vision task result: {bbox}")
