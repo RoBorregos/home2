@@ -1,0 +1,117 @@
+[
+    {
+        "cmd_type": "goToLoc",
+        "string_cmd": "go to the trashbin then look for an iced tea and get it and place it on the bookshelf",
+        "structured_cmd": "{\"commands\":[{\"action\":\"go\",\"complement\":\"trashbin\",\"characteristic\":\"\"},{\"action\":\"find_object\",\"complement\":\"trashbin\",\"characteristic\":\"iced tea\"},{\"action\":\"pick\",\"complement\":\"iced tea\",\"characteristic\":\"\"},{\"action\":\"go\",\"complement\":\"bookshelf\",\"characteristic\":\"\"},{\"action\":\"place\",\"complement\":\"\",\"characteristic\":\"\"}]}"
+    },
+    {
+        "cmd_type": "takeObjFromPlcmt",
+        "string_cmd": "take a spam from the storage rack and put it on the bookshelf",
+        "structured_cmd": "{\"commands\":[{\"action\":\"go\",\"complement\":\"storage rack\",\"characteristic\":\"\"},{\"action\":\"find_object\",\"complement\":\"storage rack\",\"characteristic\":\"spam\"},{\"action\":\"pick\",\"complement\":\"spam\",\"characteristic\":\"\"},{\"action\":\"go\",\"complement\":\"bookshelf\",\"characteristic\":\"\"},{\"action\":\"place\",\"complement\":\"\",\"characteristic\":\"\"}]}"
+    },
+    {
+        "cmd_type": "findPrsInRoom",
+        "string_cmd": "locate a standing person in the bedroom and follow them",
+        "structured_cmd": "{\"commands\":[{\"action\":\"go\",\"complement\":\"bedroom\",\"characteristic\":\"\"},{\"action\":\"find_person\",\"complement\":\"standing person\",\"characteristic\":\"\"},{\"action\":\"follow_person_until\",\"complement\":\"canceled\",\"characteristic\":\"\"}]}"
+    },
+    {
+        "cmd_type": "findObjInRoom",
+        "string_cmd": "locate a fruit in the bathroom then grasp it and give it to Angel in the bedroom",
+        "structured_cmd": "{\"commands\":[{\"action\":\"go\",\"complement\":\"bathroom\",\"characteristic\":\"\"},{\"action\":\"find_object\",\"complement\":\"bathroom\",\"characteristic\":\"fruit\"},{\"action\":\"pick\",\"complement\":\"fruit\",\"characteristic\":\"\"},{\"action\":\"go\",\"complement\":\"bedroom\",\"characteristic\":\"\"},{\"action\":\"find_person_by_name\",\"complement\":\"Angel\",\"characteristic\":\"\"},{\"action\":\"give\",\"complement\":\"\",\"characteristic\":\"\"}]}"
+    },
+    {
+        "cmd_type": "meetPrsAtBeac",
+        "string_cmd": "meet Robin in the bathroom and follow them to the potted plant",
+        "structured_cmd": "{\"commands\":[{\"action\":\"go\",\"complement\":\"bathroom\",\"characteristic\":\"\"},{\"action\":\"find_person_by_name\",\"complement\":\"Robin\",\"characteristic\":\"\"},{\"action\":\"follow_person_until\",\"complement\":\"potted plant\",\"characteristic\":\"\"}]}"
+    },
+    {
+        "cmd_type": "countObjOnPlcmt",
+        "string_cmd": "tell me how many dishes there are on the desk",
+        "structured_cmd": "{\"commands\":[{\"action\":\"go\",\"complement\":\"desk\",\"characteristic\":\"\"},{\"action\":\"count\",\"complement\":\"desk\",\"characteristic\":\"dishes\"},{\"action\":\"go\",\"complement\":\"start_location\",\"characteristic\":\"\"},{\"action\":\"contextual_say\",\"complement\":\"tell me how many dishes there are on the desk\",\"characteristic\":\"count\"}]}"
+    },
+    {
+        "cmd_type": "countPrsInRoom",
+        "string_cmd": "tell me how many persons raising their right arm are in the bedroom",
+        "structured_cmd": "{\"commands\":[{\"action\":\"go\",\"complement\":\"bedroom\",\"characteristic\":\"\"},{\"action\":\"count\",\"complement\":\"bedroom\",\"characteristic\":\"persons raising their right arm\"},{\"action\":\"go\",\"complement\":\"start_location\",\"characteristic\":\"\"},{\"action\":\"contextual_say\",\"complement\":\"tell me how many persons raising their right arm are in the bedroom\",\"characteristic\":\"count\"}]}"
+    },
+    {
+        "cmd_type": "tellPrsInfoInLoc",
+        "string_cmd": "tell me the pose of the person in the living room",
+        "structured_cmd": "{\"commands\":[{\"action\":\"go\",\"complement\":\"living room\",\"characteristic\":\"\"},{\"action\":\"find_person\",\"complement\":\"\",\"characteristic\":\"\"},{\"action\":\"find_person_info\",\"complement\":\"pose\",\"characteristic\":\"\"},{\"action\":\"go\",\"complement\":\"start_location\",\"characteristic\":\"\"},{\"action\":\"contextual_say\",\"complement\":\"tell me the pose of the person in the living room\",\"characteristic\":\"find_person_info\"}]}"
+    },
+    {
+        "cmd_type": "tellObjPropOnPlcmt",
+        "string_cmd": "tell me what is the largest object on the storage rack",
+        "structured_cmd": "{\"commands\":[{\"action\":\"go\",\"complement\":\"storage rack\",\"characteristic\":\"\"},{\"action\":\"visual_info\",\"complement\":\"largest\",\"characteristic\":\"\"},{\"action\":\"go\",\"complement\":\"start_location\",\"characteristic\":\"\"},{\"action\":\"contextual_say\",\"complement\":\"tell me what is the largest object on the storage rack\",\"characteristic\":\"visual_info\"}]}"
+    },
+    {
+        "cmd_type": "talkInfoToGestPrsInRoom",
+        "string_cmd": "say the time to the person raising their right arm in the office",
+        "structured_cmd": "{\"commands\":[{\"action\":\"go\",\"complement\":\"office\",\"characteristic\":\"\"},{\"action\":\"find_person\",\"complement\":\"person raising their right arm\",\"characteristic\":\"\"},{\"action\":\"contextual_say\",\"complement\":\"say the time to the person raising their right arm in the office\",\"characteristic\":\"the time\"}]}"
+    },
+    {
+        "cmd_type": "answerToGestPrsInRoom",
+        "string_cmd": "answer the quiz of the person raising their left arm in the living room",
+        "structured_cmd": "{\"commands\":[{\"action\":\"go\",\"complement\":\"living room\",\"characteristic\":\"\"},{\"action\":\"find_person\",\"complement\":\"person raising their left arm\",\"characteristic\":\"\"},{\"action\":\"ask_answer_question\",\"complement\":\"\",\"characteristic\":\"\"}]}"
+    },
+    {
+        "cmd_type": "followNameFromBeacToRoom",
+        "string_cmd": "follow Angel from the bed to the living room",
+        "structured_cmd": "{\"commands\":[{\"action\":\"go\",\"complement\":\"bed\",\"characteristic\":\"\"},{\"action\":\"find_person_by_name\",\"complement\":\"Angel\",\"characteristic\":\"\"},{\"action\":\"follow_person_until\",\"complement\":\"living room\",\"characteristic\":\"Angel\"}]}"
+    },
+    {
+        "cmd_type": "guideNameFromBeacToBeac",
+        "string_cmd": "lead Robin from the armchair to the living room",
+        "structured_cmd": "{\"commands\":[{\"action\":\"go\",\"complement\":\"armchair\",\"characteristic\":\"\"},{\"action\":\"find_person_by_name\",\"complement\":\"Robin\",\"characteristic\":\"\"},{\"action\":\"guide_to\",\"complement\":\"Robin\",\"characteristic\":\"living room\"}]}"
+    },
+    {
+        "cmd_type": "guidePrsFromBeacToBeac",
+        "string_cmd": "take the waving person from the cabinet to the chairs",
+        "structured_cmd": "{\"commands\":[{\"action\":\"go\",\"complement\":\"cabinet\",\"characteristic\":\"\"},{\"action\":\"find_person\",\"complement\":\"waving person\",\"characteristic\":\"\"},{\"action\":\"guide_to\",\"complement\":\"person\",\"characteristic\":\"chairs\"}]}"
+    },
+    {
+        "cmd_type": "guideClothPrsFromBeacToBeac",
+        "string_cmd": "guide the person wearing a red jacket from the waste basket to the pantry",
+        "structured_cmd": "{\"commands\":[{\"action\":\"go\",\"complement\":\"waste basket\",\"characteristic\":\"\"},{\"action\":\"find_person\",\"complement\":\"red jacket\",\"characteristic\":\"clothes\"},{\"action\":\"guide_to\",\"complement\":\"person\",\"characteristic\":\"pantry\"}]}"
+    },
+    {
+        "cmd_type": "bringMeObjFromPlcmt",
+        "string_cmd": "bring me an orange juice from the kitchen table",
+        "structured_cmd": "{\"commands\":[{\"action\":\"go\",\"complement\":\"kitchen table\",\"characteristic\":\"\"},{\"action\":\"find_object\",\"complement\":\"kitchen table\",\"characteristic\":\"orange juice\"},{\"action\":\"pick\",\"complement\":\"orange juice\",\"characteristic\":\"\"},{\"action\":\"go\",\"complement\":\"start_location\",\"characteristic\":\"\"},{\"action\":\"give\",\"complement\":\"\",\"characteristic\":\"\"}]}"
+    },
+    {
+        "cmd_type": "tellCatPropOnPlcmt",
+        "string_cmd": "tell me what is the lightest drink on the sink",
+        "structured_cmd": "{\"commands\":[{\"action\":\"go\",\"complement\":\"sink\",\"characteristic\":\"\"},{\"action\":\"visual_info\",\"complement\":\"lightest\",\"characteristic\":\"drink\"},{\"action\":\"go\",\"complement\":\"start_location\",\"characteristic\":\"\"},{\"action\":\"contextual_say\",\"complement\":\"tell me what is the lightest drink on the sink\",\"characteristic\":\"visual_info\"}]}"
+    },
+    {
+        "cmd_type": "greetClothDscInRm",
+        "string_cmd": "say hello to the person wearing a blue shirt in the kitchen and follow them to the dishwasher",
+        "structured_cmd": "{\"commands\":[{\"action\":\"go\",\"complement\":\"kitchen\",\"characteristic\":\"\"},{\"action\":\"find_person\",\"complement\":\"blue shirt\",\"characteristic\":\"clothes\"},{\"action\":\"contextual_say\",\"complement\":\"say hello to the person wearing a blue shirt in the kitchen and follow them to the dishwasher\",\"characteristic\":\"introduction\"},{\"action\":\"follow_person_until\",\"complement\":\"dishwasher\",\"characteristic\":\"\"}]}"
+    },
+    {
+        "cmd_type": "greetNameInRm",
+        "string_cmd": "introduce yourself to Paris in the kitchen and answer a question",
+        "structured_cmd": "{\"commands\":[{\"action\":\"go\",\"complement\":\"kitchen\",\"characteristic\":\"\"},{\"action\":\"find_person_by_name\",\"complement\":\"Paris\",\"characteristic\":\"\"},{\"action\":\"contextual_say\",\"complement\":\"introduce yourself to Paris in the kitchen and answer a question\",\"characteristic\":\"introduction\"},{\"action\":\"ask_answer_question\",\"complement\":\"\",\"characteristic\":\"\"}]}"
+    },
+    {
+        "cmd_type": "meetNameAtLocThenFindInRm",
+        "string_cmd": "meet Adel at the dishwasher then locate them in the kitchen",
+        "structured_cmd": "{\"commands\":[{\"action\":\"go\",\"complement\":\"dishwasher\",\"characteristic\":\"\"},{\"action\":\"find_person_by_name\",\"complement\":\"Adel\",\"characteristic\":\"\"},{\"action\":\"say\",\"complement\":\"Hi Adel, I'll find you at kitchen\",\"characteristic\":\"\"},{\"action\":\"go\",\"complement\":\"kitchen\",\"characteristic\":\"\"},{\"action\":\"find_person_by_name\",\"complement\":\"Adel\",\"characteristic\":\"\"},{\"action\":\"say\",\"complement\":\"Hi Adel, nice to see you again!\",\"characteristic\":\"\"}]}"
+    },
+    {
+        "cmd_type": "countClothPrsInRoom",
+        "string_cmd": "tell me how many people in the office are wearing gray blouses",
+        "structured_cmd": "{\"commands\":[{\"action\":\"go\",\"complement\":\"office\",\"characteristic\":\"\"},{\"action\":\"count\",\"complement\":\"office\",\"characteristic\":\"people wearing gray blouses\"},{\"action\":\"go\",\"complement\":\"start_location\",\"characteristic\":\"\"},{\"action\":\"contextual_say\",\"complement\":\"tell me how many people in the office are wearing gray blouses\",\"characteristic\":\"count\"}]}"
+    },
+    {
+        "cmd_type": "tellPrsInfoAtLocToPrsAtLoc",
+        "string_cmd": "tell the pose of the person at the bedside table to the person at the bookshelf",
+        "structured_cmd": "{\"commands\":[{\"action\":\"go\",\"complement\":\"bedside table\",\"characteristic\":\"\"},{\"action\":\"find_person\",\"complement\":\"\",\"characteristic\":\"\"},{\"action\":\"find_person_info\",\"complement\":\"pose\",\"characteristic\":\"\"},{\"action\":\"go\",\"complement\":\"bookshelf\",\"characteristic\":\"\"},{\"action\":\"find_person\",\"complement\":\"\",\"characteristic\":\"\"},{\"action\":\"contextual_say\",\"complement\":\"tell the pose of the person at the bedside table to the person at the bookshelf\",\"characteristic\":\"find_person_info\"}]}"
+    },
+    {
+        "cmd_type": "followPrsAtLoc",
+        "string_cmd": "follow the person raising their right arm in the living room",
+        "structured_cmd": "{\"commands\":[{\"action\":\"go\",\"complement\":\"living room\",\"characteristic\":\"\"},{\"action\":\"find_person\",\"complement\":\"person raising their right arm\",\"characteristic\":\"\"},{\"action\":\"follow_person_until\",\"complement\":\"canceled\",\"characteristic\":\"\"}]}"
+    }
+]

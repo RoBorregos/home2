@@ -2,6 +2,8 @@ import sys
 
 sys.path.append("..")
 
+import json
+
 import pytest
 from deepeval import assert_test
 from deepeval.dataset import EvaluationDataset
@@ -25,7 +27,7 @@ def generate_response(full_text, two_steps=False):
         model=MODEL,
         temperature=TEMPERATURE,
         messages=messages,
-        response_format=CommandListShape if not two_steps else NOT_GIVEN,
+        response_format=NOT_GIVEN if two_steps else CommandListShape,
     )
 
     content = response.choices[0].message.content
@@ -49,22 +51,19 @@ def structured_response(response, response_format):
     return formatted_response.choices[0].message.content
 
 
+with open("data/command_interpreter.json") as f:
+    command_dataset = json.load(f)
+
 test_cases = [
-    # Test possible receptionist dialogs
     (
-        "navigate to the storage rack then find a cleaning supply and grasp it and bring it to the waving person in the office",
+        command["string_cmd"],
         CommandListShape(
-            commands=[
-                {"action": "go", "complement": "storage rack", "characteristic": ""},
-                {"action": "find_object", "complement": "storage rack", "characteristic": "cleaning supply"},
-                {"action": "pick", "complement": "cleaning supply", "characteristic": ""},
-                {"action": "go", "complement": "office", "characteristic": ""},
-                {"action": "find_person", "complement": "waving person", "characteristic": ""},
-                {"action": "give", "complement": "", "characteristic": ""},
-            ]
+            commands=json.loads(command["structured_cmd"])["commands"],
         ).model_dump_json(),
-    ),
+    )
+    for command in command_dataset
 ]
+
 
 # Define test cases
 test_cases = [
@@ -77,7 +76,7 @@ test_cases = [
 ]
 
 
-dataset = EvaluationDataset(test_cases=test_cases)
+dataset = EvaluationDataset(test_cases=[test_cases[0]])
 
 
 @pytest.mark.parametrize(
