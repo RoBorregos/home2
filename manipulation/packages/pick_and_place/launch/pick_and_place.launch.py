@@ -46,9 +46,16 @@ def generate_launch_description():
                 emulate_tty=True,
                 parameters=[
                     {
-                        "ee_link_offset": -0.12,  # based on distance between end-effector link and contact point with objects e.g. where you grip
+                        "ee_link_offset": -0.10,  # based on distance between end-effector link and contact point with objects e.g. where you grip
                     }
                 ],
+            ),
+            Node(
+                package="pick_and_place",
+                executable="place_server.py",
+                name="place_server",
+                output="screen",
+                emulate_tty=True,
             ),
             # perception_3d.launch.py
             IncludeLaunchDescription(
@@ -61,6 +68,10 @@ def generate_launch_description():
                         ]
                     )
                 ),
+            ),
+            Node(
+                package="place",
+                executable="heatmapPlace_Server.py",
             ),
             Node(
                 package="frida_motion_planning",

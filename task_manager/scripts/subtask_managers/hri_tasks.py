@@ -23,6 +23,7 @@ from frida_constants.hri_constants import (
     STT_SERVICE_NAME,
     USEFUL_AUDIO_NODE_NAME,
     WAKEWORD_TOPIC,
+    CATEGORIZE_SERVICE,
 )
 from frida_interfaces.srv import (
     STT,
@@ -36,6 +37,7 @@ from frida_interfaces.srv import (
     LLMWrapper,
     QueryEntry,
     Speak,
+    CategorizeShelves,
 )
 from rcl_interfaces.msg import Parameter, ParameterType, ParameterValue
 from rcl_interfaces.srv import SetParameters
@@ -58,7 +60,7 @@ def confirm_query(interpreted_text, target_info):
 class HRITasks(metaclass=SubtaskMeta):
     """Class to manage the vision tasks"""
 
-    def __init__(self, task_manager, config=None, task=Task.RECEPTIONIST) -> None:
+    def __init__(self, task_manager: Node, config=None, task=Task.RECEPTIONIST) -> None:
         self.node = task_manager
         self.keyword = ""
         self.speak_service = self.node.create_client(Speak, SPEAK_SERVICE)
@@ -79,6 +81,7 @@ class HRITasks(metaclass=SubtaskMeta):
         self.query_item_client = self.node.create_client(QueryEntry, QUERY_ENTRY_SERVICE)
         self.add_item_client = self.node.create_client(AddEntry, ADD_ENTRY_SERVICE)
         self.llm_wrapper_service = self.node.create_client(LLMWrapper, LLM_WRAPPER_SERVICE)
+        self.categorize_service = self.node.create_client(CategorizeShelves, CATEGORIZE_SERVICE)
         self.keyword_client = self.node.create_subscription(
             String, WAKEWORD_TOPIC, self._get_keyword, 10
         )
@@ -402,7 +405,12 @@ class HRITasks(metaclass=SubtaskMeta):
         future = self.is_positive_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
         return Status.EXECUTION_SUCCESS, future.result().is_positive
-
+        @service_check("is_negative_service", (Status.SERVICE_CHECK, False), TIMEOUT)
+    def is_negative(self, text):
+        request = IsNegative.Request(text=text)
+        future = self.is_negative_service.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+        return Status.EXECUTION_SUCCESS, future.result().is_negative
     # /////////////////embeddings services/////
     def add_command_history(
         self, command: str, complement: str, characteristic: str, result, status
@@ -425,7 +433,6 @@ class HRITasks(metaclass=SubtaskMeta):
         metadata = [json.dumps(metadata)]
 
         request = AddEntry.Request(document=document, metadata=metadata[0], collection=collection)
-
         future = self.add_item_client.call_async(request)
 
         def callback(fut):
@@ -609,6 +616,37 @@ class HRITasks(metaclass=SubtaskMeta):
         except (IndexError, KeyError, json.JSONDecodeError) as e:
             self.node.get_logger().error(f"Failed to extract context: {str(e)}")
             return ""
+
+    def categorize_objects(
+        self, table_objects: list[str], shelves: dict[int, list[str]]
+    ) -> tuple[Status, dict[int, list[str]], dict[int, list[str]]]:
+        """
+        Categorize objects based on their shelf levels.
+
+        Args:
+            table_objects (list[str]): List of objects on the table.
+            shelves (dict[int, list[str]]): Dictionary mapping shelf levels to object names.
+
+        Returns:
+            dict[int, list[str]]: Dictionary mapping shelf levels to categorized objects.
+        """
+        try:
+            request = CategorizeShelves.Request()
+            for i, obj in enumerate(table_objects):
+                request.table_objects.append(obj)
+            request.shelves = str(shelves)
+            # request = CategorizeShelves.Request(table_objects=table_objects, shelves=shelves)
+            future = self.categorize_service.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future)
+            res: CategorizeShelves.Response = future.result()
+            categorized_shelves = eval(res.categorized_shelves)
+            categorized_shelves = {int(k): v for k, v in categorized_shelves.items()}
+            objects_to_add = eval(res.objects_to_add)
+            objects_to_add = {int(k): v for k, v in objects_to_add.items()}
+        except Exception as e:
+            self.node.get_logger().error(f"Error: {e}")
+            return Status.EXECUTION_ERROR, {}, {}
+        return Status.EXECUTION_SUCCESS, categorized_shelves, objects_to_add
 
 
 if __name__ == "__main__":

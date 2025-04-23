@@ -1,0 +1,3 @@
+PlaceParams place_params
+---
+sensor_msgs/PointCloud2 cluster_result

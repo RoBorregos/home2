@@ -452,22 +452,20 @@ public:
     pass3.setFilterLimits(point.y - distance, point.y + distance);
     pass3.filter(*cloud_out);
 
-    // filter points closest to the robot arm
-    pcl::PassThrough<pcl::PointXYZ> pass4;
-    pass4.setInputCloud(cloud_out);
+    // filter points closest to the robot arm in xy
+    float min_distance = 0.15; // lower than this are excluded
+    for (auto it = cloud_out->points.begin(); it != cloud_out->points.end();) {
+      float dx = it->x;
+      float dy = it->y;
+      float distance = std::sqrt(dx * dx + dy * dy);
+      if (distance < min_distance) {
+        it = cloud_out->points.erase(it);
+      } else {
+        ++it;
+      }
+    }
+    cloud_out->width = cloud_out->points.size();
 
-    pass4.setFilterFieldName("x");
-    pass4.setFilterLimits(-0.15, 0.15);
-    pass4.setNegative(true);
-    pass4.filter(*cloud_out);
-
-    // filter points closest to the robot arm
-    pcl::PassThrough<pcl::PointXYZ> pass5;
-    pass5.setInputCloud(cloud_out);
-    pass5.setFilterFieldName("y");
-    pass5.setFilterLimits(-0.15, 0.15);
-    pass5.setNegative(true);
-    pass5.filter(*cloud_out);
 
     return OK;
   }

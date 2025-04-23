@@ -1,7 +1,7 @@
 # Local LLM
 API_KEY = "ollama"
 BASE_URL = "http://localhost:11434/v1"
-MODEL = "deepseek-r1:7b"
+MODEL = "qwen2.5"
 TEMPERATURE = 0.0
 
 # OpenAI API

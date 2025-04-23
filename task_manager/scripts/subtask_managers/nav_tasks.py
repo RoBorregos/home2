@@ -89,7 +89,6 @@ class NavigationTasks:
             self._send_goal_future.add_done_callback(
                 lambda future_goal: self.goal_response_callback(future_goal, future)
             )
-
             return future
         except Exception as e:
             self.node.get_logger().error(f"Error moving to location: {e}")
