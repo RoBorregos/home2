@@ -56,6 +56,14 @@
       <joint name="${prefix}joint6" value="0" />
     </group_state>
 
+    <disable_collisions link1="zed_camera_link" link2="link_eef" reason="Never"/>
+    <disable_collisions link1="zed_camera_link" link2="gripper" reason="Never"/>
+    <disable_collisions link1="zed_camera_link" link2="left_finger" reason="Never"/>
+    <disable_collisions link1="zed_camera_link" link2="link3" reason="Never"/>
+    <disable_collisions link1="zed_camera_link" link2="link5" reason="Never"/>
+    <disable_collisions link1="zed_camera_link" link2="link6" reason="Never"/>
+    <disable_collisions link1="zed_camera_link" link2="right_finger" reason="Never"/>
+
     <!-- gripper -->
     <xacro:if value="${add_gripper}">
       <group name="${prefix}xarm_gripper">
@@ -141,12 +149,6 @@
       <disable_collisions link1="LIDAR" link2="link3" reason="Never"/>
       <disable_collisions link1="LIDAR" link2="link4" reason="Never"/>
       <disable_collisions link1="LIDAR" link2="link_base" reason="Never"/>
-      <disable_collisions link1="ZED" link2="gripper" reason="Adjacent"/>
-      <disable_collisions link1="ZED" link2="left_finger" reason="Never"/>
-      <disable_collisions link1="ZED" link2="link3" reason="Never"/>
-      <disable_collisions link1="ZED" link2="link5" reason="Never"/>
-      <disable_collisions link1="ZED" link2="link6" reason="Never"/>
-      <disable_collisions link1="ZED" link2="right_finger" reason="Never"/>
       <disable_collisions link1="base_link" link2="intel_realsense" reason="Adjacent"/>
       <disable_collisions link1="base_link" link2="left_finger" reason="Default"/>
       <disable_collisions link1="base_link" link2="link1" reason="Never"/>
