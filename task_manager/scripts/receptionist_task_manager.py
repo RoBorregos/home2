@@ -244,10 +244,10 @@ class ReceptionistTM(Node):
             # )
             print("Finding seat")
             for seat_angle in self.seat_angles:
-                joint_positions = self.subtask_manager.manipulation.get_joint_positions(
-                    degrees=True
-                )
-                joint_positions["joint1"] = joint_positions["joint1"] - seat_angle
+                # joint_positions = self.subtask_manager.manipulation.get_joint_positions(
+                #     degrees=True
+                # )
+                # joint_positions["joint1"] = joint_positions["joint1"] - seat_angle
                 # self.subtask_manager.manipulation.move_joint_positions(
                 #     joint_positions=joint_positions, velocity=0.5, degrees=True
                 # )
