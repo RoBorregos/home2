@@ -90,7 +90,7 @@ class VisionTasks:
         self.object_detector_client = self.node.create_client(
             DetectionHandler, DETECTION_HANDLER_TOPIC_SRV
         )
-        
+
         self.detect_person_action_client = ActionClient(self.node, DetectPerson, CHECK_PERSON_TOPIC)
 
         self.services = {
@@ -563,15 +563,15 @@ class VisionTasks:
         Logger.info(self.node, "Describing bag")
         prompt = "Describe the bag that the person is pointing at using the folling format: the bag on your left is small and green"
         return self.moondream_query(prompt, query_person=False)
-    
+
     def find_seat_moondream(self):
         """Find the seat using only moondream"""
         Logger.info(self.node, "Finding seat")
-        prompt = '''Check if there is an available seat in the image. 
+        prompt = """Check if there is an available seat in the image. 
         This could be an empty chair (the largest empty chair) or a space in a couch. 
         If there is no available seat, please return 300. 
         Else return the estimated angle of the person decimal from -1 to 1, where -1 is the image on the left and 1 is right.
-        '''
+        """
         return self.moondream_query(prompt, query_person=False)
 
     def describe_shelf(self):

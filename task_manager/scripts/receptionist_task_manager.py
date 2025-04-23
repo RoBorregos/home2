@@ -322,7 +322,6 @@ class ReceptionistTM(Node):
             #     joint_positions=joint_positions, velocity=0.5, degrees=True
             # )
             self.current_state = ReceptionistTM.TASK_STATES["END"]
-        
 
 
 def main(args=None):

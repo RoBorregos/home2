@@ -72,7 +72,7 @@ class ManipulationTasks:
         self.gripper_client = self.node.create_client(SetDigitalIO, "/xarm/set_tgpio_digital")
 
         self._get_joints_client = self.node.create_client(GetJoints, "/manipulation/get_joints")
-        self.follow_face_client = self.node.create_client(FollowFace, '/follow_face')
+        self.follow_face_client = self.node.create_client(FollowFace, "/follow_face")
 
     def open_gripper(self):
         """Opens the gripper"""
@@ -124,7 +124,16 @@ class ManipulationTasks:
         Named position has priority over joint_positions.
         """
         if named_position:
+            # joint_positions = self.get_named_target(named_position)
+            # joint_positions = joint_positions["positions"].keys()
+
             joint_positions = self.get_named_target(named_position)
+
+            degrees = joint_positions.get("degrees", False)
+
+            joint_positions = joint_positions["joints"]
+
+            self.node.get_logger().info(f"dict: {joint_positions}")
 
         # Determine format of joint_positions and apply degree conversion if needed.
         if isinstance(joint_positions, dict):
@@ -209,7 +218,7 @@ class ManipulationTasks:
         if not result.success:
             return False
         return True
-    
+
     @mockable(return_value=Status.EXECUTION_SUCCESS)
     @service_check(client="follow_face_client", return_value=Status.TERMINAL_ERROR, timeout=TIMEOUT)
     def follow_face(self, follow) -> int:
@@ -224,8 +233,8 @@ class ManipulationTasks:
 
         try:
             future = self.follow_face_client.call_async(request)
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=10.0)
-            result = future.result()
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+            result = future.result().result
 
             if not result.success:
                 raise Exception("Service call failed")
