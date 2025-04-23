@@ -429,12 +429,10 @@ class HRITasks(metaclass=SubtaskMeta):
                 "timestamp": datetime.now().isoformat(),
             }
         ]
-        self.node.get_logger().info(f"Saving command history: {document}, {metadata}")
 
-        # Prepare the service request
-        metadata = [json.dumps(metadata)]
-
-        request = AddEntry.Request(document=document, metadata=metadata[0], collection=collection)
+        request = AddEntry.Request(
+            document=document, metadata=json.dumps(metadata), collection=collection
+        )
         future = self.add_item_client.call_async(request)
 
         def callback(fut):
@@ -506,118 +504,22 @@ class HRITasks(metaclass=SubtaskMeta):
         )
 
     def get_context(self, query_result):
-        """
-        Extracts the 'context' from the metadata of a query result.
-
-        Args:
-            query_result (tuple): The query result tuple (status, list of JSON strings)
-
-        Returns:
-            str: The 'context' field from metadata, or empty string if not found
-        """
-        try:
-            parsed_result = json.loads(query_result[1][0])  # parse the first JSON string
-            metadata = parsed_result["results"][0]["metadata"]  # go into metadata
-            context = metadata.get("context", "")  # safely get 'context'
-            return context
-        except (IndexError, KeyError, json.JSONDecodeError) as e:
-            self.get_logger().error(f"Failed to extract context: {str(e)}")
-            return ""
+        return self.get_metadata_key(query_result, "context")
 
     def get_complement(self, query_result):
-        """
-        Extracts the 'complement' from the metadata of a query result.
-
-        Args:
-            query_result (tuple): The query result tuple (status, list of JSON strings)
-
-        Returns:
-            str: The 'context' field from metadata, or empty string if not found
-        """
-        try:
-            parsed_result = json.loads(query_result[1][0])  # parse the first JSON string
-            metadata = parsed_result["results"][0]["metadata"]  # go into metadata
-            context = metadata.get("complement", "")  # safely get 'context'
-            return context
-        except (IndexError, KeyError, json.JSONDecodeError) as e:
-            self.get_logger().error(f"Failed to extract context: {str(e)}")
-            return ""
+        return self.get_metadata_key(query_result, "complement")
 
     def get_characteristic(self, query_result):
-        """
-        Extracts the 'characteristic' from the metadata of a query result.
-
-        Args:
-            query_result (tuple): The query result tuple (status, list of JSON strings)
-
-        Returns:
-            str: The 'context' field from metadata, or empty string if not found
-        """
-        try:
-            parsed_result = json.loads(query_result[1][0])  # parse the first JSON string
-            metadata = parsed_result["results"][0]["metadata"]  # go into metadata
-            context = metadata.get("characteristic", "")  # safely get 'context'
-            return context
-        except (IndexError, KeyError, json.JSONDecodeError) as e:
-            self.get_logger().error(f"Failed to extract context: {str(e)}")
-            return ""
+        return self.get_metadata_key(query_result, "characteristic")
 
     def get_result(self, query_result):
-        """
-        Extracts the 'result' from the metadata of a query result.
-
-        Args:
-            query_result (tuple): The query result tuple (status, list of JSON strings)
-
-        Returns:
-            str: The 'context' field from metadata, or empty string if not found
-        """
-        try:
-            parsed_result = json.loads(query_result[1][0])  # parse the first JSON string
-            metadata = parsed_result["results"][0]["metadata"]  # go into metadata
-            context = metadata.get("status", "")  # safely get 'context'
-            return context
-        except (IndexError, KeyError, json.JSONDecodeError) as e:
-            self.get_logger().error(f"Failed to extract context: {str(e)}")
-            return ""
+        return self.get_metadata_key(query_result, "result")
 
     def get_status(self, query_result):
-        """
-        Extracts the 'status' from the metadata of a query result.
-
-        Args:
-            query_result (tuple): The query result tuple (status, list of JSON strings)
-
-        Returns:
-            str: The 'context' field from metadata, or empty string if not found
-        """
-        try:
-            parsed_result = json.loads(query_result[1][0])  # parse the first JSON string
-            metadata = parsed_result["results"][0]["metadata"]  # go into metadata
-            context = metadata.get("result", "")  # safely get 'context'
-            return context
-        except (IndexError, KeyError, json.JSONDecodeError) as e:
-            self.get_logger().error(f"Failed to extract context: {str(e)}")
-            return ""
+        return self.get_metadata_key(query_result, "status")
 
     def get_name(self, query_result):
-        """
-        Extracts the 'status' from the metadata of a query result.
-
-        Args:
-            query_result (tuple): The query result tuple (status, list of JSON strings)
-
-        Returns:
-            str: The 'context' field from metadata, or empty string if not found
-        """
-        try:
-            parsed_result = json.loads(query_result[1][0])  # parse the first JSON string
-            metadata = parsed_result["results"][0]["metadata"]  # go into metadata
-            context = metadata.get("original_name", "")  # safely get 'context'
-            return context
-        except (IndexError, KeyError, json.JSONDecodeError) as e:
-            self.node.get_logger().error(f"Failed to extract context: {str(e)}")
-            return ""
+        return self.get_metadata_key(query_result, "original_name")
 
     def categorize_objects(
         self, table_objects: list[str], shelves: dict[int, list[str]]
@@ -649,6 +551,25 @@ class HRITasks(metaclass=SubtaskMeta):
             self.node.get_logger().error(f"Error: {e}")
             return Status.EXECUTION_ERROR, {}, {}
         return Status.EXECUTION_SUCCESS, categorized_shelves, objects_to_add
+
+    def get_metadata_key(self, query_result, field: str):
+        """
+        Extracts the field from the metadata of a query result.
+
+        Args:
+            query_result (tuple): The query result tuple (status, list of JSON strings)
+
+        Returns:
+            str: The 'context' field from metadata, or empty string if not found
+        """
+        try:
+            parsed_result = json.loads(query_result[1][0])  # parse the first JSON string
+            metadata = parsed_result["results"][0]["metadata"]  # go into metadata
+            key = metadata.get(field, "")  # safely get 'context'
+            return key
+        except (IndexError, KeyError, json.JSONDecodeError) as e:
+            self.get_logger().error(f"Failed to extract context: {str(e)}")
+            return ""
 
 
 if __name__ == "__main__":
