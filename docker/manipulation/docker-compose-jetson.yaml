@@ -8,7 +8,7 @@ services:
         BASE_IMAGE: ${BASE_IMAGE:-roborregos/home2:cpu_base} 
     image: ${IMAGE_NAME:-roborregos/home2:manipulation-jetson}
     volumes:
-      - ../../:/workspace
+      - ../../:/workspace/src/home2
       - /dev:/dev
       - /dev/video0:/dev/video0
       - /tmp:/tmp

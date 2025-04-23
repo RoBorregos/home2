@@ -13,7 +13,9 @@ conststr REMOVE_PLANE_SERVICE = "/manipulation/extract_plane";
 conststr CLUSTER_OBJECT_SERVICE = "/manipulation/cluster_object"; // Kept original
 conststr ADD_PICK_PRIMITIVES_SERVICE = "/manipulation/add_pick_primitives";
 conststr ADD_COLLISION_SERVICE = "/manipulation/add_collision_objects";
-conststr PERCEPTION_SERVICE = "/manipulation/perception_service"; // Kept original
+conststr PICK_PERCEPTION_SERVICE = "/manipulation/pick_perception_service"; // Kept original
+conststr PLACE_PERCEPTION_SERVICE = "/manipulation/place_perception_service"; // Kept original
+conststr PLACE_CLOUD_TOPIC_PUBLISHER = "/manipulation/place_cloud_publisher";
 
 // New constants
 conststr EEF_LINK_NAME = "link_eef";

@@ -36,7 +36,7 @@ class NavigationTasks:
 
     def setup_services(self):
         self.pose_client = ActionClient(self.node, NavigateToPose, MOVE_TOPIC)
-        self.activate_follow = self.create_client(SetBool, FOLLOWING_SERVICE)
+        self.activate_follow = self.node.create_client(SetBool, FOLLOWING_SERVICE)
         if not self.pose_client.wait_for_server(timeout_sec=TIMEOUT):
             self.node.get_logger().warn("Move service not initialized.")
 
@@ -89,7 +89,6 @@ class NavigationTasks:
             self._send_goal_future.add_done_callback(
                 lambda future_goal: self.goal_response_callback(future_goal, future)
             )
-
             return future
         except Exception as e:
             self.node.get_logger().error(f"Error moving to location: {e}")
@@ -116,13 +115,15 @@ class NavigationTasks:
     def follow_person(self, activate: bool):
         """Activate or deactivate the follow person mode"""
         try:
-            future = self.activate_follow.call_async(SetBool.Request(data=activate))
+            request = SetBool.Request()
+            request.data = activate
+            future = self.activate_follow.call_async(request)
             rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
             result = future.result()
             if not result.success:
                 raise Exception("Service call failed")
-        except Exception:
-            self.node.get_logger().info("Error sending follow person mode")
+        except Exception as e:
+            self.node.get_logger().info(f"Error sending follow person mode: {e}")
             return self.STATE["EXECUTION_ERROR"]
         if activate:
             self.node.get_logger().info("Follow person activated")

@@ -28,15 +28,24 @@ def move_joint_positions(
         acceleration=0.0,
         planner_id="",
     ):
-        print("Joint names: ", joint_names)
-        print("Joint positions: ", joint_positions)
+        # time.sleep(5)
         goal_msg = MoveJoints.Goal()
+        # print("MoveJoints goal message created")
+        # time.sleep(5)
         goal_msg.joint_names = joint_names
+        # print("Joint names set")
+        # time.sleep(5)
         goal_msg.joint_positions = joint_positions
+        # print("Joint positions set")
+        # time.sleep(5)
         goal_msg.velocity = velocity
+        # print("Velocity set")
+        # time.sleep(5)
         goal_msg.acceleration = acceleration
+        # print("Acceleration set")
+        # time.sleep(5)
         goal_msg.planner_id = planner_id
-
+        # time.sleep(5)
         move_joints_action_client.wait_for_server()
 
         return move_joints_action_client.send_goal_async(goal_msg)
@@ -83,5 +92,4 @@ def get_joint_positions(
     result = future.result()
     if degrees:
         result.joint_positions = [x * RAD2DEG for x in result.joint_positions]
-    print("Joint positions from service: ", result.joint_positions)
     return dict(zip(result.joint_names, result.joint_positions))

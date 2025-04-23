@@ -107,7 +107,14 @@ class GPSRTM(Node):
                 else:
                     Logger.info(self, f"Executing command: {command}")
                     self.subtask_manager.hri.say(f"Executing command: {command}")
-                    exec_commad(command["complement"], command["characteristic"])
+                    status, res = exec_commad(command["complement"], command["characteristic"])
+                    self.subtask_manager.hri.add_command_history(
+                        command["action"],
+                        command["complement"],
+                        command["characteristic"],
+                        res,
+                        status,
+                    )
         elif self.current_state == GPSRTM.States.FINISHED_COMMAND:
             self.subtask_manager.hri.say(
                 "I have finished executing your command. I will return to the start position to await for new commands.",

@@ -1,0 +1,2 @@
+datasets==3.5.0
+deepeval==2.7.3

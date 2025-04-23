@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+<xacro:property name="mesh_path" value="file://$(find frida_description)/urdf/meshes/TMR2025/" />
+<xacro:property name="material_rgba" value="0.745 0.203 0.482 1" />
+<xacro:property name="black_rgba" value="0.102 0.102 0.102 1" />
+<xacro:property name="intel_rgba" value="0.776 0.757 0.737 1" />
+
+<xacro:include filename="base.xacro"/>
+<xacro:include filename="wheels.xacro"/>
+<xacro:include filename="castwheel.xacro"/>
+<xacro:include filename="lidar.xacro"/>
+<xacro:include filename="realsense.xacro"/>
+<xacro:include filename="$(find frida_description)/urdf/RoboCup2024/imu.xacro"/>
+<xacro:include filename="$(find frida_description)/urdf/RoboCup2024/gazebo.xacro"/>
+
+</robot>

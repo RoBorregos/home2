@@ -269,7 +269,7 @@ public:
         req2->collision_objects.back().pose.pose.position.y = point.y;
         req2->collision_objects.back().pose.pose.position.z = point.z;
 
-        req2->collision_objects.back().dimensions.x = 0.01;
+        req2->collision_objects.back().dimensions.x = 0.015;
 
         req2->collision_objects.back().pose.pose.orientation.x = 0;
         req2->collision_objects.back().pose.pose.orientation.y = 0;
