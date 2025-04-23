@@ -53,7 +53,9 @@ class ReceptionistTM(Node):
     def __init__(self):
         """Initialize the node"""
         super().__init__("receptionist_task_manager")
-        self.subtask_manager = SubtaskManager(self, task=Task.RECEPTIONIST, mock_areas=["navigation", "manipulation"])
+        self.subtask_manager = SubtaskManager(
+            self, task=Task.RECEPTIONIST, mock_areas=["navigation", "manipulation"]
+        )
         self.current_state = ReceptionistTM.TASK_STATES[START]
         self.current_guest = 1
         self.seat_angles = [0, 90]
@@ -238,7 +240,7 @@ class ReceptionistTM(Node):
 
         if self.current_state == ReceptionistTM.TASK_STATES["FIND_SEAT"]:
             Logger.state(self, "Finding seat")
-            target = 0
+            # target = 0
             # self.subtask_manager.manipulation.move_joint_positions(
             #     named_position="front_stare", velocity=0.5, degrees=True
             # )
@@ -254,7 +256,7 @@ class ReceptionistTM(Node):
                 status, angle = self.subtask_manager.vision.find_seat()
                 print(self.subtask_manager.vision.find_seat_moondream())
                 if status == Status.EXECUTION_SUCCESS:
-                    target = angle
+                    # target = angle
                     break
 
             self.subtask_manager.hri.say("Please take a seat where my arm points at.")
