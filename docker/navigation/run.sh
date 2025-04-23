@@ -123,14 +123,10 @@ if [ -z "$TASK" ]; then
     if [ "$NEEDS_BUILD" = true ]; then
         docker compose up --build -d
     else
-       RUNNING=$(docker ps --filter "name=vision" --format "{{.ID}}")
+    
+        docker compose up -d 
         
-        if [ -z "$RUNNING" ]; then
-            echo "Starting vision service..."
-            docker compose up -d
-        fi 
-        
-        docker compose exec vision /bin/bash
+        docker compose exec navigation /bin/bash
     fi
 
 else
