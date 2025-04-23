@@ -37,7 +37,7 @@ class ZedSimulator(Node):
                 self.get_logger().info("No frame")
                 continue
 
-            if self.use_zed.value:
+            if self.use_zed:
                 frame = frame[:, : frame.shape[1] // 2]
 
             image = self.bridge.cv2_to_imgmsg(frame, encoding="bgr8")
