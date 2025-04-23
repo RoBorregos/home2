@@ -172,14 +172,14 @@ class HRITasks(metaclass=SubtaskMeta):
     def execute_command(self, command: str, complement: str, characteristic: str) -> None:
         if command == "speak":
             self.say(complement)
+            return Status.EXECUTION_SUCCESS
         elif command == "clarification":
             self.say("Sorry, I don't undestand your command.")
             self.say(command.complement)
+            return Status.EXECUTION_SUCCESS
         else:
             self.say(f"Sorry, I don't know how to {command}")
             return Status.TARGET_NOT_FOUND
-        self.add_command_history(command, complement, characteristic, "", Status.EXECUTION_SUCCESS)
-        return Status.EXECUTION_SUCCESS
 
     def _get_keyword(self, msg: String) -> None:
         try:
@@ -462,7 +462,7 @@ class HRITasks(metaclass=SubtaskMeta):
         """
         self._add_to_collection(document=documents, metadata="", collection="closest_items")
         self.node.get_logger().info(f"Adding closest items: {documents}")
-        Results = self._query_(query, "closest_items")
+        Results = self._query_(query, "closest_items", top_k)
         Results = self.get_name(Results)
         return Status.EXECUTION_SUCCESS, Results
 
