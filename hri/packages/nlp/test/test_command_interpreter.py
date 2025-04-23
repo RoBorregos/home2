@@ -4,9 +4,9 @@ sys.path.append("..")
 
 import json
 
-import pytest
-from deepeval import assert_test
-from deepeval.dataset import EvaluationDataset
+# import pytest
+# from deepeval import assert_test
+# from deepeval.dataset import EvaluationDataset
 from deepeval.test_case import LLMTestCase
 from nlp.assets.dialogs import format_response, get_command_interpreter_args
 from nlp.assets.schemas import CommandListShape
@@ -16,6 +16,13 @@ from tqdm import tqdm
 
 from config import API_KEY, BASE_URL, MODEL, TEMPERATURE
 from metrics.json_insensitive_values_match import JsonInsensitiveValuesMatch
+
+
+def format_json(data):
+    try:
+        return json.loads(data)
+    except (TypeError, ValueError):
+        return json.loads(json.dumps(data))
 
 
 # Sample function to test
@@ -34,7 +41,6 @@ def generate_response(full_text, two_steps=False):
 
     if two_steps:
         content = structured_response(content, CommandListShape)
-        print(content)
         return content
 
     return content
@@ -75,13 +81,31 @@ test_cases = [
     for test_case in tqdm(test_cases, desc="Generating test case responses")
 ]
 
+# dataset = EvaluationDataset(test_cases=test_cases)
 
-dataset = EvaluationDataset(test_cases=[test_cases[0]])
+
+# @pytest.mark.parametrize(
+#     "test_case",
+#     dataset,
+# )
+# def test_command_interpreter(test_case: LLMTestCase):
+#     assert_test(test_case, [JsonInsensitiveValuesMatch()])
 
 
-@pytest.mark.parametrize(
-    "test_case",
-    dataset,
-)
-def test_command_interpreter(test_case: LLMTestCase):
-    assert_test(test_case, [JsonInsensitiveValuesMatch()])
+metric = JsonInsensitiveValuesMatch()
+count = 0
+print("\n\n")
+
+for test_case in test_cases:
+    if metric.measure(test_case) == 0:
+        count += 1
+        print("\033[91mTest case failed:\033[0m")
+        print("\033[94minput:\033[0m", test_case.input)
+        print("\033[93mexpected_output:\033[0m", format_json(test_case.expected_output))
+        print("\033[93mactual_output:\033[0m", format_json(test_case.actual_output))
+        print("\n\n")
+
+if count == 0:
+    print(f"\n\033[92mAll test cases passed ({len(test_case)}/{len(test_case)})!\033[0m")
+else:
+    print(f"\n\033[91m{count} test cases failed out of {len(test_cases)}\033[0m")

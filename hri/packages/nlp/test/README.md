@@ -27,3 +27,8 @@ deepeval set-local-embeddings --model-name=nomic-embed-text:latest \
 ```bash
 deepeval test run test_<script>.py
 ```
+
+Alternatively, some scripts can be run directly (i.e., `test_command_interpreter.py`):
+```bash
+python test_<script>.py
+```
