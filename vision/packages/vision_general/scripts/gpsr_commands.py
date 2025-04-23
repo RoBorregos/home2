@@ -12,6 +12,7 @@ import rclpy
 from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
+import time
 
 from frida_interfaces.srv import (
     CountBy,
@@ -19,7 +20,7 @@ from frida_interfaces.srv import (
     CountByPose,
     PersonPoseGesture,
     CropQuery,
-    CountByColor
+    CountByColor,
 )
 
 from ament_index_python.packages import get_package_share_directory
@@ -47,6 +48,7 @@ MAX_DEGREE = 30
 AREA_PERCENTAGE_THRESHOLD = 0.2
 CONF_THRESHOLD = 0.5
 TIMEOUT = 5.0
+
 
 class GPSRCommands(Node):
     def __init__(self):
@@ -89,13 +91,9 @@ class GPSRCommands(Node):
         self.get_logger().info("GPSRCommands Ready.")
         self.create_timer(0.1, self.publish_image)
 
-<<<<<<< Updated upstream
-        self.moondream_crop_query_client = self.create_client(CropQuery, CROP_QUERY_TOPIC)
-=======
         self.moondream_client = self.create_client(
             CropQuery, CROP_QUERY_TOPIC
         )
->>>>>>> Stashed changes
 
     def image_callback(self, data):
         """Callback to receive the image from the camera."""
@@ -213,8 +211,8 @@ class GPSRCommands(Node):
         frame = self.image
         self.output_image = frame.copy()
 
-        clothing = request.clothing 
-        color = request.color 
+        clothing = request.clothing
+        color = request.color
 
         self.get_detections(frame, 0)
 
@@ -224,7 +222,9 @@ class GPSRCommands(Node):
             x1, y1, x2, y2 = person["bbox"]
 
             prompt = f"Reply only with 1 if the person is wearing a {color} {clothing}. Otherwise, reply only with 0."
-            status, response_q = self.moondream_crop_query(prompt, [float(y1), float(x1), float(y2), float(x2)])
+            status, response_q = self.moondream_crop_query(
+                prompt, [float(y1), float(x1), float(y2), float(x2)]
+            )
             if status:
                 print(response_q)
                 response_clean = response_q.strip()
@@ -232,7 +232,7 @@ class GPSRCommands(Node):
                     count += 1
                 elif response_clean != "0":
                     self.get_logger().warn(f"Unexpected response: {response_clean}")
-        
+
         response.success = True
         response.count = count
         self.get_logger().info(f"People wearing a {color} {clothing}: {count}")
@@ -420,29 +420,6 @@ class GPSRCommands(Node):
         request.ymax = bbox[2]
         request.xmax = bbox[3]
 
-<<<<<<< Updated upstream
-        try:
-            future = self.moondream_crop_query_client.call_async(request)
-            rclpy.spin_until_future_complete(self, future)
-            result = future.result()
-
-            print(future.done())
-            print(f"Result: {result}")
-            print(f"Result success: {result.success}")
-            print(f"Result message: {result.message}")
-            print(f"Result result: {result.result}")
-            
-            if not result or not result.success:
-                self.get_logger().warn("No result generated")
-                return False, ""
-
-            self.get_logger().info(f"Result: {result.result}")
-            return True, result.result
-
-        except Exception as e:
-            self.get_logger().error(f"Error requesting description: {e}")
-            return False, ""
-=======
         future = self.moondream_client.call_async(request)
         result = future.add_done_callback(self.moondream_response_callback)
 
@@ -463,7 +440,6 @@ class GPSRCommands(Node):
                 return None
         except Exception as e:
             self.get_logger().error(f"Error getting response from Moondream service: {str(e)}")
->>>>>>> Stashed changes
 
 def main(args=None):
     rclpy.init(args=args)
