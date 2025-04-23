@@ -237,7 +237,7 @@ class FaceRecognition(Node):
 
         if len(self.depth_image) > 0:
             print(xc, yc)
-            point2D = (xc, yc)
+            point2D = (float(xc), float(yc))
             depth = get_depth(self.depth_image, point2D)
             point3D = deproject_pixel_to_point(self.imageInfo, point2D, depth)
             point3D = float(point3D[0]), float(point3D[1]), float(point3D[2])

@@ -385,6 +385,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
     @service_check("common_interest_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def common_interest(self, person1, interest1, person2, interest2, remove_thinking=True):
+        Logger.info(self.node, f"Finding common interest between {person1} and {person2}")
         request = CommonInterest.Request(
             person1=person1, interests1=interest1, person2=person2, interests2=interest2
         )
