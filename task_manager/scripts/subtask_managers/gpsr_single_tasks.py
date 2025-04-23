@@ -1,4 +1,5 @@
 from subtask_managers.generic_tasks import GenericTask
+from task_manager.scripts.utils.status import Status
 
 
 class GPSRSingleTask(GenericTask):
@@ -27,6 +28,8 @@ class GPSRSingleTask(GenericTask):
         """
         self.subtask_manager.hri.say(f"I will go to {complement}.", wait=False)
         self.subtask_manager.nav.move_to_location(complement)
+
+        return Status.EXECUTION_SUCCESS, "arrived to:" + complement
 
     ## Manipulation
     def pick(self, complement: str, characteristic=""):
@@ -171,7 +174,27 @@ class GPSRSingleTask(GenericTask):
                     contextual_say('Please answer my question', question)
         """
 
-        pass
+        def confirm_question(interpreted_text, target_info):
+            return f"Is your question: {target_info}?"
+
+        status, question = self.subtask_manager.hri.ask_and_confirm(
+            "Please ask your question",
+            "question",
+            context="The user was asked to say a question. We want to infer his question from the response",
+            confirm_question=confirm_question,
+            use_hotwords=False,
+            retries=3,
+            min_wait_between_retries=5.0,
+        )
+
+        if status != Status.EXECUTION_SUCCESS:
+            self.subtask_manager.hri.say("I am sorry, I could not understand your question.")
+            return Status.TARGET_NOT_FOUND, ""
+
+        return self.contextual_say(
+            f"Please answer my question: {question}",
+            question,
+        )
 
     ## Vision
     def visual_info(self, complement: str, characteristic=""):

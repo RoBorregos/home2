@@ -1,4 +1,5 @@
 from subtask_managers.generic_tasks import GenericTask
+from task_manager.scripts.utils.status import Status
 
 
 class GPSRTask(GenericTask):
@@ -29,7 +30,28 @@ class GPSRTask(GenericTask):
         Postconditions:
             - The robot is in front of a person without holding an object.
         """
-        pass
+        self.subtask_manager.hri.say(
+            "I will give you the object. Once you have picked the object, I will open my gripper",
+            wait=False,
+        )
+        self.subtask_manager.manipulation.move_joint_positions(
+            named_position="receive_object", velocity=0.5, degrees=True
+        )
+
+        while True:
+            s, res = self.subtask_manager.hri.confirm("Have you grabbed the object?")
+            if res == "yes":
+                break
+            else:
+                self.subtask_manager.hri.say(
+                    "I will give you the object. Once you have picked the object, I will open my gripper.",
+                    wait=False,
+                )
+
+        self.subtask_manager.hri.say("I will now release the object.", wait=True)
+        self.subtask_manager.manipulation.open_gripper()
+
+        return Status.EXECUTION_SUCCESS, "object given"
 
     ## HRI, Nav
     def follow_person_until(self, complement: str, characteristic: str):
