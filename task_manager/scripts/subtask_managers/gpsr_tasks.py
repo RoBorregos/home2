@@ -211,7 +211,13 @@ class GPSRTask(GenericTask):
                 Add the count of the target in the frame to the total count.
             Store the total count.
         """
-        pass
+
+        self.subtask_manager.manipulation.move_joint_positions(
+            named_position="front_stare", velocity=0.5, degrees=True
+        )
+        for degree in [-45, 0, 45]:
+            # self.subtask_manager.manipulation.set_angle(degree)
+            pass
 
     ## Manipulation, Nav, Vision
     def find_person(self, complement="", characteristic=""):
@@ -248,7 +254,12 @@ class GPSRTask(GenericTask):
             if not found:
                 deus_machina()
         """
-        pass
+        self.subtask_manager.manipulation.move_joint_positions(
+            named_position="front_stare", velocity=0.5, degrees=True
+        )
+        for degree in [-45, 0, 45]:
+            # self.subtask_manager.manipulation.set_angle(degree)
+            pass
 
     ## HRI, Manipulation, Nav, Vision
     def find_person_by_name(self, complement="", characteristic=""):

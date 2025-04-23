@@ -57,8 +57,7 @@ class GPSRSingleTask(GenericTask):
             - pick_object(complement)
         """
         self.subtask_manager.hri.say(f"I will pick the {complement}.", wait=False)
-
-        pass
+        # self.subtask_manager.manipulation.pick_object(complement)
 
     ## Manipulation
     def place(self, complement="", characteristic=""):
@@ -86,7 +85,8 @@ class GPSRSingleTask(GenericTask):
             place()
         """
         self.subtask_manager.hri.say("I will place the object.", wait=False)
-        pass
+
+        # self.subtask_manager.manipulation.place_object()
 
     ## HRI
     def contextual_say(self, complement: str, characteristic: str):
@@ -223,7 +223,4 @@ class GPSRSingleTask(GenericTask):
         Postconditions:
             The robot saves the specified information for further use.
         """
-
-        # TODO: @lleo-13 -> implement saving information to db
-        # TODO: @Oscar-gg -> integrate db interactions
         pass
