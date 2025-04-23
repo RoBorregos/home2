@@ -78,6 +78,7 @@ class ReceptionistCommands(Node):
 
         if self.image is None:
             response.success = False
+            self._logger().warn("No image received yet.")
             return response
 
         frame = self.image
