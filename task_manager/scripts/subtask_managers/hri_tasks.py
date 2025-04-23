@@ -405,12 +405,14 @@ class HRITasks(metaclass=SubtaskMeta):
         future = self.is_positive_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
         return Status.EXECUTION_SUCCESS, future.result().is_positive
-        @service_check("is_negative_service", (Status.SERVICE_CHECK, False), TIMEOUT)
+
+    @service_check("is_negative_service", (Status.SERVICE_CHECK, False), TIMEOUT)
     def is_negative(self, text):
         request = IsNegative.Request(text=text)
         future = self.is_negative_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
         return Status.EXECUTION_SUCCESS, future.result().is_negative
+
     # /////////////////embeddings services/////
     def add_command_history(
         self, command: str, complement: str, characteristic: str, result, status
