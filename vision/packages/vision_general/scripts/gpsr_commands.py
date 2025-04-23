@@ -423,20 +423,22 @@ class GPSRCommands(Node):
         future = self.moondream_client.call_async(request)
         result = future.add_done_callback(self.moondream_response_callback)
 
-        if result is None:
-            self.get_logger().error("Moondream service not available.")
-            return 0, ""
+        # if result is None:
+        #     self.get_logger().error("Moondream service not available.")
+        #     return 0, ""
 
-        self.get_logger().info(f"Moondream result: {result}")
-        return 1, result
+        # self.get_logger().info(f"Moondream result: {result}")
+        # return 1, result
     
     def moondream_response_callback(self, future):
         """Process the response from the Moondream service."""
         try:
             response = future.result()
             if response.success:
+                self.get_logger().info(f"Moondream response: {response.result}")
                 return response.result
             else:
+                self.get_logger().error("Moondream service failed.")
                 return None
         except Exception as e:
             self.get_logger().error(f"Error getting response from Moondream service: {str(e)}")
