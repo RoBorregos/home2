@@ -189,19 +189,31 @@ public:
 
     // Using rotation from base_link frame's perspective
     tf2::Quaternion tf_quat(quat.x(), quat.y(), quat.z(), quat.w());
-    tf2::Matrix3x3 m(tf_quat);
-
     // Normalize and correct rotation if needed
-    tf_quat.normalize();
+    // tf_quat.normalize();
+    // tf2::Matrix3x3 m(tf_quat);
+
 
     // Apply rotation to the transform
 
     // Set the orientation in the box parameters
     quat.normalize();
+    // for (int i = 0; i <= 3; ++i) {
+    //   for (int j = 0; j <= 3; ++j) {
+    //     RCLCPP_INFO(this->get_logger(), "m[%d][%d]: %f", i, j, m[i][j]);
+    //   }
+    // }
+
     box_params.orientation.x = tf_quat.x();
     box_params.orientation.y = tf_quat.y();
     box_params.orientation.z = tf_quat.z();
-    box_params.orientation.w = tf_quat.w();
+    box_params.orientation.w = 1;
+    // box_params.orientation.w = tf_quat.w();
+
+    // box_params.orientation.x = m[0][0];
+    // box_params.orientation.y = m[0][1];
+    // box_params.orientation.z = m[0][2];
+    // box_params.orientation.w = m[0][3];
     transform.rotate(quat);
 
     pcl::PointCloud<pcl::PointXYZ> transformed_cloud;
