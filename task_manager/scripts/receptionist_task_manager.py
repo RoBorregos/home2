@@ -54,7 +54,7 @@ class ReceptionistTM(Node):
         """Initialize the node"""
         super().__init__("receptionist_task_manager")
         self.subtask_manager = SubtaskManager(
-            self, task=Task.RECEPTIONIST, mock_areas=["navigation", "manipulation"]
+            self, task=Task.RECEPTIONIST, mock_areas=["navigation"]
         )
         self.current_state = ReceptionistTM.TASK_STATES[START]
         self.current_guest = 1
@@ -79,9 +79,9 @@ class ReceptionistTM(Node):
                 f"I will now guide you to the {location}. Please follow me."
             )
             self.subtask_manager.manipulation.follow_face(False)
-            # self.subtask_manager.manipulation.move_joint_positions(
-            #     named_position="front_stare", velocity=0.5, degrees=True
-            # )
+            self.subtask_manager.manipulation.move_joint_positions(
+                named_position="front_stare", velocity=0.5, degrees=True
+            )
         future = self.subtask_manager.nav.move_to_location(location, sublocation)
         if "navigation" not in self.subtask_manager.get_mocked_areas():
             rclpy.spin_until_future_complete(self, future)
@@ -166,9 +166,9 @@ class ReceptionistTM(Node):
         if self.current_state == ReceptionistTM.TASK_STATES["NAVIGATE_TO_BEVERAGES"]:
             Logger.state(self, "Navigating to beverages")
             self.navigate_to("kitchen", "beverages")
-            # self.subtask_manager.manipulation.move_joint_positions(
-            #     named_position="front_stare", velocity=0.5, degrees=True
-            # )
+            self.subtask_manager.manipulation.move_joint_positions(
+                named_position="front_stare", velocity=0.5, degrees=True
+            )
             self.current_state = ReceptionistTM.TASK_STATES["ASK_FOR_DRINK"]
 
         if self.current_state == ReceptionistTM.TASK_STATES["ASK_FOR_DRINK"]:
@@ -194,9 +194,9 @@ class ReceptionistTM(Node):
         if self.current_state == ReceptionistTM.TASK_STATES["DRINK_AVAILABLE"]:
             Logger.state(self, "Checking drink availability")
             self.subtask_manager.manipulation.follow_face(False)
-            # self.subtask_manager.manipulation.move_joint_positions(
-            #     named_position="table_stare", velocity=0.5, degrees=True
-            # )
+            self.subtask_manager.manipulation.move_joint_positions(
+                named_position="table_stare", velocity=0.5, degrees=True
+            )
             status, position = self.subtask_manager.vision.find_drink(
                 self.get_guest().drink, timeout=40
             )
@@ -212,9 +212,9 @@ class ReceptionistTM(Node):
         if self.current_state == ReceptionistTM.TASK_STATES["ASK_FOR_INTEREST"]:
             Logger.state(self, "Asking for interest")
 
-            # self.subtask_manager.manipulation.move_joint_positions(
-            #     named_position="front_stare", velocity=0.5, degrees=True
-            # )
+            self.subtask_manager.manipulation.move_joint_positions(
+                named_position="front_stare", velocity=0.5, degrees=True
+            )
             self.subtask_manager.manipulation.follow_face(True)
 
             status, interest = self.subtask_manager.hri.ask_and_confirm(
@@ -240,40 +240,40 @@ class ReceptionistTM(Node):
 
         if self.current_state == ReceptionistTM.TASK_STATES["FIND_SEAT"]:
             Logger.state(self, "Finding seat")
-            # target = 0
-            # self.subtask_manager.manipulation.move_joint_positions(
-            #     named_position="front_stare", velocity=0.5, degrees=True
-            # )
+            target = 0
+            self.subtask_manager.manipulation.move_joint_positions(
+                named_position="front_stare", velocity=0.5, degrees=True
+            )
             print("Finding seat")
             for seat_angle in self.seat_angles:
-                # joint_positions = self.subtask_manager.manipulation.get_joint_positions(
-                #     degrees=True
-                # )
-                # joint_positions["joint1"] = joint_positions["joint1"] - seat_angle
-                # self.subtask_manager.manipulation.move_joint_positions(
-                #     joint_positions=joint_positions, velocity=0.5, degrees=True
-                # )
+                joint_positions = self.subtask_manager.manipulation.get_joint_positions(
+                    degrees=True
+                )
+                joint_positions["joint1"] = joint_positions["joint1"] - seat_angle
+                self.subtask_manager.manipulation.move_joint_positions(
+                    joint_positions=joint_positions, velocity=0.5, degrees=True
+                )
                 status, angle = self.subtask_manager.vision.find_seat()
                 print(self.subtask_manager.vision.find_seat_moondream())
                 if status == Status.EXECUTION_SUCCESS:
-                    # target = angle
+                    target = angle
                     break
 
             self.subtask_manager.hri.say("Please take a seat where my arm points at.")
-            # joint_positions = self.subtask_manager.manipulation.get_joint_positions(degrees=True)
-            # joint_positions["joint1"] = joint_positions["joint1"] - target
-            # self.subtask_manager.manipulation.move_joint_positions(
-            #     joint_positions=joint_positions, velocity=0.5, degrees=True
-            # )
+            joint_positions = self.subtask_manager.manipulation.get_joint_positions(degrees=True)
+            joint_positions["joint1"] = joint_positions["joint1"] - target
+            self.subtask_manager.manipulation.move_joint_positions(
+                joint_positions=joint_positions, velocity=0.5, degrees=True
+            )
 
             # self.subtask_manager.vision.detect_guest(self.get_guest().name, timeout=5)
             self.current_state = ReceptionistTM.TASK_STATES["INTRODUCTION"]
 
         if self.current_state == ReceptionistTM.TASK_STATES["INTRODUCTION"]:
             Logger.state(self, "Introducing guest")
-            # self.subtask_manager.manipulation.move_joint_positions(
-            #     named_position="front_stare", velocity=0.5, degrees=True
-            # )
+            self.subtask_manager.manipulation.move_joint_positions(
+                named_position="front_stare", velocity=0.5, degrees=True
+            )
             # self.subtask_manager.manipulation.move_to_position("gaze")
             self.subtask_manager.manipulation.follow_face(True)
 
