@@ -27,7 +27,7 @@ MOVE_TO_POSE_ACTION_SERVER = "/manipulation/move_to_pose_action_server"
 GET_JOINT_SERVICE = "/manipulation/get_joints"
 TOGGLE_SERVO_SERVICE = "/manipulation/toggle_servo"
 
-PICK_VELOCITY = 0.15
+PICK_VELOCITY = 0.2
 PICK_ACCELERATION = 0.15
 PICK_PLANNER = "RRTConnect"
 
