@@ -14,10 +14,6 @@ import face_recognition
 import tqdm
 import os
 import numpy as np
-from vision_general.utils.calculations import (
-    get_depth,
-    deproject_pixel_to_point,
-)
 
 import rclpy
 from rclpy.node import Node
@@ -243,6 +239,7 @@ class FaceRecognition(Node):
             point3D = float(point3D[0]), float(point3D[1]), float(point3D[2])
             target.z = point3D[2]
 
+
         target.x = move_x
         target.y = move_y
 
@@ -409,8 +406,8 @@ class FaceRecognition(Node):
             self.publish_follow_face(xc, yc, largest_face_name)
         else:
             self.name_publisher.publish(String(data=""))
-        if self.verbose:
-            cv2.imshow("Face recognition", self.annotated_frame)
+        # if self.verbose:
+        #    cv2.imshow("Face recognition", self.annotated_frame)
         # self.image_view = self.annotated_frame
         # self.view_pub.publish(
         #     self.bridge.cv2_to_imgmsg(self.self.annotated_frame, "bgr8")
@@ -422,10 +419,12 @@ class FaceRecognition(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = FaceRecognition()
 
     try:
-        rclpy.spin(node)
+        node = FaceRecognition()
+        executor = rclpy.executors.MultiThreadedExecutor(5)
+        executor.add_node(node)
+        executor.spin()
     except KeyboardInterrupt:
         pass
     finally:

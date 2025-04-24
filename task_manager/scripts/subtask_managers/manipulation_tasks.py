@@ -17,10 +17,15 @@ from rclpy.action import ActionClient
 from typing import List, Union
 from utils.decorators import mockable, service_check
 from utils.status import Status
+from frida_interfaces.action import ManipulationAction
+from frida_interfaces.msg import ManipulationTask
 
 # from utils.decorators import service_check
 from xarm_msgs.srv import SetDigitalIO
 
+from frida_constants.manipulation_constants import (
+    MANIPULATION_ACTION_SERVER,
+)
 # import time as t
 
 XARM_ENABLE_SERVICE = "/xarm/motion_enable"
@@ -73,6 +78,9 @@ class ManipulationTasks:
 
         self._get_joints_client = self.node.create_client(GetJoints, "/manipulation/get_joints")
         self.follow_face_client = self.node.create_client(FollowFace, "/follow_face")
+        self._manipulation_action_client = ActionClient(
+            self.node, ManipulationAction, MANIPULATION_ACTION_SERVER
+        )
 
     def open_gripper(self):
         """Opens the gripper"""
@@ -234,7 +242,7 @@ class ManipulationTasks:
         try:
             future = self.follow_face_client.call_async(request)
             rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
-            result = future.result().result
+            result = future.result()
 
             if not result.success:
                 raise Exception("Service call failed")
@@ -245,6 +253,62 @@ class ManipulationTasks:
 
         Logger.success(self.node, "Following face request successful")
         return Status.EXECUTION_SUCCESS
+
+    def pick_object(self, object_name: str):
+        """Pick an object by name"""
+        if not self._manipulation_action_client.wait_for_server(timeout_sec=TIMEOUT):
+            Logger.error(self.node, "Manipulation action server not available")
+            return self.STATE["EXECUTION_ERROR"]
+
+        goal_msg = ManipulationAction.Goal()
+        goal_msg.task_type = ManipulationTask.PICK
+        goal_msg.pick_params.object_name = object_name
+
+        future = self._manipulation_action_client.send_goal_async(goal_msg)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+
+        if future.result() is None:
+            Logger.error(self.node, "Failed to send pick request")
+            return self.STATE["EXECUTION_ERROR"]
+
+        Logger.info(self.node, f"Pick request for {object_name} sent")
+        # wait for result
+        result_future = future.result().get_result_async()
+        rclpy.spin_until_future_complete(self.node, result_future)
+        result = result_future.result().result
+        Logger.info(self.node, f"Pick result: {result}")
+        if result.success:
+            Logger.success(self.node, f"Pick request for {object_name} successful")
+        else:
+            Logger.error(self.node, f"Pick request for {object_name} failed")
+            return self.STATE["EXECUTION_ERROR"]
+
+        return self.STATE["EXECUTION_SUCCESS"]
+
+    def place(self):
+        if not self._manipulation_action_client.wait_for_server(timeout_sec=TIMEOUT):
+            Logger.error(self.node, "Manipulation action server not available")
+            return self.STATE["EXECUTION_ERROR"]
+
+        goal_msg = ManipulationAction.Goal()
+        goal_msg.task_type = ManipulationTask.PLACE
+        future = self._manipulation_action_client.send_goal_async(goal_msg)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+        if future.result() is None:
+            Logger.error(self.node, "Failed to send place request")
+            return self.STATE["EXECUTION_ERROR"]
+        Logger.info(self.node, "Place request sent")
+        # wait for result
+        result_future = future.result().get_result_async()
+        rclpy.spin_until_future_complete(self.node, result_future)
+        result = result_future.result().result
+        Logger.info(self.node, f"Place result: {result}")
+        if result.success:
+            Logger.success(self.node, "Place request successful")
+        else:
+            Logger.error(self.node, "Place request failed")
+            return self.STATE["EXECUTION_ERROR"]
+        return self.STATE["EXECUTION_SUCCESS"]
 
 
 if __name__ == "__main__":

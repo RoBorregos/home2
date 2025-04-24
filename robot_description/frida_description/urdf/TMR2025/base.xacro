@@ -34,7 +34,7 @@
 
   <link name="xarm_base" />
   <joint name="xarm_base_joint" type="fixed">
-    <origin xyz="0.036105613000001 0 0.401000000000001" rpy="0 0 1.57" />
+    <origin xyz="0.036105613000001 0 0.441000000000001" rpy="0 0 1.57" />
     <parent link="base_link" />
     <child link="xarm_base" />
   </joint>
