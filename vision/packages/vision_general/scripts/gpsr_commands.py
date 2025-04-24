@@ -89,7 +89,7 @@ class GPSRCommands(Node):
         self.output_image = []
 
         self.get_logger().info("GPSRCommands Ready.")
-        self.create_timer(0.1, self.publish_image)
+        # self.create_timer(0.1, self.publish_image)
 
         self.moondream_client = self.create_client(
             CropQuery, CROP_QUERY_TOPIC
