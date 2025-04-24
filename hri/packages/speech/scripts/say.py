@@ -142,6 +142,7 @@ class Say(Node):
                 os.remove(old_filepath)
 
         self._audio_cache[text] = filepath
+        self._save_cache()
 
     def speak_service(self, req, res):
         self.get_logger().info("[Service] I will say: " + req.text)
@@ -171,6 +172,12 @@ class Say(Node):
                 self.get_logger().warn("Retrying with offline mode")
                 self.offline_voice(text)
 
+        # Wait for audio to finish playing before returning
+        try:
+            while mixer.music.get_busy():
+                pass
+        except Exception as e:
+            self.get_logger().error(f"Error while waiting for audio: {e}")
         self.publisher_.publish(Bool(data=False))
         return success
 
@@ -213,10 +220,10 @@ class Say(Node):
     def play_audio(self, file_path):
         mixer.pre_init(frequency=48000, buffer=2048)
         mixer.init()
-        mixer.music.load(file_path)
-        mixer.music.play()
         while mixer.music.get_busy():
             pass
+        mixer.music.load(file_path)
+        mixer.music.play()
 
     @staticmethod
     def split_text(text: str, max_len, split_sentences=False):
