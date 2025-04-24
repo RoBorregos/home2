@@ -6,25 +6,26 @@ available seats. Tasks for receptionist
 commands.
 """
 
-import time
-
 import rclpy
 from frida_constants.vision_classes import BBOX, ShelfDetection
 from frida_constants.vision_constants import (
-    BEVERAGE_TOPIC,
-    CHECK_PERSON_TOPIC,
-    CROP_QUERY_TOPIC,
-    FIND_SEAT_TOPIC,
     FOLLOW_BY_TOPIC,
     FOLLOW_TOPIC,
-    PERSON_LIST_TOPIC,
     PERSON_NAME_TOPIC,
-    POINTING_OBJECT_SERVICE,
-    QUERY_TOPIC,
     SAVE_NAME_TOPIC,
     SET_TARGET_TOPIC,
     SHELF_DETECTION_TOPIC,
     DETECTION_HANDLER_TOPIC_SRV,
+    FIND_SEAT_TOPIC,
+    CHECK_PERSON_TOPIC,
+    QUERY_TOPIC,
+    CROP_QUERY_TOPIC,
+    BEVERAGE_TOPIC,
+    POINTING_OBJECT_SERVICE,
+    PERSON_LIST_TOPIC,
+    COUNT_BY_GESTURES_TOPIC,
+    COUNT_BY_POSE_TOPIC,
+    POSE_GESTURE_TOPIC,
 )
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.msg import ObjectDetection, PersonList
@@ -40,7 +41,7 @@ from frida_interfaces.srv import (
 
     CountByPose,
     CountByGesture,
-    CountByColor,
+    # CountByColor,
     PersonPoseGesture,
 )
 from geometry_msgs.msg import Point, PointStamped
@@ -53,26 +54,6 @@ from utils.logger import Logger
 from utils.status import Status
 import time
 
-from frida_constants.vision_constants import (
-    SAVE_NAME_TOPIC,
-    FIND_SEAT_TOPIC,
-    CHECK_PERSON_TOPIC,
-    FOLLOW_TOPIC,
-    FOLLOW_BY_TOPIC,
-    QUERY_TOPIC,
-    CROP_QUERY_TOPIC,
-    BEVERAGE_TOPIC,
-    SET_TARGET_TOPIC,
-    POINTING_OBJECT_SERVICE,
-    PERSON_LIST_TOPIC,
-    PERSON_NAME_TOPIC,
-    COUNT_BY_GESTURES_TOPIC,
-    COUNT_BY_POSE_TOPIC,
-    POSE_GESTURE_TOPIC,
-)
-from frida_constants.vision_classes import (
-    BBOX,
-)
 from utils.task import Task
 
 TIMEOUT = 5.0
