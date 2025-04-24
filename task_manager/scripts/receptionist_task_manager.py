@@ -10,6 +10,7 @@ from rclpy.node import Node
 from utils.logger import Logger
 from utils.subtask_manager import SubtaskManager, Task
 from utils.status import Status
+import time
 
 ATTEMPT_LIMIT = 3
 START = "START"
@@ -100,13 +101,16 @@ class ReceptionistTM(Node):
             name = statement
         return name
 
+    def timeout(self, timeout: int = 2):
+        start_time = time.time()
+        while (time.time() - start_time) < timeout:
+            pass
+
     def set_description(self, status, description: str):
         self.get_guest().description = description
 
     # TODO (@alecoeto): wait to detect guest
-    # TODO (@alecoeto): not found beverage
     # TODO (@alecoeto): sleep before find seat
-    # TODO (@alecoeto): no follow me to the entrance at the end
 
     def run(self):
         """State machine"""
@@ -259,6 +263,7 @@ class ReceptionistTM(Node):
                 self.subtask_manager.manipulation.move_joint_positions(
                     joint_positions=joint_positions, velocity=0.5, degrees=True
                 )
+                self.timeout(2)
                 status, angle = self.subtask_manager.vision.find_seat()
                 # print(self.subtask_manager.vision.find_seat_moondream())
                 if status == Status.EXECUTION_SUCCESS:
