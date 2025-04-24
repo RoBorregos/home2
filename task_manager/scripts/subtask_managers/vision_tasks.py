@@ -140,7 +140,7 @@ class VisionTasks:
                     "type": "service",
                 },
                 "find_person_info": {
-                    "client": self.person_info_client,
+                    "client": self.find_person_info_client,
                     "type": "service",
                 },
                 "count_by_pose": {
