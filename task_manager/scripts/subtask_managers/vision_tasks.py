@@ -658,7 +658,7 @@ class VisionTasks:
         """Return the object matching the description"""
         Logger.info(self.node, "Detecting object matching description")
         prompt = f"What is the {description} {object} in the image?"
-        self.moondream_query(prompt, query_person=False)
+        return self.moondream_query(prompt, query_person=False)
 
     def describe_person(self, callback):
         """Describe the person in the image"""
