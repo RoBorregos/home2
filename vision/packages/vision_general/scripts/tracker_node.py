@@ -164,10 +164,10 @@ class SingleTracker(Node):
     def publish_image(self):
         """Publish the image to the camera topic"""
         if len(self.output_image) != 0:
-            if self.verbose:
-                cv2.imshow("Tracking", self.output_image)
-                if cv2.waitKey(1) & 0xFF == ord("q"):
-                    cv2.destroyAllWindows()
+            # if self.verbose:
+            #     cv2.imshow("Tracking", self.output_image)
+            #     if cv2.waitKey(1) & 0xFF == ord("q"):
+            #         cv2.destroyAllWindows()
             self.image_publisher.publish(
                 self.bridge.cv2_to_imgmsg(self.output_image, "bgr8")
             )
