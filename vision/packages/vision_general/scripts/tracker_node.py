@@ -181,6 +181,8 @@ class SingleTracker(Node):
         if self.image is None:
             self.get_logger().warn("No image available")
             return False
+            
+        self.get_logger().info(f"Setting target by {track_by} with value {value}")
 
         self.frame = self.image
         self.output_image = self.frame.copy()
@@ -225,10 +227,17 @@ class SingleTracker(Node):
                         largest_person["id"] = track_id
                         largest_person["area"] = area
                         largest_person["bbox"] = (x1, y1, x2, y2)
-                elif track_by == DetectBy.GESTURES.value:
-                    print("Gesture detection")
+
+                else:
                     cropped_image = self.frame[y1:y2, x1:x2]
-                    pose = self.pose_detection.detectGesture(cropped_image)
+
+                    if track_by == DetectBy.GESTURES.value:
+                        pose = self.pose_detection.detectGesture(cropped_image)
+
+                    elif track_by == DetectBy.POSES.value:
+                        pose = self.pose_detection.detectPose(cropped_image)
+
+                    print(f"pose: {pose.value}, value: {value}")
                     if pose.value == value:
                         largest_person["id"] = track_id
                         largest_person["area"] = area
