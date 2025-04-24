@@ -416,7 +416,7 @@ class GPSRCommands(Node):
         if future is None:
             print("timeout reached")
             return False
-        while not future.result():
+        while not future.done():
             pass
         return future
 
