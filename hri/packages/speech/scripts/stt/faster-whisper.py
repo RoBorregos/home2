@@ -35,7 +35,7 @@ class WhisperServicer(speech_pb2_grpc.SpeechServiceServicer):
             if torch.cuda.is_available():
                 device = "cuda"
         except Exception:
-            device = "cuda" if torch.cuda.is_available() else "cpu"
+            pass
 
         return WhisperModel(
             self.model_size,
@@ -69,7 +69,7 @@ class WhisperServicer(speech_pb2_grpc.SpeechServiceServicer):
 
         # Log transcription if enabled
         if self.log_transcriptions:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
             audio_filename = f"audio_{timestamp}.wav"
             audio_path = os.path.join(self.log_dir, audio_filename)
 
