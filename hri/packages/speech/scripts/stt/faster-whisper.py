@@ -37,6 +37,8 @@ class WhisperServicer(speech_pb2_grpc.SpeechServiceServicer):
         except Exception:
             pass
 
+        print("Using device:", device)
+
         return WhisperModel(
             self.model_size,
             download_root=model_directory,
