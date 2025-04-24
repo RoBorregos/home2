@@ -22,10 +22,6 @@ from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import Point
 from std_msgs.msg import String
 from ament_index_python.packages import get_package_share_directory
-from vision_general.utils.calculations import (
-    get_depth,
-    deproject_pixel_to_point,
-)
 from frida_interfaces.srv import SaveName
 from frida_interfaces.msg import Person, PersonList
 from frida_constants.vision_constants import (
@@ -234,13 +230,13 @@ class FaceRecognition(Node):
 
         target = Point()
 
-        if len(self.depth_image) > 0:
-            print(xc, yc)
-            point2D = (float(xc), float(yc))
-            depth = get_depth(self.depth_image, point2D)
-            point3D = deproject_pixel_to_point(self.imageInfo, point2D, depth)
-            point3D = float(point3D[0]), float(point3D[1]), float(point3D[2])
-            target.z = point3D[2]
+        # if len(self.depth_image) > 0:
+        #     print(xc, yc)
+        #     point2D = (float(xc), float(yc))
+        #     depth = get_depth(self.depth_image, point2D)
+        #     point3D = deproject_pixel_to_point(self.imageInfo, point2D, depth)
+        #     point3D = float(point3D[0]), float(point3D[1]), float(point3D[2])
+        #     target.z = point3D[2]
 
         target.x = move_x
         target.y = move_y
