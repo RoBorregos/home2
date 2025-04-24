@@ -27,7 +27,7 @@ MOVE_TO_POSE_ACTION_SERVER = "/manipulation/move_to_pose_action_server"
 GET_JOINT_SERVICE = "/manipulation/get_joints"
 TOGGLE_SERVO_SERVICE = "/manipulation/toggle_servo"
 
-PICK_VELOCITY = 0.15
+PICK_VELOCITY = 0.2
 PICK_ACCELERATION = 0.15
 PICK_PLANNER = "RRTConnect"
 
@@ -39,6 +39,7 @@ PICK_PERCEPTION_SERVICE = "/manipulation/pick_perception_service"
 GRASP_DETECTION_SERVICE = "/manipulation/detect_grasps"
 GRIPPER_SET_STATE_SERVICE = "/manipulation/gripper/set_state"
 XARM_SET_DIGITAL_TGPIO_SERVICE = "/xarm/set_tgpio_digital"
+SAFETY_HEIGHT = 0.025
 
 # Place
 PLACE_PERCEPTION_SERVICE = "/manipulation/place_perception_service"

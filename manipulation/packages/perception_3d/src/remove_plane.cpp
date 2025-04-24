@@ -738,7 +738,7 @@ public:
 
     std::vector<pcl::PointIndices> cluster_indices;
     pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
-    ec.setClusterTolerance(0.05);
+    ec.setClusterTolerance(0.02);
     ec.setMinClusterSize(10);    // Minimum number of points in a cluster
     ec.setMaxClusterSize(6000); // Maximum number of points in a cluster
     ec.setSearchMethod(tree);
