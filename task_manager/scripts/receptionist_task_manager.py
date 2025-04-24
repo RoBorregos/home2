@@ -104,6 +104,9 @@ class ReceptionistTM(Node):
         self.get_guest().description = description
 
     # TODO (@alecoeto): wait to detect guest
+    # TODO (@alecoeto): not found beverage 
+    # TODO (@alecoeto): sleep before find seat
+    # TODO (@alecoeto): no follow me to the entrance at the end
 
     def run(self):
         """State machine"""
@@ -256,7 +259,7 @@ class ReceptionistTM(Node):
                     joint_positions=joint_positions, velocity=0.5, degrees=True
                 )
                 status, angle = self.subtask_manager.vision.find_seat()
-                print(self.subtask_manager.vision.find_seat_moondream())
+                # print(self.subtask_manager.vision.find_seat_moondream())
                 if status == Status.EXECUTION_SUCCESS:
                     target = angle
                     break
@@ -300,7 +303,7 @@ class ReceptionistTM(Node):
 
         if self.current_state == ReceptionistTM.TASK_STATES["NAVIGATE_TO_ENTRANCE"]:
             Logger.state(self, "Navigating to entrance")
-            self.navigate_to("entrance")
+            self.navigate_to("entrance", say=False)
             self.current_guest += 1
             if self.current_guest == 3:
                 self.current_state = ReceptionistTM.TASK_STATES["END"]
