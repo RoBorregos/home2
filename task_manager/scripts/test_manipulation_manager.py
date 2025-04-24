@@ -19,7 +19,7 @@ PICK_OBJECT = "zucaritas"
 TEST = "PICK"
 # TEST = "PLACE"
 TEST = "PAN_TO"
-TEST = "FOLLOW_FACE"
+# TEST = "FOLLOW_FACE"
 
 
 class TestTaskManager(Node):
@@ -45,6 +45,10 @@ class TestTaskManager(Node):
             result = self.subtask_manager["manipulation"].place()
             self.get_logger().info(f"Result: {result}")
         elif TEST == "PAN_TO":
+            self.get_logger().info("Moving to front stare")
+            self.subtask_manager["manipulation"].move_joint_positions(
+                named_position="front_stare", velocity=0.3, degrees=True
+            )
             joint_positions = self.subtask_manager["manipulation"].get_joint_positions(degrees=True)
             Logger.info(self, f"Joint positions: {joint_positions}")
             joint_positions["joint1"] = joint_positions["joint1"] - 45.0
