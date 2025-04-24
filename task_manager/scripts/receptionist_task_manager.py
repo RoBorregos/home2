@@ -110,6 +110,7 @@ class ReceptionistTM(Node):
 
         if self.current_state == ReceptionistTM.TASK_STATES["START"]:
             Logger.state(self, "Starting task")
+            self.subtask_manager.manipulation.follow_face(False)
             self.navigate_to("entrance", say=False)
             self.subtask_manager.hri.say("I am ready to start my task.")
             self.current_state = ReceptionistTM.TASK_STATES["WAIT_FOR_GUEST"]
