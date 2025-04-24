@@ -45,12 +45,27 @@ class KeyboardInput(Node):
 
         goal_msg = ManipulationAction.Goal()
         goal_msg.task_type = ManipulationTask.PICK
-        goal_msg.object_name = object_name
+        goal_msg.pick_params.object_name = object_name
 
         self.get_logger().info(f"Sending pick request for: {object_name}")
         self._action_client.send_goal_async(
             goal_msg, feedback_callback=self.feedback_callback
         )
+        self.get_logger().info(f"Pick request for {object_name} sent")
+
+    def send_place_request(self):
+        if not self._action_client.wait_for_server(timeout_sec=5.0):
+            self.get_logger().error("Action server not available!")
+            return
+
+        goal_msg = ManipulationAction.Goal()
+        goal_msg.task_type = ManipulationTask.PLACE
+
+        self.get_logger().info("Sending place request")
+        self._action_client.send_goal_async(
+            goal_msg, feedback_callback=self.feedback_callback
+        )
+        self.get_logger().info("Place request sent")
 
     def feedback_callback(self, feedback_msg):
         self.get_logger().info(f"Feedback received: {feedback_msg.feedback}")
@@ -75,22 +90,30 @@ def main(args=None):
             for i, obj in enumerate(node.objects, start=1):
                 print(f"{i}. {obj}")
             print("-2. Refresh objects list")
+            print("-3. Place")
             print("q. Quit")
 
             choice = input("\nEnter your choice: ")
             if choice.lower() == "q":
                 break
 
-            try:
-                choice_num = int(choice)
-                if choice_num == -2:
-                    node.refresh_objects()
-                elif 0 <= choice_num - 1 < len(node.objects):
-                    node.send_pick_request(node.objects[choice_num - 1])
-                else:
-                    print("Invalid choice. Please try again.")
-            except ValueError:
-                print("Invalid input. Please enter a number.")
+            if choice.lower() == "q":
+                break
+            elif choice == "-2":
+                node.refresh_objects()
+            elif choice == "-3":
+                node.send_place_request()
+            elif choice.isdigit():
+                try:
+                    choice_num = int(choice)
+                    if 0 <= choice_num - 1 < len(node.objects):
+                        node.send_pick_request(node.objects[choice_num - 1])
+                    else:
+                        print("Invalid choice. Please try again.")
+                except ValueError:
+                    print("Invalid input. Please enter a number.")
+            else:
+                node.send_pick_request(choice)
 
     except KeyboardInterrupt:
         pass

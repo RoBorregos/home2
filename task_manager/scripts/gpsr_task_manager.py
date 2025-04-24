@@ -1,63 +1,151 @@
 #!/usr/bin/env python3
 
 """
-Task Manager to handle Q&A
+Task Manager for GPSR task of Robocup @Home 2025
 """
 
 import rclpy
-from config.hri.debug import config as test_hri_config
-from frida_interfaces.msg import CommandList
-from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
+from subtask_managers.gpsr_single_tasks import GPSRSingleTask
+from subtask_managers.gpsr_tasks import GPSRTask
+from subtask_managers.gpsr_test_commands import get_gpsr_comands
+from utils.logger import Logger
+from utils.status import Status
 from subtask_managers.hri_tasks import HRITasks
+from utils.subtask_manager import SubtaskManager, Task
+
+ATTEMPT_LIMIT = 3
+MAX_COMMANDS = 3
+START = "START"
 
 
-class GPSRTaskManager(Node):
+def confirm_command(interpreted_text, target_info):
+    return f"Did you say {target_info}?"
+
+
+def search_command(command, objects: list[object]):
+    for object in objects:
+        if hasattr(object, command):
+            method = getattr(object, command)
+            if callable(method):
+                return method
+    return None
+
+
+class GPSRTM(Node):
+    """Class to manage the GPSR task"""
+
+    class States:
+        START = 0
+        WAITING_FOR_COMMAND = 1
+        EXECUTING_COMMAND = 2
+        FINISHED_COMMAND = 3
+        DONE = 4
+
     def __init__(self):
         """Initialize the node"""
-        super().__init__("demo_task_manager")
-        self.hri = HRITasks(self, config=test_hri_config)
-        self.command_queue = CommandList()
-        self.command_queue.commands = []
-        self._sub = self.create_subscription(
-            CommandList, "/task_manager/commands", self.commands_callback, 10
-        )
-        self.first_run = True
-        self.create_timer(0.1, self.run)
+        super().__init__("gpsr_task_manager")
+        self.hri_tasks = HRITasks(self.subtask_manager)
+        self.subtask_manager = SubtaskManager(self, task=Task.GPSR, mock_areas=["navigation"])
+        self.gpsr_tasks = GPSRTask(self.subtask_manager)
+        self.gpsr_individual_tasks = GPSRSingleTask(self.subtask_manager)
 
-    def commands_callback(self, commands_input: CommandList) -> None:
-        """Receive processed commands from the interpreter and call executions from the queue"""
+        self.current_state = GPSRTM.States.START
+        self.running_task = True
+        self.current_attempt = 0
+        self.executed_commands = 0
+        self.commands = get_gpsr_comands("goToLoc")
 
-        if commands_input:
-            self.get_logger().info("Received commands")
-        else:
-            self.get_logger().info("No commands received")
-            return
+        Logger.info(self, "GPSRTMTaskManager has started.")
 
-        for command in commands_input.commands:
-            self.get_logger().info(
-                f"Added command to queue: {command.action} -> {command.complement} : {command.characteristic}"
+    def run(self):
+        """State machine"""
+
+        if self.current_state == GPSRTM.States.START:
+            self.subtask_manager.hri.say(
+                "Hi, my name is Frida. I am a general purpose robot. I can help you with some tasks."
             )
-            self.command_queue.commands.append(command)
+            self.current_state = GPSRTM.States.WAITING_FOR_COMMAND
+        elif self.current_state == GPSRTM.States.WAITING_FOR_COMMAND:
+            if self.executed_commands >= MAX_COMMANDS:
+                self.current_state = GPSRTM.States.DONE
+                return
 
-    def run(self) -> None:
-        if self.first_run:
-            self.hri.say("Hi, I am Frida, your personal assistant. How can I help you today?")
-            self.first_run = False
-        elif len(self.command_queue.commands) > 0:
-            command = self.command_queue.commands[0]
-            self.hri.execute_command(command.action, command.complement, command.characteristic)
-            self.command_queue.commands.pop(0)
+            s, user_command = self.subtask_manager.hri.ask_and_confirm(
+                "What is your command?",
+                "command",
+                context="The user was asked to say a command. We want to infer his command from the response",
+                confirm_question=confirm_command,
+                use_hotwords=False,
+                retries=ATTEMPT_LIMIT,
+                min_wait_between_retries=5.0,
+            )
+            if s != Status.EXECUTION_SUCCESS:
+                self.subtask_manager.hri.say("I am sorry, I could not understand you.")
+                self.current_attempt += 1
+            else:
+                self.subtask_manager.hri.say(
+                    "I am planning how to perform your command, please wait a moment", wait=False
+                )
+                s, self.commands = self.subtask_manager.hri.command_interpreter(user_command)
+                self.get_logger().info(
+                    f"Interpreted command: {user_command} -> {str(self.commands)}"
+                )
+                self.subtask_manager.hri.say("I will now execute your command")
+                self.current_state = GPSRTM.States.EXECUTING_COMMAND
+        elif self.current_state == GPSRTM.States.EXECUTING_COMMAND:
+            if len(self.commands) == 0:
+                self.current_state = GPSRTM.States.FINISHED_COMMAND
+            else:
+                command = self.commands.pop(0)
+                exec_commad = search_command(
+                    command["action"],
+                    [self.gpsr_tasks, self.gpsr_individual_tasks],
+                )
+                if exec_commad is None:
+                    self.get_logger().error(
+                        f"Command {command} is not implemented in GPSRTask or in the subtask managers."
+                    )
+                else:
+                    Logger.info(self, f"Executing command: {command}")
+                    self.subtask_manager.hri.say(f"Executing command: {command}")
+                    status, res = exec_commad(command["complement"], command["characteristic"])
+                    self.hri_tasks.add_command_history(
+                        command["action"],
+                        command["complement"],
+                        command["characteristic"],
+                        res,
+                        status,
+                    )
+        elif self.current_state == GPSRTM.States.FINISHED_COMMAND:
+            self.subtask_manager.hri.say(
+                "I have finished executing your command. I will return to the start position to await for new commands.",
+                wait=False,
+            )
+            self.executed_commands += 1
+            self.current_state = GPSRTM.States.WAITING_FOR_COMMAND
+        elif self.current_state == GPSRTM.States.DONE:
+            self.subtask_manager.hri.say(
+                "I am done with the task. I will now return to my home position.",
+                wait=False,
+            )
+            self.running_task = False
 
 
 def main(args=None):
+    """Main function"""
     rclpy.init(args=args)
+    node = GPSRTM()
+
     try:
-        rclpy.spin(GPSRTaskManager())
-    except (ExternalShutdownException, KeyboardInterrupt):
+        while rclpy.ok() and node.running_task:
+            rclpy.spin_once(node, timeout_sec=0.1)
+            node.run()
+    except KeyboardInterrupt:
         pass
     finally:
-        rclpy.try_shutdown()
+        node.destroy_node()
+        rclpy.shutdown()
 
 
 if __name__ == "__main__":

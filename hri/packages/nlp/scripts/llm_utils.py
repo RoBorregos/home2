@@ -9,7 +9,11 @@ from typing import Optional
 
 import pytz
 import rclpy
-from nlp.assets.dialogs import get_is_answer_negative_args, get_is_answer_positive_args
+from nlp.assets.dialogs import (
+    get_common_interests_dialog,
+    get_is_answer_negative_args,
+    get_is_answer_positive_args,
+)
 from nlp.assets.schemas import IsAnswerNegative, IsAnswerPositive
 from openai import OpenAI
 from pydantic import BaseModel
@@ -18,6 +22,7 @@ from rclpy.node import Node
 from std_msgs.msg import Bool, String
 
 from frida_interfaces.srv import (
+    CategorizeShelves,
     CommonInterest,
     Grammar,
     IsNegative,
@@ -49,6 +54,15 @@ class ResponseFormat(BaseModel):
     is_stop: bool
 
 
+class Shelf(BaseModel):
+    objects_to_add: list[str] = []
+    classification_tag: str
+
+
+class CategorizeShelvesResult(BaseModel):
+    shelves: dict[int, Shelf] = {}
+
+
 class LLMUtils(Node):
     model: Optional[str]
     base_url: Optional[str]
@@ -68,6 +82,7 @@ class LLMUtils(Node):
         self.declare_parameter("COMMON_INTEREST_SERVICE", "/nlp/common_interest")
         self.declare_parameter("IS_POSITIVE_SERVICE", "/nlp/is_positive")
         self.declare_parameter("IS_NEGATIVE_SERVICE", "/nlp/is_negative")
+        self.declare_parameter("CATEGORIZE_SERVICE", "/nlp/categorize_shelves")
 
         self.declare_parameter("temperature", 0.5)
         base_url = self.get_parameter("base_url").get_parameter_value().string_value
@@ -117,6 +132,10 @@ class LLMUtils(Node):
             self.get_parameter("IS_NEGATIVE_SERVICE").get_parameter_value().string_value
         )
 
+        categorize_shelves_service = (
+            self.get_parameter("CATEGORIZE_SERVICE").get_parameter_value().string_value
+        )
+
         self.create_service(Grammar, grammar_service, self.grammar_service)
 
         self.create_service(LLMWrapper, llm_wrapper_service, self.llm_wrapper_service)
@@ -127,6 +146,10 @@ class LLMUtils(Node):
 
         self.create_service(IsPositive, is_positive_service, self.is_positive)
         self.create_service(IsNegative, is_negative_service, self.is_negative)
+
+        self.create_service(
+            CategorizeShelves, categorize_shelves_service, self.categorize_shelves
+        )
 
         # publisher
         self.publisher = self.create_publisher(Bool, OUT_COMMAND_TOPIC, 10)
@@ -219,20 +242,14 @@ class LLMUtils(Node):
         return res
 
     def common_interest(self, req, res):
+        messages = get_common_interests_dialog(
+            req.person1, req.person2, req.interests1, req.interests2
+        )["messages"]
         response = (
             self.client.beta.chat.completions.parse(
                 model=self.model,
                 temperature=self.temperature,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You will be presented with the interests of two people, your task is to get the common interests between them. Give a short answer with one common interest. Don't overthink your response",
-                    },
-                    {
-                        "role": "user",
-                        "content": f"{req.person1} likes {req.interests1} and {req.person2} likes {req.interests2}",
-                    },
-                ],
+                messages=messages,
             )
             .choices[0]
             .message.content
@@ -241,6 +258,70 @@ class LLMUtils(Node):
         res.common_interest = response
 
         return res
+
+    def generic_structured_output(
+        self, system_prompt: str, user_prompt: str, response_format
+    ):
+        self.get_logger().info("Generating structured output")
+        # self.get_logger().info(f"System prompt: {system_prompt}")
+        # self.get_logger().info(f"User prompt: {user_prompt}")
+        # self.get_logger().info(f"Response format: {response_format}")
+        response = (
+            self.client.beta.chat.completions.parse(
+                model=self.model,
+                temperature=self.temperature,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": system_prompt,
+                    },
+                    {"role": "user", "content": user_prompt},
+                ],
+            )
+            .choices[0]
+            .message.content
+        )
+        self.get_logger().info(f"Response: {response}")
+        try:
+            response_data = json.loads(response)
+            result = response_format(**response_data)
+        except Exception as e:
+            self.get_logger().error(f"Service error: {e}")
+            raise rclpy.exceptions.ServiceException(str(e))
+        return result
+
+    def categorize_shelves(
+        self, request: CategorizeShelves.Request, response: CategorizeShelves.Response
+    ) -> CategorizeShelves.Response:
+        """Service to categorize shelves."""
+
+        self.get_logger().info("Categorizing shelves")
+        shelves: dict[int, list[str]] = eval(request.shelves)
+        table_objects: list[str] = request.table_objects
+        shelves = {int(k): v for k, v in shelves.items()}
+        self.get_logger().info(f"Shelves: {shelves}")
+        self.get_logger().info(f"Table objects: {table_objects}")
+
+        result: CategorizeShelvesResult = self.generic_structured_output(
+            system_prompt="Categorize the objects into different categories each category should correspond to a shelf and given the shelfs with the objects in them and the objects on the table you should"
+            + " categorize the objects into the shelfs. The output should be a dictionary with the shelf number as the key and the objects TO ADD that are in the table, as well as the category of the shelf. "
+            + "example: shelves = {1: ['milk', 'buttermilk'], 2: [], 3: ['apple', 'banana']}, table_objects = ['butter', 'orange', 'cookies', 'cheese', 'watermelon' , 'pringles']"
+            + " the output should be {1: ['butter', 'cheese'], 2: ['cookies', 'pringles'], 3: ['orange', 'watermelon']} {1: 'dairy', 2: 'snacks',  3: 'fruit'}",
+            user_prompt=f"Shelves: {shelves}, Table objects: {table_objects}",
+            response_format=CategorizeShelvesResult,
+        )
+
+        response.objects_to_add = String(
+            {k: [i for i in v.objects_to_add] for k, v in result.shelves.items()}
+        )
+        response.categorized_shelves = String(
+            {k: v.classification_tag for k, v in result.shelves.items()}
+        )
+
+        self.get_logger().info(f"Response: {response.objects_to_add}")
+        self.get_logger().info(f"Categorized shelves: {response.categorized_shelves}")
+
+        return response
 
     def is_positive(
         self, request: IsPositive.Request, response: IsPositive.Response

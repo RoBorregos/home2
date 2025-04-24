@@ -27,14 +27,21 @@ PICK_VELOCITY = 0.15
 PICK_ACCELERATION = 0.15
 PICK_PLANNER = "RRTConnect"
 
+# Pick
 PICK_MOTION_ACTION_SERVER_NODE = "manipulation/pick_motion_server"
 PICK_MOTION_ACTION_SERVER = "/manipulation/pick_motion_action_server"
 CLUSTER_OBJECT_SERVICE = "/manipulation/cluster_object"
-PERCEPTION_SERVICE = "/manipulation/perception_service"
+PICK_PERCEPTION_SERVICE = "/manipulation/pick_perception_service"
 GRASP_DETECTION_SERVICE = "/manipulation/detect_grasps"
 GRIPPER_SET_STATE_SERVICE = "/manipulation/gripper/set_state"
-XARM_SET_DIGITAL_TGPIO_SERVICE = "/xarm/set_digital_tgpio"
+XARM_SET_DIGITAL_TGPIO_SERVICE = "/xarm/set_tgpio_digital"
 
+# Place
+PLACE_PERCEPTION_SERVICE = "/manipulation/place_perception_service"
+HEATMAP_PLACE_SERVICE = "/manipulation/heatmap_place_service"
+PLACE_POINT_DEBUG_TOPIC = "/manipulation/table_place_point_debug"
+PLACE_MAX_DISTANCE = 0.85
+PLACE_MOTION_ACTION_SERVER = "/manipulation/place_motion_action_server"
 
 MANIPULATION_ACTION_SERVER = "/manipulation/manipulation_action_server"
 
@@ -52,3 +59,5 @@ DEBUG_POSE_GOAL_TOPIC = "/manipulation/debug_pose_goal"
 GET_JOINT_TOPIC = "/manipulation/get_joints"
 
 TOGGLE_SERVO_TOPIC = "/manipulation/toggle_servo"
+
+ZED_POINT_CLOUD_TOPIC = "/zed/zed_node/point_cloud/cloud_registered"

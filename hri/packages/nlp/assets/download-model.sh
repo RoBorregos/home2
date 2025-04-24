@@ -25,6 +25,6 @@ CONTAINER_ID=$(docker run -d --rm --runtime=nvidia -v $SCRIPT_DIR:/ollama -e OLL
 
 docker exec "$CONTAINER_ID" ollama create -f /ollama/Modelfile robollm
 docker exec "$CONTAINER_ID" ollama pull nomic-embed-text
-docker exec "$CONTAINER_ID" ollama pull deepseek-r1:7b
+docker exec "$CONTAINER_ID" ollama pull qwen2.5
 
 docker stop "$CONTAINER_ID"

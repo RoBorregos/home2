@@ -1,16 +1,17 @@
 
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, SetEnvironmentVariable
+from launch.actions import DeclareLaunchArgument, SetEnvironmentVariable, OpaqueFunction
 from launch.substitutions import LaunchConfiguration
 from launch.conditions import IfCondition, UnlessCondition
 from launch_ros.actions import Node
 
 
-def generate_launch_description():
+def launch_setup(context, *args, **kwargs):
 
-    use_sim_time = LaunchConfiguration('use_sim_time')
-    localization = LaunchConfiguration('localization')
-    rtabmap_viz = LaunchConfiguration('rtabmap_viz')
+    use_sim_time = LaunchConfiguration('use_sim_time',default='false')
+    localization = LaunchConfiguration('localization', default='true')
+    rtabmap_viz = LaunchConfiguration('rtabmap_viz', default='false')
+    use_3d_grid = LaunchConfiguration('3d_grid', default='true')
 
     icp_parameters={
           'odom_frame_id':'icp_odom',
@@ -26,38 +27,54 @@ def generate_launch_description():
           'Mem/NotLinkedNodesKept':'false'
     }
 
-    # Shared parameters between different nodes
-    shared_parameters={
-          'frame_id':'base_link',
-          'use_sim_time':use_sim_time,
-          # RTAB-Map's parameters should be strings:
-          'Reg/Strategy':'1',
-          'Reg/Force3DoF':'true',
-          'Mem/NotLinkedNodesKept':'false',
-          'Icp/PointToPlaneMinComplexity':'0.04', # to be more robust to long corridors with low geometry
-          'Grid/MaxGroundHeight':'0.2', # All points above 5 cm are obstacles
-          'Grid/MaxObstacleHeight':'1.2',  # All points over 1 meter are ignored
-    }
+    if(use_3d_grid.perform(context) == 'true'):
+
+        # Shared parameters between different nodes
+        shared_parameters={
+            'frame_id':'base_link',
+            'use_sim_time':use_sim_time,
+            # RTAB-Map's parameters should be strings:
+            'Reg/Strategy':'1',
+            'Reg/Force3DoF':'true',
+            'Mem/NotLinkedNodesKept':'false',
+            'Icp/PointToPlaneMinComplexity':'0.04',
+            'Grid/MaxGroundHeight':'0.1', 
+            'Grid/MaxObstacleHeight':'2',  
+            'RGBD/NeighborLinkRefining':'True',
+            #   'Grid/RayTracing':'true', # Fill empty space
+            'Grid/3D':'false', # Use 2D occupancy
+            'Grid/RangeMax':'3',
+            'Grid/NormalsSegmentation':'false', # Use passthrough filter to detect obstacles
+            'Grid/Sensor':'2', # Use both laser scan and camera for obstacle detection in global map
+            'Optimizer/GravitySigma':'0' # Disable imu constraints (we are already in 2D)
+        }
+    else:
+         shared_parameters={
+            'frame_id':'base_link',
+            'use_sim_time':use_sim_time,
+            # RTAB-Map's parameters should be strings:
+            'Reg/Strategy':'1',
+            'Reg/Force3DoF':'true',
+            'Mem/NotLinkedNodesKept':'false',
+            'Icp/PointToPlaneMinComplexity':'0.04',
+            'Grid/MaxGroundHeight':'0.1', 
+            'Grid/MaxObstacleHeight':'2',  
+            'RGBD/NeighborLinkRefining':'True',
+            #   'Grid/RayTracing':'true', # Fill empty space
+            'Grid/3D':'false', # Use 2D occupancy
+            'Grid/RangeMax':'3',
+            'Grid/NormalsSegmentation':'false', # Use passthrough filter to detect obstacles
+            #   'Grid/Sensor':'2', # Use both laser scan and camera for obstacle detection in global map
+            'Optimizer/GravitySigma':'0' # Disable imu constraints (we are already in 2D)
+        }
+
 
     remappings=[
           ('rgb/image', '/zed/zed_node/rgb/image_rect_color'),
           ('rgb/camera_info', '/zed/zed_node/rgb/camera_info'),
           ('depth/image', '/zed/zed_node/depth/depth_registered')]
 
-    return LaunchDescription([
-
-        # Launch arguments
-        DeclareLaunchArgument(
-            'use_sim_time', default_value='false', choices=['true', 'false'],
-            description='Use simulation (Gazebo) clock if true'),
-        
-        DeclareLaunchArgument(
-            'localization', default_value='false', choices=['true', 'false'],
-            description='Launch rtabmap in localization mode (a map should have been already created).'),
-        
-        DeclareLaunchArgument(
-            'rtabmap_viz', default_value='true', choices=['true', 'false'],
-            description='Launch rtabmap_viz for visualization.'),
+    return_list = [
 
         # Nodes to launch
         Node(
@@ -100,4 +117,7 @@ def generate_launch_description():
             remappings=[('cloud', '/zed/zed_node/point_cloud/cloud_registered'),
                         ('obstacles', '/camera/obstacles'),
                         ('ground', '/camera/ground')]),
-    ])
+    ]
+    return return_list
+def generate_launch_description():
+    return LaunchDescription([OpaqueFunction(function=launch_setup)])
