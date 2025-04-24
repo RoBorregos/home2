@@ -16,6 +16,7 @@ from subtask_managers.manipulation_tasks import ManipulationTasks
 PICK_OBJECT = "zucaritas"
 
 TEST = "PICK"
+# TEST = "PLACE"
 
 
 class TestTaskManager(Node):
@@ -35,6 +36,10 @@ class TestTaskManager(Node):
         if TEST == "PICK":
             self.get_logger().info(f"Trying to pick {PICK_OBJECT}")
             result = self.subtask_manager["manipulation"].pick_object(PICK_OBJECT)
+            self.get_logger().info(f"Result: {result}")
+        elif TEST == "PLACE":
+            self.get_logger().info(f"Trying to place {PICK_OBJECT}")
+            result = self.subtask_manager["manipulation"].place()
             self.get_logger().info(f"Result: {result}")
 
 
