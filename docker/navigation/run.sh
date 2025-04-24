@@ -1,6 +1,13 @@
 #!/bin/bash
-
-
+ARGS=("$@")  # Save all arguments in an array
+TASK=${ARGS[0]}
+detached=""
+# check if one of the arguments is --detached
+for arg in "${ARGS[@]}"; do
+  if [ "$arg" == "-d" ]; then
+    detached="-d"
+  fi
+done
 #_________________________BUILD_________________________
 
 # Image names
@@ -82,42 +89,52 @@ esac
 export LOCAL_USER_ID=$(id -u)
 export LOCAL_GROUP_ID=$(id -g)
 
-# Remove current install, build and log directories if they exist 
-# if [ -d "../../install" ] || [ -d "../../log" ] || [ -d "../../build" ]; then
-#   read -p "Do you want to delete 'install', 'log', and 'build' directories (Recommended for first build)? (y/n): " confirmation
-#   if [[ "$confirmation" == "y" ]]; then
-#     rm -rf ../../install/ ../../log/ ../../build/
-#     echo "Directories deleted."
-#   else
-#     echo "Operation cancelled."
-#   fi
-# fi
-
-# Setup camera permissions
-if [ -e /dev/video0 ]; then
-    echo "Setting permissions for /dev/video0..."
-    sudo chmod 666 /dev/video0  # Allow the container to access the camera device
-fi
-
 #_________________________RUN_________________________
 
-SERVICE_NAME="navigation"  # Change this to your service name in docker-compose.yml
 
-# Check if the container exists
-EXISTING_CONTAINER=$(docker ps -a -q -f name=$SERVICE_NAME)
-if [ -z "$EXISTING_CONTAINER" ]; then
-    echo "No container with the name $SERVICE_NAME exists. Building and starting the container now..."
-    docker compose up --build -d
+# Check which commands and services to run
+PROFILES=()
+SERVICES=()
+
+case $TASK in
+    "--receptionist")
+        PACKAGES="nav_main dashgo_driver sllidar_ros2"
+        RUN="ros2 launch nav_main receptionist.launch.py"
+        ;;
+    "--help-me-carry")
+        PACKAGES="nav_main dashgo_driver sllidar_ros2"
+        RUN="ros2 launch nav_main carry_my.launch.py"
+        ;;
+    "--storing-groceries")
+        PACKAGES="nav_main dashgo_driver sllidar_ros2"
+        RUN="ros2 launch nav_main storing_groceries.launch.py"
+        ;;
+
+esac
+
+# Add command to env if TASK is not empty, otherwise it will run bash
+if [ -n "$TASK" ]; then
+    COMMAND="source /opt/ros/humble/setup.bash && colcon build --packages-up-to $PACKAGES && source install/setup.bash && $RUN"
+    echo "COMMAND= $COMMAND " >> .env
 fi
 
-# Check if the container is running
-RUNNING_CONTAINER=$(docker ps -q -f name=$SERVICE_NAME)
+# If no task set, enter with bash
+if [ -z "$TASK" ]; then
+    if [ "$NEEDS_BUILD" = true ]; then
+        docker compose up --build -d
+    else
+    
+        docker compose up -d 
+        
+        docker compose exec navigation /bin/bash
+    fi
 
-if [ -n "$RUNNING_CONTAINER" ]; then
-    echo "Container $SERVICE_NAME is already running. Executing bash..."
-    docker compose exec -it $SERVICE_NAME /bin/bash
 else
-    echo "Container $SERVICE_NAME is stopped. Starting it now..."
-    docker compose up --build -d
-    docker compose exec $SERVICE_NAME /bin/bash
+    if [ "$NEEDS_BUILD" = true ]; then
+        echo "Building and starting containers..."
+        docker compose up --build -d
+    else
+        echo "All containers exist. Starting without build..."
+        docker compose up
+    fi
 fi

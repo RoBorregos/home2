@@ -12,6 +12,11 @@ from geometry_msgs.msg import Point
 from rclpy.node import Node
 from utils.logger import Logger
 from xarm_msgs.srv import MoveVelocity, SetInt16
+from frida_constants.manipulation_constants import (
+    MOVEIT_MODE,
+)
+from rclpy.callback_groups import ReentrantCallbackGroup
+import time
 
 XARM_MOVEVELOCITY_SERVICE = "/xarm/vc_set_joint_velocity"
 XARM_SETMODE_SERVICE = "/xarm/set_mode"
@@ -24,6 +29,18 @@ XARM_SETSTATE_SERVICE = "/xarm/set_state"
 TIMEOUT = 5.0
 
 
+def wait_for_future(future, timeout_sec=TIMEOUT):
+    """
+    Wait for a future to complete with a timeout.
+    """
+    start_time = time.time()
+    while not future.done():
+        if time.time() - start_time > timeout_sec:
+            return future, False
+        time.sleep(0.1)
+    return future, True
+
+
 class FollowFaceNode(Node):
     """Class to manage demo tasks"""
 
@@ -33,7 +50,8 @@ class FollowFaceNode(Node):
 
     def __init__(self):
         """Initialize the node"""
-        super().__init__("demo_task_manager")
+        super().__init__("follow_face_node")
+        self.callback_group = ReentrantCallbackGroup()
         # self.subtask_manager = subtask_manager()
         # self.subtask_manager.vision = VisionTasks(
         #     self, task="DEMO", mock_data=False)
@@ -80,7 +98,12 @@ class FollowFaceNode(Node):
         if not self.mode_client.wait_for_service(timeout_sec=TIMEOUT):
             Logger.warn(self, "AAAA3")
 
-        self.service = self.create_service(FollowFace, "/follow_face", self.follow_face_callback)
+        self.service = self.create_service(
+            FollowFace,
+            "/follow_face",
+            self.follow_face_callback,
+            callback_group=self.callback_group,
+        )
 
         self.is_following_face_active = False
 
@@ -90,8 +113,8 @@ class FollowFaceNode(Node):
 
         self.create_timer(0.1, self.run)
 
-    def set_state(self):
-        Logger.info(self, "Activating arm")
+    def set_state_speed(self):
+        Logger.info(self, "Activating arm for speed calls")
 
         # Set state
         state_request = SetInt16.Request()
@@ -102,11 +125,38 @@ class FollowFaceNode(Node):
         mode_request.data = 4
 
         try:
-            future_mode = self.mode_client.call_async(mode_request)
-            rclpy.spin_until_future_complete(self, future_mode, timeout_sec=TIMEOUT)
+            self.mode_client.call_async(mode_request)
+            # future_mode, success = wait_for_future(future_mode)
+            # if not success:
+            #     Logger.error(self, "Failed to set mode")
 
-            future_state = self.state_client.call_async(state_request)
-            rclpy.spin_until_future_complete(self, future_state, timeout_sec=TIMEOUT)
+            self.state_client.call_async(state_request)
+            # future_state, success = wait_for_future(future_state)
+            # if not success:
+            #     Logger.error(self, "Failed to set state")
+        except Exception as e:
+            Logger.error(self, f"Error Activating arm: {e}")
+
+    def set_state_moveit(self):
+        Logger.info(self, "Activating arm for moveit")
+
+        # Set state
+        state_request = SetInt16.Request()
+        state_request.data = 0
+        # Set mode
+        mode_request = SetInt16.Request()
+        mode_request.data = MOVEIT_MODE
+
+        try:
+            self.mode_client.call_async(mode_request)
+            # future_mode, success = wait_for_future(future_mode)
+            # if not success:
+            #     Logger.error(self, "Failed to set mode")
+
+            self.state_client.call_async(state_request)
+            # future_state, success = wait_for_future(future_state)
+            # if not success:
+            #     Logger.error(self, "Failed to set state")
         except Exception as e:
             Logger.error(self, f"Error Activating arm: {e}")
 
@@ -128,8 +178,13 @@ class FollowFaceNode(Node):
         self.is_following_face_active = request.follow_face
         if not self.is_following_face_active:
             self.move_to(0.0, 0.0)
+            time.sleep(1)
+            self.set_state_moveit()
+            time.sleep(1)
         else:
-            self.set_state()
+            self.set_state_speed()
+            time.sleep(1)
+        self.get_logger().info("Returning service response")
         response.success = True
         return response
 
