@@ -22,10 +22,6 @@ from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import Point
 from std_msgs.msg import String
 from ament_index_python.packages import get_package_share_directory
-from vision_general.utils.calculations import (
-    get_depth,
-    deproject_pixel_to_point,
-)
 from frida_interfaces.srv import SaveName
 from frida_interfaces.msg import Person, PersonList
 from frida_constants.vision_constants import (
