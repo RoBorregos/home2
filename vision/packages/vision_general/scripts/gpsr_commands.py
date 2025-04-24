@@ -409,7 +409,7 @@ class GPSRCommands(Node):
                         cv2.LINE_AA,
                     )
 
-    def wait_for_future(future, timeout=1):
+    def wait_for_future(self, future, timeout=1):
         start_time = time.time()
         while future is None and (time.time() - start_time) < timeout:
             pass
