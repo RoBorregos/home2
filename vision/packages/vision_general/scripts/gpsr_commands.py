@@ -409,52 +409,53 @@ class GPSRCommands(Node):
                         cv2.LINE_AA,
                     )
 
+    def wait_for_future(future, timeout=1):
+        start_time = time.time()
+        while future is None and (time.time() - start_time) < timeout:
+            pass
+        if future is None:
+            print("timeout reached")
+            return False
+        while not future.done():
+            pass
+        return future
+
     def moondream_crop_query(self, prompt: str, bbox: list[float]) -> tuple[int, str]:
         """Makes a query of the current image using moondream."""
         self.get_logger().info(f"Querying image with prompt: {prompt}")
 
+        height, width = self.image.shape[:2]
+
+        ymin = bbox[0] / height
+        xmin = bbox[1] / width
+        ymax = bbox[2] / height
+        xmax = bbox[3] / width
+
         request = CropQuery.Request()
         request.query = prompt
-        request.ymin = bbox[0]
-        request.xmin = bbox[1]
-        request.ymax = bbox[2]
-        request.xmax = bbox[3]
+        request.ymin = ymin
+        request.xmin = xmin
+        request.ymax = ymax
+        request.xmax = xmax
 
         future = self.moondream_client.call_async(request)
-        result = future.add_done_callback(self.moondream_response_callback)
-
-        # if result is None:
-        #     self.get_logger().error("Moondream service not available.")
-        #     return 0, ""
-
-        # self.get_logger().info(f"Moondream result: {result}")
-        # return 1, result
+        future = self.wait_for_future(future)
+        result = future.result()
+        if result is None:
+            self.get_logger().error("Moondream service not available.")
+            return 0, ""
+        if result.success:
+            self.get_logger().info(f"Moondream result: {result.result}")
+            return 1, result.result
     
-    def moondream_response_callback(self, future):
-        """Process the response from the Moondream service."""
-        try:
-            response = future.result()
-            if response.success:
-                self.get_logger().info(f"Moondream response: {response.result}")
-                return response.result
-            else:
-                self.get_logger().error("Moondream service failed.")
-                return None
-        except Exception as e:
-            self.get_logger().error(f"Error getting response from Moondream service: {str(e)}")
-
 def main(args=None):
     rclpy.init(args=args)
     node = GPSRCommands()
-
-    try:
-        rclpy.spin(node)
-    except KeyboardInterrupt:
-        pass
-    finally:
-        node.destroy_node()
-        rclpy.shutdown()
-
+    executor = rclpy.executors.MultiThreadedExecutor(5)
+    executor.add_node(node)
+    executor.spin()
+    rclpy.shutdown()
 
 if __name__ == "__main__":
     main()
+
