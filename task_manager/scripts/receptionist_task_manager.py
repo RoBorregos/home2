@@ -104,7 +104,7 @@ class ReceptionistTM(Node):
         self.get_guest().description = description
 
     # TODO (@alecoeto): wait to detect guest
-    # TODO (@alecoeto): not found beverage 
+    # TODO (@alecoeto): not found beverage
     # TODO (@alecoeto): sleep before find seat
     # TODO (@alecoeto): no follow me to the entrance at the end
 
