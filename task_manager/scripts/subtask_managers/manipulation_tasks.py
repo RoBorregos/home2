@@ -243,7 +243,7 @@ class ManipulationTasks:
         try:
             future = self.follow_face_client.call_async(request)
             rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
-            result = future.result().result
+            result = future.result()
 
             if not result.success:
                 raise Exception("Service call failed")
