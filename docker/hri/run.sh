@@ -136,3 +136,14 @@ if [ $ENV_TYPE == "cpu" ]; then
     elif [ $ENV_TYPE == "jetson" ]; then
         docker compose up $detached
 fi
+
+# For the display to work, we need to set the DISPLAY environment variable
+echo "Waiting for localhost:3000 to be available..."
+
+until curl --output /dev/null --silent --head --fail http://localhost:3000; do
+  printf '.'
+  sleep 1
+done
+
+echo -e "\nLaunching Firefox..."
+bash open-display.bash
