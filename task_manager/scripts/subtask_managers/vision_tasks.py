@@ -551,8 +551,8 @@ class VisionTasks:
 
         Logger.success(self.node, "Person tracking success")
         return Status.EXECUTION_SUCCESS
-
-    @mockable(return_value=100)
+    
+    @mockable(return_value=[Status.EXECUTION_SUCCESS, 100])
     @service_check("count_by_pose_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
     def count_by_pose(self, pose: str) -> tuple[int, int]:
         """Count the number of people with the requested pose"""
@@ -661,7 +661,7 @@ class VisionTasks:
         """Return the object matching the description"""
         Logger.info(self.node, "Detecting object matching description")
         prompt = f"What is the {description} {object} in the image?"
-        self.moondream_query(prompt, query_person=False)
+        return self.moondream_query(prompt, query_person=False)
 
     def describe_person(self, callback):
         """Describe the person in the image"""
