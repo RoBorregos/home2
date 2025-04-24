@@ -37,8 +37,8 @@ YOLO_LOCATION = str(pathlib.Path(__file__).parent) + "/Utils/yolov8n.pt"
 
 PERCENTAGE = 0.3
 MAX_DEGREE = 30
-AREA_PERCENTAGE_THRESHOLD = 0.2
-CONF_THRESHOLD = 0.5
+AREA_PERCENTAGE_THRESHOLD = 0.01
+CONF_THRESHOLD = 0.4
 CHECK_TIMEOUT = 5
 
 
@@ -78,6 +78,7 @@ class ReceptionistCommands(Node):
 
         if self.image is None:
             response.success = False
+            self.get_logger().warn("No image received yet.")
             return response
 
         frame = self.image

@@ -90,6 +90,7 @@ class VisionTasks:
         self.object_detector_client = self.node.create_client(
             DetectionHandler, DETECTION_HANDLER_TOPIC_SRV
         )
+
         self.detect_person_action_client = ActionClient(self.node, DetectPerson, CHECK_PERSON_TOPIC)
 
         self.services = {
@@ -523,7 +524,7 @@ class VisionTasks:
     def describe_person(self, callback):
         """Describe the person in the image"""
         Logger.info(self.node, "Describing person")
-        prompt = "Describe the person in the image"
+        prompt = "Briefly describe the person in the image and only say the description: They are .... Mention 4 attributes. For example: shirt color, clothes details, hair color, if the person has glasses"
         self.moondream_query_async(prompt, query_person=True, callback=callback)
 
     def get_pointing_bag(self, timeout: float = TIMEOUT) -> tuple[int, ObjectDetection]:
@@ -561,6 +562,16 @@ class VisionTasks:
         """Describe the bag using only moondream"""
         Logger.info(self.node, "Describing bag")
         prompt = "Describe the bag that the person is pointing at using the folling format: the bag on your left is small and green"
+        return self.moondream_query(prompt, query_person=False)
+
+    def find_seat_moondream(self):
+        """Find the seat using only moondream"""
+        Logger.info(self.node, "Finding seat")
+        prompt = """Check if there is an available seat in the image. 
+        This could be an empty chair (the largest empty chair) or a space in a couch. 
+        If there is no available seat, please return 300. 
+        Else return the estimated angle of the person decimal from -1 to 1, where -1 is the image on the left and 1 is right.
+        """
         return self.moondream_query(prompt, query_person=False)
 
     def describe_shelf(self):
