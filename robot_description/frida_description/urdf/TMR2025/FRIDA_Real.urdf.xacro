@@ -71,7 +71,7 @@
     <xacro:load_gripper attach_to="link_eef" xyz="0 0 0" rpy="2.3562 -1.5708 0" />
    <!-- ZED MACRO -->
     <xacro:include filename="$(find frida_description)/urdf/RoboCup2024/zed.xacro" />
-  <xacro:load_zed attach_to="gripper" xyz="0.030461 0 -0.050649" rpy="0 0.81804 0" />
+  <xacro:load_zed attach_to="gripper" xyz="0.046461 0 -0.075649" rpy="0 0.81804 0" />
 
   <!-- NEW GRIPPER MACRO   -->
   <!-- Gripper -->
