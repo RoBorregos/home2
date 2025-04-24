@@ -12,6 +12,7 @@ def generate_launch_description():
         "launch",
         "zero_shot_object_detector_node.launch.py",
     )
+    print(detector_launch_file)
     return LaunchDescription(
         [
             Node(
