@@ -54,6 +54,8 @@ class GPSRCommands(Node):
     def __init__(self):
         super().__init__("gpsr_commands")
         self.bridge = CvBridge()
+        self.callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
+        self.get_logger().info("FROM ~/dev/vision....")
 
         self.image_subscriber = self.create_subscription(
             Image, CAMERA_TOPIC, self.image_callback, 10
@@ -74,7 +76,7 @@ class GPSRCommands(Node):
         )
 
         self.count_by_color_service = self.create_service(
-            CountByColor, COUNT_BY_COLOR_TOPIC, self.count_by_color_callback
+            CountByColor, COUNT_BY_COLOR_TOPIC, self.count_by_color_callback, callback_group=self.callback_group
         )
 
         self.pose_gesture_detection_service = self.create_service(
@@ -92,7 +94,7 @@ class GPSRCommands(Node):
         # self.create_timer(0.1, self.publish_image)
 
         self.moondream_client = self.create_client(
-            CropQuery, CROP_QUERY_TOPIC
+            CropQuery, CROP_QUERY_TOPIC, callback_group=self.callback_group
         )
 
     def image_callback(self, data):
@@ -230,6 +232,7 @@ class GPSRCommands(Node):
                 response_clean = response_q.strip()
                 if response_clean == "1":
                     count += 1
+                    self.get_logger().info(f"Person {count} is wearing a {color} {clothing}.")
                 elif response_clean != "0":
                     self.get_logger().warn(f"Unexpected response: {response_clean}")
 
@@ -409,15 +412,14 @@ class GPSRCommands(Node):
                         cv2.LINE_AA,
                     )
 
-    def wait_for_future(self, future, timeout=1):
+    def wait_for_future(self, future, timeout=5):
         start_time = time.time()
         while future is None and (time.time() - start_time) < timeout:
             pass
         if future is None:
-            print("timeout reached")
             return False
-        while not future.done():
-            pass
+        while not future.done() and (time.time() - start_time) < timeout:
+            print("Waiting for future to complete...")
         return future
 
     def moondream_crop_query(self, prompt: str, bbox: list[float]) -> tuple[int, str]:
@@ -439,11 +441,11 @@ class GPSRCommands(Node):
         request.xmax = xmax
 
         future = self.moondream_client.call_async(request)
-        future = self.wait_for_future(future)
+        future = self.wait_for_future(future, 15)
         result = future.result()
         if result is None:
-            self.get_logger().error("Moondream service not available.")
-            return 0, ""
+            self.get_logger().error("Moondream service returned None.")
+            return 0, "0"
         if result.success:
             self.get_logger().info(f"Moondream result: {result.result}")
             return 1, result.result
