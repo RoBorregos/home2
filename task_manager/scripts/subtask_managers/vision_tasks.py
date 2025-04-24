@@ -38,7 +38,6 @@ from frida_interfaces.srv import (
     SaveName,
     ShelfDetectionHandler,
     DetectionHandler,
-
     CountByPose,
     CountByGesture,
     # CountByColor,
@@ -102,8 +101,12 @@ class VisionTasks:
         self.detect_person_action_client = ActionClient(self.node, DetectPerson, CHECK_PERSON_TOPIC)
 
         self.count_by_pose_client = self.node.create_client(CountByPose, COUNT_BY_POSE_TOPIC)
-        self.count_by_gesture_client = self.node.create_client(CountByGesture, COUNT_BY_GESTURES_TOPIC)
-        self.find_person_info_client = self.node.create_client(PersonPoseGesture, POSE_GESTURE_TOPIC)
+        self.count_by_gesture_client = self.node.create_client(
+            CountByGesture, COUNT_BY_GESTURES_TOPIC
+        )
+        self.find_person_info_client = self.node.create_client(
+            PersonPoseGesture, POSE_GESTURE_TOPIC
+        )
 
         self.services = {
             Task.RECEPTIONIST: {
@@ -441,7 +444,7 @@ class VisionTasks:
 
         Logger.success(self.node, f"Result: {result.result}")
         return Status.EXECUTION_SUCCESS, result.result
-    
+
     @mockable(return_value=(Status.EXECUTION_ERROR, ""), delay=5, mock=False)
     @service_check("moondream_crop_query_client", Status.EXECUTION_ERROR, TIMEOUT)
     def moondream_crop_query(self, prompt: str, bbox: BBOX, timeout=TIMEOUT) -> tuple[int, str]:
@@ -548,7 +551,7 @@ class VisionTasks:
 
         Logger.success(self.node, "Person tracking success")
         return Status.EXECUTION_SUCCESS
-    
+
     @mockable(return_value=100)
     @service_check("count_by_pose_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
     def count_by_pose(self, pose: str) -> tuple[int, int]:
@@ -574,7 +577,7 @@ class VisionTasks:
 
         Logger.success(self.node, f"People with pose {pose}: {result.count}")
         return Status.EXECUTION_SUCCESS, result.count
-    
+
     @mockable(return_value=100)
     @service_check("count_by_gesture_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
     def count_by_gesture(self, gesture: str) -> tuple[int, int]:
@@ -600,7 +603,7 @@ class VisionTasks:
 
         Logger.success(self.node, f"People with gesture {gesture}: {result.count}")
         return Status.EXECUTION_SUCCESS, result.count
-    
+
     # @mockable(return_value=100)
     # @service_check("count_by_color_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
     # def count_by_color(self, color: str, clothing: str) -> tuple[int, int]:
@@ -627,7 +630,7 @@ class VisionTasks:
 
     #     Logger.success(self.node, f"People with {clothing} {color}: {result.count}")
     #     return Status.EXECUTION_SUCCESS, result.count
-    
+
     @mockable(return_value=100)
     @service_check("find_person_info_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
     def find_person_info(self, type_requested: str) -> tuple[int, str]:
@@ -653,8 +656,8 @@ class VisionTasks:
 
         Logger.success(self.node, f"The person is: {result.result}")
         return Status.EXECUTION_SUCCESS, result.result
-    
-    def visual_info(self, description, object='object'):
+
+    def visual_info(self, description, object="object"):
         """Return the object matching the description"""
         Logger.info(self.node, "Detecting object matching description")
         prompt = f"What is the {description} {object} in the image?"
@@ -718,6 +721,7 @@ class VisionTasks:
         Logger.info(self.node, "Describing shelf")
         prompt = "You are watching a shelf level with several items. Please give me a list of the items in the shelf"
         return self.moondream_query(prompt, query_person=False)
+
 
 if __name__ == "__main__":
     rclpy.init()
