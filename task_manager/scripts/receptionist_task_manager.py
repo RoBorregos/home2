@@ -156,6 +156,7 @@ class ReceptionistTM(Node):
 
         if self.current_state == ReceptionistTM.TASK_STATES["SAVE_FACE"]:
             Logger.state(self, "Saving face")
+            self.subtask_manager.hri.say("I will save your face now. Please stand in front of me")
             result = self.subtask_manager.vision.save_face_name(self.get_guest().name)
             self.subtask_manager.vision.describe_person(self.set_description)
 
@@ -313,12 +314,12 @@ class ReceptionistTM(Node):
         if self.current_state == ReceptionistTM.TASK_STATES["END"]:
             Logger.state(self, "Ending task")
             self.subtask_manager.hri.say("I have finished my task, I will rest now.")
+            self.subtask_manager.manipulation.follow_face(False)
             self.running_task = False
 
         if self.current_state == ReceptionistTM.TASK_STATES["DEBUG"]:
             Logger.state(self, "Debugging task")
             self.subtask_manager.hri.say("Debugging task.")
-            self.subtask_manager.manipulation.follow_face(False)
             # self.subtask_manager.manipulation.move_joint_positions(
             #     named_position="front_stare", velocity=0.5, degrees=True
             # )
