@@ -104,6 +104,108 @@ public:
   }
 
   STATUS_RESPONSE
+  Normals(_IN_ std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud,
+          _OUT_ BoxPrimitiveParams &box_params) {
+    STATUS_RESPONSE status = OK;
+
+    // 1. Compute centroid and covariance
+    Eigen::Vector4f pcaCentroid;
+    pcl::compute3DCentroid(*cloud, pcaCentroid);
+    Eigen::Matrix3f covariance;
+    pcl::computeCovarianceMatrixNormalized(*cloud, pcaCentroid, covariance);
+
+    // 2. Compute eigenvalues and eigenvectors
+    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigen_solver(
+        covariance, Eigen::ComputeEigenvectors);
+    Eigen::Matrix3f eigenVectorsPCA = eigen_solver.eigenvectors();
+
+    // This line is necessary for proper orientation
+    eigenVectorsPCA.col(2) =
+        eigenVectorsPCA.col(0).cross(eigenVectorsPCA.col(1));
+
+    // 3. Transform the original cloud to the origin where
+    // the principal components correspond to the axes
+    Eigen::Matrix4f projectionTransform(Eigen::Matrix4f::Identity());
+    projectionTransform.block<3, 3>(0, 0) = eigenVectorsPCA.transpose();
+    projectionTransform.block<3, 1>(0, 3) =
+        -1.0f * (projectionTransform.block<3, 3>(0, 0) * pcaCentroid.head<3>());
+
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloudPointsProjected(
+        new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::transformPointCloud(*cloud, *cloudPointsProjected,
+                             projectionTransform);
+
+    // 4. Get the minimum and maximum points of the transformed cloud
+    pcl::PointXYZ minPoint, maxPoint;
+    pcl::getMinMax3D(*cloudPointsProjected, minPoint, maxPoint);
+
+    const Eigen::Vector3f meanDiagonal =
+        0.5f * (maxPoint.getVector3fMap() + minPoint.getVector3fMap());
+
+    // 5. Final transform
+    const Eigen::Quaternionf bboxQuaternion(eigenVectorsPCA);
+    const Eigen::Vector3f bboxTransform =
+        eigenVectorsPCA * meanDiagonal + pcaCentroid.head<3>();
+
+    // 6. Save the results
+    box_params.orientation.w = bboxQuaternion.w();
+    box_params.orientation.x = bboxQuaternion.x();
+    box_params.orientation.y = bboxQuaternion.y();
+    box_params.orientation.z = bboxQuaternion.z();
+
+    box_params.centroid.x = bboxTransform[0];
+    box_params.centroid.y = bboxTransform[1];
+    box_params.centroid.z = bboxTransform[2];
+
+    box_params.width = maxPoint.x - minPoint.x;
+    box_params.depth = maxPoint.y - minPoint.y;
+    box_params.height = maxPoint.z - minPoint.z;
+
+    // 7. Compute the corners
+    // First, define the corners in the local coordinate system
+    float halfWidth = box_params.width / 2;
+    float halfDepth = box_params.depth / 2;
+    float midHeight = (minPoint.z + maxPoint.z) / 2; // Use middle of Z range
+
+    pcl::PointXYZ corner1, corner2, corner3, corner4;
+    corner1.x = -halfWidth;
+    corner1.y = -halfDepth;
+    corner1.z = midHeight;
+    corner2.x = -halfWidth;
+    corner2.y = halfDepth;
+    corner2.z = midHeight;
+    corner3.x = halfWidth;
+    corner3.y = halfDepth;
+    corner3.z = midHeight;
+    corner4.x = halfWidth;
+    corner4.y = -halfDepth;
+    corner4.z = midHeight;
+
+    // Now transform these corners back to the original coordinate system
+    Eigen::Matrix4f invProjection = projectionTransform.inverse();
+
+    // Function to transform a point using a 4x4 matrix
+    auto transformPoint = [](const pcl::PointXYZ &point,
+                             const Eigen::Matrix4f &matrix) {
+      Eigen::Vector4f pointVector;
+      pointVector << point.x, point.y, point.z, 1;
+      Eigen::Vector4f transformedPoint = matrix * pointVector;
+      pcl::PointXYZ result;
+      result.x = transformedPoint(0) / transformedPoint(3);
+      result.y = transformedPoint(1) / transformedPoint(3);
+      result.z = transformedPoint(2) / transformedPoint(3);
+      return result;
+    };
+
+    box_params.xy1 = transformPoint(corner1, invProjection);
+    box_params.xy2 = transformPoint(corner2, invProjection);
+    box_params.xy3 = transformPoint(corner3, invProjection);
+    box_params.xy4 = transformPoint(corner4, invProjection);
+
+    return status;
+  }
+
+  STATUS_RESPONSE
   RansacNormals(_IN_ std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud,
                 _OUT_ BoxPrimitiveParams &box_params) {
     STATUS_RESPONSE status = OK;
@@ -127,24 +229,10 @@ public:
     center[1] = box_params.centroid.y;
     center[2] = box_params.centroid.z;
 
-    // Compute eigenvectors and eigenvalues of the covariance matrix
     Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigen_solver(
         covariance_matrix);
     Eigen::Matrix3f eigenvectors = eigen_solver.eigenvectors();
-
-    // Sort eigenvectors by eigenvalues in descending order
-    // This ensures the principal axes are properly ordered
     Eigen::Vector3f eigenvalues = eigen_solver.eigenvalues();
-    // int max_idx = 0, mid_idx = 1, min_idx = 2;
-    // if (eigenvalues(0) > eigenvalues(max_idx))
-    //   max_idx = 0;
-    // if (eigenvalues(1) > eigenvalues(max_idx))
-    //   max_idx = 1;
-    // if (eigenvalues(2) > eigenvalues(max_idx))
-    //   max_idx = 2;
-
-    // min_idx = (max_idx + 1) % 3;
-    // mid_idx = (max_idx + 2) % 3;
 
     std::priority_queue<std::pair<double, int>> pq;
     for (int i = 0; i < 3; ++i) {
@@ -168,52 +256,25 @@ public:
     rotation_matrix.col(2) = eigenvectors.col(min_idx);
 
     // Ensure we have a right-handed coordinate system
-    if (rotation_matrix.determinant() < 0) {
-      rotation_matrix.col(2) = -rotation_matrix.col(2);
-    }
 
-    // Make sure the axes follow ROS convention (x forward, y left, z up)
-    // Align the principal components with ROS coordinate system
+    // if (rotation_matrix.determinant() < 0) {
+    //   rotation_matrix.col(2) = -rotation_matrix.col(2);
+    // }
     Eigen::Matrix3f ros_align = Eigen::Matrix3f::Identity();
 
-    // Convert from PCA eigenvectors to ROS convention
     Eigen::Matrix3f aligned_rotation = rotation_matrix;
 
-    // Construct the transform
     Eigen::Affine3f transform = Eigen::Affine3f::Identity();
     transform.translate(center);
 
-    // Create quaternion from the aligned rotation matrix
-    // For ROS2 TF compatibility, we need to ensure correct orientation
     Eigen::Quaternionf quat(aligned_rotation);
 
-    // Using rotation from base_link frame's perspective
-    tf2::Quaternion tf_quat(quat.x(), quat.y(), quat.z(), quat.w());
-    // Normalize and correct rotation if needed
-    // tf_quat.normalize();
-    // tf2::Matrix3x3 m(tf_quat);
-
-
-    // Apply rotation to the transform
-
-    // Set the orientation in the box parameters
+    box_params.orientation.x = quat.x();
+    box_params.orientation.y = quat.y();
+    box_params.orientation.z = quat.z();
+    box_params.orientation.w = quat.w();
     quat.normalize();
-    // for (int i = 0; i <= 3; ++i) {
-    //   for (int j = 0; j <= 3; ++j) {
-    //     RCLCPP_INFO(this->get_logger(), "m[%d][%d]: %f", i, j, m[i][j]);
-    //   }
-    // }
 
-    box_params.orientation.x = tf_quat.x();
-    box_params.orientation.y = tf_quat.y();
-    box_params.orientation.z = tf_quat.z();
-    box_params.orientation.w = 1;
-    // box_params.orientation.w = tf_quat.w();
-
-    // box_params.orientation.x = m[0][0];
-    // box_params.orientation.y = m[0][1];
-    // box_params.orientation.z = m[0][2];
-    // box_params.orientation.w = m[0][3];
     transform.rotate(quat);
 
     pcl::PointCloud<pcl::PointXYZ> transformed_cloud;
@@ -237,30 +298,7 @@ public:
     xy4.x = max_pt2.x;
     xy4.y = min_pt.y;
     xy4.z = z;
-    // box_params.xy1 = xy1;
-    // box_params.xy2 = xy2;
-    // box_params.xy3 = xy3;
-    // box_params.xy4 = xy4;
 
-    // how can I get min_pt and max_pt2 in the original space?
-    // Transform back to original space
-    // pcl::PointXYZ min_pt_transformed, max_pt_transformed;
-    // min_pt_transformed = pcl::transformPoint(min_pt, transform.inverse());
-    // max_pt_transformed = pcl::transformPoint(max_pt2, transform.inverse());
-
-    // // for xy points dont take into account the z axis
-    // box_params.xy1.x = min_pt_transformed.x;
-    // box_params.xy1.y = min_pt_transformed.y;
-    // box_params.xy2.x = min_pt_transformed.x;
-    // box_params.xy2.y = max_pt_transformed.y;
-    // box_params.xy3.x = max_pt_transformed.x;
-    // box_params.xy3.y = max_pt_transformed.y;
-    // box_params.xy4.x = max_pt_transformed.x;
-    // box_params.xy4.y = min_pt_transformed.y;
-    // box_params.xy1.z = z;
-    // box_params.xy2.z = z;
-    // box_params.xy3.z = z;
-    // box_params.xy4.z = z;
     box_params.xy1 = xy1;
     box_params.xy2 = xy2;
     box_params.xy3 = xy3;
@@ -333,7 +371,7 @@ public:
 
       BoxPrimitiveParams box_params;
 
-      STATUS_RESPONSE status = RansacNormals(cloud, box_params);
+      STATUS_RESPONSE status = Normals(cloud, box_params);
 
       ASSERT_AND_RETURN_CODE(
           status, OK, "Error computing box primitive with code %d", status);
@@ -463,18 +501,18 @@ public:
           RCLCPP_INFO(this->get_logger(), "Cloud size: %zu",
                       cloud_out->points.size());
           BoxPrimitiveParams box_params;
-          response->health_response = RansacNormals(cloud_out, box_params);
+          response->health_response = Normals(cloud_out, box_params);
           ASSERT_AND_RETURN_CODE(response->health_response, OK,
                                  "Error computing box primitive with code %d",
                                  response->health_response);
           box_params.height = 0.025;
-          pcl::PointXYZ min_pt, max_pt2;
-          pcl::getMinMax3D(*cloud_out, min_pt, max_pt2);
-          box_params.centroid.x = min_pt.x + (max_pt2.x - min_pt.x) / 2;
-          box_params.centroid.y = min_pt.y + (max_pt2.y - min_pt.y) / 2;
-          box_params.centroid.z = min_pt.z + (max_pt2.z - min_pt.z) / 2;
-          box_params.width = max_pt2.x - min_pt.x;
-          box_params.depth = max_pt2.y - min_pt.y;
+          // pcl::PointXYZ min_pt, max_pt2;
+          // pcl::getMinMax3D(*cloud_out, min_pt, max_pt2);
+          // box_params.centroid.x = min_pt.x + (max_pt2.x - min_pt.x) / 2;
+          // box_params.centroid.y = min_pt.y + (max_pt2.y - min_pt.y) / 2;
+          // box_params.centroid.z = min_pt.z + (max_pt2.z - min_pt.z) / 2;
+          // box_params.width = max_pt2.x - min_pt.x;
+          // box_params.depth = max_pt2.y - min_pt.y;
           RCLCPP_INFO(this->get_logger(), "Box params: %Lf %Lf %Lf",
                       box_params.width, box_params.depth, box_params.height);
           // // box_params.height = std::max(max_pt2.z - min_pt.z - 0.01, 0.01);
@@ -516,31 +554,31 @@ public:
             transform.transform.translation.x = box_params.xy2.x;
             transform.transform.translation.y = box_params.xy2.y;
             transform.transform.translation.z = (minn[2] + maxx[2]) / 2.0;
+            transform.transform.rotation = box_params.orientation;
             // transform.transform.rotation.x = 0.0;
             // transform.transform.rotation.y = 0.0;
             // transform.transform.rotation.z = 0.0;
             // transform.transform.rotation.w = 1.0;
-            transform.transform.rotation = box_params.orientation;
             transform.child_frame_id = "plane_corner_2";
             this->tf_broadcaster->sendTransform(transform);
             transform.transform.translation.x = box_params.xy3.x;
             transform.transform.translation.y = box_params.xy3.y;
             transform.transform.translation.z = (minn[2] + maxx[2]) / 2.0;
+            transform.transform.rotation = box_params.orientation;
             // transform.transform.rotation.x = 0.0;
             // transform.transform.rotation.y = 0.0;
             // transform.transform.rotation.z = 0.0;
             // transform.transform.rotation.w = 1.0;
-            transform.transform.rotation = box_params.orientation;
             transform.child_frame_id = "plane_corner_3";
             this->tf_broadcaster->sendTransform(transform);
             transform.transform.translation.x = box_params.xy4.x;
             transform.transform.translation.y = box_params.xy4.y;
             transform.transform.translation.z = (minn[2] + maxx[2]) / 2.0;
+            transform.transform.rotation = box_params.orientation;
             // transform.transform.rotation.x = 0.0;
             // transform.transform.rotation.y = 0.0;
             // transform.transform.rotation.z = 0.0;
             // transform.transform.rotation.w = 1.0;
-            transform.transform.rotation = box_params.orientation;
             transform.child_frame_id = "plane_corner_4";
             this->tf_broadcaster->sendTransform(transform);
 
