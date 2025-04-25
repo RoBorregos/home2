@@ -128,22 +128,47 @@ COMMAND="source /opt/ros/humble/setup.bash && colcon build --symlink-install --p
 # echo "COMMAND= $COMMAND " >> .env
 add_or_update_variable .env "COMMAND" "$COMMAND"
 
-# Check if the container exists
-if [ $ENV_TYPE == "cpu" ]; then
-        docker compose -f docker-compose-cpu.yml up $detached
-    elif [ $ENV_TYPE == "gpu" ]; then
-        docker compose -f docker-compose-cpu.yml up $detached
-    elif [ $ENV_TYPE == "jetson" ]; then
-        docker compose up $detached
+# Trap Ctrl+C to clean up
+cleanup() {
+  echo -e "\n🛑 Interrupted. Cleaning up..."
+  [ -n "$compose_pid" ] && kill "$compose_pid" 2>/dev/null
+  [ -n "$curl_pid" ] && kill "$curl_pid" 2>/dev/null
+  exit 1
+}
+trap cleanup SIGINT
+
+compose_file="docker-compose-cpu.yml"
+[ "$ENV_TYPE" == "jetson" ] && compose_file="docker-compose.yml"
+
+if [ -n "$detached" ]; then
+  echo "🚀 Launching containers in detached mode..."
+  docker compose -f "$compose_file" up -d
+
+  echo "⏳ Waiting for localhost:3000 to be available..."
+  until curl --output /dev/null --silent --head --fail http://localhost:3000; do
+    printf '.'
+    sleep 1
+  done
+  echo -e "\n✅ Web service is up. Launching Firefox..."
+  bash open-display.bash
+
+else
+  echo "🚀 Launching containers in attached mode..."
+  docker compose -f "$compose_file" up &
+  compose_pid=$!
+
+  echo "⏳ Waiting for localhost:3000 to be available..."
+  (
+    while ! curl --output /dev/null --silent --head --fail http://localhost:3000; do
+      printf '.'
+      sleep 1
+    done
+    echo -e "\n✅ Web service is up. Launching Firefox..."
+    bash open-display.bash
+  ) &
+  curl_pid=$!
+
+  # Wait for docker compose to finish, then kill the curl loop
+  wait $compose_pid
+  kill $curl_pid 2>/dev/null
 fi
-
-# For the display to work, we need to set the DISPLAY environment variable
-echo "Waiting for localhost:3000 to be available..."
-
-until curl --output /dev/null --silent --head --fail http://localhost:3000; do
-  printf '.'
-  sleep 1
-done
-
-echo -e "\nLaunching Firefox..."
-bash open-display.bash
