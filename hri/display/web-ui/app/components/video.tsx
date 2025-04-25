@@ -11,13 +11,11 @@ export default function MjpegStream({ streamUrl }: MjpegStreamProps) {
   const [retryKey, setRetryKey] = useState(Date.now());
 
   useEffect(() => {
-    let interval: NodeJS.Timeout;
-
     const tryReload = () => {
       setRetryKey(Date.now()); // force reload with new URL to bust cache
     };
 
-    interval = setInterval(() => {
+    const interval = setInterval(() => {
       if (imgRef.current && !imgRef.current.complete) {
         tryReload();
       }
