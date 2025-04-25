@@ -503,6 +503,15 @@ public:
           RCLCPP_INFO(this->get_logger(), "Cloud size: %zu",
                       cloud_out->points.size());
           BoxPrimitiveParams box_params;
+          try {
+            RCLCPP_INFO(this->get_logger(), "Computing box primitive");
+            response->health_response = RansacNormals(cloud_out, box_params);
+          } catch (const std::exception &exeption) {
+            RCLCPP_ERROR(this->get_logger(), "Exception: %s", exeption.what());
+            response->health_response = INVALID_INPUT_FILTER;
+            return;
+          }
+          // response->health_response = RansacNormals(cloud_out, box_params);
           response->health_response = RansacNormals(cloud_out, box_params);
           ASSERT_AND_RETURN_CODE(response->health_response, OK,
                                  "Error computing box primitive with code %d",
