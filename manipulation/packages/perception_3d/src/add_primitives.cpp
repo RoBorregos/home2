@@ -319,21 +319,21 @@ public:
     box_params.xy4 = xy4;
     RCLCPP_INFO(this->get_logger(), "xy4: %f %f %f", box_params.xy4.x,
                 box_params.xy4.y, box_params.xy4.z);
-    Eigen::Affine3f transform_inverse = Eigen::Affine3f::Identity();
-    transform_inverse.translate(center);
+    // Eigen::Affine3f transform_inverse = Eigen::Affine3f::Identity();
+    // transform_inverse.translate(center);
     // transform_inverse.rotate(quat);
-    transform_inverse.inverse();
+    // transform_inverse.inverse();
 
-    box_params.xy1 = pcl::transformPoint(xy1, transform_inverse);
+    box_params.xy1 = pcl::transformPoint(xy1, transform.inverse());
     RCLCPP_INFO(this->get_logger(), "xy1: %f %f %f", box_params.xy1.x,
                 box_params.xy1.y, box_params.xy1.z);
-    box_params.xy2 = pcl::transformPoint(xy2, transform_inverse);
+    box_params.xy2 = pcl::transformPoint(xy2, transform.inverse());
     RCLCPP_INFO(this->get_logger(), "xy2: %f %f %f", box_params.xy2.x,
                 box_params.xy2.y, box_params.xy2.z);
-    box_params.xy3 = pcl::transformPoint(xy3, transform_inverse);
+    box_params.xy3 = pcl::transformPoint(xy3, transform.inverse());
     RCLCPP_INFO(this->get_logger(), "xy3: %f %f %f", box_params.xy3.x,
                 box_params.xy3.y, box_params.xy3.z);
-    box_params.xy4 = pcl::transformPoint(xy4, transform_inverse);
+    box_params.xy4 = pcl::transformPoint(xy4, transform.inverse());
     RCLCPP_INFO(this->get_logger(), "xy4: %f %f %f", box_params.xy4.x,
                 box_params.xy4.y, box_params.xy4.z);
     // Eigen::Affine3f transform_inverse = transform.inverse();
