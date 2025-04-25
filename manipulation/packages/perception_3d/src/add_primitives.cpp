@@ -321,8 +321,8 @@ public:
                 box_params.xy4.y, box_params.xy4.z);
     Eigen::Affine3f transform_inverse = Eigen::Affine3f::Identity();
     transform_inverse.translate(center);
-    transform_inverse.rotate(quat);
-    // transform_inverse.inverse();
+    // transform_inverse.rotate(quat);
+    transform_inverse.inverse();
 
     box_params.xy1 = pcl::transformPoint(xy1, transform_inverse);
     RCLCPP_INFO(this->get_logger(), "xy1: %f %f %f", box_params.xy1.x,
