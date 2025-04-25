@@ -37,9 +37,6 @@ from frida_interfaces.srv import (
     FindSeat,
     Query,
     SaveName,
-    FindSeat,
-    Query,
-    SaveName,
     ShelfDetectionHandler,
     DetectionHandler,
     CountByPose,
@@ -52,14 +49,11 @@ from rclpy.action import ActionClient
 from rclpy.node import Node
 from std_msgs.msg import String
 from std_srvs.srv import SetBool
-from std_msgs.msg import String
-from std_srvs.srv import SetBool
 from utils.decorators import mockable, service_check
 from utils.logger import Logger
 from utils.status import Status
 import time
 
-from utils.task import Task
 from utils.task import Task
 
 TIMEOUT = 5.0
@@ -68,7 +62,6 @@ TIMEOUT = 5.0
 class VisionTasks:
     """Class to manage the vision tasks"""
 
-    def __init__(self, task_manager: Node, task: Task, mock_data=False) -> None:
     def __init__(self, task_manager: Node, task: Task, mock_data=False) -> None:
         """Initialize the class"""
         self.node = task_manager
@@ -173,7 +166,6 @@ class VisionTasks:
             Task.STORING_GROCERIES: {
                 "moondream_query": {"client": self.moondream_query_client, "type": "service"},
                 "shelf_detections": {"client": self.shelf_detections_client, "type": "service"},
-                "detect_objects": {"client": self.object_detector_client, "type": "service"},
                 "detect_objects": {"client": self.object_detector_client, "type": "service"},
             },
             Task.DEBUG: {
@@ -283,7 +275,6 @@ class VisionTasks:
     @mockable(return_value=(Status.EXECUTION_SUCCESS, []), delay=2)
     @service_check("shelf_detections_client", Status.EXECUTION_ERROR, TIMEOUT)
     def detect_shelf(self, timeout: float = TIMEOUT) -> tuple[Status, list[ShelfDetection]]:
-    def detect_shelf(self, timeout: float = TIMEOUT) -> tuple[Status, list[ShelfDetection]]:
         """Detect the shelf in the image"""
         Logger.info(self.node, "Waiting for shelf detection")
         request = ShelfDetectionHandler.Request()
@@ -314,61 +305,6 @@ class VisionTasks:
             return Status.EXECUTION_ERROR, detections
 
         Logger.success(self.node, "Shelf detected")
-        return Status.EXECUTION_SUCCESS, detections
-
-    @mockable(return_value=(Status.EXECUTION_SUCCESS, []), delay=2)
-    @service_check("object_detector_client", Status.EXECUTION_ERROR, TIMEOUT)
-    def detect_objects(self, timeout: float = TIMEOUT) -> tuple[Status, list[BBOX]]:
-        """Detect the object in the image"""
-        Logger.info(self.node, "Waiting for object detection")
-        request = DetectionHandler.Request()
-        request.closest_object = False
-        request.label = "all"
-        detections: list[BBOX] = []
-        try:
-            future = self.object_detector_client.call_async(request)
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=timeout)
-            result: DetectionHandler.Response = future.result()
-
-            if not result.success:
-                Logger.warn(self.node, "No object detected")
-                return Status.TARGET_NOT_FOUND, detections
-
-            results2 = result.detection_array.detections
-            """
-            int32 label
-            string label_text
-            float32 score
-            float32 ymin
-            float32 xmin
-            float32 ymax
-            float32 xmax
-            geometry_msgs/PointStamped point3d
-            """
-            # for each result
-            for detection in results2:
-                object_detection = BBOX()
-                object_detection.x1 = detection.xmin
-                object_detection.x2 = detection.xmax
-                object_detection.y1 = detection.ymin
-                object_detection.y2 = detection.ymax
-                object_detection.classname = detection.label_text
-                object_detection.h = detection.ymax - detection.ymin
-                object_detection.w = detection.xmax - detection.xmin
-                object_detection.x = (detection.xmin + detection.xmax) / 2
-                object_detection.y = (detection.ymin + detection.ymax) / 2
-
-                # TODO transorm if the frame_id is not 'zed...camera_frame'
-                object_detection.distance = detection.point3d.point.z
-                object_detection.px = detection.point3d.point.x
-                object_detection.py = detection.point3d.point.y
-                object_detection.pz = detection.point3d.point.z
-                print(f"example_detection: {detection}")
-                detections.append(object_detection)
-        except Exception as e:
-            Logger.error(self.node, f"Error detecting objects: {e}")
-            return Status.EXECUTION_ERROR, detections
-        Logger.success(self.node, "Objects detected")
         return Status.EXECUTION_SUCCESS, detections
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, []), delay=2)
@@ -776,16 +712,6 @@ class VisionTasks:
         """Describe the bag using only moondream"""
         Logger.info(self.node, "Describing bag")
         prompt = "Describe the bag that the person is pointing at using the folling format: the bag on your left is small and green"
-        return self.moondream_query(prompt, query_person=False)
-
-    def find_seat_moondream(self):
-        """Find the seat using only moondream"""
-        Logger.info(self.node, "Finding seat")
-        prompt = """Check if there is an available seat in the image. 
-        This could be an empty chair (the largest empty chair) or a space in a couch. 
-        If there is no available seat, please return 300. 
-        Else return the estimated angle of the person decimal from -1 to 1, where -1 is the image on the left and 1 is right.
-        """
         return self.moondream_query(prompt, query_person=False)
 
     def find_seat_moondream(self):

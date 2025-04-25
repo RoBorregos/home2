@@ -12,7 +12,6 @@ from typing import Union
 import rclpy
 from frida_constants.hri_constants import (
     ADD_ENTRY_SERVICE,
-    CATEGORIZE_SERVICE,
     COMMAND_INTERPRETER_SERVICE,
     COMMON_INTEREST_SERVICE,
     EXTRACT_DATA_SERVICE,
@@ -30,7 +29,6 @@ from frida_constants.hri_constants import (
 from frida_interfaces.srv import (
     STT,
     AddEntry,
-    CategorizeShelves,
     CommandInterpreter,
     CommonInterest,
     ExtractInfo,

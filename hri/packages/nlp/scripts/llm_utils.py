@@ -22,7 +22,6 @@ from rclpy.node import Node
 from std_msgs.msg import Bool, String
 
 from frida_interfaces.srv import (
-    CategorizeShelves,
     CommonInterest,
     Grammar,
     IsNegative,
