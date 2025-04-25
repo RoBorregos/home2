@@ -12,7 +12,6 @@ from typing import Union
 import rclpy
 from frida_constants.hri_constants import (
     ADD_ENTRY_SERVICE,
-    CATEGORIZE_SERVICE,
     COMMAND_INTERPRETER_SERVICE,
     COMMON_INTEREST_SERVICE,
     EXTRACT_DATA_SERVICE,
@@ -25,11 +24,11 @@ from frida_constants.hri_constants import (
     STT_SERVICE_NAME,
     USEFUL_AUDIO_NODE_NAME,
     WAKEWORD_TOPIC,
+    CATEGORIZE_SERVICE,
 )
 from frida_interfaces.srv import (
     STT,
     AddEntry,
-    CategorizeShelves,
     CommandInterpreter,
     CommonInterest,
     ExtractInfo,
@@ -39,6 +38,7 @@ from frida_interfaces.srv import (
     LLMWrapper,
     QueryEntry,
     Speak,
+    CategorizeShelves,
 )
 from rcl_interfaces.msg import Parameter, ParameterType, ParameterValue
 from rcl_interfaces.srv import SetParameters
