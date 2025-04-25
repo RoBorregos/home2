@@ -82,7 +82,7 @@ class SingleTracker(Node):
         self.verbose = self.declare_parameter("verbose", True)
         self.setup()
         self.create_timer(0.1, self.run)
-        self.create_timer(0.1, self.publish_image)
+        self.create_timer(0.01, self.publish_image)
 
     def setup(self):
         """Load models and initial variables"""

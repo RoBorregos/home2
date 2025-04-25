@@ -44,7 +44,7 @@ class TestVision(Node):
                 self.done = True
                 self.running_task = False
         elif task == Task.HELP_ME_CARRY:
-            status = self.manager.track_person_by(by=DetectBy.GESTURES.value, value=Gestures.RAISING_RIGHT_ARM.value)
+            status = self.manager.track_person_by(by=DetectBy.POSES.value, value=Poses.SITTING.value)
             self.running_task = False
             # status, bbox, point3d = self.manager.get_pointing_bag(5)
             # if status:
