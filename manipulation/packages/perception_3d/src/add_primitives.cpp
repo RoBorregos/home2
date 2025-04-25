@@ -229,7 +229,10 @@ public:
     pcl::getMinMax3D(*cloud, min_pt2, max_pt);
 
     Eigen::Vector3f center;
-    center = (max_pt.getVector3fMap() + min_pt2.getVector3fMap()) / 2;
+    // center = (max_pt.getVector3fMap() + min_pt2.getVector3fMap()) / 2;
+    center[0] = (max_pt.x + min_pt2.x) / 2;
+    center[1] = (max_pt.y + min_pt2.y) / 2;
+    center[2] = (max_pt.z + min_pt2.z) / 2;
 
     Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigen_solver(
         covariance_matrix);
@@ -249,7 +252,7 @@ public:
 
     // Eigen::Vector3f euler_angles = (eigenvectors).eulerAngles(2, 1, 0);
     Eigen::Quaternionf quat(eigenvectors);
-    quat.normalize();
+    // quat.normalize();
     // Eigen::AngleAxisf keep_Z_rot(euler_angles[0], Eigen::Vector3f::UnitZ());
     Eigen::Affine3f transform = Eigen::Affine3f::Identity();
     transform.translate(center);
@@ -275,9 +278,13 @@ public:
     box_params.orientation.x = quat.x();
     box_params.orientation.y = quat.y();
     box_params.orientation.z = quat.z();
-    box_params.centroid.x = center_new[0];
-    box_params.centroid.y = center_new[1];
-    box_params.centroid.z = center_new[2];
+    // box_params.orientation.w = 1;
+    // box_params.orientation.x = 0;
+    // box_params.orientation.y = 0;
+    // box_params.orientation.z = 0;
+    box_params.centroid.x = center[0];
+    box_params.centroid.y = center[1];
+    box_params.centroid.z = center[2];
 
     // box_params.centroid.x = min_pt.x + (max_pt2.x - min_pt.x) / 2;
 
@@ -301,13 +308,33 @@ public:
     xy4.z = z;
 
     box_params.xy1 = xy1;
+    RCLCPP_INFO(this->get_logger(), "xy1: %f %f %f", box_params.xy1.x,
+                box_params.xy1.y, box_params.xy1.z);
     box_params.xy2 = xy2;
+    RCLCPP_INFO(this->get_logger(), "xy2: %f %f %f", box_params.xy2.x,
+                box_params.xy2.y, box_params.xy2.z);
     box_params.xy3 = xy3;
+    RCLCPP_INFO(this->get_logger(), "xy3: %f %f %f", box_params.xy3.x,
+                box_params.xy3.y, box_params.xy3.z);
     box_params.xy4 = xy4;
-    box_params.xy1 = pcl::transformPoint(xy1, transform3);
-    box_params.xy2 = pcl::transformPoint(xy2, transform3);
-    box_params.xy3 = pcl::transformPoint(xy3, transform3);
-    box_params.xy4 = pcl::transformPoint(xy4, transform3);
+    RCLCPP_INFO(this->get_logger(), "xy4: %f %f %f", box_params.xy4.x,
+                box_params.xy4.y, box_params.xy4.z);
+    Eigen::Affine3f transform_inverse = Eigen::Affine3f::Identity();
+    transform_inverse.translate(center);
+    transform_inverse.inverse();
+
+    box_params.xy1 = pcl::transformPoint(xy1, transform_inverse);
+    RCLCPP_INFO(this->get_logger(), "xy1: %f %f %f", box_params.xy1.x,
+                box_params.xy1.y, box_params.xy1.z);
+    box_params.xy2 = pcl::transformPoint(xy2, transform_inverse);
+    RCLCPP_INFO(this->get_logger(), "xy2: %f %f %f", box_params.xy2.x,
+                box_params.xy2.y, box_params.xy2.z);
+    box_params.xy3 = pcl::transformPoint(xy3, transform_inverse);
+    RCLCPP_INFO(this->get_logger(), "xy3: %f %f %f", box_params.xy3.x,
+                box_params.xy3.y, box_params.xy3.z);
+    box_params.xy4 = pcl::transformPoint(xy4, transform_inverse);
+    RCLCPP_INFO(this->get_logger(), "xy4: %f %f %f", box_params.xy4.x,
+                box_params.xy4.y, box_params.xy4.z);
     // Eigen::Affine3f transform_inverse = transform.inverse();
     // box_params.xy1 = pcl::transformPoint(xy1, transform_inverse);
     // box_params.xy2 = pcl::transformPoint(xy2, transform_inverse);
