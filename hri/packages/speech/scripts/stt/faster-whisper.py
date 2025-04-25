@@ -52,6 +52,12 @@ class WhisperServicer(speech_pb2_grpc.SpeechServiceServicer):
         # Generate a temporary WAV file from received audio data
         temp_file = WavUtils.generate_temp_wav(1, 2, 16000, request.audio_data)
 
+        if self.log_transcriptions:
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+            audio_filename = f"audio_{timestamp}.wav"
+            audio_path = os.path.join(self.log_dir, audio_filename)
+            shutil.copy(temp_file, audio_path)
+
         # Get hotwords from request
         current_hotwords = request.hotwords if request.hotwords else ""
 
@@ -71,11 +77,6 @@ class WhisperServicer(speech_pb2_grpc.SpeechServiceServicer):
 
         # Log transcription if enabled
         if self.log_transcriptions:
-            timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
-            audio_filename = f"audio_{timestamp}.wav"
-            audio_path = os.path.join(self.log_dir, audio_filename)
-
-            shutil.copy(temp_file, audio_path)
             log_file = os.path.join(self.log_dir, "transcriptions.log")
             with open(log_file, "a") as f:
                 f.write(
