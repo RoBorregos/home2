@@ -162,9 +162,9 @@ class ReceptionistTM(Node):
             Logger.state(self, "Saving face")
             self.subtask_manager.hri.say("I will save your face now. Please stand in front of me")
             result = self.subtask_manager.vision.save_face_name(self.get_guest().name)
-            self.subtask_manager.vision.describe_person(self.set_description)
 
             if result == Status.EXECUTION_SUCCESS or self.current_attempts >= ATTEMPT_LIMIT:
+                self.subtask_manager.vision.describe_person(self.set_description)
                 self.subtask_manager.hri.say("I have saved your face.")
                 self.current_attempts = 0
                 self.current_state = ReceptionistTM.TASK_STATES["NAVIGATE_TO_BEVERAGES"]
