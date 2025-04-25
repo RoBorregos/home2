@@ -147,7 +147,7 @@ class VisionTasks:
                     "type": "service",
                 },
                 "find_person_info": {
-                    "client": self.person_info_client,
+                    "client": self.find_person_info_client,
                     "type": "service",
                 },
                 "count_by_pose": {
@@ -558,7 +558,7 @@ class VisionTasks:
 
         Logger.success(self.node, "Person tracking success")
         return Status.EXECUTION_SUCCESS
-      
+
     @mockable(return_value=Status.EXECUTION_SUCCESS, delay=2)
     @service_check("track_person_by_client", Status.EXECUTION_ERROR, TIMEOUT)
     def track_person_by(self, by: str, value: str, track: bool = True) -> int:
