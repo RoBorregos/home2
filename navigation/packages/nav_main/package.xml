@@ -19,6 +19,8 @@
   <depend>rclcpp_components</depend>
   <depend>navigation2</depend>
   <depend>nav2_bringup</depend>
+  <depend>robot_localization</depend>
+  <depend>sllidar_ros2</depend>
   <!-- Action server move -->
   <depend>action_msgs</depend>
 

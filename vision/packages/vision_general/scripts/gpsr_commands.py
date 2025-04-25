@@ -30,7 +30,6 @@ from frida_constants.vision_constants import (
     COUNT_BY_PERSON_TOPIC,
     IMAGE_TOPIC,
     COUNT_BY_COLOR_TOPIC,
-    # COUNT_BY_OBJECTS_TOPIC,
     COUNT_BY_GESTURES_TOPIC,
     COUNT_BY_POSE_TOPIC,
     POSE_GESTURE_TOPIC,
@@ -49,12 +48,15 @@ MAX_DEGREE = 30
 AREA_PERCENTAGE_THRESHOLD = 0.2
 CONF_THRESHOLD = 0.5
 TIMEOUT = 5.0
+TIMEOUT = 5.0
 
 
 class GPSRCommands(Node):
     def __init__(self):
         super().__init__("gpsr_commands")
         self.bridge = CvBridge()
+        self.callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
+        self.get_logger().info("FROM ~/dev/vision....")
 
         self.image_subscriber = self.create_subscription(
             Image, CAMERA_TOPIC, self.image_callback, 10
@@ -70,16 +72,15 @@ class GPSRCommands(Node):
             CountByPose, COUNT_BY_POSE_TOPIC, self.count_by_pose_callback
         )
 
-        # self.count_by_objects_service = self.create_service(
-        #     CountBy, COUNT_BY_OBJECTS_TOPIC, self.count_by_objects_callback
-        # )
-
         self.count_by_person_service = self.create_service(
             CountBy, COUNT_BY_PERSON_TOPIC, self.count_by_person_callback
         )
 
         self.count_by_color_service = self.create_service(
-            CountByColor, COUNT_BY_COLOR_TOPIC, self.count_by_color_callback
+            CountByColor,
+            COUNT_BY_COLOR_TOPIC,
+            self.count_by_color_callback,
+            callback_group=self.callback_group,
         )
 
         self.pose_gesture_detection_service = self.create_service(
@@ -94,10 +95,10 @@ class GPSRCommands(Node):
         self.output_image = []
 
         self.get_logger().info("GPSRCommands Ready.")
-        self.create_timer(0.1, self.publish_image)
+        # self.create_timer(0.1, self.publish_image)
 
-        self.moondream_crop_query_client = self.create_client(
-            CropQuery, CROP_QUERY_TOPIC
+        self.moondream_client = self.create_client(
+            CropQuery, CROP_QUERY_TOPIC, callback_group=self.callback_group
         )
 
     def image_callback(self, data):
@@ -183,27 +184,6 @@ class GPSRCommands(Node):
         self.get_logger().info(f"Pose {pose_requested} counted: {pose_count}")
         return response
 
-    def count_by_objects_callback(self, request, response):
-        """Callback to count objects in the image."""
-        self.get_logger().info("Executing service Count By Objects")
-        if self.image is None:
-            response.success = False
-            return response
-
-        frame = self.image
-        self.output_image = frame.copy()
-
-        # Detect objects using YOLO
-        # self.get_detections(frame, comp)
-
-        # Update objects_count
-        objects_count = 0
-
-        response.success = True
-        response.count = objects_count
-        self.get_logger().info(f"Objects counted: {objects_count}")
-        return response
-
     def count_by_person_callback(self, request, response):
         """Callback to count people in the image."""
         self.get_logger().info("Executing service Count By Person")
@@ -226,6 +206,7 @@ class GPSRCommands(Node):
         return response
 
     def count_by_color_callback(self, request, response):
+        """Callback to count people wearing a specific color and clothing."""
         """Callback to count people wearing a specific color and clothing."""
         self.get_logger().info("Executing service Count By Color")
 
@@ -256,12 +237,15 @@ class GPSRCommands(Node):
                 response_clean = response_q.strip()
                 if response_clean == "1":
                     count += 1
+                    self.get_logger().info(
+                        f"Person {count} is wearing a {color} {clothing}."
+                    )
                 elif response_clean != "0":
                     self.get_logger().warn(f"Unexpected response: {response_clean}")
 
         response.success = True
         response.count = count
-        self.get_logger().info(f"People wearing a {clothing} of color {color}: {count}")
+        self.get_logger().info(f"People wearing a {color} {clothing}: {count}")
         return response
 
     def detect_pose_gesture_callback(self, request, response):
@@ -290,8 +274,23 @@ class GPSRCommands(Node):
             response.success = False
             response.result = ""
             return response
+        # Detect people using YOLO
+        self.get_detections(frame, 0)
+
+        type_requested = request.type_requested
+
+        if type_requested == "pose":
+            response.result = self.detect_pose(frame)
+        elif type_requested == "gesture":
+            response.result = self.detect_gesture(frame)
+        else:
+            self.get_logger().warn(f"Type {type_requested} is not valid.")
+            response.success = False
+            response.result = ""
+            return response
 
         response.success = True
+        self.get_logger().info(f"{type_requested} detected: {response.result}")
         self.get_logger().info(f"{type_requested} detected: {response.result}")
         return response
 
@@ -302,7 +301,7 @@ class GPSRCommands(Node):
     def publish_image(self):
         """Publish the image with the detections if available."""
         if len(self.output_image) != 0:
-            cv2.imshow("GPSR Commands", self.output_image)
+            # cv2.imshow("GPSR Commands", self.output_image)
             cv2.waitKey(1)
             self.image_publisher.publish(
                 self.bridge.cv2_to_imgmsg(self.output_image, "bgr8")
@@ -334,6 +333,7 @@ class GPSRCommands(Node):
         """Count the poses in the image and return a dictionary."""
         pose_count = {
             Poses.UNKNOWN: 0,
+            Poses.UNKNOWN: 0,
             Poses.STANDING: 0,
             Poses.SITTING: 0,
             Poses.LYING_DOWN: 0,
@@ -342,7 +342,10 @@ class GPSRCommands(Node):
         # Detect poses for each detected person
         for person in self.people:
             x1, y1, x2, y2 = person["bbox"]
+            x1, y1, x2, y2 = person["bbox"]
 
+            # Crop the frame to the bounding box of the person
+            cropped_frame = frame[y1:y2, x1:x2]
             # Crop the frame to the bounding box of the person
             cropped_frame = frame[y1:y2, x1:x2]
             pose = self.pose_detection.detectPose(cropped_frame)
@@ -381,6 +384,7 @@ class GPSRCommands(Node):
         """Count the gestures in the image and return a dictionary."""
         gesture_count = {
             Gestures.UNKNOWN: 0,
+            Gestures.UNKNOWN: 0,
             Gestures.WAVING: 0,
             Gestures.RAISING_LEFT_ARM: 0,
             Gestures.RAISING_RIGHT_ARM: 0,
@@ -390,6 +394,10 @@ class GPSRCommands(Node):
 
         # Detect gestures for each detected person
         for person in self.people:
+            x1, y1, x2, y2 = person["bbox"]
+
+            # Crop the frame to the bounding box of the person
+            cropped_frame = frame[y1:y2, x1:x2]
             x1, y1, x2, y2 = person["bbox"]
 
             # Crop the frame to the bounding box of the person
@@ -435,60 +443,52 @@ class GPSRCommands(Node):
                         cv2.LINE_AA,
                     )
 
-    def wait_for_future(self, future, timeout=5.0):
+    def wait_for_future(self, future, timeout=5):
         start_time = time.time()
-        self.get_logger().info("Waiting for future to complete")
-
+        while future is None and (time.time() - start_time) < timeout:
+            pass
         if future is None:
-            self.get_logger().warn("Future is None")
-            return None
-
+            return False
         while not future.done() and (time.time() - start_time) < timeout:
-            rclpy.spin_once(self, timeout_sec=0.1)
-
-        if not future.done():
-            self.get_logger().warn("Timeout reached, future did not complete")
-            return None
-
-        return future.result()
+            print("Waiting for future to complete...")
+        return future
 
     def moondream_crop_query(self, prompt: str, bbox: list[float]) -> tuple[int, str]:
         """Makes a query of the current image using moondream."""
         self.get_logger().info(f"Querying image with prompt: {prompt}")
 
+        height, width = self.image.shape[:2]
+
+        ymin = bbox[0] / height
+        xmin = bbox[1] / width
+        ymax = bbox[2] / height
+        xmax = bbox[3] / width
+
         request = CropQuery.Request()
         request.query = prompt
-        request.ymin = bbox[0]
-        request.xmin = bbox[1]
-        request.ymax = bbox[2]
-        request.xmax = bbox[3]
+        request.ymin = ymin
+        request.xmin = xmin
+        request.ymax = ymax
+        request.xmax = xmax
 
-        future = self.moondream_crop_query_client.call_async(request)
-        result = self.wait_for_future(future)
-
+        future = self.moondream_client.call_async(request)
+        future = self.wait_for_future(future, 15)
+        result = future.result()
         if result is None:
-            self.get_logger().error("Future timed out or failed")
-            return False, ""
-
-        if not result.success:
-            self.get_logger().warn(f"Moondream failed: {result.message}")
-            return False, ""
-
-        self.get_logger().info(f"Moondream result: {result.result}")
-        return True, result.result
+            self.get_logger().error("Moondream service returned None.")
+            return 0, "0"
+        if result.success:
+            self.get_logger().info(f"Moondream result: {result.result}")
+            return 1, result.result
 
 
 def main(args=None):
     rclpy.init(args=args)
     node = GPSRCommands()
-
-    try:
-        rclpy.spin(node)
-    except KeyboardInterrupt:
-        pass
-    finally:
-        node.destroy_node()
-        rclpy.shutdown()
+    executor = rclpy.executors.MultiThreadedExecutor(5)
+    executor.add_node(node)
+    executor.spin()
+    rclpy.shutdown()
 
 
 if __name__ == "__main__":

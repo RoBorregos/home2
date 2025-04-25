@@ -18,6 +18,7 @@ from frida_constants.manipulation_constants import (
     EEF_CONTACT_LINKS,
     PICK_MOTION_ACTION_SERVER,
     PLANE_OBJECT_COLLISION_TOLERANCE,
+    SAFETY_HEIGHT,
 )
 from frida_interfaces.srv import (
     AttachCollisionObject,
@@ -189,14 +190,14 @@ class PickMotionServer(Node):
             if PICK_OBJECT_NAMESPACE in obj.id:
                 request = AttachCollisionObject.Request()
                 request.id = obj.id
-                if plane is not None and self.object_in_plane(obj, plane):
-                    self.remove_collision_object(obj.id)
-                    continue
                 if obj_lowest is None:
                     obj_lowest = obj
                 else:
                     if obj.pose.pose.position.z < obj_lowest.pose.pose.position.z:
                         obj_lowest = obj
+                if plane is not None and self.object_in_plane(obj, plane):
+                    self.remove_collision_object(obj.id)
+                    continue
                 request.attached_link = EEF_LINK_NAME
                 request.touch_links = EEF_CONTACT_LINKS
                 request.detach = False
@@ -239,8 +240,10 @@ class PickMotionServer(Node):
             )
             return 0.0
         obj_z = obj.pose.pose.position.z
+        obj_radius = obj.dimensions.x
         grasp_height = pose.pose.position.z
-        height = grasp_height - obj_z
+        # assume lowest part of the object is lowest bound of lowest sphere
+        height = grasp_height - (obj_z - obj_radius) + SAFETY_HEIGHT
         self.get_logger().info(f"Object pick height: {height}")
         return height
 

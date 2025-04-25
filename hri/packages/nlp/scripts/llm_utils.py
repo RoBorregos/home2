@@ -9,7 +9,11 @@ from typing import Optional
 
 import pytz
 import rclpy
-from nlp.assets.dialogs import get_is_answer_negative_args, get_is_answer_positive_args
+from nlp.assets.dialogs import (
+    get_common_interests_dialog,
+    get_is_answer_negative_args,
+    get_is_answer_positive_args,
+)
 from nlp.assets.schemas import IsAnswerNegative, IsAnswerPositive
 from openai import OpenAI
 from pydantic import BaseModel
@@ -238,20 +242,14 @@ class LLMUtils(Node):
         return res
 
     def common_interest(self, req, res):
+        messages = get_common_interests_dialog(
+            req.person1, req.person2, req.interests1, req.interests2
+        )["messages"]
         response = (
             self.client.beta.chat.completions.parse(
                 model=self.model,
                 temperature=self.temperature,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You will be presented with the interests of two people, your task is to get the common interests between them. Give a short answer with one common interest. Don't overthink your response",
-                    },
-                    {
-                        "role": "user",
-                        "content": f"{req.person1} likes {req.interests1} and {req.person2} likes {req.interests2}",
-                    },
-                ],
+                messages=messages,
             )
             .choices[0]
             .message.content
