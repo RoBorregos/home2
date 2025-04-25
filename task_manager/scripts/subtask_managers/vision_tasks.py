@@ -129,8 +129,7 @@ class VisionTasks:
                 "track_by": {
                     "client": self.track_person_by_client,
                     "type": "service",
-                }
-                
+                },
             },
             Task.STORING_GROCERIES: {
                 "moondream_query": {"client": self.moondream_query_client, "type": "service"},

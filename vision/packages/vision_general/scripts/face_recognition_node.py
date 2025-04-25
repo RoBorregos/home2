@@ -14,10 +14,10 @@ import face_recognition
 import tqdm
 import os
 import numpy as np
-from vision_general.utils.calculations import (
-    get_depth,
-    deproject_pixel_to_point,
-)
+# from vision_general.utils.calculations import (
+#     get_depth,
+#     deproject_pixel_to_point,
+# )
 
 import rclpy
 from rclpy.node import Node

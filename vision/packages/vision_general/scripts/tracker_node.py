@@ -181,7 +181,7 @@ class SingleTracker(Node):
         if self.image is None:
             self.get_logger().warn("No image available")
             return False
-            
+
         self.get_logger().info(f"Setting target by {track_by} with value {value}")
 
         self.frame = self.image
