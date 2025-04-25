@@ -16,6 +16,7 @@ from frida_constants.vision_constants import (
     SET_TARGET_TOPIC,
     SHELF_DETECTION_TOPIC,
     DETECTION_HANDLER_TOPIC_SRV,
+    SET_TARGET_BY_TOPIC,
     FIND_SEAT_TOPIC,
     CHECK_PERSON_TOPIC,
     QUERY_TOPIC,
@@ -39,6 +40,7 @@ from frida_interfaces.srv import (
     SaveName,
     ShelfDetectionHandler,
     DetectionHandler,
+    TrackBy,
     CountByPose,
     CountByGesture,
     CountByColor,
@@ -87,6 +89,7 @@ class VisionTasks:
         self.moondream_query_client = self.node.create_client(Query, QUERY_TOPIC)
         self.moondream_crop_query_client = self.node.create_client(CropQuery, CROP_QUERY_TOPIC)
         self.track_person_client = self.node.create_client(SetBool, SET_TARGET_TOPIC)
+        self.track_person_by_client = self.node.create_client(TrackBy, SET_TARGET_BY_TOPIC)
         self.pointing_object_client = self.node.create_client(
             DetectPointingObject, POINTING_OBJECT_SERVICE
         )
@@ -145,8 +148,12 @@ class VisionTasks:
                     "client": self.save_name_client,
                     "type": "service",
                 },
+                "track_by": {
+                    "client": self.track_person_by_client,
+                    "type": "service",
+                },
                 "find_person_info": {
-                    "client": self.person_info_client,
+                    "client": self.find_person_info_client,
                     "type": "service",
                 },
                 "count_by_pose": {
@@ -537,11 +544,11 @@ class VisionTasks:
 
     @mockable(return_value=Status.EXECUTION_SUCCESS, delay=2)
     @service_check("track_person_client", Status.EXECUTION_ERROR, TIMEOUT)
-    def track_person(self):
+    def track_person(self, track: bool = True):
         """Track the person in the image"""
         Logger.info(self.node, "Tracking person")
         request = SetBool.Request()
-        request.data = True
+        request.data = track
 
         try:
             future = self.track_person_client.call_async(request)
@@ -558,7 +565,33 @@ class VisionTasks:
         Logger.success(self.node, "Person tracking success")
         return Status.EXECUTION_SUCCESS
 
-    @mockable(return_value=(Status.EXECUTION_SUCCESS, 100))
+    @mockable(return_value=Status.EXECUTION_SUCCESS, delay=2)
+    @service_check("track_person_by_client", Status.EXECUTION_ERROR, TIMEOUT)
+    def track_person_by(self, by: str, value: str, track: bool = True) -> int:
+        """Track the person in the image"""
+        Logger.info(self.node, f"Tracking person by {by} with value {value}")
+        request = TrackBy.Request()
+        request.track_enabled = track
+        request.track_by = by
+        request.value = value
+
+        try:
+            future = self.track_person_by_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+            result = future.result()
+
+            if not result.success:
+                Logger.warn(self.node, "No person found")
+                return Status.TARGET_NOT_FOUND
+
+        except Exception as e:
+            Logger.error(self.node, f"Error tracking person: {e}")
+            return Status.EXECUTION_ERROR
+
+        Logger.success(self.node, "Person tracking success")
+        return Status.EXECUTION_SUCCESS
+
+    @mockable(return_value=[Status.EXECUTION_SUCCESS, 100])
     @service_check("count_by_pose_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
     def count_by_pose(self, pose: str) -> tuple[int, int]:
         """Count the number of people with the requested pose"""
