@@ -237,11 +237,15 @@ class SingleTracker(Node):
                     elif track_by == DetectBy.POSES.value:
                         pose = self.pose_detection.detectPose(cropped_image)
 
-                    print(f"pose: {pose.value}, value: {value}")
                     if pose.value == value:
+                        self.success(f"Target found by {track_by}: {pose.value}")
                         largest_person["id"] = track_id
                         largest_person["area"] = area
                         largest_person["bbox"] = (x1, y1, x2, y2)
+                    else:
+                        self.get_logger().warn(
+                            f"Person detected with {track_by}: {pose.value}"
+                        )
 
         if largest_person["id"] is not None:
             self.person_data["id"] = largest_person["id"]

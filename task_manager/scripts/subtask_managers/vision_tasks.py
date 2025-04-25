@@ -530,12 +530,13 @@ class VisionTasks:
 
     @mockable(return_value=Status.EXECUTION_SUCCESS, delay=2)
     @service_check("track_person_by_client", Status.EXECUTION_ERROR, TIMEOUT)
-    def track_person_by(self, by: str, track: bool = True):
+    def track_person_by(self, by: str, value: str, track: bool = True) -> int:
         """Track the person in the image"""
-        Logger.info(self.node, f"Tracking person by {by}")
+        Logger.info(self.node, f"Tracking person by {by} with value {value}")
         request = TrackBy.Request()
         request.track_enabled = track
         request.track_by = by
+        request.value = value
 
         try:
             future = self.track_person_by_client.call_async(request)
@@ -543,7 +544,8 @@ class VisionTasks:
             result = future.result()
 
             if not result.success:
-                raise Exception("Service call failed")
+                Logger.warn(self.node, "No person found")
+                return Status.TARGET_NOT_FOUND
 
         except Exception as e:
             Logger.error(self.node, f"Error tracking person: {e}")
