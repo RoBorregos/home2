@@ -25,6 +25,7 @@ from frida_constants.vision_constants import (
     SET_TARGET_TOPIC,
     SHELF_DETECTION_TOPIC,
     DETECTION_HANDLER_TOPIC_SRV,
+    SET_TARGET_BY_TOPIC,
 )
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.msg import ObjectDetection, PersonList
@@ -37,6 +38,7 @@ from frida_interfaces.srv import (
     SaveName,
     ShelfDetectionHandler,
     DetectionHandler,
+    TrackBy,
 )
 from geometry_msgs.msg import Point, PointStamped
 from rclpy.action import ActionClient
@@ -79,6 +81,7 @@ class VisionTasks:
         self.moondream_query_client = self.node.create_client(Query, QUERY_TOPIC)
         self.moondream_crop_query_client = self.node.create_client(CropQuery, CROP_QUERY_TOPIC)
         self.track_person_client = self.node.create_client(SetBool, SET_TARGET_TOPIC)
+        self.track_person_by_client = self.node.create_client(TrackBy, SET_TARGET_BY_TOPIC)
         self.pointing_object_client = self.node.create_client(
             DetectPointingObject, POINTING_OBJECT_SERVICE
         )
@@ -123,6 +126,11 @@ class VisionTasks:
                     "client": self.save_name_client,
                     "type": "service",
                 },
+                "track_by": {
+                    "client": self.track_person_by_client,
+                    "type": "service",
+                }
+                
             },
             Task.STORING_GROCERIES: {
                 "moondream_query": {"client": self.moondream_query_client, "type": "service"},
@@ -499,14 +507,38 @@ class VisionTasks:
 
     @mockable(return_value=Status.EXECUTION_SUCCESS, delay=2)
     @service_check("track_person_client", Status.EXECUTION_ERROR, TIMEOUT)
-    def track_person(self):
+    def track_person(self, track: bool = True):
         """Track the person in the image"""
         Logger.info(self.node, "Tracking person")
         request = SetBool.Request()
-        request.data = True
+        request.data = track
 
         try:
             future = self.track_person_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+            result = future.result()
+
+            if not result.success:
+                raise Exception("Service call failed")
+
+        except Exception as e:
+            Logger.error(self.node, f"Error tracking person: {e}")
+            return Status.EXECUTION_ERROR
+
+        Logger.success(self.node, "Person tracking success")
+        return Status.EXECUTION_SUCCESS
+
+    @mockable(return_value=Status.EXECUTION_SUCCESS, delay=2)
+    @service_check("track_person_by_client", Status.EXECUTION_ERROR, TIMEOUT)
+    def track_person_by(self, by: str, track: bool = True):
+        """Track the person in the image"""
+        Logger.info(self.node, f"Tracking person by {by}")
+        request = TrackBy.Request()
+        request.track_enabled = track
+        request.track_by = by
+
+        try:
+            future = self.track_person_by_client.call_async(request)
             rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
             result = future.result()
 
