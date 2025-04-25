@@ -82,7 +82,7 @@ class SingleTracker(Node):
         self.verbose = self.declare_parameter("verbose", True)
         self.setup()
         self.create_timer(0.1, self.run)
-        self.create_timer(0.1, self.publish_image)
+        self.create_timer(0.01, self.publish_image)
 
     def setup(self):
         """Load models and initial variables"""
@@ -164,10 +164,10 @@ class SingleTracker(Node):
     def publish_image(self):
         """Publish the image to the camera topic"""
         if len(self.output_image) != 0:
-            if self.verbose:
-                cv2.imshow("Tracking", self.output_image)
-                if cv2.waitKey(1) & 0xFF == ord("q"):
-                    cv2.destroyAllWindows()
+            # if self.verbose:
+            #     cv2.imshow("Tracking", self.output_image)
+            #     if cv2.waitKey(1) & 0xFF == ord("q"):
+            #         cv2.destroyAllWindows()
             self.image_publisher.publish(
                 self.bridge.cv2_to_imgmsg(self.output_image, "bgr8")
             )
@@ -181,6 +181,8 @@ class SingleTracker(Node):
         if self.image is None:
             self.get_logger().warn("No image available")
             return False
+
+        self.get_logger().info(f"Setting target by {track_by} with value {value}")
 
         self.frame = self.image
         self.output_image = self.frame.copy()
@@ -225,14 +227,25 @@ class SingleTracker(Node):
                         largest_person["id"] = track_id
                         largest_person["area"] = area
                         largest_person["bbox"] = (x1, y1, x2, y2)
-                elif track_by == DetectBy.GESTURES.value:
-                    print("Gesture detection")
+
+                else:
                     cropped_image = self.frame[y1:y2, x1:x2]
-                    pose = self.pose_detection.detectGesture(cropped_image)
+
+                    if track_by == DetectBy.GESTURES.value:
+                        pose = self.pose_detection.detectGesture(cropped_image)
+
+                    elif track_by == DetectBy.POSES.value:
+                        pose = self.pose_detection.detectPose(cropped_image)
+
                     if pose.value == value:
+                        self.success(f"Target found by {track_by}: {pose.value}")
                         largest_person["id"] = track_id
                         largest_person["area"] = area
                         largest_person["bbox"] = (x1, y1, x2, y2)
+                    else:
+                        self.get_logger().warn(
+                            f"Person detected with {track_by}: {pose.value}"
+                        )
 
         if largest_person["id"] is not None:
             self.person_data["id"] = largest_person["id"]

@@ -16,5 +16,5 @@ services:
       [
         "bash",
         "-c",
-        "python3 -u faster-whisper.py --port 50051 --model_size base.en",
+        "python3 -u faster-whisper.py --port 50051 --model_size base.en --log_transcriptions",
       ]
