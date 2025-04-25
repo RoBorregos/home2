@@ -198,11 +198,6 @@ class PickMotionServer(Node):
                 if plane is not None and self.object_in_plane(obj, plane):
                     self.remove_collision_object(obj.id)
                     continue
-                if obj_lowest is None:
-                    obj_lowest = obj
-                else:
-                    if obj.pose.pose.position.z < obj_lowest.pose.pose.position.z:
-                        obj_lowest = obj
                 request.attached_link = EEF_LINK_NAME
                 request.touch_links = EEF_CONTACT_LINKS
                 request.detach = False
