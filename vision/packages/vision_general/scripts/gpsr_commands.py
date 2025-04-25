@@ -77,7 +77,10 @@ class GPSRCommands(Node):
         )
 
         self.count_by_color_service = self.create_service(
-            CountByColor, COUNT_BY_COLOR_TOPIC, self.count_by_color_callback, callback_group=self.callback_group
+            CountByColor,
+            COUNT_BY_COLOR_TOPIC,
+            self.count_by_color_callback,
+            callback_group=self.callback_group,
         )
 
         self.pose_gesture_detection_service = self.create_service(
@@ -234,7 +237,9 @@ class GPSRCommands(Node):
                 response_clean = response_q.strip()
                 if response_clean == "1":
                     count += 1
-                    self.get_logger().info(f"Person {count} is wearing a {color} {clothing}.")
+                    self.get_logger().info(
+                        f"Person {count} is wearing a {color} {clothing}."
+                    )
                 elif response_clean != "0":
                     self.get_logger().warn(f"Unexpected response: {response_clean}")
 
@@ -475,7 +480,8 @@ class GPSRCommands(Node):
         if result.success:
             self.get_logger().info(f"Moondream result: {result.result}")
             return 1, result.result
-    
+
+
 def main(args=None):
     rclpy.init(args=args)
     node = GPSRCommands()
@@ -484,6 +490,6 @@ def main(args=None):
     executor.spin()
     rclpy.shutdown()
 
+
 if __name__ == "__main__":
     main()
-

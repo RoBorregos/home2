@@ -99,7 +99,6 @@ class VisionTasks:
             DetectionHandler, DETECTION_HANDLER_TOPIC_SRV
         )
 
-
         self.object_detector_client = self.node.create_client(
             DetectionHandler, DETECTION_HANDLER_TOPIC_SRV
         )
