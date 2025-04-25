@@ -253,7 +253,8 @@ public:
     transform.translate(center);
     transform.rotate(keep_Z_rot);
 
-    pcl::PointCloud<pcl::PointXYZ>::Ptr transformed_cloud;
+    pcl::PointCloud<pcl::PointXYZ>::Ptr transformed_cloud(
+        new pcl::PointCloud<pcl::PointXYZ>);
     pcl::transformPointCloud(*cloud, *transformed_cloud, transform);
 
     // // Find min and max points in the transformed space
