@@ -171,9 +171,9 @@ class object_detector_node(rclpy.node.Node):
             self.get_parameter("DEBUG_IMAGE_TOPIC").get_parameter_value().string_value
         )
         self.node_params.YOLO_MODEL_PATH = (
-            MODELS_PATH
-            + self.get_parameter("YOLO_MODEL_PATH").get_parameter_value().string_value
+            self.get_parameter("YOLO_MODEL_PATH").get_parameter_value().string_value
         )
+        self.get_logger().info(f"path: {self.node_params.YOLO_MODEL_PATH}")
         self.node_params.USE_ACTIVE_FLAG = (
             self.get_parameter("USE_ACTIVE_FLAG").get_parameter_value().bool_value
         )

@@ -18,6 +18,7 @@ from frida_constants.manipulation_constants import (
     EEF_CONTACT_LINKS,
     PICK_MOTION_ACTION_SERVER,
     PLANE_OBJECT_COLLISION_TOLERANCE,
+    SAFETY_HEIGHT,
 )
 from frida_interfaces.srv import (
     AttachCollisionObject,
@@ -39,6 +40,7 @@ class PickMotionServer(Node):
         # Declare and retrieve the parameter for the end-effector link offset
         self.declare_parameter("ee_link_offset", -0.125)
         self.ee_link_offset = self.get_parameter("ee_link_offset").value
+        self.get_logger().info(f"End-effector link offset: {self.ee_link_offset} m")
 
         self._action_server = ActionServer(
             self,
@@ -148,6 +150,7 @@ class PickMotionServer(Node):
                 else:
                     self.get_logger().error("Failed to attach object")
                 return True, pick_result
+
         self.get_logger().error("Failed to reach any grasp pose")
         return False, pick_result
 
@@ -187,6 +190,11 @@ class PickMotionServer(Node):
             if PICK_OBJECT_NAMESPACE in obj.id:
                 request = AttachCollisionObject.Request()
                 request.id = obj.id
+                if obj_lowest is None:
+                    obj_lowest = obj
+                else:
+                    if obj.pose.pose.position.z < obj_lowest.pose.pose.position.z:
+                        obj_lowest = obj
                 if plane is not None and self.object_in_plane(obj, plane):
                     self.remove_collision_object(obj.id)
                     continue
@@ -237,8 +245,10 @@ class PickMotionServer(Node):
             )
             return 0.0
         obj_z = obj.pose.pose.position.z
+        obj_radius = obj.dimensions.x
         grasp_height = pose.pose.position.z
-        height = grasp_height - obj_z
+        # assume lowest part of the object is lowest bound of lowest sphere
+        height = grasp_height - (obj_z - obj_radius) + SAFETY_HEIGHT
         self.get_logger().info(f"Object pick height: {height}")
         return height
 

@@ -61,7 +61,7 @@ class HeatmapServer(Node):
             response.point = PointStamped()
             return response
 
-        grid_size = 0.02  # meters
+        grid_size = 0.015  # meters
         grid_size_mm = int(grid_size * 1000)
 
         # Convert points to mm coordinates
@@ -79,10 +79,10 @@ class HeatmapServer(Node):
         binary_map = hist > 0
 
         # Create heat/cool kernels
-        heat_kernel_length = 0.4  # meters
-        cool_kernel_length = 0.3  # meters
+        heat_kernel_length = 0.3  # meters
+        cool_kernel_length = 0.2  # meters
         heat_multiplier = 1.0
-        cool_multiplier = 1.5
+        cool_multiplier = 10.0
 
         # Heat kernel
         heat_kernel_size = int(heat_kernel_length / grid_size)

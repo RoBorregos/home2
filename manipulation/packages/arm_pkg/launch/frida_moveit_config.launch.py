@@ -217,6 +217,14 @@ def launch_setup(context, *args, **kwargs):
         }.items(),
     )
 
+    downsample_pcd = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution(
+                [FindPackageShare("perception_3d"), "launch", "downsample_pc.launch.py"]
+            )
+        ),
+    )
+
     control_node = Node(
         package="controller_manager",
         executable="spawner",
@@ -234,6 +242,7 @@ def launch_setup(context, *args, **kwargs):
         joint_state_publisher_node,
         ros2_control_launch,
         control_node,
+        downsample_pcd,
         # robot_driver_launch,
     ]
 

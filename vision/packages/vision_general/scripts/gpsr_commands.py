@@ -13,7 +13,16 @@ from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 import time
+import time
 
+from frida_interfaces.srv import (
+    CountBy,
+    CountByGesture,
+    CountByPose,
+    PersonPoseGesture,
+    CropQuery,
+    CountByColor,
+)
 from frida_interfaces.srv import (
     CountBy,
     CountByGesture,
@@ -34,6 +43,8 @@ from frida_constants.vision_constants import (
     COUNT_BY_POSE_TOPIC,
     POSE_GESTURE_TOPIC,
     CROP_QUERY_TOPIC,
+    POSE_GESTURE_TOPIC,
+    CROP_QUERY_TOPIC,
 )
 
 from frida_constants.vision_enums import Poses, Gestures
@@ -47,6 +58,7 @@ PERCENTAGE = 0.3
 MAX_DEGREE = 30
 AREA_PERCENTAGE_THRESHOLD = 0.2
 CONF_THRESHOLD = 0.5
+TIMEOUT = 5.0
 TIMEOUT = 5.0
 
 
@@ -79,6 +91,9 @@ class GPSRCommands(Node):
             CountByColor, COUNT_BY_COLOR_TOPIC, self.count_by_color_callback, callback_group=self.callback_group
         )
 
+        self.pose_gesture_detection_service = self.create_service(
+            PersonPoseGesture, POSE_GESTURE_TOPIC, self.detect_pose_gesture_callback
+        )
         self.pose_gesture_detection_service = self.create_service(
             PersonPoseGesture, POSE_GESTURE_TOPIC, self.detect_pose_gesture_callback
         )
@@ -203,6 +218,7 @@ class GPSRCommands(Node):
 
     def count_by_color_callback(self, request, response):
         """Callback to count people wearing a specific color and clothing."""
+        """Callback to count people wearing a specific color and clothing."""
         self.get_logger().info("Executing service Count By Color")
 
         if self.image is None:
@@ -252,7 +268,32 @@ class GPSRCommands(Node):
 
         frame = self.image
         self.output_image = frame.copy()
+    def detect_pose_gesture_callback(self, request, response):
+        """Callback to detect a specific pose or gesture in the image."""
+        self.get_logger().info("Executing service Pose Detection")
 
+        if self.image is None:
+            response.success = False
+            response.result = ""
+            return response
+
+        frame = self.image
+        self.output_image = frame.copy()
+
+        # Detect people using YOLO
+        self.get_detections(frame, 0)
+
+        type_requested = request.type_requested
+
+        if type_requested == "pose":
+            response.result = self.detect_pose(frame)
+        elif type_requested == "gesture":
+            response.result = self.detect_gesture(frame)
+        else:
+            self.get_logger().warn(f"Type {type_requested} is not valid.")
+            response.success = False
+            response.result = ""
+            return response
         # Detect people using YOLO
         self.get_detections(frame, 0)
 
@@ -269,6 +310,7 @@ class GPSRCommands(Node):
             return response
 
         response.success = True
+        self.get_logger().info(f"{type_requested} detected: {response.result}")
         self.get_logger().info(f"{type_requested} detected: {response.result}")
         return response
 
@@ -307,9 +349,32 @@ class GPSRCommands(Node):
 
         return Poses.UNKNOWN.value
 
+    def detect_pose(self, frame):
+        """Detect the pose in the image."""
+        poses = [
+            Poses.UNKNOWN,
+            Poses.STANDING,
+            Poses.SITTING,
+            Poses.LYING_DOWN,
+        ]
+
+        # Detect pose for the person with the biggest bounding box
+        biggest_person = max(self.people, key=lambda p: p["area"], default=None)
+        x1, y1, x2, y2 = biggest_person["bbox"]
+
+        # Crop the frame to the bounding box of the person
+        cropped_frame = frame[y1:y2, x1:x2]
+        pose = self.pose_detection.detectPose(cropped_frame)
+
+        if pose in poses:
+            return pose.value
+
+        return Poses.UNKNOWN.value
+
     def count_poses(self, frame):
         """Count the poses in the image and return a dictionary."""
         pose_count = {
+            Poses.UNKNOWN: 0,
             Poses.UNKNOWN: 0,
             Poses.STANDING: 0,
             Poses.SITTING: 0,
@@ -319,7 +384,10 @@ class GPSRCommands(Node):
         # Detect poses for each detected person
         for person in self.people:
             x1, y1, x2, y2 = person["bbox"]
+            x1, y1, x2, y2 = person["bbox"]
 
+            # Crop the frame to the bounding box of the person
+            cropped_frame = frame[y1:y2, x1:x2]
             # Crop the frame to the bounding box of the person
             cropped_frame = frame[y1:y2, x1:x2]
             pose = self.pose_detection.detectPose(cropped_frame)
@@ -354,9 +422,34 @@ class GPSRCommands(Node):
 
         return Gestures.UNKNOWN.value
 
+    def detect_gesture(self, frame):
+        """Detect the pose in the image."""
+        gestures = [
+            Gestures.UNKNOWN,
+            Gestures.WAVING,
+            Gestures.RAISING_LEFT_ARM,
+            Gestures.RAISING_RIGHT_ARM,
+            Gestures.POINTING_LEFT,
+            Gestures.POINTING_RIGHT,
+        ]
+
+        # Detect gesture for the person with the biggest bounding box
+        biggest_person = max(self.people, key=lambda p: p["area"], default=None)
+        x1, y1, x2, y2 = biggest_person["bbox"]
+
+        # Crop the frame to the bounding box of the person
+        cropped_frame = frame[y1:y2, x1:x2]
+        gesture = self.pose_detection.detectGesture(cropped_frame)
+
+        if gesture in gestures:
+            return gesture.value
+
+        return Gestures.UNKNOWN.value
+
     def count_gestures(self, frame):
         """Count the gestures in the image and return a dictionary."""
         gesture_count = {
+            Gestures.UNKNOWN: 0,
             Gestures.UNKNOWN: 0,
             Gestures.WAVING: 0,
             Gestures.RAISING_LEFT_ARM: 0,
@@ -367,6 +460,10 @@ class GPSRCommands(Node):
 
         # Detect gestures for each detected person
         for person in self.people:
+            x1, y1, x2, y2 = person["bbox"]
+
+            # Crop the frame to the bounding box of the person
+            cropped_frame = frame[y1:y2, x1:x2]
             x1, y1, x2, y2 = person["bbox"]
 
             # Crop the frame to the bounding box of the person
@@ -393,6 +490,11 @@ class GPSRCommands(Node):
 
                     if confidence > CONF_THRESHOLD:
                         self.people.append(
+                            {
+                                "bbox": (x1, y1, x2, y2),
+                                "confidence": confidence,
+                                "area": (x2 - x1) * (y2 - y1),
+                            }
                             {
                                 "bbox": (x1, y1, x2, y2),
                                 "confidence": confidence,

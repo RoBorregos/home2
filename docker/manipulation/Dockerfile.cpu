@@ -14,7 +14,7 @@ RUN mkdir -p /workspace/requirements
 RUN pip3 install torch torchvision torchaudio
 
 # ROS Requirements, will need several tools from desktop TODO: change desktop for specific dependencies
-RUN apt update && apt install -y ros-humble-desktop ros-humble-cv-bridge ros-humble-moveit
+RUN apt update && apt install -y ros-humble-desktop ros-humble-cv-bridge ros-humble-moveit ros-humble-laser-geometry
 
 # Python Requirements
 COPY manipulation/requirements.txt /workspace/requirements/requirements.txt

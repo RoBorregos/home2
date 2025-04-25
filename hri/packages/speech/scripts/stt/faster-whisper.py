@@ -2,6 +2,7 @@ import argparse
 import os
 import sys
 from concurrent import futures
+from datetime import datetime
 
 import grpc
 import speech_pb2
@@ -11,20 +12,37 @@ from faster_whisper import WhisperModel
 # Add the directory containing the protos to the Python path
 sys.path.append(os.path.join(os.path.dirname(__file__), "speech"))
 
+import shutil
+
 from wav_utils import WavUtils
 
 
 class WhisperServicer(speech_pb2_grpc.SpeechServiceServicer):
-    def __init__(self, model_size):
+    def __init__(self, model_size, log_transcriptions=False):
         self.model_size = model_size
         self.audio_model = self.load_model()
+        self.log_transcriptions = log_transcriptions
+        self.log_dir = os.path.join(os.path.dirname(__file__), "logs")
+        if self.log_transcriptions:
+            os.makedirs(self.log_dir, exist_ok=True)
 
     def load_model(self):
         model_directory = os.path.join(os.path.dirname(__file__), "models")
+        device = "cpu"
+        try:
+            import torch
+
+            if torch.cuda.is_available():
+                device = "cuda"
+        except Exception:
+            pass
+
+        print("Using device:", device)
+
         return WhisperModel(
             self.model_size,
             download_root=model_directory,
-            device="cpu",
+            device=device,
             compute_type="float32",
         )
 
@@ -45,13 +63,26 @@ class WhisperServicer(speech_pb2_grpc.SpeechServiceServicer):
             condition_on_previous_text=True,
         )
 
-        WavUtils.discard_wav(temp_file)
-
         # Access the generator to collect text segments
         segments = result[0]  # The generator
         transcription = "".join(
             [segment.text for segment in segments]
         )  # Collect all text
+
+        # Log transcription if enabled
+        if self.log_transcriptions:
+            timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+            audio_filename = f"audio_{timestamp}.wav"
+            audio_path = os.path.join(self.log_dir, audio_filename)
+
+            shutil.copy(temp_file, audio_path)
+            log_file = os.path.join(self.log_dir, "transcriptions.log")
+            with open(log_file, "a") as f:
+                f.write(
+                    f"{timestamp} | Audio: {audio_filename} | Transcription: {transcription}\n"
+                )
+
+        WavUtils.discard_wav(temp_file)
 
         print(f"Transcription: {transcription}")
 
@@ -59,11 +90,11 @@ class WhisperServicer(speech_pb2_grpc.SpeechServiceServicer):
         return speech_pb2.TextResponse(text=transcription)
 
 
-def serve(port, model_size):
+def serve(port, model_size, log_transcriptions):
     # Create the gRPC server
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     speech_pb2_grpc.add_SpeechServiceServicer_to_server(
-        WhisperServicer(model_size), server
+        WhisperServicer(model_size, log_transcriptions), server
     )
 
     # Bind to a port
@@ -84,5 +115,10 @@ if __name__ == "__main__":
         default="base.en",
         help="Model size to use (base.en, large.en, or small.en)",
     )
+    parser.add_argument(
+        "--log_transcriptions",
+        action="store_true",
+        help="Enable logging of transcriptions and audio files",
+    )
     args = parser.parse_args()
-    serve(args.port, args.model_size)
+    serve(args.port, args.model_size, args.log_transcriptions)
