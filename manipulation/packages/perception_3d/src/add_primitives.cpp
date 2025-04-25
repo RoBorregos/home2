@@ -247,11 +247,13 @@ public:
 
     eigenvectors = temp;
 
-    Eigen::Vector3f euler_angles = (eigenvectors).eulerAngles(2, 1, 0);
-    Eigen::AngleAxisf keep_Z_rot(euler_angles[0], Eigen::Vector3f::UnitZ());
+    // Eigen::Vector3f euler_angles = (eigenvectors).eulerAngles(2, 1, 0);
+    Eigen::Quaternionf quat(eigenvectors);
+    quat.normalize();
+    // Eigen::AngleAxisf keep_Z_rot(euler_angles[0], Eigen::Vector3f::UnitZ());
     Eigen::Affine3f transform = Eigen::Affine3f::Identity();
     transform.translate(center);
-    transform.rotate(keep_Z_rot);
+    transform.rotate(quat);
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr transformed_cloud(
         new pcl::PointCloud<pcl::PointXYZ>);
@@ -267,7 +269,7 @@ public:
     transform2.translate(center_new);
     Eigen::Affine3f transform3 = transform * transform2;
 
-    Eigen::Quaternionf quat(keep_Z_rot);
+    // Eigen::Quaternionf quat(keep_Z_rot);
 
     box_params.orientation.w = quat.w();
     box_params.orientation.x = quat.x();
