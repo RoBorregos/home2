@@ -2,6 +2,9 @@
 
 import { useEffect, useState, useRef } from "react";
 import { MessageCircle, Mic, Speaker, Star, VolumeX } from "lucide-react";
+import dynamic from "next/dynamic";
+
+const MjpegStream = dynamic(() => import("./video"), { ssr: false });
 
 interface Message {
   type: "heard" | "spoken" | "keyword";
@@ -184,14 +187,9 @@ export default function RosMessagesDisplay() {
           )}
         </div>
         <div className="flex flex-col items-center justify-center p-4 border-l border-[oklch(1_0_0/10%)] bg-[oklch(0.145_0_0)]">
-          <p className="text-xl">ZED feed at {audioTopic}</p>
-          <img
-            src={`http://localhost:8080/stream?topic=${audioTopic}`}
-            alt=""
-            width={640}
-            height={480}
-            style={{ border: "1px solid black", margin: "10px" }}
-            className="rounded-lg shadow-lg bg-[oklch(1_0_0/10%)]"
+          <p className="text-xl mb-4">Video feed at {audioTopic}</p>
+          <MjpegStream
+            streamUrl={`http://localhost:8080/stream?topic=${audioTopic}`}
           />
         </div>
       </div>
