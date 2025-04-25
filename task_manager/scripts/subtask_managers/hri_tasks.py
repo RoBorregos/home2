@@ -4,13 +4,15 @@
 HRI Subtask manager
 """
 
-import re
-from typing import Union
-import rclpy
 import json
+import re
 from datetime import datetime
+from typing import Union
+
+import rclpy
 from frida_constants.hri_constants import (
     ADD_ENTRY_SERVICE,
+    CATEGORIZE_SERVICE,
     COMMAND_INTERPRETER_SERVICE,
     COMMON_INTEREST_SERVICE,
     EXTRACT_DATA_SERVICE,
@@ -23,11 +25,11 @@ from frida_constants.hri_constants import (
     STT_SERVICE_NAME,
     USEFUL_AUDIO_NODE_NAME,
     WAKEWORD_TOPIC,
-    CATEGORIZE_SERVICE,
 )
 from frida_interfaces.srv import (
     STT,
     AddEntry,
+    CategorizeShelves,
     CommandInterpreter,
     CommonInterest,
     ExtractInfo,
@@ -37,7 +39,6 @@ from frida_interfaces.srv import (
     LLMWrapper,
     QueryEntry,
     Speak,
-    CategorizeShelves,
 )
 from rcl_interfaces.msg import Parameter, ParameterType, ParameterValue
 from rcl_interfaces.srv import SetParameters
@@ -193,7 +194,7 @@ class HRITasks(metaclass=SubtaskMeta):
             self.keyword = ""
 
     @service_check("hear_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
-    def hear(self, min_audio_length=0.5, max_audio_length=10.0) -> str:
+    def hear(self, min_audio_length=1.0, max_audio_length=10.0) -> str:
         if min_audio_length > 0:
             self.set_double_param("MIN_AUDIO_DURATION", float(min_audio_length))
 
@@ -386,6 +387,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
     @service_check("common_interest_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def common_interest(self, person1, interest1, person2, interest2, remove_thinking=True):
+        Logger.info(self.node, f"Finding common interest between {person1} and {person2}")
         request = CommonInterest.Request(
             person1=person1, interests1=interest1, person2=person2, interests2=interest2
         )

@@ -19,6 +19,7 @@ import numpy as np
 #     deproject_pixel_to_point,
 # )
 
+
 import rclpy
 from rclpy.node import Node
 from cv_bridge import CvBridge
@@ -26,7 +27,6 @@ from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import Point
 from std_msgs.msg import String
 from ament_index_python.packages import get_package_share_directory
-
 from frida_interfaces.srv import SaveName
 from frida_interfaces.msg import Person, PersonList
 from frida_constants.vision_constants import (
@@ -408,8 +408,8 @@ class FaceRecognition(Node):
             self.publish_follow_face(xc, yc, largest_face_name)
         else:
             self.name_publisher.publish(String(data=""))
-        if self.verbose:
-            cv2.imshow("Face recognition", self.annotated_frame)
+        # if self.verbose:
+        #    cv2.imshow("Face recognition", self.annotated_frame)
         # self.image_view = self.annotated_frame
         # self.view_pub.publish(
         #     self.bridge.cv2_to_imgmsg(self.self.annotated_frame, "bgr8")
@@ -421,10 +421,12 @@ class FaceRecognition(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = FaceRecognition()
 
     try:
-        rclpy.spin(node)
+        node = FaceRecognition()
+        executor = rclpy.executors.MultiThreadedExecutor(5)
+        executor.add_node(node)
+        executor.spin()
     except KeyboardInterrupt:
         pass
     finally:

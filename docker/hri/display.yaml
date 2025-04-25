@@ -1,6 +1,5 @@
 services:
   display:
-    
     profiles: [receptionist, carry]
 
     container_name: home2-hri-display
@@ -9,16 +8,18 @@ services:
       context: ../..
       dockerfile: docker/hri/Dockerfile.display
       args:
-        # BASE_IMAGE: roborregos/home2:cpu_base
-        BASE_IMAGE: roborregos/home2:cuda_base
+        BASE_IMAGE: roborregos/home2:cpu_base
+        # BASE_IMAGE: roborregos/home2:cuda_base
     volumes:
       - ../../hri/display/:/app
     ports:
-      - '3000:3000'
-      - '8000:8000'
-    command: [
-        '/bin/bash',
-        '-l',
-        '-c',
-        'source /opt/ros/humble/setup.bash && npm i && npm run dev',
+      - "3000:3000"
+      - "8000:8000"
+      - "8080:8080"
+    command:
+      [
+        "/bin/bash",
+        "-l",
+        "-c",
+        "source /opt/ros/humble/setup.bash && npm i && (ros2 run web_video_server web_video_server &) && npm run start",
       ]

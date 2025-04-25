@@ -86,6 +86,18 @@ rclnodejs.init().then(() => {
     }
   );
 
+  node.createSubscription(
+    "std_msgs/msg/String",
+    "/hri/display/change_video",
+    (msg: { data: string }) => {
+      wss.clients.forEach((client: any) => {
+        if (client.readyState === 1) {
+          client.send(JSON.stringify({ type: "changeVideo", data: msg.data }));
+        }
+      });
+    }
+  );
+
   // Gracefully handle SIGINT (Ctrl+C)
   process.on("SIGINT", () => {
     console.log("SIGINT received: Closing node and WebSocket server...");

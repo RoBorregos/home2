@@ -107,21 +107,6 @@ class ManipulationCore(Node):
         self.get_logger().info(f"Goal: {object_point}")
         self.get_logger().info("Extracting object cloud")
 
-        # self.remove_all_collision_object(attached=True)
-        # result, pick_result = self.pick_manager.execute(
-        #     object_name=object_name,
-        #     point=object_point,
-        # )
-
-        # if not result:
-        #     self.get_logger().error("Pick failed")
-        #     self.remove_all_collision_object(attached=True)
-        #     return False
-
-        # self.remove_all_collision_object(attached=False)
-        # self.get_logger().info("Pick succeeded")
-        # return result, pick_result
-
         try:
             self.remove_all_collision_object(attached=True)
             result, pick_result = self.pick_manager.execute(
@@ -135,6 +120,20 @@ class ManipulationCore(Node):
             return (result, pick_result)
         except Exception:
             return (False, PickResult())
+
+    def place_execute(self, place_params=None):
+        self.get_logger().info("Executing place")
+        try:
+            result = self.place_manager.execute(
+                place_params=place_params,
+                pick_result=self.pick_result,
+            )
+            if not result:
+                self.get_logger().error("Place failed")
+                return False
+            return result
+        except Exception:
+            return False
 
     def manipulation_server_callback(self, goal_handle):
         task_type = goal_handle.request.task_type
@@ -156,11 +155,10 @@ class ManipulationCore(Node):
             response.success = result
         elif task_type == ManipulationTask.PLACE:
             self.get_logger().info("Executing Place Task")
+            result = self.place_execute(place_params=goal_handle.request.place_params)
             goal_handle.succeed()
-            result = self.place_manager.execute(
-                place_params=goal_handle.request.place_params,
-                pick_result=self.pick_result,
-            )
+            if result:
+                self.remove_all_collision_object(attached=True)
             response.success = result
         else:
             self.get_logger().error("Unknown task type")
