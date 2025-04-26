@@ -633,8 +633,10 @@ class HRITasks(metaclass=SubtaskMeta):
             str: The 'context' field from metadata, or empty string if not found
         """
         try:
-            parsed_result = json.loads(query_result[1][0])  # parse the first JSON string
-            metadata = parsed_result["results"][0]["metadata"]  # go into metadata
+            # parse the first JSON string
+            parsed_result = json.loads(query_result[1][0])
+            # go into metadata
+            metadata = parsed_result["results"][0]["metadata"]
             key = metadata.get(field, "")  # safely get 'context'
             return key
         except (IndexError, KeyError, json.JSONDecodeError) as e:
