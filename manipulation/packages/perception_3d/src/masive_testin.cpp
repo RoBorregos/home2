@@ -357,7 +357,7 @@ public:
   void run() {
     // RCLCPP_INFO(this->get_logger(), "Timer callback");
     if (this->point == this->last_point) {
-      RCLCPP_INFO(this->get_logger(), "Same point, skiping processing");
+      // RCLCPP_INFO(this->get_logger(), "Same point, skiping processing");
       return;
     }
 
