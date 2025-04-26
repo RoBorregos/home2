@@ -178,7 +178,6 @@ class WhisperServicer(speech_pb2_grpc.SpeechServiceServicer):
             vad_parameters={
                 "threshold": 0.9,
             },
-            initial_prompt="only transcribe loudest speaker",
         )
 
         # Access the generator to collect text segments
