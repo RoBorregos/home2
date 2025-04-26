@@ -235,6 +235,7 @@ class LLMUtils(Node):
                     },
                     {"role": "user", "content": user_prompt},
                 ],
+                response_format=response_format,
             )
             .choices[0]
             .message.content

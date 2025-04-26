@@ -377,6 +377,8 @@ class StoringGroceriesManager(Node):
                 return
             self.state = ExecutionStates.PLACE_OBJECT
         elif self.state == ExecutionStates.PLACE_OBJECT:
+            self.state = ExecutionStates.DEUX_PICK_OBJECT
+            return
             status = self.subtask_manager.manipulation.place_in_shelf(
                 self.object_to_placing_shelf[self.current_object].pop(0), self.current_object
             )

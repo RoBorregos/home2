@@ -17,6 +17,7 @@
 #include <pcl/segmentation/extract_clusters.h>
 #include <pcl/visualization/pcl_visualizer.h>
 #include <queue>
+#include <rclcpp/callback_group.hpp>
 #include <rclcpp/client.hpp>
 #include <rclcpp/duration.hpp>
 #include <rclcpp/logging.hpp>
@@ -74,6 +75,8 @@ private:
   std::unique_ptr<tf2_ros::Buffer> tf_buffer;
 
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster;
+  // callback gorup
+  std::shared_ptr<rclcpp::CallbackGroup> callback_group_;
 
 public:
   AddPrimitivesNode() : Node("add_primitives_node") {
@@ -101,7 +104,8 @@ public:
             GET_PLANE_BBOX_SERVICE,
             std::bind(&AddPrimitivesNode::get_plane_bbox, this,
                       std::placeholders::_1, std::placeholders::_2,
-                      std::placeholders::_3));
+                      std::placeholders::_3),
+            rmw_qos_profile_services_default, callback_group_);
 
     this->add_collision_object_client =
         this->create_client<frida_interfaces::srv::AddCollisionObjects>(
@@ -207,7 +211,7 @@ public:
     rotation = pca.getEigenVectors();
 
     // get euler angles
-    //Eigen::Vector3f euler_angles = (rotation).eulerAngles(2, 1, 0);
+    // Eigen::Vector3f euler_angles = (rotation).eulerAngles(2, 1, 0);
 
     // Ensure we have a right-handed coordinate system
     // If the determinant is negative, flip the last column
@@ -245,7 +249,7 @@ public:
 
     // Transform the center offset back to the original coordinate system
     // Eigen::Vector3f ident =
-    //center += rotation * center_offset;
+    // center += rotation * center_offset;
 
     // Calculate the four corners of the box in the transformed space
     pcl::PointXYZ xy1, xy2, xy3, xy4;
@@ -327,6 +331,7 @@ public:
     return status;
   }
 
+  /* **
   // STATUS_RESPONSE
   // RansacNormals(_IN_ std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud,
   //               _OUT_ BoxPrimitiveParams &box_params) {
@@ -488,7 +493,7 @@ public:
 
   //   return status;
   // }
-
+  */
   STATUS_RESPONSE DownSampleObject(
       _IN_ const std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud,
       _OUT_ std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud_out) {
@@ -654,6 +659,124 @@ public:
     req->min_height = request->min_height;
     req->max_height = request->max_height;
 
+    auto res = this->remove_plane_client->async_send_request(req);
+    if (res.wait_for(std::chrono::seconds(5)) == std::future_status::timeout) {
+      RCLCPP_ERROR(this->get_logger(), "remove_plane timed out");
+      response->health_response = -2;
+      return;
+    }
+
+    if (res.get()->health_response != OK) {
+      response->health_response = res.get()->health_response;
+      return;
+    }
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out(
+        new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::fromROSMsg(res.get()->cloud, *cloud_out);
+    if (cloud_out->points.size() == 0) {
+      response->health_response = NO_POINT_DETECTED;
+      return;
+    }
+    RCLCPP_INFO(this->get_logger(), "Computing box primitive");
+    RCLCPP_INFO(this->get_logger(), "Cloud size: %zu",
+                cloud_out->points.size());
+    BoxPrimitiveParams box_params;
+    try {
+      RCLCPP_INFO(this->get_logger(), "Computing box primitive");
+      response->health_response = RansacNormals(cloud_out, box_params);
+    } catch (const std::exception &exeption) {
+      RCLCPP_ERROR(this->get_logger(), "Exception: %s", exeption.what());
+      response->health_response = INVALID_INPUT_FILTER;
+      return;
+    }
+
+    if (true) {
+
+      geometry_msgs::msg::TransformStamped transform;
+
+      transform.header.stamp = this->now();
+      transform.header.frame_id = "base_link";
+
+      transform.child_frame_id = "plane_center";
+      transform.transform.translation.x = box_params.centroid.x;
+      transform.transform.translation.y = box_params.centroid.y;
+      transform.transform.translation.z = box_params.centroid.z;
+      transform.transform.rotation = box_params.orientation;
+      this->tf_broadcaster->sendTransform(transform);
+
+      transform.header.frame_id = "plane_center";
+
+      transform.child_frame_id = "plane_corner_1";
+      transform.transform.translation.x = box_params.xy1.x;
+      transform.transform.translation.y = box_params.xy1.y;
+      transform.transform.translation.z = box_params.xy1.z;
+      transform.transform.rotation = box_params.orientation2;
+      RCLCPP_INFO(this->get_logger(), "Sending transform");
+      this->tf_broadcaster->sendTransform(transform);
+      transform.child_frame_id = "plane_corner_2";
+      transform.transform.translation.x = box_params.xy2.x;
+      transform.transform.translation.y = box_params.xy2.y;
+      transform.transform.translation.z = box_params.xy2.z;
+      transform.transform.rotation = box_params.orientation2;
+      RCLCPP_INFO(this->get_logger(), "Sending transform");
+      this->tf_broadcaster->sendTransform(transform);
+      transform.child_frame_id = "plane_corner_3";
+      transform.transform.translation.x = box_params.xy3.x;
+      transform.transform.translation.y = box_params.xy3.y;
+      transform.transform.translation.z = box_params.xy3.z;
+      transform.transform.rotation = box_params.orientation2;
+      RCLCPP_INFO(this->get_logger(), "Sending transform");
+      this->tf_broadcaster->sendTransform(transform);
+      transform.child_frame_id = "plane_corner_4";
+      transform.transform.translation.x = box_params.xy4.x;
+      transform.transform.translation.y = box_params.xy4.y;
+      transform.transform.translation.z = box_params.xy4.z;
+      transform.transform.rotation = box_params.orientation2;
+      RCLCPP_INFO(this->get_logger(), "Sending transform");
+      this->tf_broadcaster->sendTransform(transform);
+
+      auto tf_center = this->tf_buffer->lookupTransform(
+          "base_link", "plane_center", tf2::TimePointZero);
+      auto tf_corner_1 = this->tf_buffer->lookupTransform(
+          "base_link", "plane_corner_1", tf2::TimePointZero);
+      auto tf_corner_2 = this->tf_buffer->lookupTransform(
+          "base_link", "plane_corner_2", tf2::TimePointZero);
+      auto tf_corner_3 = this->tf_buffer->lookupTransform(
+          "base_link", "plane_corner_3", tf2::TimePointZero);
+      auto tf_corner_4 = this->tf_buffer->lookupTransform(
+          "base_link", "plane_corner_4", tf2::TimePointZero);
+
+      response->center.point.x = tf_center.transform.translation.x;
+      response->center.point.y = tf_center.transform.translation.y;
+      response->center.point.z = tf_center.transform.translation.z;
+      response->pt1.point.x = tf_corner_1.transform.translation.x;
+      response->pt1.point.y = tf_corner_1.transform.translation.y;
+      response->pt1.point.z = tf_corner_1.transform.translation.z;
+      response->pt2.point.x = tf_corner_2.transform.translation.x;
+      response->pt2.point.y = tf_corner_2.transform.translation.y;
+      response->pt2.point.z = tf_corner_2.transform.translation.z;
+      response->pt3.point.x = tf_corner_3.transform.translation.x;
+      response->pt3.point.y = tf_corner_3.transform.translation.y;
+      response->pt3.point.z = tf_corner_3.transform.translation.z;
+      response->pt4.point.x = tf_corner_4.transform.translation.x;
+      response->pt4.point.y = tf_corner_4.transform.translation.y;
+      response->pt4.point.z = tf_corner_4.transform.translation.z;
+
+      response->center.header.frame_id = "base_link";
+      response->pt1.header.frame_id = "base_link";
+      response->pt2.header.frame_id = "base_link";
+      response->pt3.header.frame_id = "base_link";
+      response->pt4.header.frame_id = "base_link";
+      response->center.header.stamp = this->now();
+      response->pt1.header.stamp = this->now();
+      response->pt2.header.stamp = this->now();
+      response->pt3.header.stamp = this->now();
+      response->pt4.header.stamp = this->now();
+    }
+
+    response->health_response = OK;
+    return;
+
     this->remove_plane_client->async_send_request(
         req,
         [this, response](
@@ -700,12 +823,12 @@ public:
                       box_params.width, box_params.depth, box_params.height);
           // // box_params.height = std::max(max_pt2.z - min_pt.z - 0.01, 0.01);
 
-          response->min_x = box_params.centroid.x - box_params.width / 2;
-          response->min_y = box_params.centroid.y - box_params.depth / 2;
-          response->min_z = box_params.centroid.z - box_params.height / 2;
-          response->max_x = box_params.centroid.x + box_params.width / 2;
-          response->max_y = box_params.centroid.y + box_params.depth / 2;
-          response->max_z = box_params.centroid.z + box_params.height / 2;
+          // response->min_x = box_params.centroid.x - box_params.width / 2;
+          // response->min_y = box_params.centroid.y - box_params.depth / 2;
+          // response->min_z = box_params.centroid.z - box_params.height / 2;
+          // response->max_x = box_params.centroid.x + box_params.width / 2;
+          // response->max_y = box_params.centroid.y + box_params.depth / 2;
+          // response->max_z = box_params.centroid.z + box_params.height / 2;
 
           // response->min_x = box_params.xy1.x;
           // response->min_y = min_pt.y;
@@ -713,11 +836,11 @@ public:
           // response->max_x = max_pt2.x;
 
           if (true) {
-            // publish tfs 8 corners and center
-            double minn[3] = {response->min_x, response->min_y,
-                              response->min_z};
-            double maxx[3] = {response->max_x, response->max_y,
-                              response->max_z};
+            // // publish tfs 8 corners and center
+            // double minn[3] = {response->min_x, response->min_y,
+            //                   response->min_z};
+            // double maxx[3] = {response->max_x, response->max_y,
+            //                   response->max_z};
 
             geometry_msgs::msg::TransformStamped transform;
 
@@ -783,6 +906,46 @@ public:
             // transform.transform.rotation.w = 1.0;
             transform.child_frame_id = "plane_corner_4";
             this->tf_broadcaster->sendTransform(transform);
+
+            auto tf_center = this->tf_buffer->lookupTransform(
+                "plane_corner_1", "base_link", tf2::TimePointZero);
+            auto tf_corner_1 = this->tf_buffer->lookupTransform(
+                "plane_corner_1", "base_link", tf2::TimePointZero);
+            auto tf_corner_2 = this->tf_buffer->lookupTransform(
+                "plane_corner_2", "base_link", tf2::TimePointZero);
+            auto tf_corner_3 = this->tf_buffer->lookupTransform(
+                "plane_corner_3", "base_link", tf2::TimePointZero);
+            auto tf_corner_4 = this->tf_buffer->lookupTransform(
+                "plane_corner_4", "base_link", tf2::TimePointZero);
+
+            response->center.point.x = tf_center.transform.translation.x;
+            response->center.point.y = tf_center.transform.translation.y;
+            response->center.point.z = tf_center.transform.translation.z;
+            response->center.header.frame_id = "base_link";
+            response->center.header.stamp = this->now();
+            response->pt1.point.x = tf_corner_1.transform.translation.x;
+            response->pt1.point.y = tf_corner_1.transform.translation.y;
+            response->pt1.point.z = tf_corner_1.transform.translation.z;
+            response->pt1.header.frame_id = "base_link";
+            response->pt1.header.stamp = this->now();
+            response->pt2.point.x = tf_corner_2.transform.translation.x;
+            response->pt2.point.y = tf_corner_2.transform.translation.y;
+            response->pt2.point.z = tf_corner_2.transform.translation.z;
+            response->pt2.header.frame_id = "base_link";
+            response->pt2.header.stamp = this->now();
+            response->pt3.point.x = tf_corner_3.transform.translation.x;
+            response->pt3.point.y = tf_corner_3.transform.translation.y;
+            response->pt3.point.z = tf_corner_3.transform.translation.z;
+            response->pt3.header.frame_id = "base_link";
+            response->pt3.header.stamp = this->now();
+            response->pt4.point.x = tf_corner_4.transform.translation.x;
+            response->pt4.point.y = tf_corner_4.transform.translation.y;
+            response->pt4.point.z = tf_corner_4.transform.translation.z;
+            response->pt4.header.frame_id = "base_link";
+            response->pt4.header.stamp = this->now();
+            // RCLCPP_INFO(this->get_logger(), "Transform: %f %f %f",
+            //             t.transform.translation.x, t.transform.translation.y,
+            //             t.transform.translation.z);
 
             // // Publish transforms for all 8 corners
             // for (int i = 0; i < 2; ++i) {
