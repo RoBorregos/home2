@@ -310,6 +310,17 @@ class ManipulationTasks:
             return self.STATE["EXECUTION_ERROR"]
         return self.STATE["EXECUTION_SUCCESS"]
 
+    def pan_to(self, degrees: float):
+        joint_positions = self.get_joint_positions(degrees=True)
+        joint_positions["joint1"] = joint_positions["joint1"] - degrees
+        self.move_joint_positions(
+            joint_positions=joint_positions, velocity=0.5, degrees=True
+        )
+
+    def move_to_position(self, named_position: str):
+        self.move_joint_positions(
+            named_position=named_position, velocity=0.5, degrees=True
+        )
 
 if __name__ == "__main__":
     rclpy.init()
