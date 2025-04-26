@@ -12,14 +12,15 @@ services:
         BASE_IMAGE: roborregos/home2:l4t_base
     volumes:
       - ../../hri/display/:/app
+      - /dev:/dev
     ports:
       - "3000:3000"
-      - "8000:8000"
+      - "8001:8001"
     network_mode: host
     command:
       [
         "/bin/bash",
         "-l",
         "-c",
-        "source ~/.bashrc && source /opt/ros/humble/setup.bash && npm i && npm run dev",
+        "source /opt/ros/humble/setup.bash && npm i && npm run start",
       ]

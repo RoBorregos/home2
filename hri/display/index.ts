@@ -15,7 +15,7 @@ app.get("/", (req: Request, res: Response) => {
   res.send("Hello World From the Typescript Server!");
 });
 
-const port = 8000;
+const port = 8001;
 
 const server = app.listen(port, () => {
   console.log(`ROS2 websocket running on port ${port}`);
@@ -30,7 +30,6 @@ rclnodejs.init().then(() => {
     "std_msgs/msg/String",
     "/speech/raw_command",
     (msg: { data: string }) => {
-      console.log(`I heard: [${msg.data}]`);
       wss.clients.forEach((client: any) => {
         if (client.readyState === 1) {
           client.send(JSON.stringify({ type: "heard", data: msg.data }));
@@ -43,7 +42,6 @@ rclnodejs.init().then(() => {
     "std_msgs/msg/String",
     "/speech/text_spoken",
     (msg: { data: string }) => {
-      console.log(`I said: [${msg.data}]`);
       wss.clients.forEach((client: any) => {
         if (client.readyState === 1) {
           client.send(JSON.stringify({ type: "spoken", data: msg.data }));
@@ -56,7 +54,6 @@ rclnodejs.init().then(() => {
     "std_msgs/msg/String",
     "/hri/speech/oww",
     (msg: { data: string }) => {
-      console.log(`I detected: [${msg.data}]`);
       wss.clients.forEach((client: any) => {
         if (client.readyState === 1) {
           client.send(JSON.stringify({ type: "keyword", data: msg.data }));
@@ -69,7 +66,6 @@ rclnodejs.init().then(() => {
     "std_msgs/msg/String",
     "/AudioState",
     (msg: { data: string }) => {
-      console.log(`AudioState: [${msg.data}]`);
       wss.clients.forEach((client: any) => {
         if (client.readyState === 1) {
           client.send(JSON.stringify({ type: "audioState", data: msg.data }));
@@ -82,10 +78,21 @@ rclnodejs.init().then(() => {
     "std_msgs/msg/Float32",
     "/hri/speech/vad",
     (msg: { data: number }) => {
-      console.log(`VAD: [${msg.data}]`);
       wss.clients.forEach((client: any) => {
         if (client.readyState === 1) {
           client.send(JSON.stringify({ type: "vad", data: msg.data }));
+        }
+      });
+    }
+  );
+
+  node.createSubscription(
+    "std_msgs/msg/String",
+    "/hri/display/change_video",
+    (msg: { data: string }) => {
+      wss.clients.forEach((client: any) => {
+        if (client.readyState === 1) {
+          client.send(JSON.stringify({ type: "changeVideo", data: msg.data }));
         }
       });
     }

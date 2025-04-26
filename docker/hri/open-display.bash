@@ -1,2 +1,2 @@
 export DISPLAY=:0
-firefox localhost:3000 --kiosk --new-window
+nohup firefox localhost:3000 --kiosk --new-window > /dev/null 2>&1 &
