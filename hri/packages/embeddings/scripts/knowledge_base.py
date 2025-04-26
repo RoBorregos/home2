@@ -72,7 +72,7 @@ class RAGService(Node):
                 context_text = "\n".join(relevant_contexts)
                 prompt = f"Use the following knowledge base information:\n{context_text}\n\nAnswer the question:\n{question}"
             else:
-                prompt = question  # fallback if no good contexts
+                prompt = question
 
             llm_response = self.llm.create_chat_completion(
                 messages=[{"role": "user", "content": prompt}]
