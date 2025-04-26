@@ -27,6 +27,7 @@ class ExecutionStates(Enum):
     INIT_NAV_TO_TABLE = 30
     VIEW_AND_SAVE_OBJECTS_ON_TABLE = 40
     CATEGORIZE_OBJECTS = 50
+    CATEGORIZE_OBJECTS2 = 51
     SAY_5_OBJECTS_CATEGORIZED = 55
 
     PLAN_NEXT = 59
@@ -286,9 +287,13 @@ class StoringGroceriesManager(Node):
             shelfs: dict[int, list[str]] = {}
             for i in self.shelves:
                 shelfs[i] = self.shelves[i].objects
-            status, categorized_shelfs, objects_to_add = (
-                self.subtask_manager.hri.categorize_objects(self.object_names_on_table, shelfs)
-            )
+            try:
+                status, categorized_shelfs, objects_to_add = (
+                    self.subtask_manager.hri.categorize_objects(self.object_names_on_table, shelfs)
+                )
+            except Exception as e:
+                Logger.error(self, f"Error categorizing objects: {e}")
+                return
             if not status == Status.EXECUTION_SUCCESS:
                 Logger.error(self, "Failed to categorize objects")
                 return
@@ -306,6 +311,22 @@ class StoringGroceriesManager(Node):
             self.subtask_manager.hri.say(
                 text=f"Categorized {len(self.object_names_on_table)} objects", wait=True
             )
+        elif self.state == ExecutionStates.CATEGORIZE_OBJECTS2:
+            for i in self.object_names_on_table:
+                # random shelf
+                self.object_to_placing_shelf[i].append(self.shelves_count % len(self.shelves))
+                self.shelves[self.shelves_count % len(self.shelves)].objects.append(i)
+                self.shelves[self.shelves_count % len(self.shelves)].tag = "random"
+                self.shelves_count += 1
+            # self.subtask_manager.hri.say(
+            #     text=f"Categorized {len(self.object_names_on_table)} objects", wait=True
+            # )
+            # for i in self.object_names_on_table:
+            #     self.subtask_manager.hri.say(
+            #         text=f"Categorized object: {i} as {self.shelves[self.object_to_placing_shelf[i]].tag}",
+            #         wait=True,
+            #     )
+            # self.state = ExecutionStates.PLAN_NEXT
         elif self.state == ExecutionStates.SAY_5_OBJECTS_CATEGORIZED:
             for i in list(set(self.object_names_on_table))[
                 : max(5, len(self.object_names_on_table))
