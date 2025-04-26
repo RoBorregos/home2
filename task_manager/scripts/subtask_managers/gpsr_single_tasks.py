@@ -6,6 +6,8 @@ class GPSRSingleTask(GenericTask):
     """Class to manage the GPS task"""
 
     ## Nav
+    
+
     def go(self, complement="", characteristic=""):
         """
         Navigate to a given location.
@@ -27,7 +29,9 @@ class GPSRSingleTask(GenericTask):
             - The robot is in the specified location
         """
         self.subtask_manager.hri.say(f"I will go to {complement}.", wait=False)
+
         self.subtask_manager.nav.move_to_location(complement)
+        
 
         return Status.EXECUTION_SUCCESS, "arrived to:" + complement
 

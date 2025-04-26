@@ -55,6 +55,7 @@ class GPSRTM(Node):
         self.commands = get_gpsr_comands("goToLoc")
 
         Logger.info(self, "GPSRTMTaskManager has started.")
+    
 
     def run(self):
         """State machine"""

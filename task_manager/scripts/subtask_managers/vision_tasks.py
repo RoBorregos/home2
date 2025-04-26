@@ -556,7 +556,8 @@ class VisionTasks:
             result = future.result()
 
             if not result.success:
-                raise Exception("Service call failed")
+                Logger.warn(self.node, "No person found")
+                return Status.TARGET_NOT_FOUND
 
         except Exception as e:
             Logger.error(self.node, f"Error tracking person: {e}")
