@@ -102,6 +102,9 @@ class StoringGroceriesManager(Node):
         try:
             if say:
                 self.subtask_manager.hri.say(text=f"Going to {location} {sub_location}", wait=True)
+            self.subtask_manager.manipulation.move_joint_positions(
+                named_position="nav_pose", velocity=0.5, degrees=True
+            )   
             future = self.subtask_manager.nav.move_to_location(location, sub_location)
             rclpy.spin_until_future_complete(self, future)
             hres = future.result()
@@ -134,6 +137,9 @@ class StoringGroceriesManager(Node):
         except Exception as e:
             Logger.error(self, f"Error converting to height: {e}")
             return None
+        
+    def get_new_height(self, bbox: BBOX) -> float:
+        return bbox.pz + 0.1
 
     def exec_state(self):
         Logger.info(self, f"Executing state: {self.state.name}")
@@ -201,28 +207,50 @@ class StoringGroceriesManager(Node):
                 len(self.shelves)
             else:
                 # Manual levels
-                self.generate_manual_levels()
-                status, res = self.subtask_manager.vision.detect_objects()
-                for count, det in enumerate(res):
-                    if det is not None:
-                        height = self.convert_to_height(det)
-                        while height is None:
-                            height = self.convert_to_height(det)
-                        for i in self.shelves:
-                            distance_check = height - self.manual_heights[i]
-                            if (
-                                distance_check < 0
-                                and abs(distance_check) < self.shelf_level_down_threshold
-                            ) or (
-                                distance_check >= 0 and distance_check < self.shelf_level_threshold
-                            ):
-                                self.shelves[i].objects.append(det.classname)
-                                self.shelves[i].id = i
-                                Logger.info(
-                                    self,
-                                    f"Detected object {det.classname} in shelf {self.shelves[i].tag}",
-                                )
-                                break
+                self.shelves_count = 0
+                self.shelves = {}
+                for i, height in enumerate(self.manual_heights):
+                    self.shelves[i] = Shelf(id=i, tag="", objects=[])
+                    self.subtask_manager.manipulation.move_to_height(height)
+                    bbox = self.subtask_manager.manipulation.get_plane_bbox()
+                    new_target = self.get_new_height(bbox)
+                    self.subtask_manager.manipulation.move_to_height(new_target)
+                    status, res = self.subtask_manager.vision.detect_objects()
+
+                    for count, det in enumerate(res):
+                        if det is not None:
+                            self.shelves[i].objects.append(det.classname)
+                            self.shelves[i].id = i
+                            Logger.info(
+                                self,
+                                f"Detected object {det.classname} in shelf {self.shelves[i].tag}",
+                            )
+                            
+                    self.shelves_count += 1
+        
+                # self.generate_manual_levels()
+
+                # status, res = self.subtask_manager.vision.detect_objects()
+                # for count, det in enumerate(res):
+                #     if det is not None:
+                #         height = self.convert_to_height(det)
+                #         while height is None:
+                #             height = self.convert_to_height(det)
+                #         for i in self.shelves:
+                #             distance_check = height - self.manual_heights[i]
+                #             if (
+                #                 distance_check < 0
+                #                 and abs(distance_check) < self.shelf_level_down_threshold
+                #             ) or (
+                #                 distance_check >= 0 and distance_check < self.shelf_level_threshold
+                #             ):
+                #                 self.shelves[i].objects.append(det.classname)
+                #                 self.shelves[i].id = i
+                #                 Logger.info(
+                #                     self,
+                #                     f"Detected object {det.classname} in shelf {self.shelves[i].tag}",
+                #                 )
+                #                 break
 
                 if status == Status.EXECUTION_SUCCESS:
                     self.state = ExecutionStates.INIT_NAV_TO_TABLE
