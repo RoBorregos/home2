@@ -1,6 +1,5 @@
-import os
-import chromadb
-from sentence_transformers import SentenceTransformer, util
+import ChromaAdapter
+from sentence_transformers import SentenceTransformer
 from llama_cpp import Llama
 
 llm = Llama.from_pretrained(
@@ -9,62 +8,62 @@ llm = Llama.from_pretrained(
     verbose=False,
 )
 
+client = ChromaAdapter()
 model = SentenceTransformer("all-MiniLM-L6-v2")
-client = chromadb.Client()
-
-frida_knowledge = client.create_collection("frida_knowledge")
-roborregos_knowledge = client.create_collection("roborregos_knowledge")
-tec_knowledge = client.create_collection("tec_knowledge")
-
-directory = "hri/packages/embeddings/embeddings/dataframes/knowledge_base"
-
-file_embeddings = {}
-for filename in os.listdir(directory):
-    if filename.endswith(".txt"):
-        with open(os.path.join(directory, filename), "r") as file:
-            text = file.read()
-            lines = text.split("\n")
-            embeddings = model.encode(lines, convert_to_tensor=True)
-            file_embeddings[filename] = (lines, embeddings)
-
-            # Upload embeddings to Chroma collections
-            for i, line in enumerate(lines):
-                embedding = embeddings[i].tolist()
-                frida_knowledge.add_document(line, embedding)
-                roborregos_knowledge.add_document(line, embedding)
-                tec_knowledge.add_document(line, embedding)
 
 
-def answer_question(question):
-    question_embedding = model.encode(question, convert_to_tensor=True)
-    all_similarities = []
+def answer_question(question, top_k=3, threshold=0.4):
+    # Define the existing collections you want to use
+    collection_names = ["frida_knowledge", "roborregos_knowledge", "tec_knowledge"]
 
-    for filename, (lines, embeddings) in file_embeddings.items():
-        similarities = util.pytorch_cos_sim(question_embedding, embeddings)
-        for i, similarity in enumerate(similarities[0]):
-            all_similarities.append((similarity.item(), lines[i], filename))
+    all_context_pairs = []
 
-    # Get top 3 results
-    all_similarities.sort(key=lambda x: x[0], reverse=True)
-    top_3_results = all_similarities[:3]
+    # Fetch from ChromaAdapter using each collection
+    for collection_name in collection_names:
+        try:
+            collection = client.get_collection(collection_name)
+            results = collection.query(
+                query_texts=[question],
+                n_results=top_k,
+                include=["documents", "distances"],
+            )
 
-    # Check if any similarity is above 0.4
-    relevant_contexts = [result for result in top_3_results if result[0] > 0.4]
+            documents = results.get("documents", [[]])[0]
+            distances = results.get("distances", [[]])[0]
 
-    # Answer with context from knowledge base
+            # Pair scores with documents
+            context_pairs = list(zip(distances, documents))
+            all_context_pairs.extend(context_pairs)
+
+        except ValueError as e:
+            print(f"Warning: Collection {collection_name} not found. {str(e)}")
+            continue
+
+    # Sort all results by similarity score descending
+    all_context_pairs.sort(key=lambda x: -x[0])
+
+    # Select only top_k results
+    top_contexts = all_context_pairs[:top_k]
+
+    # Keep only relevant contexts (score > threshold)
+    relevant_contexts = [doc for score, doc in top_contexts if score > threshold]
+
     if relevant_contexts:
-        context_statements = " ".join([context[1] for context in relevant_contexts])
-        prompt = f"{context_statements} {question}"
-    # Answer with question only
+        context_text = "\n".join(relevant_contexts)
+        prompt = f"""You have the following information retrieved from knowledge bases:\n{context_text}\n\nUse it to answer the following question:\n{question}"""
     else:
-        prompt = question
+        prompt = question  # Fallback to pure LLM if no good context
 
+    # Query the local LLM
     response = llm.create_chat_completion(
         messages=[{"role": "user", "content": prompt}]
     )
-
     assistant_response = response["choices"][0]["message"]["content"]
-    return assistant_response
+
+    return {
+        "response": assistant_response,
+        "score": top_contexts[0][0] if top_contexts else 0,
+    }
 
 
 # Example usage

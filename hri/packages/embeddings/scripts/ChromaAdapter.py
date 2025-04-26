@@ -144,8 +144,8 @@ class ChromaAdapter:
 
 def main():
     client_ = ChromaAdapter()
-    collection = client_.get_collection("items")
-    print(collection.get())
+    collection = client_.list_collections()
+    print(collection)
 
 
 if __name__ == "__main__":

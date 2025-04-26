@@ -246,6 +246,7 @@ class Embeddings(Node):
         script_dir = Path(__file__).resolve().parent
         # Define the folder where the CSV files are located
         dataframes_folder = script_dir / "../embeddings/dataframes"
+        knowledge_base_folder = script_dir / "../embeddings/dataframes/knowledge_base"
 
         # Ensure the folder exists
         if not (dataframes_folder.exists() and dataframes_folder.is_dir()):
@@ -253,18 +254,59 @@ class Embeddings(Node):
                 f"The folder {dataframes_folder} does not exist or is not a directory."
             )
 
+        # Ensure the knowledge base folder exists
+        if not (knowledge_base_folder.exists() and knowledge_base_folder.is_dir()):
+            raise FileNotFoundError(
+                f"The folder {knowledge_base_folder} does not exist or is not a directory."
+            )
+
+        # Get all txt files in the knowledge base folder
+        knowledge_files = [
+            file.resolve()
+            for file in knowledge_base_folder.iterdir()
+            if file.suffix == ".txt"
+        ]
+
         # Get all CSV files in the folder
         dataframes = [
             file.resolve()
             for file in dataframes_folder.iterdir()
             if file.suffix == ".csv"
         ]
+
         # Check if there are any CSV files
         if not dataframes:
             raise FileNotFoundError(
                 f"No CSV files found in the folder {dataframes_folder}."
             )
+
+        # Check if there are any knowledge base files
+        if not knowledge_files:
+            raise FileNotFoundError(
+                f"No knowledge base files found in the folder {knowledge_base_folder}."
+            )
+
         collections = {}
+        for file in knowledge_files:
+            print(f"Processing knowledge base file: {file.name}")
+            # Read the content of the file
+            with open(file, "r", encoding="utf-8") as f:
+                content = f.read()
+
+            # Split the content into individual documents (e.g., by paragraphs)
+            documents = [doc.strip() for doc in content.split("\n\n") if doc.strip()]
+
+            # Create metadata for each document
+            metadatas = [
+                {"source": file.stem, "context": "Knowledge Base"} for _ in documents
+            ]
+
+            # Sanitize and get or create the collection
+            collection_name = self.chroma_adapter._sanitize_collection_name(file.stem)
+
+            # Add the documents and metadata to the collection
+            self.chroma_adapter.add_entries(collection_name, documents, metadatas)
+
         for file in dataframes:
             print("Processing file:", file)
             # Read the CSV file into a pandas DataFrame
