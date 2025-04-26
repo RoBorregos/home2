@@ -1,0 +1,153 @@
+[
+    {
+      "shelves": {
+        "1": ["milk", "cheese", "yogurt"],
+        "2": ["apple", "banana", "grapes"],
+        "3": [],
+        "4": ["chicken", "beef"]
+      },
+      "table_objects": ["butter", "pear", "oats", "turkey", "pineapple"],
+      "expected_output": {
+        "1": {
+          "objects_to_add": ["butter"],
+          "classification_tag": "dairy"
+        },
+        "2": {
+          "objects_to_add": ["pear", "pineapple"],
+          "classification_tag": "fruit"
+        },
+        "3": {
+          "objects_to_add": ["oats"],
+          "classification_tag": "cereal"
+        },
+        "4": {
+          "objects_to_add": ["turkey"],
+          "classification_tag": "meat"
+        }
+      }
+    },
+    {
+      "shelves": {
+        "1": ["soda", "water", "juice"],
+        "2": [],
+        "3": ["lettuce", "spinach"],
+        "4": ["potato chips", "pretzels"],
+        "5": ["toothbrush", "toothpaste"]
+      },
+      "table_objects": ["cucumber", "pringles", "sprite", "mouthwash", "carrot"],
+      "expected_output": {
+        "1": {
+          "objects_to_add": ["sprite"],
+          "classification_tag": "drinks"
+        },
+        "2": {
+          "objects_to_add": [],
+          "classification_tag": "empty"
+        },
+        "3": {
+          "objects_to_add": ["cucumber", "carrot"],
+          "classification_tag": "vegetables"
+        },
+        "4": {
+          "objects_to_add": ["pringles"],
+          "classification_tag": "snacks"
+        },
+        "5": {
+          "objects_to_add": ["mouthwash"],
+          "classification_tag": "personal care"
+        }
+      }
+    },
+    {
+      "shelves": {
+        "1": [],
+        "2": ["strawberries", "blueberries"],
+        "3": ["ketchup", "mustard"],
+        "4": ["screwdriver", "hammer"],
+        "5": ["salmon", "shrimp"],
+        "6": ["book", "magazine"]
+      },
+      "table_objects": ["tuna", "blackberries", "mayonnaise", "nails", "novel", "rubiks cube"],
+      "expected_output": {
+        "1": {
+          "objects_to_add": ["rubiks cube"],
+          "classification_tag": "toys"
+        },
+        "2": {
+          "objects_to_add": ["blackberries"],
+          "classification_tag": "berries"
+        },
+        "3": {
+          "objects_to_add": ["mayonnaise"],
+          "classification_tag": "condiments"
+        },
+        "4": {
+          "objects_to_add": ["nails"],
+          "classification_tag": "tools"
+        },
+        "5": {
+          "objects_to_add": ["tuna"],
+          "classification_tag": "seafood"
+        },
+        "6": {
+          "objects_to_add": ["novel"],
+          "classification_tag": "reading material"
+        }
+      }
+    },
+    {
+      "shelves": {
+        "1": ["bread", "baguette", "croissant"],
+        "2": [],
+        "3": ["pasta", "rice", "noodles"]
+      },
+      "table_objects": ["lasagna sheets", "sourdough", "detergent", "quinoa", "body wash"],
+      "expected_output": {
+        "1": {
+          "objects_to_add": ["sourdough"],
+          "classification_tag": "baked goods"
+        },
+        "2": {
+          "objects_to_add": ["detergent", "body wash"],
+          "classification_tag": "cleaning and personal care"
+        },
+        "3": {
+          "objects_to_add": ["lasagna sheets", "quinoa"],
+          "classification_tag": "grains and pasta"
+        }
+      }
+    },
+    {
+      "shelves": {
+        "1": ["cat food", "dog food"],
+        "2": ["cucumber", "tomato"],
+        "3": [],
+        "4": ["notebook", "pen"],
+        "5": ["screw", "wrench"]
+      },
+      "table_objects": ["puppy treats", "broccoli", "twix", "pliers", "eraser"],
+      "expected_output": {
+        "1": {
+          "objects_to_add": ["puppy treats"],
+          "classification_tag": "pet food"
+        },
+        "2": {
+          "objects_to_add": ["broccoli"],
+          "classification_tag": "vegetables"
+        },
+        "3": {
+          "objects_to_add": ["twix"],
+          "classification_tag": "candy and sweets"
+        },
+        "4": {
+          "objects_to_add": ["eraser"],
+          "classification_tag": "stationery"
+        },
+        "5": {
+          "objects_to_add": ["pliers"],
+          "classification_tag": "tools"
+        }
+      }
+    }
+  ]
+  
