@@ -7,7 +7,7 @@ from enum import Enum
 import json
 import pandas as pd
 from pathlib import Path
-from frida_interfaces.srv import (
+from frida_interfaces.hri.srv import (
     AddEntry,
     BuildEmbeddings,
     QueryEntry,

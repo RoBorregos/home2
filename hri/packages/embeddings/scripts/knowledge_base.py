@@ -1,78 +1,105 @@
-import ChromaAdapter
+#!/usr/bin/env python3
+import rclpy
+from rclpy.node import Node
+from frida_interfaces.hri.srv import AnswerQuestion
+from ChromaAdapter import ChromaAdapter
 from sentence_transformers import SentenceTransformer
 from llama_cpp import Llama
 
-llm = Llama.from_pretrained(
-    repo_id="lmstudio-community/Qwen2.5-7B-Instruct-1M-GGUF",
-    filename="Qwen2.5-7B-Instruct-1M-Q3_K_L.gguf",
-    verbose=False,
-)
 
-client = ChromaAdapter()
-model = SentenceTransformer("all-MiniLM-L6-v2")
+class RAGService(Node):
+    def __init__(self):
+        super().__init__("rag_service")
 
+        self.get_logger().info("Initializing RAG Service...")
 
-def answer_question(question, top_k=3, threshold=0.4):
-    # Define the existing collections you want to use
-    collection_names = ["frida_knowledge", "roborregos_knowledge", "tec_knowledge"]
+        # Setup Chroma Adapter
+        self.client = ChromaAdapter()
 
-    all_context_pairs = []
+        # Load Sentence Transformer
+        self.model = SentenceTransformer("all-MiniLM-L6-v2")
 
-    # Fetch from ChromaAdapter using each collection
-    for collection_name in collection_names:
+        # Load Local LLM
+        self.llm = Llama.from_pretrained(
+            repo_id="lmstudio-community/Qwen2.5-7B-Instruct-1M-GGUF",
+            filename="Qwen2.5-7B-Instruct-1M-Q3_K_L.gguf",
+            verbose=False,
+        )
+
+        # Create the service
+        self.srv = self.create_service(
+            AnswerQuestion, "/hri/rag/answer_question", self.answer_question_callback
+        )
+        self.get_logger().info("RAG Service is ready!")
+
+    def answer_question_callback(self, request, response):
+        question = request.question
+        top_k = request.topk
+        threshold = request.threshold
+        collections = (
+            request.collections
+            if request.collections
+            else ["frida_knowledge", "roborregos_knowledge", "tec_knowledge"]
+        )
+
         try:
-            collection = client.get_collection(collection_name)
-            results = collection.query(
-                query_texts=[question],
-                n_results=top_k,
-                include=["documents", "distances"],
+            all_context_pairs = []
+
+            for collection_name in collections:
+                try:
+                    collection = self.client.get_collection(collection_name)
+                    results = collection.query(
+                        query_texts=[question],
+                        n_results=top_k,
+                        include=["documents", "distances"],
+                    )
+                    documents = results.get("documents", [[]])[0]
+                    distances = results.get("distances", [[]])[0]
+
+                    context_pairs = list(zip(distances, documents))
+                    all_context_pairs.extend(context_pairs)
+
+                except Exception as e:
+                    self.get_logger().warn(f"Collection {collection_name} error: {e}")
+
+            all_context_pairs.sort(key=lambda x: -x[0])
+            top_contexts = all_context_pairs[:top_k]
+            relevant_contexts = [
+                doc for score, doc in top_contexts if score > threshold
+            ]
+
+            if relevant_contexts:
+                context_text = "\n".join(relevant_contexts)
+                prompt = f"Use the following knowledge base information:\n{context_text}\n\nAnswer the question:\n{question}"
+            else:
+                prompt = question  # fallback if no good contexts
+
+            llm_response = self.llm.create_chat_completion(
+                messages=[{"role": "user", "content": prompt}]
             )
 
-            documents = results.get("documents", [[]])[0]
-            distances = results.get("distances", [[]])[0]
+            assistant_response = llm_response["choices"][0]["message"]["content"]
 
-            # Pair scores with documents
-            context_pairs = list(zip(distances, documents))
-            all_context_pairs.extend(context_pairs)
+            # Fill the service response
+            response.success = True
+            response.response = assistant_response
+            response.score = top_contexts[0][0] if top_contexts else 0
 
-        except ValueError as e:
-            print(f"Warning: Collection {collection_name} not found. {str(e)}")
-            continue
+        except Exception as e:
+            self.get_logger().error(f"Error during RAG process: {e}")
+            response.success = False
+            response.response = f"Failed to answer question: {e}"
+            response.score = 0.0
 
-    # Sort all results by similarity score descending
-    all_context_pairs.sort(key=lambda x: -x[0])
-
-    # Select only top_k results
-    top_contexts = all_context_pairs[:top_k]
-
-    # Keep only relevant contexts (score > threshold)
-    relevant_contexts = [doc for score, doc in top_contexts if score > threshold]
-
-    if relevant_contexts:
-        context_text = "\n".join(relevant_contexts)
-        prompt = f"""You have the following information retrieved from knowledge bases:\n{context_text}\n\nUse it to answer the following question:\n{question}"""
-    else:
-        prompt = question  # Fallback to pure LLM if no good context
-
-    # Query the local LLM
-    response = llm.create_chat_completion(
-        messages=[{"role": "user", "content": prompt}]
-    )
-    assistant_response = response["choices"][0]["message"]["content"]
-
-    return {
-        "response": assistant_response,
-        "score": top_contexts[0][0] if top_contexts else 0,
-    }
+        return response
 
 
-# Example usage
-question = "What is the capital of France?"
-answer = answer_question(question)
-print(answer)
+def main(args=None):
+    rclpy.init(args=args)
+    node = RAGService()
+    rclpy.spin(node)
+    rclpy.shutdown()
 
-# 1. knowledge base upload of txt with embeddings per line to chroma db (there are 3 different knowledge bases)
-# 2. when the query is done we will retrieve the top 3 results from all the files
-# 3. we will return the answer and score to measure
-# 4. if the score is not greater than 0.4 then use normal llm to answer the question (to target potential quizz questions and dates)
-# 5. otherwise return the answer from the knowledge base and pass it on to the local llm for a structured output (knowledge base answer + local llm answer)
+
+if __name__ == "__main__":
+    main()
