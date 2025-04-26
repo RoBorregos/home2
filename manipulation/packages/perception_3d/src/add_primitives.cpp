@@ -244,81 +244,36 @@ public:
     center_offset[2] = (min_pt.z + max_pt.z) / 2.0f;
 
     // Transform the center offset back to the original coordinate system
-    center += rotation * center_offset;
+    center += rotation;
 
-    Eigen::Vector3f min_pt_vec;
-    min_pt_vec[0] = min_pt.x;
-    min_pt_vec[1] = min_pt.y;
-    min_pt_vec[2] = min_pt.z;
-    Eigen::Vector3f max_pt_vec;
-    max_pt_vec[0] = max_pt.x;
-    max_pt_vec[1] = max_pt.y;
-    max_pt_vec[2] = max_pt.z;
+    // Calculate the four corners of the box in the transformed space
+    pcl::PointXYZ xy1, xy2, xy3, xy4;
+    const double z = 0; // Use zero as the z-coordinate in local frame
 
-    // Fix the matrix multiplication order to avoid
-    // EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE error
-    Eigen::Vector3f p1 = rotation.transpose() * (min_pt_vec) + center;
-    Eigen::Vector3f p2 = rotation.transpose() * (max_pt_vec) + center;
-    box_params.xy1.x = p1[0];
-    box_params.xy1.y = p1[1];
-    box_params.xy1.z = p1[2];
+    // Define corners relative to the center in the transformed coordinate
+    // system
+    xy1.x = -extent[0];
+    xy1.y = -extent[1];
+    xy1.z = z;
 
-    box_params.xy3.x = p2[0];
-    box_params.xy3.y = p2[1];
-    box_params.xy3.z = p2[2];
+    xy2.x = -extent[0];
+    xy2.y = extent[1];
+    xy2.z = z;
 
-    box_params.xy2.x = p1[0];
-    box_params.xy2.y = p2[1];
-    box_params.xy2.z = p1[2];
-    box_params.xy4.x = p2[0];
-    box_params.xy4.y = p1[1];
-    box_params.xy4.z = p2[2];
+    xy3.x = extent[0];
+    xy3.y = extent[1];
+    xy3.z = z;
 
-    return true;
-  }
+    xy4.x = extent[0];
+    xy4.y = -extent[1];
+    xy4.z = z;
 
-  pcl::PointXYZ point_from_rotation(_IN_ const Eigen::Matrix3f &rotation,
-                                    _IN_ const Eigen::Vector3f &center,
-                                    _IN_ const Eigen::Vector3f &extent,
-                                    _IN_ const Eigen::Vector3f &point) {
-    // Transform the point using the rotation matrix and center
-    Eigen::Vector3f transformed_point = rotation * point + center;
-    pcl::PointXYZ transformed_point_xyz;
-    transformed_point_xyz.x = transformed_point[0];
-    transformed_point_xyz.y = transformed_point[1];
-    transformed_point_xyz.z = transformed_point[2];
-    return transformed_point_xyz;
-  }
+    // Store the corners in box_params
+    box_params.xy1 = xy1;
+    box_params.xy2 = xy2;
+    box_params.xy3 = xy3;
+    box_params.xy4 = xy4;
 
-  bool get_3d_oriented_bbox(_IN_ const Eigen::Matrix3f &rotation,
-                            _IN_ const Eigen::Vector3f &center,
-                            _IN_ const Eigen::Vector3f &extent,
-                            BoxPrimitiveParams &box_params) {
-
-    // only modify xy1, xy2, xy3, xy4 from box_params
-    box_params.xy1 = point_from_rotation(
-        rotation, center, extent, Eigen::Vector3f(-extent[0], -extent[1], 0));
-    box_params.xy2 = point_from_rotation(
-        rotation, center, extent, Eigen::Vector3f(-extent[0], extent[1], 0));
-    box_params.xy3 = point_from_rotation(
-        rotation, center, extent, Eigen::Vector3f(extent[0], extent[1], 0));
-    box_params.xy4 = point_from_rotation(
-        rotation, center, extent, Eigen::Vector3f(extent[0], -extent[1], 0));
-    // box_params.xy1 = point_from_rotation(
-    //  take into consideration the rotation and center
-    // Eigen::Vector3f transformation =
-    //     rotation * Eigen::Vector3f(extent[0], extent[1], extent[2]);
-    // box_params.xy1.x = center[0] - transformation[0];
-    // box_params.xy1.y = center[1] - transformation[1];
-    // box_params.xy1.z = center[2] - transformation[2];
-    // box_params.xy2.x = center[0] - transformation[0];
-    // box_params.xy2.y = center[1] + transformation[1];
-    // box_params.xy2.z = center[2] - transformation[2];
-    // box_params.xy3.x = center[0] + transformation[0];
-    // box_params.xy3.y = center[1] + transformation[1];
-    // box_params.xy3.z = center[2] - transformation[2];
-    // box_params.xy4.x = center[0] + transformation[0];
-    // box_params.xy4.y = center[1] - transformation[1];
     return true;
   }
 
@@ -351,10 +306,17 @@ public:
     box_params.orientation.z = quat.z();
     box_params.orientation.w = quat.w();
 
+    quat = quat.inverse();
+    quat.normalize();
+
     box_params.orientation2.x = quat.x();
     box_params.orientation2.y = quat.y();
     box_params.orientation2.z = quat.z();
     box_params.orientation2.w = quat.w();
+    // box_params.orientation2.x = 0;
+    // box_params.orientation2.y = 0;
+    // box_params.orientation2.z = 0;
+    // box_params.orientation2.w = 1;
 
     // Get the oriented bounding box corners
     // if (!get_3d_oriented_bbox(rotation, center, extent, box_params)) {
@@ -757,12 +719,28 @@ public:
                               response->max_z};
 
             geometry_msgs::msg::TransformStamped transform;
+
             transform.header.stamp = this->now();
             transform.header.frame_id = "base_link";
 
+            transform.child_frame_id = "plane_center";
+            // transform.transform.translation.x = (minn[0] + maxx[0]) / 2.0;
+            // transform.transform.translation.y = (minn[1] + maxx[1]) / 2.0;
+            // transform.transform.translation.z = (minn[2] + maxx[2]) / 2.0;
+            transform.transform.translation.x = box_params.centroid.x;
+            transform.transform.translation.y = box_params.centroid.y;
+            transform.transform.translation.z = box_params.centroid.z;
+
+            transform.transform.rotation = box_params.orientation;
+            this->tf_broadcaster->sendTransform(transform);
+
+            transform.header.stamp = this->now();
+            transform.header.frame_id = "plane_center";
+
             transform.transform.translation.x = box_params.xy1.x;
             transform.transform.translation.y = box_params.xy1.y;
-            transform.transform.translation.z = (minn[2] + maxx[2]) / 2.0;
+            // transform.transform.translation.z = (minn[2] + maxx[2]) / 2.0;
+            transform.transform.translation.z = box_params.xy2.z;
             // transform.transform.rotation.x = 0.0;
             // transform.transform.rotation.y = 0.0;
             // transform.transform.rotation.z = 0.0;
@@ -773,7 +751,8 @@ public:
             this->tf_broadcaster->sendTransform(transform);
             transform.transform.translation.x = box_params.xy2.x;
             transform.transform.translation.y = box_params.xy2.y;
-            transform.transform.translation.z = (minn[2] + maxx[2]) / 2.0;
+            // transform.transform.translation.z = (minn[2] + maxx[2]) / 2.0;
+            transform.transform.translation.z = box_params.xy2.z;
             transform.transform.rotation = box_params.orientation2;
             // transform.transform.rotation.x = 0.0;
             // transform.transform.rotation.y = 0.0;
@@ -783,7 +762,8 @@ public:
             this->tf_broadcaster->sendTransform(transform);
             transform.transform.translation.x = box_params.xy3.x;
             transform.transform.translation.y = box_params.xy3.y;
-            transform.transform.translation.z = (minn[2] + maxx[2]) / 2.0;
+            // transform.transform.translation.z = (minn[2] + maxx[2]) / 2.0;
+            transform.transform.translation.z = box_params.xy2.z;
             transform.transform.rotation = box_params.orientation2;
             // transform.transform.rotation.x = 0.0;
             // transform.transform.rotation.y = 0.0;
@@ -793,7 +773,8 @@ public:
             this->tf_broadcaster->sendTransform(transform);
             transform.transform.translation.x = box_params.xy4.x;
             transform.transform.translation.y = box_params.xy4.y;
-            transform.transform.translation.z = (minn[2] + maxx[2]) / 2.0;
+            // transform.transform.translation.z = (minn[2] + maxx[2]) / 2.0;
+            transform.transform.translation.z = box_params.xy2.z;
             transform.transform.rotation = box_params.orientation2;
             // transform.transform.rotation.x = 0.0;
             // transform.transform.rotation.y = 0.0;
@@ -832,12 +813,6 @@ public:
             // }
 
             // Publish center transform
-            transform.child_frame_id = "plane_center";
-            transform.transform.translation.x = (minn[0] + maxx[0]) / 2.0;
-            transform.transform.translation.y = (minn[1] + maxx[1]) / 2.0;
-            transform.transform.translation.z = (minn[2] + maxx[2]) / 2.0;
-            transform.transform.rotation = box_params.orientation;
-            this->tf_broadcaster->sendTransform(transform);
           }
 
           response->health_response = OK;
