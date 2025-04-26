@@ -10,8 +10,9 @@ from rclpy.node import Node
 from subtask_managers.vision_tasks import VisionTasks
 from utils.task import Task
 from utils.logger import Logger
+from frida_constants.vision_enums import DetectBy, Poses
 
-task = Task.STORING_GROCERIES
+task = Task.HELP_ME_CARRY
 
 
 class TestVision(Node):
@@ -43,13 +44,18 @@ class TestVision(Node):
                 self.done = True
                 self.running_task = False
         elif task == Task.HELP_ME_CARRY:
-            status, bbox, point3d = self.manager.get_pointing_bag(5)
-            if status:
-                self.get_logger().info(f"Vision task result: {bbox}")
-                self.get_logger().info(f"Vision task result: {point3d}")
-                self.running_task = False
-            else:
-                self.get_logger().info("Vision task failed")
+            status = self.manager.track_person_by(
+                by=DetectBy.POSES.value, value=Poses.SITTING.value
+            )
+            print(status)
+            self.running_task = False
+            # status, bbox, point3d = self.manager.get_pointing_bag(5)
+            # if status:
+            #     self.get_logger().info(f"Vision task result: {bbox}")
+            #     self.get_logger().info(f"Vision task result: {point3d}")
+            #     self.running_task = False
+            # else:
+            #     self.get_logger().info("Vision task failed")
 
         elif task == Task.GPSR:
             name = self.manager.get_person_name()

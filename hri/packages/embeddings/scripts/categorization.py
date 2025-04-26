@@ -29,6 +29,11 @@ class MetadataModel(BaseModel):
     category: Optional[str] = None
     default_location: Optional[str] = None
     context: Optional[str] = ""
+    complement: Optional[str] = None
+    characteristic: Optional[str] = None
+    result: Optional[str] = None
+    status: Optional[int] = None
+    timestamp: Optional[str] = None
 
     PROFILES: ClassVar[Dict[MetadataProfile, Dict[str, str]]] = {
         MetadataProfile.ITEMS: {"context": "item for household use"},
@@ -93,13 +98,14 @@ class Embeddings(Node):
 
     def add_entry_callback(self, request, response):
         """Service callback to add items to ChromaDB"""
+
         try:
-            # Ensure documents is a list
             if request.metadata:
                 metadatas_ = json.loads(request.metadata)
             else:
                 metadatas_ = request.metadata
 
+            # Ensure documents is a list
             documents = (
                 request.document
                 if isinstance(request.document, list)
@@ -110,23 +116,30 @@ class Embeddings(Node):
             metadata_objects = []
 
             # Normalize and validate all metadata entries using the profile
-            for meta in metadatas:
-                metadata_parsed = MetadataModel.with_profile(request.collection, **meta)
-                metadata_objects.append(metadata_parsed.model_dump())
 
-            print("lenght of documents", len(documents), len(metadatas))
+            for meta in metadatas:
+                try:
+                    metadata_parsed = MetadataModel.with_profile(
+                        request.collection, **meta
+                    )
+                    metadata_objects.append(metadata_parsed.model_dump())
+                except Exception as e:
+                    self.get_logger().error(
+                        f"Failed to process metadata entry: {meta} — {str(e)}"
+                    )
+                    raise
+
             documents = self.clean(documents)
             # Inject context into documents and preserve original names
-
-            print("documents before the context added", documents)
-
             for i, (doc, meta) in enumerate(zip(documents, metadata_objects)):
                 meta["original_name"] = doc
                 context = meta.get("context")
                 if context:
                     documents[i] = f"{doc} {context}"
-            print("documents after the context added", documents)
-
+            # self.get_logger().info(f"This is the request that is reaching{(request.collection, documents, metadata_objects)}")
+            # self.get_logger().info("Adding entries to ChromaDB")
+            if request.collection == "closest_items":
+                self.chroma_adapter._get_or_create_collection("closest_items")
             self.chroma_adapter.add_entries(
                 request.collection, documents, metadata_objects
             )
@@ -142,7 +155,6 @@ class Embeddings(Node):
             response.success = False
             response.message = f"Failed to add item: {str(e)}"
             self.get_logger().error(response.message)
-
         return response
 
     def query_entry_callback(self, request, response):
@@ -164,21 +176,23 @@ class Embeddings(Node):
                 results_raw = self.chroma_adapter.query(
                     request.collection, [query_with_context], request.topk
                 )
-                # #Test with no context
-                # results_raw = self.chroma_adapter.query(
-                #     request.collection, query, request.topk
-                # )
                 docs = results_raw.get("documents", [[]])[0]
                 metas = results_raw.get("metadatas", [[]])[0]
 
-                formatted_results = [
-                    meta.get("original_name", doc) if isinstance(meta, dict) else doc
-                    for doc, meta in zip(docs, metas)
-                ]
+                formatted_results = []
+                for doc, meta in zip(docs, metas):
+                    entry = {
+                        "document": doc,
+                        "metadata": meta if isinstance(meta, dict) else {},
+                    }
+
+                    if isinstance(meta, dict) and "original_name" in meta:
+                        entry["document"] = meta["original_name"]
+
+                    formatted_results.append(entry)
 
                 grouped_results.append({"query": query, "results": formatted_results})
 
-            # Convert each result group to JSON string
             response.results = [json.dumps(entry) for entry in grouped_results]
 
             response.success = bool(grouped_results)
@@ -191,7 +205,8 @@ class Embeddings(Node):
             response.success = False
             response.message = f"Failed to query items: {str(e)}"
             self.get_logger().error(response.message)
-
+        if request.collection == "closest_items":
+            self.chroma_adapter.delete_collection("closest_items")
         return response
 
     def build_embeddings_callback(self, request, response):
@@ -276,7 +291,7 @@ class Embeddings(Node):
             )
 
             self.chroma_adapter.add_entries(collection_name, documents, metadatas_)
-
+        self.chroma_adapter._get_or_create_collection("command_history")
         return
 
     def add_basics(self, documents, metadatas):
@@ -289,8 +304,6 @@ class Embeddings(Node):
         return documents, metadatas
 
     def clean(self, documents):
-        # If it's a list, clean each element
-        print("document before cleaning:", documents)
         # If it's a string that looks like a list -> try parsing it
         if (
             isinstance(documents, str)

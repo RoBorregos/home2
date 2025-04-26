@@ -7,6 +7,6 @@ point_cloud_camera:
     max_range: 2.0
     point_subsample: 1
     padding_offset: 0.1
-    padding_scale: 1.0
+    padding_scale: 1.01
     max_update_rate: 1.0
     filtered_cloud_topic: filtered_cloud

@@ -78,7 +78,6 @@ class ManipulationTasks:
 
         self._get_joints_client = self.node.create_client(GetJoints, "/manipulation/get_joints")
         self.follow_face_client = self.node.create_client(FollowFace, "/follow_face")
-
         self._manipulation_action_client = ActionClient(
             self.node, ManipulationAction, MANIPULATION_ACTION_SERVER
         )
@@ -243,7 +242,7 @@ class ManipulationTasks:
         try:
             future = self.follow_face_client.call_async(request)
             rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
-            result = future.result().result
+            result = future.result()
 
             if not result.success:
                 raise Exception("Service call failed")
