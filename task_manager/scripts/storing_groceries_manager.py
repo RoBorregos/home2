@@ -104,7 +104,7 @@ class StoringGroceriesManager(Node):
                 self.subtask_manager.hri.say(text=f"Going to {location} {sub_location}", wait=True)
             self.subtask_manager.manipulation.move_joint_positions(
                 named_position="nav_pose", velocity=0.5, degrees=True
-            )   
+            )
             future = self.subtask_manager.nav.move_to_location(location, sub_location)
             rclpy.spin_until_future_complete(self, future)
             hres = future.result()
@@ -137,7 +137,7 @@ class StoringGroceriesManager(Node):
         except Exception as e:
             Logger.error(self, f"Error converting to height: {e}")
             return None
-        
+
     def get_new_height(self, bbox: BBOX) -> float:
         return bbox.pz + 0.1
 
@@ -225,9 +225,9 @@ class StoringGroceriesManager(Node):
                                 self,
                                 f"Detected object {det.classname} in shelf {self.shelves[i].tag}",
                             )
-                            
+
                     self.shelves_count += 1
-        
+
                 # self.generate_manual_levels()
 
                 # status, res = self.subtask_manager.vision.detect_objects()
@@ -364,9 +364,7 @@ class StoringGroceriesManager(Node):
                 text=f"I'm going to pick the object: {min_distance_obj.classname}", wait=True
             )
             self.current_object = min_distance_obj.classname
-            hres: Status = self.subtask_manager.manipulation.pick_object(
-                min_distance_obj.classname, timeout=10
-            )
+            hres: Status = self.subtask_manager.manipulation.pick_object(min_distance_obj.classname)
             if not hres == Status.EXECUTION_SUCCESS:
                 # self.state = ExecutionStates.FAILED_NAV_TO_SHELF
                 Logger.error(self, "Failed to pick object")
