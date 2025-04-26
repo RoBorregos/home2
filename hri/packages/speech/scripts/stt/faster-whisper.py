@@ -67,7 +67,7 @@ class WhisperServicer(speech_pb2_grpc.SpeechServiceServicer):
         dbfs_values = [chunk.dBFS for chunk in chunks if chunk.dBFS > float("-inf")]
 
         if not dbfs_values:
-            silence_thresh = -28  # Default for silent audio
+            silence_thresh = -30  # Default for silent audio
         else:
             # Sort by loudness (loudest first)
             dbfs_values.sort(reverse=True)
@@ -86,7 +86,7 @@ class WhisperServicer(speech_pb2_grpc.SpeechServiceServicer):
         print(f"Using adaptive silence threshold: {silence_thresh} dB")
 
         # Discard audio if threshold is less than -35 dB (too quiet/noisy)
-        if silence_thresh < -35:
+        if silence_thresh < -40:
             print("Audio too quiet or noisy, discarding")
             WavUtils.discard_wav(temp_file)
             return speech_pb2.TextResponse(text="")
