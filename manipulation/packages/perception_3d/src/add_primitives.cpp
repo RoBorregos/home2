@@ -244,7 +244,8 @@ public:
     center_offset[2] = (min_pt.z + max_pt.z) / 2.0f;
 
     // Transform the center offset back to the original coordinate system
-    center += rotation;
+    // Eigen::Vector3f ident =
+    center += rotation * center_offset;
 
     // Calculate the four corners of the box in the transformed space
     pcl::PointXYZ xy1, xy2, xy3, xy4;
@@ -294,9 +295,9 @@ public:
     box_params.centroid.y = center[1];
     box_params.centroid.z = center[2];
 
-    box_params.width = extent[0];
-    box_params.depth = extent[1];
-    box_params.height = extent[2];
+    box_params.width = extent[0] * 2;
+    box_params.depth = extent[1] * 2;
+    box_params.height = extent[2] * 2;
 
     // Set the orientation in the box parameters
     Eigen::Quaternionf quat(rotation);
@@ -544,7 +545,7 @@ public:
 
       BoxPrimitiveParams box_params;
 
-      STATUS_RESPONSE status = PrevRansacNormals(cloud, box_params);
+      STATUS_RESPONSE status = RansacNormals(cloud, box_params);
 
       ASSERT_AND_RETURN_CODE(
           status, OK, "Error computing box primitive with code %d", status);

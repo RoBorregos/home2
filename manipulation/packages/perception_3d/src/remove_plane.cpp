@@ -350,8 +350,8 @@ public:
         new pcl::PointCloud<pcl::PointXYZ>);
 
     // radial filter, to eliminate chance of error by planes far from the point
-    response->status =
-        this->DistanceFilterFromPoint(last_, point, cloud_radius_out, 0.5, 0.1);
+    response->status = this->DistanceFilterFromPoint(
+        last_, point, cloud_radius_out, 0.5, point.z - 0.3, point.z + 0.3);
     std::string base_path = this->package_path;
     response->status =
         savePointCloud(base_path + "/radial_filtered.pcd", cloud_radius_out);
