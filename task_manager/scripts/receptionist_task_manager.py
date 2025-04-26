@@ -170,9 +170,9 @@ class ReceptionistTM(Node):
         if self.current_state == ReceptionistTM.TASK_STATES["NAVIGATE_TO_BEVERAGES"]:
             Logger.state(self, "Navigating to beverages")
             self.navigate_to("kitchen", "beverages")
-            self.subtask_manager.manipulation.move_joint_positions(
-                named_position="front_stare", velocity=0.5, degrees=True
-            )
+            # self.subtask_manager.manipulation.move_joint_positions(
+            #     named_position="front_stare", velocity=0.5, degrees=True
+            # )
             self.current_state = ReceptionistTM.TASK_STATES["ASK_FOR_DRINK"]
 
         if self.current_state == ReceptionistTM.TASK_STATES["ASK_FOR_DRINK"]:
@@ -244,32 +244,32 @@ class ReceptionistTM(Node):
 
         if self.current_state == ReceptionistTM.TASK_STATES["FIND_SEAT"]:
             Logger.state(self, "Finding seat")
-            target = 0
+            # target = 0
             self.subtask_manager.manipulation.follow_face(False)
             self.subtask_manager.manipulation.move_joint_positions(
                 named_position="front_low_stare", velocity=0.5, degrees=True
             )
             print("Finding seat")
             for seat_angle in self.seat_angles:
-                joint_positions = self.subtask_manager.manipulation.get_joint_positions(
-                    degrees=True
-                )
-                joint_positions["joint1"] = joint_positions["joint1"] - seat_angle
-                self.subtask_manager.manipulation.move_joint_positions(
-                    joint_positions=joint_positions, velocity=0.5, degrees=True
-                )
+                # joint_positions = self.subtask_manager.manipulation.get_joint_positions(
+                #     degrees=True
+                # )
+                # joint_positions["joint1"] = joint_positions["joint1"] - seat_angle
+                # self.subtask_manager.manipulation.move_joint_positions(
+                #     joint_positions=joint_positions, velocity=0.5, degrees=True
+                # )
                 status, angle = self.subtask_manager.vision.find_seat()
                 # print(self.subtask_manager.vision.find_seat_moondream())
                 if status == Status.EXECUTION_SUCCESS:
-                    target = angle
+                    # target = angle
                     break
 
             self.subtask_manager.hri.say("Please take a seat where my arm points at.")
-            joint_positions = self.subtask_manager.manipulation.get_joint_positions(degrees=True)
-            joint_positions["joint1"] = joint_positions["joint1"] - target
-            self.subtask_manager.manipulation.move_joint_positions(
-                joint_positions=joint_positions, velocity=0.5, degrees=True
-            )
+            # joint_positions = self.subtask_manager.manipulation.get_joint_positions(degrees=True)
+            # joint_positions["joint1"] = joint_positions["joint1"] - target
+            # self.subtask_manager.manipulation.move_joint_positions(
+            #     joint_positions=joint_positions, velocity=0.5, degrees=True
+            # )
 
             # self.subtask_manager.vision.detect_guest(self.get_guest().name, timeout=5)
             self.current_state = ReceptionistTM.TASK_STATES["INTRODUCTION"]
