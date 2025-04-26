@@ -231,7 +231,7 @@ local_costmap:
           obstacle_min_range: 0.0
         obstacles:
           topic: /camera/obstacles
-          max_obstacle_height: 0.4
+          max_obstacle_height: 2.0
           clearing: True
           marking: True
           data_type: "PointCloud2"

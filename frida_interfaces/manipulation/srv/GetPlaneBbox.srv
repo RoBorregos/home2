@@ -1,0 +1,10 @@
+float32 min_height
+float32 max_height
+---
+float32 min_x
+float32 min_y
+float32 min_z
+float32 max_x
+float32 max_y
+float32 max_z
+int32 health_response
