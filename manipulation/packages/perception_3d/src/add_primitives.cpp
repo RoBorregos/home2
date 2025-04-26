@@ -7,6 +7,7 @@
 #include <pcl/common/centroid.h>
 #include <pcl/common/common.h>
 #include <pcl/common/eigen.h>
+#include <pcl/common/pca.h>
 #include <pcl/common/transforms.h>
 #include <pcl/filters/passthrough.h>
 #include <pcl/impl/point_types.hpp>
@@ -51,6 +52,7 @@ struct BoxPrimitiveParams {
   long double height;
   long double depth;
   geometry_msgs::msg::Quaternion orientation;
+  geometry_msgs::msg::Quaternion orientation2;
   pcl::PointXYZ xy1;
   pcl::PointXYZ xy2;
   pcl::PointXYZ xy3;
@@ -112,110 +114,8 @@ public:
   }
 
   STATUS_RESPONSE
-  Normals(_IN_ std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud,
-          _OUT_ BoxPrimitiveParams &box_params) {
-    STATUS_RESPONSE status = OK;
-
-    // 1. Compute centroid and covariance
-    Eigen::Vector4f pcaCentroid;
-    pcl::compute3DCentroid(*cloud, pcaCentroid);
-    Eigen::Matrix3f covariance;
-    pcl::computeCovarianceMatrixNormalized(*cloud, pcaCentroid, covariance);
-
-    // 2. Compute eigenvalues and eigenvectors
-    Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigen_solver(
-        covariance, Eigen::ComputeEigenvectors);
-    Eigen::Matrix3f eigenVectorsPCA = eigen_solver.eigenvectors();
-
-    // This line is necessary for proper orientation
-    eigenVectorsPCA.col(2) =
-        eigenVectorsPCA.col(0).cross(eigenVectorsPCA.col(1));
-
-    // 3. Transform the original cloud to the origin where
-    // the principal components correspond to the axes
-    Eigen::Matrix4f projectionTransform(Eigen::Matrix4f::Identity());
-    projectionTransform.block<3, 3>(0, 0) = eigenVectorsPCA.transpose();
-    projectionTransform.block<3, 1>(0, 3) =
-        -1.0f * (projectionTransform.block<3, 3>(0, 0) * pcaCentroid.head<3>());
-
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloudPointsProjected(
-        new pcl::PointCloud<pcl::PointXYZ>);
-    pcl::transformPointCloud(*cloud, *cloudPointsProjected,
-                             projectionTransform);
-
-    // 4. Get the minimum and maximum points of the transformed cloud
-    pcl::PointXYZ minPoint, maxPoint;
-    pcl::getMinMax3D(*cloudPointsProjected, minPoint, maxPoint);
-
-    const Eigen::Vector3f meanDiagonal =
-        0.5f * (maxPoint.getVector3fMap() + minPoint.getVector3fMap());
-
-    // 5. Final transform
-    const Eigen::Quaternionf bboxQuaternion(eigenVectorsPCA);
-    const Eigen::Vector3f bboxTransform =
-        eigenVectorsPCA * meanDiagonal + pcaCentroid.head<3>();
-
-    // 6. Save the results
-    box_params.orientation.w = bboxQuaternion.w();
-    box_params.orientation.x = bboxQuaternion.x();
-    box_params.orientation.y = bboxQuaternion.y();
-    box_params.orientation.z = bboxQuaternion.z();
-
-    box_params.centroid.x = bboxTransform[0];
-    box_params.centroid.y = bboxTransform[1];
-    box_params.centroid.z = bboxTransform[2];
-
-    box_params.width = maxPoint.x - minPoint.x;
-    box_params.depth = maxPoint.y - minPoint.y;
-    box_params.height = maxPoint.z - minPoint.z;
-
-    // 7. Compute the corners
-    // First, define the corners in the local coordinate system
-    float halfWidth = box_params.width / 2;
-    float halfDepth = box_params.depth / 2;
-    float midHeight = (minPoint.z + maxPoint.z) / 2; // Use middle of Z range
-
-    pcl::PointXYZ corner1, corner2, corner3, corner4;
-    corner1.x = -halfWidth;
-    corner1.y = -halfDepth;
-    corner1.z = midHeight;
-    corner2.x = -halfWidth;
-    corner2.y = halfDepth;
-    corner2.z = midHeight;
-    corner3.x = halfWidth;
-    corner3.y = halfDepth;
-    corner3.z = midHeight;
-    corner4.x = halfWidth;
-    corner4.y = -halfDepth;
-    corner4.z = midHeight;
-
-    // Now transform these corners back to the original coordinate system
-    Eigen::Matrix4f invProjection = projectionTransform.inverse();
-
-    // Function to transform a point using a 4x4 matrix
-    auto transformPoint = [](const pcl::PointXYZ &point,
-                             const Eigen::Matrix4f &matrix) {
-      Eigen::Vector4f pointVector;
-      pointVector << point.x, point.y, point.z, 1;
-      Eigen::Vector4f transformedPoint = matrix * pointVector;
-      pcl::PointXYZ result;
-      result.x = transformedPoint(0) / transformedPoint(3);
-      result.y = transformedPoint(1) / transformedPoint(3);
-      result.z = transformedPoint(2) / transformedPoint(3);
-      return result;
-    };
-
-    box_params.xy1 = transformPoint(corner1, invProjection);
-    box_params.xy2 = transformPoint(corner2, invProjection);
-    box_params.xy3 = transformPoint(corner3, invProjection);
-    box_params.xy4 = transformPoint(corner4, invProjection);
-
-    return status;
-  }
-
-  STATUS_RESPONSE
-  RansacNormals(_IN_ std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud,
-                _OUT_ BoxPrimitiveParams &box_params) {
+  PrevRansacNormals(_IN_ std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud,
+                    _OUT_ BoxPrimitiveParams &box_params) {
     STATUS_RESPONSE status = OK;
 
     Eigen::Matrix3f covariance_matrix;
@@ -228,125 +128,403 @@ public:
     pcl::PointXYZ min_pt2, max_pt;
     pcl::getMinMax3D(*cloud, min_pt2, max_pt);
 
-    Eigen::Vector3f center;
-    // center = (max_pt.getVector3fMap() + min_pt2.getVector3fMap()) / 2;
-    center[0] = (max_pt.x + min_pt2.x) / 2;
-    center[1] = (max_pt.y + min_pt2.y) / 2;
-    center[2] = (max_pt.z + min_pt2.z) / 2;
+    box_params.centroid.x = min_pt2.x + (max_pt.x - min_pt2.x) / 2;
+    box_params.centroid.y = min_pt2.y + (max_pt.y - min_pt2.y) / 2;
+    box_params.centroid.z = min_pt2.z + (max_pt.z - min_pt2.z) / 2;
 
+    Eigen::Vector3f center;
+    center[0] = box_params.centroid.x;
+    center[1] = box_params.centroid.y;
+    center[2] = box_params.centroid.z;
+
+    // Compute eigenvectors and eigenvalues of the covariance matrix
     Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigen_solver(
         covariance_matrix);
     Eigen::Matrix3f eigenvectors = eigen_solver.eigenvectors();
     Eigen::Vector3f eigenvalues = eigen_solver.eigenvalues();
 
-    eigenvectors.col(2) = eigenvectors.col(0).cross(eigenvectors.col(1));
-    eigenvectors.col(0) = eigenvectors.col(1).cross(eigenvectors.col(2));
-    eigenvectors.col(1) = eigenvectors.col(2).cross(eigenvectors.col(0));
+    eigenvectors.col(2) =
+        (eigenvectors.col(0).cross(eigenvectors.col(1))).normalized();
+    eigenvectors.col(0) =
+        (eigenvectors.col(1).cross(eigenvectors.col(2))).normalized();
+    eigenvectors.col(1) =
+        (eigenvectors.col(2).cross(eigenvectors.col(0))).normalized();
 
-    Eigen::Matrix3f temp;
-    temp.col(0) = eigenvectors.col(2);
-    temp.col(1) = eigenvectors.col(1);
-    temp.col(2) = eigenvectors.col(0);
+    Eigen::Matrix3f eigenVectorsPCA1;
+    eigenVectorsPCA1.col(0) = eigenvectors.col(2);
+    eigenVectorsPCA1.col(1) = eigenvectors.col(1);
+    eigenVectorsPCA1.col(2) = eigenvectors.col(0);
+    eigenvectors = eigenVectorsPCA1;
 
-    eigenvectors = temp;
-
-    // Eigen::Vector3f euler_angles = (eigenvectors).eulerAngles(2, 1, 0);
-    Eigen::Quaternionf quat(eigenvectors);
-    // quat.normalize();
-    // Eigen::AngleAxisf keep_Z_rot(euler_angles[0], Eigen::Vector3f::UnitZ());
+    Eigen::Vector3f ea = (eigenvectors).eulerAngles(2, 1, 0);
+    // Eigen::AngleAxisf keep_Z_Rot(ea[0], Eigen::Vector3f::UnitZ());
     Eigen::Affine3f transform = Eigen::Affine3f::Identity();
+
     transform.translate(center);
+    // transform.rotate(keep_Z_Rot);
+    // Convert eigenvectors (rotation matrix) to quaternion and normalize it
+    Eigen::Quaternionf quat(eigenvectors);
+    quat.normalize();
+
+    // Rotate using the quaternion directly
     transform.rotate(quat);
 
-    pcl::PointCloud<pcl::PointXYZ>::Ptr transformed_cloud(
-        new pcl::PointCloud<pcl::PointXYZ>);
-    pcl::transformPointCloud(*cloud, *transformed_cloud, transform);
-
-    // // Find min and max points in the transformed space
-    pcl::PointXYZ min_pt, max_pt2;
-    pcl::getMinMax3D(*transformed_cloud, min_pt, max_pt2);
-
-    Eigen::Vector3f center_new =
-        (max_pt2.getVector3fMap() + min_pt.getVector3fMap()) / 2;
-    Eigen::Affine3f transform2 = Eigen::Affine3f::Identity();
-    transform2.translate(center_new);
-    Eigen::Affine3f transform3 = transform * transform2;
-
-    // Eigen::Quaternionf quat(keep_Z_rot);
-
-    box_params.orientation.w = quat.w();
+    // Set the orientation in the box parameters
     box_params.orientation.x = quat.x();
     box_params.orientation.y = quat.y();
     box_params.orientation.z = quat.z();
-    // box_params.orientation.w = 1;
-    // box_params.orientation.x = 0;
-    // box_params.orientation.y = 0;
-    // box_params.orientation.z = 0;
-    box_params.centroid.x = center[0];
-    box_params.centroid.y = center[1];
-    box_params.centroid.z = center[2];
+    box_params.orientation.w = quat.w();
 
-    // box_params.centroid.x = min_pt.x + (max_pt2.x - min_pt.x) / 2;
+    pcl::PointCloud<pcl::PointXYZ> transformed_cloud;
+    pcl::transformPointCloud(*cloud, transformed_cloud, transform);
 
-    // box_params.centroid.x = min_pt2.x + (max_pt.x - min_pt2.x) / 2;
-    // box_params.centroid.y = min_pt2.y + (max_pt.y - min_pt2.y) / 2;
-    // box_params.centroid.z = min_pt2.z + (max_pt.z - min_pt2.z) / 2;
+    // // Find min and max points in the transformed space
+    pcl::PointXYZ min_pt, max_pt2;
+    pcl::getMinMax3D(transformed_cloud, min_pt, max_pt2);
 
-    pcl::PointXYZ xy1, xy2, xy3, xy4;
-    const double z = (min_pt.z + max_pt2.z) / 2;
-    xy1.x = min_pt.x;
-    xy1.y = min_pt.y;
-    xy1.z = z;
-    xy2.x = min_pt.x;
-    xy2.y = max_pt2.y;
-    xy2.z = z;
-    xy3.x = max_pt2.x;
-    xy3.y = max_pt2.y;
-    xy3.z = z;
-    xy4.x = max_pt2.x;
-    xy4.y = min_pt.y;
-    xy4.z = z;
-
-    box_params.xy1 = xy1;
-    RCLCPP_INFO(this->get_logger(), "xy1: %f %f %f", box_params.xy1.x,
-                box_params.xy1.y, box_params.xy1.z);
-    box_params.xy2 = xy2;
-    RCLCPP_INFO(this->get_logger(), "xy2: %f %f %f", box_params.xy2.x,
-                box_params.xy2.y, box_params.xy2.z);
-    box_params.xy3 = xy3;
-    RCLCPP_INFO(this->get_logger(), "xy3: %f %f %f", box_params.xy3.x,
-                box_params.xy3.y, box_params.xy3.z);
-    box_params.xy4 = xy4;
-    RCLCPP_INFO(this->get_logger(), "xy4: %f %f %f", box_params.xy4.x,
-                box_params.xy4.y, box_params.xy4.z);
-    // Eigen::Affine3f transform_inverse = Eigen::Affine3f::Identity();
-    // transform_inverse.translate(center);
-    // transform_inverse.rotate(quat);
-    // transform_inverse.inverse();
-
-    box_params.xy1 = pcl::transformPoint(xy1, transform.inverse());
-    RCLCPP_INFO(this->get_logger(), "xy1: %f %f %f", box_params.xy1.x,
-                box_params.xy1.y, box_params.xy1.z);
-    box_params.xy2 = pcl::transformPoint(xy2, transform.inverse());
-    RCLCPP_INFO(this->get_logger(), "xy2: %f %f %f", box_params.xy2.x,
-                box_params.xy2.y, box_params.xy2.z);
-    box_params.xy3 = pcl::transformPoint(xy3, transform.inverse());
-    RCLCPP_INFO(this->get_logger(), "xy3: %f %f %f", box_params.xy3.x,
-                box_params.xy3.y, box_params.xy3.z);
-    box_params.xy4 = pcl::transformPoint(xy4, transform.inverse());
-    RCLCPP_INFO(this->get_logger(), "xy4: %f %f %f", box_params.xy4.x,
-                box_params.xy4.y, box_params.xy4.z);
-    // Eigen::Affine3f transform_inverse = transform.inverse();
-    // box_params.xy1 = pcl::transformPoint(xy1, transform_inverse);
-    // box_params.xy2 = pcl::transformPoint(xy2, transform_inverse);
-    // box_params.xy3 = pcl::transformPoint(xy3, transform_inverse);
-    // box_params.xy4 = pcl::transformPoint(xy4, transform_inverse);
     box_params.width = max_pt2.x - min_pt.x;
     box_params.depth = max_pt2.y - min_pt.y;
     box_params.height = std::max(max_pt2.z - min_pt.z - 0.01, 0.01);
 
     return status;
   }
+
+  bool createOrientedBoundingBoxFromPoints(
+      const typename pcl::PointCloud<pcl::PointXYZ>::ConstPtr &cloud,
+      Eigen::Vector3f &center, Eigen::Matrix3f &rotation,
+      Eigen::Vector3f &extent, BoxPrimitiveParams &box_params) {
+    // Check for empty point cloud
+    if (cloud->empty()) {
+      return false;
+    }
+
+    // Perform PCA to find principal components
+    pcl::PCA<pcl::PointXYZ> pca;
+    pca.setInputCloud(cloud);
+
+    // Get the principal components (eigenvectors)
+    // These will form the rotation matrix for our OBB
+    rotation = pca.getEigenVectors();
+
+    // get euler angles
+    Eigen::Vector3f euler_angles = (rotation).eulerAngles(2, 1, 0);
+
+    // Ensure we have a right-handed coordinate system
+    // If the determinant is negative, flip the last column
+    if (rotation.determinant() < 0) {
+      rotation.col(2) = -rotation.col(2);
+    }
+
+    // Get the mean of the point cloud as the center
+    center = pca.getMean().head<3>();
+
+    // Transform the point cloud to align with the principal components
+    typename pcl::PointCloud<pcl::PointXYZ>::Ptr transformed_cloud(
+        new pcl::PointCloud<pcl::PointXYZ>());
+    pcl::demeanPointCloud(*cloud, pca.getMean(), *transformed_cloud);
+
+    // Apply the transpose of rotation to align points with principal axes
+    Eigen::Matrix4f transform = Eigen::Matrix4f::Identity();
+    transform.block<3, 3>(0, 0) = rotation.transpose();
+    pcl::transformPointCloud(*transformed_cloud, *transformed_cloud, transform);
+
+    // Find the min and max points in the transformed space
+    pcl::PointXYZ min_pt, max_pt;
+    pcl::getMinMax3D(*transformed_cloud, min_pt, max_pt);
+
+    // Compute the extent (half-size) of the bounding box
+    extent[0] = (max_pt.x - min_pt.x) / 2.0f;
+    extent[1] = (max_pt.y - min_pt.y) / 2.0f;
+    extent[2] = (max_pt.z - min_pt.z) / 2.0f;
+
+    // Adjust the center position to account for non-centered min/max
+    Eigen::Vector3f center_offset;
+    center_offset[0] = (min_pt.x + max_pt.x) / 2.0f;
+    center_offset[1] = (min_pt.y + max_pt.y) / 2.0f;
+    center_offset[2] = (min_pt.z + max_pt.z) / 2.0f;
+
+    // Transform the center offset back to the original coordinate system
+    center += rotation * center_offset;
+
+    Eigen::Vector3f min_pt_vec;
+    min_pt_vec[0] = min_pt.x;
+    min_pt_vec[1] = min_pt.y;
+    min_pt_vec[2] = min_pt.z;
+    Eigen::Vector3f max_pt_vec;
+    max_pt_vec[0] = max_pt.x;
+    max_pt_vec[1] = max_pt.y;
+    max_pt_vec[2] = max_pt.z;
+
+    // Fix the matrix multiplication order to avoid
+    // EIGEN_STATIC_ASSERT_SAME_MATRIX_SIZE error
+    Eigen::Vector3f p1 = rotation.transpose() * (min_pt_vec) + center;
+    Eigen::Vector3f p2 = rotation.transpose() * (max_pt_vec) + center;
+    box_params.xy1.x = p1[0];
+    box_params.xy1.y = p1[1];
+    box_params.xy1.z = p1[2];
+
+    box_params.xy3.x = p2[0];
+    box_params.xy3.y = p2[1];
+    box_params.xy3.z = p2[2];
+
+    box_params.xy2.x = p1[0];
+    box_params.xy2.y = p2[1];
+    box_params.xy2.z = p1[2];
+    box_params.xy4.x = p2[0];
+    box_params.xy4.y = p1[1];
+    box_params.xy4.z = p2[2];
+
+    return true;
+  }
+
+  pcl::PointXYZ point_from_rotation(_IN_ const Eigen::Matrix3f &rotation,
+                                    _IN_ const Eigen::Vector3f &center,
+                                    _IN_ const Eigen::Vector3f &extent,
+                                    _IN_ const Eigen::Vector3f &point) {
+    // Transform the point using the rotation matrix and center
+    Eigen::Vector3f transformed_point = rotation * point + center;
+    pcl::PointXYZ transformed_point_xyz;
+    transformed_point_xyz.x = transformed_point[0];
+    transformed_point_xyz.y = transformed_point[1];
+    transformed_point_xyz.z = transformed_point[2];
+    return transformed_point_xyz;
+  }
+
+  bool get_3d_oriented_bbox(_IN_ const Eigen::Matrix3f &rotation,
+                            _IN_ const Eigen::Vector3f &center,
+                            _IN_ const Eigen::Vector3f &extent,
+                            BoxPrimitiveParams &box_params) {
+
+    // only modify xy1, xy2, xy3, xy4 from box_params
+    box_params.xy1 = point_from_rotation(
+        rotation, center, extent, Eigen::Vector3f(-extent[0], -extent[1], 0));
+    box_params.xy2 = point_from_rotation(
+        rotation, center, extent, Eigen::Vector3f(-extent[0], extent[1], 0));
+    box_params.xy3 = point_from_rotation(
+        rotation, center, extent, Eigen::Vector3f(extent[0], extent[1], 0));
+    box_params.xy4 = point_from_rotation(
+        rotation, center, extent, Eigen::Vector3f(extent[0], -extent[1], 0));
+    // box_params.xy1 = point_from_rotation(
+    //  take into consideration the rotation and center
+    // Eigen::Vector3f transformation =
+    //     rotation * Eigen::Vector3f(extent[0], extent[1], extent[2]);
+    // box_params.xy1.x = center[0] - transformation[0];
+    // box_params.xy1.y = center[1] - transformation[1];
+    // box_params.xy1.z = center[2] - transformation[2];
+    // box_params.xy2.x = center[0] - transformation[0];
+    // box_params.xy2.y = center[1] + transformation[1];
+    // box_params.xy2.z = center[2] - transformation[2];
+    // box_params.xy3.x = center[0] + transformation[0];
+    // box_params.xy3.y = center[1] + transformation[1];
+    // box_params.xy3.z = center[2] - transformation[2];
+    // box_params.xy4.x = center[0] + transformation[0];
+    // box_params.xy4.y = center[1] - transformation[1];
+    return true;
+  }
+
+  STATUS_RESPONSE
+  RansacNormals(_IN_ std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud,
+                _OUT_ BoxPrimitiveParams &box_params) {
+    STATUS_RESPONSE status = OK;
+
+    Eigen::Matrix3f rotation;
+    Eigen::Vector3f center, extent;
+
+    if (!createOrientedBoundingBoxFromPoints(cloud, center, rotation, extent,
+                                             box_params)) {
+      return INVALID_INPUT;
+    }
+
+    box_params.centroid.x = center[0];
+    box_params.centroid.y = center[1];
+    box_params.centroid.z = center[2];
+
+    box_params.width = extent[0];
+    box_params.depth = extent[1];
+    box_params.height = extent[2];
+
+    // Set the orientation in the box parameters
+    Eigen::Quaternionf quat(rotation);
+    // quat.normalize();
+    box_params.orientation.x = quat.x();
+    box_params.orientation.y = quat.y();
+    box_params.orientation.z = quat.z();
+    box_params.orientation.w = quat.w();
+
+    box_params.orientation2.x = quat.x();
+    box_params.orientation2.y = quat.y();
+    box_params.orientation2.z = quat.z();
+    box_params.orientation2.w = quat.w();
+
+    // Get the oriented bounding box corners
+    // if (!get_3d_oriented_bbox(rotation, center, extent, box_params)) {
+    //   return INVALID_INPUT;
+    // }
+
+    return status;
+  }
+
+  // STATUS_RESPONSE
+  // RansacNormals(_IN_ std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud,
+  //               _OUT_ BoxPrimitiveParams &box_params) {
+  //   STATUS_RESPONSE status = OK;
+
+  //   Eigen::Matrix3f covariance_matrix;
+  //   Eigen::Vector4f centroid;
+
+  //   pcl::compute3DCentroid(*cloud, centroid);
+
+  //   pcl::computeCovarianceMatrixNormalized(*cloud, centroid,
+  //   covariance_matrix);
+
+  //   pcl::PointXYZ min_pt2, max_pt;
+  //   pcl::getMinMax3D(*cloud, min_pt2, max_pt);
+
+  //   Eigen::Vector3f center;
+  //   // center = (max_pt.getVector3fMap() + min_pt2.getVector3fMap()) / 2;
+  //   // center[0] = (max_pt.x + min_pt2.x) / 2;
+  //   center[0] = min_pt2.x + (max_pt.x - min_pt2.x) / 2;
+  //   center[1] = min_pt2.y + (max_pt.y - min_pt2.y) / 2;
+  //   center[2] = min_pt2.z + (max_pt.z - min_pt2.z) / 2;
+  //   // center[1] = (max_pt.y + min_pt2.y) / 2;
+  //   // center[2] = (max_pt.z + min_pt2.z) / 2;
+
+  //   Eigen::SelfAdjointEigenSolver<Eigen::Matrix3f> eigen_solver(
+  //       covariance_matrix);
+  //   Eigen::Matrix3f eigenvectors = eigen_solver.eigenvectors();
+  //   Eigen::Vector3f eigenvalues = eigen_solver.eigenvalues();
+
+  //   eigenvectors.col(2) = eigenvectors.col(0).cross(eigenvectors.col(1));
+  //   eigenvectors.col(0) = eigenvectors.col(1).cross(eigenvectors.col(2));
+  //   eigenvectors.col(1) = eigenvectors.col(2).cross(eigenvectors.col(0));
+
+  //   Eigen::Matrix3f temp;
+  //   temp.col(0) = eigenvectors.col(2);
+  //   temp.col(1) = eigenvectors.col(1);
+  //   temp.col(2) = eigenvectors.col(0);
+
+  //   eigenvectors = temp;
+
+  //   Eigen::Vector3f euler_angles = (eigenvectors).eulerAngles(2, 1, 0);
+
+  //   // quat.normalize();
+  //   // Extract just the Z-rotation component from the quaternion
+  //   Eigen::Quaternionf quat2(eigenvectors);
+  //   // quat2.inverse();
+  //   quat2 = quat2.inverse();
+  //   quat2.normalize();
+  //   Eigen::Affine3f transform = Eigen::Affine3f::Identity();
+  //   transform.translate(center);
+  //   // Eigen::Quaternionf quat2(eigenvectors);
+  //   // quat2.normalize();
+  //   // Eigen::Quaternionf quat(keep_Z_rot);
+  //   // transform.rotate(keep_Z_rot);
+  //   transform.rotate(quat2);
+  //   pcl::PointCloud<pcl::PointXYZ> transformed_cloud;
+  //   pcl::transformPointCloud(*cloud, transformed_cloud, transform);
+
+  //   // // Find min and max points in the transformed space
+  //   pcl::PointXYZ min_pt, max_pt2;
+  //   pcl::getMinMax3D(transformed_cloud, min_pt, max_pt2);
+
+  //   // Eigen::Vector3f center_new =
+  //   //     (max_pt2.getVector3fMap() + min_pt.getVector3fMap()) / 2;
+  //   // Eigen::Affine3f transform2 = Eigen::Affine3f::Identity();
+  //   // transform2.translate(center_new);
+  //   // Eigen::Affine3f transform3 = transform * transform2;
+
+  //   box_params.orientation.w = quat2.w();
+  //   box_params.orientation.x = quat2.x();
+  //   box_params.orientation.y = quat2.y();
+  //   box_params.orientation.z = quat2.z();
+
+  //   box_params.orientation2.w = quat2.w();
+  //   box_params.orientation2.x = quat2.x();
+  //   box_params.orientation2.y = quat2.y();
+  //   box_params.orientation2.z = quat2.z();
+  //   // box_params.orientation.w = 1;
+  //   // box_params.orientation.x = 0;
+  //   // box_params.orientation.y = 0;
+  //   // box_params.orientation.z = 0;
+  //   box_params.centroid.x = center[0];
+  //   box_params.centroid.y = center[1];
+  //   box_params.centroid.z = center[2];
+
+  //   // box_params.centroid.x = min_pt.x + (max_pt2.x - min_pt.x) / 2;
+
+  //   // box_params.centroid.x = min_pt2.x + (max_pt.x - min_pt2.x) / 2;
+  //   // box_params.centroid.y = min_pt2.y + (max_pt.y - min_pt2.y) / 2;
+  //   // box_params.centroid.z = min_pt2.z + (max_pt.z - min_pt2.z) / 2;
+
+  //   pcl::PointXYZ xy1, xy2, xy3, xy4;
+  //   const double z = (min_pt.z + max_pt2.z) / 2;
+  //   xy1.x = min_pt.x;
+  //   xy1.y = min_pt.y;
+  //   xy1.z = z;
+  //   xy2.x = min_pt.x;
+  //   xy2.y = max_pt2.y;
+  //   xy2.z = z;
+  //   xy3.x = max_pt2.x;
+  //   xy3.y = max_pt2.y;
+  //   xy3.z = z;
+  //   xy4.x = max_pt2.x;
+  //   xy4.y = min_pt.y;
+  //   xy4.z = z;
+
+  //   box_params.xy1 = xy1;
+  //   RCLCPP_INFO(this->get_logger(), "xy1: %f %f %f", box_params.xy1.x,
+  //               box_params.xy1.y, box_params.xy1.z);
+  //   box_params.xy2 = xy2;
+  //   RCLCPP_INFO(this->get_logger(), "xy2: %f %f %f", box_params.xy2.x,
+  //               box_params.xy2.y, box_params.xy2.z);
+  //   box_params.xy3 = xy3;
+  //   RCLCPP_INFO(this->get_logger(), "xy3: %f %f %f", box_params.xy3.x,
+  //               box_params.xy3.y, box_params.xy3.z);
+  //   box_params.xy4 = xy4;
+  //   RCLCPP_INFO(this->get_logger(), "xy4: %f %f %f", box_params.xy4.x,
+  //               box_params.xy4.y, box_params.xy4.z);
+  //   Eigen::Vector3f new_center;
+  //   new_center[0] = max_pt2.x + (min_pt.x - max_pt2.x) / 2;
+  //   new_center[1] = max_pt2.y + (min_pt.y - max_pt2.y) / 2;
+  //   new_center[2] = max_pt2.z + (min_pt.z - max_pt2.z) / 2;
+  //   Eigen::Affine3f transform_inverse = Eigen::Affine3f::Identity();
+  //   transform_inverse.rotate(quat2.inverse());
+  //   transform_inverse.translate(center);
+  //   // transform_inverse.translate(center);
+  //   // transform_inverse.translate(new_center);
+  //   // transform_inverse.rotate(quat);
+  //   // transform_inverse.inverse();
+  //   // box_params.centroid.x = new_center[0];
+  //   // box_params.centroid.y = new_center[1];
+  //   // box_params.centroid.z = new_center[2];
+
+  //   // box_params.xy1 = pcl::transformPoint(xy1,
+  //   transform_inverse.inverse());
+  //   // RCLCPP_INFO(this->get_logger(), "xy1: %f %f %f", box_params.xy1.x,
+  //   //             box_params.xy1.y, box_params.xy1.z);
+  //   // box_params.xy2 = pcl::transformPoint(xy2,
+  //   transform_inverse.inverse());
+  //   // RCLCPP_INFO(this->get_logger(), "xy2: %f %f %f", box_params.xy2.x,
+  //   //             box_params.xy2.y, box_params.xy2.z);
+  //   // box_params.xy3 = pcl::transformPoint(xy3,
+  //   transform_inverse.inverse());
+  //   // RCLCPP_INFO(this->get_logger(), "xy3: %f %f %f", box_params.xy3.x,
+  //   //             box_params.xy3.y, box_params.xy3.z);
+  //   // box_params.xy4 = pcl::transformPoint(xy4,
+  //   transform_inverse.inverse());
+  //   // RCLCPP_INFO(this->get_logger(), "xy4: %f %f %f", box_params.xy4.x,
+  //   //             box_params.xy4.y, box_params.xy4.z);
+  //   // Eigen::Affine3f transform_inverse = transform.inverse();
+  //   box_params.xy1 = pcl::transformPoint(xy1, transform_inverse.inverse());
+  //   box_params.xy2 = pcl::transformPoint(xy2, transform_inverse.inverse());
+  //   box_params.xy3 = pcl::transformPoint(xy3, transform_inverse.inverse());
+  //   box_params.xy4 = pcl::transformPoint(xy4, transform_inverse.inverse());
+  //   box_params.width = max_pt2.x - min_pt.x;
+  //   box_params.depth = max_pt2.y - min_pt.y;
+  //   box_params.height = std::max(max_pt2.z - min_pt.z - 0.01, 0.01);
+
+  //   return status;
+  // }
 
   STATUS_RESPONSE DownSampleObject(
       _IN_ const std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud,
@@ -404,7 +582,7 @@ public:
 
       BoxPrimitiveParams box_params;
 
-      STATUS_RESPONSE status = RansacNormals(cloud, box_params);
+      STATUS_RESPONSE status = PrevRansacNormals(cloud, box_params);
 
       ASSERT_AND_RETURN_CODE(
           status, OK, "Error computing box primitive with code %d", status);
@@ -543,7 +721,7 @@ public:
             return;
           }
           // response->health_response = RansacNormals(cloud_out, box_params);
-          response->health_response = RansacNormals(cloud_out, box_params);
+          // response->health_response = RansacNormals(cloud_out, box_params);
           ASSERT_AND_RETURN_CODE(response->health_response, OK,
                                  "Error computing box primitive with code %d",
                                  response->health_response);
@@ -589,14 +767,14 @@ public:
             // transform.transform.rotation.y = 0.0;
             // transform.transform.rotation.z = 0.0;
             // transform.transform.rotation.w = 1.0;
-            transform.transform.rotation = box_params.orientation;
+            transform.transform.rotation = box_params.orientation2;
             transform.child_frame_id = "plane_corner_1";
             RCLCPP_INFO(this->get_logger(), "Sending transform");
             this->tf_broadcaster->sendTransform(transform);
             transform.transform.translation.x = box_params.xy2.x;
             transform.transform.translation.y = box_params.xy2.y;
             transform.transform.translation.z = (minn[2] + maxx[2]) / 2.0;
-            transform.transform.rotation = box_params.orientation;
+            transform.transform.rotation = box_params.orientation2;
             // transform.transform.rotation.x = 0.0;
             // transform.transform.rotation.y = 0.0;
             // transform.transform.rotation.z = 0.0;
@@ -606,7 +784,7 @@ public:
             transform.transform.translation.x = box_params.xy3.x;
             transform.transform.translation.y = box_params.xy3.y;
             transform.transform.translation.z = (minn[2] + maxx[2]) / 2.0;
-            transform.transform.rotation = box_params.orientation;
+            transform.transform.rotation = box_params.orientation2;
             // transform.transform.rotation.x = 0.0;
             // transform.transform.rotation.y = 0.0;
             // transform.transform.rotation.z = 0.0;
@@ -616,7 +794,7 @@ public:
             transform.transform.translation.x = box_params.xy4.x;
             transform.transform.translation.y = box_params.xy4.y;
             transform.transform.translation.z = (minn[2] + maxx[2]) / 2.0;
-            transform.transform.rotation = box_params.orientation;
+            transform.transform.rotation = box_params.orientation2;
             // transform.transform.rotation.x = 0.0;
             // transform.transform.rotation.y = 0.0;
             // transform.transform.rotation.z = 0.0;
