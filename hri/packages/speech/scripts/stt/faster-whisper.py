@@ -23,6 +23,20 @@ class WhisperServicer(speech_pb2_grpc.SpeechServiceServicer):
     def __init__(self, model_size, log_transcriptions=False):
         self.model_size = model_size
         self.audio_model = self.load_model()
+        # Warmup the model with a sample file
+        warmup_file = "./warmup.wav"
+        if os.path.exists(warmup_file):
+            try:
+                print(f"Warming up model with {warmup_file}...")
+                result = self.audio_model.transcribe(warmup_file)
+                # Consume generator to complete the warmup
+                for _ in result[0]:
+                    pass
+                print("Model warmup complete")
+            except Exception as e:
+                print(f"Model warmup failed: {e}")
+        else:
+            print(f"Warmup file {warmup_file} not found, skipping warmup")
         self.log_transcriptions = log_transcriptions
         self.log_dir = os.path.join(os.path.dirname(__file__), "logs")
         if self.log_transcriptions:
