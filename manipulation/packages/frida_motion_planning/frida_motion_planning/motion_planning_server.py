@@ -226,7 +226,7 @@ class MotionPlanningServer(Node):
             # self.get_logger().info(
             #     f"Joint configuration distance: {configuration_distance}"
             # )
-            if configuration_distance < 0.2:
+            if configuration_distance < 0.01:
                 self.get_logger().info(
                     f"Joint positions are already close to target: {configuration_distance}"
                 )

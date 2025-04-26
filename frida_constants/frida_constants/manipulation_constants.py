@@ -31,6 +31,10 @@ PICK_VELOCITY = 0.2
 PICK_ACCELERATION = 0.15
 PICK_PLANNER = "RRTConnect"
 
+# Scan
+SCAN_ANGLE_VERTICAL = 30.0  # degrees
+SCAN_ANGLE_HORIZONTAL = 30.0  # degrees
+
 # Pick
 PICK_MOTION_ACTION_SERVER_NODE = "manipulation/pick_motion_server"
 PICK_MOTION_ACTION_SERVER = "/manipulation/pick_motion_action_server"

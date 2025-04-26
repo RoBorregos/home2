@@ -51,13 +51,12 @@ def move_joint_positions(
         return move_joints_action_client.send_goal_async(goal_msg)
 
     if named_position:
-        joint_positions = XARM_CONFIGURATIONS[named_position]["joints"]
-        degrees = XARM_CONFIGURATIONS[named_position]["degrees"]
-
+        joint_positions = XARM_CONFIGURATIONS[named_position]
     # Determine format of joint_positions and apply degree conversion if needed.
     if isinstance(joint_positions, dict):
-        joint_names = list(joint_positions.keys())
-        joint_vals = list(joint_positions.values())
+        joint_names = list(joint_positions["joints"].keys())
+        joint_vals = list(joint_positions["joints"].values())
+        degrees = joint_positions["degrees"]
         if degrees:
             joint_vals = [x * DEG2RAD for x in joint_vals]
     elif isinstance(joint_positions, list):
@@ -92,4 +91,5 @@ def get_joint_positions(
     result = future.result()
     if degrees:
         result.joint_positions = [x * RAD2DEG for x in result.joint_positions]
-    return dict(zip(result.joint_names, result.joint_positions))
+    joint_positions = dict(zip(result.joint_names, result.joint_positions))
+    return {"joints": joint_positions, "degrees": degrees}
