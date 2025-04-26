@@ -91,11 +91,9 @@ export LOCAL_GROUP_ID=$(id -g)
 
 #_________________________RUN_________________________
 
-
+NAV_NAME="home2-navigation"
 # Check which commands and services to run
-PROFILES=()
-SERVICES=()
-
+echo "TASK=$TASK"
 case $TASK in
     "--receptionist")
         PACKAGES="nav_main dashgo_driver sllidar_ros2"
@@ -111,22 +109,40 @@ case $TASK in
         ;;
 
 esac
+echo "PACKAGES=$PACKAGES"
+echo "RUN=$RUN"
 
-# Add command to env if TASK is not empty, otherwise it will run bash
+
 if [ -n "$TASK" ]; then
-    COMMAND="source /opt/ros/humble/setup.bash && colcon build --packages-up-to $PACKAGES && source install/setup.bash && $RUN"
+    COMMAND="source /opt/ros/humble/setup.bash && colcon build --symlink-install --packages-up-to $PACKAGES && source install/setup.bash && $RUN"
     echo "COMMAND= $COMMAND " >> .env
 fi
+
+NEEDS_BUILD=false
+
+# Check if any enabled service is missing a container
+CONTAINER=$(docker ps -a --filter "name=${NAV_NAME}" --format "{{.ID}}")
+if [ -z "$CONTAINER" ]; then
+    echo "No container found for '$NAV_NAME'."
+    NEEDS_BUILD=true
+    break 
+fi
+
 
 # If no task set, enter with bash
 if [ -z "$TASK" ]; then
     if [ "$NEEDS_BUILD" = true ]; then
         docker compose up --build -d
     else
-    
-        docker compose up -d 
-        
-        docker compose exec navigation /bin/bash
+        echo "checking container run"
+       RUNNING=$(docker ps --filter "name=home2-navigation" --format "{{.ID}}")
+       echo "RUNNING=$RUNNING"
+        if [ -z "$RUNNING" ]; then
+            echo "Starting navigation docker container..."
+            docker compose up -d
+        fi 
+        docker start home2-navigation
+        docker exec -it home2-navigation /bin/bash
     fi
 
 else
