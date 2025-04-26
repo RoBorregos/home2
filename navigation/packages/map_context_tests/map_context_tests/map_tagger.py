@@ -622,8 +622,8 @@ class MapTagger(Node):
         if not filename.endswith(".yaml"):
             filename += ".yaml"
 
-        package_path = get_package_share_directory('map_context_tests')
-        full_path = os.path.join(package_path, 'data', filename)
+        # package_path = get_package_directory('map_context_tests')
+        full_path = os.path.join("src/navigation/packages/map_context_tests/data", filename)
 
         if not os.path.exists(full_path):
             print(f"❌ File '{full_path}' not found.")
