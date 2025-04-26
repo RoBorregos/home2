@@ -207,7 +207,7 @@ public:
     rotation = pca.getEigenVectors();
 
     // get euler angles
-    Eigen::Vector3f euler_angles = (rotation).eulerAngles(2, 1, 0);
+    //Eigen::Vector3f euler_angles = (rotation).eulerAngles(2, 1, 0);
 
     // Ensure we have a right-handed coordinate system
     // If the determinant is negative, flip the last column
@@ -245,7 +245,7 @@ public:
 
     // Transform the center offset back to the original coordinate system
     // Eigen::Vector3f ident =
-    center += rotation * center_offset;
+    //center += rotation * center_offset;
 
     // Calculate the four corners of the box in the transformed space
     pcl::PointXYZ xy1, xy2, xy3, xy4;
