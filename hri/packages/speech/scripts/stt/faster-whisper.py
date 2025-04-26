@@ -165,7 +165,7 @@ class WhisperServicer(speech_pb2_grpc.SpeechServiceServicer):
             non_silence_segments = merged_segments
 
         # Create a new audio segment with only the speech parts and small silent padding
-        padding_ms = 300  # Amount of silence to add between segments
+        padding_ms = 100  # Amount of silence to add between segments
         processed_audio = AudioSegment.empty()
 
         # Add each non-silence segment with padding
