@@ -91,6 +91,7 @@ def main(args=None):
                 print(f"{i}. {obj}")
             print("-2. Refresh objects list")
             print("-3. Place")
+            print("-4. Place on shelf")
             print("q. Quit")
 
             choice = input("\nEnter your choice: ")

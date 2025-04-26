@@ -104,10 +104,10 @@ class PlaceMotionServer(Node):
 
             ee_link_pose = copy.deepcopy(pose)
             if is_shelf:
-                ee_link_pose.pose.quaternion.x = AIM_STRAIGHT_FRONT_QUAT[0]
-                ee_link_pose.pose.quaternion.y = AIM_STRAIGHT_FRONT_QUAT[1]
-                ee_link_pose.pose.quaternion.z = AIM_STRAIGHT_FRONT_QUAT[2]
-                ee_link_pose.pose.quaternion.w = AIM_STRAIGHT_FRONT_QUAT[3]
+                ee_link_pose.pose.orientation.x = AIM_STRAIGHT_FRONT_QUAT[0]
+                ee_link_pose.pose.orientation.y = AIM_STRAIGHT_FRONT_QUAT[1]
+                ee_link_pose.pose.orientation.z = AIM_STRAIGHT_FRONT_QUAT[2]
+                ee_link_pose.pose.orientation.w = AIM_STRAIGHT_FRONT_QUAT[3]
             place_pose_handler, place_pose_result = self.move_to_pose(ee_link_pose)
             print(f"Grasp Pose {i} result: {place_pose_result}")
             if place_pose_result.result.success:
