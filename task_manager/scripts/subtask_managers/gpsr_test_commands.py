@@ -326,3 +326,78 @@ GPSR_COMMANDS = [
         ],
     },
 ]
+
+
+AVAILABLE_COMMANDS = {
+    "give",
+    "find_person_info",
+    "go",
+    "pick",
+    "place",
+    "say",
+    "ask_answer_question",
+    "visual_info",
+    # "find_object",
+    # "find_person",
+    # "guide_to",
+    # "find_person_by_name",
+    # "follow_person_until",
+    # "count",
+    # "contextual_say",
+}
+
+if __name__ == "__main__":
+    command_statistics = []
+
+    for command in GPSR_COMMANDS:
+        cmd_type = command["cmd_type"]
+        structured_cmd = command["structured_cmd"]
+
+        implemented_count = 0
+        total_count = len(structured_cmd)
+
+        for sub_cmd in structured_cmd:
+            if sub_cmd["action"] in AVAILABLE_COMMANDS:
+                implemented_count += 1
+
+        command_statistics.append(
+            {
+                "cmd_type": cmd_type,
+                "implemented": implemented_count,
+                "total": total_count,
+                "percentage": (implemented_count / total_count) * 100 if total_count > 0 else 0,
+            }
+        )
+
+    # Sort by percentage of implementation (ascending)
+    command_statistics.sort(key=lambda x: -x["percentage"])
+
+    # ANSI color codes
+    RED = "\033[91m"
+    ORANGE = "\033[93m"
+    GREEN = "\033[92m"
+    RESET = "\033[0m"
+
+    print("\nCommand Implementation Status:\n")
+    for stat in command_statistics:
+        cmd_type = stat["cmd_type"]
+        implemented = stat["implemented"]
+        total = stat["total"]
+        percentage = stat["percentage"]
+
+        if implemented == total:
+            color = GREEN
+        elif percentage >= 50:
+            color = ORANGE
+        else:
+            color = RED
+
+        print(f"{color}{implemented}/{total} ({percentage:.1f}%) - {cmd_type}{RESET}")
+
+    total_implemented = sum(stat["implemented"] for stat in command_statistics)
+    total_commands = sum(stat["total"] for stat in command_statistics)
+    total_percentage = (total_implemented / total_commands) * 100 if total_commands > 0 else 0
+
+    print(
+        f"\nOverall implementation: {total_implemented}/{total_commands} ({total_percentage:.1f}%)"
+    )

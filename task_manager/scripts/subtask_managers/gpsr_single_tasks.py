@@ -57,7 +57,7 @@ class GPSRSingleTask(GenericTask):
             - pick_object(complement)
         """
         self.subtask_manager.hri.say(f"I will pick the {complement}.", wait=False)
-        # self.subtask_manager.manipulation.pick_object(complement)
+        self.subtask_manager.manipulation.pick_object(complement)
 
     ## Manipulation
     def place(self, complement="", characteristic=""):
@@ -86,7 +86,7 @@ class GPSRSingleTask(GenericTask):
         """
         self.subtask_manager.hri.say("I will place the object.", wait=False)
 
-        # self.subtask_manager.manipulation.place_object()
+        self.subtask_manager.manipulation.place()
 
     ## HRI
     def contextual_say(self, complement: str, characteristic: str):
@@ -143,7 +143,7 @@ class GPSRSingleTask(GenericTask):
         Pseudocode:
             - say(text)
         """
-        self.subtask_manager.hri.say(complement, wait=True)
+        return self.subtask_manager.hri.say(complement, wait=True), ""
 
     ## HRI
     def ask_answer_question(self, complement="", characteristic=""):
@@ -223,4 +223,5 @@ class GPSRSingleTask(GenericTask):
         Postconditions:
             The robot saves the specified information for further use.
         """
-        pass
+        characteristic = characteristic if len(characteristic) > 1 else None
+        return self.subtask_manager.vision.visual_info(complement, characteristic)

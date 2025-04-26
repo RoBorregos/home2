@@ -1,3 +1,5 @@
+from frida_constants.vision_enums import DetectBy
+
 from subtask_managers.generic_tasks import GenericTask
 from task_manager.scripts.utils.status import Status
 
@@ -145,6 +147,38 @@ class GPSRTask(GenericTask):
             else:
                 return get_person_name()
         """
+
+        if complement == "gesture":
+            complement = DetectBy.GESTURES.value
+        elif complement == "posture":
+            complement = DetectBy.POSES.value
+
+        if complement != "name":
+            return self.subtask_manager.vision.find_person_info(complement)
+
+        s, res = self.subtask_manager.vision.get_person_name()
+        if s == Status.EXECUTION_SUCCESS:
+            return (Status.EXECUTION_SUCCESS,)
+
+        else:
+            self.subtask_manager.hri.say(
+                "Hi, I'm Frida.",
+            )
+            s, name = self.subtask_manager.hri.ask_and_confirm(
+                question="Can you please tell me your name?",
+                query="name",
+                use_hotwords=False,
+                context="The user was asked to say their name. We want to infer his name from the response",
+            )
+            if s == Status.EXECUTION_SUCCESS:
+                self.subtask_manager.hri.say(
+                    "Please stand in front .",
+                )
+                self.subtask_manager.vision.save_face_name(res)
+                return Status.EXECUTION_SUCCESS, res
+            else:
+                return Status.EXECUTION_FAILURE, "name not found"
+
         pass
 
     ## Nav, Vision
