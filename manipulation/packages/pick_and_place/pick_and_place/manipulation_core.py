@@ -139,6 +139,7 @@ class ManipulationCore(Node):
         task_type = goal_handle.request.task_type
         object_name = goal_handle.request.pick_params.object_name
         object_point = goal_handle.request.pick_params.object_point
+        # scan_environment = goal_handle.request.scan_environment
         self.get_logger().info(f"Task Type: {task_type}")
         self.get_logger().info(f"Object Name: {object_name}")
         response = ManipulationAction.Result()

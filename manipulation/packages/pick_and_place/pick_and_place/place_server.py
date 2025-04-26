@@ -16,6 +16,7 @@ from frida_constants.manipulation_constants import (
     EEF_LINK_NAME,
     EEF_CONTACT_LINKS,
     PLACE_MOTION_ACTION_SERVER,
+    AIM_STRAIGHT_FRONT_QUAT,
 )
 from frida_interfaces.srv import (
     AttachCollisionObject,
@@ -87,6 +88,7 @@ class PlaceMotionServer(Node):
             f"Trying to place up object: {goal_handle.request.object_name}"
         )
         place_pose = goal_handle.request.place_pose
+        is_shelf = goal_handle.request.place_params.is_shelf
 
         # generate several place_poses, so try every time higher from plane
         n_poses = 5
@@ -101,7 +103,11 @@ class PlaceMotionServer(Node):
             # Move to pre-grasp pose
 
             ee_link_pose = copy.deepcopy(pose)
-
+            if is_shelf:
+                ee_link_pose.pose.quaternion.x = AIM_STRAIGHT_FRONT_QUAT[0]
+                ee_link_pose.pose.quaternion.y = AIM_STRAIGHT_FRONT_QUAT[1]
+                ee_link_pose.pose.quaternion.z = AIM_STRAIGHT_FRONT_QUAT[2]
+                ee_link_pose.pose.quaternion.w = AIM_STRAIGHT_FRONT_QUAT[3]
             place_pose_handler, place_pose_result = self.move_to_pose(ee_link_pose)
             print(f"Grasp Pose {i} result: {place_pose_result}")
             if place_pose_result.result.success:

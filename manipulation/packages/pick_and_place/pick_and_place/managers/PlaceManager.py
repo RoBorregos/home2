@@ -43,6 +43,7 @@ class PlaceManager:
         place_motion_request = PlaceMotion.Goal()
         place_motion_request.place_pose = place_pose
         place_motion_request.object_name = pick_result.object_name
+        place_motion_request.place_params = place_params
 
         self.node.get_logger().info("Sending place motion request")
         self.node._place_motion_action_client.wait_for_server()

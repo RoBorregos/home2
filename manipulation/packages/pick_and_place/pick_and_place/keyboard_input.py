@@ -53,14 +53,14 @@ class KeyboardInput(Node):
         )
         self.get_logger().info(f"Pick request for {object_name} sent")
 
-    def send_place_request(self):
+    def send_place_request(self, is_shelf=False):
         if not self._action_client.wait_for_server(timeout_sec=5.0):
             self.get_logger().error("Action server not available!")
             return
 
         goal_msg = ManipulationAction.Goal()
         goal_msg.task_type = ManipulationTask.PLACE
-
+        goal_msg.place_params.is_shelf = is_shelf
         self.get_logger().info("Sending place request")
         self._action_client.send_goal_async(
             goal_msg, feedback_callback=self.feedback_callback
@@ -103,6 +103,8 @@ def main(args=None):
                 node.refresh_objects()
             elif choice == "-3":
                 node.send_place_request()
+            elif choice == "-4":
+                node.send_place_request(is_shelf=True)
             elif choice.isdigit():
                 try:
                     choice_num = int(choice)
