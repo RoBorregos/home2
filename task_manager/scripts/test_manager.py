@@ -16,6 +16,7 @@ from subtask_managers.manipulation_tasks import ManipulationTasks
 from subtask_managers.nav_tasks import NavigationTasks
 import time as t
 
+
 class TestTaskManager(Node):
     def __init__(self):
         super().__init__("test_task_manager")
@@ -112,15 +113,14 @@ class TestTaskManager(Node):
         # self.subtask_manager["manipulation"].close_gripper()
         # self.subtask_manager.open_gripper()
 
-
         ###NAV TESTS
         future = self.subtask_manager.nav.move_to_location("entrance")
         rclpy.spin_until_future_complete(self, future)
         t.sleep(20)
-        future = self.subtask_manager.nav.move_to_location("kitchen","beverages")
+        future = self.subtask_manager.nav.move_to_location("kitchen", "beverages")
         rclpy.spin_until_future_complete(self, future)
         t.sleep(20)
-        future = self.subtask_manager.nav.move_to_location("living_room","couches")
+        future = self.subtask_manager.nav.move_to_location("living_room", "couches")
         rclpy.spin_until_future_complete(self, future)
         t.sleep(20)
         future = self.subtask_manager.nav.move_to_location("entrance")
@@ -128,11 +128,6 @@ class TestTaskManager(Node):
         t.sleep(20)
 
         ###
-
-
-
-
-
 
         ####### EXAMPLE: Move to named position then move only the first joint #######
         # Move to a named position
