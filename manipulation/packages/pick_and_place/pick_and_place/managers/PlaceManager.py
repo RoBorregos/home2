@@ -98,6 +98,8 @@ class PlaceManager:
 
         heatmap_request = HeatmapPlace.Request()
         heatmap_request.pointcloud = pcl_result
+        if place_params.is_shelf:
+            heatmap_request.prefer_closest = True
 
         self.node.place_pose_client.wait_for_service()
         future = self.node.place_pose_client.call_async(heatmap_request)
@@ -113,7 +115,7 @@ class PlaceManager:
             or pick_result.pick_pose.header.frame_id == ""
         ):
             self.node.get_logger().warn("No object height detected using default")
-            pick_result.object_pick_height = 0.2
+            pick_result.object_pick_height = 0.2 if place_params.is_shelf else 0.10
             # z aiming down
             orientation_quat = [0.0, 1.0, 0.0, 0.0]
             pick_result.pick_pose.pose.orientation.x = orientation_quat[0]
