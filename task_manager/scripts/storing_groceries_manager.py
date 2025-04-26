@@ -80,10 +80,10 @@ class StoringGroceriesManager(Node):
         self.prev_state = None
         self.check_manual_levels = True
         self.manual_heights = [
-            0.445,
-            0.805,
-            1.165,
-            1.525,
+            0.445,  # 0.445 (0.1 +-) -> 0.345 0.545
+            0.805,  # 0.805 (0.1 +-) -> 0.705 0.905
+            1.165,  # 1.165 (0.1 +-) -> 1.065 1.265
+            1.525,  # 1.525 (0.1 +-) -> 1.425 1.625
         ]  # remember rest 15cm from the base_link and the measure is in m
         self.shelf_level_threshold = 0.30
         self.shelf_level_down_threshold = 0.05

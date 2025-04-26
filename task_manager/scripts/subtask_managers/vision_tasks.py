@@ -27,6 +27,7 @@ from frida_constants.vision_constants import (
     COUNT_BY_GESTURES_TOPIC,
     COUNT_BY_POSE_TOPIC,
     POSE_GESTURE_TOPIC,
+    COUNT_BY_COLOR_TOPIC,
 )
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.msg import ObjectDetection, PersonList
@@ -42,7 +43,7 @@ from frida_interfaces.srv import (
     TrackBy,
     CountByPose,
     CountByGesture,
-    # CountByColor,
+    CountByColor,
     PersonPoseGesture,
 )
 from geometry_msgs.msg import Point, PointStamped
@@ -101,6 +102,10 @@ class VisionTasks:
             DetectionHandler, DETECTION_HANDLER_TOPIC_SRV
         )
 
+        self.object_detector_client = self.node.create_client(
+            DetectionHandler, DETECTION_HANDLER_TOPIC_SRV
+        )
+
         self.detect_person_action_client = ActionClient(self.node, DetectPerson, CHECK_PERSON_TOPIC)
 
         self.count_by_pose_client = self.node.create_client(CountByPose, COUNT_BY_POSE_TOPIC)
@@ -110,6 +115,7 @@ class VisionTasks:
         self.find_person_info_client = self.node.create_client(
             PersonPoseGesture, POSE_GESTURE_TOPIC
         )
+        self.count_by_color_client = self.node.create_client(CountByColor, COUNT_BY_COLOR_TOPIC)
 
         self.services = {
             Task.RECEPTIONIST: {
@@ -158,10 +164,10 @@ class VisionTasks:
                     "client": self.count_by_gesture_client,
                     "type": "service",
                 },
-                # "count_by_color": {
-                #     "client": self.count_by_color,
-                #     "type": "service",
-                # },
+                "count_by_color": {
+                    "client": self.count_by_color_client,
+                    "type": "service",
+                },
             },
             Task.STORING_GROCERIES: {
                 "moondream_query": {"client": self.moondream_query_client, "type": "service"},
@@ -611,7 +617,7 @@ class VisionTasks:
         Logger.success(self.node, f"People with pose {pose}: {result.count}")
         return Status.EXECUTION_SUCCESS, result.count
 
-    @mockable(return_value=100)
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, 100))
     @service_check("count_by_gesture_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
     def count_by_gesture(self, gesture: str) -> tuple[int, int]:
         """Count the number of people with the requested gesture"""
@@ -637,34 +643,34 @@ class VisionTasks:
         Logger.success(self.node, f"People with gesture {gesture}: {result.count}")
         return Status.EXECUTION_SUCCESS, result.count
 
-    # @mockable(return_value=100)
-    # @service_check("count_by_color_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
-    # def count_by_color(self, color: str, clothing: str) -> tuple[int, int]:
-    #     """Count the number of people with the requested color and clothing"""
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, 100))
+    @service_check("count_by_color_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
+    def count_by_color(self, color: str, clothing: str) -> tuple[int, int]:
+        """Count the number of people with the requested color and clothing"""
 
-    #     Logger.info(self.node, "Counting people by pose")
-    #     request = CountByColor.Request()
-    #     request.color = color
-    #     request.clothing = clothing
-    #     request.request = True
+        Logger.info(self.node, "Counting people by pose")
+        request = CountByColor.Request()
+        request.color = color
+        request.clothing = clothing
+        request.request = True
 
-    #     try:
-    #         future = self.count_by_color_client.call_async(request)
-    #         rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
-    #         result = future.result()
+        try:
+            future = self.count_by_color_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+            result = future.result()
 
-    #         if not result.success:
-    #             Logger.warn(self.node, f"No {color} {clothing} found")
-    #             return Status.TARGET_NOT_FOUND, 300
+            if not result.success:
+                Logger.warn(self.node, f"No {color} {clothing} found")
+                return Status.TARGET_NOT_FOUND, 300
 
-    #     except Exception as e:
-    #         Logger.error(self.node, f"Error counting people by color: {e}")
-    #         return Status.EXECUTION_ERROR, 300
+        except Exception as e:
+            Logger.error(self.node, f"Error counting people by color of clothing: {e}")
+            return Status.EXECUTION_ERROR, 300
 
-    #     Logger.success(self.node, f"People with {clothing} {color}: {result.count}")
-    #     return Status.EXECUTION_SUCCESS, result.count
+        Logger.success(self.node, f"People with {color} {clothing}: {result.count}")
+        return Status.EXECUTION_SUCCESS, result.count
 
-    @mockable(return_value=100)
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, ""))
     @service_check("find_person_info_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
     def find_person_info(self, type_requested: str) -> tuple[int, str]:
         """Get the pose or gesture of the person in the image"""
@@ -699,6 +705,7 @@ class VisionTasks:
     def describe_person(self, callback):
         """Describe the person in the image"""
         Logger.info(self.node, "Describing person")
+        prompt = "Briefly describe the person in the image and only say the description: They are .... Mention 4 attributes. For example: shirt color, clothes details, hair color, if the person has glasses"
         prompt = "Briefly describe the person in the image and only say the description: They are .... Mention 4 attributes. For example: shirt color, clothes details, hair color, if the person has glasses"
         self.moondream_query_async(prompt, query_person=True, callback=callback)
 
