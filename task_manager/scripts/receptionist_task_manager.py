@@ -56,9 +56,7 @@ class ReceptionistTM(Node):
     def __init__(self):
         """Initialize the node"""
         super().__init__("receptionist_task_manager")
-        self.subtask_manager = SubtaskManager(
-            self, task=Task.RECEPTIONIST, mock_areas=[]
-        )
+        self.subtask_manager = SubtaskManager(self, task=Task.RECEPTIONIST, mock_areas=[])
         self.current_state = ReceptionistTM.TASK_STATES[START]
         self.current_guest = 1
         self.seat_angles = [0, 90]
@@ -110,7 +108,6 @@ class ReceptionistTM(Node):
 
     def set_description(self, status, description: str):
         self.get_guest().description = description
-
 
     # TODO (@alecoeto): wait to detect guest
     # TODO (@alecoeto): sleep before find seat
@@ -245,7 +242,6 @@ class ReceptionistTM(Node):
             else:
                 self.subtask_manager.hri.say(f"Sorry, we do not have {self.get_guest().drink}.")
             self.current_state = ReceptionistTM.TASK_STATES["NAVIGATE_TO_LEAVING_ROOM"]
-
 
         if self.current_state == ReceptionistTM.TASK_STATES["NAVIGATE_TO_LEAVING_ROOM"]:
             Logger.state(self, "Navigating to leaving room")
