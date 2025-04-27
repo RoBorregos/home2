@@ -87,6 +87,7 @@ class LookAt(Node):
 
         request = MoveToPose.Goal()
         request.pose = target_pose
+        request.velocity = 0.3
         request.target_link = xarm6.camera_frame_name()
         self.get_logger().info(f"Goal: {request}")
 
