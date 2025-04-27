@@ -31,15 +31,15 @@ class GPSRSingleTask(GenericTask):
             - The robot is in the specified location
         """
         self.subtask_manager.hri.say(f"I will go to {complement}.", wait=False)
-        location = self.subtask_manager.hri.query_location(complement)
-        area = self.subtask_manager.hri.get_area(location)
-        subarea = self.subtask_manager.hri.get_subarea(location)
+        # location = self.subtask_manager.hri.query_location(complement)
+        # area = self.subtask_manager.hri.get_area(location)
+        # subarea = self.subtask_manager.hri.get_subarea(location)
 
-        self.subtask_manager.hri.node.get_logger().info(
-            f"Moving to {complement} in area: {area}, subarea: {subarea}"
-        )
+        # self.subtask_manager.hri.node.get_logger().info(
+        #     f"Moving to {complement} in area: {area}, subarea: {subarea}"
+        # )
 
-        self.subtask_manager.nav.move_to_location(area, subarea)
+        self.subtask_manager.nav.move_to_location("area", "subarea")
 
         return Status.EXECUTION_SUCCESS, "arrived to:" + complement
 
