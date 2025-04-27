@@ -100,6 +100,6 @@ for test_case in test_cases:
 
 
 if count == 0:
-    print(f"\n\033[92mAll test cases passed ({len(test_case)}/{len(test_case)})!\033[0m")
+    print(f"\n\033[92mAll test cases passed ({len(test_cases)}/{len(test_cases)})!\033[0m")
 else:
     print(f"\n\033[91m{count} test cases failed out of {len(test_cases)}\033[0m")
