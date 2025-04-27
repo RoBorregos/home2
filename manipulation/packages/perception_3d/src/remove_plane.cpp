@@ -192,6 +192,7 @@ public:
     pcl::toROSMsg(*cloud_out, response->cloud);
     response->health_response = OK;
 
+    RCLCPP_INFO(this->get_logger(), "Publishing point cloud");
     return;
   }
 

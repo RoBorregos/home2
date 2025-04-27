@@ -1,0 +1,6 @@
+float32 plane_est_min_height
+float32 plane_est_max_height
+---
+geometry_msgs/PointStamped pt1
+geometry_msgs/QuaternionStamped q1
+bool is_valid
