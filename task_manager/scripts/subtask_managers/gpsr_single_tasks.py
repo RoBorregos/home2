@@ -1,6 +1,8 @@
 from subtask_managers.generic_tasks import GenericTask
 from task_manager.scripts.utils.status import Status
 
+RETRIES = 3
+
 
 class GPSRSingleTask(GenericTask):
     """Class to manage the GPS task"""
@@ -59,7 +61,22 @@ class GPSRSingleTask(GenericTask):
             - pick_object(complement)
         """
         self.subtask_manager.hri.say(f"I will pick the {complement}.", wait=False)
-        return self.subtask_manager.manipulation.pick_object(complement), ""
+        current_try = 0
+
+        while True:
+            s, detections = self.subtask_manager.vision.detect_objects()
+            current_try += 1
+            if s == Status.EXECUTION_SUCCESS:
+                break
+            if current_try >= RETRIES:
+                self.subtask_manager.hri.say(
+                    "I am sorry, I could not see the object. I will try again."
+                )
+                return Status.TARGET_NOT_FOUND, ""
+
+        labels = self.subtask_manager.vision.get_labels(detections)
+        s, object_to_pick = self.subtask_manager.hri.find_closest(labels, characteristic)
+        return self.subtask_manager.manipulation.pick_object(object_to_pick), ""
 
     ## Manipulation
     def place(self, complement="", characteristic=""):
