@@ -15,7 +15,6 @@ from frida_constants.vision_constants import (
     SAVE_NAME_TOPIC,
     SET_TARGET_TOPIC,
     SHELF_DETECTION_TOPIC,
-    DETECTION_HANDLER_TOPIC_SRV,
     SET_TARGET_BY_TOPIC,
     FIND_SEAT_TOPIC,
     CHECK_PERSON_TOPIC,
@@ -59,6 +58,7 @@ import time
 from utils.task import Task
 
 TIMEOUT = 5.0
+DETECTION_HANDLER_TOPIC_SRV = "/vision/detection_handler"
 
 
 class VisionTasks:
@@ -97,10 +97,6 @@ class VisionTasks:
             ShelfDetectionHandler, SHELF_DETECTION_TOPIC
         )
         self.beverage_location_client = self.node.create_client(BeverageLocation, BEVERAGE_TOPIC)
-
-        self.object_detector_client = self.node.create_client(
-            DetectionHandler, DETECTION_HANDLER_TOPIC_SRV
-        )
 
         self.object_detector_client = self.node.create_client(
             DetectionHandler, DETECTION_HANDLER_TOPIC_SRV
@@ -325,7 +321,8 @@ class VisionTasks:
         try:
             future = self.object_detector_client.call_async(request)
             rclpy.spin_until_future_complete(self.node, future, timeout_sec=timeout)
-            result: DetectionHandler.Response = future.result()
+            result = future.result()
+            print(f"result: {result}")
 
             if not result.success:
                 Logger.warn(self.node, "No object detected")
