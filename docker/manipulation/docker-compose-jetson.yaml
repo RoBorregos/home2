@@ -29,4 +29,6 @@ services:
     tty: true
     stdin_open: true    
     working_dir: /workspace
-    command: ["/bin/bash", "-i", "-l"]
+
+    command: >
+      bash -c "${COMMAND:-/bin/bash}"
