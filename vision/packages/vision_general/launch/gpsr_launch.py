@@ -31,8 +31,8 @@ def generate_launch_description():
                 emulate_tty=True,
                 # parameters=[config],
             ),
-            IncludeLaunchDescription(
-                PythonLaunchDescriptionSource(detector_launch_file)
-            ),
+            # IncludeLaunchDescription(
+            #     PythonLaunchDescriptionSource(detector_launch_file)
+            # ),
         ]
     )
