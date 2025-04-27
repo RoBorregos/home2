@@ -10,6 +10,7 @@ from rclpy.node import Node
 from utils.logger import Logger
 from utils.subtask_manager import SubtaskManager, Task
 from utils.status import Status
+import time
 
 ATTEMPT_LIMIT = 3
 START = "START"
@@ -100,13 +101,16 @@ class ReceptionistTM(Node):
             name = statement
         return name
 
+    def timeout(self, timeout: int = 2):
+        start_time = time.time()
+        while (time.time() - start_time) < timeout:
+            pass
+
     def set_description(self, status, description: str):
         self.get_guest().description = description
 
     # TODO (@alecoeto): wait to detect guest
-    # TODO (@alecoeto): not found beverage
     # TODO (@alecoeto): sleep before find seat
-    # TODO (@alecoeto): no follow me to the entrance at the end
 
     def run(self):
         """State machine"""
@@ -156,10 +160,11 @@ class ReceptionistTM(Node):
 
         if self.current_state == ReceptionistTM.TASK_STATES["SAVE_FACE"]:
             Logger.state(self, "Saving face")
+            self.subtask_manager.hri.say("I will save your face now. Please stand in front of me")
             result = self.subtask_manager.vision.save_face_name(self.get_guest().name)
-            self.subtask_manager.vision.describe_person(self.set_description)
 
             if result == Status.EXECUTION_SUCCESS or self.current_attempts >= ATTEMPT_LIMIT:
+                self.subtask_manager.vision.describe_person(self.set_description)
                 self.subtask_manager.hri.say("I have saved your face.")
                 self.current_attempts = 0
                 self.current_state = ReceptionistTM.TASK_STATES["NAVIGATE_TO_BEVERAGES"]
@@ -251,13 +256,14 @@ class ReceptionistTM(Node):
             )
             print("Finding seat")
             for seat_angle in self.seat_angles:
-                # joint_positions = self.subtask_manager.manipulation.get_joint_positions(
-                #     degrees=True
-                # )
-                # joint_positions["joint1"] = joint_positions["joint1"] - seat_angle
-                # self.subtask_manager.manipulation.move_joint_positions(
-                #     joint_positions=joint_positions, velocity=0.5, degrees=True
-                # )
+                joint_positions = self.subtask_manager.manipulation.get_joint_positions(
+                    degrees=True
+                )
+                joint_positions["joint1"] = joint_positions["joint1"] - seat_angle
+                self.subtask_manager.manipulation.move_joint_positions(
+                    joint_positions=joint_positions, velocity=0.5, degrees=True
+                )
+                self.timeout(2)
                 status, angle = self.subtask_manager.vision.find_seat()
                 # print(self.subtask_manager.vision.find_seat_moondream())
                 if status == Status.EXECUTION_SUCCESS:
@@ -313,12 +319,12 @@ class ReceptionistTM(Node):
         if self.current_state == ReceptionistTM.TASK_STATES["END"]:
             Logger.state(self, "Ending task")
             self.subtask_manager.hri.say("I have finished my task, I will rest now.")
+            self.subtask_manager.manipulation.follow_face(False)
             self.running_task = False
 
         if self.current_state == ReceptionistTM.TASK_STATES["DEBUG"]:
             Logger.state(self, "Debugging task")
             self.subtask_manager.hri.say("Debugging task.")
-            self.subtask_manager.manipulation.follow_face(False)
             # self.subtask_manager.manipulation.move_joint_positions(
             #     named_position="front_stare", velocity=0.5, degrees=True
             # )
