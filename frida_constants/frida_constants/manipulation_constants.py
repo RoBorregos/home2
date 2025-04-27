@@ -27,9 +27,14 @@ MOVE_TO_POSE_ACTION_SERVER = "/manipulation/move_to_pose_action_server"
 GET_JOINT_SERVICE = "/manipulation/get_joints"
 TOGGLE_SERVO_SERVICE = "/manipulation/toggle_servo"
 
+MIN_CONFIGURATION_DISTANCE_TRESHOLD = 0.01
 PICK_VELOCITY = 0.2
 PICK_ACCELERATION = 0.15
 PICK_PLANNER = "RRTConnect"
+
+# Scan
+SCAN_ANGLE_VERTICAL = 30.0  # degrees
+SCAN_ANGLE_HORIZONTAL = 30.0  # degrees
 
 # Pick
 PICK_MOTION_ACTION_SERVER_NODE = "manipulation/pick_motion_server"
@@ -60,9 +65,14 @@ PLANE_OBJECT_COLLISION_TOLERANCE = (
     0.025  # Tolerance to delete collision objects if they are too close to the plane
 )
 
+SHELF_POSITION_PREPLACE_POSE = -0.3
+
 DEBUG_POSE_GOAL_TOPIC = "/manipulation/debug_pose_goal"
 GET_JOINT_TOPIC = "/manipulation/get_joints"
 
 TOGGLE_SERVO_TOPIC = "/manipulation/toggle_servo"
 
 ZED_POINT_CLOUD_TOPIC = "/zed/zed_node/point_cloud/cloud_registered"
+
+# Similar to what you have on stare poses, gripper looking front, camera looking front-down
+AIM_STRAIGHT_FRONT_QUAT = [0.650, -0.290, 0.636, -0.299]

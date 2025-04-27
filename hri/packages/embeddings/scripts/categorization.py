@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
+
 import rclpy
 from rclpy.node import Node
 from pydantic import BaseModel, ValidationError
 from typing import Optional, ClassVar, Dict
 from enum import Enum
 import json
-import pandas as pd
 from pathlib import Path
 from frida_interfaces.srv import (
     AddEntry,
@@ -27,18 +27,18 @@ class MetadataProfile(str, Enum):
 class MetadataModel(BaseModel):
     shelve: Optional[str] = None
     category: Optional[str] = None
-    default_location: Optional[str] = None
     context: Optional[str] = ""
     complement: Optional[str] = None
     characteristic: Optional[str] = None
     result: Optional[str] = None
     status: Optional[int] = None
     timestamp: Optional[str] = None
+    subarea: Optional[str] = None
 
     PROFILES: ClassVar[Dict[MetadataProfile, Dict[str, str]]] = {
-        MetadataProfile.ITEMS: {"context": "item for household use"},
-        MetadataProfile.LOCATIONS: {"context": "house locations"},
-        MetadataProfile.ACTIONS: {"context": "human actions"},
+        MetadataProfile.ITEMS: {"context": " item for household use"},
+        MetadataProfile.LOCATIONS: {"context": " house locations"},
+        MetadataProfile.ACTIONS: {"context": " human actions"},
     }
 
     @classmethod
@@ -234,7 +234,7 @@ class Embeddings(Node):
     def build_embeddings(self):
         """
         Method to build embeddings for household use.
-        Reads CSV files from the designated dataframes folder,
+        Reads JSON files from the designated dataframes folder,
         and for each file:
         - Reads documents and (if available) metadata.
         - Gets or creates a corresponding collection.
@@ -244,44 +244,44 @@ class Embeddings(Node):
         """
         # Get the directory of the current script
         script_dir = Path(__file__).resolve().parent
-        # Define the folder where the CSV files are located
-        dataframes_folder = script_dir / "../embeddings/dataframes"
 
+        # Define the folder where the JSON files are located
+        dataframes_folder = script_dir / "../embeddings/dataframes"
         # Ensure the folder exists
         if not (dataframes_folder.exists() and dataframes_folder.is_dir()):
             raise FileNotFoundError(
                 f"The folder {dataframes_folder} does not exist or is not a directory."
             )
 
-        # Get all CSV files in the folder
+        # Get all JSON files in the folder
         dataframes = [
             file.resolve()
             for file in dataframes_folder.iterdir()
-            if file.suffix == ".csv"
+            if file.suffix == ".json"
         ]
-        # Check if there are any CSV files
+        # Check if there are any JSON files
         if not dataframes:
             raise FileNotFoundError(
-                f"No CSV files found in the folder {dataframes_folder}."
+                f"No JSON files found in the folder {dataframes_folder}."
             )
         collections = {}
+        documents = []
+        metadatas_ = []
         for file in dataframes:
             print("Processing file:", file)
-            # Read the CSV file into a pandas DataFrame
-            df = pd.read_csv(file)
-
-            # Ensure that the 'documents' column exists
-            if "documents" not in df.columns:
-                raise ValueError(f"The 'documents' column is missing in {file}")
-
-            documents = df["documents"].tolist()
-
-            # Process metadata if available; otherwise, use None
-            metadatas_ = None
-            if "metadata" in df.columns:
-                metadatas_ = self.chroma_adapter.json2dict(df["metadata"])
-                # Process each document/metadata pair
-                [documents, metadatas_] = self.add_basics(documents, metadatas_)
+            # Read the JSON file into a Python dictionary
+            with open(file, "r") as f:
+                data = json.load(f)
+            for dict in data:
+                document = dict["document"]
+                if "metadata" in dict:
+                    metadata = dict["metadata"]
+                    [document, metadata] = self.add_basics(document, metadata)
+                else:
+                    metadata = {}
+                    [document, metadata] = self.add_basics(document, metadata)
+                metadatas_.append(metadata)
+                documents.append(dict["document"])
 
             # Sanitize and get or create the collection
             collection_name = self.chroma_adapter._sanitize_collection_name(file.stem)
@@ -289,17 +289,19 @@ class Embeddings(Node):
             collections[collection_name] = (
                 self.chroma_adapter._get_or_create_collection(collection_name)
             )
-
+            print("Collection name:", collection_name)
             self.chroma_adapter.add_entries(collection_name, documents, metadatas_)
         self.chroma_adapter._get_or_create_collection("command_history")
         return
 
     def add_basics(self, documents, metadatas):
         # Inject context and sanitize document content
-        for i, (doc, meta) in enumerate(zip(documents, metadatas)):
-            meta["original_name"] = doc
-            context = meta.get("context", "")
-            documents[i] = f"{doc} {context}" if context else doc
+        metadatas["original_name"] = documents
+        if "context" in metadatas:
+            context = metadatas.get("context")
+        else:
+            context = ""
+        documents = f"{documents} {context}" if context else documents
 
         return documents, metadatas
 
