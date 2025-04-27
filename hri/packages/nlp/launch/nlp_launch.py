@@ -65,7 +65,7 @@ def generate_launch_description():
     ]
 
     if os.getenv("COMPOSE_PROFILES", "receptionist") == "gpsr":
-        embeddings_launch_path = (
+        embeddings_launch_path = os.path.join(
             get_package_share_directory("embeddings"),
             "launch",
             "chroma_launch.py",

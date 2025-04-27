@@ -1,14 +1,15 @@
+import json
+from datetime import datetime
+from uuid import uuid4
+
 import chromadb
 from chromadb.utils import embedding_functions
-import json
-from uuid import uuid4
 from filter import remove_empty_lists, remove_nulls
-from datetime import datetime
 
 
 class ChromaAdapter:
     def __init__(self):
-        self.client = chromadb.HttpClient(host="localhost", port=8000)
+        self.client = chromadb.HttpClient(host="localhost", port=8002)
         # Configure the embedding function
         self.sentence_transformer_ef = (
             embedding_functions.SentenceTransformerEmbeddingFunction(
