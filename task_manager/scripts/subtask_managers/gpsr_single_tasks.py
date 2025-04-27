@@ -34,7 +34,10 @@ class GPSRSingleTask(GenericTask):
         location = self.subtask_manager.hri.query_location(complement)
         area = self.subtask_manager.hri.get_area(location)
         subarea = self.subtask_manager.hri.get_subarea(location)
-        print(f"Moving to {complement} in area: {area}, subarea: {subarea}")
+
+        self.subtask_manager.hri.node.get_logger().info(
+            f"Moving to {complement} in area: {area}, subarea: {subarea}"
+        )
 
         self.subtask_manager.nav.move_to_location(area, subarea)
 
@@ -141,7 +144,16 @@ class GPSRSingleTask(GenericTask):
         Pseudocode:
             say(llm_response(complement, fetch_info(characteristic)))
         """
-        pass
+        history = self.subtask_manager.hri.query_command_history(complement)
+        context = self.subtask_manager.hri.get_context(history)
+        complement = self.subtask_manager.hri.get_complement(history)
+        # characteristic = self.subtask_manager.hri.get_characteristic(history)
+        result = self.subtask_manager.hri.get_result(history)
+        # status = self.subtask_manager.hri.get_status(history)
+        self.subtask_manager.hri.say(
+            f"Okay, the result of {context} is: {result}.",
+            wait=True,
+        )
 
     ## HRI
     def say(self, complement: str, characteristic=""):

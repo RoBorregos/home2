@@ -241,7 +241,7 @@ class VisionTasks:
             result = future.result()
 
             if not result.success:
-                raise Exception("Service call failed")
+                return Status.TARGET_NOT_FOUND
 
         except Exception as e:
             Logger.error(self.node, f"Error saving name: {e}")
@@ -773,7 +773,7 @@ class VisionTasks:
                 return Status.TARGET_NOT_FOUND
         else:
             return Status.EXECUTION_ERROR
-        
+
     def get_labels(self, detections: list[BBOX]) -> list[str]:
         """Get the labels of the detected objects"""
         labels = []
