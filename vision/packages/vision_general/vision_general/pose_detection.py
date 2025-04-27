@@ -26,12 +26,12 @@ class PoseDetection:
             right_ankle = landmarks[self.mp_pose.PoseLandmark.RIGHT_ANKLE]
 
             if left_hip.y < left_knee.y and right_hip.y < right_knee.y:
-                return Poses.STANDING
-            elif left_hip.y > left_knee.y and right_hip.y > right_knee.y:
                 return Poses.SITTING
+            elif left_hip.y > left_knee.y and right_hip.y > right_knee.y:
+                return Poses.STANDING
             elif left_knee.y > left_ankle.y and right_knee.y > right_ankle.y:
                 return Poses.LYING_DOWN
-        return Poses.UNKNWON
+        return Poses.UNKNOWN
 
     def detectGesture(self, image):
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)

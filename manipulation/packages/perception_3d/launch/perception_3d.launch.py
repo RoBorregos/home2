@@ -30,7 +30,7 @@ def generate_launch_description():
                 name="test_only_orchestrator",
                 output="screen",
                 emulate_tty=True,
-                parameters=[{"testing": False}],
+                parameters=[{"testing": True}],
             ),
         ]
     )

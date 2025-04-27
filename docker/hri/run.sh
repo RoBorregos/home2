@@ -92,6 +92,8 @@ esac
 bash setup.bash
 bash ../../hri/packages/nlp/assets/download-model.sh
 
+# Create dirs with current user to avoid permission problems
+mkdir install build log
 #_________________________RUN_________________________
 
 PROFILES=()
