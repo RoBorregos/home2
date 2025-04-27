@@ -6,7 +6,6 @@ class GPSRSingleTask(GenericTask):
     """Class to manage the GPS task"""
 
     ## Nav
-    
 
     def go(self, complement="", characteristic=""):
         """
@@ -31,7 +30,6 @@ class GPSRSingleTask(GenericTask):
         self.subtask_manager.hri.say(f"I will go to {complement}.", wait=False)
 
         self.subtask_manager.nav.move_to_location(complement)
-        
 
         return Status.EXECUTION_SUCCESS, "arrived to:" + complement
 
@@ -61,7 +59,7 @@ class GPSRSingleTask(GenericTask):
             - pick_object(complement)
         """
         self.subtask_manager.hri.say(f"I will pick the {complement}.", wait=False)
-        self.subtask_manager.manipulation.pick_object(complement)
+        return self.subtask_manager.manipulation.pick_object(complement), ""
 
     ## Manipulation
     def place(self, complement="", characteristic=""):
@@ -90,7 +88,7 @@ class GPSRSingleTask(GenericTask):
         """
         self.subtask_manager.hri.say("I will place the object.", wait=False)
 
-        self.subtask_manager.manipulation.place()
+        return self.subtask_manager.manipulation.place(), ""
 
     ## HRI
     def contextual_say(self, complement: str, characteristic: str):
