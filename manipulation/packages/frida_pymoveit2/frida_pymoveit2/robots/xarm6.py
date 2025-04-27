@@ -26,6 +26,26 @@ def end_effector_name(prefix: str = "") -> str:
     return prefix + "link_eef"
 
 
+def camera_frame_name(prefix: str = "") -> str:
+    return prefix + "zed_camera_link"
+
+
+def left_camera_frame_name(prefix: str = "") -> str:
+    return prefix + "zed_left_camera_frame"
+
+
+def left_camera_optical_frame_name(prefix: str = "") -> str:
+    return prefix + "zed_left_camera_optical_frame"
+
+
+def right_camera_frame_name(prefix: str = "") -> str:
+    return prefix + "zed_right_camera_frame"
+
+
+def right_camera_optical_frame_name(prefix: str = "") -> str:
+    return prefix + "zed_right_camera_optical_frame"
+
+
 def gripper_joint_names(prefix: str = "") -> List[str]:
     return [
         prefix + "drive_joint",
