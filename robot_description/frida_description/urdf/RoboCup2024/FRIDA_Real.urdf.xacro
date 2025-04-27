@@ -68,7 +68,7 @@
   <xacro:include filename="$(find frida_description)/urdf/Gripper/Commercial/gripper.xacro" />
     <xacro:load_gripper attach_to="link_eef" xyz="0 0 0" rpy="2.3562 -1.5708 0" />
    <!-- ZED MACRO -->
-    <xacro:include filename="zed.xacro" />
+    <xacro:include filename="$(find frida_description)/urdf/zed/zed.xacro" />
   <xacro:load_zed attach_to="gripper" xyz="0.030461 0 -0.050649" rpy="0 0.81804 0" />
 
 

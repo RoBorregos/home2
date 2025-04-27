@@ -257,7 +257,7 @@
     </xacro:if>
 
     <xacro:if value="${simulation}">
-      <xacro:include filename="$(find frida_description)/urdf/zed_gazebo.xacro"/>
+      <xacro:include filename="$(find frida_description)/urdf/zed/zed_gazebo.xacro"/>
       <xacro:zed_gazebo prefix="${name}" />
     </xacro:if>
     
