@@ -5,7 +5,11 @@ from rclpy.node import Node
 from rclpy.action import ActionClient, ActionServer
 from rclpy.callback_groups import ReentrantCallbackGroup
 from frida_motion_planning.utils.ros_utils import wait_for_future
-from std_srvs.srv import SetBool
+from frida_motion_planning.utils.service_utils import (
+    get_joint_positions,
+    move_joint_positions,
+)
+from std_srvs.srv import SetBool, Empty
 from frida_interfaces.action import MoveJoints
 from frida_interfaces.msg import ManipulationTask
 from frida_interfaces.action import PickMotion, PlaceMotion, ManipulationAction
@@ -16,6 +20,7 @@ from frida_interfaces.srv import (
     RemoveCollisionObject,
     PlacePerceptionService,
     HeatmapPlace,
+    GetJoints,
 )
 from frida_constants.manipulation_constants import (
     PICK_MOTION_ACTION_SERVER,
@@ -28,6 +33,9 @@ from frida_constants.manipulation_constants import (
     GRIPPER_SET_STATE_SERVICE,
     PLACE_PERCEPTION_SERVICE,
     HEATMAP_PLACE_SERVICE,
+    GET_JOINT_SERVICE,
+    SCAN_ANGLE_VERTICAL,
+    SCAN_ANGLE_HORIZONTAL,
 )
 from frida_constants.vision_constants import (
     DETECTION_HANDLER_TOPIC_SRV,
@@ -35,6 +43,7 @@ from frida_constants.vision_constants import (
 from pick_and_place.managers.PickManager import PickManager
 from pick_and_place.managers.PlaceManager import PlaceManager
 from frida_interfaces.msg import PickResult
+import time
 
 
 class ManipulationCore(Node):
@@ -68,6 +77,8 @@ class ManipulationCore(Node):
             MOVE_JOINTS_ACTION_SERVER,
         )
 
+        self._get_joints_client = self.create_client(GetJoints, GET_JOINT_SERVICE)
+
         self.detection_handler_client = self.create_client(
             DetectionHandler, DETECTION_HANDLER_TOPIC_SRV
         )
@@ -96,6 +107,8 @@ class ManipulationCore(Node):
             GRIPPER_SET_STATE_SERVICE,
         )
 
+        self._clear_octomap_client = self.create_client(Empty, "/clear_octomap")
+
         self.pick_manager = PickManager(self)
         self.pick_result = PickResult()
 
@@ -106,21 +119,6 @@ class ManipulationCore(Node):
     def pick_execute(self, object_name=None, object_point=None):
         self.get_logger().info(f"Goal: {object_point}")
         self.get_logger().info("Extracting object cloud")
-
-        # self.remove_all_collision_object(attached=True)
-        # result, pick_result = self.pick_manager.execute(
-        #     object_name=object_name,
-        #     point=object_point,
-        # )
-
-        # if not result:
-        #     self.get_logger().error("Pick failed")
-        #     self.remove_all_collision_object(attached=True)
-        #     return False
-
-        # self.remove_all_collision_object(attached=False)
-        # self.get_logger().info("Pick succeeded")
-        # return result, pick_result
 
         try:
             self.remove_all_collision_object(attached=True)
@@ -136,13 +134,37 @@ class ManipulationCore(Node):
         except Exception:
             return (False, PickResult())
 
+    def place_execute(self, place_params=None):
+        self.get_logger().info("Executing place")
+        try:
+            result = self.place_manager.execute(
+                place_params=place_params,
+                pick_result=self.pick_result,
+            )
+            if not result:
+                self.get_logger().error("Place failed")
+                return False
+            return result
+        except Exception:
+            return False
+
     def manipulation_server_callback(self, goal_handle):
         task_type = goal_handle.request.task_type
         object_name = goal_handle.request.pick_params.object_name
         object_point = goal_handle.request.pick_params.object_point
+        # scan_environment = goal_handle.request.scan_environment
         self.get_logger().info(f"Task Type: {task_type}")
         self.get_logger().info(f"Object Name: {object_name}")
         response = ManipulationAction.Result()
+
+        self.clear_octomap()
+
+        if goal_handle.request.scan_environment:
+            self.get_logger().info("Scanning environment")
+            self.scan_environment()
+            # give time to see
+            time.sleep(1)
+
         if task_type == ManipulationTask.PICK:
             self.get_logger().info("Executing Pick Task")
             result, self.pick_result = self.pick_execute(
@@ -156,11 +178,10 @@ class ManipulationCore(Node):
             response.success = result
         elif task_type == ManipulationTask.PLACE:
             self.get_logger().info("Executing Place Task")
+            result = self.place_execute(place_params=goal_handle.request.place_params)
             goal_handle.succeed()
-            result = self.place_manager.execute(
-                place_params=goal_handle.request.place_params,
-                pick_result=self.pick_result,
-            )
+            if result:
+                self.remove_all_collision_object(attached=True)
             response.success = result
         else:
             self.get_logger().error("Unknown task type")
@@ -179,6 +200,42 @@ class ManipulationCore(Node):
         future = self._remove_collision_object_client.call_async(request)
         wait_for_future(future)
         return future.result().success
+
+    def clear_octomap(self):
+        """Clear the octomap."""
+        request = Empty.Request()
+        self.get_logger().info("Clearing octomap")
+        future = self._clear_octomap_client.call_async(request)
+        wait_for_future(future)
+        return True
+
+    def scan_environment(self):
+        """Scan the environment and update the octomap."""
+        curr_joint_positions = get_joint_positions(
+            self._get_joints_client, degrees=True
+        )
+        self.get_logger().info(f"Current joint positions: {curr_joint_positions}")
+        curr_joint_positions["joints"]["joint1"] += SCAN_ANGLE_HORIZONTAL
+        curr_joint_positions["joints"]["joint5"] -= SCAN_ANGLE_VERTICAL
+        self.get_logger().info(f"Moving to: {curr_joint_positions}")
+        move_joint_positions(
+            move_joints_action_client=self._move_joints_client,
+            joint_positions=curr_joint_positions,
+            velocity=0.2,
+        )
+        curr_joint_positions["joints"]["joint1"] -= SCAN_ANGLE_HORIZONTAL * 2
+        move_joint_positions(
+            move_joints_action_client=self._move_joints_client,
+            joint_positions=curr_joint_positions,
+            velocity=0.2,
+        )
+        curr_joint_positions["joints"]["joint1"] += SCAN_ANGLE_HORIZONTAL
+        curr_joint_positions["joints"]["joint5"] += SCAN_ANGLE_VERTICAL
+        move_joint_positions(
+            move_joints_action_client=self._move_joints_client,
+            joint_positions=curr_joint_positions,
+            velocity=0.2,
+        )
 
 
 def main(args=None):

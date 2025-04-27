@@ -9,6 +9,19 @@ FRONT_STARE = {
     },
     "degrees": True,
 }
+
+FRONT_LOW_STARE = {
+    "joints": {
+        "joint1": -90.0,
+        "joint2": -45.0,
+        "joint3": -90.0,
+        "joint4": 0.0,
+        "joint5": 20.0,
+        "joint6": 45.0,
+    },
+    "degrees": True,
+}
+
 TABLE_STARE = {
     "joints": {
         "joint1": -90.0,
@@ -45,9 +58,27 @@ PICK_STARE_AT_TABLE = {
     "degrees": True,
 }
 
+# Creditos a dominguez
+
+
+NAV_POSE = {
+    "joints": {
+        "joint1": -88.7,
+        "joint2": -56.0,
+        "joint3": -106.0,
+        "joint4": 0.1,
+        "joint5": 66.9,
+        "joint6": 43.3,
+    },
+    "degrees": True,
+}
+
+
 XARM_CONFIGURATIONS = {
     "front_stare": FRONT_STARE,
+    "front_low_stare": FRONT_LOW_STARE,
     "table_stare": TABLE_STARE,
     "receive_object": RECEIVE_OBJECT,
     "pick_stare_at_table": PICK_STARE_AT_TABLE,
+    "nav_pose": NAV_POSE,
 }

@@ -12,6 +12,10 @@ XARM_SETSTATE_SERVICE = "/xarm/set_state"
 MOVEIT_MODE = 1
 JOINT_VELOCITY_MODE = 4
 
+FACE_RECOGNITION_LIFETIME = 0.1
+FOLLOW_FACE_SPEED = 2.0
+FOLLOW_FACE_TOLERANCE = 0.15
+
 XARM_MOVEVELOCITY_SERVICE = "/xarm/vc_set_joint_velocity"
 SET_JOINT_VELOCITY_SERVICE = "/manipulation/set_joint_velocity"
 
@@ -23,9 +27,14 @@ MOVE_TO_POSE_ACTION_SERVER = "/manipulation/move_to_pose_action_server"
 GET_JOINT_SERVICE = "/manipulation/get_joints"
 TOGGLE_SERVO_SERVICE = "/manipulation/toggle_servo"
 
-PICK_VELOCITY = 0.15
+MIN_CONFIGURATION_DISTANCE_TRESHOLD = 0.01
+PICK_VELOCITY = 0.2
 PICK_ACCELERATION = 0.15
 PICK_PLANNER = "RRTConnect"
+
+# Scan
+SCAN_ANGLE_VERTICAL = 30.0  # degrees
+SCAN_ANGLE_HORIZONTAL = 30.0  # degrees
 
 # Pick
 PICK_MOTION_ACTION_SERVER_NODE = "manipulation/pick_motion_server"
@@ -35,6 +44,7 @@ PICK_PERCEPTION_SERVICE = "/manipulation/pick_perception_service"
 GRASP_DETECTION_SERVICE = "/manipulation/detect_grasps"
 GRIPPER_SET_STATE_SERVICE = "/manipulation/gripper/set_state"
 XARM_SET_DIGITAL_TGPIO_SERVICE = "/xarm/set_tgpio_digital"
+SAFETY_HEIGHT = 0.025
 
 # Place
 PLACE_PERCEPTION_SERVICE = "/manipulation/place_perception_service"
@@ -55,9 +65,14 @@ PLANE_OBJECT_COLLISION_TOLERANCE = (
     0.025  # Tolerance to delete collision objects if they are too close to the plane
 )
 
+SHELF_POSITION_PREPLACE_POSE = -0.3
+
 DEBUG_POSE_GOAL_TOPIC = "/manipulation/debug_pose_goal"
 GET_JOINT_TOPIC = "/manipulation/get_joints"
 
 TOGGLE_SERVO_TOPIC = "/manipulation/toggle_servo"
 
 ZED_POINT_CLOUD_TOPIC = "/zed/zed_node/point_cloud/cloud_registered"
+
+# Similar to what you have on stare poses, gripper looking front, camera looking front-down
+AIM_STRAIGHT_FRONT_QUAT = [0.650, -0.290, 0.636, -0.299]

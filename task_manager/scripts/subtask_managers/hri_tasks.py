@@ -4,12 +4,15 @@
 HRI Subtask manager
 """
 
+import json
 import re
+from datetime import datetime
 from typing import Union
 
 import rclpy
 from frida_constants.hri_constants import (
     ADD_ENTRY_SERVICE,
+    CATEGORIZE_SERVICE,
     COMMAND_INTERPRETER_SERVICE,
     COMMON_INTEREST_SERVICE,
     EXTRACT_DATA_SERVICE,
@@ -22,11 +25,11 @@ from frida_constants.hri_constants import (
     STT_SERVICE_NAME,
     USEFUL_AUDIO_NODE_NAME,
     WAKEWORD_TOPIC,
-    CATEGORIZE_SERVICE,
 )
 from frida_interfaces.srv import (
     STT,
     AddEntry,
+    CategorizeShelves,
     CommandInterpreter,
     CommonInterest,
     ExtractInfo,
@@ -36,7 +39,6 @@ from frida_interfaces.srv import (
     LLMWrapper,
     QueryEntry,
     Speak,
-    CategorizeShelves,
 )
 from rcl_interfaces.msg import Parameter, ParameterType, ParameterValue
 from rcl_interfaces.srv import SetParameters
@@ -116,6 +118,7 @@ class HRITasks(metaclass=SubtaskMeta):
         }
 
         self.setup_services()
+        Logger.success(self.node, f"hri_tasks initialized with task {self.task}")
 
     def setup_services(self):
         """Initialize services and actions"""
@@ -135,7 +138,8 @@ class HRITasks(metaclass=SubtaskMeta):
     @service_check("speak_service", Status.SERVICE_CHECK, TIMEOUT)
     def say(self, text: str, wait: bool = True) -> None:
         """Method to publish directly text to the speech node"""
-        self.node.get_logger().info(f"Sending to saying service: {text}")
+        Logger.info(self.node, f"Sending to saying service: {text}")
+
         request = Speak.Request(text=text)
 
         future = self.speak_service.call_async(request)
@@ -143,6 +147,8 @@ class HRITasks(metaclass=SubtaskMeta):
         if wait:
             rclpy.spin_until_future_complete(self.node, future)
             return Status.EXECUTION_SUCCESS if future.result().success else Status.EXECUTION_ERROR
+        Logger.info(self.node, "Saying service finished executing")
+
         return Status.EXECUTION_SUCCESS
 
     @service_check("extract_data_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
@@ -157,8 +163,8 @@ class HRITasks(metaclass=SubtaskMeta):
         Returns:
             str: The extracted data as a string. If no data is found, an empty string is returned.
         """
-        self.node.get_logger().info(
-            f"Sending to extract data service: query={query}, text={complete_text}"
+        Logger.info(
+            self.node, f"Sending to extract data service: query={query}, text={complete_text}"
         )
 
         request = ExtractInfo.Request(data=query, full_text=complete_text, context=context)
@@ -168,6 +174,14 @@ class HRITasks(metaclass=SubtaskMeta):
         execution_status = (
             Status.EXECUTION_SUCCESS if len(future.result().result) > 0 else Status.TARGET_NOT_FOUND
         )
+
+        if execution_status == Status.EXECUTION_SUCCESS:
+            Logger.info(
+                self.node,
+                f"extract_data result: {future.result().result}",
+            )
+        else:
+            Logger.warn(self.node, "extract_data: no data found")
 
         return execution_status, future.result().result
 
@@ -192,7 +206,7 @@ class HRITasks(metaclass=SubtaskMeta):
             self.keyword = ""
 
     @service_check("hear_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
-    def hear(self, min_audio_length=0.5, max_audio_length=10.0) -> str:
+    def hear(self, min_audio_length=1.0, max_audio_length=10.0) -> str:
         if min_audio_length > 0:
             self.set_double_param("MIN_AUDIO_DURATION", float(min_audio_length))
 
@@ -202,7 +216,10 @@ class HRITasks(metaclass=SubtaskMeta):
         request = STT.Request()
 
         future = self.hear_service.call_async(request)
-        self.node.get_logger().info("Hearing from the user...")
+        Logger.info(
+            self.node,
+            "Hearing from the user...",
+        )
         rclpy.spin_until_future_complete(self.node, future)
 
         execution_status = (
@@ -210,6 +227,14 @@ class HRITasks(metaclass=SubtaskMeta):
             if len(future.result().text_heard) > 0
             else Status.TARGET_NOT_FOUND
         )
+
+        if execution_status == Status.EXECUTION_SUCCESS:
+            Logger.info(
+                self.node,
+                f"hearing result: {future.result().text_heard}",
+            )
+        else:
+            Logger.warn(self.node, "hearing: no text heard")
 
         return execution_status, future.result().text_heard
 
@@ -232,6 +257,10 @@ class HRITasks(metaclass=SubtaskMeta):
             Status: the status of the execution
             str: "yes" (user confirms), "no" (user doesn't confirm), or "" (no response interpreted).
         """
+        Logger.info(
+            self.node,
+            "Asking for confirmation: " + question,
+        )
         current_attempt = 0
         while current_attempt < retries:
             current_attempt += 1
@@ -257,6 +286,10 @@ class HRITasks(metaclass=SubtaskMeta):
                         elif self.is_negative(interpret_text)[1]:
                             return Status.EXECUTION_SUCCESS, "no"
 
+        Logger.info(
+            self.node,
+            "Confirmation timed out for: " + question,
+        )
         return Status.TIMEOUT, ""
 
     def ask_and_confirm(
@@ -293,7 +326,6 @@ class HRITasks(metaclass=SubtaskMeta):
 
             self.say(question)
             s, interpreted_text = self.hear()
-            print(f"Interpreted text: {interpreted_text}")
 
             if s == Status.EXECUTION_SUCCESS:
                 s, target_info = self.extract_data(query, interpreted_text, context)
@@ -318,11 +350,19 @@ class HRITasks(metaclass=SubtaskMeta):
             ) < min_wait_between_retries:
                 rclpy.spin_once(self.node, timeout_sec=0.1)
 
+        Logger.warn(
+            self.node,
+            "Ask and confirm timed out for question: " + question,
+        )
         return Status.TIMEOUT, ""
 
     def interpret_keyword(self, keywords: list[str], timeout: float) -> str:
         start_time = self.node.get_clock().now()
         self.keyword = ""
+        Logger.info(
+            self.node,
+            f"Listening for keywords: {str(keywords)}",
+        )
         while (
             self.keyword not in keywords
             and ((self.node.get_clock().now() - start_time).nanoseconds / 1e9) < timeout
@@ -332,6 +372,17 @@ class HRITasks(metaclass=SubtaskMeta):
         execution_status = (
             Status.EXECUTION_SUCCESS if self.keyword in keywords else Status.TARGET_NOT_FOUND
         )
+
+        if execution_status == Status.EXECUTION_SUCCESS:
+            Logger.info(
+                self.node,
+                f"Keyword recognized: {self.keyword}",
+            )
+        else:
+            Logger.warn(
+                self.node,
+                "interpret_keyword: no keyword recognized",
+            )
 
         return execution_status, self.keyword
 
@@ -351,9 +402,18 @@ class HRITasks(metaclass=SubtaskMeta):
 
     @service_check("command_interpreter_client", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def command_interpreter(self, text: str) -> CommandInterpreter.Response:
+        Logger.info(
+            self.node,
+            "Received command for interpretation: " + text,
+        )
         request = CommandInterpreter.Request(text=text)
         future = self.command_interpreter_client.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
+
+        Logger.info(
+            self.node,
+            "command_interpreter result: " + str(future.result().commands),
+        )
 
         return Status.EXECUTION_SUCCESS, future.result().commands
 
@@ -385,6 +445,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
     @service_check("common_interest_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def common_interest(self, person1, interest1, person2, interest2, remove_thinking=True):
+        Logger.info(self.node, f"Finding common interest between {person1} and {person2}")
         request = CommonInterest.Request(
             person1=person1, interests1=interest1, person2=person2, interests2=interest2
         )
@@ -396,46 +457,139 @@ class HRITasks(metaclass=SubtaskMeta):
         if remove_thinking:
             result = re.sub(r"<think>.*?</think>", "", result, flags=re.DOTALL)
 
+        Logger.info(
+            self.node, f"Common interest computed between {person1} and {person2}: {result}"
+        )
+
         return Status.EXECUTION_SUCCESS, result
 
     @service_check("is_positive_service", (Status.SERVICE_CHECK, False), TIMEOUT)
     def is_positive(self, text):
+        Logger.info(self.node, f"Checking if text is positive: {text}")
         request = IsPositive.Request(text=text)
         future = self.is_positive_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
+        Logger.info(self.node, f"is_positive result ({text}): {future.result().is_positive}")
         return Status.EXECUTION_SUCCESS, future.result().is_positive
 
     @service_check("is_negative_service", (Status.SERVICE_CHECK, False), TIMEOUT)
     def is_negative(self, text):
+        Logger.info(self.node, f"Checking if text is negative: {text}")
         request = IsNegative.Request(text=text)
         future = self.is_negative_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
+        Logger.info(self.node, f"is_negative result ({text}): {future.result().is_negative}")
         return Status.EXECUTION_SUCCESS, future.result().is_negative
 
-    def _add_to_collection(self, document: list, metadata: str, collection: str) -> str:
-        request = AddEntry.Request(document=document, metadata=metadata, collection=collection)
-        future = self.add_item_client.call_async(request)
-        rclpy.spin_until_future_complete(self.node, future)
-        return "Success" if future.result().success else f"Failed: {future.result().message}"
+    # /////////////////embeddings services/////
+    def add_command_history(
+        self, command: str, complement: str, characteristic: str, result, status
+    ):
+        collection = "command_history"
 
-    def add_item(self, document: list, metadata: str) -> str:
+        document = [command]
+        metadata = [
+            {
+                "complement": complement,
+                "characteristic": characteristic,
+                "result": result,
+                "status": status,
+                "timestamp": datetime.now().isoformat(),
+            }
+        ]
+
+        request = AddEntry.Request(
+            document=document, metadata=json.dumps(metadata), collection=collection
+        )
+        future = self.add_item_client.call_async(request)
+
+        def callback(fut):
+            try:
+                response = fut.result()
+                self.node.get_logger().info(f"Command history saved: {response}")
+            except Exception as e:
+                self.node.get_logger().error(f"Failed to save command history: {e}")
+
+        future.add_done_callback(callback)
+        return Status.EXECUTION_SUCCESS
+
+    def add_item(self, document: list, metadata: str) -> list[str]:
         return self._add_to_collection(document, metadata, "items")
 
-    def add_location(self, document: list, metadata: str) -> str:
+    def add_location(self, document: list, metadata: str) -> list[str]:
         return self._add_to_collection(document, metadata, "locations")
-
-    def _query_(self, query: str, collection: str, top_k: int = 1) -> list[str]:
-        # Wrap the query in a list so that the field receives a sequence of strings.
-        request = QueryEntry.Request(query=[query], collection=collection, topk=top_k)
-        future = self.query_item_client.call_async(request)
-        rclpy.spin_until_future_complete(self.node, future)
-        return future.result().results
 
     def query_item(self, query: str, top_k: int = 1) -> list[str]:
         return self._query_(query, "items", top_k)
 
     def query_location(self, query: str, top_k: int = 1) -> list[str]:
         return self._query_(query, "locations", top_k)
+
+    def find_closest(self, documents: list, query: str, top_k: int = 1) -> list[str]:
+        """
+        Method to find the closest item to the query.
+        Args:
+            documents: the documents to search among
+            query: the query to search for
+        Returns:
+            Status: the status of the execution
+            list[str]: the results of the query
+        """
+        Logger.info(self.node, f"Finding closest items to: {query} in {str(documents)}")
+        self._add_to_collection(document=documents, metadata="", collection="closest_items")
+        self.node.get_logger().info(f"Adding closest items: {documents}")
+        Results = self._query_(query, "closest_items", top_k)
+        Results = self.get_name(Results)
+        Logger.info(self.node, f"find_closest result({query}): {str(Results)}")
+        return Status.EXECUTION_SUCCESS, Results
+
+    def query_command_history(self, query: str, top_k: int = 1):
+        """
+        Method to query the command history collection.
+        Args:
+            query: the query to search for
+        Returns:
+            Status: the status of the execution
+            list[str]: the results of the query
+        """
+        return self._query_(query, "command_history", top_k)
+
+    # /////////////////helpers/////
+    def _query_(self, query: str, collection: str, top_k: int = 1) -> list[str]:
+        # Wrap the query in a list so that the field receives a sequence of strings.
+        request = QueryEntry.Request(query=[query], collection=collection, topk=top_k)
+        future = self.query_item_client.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+
+        return Status.EXECUTION_SUCCESS, future.result().results
+
+    def _add_to_collection(self, document: list, metadata: str, collection: str) -> str:
+        request = AddEntry.Request(document=document, metadata=metadata, collection=collection)
+        future = self.add_item_client.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+
+        return (
+            Status.EXECUTION_SUCCESS,
+            "Success" if future.result().success else f"Failed: {future.result().message}",
+        )
+
+    def get_context(self, query_result):
+        return self.get_metadata_key(query_result, "context")
+
+    def get_complement(self, query_result):
+        return self.get_metadata_key(query_result, "complement")
+
+    def get_characteristic(self, query_result):
+        return self.get_metadata_key(query_result, "characteristic")
+
+    def get_result(self, query_result):
+        return self.get_metadata_key(query_result, "result")
+
+    def get_status(self, query_result):
+        return self.get_metadata_key(query_result, "status")
+
+    def get_name(self, query_result):
+        return self.get_metadata_key(query_result, "original_name")
 
     def categorize_objects(
         self, table_objects: list[str], shelves: dict[int, list[str]]
@@ -450,23 +604,59 @@ class HRITasks(metaclass=SubtaskMeta):
         Returns:
             dict[int, list[str]]: Dictionary mapping shelf levels to categorized objects.
         """
+        Logger.info(self.node, "Sending request to categorize_objects")
+
         try:
             request = CategorizeShelves.Request()
-            for i, obj in enumerate(table_objects):
-                request.table_objects.append(obj)
-            request.shelves = str(shelves)
-            # request = CategorizeShelves.Request(table_objects=table_objects, shelves=shelves)
+            table_objects = [String(data=str(obj)) for obj in table_objects]
+            request = CategorizeShelves.Request(
+                table_objects=table_objects, shelves=String(data=str(shelves))
+            )
+
             future = self.categorize_service.call_async(request)
+            Logger.info(self.node, "generated request")
             rclpy.spin_until_future_complete(self.node, future)
             res: CategorizeShelves.Response = future.result()
-            categorized_shelves = eval(res.categorized_shelves)
+            Logger.info(self.node, "request finished")
+
+            categorized_shelves = eval(res.categorized_shelves.data)
             categorized_shelves = {int(k): v for k, v in categorized_shelves.items()}
-            objects_to_add = eval(res.objects_to_add)
+            objects_to_add = eval(res.objects_to_add.data)
             objects_to_add = {int(k): v for k, v in objects_to_add.items()}
         except Exception as e:
             self.node.get_logger().error(f"Error: {e}")
             return Status.EXECUTION_ERROR, {}, {}
+
+        Logger.info(self.node, "Finished executing categorize_objects")
+
         return Status.EXECUTION_SUCCESS, categorized_shelves, objects_to_add
+
+    def get_subarea(self, query_result):
+        return self.get_metadata_key(query_result, "subarea")
+
+    def get_area(self, query_result):
+        return self.get_metadata_key(query_result, "area")
+
+    def get_metadata_key(self, query_result, field: str):
+        """
+        Extracts the field from the metadata of a query result.
+
+        Args:
+            query_result (tuple): The query result tuple (status, list of JSON strings)
+
+        Returns:
+            str: The 'context' field from metadata, or empty string if not found
+        """
+        try:
+            # parse the first JSON string
+            parsed_result = json.loads(query_result[1][0])
+            # go into metadata
+            metadata = parsed_result["results"][0]["metadata"]
+            key = metadata.get(field, "")  # safely get 'context'
+            return key
+        except (IndexError, KeyError, json.JSONDecodeError) as e:
+            self.get_logger().error(f"Failed to extract context: {str(e)}")
+            return ""
 
 
 if __name__ == "__main__":

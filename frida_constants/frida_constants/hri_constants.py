@@ -24,7 +24,7 @@ USEFUL_AUDIO_NODE_NAME = "useful_audio_node"
 
 # OpenWakeWord
 USE_OWW = True
-SENSITIVITY_THRESHOLD = 0.15
-threshold = 0.4
+SENSITIVITY_THRESHOLD = 0.2
+threshold = 0.6
 
 DEFAULT_HOTWORDS = "Frida RoBorregos"

@@ -1,6 +1,7 @@
 #goal definition
 geometry_msgs/PoseStamped place_pose
 string object_name
+PlaceParams place_params
 ---
 #result definition
 int32 success

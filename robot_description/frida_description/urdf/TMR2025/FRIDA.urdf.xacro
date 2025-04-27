@@ -73,12 +73,22 @@
     robot_sn="$(arg robot_sn)" use_gazebo_camera="$(arg use_gazebo_camera)" mesh_suffix="$(arg mesh_suffix)" kinematics_suffix="$(arg kinematics_suffix)" />
 
 
-    <xacro:if value="$(arg load_zed)">
-      <xacro:include filename="$(find frida_description)/urdf/Gripper/Custom/gripper.xacro" />
-      <xacro:load_gripper attach_to="link_eef" xyz="0 0 0.046" rpy="0 0 1.57" fixed_joints="true"/>
+    <!-- <xacro:if value="$(arg load_zed)"> -->
+      <!-- <xacro:include filename="$(find frida_description)/urdf/Gripper/Custom/gripper.xacro" /> -->
+      <!-- <xacro:load_gripper attach_to="link_eef" xyz="0 0 0.046" rpy="0 0 1.57" fixed_joints="true"/> -->
       <!-- ZED MACRO -->
-      <xacro:include filename="$(find frida_description)/urdf/RoboCup2024/zed_macro.urdf.xacro" />
-      <xacro:zed_camera name="zed" model="zed2" custom_baseline="0" enable_gnss="false" simulation="true" attach_to="zed" xyz="0 0 0" rpy="0 0 0">
+      <!-- <xacro:include filename="$(find frida_description)/urdf/zed/zed_macro.urdf.xacro" /> -->
+      <!-- <xacro:zed_camera name="zed" model="zed2" custom_baseline="0" enable_gnss="false" simulation="true" attach_to="zed" xyz="0 0 0" rpy="0 0 0"> -->
+          <!-- <origin xyz="0 0 0" rpy="0 0 0"/> -->
+      <!-- </xacro:zed_camera> -->
+    <!-- </xacro:if> -->
+
+    <xacro:if value="$(arg load_zed)">
+      <xacro:include filename="$(find frida_description)/urdf/Gripper/Commercial/gripper.xacro" />
+      <xacro:load_gripper attach_to="link_eef" xyz="0 0 0" rpy="2.3562 -1.5708 0" fixed_joints="true"/>
+      <!-- ZED MACRO -->
+      <xacro:include filename="$(find frida_description)/urdf/zed/zed_macro.urdf.xacro" />
+      <xacro:zed_camera name="zed" model="zed2" custom_baseline="0" enable_gnss="false" simulation="true" attach_to="gripper" xyz="0.030461 0 -0.050649" rpy="0 0.81804 0">
           <origin xyz="0 0 0" rpy="0 0 0"/>
       </xacro:zed_camera>
     </xacro:if>

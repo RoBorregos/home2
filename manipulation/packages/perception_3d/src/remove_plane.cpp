@@ -1,5 +1,6 @@
 #include "rclcpp/rclcpp.hpp"
 #include <ament_index_cpp/get_package_share_directory.hpp>
+#include <pcl/common/transforms.h>
 #include <rclcpp/duration.hpp>
 #include <rclcpp/logging.hpp>
 
@@ -54,9 +55,7 @@ private:
   rclcpp::Publisher<geometry_msgs::msg::PointStamped>::SharedPtr point_pub_;
 
   std::shared_ptr<tf2_ros::TransformListener> tf_listener;
-  // std::shared_ptr<tf2_ros::Buffer> tf_buffer;
   std::unique_ptr<tf2_ros::Buffer> tf_buffer;
-  // tf2_ros::Buffer tf_buffer;/
 
   std::string point_cloud_topic = POINT_CLOUD_TOPIC;
 
@@ -69,7 +68,7 @@ public:
     RCLCPP_INFO(this->get_logger(), "Starting Table Segmentation Node");
     this->point_cloud_topic =
         this->declare_parameter("point_cloud_topic", point_cloud_topic);
-  
+
     this->point_pub_ = this->create_publisher<geometry_msgs::msg::PointStamped>(
         "/manipulation/perception_3d_debug/point", 10);
 
@@ -77,12 +76,6 @@ public:
 
     this->package_path =
         ament_index_cpp::get_package_share_directory("perception_3d");
-
-    // RCLCPP_ERROR(this->get_logger(), "Package path: %s",
-    //              this->package_path.c_str());
-
-    // this->tf_listener = std::make_shared<tf2_ros::TransformListener>(
-    //     this->shared_from_this(), this->get_clock());
 
     this->tf_buffer = std::make_unique<tf2_ros::Buffer>(this->get_clock());
 
@@ -93,11 +86,12 @@ public:
     qos.reliability(rclcpp::ReliabilityPolicy::BestEffort);
     qos.durability(rclcpp::DurabilityPolicy::Volatile);
     qos.keep_last(1);
-    RCLCPP_INFO(this->get_logger(), "Creating subscription to point cloud WITH BEST EFFORT");
+    RCLCPP_INFO(this->get_logger(),
+                "Creating subscription to point cloud WITH BEST EFFORT");
     this->cloud_sub_ = this->create_subscription<sensor_msgs::msg::PointCloud2>(
-      point_cloud_topic, qos,
-      std::bind(&TableSegmentationNode::pointCloudCallback, this,
-            std::placeholders::_1));
+        point_cloud_topic, qos,
+        std::bind(&TableSegmentationNode::pointCloudCallback, this,
+                  std::placeholders::_1));
 
     RCLCPP_INFO(this->get_logger(), "Subscribed to point cloud topic");
 
@@ -120,7 +114,6 @@ public:
             std::bind(&TableSegmentationNode::test_cluster, this,
                       std::placeholders::_1, std::placeholders::_2,
                       std::placeholders::_3));
-
     RCLCPP_INFO(this->get_logger(), "Service created");
   }
 
@@ -144,7 +137,7 @@ public:
         new pcl::PointCloud<pcl::PointXYZ>);
 
     copyPointCloud(last_, cloud_out);
-    
+
     // defaults
     if (request->min_height == 0.0 and request->max_height == 0.0) {
       request->min_height = 0.1;
@@ -157,8 +150,9 @@ public:
       req_point.x = 0.0;
       req_point.y = 0.0;
       req_point.z = 0.0;
-      response->health_response =
-          this->DistanceFilterFromPoint(cloud_out, req_point, cloud_out, 2.0, request->min_height, request->max_height);
+      response->health_response = this->DistanceFilterFromPoint(
+          cloud_out, req_point, cloud_out, 2.0, request->min_height,
+          request->max_height);
     } else {
       geometry_msgs::msg::PointStamped point;
       if (request->close_point.header.frame_id != "base_link") {
@@ -178,13 +172,19 @@ public:
       req_point.y = point.point.y;
       req_point.z = point.point.z;
 
-      response->health_response =
-          this->DistanceFilterFromPoint(cloud_out, req_point, cloud_out, 1.5, request->min_height, request->max_height);
+      response->health_response = this->DistanceFilterFromPoint(
+          cloud_out, req_point, cloud_out, 1.5, request->min_height,
+          request->max_height);
     }
 
     response->health_response =
         this->extractPlane(cloud_out, cloud_out, request->extract_or_remove);
 
+    if (response->health_response != OK) {
+      return;
+    }
+
+    response->health_response = this->densest_cluster(cloud_out, cloud_out);
     if (response->health_response != OK) {
       return;
     }
@@ -237,8 +237,7 @@ public:
                            "Error filtering point cloud by height with code %d",
                            response->success);
 
-    response->success =
-        savePointCloud("/height_filtered.pcd", cloud_out);
+    response->success = savePointCloud("/height_filtered.pcd", cloud_out);
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out2(
         new pcl::PointCloud<pcl::PointXYZ>);
@@ -248,8 +247,7 @@ public:
                            "Error removing plane with code %d",
                            response->success);
 
-    response->success =
-        savePointCloud("/filtered_no_plane.pcd", cloud_out2);
+    response->success = savePointCloud("/filtered_no_plane.pcd", cloud_out2);
 
     ASSERT_AND_RETURN_CODE(response->success, OK,
                            "Error saving filtered point cloud with code %d",
@@ -277,17 +275,17 @@ public:
   }
 
   uint32_t radialFilter(_IN_ const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
-              _OUT_ pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out,
-              const float x, const float y, const float z,
-              const float radius) {
+                        _OUT_ pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out,
+                        const float x, const float y, const float z,
+                        const float radius) {
     cloud_out->points.clear();
-    
-    for (const auto& point : cloud->points) {
+
+    for (const auto &point : cloud->points) {
       float dx = point.x - x;
       float dy = point.y - y;
       float dz = point.z - z;
-      float distance = std::sqrt(dx*dx + dy*dy + dz*dz);
-      
+      float distance = std::sqrt(dx * dx + dy * dy + dz * dz);
+
       if (distance <= radius) {
         cloud_out->points.push_back(point);
       }
@@ -300,7 +298,7 @@ public:
     if (cloud_out->points.empty()) {
       return POINT_CLOUD_EMPTY;
     }
-    
+
     return OK;
   }
 
@@ -318,7 +316,6 @@ public:
       response->status = NO_POINTCLOUD;
       return;
     }
-
 
     bool can_transform =
         request->point.header.frame_id == "base_link" ||
@@ -349,22 +346,21 @@ public:
     point.y = request->point.point.y;
     point.z = request->point.point.z;
 
-
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_radius_out(
         new pcl::PointCloud<pcl::PointXYZ>);
 
     // radial filter, to eliminate chance of error by planes far from the point
-    response->status =
-        this->DistanceFilterFromPoint(last_, point, cloud_radius_out, 0.5, 0.1);
+    response->status = this->DistanceFilterFromPoint(
+        last_, point, cloud_radius_out, 0.5, point.z - 0.3, point.z + 0.3);
     std::string base_path = this->package_path;
-    response->status = 
-          savePointCloud(base_path + "/radial_filtered.pcd", cloud_radius_out);
+    response->status =
+        savePointCloud(base_path + "/radial_filtered.pcd", cloud_radius_out);
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out(
         new pcl::PointCloud<pcl::PointXYZ>);
-    
-    response->status = this->get_cloud_without_plane(
-        cloud_radius_out, cloud_out);
+
+    response->status =
+        this->get_cloud_without_plane(cloud_radius_out, cloud_out);
 
     ASSERT_AND_RETURN_CODE(response->status, OK,
                            "Error getting current cloud with code %d",
@@ -386,8 +382,6 @@ public:
         savePointCloud(base_path + "/filtered_plane.pcd", cloud_out5_debug);
 
     response->status = savePointCloud(base_path + "/original.pcd", last_);
-
-    
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out2(
         new pcl::PointCloud<pcl::PointXYZ>);
@@ -427,14 +421,13 @@ public:
       _IN_ const std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud,
       _IN_ const pcl::PointXYZ point,
       _OUT_ std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud_out,
-      const float distance = 0.5,
-      const float min_height = 0.1,
+      const float distance = 0.5, const float min_height = 0.1,
       const float max_height = 2.0) {
-    
+
     pcl::PassThrough<pcl::PointXYZ> pass;
     pass.setInputCloud(cloud);
     pass.setFilterFieldName("z");
-    pass.setFilterLimits(std::max(float(point.z - distance), min_height), 
+    pass.setFilterLimits(std::max(float(point.z - distance), min_height),
                          std::min(float(point.z + distance), max_height));
 
     pass.filter(*cloud_out);
@@ -466,13 +459,12 @@ public:
     }
     cloud_out->width = cloud_out->points.size();
 
-
     return OK;
   }
 
-  uint32_t get_cloud_without_plane(
-      _IN_ pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_in, 
-      _OUT_ pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out) {
+  uint32_t
+  get_cloud_without_plane(_IN_ pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_in,
+                          _OUT_ pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out) {
 
     uint32_t status = OK;
     // cloud_out =
@@ -568,7 +560,7 @@ public:
    * @param max_val: Maximum value to filter *Optional*. Default is 5.0
    * @param filter: Axis to filter. *Optional*. Default is Z
    */
-  uint32_t passThroughPlane(
+  static uint32_t passThroughPlane(
       _IN_ const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
       _OUT_ pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out,
       const float min_val = 0.0, const float max_val = 5.0,
@@ -738,8 +730,8 @@ public:
 
     std::vector<pcl::PointIndices> cluster_indices;
     pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
-    ec.setClusterTolerance(0.05);
-    ec.setMinClusterSize(10);    // Minimum number of points in a cluster
+    ec.setClusterTolerance(0.02);
+    ec.setMinClusterSize(10);   // Minimum number of points in a cluster
     ec.setMaxClusterSize(6000); // Maximum number of points in a cluster
     ec.setSearchMethod(tree);
     ec.setInputCloud(cloud);
@@ -784,6 +776,67 @@ public:
                 "Original cloud size: %lu, clustered %lu points",
                 cloud->points.size(), cloud_out->points.size());
 
+    return OK;
+  }
+
+  STATUS_RESPONSE
+  densest_cluster(_IN_ const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
+                  _OUT_ pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out) {
+    // Using kdTree to get the closest point FROM the pointcloud to the point
+    // given as input
+    pcl::KdTreeFLANN<pcl::PointXYZ> kdtree;
+    kdtree.setInputCloud(cloud);
+    std::vector<int> pointIdxNKNSearch(1);
+    std::vector<float> pointNKNSquaredDistance(1);
+    if (kdtree.nearestKSearch(cloud->points[0], 1, pointIdxNKNSearch,
+                              pointNKNSquaredDistance) <= 0) {
+      RCLCPP_WARN(this->get_logger(),
+                  "No point detected at point x: %f y: %f z: %f",
+                  cloud->points[0].x, cloud->points[0].y, cloud->points[0].z);
+      return NO_POINT_DETECTED;
+    }
+    // Euclidean clustering (Make all clusters from the given point cloud)
+    // (Input point agnostic)
+    pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(
+        new pcl::search::KdTree<pcl::PointXYZ>);
+    tree->setInputCloud(cloud);
+    std::vector<pcl::PointIndices> cluster_indices;
+    pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
+    ec.setClusterTolerance(0.01);
+    ec.setMinClusterSize(10);   // Minimum number of points in a cluster
+    ec.setMaxClusterSize(6000); // Maximum number of points in a cluster
+    ec.setSearchMethod(tree);
+    ec.setInputCloud(cloud);
+    ec.extract(cluster_indices);
+    // Find which cluster our point belongs to
+    int targetPointIdx = pointIdxNKNSearch[0];
+    int targetClusterIdx = -1;
+    // given the clusters resulting from the Euclidean clustering, find the
+    // cluster that most dense
+    int max_points = 0;
+    for (size_t i = 0; i < cluster_indices.size(); i++) {
+      if (cluster_indices[i].indices.size() > max_points) {
+        max_points = cluster_indices[i].indices.size();
+        targetClusterIdx = i;
+      }
+    }
+    if (targetClusterIdx < 0) {
+      RCLCPP_WARN(this->get_logger(),
+                  "No object to cluster at point x: %f y: %f z: %f",
+                  cloud->points[0].x, cloud->points[0].y, cloud->points[0].z);
+      return NO_OBJECT_TO_CLUSTER_AT_POINT;
+    }
+    // Get cluster given
+    cloud_out->points.clear();
+    for (const auto &idx : cluster_indices[targetClusterIdx].indices) {
+      cloud_out->points.push_back(cloud->points[idx]);
+    }
+    cloud_out->width = cloud_out->points.size();
+    cloud_out->height = 1;
+    cloud_out->is_dense = true;
+    RCLCPP_INFO(this->get_logger(),
+                "Original cloud size: %lu, clustered %lu points",
+                cloud->points.size(), cloud_out->points.size());
     return OK;
   }
 

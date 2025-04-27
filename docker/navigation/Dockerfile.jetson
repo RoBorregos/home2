@@ -11,4 +11,9 @@ RUN sudo apt update
 RUN sudo rosdep init && rosdep update && rosdep install --from-paths src --ignore-src -r -y
 RUN source /opt/ros/humble/setup.bash && colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
 RUN echo "source /home/ros/ros_packages/install/setup.bash" >> /home/ros/.bashrc
+# Install and compile 
+RUN sudo apt update && pip install pyserial
+COPY . /workspace/src
+RUN cd /workspace/src && sudo apt update && rosdep update && rosdep install --from-paths . --ignore-src --skip-keys "gpd gazebo_ros gazebo_plugins gazebo_ros2_control" -y
+RUN sudo rm -rf /workspace/src/
 WORKDIR /workspace

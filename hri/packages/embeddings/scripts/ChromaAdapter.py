@@ -16,6 +16,13 @@ class ChromaAdapter:
             )
         )
 
+    def delete_collection(self, collection_name: str):
+        """Method to delete a collection"""
+        try:
+            self.client.delete_collection(name=collection_name)
+        except Exception:
+            raise ValueError(f"The collection is missing {collection_name}")
+
     def remove_all_collections(self):
         """Method to remove all collections"""
         collections = self.client.list_collections()
@@ -86,6 +93,7 @@ class ChromaAdapter:
         - Normalizes metadatas to a list of dictionaries.
         - Cleans metadata with remove_empty_lists and remove_nulls.
         """
+
         collection_ = self.get_collection(collection_name)
 
         # Ensure documents is always a list
@@ -136,8 +144,7 @@ class ChromaAdapter:
 
 def main():
     client_ = ChromaAdapter()
-    collection = client_.get_collection("items")
-    print(collection.get())
+    print(client_.list_collections())
 
 
 if __name__ == "__main__":

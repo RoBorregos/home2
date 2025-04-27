@@ -1,4 +1,5 @@
 from typing import List, Optional
+
 from pydantic import BaseModel, Field
 
 
@@ -28,3 +29,12 @@ class CommandShape(BaseModel):
 
 class CommandListShape(BaseModel):
     commands: List[CommandShape]
+
+
+class Shelf(BaseModel):
+    objects_to_add: list[str] = []
+    classification_tag: str
+
+
+class CategorizeShelvesResult(BaseModel):
+    shelves: dict[int, Shelf] = {}

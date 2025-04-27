@@ -15,6 +15,11 @@ from frida_constants.manipulation_constants import (
     PLACE_POINT_DEBUG_TOPIC,
 )
 
+# change matplotlib backend to avoid X server dependency
+import matplotlib
+
+matplotlib.use("Agg")  # Use a non-interactive backend
+
 
 class HeatmapServer(Node):
     def __init__(self):
@@ -31,6 +36,7 @@ class HeatmapServer(Node):
     def handle_heatmap(self, request, response):
         # Convert PointCloud2 to numpy array
         point_cloud = request.pointcloud
+        prefer_closest = request.prefer_closest
         if point_cloud.header.frame_id != "base_link":
             self.get_logger().warn(
                 f"PointCloud2 frame_id is {point_cloud.header.frame_id}, expected base_link"
@@ -58,10 +64,10 @@ class HeatmapServer(Node):
         # If no points found, return zero point
         if len(cloud_points) == 0:
             self.get_logger().warn("Empty pointcloud received")
-            response.point = PointStamped()
+            response.place_point = PointStamped()
             return response
 
-        grid_size = 0.02  # meters
+        grid_size = 0.015  # meters
         grid_size_mm = int(grid_size * 1000)
 
         # Convert points to mm coordinates
@@ -79,10 +85,10 @@ class HeatmapServer(Node):
         binary_map = hist > 0
 
         # Create heat/cool kernels
-        heat_kernel_length = 0.4  # meters
-        cool_kernel_length = 0.3  # meters
+        heat_kernel_length = 0.3  # meters
+        cool_kernel_length = 0.2  # meters
         heat_multiplier = 1.0
-        cool_multiplier = 1.5
+        cool_multiplier = 10.0
 
         # Heat kernel
         heat_kernel_size = int(heat_kernel_length / grid_size)
@@ -102,16 +108,6 @@ class HeatmapServer(Node):
         cool_kernel = np.exp(-(xx**2 + yy**2) / (2 * (cool_kernel_size / 2) ** 2))
         cool_kernel *= cool_multiplier
 
-        # closeness kernel -> closer to 0,0 the higher the value -> NOT WORKING
-        # closeness_map = np.zeros(binary_map.shape)
-        # for i in range(binary_map.shape[0]):
-        #     for j in range(binary_map.shape[1]):
-        #         x = (min_x_mm + (i + 0.5) * grid_size_mm) / 1000.0
-        #         y = (min_y_mm + (j + 0.5) * grid_size_mm) / 1000.0
-        #         distance = np.sqrt(x**2 + y**2)
-
-        # Apply convolution
-
         heat_map = convolve2d(binary_map.astype(float), heat_kernel, mode="same")
         cool_map = convolve2d((~binary_map).astype(float), cool_kernel, mode="same")
 
@@ -120,6 +116,28 @@ class HeatmapServer(Node):
         # final_map = final_map * closeness_map
         final_map[~binary_map] = 0
         final_map = np.clip(final_map, 0, None)
+
+        # if prefer closest, multiply everything by how close it is to 0,0
+        closeness_map = None
+        if prefer_closest:
+            self.get_logger().info("Prefer closest point")
+            closeness_map = np.zeros_like(binary_map, dtype=float)
+            for i in range(closeness_map.shape[0]):
+                for j in range(closeness_map.shape[1]):
+                    x = (min_x_mm + (i + 0.5) * grid_size_mm) / 1000.0
+                    y = (min_y_mm + (j + 0.5) * grid_size_mm) / 1000.0
+                    closeness_map[i, j] = np.sqrt(x**2 + y**2)
+            closeness_map = np.exp(-closeness_map / (grid_size_mm * 2))
+            # normalize so smallest value is 0 and largest is 1
+            closeness_map = (closeness_map - np.min(closeness_map)) / (
+                np.max(closeness_map) - np.min(closeness_map)
+            )
+            closeness_map = closeness_map**2
+            final_map = final_map * closeness_map
+
+            # Normalize final map
+            final_map = final_map / np.max(final_map)
+            final_map = np.clip(final_map, 0, None)
 
         # Find best position
         max_idx = np.unravel_index(np.argmax(final_map), final_map.shape)
@@ -233,23 +251,22 @@ class HeatmapServer(Node):
                 aspect="auto",
             )
             plt.title("Coolmap")
-            # plt.colorbar()
-            # plt.subplot(247)
-            # plt.imshow(
-            #     closeness_map.T,
-            #     origin="lower",
-            #     extent=[
-            #         xedges[0] / 1000,
-            #         xedges[-1] / 1000,
-            #         yedges[0] / 1000,
-            #         yedges[-1] / 1000,
-            #     ],
-            #     cmap="plasma",
-            #     aspect="auto",
-            # )
-            # plt.title("Closeness Map")
-            # plt.colorbar()
-
+            if closeness_map is not None:
+                plt.subplot(247)
+                plt.imshow(
+                    closeness_map.T,
+                    origin="lower",
+                    extent=[
+                        xedges[0] / 1000,
+                        xedges[-1] / 1000,
+                        yedges[0] / 1000,
+                        yedges[-1] / 1000,
+                    ],
+                    cmap="plasma",
+                    aspect="auto",
+                )
+                plt.title("Closeness Map")
+                plt.colorbar()
             output_dir = "/workspace/heatmap_results"
             os.makedirs(output_dir, exist_ok=True)
             plt.savefig(os.path.join(output_dir, "heatmap_result.png"))

@@ -11,6 +11,7 @@ from subtask_managers.gpsr_tasks import GPSRTask
 from subtask_managers.gpsr_test_commands import get_gpsr_comands
 from utils.logger import Logger
 from utils.status import Status
+from subtask_managers.hri_tasks import HRITasks
 from utils.subtask_manager import SubtaskManager, Task
 
 ATTEMPT_LIMIT = 3
@@ -44,6 +45,7 @@ class GPSRTM(Node):
     def __init__(self):
         """Initialize the node"""
         super().__init__("gpsr_task_manager")
+        self.hri_tasks = HRITasks(self.subtask_manager)
         self.subtask_manager = SubtaskManager(self, task=Task.GPSR, mock_areas=["navigation"])
         self.gpsr_tasks = GPSRTask(self.subtask_manager)
         self.gpsr_individual_tasks = GPSRSingleTask(self.subtask_manager)
@@ -107,7 +109,14 @@ class GPSRTM(Node):
                 else:
                     Logger.info(self, f"Executing command: {command}")
                     self.subtask_manager.hri.say(f"Executing command: {command}")
-                    exec_commad(command["complement"], command["characteristic"])
+                    status, res = exec_commad(command["complement"], command["characteristic"])
+                    self.hri_tasks.add_command_history(
+                        command["action"],
+                        command["complement"],
+                        command["characteristic"],
+                        res,
+                        status,
+                    )
         elif self.current_state == GPSRTM.States.FINISHED_COMMAND:
             self.subtask_manager.hri.say(
                 "I have finished executing your command. I will return to the start position to await for new commands.",
