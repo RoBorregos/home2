@@ -18,16 +18,22 @@ from frida_constants.manipulation_constants import (
     PLACE_MOTION_ACTION_SERVER,
     AIM_STRAIGHT_FRONT_QUAT,
     SHELF_POSITION_PREPLACE_POSE,
+    GRIPPER_SET_STATE_SERVICE,
 )
 from frida_interfaces.srv import (
     AttachCollisionObject,
     GetCollisionObjects,
     RemoveCollisionObject,
 )
+from std_srvs.srv import SetBool
 from frida_interfaces.action import PlaceMotion, MoveToPose
+from frida_motion_planning.utils.service_utils import (
+    open_gripper,
+)
 import copy
 import numpy as np
 from transforms3d.quaternions import quat2mat
+import time
 
 
 class PlaceMotionServer(Node):
@@ -64,6 +70,11 @@ class PlaceMotionServer(Node):
             REMOVE_COLLISION_OBJECT_SERVICE,
         )
 
+        self._gripper_set_state_client = self.create_client(
+            SetBool,
+            GRIPPER_SET_STATE_SERVICE,
+        )
+
         self._move_to_pose_action_client.wait_for_server()
 
         self.get_logger().info("Place Action Server has been started")
@@ -93,6 +104,11 @@ class PlaceMotionServer(Node):
         place_pose = goal_handle.request.place_pose
         is_shelf = goal_handle.request.place_params.is_shelf
 
+        if is_shelf:
+            self.get_logger().info(
+                "################ Placing on shelf ##################"
+            )
+
         # generate several place_poses, so try every time higher from plane
         n_poses = 5
         poses_dist = 0.03
@@ -104,6 +120,12 @@ class PlaceMotionServer(Node):
             ee_link_pre_pose = copy.deepcopy(ee_link_pose)
 
             if is_shelf:
+                self.set_quaternion(
+                    ee_link_pre_pose, AIM_STRAIGHT_FRONT_QUAT
+                )  # Set the orientation to aim straight front
+                self.set_quaternion(
+                    ee_link_pose, AIM_STRAIGHT_FRONT_QUAT
+                )  # Set the orientation to aim straight front
                 # send it a little bit back, then forward
                 offset_distance = SHELF_POSITION_PREPLACE_POSE  # Desired distance in meters along the local z-axis
 
@@ -141,36 +163,39 @@ class PlaceMotionServer(Node):
             ee_link_pre_pose = poses[0]
             ee_link_pose = poses[1]
             if is_shelf:
-                ee_link_pose.pose.orientation.x = AIM_STRAIGHT_FRONT_QUAT[0]
-                ee_link_pose.pose.orientation.y = AIM_STRAIGHT_FRONT_QUAT[1]
-                ee_link_pose.pose.orientation.z = AIM_STRAIGHT_FRONT_QUAT[2]
-                ee_link_pose.pose.orientation.w = AIM_STRAIGHT_FRONT_QUAT[3]
+                self.get_logger().info(
+                    f"Placing on shelf, pre-place pose: {ee_link_pre_pose}"
+                )
                 place_pose_handler, place_pose_result = self.move_to_pose(
                     ee_link_pre_pose
                 )
                 if not place_pose_result.result.success:
                     self.get_logger().error("Failed to reach pre-place pose")
                     continue
+                self.get_logger().info("Pre-place pose reached")
+            self.get_logger().info(f"Placing on table, place pose: {ee_link_pre_pose}")
             place_pose_handler, place_pose_result = self.move_to_pose(ee_link_pose)
             print(f"Grasp Pose {i} result: {place_pose_result}")
             if place_pose_result.result.success:
                 self.get_logger().info("Grasp pose reached")
                 self.deattach_pick_object()
 
-                # close gripper
-                # gripper_request = SetBool.Request()
-                # gripper_request.data = False
-                # self.node.get_logger().info(
-                #     "Closing gripper :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
-                # )
-                # future = self.node._gripper_set_state_client.call_async(gripper_request)
-                # future = wait_for_future(future)
-                # result = future.result()
-                # self.node.get_logger().info(f"Gripper Result: {str(gripper_request.data)}")
+                # open gripper
+                self.get_logger().info("Opening gripper")
+                open_gripper(self._gripper_set_state_client)
+                time.sleep(3)
+                self.get_logger().info("Gripper opened")
 
-                # self.node.get_logger().info(
-                #     "Returning to position............................................."
-                # )
+                if is_shelf:
+                    self.get_logger().info(
+                        f"Going back to pre-place pose: {ee_link_pre_pose}"
+                    )
+                    place_pose_handler, place_pose_result = self.move_to_pose(
+                        ee_link_pre_pose
+                    )
+                    self.get_logger().info(
+                        f"Pre-place pose result: {place_pose_result}"
+                    )
 
                 return True
         self.get_logger().error("Failed to reach any grasp pose")
@@ -228,6 +253,14 @@ class PlaceMotionServer(Node):
         future = self._remove_collision_object_client.call_async(request)
         self.wait_for_future(future)
         return future.result().success
+
+    def set_quaternion(self, pose, quat):
+        """Set the quaternion of the pose."""
+        pose.pose.orientation.x = quat[0]
+        pose.pose.orientation.y = quat[1]
+        pose.pose.orientation.z = quat[2]
+        pose.pose.orientation.w = quat[3]
+        return pose
 
 
 def main(args=None):

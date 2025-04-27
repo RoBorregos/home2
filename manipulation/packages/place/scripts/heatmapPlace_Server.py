@@ -24,7 +24,7 @@ matplotlib.use("Agg")  # Use a non-interactive backend
 class HeatmapServer(Node):
     def __init__(self):
         super().__init__("heatmap_service")
-        self.save_image = False
+        self.save_image = True
         self.srv = self.create_service(
             HeatmapPlace, HEATMAP_PLACE_SERVICE, self.handle_heatmap
         )

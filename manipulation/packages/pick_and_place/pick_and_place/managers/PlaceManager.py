@@ -3,12 +3,10 @@ from frida_interfaces.srv import PlacePerceptionService, HeatmapPlace
 from geometry_msgs.msg import PoseStamped
 from frida_interfaces.msg import PlaceParams
 from frida_interfaces.action import PlaceMotion
-from std_srvs.srv import SetBool
 from frida_motion_planning.utils.service_utils import (
     move_joint_positions as send_joint_goal,
 )
 from frida_interfaces.msg import PickResult
-import time
 
 
 class PlaceManager:
@@ -58,25 +56,16 @@ class PlaceManager:
             self.node.get_logger().error("Pick motion failed")
             return False
 
-        # open gripper
-        gripper_request = SetBool.Request()
-        gripper_request.data = True
-        self.node.get_logger().info("Opening gripper")
-        future = self.node._gripper_set_state_client.call_async(gripper_request)
-        future = wait_for_future(future)
-        result = future.result()
-        self.node.get_logger().info(f"Gripper Result: {result}")
-        time.sleep(3)
         self.node.get_logger().info("Returning to position")
 
         # return to configured position
-        send_joint_goal(
+        return_result = send_joint_goal(
             move_joints_action_client=self.node._move_joints_client,
             named_position="table_stare",
             velocity=0.3,
         )
 
-        return result.success
+        return return_result
 
     def get_place_pose(
         self, place_params: PlaceParams, pick_result: PickResult
@@ -115,7 +104,7 @@ class PlaceManager:
             or pick_result.pick_pose.header.frame_id == ""
         ):
             self.node.get_logger().warn("No object height detected using default")
-            pick_result.object_pick_height = 0.2 if place_params.is_shelf else 0.10
+            pick_result.object_pick_height = 0.15 if place_params.is_shelf else 0.20
             # z aiming down
             orientation_quat = [0.0, 1.0, 0.0, 0.0]
             pick_result.pick_pose.pose.orientation.x = orientation_quat[0]
@@ -123,7 +112,10 @@ class PlaceManager:
             pick_result.pick_pose.pose.orientation.z = orientation_quat[2]
             pick_result.pick_pose.pose.orientation.w = orientation_quat[3]
 
-        result_pose.pose.position.z += pick_result.object_pick_height
+        # forget height if placing on shelf
+        result_pose.pose.position.z += (
+            pick_result.object_pick_height if not place_params.is_shelf else 0.15
+        )
         result_pose.pose.orientation = pick_result.pick_pose.pose.orientation
 
         return result_pose
