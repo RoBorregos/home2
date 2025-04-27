@@ -177,17 +177,22 @@ public:
           request->max_height);
     }
 
+    ASSERT_AND_RETURN_CODE(response->health_response, OK,
+                           "Error filtering point cloud with code %d",
+                           response->health_response);
+
     response->health_response =
         this->extractPlane(cloud_out, cloud_out, request->extract_or_remove);
 
-    if (response->health_response != OK) {
-      return;
-    }
+    ASSERT_AND_RETURN_CODE(response->health_response, OK,
+                           "Error extracting plane with code %d",
+                           response->health_response);
 
     response->health_response = this->densest_cluster(cloud_out, cloud_out);
-    if (response->health_response != OK) {
-      return;
-    }
+
+    ASSERT_AND_RETURN_CODE(response->health_response, OK,
+                           "Error clustering point cloud with code %d",
+                           response->health_response);
 
     pcl::toROSMsg(*cloud_out, response->cloud);
     response->health_response = OK;

@@ -8,6 +8,7 @@ from frida_interfaces.srv import GetPlaneBbox, GetOptimalPositionForPlane
 from rclpy.executors import MultiThreadedExecutor
 from tf2_ros import TransformBroadcaster
 from geometry_msgs.msg import TransformStamped
+import time
 
 
 class MyPoint:
@@ -75,25 +76,50 @@ class FixPositionToPlane(Node):
 
     @staticmethod
     def get_line_from_points(p1: MyPoint, p2: MyPoint, distance: float):
-        direction_vector = MyPoint(p2.x - p1.x, p2.y - p1.y, p2.z - p1.z)
+        # y = mx + b
+        m = (p2.y - p1.y) / (p2.x - p1.x)
+        b = p1.y - m * p1.x
+        print(f"m: {m}, b: {b}")
+        k = p1.y - b
 
-        length = (
-            direction_vector.x**2 + direction_vector.y**2 + direction_vector.z**2
-        ) ** 0.5
+        # d = (p2.x*100 - p1.x*100) ** 2 + (p2.y*100 - p1.y*100) ** 2
+        # print(f"d: {d}")
+        # distance *= 100
+        # print(f"distance: {distance}")
+        # distance += d
+        # print(f"distance: {distance}")
+        # distance = distance / 100
+        # print(f"distance: {distance}")
 
-        unit_vector = MyPoint(
-            direction_vector.x / length,
-            direction_vector.y / length,
-            direction_vector.z / length,
-        )
-
-        new_point = MyPoint(
-            p2.x - unit_vector.x * distance,
-            p2.y - unit_vector.y * distance,
-            p2.z - unit_vector.z * distance,
-        )
-
+        d = ((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2) ** 0.5
+        print(f"d: {d}")
+        distance += d
+        print(f"distance: {distance}")
+        A = m**2 + 1
+        B = -2 * (p1.x + k * m)
+        C = p1.x**2 + k**2 - distance**2
+        print(f"A: {A}, B: {B}, C: {C}")
+        # x = (-B + (B**2 - 4*A*C)**0.5) / (2*A)
+        if B**2 - 4 * A * C < 0:
+            print("No solution")
+            return None
+        x = (-B - (B**2 - 4 * A * C) ** 0.5) / (2 * A)
+        y = m * x + b
+        z = p1.z
+        new_point = MyPoint(x, y, z)
+        print(f"New point: {new_point}")
         return new_point
+
+    def wait_for_future(self, future, timeout=5):
+        start_time = time.time()
+        while future is None and (time.time() - start_time) < timeout:
+            pass
+        if future is None:
+            return False
+        while not future.done() and (time.time() - start_time) < timeout:
+            time.sleep(0.1)
+            # print("Waiting for future to complete...")
+        return future
 
     def get_optimal_position_for_plane_callback(
         self,
@@ -111,11 +137,13 @@ class FixPositionToPlane(Node):
         plane_bbox_request.min_height = min_h
 
         future = self.get_plane_bbox_client.call_async(plane_bbox_request)
-        rclpy.spin_until_future_complete(self, future)
-        res: GetPlaneBbox.Response = future.result()
+        # rclpy.spin_until_future_complete(self, future, timeout_sec=5)
+        self.wait_for_future(future)
+        res = future.result()
         if res is None or res.health_response != 0:
             # self.get_logger().info("Received response from get_plane_bbox service")
             self.get_logger().error("Error while calling get_plane_bbox service")
+            response.is_valid = False
             return response
 
         self.get_logger().info("Received response from get_plane_bbox service")
@@ -138,10 +166,10 @@ class FixPositionToPlane(Node):
 
             self.get_logger().info(f"p12: {p12}, p34: {p34}, p23: {p23}, p41: {p41}")
 
-            p_12 = MyPoint().from_point(self.get_line_from_points(center, p12, 0.9))
-            p_34 = MyPoint().from_point(self.get_line_from_points(center, p34, 0.9))
-            p_23 = MyPoint().from_point(self.get_line_from_points(center, p23, 0.9))
-            p_41 = MyPoint().from_point(self.get_line_from_points(center, p41, 0.9))
+            p_12 = MyPoint().from_point(self.get_line_from_points(center, p12, 0.35))
+            p_34 = MyPoint().from_point(self.get_line_from_points(center, p34, 0.35))
+            p_23 = MyPoint().from_point(self.get_line_from_points(center, p23, 0.35))
+            p_41 = MyPoint().from_point(self.get_line_from_points(center, p41, 0.35))
 
             self.get_logger().info(
                 f"p_12: {p_12}, p_34: {p_34}, p_23: {p_23}, p_41: {p_41}"
@@ -161,11 +189,31 @@ class FixPositionToPlane(Node):
             response.q1.header.frame_id = "base_link"
             response.q1.header.stamp = self.get_clock().now().to_msg()
 
-            # Set the quaternion to identity
+            # # Set the quaternion to identity
             response.q1.quaternion.x = 0.0
             response.q1.quaternion.y = 0.0
             response.q1.quaternion.z = 0.0
             response.q1.quaternion.w = 1.0
+
+            # jaw = (center.x - closest_point.x) / (
+            #     (center.x - closest_point.x) ** 2
+            #     + (center.y - closest_point.y) ** 2
+            # ) ** 0.5
+
+            # roll = 0
+            # pitch = 0
+
+            # if jaw > 0:
+            #     response.q1.quaternion.x = 0.0
+            #     response.q1.quaternion.y = 0.0
+            #     response.q1.quaternion.z = jaw
+            #     response.q1.quaternion.w = (1 - jaw**2) ** 0.5
+            # else:
+            #     response.q1.quaternion.x = 0.0
+            #     response.q1.quaternion.y = 0.0
+            #     response.q1.quaternion.z = -jaw
+            #     response.q1.quaternion.w = (1 - jaw**2) ** 0.5
+
             response.is_valid = True
 
             # Broadcast the transform
@@ -181,18 +229,14 @@ class FixPositionToPlane(Node):
             self.get_logger().error(f"Error while processing the request: {e}")
             response.is_valid = False
             return response
-        finally:
-            self.get_logger().info("Finished processing the request")
-            # self.get_plane_bbox_client.destroy()
-            # self.get_plane_bbox_client = self.create_client(
-            #     GetPlaneBbox, "/manipulation/get_plane_bbox"
-            # )
+        self.get_logger().info("Response:a aaa")
+        return response
 
 
 def main(args=None):
     rclpy.init(args=args)
     fix_position_to_plane = FixPositionToPlane()
-    executor = MultiThreadedExecutor()
+    executor = MultiThreadedExecutor(2)
     executor.add_node(fix_position_to_plane)
     try:
         executor.spin()
