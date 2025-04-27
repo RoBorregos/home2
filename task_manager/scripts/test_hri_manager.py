@@ -4,12 +4,13 @@
 Task Manager for testing the subtask managers
 """
 
+import json
+
 import rclpy
 from config.hri.debug import config as test_hri_config
 from rclpy.node import Node
 from subtask_managers.hri_tasks import HRITasks
 from utils.task import Task
-import json
 
 
 def confirm_preference(interpreted_text, extracted_data):
@@ -19,6 +20,7 @@ def confirm_preference(interpreted_text, extracted_data):
 TEST_TASK = Task.RECEPTIONIST
 TEST_COMPOUND = False
 TEST_INDIVIDUAL_FUNCTIONS = True
+TEST_EMBEDDINGS = False
 
 
 class TestHriManager(Node):
@@ -27,8 +29,7 @@ class TestHriManager(Node):
         self.hri_manager = HRITasks(self, config=test_hri_config, task=TEST_TASK)
         rclpy.spin_once(self, timeout_sec=1.0)
         self.get_logger().info("TestTaskManager has started.")
-        self.test_embeddings()
-        # self.run()
+        self.run()
 
     def run(self):
         # Testing compound commands
@@ -38,6 +39,9 @@ class TestHriManager(Node):
 
         if TEST_INDIVIDUAL_FUNCTIONS:
             self.individual_functions()
+
+        if TEST_EMBEDDINGS:
+            self.test_embeddings()
 
     def individual_functions(self):
         # Test say
@@ -62,6 +66,20 @@ class TestHriManager(Node):
         # Test extract_data
         s, drink = self.hri_manager.extract_data("name", user_request)
         self.get_logger().info(f"Extracted data: {drink}")
+
+        # Test categorize objects
+        s, categorized_shelves, objects_to_add = self.hri_manager.categorize_objects(
+            ["butter", "pear", "oats", "turkey", "pineapple"],
+            {
+                "1": ["milk", "cheese", "yogurt"],
+                "2": ["apple", "banana", "grapes"],
+                "3": [],
+                "4": ["chicken", "beef"],
+            },
+        )
+
+        self.get_logger().info(f"categorized_shelves: {str(categorized_shelves)}")
+        self.get_logger().info(f"objects_to_add: {str(objects_to_add)}")
 
     def compound_functions(self):
         s, interest1 = self.hri_manager.ask_and_confirm(
