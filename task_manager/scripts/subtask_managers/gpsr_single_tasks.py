@@ -1,5 +1,6 @@
+from utils.status import Status
+
 from subtask_managers.generic_tasks import GenericTask
-from task_manager.scripts.utils.status import Status
 
 RETRIES = 3
 

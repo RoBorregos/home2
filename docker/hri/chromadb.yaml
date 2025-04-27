@@ -1,6 +1,6 @@
 services:
   chromadb:
-    profiles: [storing-groceries]
+    profiles: [storing-groceries, gpsr]
 
     image: chromadb/chroma:latest
     ports:

@@ -1,12 +1,12 @@
-import importlib.resources as pkg_resources
 import json
+import os
 
-import frida_constants
 import rclpy
+from ament_index_python.packages import get_package_share_directory
 from frida_constants.vision_enums import DetectBy, Gestures, Poses, is_value_in_enum
+from utils.status import Status
 
 from subtask_managers.generic_tasks import GenericTask
-from task_manager.scripts.utils.status import Status
 
 
 class GPSRTask(GenericTask):
@@ -16,8 +16,10 @@ class GPSRTask(GenericTask):
         """Initialize the class"""
         super().__init__(subtask_manager)
         self.pan_angles = [-45, 0, 45]
-        with pkg_resources.files(frida_constants).joinpath("areas.json").open("r") as f:
-            self.locations = json.load(f)
+        package_share_directory = get_package_share_directory("frida_constants")
+        file_path = os.path.join(package_share_directory, "map_areas/areas.json")
+        with open(file_path, "r") as file:
+            self.locations = json.load(file)
 
     def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
         """Navigate to the location"""
