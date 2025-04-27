@@ -12,9 +12,8 @@ WORKDIR /workspace/dlib-19.21
 RUN mkdir build
 WORKDIR /workspace/dlib-19.21/build
 
-
 RUN cmake .. && \
-cmake --build .
+    cmake --build .
 
 WORKDIR /workspace/dlib-19.21
 # RUN python3 setup.py install 
@@ -29,8 +28,6 @@ RUN pip install -r utils.txt
 
 # CV-bridge
 RUN apt update && apt install -y ros-humble-cv-bridge
-
-RUN mkdir /data
 
 USER ros
 WORKDIR /workspace
