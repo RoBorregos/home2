@@ -4,7 +4,9 @@ services:
     network_mode: host
     image: chromadb/chroma:latest
     ports:
-      - "8002:8002"
+      # - "8002:8002"
+      - "8002:8000"
+
     environment:
       - ANONYMIZED_TELEMETRY=False
       - CHROMA_HOST_PORT=8002
