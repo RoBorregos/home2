@@ -5,9 +5,13 @@ import rclpy
 from rclpy.node import Node
 from rclpy.callback_groups import ReentrantCallbackGroup
 from frida_interfaces.srv import GetPlaneBbox, GetOptimalPositionForPlane
+from frida_interfaces.action import MoveToPose
+from rclpy.action import ActionClient
 from rclpy.executors import MultiThreadedExecutor
 from tf2_ros import TransformBroadcaster
-from geometry_msgs.msg import TransformStamped
+from geometry_msgs.msg import TransformStamped, PointStamped
+from frida_motion_planning.utils.tf_utils import look_at
+from frida_pymoveit2.robots import xarm6
 import time
 
 
@@ -45,14 +49,26 @@ class FixPositionToPlane(Node):
             self.get_optimal_position_for_plane_callback,
             callback_group=self.call_bck_group,
         )
+        self._action_client = ActionClient(
+            self,
+            MoveToPose,
+            "/manipulation/move_to_pose_action_server",
+            callback_group=self.call_bck_group,
+        )
         # Initialize the transform broadcaster
         self.tf_broadcaster = TransformBroadcaster(self)
-
         while not self.get_plane_bbox_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info(
                 "get_plane_bbox service not available, waiting again..."
             )
         self.get_logger().info("get_plane_bbox service is available")
+
+    def callback_call_service(self, future):
+        try:
+            response = future.result()
+            self.get_logger().info(f"Response: {response}")
+        except Exception as e:
+            self.get_logger().warn(f"Service call failed: {e}")
 
     def broadcast_transform(self, point, quaternion, parent_frame, child_frame):
         transform = TransformStamped()
@@ -182,7 +198,7 @@ class FixPositionToPlane(Node):
 
             response.pt1.point.x = closest_point.x
             response.pt1.point.y = closest_point.y
-            response.pt1.point.z = closest_point.z + 0.15
+            response.pt1.point.z = closest_point.z + 0.5
             response.pt1.header.frame_id = "base_link"
             response.pt1.header.stamp = self.get_clock().now().to_msg()
 
@@ -224,6 +240,32 @@ class FixPositionToPlane(Node):
             self.get_logger().info(
                 f"Response: {response.pt1}, {response.q1}, {response.is_valid}"
             )
+
+            center_point = PointStamped()
+            center_point.header.frame_id = "base_link"
+            center_point.header.stamp = self.get_clock().now().to_msg()
+            center_point.point.x = center.x
+            center_point.point.y = center.y
+            center_point.point.z = center.z
+
+            t = look_at(
+                source_pose=response.pt1,
+                target_pose=center_point,
+            )
+
+            req_move = MoveToPose.Goal()
+            req_move.pose.header.frame_id = "base_link"
+            req_move.pose.header.stamp = self.get_clock().now().to_msg()
+            req_move.pose = t
+
+            req_move.velocity = 0.3
+            req_move.target_link = xarm6.camera_frame_name()
+
+            # self.get_logger().info(f"Request: {req_move}")
+            # self.get_logger().info(f"Request: {req_move}")
+            fut = self._action_client.send_goal_async(req_move)
+            fut.add_done_callback(self.callback_call_service)
+            self.get_logger().info("Requested")
             return response
         except Exception as e:
             self.get_logger().error(f"Error while processing the request: {e}")
