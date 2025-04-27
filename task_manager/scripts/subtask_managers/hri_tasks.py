@@ -631,6 +631,12 @@ class HRITasks(metaclass=SubtaskMeta):
 
         return Status.EXECUTION_SUCCESS, categorized_shelves, objects_to_add
 
+    def get_subarea(self, query_result):
+        return self.get_metadata_key(query_result, "subarea")
+
+    def get_area(self, query_result):
+        return self.get_metadata_key(query_result, "area")
+
     def get_metadata_key(self, query_result, field: str):
         """
         Extracts the field from the metadata of a query result.
