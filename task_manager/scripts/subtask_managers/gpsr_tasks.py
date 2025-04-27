@@ -271,13 +271,13 @@ class GPSRTask(GenericTask):
                     Approach the object to a position suitable for picking.
         """
 
-        for location in self.locations[complement]:
-            self.navigate_to(complement, location, False)
+        # for location in self.locations[complement]:
+        #     self.navigate_to(complement, location, False)
 
-            result_status = self.subtask_manager.vision.find_object(characteristic)
-            if result_status == Status.EXECUTION_SUCCESS:
-                self.subtask_manager.hri.say(f"I found the {characteristic}.")
-                return Status.EXECUTION_SUCCESS, "object found"
+        result_status = self.subtask_manager.vision.find_object(characteristic)
+        if result_status == Status.EXECUTION_SUCCESS:
+            self.subtask_manager.hri.say(f"I found the {characteristic}.")
+            return Status.EXECUTION_SUCCESS, "object found"
 
         return Status.TARGET_NOT_FOUND, "object not found"
 
