@@ -10,13 +10,12 @@ from typing import Optional
 import pytz
 import rclpy
 from nlp.assets.dialogs import (
+    get_categorize_shelves_args,
     get_common_interests_dialog,
     get_is_answer_negative_args,
     get_is_answer_positive_args,
 )
-from nlp.assets.schemas import IsAnswerNegative, IsAnswerPositive
 from openai import OpenAI
-from pydantic import BaseModel
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from std_msgs.msg import Bool, String
@@ -48,19 +47,6 @@ def get_context():
     timezone = pytz.timezone("America/Mexico_City")
     current_date = datetime.now(timezone).strftime("%Y-%m-%d %H:%M:%S")
     return CURRENT_CONTEXT.format(CURRENT_DATE=current_date)
-
-
-class ResponseFormat(BaseModel):
-    is_stop: bool
-
-
-class Shelf(BaseModel):
-    objects_to_add: list[str] = []
-    classification_tag: str
-
-
-class CategorizeShelvesResult(BaseModel):
-    shelves: dict[int, Shelf] = {}
 
 
 class LLMUtils(Node):
@@ -255,30 +241,50 @@ class LLMUtils(Node):
         """Service to categorize shelves."""
 
         self.get_logger().info("Categorizing shelves")
-        shelves: dict[int, list[str]] = eval(request.shelves)
-        table_objects: list[str] = request.table_objects
+        self.get_logger().info("request.shelves: " + str(request.shelves.data))
+
+        shelves: dict[int, list[str]] = eval(request.shelves.data)
+        table_objects: list[str] = [
+            table_object.data for table_object in request.table_objects
+        ]
         shelves = {int(k): v for k, v in shelves.items()}
         self.get_logger().info(f"Shelves: {shelves}")
         self.get_logger().info(f"Table objects: {table_objects}")
 
-        result: CategorizeShelvesResult = self.generic_structured_output(
-            system_prompt="Categorize the objects into different categories each category should correspond to a shelf and given the shelfs with the objects in them and the objects on the table you should"
-            + " categorize the objects into the shelfs. The output should be a dictionary with the shelf number as the key and the objects TO ADD that are in the table, as well as the category of the shelf. "
-            + "example: shelves = {1: ['milk', 'buttermilk'], 2: [], 3: ['apple', 'banana']}, table_objects = ['butter', 'orange', 'cookies', 'cheese', 'watermelon' , 'pringles']"
-            + " the output should be {1: ['butter', 'cheese'], 2: ['cookies', 'pringles'], 3: ['orange', 'watermelon']} {1: 'dairy', 2: 'snacks',  3: 'fruit'}",
-            user_prompt=f"Shelves: {shelves}, Table objects: {table_objects}",
-            response_format=CategorizeShelvesResult,
+        messages, response_format = get_categorize_shelves_args(shelves, table_objects)
+
+        response_content = (
+            self.client.beta.chat.completions.parse(
+                model=self.model,
+                temperature=self.temperature,
+                messages=messages,
+                response_format=response_format,
+            )
+            .choices[0]
+            .message.content
         )
+
+        try:
+            response_data = json.loads(response_content)
+            result = response_format(**response_data)
+        except Exception as e:
+            self.get_logger().error(f"Service error: {e}")
+            raise rclpy.exceptions.ServiceException(str(e))
 
         response.objects_to_add = String(
-            {k: [i for i in v.objects_to_add] for k, v in result.shelves.items()}
-        )
-        response.categorized_shelves = String(
-            {k: v.classification_tag for k, v in result.shelves.items()}
+            data=str(
+                {k: [i for i in v.objects_to_add] for k, v in result.shelves.items()}
+            )
         )
 
-        self.get_logger().info(f"Response: {response.objects_to_add}")
-        self.get_logger().info(f"Categorized shelves: {response.categorized_shelves}")
+        response.categorized_shelves = String(
+            data=str({k: v.classification_tag for k, v in result.shelves.items()})
+        )
+
+        self.get_logger().info(f"Response: {str(response.objects_to_add)}")
+        self.get_logger().info(
+            f"Categorized shelves: {str(response.categorized_shelves)}"
+        )
 
         return response
 
@@ -305,7 +311,7 @@ class LLMUtils(Node):
 
         try:
             response_data = json.loads(response_content)
-            result = IsAnswerPositive(**response_data)
+            result = response_format(**response_data)
         except Exception as e:
             self.get_logger().error(f"Service error: {e}")
             raise rclpy.exceptions.ServiceException(str(e))
@@ -336,7 +342,7 @@ class LLMUtils(Node):
 
         try:
             response_data = json.loads(response_content)
-            result = IsAnswerNegative(**response_data)
+            result = response_format(**response_data)
         except Exception as e:
             self.get_logger().error(f"Service error: {e}")
             raise rclpy.exceptions.ServiceException(str(e))
