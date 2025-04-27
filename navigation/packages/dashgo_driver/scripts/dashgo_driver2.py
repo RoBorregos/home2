@@ -119,6 +119,8 @@ class DashgoDriver(Node):
         self.timer = self.create_timer(timer_period, self.base_controller)
 
     def base_controller(self):
+        #print(f"state button = {self.controller.get_emergency_button()}")
+
         self.now = self.get_clock().now()
         try:
             stat_, left_enc,right_enc = self.controller.get_encoder_counts()
