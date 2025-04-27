@@ -21,5 +21,5 @@ services:
         "/bin/bash",
         "-l",
         "-c",
-        "source /opt/ros/humble/setup.bash && npm i && (ros2 run web_video_server web_video_server &) && npm run start",
+        "source /opt/ros/humble/setup.bash && (ros2 run web_video_server web_video_server &) && npm run start",
       ]
