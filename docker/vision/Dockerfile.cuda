@@ -31,3 +31,4 @@ WORKDIR /workspace
 
 # CV-bridge
 RUN apt update && apt install -y ros-humble-cv-bridge
+RUN apt install -y ros-humble-laser-geometry
