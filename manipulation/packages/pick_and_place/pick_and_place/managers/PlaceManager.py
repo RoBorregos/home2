@@ -59,11 +59,15 @@ class PlaceManager:
         self.node.get_logger().info("Returning to position")
 
         # return to configured position
-        return_result = send_joint_goal(
-            move_joints_action_client=self.node._move_joints_client,
-            named_position="table_stare",
-            velocity=0.3,
-        )
+        for i in range(5):
+            return_result = send_joint_goal(
+                move_joints_action_client=self.node._move_joints_client,
+                named_position="table_stare",
+                velocity=0.3,
+            )
+            if return_result:
+                break
+            self.node.get_logger().info("Retry sending return joint goal")
 
         return return_result
 
