@@ -187,10 +187,6 @@ class LLMUtils(Node):
 
     def common_interest(self, req, res):
         self.get_logger().info("Generating common interest")
-        self.get_logger().info(f"Person 1: {req.person1}")
-        self.get_logger().info(f"Person 2: {req.person1}")
-        self.get_logger().info(f"Person interests1: {req.interest2}")
-        self.get_logger().info(f"Person interests2: {req.interest2}")
 
         messages = get_common_interests_dialog(
             req.person1, req.person2, req.interests1, req.interests2
