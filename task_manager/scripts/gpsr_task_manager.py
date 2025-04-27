@@ -8,10 +8,12 @@ import rclpy
 from rclpy.node import Node
 from subtask_managers.gpsr_single_tasks import GPSRSingleTask
 from subtask_managers.gpsr_tasks import GPSRTask
-from subtask_managers.gpsr_test_commands import get_gpsr_comands
 from utils.logger import Logger
 from utils.status import Status
 from utils.subtask_manager import SubtaskManager, Task
+
+# from subtask_managers.gpsr_test_commands import get_gpsr_comands
+
 
 ATTEMPT_LIMIT = 3
 MAX_COMMANDS = 3
@@ -52,10 +54,17 @@ class GPSRTM(Node):
         self.running_task = True
         self.current_attempt = 0
         self.executed_commands = 0
-        self.commands = get_gpsr_comands("takeObjFromPlcmt")
-        # self.commands = [
-        #     {"action": "go", "complement": "place for cooking", "characteristic": ""},
-        # ]
+        # self.commands = get_gpsr_comands("takeObjFromPlcmt")
+        self.commands = [
+            {"action": "go", "complement": "kitchen table", "characteristic": ""},
+            {"action": "visual_info", "complement": "biggest object", "characteristic": "object"},
+            {"action": "go", "complement": "start_location", "characteristic": ""},
+            {
+                "action": "contextual_say",
+                "complement": "tell me what is the biggest object in the kitchen",
+                "characteristic": "visual_info",
+            },
+        ]
 
         Logger.info(self, "GPSRTMTaskManager has started.")
 
