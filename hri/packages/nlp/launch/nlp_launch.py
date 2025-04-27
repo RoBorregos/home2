@@ -4,6 +4,8 @@ import os
 
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
+from launch.actions import IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
 
 from frida_constants import ModuleNames, parse_ros_config
@@ -35,31 +37,44 @@ def generate_launch_description():
         [ModuleNames.HRI.value],
     )["llm_utils"]["ros__parameters"]
 
-    return LaunchDescription(
-        [
-            Node(
-                package="nlp",
-                executable="command_interpreter.py",
-                name="command_interpreter",
-                output="screen",
-                emulate_tty=True,
-                parameters=[command_interpreter_config],
+    nodes = [
+        Node(
+            package="nlp",
+            executable="command_interpreter.py",
+            name="command_interpreter",
+            output="screen",
+            emulate_tty=True,
+            parameters=[command_interpreter_config],
+        ),
+        Node(
+            package="nlp",
+            executable="extract_data.py",
+            name="extract_data",
+            output="screen",
+            emulate_tty=True,
+            parameters=[extract_data_config],
+        ),
+        Node(
+            package="nlp",
+            executable="llm_utils.py",
+            name="llm_utils",
+            output="screen",
+            emulate_tty=True,
+            parameters=[llm_utils_config],
+        ),
+    ]
+
+    if os.getenv("COMPOSE_PROFILES", "receptionist") == "gpsr":
+        embeddings_launch_path = (
+            get_package_share_directory("embeddings"),
+            "launch",
+            "chroma_launch.py",
+        )
+
+        nodes.append(
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(embeddings_launch_path)
             ),
-            Node(
-                package="nlp",
-                executable="extract_data.py",
-                name="extract_data",
-                output="screen",
-                emulate_tty=True,
-                parameters=[extract_data_config],
-            ),
-            Node(
-                package="nlp",
-                executable="llm_utils.py",
-                name="llm_utils",
-                output="screen",
-                emulate_tty=True,
-                parameters=[llm_utils_config],
-            ),
-        ]
-    )
+        )
+
+    return LaunchDescription(nodes)
