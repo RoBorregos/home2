@@ -99,12 +99,6 @@ class WhisperServicer(speech_pb2_grpc.SpeechServiceServicer):
 
         print(f"Using adaptive silence threshold: {silence_thresh} dB")
 
-        # Discard audio if threshold is less than -35 dB (too quiet/noisy)
-        if silence_thresh < -40:
-            print("Audio too quiet or noisy, discarding")
-            WavUtils.discard_wav(temp_file)
-            return speech_pb2.TextResponse(text="")
-
         # Detect silence with our adaptive threshold - reduced min_silence_len for better segmentation
         silence_segments = detect_silence(
             audio, min_silence_len=300, silence_thresh=silence_thresh
@@ -125,7 +119,7 @@ class WhisperServicer(speech_pb2_grpc.SpeechServiceServicer):
             non_silence_segments.append((0, len(audio)))
 
         # Filter out short segments
-        min_segment_length = 250  # milliseconds
+        min_segment_length = 100  # milliseconds
         non_silence_segments = [
             (start, end)
             for start, end in non_silence_segments
@@ -182,13 +176,13 @@ class WhisperServicer(speech_pb2_grpc.SpeechServiceServicer):
 
         # Get hotwords from request
         current_hotwords = request.hotwords if request.hotwords else ""
-
+        
         # Perform transcription
         result = self.audio_model.transcribe(
             temp_file,
+	    language="en",
             hotwords=current_hotwords,
             vad_filter=True,
-            multilingual=True,
             vad_parameters={
                 "threshold": 0.9,
             },
