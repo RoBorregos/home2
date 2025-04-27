@@ -9,7 +9,7 @@ from filter import remove_empty_lists, remove_nulls
 
 class ChromaAdapter:
     def __init__(self):
-        self.client = chromadb.HttpClient(host="localhost", port=8002)
+        self.client = chromadb.HttpClient(host="localhost", port=8000)
         # Configure the embedding function
         self.sentence_transformer_ef = (
             embedding_functions.SentenceTransformerEmbeddingFunction(
