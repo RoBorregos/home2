@@ -1,8 +1,39 @@
+import json
+import os
+
+import rclpy
+from ament_index_python.packages import get_package_share_directory
+from frida_constants.vision_enums import DetectBy, Gestures, Poses, is_value_in_enum
+from utils.status import Status
+
 from subtask_managers.generic_tasks import GenericTask
 
 
 class GPSRTask(GenericTask):
     """Class to manage the GPS task"""
+
+    def __init__(self, subtask_manager):
+        """Initialize the class"""
+        super().__init__(subtask_manager)
+        self.pan_angles = [-45, 0, 45]
+        package_share_directory = get_package_share_directory("frida_constants")
+        file_path = os.path.join(package_share_directory, "map_areas/areas.json")
+        with open(file_path, "r") as file:
+            self.locations = json.load(file)
+
+    def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
+        """Navigate to the location"""
+        if say:
+            self.subtask_manager.hri.say(
+                f"I will now guide you to the {location}. Please follow me."
+            )
+            self.subtask_manager.manipulation.follow_face(False)
+            self.subtask_manager.manipulation.move_joint_positions(
+                named_position="front_stare", velocity=0.5, degrees=True
+            )
+        future = self.subtask_manager.nav.move_to_location(location, sublocation)
+        if "navigation" not in self.subtask_manager.get_mocked_areas():
+            rclpy.spin_until_future_complete(self, future)
 
     ## HRI, Manipulation
     def give(self, complement="", characteristic=""):
@@ -29,7 +60,26 @@ class GPSRTask(GenericTask):
         Postconditions:
             - The robot is in front of a person without holding an object.
         """
-        pass
+        self.subtask_manager.hri.say(
+            "I will give you the object. Once you have picked the object, I will open my gripper",
+            wait=False,
+        )
+        self.subtask_manager.manipulation.move_to_position(named_position="receive_object")
+
+        while True:
+            s, res = self.subtask_manager.hri.confirm("Have you grabbed the object?")
+            if res == "yes":
+                break
+            else:
+                self.subtask_manager.hri.say(
+                    "I will give you the object. Once you have picked the object, I will open my gripper.",
+                    wait=False,
+                )
+
+        self.subtask_manager.hri.say("I will now release the object.", wait=True)
+        self.subtask_manager.manipulation.open_gripper()
+
+        return Status.EXECUTION_SUCCESS, "object given"
 
     ## HRI, Nav
     def follow_person_until(self, complement: str, characteristic: str):
@@ -61,7 +111,33 @@ class GPSRTask(GenericTask):
         Pseudocode:
             while not_in_room() or not_canceled():
                 follow_person()
+
         """
+
+        if characteristic == "":
+            self.subtask_manager.hri.say(
+                "I will now follow you.",
+            )
+            # status = self.subtask_manager.vision.track_person(True)
+        else:
+            self.subtask_manager.hri.say(
+                f"I will now follow you, {characteristic}.",
+            )
+            # status = self.subtask_manager.vision.follow_by_name(characteristic)
+            self.subtask_manager.nav.follow_person()
+
+        # TODO (@nav, hri): fix conditions to stop
+        if complement == "canceled":
+            while self.subtask_manager.hri.hear() != "cancel":
+                pass
+
+        else:
+            while self.subtask_manager.nav.get_location() != complement:
+                pass
+
+        self.subtask_manager.vision.track_person(False)
+        self.subtask_manager.vision.follow_by_name("area")
+        self.subtask_manager.nav.activate_follow(False)
 
         pass
 
@@ -96,7 +172,16 @@ class GPSRTask(GenericTask):
 
         """
 
-        pass
+        location = self.subtask_manager.hri.query_location(complement)
+        area = self.subtask_manager.hri.get_area(location)
+        subarea = self.subtask_manager.hri.get_subarea(location)
+
+        self.navigate_to(area, subarea)
+
+        if complement == "person":
+            self.subtask_manager.hri.say(f"We have arrived to {characteristic}!", wait=True)
+        else:
+            self.subtask_manager.hri.say(f"We have arrived, {complement}!", wait=True)
 
     ## HRI, Vision
     def find_person_info(self, complement="", characteristic=""):
@@ -123,7 +208,37 @@ class GPSRTask(GenericTask):
             else:
                 return get_person_name()
         """
-        pass
+
+        if complement == "gesture":
+            complement = DetectBy.GESTURES.value
+        elif complement == "posture":
+            complement = DetectBy.POSES.value
+
+        if complement != "name":
+            return self.subtask_manager.vision.find_person_info(complement)
+
+        s, res = self.subtask_manager.vision.get_person_name()
+        if s == Status.EXECUTION_SUCCESS:
+            return (Status.EXECUTION_SUCCESS,)
+
+        else:
+            self.subtask_manager.hri.say(
+                "Hi, I'm Frida.",
+            )
+            s, name = self.subtask_manager.hri.ask_and_confirm(
+                question="Can you please tell me your name?",
+                query="name",
+                use_hotwords=False,
+                context="The user was asked to say their name. We want to infer his name from the response",
+            )
+            if s == Status.EXECUTION_SUCCESS:
+                self.subtask_manager.hri.say(
+                    "Please stand in front .",
+                )
+                self.subtask_manager.vision.save_face_name(res)
+                return Status.EXECUTION_SUCCESS, res
+            else:
+                return Status.EXECUTION_ERROR, "name not found"
 
     ## Nav, Vision
     def find_object(self, complement: str, characteristic: str):
@@ -155,7 +270,16 @@ class GPSRTask(GenericTask):
                 If the object is detected in the location:
                     Approach the object to a position suitable for picking.
         """
-        pass
+
+        for location in self.locations[complement]:
+            self.navigate_to(complement, location, False)
+
+            result_status = self.subtask_manager.vision.find_object(characteristic)
+            if result_status == Status.EXECUTION_SUCCESS:
+                self.subtask_manager.hri.say(f"I found the {characteristic}.")
+                return Status.EXECUTION_SUCCESS, "object found"
+
+        return Status.TARGET_NOT_FOUND, "object not found"
 
     ## Manipulation, Vision
     def count(self, complement="", characteristic=""):
@@ -189,7 +313,45 @@ class GPSRTask(GenericTask):
                 Add the count of the target in the frame to the total count.
             Store the total count.
         """
-        pass
+
+        # TODO (@nav): go to a location given only one value
+
+        # TODO (@hri):
+        # TODO: get category and value that matches vision_enums
+        # Ex: "poses", "standing" , "clothes", "red t-shirt"
+
+        possibilities = (
+            [v.value for v in DetectBy.GESTURES] + [v.value for v in DetectBy.POSES] + ["clothes"]
+        )
+
+        status, value = self.subtask_manager.hri.find_closest(possibilities, characteristic)
+
+        self.subtask_manager.manipulation.move_to_position("front_stare")
+
+        counter = 0
+        for degree in self.pan_angles:
+            self.subtask_manager.manipulation.pan_to(degree)
+            if is_value_in_enum(value, Gestures):
+                status, count = self.subtask_manager.vision.count_by_gesture(value)
+            elif is_value_in_enum(value, Poses):
+                status, count = self.subtask_manager.vision.count_by_pose(value)
+            else:
+                color = self.subtask_manager.hri.extract_data("color", value)
+                cloth = self.subtask_manager.hri.extract_data("cloth", value)
+                status, count = self.subtask_manager.vision.count_by_color(color, cloth)
+
+            if status == Status.EXECUTION_SUCCESS:
+                counter += count
+                self.subtask_manager.hri.say(f"I have counted {count} {characteristic}.")
+            elif status == Status.TARGET_NOT_FOUND:
+                self.subtask_manager.hri.say(
+                    f"I did't find any {characteristic}.",
+                )
+
+        self.subtask_manager.hri.say(
+            f"I have counted {counter} {characteristic} in the room.",
+        )
+        return Status.EXECUTION_SUCCESS, "counted " + str(counter) + " " + characteristic
 
     ## Manipulation, Nav, Vision
     def find_person(self, complement="", characteristic=""):
@@ -226,7 +388,21 @@ class GPSRTask(GenericTask):
             if not found:
                 deus_machina()
         """
-        pass
+
+        self.subtask_manager.manipulation.move_to_position("front_stare")
+        for degree in self.pan_angles:
+            self.subtask_manager.manipulation.pan_to(degree)
+            if complement == "":
+                result = self.subtask_manager.vision.track_person(track=True)
+            else:
+                result = self.subtask_manager.vision.track_person_by(
+                    by=complement, value=characteristic, track=True
+                )
+            # TODO (@nav): approach the person
+            if result == Status.EXECUTION_SUCCESS:
+                return Status.EXECUTION_SUCCESS, "person found"
+
+        return Status.TARGET_NOT_FOUND, "person not found"
 
     ## HRI, Manipulation, Nav, Vision
     def find_person_by_name(self, complement="", characteristic=""):
@@ -252,4 +428,32 @@ class GPSRTask(GenericTask):
             - The robot approaches the person with the specified name.
             - The robot saves information about all the people it encounters.
         """
-        pass
+
+        for location in self.locations[complement]:
+            self.navigate_to(complement, location, False)
+
+            self.subtask_manager.manipulation.move_to_position("front_stare")
+            for degree in self.pan_angles:
+                self.subtask_manager.manipulation.pan_to(degree)
+                status, name = self.subtask_manager.vision.get_person_name()
+
+                if status == Status.TARGET_NOT_FOUND:
+                    continue
+
+                # TODO: (@nav): approach the person
+
+                if name == "Unknown":
+                    self.subtask_manager.hri.say(
+                        "Hi, I'm Frida. Can you please tell me your name?",
+                    )
+                    status, new_name = self.subtask_manager.hri.ask_and_confirm(
+                        question="Can you please tell me your name?",
+                        query="name",
+                        use_hotwords=False,
+                    )
+                    self.subtask_manager.vision.save_face_name(new_name)
+                    name = new_name
+
+                if name == complement:
+                    return Status.EXECUTION_SUCCESS, f"found {name}"
+        return Status.TARGET_NOT_FOUND, "person not found"
