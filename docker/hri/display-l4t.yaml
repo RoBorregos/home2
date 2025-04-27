@@ -1,6 +1,5 @@
 services:
   display:
-    
     profiles: [receptionist, carry]
 
     container_name: home2-hri-display-l4t
@@ -17,10 +16,10 @@ services:
       - "3000:3000"
       - "8001:8001"
     network_mode: host
-    command:
-      [
+    command: [
         "/bin/bash",
         "-l",
         "-c",
-        "source /opt/ros/humble/setup.bash && npm i && npm run start",
+        "source /opt/ros/humble/setup.bash && (ros2 run web_video_server web_video_server &) && npm run start",
+        # "source /opt/ros/humble/setup.bash && npm run build",
       ]
