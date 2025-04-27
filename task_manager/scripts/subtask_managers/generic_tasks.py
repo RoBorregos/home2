@@ -9,9 +9,7 @@ class GenericTask:
     def __init__(self, subtask_manager: SubtaskManager):
         """Initialize the class"""
 
-        self.subtask_manager = SubtaskManager
-
-        # Initialize the subtask managers
+        self.subtask_manager = subtask_manager
 
     def test_function(self):
         """Test function"""

@@ -657,7 +657,7 @@ class HRITasks(metaclass=SubtaskMeta):
             key = metadata.get(field, "")  # safely get 'context'
             return key
         except (IndexError, KeyError, json.JSONDecodeError) as e:
-            self.get_logger().error(f"Failed to extract context: {str(e)}")
+            self.node.get_logger().error(f"Failed to extract context: {str(e)}")
             return ""
         
     def publish_display_topic(self, topic: str):
