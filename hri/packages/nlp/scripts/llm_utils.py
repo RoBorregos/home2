@@ -241,8 +241,12 @@ class LLMUtils(Node):
         """Service to categorize shelves."""
 
         self.get_logger().info("Categorizing shelves")
-        shelves: dict[int, list[str]] = eval(request.shelves)
-        table_objects: list[str] = request.table_objects
+        self.get_logger().info("request.shelves: " + str(request.shelves.data))
+
+        shelves: dict[int, list[str]] = eval(request.shelves.data)
+        table_objects: list[str] = [
+            table_object.data for table_object in request.table_objects
+        ]
         shelves = {int(k): v for k, v in shelves.items()}
         self.get_logger().info(f"Shelves: {shelves}")
         self.get_logger().info(f"Table objects: {table_objects}")
@@ -268,11 +272,13 @@ class LLMUtils(Node):
             raise rclpy.exceptions.ServiceException(str(e))
 
         response.objects_to_add = String(
-            {k: [i for i in v.objects_to_add] for k, v in result.shelves.items()}
+            data=str(
+                {k: [i for i in v.objects_to_add] for k, v in result.shelves.items()}
+            )
         )
 
         response.categorized_shelves = String(
-            {k: v.classification_tag for k, v in result.shelves.items()}
+            data=str({k: v.classification_tag for k, v in result.shelves.items()})
         )
 
         self.get_logger().info(f"Response: {str(response.objects_to_add)}")
