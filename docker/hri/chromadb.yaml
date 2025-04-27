@@ -4,11 +4,11 @@ services:
     network_mode: host
     image: chromadb/chroma:latest
     ports:
-      - "8002:8000"
+      - "8002:8002"
     environment:
       - ANONYMIZED_TELEMETRY=False
+      - CHROMA_HOST_PORT=8002
     volumes:
       - /src/hri/packages/embeddings/chromadb:/chroma/chroma
-      - ./chromadb_config.yml:/config.yaml
     restart: unless-stopped
 
