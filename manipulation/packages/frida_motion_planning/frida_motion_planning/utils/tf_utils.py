@@ -79,8 +79,6 @@ def look_at(
     else:
         target_pose_ = target_pose
 
-    print(f"Source pose: {source_pose_}")
-    print(f"Target pose: {target_pose_}")
     # Ensure the source and target poses have the same frame_id -> Will NOT run transform here
     if source_pose_.header.frame_id != target_pose_.header.frame_id:
         raise ValueError("Source and target poses must have the same frame_id")
