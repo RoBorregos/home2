@@ -107,6 +107,34 @@ class GPSRTask(GenericTask):
                 follow_person()
 
         """
+    
+        if characteristic == "":
+            self.subtask_manager.hri.say(
+                "I will now follow you.",
+            )
+            status = self.subtask_manager.vision.track_person(True)
+        else:
+            self.subtask_manager.hri.say(
+                f"I will now follow you, {characteristic}.",
+            )
+            status = self.subtask_manager.vision.follow_by_name(characteristic)
+            self.subtask_manager.nav.follow_person()
+
+        # TODO (@nav, hri): fix conditions to stop
+        if complement == "canceled":
+            while (self.subtask_manager.hri.hear() != "cancel"):
+                pass
+        
+        else:
+            while (self.subtask_manager.nav.get_location() != complement):
+                pass
+            
+        self.subtask_manager.vision.track_person(False)
+        self.subtask_manager.vision.follow_by_name("area")
+        self.subtask_manager.nav.activate_follow(False)
+
+
+            
 
         
 
@@ -232,7 +260,34 @@ class GPSRTask(GenericTask):
                 If the object is detected in the location:
                     Approach the object to a position suitable for picking.
         """
-        pass
+
+        # TODO: explore each area
+        # for zone in zones: 
+        #     self.navigation.go_to(zone)
+
+        result_status = self.subtask_manager.vision.find_object(characteristic)
+        if result_status == Status.EXECUTION_SUCCESS:
+            self.subtask_manager.hri.say(f"I found the {characteristic}.")
+            detections = self.subtask_manager.vision.detect_objects()
+            labels = self.subtask_manager.vision.get_labels(detections)
+            status, object_to_pick = self.subtask_manager.hri.find_closest(
+                labels, characteristic)
+            
+            if status == Status.EXECUTION_SUCCESS:
+                pick_status = self.subtask_manager.manipulation.pick_object(object_to_pick)
+
+                if pick_status == Status.EXECUTION_SUCCESS:
+                    return Status.EXECUTION_SUCCESS, "picked object"
+                else:
+                    return Status.EXECUTION_ERROR, "pick failed"
+            else:   
+                self.subtask_manager.hri.say(
+                    "I could not find the object to pick.",
+                )
+                return Status.EXECUTION_ERROR, "object not found"
+
+
+        
 
     ## Manipulation, Vision
     def count(self, complement="", characteristic=""):
@@ -290,11 +345,18 @@ class GPSRTask(GenericTask):
             
             if status == Status.EXECUTION_SUCCESS:
                 counter += count
+                self.subtask_manager.hri.say(
+                    f"I have counted {count} {characteristic}.")
+            elif status == Status.TARGET_NOT_FOUND:
+                self.subtask_manager.hri.say(
+                    f"I did't find any {characteristic}.",
+                )
 
         self.subtask_manager.hri.say(
             f"I have counted {counter} {characteristic} in the room.",
         )
-        return counter
+        return Status.EXECUTION_SUCCESS, "counted " + str(counter) + " " + characteristic
+    
     ## Manipulation, Nav, Vision
     def find_person(self, complement="", characteristic=""):
         """
@@ -346,7 +408,8 @@ class GPSRTask(GenericTask):
                     by=complement, value=characteristic, track=True
                 )
             if result == Status.EXECUTION_SUCCESS:
-                return True
+                # self.nav.follow_person()
+                return Status.EXECUTION_SUCCESS
             # self.subtask_manager.manipulation.set_angle(degree)
             
 
@@ -386,14 +449,6 @@ class GPSRTask(GenericTask):
             if status == Status.TARGET_NOT_FOUND:
                 continue
 
-            # if name == complement:
-            #     Logger.success(
-            #         f"Found {name}",
-            #     )
-            #     self.subtask_manager.navigation.follow_person()
-
-            #     break
-
             if name == "Unknown":
                 self.subtask_manager.hri.say(
                     "Hi, I'm Frida. Can you please tell me your name?",
@@ -407,6 +462,5 @@ class GPSRTask(GenericTask):
                 name = new_name
 
             if name == complement:
-                self.subtask_manager.navigation.follow_person()
-                break
+                return Status.EXECUTION_SUCCESS, f"found {name}"
 
