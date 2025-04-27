@@ -194,8 +194,8 @@ class DetectionsHandlerNode : public rclcpp::Node
     void detection_handler_callback( const std::shared_ptr<frida_interfaces::srv::DetectionHandler::Request> request,
                                      const std::shared_ptr<frida_interfaces::srv::DetectionHandler::Response> response){
         RCLCPP_INFO(this->get_logger(), "Detection handler request received label: %s", request->label.c_str());
-        
-        if (object_detection_vector_.empty() || umm_.empty()){
+        if (request->label == "all" || request->label.empty()) {
+        } else if ((object_detection_vector_.empty() || umm_.empty()) && request->label != "all"){
           RCLCPP_INFO(this->get_logger(), "No object detection array received yet");
           response->success = false;
           return;
@@ -233,7 +233,7 @@ class DetectionsHandlerNode : public rclcpp::Node
           return;
         }
 
-        if (umm_.find(request->label) == umm_.end()){
+        if (umm_.find(request->label) == umm_.end() && request->label != "all" && !request->label.empty()){
           
           RCLCPP_INFO(this->get_logger(), "No detection with label %s found", request->label.c_str());
           response->success = false;
