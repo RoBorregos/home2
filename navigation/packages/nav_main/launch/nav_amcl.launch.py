@@ -78,12 +78,12 @@ def generate_launch_description():
     
     return LaunchDescription([
         declare_publish_tf,
+        declare_dualshock,
+        declare_use_sim,
         nav_basics,
         declare_map_route,
         map_server,
         amcl_server,
         lifecycle_node,
-        declare_dualshock,
-        declare_use_sim
 
     ])
