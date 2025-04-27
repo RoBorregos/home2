@@ -1,14 +1,11 @@
 import sys
 
 sys.path.append("..")
+import time
 
-import pytest
-from deepeval import assert_test
-from deepeval.dataset import EvaluationDataset
 from deepeval.test_case import LLMTestCase
-from nlp.assets.dialogs import get_common_interests_dialog, format_response
+from nlp.assets.dialogs import format_response, get_common_interests_dialog
 from openai import OpenAI
-from tqdm import tqdm
 
 from config import API_KEY, BASE_URL, MODEL, TEMPERATURE
 from metrics.embeddings_similarity import EmbeddingSimilarity
@@ -64,27 +61,46 @@ test_cases = [
     ("Riley", "Jack", "football and basketball", "basketball and baseball", "Riley and Jack's common interest is basketball."),
 ]
 
+# generate_response(test_case[0], test_case[1], test_case[2], test_case[3])
 # Define test cases
 test_cases = [
     LLMTestCase(
-        input=test_case[0] + test_case[1],
+        input=(test_case[0], test_case[1], test_case[2], test_case[3]),
         expected_output=test_case[4],
-        actual_output=generate_response(test_case[0], test_case[1], test_case[2], test_case[3]),
+        actual_output="",
     )
-    for test_case in tqdm(test_cases, desc="Generating test case responses")
+    for test_case in test_cases
 ]
 
 
-dataset = EvaluationDataset(test_cases=test_cases)
-
-
-@pytest.mark.parametrize(
-    "test_case",
-    dataset,
-)
-def test_data_extractor(test_case: LLMTestCase):
-    if test_case.additional_metadata:
-        threshold = test_case.additional_metadata.get("threshold", 0.5)
+count = 0
+print("\n\n")
+for test_case in test_cases:
+    start_time = time.time()
+    threshold = test_case.additional_metadata.get("threshold", 0.5) if test_case.additional_metadata else 0.5
+    metric = EmbeddingSimilarity(threshold=threshold)
+    test_case.actual_output = generate_response(test_case.input[0], test_case.input[1], test_case.input[2], test_case.input[3])
+    print("generated response:", test_case.actual_output)
+    end_time = time.time()
+    duration = end_time - start_time
+    if metric.measure(test_case) == 0:
+        count += 1
+        print("\033[91mTest case failed:\033[0m")
+        print("\033[94minput:\033[0m", test_case.input)
+        print("\033[93mexpected_output:\033[0m", test_case.expected_output)
+        print("\033[93mactual_output:\033[0m", test_case.actual_output)
+        print(f"\033[96mTime taken: {duration:.2f} seconds\033[0m")
+        print("\n\n")
     else:
-        threshold = 0.5
-    assert_test(test_case, [EmbeddingSimilarity(threshold=threshold)])
+        # Optionally print success message with time
+        print(f"\033[92mTest case passed in {duration:.2f} seconds\033[0m")
+        # print("\033[94minput:\033[0m", test_case.input)
+        # print("\033[93mexpected_output:\033[0m", format_json(test_case.expected_output))
+        # print("\033[93mactual_output:\033[0m", format_json(test_case.actual_output))
+        print("\n")
+
+
+if count == 0:
+    print(f"\n\033[92mAll test cases passed ({len(test_case)}/{len(test_case)})!\033[0m")
+else:
+    print(f"\n\033[91m{count} test cases failed out of {len(test_cases)}\033[0m")
