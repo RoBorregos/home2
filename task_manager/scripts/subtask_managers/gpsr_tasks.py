@@ -105,7 +105,10 @@ class GPSRTask(GenericTask):
         Pseudocode:
             while not_in_room() or not_canceled():
                 follow_person()
+
         """
+
+        
 
         pass
 
@@ -197,10 +200,8 @@ class GPSRTask(GenericTask):
                 self.subtask_manager.vision.save_face_name(res)
                 return Status.EXECUTION_SUCCESS, res
             else:
-                return Status.EXECUTION_FAILURE, "name not found"
-
-        pass
-
+                return Status.EXECUTION_ERROR, "name not found"
+            
     ## Nav, Vision
     def find_object(self, complement: str, characteristic: str):
         """
@@ -266,23 +267,25 @@ class GPSRTask(GenericTask):
             Store the total count.
         """
 
-        # self.subtask_manager.manipulation.move_joint_positions(
-        #     named_position="front_stare", velocity=0.5, degrees=True
-        # )
-        # location = self.subtask_manager.hri.extract_data("location", complement)
+        # TODO (@nav): go to a location given only one value
 
-        # self.navigate_to()
-        # TODO: go to a location given only one value
+        # TODO (@hri):
+        # TODO: get category and value that matches vision_enums
+        # Ex: "poses", "standing" , "clothes", "red t-shirt"
+        category, value = self.subtask_manager.hri.categorize(characteristic)
+
         self.subtask_manager.manipulation.move_to_position("front_stare")
+
         counter = 0
         for degree in self.pan_angles:
-            if complement == DetectBy.GESTURES.value:
-                status, count = self.subtask_manager.vision.count_by_gesture(characteristic)
-            elif complement == DetectBy.POSES.value:
-                status, count = self.subtask_manager.vision.count_by_pose(characteristic)
+            self.subtask_manager.manipulation.pan_to(degree)
+            if category == DetectBy.GESTURES.value:
+                status, count = self.subtask_manager.vision.count_by_gesture(value)
+            elif category == DetectBy.POSES.value:
+                status, count = self.subtask_manager.vision.count_by_pose(value)
             else:
-                color = self.subtask_manager.hri.extract_data("color", characteristic)
-                cloth = self.subtask_manager.hri.extract_data("cloth", characteristic)
+                color = self.subtask_manager.hri.extract_data("color", value)
+                cloth = self.subtask_manager.hri.extract_data("cloth", value)
                 status, count = self.subtask_manager.vision.count_by_color(color, cloth)
             
             if status == Status.EXECUTION_SUCCESS:
@@ -374,6 +377,7 @@ class GPSRTask(GenericTask):
         # TODO: explore each area
         # for zone in zones: 
         #     self.navigation.go_to(zone) 
+
         self.subtask_manager.manipulation.move_to_position("front_stare")
         for degree in self.pan_angles:
             self.subtask_manager.manipulation.pan_to(degree)
@@ -382,25 +386,27 @@ class GPSRTask(GenericTask):
             if status == Status.TARGET_NOT_FOUND:
                 continue
 
-            if name == complement:
-                Logger.success(
-                    f"Found {name}",
-                )
-                self.subtask_manager.navigation.follow_person()
-                break
+            # if name == complement:
+            #     Logger.success(
+            #         f"Found {name}",
+            #     )
+            #     self.subtask_manager.navigation.follow_person()
 
-            elif name == "Unknown":
+            #     break
+
+            if name == "Unknown":
                 self.subtask_manager.hri.say(
                     "Hi, I'm Frida. Can you please tell me your name?",
                 )
-                status, name = self.subtask_manager.hri.ask_and_confirm(
+                status, new_name = self.subtask_manager.hri.ask_and_confirm(
                     question="Can you please tell me your name?",
                     query="name",
                     use_hotwords=False,
                 )
-                self.subtask_manager.vision.save_face_name(name)
+                self.subtask_manager.vision.save_face_name(new_name)
+                name = new_name
 
-                if name == complement:
-                    self.subtask_manager.navigation.follow_person()
-                    break
+            if name == complement:
+                self.subtask_manager.navigation.follow_person()
+                break
 
