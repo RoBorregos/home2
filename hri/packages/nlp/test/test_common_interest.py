@@ -55,6 +55,7 @@ test_cases = [
     ("Avery", "David", "knitting and sewing", "sewing and crochet", "Avery and David's common interest is sewing."),
     ("Ella", "Joseph", "cycling and running", "swimming and yoga", "Ella and Joseph don't have a common interest between them"),
     ("Scarlett", "Samuel", "astronomy and physics", "physics and mathematics", "Scarlett and Samuel's common interest is physics."),
+    ("John", "Mike", "Sports", "Basketball", "John and Mike's common interest is sports."),
     ("Grace", "John", "singing and dancing", "dancing and acting", "Grace and John's common interest is dancing."),
     ("Chloe", "Luke", "gardening and plants", "cooking and baking", "Chloe and Luke don't have a common interest between them"),
     ("Victoria", "Andrew", "movies and theater", "theater and concerts", "Victoria and Andrew's common interest is theater."),
