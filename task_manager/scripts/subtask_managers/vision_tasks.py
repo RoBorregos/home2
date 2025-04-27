@@ -241,7 +241,7 @@ class VisionTasks:
             result = future.result()
 
             if not result.success:
-                raise Exception("Service call failed")
+                return Status.TARGET_NOT_FOUND
 
         except Exception as e:
             Logger.error(self.node, f"Error saving name: {e}")
