@@ -80,7 +80,6 @@ for test_case in test_cases:
     threshold = test_case.additional_metadata.get("threshold", 0.5) if test_case.additional_metadata else 0.5
     metric = EmbeddingSimilarity(threshold=threshold)
     test_case.actual_output = generate_response(test_case.input[0], test_case.input[1], test_case.input[2], test_case.input[3])
-    print("generated response:", test_case.actual_output)
     end_time = time.time()
     duration = end_time - start_time
     if metric.measure(test_case) == 0:
@@ -94,9 +93,9 @@ for test_case in test_cases:
     else:
         # Optionally print success message with time
         print(f"\033[92mTest case passed in {duration:.2f} seconds\033[0m")
-        # print("\033[94minput:\033[0m", test_case.input)
-        # print("\033[93mexpected_output:\033[0m", format_json(test_case.expected_output))
-        # print("\033[93mactual_output:\033[0m", format_json(test_case.actual_output))
+        print("\033[94minput:\033[0m", test_case.input)
+        print("\033[93mexpected_output:\033[0m", test_case.expected_output)
+        print("\033[93mactual_output:\033[0m", test_case.actual_output)
         print("\n")
 
 
