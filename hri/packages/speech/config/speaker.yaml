@@ -9,4 +9,4 @@ say:
     speaking_topic: "saying"
 
     model: "en_US-amy-medium"
-    offline: True
+    offline: False
