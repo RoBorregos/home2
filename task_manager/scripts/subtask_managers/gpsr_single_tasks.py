@@ -34,7 +34,10 @@ class GPSRSingleTask(GenericTask):
         location = self.subtask_manager.hri.query_location(complement)
         area = self.subtask_manager.hri.get_area(location)
         subarea = self.subtask_manager.hri.get_subarea(location)
-        print(f"Moving to {complement} in area: {area}, subarea: {subarea}")
+
+        self.subtask_manager.hri.node.get_logger().info(
+            f"Moving to {complement} in area: {area}, subarea: {subarea}"
+        )
 
         self.subtask_manager.nav.move_to_location(area, subarea)
 
