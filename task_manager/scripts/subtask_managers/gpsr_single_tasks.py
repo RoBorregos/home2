@@ -154,6 +154,7 @@ class GPSRSingleTask(GenericTask):
             f"Okay, the result of {context} is: {result}.",
             wait=True,
         )
+        return Status.EXECUTION_SUCCESS, "success"
 
     ## HRI
     def say(self, complement: str, characteristic=""):

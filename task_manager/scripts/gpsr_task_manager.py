@@ -56,12 +56,12 @@ class GPSRTM(Node):
         self.executed_commands = 0
         # self.commands = get_gpsr_comands("takeObjFromPlcmt")
         self.commands = [
-            {"action": "go", "complement": "kitchen table", "characteristic": ""},
-            {"action": "visual_info", "complement": "biggest object", "characteristic": "object"},
-            {"action": "go", "complement": "start_location", "characteristic": ""},
+            # {"action": "go", "complement": "kitchen table", "characteristic": ""},
+            {"action": "visual_info", "complement": "smallest", "characteristic": "drink"},
+            # {"action": "go", "complement": "start_location", "characteristic": ""},
             {
                 "action": "contextual_say",
-                "complement": "tell me what is the biggest object in the kitchen",
+                "complement": "tell me what is the smallest object in the kitchen",
                 "characteristic": "visual_info",
             },
         ]
