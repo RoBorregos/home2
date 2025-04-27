@@ -4,7 +4,7 @@ services:
     network_mode: host
     image: chromadb/chroma:latest
     ports:
-      - "8001:8000"
+      - "8002:8000"
     environment:
       - ANONYMIZED_TELEMETRY=False
     volumes:
