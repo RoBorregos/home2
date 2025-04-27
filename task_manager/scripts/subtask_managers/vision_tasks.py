@@ -773,7 +773,7 @@ class VisionTasks:
                 return Status.TARGET_NOT_FOUND
         else:
             return Status.EXECUTION_ERROR
-        
+
     def get_labels(self, detections: list[BBOX]) -> list[str]:
         """Get the labels of the detected objects"""
         labels = []
