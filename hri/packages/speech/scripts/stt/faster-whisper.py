@@ -176,11 +176,11 @@ class WhisperServicer(speech_pb2_grpc.SpeechServiceServicer):
 
         # Get hotwords from request
         current_hotwords = request.hotwords if request.hotwords else ""
-        
+
         # Perform transcription
         result = self.audio_model.transcribe(
             temp_file,
-	    language="en",
+            language="en",
             hotwords=current_hotwords,
             vad_filter=True,
             vad_parameters={
