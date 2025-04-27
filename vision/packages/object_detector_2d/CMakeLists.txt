@@ -43,7 +43,7 @@ include_directories(include)
 ament_python_install_package(${PROJECT_NAME})
 
 
-file (GLOB NODES scripts/*.py)
+file (GLOB PYTHON_SCRIPTS scripts/*.py)
 #Install python scripts
 # install(PROGRAMS
 #   scripts/object_detector_node.py
