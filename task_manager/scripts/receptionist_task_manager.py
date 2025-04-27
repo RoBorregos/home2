@@ -133,6 +133,7 @@ class ReceptionistTM(Node):
                 "I am ready to receive guests, please open the door.", wait=True
             )
 
+            self.subtask_manager.hri.publish_display_topic("/vision/receptionist/img_person_detecion")
             result = self.subtask_manager.vision.detect_person(timeout=10)
             if result == Status.EXECUTION_SUCCESS:
                 self.subtask_manager.manipulation.follow_face(True)
@@ -143,7 +144,7 @@ class ReceptionistTM(Node):
 
         if self.current_state == ReceptionistTM.TASK_STATES["GREETING"]:
             Logger.state(self, "Greeting guest")
-
+            self.subtask_manager.hri.publish_display_topic("/vision/person_frame")
             status, name = self.subtask_manager.hri.ask_and_confirm(
                 question="What is your name?", query="name", use_hotwords=False
             )
