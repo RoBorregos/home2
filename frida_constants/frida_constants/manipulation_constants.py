@@ -64,6 +64,8 @@ PLANE_OBJECT_COLLISION_TOLERANCE = (
     0.025  # Tolerance to delete collision objects if they are too close to the plane
 )
 
+SHELF_POSITION_PREPLACE_POSE = 0.25
+
 DEBUG_POSE_GOAL_TOPIC = "/manipulation/debug_pose_goal"
 GET_JOINT_TOPIC = "/manipulation/get_joints"
 

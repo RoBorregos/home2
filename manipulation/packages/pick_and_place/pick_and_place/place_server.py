@@ -17,6 +17,7 @@ from frida_constants.manipulation_constants import (
     EEF_CONTACT_LINKS,
     PLACE_MOTION_ACTION_SERVER,
     AIM_STRAIGHT_FRONT_QUAT,
+    SHELF_POSITION_PREPLACE_POSE,
 )
 from frida_interfaces.srv import (
     AttachCollisionObject,
@@ -25,6 +26,8 @@ from frida_interfaces.srv import (
 )
 from frida_interfaces.action import PlaceMotion, MoveToPose
 import copy
+import numpy as np
+from transforms3d.quaternions import quat2mat
 
 
 class PlaceMotionServer(Node):
@@ -95,24 +98,80 @@ class PlaceMotionServer(Node):
         poses_dist = 0.03
         place_poses = []
         for i in range(n_poses):
-            new_pose = copy.deepcopy(place_pose)
-            new_pose.pose.position.z += i * poses_dist
-            place_poses.append(new_pose)
+            ee_link_pose = copy.deepcopy(place_pose)
+            ee_link_pose.pose.position.z += i * poses_dist
 
-        for i, pose in enumerate(place_poses):
+            ee_link_pre_pose = copy.deepcopy(ee_link_pose)
+
+            if is_shelf:
+                # send it a little bit back, then forward
+                offset_distance = SHELF_POSITION_PREPLACE_POSE  # Desired distance in meters along the local z-axis
+
+                # Compute the offset along the local z-axis
+                quat = [
+                    ee_link_pre_pose.pose.orientation.w,
+                    ee_link_pre_pose.pose.orientation.x,
+                    ee_link_pre_pose.pose.orientation.y,
+                    ee_link_pre_pose.pose.orientation.z,
+                ]
+                rotation_matrix = quat2mat(quat)
+                # Extract local Z-axis (third column of the rotation matrix)
+                z_axis = rotation_matrix[:, 2]
+
+                # Translate along the local Z-axis
+                new_position = (
+                    np.array(
+                        [
+                            ee_link_pre_pose.pose.position.x,
+                            ee_link_pre_pose.pose.position.y,
+                            ee_link_pre_pose.pose.position.z,
+                        ]
+                    )
+                    + z_axis * offset_distance
+                )
+                ee_link_pre_pose.pose.position.x = new_position[0]
+                ee_link_pre_pose.pose.position.y = new_position[1]
+                ee_link_pre_pose.pose.position.z = new_position[2]
+
+            place_poses.append([ee_link_pre_pose, ee_link_pose])
+
+        for i, poses in enumerate(place_poses):
             # Move to pre-grasp pose
 
-            ee_link_pose = copy.deepcopy(pose)
+            ee_link_pre_pose = poses[0]
+            ee_link_pose = poses[1]
             if is_shelf:
                 ee_link_pose.pose.orientation.x = AIM_STRAIGHT_FRONT_QUAT[0]
                 ee_link_pose.pose.orientation.y = AIM_STRAIGHT_FRONT_QUAT[1]
                 ee_link_pose.pose.orientation.z = AIM_STRAIGHT_FRONT_QUAT[2]
                 ee_link_pose.pose.orientation.w = AIM_STRAIGHT_FRONT_QUAT[3]
+                place_pose_handler, place_pose_result = self.move_to_pose(
+                    ee_link_pre_pose
+                )
+                if not place_pose_result.result.success:
+                    self.get_logger().error("Failed to reach pre-place pose")
+                    continue
             place_pose_handler, place_pose_result = self.move_to_pose(ee_link_pose)
             print(f"Grasp Pose {i} result: {place_pose_result}")
             if place_pose_result.result.success:
                 self.get_logger().info("Grasp pose reached")
                 self.deattach_pick_object()
+
+                # close gripper
+                # gripper_request = SetBool.Request()
+                # gripper_request.data = False
+                # self.node.get_logger().info(
+                #     "Closing gripper :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
+                # )
+                # future = self.node._gripper_set_state_client.call_async(gripper_request)
+                # future = wait_for_future(future)
+                # result = future.result()
+                # self.node.get_logger().info(f"Gripper Result: {str(gripper_request.data)}")
+
+                # self.node.get_logger().info(
+                #     "Returning to position............................................."
+                # )
+
                 return True
         self.get_logger().error("Failed to reach any grasp pose")
         return False

@@ -43,6 +43,7 @@ from frida_constants.vision_constants import (
 from pick_and_place.managers.PickManager import PickManager
 from pick_and_place.managers.PlaceManager import PlaceManager
 from frida_interfaces.msg import PickResult
+import time
 
 
 class ManipulationCore(Node):
@@ -161,6 +162,8 @@ class ManipulationCore(Node):
         if goal_handle.request.scan_environment:
             self.get_logger().info("Scanning environment")
             self.scan_environment()
+            # give time to see
+            time.sleep(1)
 
         if task_type == ManipulationTask.PICK:
             self.get_logger().info("Executing Pick Task")

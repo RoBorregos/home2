@@ -126,9 +126,9 @@ class HeatmapServer(Node):
                 for j in range(closeness_map.shape[1]):
                     x = (min_x_mm + (i + 0.5) * grid_size_mm) / 1000.0
                     y = (min_y_mm + (j + 0.5) * grid_size_mm) / 1000.0
-                    closeness_map[i, j] = np.sqrt(x**2 + y**2)
+                    closeness_map[i, j] = (np.sqrt(x**2 + y**2)) ** 2
             closeness_map = np.clip(closeness_map, 0, None)
-            closeness_map = np.exp(-closeness_map / (grid_size_mm * 2)) ** 5
+            closeness_map = np.exp(-closeness_map / (grid_size_mm * 2)) ** 2
 
             final_map = final_map * closeness_map
 

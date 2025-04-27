@@ -106,8 +106,6 @@ class PlaceManager:
         wait_for_future(future)
         point_result = future.result().place_point
 
-        return True
-
         result_pose = PoseStamped()
         result_pose.header = point_result.header
         result_pose.pose.position = point_result.point
