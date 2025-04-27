@@ -8,7 +8,6 @@ import rclpy
 from rclpy.node import Node
 from subtask_managers.gpsr_single_tasks import GPSRSingleTask
 from subtask_managers.gpsr_tasks import GPSRTask
-from subtask_managers.gpsr_test_commands import get_gpsr_comands
 from utils.logger import Logger
 from utils.status import Status
 from utils.subtask_manager import SubtaskManager, Task
@@ -48,14 +47,16 @@ class GPSRTM(Node):
         self.gpsr_tasks = GPSRTask(self.subtask_manager)
         self.gpsr_individual_tasks = GPSRSingleTask(self.subtask_manager)
 
-        self.current_state = GPSRTM.States.START
+        self.current_state = GPSRTM.States.EXECUTING_COMMAND
         self.running_task = True
         self.current_attempt = 0
         self.executed_commands = 0
-        self.commands = get_gpsr_comands("goToLoc")
+        # self.commands = get_gpsr_comands("goToLoc")
+        self.commands = [
+            {"action": "give", "complement": "", "characteristic": ""},
+        ]
 
         Logger.info(self, "GPSRTMTaskManager has started.")
-    
 
     def run(self):
         """State machine"""

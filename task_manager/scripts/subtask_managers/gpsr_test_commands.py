@@ -337,12 +337,12 @@ AVAILABLE_COMMANDS = {
     "say",
     "ask_answer_question",
     "visual_info",
-    # "find_object",
-    # "find_person",
-    # "guide_to",
-    # "find_person_by_name",
+    "guide_to",
+    "find_object",
+    "find_person",
+    "find_person_by_name",
     # "follow_person_until",
-    # "count",
+    "count",
     # "contextual_say",
 }
 
