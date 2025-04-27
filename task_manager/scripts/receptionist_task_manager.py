@@ -57,14 +57,14 @@ class ReceptionistTM(Node):
         """Initialize the node"""
         super().__init__("receptionist_task_manager")
         self.subtask_manager = SubtaskManager(
-            self, task=Task.RECEPTIONIST, mock_areas=["navigation"]
+            self, task=Task.RECEPTIONIST, mock_areas=[]
         )
         self.current_state = ReceptionistTM.TASK_STATES[START]
         self.current_guest = 1
         self.seat_angles = [0, 90]
 
         self.guests = [Guest() for _ in range(3)]
-        self.guests[0] = Guest("John", "Beer", "Football")
+        self.guests[0] = Guest("ale", "Juice", "Football")
 
         self.current_attempts = 0
         self.running_task = True

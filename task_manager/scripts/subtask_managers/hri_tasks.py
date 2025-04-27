@@ -447,7 +447,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
     @service_check("common_interest_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def common_interest(self, person1, interest1, person2, interest2, remove_thinking=True):
-        Logger.info(self.node, f"Finding common interest between {person1} and {person2}")
+        Logger.info(self.node, f"Finding common interest between {person1}({interest1}) and {person2}({interest2})")
         request = CommonInterest.Request(
             person1=person1, interests1=interest1, person2=person2, interests2=interest2
         )
@@ -663,7 +663,7 @@ class HRITasks(metaclass=SubtaskMeta):
     def publish_display_topic(self, topic: str):
         self.display_publisher.publish(String(data=topic))
         Logger.info(self.node, f"Published display topic: {topic}")
-        
+
 
 
 if __name__ == "__main__":
