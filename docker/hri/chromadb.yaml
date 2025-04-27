@@ -9,4 +9,6 @@ services:
       - ANONYMIZED_TELEMETRY=False
     volumes:
       - /src/hri/packages/embeddings/chromadb:/chroma/chroma
+      - chromadb_config.yml:/config.yaml
     restart: unless-stopped
+
