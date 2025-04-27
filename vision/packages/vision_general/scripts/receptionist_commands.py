@@ -36,7 +36,7 @@ package_share_dir = get_package_share_directory("vision_general")
 YOLO_LOCATION = str(pathlib.Path(__file__).parent) + "/Utils/yolov8n.pt"
 
 PERCENTAGE = 0.3
-MAX_DEGREE = 30
+MAX_DEGREE = 50
 AREA_PERCENTAGE_THRESHOLD = 0.01
 CONF_THRESHOLD = 0.4
 CHECK_TIMEOUT = 5
