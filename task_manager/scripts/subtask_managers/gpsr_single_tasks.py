@@ -1,5 +1,6 @@
 from subtask_managers.generic_tasks import GenericTask
-from task_manager.scripts.utils.status import Status
+from utils.status import Status
+
 
 RETRIES = 3
 
@@ -30,8 +31,12 @@ class GPSRSingleTask(GenericTask):
             - The robot is in the specified location
         """
         self.subtask_manager.hri.say(f"I will go to {complement}.", wait=False)
+        location = self.subtask_manager.hri.query_location(complement)
+        area = self.subtask_manager.hri.get_area(location)
+        subarea = self.subtask_manager.hri.get_subarea(location)
+        print(f"Moving to {complement} in area: {area}, subarea: {subarea}")
 
-        self.subtask_manager.nav.move_to_location(complement)
+        self.subtask_manager.nav.move_to_location(area, subarea)
 
         return Status.EXECUTION_SUCCESS, "arrived to:" + complement
 

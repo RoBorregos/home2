@@ -43,7 +43,9 @@ class GPSRTM(Node):
     def __init__(self):
         """Initialize the node"""
         super().__init__("gpsr_task_manager")
-        self.subtask_manager = SubtaskManager(self, task=Task.GPSR, mock_areas=["navigation"])
+        self.subtask_manager = SubtaskManager(
+            self, task=Task.GPSR, mock_areas=["navigation", "manipulation", "vision"]
+        )
         self.gpsr_tasks = GPSRTask(self.subtask_manager)
         self.gpsr_individual_tasks = GPSRSingleTask(self.subtask_manager)
 
@@ -53,7 +55,7 @@ class GPSRTM(Node):
         self.executed_commands = 0
         # self.commands = get_gpsr_comands("goToLoc")
         self.commands = [
-            {"action": "give", "complement": "", "characteristic": ""},
+            {"action": "go", "complement": "place for cooking", "characteristic": ""},
         ]
 
         Logger.info(self, "GPSRTMTaskManager has started.")
@@ -115,7 +117,7 @@ class GPSRTM(Node):
                         command["complement"],
                         command["characteristic"],
                         res,
-                        status,
+                        status.value,
                     )
         elif self.current_state == GPSRTM.States.FINISHED_COMMAND:
             self.subtask_manager.hri.say(
