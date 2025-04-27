@@ -27,6 +27,7 @@ from frida_constants.vision_constants import (
     COUNT_BY_POSE_TOPIC,
     POSE_GESTURE_TOPIC,
     COUNT_BY_COLOR_TOPIC,
+    DETECTION_HANDLER_TOPIC_SRV,
 )
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.msg import ObjectDetection, PersonList
@@ -58,7 +59,7 @@ import time
 from utils.task import Task
 
 TIMEOUT = 5.0
-DETECTION_HANDLER_TOPIC_SRV = "/vision/detection_handler"
+DETECTION_HANDLER_TOPIC_SRV = DETECTION_HANDLER_TOPIC_SRV
 
 
 class VisionTasks:

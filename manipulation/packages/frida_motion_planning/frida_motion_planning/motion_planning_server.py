@@ -33,6 +33,7 @@ from frida_constants.manipulation_constants import (
     ATTACH_COLLISION_OBJECT_SERVICE,
     TOGGLE_SERVO_SERVICE,
     GRIPPER_SET_STATE_SERVICE,
+    MIN_CONFIGURATION_DISTANCE_TRESHOLD,
 )
 from xarm_msgs.srv import MoveVelocity
 from frida_interfaces.msg import CollisionObject
@@ -226,7 +227,7 @@ class MotionPlanningServer(Node):
             # self.get_logger().info(
             #     f"Joint configuration distance: {configuration_distance}"
             # )
-            if configuration_distance < 0.01:
+            if configuration_distance < MIN_CONFIGURATION_DISTANCE_TRESHOLD:
                 self.get_logger().info(
                     f"Joint positions are already close to target: {configuration_distance}"
                 )
