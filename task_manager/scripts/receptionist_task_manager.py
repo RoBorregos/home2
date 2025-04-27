@@ -171,10 +171,34 @@ class ReceptionistTM(Node):
                 self.subtask_manager.vision.describe_person(self.set_description)
                 self.subtask_manager.hri.say("I have saved your face.")
                 self.current_attempts = 0
-                self.current_state = ReceptionistTM.TASK_STATES["NAVIGATE_TO_BEVERAGES"]
+                self.current_state = ReceptionistTM.TASK_STATES["ASK_FOR_INTEREST"]
             else:
                 self.current_attempts += 1
                 Logger.error(self, "Error saving face")
+
+        if self.current_state == ReceptionistTM.TASK_STATES["ASK_FOR_INTEREST"]:
+            Logger.state(self, "Asking for interest")
+
+            self.subtask_manager.manipulation.move_joint_positions(
+                named_position="front_stare", velocity=0.5, degrees=True
+            )
+            self.subtask_manager.manipulation.follow_face(True)
+
+            status, interest = self.subtask_manager.hri.ask_and_confirm(
+                question="What is your main interest?", query="interest", use_hotwords=False
+            )
+
+            if status == Status.EXECUTION_SUCCESS:
+                self.get_guest().interest = interest
+            else:
+                self.get_guest().interest = "Nothing"
+
+            Logger.info(self, f"Interest: {self.get_guest().interest}")
+
+            self.subtask_manager.hri.say(
+                f"Thank you for sharing your interest in {self.get_guest().interest}."
+            )
+            self.current_state = ReceptionistTM.TASK_STATES["NAVIGATE_TO_BEVERAGES"]
 
         if self.current_state == ReceptionistTM.TASK_STATES["NAVIGATE_TO_BEVERAGES"]:
             Logger.state(self, "Navigating to beverages")
@@ -220,31 +244,8 @@ class ReceptionistTM(Node):
                 )
             else:
                 self.subtask_manager.hri.say(f"Sorry, we do not have {self.get_guest().drink}.")
-            self.current_state = ReceptionistTM.TASK_STATES["ASK_FOR_INTEREST"]
-
-        if self.current_state == ReceptionistTM.TASK_STATES["ASK_FOR_INTEREST"]:
-            Logger.state(self, "Asking for interest")
-
-            self.subtask_manager.manipulation.move_joint_positions(
-                named_position="front_stare", velocity=0.5, degrees=True
-            )
-            self.subtask_manager.manipulation.follow_face(True)
-
-            status, interest = self.subtask_manager.hri.ask_and_confirm(
-                question="What is your main interest?", query="interest", use_hotwords=False
-            )
-
-            if status == Status.EXECUTION_SUCCESS:
-                self.get_guest().interest = interest
-            else:
-                self.get_guest().interest = "Nothing"
-
-            Logger.info(self, f"Interest: {self.get_guest().interest}")
-
-            self.subtask_manager.hri.say(
-                f"Thank you for sharing your interest in {self.get_guest().interest}."
-            )
             self.current_state = ReceptionistTM.TASK_STATES["NAVIGATE_TO_LEAVING_ROOM"]
+
 
         if self.current_state == ReceptionistTM.TASK_STATES["NAVIGATE_TO_LEAVING_ROOM"]:
             Logger.state(self, "Navigating to leaving room")
@@ -268,7 +269,7 @@ class ReceptionistTM(Node):
                 self.subtask_manager.manipulation.move_joint_positions(
                     joint_positions=joint_positions, velocity=0.5, degrees=True
                 )
-                self.timeout(2)
+                self.timeout(2.5)
                 status, angle = self.subtask_manager.vision.find_seat()
                 # print(self.subtask_manager.vision.find_seat_moondream())
                 if status == Status.EXECUTION_SUCCESS:
@@ -288,11 +289,12 @@ class ReceptionistTM(Node):
         if self.current_state == ReceptionistTM.TASK_STATES["INTRODUCTION"]:
             Logger.state(self, "Introducing guest")
             self.subtask_manager.hri.publish_display_topic(FACE_VIEW)
-            self.subtask_manager.manipulation.move_joint_positions(
-                named_position="front_stare", velocity=0.5, degrees=True
-            )
+            # self.subtask_manager.manipulation.move_joint_positions(
+            #     named_position="front_stare", velocity=0.5, degrees=True
+            # )
             # self.subtask_manager.manipulation.move_to_position("gaze")
             self.subtask_manager.manipulation.follow_face(True)
+            # self.subtask_manager.nav.move_front()
 
             for i, guest in enumerate(self.guests):
                 if guest.name is None or guest == self.get_guest():
