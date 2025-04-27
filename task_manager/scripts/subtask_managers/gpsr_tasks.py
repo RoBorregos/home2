@@ -172,7 +172,11 @@ class GPSRTask(GenericTask):
 
         """
 
-        self.navigate_to(characteristic)
+        location = self.subtask_manager.hri.query_location(complement)
+        area = self.subtask_manager.hri.get_area(location)
+        subarea = self.subtask_manager.hri.get_subarea(location)
+
+        self.navigate_to(area, subarea)
 
         if complement == "person":
             self.subtask_manager.hri.say(f"We have arrived to {characteristic}!", wait=True)
@@ -385,20 +389,18 @@ class GPSRTask(GenericTask):
                 deus_machina()
         """
 
-        for location in self.locations[complement]:
-            self.navigate_to(complement, location, False)
-
-            self.subtask_manager.manipulation.move_to_position("front_stare")
-            for degree in self.pan_angles:
-                self.subtask_manager.manipulation.pan_to(degree)
-                if complement == "":
-                    result = self.subtask_manager.vision.track_person(track=True)
-                else:
-                    result = self.subtask_manager.vision.track_person_by(
-                        by=complement, value=characteristic, track=True
-                    )
-                if result == Status.EXECUTION_SUCCESS:
-                    return Status.EXECUTION_SUCCESS, "person found"
+        self.subtask_manager.manipulation.move_to_position("front_stare")
+        for degree in self.pan_angles:
+            self.subtask_manager.manipulation.pan_to(degree)
+            if complement == "":
+                result = self.subtask_manager.vision.track_person(track=True)
+            else:
+                result = self.subtask_manager.vision.track_person_by(
+                    by=complement, value=characteristic, track=True
+                )
+            # TODO (@nav): approach the person
+            if result == Status.EXECUTION_SUCCESS:
+                return Status.EXECUTION_SUCCESS, "person found"
 
         return Status.TARGET_NOT_FOUND, "person not found"
 
@@ -437,6 +439,8 @@ class GPSRTask(GenericTask):
 
                 if status == Status.TARGET_NOT_FOUND:
                     continue
+
+                # TODO: (@nav): approach the person
 
                 if name == "Unknown":
                     self.subtask_manager.hri.say(
