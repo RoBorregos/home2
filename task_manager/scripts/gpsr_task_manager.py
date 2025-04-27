@@ -8,10 +8,8 @@ import rclpy
 from rclpy.node import Node
 from subtask_managers.gpsr_single_tasks import GPSRSingleTask
 from subtask_managers.gpsr_tasks import GPSRTask
-from subtask_managers.gpsr_test_commands import get_gpsr_comands
 from utils.logger import Logger
 from utils.status import Status
-from subtask_managers.hri_tasks import HRITasks
 from utils.subtask_manager import SubtaskManager, Task
 
 ATTEMPT_LIMIT = 3
@@ -45,16 +43,20 @@ class GPSRTM(Node):
     def __init__(self):
         """Initialize the node"""
         super().__init__("gpsr_task_manager")
-        self.hri_tasks = HRITasks(self.subtask_manager)
-        self.subtask_manager = SubtaskManager(self, task=Task.GPSR, mock_areas=["navigation"])
+        self.subtask_manager = SubtaskManager(
+            self, task=Task.GPSR, mock_areas=["navigation", "manipulation", "vision"]
+        )
         self.gpsr_tasks = GPSRTask(self.subtask_manager)
         self.gpsr_individual_tasks = GPSRSingleTask(self.subtask_manager)
 
-        self.current_state = GPSRTM.States.START
+        self.current_state = GPSRTM.States.EXECUTING_COMMAND
         self.running_task = True
         self.current_attempt = 0
         self.executed_commands = 0
-        self.commands = get_gpsr_comands("goToLoc")
+        # self.commands = get_gpsr_comands("goToLoc")
+        self.commands = [
+            {"action": "go", "complement": "place for cooking", "characteristic": ""},
+        ]
 
         Logger.info(self, "GPSRTMTaskManager has started.")
 
@@ -110,12 +112,12 @@ class GPSRTM(Node):
                     Logger.info(self, f"Executing command: {command}")
                     self.subtask_manager.hri.say(f"Executing command: {command}")
                     status, res = exec_commad(command["complement"], command["characteristic"])
-                    self.hri_tasks.add_command_history(
+                    self.subtask_manager.hri.add_command_history(
                         command["action"],
                         command["complement"],
                         command["characteristic"],
                         res,
-                        status,
+                        status.value,
                     )
         elif self.current_state == GPSRTM.States.FINISHED_COMMAND:
             self.subtask_manager.hri.say(

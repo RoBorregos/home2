@@ -50,6 +50,11 @@ class ExecutionStates(Enum):
     # TRY_HEAL = 500
 
 
+for i in ExecutionStates:
+    for j in ExecutionStates:
+        if i.value == j.value and i.name != j.name:
+            raise ValueError(f"Duplicate value found: {i.value} for {i.name} and {j.name}")
+
 STATE_TO_DEUX = {
     ExecutionStates.PICK_OBJECT: ExecutionStates.DEUX_PICK_OBJECT,
     ExecutionStates.PLACE_OBJECT: ExecutionStates.DEUX_PLACE_OBJECT,
@@ -146,7 +151,9 @@ class StoringGroceriesManager(Node):
         if self.state == ExecutionStates.START:
             self.get_logger().info("Waiting for TF system to initialize...")
             rclpy.spin_once(self, timeout_sec=2.0)
-            self.state = ExecutionStates.INIT_NAV_TO_SHELF
+            # self.state = ExecutionStates.INIT_NAV_TO_SHELF
+            self.state = ExecutionStates.VIEW_SHELF_AND_SAVE_OBJECTS
+
         elif self.state == ExecutionStates.END:
             Logger.info(self, "Ending Storing Groceries Manager...")
             self.subtask_manager.hri.say(text="Ending Storing Groceries Manager...", wait=True)
@@ -229,6 +236,9 @@ class StoringGroceriesManager(Node):
 
                 #     self.shelves_count += 1
 
+                # self.subtask_manager.manipulation.move_joint_positions(
+                # named_position="front_stare", velocity=0.5, degrees=True
+                # )
                 self.generate_manual_levels()
 
                 status, res = self.subtask_manager.vision.detect_objects()

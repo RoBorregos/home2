@@ -127,7 +127,7 @@ class TestHriManager(Node):
 
         # Querying items
         self.get_logger().info("Querying 'potatoes' from item collection")
-        results = hri.query_item("potatoes", top_k=3)
+        results = hri.query_item("potatoes", top_k=1)
         self.get_logger().info(f"Query results: {results}")
 
         self.get_logger().info("Querying 'cinnamon' from item collection")
@@ -135,23 +135,22 @@ class TestHriManager(Node):
         self.get_logger().info(f"Query results: {results}")
 
         # Adding and querying location
-        self.get_logger().info("Adding single location with metadata")
-        location_doc = ["kitchen"]
-        location_metadata = [{"floor": "1", "type": "room"}]
-        result = hri.add_location(location_doc, json.dumps(location_metadata))
-        self.get_logger().info(f"Result: {result}")
-
         self.get_logger().info("Querying 'kitchen' from location collection")
-        results = hri.query_location("kitchen", top_k=1)
-        self.get_logger().info(f"Query results: {results}")
+
+        results_location = hri.query_location("kitchen table", top_k=1)
+        subarea = hri.get_subarea(results_location)
+        area = hri.get_area(results_location)
+        self.get_logger().info(f"Subarea: {subarea}")
+        self.get_logger().info(f"Area: {area}")
+        self.get_logger().info(f"Query results: {results_location}")
 
         # ---- save_command_history ----
         self.get_logger().info("Saving command history for add_item command")
 
         hri.add_command_history(
             command="add_item",
-            complement="complement for testing",
-            characteristic="items",
+            complement="complement for testing 6",
+            characteristic="items 6",
             result="Success",
             status=1,
         )
@@ -169,6 +168,7 @@ class TestHriManager(Node):
         self.get_logger().info(f"characteristic history query results: {characteristic}")
         self.get_logger().info(f"result history query results: {result}")
         self.get_logger().info(f"status history query results: {status}")
+        # ---- end save_command_history ----
 
         self.get_logger().info("TESTING THE FIND CLOSEST FUNCTION")
         # Test find_closest
