@@ -9,14 +9,16 @@ class JsonInsensitiveValuesMatch(BaseMetric):
     def __init__(
         self,
         threshold: float = 0.5,
+        ignore_keys: list[str] = None,
     ):
         self.threshold = threshold
         self.scorer = Scorer()
+        self.ignore_keys = ignore_keys if ignore_keys else []
 
     def measure(self, test_case: LLMTestCase) -> float:
         try:
-            js1 = remove_key(json.loads(test_case.expected_output), "rationale")
-            js2 = remove_key(json.loads(test_case.actual_output), "rationale")
+            js1 = remove_keys(json.loads(test_case.expected_output), self.ignore_keys + ["rationale"])
+            js2 = remove_keys(json.loads(test_case.actual_output), self.ignore_keys + ["rationale"])
 
             self.score = 1
 
@@ -58,6 +60,16 @@ def remove_key(object, erase_key):
         return [remove_key(value, erase_key) for value in object]
     else:
         return object
+
+
+def remove_keys(object, erase_keys):
+    """
+    Remove keys from dicts recursively.
+    """
+
+    for key in erase_keys:
+        object = remove_key(object, key)
+    return object
 
 
 def format(object):

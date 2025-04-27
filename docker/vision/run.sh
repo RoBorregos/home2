@@ -126,7 +126,7 @@ case $TASK in
         SERVICES=("vision" "moondream-node" "moondream-server")
         ;;
     "--help-me-carry")
-        PACKAGES="vision_general"
+        PACKAGES="vision_general object_detector_2d object_detection_handler"
         RUN="ros2 launch vision_general help_me_carry_launch.py"
         PROFILES=("vision" "moondream")
         SERVICES=("vision" "moondream-node" "moondream-server")
