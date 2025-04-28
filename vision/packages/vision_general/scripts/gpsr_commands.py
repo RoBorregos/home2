@@ -162,10 +162,11 @@ class GPSRCommands(Node):
         self.output_image = frame.copy()
 
         pose_requested = request.pose_requested
+        print(pose_requested)
 
         # Convert pose_requested to Enum Poses
         try:
-            pose_requested_enum = Poses[pose_requested]
+            pose_requested_enum = Poses(pose_requested)
         except KeyError:
             self.get_logger().warn(f"Pose {pose_requested} is not valid.")
             response.success = False
