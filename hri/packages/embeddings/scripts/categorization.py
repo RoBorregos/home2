@@ -98,7 +98,7 @@ class Embeddings(Node):
 
     def add_entry_callback(self, request, response):
         """Service callback to add items to ChromaDB"""
-
+        self.get_logger().info("Add Entry request received")
         try:
             if request.metadata:
                 metadatas_ = json.loads(request.metadata)
@@ -163,6 +163,7 @@ class Embeddings(Node):
         Process command history to extract relevant information.
         This is a placeholder function and should be implemented based on the actual requirements.
         """
+        self.get_logger().info("Processing command history")
         # Get the last k entries that the document is equal to the name
         raw_results = self.chroma_adapter.query("command_history", [name], top_k)
         docs = raw_results.get("documents", [[]])[0]
@@ -191,6 +192,7 @@ class Embeddings(Node):
 
     def query_entry_callback(self, request, response):
         """Service callback to query items from ChromaDB"""
+        self.get_logger().info("Query Entry request received")
         try:
             if request.collection == "items":
                 context = MetadataModel.PROFILES[MetadataProfile.ITEMS]["context"]
