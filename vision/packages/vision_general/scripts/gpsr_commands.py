@@ -166,7 +166,7 @@ class GPSRCommands(Node):
 
         # Convert pose_requested to Enum Poses
         try:
-            pose_requested_enum = Poses[pose_requested]
+            pose_requested_enum = Poses(pose_requested)
         except KeyError:
             self.get_logger().warn(f"Pose {pose_requested} is not valid.")
             response.success = False
@@ -311,10 +311,10 @@ class GPSRCommands(Node):
     def detect_pose(self, frame):
         """Detect the pose in the image."""
         poses = [
-            Poses.UNKNOWN.value,
-            Poses.STANDING.value,
-            Poses.SITTING.value,
-            Poses.LYING_DOWN.value,
+            Poses.UNKNOWN,
+            Poses.STANDING,
+            Poses.SITTING,
+            Poses.LYING_DOWN,
         ]
 
         # Detect pose for the person with the biggest bounding box
