@@ -150,6 +150,7 @@ class Embeddings(Node):
         except ValidationError as e:
             response.success = False
             response.message = f"Invalid metadata: {str(e)}"
+            self.get_logger().error(str(e))
 
         except Exception as e:
             response.success = False
