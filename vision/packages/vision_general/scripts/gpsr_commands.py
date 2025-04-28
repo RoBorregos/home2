@@ -311,10 +311,10 @@ class GPSRCommands(Node):
     def detect_pose(self, frame):
         """Detect the pose in the image."""
         poses = [
-            Poses.UNKNOWN,
-            Poses.STANDING,
-            Poses.SITTING,
-            Poses.LYING_DOWN,
+            Poses.UNKNOWN.value,
+            Poses.STANDING.value,
+            Poses.SITTING.value,
+            Poses.LYING_DOWN.value,
         ]
 
         # Detect pose for the person with the biggest bounding box
