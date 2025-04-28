@@ -130,9 +130,9 @@ class GPSRCommands(Node):
 
         # Convert gesture_requested to Enum Gestures
         try:
-            gesture_requested_enum = Gestures[gesture_requested]
+            gesture_requested_enum = Gestures(gesture_requested)
         except KeyError:
-            self.get_logger().warn(f"Pose {gesture_requested} is not valid.")
+            self.get_logger().warn(f"Gesture {gesture_requested} is not valid.")
             response.success = False
             response.count = 0
             return response
