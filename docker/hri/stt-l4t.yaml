@@ -1,6 +1,6 @@
 services:
   stt-l4t:
-    profiles: [receptionist, carry]
+    profiles: [receptionist, carry, gpsr]
     
     container_name: home2-hri-stt-l4t
     user: 1000:1000
