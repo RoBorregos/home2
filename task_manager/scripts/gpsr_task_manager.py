@@ -46,7 +46,9 @@ class GPSRTM(Node):
     def __init__(self):
         """Initialize the node"""
         super().__init__("gpsr_task_manager")
-        self.subtask_manager = SubtaskManager(self, task=Task.GPSR, mock_areas=["navigation"])
+        self.subtask_manager = SubtaskManager(
+            self, task=Task.GPSR, mock_areas=["navigation", "manipulation"]
+        )
         self.gpsr_tasks = GPSRTask(self.subtask_manager)
         self.gpsr_individual_tasks = GPSRSingleTask(self.subtask_manager)
 
@@ -57,13 +59,13 @@ class GPSRTM(Node):
         # self.commands = get_gpsr_comands("takeObjFromPlcmt")
         self.commands = [
             # {"action": "go", "complement": "kitchen table", "characteristic": ""},
-            # {"action": "visual_info", "complement": "heaviest", "characteristic": "food"},
-            {"action": "count", "complement": "kitchen", "characteristic": "sitting"},
+            {"action": "visual_info", "complement": "biggest", "characteristic": "bottle"},
+            # {"action": "find_person_by_name", "complement": "Oscar", "characteristic": ""},
             # {"action": "go", "complement": "start_location", "characteristic": ""},
             {
                 "action": "contextual_say",
                 "complement": "tell me what is the heaviest object in the kitchen",
-                "characteristic": "count",
+                "characteristic": "visual_info",
             },
         ]
 
@@ -85,7 +87,7 @@ class GPSRTM(Node):
             s, user_command = self.subtask_manager.hri.ask_and_confirm(
                 "What is your command?",
                 "command",
-                context="The user was asked to say a command. We want to infer his command from the response",
+                context="The user was asked to say a command. We want to infer his complete instruction from the response",
                 confirm_question=confirm_command,
                 use_hotwords=False,
                 retries=ATTEMPT_LIMIT,
@@ -121,6 +123,8 @@ class GPSRTM(Node):
                     Logger.info(self, f"Executing command: {command}")
                     # self.subtask_manager.hri.say(f"Executing command: {command}")
                     status, res = exec_commad(command["complement"], command["characteristic"])
+                    self.get_logger().info(f"status-> {str(status)}")
+                    self.get_logger().info(f"res-> {str(res)}")
                     self.subtask_manager.hri.add_command_history(
                         command["action"],
                         command["complement"],
