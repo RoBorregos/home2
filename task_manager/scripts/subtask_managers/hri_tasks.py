@@ -78,6 +78,7 @@ class HRITasks(metaclass=SubtaskMeta):
         )
         self.is_positive_service = self.node.create_client(IsPositive, IS_POSITIVE_SERVICE)
         self.is_negative_service = self.node.create_client(IsNegative, IS_NEGATIVE_SERVICE)
+        self.display_publisher = self.node.create_publisher(String, "/hri/display/change_video", 10)
 
         self.query_item_client = self.node.create_client(QueryEntry, QUERY_ENTRY_SERVICE)
         self.add_item_client = self.node.create_client(AddEntry, ADD_ENTRY_SERVICE)
@@ -445,7 +446,10 @@ class HRITasks(metaclass=SubtaskMeta):
 
     @service_check("common_interest_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def common_interest(self, person1, interest1, person2, interest2, remove_thinking=True):
-        Logger.info(self.node, f"Finding common interest between {person1} and {person2}")
+        Logger.info(
+            self.node,
+            f"Finding common interest between {person1}({interest1}) and {person2}({interest2})",
+        )
         request = CommonInterest.Request(
             person1=person1, interests1=interest1, person2=person2, interests2=interest2
         )
@@ -657,6 +661,10 @@ class HRITasks(metaclass=SubtaskMeta):
         except (IndexError, KeyError, json.JSONDecodeError) as e:
             self.node.get_logger().error(f"Failed to extract context: {str(e)}")
             return ""
+
+    def publish_display_topic(self, topic: str):
+        self.display_publisher.publish(String(data=topic))
+        Logger.info(self.node, f"Published display topic: {topic}")
 
 
 if __name__ == "__main__":

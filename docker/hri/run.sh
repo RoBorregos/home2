@@ -93,7 +93,8 @@ bash setup.bash
 bash ../../hri/packages/nlp/assets/download-model.sh
 
 # Create dirs with current user to avoid permission problems
-mkdir install build log
+mkdir -p install build log
+
 
 # Check if display setup is needed
 if [ ! -d "../../hri/display/dist" ] || [ ! -d "../../hri/display/node_modules" ] || [ ! -d "../../hri/display/web-ui/.next" ] || [ ! -d "../../hri/display/web-ui/node_modules" ]; then

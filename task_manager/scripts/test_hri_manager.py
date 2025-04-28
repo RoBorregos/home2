@@ -34,14 +34,18 @@ class TestHriManager(Node):
     def run(self):
         # Testing compound commands
 
-        if TEST_COMPOUND:
-            self.compound_functions()
+        s, res = self.hri_manager.common_interest("John", "Football", "Gilbert", "Basketball")
 
-        if TEST_INDIVIDUAL_FUNCTIONS:
-            self.individual_functions()
+        self.get_logger().info(f"Common interest: {res}")
 
-        if TEST_EMBEDDINGS:
-            self.test_embeddings()
+        # if TEST_COMPOUND:
+        #     self.compound_functions()
+
+        # if TEST_INDIVIDUAL_FUNCTIONS:
+        #     self.individual_functions()
+
+        # if TEST_EMBEDDINGS:
+        #     self.test_embeddings()
 
     def individual_functions(self):
         # Test say
