@@ -210,15 +210,15 @@ class Embeddings(Node):
                 context = MetadataModel.PROFILES[MetadataProfile.LOCATIONS]["context"]
             elif request.collection == "actions":
                 context = MetadataModel.PROFILES[MetadataProfile.ACTIONS]["context"]
-            elif request.collection == "command_history":
-                asd = self.process_command_history(request.query[0], request.topk)
-                response.results = [json.dumps(entry) for entry in asd]
-                response.success = bool(asd)
-                response.message = (
-                    "Query successful" if asd else "No matching items found"
-                )
-                self.get_logger().info("Query request handled successfully")
-                return response
+            # elif request.collection == "command_history":
+            #     asd = self.process_command_history(request.query[0], request.topk)
+            #     response.results = [json.dumps(entry) for entry in asd]
+            #     response.success = bool(asd)
+            #     response.message = (
+            #         "Query successful" if asd else "No matching items found"
+            #     )
+            #     self.get_logger().info("Query request handled successfully")
+            #     return response
             else:
                 context = ""
 
