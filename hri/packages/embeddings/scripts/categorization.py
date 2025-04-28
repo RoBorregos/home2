@@ -164,6 +164,12 @@ class Embeddings(Node):
         This is a placeholder function and should be implemented based on the actual requirements.
         """
         self.get_logger().info("Processing command history")
+        self.get_logger().info(
+            f"Querying command history for: {name}, type: {type(name)}"
+        )
+        self.get_logger().info(f"Top K: {top_k}, type: {type(top_k)}")
+        # Ensure the name is a string
+
         # Get the last k entries that the document is equal to the name
         raw_results = self.chroma_adapter.query("command_history", [name], top_k)
         docs = raw_results.get("documents", [[]])[0]
