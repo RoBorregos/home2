@@ -1,0 +1,51 @@
+[
+    {
+      "document": "living_room",
+      "metadata": {"area": "living_room"}
+    },
+    {
+      "document": "living_room couches",
+      "metadata": {"area": "living_room", "subarea": "couch"}
+    },
+    {
+      "document": "dinning_room",
+      "metadata": {"area": "dinning_room"}
+    },
+    {
+      "document": "dinning_room entrance",
+      "metadata": {"area": "dinning_room", "subarea": "entrance"}
+    },
+    {
+      "document": "dinning_room table",
+      "metadata": {"area": "dinning_room", "subarea": "table"}
+    },
+    {
+      "document": "kitchen",
+      "metadata": {"area": "kitchen"}
+    },
+    {
+      "document": "kitchen small_table",
+      "metadata": {"area": "kitchen", "subarea": "small_table"}
+    },
+    {
+      "document": "kitchen big_table",
+      "metadata": {"area": "kitchen", "subarea": "big_table"}
+    },
+    {
+      "document": "kitchen sink",
+      "metadata": {"area": "kitchen", "subarea": "sink"}
+    },
+    {
+      "document": "kitchen shelve",
+      "metadata": {"area": "kitchen", "subarea": "shelve"}
+    },
+    {
+      "document": "bedroom",
+      "metadata": {"area": "bedroom"}
+    },
+    {
+      "document": "bedroom bed",
+      "metadata": {"area": "bedroom", "subarea": "bed"}
+    }
+  ]
+  

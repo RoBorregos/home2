@@ -13,6 +13,7 @@ def move_joint_positions(
     named_position: str = None,
     velocity: float = 0.1,
     degrees=False,  # set to true if joint_positions are in degrees
+    wait=True,
 ):
     """Set position of joints.
     If joint_positions is a dict, keys are treated as joint_names
@@ -75,9 +76,12 @@ def move_joint_positions(
         velocity=velocity,
     )
     # Check result
-    future = wait_for_future(future)
-    result = future.result().get_result().result
-    return result.success
+    if wait:
+        future = wait_for_future(future)
+        result = future.result().get_result().result
+        return result.success
+    else:
+        return future
 
 
 # @service_check("get_joints_positions", -1, TIMEOUT)

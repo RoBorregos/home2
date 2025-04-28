@@ -195,11 +195,20 @@ class MotionPlanningServer(Node):
         """Perform the pick operation."""
         self.get_logger().info(f"Moving to pose: {goal_handle.request.pose}")
         pose = goal_handle.request.pose
-        result = self.planner.plan_pose_goal(
-            pose,
-            wait=True,
-            set_mode=True,
-        )
+        target_link = goal_handle.request.target_link
+        if target_link != "":
+            result = self.planner.plan_pose_goal(
+                pose=pose,
+                target_link=target_link,
+                wait=True,
+                set_mode=True,
+            )
+        else:
+            result = self.planner.plan_pose_goal(
+                pose=pose,
+                wait=True,
+                set_mode=(self.current_mode != MOVEIT_MODE),
+            )
         if not ALWAYS_SET_MODE:
             self.current_mode = MOVEIT_MODE
         return result
