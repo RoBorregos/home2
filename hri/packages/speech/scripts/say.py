@@ -211,7 +211,7 @@ class Say(Node):
             return
 
         save_path = os.path.join(VOICE_DIRECTORY, f"{hash(text)}.mp3")
-        tts = gTTS(text=text, lang="en")
+        tts = gTTS(text=text, lang="es")
         tts.save(save_path)
         self._add_to_cache(text, save_path)
         self.get_logger().info("Saying...")
