@@ -14,6 +14,7 @@ from frida_interfaces.msg import Constraint
 from geometry_msgs.msg import PoseStamped
 import frida_motion_planning.robots.xarm6 as robot
 
+
 class MoveToPoseContraintedClient(Node):
     def __init__(self):
         super().__init__("move_to_pose_client_with_constraint")
@@ -24,7 +25,6 @@ class MoveToPoseContraintedClient(Node):
         self._debug_pub = self.create_publisher(
             PoseStamped, "/call_pose_goal/debug_pose", 10
         )
-        
 
     def publish_debug_pose(self, pose):
         self._debug_pub.publish(pose)
@@ -37,7 +37,7 @@ class MoveToPoseContraintedClient(Node):
         velocity=0.2,
         acceleration=0.0,
         planner_id="",
-        useConstraint = False,
+        useConstraint=False,
     ):
         goal_msg = MoveToPose.Goal()
         goal_msg.pose = pose
@@ -45,7 +45,7 @@ class MoveToPoseContraintedClient(Node):
         goal_msg.acceleration = acceleration
         goal_msg.planner_id = planner_id
         goal_msg.apply_constraint = useConstraint
-        
+
         if useConstraint:
             constraints_msg = Constraint()
             constraints_msg.link_name = robot.end_effector_name()
@@ -55,9 +55,9 @@ class MoveToPoseContraintedClient(Node):
             constraints_msg.tolerance_x = 0.1
             constraints_msg.weight = 1.0
             # constraints_msg.parameterization = 1
-            
+
             goal_msg.constraint = constraints_msg
-        
+
         self._action_client.wait_for_server()
         self.get_logger().info("Sending pose goal with constraint...")
 
@@ -91,7 +91,7 @@ def main(args=None):
     time.sleep(0.1)
 
     # Send goal
-    future = action_client.send_goal(pose_stamped, useConstraint = apply_constraint)
+    future = action_client.send_goal(pose_stamped, useConstraint=apply_constraint)
 
     # Wait for goal to be accepted
     rclpy.spin_until_future_complete(action_client, future)

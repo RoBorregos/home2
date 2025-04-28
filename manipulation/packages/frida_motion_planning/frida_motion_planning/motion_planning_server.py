@@ -274,8 +274,8 @@ class MotionPlanningServer(Node):
         self.planner.set_velocity(velocity)
         self.planner.set_acceleration(acceleration)
         self.planner.set_planner(planner_id)
-        
-        if goal_handle.request.apply_constraint: 
+
+        if goal_handle.request.apply_constraint:
             self.get_logger().info("Planning with Constraints")
             quat = [
                 goal_handle.request.constraint.orientation.x,
