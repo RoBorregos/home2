@@ -552,7 +552,7 @@ class HRITasks(metaclass=SubtaskMeta):
             Status: the status of the execution
             list[str]: the results of the query
         """
-        a = self._query_(query, "command_history", top_k)
+        _, a = self._query_(query, "command_history", top_k)
         Logger.info(self.node, f"query_command_history result({query}): {str(a)}")
         # return self._query_(query, "command_history", top_k)
         return a
