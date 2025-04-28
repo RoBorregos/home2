@@ -36,7 +36,7 @@ from frida_constants.manipulation_constants import (
     MIN_CONFIGURATION_DISTANCE_TRESHOLD,
 )
 from xarm_msgs.srv import MoveVelocity
-from frida_interfaces.msg import CollisionObject, Constraint
+from frida_interfaces.msg import CollisionObject
 from frida_motion_planning.utils.MoveItPlanner import MoveItPlanner
 from frida_motion_planning.utils.MoveItServo import MoveItServo
 from frida_motion_planning.utils.XArmServices import XArmServices

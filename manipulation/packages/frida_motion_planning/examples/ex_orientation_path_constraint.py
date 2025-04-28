@@ -12,7 +12,6 @@ from rclpy.action import ActionClient
 from frida_interfaces.action import MoveToPose
 from frida_interfaces.msg import Constraint
 from geometry_msgs.msg import PoseStamped
-from geometry_msgs.msg import Quaternion
 import frida_motion_planning.robots.xarm6 as robot
 
 class MoveToPoseContraintedClient(Node):
