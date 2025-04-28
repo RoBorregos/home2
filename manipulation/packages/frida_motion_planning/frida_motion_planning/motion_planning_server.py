@@ -36,7 +36,7 @@ from frida_constants.manipulation_constants import (
     MIN_CONFIGURATION_DISTANCE_TRESHOLD,
 )
 from xarm_msgs.srv import MoveVelocity
-from frida_interfaces.msg import CollisionObject
+from frida_interfaces.msg import CollisionObject, Constraint
 from frida_motion_planning.utils.MoveItPlanner import MoveItPlanner
 from frida_motion_planning.utils.MoveItServo import MoveItServo
 from frida_motion_planning.utils.XArmServices import XArmServices
@@ -265,6 +265,16 @@ class MotionPlanningServer(Node):
         self.planner.set_velocity(velocity)
         self.planner.set_acceleration(acceleration)
         self.planner.set_planner(planner_id)
+        
+        if goal_handle.request.apply_constraint: 
+            self.get_logger().info("Planning with Constraints")
+            quat = [
+                goal_handle.request.constraint.orientation.x,
+                goal_handle.request.constraint.orientation.y,
+                goal_handle.request.constraint.orientation.z,
+                goal_handle.request.constraint.orientation.w,
+            ]
+            self.planner.set_orientation_constraints(quat)
 
     def get_joints_callback(self, request, response):
         joint_dict = self.planner.get_joint_positions()
