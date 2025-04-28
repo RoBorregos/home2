@@ -157,6 +157,37 @@ class Embeddings(Node):
             self.get_logger().error(response.message)
         return response
 
+    def process_command_history(self, name, top_k):
+        """
+        Process command history to extract relevant information.
+        This is a placeholder function and should be implemented based on the actual requirements.
+        """
+        # Get the last k entries that the document is equal to the name
+        raw_results = self.chroma_adapter.query("command_history", [name], top_k)
+        docs = raw_results.get("documents", [[]])[0]
+        metas = raw_results.get("metadatas", [[]])[0]
+
+        # Filter the results based on the name
+        filtered_results = [
+            {"document": doc, "metadata": meta}
+            for doc, meta in zip(docs, metas)
+            if meta.get("original_name") == name
+        ]
+
+        # Format the results
+        formatted_results = []
+        for doc, meta in filtered_results:
+            entry = {
+                "document": doc,
+                "metadata": meta if isinstance(meta, dict) else {},
+            }
+
+            if isinstance(meta, dict) and "original_name" in meta:
+                entry["document"] = meta["original_name"]
+
+            formatted_results.append(entry)
+        return formatted_results
+
     def query_entry_callback(self, request, response):
         """Service callback to query items from ChromaDB"""
         try:
@@ -166,6 +197,8 @@ class Embeddings(Node):
                 context = MetadataModel.PROFILES[MetadataProfile.LOCATIONS]["context"]
             elif request.collection == "actions":
                 context = MetadataModel.PROFILES[MetadataProfile.ACTIONS]["context"]
+            elif request.collection == "command_history":
+                return self.process_command_history(request.query[0], request.topk)
             else:
                 context = ""
 
