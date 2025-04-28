@@ -169,32 +169,36 @@ class Embeddings(Node):
         )
         self.get_logger().info(f"Top K: {top_k}, type: {type(top_k)}")
         # Ensure the name is a string
+        try:
+            # Get the last k entries that the document is equal to the name
+            raw_results = self.chroma_adapter.query("command_history", [name], top_k)
+            docs = raw_results.get("documents", [[]])[0]
+            metas = raw_results.get("metadatas", [[]])[0]
 
-        # Get the last k entries that the document is equal to the name
-        raw_results = self.chroma_adapter.query("command_history", [name], top_k)
-        docs = raw_results.get("documents", [[]])[0]
-        metas = raw_results.get("metadatas", [[]])[0]
+            # Filter the results based on the name
+            filtered_results = [
+                {"document": doc, "metadata": meta}
+                for doc, meta in zip(docs, metas)
+                if meta.get("original_name") == name
+            ]
 
-        # Filter the results based on the name
-        filtered_results = [
-            {"document": doc, "metadata": meta}
-            for doc, meta in zip(docs, metas)
-            if meta.get("original_name") == name
-        ]
+            # Format the results
+            formatted_results = []
+            for doc, meta in filtered_results:
+                entry = {
+                    "document": doc,
+                    "metadata": meta if isinstance(meta, dict) else {},
+                }
 
-        # Format the results
-        formatted_results = []
-        for doc, meta in filtered_results:
-            entry = {
-                "document": doc,
-                "metadata": meta if isinstance(meta, dict) else {},
-            }
+                if isinstance(meta, dict) and "original_name" in meta:
+                    entry["document"] = meta["original_name"]
 
-            if isinstance(meta, dict) and "original_name" in meta:
-                entry["document"] = meta["original_name"]
-
-            formatted_results.append(entry)
-        return formatted_results
+                formatted_results.append(entry)
+            return formatted_results
+        except Exception as e:
+            self.get_logger().error(f"Failed to process command history: {str(e)}")
+            return []
+        # Placeholder for actual processing logic
 
     def query_entry_callback(self, request, response):
         """Service callback to query items from ChromaDB"""
