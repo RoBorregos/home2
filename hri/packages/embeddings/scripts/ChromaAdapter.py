@@ -65,6 +65,16 @@ class ChromaAdapter:
 
         return results  # Return only the extracted names
 
+    def query_where(self, collection_name: str, query):
+        """Method to query the collection and return only the original names from metadata"""
+        collection_ = self.get_collection(collection_name)
+        results = collection_.query(
+            where=query,
+            include=["metadatas", "documents", "distances"],
+        )
+
+        return results
+
     def _sanitize_collection_name(self, collection):
         """
         Ensures collection name is a valid string due to the constraints of the ChromaDB API.

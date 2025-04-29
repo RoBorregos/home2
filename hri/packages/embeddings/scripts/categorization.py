@@ -170,12 +170,16 @@ class Embeddings(Node):
                 context = ""
 
             grouped_results = []
-
             for query in request.query:
                 query_with_context = query + context
-                results_raw = self.chroma_adapter.query(
-                    request.collection, [query_with_context], request.topk
-                )
+                if request.collection == "closest_items":
+                    results_raw = self.chroma_adapter.query_where(
+                        request.collection, query_with_context
+                    )
+                else:
+                    results_raw = self.chroma_adapter.query(
+                        request.collection, [query_with_context], request.topk
+                    )
                 docs = results_raw.get("documents", [[]])[0]
                 metas = results_raw.get("metadatas", [[]])[0]
 
