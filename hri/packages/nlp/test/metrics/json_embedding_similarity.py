@@ -2,8 +2,8 @@ import json
 
 from deepeval.metrics import BaseMetric
 from deepeval.metrics.utils import initialize_embedding_model
-from deepeval.scorer import Scorer
 from deepeval.test_case import LLMTestCase
+from deepeval.utils import cosine_similarity
 
 
 class JsonEmbeddingSimilarity(BaseMetric):
@@ -11,10 +11,11 @@ class JsonEmbeddingSimilarity(BaseMetric):
         self,
         threshold: float = 0.5,
         ignore_keys: list[str] = None,
+        embeddings_keys: list[str] = None,
     ):
         self.threshold = threshold
-        self.scorer = Scorer()
         self.ignore_keys = ignore_keys if ignore_keys else []
+        self.embeddings_keys = embeddings_keys if embeddings_keys else []
         self.embedding_model = initialize_embedding_model()
 
     def measure(self, test_case: LLMTestCase) -> float:
@@ -22,16 +23,7 @@ class JsonEmbeddingSimilarity(BaseMetric):
             js1 = remove_keys(json.loads(test_case.expected_output), self.ignore_keys + ["rationale"])
             js2 = remove_keys(json.loads(test_case.actual_output), self.ignore_keys + ["rationale"])
 
-            self.score = 1
-
-            if js1.keys() != js2.keys():
-                self.score = 0
-            else:
-                for key in js1.keys():
-                    if format(js1[key]) != format(js2[key]):
-                        self.score = 0
-                        break
-
+            self.score = self.compare_objects_recursively(js1, js2, self.embedding_model)
             self.success = self.score > self.threshold
             return self.score
         except Exception as e:
@@ -50,6 +42,61 @@ class JsonEmbeddingSimilarity(BaseMetric):
     @property
     def __name__(self):
         return "Json case-insensitive exact match"
+
+    def compare_objects_recursively(self, obj1, obj2, embedding_model):
+        """
+        Recursively compares two objects and calculates cosine similarity between their values.
+        Returns a score between 0 and 1, where 1 means perfect similarity.
+        """
+        if isinstance(obj1, (str, int, float, bool)) and isinstance(obj2, (str, int, float, bool)):
+            if isinstance(obj1, str) and isinstance(obj2, str):
+                if not obj1.strip() and not obj2.strip():
+                    return 1.0
+                emb1 = embedding_model.embed_text(str(obj1))
+                emb2 = embedding_model.embed_text(str(obj2))
+                return cosine_similarity(emb1, emb2)
+            return 1.0 if obj1 == obj2 else 0.0
+
+        elif isinstance(obj1, list) and isinstance(obj2, list):
+            if len(obj1) != len(obj2):
+                return 0.0
+
+            if not obj1:
+                return 1.0
+
+            similarities = []
+            for i in range(len(obj1)):
+                if i < len(obj2):
+                    similarities.append(self.compare_objects_recursively(obj1[i], obj2[i], embedding_model))
+
+            return min(similarities)
+
+        elif isinstance(obj1, dict) and isinstance(obj2, dict):
+            if set(obj1.keys()) != set(obj2.keys()):
+                return 0.0
+
+            if not obj1:
+                return 1.0
+
+            similarities = []
+            for key in obj1:
+                if key in self.embeddings_keys:
+                    if obj1[key] == obj2[key]:
+                        similarities.append(1.0)
+                        continue
+                    elif not obj1[key] or not obj2[key]:
+                        similarities.append(0)
+                        continue
+                    emb1 = embedding_model.embed_text(str(obj1[key]))
+                    emb2 = embedding_model.embed_text(str(obj2[key]))
+                    similarities.append(cosine_similarity(emb1, emb2))
+                else:
+                    similarities.append(self.compare_objects_recursively(obj1[key], obj2[key], embedding_model))
+
+            return min(similarities) if similarities else 1.0
+
+        else:
+            return 0.0
 
 
 def remove_key(object, erase_key):

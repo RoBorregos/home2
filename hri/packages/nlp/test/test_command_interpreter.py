@@ -3,6 +3,8 @@ import sys
 sys.path.append("..")
 
 import json
+import re
+import time
 
 from deepeval.test_case import LLMTestCase
 from nlp.assets.dialogs import format_response, get_command_interpreter_args
@@ -10,11 +12,9 @@ from nlp.assets.schemas import CommandListShape
 from openai import OpenAI
 from openai._types import NOT_GIVEN
 from tqdm import tqdm
-import re
-import time
 
 from config import API_KEY, BASE_URL, MODEL, TEMPERATURE
-from metrics.json_insensitive_values_match import JsonInsensitiveValuesMatch
+from metrics.json_embedding_similarity import JsonEmbeddingSimilarity
 
 
 def format_json(data):
@@ -126,13 +126,13 @@ test_cases = [
 # Define test cases
 test_cases = [LLMTestCase(input=test_case[0], expected_output=test_case[1], actual_output="") for test_case in test_cases]
 
-metric = JsonInsensitiveValuesMatch()
+THRESHOLD = 0.7
+metric = JsonEmbeddingSimilarity(embeddings_keys=["complement", "characteristic"], threshold=THRESHOLD)
 count = 0
-
 for test_case in tqdm(test_cases, desc="Generating test case responses"):
     test_case.actual_output, full_response = generate_response(test_case.input, two_steps=False)
-
-    if metric.measure(test_case) == 0:
+    a = metric.measure(test_case)
+    if metric.measure(test_case) < THRESHOLD:
         count += 1
         print("\033[91mTest case failed:\033[0m")
         print("\033[94minput:\033[0m", test_case.input)
