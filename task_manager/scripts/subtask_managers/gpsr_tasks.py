@@ -15,7 +15,8 @@ class GPSRTask(GenericTask):
     def __init__(self, subtask_manager):
         """Initialize the class"""
         super().__init__(subtask_manager)
-        self.pan_angles = [-45, 0, 45]
+        # Angles are relative to current position
+        self.pan_angles = [-45, 45, 45]
         package_share_directory = get_package_share_directory("frida_constants")
         file_path = os.path.join(package_share_directory, "map_areas/areas.json")
         with open(file_path, "r") as file:
@@ -67,13 +68,15 @@ class GPSRTask(GenericTask):
         self.subtask_manager.manipulation.move_to_position(named_position="receive_object")
 
         while True:
-            s, res = self.subtask_manager.hri.confirm("Have you grabbed the object?")
+            s, res = self.subtask_manager.hri.confirm(
+                "Have you grabbed the object?", use_hotwords=False
+            )
             if res == "yes":
                 break
             else:
                 self.subtask_manager.hri.say(
                     "I will give you the object. Once you have picked the object, I will open my gripper.",
-                    wait=False,
+                    wait=True,
                 )
 
         self.subtask_manager.hri.say("I will now release the object.", wait=True)
@@ -324,11 +327,17 @@ class GPSRTask(GenericTask):
 
         status, value = self.subtask_manager.hri.find_closest(possibilities, characteristic)
 
-        # self.subtask_manager.manipulation.move_to_position("front_stare")
+        self.subtask_manager.manipulation.move_to_position("front_stare")
 
         counter = 0
+
+        self.subtask_manager.hri.say(
+            f"I am going to count the {characteristic} in the {complement}.",
+        )
+
         for degree in self.pan_angles:
-            # self.subtask_manager.manipulation.pan_to(degree)
+            self.subtask_manager.manipulation.pan_to(degree)
+
             if is_value_in_enum(value, Gestures):
                 status, count = self.subtask_manager.vision.count_by_gesture(value)
             elif is_value_in_enum(value, Poses):
@@ -347,8 +356,11 @@ class GPSRTask(GenericTask):
                 )
 
         self.subtask_manager.hri.say(
-            f"I have counted {counter} {characteristic} in the room.",
+            f"I have finished counting. In total I found {counter} {characteristic} in the {complement}.",
+            wait=False,
         )
+        self.subtask_manager.manipulation.move_to_position("front_stare")
+
         return Status.EXECUTION_SUCCESS, "counted " + str(counter) + " " + characteristic
 
     ## Manipulation, Nav, Vision

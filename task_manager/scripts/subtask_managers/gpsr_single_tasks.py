@@ -86,7 +86,7 @@ class GPSRSingleTask(GenericTask):
                 return Status.TARGET_NOT_FOUND, ""
 
         labels = self.subtask_manager.vision.get_labels(detections)
-        s, object_to_pick = self.subtask_manager.hri.find_closest(labels, characteristic)
+        s, object_to_pick = self.subtask_manager.hri.find_closest(labels, complement)
         return self.subtask_manager.manipulation.pick_object(object_to_pick), ""
 
     ## Manipulation
