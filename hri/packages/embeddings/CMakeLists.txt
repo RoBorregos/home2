@@ -28,7 +28,7 @@ install(
   PROGRAMS
     scripts/categorization.py  # Path to your Python script
     scripts/knowledge_base.py
-    scripts/ChromaAdapter.py
+    scripts/chroma_adapter.py
   DESTINATION lib/${PROJECT_NAME}  # Install to the package's lib directory
 )
 # Install csv files
