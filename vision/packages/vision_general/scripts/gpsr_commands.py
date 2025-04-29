@@ -56,7 +56,6 @@ class GPSRCommands(Node):
         super().__init__("gpsr_commands")
         self.bridge = CvBridge()
         self.callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
-        self.get_logger().info("FROM ~/dev/vision....")
 
         self.image_subscriber = self.create_subscription(
             Image, CAMERA_TOPIC, self.image_callback, 10
@@ -292,7 +291,6 @@ class GPSRCommands(Node):
 
         response.success = True
         self.get_logger().info(f"{type_requested} detected: {response.result}")
-        self.get_logger().info(f"{type_requested} detected: {response.result}")
         return response
 
     def success(self, message):
@@ -308,7 +306,7 @@ class GPSRCommands(Node):
                 self.bridge.cv2_to_imgmsg(self.output_image, "bgr8")
             )
 
-    def detect_pose(self, frame):
+    def detect_pose(self, frame, return_results=False):
         """Detect the pose in the image."""
         poses = [
             Poses.UNKNOWN,
@@ -324,6 +322,9 @@ class GPSRCommands(Node):
         # Crop the frame to the bounding box of the person
         cropped_frame = frame[y1:y2, x1:x2]
         pose = self.pose_detection.detectPose(cropped_frame)
+
+        # Put the cropped frame back into the output image
+        self.output_image[y1:y2, x1:x2] = cropped_frame
 
         if pose in poses:
             return pose.value
@@ -343,10 +344,7 @@ class GPSRCommands(Node):
         # Detect poses for each detected person
         for person in self.people:
             x1, y1, x2, y2 = person["bbox"]
-            x1, y1, x2, y2 = person["bbox"]
 
-            # Crop the frame to the bounding box of the person
-            cropped_frame = frame[y1:y2, x1:x2]
             # Crop the frame to the bounding box of the person
             cropped_frame = frame[y1:y2, x1:x2]
             pose = self.pose_detection.detectPose(cropped_frame)
@@ -374,7 +372,11 @@ class GPSRCommands(Node):
 
         # Crop the frame to the bounding box of the person
         cropped_frame = frame[y1:y2, x1:x2]
+
         gesture = self.pose_detection.detectGesture(cropped_frame)
+
+        # Put the cropped frame back into the output image
+        self.output_image[y1:y2, x1:x2] = cropped_frame
 
         if gesture in gestures:
             return gesture.value
@@ -395,10 +397,6 @@ class GPSRCommands(Node):
 
         # Detect gestures for each detected person
         for person in self.people:
-            x1, y1, x2, y2 = person["bbox"]
-
-            # Crop the frame to the bounding box of the person
-            cropped_frame = frame[y1:y2, x1:x2]
             x1, y1, x2, y2 = person["bbox"]
 
             # Crop the frame to the bounding box of the person
