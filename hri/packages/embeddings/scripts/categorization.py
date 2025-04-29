@@ -172,25 +172,26 @@ class Embeddings(Node):
             grouped_results = []
             for query in request.query:
                 query_with_context = query + context
-                if request.collection == "closest_items":
+                if request.collection == "command_history":
                     results_raw = self.chroma_adapter.query_where(
-                        request.collection, query_with_context
+                        request.collection, [query_with_context]
                     )
+
                 else:
                     results_raw = self.chroma_adapter.query(
                         request.collection, [query_with_context], request.topk
                     )
-                docs = results_raw.get("documents", [[]])[0]
-                metas = results_raw.get("metadatas", [[]])[0]
-
+                docs = results_raw.get("documents", [[]])
+                metas = results_raw.get("metadatas", [[]])
                 formatted_results = []
+
                 for doc, meta in zip(docs, metas):
                     entry = {
-                        "document": doc,
-                        "metadata": meta if isinstance(meta, dict) else {},
+                        "document": [doc],
+                        "metadata": meta,
                     }
 
-                    if isinstance(meta, dict) and "original_name" in meta:
+                    if "original_name" in meta:
                         entry["document"] = meta["original_name"]
 
                     formatted_results.append(entry)
@@ -220,7 +221,7 @@ class Embeddings(Node):
             # Call the build_embeddings_callback of ChromaAdapter to handle the actual embedding process
             if request.rebuild:
                 self.get_logger().info("Rebuilding embeddings")
-                self.chroma_adapter.remove_all_collections()
+                self.chroma_adapter.remove_categorization_collections()
                 self.build_embeddings()
             else:
                 self.build_embeddings()
