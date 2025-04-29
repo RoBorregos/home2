@@ -567,7 +567,7 @@ class HRITasks(metaclass=SubtaskMeta):
         if collection == "command_history":
             results_loaded = json.loads(future.result().results[0])
             sorted_results = sorted(
-                results_loaded["results"], key=lambda x: x["metadata"]["timestamp"]
+                results_loaded["results"], key=lambda x: x["metadata"]["timestamp"], reverse=True
             )
             results_list = sorted_results[:top_k]
         else:
