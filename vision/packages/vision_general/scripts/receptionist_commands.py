@@ -26,7 +26,7 @@ from frida_constants.vision_constants import (
     CAMERA_TOPIC,
     CHECK_PERSON_TOPIC,
     FIND_SEAT_TOPIC,
-    IMAGE_TOPIC,
+    IMAGE_TOPIC_RECEPTIONIST,
 )
 
 from ament_index_python.packages import get_package_share_directory
@@ -54,7 +54,9 @@ class ReceptionistCommands(Node):
         self.find_seat_service = self.create_service(
             FindSeat, FIND_SEAT_TOPIC, self.find_seat_callback
         )
-        self.image_publisher = self.create_publisher(Image, IMAGE_TOPIC, 10)
+        self.image_publisher = self.create_publisher(
+            Image, IMAGE_TOPIC_RECEPTIONIST, 10
+        )
         self.person_detection_action_server = ActionServer(
             self, DetectPerson, CHECK_PERSON_TOPIC, self.detect_person_callback
         )
