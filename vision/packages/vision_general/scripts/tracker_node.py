@@ -31,7 +31,7 @@ from vision_general.utils.reid_model import (
 )
 
 from std_srvs.srv import SetBool
-from frida_interfaces.srv import TrackBy
+from frida_interfaces.srv import TrackBy, CropQuery
 from vision_general.pose_detection import PoseDetection
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
@@ -42,8 +42,10 @@ from frida_constants.vision_constants import (
     RESULTS_TOPIC,
     CAMERA_INFO_TOPIC,
     CENTROID_TOIC,
+    CROP_QUERY_TOPIC,
 )
 from frida_constants.vision_enums import DetectBy
+import time
 
 CONF_THRESHOLD = 0.6
 
@@ -52,6 +54,7 @@ class SingleTracker(Node):
     def __init__(self):
         super().__init__("tracker_node")
         self.bridge = CvBridge()
+        self.callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
 
         self.image_subscriber = self.create_subscription(
             Image, CAMERA_TOPIC, self.image_callback, 10
@@ -70,7 +73,7 @@ class SingleTracker(Node):
         )
 
         self.set_target_by_service = self.create_service(
-            TrackBy, SET_TARGET_BY_TOPIC, self.set_target_by_callback
+            TrackBy, SET_TARGET_BY_TOPIC, self.set_target_by_callback, callback_group=self.callback_group,
         )
 
         self.results_publisher = self.create_publisher(Point, RESULTS_TOPIC, 10)
@@ -78,6 +81,10 @@ class SingleTracker(Node):
         self.image_publisher = self.create_publisher(Image, TRACKER_IMAGE_TOPIC, 10)
 
         self.centroid_publisher = self.create_publisher(Point, CENTROID_TOIC, 10)
+
+        self.moondream_client = self.create_client(
+            CropQuery, CROP_QUERY_TOPIC, callback_group=self.callback_group
+        )
 
         self.verbose = self.declare_parameter("verbose", True)
         self.setup()
@@ -237,8 +244,21 @@ class SingleTracker(Node):
                     elif track_by == DetectBy.POSES.value:
                         pose = self.pose_detection.detectPose(cropped_image)
 
+                    elif track_by == DetectBy.COLOR.value:
+                        prompt = f"Reply only with 1 if the person is wearing {value}. Otherwise, reply only with 0."
+                        status, response_q = self.moondream_crop_query(
+                            prompt, [float(y1), float(x1), float(y2), float(x2)]
+                        )
+                        if status:
+                            response_clean = response_q.strip()
+
                     if pose.value == value:
                         self.success(f"Target found by {track_by}: {pose.value}")
+                        largest_person["id"] = track_id
+                        largest_person["area"] = area
+                        largest_person["bbox"] = (x1, y1, x2, y2)
+                    elif response_clean == "1":
+                        self.success(f"Target found by {track_by}: {value}")
                         largest_person["id"] = track_id
                         largest_person["area"] = area
                         largest_person["bbox"] = (x1, y1, x2, y2)
@@ -271,6 +291,44 @@ class SingleTracker(Node):
         else:
             self.get_logger().warn("No person found")
             return False
+        
+    def wait_for_future(self, future, timeout=5):
+        start_time = time.time()
+        while future is None and (time.time() - start_time) < timeout:
+            pass
+        if future is None:
+            return False
+        while not future.done() and (time.time() - start_time) < timeout:
+            print("Waiting for future to complete...")
+        return future
+    
+    def moondream_crop_query(self, prompt: str, bbox: list[float]) -> tuple[int, str]:
+        """Makes a query of the current image using moondream."""
+        self.get_logger().info(f"Querying image with prompt: {prompt}")
+
+        height, width = self.image.shape[:2]
+
+        ymin = bbox[0] / height
+        xmin = bbox[1] / width
+        ymax = bbox[2] / height
+        xmax = bbox[3] / width
+
+        request = CropQuery.Request()
+        request.query = prompt
+        request.ymin = ymin
+        request.xmin = xmin
+        request.ymax = ymax
+        request.xmax = xmax
+
+        future = self.moondream_client.call_async(request)
+        future = self.wait_for_future(future, 15)
+        result = future.result()
+        if result is None:
+            self.get_logger().error("Moondream service returned None.")
+            return 0, "0"
+        if result.success:
+            self.get_logger().info(f"Moondream result: {result.result}")
+            return 1, result.result
 
     def run(self):
         """Main loop to run the tracker"""
@@ -435,19 +493,16 @@ class SingleTracker(Node):
                 else:
                     self.get_logger().warn("Depth image not available")
 
-
 def main(args=None):
     rclpy.init(args=args)
     node = SingleTracker()
 
-    try:
-        rclpy.spin(node)
-    except KeyboardInterrupt:
-        pass
-    finally:
-        node.destroy_node()
-        rclpy.shutdown()
-
+    executor = rclpy.executors.MultiThreadedExecutor(5)
+    executor.add_node(node)
+    executor.spin()
+    rclpy.shutdown()
 
 if __name__ == "__main__":
     main()
+
+

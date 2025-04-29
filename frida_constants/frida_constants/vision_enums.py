@@ -27,4 +27,4 @@ class DetectBy(Enum):
     GESTURES = "gestures"
     POSES = "poses"
     COLOR = "color"
-    CLOTHES = "clothes"
+
