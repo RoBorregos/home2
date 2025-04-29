@@ -446,8 +446,6 @@ def main():
         cv2.putText(frame, f'Gesture: {gesture.name}', (10, 60), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
 
         cv2.imshow('Pose and Gesture Detection', frame)
-        if cv2.waitKey(1) & 0xFF == ord('q'):
-            break
 
     cap.release()
     cv2.destroyAllWindows()
