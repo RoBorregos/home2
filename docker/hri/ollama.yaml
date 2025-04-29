@@ -1,7 +1,6 @@
 services:
   ollama:
     profiles: [receptionist, carry]
-
     container_name: home2-hri-ollama
     image: ollama/ollama
     runtime: nvidia
@@ -10,5 +9,7 @@ services:
       - ../../hri/packages/nlp/assets:/ollama
     environment:
       - OLLAMA_MODELS=/ollama
+      - ROLE=${ROLE}
     stdin_open: true
     tty: true
+    entrypoint: ["/bin/bash", "-c", "/ollama/entrypoint.sh"]
