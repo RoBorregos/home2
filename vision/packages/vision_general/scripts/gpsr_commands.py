@@ -354,7 +354,7 @@ class GPSRCommands(Node):
 
         return pose_count
 
-    def detect_gesture(self, frame, return_results=False):
+    def detect_gesture(self, frame):
         """Detect the pose in the image."""
         gestures = [
             Gestures.UNKNOWN,
