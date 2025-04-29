@@ -21,6 +21,12 @@ docker compose -f ollama.yaml up
 deepeval set-local-embeddings --model-name=nomic-embed-text:latest \
     --base-url="http://localhost:11434/" \
     --api-key="ollama"
+
+# Alternatively, you can set the an endpoint for the embeddings:
+# deepeval set-local-embeddings --model-name=nomic-embed-text:latest \
+#     --base-url="http://<orin_ip>:11434/" \
+#     --api-key="ollama" \
+
 ```
 
 4. Run the tests
