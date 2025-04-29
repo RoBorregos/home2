@@ -17,3 +17,4 @@ hri/packages/nlp/assets/**
 !hri/packages/nlp/assets/download-model.sh
 **.bag
 **/rtabmapdbs
+**/baml_client

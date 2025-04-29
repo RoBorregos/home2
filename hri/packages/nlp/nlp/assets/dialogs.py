@@ -338,7 +338,7 @@ These are the actions that you can use:
 3. place(complement = "", characteristic = "")
 4. contextual_say(complement = complete_command, characteristic = previous_command | information_to_answer)
 5. ask_answer_question(complement = "", characteristic = "")
-6. visual_info(complement = ("biggest" | "largest" | "smallest" | "heaviest" | "lightest" | "thinnest") + " object" | "describe the person name" | "describe the person posture", characteristic = object_category | "")
+6. visual_info(complement = ("biggest" | "largest" | "smallest" | "heaviest" | "lightest" | "thinnest"), characteristic = object_category | "object")
 7. give(complement = "", characteristic = "")
 8. follow_person_until(complement = room | location | 'canceled', characteristic = name | "")
 9. guide_to(complement = "person" | name, characteristic = loc_room)
@@ -351,22 +351,7 @@ These are the actions that you can use:
 For the contextual_say, the complement is used as a prompt for our LLM, and the characteristic specifies the context that should be fetched and passed to that LLM.
 For find_person and find_person_info, the robot approaches the specified person, so you do not need to specify that extra action.
 
-For example, for the prompt "fetch a pringles from the kitchen table and deliver it to the person pointing to the left in the bedroom", your answer should be:
-
-<think>
-Okay, let me break down the user's task step by step. The user wants the robot to fetch a Pringles from the kitchen table and deliver it to a person in the bedroom who's pointing to the left.
-
-First, the robot needs to navigate to the kitchen table. So the first action would be 'go' with the complement 'kitchen table'. Then, it needs to find the Pringles there. Since Pringles is a specific object, the action is 'find' with 'pringles' as the complement. Once located, the robot should grab it, so 'grab' and 'pringles' next.
-
-Now, the robot needs to go to the bedroom. So another 'go' action with 'bedroom' as the complement. In the bedroom, the robot has to identify the person. The user mentioned the person is pointing to the left. Here, the robot should use person recognition with the property 'pointing to the left'. So 'find' action, complement 'person', and property 'pointing to the left'.
-
-After locating the person, the robot should approach them. Then deliver the Pringles. So 'approach' and 'person', followed by 'give' and 'pringles'.
-
-Wait, but in the previous examples, when delivering to a named person, they used 'find' with the person's name. Here, since the person isn't named but identified by a gesture, the complement remains 'person' with the property specifying the gesture. That makes sense. Also, the robot doesn't need to return to a previous location here because the task ends after delivering. So no 'remember location' steps unless necessary. In the example where they went to the bedroom, they didn't have to go back. So the steps would be: go to kitchen table, find pringles, grab, go to bedroom, find person (with property), approach, give. That should be it.
-</think>
-<answer>
-{\"commands\":[{\"action\":\"go\",\"complement\":\"kitchen table\",\"characteristic\":\"\"},{\"action\":\"find_object\",\"complement\":\"kitchen table\",\"characteristic\":\"pringles\"},{\"action\":\"pick\",\"complement\":\"pringles\",\"characteristic\":\"\"},{\"action\":\"go\",\"complement\":\"bedroom\",\"characteristic\":\"\"},{\"action\":\"find_person\",\"complement\":\"person pointing to the left\",\"characteristic\":\"\"},{\"action\":\"give\",\"complement\":\"\",\"characteristic\":\"\"}]}
-</answer>
+Do not assume that a complement or a characteristic can be omitted unless it is specified on the action by having it as "". It is better to have unnecessary extra information than missing needed information.
 
 Another example, for the prompt "locate a standing person in the bedroom and follow them", your answer should be:
 
@@ -398,3 +383,23 @@ Another example, for the prompt "tell me how many dishes there are on the desk",
         },
         {"role": "user", "content": full_text},
     ]
+
+
+"""
+For example, for the prompt "fetch a pringles from the kitchen table and deliver it to the person pointing to the left in the bedroom", your answer should be:
+
+<think>
+Okay, let me break down the user's task step by step. The user wants the robot to fetch a Pringles from the kitchen table and deliver it to a person in the bedroom who's pointing to the left.
+
+First, the robot needs to navigate to the kitchen table. So the first action would be 'go' with the complement 'kitchen table'. Then, it needs to find the Pringles there. Since Pringles is a specific object, the action is 'find' with 'pringles' as the complement. Once located, the robot should grab it, so 'grab' and 'pringles' next.
+
+Now, the robot needs to go to the bedroom. So another 'go' action with 'bedroom' as the complement. In the bedroom, the robot has to identify the person. The user mentioned the person is pointing to the left. Here, the robot should use person recognition with the property 'pointing to the left'. So 'find' action, complement 'person', and property 'pointing to the left'.
+
+After locating the person, the robot should approach them. Then deliver the Pringles. So 'approach' and 'person', followed by 'give' and 'pringles'.
+
+Wait, but in the previous examples, when delivering to a named person, they used 'find' with the person's name. Here, since the person isn't named but identified by a gesture, the complement remains 'person' with the property specifying the gesture. That makes sense. Also, the robot doesn't need to return to a previous location here because the task ends after delivering. So no 'remember location' steps unless necessary. In the example where they went to the bedroom, they didn't have to go back. So the steps would be: go to kitchen table, find pringles, grab, go to bedroom, find person (with property), approach, give. That should be it.
+</think>
+<answer>
+{\"commands\":[{\"action\":\"go\",\"complement\":\"kitchen table\",\"characteristic\":\"\"},{\"action\":\"find_object\",\"complement\":\"kitchen table\",\"characteristic\":\"pringles\"},{\"action\":\"pick\",\"complement\":\"pringles\",\"characteristic\":\"\"},{\"action\":\"go\",\"complement\":\"bedroom\",\"characteristic\":\"\"},{\"action\":\"find_person\",\"complement\":\"person pointing to the left\",\"characteristic\":\"\"},{\"action\":\"give\",\"complement\":\"\",\"characteristic\":\"\"}]}
+</answer>
+"""

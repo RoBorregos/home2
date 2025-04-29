@@ -1,23 +1,25 @@
 /// Robot service command functionality
 
 /// Robot command action enum
-enum CommandAction {
-  Go
-  FindObject
-  Pick
-  FindPerson
-  FindPersonByName
-  Count
-  ContextualSay
-  FindPersonInfo
-  VisualInfo
-  AskAnswerQuestion
-  FollowPersonUntil
-  GuideTo
-  Give
-  Say
-  Place
-}
+// enum CommandAction {
+//   Go
+//   FindObject
+//   Pick
+//   FindPerson
+//   FindPersonByName
+//   Count
+//   ContextualSay
+//   FindPersonInfo
+//   VisualInfo
+//   AskAnswerQuestion
+//   FollowPersonUntil
+//   GuideTo
+//   Give
+//   Say
+//   Place
+// }
+
+type CommandAction = "go" | "find_object" | "pick" | "find_person" | "find_person_by_name" | "count" | "contextual_say" | "find_person_info" | "visual_info" | "ask_answer_question" | "follow_person_until" | "guide_to" | "give" | "place"
 
 /// Robot command shape model
 class CommandLLM {
@@ -37,85 +39,78 @@ class CommandListLLM {
 
 /// System prompt template for the robot service
 template_string RobotServiceSystem() #"
-You are a service robot for domestic applications.
-Now you are located in a house environment and we will give you general purpose tasks in the form of natural language.
+Respond in the following format:
+<think>
+...
+</think>
+<answer>
+...
+</answer>
 
-You have in your architecture the modules of:
-- navigation
-- manipulation
-- person recognition
-- object detection
-- human-robot interaction
+For the answer it should be a json that can be parsed as a CommandListShape.
 
-Your job is to understand the task and divide it into smaller actions proper to your modules,
-considering a logical flow of the actions along the time. For example, for the prompt
-'Locate a dish in the kitchen then get it and give it to Angel in the living room', the result would be: 
-        
-{
-    "commands": [
-        {'action': 'Go', 'complement': 'kitchen'},
-        {'action': 'FindObject', 'complement': 'dish'},
-        {'action': 'Pick', 'complement': 'dish'},
-        {'action': 'Go', 'complement': 'living room'},
-        {'action': 'FindPerson', 'complement': 'Angel'},
-        {'action': 'FollowPersonUntil', 'complement': 'Angel'},
-        {'action': 'Give', 'complement': 'dish'}
-    ]
-}
-        
-Another example is, for the prompt: 'Tell me what is the biggest object on the tv stand' and its result will be:
-        
-{
-    "commands": [
-        {'action': 'Remember', 'complement': 'location'},
-        {'action': 'Go', 'complement': 'tv stand'},
-        {'action': 'Identify', 'complement': 'object', 'property': 'biggest'},
-        {'action': 'Go', 'complement': 'past location'},
-        {'action': 'Interact', 'complement': 'biggest object information'}
-    ]
-}
+class CommandShape(BaseModel):
+    action: str
+    characteristic: str = ""
+    complement: str = ""
 
-Another important thing is that when we give you the general task, some complements are grouped in categories.
-For example: apple, banana and lemon are all of them in the fruits category; cola, milk and red wine are all of them in the drinks category.
-If we give you a task talking about an item category, do not change the category word. It is very important you don't make up information
-not given explicitly. If you add new words, we will be disqualified. 
-For example:  'navigate to the bedroom then locate a food'. The result will be:
+class CommandListShape(BaseModel):
+    commands: List[CommandShape]
 
-{
-    "commands": [
-        {'action': 'Remember', 'complement': 'location'},
-        {'action': 'Go', 'complement': 'bedroom'},
-        {'action': 'FindObject', 'complement': 'food'},
-        {'action': 'Pick', 'complement': 'food'},
-        {'action': 'Go', 'complement': 'past location'},
-        {'action': 'Give', 'complement': 'food'}
-    ]
-}
+These are the actions that you can use:
 
-The last important thing is that you have to rememeber the name of the person, in case we are talking about 
-someone specifically. An example for the prompt can be: 'Get a snack from the 
-side tables and deliver it to Adel in the bedroom'. And the result will be:
+1. go (complement = location_to_go, characteristic = "")
+2. pick(complement = "object to pick", characteristic = "")
+3. place(complement = "", characteristic = "")
+4. contextual_say(complement = complete_command, characteristic = previous_command | information_to_answer)
+5. ask_answer_question(complement = "", characteristic = "")
+6. visual_info(complement = ("biggest" | "largest" | "smallest" | "heaviest" | "lightest" | "thinnest"), characteristic = object_category | "object")
+7. give(complement = "", characteristic = "")
+8. follow_person_until(complement = room | location | 'canceled', characteristic = name | "")
+9. guide_to(complement = "person" | name, characteristic = loc_room)
+10. find_person_info(complement = "name" | "pose" | "gesture", characteristic = "")
+11. find_object(complement = placement_location | room, characteristic = object_to_find)
+12. count(complement = placement_location | room, characteristic = object | "person with " + cloth + color | "person with " + posture | "person with " + gesture)
+13. find_person(complement = gesture | posture | cloth + color | "", characteristic = "clothes" | "gesture" | "posture" | "")
+14. find_person_by_name(complement = name, characteristic = "")
 
-{
-    "commands": [
-        {'action': 'Remember', 'complement': 'location'},
-        {'action': 'Go', 'complement': 'side tables'},
-        {'action': 'FindObject', 'complement': 'snack'},
-        {'action': 'Pick', 'complement': 'snack'},
-        {'action': 'Go', 'complement': 'bedroom'},
-        {'action': 'FindPerson', 'complement': 'Adel'},
-        {'action': 'Approach', 'complement': 'Adel'},
-        {'action': 'Give', 'complement': 'snack'}
-    ]
-}
+For the contextual_say, the complement is used as a prompt for our LLM, and the characteristic specifies the context that should be fetched and passed to that LLM.
+For find_person and find_person_info, the robot approaches the specified person, so you do not need to specify that extra action.
 
-You can ask for clarification if the task is not clear enough.
+Do not assume that a complement or a characteristic can be omitted unless it is specified on the action by having it as "". It is better to have unnecessary extra information than missing needed information.
+
+Another example, for the prompt "locate a standing person in the bedroom and follow them", your answer should be:
+
+<think>
+Okay, let me try to figure out how to approach this command. The user wants the robot to locate a standing person in the bedroom and then follow them.
+
+First, the robot needs to go to the bedroom. So the first action is 'go' with complement 'bedroom'. Then, in the bedroom, the robot needs to find a person who is standing. The 'find_person' action is used here. The complement should be the posture, which is 'standing', and the characteristic would be 'posture' since that's the attribute we're searching by. Wait, looking back at the available actions, find_person has complement as the gesture, posture, cloth color, etc., and characteristic specifies "clothes", "gesture", "posture", etc. So maybe the complement is the value (like 'standing') and the characteristic is the type, which is 'posture'.
+
+So the command would be action: find_person, complement: 'standing', characteristic: 'posture'. That makes sense because the robot is looking for a person with a specific posture.
+
+Once the person is found, the robot needs to follow them. The 'follow_person_until' action is used here. The complement can be left as 'canceled' because the follow continues until stopped, and the characteristic would be empty unless we know the person's name. Since the user didn't mention a name, the characteristic is empty. Wait, no. The 'follow_person_until' action's complement can be a room, location, or 'canceled'. But here, we just want to follow the person regardless of where they go, until the command is canceled. So the complement would be 'canceled' to indicate that the following continues until instructed otherwise. The characteristic is the person's name, but since we don't have a name, it's left empty. So the action is follow_person_until with complement 'canceled' and characteristic empty.
+
+Putting it all together: go to bedroom, find the person with posture standing, then follow them until canceled. The commands would be:
+
+1. go to bedroom
+
+2. find_person (complement: standing, characteristic: posture)
+
+3. follow_person_until (complement: canceled, characteristic: "")
+</think>
+<answer> 
+{"commands":[{"action":"go","complement":"bedroom","characteristic":""},{"action":"find_person","complement":"standing","characteristic":"posture"},{"action":"follow_person_until","complement":"canceled","characteristic":""}]}
+</answer>
+
+Another example, for the prompt "tell me how many dishes there are on the desk", your final answer should be this:
+
+{"commands":[{"action":"go","complement":"desk","characteristic":""},{"action":"count","complement":"desk","characteristic":"dishes"},{"action":"go","complement":"start_location","characteristic":""},{"action":"contextual_say","complement":"tell me how many dishes there are on the desk","characteristic":"count"}]}
 "#
 /// Function to generate robot commands from a natural language prompt
 function GenerateCommandList(request: string) -> CommandListLLM {
   client R1
   prompt #"
-    {{ _.role("system") }}
+    {{ _.role("user") }}
     {{ RobotServiceSystem() }}
     Follow this schema for the response, addressing each element of the commands:
     {{ ctx.output_format }}
