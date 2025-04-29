@@ -622,7 +622,7 @@ class VisionTasks:
         """Count the number of people with the requested gesture"""
 
         Logger.info(self.node, "Counting people by gesture")
-        request = CountByPose.Request()
+        request = CountByGesture.Request()
         request.gesture_requested = gesture
         request.request = True
 
