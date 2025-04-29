@@ -161,6 +161,7 @@ class GPSRCommands(Node):
         self.output_image = frame.copy()
 
         pose_requested = request.pose_requested
+        print(pose_requested)
 
         # Convert pose_requested to Enum Poses
         try:
