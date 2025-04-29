@@ -324,7 +324,7 @@ class GPSRCommands(Node):
 
         # Put the cropped frame back into the output image
         self.output_image[y1:y2, x1:x2] = cropped_frame
-    
+
         if pose in poses:
             return pose.value
 
