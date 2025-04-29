@@ -4,17 +4,18 @@
 Node to move to a place.
 """
 
-import rclpy
-from rclpy.node import Node
-from rclpy.action import ActionClient
-from utils.decorators import mockable, service_check
-from geometry_msgs.msg import PoseStamped
-from ament_index_python.packages import get_package_share_directory
-from nav2_msgs.action import NavigateToPose
-import os
 import json
+import os
+
+import rclpy
+from ament_index_python.packages import get_package_share_directory
+from geometry_msgs.msg import PoseStamped
+from nav2_msgs.action import NavigateToPose
+from rclpy.action import ActionClient
+from rclpy.node import Node
 from rclpy.task import Future
 from std_srvs.srv import SetBool
+from utils.decorators import mockable, service_check
 
 MOVE_TOPIC = "/navigate_to_pose"
 FOLLOWING_SERVICE = "/navigation/activate_following"
@@ -40,7 +41,7 @@ class NavigationTasks:
         if not self.pose_client.wait_for_server(timeout_sec=TIMEOUT):
             self.node.get_logger().warn("Move service not initialized.")
 
-    @mockable(return_value=True, delay=2)
+    @mockable(return_value=True, delay=10)
     @service_check("pose_client", False, TIMEOUT)
     def move_to_location(self, location: str, sublocation: str) -> Future:
         """Attempts to move to the given location and returns a Future that completes when the action finishes.
