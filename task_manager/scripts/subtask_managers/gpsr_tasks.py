@@ -271,13 +271,13 @@ class GPSRTask(GenericTask):
                     Approach the object to a position suitable for picking.
         """
 
-        for location in self.locations[complement]:
-            self.navigate_to(complement, location, False)
+        # for location in self.locations[complement]:
+        #     self.navigate_to(complement, location, False)
 
-            result_status = self.subtask_manager.vision.find_object(characteristic)
-            if result_status == Status.EXECUTION_SUCCESS:
-                self.subtask_manager.hri.say(f"I found the {characteristic}.")
-                return Status.EXECUTION_SUCCESS, "object found"
+        result_status = self.subtask_manager.vision.find_object(characteristic)
+        if result_status == Status.EXECUTION_SUCCESS:
+            self.subtask_manager.hri.say(f"I found the {characteristic}.")
+            return Status.EXECUTION_SUCCESS, "object found"
 
         return Status.TARGET_NOT_FOUND, "object not found"
 
@@ -320,17 +320,15 @@ class GPSRTask(GenericTask):
         # TODO: get category and value that matches vision_enums
         # Ex: "poses", "standing" , "clothes", "red t-shirt"
 
-        possibilities = (
-            [v.value for v in DetectBy.GESTURES] + [v.value for v in DetectBy.POSES] + ["clothes"]
-        )
+        possibilities = [v.value for v in Gestures] + [v.value for v in Poses] + ["clothes"]
 
         status, value = self.subtask_manager.hri.find_closest(possibilities, characteristic)
 
-        self.subtask_manager.manipulation.move_to_position("front_stare")
+        # self.subtask_manager.manipulation.move_to_position("front_stare")
 
         counter = 0
         for degree in self.pan_angles:
-            self.subtask_manager.manipulation.pan_to(degree)
+            # self.subtask_manager.manipulation.pan_to(degree)
             if is_value_in_enum(value, Gestures):
                 status, count = self.subtask_manager.vision.count_by_gesture(value)
             elif is_value_in_enum(value, Poses):
@@ -345,7 +343,7 @@ class GPSRTask(GenericTask):
                 self.subtask_manager.hri.say(f"I have counted {count} {characteristic}.")
             elif status == Status.TARGET_NOT_FOUND:
                 self.subtask_manager.hri.say(
-                    f"I did't find any {characteristic}.",
+                    f"I didn't find any {characteristic}.",
                 )
 
         self.subtask_manager.hri.say(
@@ -429,31 +427,39 @@ class GPSRTask(GenericTask):
             - The robot saves information about all the people it encounters.
         """
 
-        for location in self.locations[complement]:
-            self.navigate_to(complement, location, False)
+        # self.subtask_manager.manipulation.move_to_position("front_stare")
+        for degree in self.pan_angles:
+            # self.subtask_manager.manipulation.pan_to(degree)
+            while True:
+                self.subtask_manager.hri.say(
+                    "Please stand in front of me.",
+                )
 
-            self.subtask_manager.manipulation.move_to_position("front_stare")
-            for degree in self.pan_angles:
-                self.subtask_manager.manipulation.pan_to(degree)
                 status, name = self.subtask_manager.vision.get_person_name()
+                if status == Status.EXECUTION_SUCCESS:
+                    break
 
-                if status == Status.TARGET_NOT_FOUND:
-                    continue
+            if status == Status.TARGET_NOT_FOUND:
+                continue
 
-                # TODO: (@nav): approach the person
+            # TODO: (@nav): approach the person
+            self.subtask_manager.hri.node.get_logger().info(f"Found {name}.")
+            if name == "Unknown":
+                self.subtask_manager.hri.say("Hi, I'm Frida.")
+                status, new_name = self.subtask_manager.hri.ask_and_confirm(
+                    question="Can you please tell me your name?",
+                    query="name",
+                    use_hotwords=False,
+                )
+                self.subtask_manager.vision.save_face_name(new_name)
+                name = new_name
 
-                if name == "Unknown":
-                    self.subtask_manager.hri.say(
-                        "Hi, I'm Frida. Can you please tell me your name?",
-                    )
-                    status, new_name = self.subtask_manager.hri.ask_and_confirm(
-                        question="Can you please tell me your name?",
-                        query="name",
-                        use_hotwords=False,
-                    )
-                    self.subtask_manager.vision.save_face_name(new_name)
-                    name = new_name
-
-                if name == complement:
-                    return Status.EXECUTION_SUCCESS, f"found {name}"
+            if name == complement:
+                self.subtask_manager.hri.say("Nice to meet you, " + name + ".")
+                return Status.EXECUTION_SUCCESS, f"found {name}"
+            else:
+                self.subtask_manager.hri.say(
+                    "Hi, " + name + ", but I am looking for " + complement + "."
+                )
+                self.subtask_manager.vision.save_face_name(name)
         return Status.TARGET_NOT_FOUND, "person not found"
