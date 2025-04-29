@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
-from frida_interfaces.hri.srv import AnswerQuestion
+from frida_interfaces.srv import AnswerQuestion
 from ChromaAdapter import ChromaAdapter
 from sentence_transformers import SentenceTransformer
 from llama_cpp import Llama
