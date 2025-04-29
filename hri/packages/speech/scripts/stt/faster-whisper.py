@@ -81,7 +81,7 @@ class WhisperServicer(speech_pb2_grpc.SpeechServiceServicer):
         dbfs_values = [chunk.dBFS for chunk in chunks if chunk.dBFS > float("-inf")]
 
         if not dbfs_values:
-            silence_thresh = -30  # Default for silent audio
+            silence_thresh = -45  # Default for silent audio
         else:
             # Sort by loudness (loudest first)
             dbfs_values.sort(reverse=True)

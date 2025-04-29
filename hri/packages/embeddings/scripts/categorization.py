@@ -98,7 +98,7 @@ class Embeddings(Node):
 
     def add_entry_callback(self, request, response):
         """Service callback to add items to ChromaDB"""
-
+        self.get_logger().info("Add Entry request received")
         try:
             if request.metadata:
                 metadatas_ = json.loads(request.metadata)
@@ -150,6 +150,7 @@ class Embeddings(Node):
         except ValidationError as e:
             response.success = False
             response.message = f"Invalid metadata: {str(e)}"
+            self.get_logger().error(str(e))
 
         except Exception as e:
             response.success = False
@@ -157,8 +158,51 @@ class Embeddings(Node):
             self.get_logger().error(response.message)
         return response
 
+    def process_command_history(self, name, top_k):
+        """
+        Process command history to extract relevant information.
+        This is a placeholder function and should be implemented based on the actual requirements.
+        """
+        self.get_logger().info("Processing command history")
+        self.get_logger().info(
+            f"Querying command history for: {name}, type: {type(name)}"
+        )
+        self.get_logger().info(f"Top K: {top_k}, type: {type(top_k)}")
+        # Ensure the name is a string
+        try:
+            # Get the last k entries that the document is equal to the name
+            raw_results = self.chroma_adapter.query("command_history", [name], top_k)
+            docs = raw_results.get("documents", [[]])[0]
+            metas = raw_results.get("metadatas", [[]])[0]
+
+            # Filter the results based on the name
+            filtered_results = [
+                {"document": doc, "metadata": meta}
+                for doc, meta in zip(docs, metas)
+                if meta.get("original_name") == name
+            ]
+
+            # Format the results
+            formatted_results = []
+            for doc, meta in filtered_results:
+                entry = {
+                    "document": doc,
+                    "metadata": meta if isinstance(meta, dict) else {},
+                }
+
+                if isinstance(meta, dict) and "original_name" in meta:
+                    entry["document"] = meta["original_name"]
+
+                formatted_results.append(entry)
+            return formatted_results
+        except Exception as e:
+            self.get_logger().error(f"Failed to process command history: {str(e)}")
+            return []
+        # Placeholder for actual processing logic
+
     def query_entry_callback(self, request, response):
         """Service callback to query items from ChromaDB"""
+        self.get_logger().info("Query Entry request received")
         try:
             if request.collection == "items":
                 context = MetadataModel.PROFILES[MetadataProfile.ITEMS]["context"]
@@ -166,6 +210,15 @@ class Embeddings(Node):
                 context = MetadataModel.PROFILES[MetadataProfile.LOCATIONS]["context"]
             elif request.collection == "actions":
                 context = MetadataModel.PROFILES[MetadataProfile.ACTIONS]["context"]
+            # elif request.collection == "command_history":
+            #     asd = self.process_command_history(request.query[0], request.topk)
+            #     response.results = [json.dumps(entry) for entry in asd]
+            #     response.success = bool(asd)
+            #     response.message = (
+            #         "Query successful" if asd else "No matching items found"
+            #     )
+            #     self.get_logger().info("Query request handled successfully")
+            #     return response
             else:
                 context = ""
 

@@ -556,11 +556,10 @@ class HRITasks(metaclass=SubtaskMeta):
             Status: the status of the execution
             list[str]: the results of the query
         """
-
         return self._query_(query, "command_history", top_k)
 
     # /////////////////helpers/////
-    def _query_(self, query: str, collection: str, top_k: int = 1) -> list[str]:
+    def _query_(self, query: str, collection: str, top_k: int = 1) -> tuple[Status, list[str]]:
         # Wrap the query in a list so that the field receives a sequence of strings.
         request = QueryEntry.Request(query=[query], collection=collection, topk=top_k)
         future = self.query_item_client.call_async(request)
