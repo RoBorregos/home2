@@ -74,6 +74,9 @@ class GPSRSingleTask(GenericTask):
         while True:
             s, detections = self.subtask_manager.vision.detect_objects()
             current_try += 1
+
+            if len(detections) == 0:
+                self.subtask_manager.hri.say("I didn't found any object.")
             if s == Status.EXECUTION_SUCCESS:
                 break
             if current_try >= RETRIES:

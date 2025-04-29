@@ -4,6 +4,10 @@ def get_gpsr_comands(command_type: str, structured_cmd=True):
     :param command_type: The type of command to retrieve.
     :return: A list of GPSR commands matching the command type.
     """
+
+    if command_type == "custom":
+        return custom_command
+
     for command in GPSR_COMMANDS:
         if command["cmd_type"] == command_type:
             if structured_cmd:
@@ -11,6 +15,45 @@ def get_gpsr_comands(command_type: str, structured_cmd=True):
             return command
     return None
 
+    # "visual_info",
+    # "guide_to",
+    # "find_object",
+    # "find_person",
+    # "find_person_by_name",
+    # # "follow_person_until",
+    # "count",
+    # # "contextual_say",
+
+
+custom_command = [
+    # Manipulation
+    {"action": "pick", "complement": "apple", "characteristic": "bottle"},
+    {"action": "give", "complement": "", "characteristic": ""},
+    {"action": "pick", "complement": "milk", "characteristic": ""},
+    {"action": "place", "complement": "biggest", "characteristic": "bottle"},
+    # Vision
+    # {"action": "find_object", "complement": "bathroom", "characteristic": "rubiks cube"},
+    # {"action": "find_person", "complement": "lying person", "characteristic": ""},
+    # {"action": "find_person_by_name", "complement": "Robin", "characteristic": ""},
+    # {"action": "visual_info", "complement": "biggest", "characteristic": "bottle"},
+    # {"action": "find_person_info", "complement": "pose", "characteristic": ""},
+    # {
+    #     "action": "count",
+    #     "complement": "office",
+    #     "characteristic": "person with persons raising their right arm",
+    # },
+    # Nav
+    # {"action": "go", "complement": "start_location", "characteristic": ""},
+    # {"action": "follow_person_until", "complement": "canceled", "characteristic": ""},
+    # {"action": "guide_to", "complement": "Simone", "characteristic": "office"},
+    # HRI
+    # {
+    #     "action": "contextual_say",
+    #     "complement": "tell me what is the heaviest object in the kitchen",
+    #     "characteristic": "visual_info",
+    # },
+    # {"action": "ask_answer_question", "complement": "", "characteristic": ""}
+]
 
 GPSR_COMMANDS = [
     {
