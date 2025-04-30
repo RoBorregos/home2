@@ -1,9 +1,12 @@
 services:
   ollama:
     profiles: [receptionist, carry, gpsr]
-
     container_name: home2-hri-ollama
-    image: ollama/ollama
+    build:
+      context: .
+      dockerfile: Dockerfile.ollama
+    image: roborregos/home2:hri-ollama-cpu
+    
     runtime: nvidia
     network_mode: host
     volumes:
