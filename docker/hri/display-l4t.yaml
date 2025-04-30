@@ -1,7 +1,6 @@
 services:
   display:
-    
-    profiles: [receptionist, carry]
+    profiles: [receptionist, carry, gpsr]
 
     container_name: home2-hri-display-l4t
     image: roborregos/home2:hri-display-l4t
@@ -16,11 +15,6 @@ services:
     ports:
       - "3000:3000"
       - "8001:8001"
+      - "8080:8080"
     network_mode: host
-    command:
-      [
-        "/bin/bash",
-        "-l",
-        "-c",
-        "source /opt/ros/humble/setup.bash && npm i && npm run start",
-      ]
+    command: ["/bin/bash", "/display-entrypoint.sh"]

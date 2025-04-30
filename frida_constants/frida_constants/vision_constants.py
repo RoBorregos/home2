@@ -69,7 +69,7 @@ FOLLOW_BY_TOPIC = "/vision/follow_by_name"
 # Receptionist commands node
 CHECK_PERSON_TOPIC = "/vision/receptionist/detect_person"
 FIND_SEAT_TOPIC = "/vision/receptionist/find_seat"
-IMAGE_TOPIC = "/vision/receptionist/img_person_detecion"
+IMAGE_TOPIC_RECEPTIONIST = "/vision/receptionist/img_person_detecion"
 
 # GPSR commands node
 COUNT_BY_COLOR_TOPIC = "/vision/gpsr/count_by_color"
@@ -82,4 +82,4 @@ IMAGE_TOPIC = "/vision/gpsr/img_detection"
 POSE_GESTURE_TOPIC = "/vision/gpsr/pose_gesture_detection"
 
 # Storing Groceries Commands node
-SHELF_DETECTION_TOPIC = "/vision/storing_groceries/shelf_detection"
+SHELF_DETECTION_TOPIC = "/vision/storing_grocPeries/shelf_detection"

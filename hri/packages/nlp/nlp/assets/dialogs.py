@@ -1,4 +1,9 @@
-from nlp.assets.schemas import ExtractedData, IsAnswerNegative, IsAnswerPositive
+from nlp.assets.schemas import (
+    CategorizeShelvesResult,
+    ExtractedData,
+    IsAnswerNegative,
+    IsAnswerPositive,
+)
 
 
 def get_common_interests_dialog(
@@ -8,7 +13,12 @@ def get_common_interests_dialog(
         "messages": [
             {
                 "role": "system",
-                "content": f"You will be presented with the interests of two people, your task is to get the common interests between them. Give me an answer in the format similar to '{person1Name} and {person2Name}'s common interest is movies' or '{person1Name} and {person2Name} don't have a common interest between them' in case they don't share one",
+                "content": f"""You will be presented with the interests of two people, your task is to get the common interests between them.
+Try to ALWAYS find a common interest, only rely in specifying that there is no common interest if there is absolutely no relation at all between both of their interests. For example, if {person1Name} likes 'burgers' and {person2Name} likes 'pizza', you can say that they share a common interest in 'food'.
+
+Always provide an answer in the format: '{person1Name} and {person2Name}'s common interest is movies' if there is a common interest or '{person1Name} and {person2Name} don't have a common interest between them' in case they don't share one.
+Do not add any other information or context to the answer, just the common interest or the lack of it.
+""",
             },
             {
                 "role": "user",
@@ -224,6 +234,69 @@ But does **not** include:
             },
         ],
         IsAnswerNegative,
+    )
+
+
+def get_categorize_shelves_args(shelves, table_objects):
+    return (
+        [
+            {
+                "role": "system",
+                "content": """You are tasked with categorizing grocery objects onto shelves based on similarity.
+
+Given:
+- A set of existing shelves, where each shelf contains a list of objects.
+- A list of table objects that need to be assigned to the correct shelf.
+
+Instructions:
+- Group each table object with the shelf whose existing objects are most similar.
+- If a table object isn't similar to any of the objects in the shelves, you may assign it to the empty shelf.
+- Provide, for each shelf:
+  1. 'objects_to_add': a list of new objects (from the table) that should be placed on that shelf.
+  2. 'classification_tag': a short descriptive name of the shelf's category (e.g., "dairy", "fruit", "snacks").
+- For the empty shelf, you can assign any object from the table that doesn't fit into the other shelves.
+
+Output format:
+A dictionary where:
+- The keys are shelf numbers (integers).
+- The values are objects with two properties: 'objects_to_add' and 'classification_tag'.
+
+Example:
+Shelves:
+{
+  1: ["milk", "buttermilk"],
+  2: [],
+  3: ["apple", "banana"]
+}
+
+Table objects:
+["butter", "orange", "cookies", "cheese", "watermelon", "pringles"]
+
+Expected output:
+"""
+                + CategorizeShelvesResult(
+                    shelves={
+                        1: {
+                            "objects_to_add": ["butter", "cheese"],
+                            "classification_tag": "dairy",
+                        },
+                        2: {
+                            "objects_to_add": ["cookies", "pringles"],
+                            "classification_tag": "snacks",
+                        },
+                        3: {
+                            "objects_to_add": ["orange", "watermelon"],
+                            "classification_tag": "fruit",
+                        },
+                    }
+                ).model_dump_json(),
+            },
+            {
+                "role": "user",
+                "content": f"Shelves: {shelves}, Table objects: {table_objects}",
+            },
+        ],
+        CategorizeShelvesResult,
     )
 
 

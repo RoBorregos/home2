@@ -70,16 +70,27 @@ export default function RosMessagesDisplay() {
     let displayContent = content;
 
     if (type === "keyword") {
-      const parts = content.split("'"); // Split by single quotes
-      if (parts.length >= 4) {
-        displayContent = parts[3]; // 3rd index = 4th quote-surrounded content
-      } else {
-        displayContent = "Unknown Keyword";
+      try {
+        // Replace single quotes with double quotes to make valid JSON
+        const jsonString = content.replace(/'/g, '"');
+        const parsedContent = JSON.parse(jsonString);
+
+        if (parsedContent.score !== -1) {
+          displayContent = parsedContent.keyword;
+        } else {
+          return;
+        }
+      } catch (error) {
+        console.error("Error parsing keyword content:", error);
       }
     }
 
     setMessages((prev) => [
-      { type, content: String(displayContent), timestamp: new Date() },
+      {
+        type,
+        content: String(displayContent),
+        timestamp: new Date(),
+      },
       ...prev,
     ]);
   };

@@ -10,15 +10,16 @@ from launch.conditions import UnlessCondition, IfCondition
 
 def launch_setup(context, *args, **kwargs):
     lifecycle_nodes = ['map_server', 'amcl']
+    rviz_config_dir = os.path.join(get_package_share_directory('nav_main'), 'rviz_configs', 'receptionist.rviz')
     nav_dir = get_package_share_directory('nav_main')
     use_sim = LaunchConfiguration('use_sim', default='false')
     localization = LaunchConfiguration('localization', default='true')
     rtabmap_viz = LaunchConfiguration('rtabmap_viz', default='false')
-    default_value=os.path.join(nav_dir, 'config', 'storing_groceries.yaml'),
+    default_value=os.path.join(nav_dir, 'config', 'new_params.yaml'),
     params_file = LaunchConfiguration('params_file', default=default_value)
     use_amcl = LaunchConfiguration('use_amcl', default='false')
-    map_route = LaunchConfiguration('map', default_value=os.path.join(get_package_share_directory('nav_main'), 'maps', 'Lab14marzo.yaml'),)
-    
+    map_route = LaunchConfiguration('map', default=os.path.join(get_package_share_directory('nav_main'), 'maps', 'Lab14marzo.yaml'))
+    show_rviz = LaunchConfiguration('show_rviz', default='true')
     
     nav_basics = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -30,7 +31,7 @@ def launch_setup(context, *args, **kwargs):
                 ]
             )),
         launch_arguments={'use_sim': use_sim,}.items()
-        )
+    )
     nav2_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution(
@@ -83,7 +84,14 @@ def launch_setup(context, *args, **kwargs):
                         {'node_names': lifecycle_nodes}],
                         condition=IfCondition(use_amcl)
             )
-    
+    rviz_node = Node(
+        package='rviz2',
+        executable='rviz2',
+        name='rviz2',
+        output='screen',
+        arguments=['-d', rviz_config_dir],
+        condition=IfCondition(show_rviz)
+    )
     return [
         nav_basics,
         rtabmap,
@@ -91,6 +99,7 @@ def launch_setup(context, *args, **kwargs):
         map_server,
         amcl_server,
         lifecycle_node,
+        rviz_node,
     ]
 
 def generate_launch_description():

@@ -15,3 +15,12 @@ class IsAnswerPositive(BaseModel):
 
 class IsAnswerNegative(BaseModel):
     is_negative: bool
+
+
+class Shelf(BaseModel):
+    objects_to_add: list[str] = []
+    classification_tag: str
+
+
+class CategorizeShelvesResult(BaseModel):
+    shelves: dict[int, Shelf] = {}

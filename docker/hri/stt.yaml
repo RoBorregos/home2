@@ -1,8 +1,9 @@
 services:
   stt:
-    profiles: [receptionist, carry]
+    profiles: [receptionist, carry, gpsr]
 
     container_name: home2-hri-stt
+    user: 1000:1000
     image: roborregos/home2:hri-stt
     build:
       context: ../..

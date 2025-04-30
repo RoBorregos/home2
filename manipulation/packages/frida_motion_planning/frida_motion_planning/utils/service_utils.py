@@ -3,6 +3,7 @@ from frida_constants.manipulation_constants import DEG2RAD, RAD2DEG
 from frida_motion_planning.utils.ros_utils import wait_for_future
 from frida_interfaces.action import MoveJoints
 from frida_interfaces.srv import GetJoints
+from std_srvs.srv import SetBool
 from typing import List, Union
 
 
@@ -12,6 +13,7 @@ def move_joint_positions(
     named_position: str = None,
     velocity: float = 0.1,
     degrees=False,  # set to true if joint_positions are in degrees
+    wait=True,
 ):
     """Set position of joints.
     If joint_positions is a dict, keys are treated as joint_names
@@ -51,13 +53,12 @@ def move_joint_positions(
         return move_joints_action_client.send_goal_async(goal_msg)
 
     if named_position:
-        joint_positions = XARM_CONFIGURATIONS[named_position]["joints"]
-        degrees = XARM_CONFIGURATIONS[named_position]["degrees"]
-
+        joint_positions = XARM_CONFIGURATIONS[named_position]
     # Determine format of joint_positions and apply degree conversion if needed.
     if isinstance(joint_positions, dict):
-        joint_names = list(joint_positions.keys())
-        joint_vals = list(joint_positions.values())
+        joint_names = list(joint_positions["joints"].keys())
+        joint_vals = list(joint_positions["joints"].values())
+        degrees = joint_positions["degrees"]
         if degrees:
             joint_vals = [x * DEG2RAD for x in joint_vals]
     elif isinstance(joint_positions, list):
@@ -75,9 +76,12 @@ def move_joint_positions(
         velocity=velocity,
     )
     # Check result
-    future = wait_for_future(future)
-    result = future.result().get_result().result
-    return result.success
+    if wait:
+        future = wait_for_future(future)
+        result = future.result().get_result().result
+        return result.success
+    else:
+        return future
 
 
 # @service_check("get_joints_positions", -1, TIMEOUT)
@@ -92,4 +96,25 @@ def get_joint_positions(
     result = future.result()
     if degrees:
         result.joint_positions = [x * RAD2DEG for x in result.joint_positions]
-    return dict(zip(result.joint_names, result.joint_positions))
+    joint_positions = dict(zip(result.joint_names, result.joint_positions))
+    return {"joints": joint_positions, "degrees": degrees}
+
+
+def close_gripper(gripper_set_state_client):
+    """Close the gripper."""
+    gripper_request = SetBool.Request()
+    gripper_request.data = False
+    future = gripper_set_state_client.call_async(gripper_request)
+    future = wait_for_future(future)
+    result = future.result()
+    return result.success
+
+
+def open_gripper(gripper_set_state_client):
+    """Open the gripper."""
+    gripper_request = SetBool.Request()
+    gripper_request.data = True
+    future = gripper_set_state_client.call_async(gripper_request)
+    future = wait_for_future(future)
+    result = future.result()
+    return result.success

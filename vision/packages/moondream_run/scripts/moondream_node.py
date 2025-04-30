@@ -219,8 +219,12 @@ class MoondreamNode(Node):
             )
 
             response.location = beverage_position.position
-            response.success = True
-            self.success(f"Beverage location found at: {response.location}")
+            if beverage_position.position == Position.NOT_FOUND.value:
+                self.get_logger().warn("Beverage not found")
+                response.success = False
+            else:
+                self.success(f"Beverage location found at: {response.location}")
+                response.success = True
 
         except Exception as e:
             self.get_logger().error(f"Error locating beverage: {e}")
