@@ -15,7 +15,7 @@ def launch_setup(context, *args, **kwargs):
     use_sim = LaunchConfiguration('use_sim', default='false')
     localization = LaunchConfiguration('localization', default='true')
     rtabmap_viz = LaunchConfiguration('rtabmap_viz', default='false')
-    default_value=os.path.join(nav_dir, 'config', 'storing_groceries.yaml'),
+    default_value=os.path.join(nav_dir, 'config', 'new_params.yaml'),
     params_file = LaunchConfiguration('params_file', default=default_value)
     use_amcl = LaunchConfiguration('use_amcl', default='false')
     map_route = LaunchConfiguration('map', default=os.path.join(get_package_share_directory('nav_main'), 'maps', 'Lab14marzo.yaml'))
