@@ -33,6 +33,7 @@ from frida_constants.manipulation_constants import (
     ATTACH_COLLISION_OBJECT_SERVICE,
     TOGGLE_SERVO_SERVICE,
     GRIPPER_SET_STATE_SERVICE,
+    MIN_CONFIGURATION_DISTANCE_TRESHOLD,
 )
 from xarm_msgs.srv import MoveVelocity
 from frida_interfaces.msg import CollisionObject
@@ -194,11 +195,20 @@ class MotionPlanningServer(Node):
         """Perform the pick operation."""
         self.get_logger().info(f"Moving to pose: {goal_handle.request.pose}")
         pose = goal_handle.request.pose
-        result = self.planner.plan_pose_goal(
-            pose,
-            wait=True,
-            set_mode=True,
-        )
+        target_link = goal_handle.request.target_link
+        if target_link != "":
+            result = self.planner.plan_pose_goal(
+                pose=pose,
+                target_link=target_link,
+                wait=True,
+                set_mode=True,
+            )
+        else:
+            result = self.planner.plan_pose_goal(
+                pose=pose,
+                wait=True,
+                set_mode=(self.current_mode != MOVEIT_MODE),
+            )
         if not ALWAYS_SET_MODE:
             self.current_mode = MOVEIT_MODE
         return result
@@ -226,7 +236,7 @@ class MotionPlanningServer(Node):
             # self.get_logger().info(
             #     f"Joint configuration distance: {configuration_distance}"
             # )
-            if configuration_distance < 0.2:
+            if configuration_distance < MIN_CONFIGURATION_DISTANCE_TRESHOLD:
                 self.get_logger().info(
                     f"Joint positions are already close to target: {configuration_distance}"
                 )

@@ -5,7 +5,7 @@
     <link name="${prefix}_wheel">
       <inertial>
         <origin xyz="${xyz}" rpy="0 0 0" />
-        <mass value="0.528918539158378" />
+        <mass value="100.528918539158378" />
         <inertia ixx="0.00063131" ixy="6.14301607073899E-41" ixz="-1.72050413075699E-18"
                  iyy="0.00063131" iyz="1.33885585873066E-36" izz="0.0011216" />
       </inertial>

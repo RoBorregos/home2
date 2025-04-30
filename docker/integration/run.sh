@@ -97,6 +97,7 @@ esac
 
 #_________________________SETUP_________________________
 
+mkdir -p install build log
 # Export user
 export LOCAL_USER_ID=$(id -u)
 export LOCAL_GROUP_ID=$(id -g)

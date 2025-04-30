@@ -10,7 +10,6 @@ from rclpy.qos import QoSDurabilityPolicy
 from rclpy.action import ActionClient
 from frida_interfaces.action import MoveJoints
 from frida_interfaces.srv import Speak
-from frida_constants.manipulation_constants import DEG2RAD
 from geometry_msgs.msg import TwistStamped
 from xarm_msgs.srv import SetDigitalIO
 import rclpy
@@ -19,24 +18,48 @@ from frida_constants.hri_constants import (
     SPEAK_SERVICE,
 )
 
-POS0 = [-90, -45, -90, -170, -45, -55]
-POS1 = [30, -10, -40, -170, 45, -55]
+from frida_motion_planning.utils.service_utils import move_joint_positions
 
-POS0 = [x * DEG2RAD for x in POS0]
-POS1 = [x * DEG2RAD for x in POS1]
+POS0 = {
+    "joints": {
+        "joint1": -90.0,
+        "joint2": -45.0,
+        "joint3": -90.0,
+        "joint4": -170.0,
+        "joint5": -45.0,
+        "joint6": -55.0,
+    },
+    "degrees": True,
+}
+
+POS1 = {
+    "joints": {
+        "joint1": 30.0,
+        "joint2": -10.0,
+        "joint3": -40.0,
+        "joint4": -170.0,
+        "joint5": 45.0,
+        "joint6": -55.0,
+    },
+    "degrees": True,
+}
 
 
 class ServoDS4(Node):
     def __init__(self):
         super().__init__("servo_ds4")
+        self.callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
         self.create_subscription(Joy, "/joy", self.joy_callback, 1)
         self.get_logger().info("Servo DS4 node starting...")
         # Create a client for the service
         self.gripper_client = self.create_client(
-            SetDigitalIO, "/xarm/set_tgpio_digital"
+            SetDigitalIO, "/xarm/set_tgpio_digital", callback_group=self.callback_group
         )
         self._move_joints_action_client = ActionClient(
-            self, MoveJoints, "/manipulation/move_joints_action_server"
+            self,
+            MoveJoints,
+            "/manipulation/move_joints_action_server",
+            callback_group=self.callback_group,
         )
         self.speak_service = self.create_client(Speak, SPEAK_SERVICE)
         self.twist_pub = self.create_publisher(
@@ -98,25 +121,15 @@ class ServoDS4(Node):
         future.add_done_callback(self.gripper_callback)
 
     # let the server pick the default values
-    def send_goal(
-        self,
-        joint_names=[],
-        joint_positions=[],
-        velocity=0.2,
-        acceleration=0.0,
-        planner_id="",
-    ):
+    def send_goal(self, joint_positions):
         if self.busy_planner:
             return
-        goal_msg = MoveJoints.Goal()
-        goal_msg.joint_names = joint_names
-        goal_msg.joint_positions = joint_positions
-        goal_msg.velocity = velocity
-        goal_msg.acceleration = acceleration
-        goal_msg.planner_id = planner_id
-
-        self.get_logger().info("Sending joint goal...")
-        future = self._move_joints_action_client.send_goal_async(goal_msg)
+        future = move_joint_positions(
+            move_joints_action_client=self._move_joints_action_client,
+            joint_positions=joint_positions,
+            velocity=0.3,
+            wait=False,
+        )
         future.add_done_callback(self.goal_response_callback)
         self.busy_planner = True
 
@@ -135,15 +148,15 @@ class ServoDS4(Node):
         self._get_result_future.add_done_callback(self.get_result_callback)
 
     def get_result_callback(self, future):
-        result = future.result().result
-        self.get_logger().info("Result:", result)
         self.busy_planner = False
 
 
 def main(args=None):
     rclpy.init(args=args)
+    executor = rclpy.executors.MultiThreadedExecutor(5)
     node = ServoDS4()
-    rclpy.spin(node)
+    executor.add_node(node)
+    executor.spin()
     rclpy.shutdown()
 
 

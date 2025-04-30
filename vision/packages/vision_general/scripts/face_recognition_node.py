@@ -131,7 +131,12 @@ class FaceRecognition(Node):
         """Callback to add a new face to the known faces"""
         self.get_logger().info("Executing service new face")
         self.new_name = req.name
-        res.success = True
+        if len(self.curr_faces) == 0:
+            self.get_logger().info("No face detected")
+            res.success = False
+        else:
+            self.get_logger().info(f"New name: {self.new_name}")
+            res.success = True
         return res
 
     def follow_by_name_callback(self, req, res):
