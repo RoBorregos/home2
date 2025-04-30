@@ -120,6 +120,7 @@ class TestTaskManager(Node):
         future = self.subtask_manager.nav.move_to_location("kitchen", "beverages")
         rclpy.spin_until_future_complete(self, future)
         t.sleep(20)
+
         future = self.subtask_manager.nav.move_to_location("living_room", "couches")
         rclpy.spin_until_future_complete(self, future)
         t.sleep(20)

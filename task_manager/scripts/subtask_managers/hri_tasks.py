@@ -556,10 +556,7 @@ class HRITasks(metaclass=SubtaskMeta):
             Status: the status of the execution
             list[str]: the results of the query
         """
-        _, a = self._query_(query, "command_history", top_k)
-        Logger.info(self.node, f"query_command_history result({query}): {str(a)}")
-        # return self._query_(query, "command_history", top_k)
-        return a
+        return self._query_(query, "command_history", top_k)
 
     # /////////////////helpers/////
     def _query_(self, query: str, collection: str, top_k: int = 1) -> tuple[Status, list[str]]:
@@ -567,8 +564,17 @@ class HRITasks(metaclass=SubtaskMeta):
         request = QueryEntry.Request(query=[query], collection=collection, topk=top_k)
         future = self.query_item_client.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
-
-        return Status.EXECUTION_SUCCESS, future.result().results
+        if collection == "command_history":
+            results_loaded = json.loads(future.result().results[0])
+            sorted_results = sorted(
+                results_loaded["results"], key=lambda x: x["metadata"]["timestamp"], reverse=True
+            )
+            results_list = sorted_results[:top_k]
+        else:
+            results = future.result().results
+            results_loaded = json.loads(results[0])
+            results_list = results_loaded["results"]
+        return Status.EXECUTION_SUCCESS, results_list
 
     def _add_to_collection(self, document: list, metadata: str, collection: str) -> str:
         request = AddEntry.Request(document=document, metadata=metadata, collection=collection)
@@ -652,15 +658,18 @@ class HRITasks(metaclass=SubtaskMeta):
             query_result (tuple): The query result tuple (status, list of JSON strings)
 
         Returns:
-            str: The 'context' field from metadata, or empty string if not found
+            list: The 'context' field from metadata, or empty string if not found
         """
         try:
-            # parse the first JSON string
-            parsed_result = json.loads(query_result[1][0])
-            # go into metadata
-            metadata = parsed_result["results"][0]["metadata"]
-            key = metadata.get(field, "")  # safely get 'context'
-            return key
+            key_list = []
+            query_result = query_result[1]
+            for result in query_result:
+                metadata = result["metadata"]
+                if isinstance(metadata, list) and metadata:
+                    metadata = metadata[0]
+                result_key = metadata.get(field, "")  # safely get 'field'
+                key_list.append(result_key)
+            return key_list
         except (IndexError, KeyError, json.JSONDecodeError) as e:
             self.node.get_logger().error(f"Failed to extract context: {str(e)}")
             return ""
@@ -668,6 +677,9 @@ class HRITasks(metaclass=SubtaskMeta):
     def publish_display_topic(self, topic: str):
         self.display_publisher.publish(String(data=topic))
         Logger.info(self.node, f"Published display topic: {topic}")
+
+    def get_timestamps(self, query_result):
+        return self.get_metadata_key(query_result, "timestamp")
 
 
 if __name__ == "__main__":
