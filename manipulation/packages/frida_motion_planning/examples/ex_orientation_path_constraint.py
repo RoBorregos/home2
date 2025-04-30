@@ -48,14 +48,12 @@ class MoveToPoseContraintedClient(Node):
 
         if useConstraint:
             constraints_msg = Constraint()
-            constraints_msg.link_name = robot.end_effector_name()
             constraints_msg.orientation = pose.pose.orientation
-            constraints_msg.tolerance_x = 0.1
-            constraints_msg.tolerance_x = 0.1
-            constraints_msg.tolerance_x = 0.1
-            constraints_msg.weight = 1.0
-            # constraints_msg.parameterization = 1
-
+            constraints_msg.frame_id = robot.base_link_name()
+            constraints_msg.target_link = robot.end_effector_name()
+            constraints_msg.tolerance_orientation = [3.14159, 0.5, 0.5]
+            constraints_msg.weight = 0.5
+            constraints_msg.parameterization = 1
             goal_msg.constraint = constraints_msg
 
         self._action_client.wait_for_server()
@@ -74,16 +72,16 @@ def main(args=None):
     pose_stamped.header.stamp = action_client.get_clock().now().to_msg()
 
     # Set the pose component
-    pose_stamped.pose.position.x = -0.1
-    pose_stamped.pose.position.y = 0.2
-    pose_stamped.pose.position.z = 0.35
+    pose_stamped.pose.position.x = 0.2
+    pose_stamped.pose.position.y = 0.4
+    pose_stamped.pose.position.z = 0.4
     # Quaternion for 90 degree roll (rotating around x-axis)
     pose_stamped.pose.orientation.x = 0.7071
     pose_stamped.pose.orientation.y = 0.0
     pose_stamped.pose.orientation.z = 0.0
     pose_stamped.pose.orientation.w = -0.7071
     # Use Constraint
-    apply_constraint = True
+    apply_constraint = True    
 
     # Publish debug pose
     action_client.publish_debug_pose(pose_stamped)
