@@ -280,7 +280,7 @@ class MotionPlanningServer(Node):
         if goal_handle.request.apply_constraint:
             self.get_logger().info("Planning with Constraints...")
             self.planner.set_orientation_constraints(goal_handle.request)
-    
+
     def reset_planning_settings(self, goal_handle):
         if goal_handle.request.apply_constraint:
             self.get_logger().info("Deleting all constraints...")

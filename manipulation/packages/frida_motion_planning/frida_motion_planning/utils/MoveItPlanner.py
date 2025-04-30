@@ -310,16 +310,14 @@ class MoveItPlanner(Planner):
     ) -> None:
         self.moveit2.set_position_goal(position=position, tolerance=tolerance)
 
-    def set_orientation_constraints(
-        self, goal_handle
-    ) -> None:
+    def set_orientation_constraints(self, goal_handle) -> None:
         self.moveit2.set_path_orientation_constraint(
-            quat_xyzw = goal_handle.constraint.orientation,
-            frame_id = goal_handle.constraint.frame_id,
-            target_link = goal_handle.constraint.target_link,
-            tolerance = goal_handle.constraint.tolerance_orientation,
-            weight = goal_handle.constraint.weight,
-            parameterization = goal_handle.constraint.parameterization  # 0: Euler Angles, 1: Rotation Vector
+            quat_xyzw=goal_handle.constraint.orientation,
+            frame_id=goal_handle.constraint.frame_id,
+            target_link=goal_handle.constraint.target_link,
+            tolerance=goal_handle.constraint.tolerance_orientation,
+            weight=goal_handle.constraint.weight,
+            parameterization=goal_handle.constraint.parameterization,  # 0: Euler Angles, 1: Rotation Vector
         )
         # self.moveit2.set_orientation_goal(quat_xyzw=quat_xyzw, tolerance=tolerance)
         # self.moveit2.set_path_orientation_constraint(quat_xyzw=quat_xyzw, tolerance=tolerance, parameterization=parameterization)

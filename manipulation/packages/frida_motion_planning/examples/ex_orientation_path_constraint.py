@@ -81,7 +81,7 @@ def main(args=None):
     pose_stamped.pose.orientation.z = 0.0
     pose_stamped.pose.orientation.w = -0.7071
     # Use Constraint
-    apply_constraint = True    
+    apply_constraint = True
 
     # Publish debug pose
     action_client.publish_debug_pose(pose_stamped)
