@@ -14,14 +14,14 @@ import time
 
 
 from frida_constants.vision_constants import (
-    RECEPTIONIST_VIEW,
-    FACE_VIEW,
+    IMAGE_TOPIC_RECEPTIONIST,
+    FACE_RECOGNITION_IMAGE,
 )
 
 ATTEMPT_LIMIT = 3
 START = "START"
-# RECEPTIONIST_VIEW = "/vision/receptionist/img_person_detecion"
-# FACE_VIEW = "/vision/person_frame"
+# IMAGE_TOPIC_RECEPTIONIST = "/vision/receptionist/img_person_detecion"
+# FACE_RECOGNITION_IMAGE = "/vision/person_frame"
 
 class Guest:
     """Class to manage the guest information"""
@@ -135,7 +135,7 @@ class ReceptionistTM(Node):
                 "I am ready to receive guests, please open the door.", wait=True
             )
 
-            self.subtask_manager.hri.publish_display_topic(RECEPTIONIST_VIEW)
+            self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_RECEPTIONIST)
             result = self.subtask_manager.vision.detect_person(timeout=10)
             if result == Status.EXECUTION_SUCCESS:
                 self.subtask_manager.manipulation.follow_face(True)
@@ -146,7 +146,7 @@ class ReceptionistTM(Node):
 
         if self.current_state == ReceptionistTM.TASK_STATES["GREETING"]:
             Logger.state(self, "Greeting guest")
-            self.subtask_manager.hri.publish_display_topic(FACE_VIEW)
+            self.subtask_manager.hri.publish_display_topic(FACE_RECOGNITION_IMAGE)
             status, name = self.subtask_manager.hri.ask_and_confirm(
                 question="What is your name?", query="name", use_hotwords=False
             )
@@ -254,7 +254,7 @@ class ReceptionistTM(Node):
         if self.current_state == ReceptionistTM.TASK_STATES["FIND_SEAT"]:
             Logger.state(self, "Finding seat")
             # target = 0
-            self.subtask_manager.hri.publish_display_topic(RECEPTIONIST_VIEW)
+            self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_RECEPTIONIST)
             self.subtask_manager.manipulation.follow_face(False)
             self.subtask_manager.manipulation.move_joint_positions(
                 named_position="front_low_stare", velocity=0.5, degrees=True
@@ -287,7 +287,7 @@ class ReceptionistTM(Node):
 
         if self.current_state == ReceptionistTM.TASK_STATES["INTRODUCTION"]:
             Logger.state(self, "Introducing guest")
-            self.subtask_manager.hri.publish_display_topic(FACE_VIEW)
+            self.subtask_manager.hri.publish_display_topic(FACE_RECOGNITION_IMAGE)
             # self.subtask_manager.manipulation.move_joint_positions(
             #     named_position="front_stare", velocity=0.5, degrees=True
             # )
