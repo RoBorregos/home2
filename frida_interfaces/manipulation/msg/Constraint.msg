@@ -1,8 +1,7 @@
 # frida_interfaces/msg/Constraint.msg
-string link_name
 geometry_msgs/Quaternion orientation
-float64 tolerance_x
-float64 tolerance_y
-float64 tolerance_z
+string frame_id
+string target_link
+float64[] tolerance_orientation
 float64 weight
-# int parameterization
+int32 parameterization
