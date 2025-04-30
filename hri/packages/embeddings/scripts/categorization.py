@@ -14,7 +14,7 @@ from frida_interfaces.srv import (
 )
 
 # Assuming ChromaAdapter handles Chroma client and embedding functions
-from hri.packages.embeddings.scripts.chroma_adapter import ChromaAdapter
+from chroma_adapter import ChromaAdapter
 
 
 class MetadataProfile(str, Enum):
