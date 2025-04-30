@@ -71,6 +71,7 @@ class ReceptionistTM(Node):
 
         self.current_attempts = 0
         self.running_task = True
+        self.message = ""
 
         Logger.info(self, "ReceptionistTaskManager has started.")
 
@@ -172,6 +173,7 @@ class ReceptionistTM(Node):
                 self.current_state = ReceptionistTM.TASK_STATES["ASK_FOR_INTEREST"]
             else:
                 self.current_attempts += 1
+                self.subtask_manager.hri.say("Please get closer to me.")
                 Logger.error(self, "Error saving face")
 
         if self.current_state == ReceptionistTM.TASK_STATES["ASK_FOR_INTEREST"]:
