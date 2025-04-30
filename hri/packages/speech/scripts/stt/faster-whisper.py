@@ -3,6 +3,8 @@ import os
 import sys
 from concurrent import futures
 from datetime import datetime
+from pydub import AudioSegment
+from pydub.silence import detect_silence
 
 import grpc
 import speech_pb2
@@ -21,6 +23,20 @@ class WhisperServicer(speech_pb2_grpc.SpeechServiceServicer):
     def __init__(self, model_size, log_transcriptions=False):
         self.model_size = model_size
         self.audio_model = self.load_model()
+        # Warmup the model with a sample file
+        warmup_file = "./warmup.wav"
+        if os.path.exists(warmup_file):
+            try:
+                print(f"Warming up model with {warmup_file}...")
+                result = self.audio_model.transcribe(warmup_file)
+                # Consume generator to complete the warmup
+                for _ in result[0]:
+                    pass
+                print("Model warmup complete")
+            except Exception as e:
+                print(f"Model warmup failed: {e}")
+        else:
+            print(f"Warmup file {warmup_file} not found, skipping warmup")
         self.log_transcriptions = log_transcriptions
         self.log_dir = os.path.join(os.path.dirname(__file__), "logs")
         if self.log_transcriptions:
@@ -52,6 +68,112 @@ class WhisperServicer(speech_pb2_grpc.SpeechServiceServicer):
         # Generate a temporary WAV file from received audio data
         temp_file = WavUtils.generate_temp_wav(1, 2, 16000, request.audio_data)
 
+        audio_path = os.path.join(self.log_dir, "og.wav")
+        shutil.copy(temp_file, audio_path)
+
+        audio = AudioSegment.from_wav(temp_file)
+
+        # Analyze audio to determine appropriate silence threshold
+        chunk_size = 100  # milliseconds
+        chunks = [audio[i : i + chunk_size] for i in range(0, len(audio), chunk_size)]
+
+        # Get dBFS (decibels relative to full scale) for each chunk
+        dbfs_values = [chunk.dBFS for chunk in chunks if chunk.dBFS > float("-inf")]
+
+        if not dbfs_values:
+            silence_thresh = -45  # Default for silent audio
+        else:
+            # Sort by loudness (loudest first)
+            dbfs_values.sort(reverse=True)
+
+            # Calculate average of the top 30% chunks (the loudest consistent parts)
+            top_index = max(1, int(len(dbfs_values) * 0.3))
+            top_chunks = dbfs_values[:top_index]
+            avg_loud_dbfs = sum(top_chunks) / len(top_chunks)
+
+            # Set threshold below this average to capture all speech but exclude background
+            silence_thresh = avg_loud_dbfs - 8
+
+            # Ensure the threshold stays within reasonable bounds
+            silence_thresh = max(-50, min(-25, silence_thresh))
+
+        print(f"Using adaptive silence threshold: {silence_thresh} dB")
+
+        # Detect silence with our adaptive threshold - reduced min_silence_len for better segmentation
+        silence_segments = detect_silence(
+            audio, min_silence_len=300, silence_thresh=silence_thresh
+        )
+
+        # Invert silence segments to get non-silence segments
+        non_silence_segments = []
+        if silence_segments:
+            if silence_segments[0][0] != 0:
+                non_silence_segments.append((0, silence_segments[0][0]))
+            for i in range(len(silence_segments) - 1):
+                non_silence_segments.append(
+                    (silence_segments[i][1], silence_segments[i + 1][0])
+                )
+            if silence_segments[-1][1] != len(audio):
+                non_silence_segments.append((silence_segments[-1][1], len(audio)))
+        else:
+            non_silence_segments.append((0, len(audio)))
+
+        # Filter out short segments
+        min_segment_length = 100  # milliseconds
+        non_silence_segments = [
+            (start, end)
+            for start, end in non_silence_segments
+            if (end - start) >= min_segment_length
+        ]
+
+        # If all segments were filtered out, keep the original audio
+        if not non_silence_segments:
+            non_silence_segments = [(0, len(audio))]
+
+        print(
+            f"Found {len(non_silence_segments)} speech segments of at least {min_segment_length}ms"
+        )
+
+        # Add margins around each non-silence segment to avoid cutting words
+        margin_ms = 150  # milliseconds to add before and after each segment
+        expanded_segments = []
+        for start, end in non_silence_segments:
+            # Add margin but don't go below 0 or beyond audio length
+            new_start = max(0, start - margin_ms)
+            new_end = min(len(audio), end + margin_ms)
+            expanded_segments.append((new_start, new_end))
+
+        # Merge overlapping segments after expansion
+        if expanded_segments:
+            expanded_segments.sort()
+            merged_segments = [expanded_segments[0]]
+            for current_start, current_end in expanded_segments[1:]:
+                prev_start, prev_end = merged_segments[-1]
+                if current_start <= prev_end:  # Overlap detected
+                    # Merge segments
+                    merged_segments[-1] = (prev_start, max(prev_end, current_end))
+                else:
+                    # No overlap, add as new segment
+                    merged_segments.append((current_start, current_end))
+
+            non_silence_segments = merged_segments
+
+        # Create a new audio segment with only the speech parts and small silent padding
+        padding_ms = 100  # Amount of silence to add between segments
+        processed_audio = AudioSegment.empty()
+
+        # Add each non-silence segment with padding
+        for i, (start, end) in enumerate(non_silence_segments):
+            # Add the non-silence segment
+            processed_audio += audio[start:end]
+
+            # Add padding silence between segments (but not after the last one)
+            if i < len(non_silence_segments) - 1:
+                processed_audio += AudioSegment.silent(duration=padding_ms)
+
+        # Export the processed audio
+        processed_audio.export(temp_file, format="wav")
+
         # Get hotwords from request
         current_hotwords = request.hotwords if request.hotwords else ""
 
@@ -60,7 +182,10 @@ class WhisperServicer(speech_pb2_grpc.SpeechServiceServicer):
             temp_file,
             language="en",
             hotwords=current_hotwords,
-            condition_on_previous_text=True,
+            vad_filter=True,
+            vad_parameters={
+                "threshold": 0.9,
+            },
         )
 
         # Access the generator to collect text segments
@@ -113,7 +238,7 @@ if __name__ == "__main__":
         "--model_size",
         type=str,
         default="base.en",
-        help="Model size to use (base.en, large.en, or small.en)",
+        help="Model size to use (base.en, large, or small.en)",
     )
     parser.add_argument(
         "--log_transcriptions",

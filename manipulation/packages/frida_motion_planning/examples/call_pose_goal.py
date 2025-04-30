@@ -6,6 +6,8 @@ from rclpy.action import ActionClient
 from frida_interfaces.action import MoveToPose
 from geometry_msgs.msg import PoseStamped
 
+TARGET_LINK = ""  # Example target link
+
 
 class MoveToPoseClient(Node):
     def __init__(self):
@@ -26,6 +28,7 @@ class MoveToPoseClient(Node):
     def send_goal(
         self,
         pose=PoseStamped(),
+        target_link="",
         velocity=0.2,
         acceleration=0.0,
         planner_id="",
@@ -35,6 +38,7 @@ class MoveToPoseClient(Node):
         goal_msg.velocity = velocity
         goal_msg.acceleration = acceleration
         goal_msg.planner_id = planner_id
+        goal_msg.target_link = target_link
 
         self._action_client.wait_for_server()
 
@@ -52,7 +56,7 @@ def main(args=None):
     pose_stamped.header.stamp = action_client.get_clock().now().to_msg()
 
     # Set the pose component
-    pose_stamped.pose.position.x = 0.0
+    pose_stamped.pose.position.x = 0.15
     pose_stamped.pose.position.y = 0.0
     pose_stamped.pose.position.z = 0.7
     # Quaternion for 90 degree roll (rotating around x-axis)
@@ -67,7 +71,7 @@ def main(args=None):
     time.sleep(0.1)
 
     # Send goal
-    future = action_client.send_goal(pose_stamped)
+    future = action_client.send_goal(pose=pose_stamped, target_link=TARGET_LINK)
 
     # Wait for goal to be accepted
     rclpy.spin_until_future_complete(action_client, future)

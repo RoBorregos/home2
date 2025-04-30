@@ -64,9 +64,7 @@ class StoringGroceriesManager(Node):
     def __init__(self):
         super().__init__("storing_groceries_manager")
         self.logger = Logger()
-        self.subtask_manager = SubtaskManager(
-            self, task=Task.STORING_GROCERIES, mock_areas=["manipulation"]
-        )
+        self.subtask_manager = SubtaskManager(self, task=Task.STORING_GROCERIES, mock_areas=[])
         self.state = ExecutionStates.START
         self.state_data = {}
         self.shelves: dict[int, Shelf] = defaultdict(Shelf)
@@ -80,10 +78,10 @@ class StoringGroceriesManager(Node):
         self.prev_state = None
         self.check_manual_levels = True
         self.manual_heights = [
-            0.445,
-            0.805,
-            1.165,
-            1.525,
+            0.445,  # 0.445 (0.1 +-) -> 0.345 0.545
+            0.805,  # 0.805 (0.1 +-) -> 0.705 0.905
+            1.165,  # 1.165 (0.1 +-) -> 1.065 1.265
+            1.525,  # 1.525 (0.1 +-) -> 1.425 1.625
         ]  # remember rest 15cm from the base_link and the measure is in m
         self.shelf_level_threshold = 0.30
         self.shelf_level_down_threshold = 0.05
@@ -140,7 +138,9 @@ class StoringGroceriesManager(Node):
         if self.state == ExecutionStates.START:
             self.get_logger().info("Waiting for TF system to initialize...")
             rclpy.spin_once(self, timeout_sec=2.0)
-            self.state = ExecutionStates.INIT_NAV_TO_SHELF
+            # self.state = ExecutionStates.INIT_NAV_TO_SHELF
+            self.state = ExecutionStates.VIEW_SHELF_AND_SAVE_OBJECTS
+
         elif self.state == ExecutionStates.END:
             Logger.info(self, "Ending Storing Groceries Manager...")
             self.subtask_manager.hri.say(text="Ending Storing Groceries Manager...", wait=True)
@@ -201,7 +201,32 @@ class StoringGroceriesManager(Node):
                 len(self.shelves)
             else:
                 # Manual levels
+                # self.shelves_count = 0
+                # self.shelves = {}
+                # for i, height in enumerate(self.manual_heights):
+                #     self.shelves[i] = Shelf(id=i, tag="", objects=[])
+                #     self.subtask_manager.manipulation.move_to_height(height)
+                #     bbox = self.subtask_manager.manipulation.get_plane_bbox()
+                #     new_target = self.get_new_height(bbox)
+                #     self.subtask_manager.manipulation.move_to_height(new_target)
+                #     status, res = self.subtask_manager.vision.detect_objects()
+
+                #     for count, det in enumerate(res):
+                #         if det is not None:
+                #             self.shelves[i].objects.append(det.classname)
+                #             self.shelves[i].id = i
+                #             Logger.info(
+                #                 self,
+                #                 f"Detected object {det.classname} in shelf {self.shelves[i].tag}",
+                #             )
+
+                #     self.shelves_count += 1
+
+                # self.subtask_manager.manipulation.move_joint_positions(
+                # named_position="front_stare", velocity=0.5, degrees=True
+                # )
                 self.generate_manual_levels()
+
                 status, res = self.subtask_manager.vision.detect_objects()
                 for count, det in enumerate(res):
                     if det is not None:

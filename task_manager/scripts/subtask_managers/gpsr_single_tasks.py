@@ -1,10 +1,15 @@
+from utils.status import Status
+
 from subtask_managers.generic_tasks import GenericTask
+
+RETRIES = 3
 
 
 class GPSRSingleTask(GenericTask):
     """Class to manage the GPS task"""
 
     ## Nav
+
     def go(self, complement="", characteristic=""):
         """
         Navigate to a given location.
@@ -26,7 +31,17 @@ class GPSRSingleTask(GenericTask):
             - The robot is in the specified location
         """
         self.subtask_manager.hri.say(f"I will go to {complement}.", wait=False)
-        self.subtask_manager.nav.move_to_location(complement)
+        # location = self.subtask_manager.hri.query_location(complement)
+        # area = self.subtask_manager.hri.get_area(location)
+        # subarea = self.subtask_manager.hri.get_subarea(location)
+
+        # self.subtask_manager.hri.node.get_logger().info(
+        #     f"Moving to {complement} in area: {area}, subarea: {subarea}"
+        # )
+
+        self.subtask_manager.nav.move_to_location("area", "subarea")
+
+        return Status.EXECUTION_SUCCESS, "arrived to:" + complement
 
     ## Manipulation
     def pick(self, complement: str, characteristic=""):
@@ -54,8 +69,22 @@ class GPSRSingleTask(GenericTask):
             - pick_object(complement)
         """
         self.subtask_manager.hri.say(f"I will pick the {complement}.", wait=False)
+        current_try = 0
 
-        pass
+        while True:
+            s, detections = self.subtask_manager.vision.detect_objects()
+            current_try += 1
+            if s == Status.EXECUTION_SUCCESS:
+                break
+            if current_try >= RETRIES:
+                self.subtask_manager.hri.say(
+                    "I am sorry, I could not see the object. I will try again."
+                )
+                return Status.TARGET_NOT_FOUND, ""
+
+        labels = self.subtask_manager.vision.get_labels(detections)
+        s, object_to_pick = self.subtask_manager.hri.find_closest(labels, characteristic)
+        return self.subtask_manager.manipulation.pick_object(object_to_pick), ""
 
     ## Manipulation
     def place(self, complement="", characteristic=""):
@@ -83,7 +112,8 @@ class GPSRSingleTask(GenericTask):
             place()
         """
         self.subtask_manager.hri.say("I will place the object.", wait=False)
-        pass
+
+        return self.subtask_manager.manipulation.place(), ""
 
     ## HRI
     def contextual_say(self, complement: str, characteristic: str):
@@ -114,7 +144,17 @@ class GPSRSingleTask(GenericTask):
         Pseudocode:
             say(llm_response(complement, fetch_info(characteristic)))
         """
-        pass
+        history = self.subtask_manager.hri.query_command_history(complement)
+        context = self.subtask_manager.hri.get_context(history)
+        complement = self.subtask_manager.hri.get_complement(history)
+        # characteristic = self.subtask_manager.hri.get_characteristic(history)
+        result = self.subtask_manager.hri.get_result(history)
+        # status = self.subtask_manager.hri.get_status(history)
+        self.subtask_manager.hri.say(
+            f"Okay, the result of {context} is: {result}.",
+            wait=True,
+        )
+        return Status.EXECUTION_SUCCESS, "success"
 
     ## HRI
     def say(self, complement: str, characteristic=""):
@@ -140,7 +180,7 @@ class GPSRSingleTask(GenericTask):
         Pseudocode:
             - say(text)
         """
-        self.subtask_manager.hri.say(complement, wait=True)
+        return self.subtask_manager.hri.say(complement, wait=True), ""
 
     ## HRI
     def ask_answer_question(self, complement="", characteristic=""):
@@ -171,7 +211,27 @@ class GPSRSingleTask(GenericTask):
                     contextual_say('Please answer my question', question)
         """
 
-        pass
+        def confirm_question(interpreted_text, target_info):
+            return f"Is your question: {target_info}?"
+
+        status, question = self.subtask_manager.hri.ask_and_confirm(
+            "Please ask your question",
+            "question",
+            context="The user was asked to say a question. We want to infer his question from the response",
+            confirm_question=confirm_question,
+            use_hotwords=False,
+            retries=3,
+            min_wait_between_retries=5.0,
+        )
+
+        if status != Status.EXECUTION_SUCCESS:
+            self.subtask_manager.hri.say("I am sorry, I could not understand your question.")
+            return Status.TARGET_NOT_FOUND, ""
+
+        return self.contextual_say(
+            f"Please answer my question: {question}",
+            question,
+        )
 
     ## Vision
     def visual_info(self, complement: str, characteristic=""):
@@ -200,7 +260,5 @@ class GPSRSingleTask(GenericTask):
         Postconditions:
             The robot saves the specified information for further use.
         """
-
-        # TODO: @lleo-13 -> implement saving information to db
-        # TODO: @Oscar-gg -> integrate db interactions
-        pass
+        characteristic = characteristic if len(characteristic) > 1 else None
+        return self.subtask_manager.vision.visual_info(complement, characteristic)

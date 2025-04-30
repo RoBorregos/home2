@@ -15,7 +15,6 @@ from frida_constants.vision_constants import (
     SAVE_NAME_TOPIC,
     SET_TARGET_TOPIC,
     SHELF_DETECTION_TOPIC,
-    DETECTION_HANDLER_TOPIC_SRV,
     SET_TARGET_BY_TOPIC,
     FIND_SEAT_TOPIC,
     CHECK_PERSON_TOPIC,
@@ -28,6 +27,7 @@ from frida_constants.vision_constants import (
     COUNT_BY_POSE_TOPIC,
     POSE_GESTURE_TOPIC,
     COUNT_BY_COLOR_TOPIC,
+    DETECTION_HANDLER_TOPIC_SRV,
 )
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.msg import ObjectDetection, PersonList
@@ -59,6 +59,7 @@ import time
 from utils.task import Task
 
 TIMEOUT = 5.0
+DETECTION_HANDLER_TOPIC_SRV = DETECTION_HANDLER_TOPIC_SRV
 
 
 class VisionTasks:
@@ -97,10 +98,6 @@ class VisionTasks:
             ShelfDetectionHandler, SHELF_DETECTION_TOPIC
         )
         self.beverage_location_client = self.node.create_client(BeverageLocation, BEVERAGE_TOPIC)
-
-        self.object_detector_client = self.node.create_client(
-            DetectionHandler, DETECTION_HANDLER_TOPIC_SRV
-        )
 
         self.object_detector_client = self.node.create_client(
             DetectionHandler, DETECTION_HANDLER_TOPIC_SRV
@@ -244,7 +241,7 @@ class VisionTasks:
             result = future.result()
 
             if not result.success:
-                raise Exception("Service call failed")
+                return Status.TARGET_NOT_FOUND
 
         except Exception as e:
             Logger.error(self.node, f"Error saving name: {e}")
@@ -325,7 +322,8 @@ class VisionTasks:
         try:
             future = self.object_detector_client.call_async(request)
             rclpy.spin_until_future_complete(self.node, future, timeout_sec=timeout)
-            result: DetectionHandler.Response = future.result()
+            result = future.result()
+            print(f"result: {result}")
 
             if not result.success:
                 Logger.warn(self.node, "No object detected")
@@ -556,7 +554,8 @@ class VisionTasks:
             result = future.result()
 
             if not result.success:
-                raise Exception("Service call failed")
+                Logger.warn(self.node, "No person found")
+                return Status.TARGET_NOT_FOUND
 
         except Exception as e:
             Logger.error(self.node, f"Error tracking person: {e}")
@@ -761,6 +760,26 @@ class VisionTasks:
         Logger.info(self.node, "Describing shelf")
         prompt = "You are watching a shelf level with several items. Please give me a list of the items in the shelf"
         return self.moondream_query(prompt, query_person=False)
+
+    def find_object(self, object: str) -> int:
+        """Find the object using only moondream"""
+        Logger.info(self.node, f"Finding object: {object}")
+        prompt = f"Is there an {object} in the image? Please return 0(no) or 1(yes)"
+        status, result = self.moondream_query(prompt, query_person=False)
+        if status == Status.EXECUTION_SUCCESS:
+            if result == "1":
+                return Status.EXECUTION_SUCCESS
+            else:
+                return Status.TARGET_NOT_FOUND
+        else:
+            return Status.EXECUTION_ERROR
+
+    def get_labels(self, detections: list[BBOX]) -> list[str]:
+        """Get the labels of the detected objects"""
+        labels = []
+        for detection in detections:
+            labels.append(detection.classname)
+        return labels
 
 
 if __name__ == "__main__":

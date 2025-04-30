@@ -26,9 +26,10 @@ def generate_launch_description():
         [ModuleNames.HRI.value],
     )["say"]["ros__parameters"]
 
-    respeaker_config = os.path.join(
-        get_package_share_directory("speech"), "config", "respeaker.yaml"
-    )
+    respeaker_config = parse_ros_config(
+        os.path.join(get_package_share_directory("speech"), "config", "respeaker.yaml"),
+        [ModuleNames.HRI.value],
+    )["respeaker"]["ros__parameters"]
 
     kws_config = parse_ros_config(
         os.path.join(get_package_share_directory("speech"), "config", "kws.yaml"),

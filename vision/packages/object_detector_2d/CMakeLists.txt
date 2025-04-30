@@ -21,7 +21,7 @@ find_package(tf2 REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_eigen REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
-find_package(laser_geometry REQUIRED)
+# find_package(laser_geometry REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(frida_interfaces REQUIRED)
 find_package(frida_constants REQUIRED)
@@ -43,12 +43,16 @@ include_directories(include)
 ament_python_install_package(${PROJECT_NAME})
 
 
-#file (GLOB NODES scripts/*.py)
+file (GLOB PYTHON_SCRIPTS scripts/*.py)
 #Install python scripts
+# install(PROGRAMS
+#   scripts/object_detector_node.py
+#   scripts/zero_shot_object_detector_node.py
+#   scripts/local_camera.py
+#   DESTINATION lib/${PROJECT_NAME}
+# )
 install(PROGRAMS
-  scripts/object_detector_node.py
-  scripts/zero_shot_object_detector_node.py
-  scripts/local_camera.py
+  ${PYTHON_SCRIPTS}
   DESTINATION lib/${PROJECT_NAME}
 )
 

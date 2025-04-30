@@ -1,6 +1,6 @@
 services:
   display:
-    profiles: [receptionist, carry]
+    profiles: [receptionist, carry, gpsr]
 
     container_name: home2-hri-display
     image: roborregos/home2:hri-display
@@ -14,12 +14,6 @@ services:
       - ../../hri/display/:/app
     ports:
       - "3000:3000"
-      - "8000:8000"
+      - "8001:8001"
       - "8080:8080"
-    command:
-      [
-        "/bin/bash",
-        "-l",
-        "-c",
-        "source /opt/ros/humble/setup.bash && npm i && (ros2 run web_video_server web_video_server &) && npm run start",
-      ]
+    command: ["/bin/bash", "/display-entrypoint.sh"]

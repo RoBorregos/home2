@@ -1,5 +1,5 @@
 respeaker:
   ros__parameters:
-    doa_publish_topic: "/respeaker/doa"
+    RESPEAKER_LIGHT_TOPIC: REPLACE
     doa_timer: 0.5
-    light_subscriber_topic: "/respeaker/light"
+    RESPEAKER_DOA_TOPIC: REPLACE
