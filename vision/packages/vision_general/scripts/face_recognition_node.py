@@ -36,7 +36,7 @@ from frida_constants.vision_constants import (
     FOLLOW_TOPIC,
     PERSON_LIST_TOPIC,
     PERSON_NAME_TOPIC,
-    VISION_FRAME_TOPIC,
+    FACE_RECOGNITION_IMAGE,
     DEPTH_IMAGE_TOPIC,
     CAMERA_INFO_TOPIC,
 )
@@ -67,7 +67,7 @@ class FaceRecognition(Node):
             SaveName, FOLLOW_BY_TOPIC, self.follow_by_name_callback
         )
         self.follow_publisher = self.create_publisher(Point, FOLLOW_TOPIC, 10)
-        self.view_pub = self.create_publisher(Image, VISION_FRAME_TOPIC, 10)
+        self.view_pub = self.create_publisher(Image, FACE_RECOGNITION_IMAGE, 10)
         self.name_publisher = self.create_publisher(String, PERSON_NAME_TOPIC, 10)
         self.person_list_publisher = self.create_publisher(
             PersonList, PERSON_LIST_TOPIC, 10

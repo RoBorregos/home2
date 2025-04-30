@@ -12,11 +12,16 @@ from utils.subtask_manager import SubtaskManager, Task
 from utils.status import Status
 import time
 
+
+from frida_constants.vision_constants import (
+    RECEPTIONIST_VIEW,
+    FACE_VIEW,
+)
+
 ATTEMPT_LIMIT = 3
 START = "START"
-RECEPTIONIST_VIEW = "/vision/receptionist/img_person_detecion"
-FACE_VIEW = "/vision/person_frame"
-
+# RECEPTIONIST_VIEW = "/vision/receptionist/img_person_detecion"
+# FACE_VIEW = "/vision/person_frame"
 
 class Guest:
     """Class to manage the guest information"""
@@ -123,9 +128,7 @@ class ReceptionistTM(Node):
         if self.current_state == ReceptionistTM.TASK_STATES["WAIT_FOR_GUEST"]:
             Logger.state(self, "Waiting for guest")
 
-            self.subtask_manager.manipulation.move_joint_positions(
-                named_position="front_stare", velocity=0.5, degrees=True
-            )
+            self.subtask_manager.manipulation.move_to_position("front_stare")
 
             self.subtask_manager.hri.say(
                 "I am ready to receive guests, please open the door.", wait=True
