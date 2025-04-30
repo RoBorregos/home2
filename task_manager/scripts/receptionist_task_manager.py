@@ -80,9 +80,7 @@ class ReceptionistTM(Node):
                 f"I will now guide you to the {location}. Please follow me."
             )
             self.subtask_manager.manipulation.follow_face(False)
-            self.subtask_manager.manipulation.move_joint_positions(
-                named_position="front_stare", velocity=0.5, degrees=True
-            )
+            self.subtask_manager.manipulation.move_to_position("nav_pose") 
         future = self.subtask_manager.nav.move_to_location(location, sublocation)
         if "navigation" not in self.subtask_manager.get_mocked_areas():
             rclpy.spin_until_future_complete(self, future)
