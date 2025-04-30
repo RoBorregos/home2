@@ -5,6 +5,8 @@ from rclpy.node import Node
 from pydantic import BaseModel, ValidationError
 from typing import Optional, ClassVar, Dict
 from enum import Enum
+from ament_index_python.packages import get_package_share_directory
+import os
 import json
 from pathlib import Path
 from frida_interfaces.srv import (
@@ -237,13 +239,13 @@ class Embeddings(Node):
                 docs = results_raw.get("documents", [[]])
                 metas = results_raw.get("metadatas", [[]])
                 formatted_results = []
-
                 for doc, meta in zip(docs, metas):
+                    if isinstance(meta, list):
+                        meta = meta[0]
                     entry = {
                         "document": [doc],
                         "metadata": meta,
                     }
-
                     if "original_name" in meta:
                         entry["document"] = meta["original_name"]
 
@@ -258,7 +260,6 @@ class Embeddings(Node):
                 "Query successful" if grouped_results else "No matching items found"
             )
             self.get_logger().info("Query request handled successfully")
-
         except Exception as e:
             response.success = False
             response.message = f"Failed to query items: {str(e)}"
@@ -347,9 +348,30 @@ class Embeddings(Node):
             collections[collection_name] = (
                 self.chroma_adapter._get_or_create_collection(collection_name)
             )
-            print("Collection name:", collection_name)
+            # Add entries to the collection
             self.chroma_adapter.add_entries(collection_name, documents, metadatas_)
+        self.add_locations()
+        # self.print_all_collections()
+        return
+
+    def add_locations(self):
         self.chroma_adapter._get_or_create_collection("command_history")
+        areas_document = []
+        areas_metadatas = []
+        package_share_directory = get_package_share_directory("frida_constants")
+        file_path = os.path.join(package_share_directory, "map_areas/areas.json")
+        with open(file_path, "r") as file:
+            self.areas = json.load(file)
+        for area in self.areas:
+            for subarea in self.areas[area]:
+                if subarea == "safe_place":
+                    subarea = ""
+                areas_document.append(area + " " + subarea)
+                areas_metadatas.append(
+                    {"context": "house locations", "area": area, "subarea": subarea}
+                )
+        self.chroma_adapter._get_or_create_collection("locations")
+        self.chroma_adapter.add_entries("locations", areas_document, areas_metadatas)
         return
 
     def add_basics(self, documents, metadatas):
@@ -380,6 +402,39 @@ class Embeddings(Node):
 
         # Default case: just return the string
         return documents
+
+    def print_all_collections(self):
+        """Prints all collections and their contents in ChromaDB v0.6.0+"""
+        try:
+            collection_names = self.chroma_adapter.client.list_collections()
+            if not collection_names:
+                self.get_logger().info("No collections found.")
+                return
+
+            for name in collection_names:
+                self.get_logger().info(f"--- Collection: '{name}' ---")
+
+                try:
+                    collection = self.chroma_adapter.client.get_collection(name=name)
+                    results = collection.get(include=["documents", "metadatas"])
+
+                    docs = results.get("documents", [])
+                    metas = results.get("metadatas", [])
+
+                    if not docs:
+                        self.get_logger().info("(Empty collection)")
+                        continue
+
+                    for idx, (doc, meta) in enumerate(zip(docs, metas)):
+                        self.get_logger().info(f"[{idx}] Document: {doc}")
+                        self.get_logger().info(f"     Metadata: {meta}")
+                except Exception as e:
+                    self.get_logger().warning(
+                        f"Failed to access collection '{name}': {str(e)}"
+                    )
+
+        except Exception as e:
+            self.get_logger().error(f"Failed to list collections: {str(e)}")
 
 
 def main():

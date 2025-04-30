@@ -574,8 +574,6 @@ class HRITasks(metaclass=SubtaskMeta):
             results = future.result().results
             results_loaded = json.loads(results[0])
             results_list = results_loaded["results"]
-        Logger.info(self.node, f"Querying {query} in {collection} collection")
-        self.node.get_logger().info(f"RESULTS: {results_list}")
         return Status.EXECUTION_SUCCESS, results_list
 
     def _add_to_collection(self, document: list, metadata: str, collection: str) -> str:
