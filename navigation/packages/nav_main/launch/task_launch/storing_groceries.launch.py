@@ -12,7 +12,7 @@ def launch_setup(context, *args, **kwargs):
     use_sim = LaunchConfiguration('use_sim', default='false')
     localization = LaunchConfiguration('localization', default='true')
     rtabmap_viz = LaunchConfiguration('rtabmap_viz', default='false')
-    default_value=os.path.join(nav_dir, 'config', 'new_params.yaml'),
+    default_value=os.path.join(nav_dir, 'config', 'chat_params.yaml'),
     params_file = LaunchConfiguration('params_file', default=default_value)
     
     
