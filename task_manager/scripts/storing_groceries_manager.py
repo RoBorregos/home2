@@ -240,14 +240,30 @@ class StoringGroceriesManager(Node):
                 # named_position="front_stare", velocity=0.5, degrees=True
                 # )
                 self.generate_manual_levels()
+                for i in range(len(self.manual_heights)):
+                    self.shelves[i] = Shelf(id=i, tag="", objects=[])
+                    self.subtask_manager.manipulation.get_optimal_position_for_plane(
+                        self.manual_heights[i], tolerance=0.2
+                    )
+                    status, res = self.subtask_manager.vision.detect_objects()
+                    rettry = 0
+                    while status != Status.EXECUTION_SUCCESS and rettry < 5:
+                        Logger.error(self, f"Error detecting objects: {status}")
+                        time.sleep(1)
+                        status, res = self.subtask_manager.vision.detect_objects()
+                        rettry += 1
+                    if status != Status.EXECUTION_SUCCESS:
+                        Logger.error(self, f"Error detecting objects: {status}")
+                        return
 
-                status, res = self.subtask_manager.vision.detect_objects()
-                for count, det in enumerate(res):
-                    if det is not None:
-                        height = self.convert_to_height(det)
-                        while height is None:
+                    if len(res) == 0:
+                        Logger.error(self, f"No objects detected: {status}")
+                        continue
+                    for det in res:
+                        if det is not None:
                             height = self.convert_to_height(det)
-                        for i in self.shelves:
+                            while height is None:
+                                height = self.convert_to_height(det)
                             distance_check = height - self.manual_heights[i]
                             if (
                                 distance_check < 0
@@ -262,6 +278,32 @@ class StoringGroceriesManager(Node):
                                     f"Detected object {det.classname} in shelf {self.shelves[i].tag}",
                                 )
                                 break
+                    self.shelves_count += 1
+                # self.subtask_manager.manipulation.move_joint_positions(
+                #     named_position="front_stare", velocity=0.5, degrees=True
+                # )
+
+                # status, res = self.subtask_manager.vision.detect_objects()
+                # for count, det in enumerate(res):
+                #     if det is not None:
+                #         height = self.convert_to_height(det)
+                #         while height is None:
+                #             height = self.convert_to_height(det)
+                #         for i in self.shelves:
+                #             distance_check = height - self.manual_heights[i]
+                #             if (
+                #                 distance_check < 0
+                #                 and abs(distance_check) < self.shelf_level_down_threshold
+                #             ) or (
+                #                 distance_check >= 0 and distance_check < self.shelf_level_threshold
+                #             ):
+                #                 self.shelves[i].objects.append(det.classname)
+                #                 self.shelves[i].id = i
+                #                 Logger.info(
+                #                     self,
+                #                     f"Detected object {det.classname} in shelf {self.shelves[i].tag}",
+                #                 )
+                #                 break
 
                 if status == Status.EXECUTION_SUCCESS:
                     self.state = ExecutionStates.INIT_NAV_TO_TABLE

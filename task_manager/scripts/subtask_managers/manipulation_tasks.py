@@ -11,7 +11,7 @@ from rclpy.node import Node
 from utils.logger import Logger
 
 from frida_interfaces.action import MoveJoints
-from frida_interfaces.srv import GetJoints, FollowFace
+from frida_interfaces.srv import GetJoints, FollowFace, GetOptimalPositionForPlane
 from frida_constants.xarm_configurations import XARM_CONFIGURATIONS
 from rclpy.action import ActionClient
 from typing import List, Union
@@ -80,6 +80,11 @@ class ManipulationTasks:
         self.follow_face_client = self.node.create_client(FollowFace, "/follow_face")
         self._manipulation_action_client = ActionClient(
             self.node, ManipulationAction, MANIPULATION_ACTION_SERVER
+        )
+        self._fix_position_to_plane_client = ActionClient(
+            self.node,
+            GetOptimalPositionForPlane,
+            "/manipulation/get_optimal_position_for_plane",
         )
 
     def open_gripper(self):
@@ -317,6 +322,29 @@ class ManipulationTasks:
 
     def move_to_position(self, named_position: str):
         self.move_joint_positions(named_position=named_position, velocity=0.5, degrees=True)
+
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
+    @service_check(
+        client="_fix_position_to_plane_client", return_value=Status.TERMINAL_ERROR, timeout=TIMEOUT
+    )
+    def get_optimal_position_for_plane(self, est_heigth: float, tolerance: float = 0.2):
+        """Fix the robot to a plane"""
+        req = GetOptimalPositionForPlane.Request()
+        req.plane_est_min_height = est_heigth - tolerance
+        req.plane_est_max_height = est_heigth + tolerance
+
+        future = self._fix_position_to_plane_client.call_async(req)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+        result = future.result()
+        if result is None:
+            Logger.error(self.node, "Failed to get optimal position for plane")
+            return Status.EXECUTION_ERROR
+        result: GetOptimalPositionForPlane.Response
+        if result.is_valid:
+            Logger.success(self.node, f"Optimal position for plane: {result.pt1}")
+            return
+        Logger.error(self.node, "Invalid position for plane")
+        return Status.EXECUTION_ERROR
 
 
 if __name__ == "__main__":
