@@ -527,19 +527,39 @@ public:
 
       // tf_listener->lookupTransform("base_link", msg->header.frame_id,
       //                              msg->header.stamp, rclcpp::Duration(5.0));
-      bool can_transform = this->tf_buffer->canTransform(
-          "base_link", msg->header.frame_id, tf2::TimePointZero);
-      if (!can_transform) {
-        RCLCPP_ERROR(this->get_logger(), "Could not transform point cloud");
-        return COULD_NOT_CONVERT_POINT_CLOUD;
-      }
+      // bool can_transform = this->tf_buffer->canTransform(
+      //     "base_link", msg->header.frame_id, tf2::TimePointZero);
+      // if (!can_transform) {
+      //   RCLCPP_ERROR(this->get_logger(), "Could not transform point cloud");
+      //   return COULD_NOT_CONVERT_POINT_CLOUD;
+      // }
 
       pcl_ros::transformPointCloud("base_link", *msg, msg2, *this->tf_buffer);
+
+      if (msg2.data.empty()) {
+        RCLCPP_ERROR(this->get_logger(), "Point cloud is empty");
+        return POINT_CLOUD_EMPTY;
+      }
+      pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(
+        new pcl::PointCloud<pcl::PointXYZ>);
+      try {
+
+          pcl::fromROSMsg(msg2, *cloud);
+        } catch (const std::exception &e) {
+          RCLCPP_ERROR(this->get_logger(), "Error converting point cloud: %s",
+                       e.what());
+          return COULD_NOT_CONVERT_POINT_CLOUD;
+        }
+      if (cloud->points.size() == 0) {
+        RCLCPP_ERROR(this->get_logger(), "Point cloud is empty");
+        return POINT_CLOUD_EMPTY;
+      }
 
       last_ = pcl::PointCloud<pcl::PointXYZ>::Ptr(
           new pcl::PointCloud<pcl::PointXYZ>);
 
-      pcl::fromROSMsg(msg2, *last_);
+      // pcl::fromROSMsg(msg2, *last_);
+      *last_ = *cloud;
 
       // last_ = pcl::PointCloud<pcl::PointXYZ>::Ptr(
       //     new pcl::PointCloud<pcl::PointXYZ>);

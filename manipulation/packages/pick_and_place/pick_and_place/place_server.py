@@ -203,7 +203,6 @@ class PlaceMotionServer(Node):
 
     def move_to_pose(self, pose):
         """Move the robot to the given pose."""
-        self.get_logger().info(f"Moving to pose: {pose}")
         request = MoveToPose.Goal()
         request.pose = pose
         request.velocity = PICK_VELOCITY

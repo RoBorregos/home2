@@ -19,6 +19,7 @@ from frida_constants.manipulation_constants import (
     PICK_MOTION_ACTION_SERVER,
     PLANE_OBJECT_COLLISION_TOLERANCE,
     SAFETY_HEIGHT,
+    PICK_MIN_HEIGHT,
 )
 from frida_interfaces.srv import (
     AttachCollisionObject,
@@ -99,64 +100,86 @@ class PickMotionServer(Node):
         )
         pick_result = PickResult()
         grasping_poses = goal_handle.request.grasping_poses
+
+        # Apparently GPD always sends me somewhat at the same distance to the object, so lets try different distances
+        num_grasping_alternatives = (
+            3  # for each grasping pose, try 4 alternatives from closest to farthest
+        )
+        grasping_alternative_distance = -0.015  # 5mm distance
+
+        self.save_collision_objects()
+        self.find_plane()
+        if self.plane is None:
+            self.get_logger().error("No plane found, cannot pick object")
+            return False, pick_result
+
         for i, pose in enumerate(grasping_poses):
             # Move to pre-grasp pose
 
-            ee_link_pose = copy.deepcopy(pose)
+            for j in range(num_grasping_alternatives):
+                ee_link_pose = copy.deepcopy(pose)
 
-            offset_distance = (
-                self.ee_link_offset
-            )  # Desired distance in meters along the local z-axis
+                offset_distance = (
+                    self.ee_link_offset
+                )  # Desired distance in meters along the local z-axis
 
-            # Compute the offset along the local z-axis
-            quat = [
-                ee_link_pose.pose.orientation.w,
-                ee_link_pose.pose.orientation.x,
-                ee_link_pose.pose.orientation.y,
-                ee_link_pose.pose.orientation.z,
-            ]
-            rotation_matrix = quat2mat(quat)
-            # Extract local Z-axis (third column of the rotation matrix)
-            z_axis = rotation_matrix[:, 2]
+                offset_distance += j * grasping_alternative_distance
 
-            # Translate along the local Z-axis
-            new_position = (
-                np.array(
-                    [
-                        ee_link_pose.pose.position.x,
-                        ee_link_pose.pose.position.y,
-                        ee_link_pose.pose.position.z,
-                    ]
-                )
-                + z_axis * offset_distance
-            )
-            ee_link_pose.pose.position.x = new_position[0]
-            ee_link_pose.pose.position.y = new_position[1]
-            ee_link_pose.pose.position.z = new_position[2]
+                # Compute the offset along the local z-axis
+                quat = [
+                    ee_link_pose.pose.orientation.w,
+                    ee_link_pose.pose.orientation.x,
+                    ee_link_pose.pose.orientation.y,
+                    ee_link_pose.pose.orientation.z,
+                ]
+                rotation_matrix = quat2mat(quat)
+                # Extract local Z-axis (third column of the rotation matrix)
+                z_axis = rotation_matrix[:, 2]
 
-            grasp_pose_handler, grasp_pose_result = self.move_to_pose(ee_link_pose)
-            print(f"Grasp Pose {i} result: {grasp_pose_result}")
-            if grasp_pose_result.result.success:
-                self.get_logger().info("Grasp pose reached")
-                result, lowest_obj = self.attach_pick_object()
-                if result:
-                    self.get_logger().info("Object attached")
-                    # Save object details
-                    pick_result.pick_pose = ee_link_pose
-                    pick_result.grasp_score = goal_handle.request.grasping_scores[i]
-                    pick_result.object_pick_height = self.calculate_object_pick_height(
-                        lowest_obj, ee_link_pose
+                # Translate along the local Z-axis
+                new_position = (
+                    np.array(
+                        [
+                            ee_link_pose.pose.position.x,
+                            ee_link_pose.pose.position.y,
+                            ee_link_pose.pose.position.z,
+                        ]
                     )
-                else:
-                    self.get_logger().error("Failed to attach object")
-                return True, pick_result
+                    + z_axis * offset_distance
+                )
+                ee_link_pose.pose.position.x = new_position[0]
+                ee_link_pose.pose.position.y = new_position[1]
+                ee_link_pose.pose.position.z = new_position[2]
+
+                if not self.check_feasibility(ee_link_pose):
+                    self.get_logger().warn(
+                        f"Grasping alternative {j} is not feasible, skipping"
+                    )
+                    continue
+
+                grasp_pose_handler, grasp_pose_result = self.move_to_pose(ee_link_pose)
+
+                print(f"Grasp Pose {i} result: {grasp_pose_result}")
+                if grasp_pose_result.result.success:
+                    self.get_logger().info("Grasp pose reached")
+                    result, lowest_obj = self.attach_pick_object()
+                    if result:
+                        self.get_logger().info("Object attached")
+                        # Save object details
+                        pick_result.pick_pose = ee_link_pose
+                        pick_result.grasp_score = goal_handle.request.grasping_scores[i]
+                        pick_result.object_pick_height = (
+                            self.calculate_object_pick_height(lowest_obj, ee_link_pose)
+                        )
+                    else:
+                        self.get_logger().error("Failed to attach object")
+                    return True, pick_result
 
         self.get_logger().error("Failed to reach any grasp pose")
         return False, pick_result
 
     def move_to_pose(self, pose):
         """Move the robot to the given pose."""
-        self.get_logger().info(f"Moving to pose: {pose}")
         request = MoveToPose.Goal()
         request.pose = pose
         request.velocity = PICK_VELOCITY
@@ -176,17 +199,21 @@ class PickMotionServer(Node):
         # self.get_logger().info("Execution done with status: " + str(future.result()))
         return future  # 4 is the status for success
 
-    def attach_pick_object(self):
-        """Attach the pick object to the robot."""
-        collision_objects = self.get_collision_objects()
+    def save_collision_objects(self):
+        self.collision_objects = self.get_collision_objects()
+
+    def find_plane(self):
         # find plane object
-        plane = None
-        for obj in collision_objects:
+        self.plane = None
+        for obj in self.collision_objects:
             if PLANE_NAMESPACE in obj.id:
                 self.get_logger().info(f"Plane object found: {obj.id}")
-                plane = obj
+                self.plane = obj
+
+    def attach_pick_object(self):
+        """Attach the pick object to the robot."""
         obj_lowest = None
-        for obj in collision_objects:
+        for obj in self.collision_objects:
             if PICK_OBJECT_NAMESPACE in obj.id:
                 request = AttachCollisionObject.Request()
                 request.id = obj.id
@@ -195,7 +222,7 @@ class PickMotionServer(Node):
                 else:
                     if obj.pose.pose.position.z < obj_lowest.pose.pose.position.z:
                         obj_lowest = obj
-                if plane is not None and self.object_in_plane(obj, plane):
+                if self.plane is not None and self.object_in_plane(obj, self.plane):
                     self.remove_collision_object(obj.id)
                     continue
                 request.attached_link = EEF_LINK_NAME
@@ -246,6 +273,17 @@ class PickMotionServer(Node):
         height = grasp_height - (obj_z - obj_radius) + SAFETY_HEIGHT
         self.get_logger().info(f"Object pick height: {height}")
         return height
+
+    def check_feasibility(self, pose):
+        """Check if the pose is feasible."""
+        pick_height = pose.pose.position.z
+        plane_height = self.plane.pose.pose.position.z + self.plane.dimensions.z / 2
+        if pick_height < plane_height + PICK_MIN_HEIGHT:
+            self.get_logger().warn(
+                f"Pick height {pick_height} is below acceptable height, plane height is {plane_height}"
+            )
+            return False
+        return True
 
 
 def main(args=None):
