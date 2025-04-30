@@ -24,7 +24,10 @@ from launch_ros.actions import LoadComposableNodes
 from launch_ros.actions import Node
 from launch_ros.descriptions import ComposableNode, ParameterFile
 from nav2_common.launch import RewrittenYaml
-
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument,OpaqueFunction
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch_ros.substitutions import FindPackageShare
 
 def generate_launch_description():
     # Get the launch directory
@@ -180,7 +183,7 @@ def generate_launch_description():
                 parameters=[configured_params],
                 arguments=['--ros-args', '--log-level', log_level],
                 remappings=remappings +
-                        [('cmd_vel', 'cmd_vel_nav'), ('cmd_vel_smoothed', 'cmd_vel')]),
+                        [('cmd_vel', 'cmd_vel_nav')]),
             Node(
                 package='nav2_lifecycle_manager',
                 executable='lifecycle_manager',
@@ -239,7 +242,7 @@ def generate_launch_description():
                 name='velocity_smoother',
                 parameters=[configured_params],
                 remappings=remappings +
-                           [('cmd_vel', 'cmd_vel_nav'), ('cmd_vel_smoothed', 'cmd_vel')]),
+                           [('cmd_vel', 'cmd_vel_nav')]),
             ComposableNode(
                 package='nav2_lifecycle_manager',
                 plugin='nav2_lifecycle_manager::LifecycleManager',
@@ -249,6 +252,19 @@ def generate_launch_description():
                              'node_names': lifecycle_nodes}]),
         ],
     )
+    # Declare the launch options
+    collision_launch = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            PathJoinSubstitution(
+                [
+                    FindPackageShare("nav2_collision_monitor"),
+                    "launch",
+                    "collision_monitor_node.launch.py",
+                ]
+            )),
+        
+        launch_arguments={'use_sim_time': use_sim_time, "params_file": params_file}.items()
+        )
 
     # Create the launch description and populate
     ld = LaunchDescription()
@@ -268,5 +284,6 @@ def generate_launch_description():
     # Add the actions to launch all of the navigation nodes
     ld.add_action(load_nodes)
     ld.add_action(load_composable_nodes)
+    ld.add_action(collision_launch)
 
     return ld
