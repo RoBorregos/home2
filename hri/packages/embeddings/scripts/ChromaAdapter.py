@@ -31,6 +31,20 @@ class ChromaAdapter:
             self.client.delete_collection(name=collection)
         return
 
+    def remove_categorization_collections(self):
+        """Method to remove all collections from categorization node"""
+        collections = [
+            "items",
+            "actions",
+            "categories",
+            "locations",
+            "names",
+            "command_history",
+        ]
+        for collection in collections:
+            self.client.delete_collection(collection)
+        return
+
     def list_collections(self):
         """Method to list all collections"""
         return self.client.list_collections()
@@ -65,6 +79,12 @@ class ChromaAdapter:
         )
 
         return results  # Return only the extracted names
+
+    def query_where(self, collection_name: str, query: str):
+        """Method to query the collection and return only the original names from metadata"""
+        results = self.get(collection_name, query, "original_name")
+
+        return results
 
     def _sanitize_collection_name(self, collection):
         """
@@ -142,10 +162,18 @@ class ChromaAdapter:
         metadatas_ = [json.loads(meta) for meta in metadatas_]
         return metadatas_
 
+    def get(self, collection_name: str, document: str, field: str):
+        """Method to get an entry by document (returns all of the entries that contain the string)"""
+        collection_ = self.get_collection(collection_name)
+        return collection_.get(
+            where={field: document[0]}, include=["metadatas", "documents"]
+        )
+
 
 def main():
     client_ = ChromaAdapter()
-    print(client_.list_collections())
+    results = client_.list_collections()
+    print(results)
 
 
 if __name__ == "__main__":
