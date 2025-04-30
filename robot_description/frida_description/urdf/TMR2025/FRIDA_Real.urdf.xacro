@@ -76,10 +76,10 @@
   <!-- NEW GRIPPER MACRO   -->
   <!-- Gripper -->
   <xacro:include filename="$(find frida_description)/urdf/Gripper/Custom/gripper.xacro" />
-  <xacro:load_gripper attach_to="link_eef" xyz="0 0 0.046" rpy="0 0 1.57" fixed_joints="true"/>
+  <xacro:load_gripper attach_to="link_eef" xyz="0 0 0.046" rpy="0 0 3.926" fixed_joints="true"/>
    <!-- ZED MACRO -->
   <xacro:include filename="$(find frida_description)/urdf/zed/zed.xacro" />
-  <xacro:load_zed attach_to="zed" xyz="0 0 0" rpy="0 0 0" /> 
+  <xacro:load_zed attach_to="zed" xyz="0.015 0 -0.0250" rpy="0 0 0" /> 
 
   <!-- <joint name="base_footprint_joint" type="fixed">
       <origin xyz="0 0 ${base_length/2 + caster_radius*2}" rpy="0 0 0" />        

@@ -11,9 +11,7 @@ from frida_motion_planning.utils.service_utils import (
 import time
 from typing import Tuple
 
-CFG_PATH = (
-    "/workspace/src/home2/manipulation/packages/arm_pkg/config/frida_eigen_params.cfg"
-)
+CFG_PATH = "/workspace/src/home2/manipulation/packages/arm_pkg/config/frida_eigen_params_custom_gripper.cfg"
 
 
 class PickManager:
