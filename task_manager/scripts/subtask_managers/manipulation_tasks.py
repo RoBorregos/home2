@@ -42,12 +42,12 @@ DEG_TO_RAD = 3.14159265359 / 180
 class ManipulationTasks:
     """Class to manage the vision tasks"""
 
-    STATE = {
-        "TERMINAL_ERROR": -1,
-        "EXECUTION_ERROR": 0,
-        "EXECUTION_SUCCESS": 1,
-        "TARGET_NOT_FOUND": 2,
-    }
+    # STATE = {
+    #     "TERMINAL_ERROR": -1,
+    #     "EXECUTION_ERROR": 0,
+    #     "EXECUTION_SUCCESS": 1,
+    #     "TARGET_NOT_FOUND": 2,
+    # }
 
     SUBTASKS = {
         "RECEPTIONIST": [],
@@ -90,15 +90,17 @@ class ManipulationTasks:
         """Closes the gripper"""
         return self._set_gripper_state("close")
 
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
+    @service_check("gripper_client", Status.EXECUTION_ERROR, TIMEOUT)
     def _set_gripper_state(self, state: str):
         """
         Controls the gripper state.
         State: 'open' o 'close'
         """
         try:
-            if not self.gripper_client.wait_for_service(timeout_sec=TIMEOUT):
-                Logger.error(self.node, "Gripper service not available")
-                return self.STATE["EXECUTION_ERROR"]
+            # if not self.gripper_client.wait_for_service(timeout_sec=TIMEOUT):
+            #     Logger.error(self.node, "Gripper service not available")
+            #     return Status.ExecutionError
 
             req = SetDigitalIO.Request()
             req.ionum = 0
@@ -109,14 +111,14 @@ class ManipulationTasks:
 
             if future.result() is not None:
                 Logger.info(self.node, f"Gripper {state} successfully")
-                return self.STATE["EXECUTION_SUCCESS"]
+                return Status.EXECUTION_SUCCESS
 
             Logger.error(self.node, "Failure in gripper service")
-            return self.STATE["EXECUTION_ERROR"]
+            return Status.EXECUTION_ERROR
 
         except Exception as e:
             Logger.error(self.node, f"Error gripper: {str(e)}")
-            return self.STATE["TERMINAL_ERROR"]
+            return Status.TERMINAL_ERROR
 
     @mockable(return_value=Status.EXECUTION_SUCCESS, delay=2)
     def move_joint_positions(
@@ -156,7 +158,7 @@ class ManipulationTasks:
                 joint_vals = [x * DEG_TO_RAD for x in joint_vals]
         else:
             Logger.error(self.node, "joint_positions must be a list or a dict")
-            return self.STATE["EXECUTION_ERROR"]
+            return Status.EXECUTION_ERROR
 
         future = self._send_joint_goal(
             joint_names=joint_names, joint_positions=joint_vals, velocity=velocity
@@ -164,20 +166,21 @@ class ManipulationTasks:
 
         # Wait for goal to be accepted.
         if not self._wait_for_future(future):
-            return self.STATE["EXECUTION_ERROR"]
-        return self.STATE["EXECUTION_SUCCESS"]
+            return Status.EXECUTION_ERROR
+        return Status.EXECUTION_SUCCESS
 
     def get_named_target(self, target_name: str):
         """Get named target"""
         return XARM_CONFIGURATIONS[target_name]
 
-    # @service_check("get_joints_positions", -1, TIMEOUT)
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
+    @service_check("_get_joints_client", Status.EXECUTION_ERROR, TIMEOUT)
     def get_joint_positions(
         self,
         degrees=False,  # set to true to return in degrees
     ) -> dict:
         """Get the current joint positions"""
-        self._get_joints_client.wait_for_service(timeout_sec=TIMEOUT)
+        # self._get_joints_client.wait_for_service(timeout_sec=TIMEOUT)
         future = self._get_joints_client.call_async(GetJoints.Request())
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
         result = future.result()
@@ -254,11 +257,13 @@ class ManipulationTasks:
         Logger.success(self.node, "Following face request successful")
         return Status.EXECUTION_SUCCESS
 
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
+    @service_check(client="_manipulation_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT)
     def pick_object(self, object_name: str):
         """Pick an object by name"""
-        if not self._manipulation_action_client.wait_for_server(timeout_sec=TIMEOUT):
-            Logger.error(self.node, "Manipulation action server not available")
-            return self.STATE["EXECUTION_ERROR"]
+        # if not self._manipulation_action_client.wait_for_server(timeout_sec=TIMEOUT):
+        #     Logger.error(self.node, "Manipulation action server not available")
+        #     return Status.EXECUTION_ERROR
 
         goal_msg = ManipulationAction.Goal()
         goal_msg.task_type = ManipulationTask.PICK
@@ -269,7 +274,7 @@ class ManipulationTasks:
 
         if future.result() is None:
             Logger.error(self.node, "Failed to send pick request")
-            return self.STATE["EXECUTION_ERROR"]
+            return Status.EXECUTION_ERROR
 
         Logger.info(self.node, f"Pick request for {object_name} sent")
         # wait for result
@@ -281,14 +286,16 @@ class ManipulationTasks:
             Logger.success(self.node, f"Pick request for {object_name} successful")
         else:
             Logger.error(self.node, f"Pick request for {object_name} failed")
-            return self.STATE["EXECUTION_ERROR"]
+            return Status.EXECUTION_ERROR
 
-        return self.STATE["EXECUTION_SUCCESS"]
+        return Status.EXECUTION_SUCCESS
 
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
+    @service_check(client="_manipulation_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT)
     def place(self):
-        if not self._manipulation_action_client.wait_for_server(timeout_sec=TIMEOUT):
-            Logger.error(self.node, "Manipulation action server not available")
-            return self.STATE["EXECUTION_ERROR"]
+        # if not self._manipulation_action_client.wait_for_server(timeout_sec=TIMEOUT):
+        #     Logger.error(self.node, "Manipulation action server not available")
+        #     return Status.EXECUTION_ERROR
 
         goal_msg = ManipulationAction.Goal()
         goal_msg.task_type = ManipulationTask.PLACE
@@ -296,7 +303,7 @@ class ManipulationTasks:
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
         if future.result() is None:
             Logger.error(self.node, "Failed to send place request")
-            return self.STATE["EXECUTION_ERROR"]
+            return Status.EXECUTION_ERROR
         Logger.info(self.node, "Place request sent")
         # wait for result
         result_future = future.result().get_result_async()
@@ -307,8 +314,8 @@ class ManipulationTasks:
             Logger.success(self.node, "Place request successful")
         else:
             Logger.error(self.node, "Place request failed")
-            return self.STATE["EXECUTION_ERROR"]
-        return self.STATE["EXECUTION_SUCCESS"]
+            return Status.EXECUTION_ERROR
+        return Status.EXECUTION_SUCCESS
 
     def pan_to(self, degrees: float):
         joint_positions = self.get_joint_positions(degrees=True)
