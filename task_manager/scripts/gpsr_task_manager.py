@@ -12,6 +12,9 @@ from utils.logger import Logger
 from utils.status import Status
 from utils.subtask_manager import SubtaskManager, Task
 
+# from subtask_managers.gpsr_test_commands import get_gpsr_comands
+
+
 ATTEMPT_LIMIT = 3
 MAX_COMMANDS = 3
 START = "START"
@@ -44,7 +47,7 @@ class GPSRTM(Node):
         """Initialize the node"""
         super().__init__("gpsr_task_manager")
         self.subtask_manager = SubtaskManager(
-            self, task=Task.GPSR, mock_areas=["navigation", "manipulation", "vision"]
+            self, task=Task.GPSR, mock_areas=["navigation", "manipulation"]
         )
         self.gpsr_tasks = GPSRTask(self.subtask_manager)
         self.gpsr_individual_tasks = GPSRSingleTask(self.subtask_manager)
@@ -53,9 +56,17 @@ class GPSRTM(Node):
         self.running_task = True
         self.current_attempt = 0
         self.executed_commands = 0
-        # self.commands = get_gpsr_comands("goToLoc")
+        # self.commands = get_gpsr_comands("takeObjFromPlcmt")
         self.commands = [
-            {"action": "go", "complement": "place for cooking", "characteristic": ""},
+            # {"action": "go", "complement": "kitchen table", "characteristic": ""},
+            {"action": "visual_info", "complement": "biggest", "characteristic": "bottle"},
+            # {"action": "find_person_by_name", "complement": "Oscar", "characteristic": ""},
+            # {"action": "go", "complement": "start_location", "characteristic": ""},
+            {
+                "action": "contextual_say",
+                "complement": "tell me what is the heaviest object in the kitchen",
+                "characteristic": "visual_info",
+            },
         ]
 
         Logger.info(self, "GPSRTMTaskManager has started.")
@@ -76,7 +87,7 @@ class GPSRTM(Node):
             s, user_command = self.subtask_manager.hri.ask_and_confirm(
                 "What is your command?",
                 "command",
-                context="The user was asked to say a command. We want to infer his command from the response",
+                context="The user was asked to say a command. We want to infer his complete instruction from the response",
                 confirm_question=confirm_command,
                 use_hotwords=False,
                 retries=ATTEMPT_LIMIT,
@@ -110,8 +121,10 @@ class GPSRTM(Node):
                     )
                 else:
                     Logger.info(self, f"Executing command: {command}")
-                    self.subtask_manager.hri.say(f"Executing command: {command}")
+                    # self.subtask_manager.hri.say(f"Executing command: {command}")
                     status, res = exec_commad(command["complement"], command["characteristic"])
+                    self.get_logger().info(f"status-> {str(status)}")
+                    self.get_logger().info(f"res-> {str(res)}")
                     self.subtask_manager.hri.add_command_history(
                         command["action"],
                         command["complement"],
