@@ -35,6 +35,8 @@ class MODEL(Enum):
     GENERIC_STRUCTURED_OUTPUT = "qwen2.5"
     GENERATE_RESPONSE = "qwen2.5"
     STRUCTURED_RESPONSE = "qwen2.5"
+    EXTRACT_INFO_REQUESTED = "qwen2.5"
+    GET_COMMANDS = "qwen2.5"
 
 
 USEFUL_AUDIO_NODE_NAME = "useful_audio_node"

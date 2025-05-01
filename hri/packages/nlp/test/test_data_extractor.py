@@ -12,7 +12,8 @@ from openai import OpenAI
 from openai._types import NOT_GIVEN
 from tqdm import tqdm
 
-from config import API_KEY, BASE_URL, MODEL, TEMPERATURE
+from frida_constants.hri_constants import MODEL
+from config import API_KEY, BASE_URL, TEMPERATURE
 from metrics.json_insensitive_values_match import JsonInsensitiveValuesMatch
 
 
@@ -22,7 +23,7 @@ def generate_response(full_text, data_to_extract, context, two_steps=False):
     messages, response_format = get_extract_data_args(full_text, data_to_extract, context)
 
     response = client.beta.chat.completions.parse(
-        model=MODEL,
+        model=MODEL.GENERATE_RESPONSE.value,
         temperature=TEMPERATURE,
         messages=messages,
         response_format=response_format if not two_steps else NOT_GIVEN,
@@ -36,7 +37,7 @@ def generate_response(full_text, data_to_extract, context, two_steps=False):
 def structured_response(response, response_format):
     client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
     formatted_response = client.beta.chat.completions.parse(
-        model=MODEL,
+        model=MODEL.STRUCTURED_RESPONSE.value,
         temperature=TEMPERATURE,
         messages=format_response(response),
         response_format=response_format,
