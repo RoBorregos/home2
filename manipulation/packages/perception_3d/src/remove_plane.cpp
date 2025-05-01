@@ -317,16 +317,16 @@ public:
       return;
     }
 
-    bool can_transform =
-        request->point.header.frame_id == "base_link" ||
-        this->tf_buffer->canTransform(
-            "base_link", request->point.header.frame_id, tf2::TimePointZero);
+    // bool can_transform =
+    //     request->point.header.frame_id == "base_link" ||
+    //     this->tf_buffer->canTransform(
+    //         "base_link", request->point.header.frame_id, tf2::TimePointZero);
 
-    if (!can_transform) {
-      RCLCPP_ERROR(this->get_logger(), "Could not transform point cloud");
-      response->status = COULDNT_TRANSFORM_TO_BASE_LINK;
-      return;
-    }
+    // if (!can_transform) {
+    //   RCLCPP_ERROR(this->get_logger(), "Could not transform point cloud");
+    //   response->status = COULDNT_TRANSFORM_TO_BASE_LINK;
+    //   return;
+    // }
 
     if (request->point.header.frame_id != "base_link") {
       geometry_msgs::msg::PointStamped point;

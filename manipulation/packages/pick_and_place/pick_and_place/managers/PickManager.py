@@ -68,7 +68,7 @@ class PickManager:
         pick_result_success = False
         print("Gripper Result:", result)
         for CFG_PATH in CFG_PATHS:
-            print("CFG_PATH:", CFG_PATH)
+            self.node.get_logger().info(f"CFG_PATH: {CFG_PATH}")
             # Call Grasp Pose Detection
             grasp_poses, grasp_scores = get_grasps(
                 self.node.grasp_detection_client, object_cluster, CFG_PATH
