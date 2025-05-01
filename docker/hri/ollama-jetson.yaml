@@ -13,4 +13,4 @@ services:
       - OLLAMA_MODELS=/ollama
     stdin_open: true
     tty: true
-    entrypoint: ["/bin/bash", "-c", "/ollama/entrypoint.sh"]
+    entrypoint: ["/bin/bash", "-c", "/ollama/entrypoint.sh && tail -f /dev/null"]

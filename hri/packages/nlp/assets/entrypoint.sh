@@ -32,6 +32,3 @@ else
 fi
 
 echo "Ollama models loaded. Container will continue to run..."
-while true; do
-  sleep 3600
-done
