@@ -85,7 +85,7 @@ class FaceRecognition(Node):
         self.annotated_frame = []
         self.setup()
         self.create_timer(0.1, self.run)
-        self.create_timer(0.1, self.publish_image)
+        self.create_timer(0.01, self.publish_image)
 
     def setup(self):
         """Setup face recognition, reset variables and load models"""
