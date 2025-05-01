@@ -20,6 +20,7 @@ from frida_constants.manipulation_constants import (
     PLANE_OBJECT_COLLISION_TOLERANCE,
     SAFETY_HEIGHT,
     PICK_MIN_HEIGHT,
+    GRASP_LINK_FRAME,
 )
 from frida_interfaces.srv import (
     AttachCollisionObject,
@@ -185,6 +186,7 @@ class PickMotionServer(Node):
         request.velocity = PICK_VELOCITY
         request.acceleration = PICK_ACCELERATION
         request.planner_id = PICK_PLANNER
+        request.target_link = GRASP_LINK_FRAME
         future = self._move_to_pose_action_client.send_goal_async(request)
         self.wait_for_future(future)
         action_result = future.result().get_result()
