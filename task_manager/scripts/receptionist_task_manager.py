@@ -165,6 +165,7 @@ class ReceptionistTM(Node):
             Logger.state(self, "Saving face")
             self.subtask_manager.hri.say("I will save your face now. Please stand in front of me")
             result = self.subtask_manager.vision.save_face_name(self.get_guest().name)
+            self.timeout(2)
 
             if result == Status.EXECUTION_SUCCESS or self.current_attempts >= ATTEMPT_LIMIT:
                 self.subtask_manager.vision.describe_person(self.set_description)
@@ -276,6 +277,7 @@ class ReceptionistTM(Node):
                     break
 
             self.subtask_manager.hri.say("Please take a seat where my arm points at.")
+            self.subtask_manager.manipulation.pan_to(angle)
             # joint_positions = self.subtask_manager.manipulation.get_joint_positions(degrees=True)
             # joint_positions["joint1"] = joint_positions["joint1"] - target
             # self.subtask_manager.manipulation.move_joint_positions(
@@ -316,11 +318,11 @@ class ReceptionistTM(Node):
 
         if self.current_state == ReceptionistTM.TASK_STATES["NAVIGATE_TO_ENTRANCE"]:
             Logger.state(self, "Navigating to entrance")
-            self.navigate_to("entrance", say=False)
             self.current_guest += 1
             if self.current_guest == 3:
                 self.current_state = ReceptionistTM.TASK_STATES["END"]
             else:
+                self.navigate_to("entrance", say=False)
                 self.current_state = ReceptionistTM.TASK_STATES["WAIT_FOR_GUEST"]
 
         if self.current_state == ReceptionistTM.TASK_STATES["END"]:
