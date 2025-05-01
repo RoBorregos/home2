@@ -426,6 +426,9 @@ class StoringGroceriesManager(Node):
             time.sleep(1)
 
         elif self.state == ExecutionStates.PICK_OBJECT:
+            status = self.subtask_manager.manipulation.get_optimal_position_for_plane(
+                0.75, tolerance=0.2
+            )
             status, objs = self.subtask_manager.vision.detect_objects(timeout=10)
             if status == Status.TIMEOUT:
                 # pass
@@ -477,9 +480,9 @@ class StoringGroceriesManager(Node):
             time.sleep(1)
             self.state = ExecutionStates.PLACE_OBJECT
         elif self.state == ExecutionStates.PLACE_OBJECT:
-            self.state = ExecutionStates.DEUX_PICK_OBJECT
-            return
-            status = self.subtask_manager.manipulation.place_in_shelf(
+            # self.state = ExecutionStates.DEUX_PICK_OBJECT
+            # return
+            status = self.subtask_manager.manipulation.place(
                 self.object_to_placing_shelf[self.current_object].pop(0), self.current_object
             )
             self.shelves[self.object_to_placing_shelf[self.current_object]].objects.append(
