@@ -282,10 +282,16 @@ class HRITasks(metaclass=SubtaskMeta):
                 ) < wait_between_retries:
                     s, interpret_text = self.hear()
                     if s == Status.EXECUTION_SUCCESS:
-                        if self.is_positive(interpret_text)[1]:
-                            return Status.EXECUTION_SUCCESS, "yes"
-                        elif self.is_negative(interpret_text)[1]:
-                            return Status.EXECUTION_SUCCESS, "no"
+                        positive_f = self.is_positive(interpret_text, async_call=True)
+                        negative_f = self.is_negative(interpret_text, async_call=True)
+
+                        while not positive_f.done() and not negative_f.done():
+                            if positive_f.done():
+                                if positive_f.result().is_positive:
+                                    return Status.EXECUTION_SUCCESS, "yes"
+                            elif positive_f.done() and negative_f.done():
+                                if negative_f.result().is_negative:
+                                    return Status.EXECUTION_SUCCESS, "no"
 
         Logger.info(
             self.node,
@@ -468,19 +474,23 @@ class HRITasks(metaclass=SubtaskMeta):
         return Status.EXECUTION_SUCCESS, result
 
     @service_check("is_positive_service", (Status.SERVICE_CHECK, False), TIMEOUT)
-    def is_positive(self, text):
+    def is_positive(self, text, async_call=False):
         Logger.info(self.node, f"Checking if text is positive: {text}")
         request = IsPositive.Request(text=text)
         future = self.is_positive_service.call_async(request)
+        if async_call:
+            return future
         rclpy.spin_until_future_complete(self.node, future)
         Logger.info(self.node, f"is_positive result ({text}): {future.result().is_positive}")
         return Status.EXECUTION_SUCCESS, future.result().is_positive
 
     @service_check("is_negative_service", (Status.SERVICE_CHECK, False), TIMEOUT)
-    def is_negative(self, text):
+    def is_negative(self, text, async_call=False):
         Logger.info(self.node, f"Checking if text is negative: {text}")
         request = IsNegative.Request(text=text)
         future = self.is_negative_service.call_async(request)
+        if async_call:
+            return future
         rclpy.spin_until_future_complete(self.node, future)
         Logger.info(self.node, f"is_negative result ({text}): {future.result().is_negative}")
         return Status.EXECUTION_SUCCESS, future.result().is_negative
