@@ -56,9 +56,14 @@ class FaceRecognition(Node):
         super().__init__("face_recognition")
         self.bridge = CvBridge()
         self.pbar = tqdm.tqdm(total=2)
+        qos = rclpy.qos.QoSProfile(
+            depth=5,
+            reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
+            durability=rclpy.qos.DurabilityPolicy.VOLATILE,
+        )
 
         self.image_subscriber = self.create_subscription(
-            Image, CAMERA_TOPIC, self.image_callback, 10
+            Image, CAMERA_TOPIC, self.image_callback, qos
         )
         self.new_name_service = self.create_service(
             SaveName, SAVE_NAME_TOPIC, self.new_name_callback
@@ -85,7 +90,7 @@ class FaceRecognition(Node):
         self.annotated_frame = []
         self.setup()
         self.create_timer(0.1, self.run)
-        self.create_timer(0.01, self.publish_image)
+        self.create_timer(0.05, self.publish_image)
 
     def setup(self):
         """Setup face recognition, reset variables and load models"""
