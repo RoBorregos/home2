@@ -100,7 +100,7 @@ class PickManager:
 
         if not pick_result_success:
             self.node.get_logger().error("Pick motion failed")
-            return False
+            return False, None
 
         # close gripper
         gripper_request = SetBool.Request()
