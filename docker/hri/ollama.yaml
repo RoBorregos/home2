@@ -5,7 +5,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.ollama
-    image: roborregos/home2:hri-ollama-cpu
+    image: roborregos/home2:hri-ollama-gpu
     
     runtime: nvidia
     network_mode: host
