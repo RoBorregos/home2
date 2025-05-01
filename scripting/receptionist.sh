@@ -1,8 +1,9 @@
+bash zed.sh
+
 cd ./receptionist
-bash ./hri.sh
-bash ./integration.sh
-bash ./manipulation-follow-face.sh
-bash ./manipulation-motion-planning.sh
-bash ./manipulation-planning.sh
-bash ./navigation.sh
-bash ./vision.sh
+for script in ./*.sh; do
+    if [ -f "$script" ]; then
+        echo "Executing $script"
+        bash "$script"
+    fi
+done
