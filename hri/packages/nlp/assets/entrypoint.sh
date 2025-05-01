@@ -6,7 +6,7 @@ echo "Starting with ROLE=$ROLE"
 
 max_attempts=30
 attempt=0
-ollama serve
+ollama serve&
 echo "Waiting for Ollama service to start..."
 
 while ! curl -s http://localhost:11434/api/version &>/dev/null; do
@@ -31,3 +31,8 @@ else
   echo "Unknown ROLE: $ROLE"
   exit 1
 fi
+
+echo "Ollama models loaded. Container will continue to run..."
+while true; do
+  sleep 3600
+done
