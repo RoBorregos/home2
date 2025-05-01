@@ -90,7 +90,7 @@ class FaceRecognition(Node):
         self.annotated_frame = []
         self.setup()
         self.create_timer(0.1, self.run)
-        self.create_timer(0.05, self.publish_image)
+        self.create_timer(0.1, self.publish_image)
 
     def setup(self):
         """Setup face recognition, reset variables and load models"""
@@ -118,6 +118,7 @@ class FaceRecognition(Node):
 
     def image_callback(self, data):
         """Callback to get image from camera"""
+        self.get_logger().info("img received")
         self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
 
     def depth_callback(self, data):
@@ -271,6 +272,7 @@ class FaceRecognition(Node):
             return
 
         self.frame = self.image
+        self.annotated_frame = self.frame.copy()
         self.center = [self.frame.shape[1] / 2, self.frame.shape[0] / 2]
 
         resized_frame = cv2.resize(self.frame, (0, 0), fx=0.5, fy=0.5)
@@ -283,7 +285,6 @@ class FaceRecognition(Node):
         largest_area_params = None
         largest_face_name = ""
 
-        self.annotated_frame = self.frame.copy()
         self.curr_faces = []
         self.face_list = PersonList()
         detected = False
