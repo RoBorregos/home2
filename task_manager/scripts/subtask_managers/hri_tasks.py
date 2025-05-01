@@ -22,6 +22,7 @@ from frida_constants.hri_constants import (
     IS_POSITIVE_SERVICE,
     LLM_WRAPPER_SERVICE,
     QUERY_ENTRY_SERVICE,
+    RESPEAKER_PARAMS_SERVICE,
     SPEAK_SERVICE,
     STT_SERVICE_NAME,
     USEFUL_AUDIO_NODE_NAME,
@@ -39,6 +40,7 @@ from frida_interfaces.srv import (
     IsPositive,
     LLMWrapper,
     QueryEntry,
+    SetRespeakerParams,
     Speak,
     UpdateHotwords,
 )
@@ -90,10 +92,15 @@ class HRITasks(metaclass=SubtaskMeta):
         self.keyword_client = self.node.create_subscription(
             String, WAKEWORD_TOPIC, self._get_keyword, 10
         )
+        self.respeaker_params_service = self.create_client(
+            SetRespeakerParams, RESPEAKER_PARAMS_SERVICE
+        )
 
         self.useful_audio_params = self.node.create_client(
             SetParameters, f"/{USEFUL_AUDIO_NODE_NAME}/set_parameters"
         )
+
+        self.first_say = True
 
         all_services = {
             "hear": {
@@ -142,6 +149,13 @@ class HRITasks(metaclass=SubtaskMeta):
     @service_check("speak_service", Status.SERVICE_CHECK, TIMEOUT)
     def say(self, text: str, wait: bool = True) -> None:
         """Method to publish directly text to the speech node"""
+        if self.first_say:
+            Logger.info(self.node, "Saving Respeaker config")
+            request = SetRespeakerParams.Request(acton="save")
+            future = self.respeaker_params_service.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future)
+            self.first_say = False
+
         Logger.info(self.node, f"Sending to saying service: {text}")
 
         request = Speak.Request(text=text)
@@ -216,6 +230,12 @@ class HRITasks(metaclass=SubtaskMeta):
 
         if max_audio_length > 0:
             self.set_double_param("MAX_AUDIO_DURATION", float(max_audio_length))
+
+        Logger.info(self.node, "Loading Respeaker config")
+        request = SetRespeakerParams.Request(acton="load")
+        future = self.respeaker_params_service.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+        self.first_say = False
 
         request = STT.Request()
 

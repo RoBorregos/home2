@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 
+import json
+
 import rclpy
 import usb.core
 import usb.util
 from pixel_ring import pixel_ring
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
-from speech.tuning import Tuning
+from speech.tuning import PARAMETERS, Tuning
 from std_msgs.msg import Int16, String
+
+from frida_interfaces.srv import SetRespeakerParams
 
 
 class MovingAverage:
@@ -38,6 +42,7 @@ class Respeaker(Node):
         self.declare_parameter("RESPEAKER_DOA_TOPIC", "/respeaker/doa")
         self.declare_parameter("doa_timer", 0.5)  # seconds
         self.declare_parameter("RESPEAKER_LIGHT_TOPIC", "/respeaker/light")
+        self.declare_parameter("RESPEAKER_PARAMS_SERVICE", "/respeaker/params")
 
         doa_publish_topic = (
             self.get_parameter("RESPEAKER_DOA_TOPIC").get_parameter_value().string_value
@@ -65,6 +70,14 @@ class Respeaker(Node):
         self.create_subscription(
             String, light_subscriber_topic, self.callback_light, 10
         )
+        RESPEAKER_PARAMS_SERVICE = (
+            self.get_parameter("RESPEAKER_PARAMS_SERVICE")
+            .get_parameter_value()
+            .string_value
+        )
+        self.srv = self.create_service(
+            SetRespeakerParams, RESPEAKER_PARAMS_SERVICE, self.config_params
+        )
 
         self.get_logger().info("Respeaker node initialized.")
 
@@ -84,6 +97,61 @@ class Respeaker(Node):
             pixel_ring.listen()
         else:
             self.get_logger().warn("Command: " + command + " not supported")
+
+    def save_config(self, filename="config_backup.json"):
+        if not self.dev:
+            self.get_logger().info("No device found")
+            return
+
+        config = {}
+        for name in sorted(PARAMETERS.keys()):
+            if (
+                PARAMETERS[name][5] != "ro"
+            ):  # skip read-only if you want to save only rw
+                try:
+                    value = self.dev.read(name)
+                    config[name] = value
+                except Exception as e:
+                    self.get_logger().info(f"Failed to read {name}: {e}")
+
+        with open(filename, "w") as f:
+            json.dump(config, f, indent=2)
+
+        self.get_logger().info(f"Configuration saved to {filename}")
+
+    def config_params(
+        self, request: SetRespeakerParams.Request, response: SetRespeakerParams.Response
+    ):
+        try:
+            if request.action == "save":
+                self.save_config()
+                response.success = True
+            elif request.action == "load":
+                self.load_config()
+                response.success = True
+        except Exception as e:
+            self.get_logger().error(f"Error: {e}")
+            response.success = False
+
+        return response
+
+    def load_config(self, filename="config_backup.json"):
+        if not self.dev:
+            self.get_logger().info("No device found")
+            return
+
+        with open(filename, "r") as f:
+            config = json.load(f)
+
+        for name, value in config.items():
+            if name in PARAMETERS and PARAMETERS[name][5] != "ro":
+                try:
+                    self.dev.write(name, value)
+                    self.get_logger().info(f"Set {name} = {value}")
+                except Exception as e:
+                    self.get_logger().info(f"Failed to write {name}: {e}")
+            else:
+                self.get_logger().info(f"Skipping {name}: Not writable or unknown")
 
 
 def main(args=None):

@@ -21,7 +21,7 @@ BUILD_EMBEDDINGS_SERVICE = "/hri/nlp/embeddings/build_embeddings_service"
 USE_RESPEAKER = True
 RESPEAKER_LIGHT_TOPIC = "/hri/speech/respeaker/light"
 RESPEAKER_DOA_TOPIC = "/hri/speech/respeaker/doa"
-
+RESPEAKER_PARAMS_SERVICE = "/hri/speech/respeaker/params"
 
 USEFUL_AUDIO_NODE_NAME = "useful_audio_node"
 

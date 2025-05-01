@@ -14,7 +14,7 @@ from speech.speech_api_utils import SpeechApiUtils
 from std_msgs.msg import Bool, String
 
 from frida_constants.hri_constants import SPEAK_SERVICE
-from frida_interfaces.srv import Speak
+from frida_interfaces.srv import SetRespeakerParams, Speak
 
 CURRENT_FILE_PATH = os.path.abspath(__file__)
 
@@ -46,6 +46,7 @@ class Say(Node):
 
         self.connected = False
         self.declare_parameter("speaking_topic", "/saying")
+        self.declare_parameter("RESPEAKER_PARAMS_SERVICE", "/respeaker/params")
         self.declare_parameter("text_spoken", "/speech/text_spoken")
 
         self.declare_parameter("SPEAK_SERVICE", SPEAK_SERVICE)
@@ -68,6 +69,15 @@ class Say(Node):
             self.get_parameter("SPEAKER_OUT_CHANNELS")
             .get_parameter_value()
             .integer_value
+        )
+
+        respeaker_params_service = (
+            self.get_parameter("RESPEAKER_PARAMS_SERVICE")
+            .get_parameter_value()
+            .string_value
+        )
+        self.respeaker_params_service = self.create_client(
+            SetRespeakerParams, respeaker_params_service
         )
 
         self.output_device_index = SpeechApiUtils.getIndexByNameAndChannels(
