@@ -17,6 +17,7 @@ from frida_constants.hri_constants import (
     COMMON_INTEREST_SERVICE,
     EXTRACT_DATA_SERVICE,
     GRAMMAR_SERVICE,
+    HOTWORD_SERVICE_NAME,
     IS_NEGATIVE_SERVICE,
     IS_POSITIVE_SERVICE,
     LLM_WRAPPER_SERVICE,
@@ -39,6 +40,7 @@ from frida_interfaces.srv import (
     LLMWrapper,
     QueryEntry,
     Speak,
+    UpdateHotwords,
 )
 from rcl_interfaces.msg import Parameter, ParameterType, ParameterValue
 from rcl_interfaces.srv import SetParameters
@@ -84,6 +86,7 @@ class HRITasks(metaclass=SubtaskMeta):
         self.add_item_client = self.node.create_client(AddEntry, ADD_ENTRY_SERVICE)
         self.llm_wrapper_service = self.node.create_client(LLMWrapper, LLM_WRAPPER_SERVICE)
         self.categorize_service = self.node.create_client(CategorizeShelves, CATEGORIZE_SERVICE)
+        self.hotwords_service = self.node.create_client(UpdateHotwords, HOTWORD_SERVICE_NAME)
         self.keyword_client = self.node.create_subscription(
             String, WAKEWORD_TOPIC, self._get_keyword, 10
         )
@@ -238,6 +241,22 @@ class HRITasks(metaclass=SubtaskMeta):
             Logger.warn(self.node, "hearing: no text heard")
 
         return execution_status, future.result().text_heard
+
+    @service_check("hotwords_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
+    def set_hotwords(self, hotwords) -> str:
+        Logger.info(
+            self.node,
+            "Setting hotwords: " + str(hotwords),
+        )
+        request = UpdateHotwords.Request(hotwords=hotwords)
+        future = self.hotwords_service.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+
+        execution_status = (
+            Status.EXECUTION_SUCCESS if future.result().success else Status.EXECUTION_ERROR
+        )
+
+        return execution_status, ""
 
     def confirm(
         self,
