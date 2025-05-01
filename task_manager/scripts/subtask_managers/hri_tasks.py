@@ -282,17 +282,9 @@ class HRITasks(metaclass=SubtaskMeta):
                 ) < wait_between_retries:
                     s, interpret_text = self.hear()
                     if s == Status.EXECUTION_SUCCESS:
-                        positive_f = self.is_positive(interpret_text, async_call=True)
-                        negative_f = self.is_negative(interpret_text, async_call=True)
-
-                        while not positive_f.done() and not negative_f.done():
-                            if positive_f.done():
-                                if positive_f.result().is_positive:
-                                    return Status.EXECUTION_SUCCESS, "yes"
-                            elif positive_f.done() and negative_f.done():
-                                if negative_f.result().is_negative:
-                                    return Status.EXECUTION_SUCCESS, "no"
-
+                        if self.is_positive(interpret_text)[1]:
+                            return Status.EXECUTION_SUCCESS, "yes"
+                        return Status.EXECUTION_SUCCESS, "no"
         Logger.info(
             self.node,
             "Confirmation timed out for: " + question,
