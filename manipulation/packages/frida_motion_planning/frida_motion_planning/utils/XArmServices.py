@@ -120,7 +120,7 @@ class XArmServices:
         self.gripper_io_client.wait_for_service()
         self.node.get_logger().info("Gripper IO service is available")
         request = SetDigitalIO.Request()
-        request.ionum = 0
+        request.ionum = 1
         request.value = int(state)
         self.gripper_io_client.call_async(request)
         # future = wait_for_future(future)

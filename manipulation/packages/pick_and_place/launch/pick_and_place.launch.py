@@ -46,7 +46,8 @@ def generate_launch_description():
                 emulate_tty=True,
                 parameters=[
                     {
-                        "ee_link_offset": -0.10,  # based on distance between end-effector link and contact point with objects e.g. where you grip
+                        # based on distance between end-effector link and contact point with objects e.g. where you grip
+                        "ee_link_offset": -0.08,
                     }
                 ],
             ),
