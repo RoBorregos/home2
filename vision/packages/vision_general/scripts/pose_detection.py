@@ -134,16 +134,13 @@ class PoseDetection:
 
     def is_visible(self, landmarks, indices):
         return all(landmarks[idx].visibility > 0.5 for idx in indices)
-    
+
     def are_legs_visible(self, landmarks):
         # Check visibility of knees and ankles
         left_knee = landmarks[self.mp_pose.PoseLandmark.LEFT_KNEE]
         right_knee = landmarks[self.mp_pose.PoseLandmark.RIGHT_KNEE]
 
-        return (
-            left_knee.visibility > 0.5
-            and right_knee.visibility > 0.5
-        )
+        return left_knee.visibility > 0.5 and right_knee.visibility > 0.5
 
     def detectPose(self, image, return_results=False):
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -262,7 +259,9 @@ class PoseDetection:
         left_wrist = pose_landmarks.landmark[self.mp_pose.PoseLandmark.LEFT_WRIST]
         right_wrist = pose_landmarks.landmark[self.mp_pose.PoseLandmark.RIGHT_WRIST]
         left_shoulder = pose_landmarks.landmark[self.mp_pose.PoseLandmark.LEFT_SHOULDER]
-        right_shoulder = pose_landmarks.landmark[self.mp_pose.PoseLandmark.RIGHT_SHOULDER]
+        right_shoulder = pose_landmarks.landmark[
+            self.mp_pose.PoseLandmark.RIGHT_SHOULDER
+        ]
 
         # If both wrists are below their respective shoulders by a significant margin, arms are considered down
         left_arm_down = left_wrist.y > left_shoulder.y + 0.1
@@ -279,7 +278,9 @@ class PoseDetection:
         gesture = Gestures.UNKNOWN
 
         if results_p.pose_landmarks:
-            if not self.is_chest_visible(image) or self.are_arms_down(results_p.pose_landmarks):
+            if not self.is_chest_visible(image) or self.are_arms_down(
+                results_p.pose_landmarks
+            ):
                 return gesture
             elif self.is_raising_left_arm(results_p.pose_landmarks):
                 gesture = Gestures.RAISING_LEFT_ARM
@@ -361,7 +362,7 @@ class PoseDetection:
         print(f"Distance between thumb and pinky: {distance}")
 
         # Set a threshold based on the expected distance for a waving gesture
-        waving_threshold = 0.075 
+        waving_threshold = 0.075
 
         return distance > waving_threshold
 
