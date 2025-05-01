@@ -29,7 +29,6 @@ elif [ "$ROLE" = "gpsr" ]; then
   curl http://localhost:11434/api/generate -d '{"model": "qwen2.5", "keep_alive": -1}'
 else
   echo "Unknown ROLE: $ROLE"
-  exit 1
 fi
 
 echo "Ollama models loaded. Container will continue to run..."
