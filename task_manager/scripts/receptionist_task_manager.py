@@ -23,6 +23,7 @@ START = "START"
 # IMAGE_TOPIC_RECEPTIONIST = "/vision/receptionist/img_person_detecion"
 # FACE_RECOGNITION_IMAGE = "/vision/person_frame"
 
+
 class Guest:
     """Class to manage the guest information"""
 
@@ -56,6 +57,7 @@ class ReceptionistTM(Node):
         "NAVIGATE_TO_ENTRANCE": 11,
         "END": 12,
         "DEBUG": 13,
+        "DESCRIBE": 14,
     }
 
     def __init__(self):
@@ -86,7 +88,7 @@ class ReceptionistTM(Node):
                 f"I will now guide you to the {location}. Please follow me."
             )
             self.subtask_manager.manipulation.follow_face(False)
-            self.subtask_manager.manipulation.move_to_position("nav_pose") 
+            self.subtask_manager.manipulation.move_to_position("nav_pose")
         future = self.subtask_manager.nav.move_to_location(location, sublocation)
         if "navigation" not in self.subtask_manager.get_mocked_areas():
             rclpy.spin_until_future_complete(self, future)
@@ -174,7 +176,7 @@ class ReceptionistTM(Node):
                 self.current_state = ReceptionistTM.TASK_STATES["ASK_FOR_INTEREST"]
             else:
                 self.current_attempts += 1
-                self.subtask_manager.hri.say("Please get closer to me.")
+                self.subtask_manager.hri.say("Please get closer to me and look at my camera.")
                 Logger.error(self, "Error saving face")
 
         if self.current_state == ReceptionistTM.TASK_STATES["ASK_FOR_INTEREST"]:
@@ -199,6 +201,33 @@ class ReceptionistTM(Node):
             self.subtask_manager.hri.say(
                 f"Thank you for sharing your interest in {self.get_guest().interest}."
             )
+
+            if self.current_guest == 1:
+                self.current_state = ReceptionistTM.TASK_STATES["NAVIGATE_TO_BEVERAGES"]
+            else:
+                self.current_state = ReceptionistTM.TASK_STATES["DESCRIBE"]
+
+        if self.current_state == ReceptionistTM.TASK_STATES["DESCRIBE"]:
+            guest1 = self.guests[1]
+            self.subtask_manager.hri.say(
+                f"By the way, {guest1.name} is already in the living room. They are {guest1.description}"
+            )
+
+            status, common_message_guest1 = self.subtask_manager.hri.common_interest(
+                self.get_guest().name, self.get_guest().interest, guest1.name, guest1.interest
+            )
+
+            if status == Status.EXECUTION_SUCCESS:
+                self.subtask_manager.hri.say(f"{common_message_guest1}")
+            else:
+                host = self.guests[0]
+                status, common_message_host = self.subtask_manager.hri.common_interest(
+                    self.get_guest().name, self.get_guest().interest, host.name, host.interest
+                )
+                self.subtask_manager.hri.say(
+                    f"{host.name} is also in the living room. {common_message_host}"
+                )
+
             self.current_state = ReceptionistTM.TASK_STATES["NAVIGATE_TO_BEVERAGES"]
 
         if self.current_state == ReceptionistTM.TASK_STATES["NAVIGATE_TO_BEVERAGES"]:
@@ -260,7 +289,7 @@ class ReceptionistTM(Node):
             self.subtask_manager.manipulation.move_joint_positions(
                 named_position="front_low_stare", velocity=0.5, degrees=True
             )
-            print("Finding seat")
+
             for seat_angle in self.seat_angles:
                 joint_positions = self.subtask_manager.manipulation.get_joint_positions(
                     degrees=True
@@ -269,7 +298,7 @@ class ReceptionistTM(Node):
                 self.subtask_manager.manipulation.move_joint_positions(
                     joint_positions=joint_positions, velocity=0.5, degrees=True
                 )
-                self.timeout(2.5)
+                self.timeout(1)
                 status, angle = self.subtask_manager.vision.find_seat()
                 # print(self.subtask_manager.vision.find_seat_moondream())
                 if status == Status.EXECUTION_SUCCESS:
@@ -278,13 +307,6 @@ class ReceptionistTM(Node):
 
             self.subtask_manager.hri.say("Please take a seat where my arm points at.")
             self.subtask_manager.manipulation.pan_to(angle)
-            # joint_positions = self.subtask_manager.manipulation.get_joint_positions(degrees=True)
-            # joint_positions["joint1"] = joint_positions["joint1"] - target
-            # self.subtask_manager.manipulation.move_joint_positions(
-            #     joint_positions=joint_positions, velocity=0.5, degrees=True
-            # )
-
-            # self.subtask_manager.vision.detect_guest(self.get_guest().name, timeout=5)
             self.current_state = ReceptionistTM.TASK_STATES["INTRODUCTION"]
 
         if self.current_state == ReceptionistTM.TASK_STATES["INTRODUCTION"]:
@@ -297,22 +319,36 @@ class ReceptionistTM(Node):
             self.subtask_manager.manipulation.follow_face(True)
             # self.subtask_manager.nav.move_front()
 
-            for i, guest in enumerate(self.guests):
-                if guest.name is None or guest == self.get_guest():
-                    continue
-                self.subtask_manager.vision.follow_by_name(guest.name)
-                if i == 0:
-                    self.subtask_manager.hri.say(
-                        f"Hello {guest.name}. This is {self.get_guest().name}. {self.get_guest().description} and they like {self.get_guest().drink}."
-                    )
-                else:
-                    self.subtask_manager.hri.say(
-                        f"Hello {guest.name}. This is {self.get_guest().name}."
-                    )
-                status, common_message = self.subtask_manager.hri.common_interest(
-                    self.get_guest().name, self.get_guest().interest, guest.name, guest.interest
+            if self.current_guest == 1:
+                host = self.guests[0]
+                result = False
+                # while not result:
+                result = self.subtask_manager.vision.follow_by_name(host.name)
+
+                self.subtask_manager.hri.say(f"Hello {host.name}. This is {self.get_guest().name}")
+            else:
+                guest1 = self.guests[1]
+                self.subtask_manager.vision.follow_by_name(guest1.name)
+                self.subtask_manager.hri.say(
+                    f"Hello {guest1.name}. This is {self.get_guest().name} and they like {self.get_guest().drink}"
                 )
-                self.subtask_manager.hri.say(common_message)
+
+                # for i, guest in enumerate(self.guests):
+                #     if guest.name is None or guest == self.get_guest():
+                #         continue
+                #     self.subtask_manager.vision.follow_by_name(guest.name)
+                #     if i == 0:
+                #         self.subtask_manager.hri.say(
+                #             f"Hello {guest.name}. This is {self.get_guest().name}. {self.get_guest().description} and they like {self.get_guest().drink}."
+                #         )
+                #     else:
+                #         self.subtask_manager.hri.say(
+                #             f"Hello {guest.name}. This is {self.get_guest().name}."
+                #         )
+                #     status, common_message = self.subtask_manager.hri.common_interest(
+                #         self.get_guest().name, self.get_guest().interest, guest.name, guest.interest
+                #     )
+                #     self.subtask_manager.hri.say(common_message)
 
             self.current_state = ReceptionistTM.TASK_STATES["NAVIGATE_TO_ENTRANCE"]
 

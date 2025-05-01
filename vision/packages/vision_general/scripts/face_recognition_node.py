@@ -21,6 +21,7 @@ import numpy as np
 
 
 import rclpy
+import rclpy.duration
 from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo
@@ -56,8 +57,9 @@ class FaceRecognition(Node):
         super().__init__("face_recognition")
         self.bridge = CvBridge()
         self.pbar = tqdm.tqdm(total=2)
+        # self.callback_gorup = rclpy.callback_groups.ReentrantCallbackGroup()
         qos = rclpy.qos.QoSProfile(
-            depth=5,
+            depth=1,
             reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
             durability=rclpy.qos.DurabilityPolicy.VOLATILE,
         )
@@ -79,18 +81,18 @@ class FaceRecognition(Node):
         )
 
         self.depth_subscriber = self.create_subscription(
-            Image, DEPTH_IMAGE_TOPIC, self.depth_callback, 10
+            Image, DEPTH_IMAGE_TOPIC, self.depth_callback, qos
         )
 
         self.image_info_subscriber = self.create_subscription(
-            CameraInfo, CAMERA_INFO_TOPIC, self.image_info_callback, 10
+            CameraInfo, CAMERA_INFO_TOPIC, self.image_info_callback, qos
         )
 
         self.verbose = self.declare_parameter("verbose", True)
         self.annotated_frame = []
         self.setup()
-        self.create_timer(0.1, self.run)
-        self.create_timer(0.1, self.publish_image)
+        self.create_timer(0.05, self.run)
+        # self.create_timer(0.05, self.publish_image)
 
     def setup(self):
         """Setup face recognition, reset variables and load models"""
@@ -104,7 +106,8 @@ class FaceRecognition(Node):
         self.curr_faces = []
         self.depth_image = []
         self.follow_name = "area"
-
+        self.id = None
+        self.processing_id = rclpy.duration.Infinite
         self.default_name = self.declare_parameter("default_name", DEFAULT_NAME)
         self.default_name = self.default_name.value
 
@@ -118,7 +121,9 @@ class FaceRecognition(Node):
 
     def image_callback(self, data):
         """Callback to get image from camera"""
-        self.get_logger().info("img received")
+        # self.get_logger().info("img received reentrant")
+        self.id = data.header.stamp
+        # self.get_logger().info(f"s{self.id}")
         self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
 
     def depth_callback(self, data):
@@ -149,7 +154,12 @@ class FaceRecognition(Node):
         """Callback to follow face by name or area"""
         self.get_logger().info("Executing service follow by")
         self.follow_name = req.name
-        res.success = True
+        if len(self.curr_faces) == 0:
+            self.get_logger().info("No face detected")
+            res.success = False
+        else:
+            self.get_logger().info(f"New name: {self.new_name}")
+            res.success = True
         return res
 
     def success(self, message) -> None:
@@ -270,6 +280,13 @@ class FaceRecognition(Node):
         if self.image is None:
             self.get_logger().info("No image")
             return
+        self.annotated_frame = self.image
+
+        if self.id == self.processing_id:
+            # self.get_logger().info("Skipping image")
+            return
+
+        self.processing_id = self.id
 
         self.frame = self.image
         self.annotated_frame = self.frame.copy()
@@ -279,6 +296,8 @@ class FaceRecognition(Node):
 
         # Find all the faces and face encodings in the current frame of video
         face_locations = face_recognition.face_locations(resized_frame)
+        # print("running")
+        # return
 
         largest_area = 0
         follow_face_params = None
@@ -426,8 +445,9 @@ class FaceRecognition(Node):
         #     self.bridge.cv2_to_imgmsg(self.self.annotated_frame, "bgr8")
         # )
 
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            self.prev_faces = []
+        # if cv2.waitKey(1) & 0xFF == ord("q"):
+        #     self.prev_faces = []
+        self.publish_image()
 
 
 def main(args=None):
