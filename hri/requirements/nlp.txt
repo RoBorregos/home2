@@ -24,4 +24,4 @@ pydantic==1.10.11
 pandas==2.2.3
 
 # Embedding and ChromaDB client
-chromadb
+# chromadb
