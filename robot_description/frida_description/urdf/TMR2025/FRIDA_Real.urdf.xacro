@@ -73,6 +73,12 @@
   <!-- <xacro:include filename="$(find frida_description)/urdf/zed/zed.xacro" />
   <xacro:load_zed attach_to="gripper" xyz="0.046461 0 -0.075649" rpy="0 0.81804 0" /> -->
 
+  <joint name="gripper_grasp_joint" type="fixed">
+    <parent link="link_eef"/>
+    <child link="gripper_grasp_frame"/>
+    <origin xyz="0 0 0" rpy="0 0 -0.7854"/>
+  </joint>
+  <link name="gripper_grasp_frame"> </link>
   <!-- NEW GRIPPER MACRO   -->
   <!-- Gripper -->
   <xacro:include filename="$(find frida_description)/urdf/Gripper/Custom/gripper.xacro" />
