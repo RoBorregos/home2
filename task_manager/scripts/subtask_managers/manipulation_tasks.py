@@ -258,7 +258,9 @@ class ManipulationTasks:
         return Status.EXECUTION_SUCCESS
 
     @mockable(return_value=Status.EXECUTION_SUCCESS)
-    @service_check(client="_manipulation_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT)
+    @service_check(
+        client="_manipulation_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT
+    )
     def pick_object(self, object_name: str):
         """Pick an object by name"""
         # if not self._manipulation_action_client.wait_for_server(timeout_sec=TIMEOUT):
@@ -291,7 +293,9 @@ class ManipulationTasks:
         return Status.EXECUTION_SUCCESS
 
     @mockable(return_value=Status.EXECUTION_SUCCESS)
-    @service_check(client="_manipulation_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT)
+    @service_check(
+        client="_manipulation_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT
+    )
     def place(self):
         # if not self._manipulation_action_client.wait_for_server(timeout_sec=TIMEOUT):
         #     Logger.error(self.node, "Manipulation action server not available")
