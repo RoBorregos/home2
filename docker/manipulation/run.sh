@@ -1,5 +1,6 @@
 #!/bin/bash
-
+ARGS=("$@")  # Save all arguments in an array
+TASK=${ARGS[0]}
 
 #_________________________BUILD_________________________
 
@@ -101,6 +102,26 @@ case $ENV_TYPE in
     ;;
 esac
 
+case $TASK in
+    "--receptionist")
+        RUN="ros2 launch vision_general receptionist_launch.py"
+        ;;
+    "--help-me-carry")
+        RUN="ros2 launch vision_general help_me_carry_launch.py"
+        ;;
+    "--storing-groceries")
+        RUN="ros2 launch vision_general storing_groceries_launch.py"
+        ;;
+    "--gpsr")
+        RUN="ros2 launch vision_general storing_groceries_launch.py"
+        ;;
+    *)
+        RUN="/bin/bash"
+        ;;
+esac
+
+COMMAND="source /opt/ros/humble/setup.bash && $RUN"
+echo "COMMAND= $COMMAND" >> .env
 
 #_________________________SETUP_________________________
 
@@ -139,4 +160,3 @@ else
     docker start $CONTAINER_NAME
     docker exec $CONTAINER_NAME /bin/bash
 fi
-

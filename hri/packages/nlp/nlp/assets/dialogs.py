@@ -13,7 +13,12 @@ def get_common_interests_dialog(
         "messages": [
             {
                 "role": "system",
-                "content": f"You will be presented with the interests of two people, your task is to get the common interests between them. Give me an answer in the format similar to '{person1Name} and {person2Name}'s common interest is movies' or '{person1Name} and {person2Name} don't have a common interest between them' in case they don't share one",
+                "content": f"""You will be presented with the interests of two people, your task is to get the common interests between them.
+Try to ALWAYS find a common interest, only rely in specifying that there is no common interest if there is absolutely no relation at all between both of their interests. For example, if {person1Name} likes 'burgers' and {person2Name} likes 'pizza', you can say that they share a common interest in 'food'.
+
+Always provide an answer in the format: '{person1Name} and {person2Name}'s common interest is movies' if there is a common interest or '{person1Name} and {person2Name} don't have a common interest between them' in case they don't share one.
+Do not add any other information or context to the answer, just the common interest or the lack of it.
+""",
             },
             {
                 "role": "user",

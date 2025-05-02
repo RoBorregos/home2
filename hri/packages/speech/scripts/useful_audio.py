@@ -15,6 +15,10 @@ from std_msgs.msg import Bool, String, Float32
 
 from frida_interfaces.msg import AudioData
 
+from frida_constants.hri_constants import (
+    RESPEAKER_LIGHT_TOPIC,
+)
+
 # Constants
 CHUNK_SIZE = 512  # Number of audio frames per chunk
 RATE = 16000  # Sampling rate in Hz (16 kHz)
@@ -84,7 +88,7 @@ class UsefulAudio(Node):
         self.audio_state_publisher = self.create_publisher(String, "AudioState", 10)
         self.lamp_publisher = self.create_publisher(String, "colorInstruction", 10)
         self.respeaker_light_publisher = self.create_publisher(
-            String, "/ReSpeaker/light", 10
+            String, RESPEAKER_LIGHT_TOPIC, 10
         )
         self.vad_output_publisher = self.create_publisher(Float32, "hri/speech/vad", 10)
 
@@ -281,7 +285,11 @@ class UsefulAudio(Node):
 
     def publish_respeaker_light(self, state):
         light = (
-            "speak" if state == "saying" else "think" if state == "listening" else "off"
+            "speak"
+            if state == "saying"
+            else "listen"
+            if state == "listening"
+            else "off"
         )
         self.respeaker_light_publisher.publish(String(data=light))
 

@@ -56,7 +56,6 @@ class GPSRCommands(Node):
         super().__init__("gpsr_commands")
         self.bridge = CvBridge()
         self.callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
-        self.get_logger().info("FROM ~/dev/vision....")
 
         self.image_subscriber = self.create_subscription(
             Image, CAMERA_TOPIC, self.image_callback, 10
@@ -130,9 +129,9 @@ class GPSRCommands(Node):
 
         # Convert gesture_requested to Enum Gestures
         try:
-            gesture_requested_enum = Gestures[gesture_requested]
+            gesture_requested_enum = Gestures(gesture_requested)
         except KeyError:
-            self.get_logger().warn(f"Pose {gesture_requested} is not valid.")
+            self.get_logger().warn(f"Gesture {gesture_requested} is not valid.")
             response.success = False
             response.count = 0
             return response
@@ -162,10 +161,11 @@ class GPSRCommands(Node):
         self.output_image = frame.copy()
 
         pose_requested = request.pose_requested
+        print(pose_requested)
 
         # Convert pose_requested to Enum Poses
         try:
-            pose_requested_enum = Poses[pose_requested]
+            pose_requested_enum = Poses(pose_requested)
         except KeyError:
             self.get_logger().warn(f"Pose {pose_requested} is not valid.")
             response.success = False
@@ -291,7 +291,6 @@ class GPSRCommands(Node):
 
         response.success = True
         self.get_logger().info(f"{type_requested} detected: {response.result}")
-        self.get_logger().info(f"{type_requested} detected: {response.result}")
         return response
 
     def success(self, message):
@@ -307,7 +306,7 @@ class GPSRCommands(Node):
                 self.bridge.cv2_to_imgmsg(self.output_image, "bgr8")
             )
 
-    def detect_pose(self, frame):
+    def detect_pose(self, frame, return_results=False):
         """Detect the pose in the image."""
         poses = [
             Poses.UNKNOWN,
@@ -324,6 +323,9 @@ class GPSRCommands(Node):
         cropped_frame = frame[y1:y2, x1:x2]
         pose = self.pose_detection.detectPose(cropped_frame)
 
+        # Put the cropped frame back into the output image
+        self.output_image[y1:y2, x1:x2] = cropped_frame
+
         if pose in poses:
             return pose.value
 
@@ -333,7 +335,6 @@ class GPSRCommands(Node):
         """Count the poses in the image and return a dictionary."""
         pose_count = {
             Poses.UNKNOWN: 0,
-            Poses.UNKNOWN: 0,
             Poses.STANDING: 0,
             Poses.SITTING: 0,
             Poses.LYING_DOWN: 0,
@@ -342,10 +343,7 @@ class GPSRCommands(Node):
         # Detect poses for each detected person
         for person in self.people:
             x1, y1, x2, y2 = person["bbox"]
-            x1, y1, x2, y2 = person["bbox"]
 
-            # Crop the frame to the bounding box of the person
-            cropped_frame = frame[y1:y2, x1:x2]
             # Crop the frame to the bounding box of the person
             cropped_frame = frame[y1:y2, x1:x2]
             pose = self.pose_detection.detectPose(cropped_frame)
@@ -373,7 +371,11 @@ class GPSRCommands(Node):
 
         # Crop the frame to the bounding box of the person
         cropped_frame = frame[y1:y2, x1:x2]
+
         gesture = self.pose_detection.detectGesture(cropped_frame)
+
+        # Put the cropped frame back into the output image
+        self.output_image[y1:y2, x1:x2] = cropped_frame
 
         if gesture in gestures:
             return gesture.value
@@ -394,10 +396,6 @@ class GPSRCommands(Node):
 
         # Detect gestures for each detected person
         for person in self.people:
-            x1, y1, x2, y2 = person["bbox"]
-
-            # Crop the frame to the bounding box of the person
-            cropped_frame = frame[y1:y2, x1:x2]
             x1, y1, x2, y2 = person["bbox"]
 
             # Crop the frame to the bounding box of the person

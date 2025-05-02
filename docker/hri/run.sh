@@ -93,7 +93,8 @@ bash setup.bash
 bash ../../hri/packages/nlp/assets/download-model.sh
 
 # Create dirs with current user to avoid permission problems
-mkdir install build log
+mkdir -p install build log
+
 
 # Check if display setup is needed
 if [ ! -d "../../hri/display/dist" ] || [ ! -d "../../hri/display/node_modules" ] || [ ! -d "../../hri/display/web-ui/.next" ] || [ ! -d "../../hri/display/web-ui/node_modules" ]; then
@@ -168,7 +169,7 @@ if [ -n "$detached" ]; then
 
 else
   echo "🚀 Launching containers in attached mode..."
-  docker compose -f "$compose_file" up &
+  ROLE=$PROFILES docker compose -f "$compose_file" up &
   compose_pid=$!
 
   echo "⏳ Waiting for localhost:3000 to be available..."

@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>nav2_backwards_motion</name>
+  <version>0.1.0</version>
+  <description>
+    A Nav2 plugin that enables backwards motion behavior
+  </description>
+  <maintainer email="your_email@example.com">Your Name</maintainer>
+  <license>Apache-2.0</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <build_depend>nav2_common</build_depend>
+  
+  <depend>rclcpp</depend>
+  <depend>rclcpp_components</depend>
+  <depend>behaviortree_cpp_v3</depend>
+  <depend>nav2_behavior_tree</depend>
+  <depend>geometry_msgs</depend>
+  <depend>nav2_util</depend>
+  <depend>nav_msgs</depend>
+  <depend>pluginlib</depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+    <nav2_behavior_tree plugin="${prefix}/behavior_tree_plugins.xml"/>
+  </export>
+</package>

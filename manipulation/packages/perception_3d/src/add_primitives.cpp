@@ -743,6 +743,10 @@ public:
       response->health_response = INVALID_INPUT_FILTER;
       return;
     }
+    ASSERT_AND_RETURN_CODE(response->health_response, OK,
+      "Error computing box primitive with code %d",
+      response->health_response);
+    box_params.height = 0.035;
 
     if (true) {
 

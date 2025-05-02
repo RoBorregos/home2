@@ -17,6 +17,7 @@ from frida_constants.hri_constants import (
     COMMON_INTEREST_SERVICE,
     EXTRACT_DATA_SERVICE,
     GRAMMAR_SERVICE,
+    HOTWORD_SERVICE_NAME,
     IS_NEGATIVE_SERVICE,
     IS_POSITIVE_SERVICE,
     LLM_WRAPPER_SERVICE,
@@ -39,6 +40,7 @@ from frida_interfaces.srv import (
     LLMWrapper,
     QueryEntry,
     Speak,
+    UpdateHotwords,
 )
 from rcl_interfaces.msg import Parameter, ParameterType, ParameterValue
 from rcl_interfaces.srv import SetParameters
@@ -78,11 +80,13 @@ class HRITasks(metaclass=SubtaskMeta):
         )
         self.is_positive_service = self.node.create_client(IsPositive, IS_POSITIVE_SERVICE)
         self.is_negative_service = self.node.create_client(IsNegative, IS_NEGATIVE_SERVICE)
+        self.display_publisher = self.node.create_publisher(String, "/hri/display/change_video", 10)
 
         self.query_item_client = self.node.create_client(QueryEntry, QUERY_ENTRY_SERVICE)
         self.add_item_client = self.node.create_client(AddEntry, ADD_ENTRY_SERVICE)
         self.llm_wrapper_service = self.node.create_client(LLMWrapper, LLM_WRAPPER_SERVICE)
         self.categorize_service = self.node.create_client(CategorizeShelves, CATEGORIZE_SERVICE)
+        self.hotwords_service = self.node.create_client(UpdateHotwords, HOTWORD_SERVICE_NAME)
         self.keyword_client = self.node.create_subscription(
             String, WAKEWORD_TOPIC, self._get_keyword, 10
         )
@@ -237,6 +241,22 @@ class HRITasks(metaclass=SubtaskMeta):
             Logger.warn(self.node, "hearing: no text heard")
 
         return execution_status, future.result().text_heard
+
+    @service_check("hotwords_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
+    def set_hotwords(self, hotwords) -> str:
+        Logger.info(
+            self.node,
+            "Setting hotwords: " + str(hotwords),
+        )
+        request = UpdateHotwords.Request(hotwords=hotwords)
+        future = self.hotwords_service.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+
+        execution_status = (
+            Status.EXECUTION_SUCCESS if future.result().success else Status.EXECUTION_ERROR
+        )
+
+        return execution_status, ""
 
     def confirm(
         self,
@@ -445,7 +465,10 @@ class HRITasks(metaclass=SubtaskMeta):
 
     @service_check("common_interest_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def common_interest(self, person1, interest1, person2, interest2, remove_thinking=True):
-        Logger.info(self.node, f"Finding common interest between {person1} and {person2}")
+        Logger.info(
+            self.node,
+            f"Finding common interest between {person1}({interest1}) and {person2}({interest2})",
+        )
         request = CommonInterest.Request(
             person1=person1, interests1=interest1, person2=person2, interests2=interest2
         )
@@ -555,13 +578,22 @@ class HRITasks(metaclass=SubtaskMeta):
         return self._query_(query, "command_history", top_k)
 
     # /////////////////helpers/////
-    def _query_(self, query: str, collection: str, top_k: int = 1) -> list[str]:
+    def _query_(self, query: str, collection: str, top_k: int = 1) -> tuple[Status, list[str]]:
         # Wrap the query in a list so that the field receives a sequence of strings.
         request = QueryEntry.Request(query=[query], collection=collection, topk=top_k)
         future = self.query_item_client.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
-
-        return Status.EXECUTION_SUCCESS, future.result().results
+        if collection == "command_history":
+            results_loaded = json.loads(future.result().results[0])
+            sorted_results = sorted(
+                results_loaded["results"], key=lambda x: x["metadata"]["timestamp"], reverse=True
+            )
+            results_list = sorted_results[:top_k]
+        else:
+            results = future.result().results
+            results_loaded = json.loads(results[0])
+            results_list = results_loaded["results"]
+        return Status.EXECUTION_SUCCESS, results_list
 
     def _add_to_collection(self, document: list, metadata: str, collection: str) -> str:
         request = AddEntry.Request(document=document, metadata=metadata, collection=collection)
@@ -648,18 +680,28 @@ class HRITasks(metaclass=SubtaskMeta):
             query_result (tuple): The query result tuple (status, list of JSON strings)
 
         Returns:
-            str: The 'context' field from metadata, or empty string if not found
+            list: The 'context' field from metadata, or empty string if not found
         """
         try:
-            # parse the first JSON string
-            parsed_result = json.loads(query_result[1][0])
-            # go into metadata
-            metadata = parsed_result["results"][0]["metadata"]
-            key = metadata.get(field, "")  # safely get 'context'
-            return key
+            key_list = []
+            query_result = query_result[1]
+            for result in query_result:
+                metadata = result["metadata"]
+                if isinstance(metadata, list) and metadata:
+                    metadata = metadata[0]
+                result_key = metadata.get(field, "")  # safely get 'field'
+                key_list.append(result_key)
+            return key_list
         except (IndexError, KeyError, json.JSONDecodeError) as e:
             self.node.get_logger().error(f"Failed to extract context: {str(e)}")
             return ""
+
+    def publish_display_topic(self, topic: str):
+        self.display_publisher.publish(String(data=topic))
+        Logger.info(self.node, f"Published display topic: {topic}")
+
+    def get_timestamps(self, query_result):
+        return self.get_metadata_key(query_result, "timestamp")
 
 
 if __name__ == "__main__":

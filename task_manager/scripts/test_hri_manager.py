@@ -34,14 +34,18 @@ class TestHriManager(Node):
     def run(self):
         # Testing compound commands
 
-        if TEST_COMPOUND:
-            self.compound_functions()
+        s, res = self.hri_manager.common_interest("John", "Football", "Gilbert", "Basketball")
 
-        if TEST_INDIVIDUAL_FUNCTIONS:
-            self.individual_functions()
+        self.get_logger().info(f"Common interest: {res}")
 
-        if TEST_EMBEDDINGS:
-            self.test_embeddings()
+        # if TEST_COMPOUND:
+        #     self.compound_functions()
+
+        # if TEST_INDIVIDUAL_FUNCTIONS:
+        #     self.individual_functions()
+
+        # if TEST_EMBEDDINGS:
+        self.test_embeddings()
 
     def individual_functions(self):
         # Test say
@@ -121,7 +125,7 @@ class TestHriManager(Node):
         # Adding multiple items with metadata
         self.get_logger().info("Adding multiple items with metadata")
         documents = ["apple pie with cinnamon", "banana_pie", "mango_pie_with milk"]
-        metadata = [{"price": "500"}, {"price": "400"}, {"price": "450"}]
+        metadata = [{"category": "500"}, {"characteristic": "400"}, {"complement": "450"}]
         result = hri.add_item(documents, json.dumps(metadata))
         self.get_logger().info(f"Result: {result}")
 
@@ -133,7 +137,6 @@ class TestHriManager(Node):
         self.get_logger().info("Querying 'cinnamon' from item collection")
         results = hri.query_item("cinnamon", top_k=3)
         self.get_logger().info(f"Query results: {results}")
-
         # Adding and querying location
         self.get_logger().info("Querying 'kitchen' from location collection")
 
@@ -156,7 +159,7 @@ class TestHriManager(Node):
         )
 
         self.get_logger().info("Querying command_history collection for the saved command")
-        history = hri.query_command_history("add_item")
+        history = hri.query_command_history("add_item", 2)
         context = hri.get_context(history)
         complement = hri.get_complement(history)
         characteristic = hri.get_characteristic(history)
