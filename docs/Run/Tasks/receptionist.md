@@ -1,5 +1,11 @@
 # Receptionist
 
+## ZED
+Run container. From the root directory (home2), run:
+```bash
+ros2 launch zed_wrapper zed_camera.launch.py camera_model:=zed publish_tf:=false
+```
+
 ## Integration
 Run container. From the root directory (home2), run:
 ```bash
@@ -39,7 +45,13 @@ Run container. From the root directory (home2), run:
 ```
 
 Note: ollama models are downloaded and mounted on the repo. Run the repo at the path `/home/orin/home2` to avoid having to re-download the models.
+### Launch 
+To launch the manipulation stack, run the following command:
+```bash
+ros2 launch manipulation_general receptionist.launch.py
+```
 
+The launch runs the following nodes:
 ### Arm bringup
 To test on the real robot, run the launch to bring up the robot and MoveIt planning:
 ```bash

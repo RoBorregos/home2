@@ -98,6 +98,7 @@ class NavigationTasks:
 
     def goal_response_callback(self, future, result_future):
         goal_handle = future.result()
+
         if not goal_handle.accepted:
             self.node.get_logger().info("Goal rejected.")
             result_future.set_result(self.STATE["EXECUTION_ERROR"])
@@ -111,6 +112,12 @@ class NavigationTasks:
 
     def result_callback(self, result_future):
         self.node.get_logger().info("Goal execution completed!")
+        goal_handle = self._get_result_future.result()
+        print(f"Goal handle papu pro: {goal_handle.status}")
+        if goal_handle.status != 4:
+            self.node.get_logger().info("Goal execution failed")
+            result_future.set_result(self.STATE["EXECUTION_ERROR"])
+            return
         result_future.set_result(self.STATE["EXECUTION_SUCCESS"])
 
     def follow_person(self, activate: bool):
