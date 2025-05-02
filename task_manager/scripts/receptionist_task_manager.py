@@ -61,9 +61,7 @@ class ReceptionistTM(Node):
     def __init__(self):
         """Initialize the node"""
         super().__init__("receptionist_task_manager")
-        self.subtask_manager = SubtaskManager(
-            self, task=Task.RECEPTIONIST, mock_areas=["navigation"]
-        )
+        self.subtask_manager = SubtaskManager(self, task=Task.RECEPTIONIST, mock_areas=[])
         self.current_state = ReceptionistTM.TASK_STATES[START]
         self.current_guest = 1
         self.seat_angles = [0, 90]
@@ -85,15 +83,20 @@ class ReceptionistTM(Node):
     def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
         """Navigate to the location"""
         if say:
-            self.subtask_manager.hri.say(
-                f"I will now guide you to the {location}. Please follow me."
-            )
-            self.subtask_manager.manipulation.follow_face(False)
             Logger.info(self, f"Moving to {location}")
+            self.subtask_manager.manipulation.follow_face(False)
             self.subtask_manager.manipulation.move_to_position("nav_pose")
-        future = self.subtask_manager.nav.move_to_location(location, sublocation)
-        if "navigation" not in self.subtask_manager.get_mocked_areas():
-            rclpy.spin_until_future_complete(self, future)
+            self.subtask_manager.hri.say(
+                f"I will now guide you to the {location}. Please follow me.", wait=False
+            )
+        result = Status.EXECUTION_ERROR
+        retry = 0
+        while result == Status.EXECUTION_ERROR and retry < ATTEMPT_LIMIT:
+            future = self.subtask_manager.nav.move_to_location(location, sublocation)
+            if "navigation" not in self.subtask_manager.get_mocked_areas():
+                rclpy.spin_until_future_complete(self, future)
+            result = future.result()
+            retry += 1
 
     def confirm(self, statement: str) -> bool:
         """Confirm the name is correct"""
@@ -208,24 +211,26 @@ class ReceptionistTM(Node):
 
         if self.current_state == ReceptionistTM.TASK_STATES["DESCRIBE"]:
             guest1 = self.guests[1]
-            self.subtask_manager.hri.say(
-                f"By the way, {guest1.name} is already in the living room. {guest1.description}",
-                wait=False,
-            )
+            intro = f"By the way, {guest1.name} is already in the living room. {guest1.description}"
+            # self.subtask_manager.hri.say(
+            #     ,
+            #     wait=False,
+            # )
 
             status, common_message_guest1 = self.subtask_manager.hri.common_interest(
                 self.get_guest().name, self.get_guest().interest, guest1.name, guest1.interest
             )
 
             if status == Status.EXECUTION_SUCCESS:
-                self.subtask_manager.hri.say(f"{common_message_guest1}")
+                self.subtask_manager.hri.say(f"{intro}. {common_message_guest1}", wait=False)
             else:
                 host = self.guests[0]
                 status, common_message_host = self.subtask_manager.hri.common_interest(
                     self.get_guest().name, self.get_guest().interest, host.name, host.interest
                 )
                 self.subtask_manager.hri.say(
-                    f"{host.name} is also in the living room. {common_message_host}"
+                    f"{intro}. {host.name} is also in the living room. {common_message_host}",
+                    wait=False,
                 )
 
             self.current_state = ReceptionistTM.TASK_STATES["NAVIGATE_TO_BEVERAGES"]
@@ -259,9 +264,6 @@ class ReceptionistTM(Node):
             Logger.state(self, "Checking drink availability")
             self.subtask_manager.manipulation.follow_face(False)
             self.subtask_manager.manipulation.move_to_position("table_stare")
-            # self.subtask_manager.manipulation.move_joint_positions(
-            #     named_position="table_stare", velocity=0.5, degrees=True
-            # )
             status, position = self.subtask_manager.vision.find_drink(
                 self.get_guest().drink, timeout=40
             )
@@ -337,6 +339,18 @@ class ReceptionistTM(Node):
                     self.current_attempts += 1
                 self.subtask_manager.hri.say(
                     f"Hello {guest1.name}. This is {self.get_guest().name} and they like {self.get_guest().drink}"
+                )
+
+                while self.current_attempts < ATTEMPT_LIMIT:
+                    result = self.subtask_manager.vision.follow_by_name(self.get_guest().name)
+                    if result == Status.EXECUTION_SUCCESS:
+                        break
+                    self.subtask_manager.manipulation.pan_to(
+                        self.check_angles[self.current_attempts]
+                    )
+                    self.current_attempts += 1
+                self.subtask_manager.hri.say(
+                    f"{self.get_guest().name}. This is {guest1.name} and they like {guest1.drink}"
                 )
 
             self.current_state = ReceptionistTM.TASK_STATES["NAVIGATE_TO_ENTRANCE"]

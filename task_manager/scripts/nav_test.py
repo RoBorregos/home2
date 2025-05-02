@@ -113,20 +113,22 @@ class TestTaskManager(Node):
         # self.subtask_manager.open_gripper()
 
         ###NAV TESTS
-        future = self.subtask_manager["navigation"].move_to_location("entrance")
+        future = self.subtask_manager["navigation"].move_to_location("entrance", "")
         rclpy.spin_until_future_complete(self, future)
         print("Move to entrance result: ", future.result())
         t.sleep(20)
         future = self.subtask_manager["navigation"].move_to_location("kitchen", "beverages")
         rclpy.spin_until_future_complete(self, future)
         t.sleep(20)
-
+        print("Move to entrance result: ", future.result())
         future = self.subtask_manager["navigation"].move_to_location("living_room", "couches")
         rclpy.spin_until_future_complete(self, future)
         t.sleep(20)
-        future = self.subtask_manager["navigation"].move_to_location("entrance")
+        print("Move to entrance result: ", future.result())
+        future = self.subtask_manager["navigation"].move_to_location("entrance", "")
         rclpy.spin_until_future_complete(self, future)
         t.sleep(20)
+        print("Move to entrance result: ", future.result())
 
         ###
 
