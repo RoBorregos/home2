@@ -5,7 +5,7 @@ Task Manager for testing the subtask managers
 """
 
 import rclpy
-import json
+# import json
 
 # from config.hri.debug import config as test_hri_config
 from rclpy.node import Node
@@ -14,7 +14,7 @@ from rclpy.node import Node
 
 from subtask_managers.manipulation_tasks import ManipulationTasks
 from subtask_managers.nav_tasks import NavigationTasks
-import time as t
+# import time as t
 
 
 class TestTaskManager(Node):
@@ -31,38 +31,6 @@ class TestTaskManager(Node):
         rclpy.spin_once(self, timeout_sec=1.0)
         self.get_logger().info("TestTaskManager has started.")
         self.run()
-
-    def test_embeddings(self):
-        """Testing the embeddings service via HRITasks"""
-
-        hri = self.subtask_manager["hri"]
-        self.get_logger().info("Adding single item: rotten_potatoes")
-        result = hri.add_item(["rotten_potatoes"], json.dumps([{}]))
-        self.get_logger().info(f"Result: {result}")
-
-        self.get_logger().info("Adding multiple items with metadata")
-        documents = ["apple pie with cinnamon", "banana_pie", "mango_pie_with milk"]
-        metadata = [{"price": "500"}, {"price": "400"}, {"price": "450"}]
-        result = hri.add_item(documents, json.dumps(metadata))
-        self.get_logger().info(f"Result: {result}")
-
-        self.get_logger().info("Querying 'potatoes' from item collection")
-        results = hri.query_item("potatoes", top_k=3)
-        self.get_logger().info(f"Query results: {results}")
-
-        self.get_logger().info("Querying 'cinnamon' from item collection")
-        results = hri.query_item("cinnamon", top_k=3)
-        self.get_logger().info(f"Query results: {results}")
-
-        self.get_logger().info("Adding single location with metadata")
-        location_doc = ["kitchen"]
-        location_metadata = [{"floor": "1", "type": "room"}]
-        result = hri.add_location(location_doc, json.dumps(location_metadata))
-        self.get_logger().info(f"Result: {result}")
-
-        self.get_logger().info("Querying 'kitchen' from location collection")
-        results = hri.query_location("kitchen", top_k=1)
-        self.get_logger().info(f"Query results: {results}")
 
     def run(self):
         # """testing vision tasks"""
@@ -114,20 +82,20 @@ class TestTaskManager(Node):
         # self.subtask_manager.open_gripper()
 
         ###NAV TESTS
-        future = self.subtask_manager.nav.move_to_location("entrance")
-        rclpy.spin_until_future_complete(self, future)
-        t.sleep(20)
-        future = self.subtask_manager.nav.move_to_location("kitchen", "beverages")
-        rclpy.spin_until_future_complete(self, future)
-        t.sleep(20)
+        # future = self.subtask_manager.nav.move_to_location("entrance")
+        # rclpy.spin_until_future_complete(self, future)
+        # t.sleep(20)
+        # future = self.subtask_manager.nav.move_to_location("kitchen", "beverages")
+        # rclpy.spin_until_future_complete(self, future)
+        # t.sleep(20)
 
-        future = self.subtask_manager.nav.move_to_location("living_room", "couches")
-        rclpy.spin_until_future_complete(self, future)
-        t.sleep(20)
-        future = self.subtask_manager.nav.move_to_location("entrance")
-        rclpy.spin_until_future_complete(self, future)
-        t.sleep(20)
-
+        # future = self.subtask_manager.nav.move_to_location("living_room", "couches")
+        # rclpy.spin_until_future_complete(self, future)
+        # t.sleep(20)
+        # future = self.subtask_manager.nav.move_to_location("entrance")
+        # rclpy.spin_until_future_complete(self, future)
+        # t.sleep(20)
+        self.subtask_manager["navigation"].whereIam()
         ###
 
         ####### EXAMPLE: Move to named position then move only the first joint #######
@@ -151,7 +119,6 @@ def main(args=None):
     node = TestTaskManager()
 
     try:
-        node.test_embeddings()
         rclpy.spin_once(node)
     except KeyboardInterrupt:
         pass
