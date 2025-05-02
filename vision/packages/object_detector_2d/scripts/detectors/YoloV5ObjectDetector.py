@@ -19,7 +19,6 @@ class YoloV5ObjectDetector(ObjectDectector):
             "custom",
             path=self.model_path_,
             force_reload=True,
-            source="local",
         )
 
     def _inference(self, frame):
