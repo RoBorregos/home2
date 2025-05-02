@@ -123,7 +123,7 @@ class HRITasks(metaclass=SubtaskMeta):
         package_share_directory = get_package_share_directory("frida_constants")
         file_path = os.path.join(package_share_directory, "data/positive.json")
         with open(file_path, "r") as file:
-            self.positive = json.load(file)
+            self.positive = json.load(file)["affirmations"]
 
         self.setup_services()
         Logger.success(self.node, f"hri_tasks initialized with task {self.task}")
