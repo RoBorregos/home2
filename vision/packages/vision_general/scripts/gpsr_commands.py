@@ -191,7 +191,8 @@ class GPSRCommands(Node):
         count = 0
 
         # replace underscore with space in the pose_requested
-        pose_requested = pose_requested.replace("_", "  ")
+        pose_requested = pose_requested.replace("_", "  ") 
+        pose_requested = pose_requested.replace("_", "", 1)
 
         for person in self.people:
             x1, y1, x2, y2 = person["bbox"]
@@ -209,7 +210,7 @@ class GPSRCommands(Node):
                     elif type_requested == "gesture":
                         gesture_count[gesture_requested_enum] += 1
                     self.get_logger().info(
-                        f"Person {count} is {pose_requested}."
+                        f"Person {pose_count[pose_requested_enum]} is {pose_requested}."
                     )
                 elif response_clean != "0":
                     self.get_logger().warn(f"Unexpected response: {response_clean}")
@@ -219,7 +220,7 @@ class GPSRCommands(Node):
             response.count = pose_count[pose_requested_enum]
         elif type_requested == "gesture":
             response.count = gesture_count[gesture_requested_enum]
-        self.get_logger().info(f"People with {type_requested} {pose_requested}: {count}")
+        self.get_logger().info(f"People with {type_requested} {pose_requested}: {response.count}")
         return response
     
     def count_by_person_callback(self, request, response):
