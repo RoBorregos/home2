@@ -23,6 +23,9 @@ include_directories(
 
 install(DIRECTORY map_areas
   DESTINATION share/${PROJECT_NAME})
+
+install(DIRECTORY data
+  DESTINATION share/${PROJECT_NAME})
   
 install(
   DIRECTORY include/${PROJECT_NAME}/
