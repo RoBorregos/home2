@@ -181,6 +181,7 @@ class GPSRCommands(Node):
                 pose_requested_enum = Poses(pose_requested)
             elif type_requested == "gesture":
                 gesture_requested_enum = Gestures(pose_requested)
+
         except KeyError:
             self.get_logger().warn(f"Pose {pose_requested} is not valid.")
             response.success = False
@@ -210,7 +211,7 @@ class GPSRCommands(Node):
                     elif type_requested == "gesture":
                         gesture_count[gesture_requested_enum] += 1
                     self.get_logger().info(
-                        f"Person {pose_count[pose_requested_enum]} is {pose_requested}."
+                        f"Person is {pose_requested}."
                     )
                 elif response_clean != "0":
                     self.get_logger().warn(f"Unexpected response: {response_clean}")
