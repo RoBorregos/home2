@@ -203,12 +203,12 @@ class PlaceMotionServer(Node):
 
     def move_to_pose(self, pose):
         """Move the robot to the given pose."""
-        self.get_logger().info(f"Moving to pose: {pose}")
         request = MoveToPose.Goal()
         request.pose = pose
         request.velocity = PICK_VELOCITY
         request.acceleration = PICK_ACCELERATION
         request.planner_id = PICK_PLANNER
+        request.target_link = EEF_LINK_NAME
         future = self._move_to_pose_action_client.send_goal_async(request)
         self.wait_for_future(future)
         action_result = future.result().get_result()

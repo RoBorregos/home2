@@ -4,7 +4,8 @@ import cv2
 import mediapipe as mp
 import numpy as np
 from frida_constants.vision_enums import Poses, Gestures
-from math import degrees, acos
+from math import degrees, acos, sqrt
+import time
 
 
 class PoseDetection:
@@ -134,18 +135,23 @@ class PoseDetection:
     def is_visible(self, landmarks, indices):
         return all(landmarks[idx].visibility > 0.5 for idx in indices)
 
+    def are_legs_visible(self, landmarks):
+        # Check visibility of knees and ankles
+        left_knee = landmarks[self.mp_pose.PoseLandmark.LEFT_KNEE]
+        right_knee = landmarks[self.mp_pose.PoseLandmark.RIGHT_KNEE]
+
+        return left_knee.visibility > 0.5 and right_knee.visibility > 0.5
+
     def detectPose(self, image, return_results=False):
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         results = self.pose.process(image_rgb)
         pose_result = Poses.UNKNOWN
         left_knee_angle = right_knee_angle = 0
 
-        # Optional visibility check (e.g., based on image cropping or heuristics)
-        if not self.is_chest_visible(image):
-            return (pose_result, None) if return_results else pose_result
-
         if results.pose_landmarks:
             landmarks = results.pose_landmarks.landmark
+            if not self.are_legs_visible(landmarks):
+                return pose_result
             left_knee_angle, right_knee_angle = self.get_leg_angles(landmarks)
 
             # Debug: print angles
@@ -171,6 +177,9 @@ class PoseDetection:
             ):
                 pose_result = Poses.SITTING
 
+        if pose_result != Poses.UNKNOWN:
+            print(f"Pose detected: {pose_result.value}")
+            time.sleep(0.5)
         return (pose_result, results) if return_results else pose_result
 
     def is_knee_bent_in_depth(self, landmarks):
@@ -230,13 +239,35 @@ class PoseDetection:
     def is_chest_visible(self, image):
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         results = self.pose.process(image_rgb)
-        return results.pose_landmarks and self.is_visible(
-            results.pose_landmarks.landmark,
-            [
-                self.mp_pose.PoseLandmark.LEFT_SHOULDER,
-                self.mp_pose.PoseLandmark.RIGHT_SHOULDER,
-            ],
-        )
+        if not results.pose_landmarks:
+            return False
+
+        landmarks = results.pose_landmarks.landmark
+
+        # Extract required landmarks using the preferred format
+        required = [
+            landmarks[self.mp_pose.PoseLandmark.LEFT_SHOULDER],
+            landmarks[self.mp_pose.PoseLandmark.RIGHT_SHOULDER],
+            landmarks[self.mp_pose.PoseLandmark.LEFT_HIP],
+            landmarks[self.mp_pose.PoseLandmark.RIGHT_HIP],
+        ]
+
+        # Check if all landmarks are confidently visible (threshold: 0.5)
+        return all(lm.visibility > 0.5 for lm in required)
+
+    def are_arms_down(self, pose_landmarks):
+        left_wrist = pose_landmarks.landmark[self.mp_pose.PoseLandmark.LEFT_WRIST]
+        right_wrist = pose_landmarks.landmark[self.mp_pose.PoseLandmark.RIGHT_WRIST]
+        left_shoulder = pose_landmarks.landmark[self.mp_pose.PoseLandmark.LEFT_SHOULDER]
+        right_shoulder = pose_landmarks.landmark[
+            self.mp_pose.PoseLandmark.RIGHT_SHOULDER
+        ]
+
+        # If both wrists are below their respective shoulders by a significant margin, arms are considered down
+        left_arm_down = left_wrist.y > left_shoulder.y + 0.1
+        right_arm_down = right_wrist.y > right_shoulder.y + 0.1
+
+        return left_arm_down and right_arm_down
 
     def detectGesture(self, image):
         # Detect hand gestures using mediapipe hands
@@ -247,12 +278,18 @@ class PoseDetection:
         gesture = Gestures.UNKNOWN
 
         if results_p.pose_landmarks:
-            if self.is_raising_left_arm(results_p.pose_landmarks):
+            if not self.is_chest_visible(image) or self.are_arms_down(
+                results_p.pose_landmarks
+            ):
+                return gesture
+            elif self.is_raising_left_arm(results_p.pose_landmarks):
                 gesture = Gestures.RAISING_LEFT_ARM
             elif self.is_raising_right_arm(results_p.pose_landmarks):
                 gesture = Gestures.RAISING_RIGHT_ARM
 
         if gesture != Gestures.UNKNOWN:
+            print(f"Detected gesture: {gesture.value}")
+            time.sleep(0.5)
             return gesture
 
         if results_h.multi_hand_landmarks:
@@ -280,7 +317,8 @@ class PoseDetection:
                             pose_landmarks[self.mp_pose.PoseLandmark.LEFT_WRIST],
                         )
 
-                        print(f"Left hand angle: {angle}")
+                        # print(f"Left hand angle: {angle}")
+                        # time.sleep(0.5)
                         # Check gestures for the left hand
                         if self.is_waving(hand_landmarks) or angle > 45:
                             gesture = Gestures.WAVING
@@ -295,7 +333,8 @@ class PoseDetection:
                             pose_landmarks[self.mp_pose.PoseLandmark.RIGHT_ELBOW],
                             pose_landmarks[self.mp_pose.PoseLandmark.RIGHT_WRIST],
                         )
-                        print(f"Right hand angle: {angle}")
+                        # print(f"Right hand angle: {angle}")
+                        # time.sleep(0.5)
                         # Check gestures for the right hand
                         if self.is_waving(hand_landmarks) or angle > 45:
                             gesture = Gestures.WAVING
@@ -304,6 +343,9 @@ class PoseDetection:
                             gesture = Gestures.POINTING_RIGHT
                             break
 
+        if gesture != gesture.UNKNOWN:
+            print(f"Detected gesture: {gesture.value}")
+            time.sleep(0.5)
         return gesture
 
     def is_closer_to_left_shoulder(self, wrist, left_shoulder, right_shoulder):
@@ -313,8 +355,16 @@ class PoseDetection:
         thumb = hand_landmarks.landmark[mp.solutions.hands.HandLandmark.THUMB_TIP]
         pinky = hand_landmarks.landmark[mp.solutions.hands.HandLandmark.PINKY_TIP]
 
-        # Check if the thumb and pinky are far apart
-        return abs(thumb.x - pinky.x) > 0.075
+        # Calculate the Euclidean distance between the thumb and pinky
+        distance = sqrt((thumb.x - pinky.x) ** 2 + (thumb.y - pinky.y) ** 2)
+
+        # Print the distance for debugging purposes
+        print(f"Distance between thumb and pinky: {distance}")
+
+        # Set a threshold based on the expected distance for a waving gesture
+        waving_threshold = 0.075
+
+        return distance > waving_threshold
 
     def get_midpoint_x(self, pose_landmarks):
         left_shoulder = pose_landmarks[self.mp_pose.PoseLandmark.LEFT_SHOULDER]
@@ -387,52 +437,6 @@ class PoseDetection:
 
         return False
 
-    def isChestVisible(self, image):
-        # Preprocess the image
-        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-        # Process the image
-        results = self.pose.process(image_rgb)
-
-        # Check for landmarks
-        if results.pose_landmarks:
-            landmarks = results.pose_landmarks.landmark
-
-            # Get key points for shoulders and chest (sternum approximate region)
-            left_shoulder = landmarks[self.mp_pose.PoseLandmark.LEFT_SHOULDER]
-            right_shoulder = landmarks[self.mp_pose.PoseLandmark.RIGHT_SHOULDER]
-
-            # Check visibility and positioning
-            if left_shoulder.visibility > 0.5 and right_shoulder.visibility > 0.5:
-                return True
-
-        else:
-            return False
-
-    def chestPosition(self, image):
-        # Preprocess the image
-        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-        # Process the image to detect pose landmarks
-        results = self.pose.process(image_rgb)
-
-        # Check for landmarks
-        if results.pose_landmarks:
-            landmarks = results.pose_landmarks.landmark
-
-            left_shoulder = landmarks[self.mp_pose.PoseLandmark.LEFT_SHOULDER]
-            right_shoulder = landmarks[self.mp_pose.PoseLandmark.RIGHT_SHOULDER]
-
-            # Approximate chest region as below the nose and between shoulders
-            if left_shoulder.visibility > 0.5 and right_shoulder.visibility > 0.5:
-                chest_x = int((left_shoulder.x + right_shoulder.x) / 2 * image.shape[1])
-                chest_y = int((left_shoulder.y + right_shoulder.y) / 2 * image.shape[0])
-
-                return (chest_x, chest_y)
-
-        print("Chest landmarks not detected or not fully visible.")
-        return None
-
     def personAngle(self, image):
         # Preprocess the image
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
@@ -471,6 +475,7 @@ class PoseDetection:
                 # Handle cases where the torso height is zero
                 if torso_height == 0:
                     print("Error: Torso height is zero.")
+                    time.sleep(0.5)
                     return None
 
                 # Calculate S2T ratio
@@ -510,33 +515,32 @@ def main():
             print("Error: Could not read frame.")
             break
 
-        pose, results = pose_detection.detectPose(frame, return_results=True)
-        gesture = pose_detection.detectGesture(frame)
+        pose_detection.detectPose(frame, return_results=False)
+        pose_detection.detectGesture(frame)
 
-        if results and results.pose_landmarks:
-            pose_detection.draw_landmarks(frame, results, pose_detection.mp_pose)
+        # if results and results.pose_landmarks:
+        #     pose_detection.draw_landmarks(frame, results, pose_detection.mp_pose)
 
-        cv2.putText(
-            frame,
-            f"Pose: {pose.name}",
-            (10, 30),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.8,
-            (0, 255, 0),
-            2,
-        )
-        cv2.putText(
-            frame,
-            f"Gesture: {gesture.name}",
-            (10, 60),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.8,
-            (0, 255, 0),
-            2,
-        )
+        # cv2.putText(
+        #     frame,
+        #     f"Pose: {pose.name}",
+        #     (10, 30),
+        #     cv2.FONT_HERSHEY_SIMPLEX,
+        #     0.8,
+        #     (0, 255, 0),
+        #     2,
+        # )
+        # cv2.putText(
+        #     frame,
+        #     f"Gesture: {gesture.name}",
+        #     (10, 60),
+        #     cv2.FONT_HERSHEY_SIMPLEX,
+        #     0.8,
+        #     (0, 255, 0),
+        #     2,
+        # )
 
-        cv2.imshow("Pose and Gesture Detection", frame)
-
+    # cv2.imshow("Pose and Gesture Detection", frame)
     cap.release()
     cv2.destroyAllWindows()
 

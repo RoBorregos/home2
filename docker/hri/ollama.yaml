@@ -1,14 +1,19 @@
 services:
   ollama:
     profiles: [receptionist, carry, gpsr]
-
     container_name: home2-hri-ollama
-    image: ollama/ollama
+    build:
+      context: .
+      dockerfile: Dockerfile.ollama
+    image: roborregos/home2:hri-ollama-gpu
+    
     runtime: nvidia
     network_mode: host
     volumes:
       - ../../hri/packages/nlp/assets:/ollama
     environment:
       - OLLAMA_MODELS=/ollama
+      - ROLE=${ROLE}
     stdin_open: true
     tty: true
+    entrypoint: ["/bin/bash", "-c", "/ollama/entrypoint.sh && tail -f /dev/null"]
