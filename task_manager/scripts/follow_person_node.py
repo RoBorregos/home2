@@ -214,7 +214,7 @@ class FollowPersonNode(Node):
 
     def error_to_velocity(self, x: float, y: float):
         """Convert error to velocity"""
-        KP = 0.1
+        KP = 1.2
         x_vel = KP * x
         x_vel = max(min(x_vel, MAX_ROTATIONAL_VEL), -MAX_ROTATIONAL_VEL)
 

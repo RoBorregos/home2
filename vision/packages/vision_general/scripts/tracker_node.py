@@ -11,6 +11,8 @@ from PIL import Image as PILImage
 import tqdm
 import torch.nn as nn
 import torch
+import math as m
+from std_msgs.msg import Header
 from vision_general.utils.calculations import (
     get2DCentroid,
     get_depth,
@@ -22,6 +24,8 @@ from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import Point, PointStamped
+from tf2_ros import Buffer, TransformListener
+from tf2_geometry_msgs import do_transform_point
 
 from vision_general.utils.reid_model import (
     load_network,
@@ -80,10 +84,14 @@ class SingleTracker(Node):
         self.centroid_publisher = self.create_publisher(Point, CENTROID_TOIC, 10)
 
         self.verbose = self.declare_parameter("verbose", True)
+
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self)
+
         self.setup()
         self.create_timer(0.1, self.run)
         self.create_timer(0.01, self.publish_image)
-
+        
     def setup(self):
         """Load models and initial variables"""
         self.target_set = False
@@ -413,27 +421,50 @@ class SingleTracker(Node):
                                 break
             if person_in_frame:
                 if len(self.depth_image) > 0:
-                    coords = PointStamped()
-                    coords.header.frame_id = 'zed_camera_link'
-                    coords.header.stamp = self.get_clock().now().to_msg()
-                    point2D = get2DCentroid(self.person_data["coordinates"], self.frame)
-                    point2D_x_coord = float(point2D[1])
-                    point2D_x_coord_normalized = (
-                        point2D_x_coord / (self.frame.shape[1] / 2)
-                    ) - 1
-                    point2Dpoint = Point()
-                    point2Dpoint.x = float(point2D_x_coord_normalized)
-                    point2Dpoint.y = 0.0
-                    point2Dpoint.z = 0.0
-                    # self.get_logger().info(f"frame_shape: {self.frame.shape[1]} Point2D: {point2D[1]} normalized_point2D: {point2D_x_coord_normalized}")
-                    self.centroid_publisher.publish(point2Dpoint)
-                    depth = get_depth(self.depth_image, point2D)
-                    point3D = deproject_pixel_to_point(self.imageInfo, point2D, depth)
-                    point3D = float(point3D[0]), float(point3D[1]), float(point3D[2])
-                    coords.x = point3D[0]
-                    coords.y = point3D[1]
-                    coords.z = point3D[2]
-                    self.results_publisher.publish(coords)
+                    try:
+                        point2D = get2DCentroid(self.person_data["coordinates"], self.frame)
+                        point2D_x_coord = float(point2D[1])
+                        point2D_x_coord_normalized = (
+                            point2D_x_coord / (self.frame.shape[1] / 2)
+                        ) - 1
+                        point2Dpoint = Point()
+                        point2Dpoint.x = float(point2D_x_coord_normalized)
+                        point2Dpoint.y = 0.0
+                        point2Dpoint.z = 0.0
+                        # self.get_logger().info(f"frame_shape: {self.frame.shape[1]} Point2D: {point2D[1]} normalized_point2D: {point2D_x_coord_normalized}")
+                        self.centroid_publisher.publish(point2Dpoint)
+
+                        point_3D = PointStamped(
+                        header=Header(frame_id="zed_camera_link", stamp = self.get_clock().now().to_msg()),
+                        point=Point(),
+                        )
+                        point_centroid = get2DCentroid(self.person_data["coordinates"], self.depth_image)
+                        depth = get_depth(self.depth_image, point_centroid)
+                        point_3D_ = deproject_pixel_to_point(self.imageInfo, point_centroid, depth)
+                    
+                        point_3D.point.x = float(point_3D_[0])
+                        point_3D.point.y = float(point_3D_[1])
+                        point_3D.point.z = float(point_3D_[2])
+
+                        original_orientation = m.atan2(point_3D.point.y, point_3D.point.x)
+                        original_distance = m.sqrt(point_3D.point.x ** 2 + point_3D.point.y ** 2)
+
+                        # Transform the point
+                        transformed_orientation = original_orientation + m.pi*(1.25)
+
+                        point_3D.point.x = original_distance * m.cos(transformed_orientation)
+                        point_3D.point.y = original_distance * m.sin(transformed_orientation)
+
+                        transform = self.tf_buffer.lookup_transform(
+                        'map',
+                        point_3D.header.frame_id,
+                        rclpy.time.Time(),
+                        )   
+                        transformed_point = do_transform_point(point_3D, transform)
+                        
+                        self.results_publisher.publish(transformed_point)
+                    except Exception as e:
+                        self.get_logger().warn(f"Failed to transform point: {e}")
                 else:
                     self.get_logger().warn("Depth image not available")
 
