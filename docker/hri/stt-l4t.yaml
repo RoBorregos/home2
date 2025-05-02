@@ -16,4 +16,4 @@ services:
       - ../../hri/packages/speech/speech/:/app/speech
     network_mode: host
     command: >
-      bash -c "source /tmp/PyAV/scripts/activate.sh && deactivate && python3 -u faster-whisper.py --port 50051 --model_size large.en --log_transcriptions"
+      bash -c "source /tmp/PyAV/scripts/activate.sh && deactivate && python3 -u faster-whisper.py --port 50051 --model_size large-v3-turbo --log_transcriptions"
