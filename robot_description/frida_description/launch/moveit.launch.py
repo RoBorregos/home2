@@ -150,11 +150,16 @@ def launch_setup(context, *args, **kwargs):
             "input_topic": "/zed/points",
         }.items(),
     )
-
+    
+    objects_spawn = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(PathJoinSubstitution([FindPackageShare('frida_description'), 'launch', 'gazebo_objects.launch.py']))    
+    )
+    
     return [
         robot_gazebo_launch,
         robot_moveit_common_launch,
         downsample_pcd,
+        objects_spawn,
     ]
 
 
