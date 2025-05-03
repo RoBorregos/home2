@@ -23,7 +23,6 @@ from frida_constants.vision_constants import (
     BEVERAGE_TOPIC,
     POINTING_OBJECT_SERVICE,
     PERSON_LIST_TOPIC,
-    COUNT_BY_GESTURES_TOPIC,
     COUNT_BY_POSE_TOPIC,
     POSE_GESTURE_TOPIC,
     COUNT_BY_COLOR_TOPIC,
@@ -42,7 +41,6 @@ from frida_interfaces.srv import (
     DetectionHandler,
     TrackBy,
     CountByPose,
-    CountByGesture,
     CountByColor,
     PersonPoseGesture,
 )
@@ -107,9 +105,7 @@ class VisionTasks:
         self.detect_person_action_client = ActionClient(self.node, DetectPerson, CHECK_PERSON_TOPIC)
 
         self.count_by_pose_client = self.node.create_client(CountByPose, COUNT_BY_POSE_TOPIC)
-        self.count_by_gesture_client = self.node.create_client(
-            CountByGesture, COUNT_BY_GESTURES_TOPIC
-        )
+
         self.find_person_info_client = self.node.create_client(
             PersonPoseGesture, POSE_GESTURE_TOPIC
         )
@@ -156,10 +152,6 @@ class VisionTasks:
                 },
                 "count_by_pose": {
                     "client": self.count_by_pose_client,
-                    "type": "service",
-                },
-                "count_by_gesture": {
-                    "client": self.count_by_gesture_client,
                     "type": "service",
                 },
                 "count_by_color": {
@@ -593,11 +585,12 @@ class VisionTasks:
 
     @mockable(return_value=[Status.EXECUTION_SUCCESS, 100])
     @service_check("count_by_pose_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
-    def count_by_pose(self, pose: str) -> tuple[int, int]:
-        """Count the number of people with the requested pose"""
+    def count_by_pose(self, pose: str, type_requested: str) -> tuple[int, int]:
+        """Count the number of people with the requested pose or gesture"""
 
-        Logger.info(self.node, "Counting people by pose")
+        Logger.info(self.node, "Counting people by pose or gesture")
         request = CountByPose.Request()
+        request.type_requested = type_requested
         request.pose_requested = pose
         request.request = True
 
@@ -607,40 +600,14 @@ class VisionTasks:
             result = future.result()
 
             if not result.success:
-                Logger.warn(self.node, "No pose found")
+                Logger.warn(self.node, f"No {type_requested} found")
                 return Status.TARGET_NOT_FOUND, 300
 
         except Exception as e:
-            Logger.error(self.node, f"Error counting people by pose: {e}")
+            Logger.error(self.node, f"Error counting people by {type_requested}: {e}")
             return Status.EXECUTION_ERROR, 300
 
-        Logger.success(self.node, f"People with pose {pose}: {result.count}")
-        return Status.EXECUTION_SUCCESS, result.count
-
-    @mockable(return_value=(Status.EXECUTION_SUCCESS, 100))
-    @service_check("count_by_gesture_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
-    def count_by_gesture(self, gesture: str) -> tuple[int, int]:
-        """Count the number of people with the requested gesture"""
-
-        Logger.info(self.node, "Counting people by gesture")
-        request = CountByPose.Request()
-        request.gesture_requested = gesture
-        request.request = True
-
-        try:
-            future = self.count_by_gesture_client.call_async(request)
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
-            result = future.result()
-
-            if not result.success:
-                Logger.warn(self.node, "No gesture found")
-                return Status.TARGET_NOT_FOUND, 300
-
-        except Exception as e:
-            Logger.error(self.node, f"Error counting people by gesture: {e}")
-            return Status.EXECUTION_ERROR, 300
-
-        Logger.success(self.node, f"People with gesture {gesture}: {result.count}")
+        Logger.success(self.node, f"People with {type_requested} {pose}: {result.count}")
         return Status.EXECUTION_SUCCESS, result.count
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, 100))
