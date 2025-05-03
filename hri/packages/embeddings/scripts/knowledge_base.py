@@ -4,6 +4,7 @@ from rclpy.node import Node
 from frida_interfaces.srv import AnswerQuestion
 from chroma_adapter import ChromaAdapter
 from openai import OpenAI
+from nlp.assets.dialogs import get_answer_question_dialog
 
 
 class RAGService(Node):
@@ -63,19 +64,19 @@ class RAGService(Node):
                 doc for score, doc in top_contexts if score > threshold
             ]
 
-            if relevant_contexts:
-                context_text = "\n".join(relevant_contexts)
-                prompt = f"Use the following knowledge base information:\n{context_text}\n\nAnswer the question:\n{question}"
-            else:
-                prompt = question
+            self.get_logger().info("Generating LLM answer")
 
+            messages = get_answer_question_dialog(relevant_contexts, question)
             completion = self.llm.chat.completions.create(
                 model=self.model_name,
                 temperature=self.temperature,
-                messages=[{"role": "user", "content": prompt}],
+                messages=messages,
             )
-
             assistant_response = completion.choices[0].message.content
+
+            response.success = True
+            response.response = assistant_response
+            response.score = top_contexts[0][0] if top_contexts else 0.0
 
             # Fill the service response
             response.success = True
