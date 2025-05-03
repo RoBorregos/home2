@@ -24,7 +24,6 @@ from frida_constants.manipulation_constants import (
     GRASP_LINK_FRAME,
     GRIPPER_SET_STATE_SERVICE,
     POUR_MOTION_ACTION_SERVER,
-
 )
 from frida_interfaces.srv import (
     AttachCollisionObject,
@@ -86,7 +85,7 @@ class PourMotionServer(Node):
 
         self.get_logger().info("Pour Action Server has been started")
 
-    # // Add Primitive false for the goal 
+    # // Add Primitive false for the goal
     async def execute_callback(self, goal_handle):
         """Execute the pour action when a goal is received."""
         self.get_logger().info("Executing pour goal...")
@@ -112,14 +111,29 @@ class PourMotionServer(Node):
         )
         # Obtain the desired pose
         bowl_position = goal_handle.request.bowl_position.point
-        abs_object_height = abs(goal_handle.request.object_top_height - goal_handle.request.object_centroid_height)
-        abs_bowl_height = abs(goal_handle.request.bowl_top_height - goal_handle.request.bowl_centroid_height)
+        abs_object_height = abs(
+            goal_handle.request.object_top_height
+            - goal_handle.request.object_centroid_height
+        )
+        abs_bowl_height = abs(
+            goal_handle.request.bowl_top_height
+            - goal_handle.request.bowl_centroid_height
+        )
 
         pour_pose = Pose()
         # Set position
-        pour_pose.pose.position.z += bowl_position.z + abs_bowl_height + max(goal_handle.request.object_top_height, goal_handle.request.object_centroid_height)
+        pour_pose.pose.position.z += (
+            bowl_position.z
+            + abs_bowl_height
+            + max(
+                goal_handle.request.object_top_height,
+                goal_handle.request.object_centroid_height,
+            )
+        )
         pour_pose.pose.position.x += bowl_position.x
-        pour_pose.pose.position.y += bowl_position.y + (abs_object_height)*(-np.sin(45))
+        pour_pose.pose.position.y += bowl_position.y + (abs_object_height) * (
+            -np.sin(45)
+        )
         # Set orientation
         pour_pose.pose.orientation.w = 1.0
         pour_pose.pose.orientation.x = 0.0
@@ -130,7 +144,7 @@ class PourMotionServer(Node):
         # pour_pose.header.frame_id = goal_handle.request.pour_pose.header.frame_id
 
         self.get_logger().info(f"Pour pose: {pour_pose}")
-        
+
         # Move to pour pose
         pour_pose_handler, pour_pose_result = self.move_to_pose(pour_pose)
         if not pour_pose_result.result.success:
@@ -140,7 +154,6 @@ class PourMotionServer(Node):
         self.get_logger().info("Pour pose reached")
 
         # Set the new orientation
-
 
         return True
 

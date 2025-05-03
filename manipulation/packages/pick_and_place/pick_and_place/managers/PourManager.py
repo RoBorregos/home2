@@ -3,7 +3,8 @@ from frida_interfaces.srv import PickPerceptionService, DetectionHandler
 from geometry_msgs.msg import PointStamped
 from std_srvs.srv import SetBool
 from pick_and_place.utils.grasp_utils import get_grasps
-from frida_interfaces.action import PickMotion
+from frida_interfaces.action import PickMotion, PourMotion
+from frida_interfaces.srv import GetCollisionObjects
 from frida_motion_planning.utils.service_utils import (
     move_joint_positions as send_joint_goal,
 )
@@ -60,6 +61,14 @@ class PourManager:
         else:
             self.node.get_logger().error("No bowl object name or point provided")
             return False
+
+        # get bowl top height
+        bowl_objects = self.get_container_objects(container_object_name)
+        if not bowl_objects:
+            return False
+
+        obj_lowest = min(bowl_objects, key=lambda o: o.pose.pose.position.z)
+        obj_highest = max(bowl_objects, key=lambda o: o.pose.pose.position.z)
 
         # Call Perception Service to get object cluster and generate collision objects
         object_cluster = self.get_object_cluster(point)
@@ -119,6 +128,32 @@ class PourManager:
 
         ### Up until here same as PickManager
         # Now go to pour
+        # Send bowl object point to pour
+        object_top_height = pick_result.object_height
+        object_centroid_height = pick_result.object_pick_height
+        bowl_top_height = self.calculate_object_height(obj_lowest, obj_highest)
+
+        if bowl_top_height is None:
+            return False
+
+        bowl_centroid_height = container_point
+
+        goal_msg = PourMotion.Goal(
+            object_name=object_name,
+            object_top_height=object_top_height,
+            object_centroid_height=object_centroid_height,
+            bowl_top_height=bowl_top_height,
+            bowl_centroid_height=bowl_centroid_height,
+        )
+
+        self.node.get_logger().info("Sending pour motion goal...")
+
+        future = self.node._pour_motion_action_client.send_goal_async(goal_msg)
+        future = wait_for_future(future)
+
+        if not future.result().result.success:
+            self.node.get_logger().error("Pour motion failed")
+            return False
 
         self.node.get_logger().info("Returning to position")
 
@@ -189,3 +224,32 @@ class PourManager:
             f"Object cluster detected: {len(pcl_result.data)} points"
         )
         return pcl_result
+
+    def calculate_object_height(self, obj_lowest, obj_highest):
+        """Calculate the height of the object, measured from the lowest point to the highest point"""
+        if obj_lowest.pose.header.frame_id != obj_highest.pose.header.frame_id:
+            self.get_logger().error(
+                "Object and pose frames do not match, cannot calculate height"
+            )
+            return 0.0
+        obj_lowest_z = obj_lowest.pose.pose.position.z
+        obj_highest_z = obj_highest.pose.pose.position.z
+        obj_radius = obj_lowest.dimensions.x
+        height = (obj_highest_z + obj_radius) - (obj_lowest_z - obj_radius)
+        self.get_logger().info(f"Object height: {height}")
+        return height
+
+    def get_container_objects(self, container_name: str):
+        """Obtiene los objetos de colisión del bowl."""
+        request = GetCollisionObjects.Request()
+        future = self.node.get_collision_objects_client.call_async(request)
+        future = wait_for_future(future)
+
+        if not future.result():
+            self.node.get_logger().error("Error al obtener objetos de colisión")
+            return None
+
+        # Filtrar objetos del bowl por nombre
+        return [
+            obj for obj in future.result().collision_objects if container_name in obj.id
+        ]
