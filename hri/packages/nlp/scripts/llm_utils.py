@@ -14,6 +14,7 @@ from nlp.assets.dialogs import (
     get_common_interests_dialog,
     get_is_answer_negative_args,
     get_is_answer_positive_args,
+    get_previous_command_answer,
 )
 from openai import OpenAI
 from rclpy.executors import ExternalShutdownException
@@ -165,24 +166,22 @@ class LLMUtils(Node):
         return res
 
     def llm_wrapper_service(self, req, res):
+        context = req.context
+        question = req.question
+
+        messages = get_previous_command_answer(context, question)
+
         response = (
             self.client.beta.chat.completions.parse(
                 model=self.model,
                 temperature=self.temperature,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": f"You will be presented with some a question. Your task is to answer it to the best of your ability. Here is some related context: {get_context()}",
-                    },
-                    {"role": "user", "content": req.question},
-                ],
+                messages=messages,
             )
             .choices[0]
             .message.content
         )
 
         res.answer = response
-
         return res
 
     def common_interest(self, req, res):
