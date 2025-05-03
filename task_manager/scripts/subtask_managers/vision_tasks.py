@@ -35,7 +35,6 @@ from frida_interfaces.msg import ObjectDetection, PersonList
 from frida_interfaces.srv import (
     BeverageLocation,
     CountByColor,
-    CountByGesture,
     CountByPose,
     CropQuery,
     DetectionHandler,
@@ -616,8 +615,8 @@ class VisionTasks:
         """Count the number of people with the requested gesture"""
 
         Logger.info(self.node, "Counting people by gesture")
-        request = CountByGesture.Request()
-        request.gesture_requested = gesture
+        request = CountByPose.Request()
+        request.pose_requested = gesture
         request.request = True
 
         try:
