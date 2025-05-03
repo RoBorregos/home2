@@ -37,11 +37,11 @@ custom_command = [
     # {"action": "find_person_by_name", "complement": "Robin", "characteristic": ""},
     # {"action": "visual_info", "complement": "biggest", "characteristic": "bottle"},
     # {"action": "find_person_info", "complement": "pose", "characteristic": ""},
-    {
-        "action": "count",
-        "complement": "sota corner",
-        "characteristic": "waving",
-    },
+    # {
+    #     "action": "count",
+    #     "complement": "sota corner",
+    #     "characteristic": "waving",
+    # },
     # {
     #     "action": "count",
     #     "complement": "sota corner",
@@ -62,6 +62,11 @@ custom_command = [
     #     "complement": "sota corner",
     #     "characteristic": "pointing right",
     # },
+    {
+        "action": "count",
+        "complement": "sota corner",
+        "characteristic": "green shirt",
+    },
     {
         "action": "count",
         "complement": "sota corner",
