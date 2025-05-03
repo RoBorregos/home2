@@ -320,7 +320,7 @@ class GPSRCommands(Node):
             prompt = f"Respond 'standing' if the person in the image is standing, 'sitting' if the person in the image is sitting, 'lying down' if the person in the image is lying down or 'unknown' if the person is not doing any of the previous."
             
         elif type_requested == "gesture":
-            prompt = f"Respond 'waving' if the person in the image is waving, 'raising left arm' if the person in the image is raising their left arm, 'raising right arm' if the person in the image is raising their right arm, 'pointing left' if the person in the image is pointing to their left or 'pointing right' if the person is pointing to their right. Choose only one, the most accurate to what the person is doing. If the person is doing none of the previous, respond 'unknown'."
+            prompt = f"Which arm is raising? eft or right?"
         else:
             self.get_logger().warn(f"Type {type_requested} is not valid.")
             response.success = False
@@ -331,7 +331,8 @@ class GPSRCommands(Node):
                 prompt, [float(y1), float(x1), float(y2), float(x2)]
             )
         response_clean = response_q.replace(" ", "_")
-        respose_clean = response_clean.replace("_", "", 1)
+        response_clean = response_clean.replace("_", "", 1)
+
         if status:
             self.get_logger().info(
                 f"The person is {response_q}."
