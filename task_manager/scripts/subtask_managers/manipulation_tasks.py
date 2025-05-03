@@ -81,8 +81,7 @@ class ManipulationTasks:
         self._manipulation_action_client = ActionClient(
             self.node, ManipulationAction, MANIPULATION_ACTION_SERVER
         )
-        self._fix_position_to_plane_client = ActionClient(
-            self.node,
+        self._fix_position_to_plane_client = self.node.create_client(
             GetOptimalPositionForPlane,
             "/manipulation/get_optimal_position_for_plane",
         )

@@ -66,7 +66,7 @@ bt_navigator:
 
 controller_server:
   ros__parameters:
-    controller_frequency: 30.0
+    controller_frequency: 20.0
     FollowPath:
       plugin: "nav2_mppi_controller::MPPIController"
       time_steps: 56
