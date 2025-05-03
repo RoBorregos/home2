@@ -219,6 +219,7 @@ class GPSRTask(GenericTask):
         #     complement = DetectBy.GESTURES.value
         # elif complement == "posture":
         #     complement = DetectBy.POSES.value
+        self.subtask_manager.manipulation.move_to_position("front_low_stare")
 
         if complement != "name":
             s, res = self.subtask_manager.vision.find_person_info(complement)
