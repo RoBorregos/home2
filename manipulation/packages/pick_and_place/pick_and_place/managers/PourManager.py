@@ -143,7 +143,7 @@ class PourManager:
             object_top_height=object_top_height,
             object_centroid_height=object_centroid_height,
             bowl_top_height=bowl_top_height,
-            bowl_centroid_height=bowl_centroid_height,
+            bowl_position=bowl_centroid_height,
         )
 
         self.node.get_logger().info("Sending pour motion goal...")
