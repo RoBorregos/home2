@@ -131,9 +131,7 @@ class PourMotionServer(Node):
             )
         )
         pour_pose.pose.position.x += bowl_position.x
-        pour_pose.pose.position.y += bowl_position.y + (abs_object_height) * (
-            -np.sin(45)
-        )
+        pour_pose.pose.position.y += bowl_position.y + (abs_object_height)*(np.sin(45))
         # Set orientation
         pour_pose.pose.orientation.w = 1.0
         pour_pose.pose.orientation.x = 0.0
@@ -153,7 +151,8 @@ class PourMotionServer(Node):
             return False, result
         self.get_logger().info("Pour pose reached")
 
-        # Set the new orientation
+        # Set the new orientation without constraint
+
 
         return True
 
