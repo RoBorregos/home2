@@ -51,7 +51,6 @@ class RAGService(Node):
                     )
                     documents = results.get("documents", [[]])[0]
                     distances = results.get("distances", [[]])[0]
-
                     context_pairs = list(zip(distances, documents))
                     all_context_pairs.extend(context_pairs)
 
@@ -60,11 +59,17 @@ class RAGService(Node):
 
             all_context_pairs.sort(key=lambda x: -x[0])
             top_contexts = all_context_pairs[:top_k]
-            relevant_contexts = [
-                doc for score, doc in top_contexts if score > threshold
-            ]
+            best_score = top_contexts[0][0] if top_contexts else 0.0
 
-            self.get_logger().info("Generating LLM answer")
+            relevant_contexts = (
+                [doc for score, doc in top_contexts if score > threshold]
+                if best_score > threshold
+                else []
+            )
+
+            self.get_logger().info(
+                f"Generating LLM answer (threshold={threshold}, best_score={best_score})"
+            )
 
             messages = get_answer_question_dialog(relevant_contexts, question)
             completion = self.llm.chat.completions.create(
@@ -76,12 +81,7 @@ class RAGService(Node):
 
             response.success = True
             response.response = assistant_response
-            response.score = top_contexts[0][0] if top_contexts else 0.0
-
-            # Fill the service response
-            response.success = True
-            response.response = assistant_response
-            response.score = top_contexts[0][0] if top_contexts else 0
+            response.score = best_score
 
         except Exception as e:
             self.get_logger().error(f"Error during RAG process: {e}")
