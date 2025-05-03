@@ -5,11 +5,13 @@ HRI Subtask manager
 """
 
 import json
+import os
 import re
 from datetime import datetime
 from typing import Union
 
 import rclpy
+from ament_index_python.packages import get_package_share_directory
 from frida_constants.hri_constants import (
     ADD_ENTRY_SERVICE,
     CATEGORIZE_SERVICE,
@@ -17,6 +19,7 @@ from frida_constants.hri_constants import (
     COMMON_INTEREST_SERVICE,
     EXTRACT_DATA_SERVICE,
     GRAMMAR_SERVICE,
+    HOTWORD_SERVICE_NAME,
     IS_NEGATIVE_SERVICE,
     IS_POSITIVE_SERVICE,
     LLM_WRAPPER_SERVICE,
@@ -39,6 +42,7 @@ from frida_interfaces.srv import (
     LLMWrapper,
     QueryEntry,
     Speak,
+    UpdateHotwords,
 )
 from rcl_interfaces.msg import Parameter, ParameterType, ParameterValue
 from rcl_interfaces.srv import SetParameters
@@ -84,6 +88,7 @@ class HRITasks(metaclass=SubtaskMeta):
         self.add_item_client = self.node.create_client(AddEntry, ADD_ENTRY_SERVICE)
         self.llm_wrapper_service = self.node.create_client(LLMWrapper, LLM_WRAPPER_SERVICE)
         self.categorize_service = self.node.create_client(CategorizeShelves, CATEGORIZE_SERVICE)
+        self.hotwords_service = self.node.create_client(UpdateHotwords, HOTWORD_SERVICE_NAME)
         self.keyword_client = self.node.create_subscription(
             String, WAKEWORD_TOPIC, self._get_keyword, 10
         )
@@ -117,6 +122,11 @@ class HRITasks(metaclass=SubtaskMeta):
             Task.HELP_ME_CARRY: all_services,
             Task.STORING_GROCERIES: all_services,
         }
+
+        package_share_directory = get_package_share_directory("frida_constants")
+        file_path = os.path.join(package_share_directory, "data/positive.json")
+        with open(file_path, "r") as file:
+            self.positive = json.load(file)["affirmations"]
 
         self.setup_services()
         Logger.success(self.node, f"hri_tasks initialized with task {self.task}")
@@ -239,6 +249,22 @@ class HRITasks(metaclass=SubtaskMeta):
 
         return execution_status, future.result().text_heard
 
+    @service_check("hotwords_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
+    def set_hotwords(self, hotwords) -> str:
+        Logger.info(
+            self.node,
+            "Setting hotwords: " + str(hotwords),
+        )
+        request = UpdateHotwords.Request(hotwords=hotwords)
+        future = self.hotwords_service.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+
+        execution_status = (
+            Status.EXECUTION_SUCCESS if future.result().success else Status.EXECUTION_ERROR
+        )
+
+        return execution_status, ""
+
     def confirm(
         self,
         question: str,
@@ -282,11 +308,14 @@ class HRITasks(metaclass=SubtaskMeta):
                 ) < wait_between_retries:
                     s, interpret_text = self.hear()
                     if s == Status.EXECUTION_SUCCESS:
+                        # check if positive word is in the interpreted text, if not, check if the text is positive with llm
+                        for word in self.positive:
+                            if word in interpret_text.lower():
+                                return Status.EXECUTION_SUCCESS, "yes"
+
                         if self.is_positive(interpret_text)[1]:
                             return Status.EXECUTION_SUCCESS, "yes"
-                        elif self.is_negative(interpret_text)[1]:
-                            return Status.EXECUTION_SUCCESS, "no"
-
+                        return Status.EXECUTION_SUCCESS, "no"
         Logger.info(
             self.node,
             "Confirmation timed out for: " + question,
@@ -468,19 +497,23 @@ class HRITasks(metaclass=SubtaskMeta):
         return Status.EXECUTION_SUCCESS, result
 
     @service_check("is_positive_service", (Status.SERVICE_CHECK, False), TIMEOUT)
-    def is_positive(self, text):
+    def is_positive(self, text, async_call=False):
         Logger.info(self.node, f"Checking if text is positive: {text}")
         request = IsPositive.Request(text=text)
         future = self.is_positive_service.call_async(request)
+        if async_call:
+            return future
         rclpy.spin_until_future_complete(self.node, future)
         Logger.info(self.node, f"is_positive result ({text}): {future.result().is_positive}")
         return Status.EXECUTION_SUCCESS, future.result().is_positive
 
     @service_check("is_negative_service", (Status.SERVICE_CHECK, False), TIMEOUT)
-    def is_negative(self, text):
+    def is_negative(self, text, async_call=False):
         Logger.info(self.node, f"Checking if text is negative: {text}")
         request = IsNegative.Request(text=text)
         future = self.is_negative_service.call_async(request)
+        if async_call:
+            return future
         rclpy.spin_until_future_complete(self.node, future)
         Logger.info(self.node, f"is_negative result ({text}): {future.result().is_negative}")
         return Status.EXECUTION_SUCCESS, future.result().is_negative
