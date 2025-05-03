@@ -27,8 +27,6 @@ class DetectBy(Enum):
     GESTURES = "gestures"
     POSES = "poses"
     COLOR = "color"
-    CLOTHES = "clothes"
-
 
 def is_value_in_enum(value, enum_class):
     return value in [member.value for member in enum_class]
