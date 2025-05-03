@@ -15,6 +15,7 @@ from frida_interfaces.srv import PointTransformation
 import time
 
 POINT_TRANSFORMER_TOPIC = "/integration/point_transformer"
+ATTEMPT_LIMIT = 3
 
 
 class ExecutionStates(Enum):
@@ -110,10 +111,16 @@ class StoringGroceriesManager(Node):
             self.subtask_manager.manipulation.move_joint_positions(
                 named_position="nav_pose", velocity=0.5, degrees=True
             )
-            future = self.subtask_manager.nav.move_to_location(location, sub_location)
-            rclpy.spin_until_future_complete(self, future)
-            hres = future.result()
-            return Status.EXECUTION_SUCCESS if hres == 1 else Status.EXECUTION_ERROR
+            result = Status.EXECUTION_ERROR
+            retry = 0
+            while result == Status.EXECUTION_ERROR and retry < ATTEMPT_LIMIT:
+                future = self.subtask_manager.nav.move_to_location(location, sub_location)
+                if "navigation" not in self.subtask_manager.get_mocked_areas():
+                    rclpy.spin_until_future_complete(self, future)
+                result = future.result()
+                retry += 1
+
+            return Status.EXECUTION_SUCCESS
         except Exception as e:
             Logger.error(self, f"Error navigating to {location}: {e}")
         return Status.EXECUTION_ERROR
@@ -151,8 +158,8 @@ class StoringGroceriesManager(Node):
         if self.state == ExecutionStates.START:
             self.get_logger().info("Waiting for TF system to initialize...")
             rclpy.spin_once(self, timeout_sec=2.0)
-            # self.state = ExecutionStates.INIT_NAV_TO_SHELF
-            self.state = ExecutionStates.VIEW_SHELF_AND_SAVE_OBJECTS
+            self.state = ExecutionStates.INIT_NAV_TO_SHELF
+            # self.state = ExecutionStates.IN
 
         elif self.state == ExecutionStates.END:
             Logger.info(self, "Ending Storing Groceries Manager...")
@@ -242,9 +249,9 @@ class StoringGroceriesManager(Node):
                 self.generate_manual_levels()
                 for i in range(len(self.manual_heights)):
                     self.shelves[i] = Shelf(id=i, tag="", objects=[])
-                    self.subtask_manager.manipulation.get_optimal_position_for_plane(
-                        self.manual_heights[i], tolerance=0.2
-                    )
+                    # self.subtask_manager.manipulation.get_optimal_position_for_plane(
+                    #     self.manual_heights[i], tolerance=0.2
+                    # )
                     status, res = self.subtask_manager.vision.detect_objects()
                     rettry = 0
                     while status != Status.EXECUTION_SUCCESS and rettry < 5:
@@ -426,9 +433,9 @@ class StoringGroceriesManager(Node):
             time.sleep(1)
 
         elif self.state == ExecutionStates.PICK_OBJECT:
-            status = self.subtask_manager.manipulation.get_optimal_position_for_plane(
-                0.75, tolerance=0.2
-            )
+            # status = self.subtask_manager.manipulation.get_optimal_position_for_plane(
+            #     0.75, tolerance=0.2
+            # )
             status, objs = self.subtask_manager.vision.detect_objects(timeout=10)
             if status == Status.TIMEOUT:
                 # pass

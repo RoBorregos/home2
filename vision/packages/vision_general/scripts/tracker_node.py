@@ -21,7 +21,7 @@ import rclpy
 from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import Point, PointStamped
 
 from vision_general.utils.reid_model import (
     load_network,
@@ -73,7 +73,7 @@ class SingleTracker(Node):
             TrackBy, SET_TARGET_BY_TOPIC, self.set_target_by_callback
         )
 
-        self.results_publisher = self.create_publisher(Point, RESULTS_TOPIC, 10)
+        self.results_publisher = self.create_publisher(PointStamped, RESULTS_TOPIC, 10)
 
         self.image_publisher = self.create_publisher(Image, TRACKER_IMAGE_TOPIC, 10)
 
@@ -413,7 +413,9 @@ class SingleTracker(Node):
                                 break
             if person_in_frame:
                 if len(self.depth_image) > 0:
-                    coords = Point()
+                    coords = PointStamped()
+                    coords.header.frame_id = 'zed_camera_link'
+                    coords.header.stamp = self.get_clock().now().to_msg()
                     point2D = get2DCentroid(self.person_data["coordinates"], self.frame)
                     point2D_x_coord = float(point2D[1])
                     point2D_x_coord_normalized = (
