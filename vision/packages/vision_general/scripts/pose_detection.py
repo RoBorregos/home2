@@ -322,7 +322,9 @@ class PoseDetection:
                         if self.is_waving(hand_landmarks) or angle > 45:
                             gesture = Gestures.WAVING
                             break
-                        elif self.is_pointing_left(hand_landmarks, mid_x, pose_landmarks):
+                        elif self.is_pointing_left(
+                            hand_landmarks, mid_x, pose_landmarks
+                        ):
                             gesture = Gestures.POINTING_LEFT
                             break
                     else:  # Right hand
@@ -338,7 +340,9 @@ class PoseDetection:
                         if self.is_waving(hand_landmarks) or angle > 45:
                             gesture = Gestures.WAVING
                             break
-                        elif self.is_pointing_right(hand_landmarks, mid_x, pose_landmarks):
+                        elif self.is_pointing_right(
+                            hand_landmarks, mid_x, pose_landmarks
+                        ):
                             gesture = Gestures.POINTING_RIGHT
                             break
 
@@ -386,15 +390,21 @@ class PoseDetection:
 
         distance_elbow_hip = 0
 
-        if self.is_visible(pose_landmarks, [self.mp_pose.PoseLandmark.LEFT_HIP, self.mp_pose.PoseLandmark.LEFT_ELBOW]):
+        if self.is_visible(
+            pose_landmarks,
+            [self.mp_pose.PoseLandmark.LEFT_HIP, self.mp_pose.PoseLandmark.LEFT_ELBOW],
+        ):
             right_hip = pose_landmarks.landmark[self.mp_pose.PoseLandmark.RIGHT_HIP]
             right_elbow = pose_landmarks.landmark[self.mp_pose.PoseLandmark.RIGHT_ELBOW]
-            
+
             # distance between elbow and hip
             distance_elbow_hip = abs(right_elbow.y - right_hip.y)
             # print(f"distance right: {distance_elbow_hip}")
 
-        return self.is_hand_right_of_midline(index_finger, mid_x) or distance_elbow_hip > 0.5
+        return (
+            self.is_hand_right_of_midline(index_finger, mid_x)
+            or distance_elbow_hip > 0.5
+        )
 
     def is_pointing_right(self, hand_landmarks, mid_x, pose_landmarks):
         """Detects if the hand is pointing right across the chest."""
@@ -404,15 +414,21 @@ class PoseDetection:
 
         distance_elbow_hip = 0
         # check if hip and elbow are visible
-        if self.is_visible(pose_landmarks, [self.mp_pose.PoseLandmark.LEFT_HIP, self.mp_pose.PoseLandmark.LEFT_ELBOW]):
+        if self.is_visible(
+            pose_landmarks,
+            [self.mp_pose.PoseLandmark.LEFT_HIP, self.mp_pose.PoseLandmark.LEFT_ELBOW],
+        ):
             left_hip = pose_landmarks.landmark[self.mp_pose.PoseLandmark.LEFT_HIP]
             left_elbow = pose_landmarks.landmark[self.mp_pose.PoseLandmark.LEFT_ELBOW]
-            
+
             # distance between elbow and hip
             distance_elbow_hip = abs(left_elbow.y - left_hip.y)
             # print(f"distance right: {distance_elbow_hip}")
 
-        return self.is_hand_left_of_midline(index_finger, mid_x) or distance_elbow_hip > 0.5
+        return (
+            self.is_hand_left_of_midline(index_finger, mid_x)
+            or distance_elbow_hip > 0.5
+        )
 
     def is_raising_left_arm(self, pose_landmarks):
         left_elbow = pose_landmarks.landmark[self.mp_pose.PoseLandmark.LEFT_ELBOW]
@@ -423,7 +439,7 @@ class PoseDetection:
         angle = self.get_angle(left_shoulder, left_elbow, left_wrist)
 
         # Distance between shoulder and elbow
-        #distance_shoulder_elbow = abs(left_shoulder.y - left_elbow.y)
+        # distance_shoulder_elbow = abs(left_shoulder.y - left_elbow.y)
         # Distance between elbow and hip
         distance_elbow_hip = abs(left_elbow.y - left_hip.y)
         # print(f"angle: {angle}")
