@@ -155,15 +155,6 @@ class GPSRCommands(Node):
             Poses.LYING_DOWN: 0,
         }
 
-        gesture_count = {
-            Gestures.UNKNOWN: 0,
-            Gestures.WAVING: 0,
-            Gestures.RAISING_LEFT_ARM: 0,
-            Gestures.RAISING_RIGHT_ARM: 0,
-            Gestures.POINTING_LEFT: 0,
-            Gestures.POINTING_RIGHT: 0,
-        }
-
         if self.image is None:
             response.success = False
             response.count = 0
@@ -184,7 +175,6 @@ class GPSRCommands(Node):
             return response
         
         self.get_detections(frame, 0)
-        count = 0
 
         # replace underscore with space in the pose_requested
         pose_requested = pose_requested.replace("_", "  ") 
@@ -301,13 +291,7 @@ class GPSRCommands(Node):
         type_requested = request.type_requested
 
         if type_requested == "pose":
-            for pose in Poses:
-                pose_val = pose.value
-                pose_val = pose_val.replace("_", "  ") 
-                pose_val = pose_val.replace("_", "", 1)
-                print(pose_val)
-            prompt = f"Respond 'standing' if the person in the image is standing, 'sitting' if the person in the image is sitting, 'lying down' if the person in the image is lying down or 'unknown' if the person is not doing any of the previous."
-            
+            prompt = f"Respond 'standing' if the person in the image is standing, 'sitting' if the person in the image is sitting, 'lying down' if the person in the image is lying down or 'unknown' if the person is not doing any of the previous."    
         else:
             self.get_logger().warn(f"Type {type_requested} is not valid.")
             response.success = False
