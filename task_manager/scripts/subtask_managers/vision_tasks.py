@@ -588,7 +588,7 @@ class VisionTasks:
 
     @mockable(return_value=[Status.EXECUTION_SUCCESS, 100])
     @service_check("count_by_pose_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
-    def count_by_pose(self, pose: str, type_requested: str) -> tuple[int, int]:
+    def count_by_pose(self, pose: str) -> tuple[int, int]:
         """Count the number of people with the requested pose or gesture"""
 
         Logger.info(self.node, "Counting people by pose or gesture")
@@ -602,11 +602,10 @@ class VisionTasks:
             result = future.result()
 
             if not result.success:
-                Logger.warn(self.node, f"No {type_requested} found")
                 return Status.TARGET_NOT_FOUND, 300
 
         except Exception as e:
-            Logger.error(self.node, f"Error counting people by {type_requested}: {e}")
+            Logger.error(self.node, f"Error counting people by pose: {e}")
             return Status.EXECUTION_ERROR, 300
 
         Logger.success(self.node, f"People with pose {pose}: {result.count}")
