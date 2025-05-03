@@ -312,10 +312,15 @@ class GPSRCommands(Node):
         type_requested = request.type_requested
 
         if type_requested == "pose":
+            for pose in Poses:
+                pose_val = pose.value
+                pose_val = pose_val.replace("_", "  ") 
+                pose_val = pose_val.replace("_", "", 1)
+                print(pose_val)
             prompt = f"Respond 'standing' if the person in the image is standing, 'sitting' if the person in the image is sitting, 'lying down' if the person in the image is lying down or 'unknown' if the person is not doing any of the previous."
             
         elif type_requested == "gesture":
-            prompt = f"Respond 'waving' if the person in the image is waving, 'raising left arm' if the person in the image is raising their left arm, 'raising right arm' if the person in the image is raising ther right arm, 'pointing left' if the person in the image is pointing to their left or 'pointing right' if the person is pointing to their right. Choose only one, the most accurate to what the person is doing. If the person is doing none of the previous, respond 'unknown'."
+            prompt = f"Respond 'waving' if the person in the image is waving, 'raising left arm' if the person in the image is raising their left arm, 'raising right arm' if the person in the image is raising their right arm, 'pointing left' if the person in the image is pointing to their left or 'pointing right' if the person is pointing to their right. Choose only one, the most accurate to what the person is doing. If the person is doing none of the previous, respond 'unknown'."
         else:
             self.get_logger().warn(f"Type {type_requested} is not valid.")
             response.success = False
@@ -326,6 +331,7 @@ class GPSRCommands(Node):
                 prompt, [float(y1), float(x1), float(y2), float(x2)]
             )
         response_clean = response_q.replace(" ", "_")
+        respose_clean = response_clean.replace("_", "", 1)
         if status:
             self.get_logger().info(
                 f"The person is {response_q}."
@@ -333,7 +339,7 @@ class GPSRCommands(Node):
 
         response.result = response_clean
         response.success = True
-        self.get_logger().info(f"{type_requested} detected: {response.result}")
+        self.get_logger().info(f"{type_requested} detected: {response_clean}")
         return response
 
     def success(self, message):
