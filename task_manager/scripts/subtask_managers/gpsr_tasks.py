@@ -3,7 +3,7 @@ import os
 
 import rclpy
 from ament_index_python.packages import get_package_share_directory
-from frida_constants.vision_enums import DetectBy, Gestures, Poses, is_value_in_enum
+from frida_constants.vision_enums import Gestures, Poses, is_value_in_enum
 from utils.status import Status
 
 from subtask_managers.generic_tasks import GenericTask
@@ -215,10 +215,10 @@ class GPSRTask(GenericTask):
                 return get_person_name()
         """
 
-        if complement == "gesture":
-            complement = DetectBy.GESTURES.value
-        elif complement == "posture":
-            complement = DetectBy.POSES.value
+        # if complement == "gesture":
+        #     complement = DetectBy.GESTURES.value
+        # elif complement == "posture":
+        #     complement = DetectBy.POSES.value
 
         if complement != "name":
             return self.subtask_manager.vision.find_person_info(complement)
