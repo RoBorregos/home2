@@ -16,7 +16,7 @@ from frida_interfaces.srv import (
 )
 
 # Assuming ChromaAdapter handles Chroma client and embedding functions
-from ChromaAdapter import ChromaAdapter
+from chroma_adapter import ChromaAdapter
 
 
 class MetadataProfile(str, Enum):
@@ -303,6 +303,8 @@ class Embeddings(Node):
         """
         # Get the directory of the current script
         script_dir = Path(__file__).resolve().parent
+        # Define the folder where the CSV files are located
+        dataframes_folder = script_dir / "../embeddings/dataframes"
 
         # Define the folder where the JSON files are located
         dataframes_folder = script_dir / "../embeddings/dataframes"
@@ -312,18 +314,21 @@ class Embeddings(Node):
                 f"The folder {dataframes_folder} does not exist or is not a directory."
             )
 
-        # Get all JSON files in the folder
+        # Get all json files in the folder
         dataframes = [
             file.resolve()
             for file in dataframes_folder.iterdir()
             if file.suffix == ".json"
         ]
+
         # Check if there are any JSON files
         if not dataframes:
             raise FileNotFoundError(
                 f"No JSON files found in the folder {dataframes_folder}."
             )
+
         collections = {}
+
         documents = []
         metadatas_ = []
         for file in dataframes:
