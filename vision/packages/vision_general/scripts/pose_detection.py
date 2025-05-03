@@ -468,7 +468,7 @@ class PoseDetection:
         angle = self.get_angle(right_shoulder, right_elbow, right_wrist)
 
         # Distance between shoulder and elbow
-        distance_shoulder_elbow = abs(right_shoulder.y - right_elbow.y)
+        # distance_shoulder_elbow = abs(right_shoulder.y - right_elbow.y)
         # Distance between elbow and hip
         distance_elbow_hip = abs(right_elbow.y - right_hip.y)
         # print(f"angle: {angle}")
