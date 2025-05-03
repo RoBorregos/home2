@@ -163,10 +163,12 @@ class MotionPlanningServer(Node):
                 "Move to pose finished with result: " + str(result.success)
             )
             goal_handle.succeed()
+            self.reset_planning_settings(goal_handle)
             return result
         except Exception as e:
             self.get_logger().error(f"Move to pose failed: {str(e)}")
             goal_handle.abort()
+            self.reset_planning_settings(goal_handle)
             result.success = False
             return result
 
@@ -273,6 +275,15 @@ class MotionPlanningServer(Node):
         self.planner.set_velocity(velocity)
         self.planner.set_acceleration(acceleration)
         self.planner.set_planner(planner_id)
+
+        if goal_handle.request.apply_constraint:
+            self.get_logger().info("Planning with Constraints...")
+            self.planner.set_orientation_constraints(goal_handle.request)
+
+    def reset_planning_settings(self, goal_handle):
+        if goal_handle.request.apply_constraint:
+            self.get_logger().info("Deleting all constraints...")
+            self.planner.delete_all_constraints()
 
     def get_joints_callback(self, request, response):
         joint_dict = self.planner.get_joint_positions()
