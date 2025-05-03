@@ -70,7 +70,7 @@ def launch_setup(context, *args, **kwargs):
 
     octomap_config = {
         "octomap_frame": "base_link",
-        "octomap_resolution": 0.035,
+        "octomap_resolution": 0.05,
         "max_range": 2.0,
     }
 
