@@ -77,6 +77,7 @@ COUNT_BY_CLOTHES_TOPIC = "/vision/gpsr/count_by_clothes"
 COUNT_BY_PERSON_TOPIC = "/vision/gpsr/count_by_person"
 COUNT_BY_OBJECTS_TOPIC = "/vision/gpsr/count_by_objects"
 COUNT_BY_POSE_TOPIC = "/vision/gpsr/count_by_pose"
+COUNT_BY_GESTURE_TOPIC = "/vision/gpsr/count_by_gesture"
 IMAGE_TOPIC = "/vision/gpsr/img_detection"
 POSE_GESTURE_TOPIC = "/vision/gpsr/pose_gesture_detection"
 
