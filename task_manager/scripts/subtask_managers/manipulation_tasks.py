@@ -265,8 +265,10 @@ class ManipulationTasks:
     @service_check(
         client="_manipulation_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT
     )
-    def pick_object(self, object_name: str):
-        """Pick an object by name"""
+    def pick_object(self, object_name: str, in_configuration: bool = False):
+        """Pick an object by name
+        object_name: name of the object to pick
+        in_configuration: True if the object is in the configuration"""
         # if not self._manipulation_action_client.wait_for_server(timeout_sec=TIMEOUT):
         #     Logger.error(self.node, "Manipulation action server not available")
         #     return Status.EXECUTION_ERROR
@@ -274,6 +276,7 @@ class ManipulationTasks:
         goal_msg = ManipulationAction.Goal()
         goal_msg.task_type = ManipulationTask.PICK
         goal_msg.pick_params.object_name = object_name
+        goal_msg.pick_params.in_configuration = in_configuration
 
         future = self._manipulation_action_client.send_goal_async(goal_msg)
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
@@ -349,7 +352,7 @@ class ManipulationTasks:
         req.table_or_shelf = table_or_shelf
 
         future = self._fix_position_to_plane_client.call_async(req)
-        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=20.0)
         result = future.result()
         if result is None:
             Logger.error(self.node, "Failed to get optimal position for plane")
