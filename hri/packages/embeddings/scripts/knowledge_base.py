@@ -3,34 +3,29 @@ import rclpy
 from rclpy.node import Node
 from frida_interfaces.srv import AnswerQuestion
 from chroma_adapter import ChromaAdapter
-from sentence_transformers import SentenceTransformer
-from llama_cpp import Llama
+from openai import OpenAI
 
 
 class RAGService(Node):
     def __init__(self):
         super().__init__("rag_service")
 
-        self.get_logger().info("Initializing RAG Service...")
+        self.get_logger().info("Initializing RAG node")
 
         # Setup Chroma Adapter
         self.client = ChromaAdapter()
 
-        # Load Sentence Transformer
-        self.model = SentenceTransformer("all-MiniLM-L6-v2")
+        self.api_key = "ollama"
+        self.base_url = "http://localhost:11434/v1"
+        self.model_name = "qwen2.5"
+        self.temperature = 0.0
 
-        # Load Local LLM
-        self.llm = Llama.from_pretrained(
-            repo_id="lmstudio-community/Qwen2.5-7B-Instruct-1M-GGUF",
-            filename="Qwen2.5-7B-Instruct-1M-Q3_K_L.gguf",
-            verbose=False,
-        )
-
+        self.llm = OpenAI(api_key=self.api_key, base_url=self.base_url)
         # Create the service
         self.srv = self.create_service(
             AnswerQuestion, "/hri/rag/answer_question", self.answer_question_callback
         )
-        self.get_logger().info("RAG Service is ready!")
+        self.get_logger().info("RAG node initialized")
 
     def answer_question_callback(self, request, response):
         question = request.question
@@ -74,11 +69,13 @@ class RAGService(Node):
             else:
                 prompt = question
 
-            llm_response = self.llm.create_chat_completion(
-                messages=[{"role": "user", "content": prompt}]
+            completion = self.llm.chat.completions.create(
+                model=self.model_name,
+                temperature=self.temperature,
+                messages=[{"role": "user", "content": prompt}],
             )
 
-            assistant_response = llm_response["choices"][0]["message"]["content"]
+            assistant_response = completion.choices[0].message.content
 
             # Fill the service response
             response.success = True
