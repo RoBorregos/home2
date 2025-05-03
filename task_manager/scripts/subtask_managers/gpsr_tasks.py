@@ -221,7 +221,7 @@ class GPSRTask(GenericTask):
         #     complement = DetectBy.POSES.value
 
         if complement != "name":
-            s, res = self.subtask_manager.vision.get_person_info(complement)
+            s, res = self.subtask_manager.vision.find_person_info(complement)
             self.subtask_manager.hri.say(
                 f"The person is {res}.",
             )
