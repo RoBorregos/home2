@@ -316,7 +316,7 @@ class PoseDetection:
                             pose_landmarks[self.mp_pose.PoseLandmark.LEFT_WRIST],
                         )
 
-                        # print(f"Left hand angle: {angle}")
+                        print(f"Left hand angle: {angle}")
                         # time.sleep(0.5)
                         # Check gestures for the left hand
                         if self.is_waving(hand_landmarks) or angle > 45:
@@ -334,7 +334,7 @@ class PoseDetection:
                             pose_landmarks[self.mp_pose.PoseLandmark.RIGHT_ELBOW],
                             pose_landmarks[self.mp_pose.PoseLandmark.RIGHT_WRIST],
                         )
-                        # print(f"Right hand angle: {angle}")
+                        print(f"Right hand angle: {angle}")
                         # time.sleep(0.5)
                         # Check gestures for the right hand
                         if self.is_waving(hand_landmarks) or angle > 45:
@@ -365,7 +365,7 @@ class PoseDetection:
         print(f"Distance between thumb and pinky: {distance}")
 
         # Set a threshold based on the expected distance for a waving gesture
-        waving_threshold = 0.075
+        waving_threshold = 0.13
 
         return distance > waving_threshold
 
