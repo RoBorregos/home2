@@ -4,11 +4,9 @@ from geometry_msgs.msg import PointStamped
 from std_srvs.srv import SetBool
 from pick_and_place.utils.grasp_utils import get_grasps
 from frida_interfaces.action import PickMotion
-from frida_interfaces.msg import PickResult
 from frida_motion_planning.utils.service_utils import (
     move_joint_positions as send_joint_goal,
 )
-from typing import Tuple
 
 
 CFG_PATHS = [
@@ -17,14 +15,14 @@ CFG_PATHS = [
 ]
 
 
-class PickManager:
+class PourManager:
     node = None
 
     def __init__(self, node):
         self.node = node
 
-    def execute(self, object_name: str, point: PointStamped) -> Tuple[bool, PickResult]:
-        self.node.get_logger().info("Executing Pick Task")
+    def execute(self, object_name: str, container_object_name: str) -> bool:
+        self.node.get_logger().info("Executing Pour Task")
         self.node.get_logger().info("Setting initial joint positions")
 
         # time.sleep(10)
@@ -34,27 +32,45 @@ class PickManager:
             named_position="table_stare",
             velocity=0.3,
         )
-        if point is not None and (
-            point.point.x != 0 and point.point.y != 0 and point.point.z != 0
+        if (object_name is not None and object_name != "") or (
+            container_object_name is not None and container_object_name != ""
         ):
-            self.node.get_logger().info(f"Going for point: {point}")
-        elif object_name is not None and object_name != "":
             self.node.get_logger().info(f"Going for object name: {object_name}")
             point = self.get_object_point(object_name)
             if point is None:
                 self.node.get_logger().error(
                     f"Object {object_name} not found, please provide a point"
                 )
-                return False, None
+                return False
         else:
             self.node.get_logger().error("No object name or point provided")
-            return False, None
+            return False
+
+        # get bowl object point
+        if container_object_name is not None and container_object_name != "":
+            self.node.get_logger().info(
+                f"Going for bowl object name: {container_object_name}"
+            )
+            container_point = self.get_object_point(container_object_name)
+            if container_point is None:
+                self.node.get_logger().error(
+                    f"Bowl object {container_object_name} not found, please provide a point"
+                )
+                return False
+        else:
+            self.node.get_logger().error("No bowl object name or point provided")
+            return False
 
         # Call Perception Service to get object cluster and generate collision objects
         object_cluster = self.get_object_cluster(point)
         if object_cluster is None:
             self.node.get_logger().error("No object cluster detected")
-            return False, None
+            return False
+
+        container_cluster = self.get_object_cluster(container_point)
+        if container_cluster is None:
+            self.node.get_logger().error("No container cluster detected")
+            return False
 
         # open gripper
         gripper_request = SetBool.Request()
@@ -99,16 +115,10 @@ class PickManager:
 
         if not pick_result_success:
             self.node.get_logger().error("Pick motion failed")
-            return False, None
+            return False
 
-        # close gripper
-        # gripper_request = SetBool.Request()
-        # gripper_request.data = False
-        # self.node.get_logger().info("Closing gripper")
-        # future = self.node._gripper_set_state_client.call_async(gripper_request)
-        # future = wait_for_future(future)
-        # result = future.result()
-        # self.node.get_logger().info(f"1 Gripper Result: {str(gripper_request.data)}")
+        ### Up until here same as PickManager
+        # Now go to pour
 
         self.node.get_logger().info("Returning to position")
 
@@ -123,7 +133,7 @@ class PickManager:
                 break
         # self.node.get_logger().info("Waiting for 10 seconds")
         # time.sleep(10)
-        return result.success, pick_result.pick_result
+        return result.success
 
     def get_object_point(self, object_name: str) -> PointStamped:
         request = DetectionHandler.Request()

@@ -297,6 +297,7 @@ public:
 
         req_extract_table->extract_or_remove = false;
         auto place_params = request->place_params;
+        req_extract_table->close_point =  geometry_msgs::msg::PointStamped();
         req_extract_table->min_height = place_params.table_height - place_params.table_height_tolerance;
         req_extract_table->max_height = place_params.table_height + place_params.table_height_tolerance;
 

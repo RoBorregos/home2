@@ -352,7 +352,7 @@ public:
     // radial filter, to eliminate chance of error by planes far from the point
     response->status = this->DistanceFilterFromPoint(
         last_, point, cloud_radius_out, 0.5, point.z - 0.3, point.z + 0.3);
-    std::string base_path = this->package_path;
+    std::string base_path = "/workspace";
     response->status =
         savePointCloud(base_path + "/radial_filtered.pcd", cloud_radius_out);
 
@@ -421,7 +421,7 @@ public:
       _IN_ const std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud,
       _IN_ const pcl::PointXYZ point,
       _OUT_ std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud_out,
-      const float distance = 0.5, const float min_height = 0.1,
+      const float distance = 0.5, const float min_height = 0.15,
       const float max_height = 2.0) {
 
     pcl::PassThrough<pcl::PointXYZ> pass;
@@ -429,29 +429,43 @@ public:
     pass.setFilterFieldName("z");
     pass.setFilterLimits(std::max(float(point.z - distance), min_height),
                          std::min(float(point.z + distance), max_height));
-
     pass.filter(*cloud_out);
-    pcl::PassThrough<pcl::PointXYZ> pass2;
-    pass2.setInputCloud(cloud_out);
-    pass2.setFilterFieldName("x");
-    pass2.setFilterLimits(point.x - distance, point.x + distance);
+    RCLCPP_INFO(this->get_logger(),
+                "Filtering point cloud by height with min %f and max %f",
+                std::max(float(point.z - distance), min_height),
+                std::min(float(point.z + distance), max_height));
+      
+    
+    if (point.x > 0.0 || point.x < 0.0 || point.y > 0.0 ||
+        point.y < 0.0) {
+          RCLCPP_INFO(this->get_logger(),
+                      "Filtering point cloud by x and y with min %f and max %f",
+                      point.x - distance, point.x + distance);
+          pass.filter(*cloud_out);
+          pcl::PassThrough<pcl::PointXYZ> pass2;
+          pass2.setInputCloud(cloud_out);
+          pass2.setFilterFieldName("x");
+          pass2.setFilterLimits(point.x - distance, point.x + distance);
 
-    pass2.filter(*cloud_out);
+          pass2.filter(*cloud_out);
 
-    pcl::PassThrough<pcl::PointXYZ> pass3;
-    pass3.setInputCloud(cloud_out);
+          pcl::PassThrough<pcl::PointXYZ> pass3;
+          pass3.setInputCloud(cloud_out);
 
-    pass3.setFilterFieldName("y");
-    pass3.setFilterLimits(point.y - distance, point.y + distance);
-    pass3.filter(*cloud_out);
+          pass3.setFilterFieldName("y");
+          pass3.setFilterLimits(point.y - distance, point.y + distance);
+          pass3.filter(*cloud_out);
+        }
 
     // filter points closest to the robot arm in xy
     float min_distance = 0.15; // lower than this are excluded
+    float max_distance = 2.0;
     for (auto it = cloud_out->points.begin(); it != cloud_out->points.end();) {
       float dx = it->x;
       float dy = it->y;
       float distance = std::sqrt(dx * dx + dy * dy);
-      if (distance < min_distance) {
+      if (distance < min_distance ||
+          distance > max_distance) { // filter points too close or too far
         it = cloud_out->points.erase(it);
       } else {
         ++it;
@@ -689,7 +703,7 @@ public:
     seg.setModelType(pcl::SACMODEL_PLANE);
     seg.setMethodType(pcl::SAC_RANSAC);
     seg.setMaxIterations(1000);
-    seg.setDistanceThreshold(0.01);
+    seg.setDistanceThreshold(0.02);
 
     // segment the largest planar component from the input cloud
     seg.setInputCloud(cloud);
@@ -822,9 +836,9 @@ public:
     tree->setInputCloud(cloud);
     std::vector<pcl::PointIndices> cluster_indices;
     pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
-    ec.setClusterTolerance(0.01);
+    ec.setClusterTolerance(0.02);
     ec.setMinClusterSize(10);   // Minimum number of points in a cluster
-    ec.setMaxClusterSize(6000); // Maximum number of points in a cluster
+    ec.setMaxClusterSize(15000); // Maximum number of points in a cluster
     ec.setSearchMethod(tree);
     ec.setInputCloud(cloud);
     ec.extract(cluster_indices);
