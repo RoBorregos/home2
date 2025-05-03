@@ -32,6 +32,7 @@ from frida_constants.vision_constants import (
     COUNT_BY_POSE_TOPIC,
     POSE_GESTURE_TOPIC,
     CROP_QUERY_TOPIC,
+    COUNT_BY_GESTURE_TOPIC,
 )
 
 from frida_constants.vision_enums import Poses, Gestures
@@ -65,6 +66,10 @@ class GPSRCommands(Node):
             COUNT_BY_POSE_TOPIC,
             self.count_by_pose_callback,
             callback_group=self.callback_group,
+        )
+
+        self.count_by_gestures_service = self.create_service(
+            CountByPose, COUNT_BY_GESTURE_TOPIC, self.count_by_gestures_callback
         )
 
         self.count_by_person_service = self.create_service(
@@ -202,6 +207,68 @@ class GPSRCommands(Node):
         response.count = pose_count[pose_requested_enum]
         self.get_logger().info(f"People with pose {pose_requested}: {response.count}")
         return response
+    
+    def count_by_gestures_callback(self, request, response):
+        """Callback to count gestures in the image."""
+        self.get_logger().info("Executing service Count By Gestures")
+
+        if self.image is None:
+            response.success = False
+            response.count = 0
+            return response
+
+        frame = self.image
+        self.output_image = frame.copy()
+
+        gesture_requested = request.gesture_requested
+
+        # Convert gesture_requested to Enum Gestures
+        try:
+            gesture_requested_enum = Gestures(gesture_requested)
+        except KeyError:
+            self.get_logger().warn(f"Gesture {gesture_requested} is not valid.")
+            response.success = False
+            response.count = 0
+            return response
+        
+         # Detect people using YOLO
+        self.get_detections(frame, 0)
+
+        gesture = self.count_gestures(frame)
+
+        gesture_count = gesture.get(gesture_requested_enum, 0)
+
+        response.success = True
+        response.count = gesture_count
+        self.get_logger().info(f"Gesture {gesture_requested} counted: {gesture_count}")
+        return response
+    
+    def count_gestures(self, frame):
+        """Count the gestures in the image and return a dictionary."""
+        gesture_count = {
+            Gestures.UNKNOWN: 0,
+            Gestures.UNKNOWN: 0,
+            Gestures.WAVING: 0,
+            Gestures.RAISING_LEFT_ARM: 0,
+            Gestures.RAISING_RIGHT_ARM: 0,
+            Gestures.POINTING_LEFT: 0,
+            Gestures.POINTING_RIGHT: 0,
+        }
+
+        # Detect gestures for each detected person
+        for person in self.people:
+            x1, y1, x2, y2 = person["bbox"]
+
+            # Crop the frame to the bounding box of the person
+            cropped_frame = frame[y1:y2, x1:x2]
+
+            gesture = self.pose_detection.detectGesture(cropped_frame)
+
+            # Increment the gesture count based on detected gesture
+            if gesture in gesture_count:
+                gesture_count[gesture] += 1
+
+        return gesture_count
     
     def count_by_person_callback(self, request, response):
         """Callback to count people in the image."""
