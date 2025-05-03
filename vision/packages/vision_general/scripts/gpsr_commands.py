@@ -220,7 +220,7 @@ class GPSRCommands(Node):
         frame = self.image
         self.output_image = frame.copy()
 
-        gesture_requested = request.gesture_requested
+        gesture_requested = request.pose_requested
 
         # Convert gesture_requested to Enum Gestures
         try:
