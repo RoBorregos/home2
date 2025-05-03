@@ -14,6 +14,9 @@ from frida_motion_planning.utils.tf_utils import look_at
 from frida_pymoveit2.robots import xarm6
 import time
 
+TABLE_Z_OFFSET = 0.5
+SHELF_Z_OFFSET = 0.3
+
 
 class MyPoint:
     def __init__(self, x: float = 0.0, y: float = 0.0, z: float = 0.0):
@@ -151,6 +154,7 @@ class FixPositionToPlane(Node):
         plane_bbox_request = GetPlaneBbox.Request()
         plane_bbox_request.max_height = max_h
         plane_bbox_request.min_height = min_h
+        ivan = TABLE_Z_OFFSET if request.table_or_shelf else SHELF_Z_OFFSET
 
         future = self.get_plane_bbox_client.call_async(plane_bbox_request)
         # rclpy.spin_until_future_complete(self, future, timeout_sec=5)
@@ -198,7 +202,7 @@ class FixPositionToPlane(Node):
 
             response.pt1.point.x = closest_point.x
             response.pt1.point.y = closest_point.y
-            response.pt1.point.z = closest_point.z + 0.5
+            response.pt1.point.z = closest_point.z + ivan
             response.pt1.header.frame_id = "base_link"
             response.pt1.header.stamp = self.get_clock().now().to_msg()
 

@@ -337,11 +337,16 @@ class ManipulationTasks:
     @service_check(
         client="_fix_position_to_plane_client", return_value=Status.TERMINAL_ERROR, timeout=TIMEOUT
     )
-    def get_optimal_position_for_plane(self, est_heigth: float, tolerance: float = 0.2):
-        """Fix the robot to a plane"""
+    def get_optimal_position_for_plane(
+        self, est_heigth: float, tolerance: float = 0.2, table_or_shelf: bool = True
+    ):
+        """Fix the robot to a plane
+        table_or_shelf: True for table, False for shelf
+        """
         req = GetOptimalPositionForPlane.Request()
         req.plane_est_min_height = est_heigth - tolerance
         req.plane_est_max_height = est_heigth + tolerance
+        req.table_or_shelf = table_or_shelf
 
         future = self._fix_position_to_plane_client.call_async(req)
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)

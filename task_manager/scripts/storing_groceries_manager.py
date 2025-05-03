@@ -111,16 +111,10 @@ class StoringGroceriesManager(Node):
             self.subtask_manager.manipulation.move_joint_positions(
                 named_position="nav_pose", velocity=0.5, degrees=True
             )
-            result = Status.EXECUTION_ERROR
-            retry = 0
-            while result == Status.EXECUTION_ERROR and retry < ATTEMPT_LIMIT:
-                future = self.subtask_manager.nav.move_to_location(location, sub_location)
-                if "navigation" not in self.subtask_manager.get_mocked_areas():
-                    rclpy.spin_until_future_complete(self, future)
-                result = future.result()
-                retry += 1
-
-            return Status.EXECUTION_SUCCESS
+            future = self.subtask_manager.nav.move_to_location(location, sub_location)
+            rclpy.spin_until_future_complete(self, future)
+            hres = future.result()
+            return Status.EXECUTION_SUCCESS if hres == 1 else Status.EXECUTION_ERROR
         except Exception as e:
             Logger.error(self, f"Error navigating to {location}: {e}")
         return Status.EXECUTION_ERROR
@@ -249,9 +243,9 @@ class StoringGroceriesManager(Node):
                 self.generate_manual_levels()
                 for i in range(len(self.manual_heights)):
                     self.shelves[i] = Shelf(id=i, tag="", objects=[])
-                    # self.subtask_manager.manipulation.get_optimal_position_for_plane(
-                    #     self.manual_heights[i], tolerance=0.2
-                    # )
+                    self.subtask_manager.manipulation.get_optimal_position_for_plane(
+                        self.manual_heights[i], tolerance=0.2, table_or_shelf=False
+                    )
                     status, res = self.subtask_manager.vision.detect_objects()
                     rettry = 0
                     while status != Status.EXECUTION_SUCCESS and rettry < 5:
@@ -433,9 +427,9 @@ class StoringGroceriesManager(Node):
             time.sleep(1)
 
         elif self.state == ExecutionStates.PICK_OBJECT:
-            # status = self.subtask_manager.manipulation.get_optimal_position_for_plane(
-            #     0.75, tolerance=0.2
-            # )
+            status = self.subtask_manager.manipulation.get_optimal_position_for_plane(
+                0.75, tolerance=0.2, table_or_shelf=True
+            )
             status, objs = self.subtask_manager.vision.detect_objects(timeout=10)
             if status == Status.TIMEOUT:
                 # pass
@@ -489,12 +483,30 @@ class StoringGroceriesManager(Node):
         elif self.state == ExecutionStates.PLACE_OBJECT:
             # self.state = ExecutionStates.DEUX_PICK_OBJECT
             # return
-            status = self.subtask_manager.manipulation.place(
-                self.object_to_placing_shelf[self.current_object].pop(0), self.current_object
+
+            shelf = self.object_to_placing_shelf[self.current_object][0]
+            self.subtask_manager.hri.say(
+                text=f"I'm going to place the object: {self.current_object} in shelf number {shelf}"
+                + f". corresponding to {self.shelves[shelf].tag}"
+                if self.shelves[shelf].tag != "" or self.shelves[shelf].tag == "random"
+                else "",
+                wait=True,
             )
-            self.shelves[self.object_to_placing_shelf[self.current_object]].objects.append(
-                self.current_object
+
+            shelf_height = self.manual_heights[shelf]
+
+            self.subtask_manager.manipulation.get_optimal_position_for_plane(
+                shelf_height, tolerance=0.2, table_or_shelf=False
             )
+
+            self.subtask_manager.manipulation.place()
+
+            # status = self.subtask_manager.manipulation.place(
+            #     self.object_to_placing_shelf[self.current_object].pop(0), self.current_object
+            # )
+            # self.shelves[self.object_to_placing_shelf[self.current_object]].objects.append(
+            #     self.current_object
+            # )
             if not status == Status.EXECUTION_SUCCESS:
                 Logger.error(self, "Failed to place object")
                 return
