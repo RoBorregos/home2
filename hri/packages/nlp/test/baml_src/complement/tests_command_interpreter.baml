@@ -240,11 +240,10 @@ test GreetNameInRmTest {
   args {
     request "say hello to Axel in the office and follow them"
   }
-  @@assert({{this.commands|length == 4}})
+  @@assert({{this.commands|length == 3}})
   @@assert({{this.commands[0].action == "GoTo" and this.commands[0].complement == "office"}})
   @@assert({{this.commands[1].action == "FindPerson" and this.commands[1].complement == "Axel"}})
-  @@assert({{this.commands[2].action == "SayWithContext"}})
-  @@assert({{this.commands[3].action == "FollowPersonUntil" and this.commands[3].complement == "cancelled"}})
+  @@assert({{this.commands[2].action == "FollowPersonUntil" and this.commands[2].complement == "cancelled"}})
 }
 
 /// Test for meeting a person at one location and finding them in another

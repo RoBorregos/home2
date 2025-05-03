@@ -46,8 +46,8 @@
   },
   {
     "cmd_type": "talkInfoToGestPrsInRoom",
-    "string_cmd": "say your team's affiliation to the waving person in the bathroom",
-    "structured_cmd": "{\"commands\":[{\"action\":\"GoTo\",\"complement\":\"bathroom\"},{\"action\":\"FindPerson\",\"complement\":\"waving person\"},{\"action\":\"SayWithContext\",\"complement\":\"team's affiliation\"}]}"
+    "string_cmd": "say your teams affiliation to the waving person in the bathroom",
+    "structured_cmd": "{\"commands\":[{\"action\":\"GoTo\",\"complement\":\"bathroom\"},{\"action\":\"FindPerson\",\"complement\":\"waving person\"},{\"action\":\"SayWithContext\",\"complement\":\"teams affiliation\"}]}"
   },
   {
     "cmd_type": "answerToGestPrsInRoom",
@@ -92,7 +92,7 @@
   {
     "cmd_type": "greetNameInRm",
     "string_cmd": "say hello to Axel in the office and follow them",
-    "structured_cmd": "{\"commands\":[{\"action\":\"GoTo\",\"complement\":\"office\"},{\"action\":\"FindPerson\",\"complement\":\"Axel\"},{\"action\":\"SayWithContext\",\"complement\":\"say hello to Axel in the office and follow them\"},{\"action\":\"FollowPersonUntil\",\"complement\":\"cancelled\"}]}"
+    "structured_cmd": "{\"commands\":[{\"action\":\"GoTo\",\"complement\":\"office\"},{\"action\":\"FindPerson\",\"complement\":\"Axel\"},{\"action\":\"FollowPersonUntil\",\"complement\":\"cancelled\"}]}"
   },
   {
     "cmd_type": "meetNameAtLocThenFindInRm",
@@ -107,7 +107,7 @@
   {
     "cmd_type": "tellPrsInfoAtLocToPrsAtLoc",
     "string_cmd": "tell the pose of the person at the chairs to the person at the kitchen table",
-    "structured_cmd": "{\"commands\":[{\"action\":\"GoTo\",\"complement\":\"chairs\"},{\"action\":\"FindPerson\",\"complement\":\"\"},{\"action\":\"GetPersonInfo\",\"complement\":\"pose\"},{\"action\":\"GoTo\",\"complement\":\"kitchen table\"},{\"action\":\"FindPerson\",\"complement\":\"\"},{\"action\":\"SayWithContext\",\"complement\":\"pose\"}]}"
+    "structured_cmd": "{\"commands\":[{\"action\":\"GoTo\",\"complement\":\"chairs\"},{\"action\":\"FindPerson\",\"complement\":\"null\"},{\"action\":\"GetPersonInfo\",\"complement\":\"pose\"},{\"action\":\"GoTo\",\"complement\":\"kitchen table\"},{\"action\":\"FindPerson\",\"complement\":\"null\"},{\"action\":\"SayWithContext\",\"complement\":\"pose\"}]}"
   },
   {
     "cmd_type": "followPrsAtLoc",

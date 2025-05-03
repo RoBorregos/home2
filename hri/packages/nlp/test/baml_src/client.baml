@@ -39,8 +39,31 @@ client<llm> FLASH_2_5 {
   }
 }
 
+client<llm> API_QWEN3_4B {
+  provider "openai-generic"
+  retry_policy Constant
+  options {
+    base_url https://openrouter.ai/api/v1
+    api_key env.OPENROUTER_API_KEY
+    model "qwen/qwen3-4b:free"
+    max_tokens 4096
+  }
+}
+
+client<llm> API_QWEN3_14B {
+  provider "openai-generic"
+  retry_policy Constant
+  options {
+    base_url https://openrouter.ai/api/v1
+    api_key env.OPENROUTER_API_KEY
+    model "qwen/qwen3-14b"
+    max_tokens 4096
+  }
+}
+
+
 retry_policy Constant {
-  max_retries 3
+  max_retries 4
   // Strategy is optional
   strategy {
     type constant_delay

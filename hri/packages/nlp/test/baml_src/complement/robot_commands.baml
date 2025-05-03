@@ -7,10 +7,10 @@ enum CommandAction {
   FindPerson @description("Find a person which can be identified by the complement, the complement can be a name or a feature/pose (pointing to the left, standing, blue shirt, etc.), if it's not clear a complement leave it empty. The command internally will greet the person, there's no need to add a greeting afterwards.")
   Count @description("Count the number of objects/persons, complement is the name of the object/person, can be a category or plural, and can be persons doing an action. Use if the user asks 'how many'")
   SayWithContext @description("Use to say a message to the user (just the intend without a previous verb) , complement is just the intent or purpose of the message, the system will receive previous interactions of the robot to define the actual message to be delivered")
-  GetPersonInfo @description("Get information about a person, complement is the information to be retrieved like name, clothing, age, etc.")
+  GetPersonInfo @description("Get information about a person, complement is the information to be retrieved like name, clothing, age, etc. Can only be used after a person is found by the FindPerson action")
   GetVisualInfo @description("Get information about the visualized environment, complement is the information to be retrieved like color of the object, shape, smallest object, thinnest snack,etc.")
   AnswerQuestion @description("Answer a question to be asked by a person, DOES NOT have a complement, just trigger the action, all the conversation will be handled by the system")
-  FollowPersonUntil @description("Follow a person until a specific destination or cancelled, complement is the name of the location or 'cancelled'")
+  FollowPersonUntil @description("Follow a person until a specific destination or cancelled, complement is the name of the location or 'cancelled'. Just use after a person is found by the FindPerson action")
   GuideTo @description("Guide a person to a specific destination, complement is the name of the location")
   GiveObject @description("Give the holding object to a person, it DOES NOT have a complement, since it is the current holding object already stored in the system's memory")
   PlaceObject @description("Place the current holding object on a specific location, it DOES NOT have a complement, since it is the current holding object already stored in the system's memory")
@@ -22,7 +22,8 @@ enum CommandAction {
 class CommandLLM {
   action CommandAction @description("The action to be performed")
   complement string? @description(#"A complement related to the action neccesary for context,
-  indicating a place to go, an object to find, a person to find, etc."#)
+  indicating a place to go, an object to find, a person to find, etc. Not needed by all the actions,
+  check the description of the action to see if it's needed"#)
 }
 
 /// Robot command list model
@@ -86,15 +87,16 @@ You can ask for clarification if the task is not clear enough.
 "#
 /// Function to generate robot commands from a natural language prompt
 function GenerateCommandList(request: string) -> CommandListLLM {
-  client FLASH_2_5
+  client API_QWEN3_14B
   prompt #"
     {{ _.role("user") }}
     {{ RobotServiceSystem() }}
-    Follow this schema for the response, addressing each element of the commands:
+    Follow this schema for the response, addressing each element of the commands,
+    return in JSON format:
     {{ ctx.output_format }}
 
     {{ _.role("user") }}
-    Generate commands for this prompt:
+    Generate commands for this prompt in the specified format::
     {{ request }}
   "#
 }
