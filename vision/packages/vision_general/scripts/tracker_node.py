@@ -33,7 +33,7 @@ from vision_general.utils.reid_model import (
 
 from std_srvs.srv import SetBool
 from frida_interfaces.srv import TrackBy, CropQuery
-from vision_general.pose_detection import PoseDetection
+from pose_detection import PoseDetection
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
     SET_TARGET_TOPIC,
