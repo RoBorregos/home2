@@ -5,6 +5,9 @@ from frida_motion_planning.utils.ros_utils import wait_for_future
 
 
 def get_grasps(grasp_detection_client, object_cloud, cgf_path: str):
+    # wait for the service to be available
+    if not grasp_detection_client.wait_for_service(timeout_sec=5.0):
+        raise RuntimeError("Service not available")
     request = GraspDetection.Request()
     request.input_cloud = object_cloud
     request.cfg_path = cgf_path
@@ -14,7 +17,6 @@ def get_grasps(grasp_detection_client, object_cloud, cgf_path: str):
     future = wait_for_future(future)
 
     response = future.result()
-    print(f"Grasp detection response: {response}")
 
     return response.grasp_poses, response.grasp_scores
 

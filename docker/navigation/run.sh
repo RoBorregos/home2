@@ -97,7 +97,7 @@ echo "TASK=$TASK"
 case $TASK in
     "--receptionist")
         PACKAGES="nav_main dashgo_driver sllidar_ros2"
-        RUN="ros2 launch nav_main receptionist.launch.py"
+        RUN="cp /workspace/src/navigation/rtabmapdbs/lab_3d_grid.db /home/ros/.ros/rtabmap.db && ros2 launch nav_main receptionist.launch.py"
         ;;
     "--help-me-carry")
         PACKAGES="nav_main dashgo_driver sllidar_ros2"
@@ -105,7 +105,7 @@ case $TASK in
         ;;
     "--storing-groceries")
         PACKAGES="nav_main dashgo_driver sllidar_ros2"
-        RUN="ros2 launch nav_main storing_groceries.launch.py"
+        RUN="cp /workspace/src/navigation/rtabmapdbs/lab_3d_grid.db /home/ros/.ros/rtabmap.db && ros2 launch nav_main storing_groceries.launch.py"
         ;;
 
 esac
@@ -114,7 +114,7 @@ echo "RUN=$RUN"
 
 
 if [ -n "$TASK" ]; then
-    COMMAND="source /opt/ros/humble/setup.bash && colcon build --symlink-install --packages-up-to $PACKAGES && source install/setup.bash && $RUN"
+    COMMAND="source /opt/ros/humble/setup.bash && source /home/ros/ros_packages/install/setup.bash && colcon build --symlink-install --packages-up-to $PACKAGES && source install/setup.bash && $RUN"
     echo "COMMAND= $COMMAND " >> .env
 fi
 

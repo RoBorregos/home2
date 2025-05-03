@@ -13,7 +13,7 @@ MOVEIT_MODE = 1
 JOINT_VELOCITY_MODE = 4
 
 FACE_RECOGNITION_LIFETIME = 0.1
-FOLLOW_FACE_SPEED = 2.0
+FOLLOW_FACE_SPEED = 1.5
 FOLLOW_FACE_TOLERANCE = 0.15
 
 XARM_MOVEVELOCITY_SERVICE = "/xarm/vc_set_joint_velocity"
@@ -45,6 +45,8 @@ GRASP_DETECTION_SERVICE = "/manipulation/detect_grasps"
 GRIPPER_SET_STATE_SERVICE = "/manipulation/gripper/set_state"
 XARM_SET_DIGITAL_TGPIO_SERVICE = "/xarm/set_tgpio_digital"
 SAFETY_HEIGHT = 0.025
+PICK_MIN_HEIGHT = 0.08
+GRASP_LINK_FRAME = "gripper_grasp_frame"
 
 # Place
 PLACE_PERCEPTION_SERVICE = "/manipulation/place_perception_service"
@@ -65,7 +67,7 @@ PLANE_OBJECT_COLLISION_TOLERANCE = (
     0.025  # Tolerance to delete collision objects if they are too close to the plane
 )
 
-SHELF_POSITION_PREPLACE_POSE = -0.3
+SHELF_POSITION_PREPLACE_POSE = -0.25
 
 DEBUG_POSE_GOAL_TOPIC = "/manipulation/debug_pose_goal"
 GET_JOINT_TOPIC = "/manipulation/get_joints"

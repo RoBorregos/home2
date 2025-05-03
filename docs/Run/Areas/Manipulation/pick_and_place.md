@@ -18,7 +18,7 @@ ros2 launch arm_pkg frida_moveit_config.launch.py
 #### 3D Camera
 To run the 3D camera, while on the device connected to it, run the following command:
 ```bash
-**ros2 launch zed_wrapper zed_camera.launch.py camera_model:=zed2 publish_tf:=false
+ros2 launch zed_wrapper zed_camera.launch.py camera_model:=zed2 publish_tf:=false
 ```
 
 ## Launching utilities
