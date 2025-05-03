@@ -344,8 +344,8 @@ class GPSRTask(GenericTask):
             elif is_value_in_enum(value, Poses):
                 status, count = self.subtask_manager.vision.count_by_pose(value)
             else:
-                color = self.subtask_manager.hri.extract_data("color", value)
-                cloth = self.subtask_manager.hri.extract_data("cloth", value)
+                color = self.subtask_manager.hri.extract_data("color", characteristic)
+                cloth = self.subtask_manager.hri.extract_data("cloth", characteristic)
                 status, count = self.subtask_manager.vision.count_by_color(color, cloth)
 
             if status == Status.EXECUTION_SUCCESS:
