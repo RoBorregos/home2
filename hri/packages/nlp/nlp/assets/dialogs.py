@@ -316,14 +316,24 @@ def format_response(response):
 def get_answer_question_dialog(contexts, question):
     if contexts:
         context_text = "\n".join(contexts)
-        user_content = f"""Use the following knowledge base information:\n{context_text}\n\nAnswer the question:\n{question}"""
+        user_content = (
+            f"Answer the following question based on this information:\n\n"
+            f"{context_text}\n\n"
+            f"Question: {question}"
+        )
     else:
         user_content = question
 
     return [
         {
             "role": "system",
-            "content": "You are an expert assistant. Answer the user's question using the knowledge base provided. If no context is given, use your general reasoning. Please summarize thingsand dont ask additional questions.",
+            "content": (
+                "You are a helpful and knowledgeable assistant. "
+                "Answer the user's question clearly and naturally, using the provided information if relevant. "
+                "Avoid mentioning that the information came from a knowledge base. "
+                "Respond as if you are confident and already know the answer. "
+                "Be concise, friendly, and avoid repeating the question."
+            ),
         },
         {
             "role": "user",
