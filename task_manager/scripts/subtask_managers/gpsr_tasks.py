@@ -22,6 +22,9 @@ class GPSRTask(GenericTask):
         with open(file_path, "r") as file:
             self.locations = json.load(file)
 
+        self.color_list = ["blue", "yellow", "black", "white", "red", "orange", "gray"]
+        self.clothe_list = ["t shirt", "shirt", "blouse", "sweater", "coat", "jacket"]
+
     def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
         """Navigate to the location"""
         if say:
@@ -344,8 +347,11 @@ class GPSRTask(GenericTask):
             elif is_value_in_enum(value, Poses):
                 status, count = self.subtask_manager.vision.count_by_pose(value)
             else:
-                color = self.subtask_manager.hri.extract_data("color", characteristic)
-                cloth = self.subtask_manager.hri.extract_data("cloth", characteristic)
+                s, color = self.subtask_manager.hri.find_closest(self.color_list, characteristic)
+                color = color[0]
+                s, cloth = self.subtask_manager.hri.find_closest(self.clothe_list, characteristic)
+                cloth = cloth[0]
+
                 status, count = self.subtask_manager.vision.count_by_color(color, cloth)
 
             if status == Status.EXECUTION_SUCCESS:
