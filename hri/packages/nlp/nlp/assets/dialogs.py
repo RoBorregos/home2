@@ -318,6 +318,7 @@ def get_answer_question_dialog(contexts, question):
         context_text = "\n".join(contexts)
         user_content = (
             f"Answer the following question based on this information:\n\n"
+            f"Don't mention that you obtained the information from a knowledge base and be brief\n\n"
             f"{context_text}\n\n"
             f"Question: {question}"
         )
