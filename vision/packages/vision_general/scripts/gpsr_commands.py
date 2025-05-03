@@ -172,16 +172,11 @@ class GPSRCommands(Node):
         frame = self.image
         self.output_image = frame.copy()
 
-        type_requested = request.type_requested
         pose_requested = request.pose_requested
 
         # Convert pose_requested to Enum Poses
         try:
-            if type_requested == "pose":
-                pose_requested_enum = Poses(pose_requested)
-            elif type_requested == "gesture":
-                gesture_requested_enum = Gestures(pose_requested)
-
+            pose_requested_enum = Poses(pose_requested)
         except KeyError:
             self.get_logger().warn(f"Pose {pose_requested} is not valid.")
             response.success = False
@@ -206,10 +201,7 @@ class GPSRCommands(Node):
                 print(response_q)
                 response_clean = response_q.strip()
                 if response_clean == "1":
-                    if type_requested == "pose":
-                        pose_count[pose_requested_enum] += 1
-                    elif type_requested == "gesture":
-                        gesture_count[gesture_requested_enum] += 1
+                    pose_count[pose_requested_enum] += 1       
                     self.get_logger().info(
                         f"Person is {pose_requested}."
                     )
@@ -217,11 +209,8 @@ class GPSRCommands(Node):
                     self.get_logger().warn(f"Unexpected response: {response_clean}")
 
         response.success = True
-        if type_requested == "pose":
-            response.count = pose_count[pose_requested_enum]
-        elif type_requested == "gesture":
-            response.count = gesture_count[gesture_requested_enum]
-        self.get_logger().info(f"People with {type_requested} {pose_requested}: {response.count}")
+        response.count = pose_count[pose_requested_enum]
+        self.get_logger().info(f"People with pose {pose_requested}: {response.count}")
         return response
     
     def count_by_person_callback(self, request, response):
@@ -319,8 +308,6 @@ class GPSRCommands(Node):
                 print(pose_val)
             prompt = f"Respond 'standing' if the person in the image is standing, 'sitting' if the person in the image is sitting, 'lying down' if the person in the image is lying down or 'unknown' if the person is not doing any of the previous."
             
-        elif type_requested == "gesture":
-            prompt = f"Which arm is raising? left or right? considering the person is facing the camera. If the person is not raising any arm, reply with 'unknown'."
         else:
             self.get_logger().warn(f"Type {type_requested} is not valid.")
             response.success = False

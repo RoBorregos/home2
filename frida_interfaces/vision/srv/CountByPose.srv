@@ -1,6 +1,5 @@
 bool request 
 string pose_requested
-string type_requested
 ---
 bool success
 int32 count
