@@ -22,7 +22,7 @@ class GPSRTask(GenericTask):
         with open(file_path, "r") as file:
             self.locations = json.load(file)
 
-        self.color_list = ["blue", "yellow", "black", "white", "red", "orange", "gray"]
+        self.color_list = ["blue", "yellow", "black", "white", "red", "orange", "gray", "green"]
         self.clothe_list = ["t shirt", "shirt", "blouse", "sweater", "coat", "jacket"]
 
     def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
@@ -351,6 +351,9 @@ class GPSRTask(GenericTask):
                 color = color[0]
                 s, cloth = self.subtask_manager.hri.find_closest(self.clothe_list, characteristic)
                 cloth = cloth[0]
+
+                # Say actual color that its counting
+                characteristic = f"{cloth} {color}s"
 
                 status, count = self.subtask_manager.vision.count_by_color(color, cloth)
 
