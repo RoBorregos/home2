@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+import numpy as np
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionServer, ActionClient
@@ -7,8 +7,8 @@ from rclpy.callback_groups import ReentrantCallbackGroup
 from std_srvs.srv import SetBool
 from frida_constants.manipulation_constants import (
     MOVE_TO_POSE_ACTION_SERVER,
-    PICK_VELOCITY,
-    PICK_ACCELERATION,
+    POUR_VELOCITY,
+    POUR_ACCELERATION,
     PICK_PLANNER,
     ATTACH_COLLISION_OBJECT_SERVICE,
     REMOVE_COLLISION_OBJECT_SERVICE,
@@ -24,6 +24,7 @@ from frida_constants.manipulation_constants import (
     GRASP_LINK_FRAME,
     GRIPPER_SET_STATE_SERVICE,
     POUR_MOTION_ACTION_SERVER,
+
 )
 from frida_interfaces.srv import (
     AttachCollisionObject,
@@ -31,7 +32,7 @@ from frida_interfaces.srv import (
     RemoveCollisionObject,
 )
 from frida_interfaces.action import PourMotion, MoveToPose
-
+from geometry_msgs import Pose
 # from frida_interfaces.msg import PickResult
 # import copy
 # import numpy as np
@@ -85,6 +86,7 @@ class PourMotionServer(Node):
 
         self.get_logger().info("Pour Action Server has been started")
 
+    # // Add Primitive false for the goal 
     async def execute_callback(self, goal_handle):
         """Execute the pour action when a goal is received."""
         self.get_logger().info("Executing pour goal...")
@@ -108,16 +110,27 @@ class PourMotionServer(Node):
         self.get_logger().info(
             f"Trying to pour object: {goal_handle.request.object_name}"
         )
-        pour_pose = goal_handle.request.pour_pose
-        pour_pose.pose.position.z += 0.1
-        pour_pose.pose.position.x += 0.1
-        pour_pose.pose.position.y += 0.1
+        # Obtain the desired pose
+        bowl_position = goal_handle.request.bowl_position.point
+        abs_object_height = abs(goal_handle.request.object_top_height - goal_handle.request.object_centroid_height)
+        abs_bowl_height = abs(goal_handle.request.bowl_top_height - goal_handle.request.bowl_centroid_height)
+
+        pour_pose = Pose()
+        # Set position
+        pour_pose.pose.position.z += bowl_position.z + abs_bowl_height + max(goal_handle.request.object_top_height, goal_handle.request.object_centroid_height)
+        pour_pose.pose.position.x += bowl_position.x
+        pour_pose.pose.position.y += bowl_position.y + (abs_object_height)*(-np.sin(45))
+        # Set orientation
         pour_pose.pose.orientation.w = 1.0
         pour_pose.pose.orientation.x = 0.0
         pour_pose.pose.orientation.y = 0.0
         pour_pose.pose.orientation.z = 0.0
-        pour_pose.header.frame_id = goal_handle.request.pour_pose.header.frame_id
+
+        # Set Frame ID
+        # pour_pose.header.frame_id = goal_handle.request.pour_pose.header.frame_id
+
         self.get_logger().info(f"Pour pose: {pour_pose}")
+        
         # Move to pour pose
         pour_pose_handler, pour_pose_result = self.move_to_pose(pour_pose)
         if not pour_pose_result.result.success:
@@ -126,14 +139,17 @@ class PourMotionServer(Node):
             return False, result
         self.get_logger().info("Pour pose reached")
 
+        # Set the new orientation
+
+
         return True
 
     def move_to_pose(self, pose):
         """Move the robot to the given pose."""
         request = MoveToPose.Goal()
         request.pose = pose
-        request.velocity = PICK_VELOCITY
-        request.acceleration = PICK_ACCELERATION
+        request.velocity = POUR_VELOCITY
+        request.acceleration = POUR_ACCELERATION
         request.planner_id = PICK_PLANNER
         request.target_link = GRASP_LINK_FRAME
         future = self._move_to_pose_action_client.send_goal_async(request)
