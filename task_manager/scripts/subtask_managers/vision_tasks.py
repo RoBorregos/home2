@@ -15,6 +15,7 @@ from frida_constants.vision_constants import (  # COUNT_BY_GESTURE_TOPIC,
     CHECK_PERSON_TOPIC,
     COUNT_BY_COLOR_TOPIC,
     COUNT_BY_POSE_TOPIC,
+    COUNT_BY_GESTURE_TOPIC,
     CROP_QUERY_TOPIC,
     DETECTION_HANDLER_TOPIC_SRV,
     FIND_SEAT_TOPIC,
@@ -105,9 +106,12 @@ class VisionTasks:
 
         self.count_by_pose_client = self.node.create_client(CountByPose, COUNT_BY_POSE_TOPIC)
 
+        self.count_by_gesture_client = self.node.create_client(CountByPose, COUNT_BY_GESTURE_TOPIC)
+
         self.find_person_info_client = self.node.create_client(
             PersonPoseGesture, POSE_GESTURE_TOPIC
         )
+
         self.count_by_color_client = self.node.create_client(CountByColor, COUNT_BY_COLOR_TOPIC)
 
         self.services = {
@@ -149,8 +153,8 @@ class VisionTasks:
                     "client": self.find_person_info_client,
                     "type": "service",
                 },
-                "count_by_pose": {
-                    "client": self.count_by_pose_client,
+                "count_by_gesture": {
+                    "client": self.count_by_gesture_client,
                     "type": "service",
                 },
                 "count_by_color": {
@@ -589,7 +593,6 @@ class VisionTasks:
 
         Logger.info(self.node, "Counting people by pose or gesture")
         request = CountByPose.Request()
-        request.type_requested = type_requested
         request.pose_requested = pose
         request.request = True
 
