@@ -13,6 +13,7 @@ from frida_constants.manipulation_constants import (
     REMOVE_COLLISION_OBJECT_SERVICE,
     GET_COLLISION_OBJECTS_SERVICE,
     PICK_OBJECT_NAMESPACE,
+    GRASP_LINK_FRAME,
     EEF_LINK_NAME,
     EEF_CONTACT_LINKS,
     PLACE_MOTION_ACTION_SERVER,
@@ -77,6 +78,8 @@ class PlaceMotionServer(Node):
 
         self._move_to_pose_action_client.wait_for_server()
 
+        self.target_link = EEF_LINK_NAME
+
         self.get_logger().info("Place Action Server has been started")
 
     async def execute_callback(self, goal_handle):
@@ -123,9 +126,10 @@ class PlaceMotionServer(Node):
                 self.set_quaternion(
                     ee_link_pre_pose, AIM_STRAIGHT_FRONT_QUAT
                 )  # Set the orientation to aim straight front
-                self.set_quaternion(
-                    ee_link_pose, AIM_STRAIGHT_FRONT_QUAT
-                )  # Set the orientation to aim straight front
+                self.set_quaternion(ee_link_pose, AIM_STRAIGHT_FRONT_QUAT)
+                self.target_link = (
+                    EEF_LINK_NAME  # Set the orientation to aim straight front
+                )
                 # send it a little bit back, then forward
                 offset_distance = SHELF_POSITION_PREPLACE_POSE  # Desired distance in meters along the local z-axis
 
@@ -156,7 +160,8 @@ class PlaceMotionServer(Node):
                 ee_link_pre_pose.pose.position.z = new_position[2]
 
             place_poses.append([ee_link_pre_pose, ee_link_pose])
-
+        else:
+            self.target_link = GRASP_LINK_FRAME
         for i, poses in enumerate(place_poses):
             # Move to pre-grasp pose
 
@@ -208,7 +213,7 @@ class PlaceMotionServer(Node):
         request.velocity = PICK_VELOCITY
         request.acceleration = PICK_ACCELERATION
         request.planner_id = PICK_PLANNER
-        request.target_link = EEF_LINK_NAME
+        request.target_link = self.target_link
         future = self._move_to_pose_action_client.send_goal_async(request)
         self.wait_for_future(future)
         action_result = future.result().get_result()

@@ -116,7 +116,7 @@ class ManipulationCore(Node):
 
         self.get_logger().info("Manipulation Core has been started")
 
-    def pick_execute(self, object_name=None, object_point=None):
+    def pick_execute(self, object_name=None, object_point=None, pick_params=None):
         self.get_logger().info(f"Goal: {object_point}")
         self.get_logger().info("Extracting object cloud")
 
@@ -125,6 +125,7 @@ class ManipulationCore(Node):
             result, pick_result = self.pick_manager.execute(
                 object_name=object_name,
                 point=object_point,
+                pick_params=pick_params,
             )
             if not result:
                 self.get_logger().error("Pick failed")
@@ -168,7 +169,9 @@ class ManipulationCore(Node):
         if task_type == ManipulationTask.PICK:
             self.get_logger().info("Executing Pick Task")
             result, self.pick_result = self.pick_execute(
-                object_name=object_name, object_point=object_point
+                object_name=object_name,
+                object_point=object_point,
+                pick_params=goal_handle.request.pick_params,
             )
             goal_handle.succeed()
             response.success = result

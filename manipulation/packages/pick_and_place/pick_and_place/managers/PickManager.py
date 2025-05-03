@@ -24,17 +24,20 @@ class PickManager:
     def __init__(self, node):
         self.node = node
 
-    def execute(self, object_name: str, point: PointStamped) -> Tuple[bool, PickResult]:
+    def execute(
+        self, object_name: str, point: PointStamped, pick_params
+    ) -> Tuple[bool, PickResult]:
         self.node.get_logger().info("Executing Pick Task")
         self.node.get_logger().info("Setting initial joint positions")
 
         # time.sleep(10)
         # Set initial joint positions
-        send_joint_goal(
-            move_joints_action_client=self.node._move_joints_client,
-            named_position="table_stare",
-            velocity=0.3,
-        )
+        if not pick_params.in_configuration:
+            send_joint_goal(
+                move_joints_action_client=self.node._move_joints_client,
+                named_position="table_stare",
+                velocity=0.3,
+            )
         if point is not None and (
             point.point.x != 0 and point.point.y != 0 and point.point.z != 0
         ):

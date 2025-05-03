@@ -36,6 +36,9 @@ PICK_PLANNER = "RRTConnect"
 SCAN_ANGLE_VERTICAL = 30.0  # degrees
 SCAN_ANGLE_HORIZONTAL = 30.0  # degrees
 
+ARM_HIGHEST_0_0_HEIGHT = 1.6
+ARM_LOWEST_0_0_HEIGHT = 0.95
+
 # Pick
 PICK_MOTION_ACTION_SERVER_NODE = "manipulation/pick_motion_server"
 PICK_MOTION_ACTION_SERVER = "/manipulation/pick_motion_action_server"
