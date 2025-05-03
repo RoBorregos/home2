@@ -1,0 +1,13 @@
+# Goal definition
+geometry_msgs/PointStamped bowl_position    # [x, y, z]
+float64 bowl_top_height              # Height of the top of the bowl
+float64 bowl_centroid_height         # Height of the bowl's centroid
+float64 object_top_height            # Height of the top of the object
+float64 object_centroid_height       # Height of the object's centroid
+---
+# Result definition
+int32 success
+PickResult pour_result
+---
+# Feedback
+string execution_state               # e.g., "approaching", "pouring", "done"
