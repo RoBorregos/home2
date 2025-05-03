@@ -23,7 +23,7 @@ class GPSRTask(GenericTask):
             self.locations = json.load(file)
 
         self.color_list = ["blue", "yellow", "black", "white", "red", "orange", "gray", "green"]
-        self.clothe_list = ["t shirt", "shirt", "blouse", "sweater", "coat", "jacket"]
+        self.clothe_list = ["t shirt", "shirt", "blouse", "sweater", "coat", "jacket", "jeans"]
 
     def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
         """Navigate to the location"""
@@ -353,7 +353,7 @@ class GPSRTask(GenericTask):
                 cloth = cloth[0]
 
                 # Say actual color that its counting
-                characteristic = f"{cloth} {color}s"
+                characteristic = f"{color} {cloth}s"
 
                 status, count = self.subtask_manager.vision.count_by_color(color, cloth)
 
