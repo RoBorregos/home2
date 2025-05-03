@@ -10,7 +10,7 @@ import time
 
 import rclpy
 from frida_constants.vision_classes import BBOX, ShelfDetection
-from frida_constants.vision_constants import (  
+from frida_constants.vision_constants import (
     BEVERAGE_TOPIC,
     CHECK_PERSON_TOPIC,
     COUNT_BY_COLOR_TOPIC,
@@ -592,12 +592,11 @@ class VisionTasks:
 
     @mockable(return_value=[Status.EXECUTION_SUCCESS, 100])
     @service_check("count_by_pose_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
-    def count_by_pose(self, pose: str, type_requested: str) -> tuple[int, int]:
+    def count_by_pose(self, pose: str) -> tuple[int, int]:
         """Count the number of people with the requested pose or gesture"""
 
         Logger.info(self.node, "Counting people by pose or gesture")
         request = CountByPose.Request()
-        request.type_requested = type_requested
         request.pose_requested = pose
         request.request = True
 
@@ -636,10 +635,10 @@ class VisionTasks:
                 return Status.TARGET_NOT_FOUND, 300
 
         except Exception as e:
-            Logger.error(self.node, f"Error counting people by {type_requested}: {e}")
+            Logger.error(self.node, f"Error counting people by gesture: {e}")
             return Status.EXECUTION_ERROR, 300
 
-        Logger.success(self.node, f"People with {type_requested} {pose}: {result.count}")
+        Logger.success(self.node, f"People with {gesture}: {result.count}")
         return Status.EXECUTION_SUCCESS, result.count
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, 100))

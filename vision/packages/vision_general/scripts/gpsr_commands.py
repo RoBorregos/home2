@@ -336,8 +336,8 @@ class GPSRCommands(Node):
             response.result = response_clean
 
         elif type_requested == DetectBy.GESTURES.value:
-            gesture = self.detect_gesture(cropped_frame)  
-            response.result = gesture  
+            gesture = self.detect_gesture(cropped_frame)
+            response.result = gesture
             response_clean = gesture
             self.get_logger().info(f"The person is {gesture}")
         else:

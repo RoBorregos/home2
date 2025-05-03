@@ -83,9 +83,7 @@ class SingleTracker(Node):
         self.centroid_publisher = self.create_publisher(Point, CENTROID_TOIC, 10)
 
         self.moondream_client = self.create_client(
-            CropQuery,
-            CROP_QUERY_TOPIC,
-            callback_group=self.callback_group
+            CropQuery, CROP_QUERY_TOPIC, callback_group=self.callback_group
         )
 
         self.verbose = self.declare_parameter("verbose", True)
@@ -267,7 +265,9 @@ class SingleTracker(Node):
                         if pose.value == value:
                             self.success(f"Target found by {track_by}: {pose.value}")
                         elif response_clean == value:
-                            self.success(f"Target found by {track_by}: {response_clean}")
+                            self.success(
+                                f"Target found by {track_by}: {response_clean}"
+                            )
                         elif response_clean == "1":
                             self.success(f"Target found by {track_by}: {value}")
                         largest_person["id"] = track_id
@@ -312,7 +312,7 @@ class SingleTracker(Node):
         while not future.done() and (time.time() - start_time) < timeout:
             print("Waiting for future to complete...")
         return future
-    
+
     def moondream_crop_query(self, prompt: str, bbox: list[float]) -> tuple[int, str]:
         """Makes a query of the current image using moondream."""
         self.get_logger().info(f"Querying image with prompt: {prompt}")

@@ -28,5 +28,6 @@ class DetectBy(Enum):
     POSES = "poses"
     COLOR = "color"
 
+
 def is_value_in_enum(value, enum_class):
     return value in [member.value for member in enum_class]
