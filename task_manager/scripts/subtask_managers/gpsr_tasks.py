@@ -331,7 +331,7 @@ class GPSRTask(GenericTask):
         status, value = self.subtask_manager.hri.find_closest(possibilities, characteristic)
         value = value[0]
 
-        self.subtask_manager.manipulation.move_to_position("front_stare")
+        self.subtask_manager.manipulation.move_to_position("front_low_stare")
 
         counter = 0
 

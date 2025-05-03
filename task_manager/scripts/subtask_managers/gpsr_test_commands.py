@@ -65,18 +65,18 @@ custom_command = [
     {
         "action": "count",
         "complement": "sota corner",
-        "characteristic": "black jeans",
+        "characteristic": "waving",
     },
     {
         "action": "count",
         "complement": "sota corner",
-        "characteristic": "black shirt",
+        "characteristic": "seating",
     },
-    {
-        "action": "count",
-        "complement": "sota corner",
-        "characteristic": "standing",
-    },
+    # {
+    #     "action": "count",
+    #     "complement": "sota corner",
+    #     "characteristic": "standing",
+    # },
     # {
     #     "action": "count",
     #     "complement": "sota corner",
