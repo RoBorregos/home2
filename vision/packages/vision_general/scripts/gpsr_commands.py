@@ -79,7 +79,7 @@ class GPSRCommands(Node):
         )
 
         self.pose_gesture_detection_service = self.create_service(
-            PersonPoseGesture, POSE_GESTURE_TOPIC, self.detect_pose_gesture_callback
+            PersonPoseGesture, POSE_GESTURE_TOPIC, self.detect_pose_gesture_callback, callback_group=self.callback_group
         )
 
         self.image_publisher = self.create_publisher(Image, IMAGE_TOPIC, 10)
