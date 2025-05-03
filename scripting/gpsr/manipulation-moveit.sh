@@ -1,4 +1,4 @@
-SESSION_NAME="manipulation-receptionist-planning"
+SESSION_NAME="m-gpsr-planning"
 
 tmux new-session -d -s $SESSION_NAME
 tmux send-keys -t $SESSION_NAME 'cd ../../' C-m
