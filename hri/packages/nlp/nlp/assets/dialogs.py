@@ -311,3 +311,28 @@ def format_response(response):
             "content": response,
         },
     ]
+
+
+def get_answer_question_dialog(contexts, question):
+    if contexts:
+        context_text = "\n".join(contexts)
+        user_content = f"{context_text}\n\n{question}"
+    else:
+        user_content = question
+
+    return [
+        {
+            "role": "system",
+            "content": (
+                "You are a concise and knowledgeable assistant. "
+                "Answer clearly and directly using only the provided information. "
+                "Do not mention where the information came from. "
+                "Avoid long explanations, speculation, or unnecessary details. "
+                "Just provide the best possible answer."
+            ),
+        },
+        {
+            "role": "user",
+            "content": user_content,
+        },
+    ]
