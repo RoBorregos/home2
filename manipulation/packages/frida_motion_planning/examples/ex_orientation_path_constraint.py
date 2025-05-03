@@ -1,10 +1,4 @@
 #!/usr/bin/env python3
-"""
-Example of moving to a joint configuration with orientation path constraints.
-- ros2 run pymoveit2 ex_orientation_path_constraints.py --ros-args -p use_orientation_constraint:=True
-- ros2 run pymoveit2 ex_orientation_path_constraints.py --ros-args -p use_orientation_constraint:=False
-"""
-
 import time
 import rclpy
 from rclpy.node import Node
@@ -12,7 +6,7 @@ from rclpy.action import ActionClient
 from frida_interfaces.action import MoveToPose
 from frida_interfaces.msg import Constraint
 from geometry_msgs.msg import PoseStamped
-import frida_motion_planning.robots.xarm6 as robot
+from frida_pymoveit2.robots import xarm6 as robot
 
 
 class MoveToPoseContraintedClient(Node):
