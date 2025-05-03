@@ -16,6 +16,7 @@ from pydantic import BaseModel, Field
 from rclpy.node import Node
 from std_msgs.msg import String
 
+from frida_constants.hri_constants import MODEL
 from frida_interfaces.msg import Command, CommandList
 from frida_interfaces.srv import CommandInterpreter as CommandInterpreterSrv
 
@@ -39,7 +40,6 @@ class CommandInterpreter(Node):
 
         # Declare and get parameters
         self.declare_parameter("base_url", "None")
-        self.declare_parameter("model", "gpt-4o-2024-08-06")
         self.declare_parameter("speech_command_topic", "/speech/raw_command")
         self.declare_parameter("publish_command_topic", "/task_manager/commands")
         self.declare_parameter(
@@ -49,7 +49,6 @@ class CommandInterpreter(Node):
         self.declare_parameter("temperature", 0.5)
 
         base_url = self.get_parameter("base_url").get_parameter_value().string_value
-        model = self.get_parameter("model").get_parameter_value().string_value
         speech_command_topic = (
             self.get_parameter("speech_command_topic")
             .get_parameter_value()
@@ -73,7 +72,6 @@ class CommandInterpreter(Node):
         if base_url == "None":
             base_url = None
 
-        self.model = model
         self.client = OpenAI(
             api_key=os.getenv("OPENAI_API_KEY", "ollama"), base_url=base_url
         )
@@ -107,7 +105,7 @@ class CommandInterpreter(Node):
     def get_commands(self, raw_command: str):
         response = (
             self.client.beta.chat.completions.parse(
-                model=self.model,
+                model=MODEL.GET_COMMANDS.value,
                 temperature=self.temperature,
                 messages=[
                     {"role": "system", "content": get_system_prompt_expo()},
