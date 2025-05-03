@@ -1,5 +1,5 @@
 import sys
-
+import time
 sys.path.append("..")
 
 import json
@@ -12,12 +12,13 @@ from nlp.assets.schemas import CommandListShape
 from openai import OpenAI
 from tqdm import tqdm
 from baml_client.sync_client import b
+from baml_client.types import CommandListLLM
 
 from config import API_KEY, BASE_URL, MODEL, TEMPERATURE
 from metrics.json_embedding_similarity import JsonEmbeddingSimilarity
 
 
-STARTING_CASE = 3
+STARTING_CASE = 1
 
 
 def format_json(data):
@@ -89,7 +90,7 @@ def generate_response(full_text, two_steps=False):
     # print(messages)
     start = time.time()
     # response = client.beta.chat.completions.parse(model=MODEL, temperature=TEMPERATURE, messages=messages, response_format=NOT_GIVEN)
-    response = b.GenerateCommandList(full_text).model_dump_json()
+    response = b.GenerateCommandList(full_text)
     end = time.time()
     print(f"Time waiting for response: {end - start}")
 
@@ -106,7 +107,10 @@ def generate_response(full_text, two_steps=False):
     #     print("Structured response:\n", content)
     #     return content, response.choices[0].message.content
 
-    return response
+    str_response = json.dumps(response.model_dump())
+    # Change ' to " and None to null
+    str_response = str_response.replace("'", '"').replace("None", "null")
+    return str_response
     # return content, response.choices[0].message.content
 
 
@@ -121,15 +125,13 @@ def structured_response(response, response_format):
     return formatted_response.choices[0].message.content
 
 
-with open("data/command_interpreter.json") as f:
+with open("data/command_interpreter_v2.json") as f:
     command_dataset = json.load(f)
 
 test_cases = [
     (
         command["string_cmd"],
-        CommandListShape(
-            commands=json.loads(command["structured_cmd"])["commands"],
-        ).model_dump_json(),
+        json.dumps(command["structured_cmd"])
     )
     for command in command_dataset[STARTING_CASE + 1 :]
 ]
@@ -139,12 +141,13 @@ test_cases = [
 test_cases = [LLMTestCase(input=test_case[0], expected_output=test_case[1], actual_output="") for test_case in test_cases]
 
 THRESHOLD = 0.7
-metric = JsonEmbeddingSimilarity(embeddings_keys=["complement", "characteristic"], threshold=THRESHOLD)
+metric = JsonEmbeddingSimilarity(embeddings_keys=["complement"], threshold=THRESHOLD)
 count = 0
 wrong_cases = []
 
 for test_case in tqdm(test_cases, desc="Generating test case responses"):
     test_case.actual_output = generate_response(test_case.input, two_steps=False)
+    time.sleep(5)
     a = metric.measure(test_case)
     if metric.measure(test_case) < THRESHOLD:
         count += 1
