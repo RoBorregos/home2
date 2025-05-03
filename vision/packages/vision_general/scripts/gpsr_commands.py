@@ -320,7 +320,7 @@ class GPSRCommands(Node):
             prompt = f"Respond 'standing' if the person in the image is standing, 'sitting' if the person in the image is sitting, 'lying down' if the person in the image is lying down or 'unknown' if the person is not doing any of the previous."
             
         elif type_requested == "gesture":
-            prompt = f"Which arm is raising? eft or right?"
+            prompt = f"Which arm is raising? left or right? considering the person is facing the camera. If the person is not raising any arm, reply with 'unknown'."
         else:
             self.get_logger().warn(f"Type {type_requested} is not valid.")
             response.success = False
