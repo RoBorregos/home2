@@ -384,33 +384,6 @@ class GPSRCommands(Node):
 
         return Gestures.UNKNOWN.value
 
-    def count_gestures(self, frame):
-        """Count the gestures in the image and return a dictionary."""
-        gesture_count = {
-            Gestures.UNKNOWN: 0,
-            Gestures.UNKNOWN: 0,
-            Gestures.WAVING: 0,
-            Gestures.RAISING_LEFT_ARM: 0,
-            Gestures.RAISING_RIGHT_ARM: 0,
-            Gestures.POINTING_LEFT: 0,
-            Gestures.POINTING_RIGHT: 0,
-        }
-
-        # Detect gestures for each detected person
-        for person in self.people:
-            x1, y1, x2, y2 = person["bbox"]
-
-            # Crop the frame to the bounding box of the person
-            cropped_frame = frame[y1:y2, x1:x2]
-
-            gesture = self.pose_detection.detectGesture(cropped_frame)
-
-            # Increment the gesture count based on detected gesture
-            if gesture in gesture_count:
-                gesture_count[gesture] += 1
-
-        return gesture_count
-
     def get_detections(self, frame, comp_class) -> None:
         """Obtain YOLO detections for people."""
         results = self.yolo_model(frame, verbose=False, classes=[comp_class])
