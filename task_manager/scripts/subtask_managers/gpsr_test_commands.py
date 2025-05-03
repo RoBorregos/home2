@@ -40,28 +40,28 @@ custom_command = [
     {
         "action": "count",
         "complement": "sota corner",
-        "characteristic": "raise right arm",
-    },
-    {
-        "action": "count",
-        "complement": "sota corner",
-        "characteristic": "raise left arm",
-    },
-    {
-        "action": "count",
-        "complement": "sota corner",
-        "characteristic": "pointing left",
-    },
-    {
-        "action": "count",
-        "complement": "sota corner",
-        "characteristic": "pointing right",
-    },
-    {
-        "action": "count",
-        "complement": "sota corner",
         "characteristic": "waving",
     },
+    # {
+    #     "action": "count",
+    #     "complement": "sota corner",
+    #     "characteristic": "raise right arm",
+    # },
+    # {
+    #     "action": "count",
+    #     "complement": "sota corner",
+    #     "characteristic": "raise left arm",
+    # },
+    # {
+    #     "action": "count",
+    #     "complement": "sota corner",
+    #     "characteristic": "pointing left",
+    # },
+    # {
+    #     "action": "count",
+    #     "complement": "sota corner",
+    #     "characteristic": "pointing right",
+    # },
     {
         "action": "count",
         "complement": "sota corner",
@@ -72,11 +72,11 @@ custom_command = [
         "complement": "sota corner",
         "characteristic": "standing",
     },
-    {
-        "action": "count",
-        "complement": "sota corner",
-        "characteristic": "lying",
-    },
+    # {
+    #     "action": "count",
+    #     "complement": "sota corner",
+    #     "characteristic": "lying",
+    # },
     # Nav
     # {"action": "go", "complement": "start_location", "characteristic": ""},
     # {"action": "follow_person_until", "complement": "canceled", "characteristic": ""},
