@@ -84,7 +84,10 @@ class GPSRCommands(Node):
         )
 
         self.pose_gesture_detection_service = self.create_service(
-            PersonPoseGesture, POSE_GESTURE_TOPIC, self.detect_pose_gesture_callback, callback_group=self.callback_group
+            PersonPoseGesture,
+            POSE_GESTURE_TOPIC,
+            self.detect_pose_gesture_callback,
+            callback_group=self.callback_group,
         )
 
         self.image_publisher = self.create_publisher(Image, IMAGE_TOPIC, 10)
@@ -113,41 +116,6 @@ class GPSRCommands(Node):
 
         except Exception as e:
             print(f"Error: {e}")
-
-    def count_by_gestures_callback(self, request, response):
-        """Callback to count gestures in the image."""
-        self.get_logger().info("Executing service Count By Gestures")
-
-        if self.image is None:
-            response.success = False
-            response.count = 0
-            return response
-
-        frame = self.image
-        self.output_image = frame.copy()
-
-        gesture_requested = request.gesture_requested
-
-        # Convert gesture_requested to Enum Gestures
-        try:
-            gesture_requested_enum = Gestures(gesture_requested)
-        except KeyError:
-            self.get_logger().warn(f"Gesture {gesture_requested} is not valid.")
-            response.success = False
-            response.count = 0
-            return response
-
-        # Detect people using YOLO
-        self.get_detections(frame, 0)
-
-        gesture = self.count_gestures(frame)
-
-        gesture_count = gesture.get(gesture_requested_enum, 0)
-
-        response.success = True
-        response.count = gesture_count
-        self.get_logger().info(f"Gesture {gesture_requested} counted: {gesture_count}")
-        return response
 
     def count_by_pose_callback(self, request, response):
         """Callback to count a specific pose in the image."""
@@ -178,11 +146,11 @@ class GPSRCommands(Node):
             response.success = False
             response.count = 0
             return response
-        
+
         self.get_detections(frame, 0)
 
         # replace underscore with space in the pose_requested
-        pose_requested = pose_requested.replace("_", "  ") 
+        pose_requested = pose_requested.replace("_", "  ")
         pose_requested = pose_requested.replace("_", "", 1)
 
         for person in self.people:
@@ -196,10 +164,8 @@ class GPSRCommands(Node):
                 print(response_q)
                 response_clean = response_q.strip()
                 if response_clean == "1":
-                    pose_count[pose_requested_enum] += 1       
-                    self.get_logger().info(
-                        f"Person is {pose_requested}."
-                    )
+                    pose_count[pose_requested_enum] += 1
+                    self.get_logger().info(f"Person is {pose_requested}.")
                 elif response_clean != "0":
                     self.get_logger().warn(f"Unexpected response: {response_clean}")
 
@@ -207,7 +173,7 @@ class GPSRCommands(Node):
         response.count = pose_count[pose_requested_enum]
         self.get_logger().info(f"People with pose {pose_requested}: {response.count}")
         return response
-    
+
     def count_by_gestures_callback(self, request, response):
         """Callback to count gestures in the image."""
         self.get_logger().info("Executing service Count By Gestures")
@@ -230,8 +196,8 @@ class GPSRCommands(Node):
             response.success = False
             response.count = 0
             return response
-        
-         # Detect people using YOLO
+
+        # Detect people using YOLO
         self.get_detections(frame, 0)
 
         gesture = self.count_gestures(frame)
@@ -242,7 +208,7 @@ class GPSRCommands(Node):
         response.count = gesture_count
         self.get_logger().info(f"Gesture {gesture_requested} counted: {gesture_count}")
         return response
-    
+
     def count_gestures(self, frame):
         """Count the gestures in the image and return a dictionary."""
         gesture_count = {
@@ -269,7 +235,7 @@ class GPSRCommands(Node):
                 gesture_count[gesture] += 1
 
         return gesture_count
-    
+
     def count_by_person_callback(self, request, response):
         """Callback to count people in the image."""
         self.get_logger().info("Executing service Count By Person")
@@ -353,12 +319,10 @@ class GPSRCommands(Node):
         x1, y1, x2, y2 = biggest_person["bbox"]
 
         # Crop the frame to the bounding box of the person
-        cropped_frame = frame[y1:y2, x1:x2]
-
         type_requested = request.type_requested
 
         if type_requested == "pose":
-            prompt = f"Respond 'standing' if the person in the image is standing, 'sitting' if the person in the image is sitting, 'lying down' if the person in the image is lying down or 'unknown' if the person is not doing any of the previous."    
+            prompt = "Respond 'standing' if the person in the image is standing, 'sitting' if the person in the image is sitting, 'lying down' if the person in the image is lying down or 'unknown' if the person is not doing any of the previous."
         else:
             self.get_logger().warn(f"Type {type_requested} is not valid.")
             response.success = False
@@ -366,15 +330,13 @@ class GPSRCommands(Node):
             return response
 
         status, response_q = self.moondream_crop_query(
-                prompt, [float(y1), float(x1), float(y2), float(x2)]
-            )
+            prompt, [float(y1), float(x1), float(y2), float(x2)]
+        )
         response_clean = response_q.replace(" ", "_")
         response_clean = response_clean.replace("_", "", 1)
 
         if status:
-            self.get_logger().info(
-                f"The person is {response_q}."
-            )
+            self.get_logger().info(f"The person is {response_q}.")
 
         response.result = response_clean
         response.success = True
