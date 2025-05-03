@@ -1,0 +1,35 @@
+<root main_tree_to_execute="navigate_to_pose">
+  <BehaviorTree ID="navigate_to_pose">
+  
+    <PipelineSequence name="NavigateWithReplanning">
+
+      <!-- Get a valid path -->
+      <ComputePathToPose goal="{goal}" path="{path}" planner_id="GridBased"/>
+
+      <!-- Start moving -->
+      <RateController hz="5.0">
+        <RecoveryNode number_of_retries="5" name="FollowPathWithRecovery">
+
+        <FollowPath path="{path}" controller_id="FollowPath"/>
+
+        <!-- Recovery sequence -->
+        <SequenceStar name="ClearAndBackupRecovery">
+            <!-- First clear costmap around robot -->
+            <ClearCostmapAroundRobot service_name="local_costmap/clear_around_local_costmap" reset_distance="1.0"/>
+            <!-- Try backing up a little -->
+            <BackwardsMotion speed="-0.3" time_seconds="3.0"/>
+            <!-- Recompute the path -->
+            <ComputePathToPose goal="{goal}" path="{path}" planner_id="GridBased"/>
+        </SequenceStar>
+
+      </RecoveryNode>
+
+      </RateController>
+
+      <!-- Goal checking (moved inside) -->
+      <GoalReached/>
+
+    </PipelineSequence>
+
+  </BehaviorTree>
+</root>

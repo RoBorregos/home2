@@ -138,8 +138,9 @@ export default function RosMessagesDisplay() {
         </div>
       </div>
 
-      <div className="h-full overflow-y-hidden grid grid-cols-2">
-        <div className="flex-1 p-4 space-y-3 h-full">
+      <div className="grid grid-cols-2 h-full overflow-y-hidden">
+        {/* Left column */}
+        <div className="flex flex-col p-4 space-y-3 overflow-y-auto">
           <div ref={messagesStartRef} />
           {messages.length === 0 ? (
             <div className="flex items-center justify-center h-full text-[oklch(0.708_0_0)]">
@@ -197,11 +198,14 @@ export default function RosMessagesDisplay() {
             ))
           )}
         </div>
-        <div className="flex flex-col items-center justify-center p-4 border-l border-[oklch(1_0_0/10%)] bg-[oklch(0.145_0_0)]">
-          <p className="text-xl mb-4">Video feed at {audioTopic}</p>
-          <MjpegStream
-            streamUrl={`http://localhost:8080/stream?topic=${audioTopic}`}
-          />
+        {/* Right column */}
+        <div className="sticky top-0 self-start h-[inherit] border-l border-[oklch(1_0_0/10%)] bg-[oklch(0.145_0_0)]">
+          <div className="h-full flex flex-col items-center justify-center p-4">
+            <p className="text-xl mb-4">Video feed at {audioTopic}</p>
+            <MjpegStream
+              streamUrl={`http://localhost:8080/stream?topic=${audioTopic}`}
+            />
+          </div>
         </div>
       </div>
 

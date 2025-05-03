@@ -335,7 +335,6 @@ class GPSRCommands(Node):
         """Count the poses in the image and return a dictionary."""
         pose_count = {
             Poses.UNKNOWN: 0,
-            Poses.UNKNOWN: 0,
             Poses.STANDING: 0,
             Poses.SITTING: 0,
             Poses.LYING_DOWN: 0,

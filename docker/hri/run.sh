@@ -169,7 +169,7 @@ if [ -n "$detached" ]; then
 
 else
   echo "🚀 Launching containers in attached mode..."
-  docker compose -f "$compose_file" up &
+  ROLE=$PROFILES docker compose -f "$compose_file" up &
   compose_pid=$!
 
   echo "⏳ Waiting for localhost:3000 to be available..."

@@ -195,7 +195,6 @@ class MotionPlanningServer(Node):
 
     def move_to_pose(self, goal_handle, feedback):
         """Perform the pick operation."""
-        self.get_logger().info(f"Moving to pose: {goal_handle.request.pose}")
         pose = goal_handle.request.pose
         target_link = goal_handle.request.target_link
         if target_link != "":

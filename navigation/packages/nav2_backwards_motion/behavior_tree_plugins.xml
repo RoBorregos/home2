@@ -1,0 +1,5 @@
+<library path="nav2_backwards_motion_bt_node">
+  <class name="BackwardsMotion" type="nav2_backwards_motion::BackwardsMotion" base_class_type="BT::ActionNodeBase">
+    <description>This node moves the robot backwards for a specified duration</description>
+  </class>
+</library>

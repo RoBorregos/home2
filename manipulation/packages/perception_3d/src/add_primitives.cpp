@@ -688,7 +688,7 @@ public:
           ASSERT_AND_RETURN_CODE(response->health_response, OK,
                                  "Error computing box primitive with code %d",
                                  response->health_response);
-          box_params.height = 0.025;
+          box_params.height = 0.035;
           // pcl::PointXYZ min_pt, max_pt2;
           // pcl::getMinMax3D(*cloud_out, min_pt, max_pt2);
           // box_params.centroid.x = min_pt.x + (max_pt2.x - min_pt.x) / 2;
