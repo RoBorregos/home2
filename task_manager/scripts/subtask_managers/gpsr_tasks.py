@@ -325,7 +325,8 @@ class GPSRTask(GenericTask):
 
         possibilities = [v.value for v in Gestures] + [v.value for v in Poses] + ["clothes"]
 
-        status, value = self.subtask_manager.hri.find_closest(possibilities, characteristic)[0]
+        status, value = self.subtask_manager.hri.find_closest(possibilities, characteristic)
+        value = value[0]
 
         self.subtask_manager.manipulation.move_to_position("front_stare")
 
