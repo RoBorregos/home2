@@ -42,6 +42,7 @@ from frida_constants.vision_constants import (
 )
 from pick_and_place.managers.PickManager import PickManager
 from pick_and_place.managers.PlaceManager import PlaceManager
+from pick_and_place.managers.PourManager import PourManager
 from frida_interfaces.msg import PickResult
 import time
 
@@ -111,6 +112,7 @@ class ManipulationCore(Node):
 
         self.pick_manager = PickManager(self)
         self.pick_result = PickResult()
+        self.pour_manager = PourManager(self)
 
         self.place_manager = PlaceManager(self)
 
@@ -148,6 +150,22 @@ class ManipulationCore(Node):
         except Exception:
             return False
 
+    def pour_execute(self, object_name=None, object_point=None):
+        self.get_logger().info(f"Goal: {object_point}")
+        self.get_logger().info("Extracting object cloud")
+
+        try:
+            result = self.pour_manager.execute(
+                object_name=object_name,
+                point=object_point,
+            )
+            if not result:
+                self.get_logger().error("Pour failed")
+                return False
+            return result
+        except Exception:
+            return False
+
     def manipulation_server_callback(self, goal_handle):
         task_type = goal_handle.request.task_type
         object_name = goal_handle.request.pick_params.object_name
@@ -179,6 +197,15 @@ class ManipulationCore(Node):
         elif task_type == ManipulationTask.PLACE:
             self.get_logger().info("Executing Place Task")
             result = self.place_execute(place_params=goal_handle.request.place_params)
+            goal_handle.succeed()
+            if result:
+                self.remove_all_collision_object(attached=True)
+            response.success = result
+        elif task_type == ManipulationTask.POUR:
+            self.get_logger().info("Executing Pour Task")
+            result = self.pour_execute(
+                object_name=object_name, object_point=object_point
+            )
             goal_handle.succeed()
             if result:
                 self.remove_all_collision_object(attached=True)
