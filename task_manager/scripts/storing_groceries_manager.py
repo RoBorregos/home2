@@ -4,7 +4,7 @@ from collections import defaultdict
 from enum import Enum
 
 import rclpy
-from frida_constants.vision_classes import BBOX, ShelfDetection
+from frida_constants.vision_classes import BBOX
 from pydantic import BaseModel
 from rclpy.node import Node
 from utils.logger import Logger
@@ -16,6 +16,11 @@ import time
 
 POINT_TRANSFORMER_TOPIC = "/integration/point_transformer"
 ATTEMPT_LIMIT = 5
+
+
+class Retries(Enum):
+    DEFAULT = 10
+    NAVIGATION = 5
 
 
 class ExecutionStates(Enum):
@@ -48,8 +53,6 @@ class ExecutionStates(Enum):
 
     END = 200
 
-    # TRY_HEAL = 500
-
 
 for i in ExecutionStates:
     for j in ExecutionStates:
@@ -63,6 +66,22 @@ STATE_TO_DEUX = {
     ExecutionStates.INIT_NAV_TO_TABLE: ExecutionStates.VIEW_AND_SAVE_OBJECTS_ON_TABLE,
     ExecutionStates.NAV_TO_SHELF: ExecutionStates.PLACE_OBJECT,
     ExecutionStates.NAV_TO_TABLE: ExecutionStates.PICK_OBJECT,
+}
+STATE_RETRIES = {
+    ExecutionStates.INIT_NAV_TO_SHELF: 5,
+    ExecutionStates.VIEW_SHELF_AND_SAVE_OBJECTS: 2,
+    ExecutionStates.INIT_NAV_TO_TABLE: 5,
+    ExecutionStates.VIEW_AND_SAVE_OBJECTS_ON_TABLE: 5,
+    ExecutionStates.CATEGORIZE_OBJECTS: 5,
+    ExecutionStates.SAY_5_OBJECTS_CATEGORIZED: 2,
+    ExecutionStates.NAV_TO_TABLE: 10,
+    ExecutionStates.NAV_TO_SHELF: 10,
+    ExecutionStates.PICK_OBJECT: 3,
+    ExecutionStates.PLACE_OBJECT: 3,
+    ExecutionStates.CEREAL_ANALYSIS: 10,
+    ExecutionStates.CEREAL_PICK: 10,
+    ExecutionStates.CEREAL_PLACE: 10,
+    "DEFAULT": 10,
 }
 
 
@@ -88,7 +107,6 @@ class StoringGroceriesManager(Node):
         self.point_pub = self.create_publisher(PointStamped, "point_visualize", 10)
         self.retry_count = 0
         self.prev_state = None
-        self.check_manual_levels = True
         self.manual_heights = [  # 0.2
             0.45,  # 0.45 +- 0.2 -> 0.25 0.65
             0.8,  # 0.8 +- 0.2 -> 0.6 1.0
@@ -115,7 +133,7 @@ class StoringGroceriesManager(Node):
             self.subtask_manager.manipulation.move_to_position("nav_pose")
             result = Status.EXECUTION_ERROR
             retry = 0
-            while result == Status.EXECUTION_ERROR and retry < ATTEMPT_LIMIT:
+            while result == Status.EXECUTION_ERROR and retry < Retries.NAVIGATION.value:
                 future = self.subtask_manager.nav.move_to_location(location, sub_location)
                 if "navigation" not in self.subtask_manager.get_mocked_areas():
                     rclpy.spin_until_future_complete(self, future)
@@ -157,10 +175,7 @@ class StoringGroceriesManager(Node):
     def exec_state(self):
         Logger.info(self, f"Executing state: {self.state.name}")
         if self.state == ExecutionStates.START:
-            self.get_logger().info("Waiting for TF system to initialize...")
-            rclpy.spin_once(self, timeout_sec=2.0)
             self.state = ExecutionStates.INIT_NAV_TO_SHELF
-            # self.state = ExecutionStates.IN
 
         elif self.state == ExecutionStates.END:
             Logger.info(self, "Ending Storing Groceries Manager...")
@@ -174,158 +189,89 @@ class StoringGroceriesManager(Node):
             else:
                 Logger.error(self, f"Failed to navigate to shelf {hres}")
                 return
-                self.state = ExecutionStates.FAILED_NAV_TO_SHELF
+
         elif self.state == ExecutionStates.SUCCEDED_NAV_TO_SHELF:
             self.state = ExecutionStates.VIEW_SHELF_AND_SAVE_OBJECTS
         elif self.state == ExecutionStates.VIEW_SHELF_AND_SAVE_OBJECTS:
-            if not self.check_manual_levels:
-                status, results = self.subtask_manager.vision.detect_shelf(timeout=10)
-                results: list[ShelfDetection]
-                self.shelves_count = max([i.level for i in results]) + (
-                    1 if 0 in [i.level for i in results] > 0 else 0
+            # Manual levels
+            self.shelves_count = 0
+            self.shelves = {}
+            self.generate_manual_levels()
+            for i in range(len(self.manual_heights)):
+                self.subtask_manager.hri.say(text=f"Detecting shelf number {i}", wait=True)
+                self.shelves[i] = Shelf(id=i, tag="", objects=[])
+                Logger.info(self, f"Moving to height {self.manual_heights[i]}")
+                self.subtask_manager.manipulation.get_optimal_position_for_plane(
+                    self.manual_heights[i],
+                    tolerance=0.2,
+                    table_or_shelf=False,
+                    approach_plane=True,
                 )
-                if status == Status.TIMEOUT:
-                    pass  # should retry
-                    return
-                elif status == Status.EXECUTION_SUCCESS:
-                    pass  # rn todo
-                else:
-                    Logger.error(self, "Unknown status")
-                    return
-
+                Logger.info(self, "Moved, now detecting objects")
+                time.sleep(1)
                 status, res = self.subtask_manager.vision.detect_objects()
-
-                if status == Status.EXECUTION_SUCCESS:
-                    Logger.info(self, f"Detected objects: {res}")
-                    res: list[BBOX]
-                else:
-                    Logger.error(self, "Unknown status")
-                    return
-
-                # for det in res:
-                #     # Logger.info(self, f"Detected object: {det.classname}")
-                #     detected_shelf: ShelfDetection = None
-                #     center_x = det.x1 + det.w / 2
-                #     center_y = det.y1 + det.h / 2
-                #     for shelf in results:
-                #         if shelf.x1 < center_x < shelf.x2 and shelf.y1 < center_y < shelf.y2:
-                #             detected_shelf = shelf
-                #             break
-                #     if detected_shelf is None:
-                #         Logger.error(self, f"Detected object {det.classname} not in any shelf")
-                #         continue
-                #     Logger.info(
-                #         self, f"Detected object {det.classname} in shelf {detected_shelf.level}"
-                #     )
-                #     self.shelves[detected_shelf.level].id = detected_shelf.level
-                #     self.shelves[detected_shelf.level].objects.append(det.classname)
-                Logger.info(self, f"Shelves: {self.shelves}")
-                self.state = ExecutionStates.INIT_NAV_TO_TABLE
-
-                len(self.shelves)
-            else:
-                # Manual levels
-                self.shelves_count = 0
-                self.shelves = {}
-                # for i, height in enumerate(self.manual_heights):
-                #     self.shelves[i] = Shelf(id=i, tag="", objects=[])
-                #     self.subtask_manager.manipulation.move_to_height(height)
-                #     bbox = self.subtask_manager.manipulation.get_plane_bbox()
-                #     new_target = self.get_new_height(bbox)
-                #     self.subtask_manager.manipulation.move_to_height(new_target)
-                #     status, res = self.subtask_manager.vision.detect_objects()
-
-                #     for count, det in enumerate(res):
-                #         if det is not None:
-                #             self.shelves[i].objects.append(det.classname)
-                #             self.shelves[i].id = i
-                #             Logger.info(
-                #                 self,
-                #                 f"Detected object {det.classname} in shelf {self.shelves[i].tag}",
-                #             )
-
-                #     self.shelves_count += 1
-
-                # self.subtask_manager.manipulation.move_joint_positions(
-                # named_position="front_stare", velocity=0.5, degrees=True
-                # )
-                self.generate_manual_levels()
-                for i in range(len(self.manual_heights)):
-                    self.subtask_manager.hri.say(text=f"Detecting shelf number {i}", wait=True)
-                    self.shelves[i] = Shelf(id=i, tag="", objects=[])
-                    Logger.info(self, f"Moving to height {self.manual_heights[i]}")
-
-                    self.subtask_manager.manipulation.get_optimal_position_for_plane(
-                        self.manual_heights[i],
-                        tolerance=0.2,
-                        table_or_shelf=False,
-                        approach_plane=True,
-                    )
-                    Logger.info(self, "Moved, now detecting")
+                rettry = 0
+                while status != Status.EXECUTION_SUCCESS and rettry < 5:
+                    Logger.error(self, f"Error detecting objects: {status}")
                     time.sleep(1)
                     status, res = self.subtask_manager.vision.detect_objects()
-                    rettry = 0
-                    while status != Status.EXECUTION_SUCCESS and rettry < 5:
-                        Logger.error(self, f"Error detecting objects: {status}")
-                        time.sleep(1)
-                        status, res = self.subtask_manager.vision.detect_objects()
-                        rettry += 1
-                    if status != Status.EXECUTION_SUCCESS:
-                        Logger.error(self, f"Error detecting objects: {status}")
-                        return
+                    rettry += 1
+                if status != Status.EXECUTION_SUCCESS:
+                    Logger.error(self, f"Error detecting objects: {status}")
+                    return
 
-                    if len(res) == 0:
-                        Logger.error(self, f"No objects detected: {status}")
-                        continue
-                    for det in res:
-                        Logger.info(self, f"Detected object: {det.classname}, projecting...")
-                        if det is not None:
+                if len(res) == 0:
+                    Logger.error(self, f"No objects detected: {status}")
+                    continue
+                for det in res:
+                    Logger.info(self, f"Detected object: {det.classname}, projecting...")
+                    if det is not None:
+                        height = self.convert_to_height(det)
+                        while height is None:
                             height = self.convert_to_height(det)
-                            while height is None:
-                                height = self.convert_to_height(det)
-                            distance_check = height - self.manual_heights[i]
-                            if (
-                                distance_check < 0
-                                and abs(distance_check) < self.shelf_level_down_threshold
-                            ) or (
-                                distance_check >= 0 and distance_check < self.shelf_level_threshold
-                            ):
-                                self.shelves[i].objects.append(det.classname)
-                                self.shelves[i].id = i
-                                Logger.info(
-                                    self,
-                                    f"Detected object {det.classname} in shelf {self.shelves[i].tag}",
-                                )
-                                break
-                    self.shelves_count += 1
-                # self.subtask_manager.manipulation.move_joint_positions(
-                #     named_position="front_stare", velocity=0.5, degrees=True
-                # )
+                        distance_check = height - self.manual_heights[i]
+                        if (
+                            distance_check < 0
+                            and abs(distance_check) < self.shelf_level_down_threshold
+                        ) or (distance_check >= 0 and distance_check < self.shelf_level_threshold):
+                            self.shelves[i].objects.append(det.classname)
+                            self.shelves[i].id = i
+                            Logger.info(
+                                self,
+                                f"Detected object {det.classname} in shelf {self.shelves[i].tag}",
+                            )
+                            break
+                self.shelves_count += 1
+            # self.subtask_manager.manipulation.move_joint_positions(
+            #     named_position="front_stare", velocity=0.5, degrees=True
+            # )
 
-                # status, res = self.subtask_manager.vision.detect_objects()
-                # for count, det in enumerate(res):
-                #     if det is not None:
-                #         height = self.convert_to_height(det)
-                #         while height is None:
-                #             height = self.convert_to_height(det)
-                #         for i in self.shelves:
-                #             distance_check = height - self.manual_heights[i]
-                #             if (
-                #                 distance_check < 0
-                #                 and abs(distance_check) < self.shelf_level_down_threshold
-                #             ) or (
-                #                 distance_check >= 0 and distance_check < self.shelf_level_threshold
-                #             ):
-                #                 self.shelves[i].objects.append(det.classname)
-                #                 self.shelves[i].id = i
-                #                 Logger.info(
-                #                     self,
-                #                     f"Detected object {det.classname} in shelf {self.shelves[i].tag}",
-                #                 )
-                #                 break
+            # status, res = self.subtask_manager.vision.detect_objects()
+            # for count, det in enumerate(res):
+            #     if det is not None:
+            #         height = self.convert_to_height(det)
+            #         while height is None:
+            #             height = self.convert_to_height(det)
+            #         for i in self.shelves:
+            #             distance_check = height - self.manual_heights[i]
+            #             if (
+            #                 distance_check < 0
+            #                 and abs(distance_check) < self.shelf_level_down_threshold
+            #             ) or (
+            #                 distance_check >= 0 and distance_check < self.shelf_level_threshold
+            #             ):
+            #                 self.shelves[i].objects.append(det.classname)
+            #                 self.shelves[i].id = i
+            #                 Logger.info(
+            #                     self,
+            #                     f"Detected object {det.classname} in shelf {self.shelves[i].tag}",
+            #                 )
+            #                 break
+            self.state = ExecutionStates.INIT_NAV_TO_TABLE
+            # if status = Status.EXECUTION_SUCCESS
 
-                if status == Status.EXECUTION_SUCCESS:
-                    self.state = ExecutionStates.INIT_NAV_TO_TABLE
+            # return
+
         elif self.state == ExecutionStates.INIT_NAV_TO_TABLE:
             hres: Status = self.nav_to("kitchen", "table")
             hres: Status = self.nav_to("kitchen", "table")
@@ -336,6 +282,9 @@ class StoringGroceriesManager(Node):
                 Logger.error(self, "Failed to navigate to table")
                 return
         elif self.state == ExecutionStates.VIEW_AND_SAVE_OBJECTS_ON_TABLE:
+            self.subtask_manager.manipulation.move_joint_positions(
+                named_position="table_stare", velocity=0.5, degrees=True
+            )
             status, result = self.subtask_manager.vision.detect_objects(timeout=10)
             if status == Status.TIMEOUT:
                 # pass
@@ -344,6 +293,10 @@ class StoringGroceriesManager(Node):
                 pass
             else:
                 Logger.error(self, "Unknown status")
+                return
+            if len(result) == 0:
+                Logger.error(self, "No objects detected")
+                self.subtask_manager.hri.say(text="No objects detected", wait=True)
                 return
             Logger.info(self, f"Detected objects: {result}")
             result: list[BBOX]
@@ -505,7 +458,7 @@ class StoringGroceriesManager(Node):
             # self.state = ExecutionStates.DEUX_PICK_OBJECT
             # return
 
-            shelf = self.object_to_placing_shelf[self.current_object][0]
+            shelf = self.object_to_placing_shelf[self.current_object][0] % len(self.shelves)
             self.subtask_manager.hri.say(
                 text=f"I'm going to place the object: {self.current_object} in shelf number {shelf}"
                 + f". corresponding to {self.shelves[shelf].tag}"
@@ -517,7 +470,7 @@ class StoringGroceriesManager(Node):
             shelf_height = self.manual_heights[shelf]
 
             self.subtask_manager.manipulation.get_optimal_position_for_plane(
-                shelf_height, tolerance=0.2, table_or_shelf=False, approach_plane=False
+                shelf_height, tolerance=0.2, table_or_shelf=False, approach_plane=True
             )
 
             status = self.subtask_manager.manipulation.place_on_shelf(
@@ -547,9 +500,7 @@ class StoringGroceriesManager(Node):
             )
             # wait 2 seconds
             tries = 0
-            while not self.subtask_manager.hri.confirm(
-                "Have you handed me the object?", timeout=30
-            ):
+            while not self.subtask_manager.hri.confirm("Have you handed me the object?"):
                 self.subtask_manager.hri.say("Please hand me the object when ready.")
                 tries += 1
                 if tries > 5:
@@ -569,7 +520,7 @@ class StoringGroceriesManager(Node):
                 self.subtask_manager.hri.say(f"{i}", wait=True)
             tries = 0
             self.subtask_manager.manipulation.open_gripper()
-            while not self.subtask_manager.hri.confirm("Have you placed the object?", timeout=30):
+            while not self.subtask_manager.hri.confirm("Have you placed the object?"):
                 self.subtask_manager.hri.say("Please place the object when ready.")
                 tries += 1
                 if tries > 5:
@@ -594,6 +545,7 @@ class StoringGroceriesManager(Node):
                 Logger.info(self, f"Retry count: {self.retry_count}")
                 Logger.info(self, f"Prev: {self.prev_state}")
                 self.retry_count += 1
+
                 if self.retry_count > 10:
                     Logger.error(self, "Retry count exceeded")
                     if self.state in STATE_TO_DEUX:
