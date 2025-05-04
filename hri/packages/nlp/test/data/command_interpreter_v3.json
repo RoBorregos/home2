@@ -886,12 +886,7 @@
             {
                 "action": "say_with_context",
                 "user_instruction": "introduce yourself to Morgan in the bathroom and say your teams name",
-                "previous_command_info": ["introduction"]
-            },
-            {
-                "action": "say_with_context",
-                "user_instruction": "introduce yourself to Morgan in the bathroom and say your teams name",
-                "previous_command_info": ["your teams name"]
+                "previous_command_info": ["introduction", "your teams name"]
             }
         ]
     },
