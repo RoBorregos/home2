@@ -1,20 +1,15 @@
-import sys
+"""Testing command interpreter using BAML for structured responses"""
 import json
 import time
-from typing import List, Optional
+from typing import Optional
 
-# Add parent directory to path if needed (adjust based on your structure)
-# sys.path.append("..") 
-
-from pydantic import BaseModel, Field
 from baml_client.sync_client import b
 from baml_client.types import CommandListLLM_V3
-# We'll need sentence-transformers for cosine similarity later
+from baml_client.config import set_log_level
 from sentence_transformers import SentenceTransformer
 from scipy.spatial.distance import cosine
 from tqdm import tqdm
 import numpy as np
-from baml_client.config import set_log_level
 
 # Turn off all logging
 set_log_level("ERROR")

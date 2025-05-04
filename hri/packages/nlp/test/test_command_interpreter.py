@@ -4,7 +4,6 @@ sys.path.append("..")
 
 import json
 import re
-import time
 
 from deepeval.test_case import LLMTestCase
 from nlp.assets.dialogs import format_response
@@ -12,7 +11,6 @@ from nlp.assets.schemas import CommandListShape
 from openai import OpenAI
 from tqdm import tqdm
 from baml_client.sync_client import b
-from baml_client.types import CommandListLLM
 
 from config import API_KEY, BASE_URL, MODEL, TEMPERATURE
 from metrics.json_embedding_similarity import JsonEmbeddingSimilarity
