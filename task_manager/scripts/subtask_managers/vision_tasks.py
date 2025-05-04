@@ -53,6 +53,7 @@ from utils.decorators import mockable, service_check
 from utils.logger import Logger
 from utils.status import Status
 import time
+import math
 
 from utils.task import Task
 
@@ -347,7 +348,11 @@ class VisionTasks:
                 object_detection.y = (detection.ymin + detection.ymax) / 2
 
                 # TODO transorm if the frame_id is not 'zed...camera_frame'
-                object_detection.distance = detection.point3d.point.z
+                object_detection.distance = math.sqrt(
+                    detection.point3d.point.x**2
+                    + detection.point3d.point.y**2
+                    + detection.point3d.point.z**2
+                )
                 object_detection.px = detection.point3d.point.x
                 object_detection.py = detection.point3d.point.y
                 object_detection.pz = detection.point3d.point.z

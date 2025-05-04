@@ -63,7 +63,7 @@ class MoveItPlanner(Planner):
         self.mode_enabled = True
         if self.mode_client.wait_for_service(
             timeout_sec=3
-        ) and self.state_client.wait_for_service(timeout_sec=3):
+        ) or self.state_client.wait_for_service(timeout_sec=3):
             self.mode_enabled = True
             self.switch_controller_client = self.node.create_client(
                 SwitchController, "/controller_manager/switch_controller"

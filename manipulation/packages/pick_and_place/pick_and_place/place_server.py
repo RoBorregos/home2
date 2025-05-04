@@ -121,18 +121,22 @@ class PlaceMotionServer(Node):
             ee_link_pose.pose.position.z += i * poses_dist
 
             ee_link_pre_pose = copy.deepcopy(ee_link_pose)
+            ee_link_half_pose = copy.deepcopy(ee_link_pose)
 
             if is_shelf:
                 self.set_quaternion(
                     ee_link_pre_pose, AIM_STRAIGHT_FRONT_QUAT
                 )  # Set the orientation to aim straight front
                 self.set_quaternion(ee_link_pose, AIM_STRAIGHT_FRONT_QUAT)
+                self.set_quaternion(
+                    ee_link_half_pose, AIM_STRAIGHT_FRONT_QUAT
+                )  # Set the orientation to aim straight front
                 self.target_link = (
                     EEF_LINK_NAME  # Set the orientation to aim straight front
                 )
                 # send it a little bit back, then forward
                 offset_distance = SHELF_POSITION_PREPLACE_POSE  # Desired distance in meters along the local z-axis
-
+                offset_distance_half = SHELF_POSITION_PREPLACE_POSE / 2
                 # Compute the offset along the local z-axis
                 quat = [
                     ee_link_pre_pose.pose.orientation.w,
@@ -158,18 +162,33 @@ class PlaceMotionServer(Node):
                 ee_link_pre_pose.pose.position.x = new_position[0]
                 ee_link_pre_pose.pose.position.y = new_position[1]
                 ee_link_pre_pose.pose.position.z = new_position[2]
+
+                new_position_half = (
+                    np.array(
+                        [
+                            ee_link_half_pose.pose.position.x,
+                            ee_link_half_pose.pose.position.y,
+                            ee_link_half_pose.pose.position.z,
+                        ]
+                    )
+                    + z_axis * offset_distance_half
+                )
+                ee_link_half_pose.pose.position.x = new_position_half[0]
+                ee_link_half_pose.pose.position.y = new_position_half[1]
+                ee_link_half_pose.pose.position.z = new_position_half[2]
             else:
                 self.target_link = GRASP_LINK_FRAME
-            place_poses.append([ee_link_pre_pose, ee_link_pose])
+            place_poses.append([ee_link_pre_pose, ee_link_half_pose, ee_link_pose])
+
+        result = False
         for i, poses in enumerate(place_poses):
             # Move to pre-grasp pose
 
             ee_link_pre_pose = poses[0]
-            ee_link_pose = poses[1]
+            ee_link_half_pose = poses[1]
+            ee_link_pose = poses[2]
             if is_shelf:
-                self.get_logger().info(
-                    f"Placing on shelf, pre-place pose: {ee_link_pre_pose}"
-                )
+                self.get_logger().info("Placing on shelf, pre-place pose")
                 place_pose_handler, place_pose_result = self.move_to_pose(
                     ee_link_pre_pose
                 )
@@ -177,31 +196,44 @@ class PlaceMotionServer(Node):
                     self.get_logger().error("Failed to reach pre-place pose")
                     continue
                 self.get_logger().info("Pre-place pose reached")
-            self.get_logger().info(f"Placing on table, place pose: {ee_link_pre_pose}")
+
+            self.get_logger().info("Placing on table, place pose")
             place_pose_handler, place_pose_result = self.move_to_pose(ee_link_pose)
             print(f"Grasp Pose {i} result: {place_pose_result}")
             if place_pose_result.result.success:
                 self.get_logger().info("Grasp pose reached")
-                self.deattach_pick_object()
+                result = True
+                break
+            elif is_shelf:
+                # try halfway through, but only if we are placing on shelf
+                self.get_logger().info("Placing on table, halfway")
+                place_pose_handler, place_pose_result = self.move_to_pose(
+                    ee_link_half_pose
+                )
+                print(f"Grasp Pose {i} result: {place_pose_result}")
+                if place_pose_result.result.success:
+                    self.get_logger().info("Grasp halfway pose reached")
+                    result = True
+                    break
 
-                # open gripper
-                self.get_logger().info("Opening gripper")
-                open_gripper(self._gripper_set_state_client)
-                time.sleep(1)
-                self.get_logger().info("Gripper opened")
+        if result:
+            self.deattach_pick_object()
 
-                if is_shelf:
-                    self.get_logger().info(
-                        f"Going back to pre-place pose: {ee_link_pre_pose}"
-                    )
-                    place_pose_handler, place_pose_result = self.move_to_pose(
-                        ee_link_pre_pose
-                    )
-                    self.get_logger().info(
-                        f"Pre-place pose result: {place_pose_result}"
-                    )
+            # open gripper
+            self.get_logger().info("Opening gripper")
+            open_gripper(self._gripper_set_state_client)
+            time.sleep(1)
+            self.get_logger().info("Gripper opened")
 
-                return True
+            if is_shelf:
+                self.get_logger().info(
+                    f"Going back to pre-place pose: {ee_link_pre_pose}"
+                )
+                place_pose_handler, place_pose_result = self.move_to_pose(
+                    ee_link_pre_pose
+                )
+                self.get_logger().info(f"Pre-place pose result: {place_pose_result}")
+            return True
         self.get_logger().error("Failed to reach any grasp pose")
         return False
 

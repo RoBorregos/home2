@@ -107,7 +107,7 @@ class ManipulationTasks:
             #     return Status.ExecutionError
 
             req = SetDigitalIO.Request()
-            req.ionum = 0
+            req.ionum = 1
             req.value = 0 if state == "open" else 1  # 0=Open, 1=close
 
             future = self.gripper_client.call_async(req)
@@ -361,10 +361,10 @@ class ManipulationTasks:
     def pan_to(self, degrees: float):
         joint_positions = self.get_joint_positions(degrees=True)
         joint_positions["joint1"] = joint_positions["joint1"] - degrees
-        self.move_joint_positions(joint_positions=joint_positions, velocity=0.5, degrees=True)
+        self.move_joint_positions(joint_positions=joint_positions, velocity=0.75, degrees=True)
 
     def move_to_position(self, named_position: str):
-        self.move_joint_positions(named_position=named_position, velocity=0.5, degrees=True)
+        self.move_joint_positions(named_position=named_position, velocity=0.75, degrees=True)
 
     @mockable(return_value=Status.EXECUTION_SUCCESS)
     @service_check(
