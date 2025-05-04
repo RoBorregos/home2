@@ -109,15 +109,15 @@ class SayWithContext {
   answer_question since here it just the robot talking without a conversation"#)
 }
 
-type AvailableCommandsV3 = GoTo | PickObject | FindPersonByName | FindPerson | Count | GetPersonInfo | GetVisualInfo | AnswerQuestion | FollowPersonUntil | GuidePersonTo | GiveObject | PlaceObject | SayWithContext
+type AvailableCommands = GoTo | PickObject | FindPersonByName | FindPerson | Count | GetPersonInfo | GetVisualInfo | AnswerQuestion | FollowPersonUntil | GuidePersonTo | GiveObject | PlaceObject | SayWithContext
 
 /// Robot command list model
-class CommandListLLM_V3 {
-  commands AvailableCommandsV3[] @description("List of commands for the robot to execute")
+class CommandListLLM {
+  commands AvailableCommands[] @description("List of commands for the robot to execute")
 }
 
 /// System prompt template for the robot service
-template_string RobotServiceSystem_V3() #"
+template_string RobotServiceSystem() #"
 
 You are a service robot for domestic applications.
  Now you are located in a house environment and we will give you general purpose tasks in the form of natural language.
@@ -179,11 +179,11 @@ You are a service robot for domestic applications.
 You can ask for clarification if the task is not clear enough.
 
 "#
-function GenerateCommandListV3(request: string) -> CommandListLLM_V3 {
+function GenerateCommandList(request: string) -> CommandListLLM {
   client LOCAL_FINETUNED_NEW
   prompt #"
     {{ _.role("system") }}
-    {{ RobotServiceSystem_V3() }}
+    {{ RobotServiceSystem() }}
     Follow this schema for the response, addressing each element of the commands,
     return in JSON format:
     {{ ctx.output_format }}
