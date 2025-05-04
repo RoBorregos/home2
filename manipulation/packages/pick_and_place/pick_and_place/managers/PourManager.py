@@ -9,6 +9,7 @@ from frida_interfaces.srv import GetCollisionObjects
 from frida_motion_planning.utils.service_utils import (
     move_joint_positions as send_joint_goal,
 )
+# from sensor_msgs.msg import JointState
 
 
 CFG_PATHS = [

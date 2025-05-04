@@ -50,6 +50,9 @@ from pick_and_place.managers.PlaceManager import PlaceManager
 from pick_and_place.managers.PourManager import PourManager
 from frida_interfaces.msg import PickResult
 import time
+# from geometry_msgs.msg import PoseStamped
+# from frida_pymoveit2.robots import xarm6
+# from sensor_msgs.msg import JointState
 
 
 class ManipulationCore(Node):
