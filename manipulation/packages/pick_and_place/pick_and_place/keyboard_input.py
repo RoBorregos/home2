@@ -73,7 +73,7 @@ class KeyboardInput(Node):
         )
         self.get_logger().info("Place request sent")
 
-    def send_pour_request(self, object_name):
+    def send_pour_request(self, object_name, bowl_name):
         if not self._action_client.wait_for_server(timeout_sec=5.0):
             self.get_logger().error("Action server not available!")
             return
@@ -81,8 +81,10 @@ class KeyboardInput(Node):
         goal_msg = ManipulationAction.Goal()
         goal_msg.task_type = ManipulationTask.POUR
         goal_msg.pour_params.object_name = object_name
+        goal_msg.pour_params.bowl_name = bowl_name
 
         self.get_logger().info(f"Sending pour request for: {object_name}")
+        self.get_logger().info(f"Pouring into: {bowl_name}")
         self._action_client.send_goal_async(
             goal_msg, feedback_callback=self.feedback_callback
         )
@@ -152,7 +154,8 @@ def main(args=None):
             elif choice == "-6":
                 # receive object name
                 object_name = input("Enter object name: ")
-                node.send_pour_request(object_name)
+                bowl_name = input("Enter bowl name: ")
+                node.send_pour_request(object_name, bowl_name)
 
             elif choice.isdigit():
                 try:

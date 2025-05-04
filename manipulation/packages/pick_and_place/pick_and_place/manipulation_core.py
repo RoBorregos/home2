@@ -150,29 +150,43 @@ class ManipulationCore(Node):
         except Exception:
             return False
 
-    def pour_execute(self, object_name=None, object_point=None):
-        self.get_logger().info(f"Goal: {object_point}")
+    def pour_execute(self, object_name=None, bowl_name=None):
+        # self.get_logger().info(f"Goal: {object_point}")
+        self.get_logger().info(f"ObjectName: {object_name}")
+        self.get_logger().info(f"BowlName: {bowl_name}")
         self.get_logger().info("Extracting object cloud")
 
         try:
+            self.get_logger().info("Executing pour100")
             result = self.pour_manager.execute(
                 object_name=object_name,
-                point=object_point,
+                # object_point=object_point,
+                container_object_name=bowl_name,
             )
             if not result:
                 self.get_logger().error("Pour failed")
                 return False
             return result
         except Exception:
+            self.get_logger().error("Pour failed1000")
             return False
 
     def manipulation_server_callback(self, goal_handle):
         task_type = goal_handle.request.task_type
-        object_name = goal_handle.request.pick_params.object_name
-        object_point = goal_handle.request.pick_params.object_point
-        # scan_environment = goal_handle.request.scan_environment
+        if task_type == ManipulationTask.POUR:
+            object_name = goal_handle.request.pour_params.object_name
+            bowl_name = goal_handle.request.pour_params.bowl_name
+            # object_point = goal_handle.request.pick_params.object_point
+        else:
+            object_name = goal_handle.request.pick_params.object_name
+            object_point = goal_handle.request.pick_params.object_point
+
+        # object_name = goal_handle.request.pick_params.object_name
+        # object_point = goal_handle.request.pick_params.object_point
+        # bowl_name = goal_handle.request.pour_params.bowl_name
         self.get_logger().info(f"Task Type: {task_type}")
         self.get_logger().info(f"Object Name: {object_name}")
+
         response = ManipulationAction.Result()
 
         self.clear_octomap()
@@ -204,7 +218,9 @@ class ManipulationCore(Node):
         elif task_type == ManipulationTask.POUR:
             self.get_logger().info("Executing Pour Task")
             result = self.pour_execute(
-                object_name=object_name, object_point=object_point
+                object_name=object_name,
+                bowl_name=bowl_name,
+                # , object_point=object_point
             )
             goal_handle.succeed()
             if result:
