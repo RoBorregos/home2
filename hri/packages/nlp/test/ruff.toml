@@ -1,2 +1,5 @@
 line-length = 200
 lint.extend-ignore = ["E501"]
+exclude = [
+    "baml_client"
+]
