@@ -27,11 +27,7 @@ public:
     this->declare_parameter("pcd_default_frame", "base_link");
     this->declare_parameter("transform_timeout", 1.0);
 
-    // Create service
-    service_ = this->create_service<frida_interfaces::srv::GraspDetection>(
-      GRASP_DETECTION_SERVICE, 
-      std::bind(&GraspDetectionService::handle_service, this, 
-                std::placeholders::_1, std::placeholders::_2));
+    
 
     // Create publishers
     pcd_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(GRASP_POINTCLOUD_TOPIC, 10);
@@ -39,12 +35,18 @@ public:
 
     // create timer -> This timer kills the node when the service runs once, as I have not found a way to properly use GPD more than once on a single runtime
     timer_ = this->create_wall_timer(
-      std::chrono::milliseconds(1000),
+      std::chrono::milliseconds(50),
       [this]() {
         if (exit_) {
           kill_timer();
         }
       });
+
+    // Create service
+    service_ = this->create_service<frida_interfaces::srv::GraspDetection>(
+      GRASP_DETECTION_SERVICE, 
+      std::bind(&GraspDetectionService::handle_service, this, 
+                std::placeholders::_1, std::placeholders::_2));
 
     RCLCPP_INFO(this->get_logger(), "Grasp detection service ready");
   }

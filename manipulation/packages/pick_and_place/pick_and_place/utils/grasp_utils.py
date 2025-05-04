@@ -14,7 +14,6 @@ def get_grasps(grasp_detection_client, object_cloud, cgf_path: str):
     grasp_detection_client.wait_for_service()
     future = grasp_detection_client.call_async(request)
     future = wait_for_future(future)
-    future = wait_for_future(future)
 
     response = future.result()
 

@@ -1,10 +1,11 @@
 float32 min_height
 float32 max_height
 ---
-float32 min_x
-float32 min_y
-float32 min_z
-float32 max_x
-float32 max_y
-float32 max_z
+geometry_msgs/PointStamped pt1
+geometry_msgs/PointStamped pt2
+geometry_msgs/PointStamped pt3
+geometry_msgs/PointStamped pt4
+geometry_msgs/PointStamped center
+geometry_msgs/PointStamped highest
+geometry_msgs/PointStamped lowest
 int32 health_response

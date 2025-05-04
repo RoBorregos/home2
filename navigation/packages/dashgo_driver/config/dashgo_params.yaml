@@ -3,7 +3,7 @@ DashgoDriver:
     port: /dev/ttyUSB1
     baud: 115200
     timeout: 0.1
-    rate: 50
+    rate: 20
     imu_offset: 1.005
     # === Robot Module activation
     #useImu: False

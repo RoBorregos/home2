@@ -33,6 +33,9 @@ def launch_setup(context, *args, **kwargs):
         shared_parameters={
             'frame_id':'base_link',
             'use_sim_time':use_sim_time,
+            'wait_for_transform_duration': 0.8,
+            'queue_size': 3,
+            'approx_sync ': True,
             # RTAB-Map's parameters should be strings:
             'Reg/Strategy':'1',
             'Reg/Force3DoF':'true',
@@ -52,6 +55,9 @@ def launch_setup(context, *args, **kwargs):
          shared_parameters={
             'frame_id':'base_link',
             'use_sim_time':use_sim_time,
+            'wait_for_transform_duration': 0.8,
+            'queue_size': 3,
+            'approx_sync ': True,
             # RTAB-Map's parameters should be strings:
             'Reg/Strategy':'1',
             'Reg/Force3DoF':'true',
@@ -79,7 +85,7 @@ def launch_setup(context, *args, **kwargs):
         # Nodes to launch
         Node(
             package='rtabmap_sync', executable='rgbd_sync', output='screen',
-            parameters=[{'approx_sync':False, 'use_sim_time':use_sim_time}],
+            parameters=[{'approx_sync':True, 'use_sim_time':use_sim_time}],
             remappings=remappings),
 
         Node(

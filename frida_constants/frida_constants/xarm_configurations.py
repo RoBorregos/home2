@@ -25,10 +25,10 @@ FRONT_LOW_STARE = {
 TABLE_STARE = {
     "joints": {
         "joint1": -90.0,
-        "joint2": -45.0,
-        "joint3": -90.0,
+        "joint2": -20.0,
+        "joint3": -150.0,
         "joint4": 0.0,
-        "joint5": 45.0,
+        "joint5": 90.0,
         "joint6": 45.0,
     },
     "degrees": True,
@@ -63,12 +63,12 @@ PICK_STARE_AT_TABLE = {
 
 NAV_POSE = {
     "joints": {
-        "joint1": -88.7,
-        "joint2": -56.0,
-        "joint3": -106.0,
-        "joint4": 0.1,
-        "joint5": 66.9,
-        "joint6": 43.3,
+        "joint1": -90.0,
+        "joint2": -60.0,
+        "joint3": -55.0,
+        "joint4": 0,
+        "joint5": 25.0,
+        "joint6": 45.0,
     },
     "degrees": True,
 }
