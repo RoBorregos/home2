@@ -22,3 +22,7 @@ _run_sh_autocomplete() {
 }
 
 complete -F _run_sh_autocomplete ./run.sh
+
+# To use this script:
+# Source this script in your terminal: `source auto-complete.sh` or 
+# add it to your shell's configuration file (e.g., ~/.bashrc or ~/.bash_profile).
