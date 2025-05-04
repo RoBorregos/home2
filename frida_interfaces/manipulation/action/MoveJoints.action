@@ -3,7 +3,8 @@ string[] joint_names
 float32 velocity
 float32 acceleration
 string planner_id
-bool constrained
+bool apply_constraint
+frida_interfaces/Constraint constraint
 ---
 #result definition
 int32 success
