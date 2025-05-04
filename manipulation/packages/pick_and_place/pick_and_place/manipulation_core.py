@@ -26,7 +26,7 @@ from frida_interfaces.srv import (
     PlacePerceptionService,
     HeatmapPlace,
     GetJoints,
-    GetCollisionObjects
+    GetCollisionObjects,
 )
 from frida_constants.manipulation_constants import (
     PICK_MOTION_ACTION_SERVER,

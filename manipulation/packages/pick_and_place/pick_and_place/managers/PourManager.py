@@ -1,6 +1,8 @@
+import numpy as np
 from frida_motion_planning.utils.ros_utils import wait_for_future
 from frida_interfaces.srv import PickPerceptionService, DetectionHandler
-from geometry_msgs.msg import PointStamped
+from geometry_msgs.msg import PointStamped, PoseStamped
+from sensor_msgs_py import point_cloud2
 
 # from std_srvs.srv import SetBool
 # from pick_and_place.utils.grasp_utils import get_grasps
@@ -9,7 +11,7 @@ from frida_interfaces.srv import GetCollisionObjects
 from frida_motion_planning.utils.service_utils import (
     move_joint_positions as send_joint_goal,
 )
-from frida_constants.manipulation_constants import GET_COLLISION_OBJECTS_SERVICE
+from frida_pymoveit2.robots import xarm6 as robot
 
 CFG_PATHS = [
     "/workspace/src/home2/manipulation/packages/arm_pkg/config/frida_eigen_params_custom_gripper_testing.cfg",
@@ -36,19 +38,6 @@ class PourManager:
             velocity=0.3,
         )
 
-        # get object point
-        # if object_name is not None and object_name != "":
-        #     self.node.get_logger().info(f"Going for object name: {object_name}")
-        #     point = self.get_object_point(object_name)
-        #     if point is None:
-        #         self.node.get_logger().error(
-        #             f"Object {object_name} not found, please provide a point"
-        #         )
-        #         return False
-        # else:
-        #     self.node.get_logger().error("No object name or point provided")
-        #     return False
-
         # get bowl object point
         self.node.get_logger().warning("Get bowl object point - FFN2")
         if container_object_name is not None and container_object_name != "":
@@ -65,111 +54,80 @@ class PourManager:
             self.node.get_logger().error("No bowl object name or point provided")
             return False
 
-        # get bowl top height
-        # self.node.get_logger().error("Get bowl top height - FF3")
-        # bowl_objects = self.get_container_objects(container_object_name)
-        # if not bowl_objects:
-        #     self.node.get_logger().error("Not bowl objects - Error")
-        #     return False
-
-        # obj_lowest = min(bowl_objects, key=lambda o: o.pose.pose.position.z)
-        # obj_highest = max(bowl_objects, key=lambda o: o.pose.pose.position.z)
-
-        # Call Perception Service to get object cluster and generate collision objects
-        # object_cluster = self.get_object_cluster(point)
-        # if object_cluster is None:
-        #     self.node.get_logger().error("No object cluster detected")
-        #     return False
-
-        self.node.get_logger().error("fucking fucker -4")
-        # Call Perception Service to get container cluster and generate collision objects
+        # get cluster for bowl object
+        self.node.get_logger().warning("Get cluster for bowl object - FFN3")
         container_cluster = self.get_object_cluster(container_point)
         if container_cluster is None:
-            self.node.get_logger().error("No container cluster detected")
+            self.node.get_logger().error("No bowl object cluster detected")
             return False
 
-        # # open gripper
-        # gripper_request = SetBool.Request()
-        # gripper_request.data = True
-        # self.node.get_logger().info("Open gripper")
-        # future = self.node._gripper_set_state_client.call_async(gripper_request)
-        # future = wait_for_future(future)
-        # result = future.result()
-        # self.node.get_logger().info(f"2 Gripper Result: {str(gripper_request.data)}")
-        # pick_result_success = False
-        # print("Gripper Result:", result)
-        # for CFG_PATH in CFG_PATHS:
-        #     self.node.get_logger().info(f"CFG_PATH: {CFG_PATH}")
-        #     # Call Grasp Pose Detection
-        #     grasp_poses, grasp_scores = get_grasps(
-        #         self.node.grasp_detection_client, object_cluster, CFG_PATH
-        #     )
+        # TODO: computer the bowl top height since container cluster
+        # TODO: computer the bowl centroid height since container cluster
 
-        #     grasp_poses, grasp_scores = grasp_poses[:5], grasp_scores[:5]
+        if container_cluster.header.frame_id != robot.base_link_name():
+            self.get_logger().warn(
+                f"PointCloud2 frame_id is {container_cluster.header.frame_id}, expected {robot.base_link_name()}"
+            )
+            return False
+        else:
+            self.get_logger().info(
+                "PointCloud2 frame_id is {container_cluster.header.frame_id}"
+            )
 
-        #     if len(grasp_poses) == 0:
-        #         self.node.get_logger().error("No grasp poses detected")
-        #         continue
-
-        #     # Call Pick Motion Actio
-
-        #     # Create goal
-        #     goal_msg = PickMotion.Goal()
-        #     goal_msg.grasping_poses = grasp_poses
-        #     goal_msg.grasping_scores = grasp_scores
-
-        #     # Send goal
-        #     self.node.get_logger().info("Sending pick motion goal...")
-        #     future = self.node._pick_motion_action_client.send_goal_async(goal_msg)
-        #     future = wait_for_future(future)
-        #     # Check result
-        #     pick_result = future.result().get_result().result
-        #     self.node.get_logger().info(f"Pick Motion Result: {pick_result}")
-        #     if pick_result.success:
-        #         pick_result_success = True
-        #         break
-
-        # if not pick_result_success:
-        #     self.node.get_logger().error("Pick motion failed")
-        #     return False
-
-        ### Up until here same as PickManager
-        # Now go to pour
-        # Send bowl object point to pour
-        # object_top_height = pick_result.object_height
-        # object_centroid_height = pick_result.object_pick_height
-
-        self.node.get_logger().error("fucking fucker 1")
-        # bowl_top_height = self.calculate_object_height(obj_lowest, obj_highest)
-
-        # if bowl_top_height is None:
-        #     self.node.get_logger().error("Bowl top height is none - Error")
-        #     return False
-        # bowl_centroid_height = container_point
-
-        self.node.get_logger().error("fucking fucker 2")
-        goal_msg = PourMotion.Goal(
-            object_name=object_name,
-            # object_top_height=object_top_height,
-            # object_centroid_height=object_centroid_height,
-            # bowl_top_height=bowl_top_height,
-            # bowl_position=bowl_centroid_height,
+        cloud_gen = point_cloud2.read_points(
+            container_cluster, field_names=("x", "y", "z"), skip_nans=True
         )
 
-        self.node.get_logger().error("fucking fucker 3")
-        self.node.get_logger().info("Sending pour motion goal...")
+        points = []
+        max_z = float("-inf")
+        for p in cloud_gen:
+            points.append([p[0], p[1], p[2]])
+            if p[2] > max_z:
+                max_z = p[2]
 
+        if not points:
+            self.get_logger().error("Empty cluster received")
+            return False
+
+        points_np = np.array(points)
+        centroid = np.mean(points_np, axis=0)
+
+        self.get_logger().info(f"Centroid: {centroid.point}")
+        self.get_logger().info(f"Max Z: {max_z:.3f}")
+
+        # Set the final pose
+        self.node.get_logger().error("Setting final pose - FFN4")
+        pose_msg = PoseStamped()
+        pose_msg.msg.header.frame_id = robot.base_link_name()
+        pose_msg.msg.header.stamp = self.node.get_clock().now().to_msg()
+        pose_msg.msg.pose.position.x = centroid.point.x
+        pose_msg.msg.pose.position.y = centroid.point.y + 0.05  # TODO: set the offset
+        pose_msg.msg.pose.position.z = (
+            float(max_z) + 0.15
+        )  # TODO: set the height of the bowl
+        pose_msg.msg.pose.orientation.x = 0.7071
+        pose_msg.msg.pose.orientation.y = 0.0
+        pose_msg.msg.pose.orientation.z = 0.0
+        pose_msg.msg.pose.orientation.w = -0.7071
+        self.node.get_logger().info(f"Final pose: {pose_msg}")
+
+        goal_msg = PourMotion.Goal(
+            pour_pose=pose_msg,
+        )
+
+        # Call Pour Motion Action
+        self.node.get_logger().info("Sending pour motion goal - FFN5")
         future = self.node._pour_motion_action_client.send_goal_async(goal_msg)
         future = wait_for_future(future)
 
-        self.node.get_logger().error("fucking fucker 4")
+        # Print the result of the pour motion
+        self.node.get_logger().error("Result of pour motion - FFN5")
         if not future.result().result.success:
             self.node.get_logger().error("Pour motion failed")
             return False
 
-        self.node.get_logger().info("Returning to position")
-
-        self.node.get_logger().error("fucking fucker 5")
+        # Return to the initial position
+        self.node.get_logger().info("Returning to position - FFN6")
         for i in range(5):
             # return to configured position
             return_result = send_joint_goal(
@@ -235,7 +193,7 @@ class PourManager:
     def get_object_cluster(self, point: PointStamped):
         request = PickPerceptionService.Request()
         request.point = point
-        request.add_collision_objects = True
+        request.add_collision_objects = False
         self.node.pick_perception_3d_client.wait_for_service()
         future = self.node.pick_perception_3d_client.call_async(request)
         future = wait_for_future(future)
