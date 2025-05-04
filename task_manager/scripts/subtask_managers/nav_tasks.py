@@ -95,7 +95,7 @@ class NavigationTasks:
             self.node.get_logger().error(f"Error moving to location: {e}")
             future.set_result(self.STATE["EXECUTION_ERROR"])
             return future
-    
+
     @mockable(return_value=True, delay=10)
     @service_check("pose_client", False, TIMEOUT)
     def move_to_zero(self) -> Future:
@@ -118,7 +118,7 @@ class NavigationTasks:
             return future
 
         try:
-            self.node.get_logger().info(f"Sending move request to original location")
+            self.node.get_logger().info("Sending move request to original location")
             client_goal = NavigateToPose.Goal()
             goal = PoseStamped()
             goal.header.frame_id = "map"
