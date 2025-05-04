@@ -3,6 +3,7 @@
 // #include <Eigen/src/Geometry/Quaternion.h>
 #include <cstdint>
 
+#include <exception>
 #include <memory>
 #include <pcl/common/centroid.h>
 #include <pcl/common/common.h>
@@ -744,17 +745,16 @@ public:
       return;
     }
     ASSERT_AND_RETURN_CODE(response->health_response, OK,
-      "Error computing box primitive with code %d",
-      response->health_response);
+                           "Error computing box primitive with code %d",
+                           response->health_response);
     box_params.height = 0.035;
 
     if (true) {
 
+      // Send and lookup plane center transform
       geometry_msgs::msg::TransformStamped transform;
-
       transform.header.stamp = this->now();
       transform.header.frame_id = "base_link";
-
       transform.child_frame_id = "plane_center";
       transform.transform.translation.x = box_params.centroid.x;
       transform.transform.translation.y = box_params.centroid.y;
@@ -762,47 +762,136 @@ public:
       transform.transform.rotation = box_params.orientation;
       this->tf_broadcaster->sendTransform(transform);
 
-      transform.header.frame_id = "plane_center";
+      geometry_msgs::msg::TransformStamped tf_center;
+      bool valid = false;
+      for (int i = 0; i < 3 && !valid; i++) {
+        try {
+          this->tf_broadcaster->sendTransform(transform);
+          tf_center = this->tf_buffer->lookupTransform(
+              "base_link", "plane_center", tf2::TimePointZero);
+          valid = true;
+        } catch (std::exception &e) {
+          RCLCPP_WARN(this->get_logger(), "Exception: %s", e.what());
+        }
+      }
+      if (!valid) {
+        RCLCPP_ERROR(this->get_logger(),
+                     "FAILED lookupTransform for tf_center to baselink");
+        response->health_response = INVALID_INPUT_FILTER;
+        return;
+      }
 
+      // Transform setup for corners
+      transform.header.frame_id = "plane_center";
+      transform.transform.rotation = box_params.orientation2;
+
+      // Send and lookup corner 1
       transform.child_frame_id = "plane_corner_1";
       transform.transform.translation.x = box_params.xy1.x;
       transform.transform.translation.y = box_params.xy1.y;
       transform.transform.translation.z = box_params.xy1.z;
-      transform.transform.rotation = box_params.orientation2;
-      RCLCPP_INFO(this->get_logger(), "Sending transform");
       this->tf_broadcaster->sendTransform(transform);
+
+      geometry_msgs::msg::TransformStamped tf_corner_1;
+      bool valid_corner_1 = false;
+      for (int i = 0; i < 3 && !valid_corner_1; i++) {
+        try {
+          this->tf_broadcaster->sendTransform(transform);
+          tf_corner_1 = this->tf_buffer->lookupTransform(
+              "base_link", "plane_corner_1", tf2::TimePointZero);
+          valid_corner_1 = true;
+        } catch (std::exception &e) {
+          RCLCPP_WARN(this->get_logger(), "Exception looking up corner 1: %s",
+                      e.what());
+        }
+      }
+      if (!valid_corner_1) {
+        RCLCPP_ERROR(this->get_logger(),
+                     "FAILED lookupTransform for tf_corner_1 to baselink");
+        response->health_response = INVALID_INPUT_FILTER;
+        return;
+      }
+
+      // Send and lookup corner 2
       transform.child_frame_id = "plane_corner_2";
       transform.transform.translation.x = box_params.xy2.x;
       transform.transform.translation.y = box_params.xy2.y;
       transform.transform.translation.z = box_params.xy2.z;
-      transform.transform.rotation = box_params.orientation2;
-      RCLCPP_INFO(this->get_logger(), "Sending transform");
       this->tf_broadcaster->sendTransform(transform);
+
+      geometry_msgs::msg::TransformStamped tf_corner_2;
+      bool valid_corner_2 = false;
+      for (int i = 0; i < 3 && !valid_corner_2; i++) {
+        try {
+          this->tf_broadcaster->sendTransform(transform);
+          tf_corner_2 = this->tf_buffer->lookupTransform(
+              "base_link", "plane_corner_2", tf2::TimePointZero);
+          valid_corner_2 = true;
+        } catch (std::exception &e) {
+          RCLCPP_WARN(this->get_logger(), "Exception looking up corner 2: %s",
+                      e.what());
+        }
+      }
+      if (!valid_corner_2) {
+        RCLCPP_ERROR(this->get_logger(),
+                     "FAILED lookupTransform for tf_corner_2 to baselink");
+        response->health_response = INVALID_INPUT_FILTER;
+        return;
+      }
+
+      // Send and lookup corner 3
       transform.child_frame_id = "plane_corner_3";
       transform.transform.translation.x = box_params.xy3.x;
       transform.transform.translation.y = box_params.xy3.y;
       transform.transform.translation.z = box_params.xy3.z;
-      transform.transform.rotation = box_params.orientation2;
-      RCLCPP_INFO(this->get_logger(), "Sending transform");
       this->tf_broadcaster->sendTransform(transform);
+
+      geometry_msgs::msg::TransformStamped tf_corner_3;
+      bool valid_corner_3 = false;
+      for (int i = 0; i < 3 && !valid_corner_3; i++) {
+        try {
+          this->tf_broadcaster->sendTransform(transform);
+          tf_corner_3 = this->tf_buffer->lookupTransform(
+              "base_link", "plane_corner_3", tf2::TimePointZero);
+          valid_corner_3 = true;
+        } catch (std::exception &e) {
+          RCLCPP_WARN(this->get_logger(), "Exception looking up corner 3: %s",
+                      e.what());
+        }
+      }
+      if (!valid_corner_3) {
+        RCLCPP_ERROR(this->get_logger(),
+                     "FAILED lookupTransform for tf_corner_3 to baselink");
+        response->health_response = INVALID_INPUT_FILTER;
+        return;
+      }
+
+      // Send and lookup corner 4
       transform.child_frame_id = "plane_corner_4";
       transform.transform.translation.x = box_params.xy4.x;
       transform.transform.translation.y = box_params.xy4.y;
       transform.transform.translation.z = box_params.xy4.z;
-      transform.transform.rotation = box_params.orientation2;
-      RCLCPP_INFO(this->get_logger(), "Sending transform");
       this->tf_broadcaster->sendTransform(transform);
 
-      auto tf_center = this->tf_buffer->lookupTransform(
-          "base_link", "plane_center", tf2::TimePointZero);
-      auto tf_corner_1 = this->tf_buffer->lookupTransform(
-          "base_link", "plane_corner_1", tf2::TimePointZero);
-      auto tf_corner_2 = this->tf_buffer->lookupTransform(
-          "base_link", "plane_corner_2", tf2::TimePointZero);
-      auto tf_corner_3 = this->tf_buffer->lookupTransform(
-          "base_link", "plane_corner_3", tf2::TimePointZero);
-      auto tf_corner_4 = this->tf_buffer->lookupTransform(
-          "base_link", "plane_corner_4", tf2::TimePointZero);
+      geometry_msgs::msg::TransformStamped tf_corner_4;
+      bool valid_corner_4 = false;
+      for (int i = 0; i < 3 && !valid_corner_4; i++) {
+        try {
+          this->tf_broadcaster->sendTransform(transform);
+          tf_corner_4 = this->tf_buffer->lookupTransform(
+              "base_link", "plane_corner_4", tf2::TimePointZero);
+          valid_corner_4 = true;
+        } catch (std::exception &e) {
+          RCLCPP_WARN(this->get_logger(), "Exception looking up corner 4: %s",
+                      e.what());
+        }
+      }
+      if (!valid_corner_4) {
+        RCLCPP_ERROR(this->get_logger(),
+                     "FAILED lookupTransform for tf_corner_4 to baselink");
+        response->health_response = INVALID_INPUT_FILTER;
+        return;
+      }
 
       response->center.point.x = tf_center.transform.translation.x;
       response->center.point.y = tf_center.transform.translation.y;

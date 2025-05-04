@@ -692,10 +692,12 @@ public:
 
     // set segmentation parameters
     seg.setOptimizeCoefficients(true);
-    seg.setModelType(pcl::SACMODEL_PLANE);
+    seg.setModelType(pcl::SACMODEL_PERPENDICULAR_PLANE);
     seg.setMethodType(pcl::SAC_RANSAC);
+    seg.setEpsAngle(5.0f * (M_PI / 180.0f));
+    seg.setAxis(Eigen::Vector3f::UnitZ());
     seg.setMaxIterations(1000);
-    seg.setDistanceThreshold(0.01);
+    seg.setDistanceThreshold(0.015);
 
     // segment the largest planar component from the input cloud
     seg.setInputCloud(cloud);

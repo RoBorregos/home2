@@ -6,4 +6,6 @@ geometry_msgs/PointStamped pt2
 geometry_msgs/PointStamped pt3
 geometry_msgs/PointStamped pt4
 geometry_msgs/PointStamped center
+geometry_msgs/PointStamped highest
+geometry_msgs/PointStamped lowest
 int32 health_response
