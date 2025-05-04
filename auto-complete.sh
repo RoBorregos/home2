@@ -1,7 +1,5 @@
 #!/bin/bash
 
-#!/bin/bash
-
 _run_sh_autocomplete() {
     local cur prev words cword
     _init_completion || return
