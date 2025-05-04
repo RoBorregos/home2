@@ -86,7 +86,7 @@ class HeatmapServer(Node):
 
         # Create heat/cool kernels
         heat_kernel_length = 0.3  # meters
-        cool_kernel_length = 0.1  # meters
+        cool_kernel_length = 0.15  # meters
         heat_multiplier = 1.0
         cool_multiplier = 10.0
 
@@ -171,92 +171,50 @@ class HeatmapServer(Node):
 
         # Save visualization
         if self.save_image:
-            plt.figure(figsize=(16, 6))
+            try:
+                plt.figure(figsize=(16, 6))
 
-            plt.subplot(241)
-            plt.scatter(cloud_points[:, 0], cloud_points[:, 1], s=1, c="blue")
-            plt.scatter(
-                filtered_cloud_points[:, 0], filtered_cloud_points[:, 1], s=1, c="red"
-            )
-            plt.title("Input Points")
+                plt.subplot(241)
+                plt.scatter(cloud_points[:, 0], cloud_points[:, 1], s=1, c="blue")
+                plt.scatter(
+                    filtered_cloud_points[:, 0],
+                    filtered_cloud_points[:, 1],
+                    s=1,
+                    c="red",
+                )
+                plt.title("Input Points")
 
-            plt.subplot(242)
-            plt.imshow(
-                hist.T,
-                origin="lower",
-                extent=[
-                    xedges[0] / 1000,
-                    xedges[-1] / 1000,
-                    yedges[0] / 1000,
-                    yedges[-1] / 1000,
-                ],
-                aspect="auto",
-            )
-            plt.title("Histogram")
-
-            plt.subplot(243)
-            plt.imshow(
-                binary_map.T,
-                origin="lower",
-                extent=[
-                    xedges[0] / 1000,
-                    xedges[-1] / 1000,
-                    yedges[0] / 1000,
-                    yedges[-1] / 1000,
-                ],
-                aspect="auto",
-            )
-            plt.title("Binary Map")
-
-            plt.subplot(244)
-            plt.imshow(
-                final_map.T,
-                origin="lower",
-                extent=[
-                    xedges[0] / 1000,
-                    xedges[-1] / 1000,
-                    yedges[0] / 1000,
-                    yedges[-1] / 1000,
-                ],
-                cmap="plasma",
-                aspect="auto",
-            )
-            plt.plot(x_center, y_center, "g+", markersize=15)
-            plt.title("Heatmap with Optimal Position")
-
-            plt.subplot(245)
-            plt.imshow(
-                heat_map.T,
-                origin="lower",
-                extent=[
-                    xedges[0] / 1000,
-                    xedges[-1] / 1000,
-                    yedges[0] / 1000,
-                    yedges[-1] / 1000,
-                ],
-                cmap="plasma",
-                aspect="auto",
-            )
-            plt.title("Heatmap")
-            plt.colorbar()
-            plt.subplot(246)
-            plt.imshow(
-                cool_map.T,
-                origin="lower",
-                extent=[
-                    xedges[0] / 1000,
-                    xedges[-1] / 1000,
-                    yedges[0] / 1000,
-                    yedges[-1] / 1000,
-                ],
-                cmap="plasma",
-                aspect="auto",
-            )
-            plt.title("Coolmap")
-            if closeness_map is not None:
-                plt.subplot(247)
+                plt.subplot(242)
                 plt.imshow(
-                    closeness_map.T,
+                    hist.T,
+                    origin="lower",
+                    extent=[
+                        xedges[0] / 1000,
+                        xedges[-1] / 1000,
+                        yedges[0] / 1000,
+                        yedges[-1] / 1000,
+                    ],
+                    aspect="auto",
+                )
+                plt.title("Histogram")
+
+                plt.subplot(243)
+                plt.imshow(
+                    binary_map.T,
+                    origin="lower",
+                    extent=[
+                        xedges[0] / 1000,
+                        xedges[-1] / 1000,
+                        yedges[0] / 1000,
+                        yedges[-1] / 1000,
+                    ],
+                    aspect="auto",
+                )
+                plt.title("Binary Map")
+
+                plt.subplot(244)
+                plt.imshow(
+                    final_map.T,
                     origin="lower",
                     extent=[
                         xedges[0] / 1000,
@@ -267,12 +225,61 @@ class HeatmapServer(Node):
                     cmap="plasma",
                     aspect="auto",
                 )
-                plt.title("Closeness Map")
+                plt.plot(x_center, y_center, "g+", markersize=15)
+                plt.title("Heatmap with Optimal Position")
+
+                plt.subplot(245)
+                plt.imshow(
+                    heat_map.T,
+                    origin="lower",
+                    extent=[
+                        xedges[0] / 1000,
+                        xedges[-1] / 1000,
+                        yedges[0] / 1000,
+                        yedges[-1] / 1000,
+                    ],
+                    cmap="plasma",
+                    aspect="auto",
+                )
+                plt.title("Heatmap")
                 plt.colorbar()
-            output_dir = "/workspace/heatmap_results"
-            os.makedirs(output_dir, exist_ok=True)
-            plt.savefig(os.path.join(output_dir, "heatmap_result.png"))
-            plt.close()
+                plt.subplot(246)
+                plt.imshow(
+                    cool_map.T,
+                    origin="lower",
+                    extent=[
+                        xedges[0] / 1000,
+                        xedges[-1] / 1000,
+                        yedges[0] / 1000,
+                        yedges[-1] / 1000,
+                    ],
+                    cmap="plasma",
+                    aspect="auto",
+                )
+                plt.title("Coolmap")
+                if closeness_map is not None:
+                    plt.subplot(247)
+                    plt.imshow(
+                        closeness_map.T,
+                        origin="lower",
+                        extent=[
+                            xedges[0] / 1000,
+                            xedges[-1] / 1000,
+                            yedges[0] / 1000,
+                            yedges[-1] / 1000,
+                        ],
+                        cmap="plasma",
+                        aspect="auto",
+                    )
+                    plt.title("Closeness Map")
+                    plt.colorbar()
+
+                output_dir = "/workspace/heatmap_results"
+                os.makedirs(output_dir, exist_ok=True)
+                plt.savefig(os.path.join(output_dir, "heatmap_result.png"))
+                plt.close()
+            except Exception as e:
+                self.get_logger().error(f"Could not save image: {e}")
 
         return response
 

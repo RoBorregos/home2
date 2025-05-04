@@ -1,6 +1,6 @@
 services:
   stt:
-    profiles: [receptionist, carry, gpsr]
+    profiles: [receptionist, carry, gpsr, storing]
 
     container_name: home2-hri-stt
     user: 1000:1000

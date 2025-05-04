@@ -266,6 +266,7 @@ class Say(Node):
             VOICE_DIRECTORY,
             "--output_file",
             output_path,
+            "--cuda",
         ]
 
         subprocess.run(" ".join(command), shell=True)

@@ -55,7 +55,11 @@ from std_srvs.srv import SetBool
 from utils.decorators import mockable, service_check
 from utils.logger import Logger
 from utils.status import Status
+import time
+import math
+
 from utils.task import Task
+
 
 TIMEOUT = 5.0
 DETECTION_HANDLER_TOPIC_SRV = DETECTION_HANDLER_TOPIC_SRV
@@ -323,7 +327,7 @@ class VisionTasks:
             future = self.object_detector_client.call_async(request)
             rclpy.spin_until_future_complete(self.node, future, timeout_sec=timeout)
             result = future.result()
-            print(f"result: {result}")
+            # print(f"result: {result}")
 
             if not result.success:
                 Logger.warn(self.node, "No object detected")
@@ -354,11 +358,14 @@ class VisionTasks:
                 object_detection.y = (detection.ymin + detection.ymax) / 2
 
                 # TODO transorm if the frame_id is not 'zed...camera_frame'
-                object_detection.distance = detection.point3d.point.z
+                object_detection.distance = math.sqrt(
+                    detection.point3d.point.x**2
+                    + detection.point3d.point.y**2
+                    + detection.point3d.point.z**2
+                )
                 object_detection.px = detection.point3d.point.x
                 object_detection.py = detection.point3d.point.y
                 object_detection.pz = detection.point3d.point.z
-                print(f"example_detection: {detection}")
                 detections.append(object_detection)
         except Exception as e:
             Logger.error(self.node, f"Error detecting objects: {e}")
