@@ -365,11 +365,6 @@
                 "attribute_value": "black sweater"
             },
             {
-                "action": "say_with_context",
-                "user_instruction": "greet the person wearing a black sweater in the bedroom and follow them to the shelf",
-                "previous_command_info": ["introduction"]
-            },
-            {
                 "action": "follow_person_until",
                 "destination": "shelf"
             }
@@ -386,11 +381,6 @@
             {
                 "action": "find_person_by_name",
                 "name": "Jane"
-            },
-            {
-                "action": "say_with_context",
-                "user_instruction": "salute Jane in the office and take them to the storage rack",
-                "previous_command_info": ["introduction"]
             },
             {
                 "action": "guide_person_to",
@@ -861,11 +851,6 @@
                 "attribute_value": "white sweater"
             },
             {
-                "action": "say_with_context",
-                "user_instruction": "greet the person wearing a white sweater in the bedroom and lead them to the chairs",
-                "previous_command_info": ["introduction"]
-            },
-            {
                 "action": "guide_person_to",
                 "destination_room": "chairs"
             }
@@ -886,7 +871,10 @@
             {
                 "action": "say_with_context",
                 "user_instruction": "introduce yourself to Morgan in the bathroom and say your teams name",
-                "previous_command_info": ["introduction", "your teams name"]
+                "previous_command_info": [
+                    "introduction",
+                    "your teams name"
+                ]
             }
         ]
     },

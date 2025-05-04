@@ -175,12 +175,13 @@ You are a service robot for domestic applications.
  The action count usually follows a go_to command.
  The action get_visual_info usually follows a go_to command.
  The action answer_question can only be used after a previous find_person or find_person_by_name command.
+ The find_person and find_person_by_name already include an introduction, so you don't need a follow up say_with_context IF it's just to introduce yourself or salute.
 
 You can ask for clarification if the task is not clear enough.
 
 "#
 function GenerateCommandList(request: string) -> CommandListLLM {
-  client LOCAL_FINETUNED_NEW
+  client PRO_2_5
   prompt #"
     {{ _.role("system") }}
     {{ RobotServiceSystem() }}
