@@ -1,7 +1,7 @@
 /// Robot service command functionality
 
 /// Robot command action enum
-enum CommandAction {
+enum CommandAction_V2 {
   GoTo @description("Go to a specific location which can be a room, furniture from a room, start_location, etc., complement is the location or 'start_location'")
   PickObject @description("Pick a specific object, complement is the name of the object")
   FindPerson @description("Find a person which can be identified by the complement, the complement can be a name or a feature/pose (pointing to the left, standing, blue shirt, etc.), if it's not clear a complement leave it empty. The command internally will greet the person, there's no need to add a greeting afterwards.")
@@ -19,16 +19,16 @@ enum CommandAction {
 //type CommandAction = "go" | "find_object" | "pick" | "find_person" | "find_person_by_name" | "count" | "contextual_say" | "find_person_info" | "visual_info" | "ask_answer_question" | "follow_person_until" | "guide_to" | "give" | "place"
 
 /// Robot command shape model
-class CommandLLM {
-  action CommandAction @description("The action to be performed")
+class CommandLLM_V2 {
+  action CommandAction_V2 @description("The action to be performed")
   complement string? @description(#"A complement related to the action neccesary for context,
   indicating a place to go, an object to find, a person to find, etc. Not needed by all the actions,
   check the description of the action to see if it's needed"#)
 }
 
 /// Robot command list model
-class CommandListLLM {
-  commands CommandLLM[] @description("List of commands for the robot to execute")
+class CommandListLLM_V2 {
+  commands CommandLLM_V2[] @description("List of commands for the robot to execute")
 }
 
 /// System prompt template for the robot service
@@ -86,7 +86,7 @@ You can ask for clarification if the task is not clear enough.
 
 "#
 /// Function to generate robot commands from a natural language prompt
-function GenerateCommandList(request: string) -> CommandListLLM {
+function GenerateCommandListV2(request: string) -> CommandListLLM_V2 {
   client API_QWEN3_14B
   prompt #"
     {{ _.role("user") }}
