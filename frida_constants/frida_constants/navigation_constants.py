@@ -1,2 +1,2 @@
-# follow person
-FOLLOW_PERSON_TOPIC = "/navigation/follow_person"
+GOAL_TOPIC = "/navigate_to_pose"
+FOLLOWING_SERVICE = "/navigation/activate_following"

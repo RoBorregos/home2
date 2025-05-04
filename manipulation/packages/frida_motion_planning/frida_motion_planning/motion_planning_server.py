@@ -33,6 +33,7 @@ from frida_constants.manipulation_constants import (
     ATTACH_COLLISION_OBJECT_SERVICE,
     TOGGLE_SERVO_SERVICE,
     GRIPPER_SET_STATE_SERVICE,
+    MIN_CONFIGURATION_DISTANCE_TRESHOLD,
 )
 from xarm_msgs.srv import MoveVelocity
 from frida_interfaces.msg import CollisionObject
@@ -192,43 +193,65 @@ class MotionPlanningServer(Node):
 
     def move_to_pose(self, goal_handle, feedback):
         """Perform the pick operation."""
-        self.get_logger().info(f"Moving to pose: {goal_handle.request.pose}")
         pose = goal_handle.request.pose
-        result = self.planner.plan_pose_goal(
-            pose,
-            wait=True,
-            set_mode=(self.current_mode != MOVEIT_MODE),
-        )
+        target_link = goal_handle.request.target_link
+        if target_link != "":
+            result = self.planner.plan_pose_goal(
+                pose=pose,
+                target_link=target_link,
+                wait=True,
+                set_mode=True,
+            )
+        else:
+            result = self.planner.plan_pose_goal(
+                pose=pose,
+                wait=True,
+                set_mode=(self.current_mode != MOVEIT_MODE),
+            )
         if not ALWAYS_SET_MODE:
             self.current_mode = MOVEIT_MODE
         return result
 
     def move_joints(self, goal_handle, feedback):
         self.get_logger().info(
-            f"Moving joints: {goal_handle.request.joint_names} to joints: {list(goal_handle.request.joint_positions)}"
+            f"Moving joints: {goal_handle.request.joint_names} to : {list(goal_handle.request.joint_positions)}"
         )
         joint_names = goal_handle.request.joint_names
         joint_positions = list(goal_handle.request.joint_positions)
         joint_dict = self.planner.get_joint_positions()
+        if len(list(joint_dict.keys())) == 0:
+            self.get_logger().error("No joints available")
+            return False
+        try:
+            configuration_distance = 0
+            for i, joint_name in enumerate(joint_names):
+                # self.get_logger().info(
+                #     f"Joint name: {joint_name}, position: {joint_positions[i]}, index: {i}"
+                # )
+                joint_curr_pos = joint_dict[joint_name]
+                joint_target_pos = joint_positions[i]
+                configuration_distance += (joint_curr_pos - joint_target_pos) ** 2
+            configuration_distance = configuration_distance**0.5
+            # self.get_logger().info(
+            #     f"Joint configuration distance: {configuration_distance}"
+            # )
+            if configuration_distance < MIN_CONFIGURATION_DISTANCE_TRESHOLD:
+                self.get_logger().info(
+                    f"Joint positions are already close to target: {configuration_distance}"
+                )
+                return True
+        except Exception as e:
+            self.get_logger().error(str(e))
+            return False
 
-        configuration_distance = 0
-        for i, joint_name in enumerate(joint_names):
-            joint_curr_pos = joint_dict[joint_name]
-            joint_target_pos = joint_positions[i]
-            configuration_distance += (joint_curr_pos - joint_target_pos) ** 2
-        configuration_distance = configuration_distance**0.5
-        if configuration_distance < 0.2:
-            self.get_logger().info(
-                f"Joint positions are already close to target: {configuration_distance}"
-            )
-            return True
-
+        self.get_logger().info("Planning joint goal...")
         result = self.planner.plan_joint_goal(
             joint_positions,
             joint_names,
             wait=True,
             set_mode=(self.current_mode != MOVEIT_MODE),
         )
+        self.get_logger().info(f"Move Joints Result: {result}")
         if not ALWAYS_SET_MODE:
             self.current_mode = MOVEIT_MODE
         return result
@@ -452,7 +475,7 @@ class MotionPlanningServer(Node):
 
     def set_gripper_state_callback(self, request, response):
         """Handle requests to set the gripper state"""
-
+        self.get_logger().info(f"Setting gripper state: {request.data}")
         # 0 open, 1 closed
         if request.data:
             self.xarm_services.open_gripper()

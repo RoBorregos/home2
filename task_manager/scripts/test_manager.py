@@ -5,15 +5,16 @@ Task Manager for testing the subtask managers
 """
 
 import rclpy
+# import json
 
 # from config.hri.debug import config as test_hri_config
 from rclpy.node import Node
 
 # from subtask_managers.hri_tasks import HRITasks
-from subtask_managers.manipulation_tasks import ManipulationTasks
 
-# from subtask_managers.vision_tasks import VisionTasks
-# from utils.task import Task
+from subtask_managers.manipulation_tasks import ManipulationTasks
+from subtask_managers.nav_tasks import NavigationTasks
+# import time as t
 
 
 class TestTaskManager(Node):
@@ -23,8 +24,9 @@ class TestTaskManager(Node):
         # self.subtask_manager["hri"] = HRITasks(self, config=test_hri_config)
 
         self.subtask_manager["manipulation"] = ManipulationTasks(self, task="DEMO", mock_data=False)
-        # self.subtask_manager["vision"] = VisionTasks(self, task=Task.HELP_ME_CARRY, mock_data=False)
+        self.subtask_manager["navigation"] = NavigationTasks(self, mock_data=False)
 
+        # self.subtask_manager["hri"] = HRITasks(self, task="DEMO")
         # wait for a bit
         rclpy.spin_once(self, timeout_sec=1.0)
         self.get_logger().info("TestTaskManager has started.")
@@ -77,8 +79,24 @@ class TestTaskManager(Node):
         # print(joint_positions)
 
         # self.subtask_manager["manipulation"].close_gripper()
+        # self.subtask_manager.open_gripper()
 
-        self.subtask_manager["manipulation"].open_gripper()
+        ###NAV TESTS
+        # future = self.subtask_manager.nav.move_to_location("entrance")
+        # rclpy.spin_until_future_complete(self, future)
+        # t.sleep(20)
+        # future = self.subtask_manager.nav.move_to_location("kitchen", "beverages")
+        # rclpy.spin_until_future_complete(self, future)
+        # t.sleep(20)
+
+        # future = self.subtask_manager.nav.move_to_location("living_room", "couches")
+        # rclpy.spin_until_future_complete(self, future)
+        # t.sleep(20)
+        # future = self.subtask_manager.nav.move_to_location("entrance")
+        # rclpy.spin_until_future_complete(self, future)
+        # t.sleep(20)
+        self.subtask_manager["navigation"].whereIam()
+        ###
 
         ####### EXAMPLE: Move to named position then move only the first joint #######
         # Move to a named position

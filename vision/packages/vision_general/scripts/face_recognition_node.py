@@ -14,15 +14,20 @@ import face_recognition
 import tqdm
 import os
 import numpy as np
+# from vision_general.utils.calculations import (
+#     get_depth,
+#     deproject_pixel_to_point,
+# )
+
 
 import rclpy
+import rclpy.duration
 from rclpy.node import Node
 from cv_bridge import CvBridge
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import Point
 from std_msgs.msg import String
 from ament_index_python.packages import get_package_share_directory
-
 from frida_interfaces.srv import SaveName
 from frida_interfaces.msg import Person, PersonList
 from frida_constants.vision_constants import (
@@ -32,7 +37,9 @@ from frida_constants.vision_constants import (
     FOLLOW_TOPIC,
     PERSON_LIST_TOPIC,
     PERSON_NAME_TOPIC,
-    VISION_FRAME_TOPIC,
+    FACE_RECOGNITION_IMAGE,
+    DEPTH_IMAGE_TOPIC,
+    CAMERA_INFO_TOPIC,
 )
 
 DEFAULT_NAME = "ale"
@@ -50,9 +57,15 @@ class FaceRecognition(Node):
         super().__init__("face_recognition")
         self.bridge = CvBridge()
         self.pbar = tqdm.tqdm(total=2)
+        # self.callback_gorup = rclpy.callback_groups.ReentrantCallbackGroup()
+        qos = rclpy.qos.QoSProfile(
+            depth=1,
+            reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
+            durability=rclpy.qos.DurabilityPolicy.VOLATILE,
+        )
 
         self.image_subscriber = self.create_subscription(
-            Image, CAMERA_TOPIC, self.image_callback, 10
+            Image, CAMERA_TOPIC, self.image_callback, qos
         )
         self.new_name_service = self.create_service(
             SaveName, SAVE_NAME_TOPIC, self.new_name_callback
@@ -61,16 +74,25 @@ class FaceRecognition(Node):
             SaveName, FOLLOW_BY_TOPIC, self.follow_by_name_callback
         )
         self.follow_publisher = self.create_publisher(Point, FOLLOW_TOPIC, 10)
-        self.view_pub = self.create_publisher(Image, VISION_FRAME_TOPIC, 10)
+        self.view_pub = self.create_publisher(Image, FACE_RECOGNITION_IMAGE, 10)
         self.name_publisher = self.create_publisher(String, PERSON_NAME_TOPIC, 10)
         self.person_list_publisher = self.create_publisher(
             PersonList, PERSON_LIST_TOPIC, 10
         )
+
+        self.depth_subscriber = self.create_subscription(
+            Image, DEPTH_IMAGE_TOPIC, self.depth_callback, qos
+        )
+
+        self.image_info_subscriber = self.create_subscription(
+            CameraInfo, CAMERA_INFO_TOPIC, self.image_info_callback, qos
+        )
+
         self.verbose = self.declare_parameter("verbose", True)
         self.annotated_frame = []
         self.setup()
-        self.create_timer(0.1, self.run)
-        self.create_timer(0.1, self.publish_image)
+        self.create_timer(0.05, self.run)
+        # self.create_timer(0.05, self.publish_image)
 
     def setup(self):
         """Setup face recognition, reset variables and load models"""
@@ -82,7 +104,12 @@ class FaceRecognition(Node):
         self.image = None
         self.prev_faces = []
         self.curr_faces = []
+        self.depth_image = []
         self.follow_name = "area"
+        self.id = None
+        self.processing_id = rclpy.duration.Infinite
+        self.default_name = self.declare_parameter("default_name", DEFAULT_NAME)
+        self.default_name = self.default_name.value
 
         self.people = [[random_encodings, "random"]]
         self.people_encodings = [random_encodings]
@@ -94,20 +121,45 @@ class FaceRecognition(Node):
 
     def image_callback(self, data):
         """Callback to get image from camera"""
+        # self.get_logger().info("img received reentrant")
+        self.id = data.header.stamp
+        # self.get_logger().info(f"s{self.id}")
         self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
+
+    def depth_callback(self, data):
+        """Callback to receive depth image from camera"""
+        try:
+            depth_image = self.bridge.imgmsg_to_cv2(data, "32FC1")
+            self.depth_image = depth_image
+        except Exception as e:
+            print(f"Error: {e}")
+
+    def image_info_callback(self, data):
+        """Callback to receive camera info"""
+        self.imageInfo = data
 
     def new_name_callback(self, req, res):
         """Callback to add a new face to the known faces"""
         self.get_logger().info("Executing service new face")
         self.new_name = req.name
-        res.success = True
+        if len(self.curr_faces) == 0:
+            self.get_logger().info("No face detected")
+            res.success = False
+        else:
+            self.get_logger().info(f"New name: {self.new_name}")
+            res.success = True
         return res
 
     def follow_by_name_callback(self, req, res):
         """Callback to follow face by name or area"""
         self.get_logger().info("Executing service follow by")
         self.follow_name = req.name
-        res.success = True
+        if len(self.curr_faces) == 0:
+            self.get_logger().info("No face detected")
+            res.success = False
+        else:
+            self.get_logger().info(f"New name: {self.new_name}")
+            res.success = True
         return res
 
     def success(self, message) -> None:
@@ -136,7 +188,7 @@ class FaceRecognition(Node):
             if (
                 filename == ".DS_Store"
                 or filename == "random.png"
-                or filename == DEFAULT_NAME + ".png"
+                or filename == self.default_name + ".png"
             ):
                 continue
 
@@ -204,6 +256,13 @@ class FaceRecognition(Node):
 
         target = Point()
 
+        # if len(self.depth_image) > 0:
+        #     point2D = (xc, yc)
+        #     depth = get_depth(self.depth_image, point2D)
+        #     point3D = deproject_pixel_to_point(self.imageInfo, point2D, depth)
+        #     point3D = float(point3D[0]), float(point3D[1]), float(point3D[2])
+        #     target.z = point3D[2]
+
         target.x = move_x
         target.y = move_y
 
@@ -221,21 +280,30 @@ class FaceRecognition(Node):
         if self.image is None:
             self.get_logger().info("No image")
             return
+        self.annotated_frame = self.image
+
+        if self.id == self.processing_id:
+            # self.get_logger().info("Skipping image")
+            return
+
+        self.processing_id = self.id
 
         self.frame = self.image
+        self.annotated_frame = self.frame.copy()
         self.center = [self.frame.shape[1] / 2, self.frame.shape[0] / 2]
 
         resized_frame = cv2.resize(self.frame, (0, 0), fx=0.5, fy=0.5)
 
         # Find all the faces and face encodings in the current frame of video
         face_locations = face_recognition.face_locations(resized_frame)
+        # print("running")
+        # return
 
         largest_area = 0
         follow_face_params = None
         largest_area_params = None
         largest_face_name = ""
 
-        self.annotated_frame = self.frame.copy()
         self.curr_faces = []
         self.face_list = PersonList()
         detected = False
@@ -368,23 +436,28 @@ class FaceRecognition(Node):
         # Calculate the joint degrees for the arm to follow the face
         if detected:
             self.publish_follow_face(xc, yc, largest_face_name)
-        if self.verbose:
-            cv2.imshow("Face recognition", self.annotated_frame)
+        else:
+            self.name_publisher.publish(String(data=""))
+        # if self.verbose:
+        #    cv2.imshow("Face recognition", self.annotated_frame)
         # self.image_view = self.annotated_frame
         # self.view_pub.publish(
         #     self.bridge.cv2_to_imgmsg(self.self.annotated_frame, "bgr8")
         # )
 
-        if cv2.waitKey(1) & 0xFF == ord("q"):
-            self.prev_faces = []
+        # if cv2.waitKey(1) & 0xFF == ord("q"):
+        #     self.prev_faces = []
+        self.publish_image()
 
 
 def main(args=None):
     rclpy.init(args=args)
-    node = FaceRecognition()
 
     try:
-        rclpy.spin(node)
+        node = FaceRecognition()
+        executor = rclpy.executors.MultiThreadedExecutor(5)
+        executor.add_node(node)
+        executor.spin()
     except KeyboardInterrupt:
         pass
     finally:

@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
+import json
 import os
 import subprocess
+from collections import OrderedDict
 
 import rclpy
 from gtts import gTTS
@@ -9,7 +11,6 @@ from pygame import mixer
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from speech.speech_api_utils import SpeechApiUtils
-from speech.wav_utils import WavUtils
 from std_msgs.msg import Bool, String
 
 from frida_constants.hri_constants import SPEAK_SERVICE
@@ -23,6 +24,7 @@ ASSETS_DIR = os.path.join(
 )
 
 VOICE_DIRECTORY = os.path.join(ASSETS_DIR, "offline_voice")
+CACHE_FILE = os.path.join(VOICE_DIRECTORY, "audio_cache.json")
 
 os.makedirs(VOICE_DIRECTORY, exist_ok=True)
 
@@ -31,6 +33,16 @@ class Say(Node):
     def __init__(self):
         super().__init__("say")
         self.get_logger().info("Initializing Say node.")
+
+        # Initialize LRU cache for audio files
+        self.declare_parameter("cache_size", 100)
+        self._cache_size = (
+            self.get_parameter("cache_size").get_parameter_value().integer_value
+        )
+        self._audio_cache = OrderedDict()  # text -> filepath mapping
+
+        # Load cached mappings from disk if they exist
+        self._load_cache()
 
         self.connected = False
         self.declare_parameter("speaking_topic", "/saying")
@@ -85,6 +97,53 @@ class Say(Node):
 
         self.get_logger().info("Say node initialized.")
 
+    def _load_cache(self):
+        """Load the cache from disk if it exists."""
+        try:
+            if os.path.exists(CACHE_FILE):
+                with open(CACHE_FILE, "r") as f:
+                    cache_data = json.load(f)
+                    for text, filepath in cache_data.items():
+                        if os.path.exists(filepath):
+                            self._audio_cache[text] = filepath
+                        else:
+                            self.get_logger().warn(f"Cached file not found: {filepath}")
+                self.get_logger().info(
+                    f"Loaded {len(self._audio_cache)} entries from cache"
+                )
+        except Exception as e:
+            self.get_logger().error(f"Failed to load cache: {e}")
+            self._audio_cache.clear()
+
+    def _save_cache(self):
+        """Save the current cache to disk."""
+        try:
+            with open(CACHE_FILE, "w") as f:
+                json.dump(dict(self._audio_cache), f)
+            self.get_logger().info(f"Saved {len(self._audio_cache)} entries to cache")
+        except Exception as e:
+            self.get_logger().error(f"Failed to save cache: {e}")
+
+    def _get_cached_audio(self, text):
+        """Check if text exists in cache and return its filepath."""
+        if text in self._audio_cache:
+            # Move to end to mark as recently used
+            filepath = self._audio_cache.pop(text)
+            self._audio_cache[text] = filepath
+            return filepath
+        return None
+
+    def _add_to_cache(self, text, filepath):
+        """Add a new text-filepath pair to the cache."""
+        if len(self._audio_cache) >= self._cache_size:
+            # Remove oldest entry (first item in OrderedDict)
+            _, old_filepath = self._audio_cache.popitem(last=False)
+            if os.path.exists(old_filepath):
+                os.remove(old_filepath)
+
+        self._audio_cache[text] = filepath
+        self._save_cache()
+
     def speak_service(self, req, res):
         self.get_logger().info("[Service] I will say: " + req.text)
         if req.text:
@@ -113,45 +172,58 @@ class Say(Node):
                 self.get_logger().warn("Retrying with offline mode")
                 self.offline_voice(text)
 
+        # Wait for audio to finish playing before returning
+        try:
+            while mixer.music.get_busy():
+                pass
+        except Exception as e:
+            self.get_logger().error(f"Error while waiting for audio: {e}")
         self.publisher_.publish(Bool(data=False))
         return success
 
     def offline_voice(self, text):
         text_chunks = self.split_text(text, 4000)
-        counter = 0
+        audio_files = []
 
-        # Generate all wav files for each chunk
-        for chunk in text_chunks:
-            counter += 1
-            output_path = os.path.join(VOICE_DIRECTORY, f"{counter}.wav")
-            self.synthesize_voice_offline(output_path, chunk)
+        # Check cache or generate new files for each chunk
+        for i, chunk in enumerate(text_chunks, 1):
+            cached_path = self._get_cached_audio(chunk)
+            if cached_path and os.path.exists(cached_path):
+                self.get_logger().debug(f"Using cached audio for chunk {i}")
+                audio_files.append(cached_path)
+            else:
+                output_path = os.path.join(VOICE_DIRECTORY, f"{hash(chunk)}.wav")
+                self.synthesize_voice_offline(output_path, chunk)
+                self._add_to_cache(chunk, output_path)
+                audio_files.append(output_path)
 
-        self.get_logger().debug(f"Generated {counter} wav files.")
+        self.get_logger().debug(f"Playing {len(audio_files)} audio files")
 
-        # Play and remove all mp3 files
-        for i in range(1, counter + 1):
-            save_path = os.path.join(VOICE_DIRECTORY, f"{i}.wav")
-            # WavUtils.play_wav(save_path, device_index=self.output_device_index)
-            self.play_audio(save_path)
-            WavUtils.discard_wav(save_path)
+        # Play all audio files
+        for filepath in audio_files:
+            self.play_audio(filepath)
 
     def connectedVoice(self, text):
-        tts = gTTS(text=text, lang="en")
-        save_path = "play.mp3"
+        cached_path = self._get_cached_audio(text)
+        if cached_path and os.path.exists(cached_path):
+            self.get_logger().info("Using cached audio")
+            self.play_audio(cached_path)
+            return
+
+        save_path = os.path.join(VOICE_DIRECTORY, f"{hash(text)}.mp3")
+        tts = gTTS(text=text, lang="es")
         tts.save(save_path)
+        self._add_to_cache(text, save_path)
         self.get_logger().info("Saying...")
-        # WavUtils.play_mp3(save_path, device_index=self.output_device_index)
-        # .play_mp3(save_path, device_index=self.output_device_index)
         self.play_audio(save_path)
-        self.get_logger().info("Finished speaking.")
 
     def play_audio(self, file_path):
         mixer.pre_init(frequency=48000, buffer=2048)
         mixer.init()
-        mixer.music.load(file_path)
-        mixer.music.play()
         while mixer.music.get_busy():
             pass
+        mixer.music.load(file_path)
+        mixer.music.play()
 
     @staticmethod
     def split_text(text: str, max_len, split_sentences=False):
@@ -194,6 +266,7 @@ class Say(Node):
             VOICE_DIRECTORY,
             "--output_file",
             output_path,
+            "--cuda",
         ]
 
         subprocess.run(" ".join(command), shell=True)

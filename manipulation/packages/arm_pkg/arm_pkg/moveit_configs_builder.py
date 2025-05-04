@@ -330,7 +330,7 @@ class MoveItConfigsBuilder(ParameterBuilder):
         }
 
         self.__urdf_package = Path(get_package_share_directory("frida_description"))
-        self.__urdf_file_path = Path("urdf/FRIDA_Real.urdf.xacro")
+        self.__urdf_file_path = Path("urdf/TMR2025/FRIDA_Real.urdf.xacro")
         self.__srdf_file_path = Path("srdf/xarm.srdf.xacro")
 
         self.__robot_description = 'robot_description'
@@ -559,7 +559,7 @@ class MoveItConfigsBuilder(ParameterBuilder):
                 'moveit_simple_controller_manager': controllers_yaml,
                 'trajectory_execution.allowed_execution_duration_scaling': 1.2,
                 'trajectory_execution.allowed_goal_duration_margin': 0.5,
-                'trajectory_execution.allowed_start_tolerance': 0.01,
+                'trajectory_execution.allowed_start_tolerance': 0.05,
                 'trajectory_execution.execution_duration_monitoring': False,
                 'plan_execution.record_trajectory_state_frequency': 10.0
             }
@@ -574,7 +574,7 @@ class MoveItConfigsBuilder(ParameterBuilder):
                     ), value_type=str),
                 'trajectory_execution.allowed_execution_duration_scaling': 1.2,
                 'trajectory_execution.allowed_goal_duration_margin': 0.5,
-                'trajectory_execution.allowed_start_tolerance': 0.01,
+                'trajectory_execution.allowed_start_tolerance': 0.05,
                 'trajectory_execution.execution_duration_monitoring': False,
                 'plan_execution.record_trajectory_state_frequency': 10.0
             }
@@ -1353,7 +1353,7 @@ class DualMoveItConfigsBuilder(ParameterBuilder):
                 'moveit_simple_controller_manager': controllers_yaml,
                 'trajectory_execution.allowed_execution_duration_scaling': 1.2,
                 'trajectory_execution.allowed_goal_duration_margin': 0.5,
-                'trajectory_execution.allowed_start_tolerance': 0.01,
+                'trajectory_execution.allowed_start_tolerance': 0.05,
                 'trajectory_execution.execution_duration_monitoring': False,
                 'plan_execution.record_trajectory_state_frequency': 10.0
             }
@@ -1372,7 +1372,7 @@ class DualMoveItConfigsBuilder(ParameterBuilder):
                     ), value_type=str),
                 'trajectory_execution.allowed_execution_duration_scaling': 1.2,
                 'trajectory_execution.allowed_goal_duration_margin': 0.5,
-                'trajectory_execution.allowed_start_tolerance': 0.01,
+                'trajectory_execution.allowed_start_tolerance': 0.05,
                 'trajectory_execution.execution_duration_monitoring': False,
                 'plan_execution.record_trajectory_state_frequency': 10.0
             }

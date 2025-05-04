@@ -26,7 +26,7 @@ from frida_constants.vision_constants import (
     CAMERA_TOPIC,
     CHECK_PERSON_TOPIC,
     FIND_SEAT_TOPIC,
-    IMAGE_TOPIC,
+    IMAGE_TOPIC_RECEPTIONIST,
 )
 
 from ament_index_python.packages import get_package_share_directory
@@ -36,9 +36,9 @@ package_share_dir = get_package_share_directory("vision_general")
 YOLO_LOCATION = str(pathlib.Path(__file__).parent) + "/Utils/yolov8n.pt"
 
 PERCENTAGE = 0.3
-MAX_DEGREE = 30
-AREA_PERCENTAGE_THRESHOLD = 0.2
-CONF_THRESHOLD = 0.5
+MAX_DEGREE = 50
+AREA_PERCENTAGE_THRESHOLD = 0.01
+CONF_THRESHOLD = 0.4
 CHECK_TIMEOUT = 5
 
 
@@ -54,7 +54,9 @@ class ReceptionistCommands(Node):
         self.find_seat_service = self.create_service(
             FindSeat, FIND_SEAT_TOPIC, self.find_seat_callback
         )
-        self.image_publisher = self.create_publisher(Image, IMAGE_TOPIC, 10)
+        self.image_publisher = self.create_publisher(
+            Image, IMAGE_TOPIC_RECEPTIONIST, 10
+        )
         self.person_detection_action_server = ActionServer(
             self, DetectPerson, CHECK_PERSON_TOPIC, self.detect_person_callback
         )
@@ -63,6 +65,7 @@ class ReceptionistCommands(Node):
         self.yolo_model = YOLO(YOLO_LOCATION)
         self.output_image = []
         self.check = False
+        # self.id = None
 
         self.get_logger().info("ReceptionistCommands Ready.")
 
@@ -70,6 +73,7 @@ class ReceptionistCommands(Node):
 
     def image_callback(self, data):
         """Callback to receive the image from the camera."""
+        # self.id = self.data
         self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
 
     def find_seat_callback(self, request, response):
@@ -78,6 +82,7 @@ class ReceptionistCommands(Node):
 
         if self.image is None:
             response.success = False
+            self.get_logger().warn("No image received yet.")
             return response
 
         frame = self.image
@@ -138,8 +143,8 @@ class ReceptionistCommands(Node):
     def publish_image(self):
         """Publish the image with the detections if available."""
         if len(self.output_image) != 0:
-            cv2.imshow("Receptionist Commands", self.output_image)
-            cv2.waitKey(1)
+            # cv2.imshow("Receptionist Commands", self.output_image)
+            # cv2.waitKey(1)
             self.image_publisher.publish(
                 self.bridge.cv2_to_imgmsg(self.output_image, "bgr8")
             )

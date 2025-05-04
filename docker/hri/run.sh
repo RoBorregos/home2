@@ -92,6 +92,21 @@ esac
 bash setup.bash
 bash ../../hri/packages/nlp/assets/download-model.sh
 
+# Create dirs with current user to avoid permission problems
+mkdir -p install build log
+
+
+# Check if display setup is needed
+if [ ! -d "../../hri/display/dist" ] || [ ! -d "../../hri/display/node_modules" ] || [ ! -d "../../hri/display/web-ui/.next" ] || [ ! -d "../../hri/display/web-ui/node_modules" ]; then
+  echo "Setting up display environment..."
+
+  compose_file="display.yaml"
+  [ "$ENV_TYPE" == "jetson" ] && compose_file="display-l4t.yaml"
+  
+  echo "Installing dependencies and building project inside temporary container..."
+  docker compose -f "$compose_file" run --entrypoint "" display bash -c "source /opt/ros/humble/setup.bash && npm run build"
+fi
+
 #_________________________RUN_________________________
 
 PROFILES=()
@@ -128,11 +143,47 @@ COMMAND="source /opt/ros/humble/setup.bash && colcon build --symlink-install --p
 # echo "COMMAND= $COMMAND " >> .env
 add_or_update_variable .env "COMMAND" "$COMMAND"
 
-# Check if the container exists
-if [ $ENV_TYPE == "cpu" ]; then
-        docker compose -f docker-compose-cpu.yml up $detached
-    elif [ $ENV_TYPE == "gpu" ]; then
-        docker compose -f docker-compose-cpu.yml up $detached
-    elif [ $ENV_TYPE == "jetson" ]; then
-        docker compose up $detached
+# Trap Ctrl+C to clean up
+cleanup() {
+  echo -e "\n🛑 Interrupted. Cleaning up..."
+  [ -n "$compose_pid" ] && kill "$compose_pid" 2>/dev/null
+  [ -n "$curl_pid" ] && kill "$curl_pid" 2>/dev/null
+  exit 1
+}
+trap cleanup SIGINT
+
+compose_file="docker-compose-cpu.yml"
+[ "$ENV_TYPE" == "jetson" ] && compose_file="docker-compose.yml"
+
+if [ -n "$detached" ]; then
+  echo "🚀 Launching containers in detached mode..."
+  docker compose -f "$compose_file" up -d
+
+  echo "⏳ Waiting for localhost:3000 to be available..."
+  until curl --output /dev/null --silent --head --fail http://localhost:3000; do
+    printf '.'
+    sleep 1
+  done
+  echo -e "\n✅ Web service is up. Launching Firefox..."
+  bash open-display.bash
+
+else
+  echo "🚀 Launching containers in attached mode..."
+  ROLE=$PROFILES docker compose -f "$compose_file" up &
+  compose_pid=$!
+
+  echo "⏳ Waiting for localhost:3000 to be available..."
+  (
+    while ! curl --output /dev/null --silent --head --fail http://localhost:3000; do
+      printf '.'
+      sleep 1
+    done
+    echo -e "\n✅ Web service is up. Launching Firefox..."
+    bash open-display.bash
+  ) &
+  curl_pid=$!
+
+  # Wait for docker compose to finish, then kill the curl loop
+  wait $compose_pid
+  kill $curl_pid 2>/dev/null
 fi

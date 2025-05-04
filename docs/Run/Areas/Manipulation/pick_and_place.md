@@ -18,21 +18,11 @@ ros2 launch arm_pkg frida_moveit_config.launch.py
 #### 3D Camera
 To run the 3D camera, while on the device connected to it, run the following command:
 ```bash
-**ros2 launch zed_wrapper zed_camera.launch.py camera_model:=zed2 publish_tf:=false
+ros2 launch zed_wrapper zed_camera.launch.py camera_model:=zed2 publish_tf:=false
 ```
 
 ## Launching utilities
 These represent core functionalities that are used within the pipeline.
-### Downsample Point Cloud
-To run the downsample for the pointcloud:
-```bash
-ros2 run perception_3d down_sample_pc
-```
-### Motion planning server
-Check that the motion planning interface is running:
-```bash
-ros2 run frida_motion_planning motion_planning_server.py
-```
 ### Object detector
 To run the object detector, run the following command:
 ```bash
@@ -40,12 +30,12 @@ ros2 launch object_detector_2d object_detector_node.launch.py
 ```
 For this, be sure that the topics on [vision constants](../../../../frida_constants/frida_constants/vision_constants.py) are set to your published image and depth topics. These may change if you are using simulation or the real robot.
 
-## Launch Pick and Place main code
-### Perception
-To run the perception service (Cluster and plane remove/extraction):
+You can also run the zero shot object detector, which classes you can change on the [vision constants](../../../../frida_constants/frida_constants/vision_constants.py) file:
 ```bash
-ros2 launch perception_3d test.launch.py
+ros2 launch object_detector_2d zero_shot_object_detector.launch.py
 ```
+
+## Launch Pick and Place main code
 ### Pick and Place pipeline
 To run the pick and place pipeline:
 ```bash

@@ -135,7 +135,7 @@ class MoondreamNode(Node):
 
     def crop_query_callback(self, request, response):
         """Callback to describe the bag."""
-        self.get_logger().info("Executing service Bag Description")
+        self.get_logger().info("Executing service Crop query")
         if self.image is None:
             response.result = "No image received yet."
             response.success = False
@@ -166,6 +166,7 @@ class MoondreamNode(Node):
 
         else:
             response.result = "Crop coordinates are out of bounds."
+            self.get_logger().warn("Crop coordinates are out of bounds.")
             response.success = False
             return response
 
@@ -189,7 +190,7 @@ class MoondreamNode(Node):
 
         except Exception as e:
             self.get_logger().error(f"Error describing bag: {e}")
-            response.description = ""
+            response.result = ""
             response.success = False
 
         return response
@@ -218,8 +219,12 @@ class MoondreamNode(Node):
             )
 
             response.location = beverage_position.position
-            response.success = True
-            self.success(f"Beverage location found at: {response.location}")
+            if beverage_position.position == Position.NOT_FOUND.value:
+                self.get_logger().warn("Beverage not found")
+                response.success = False
+            else:
+                self.success(f"Beverage location found at: {response.location}")
+                response.success = True
 
         except Exception as e:
             self.get_logger().error(f"Error locating beverage: {e}")

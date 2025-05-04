@@ -1,9 +1,10 @@
+import os
 import tempfile
 import wave
-import os
-from pydub import AudioSegment
-import soundfile as sf
+
 import sounddevice as sd
+import soundfile as sf
+from pydub import AudioSegment
 
 
 class WavUtils:

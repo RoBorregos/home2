@@ -9,15 +9,19 @@ from typing import Optional
 
 import pytz
 import rclpy
-from nlp.assets.dialogs import get_is_answer_negative_args, get_is_answer_positive_args
-from nlp.assets.schemas import IsAnswerNegative, IsAnswerPositive
+from nlp.assets.dialogs import (
+    get_categorize_shelves_args,
+    get_common_interests_dialog,
+    get_is_answer_negative_args,
+    get_is_answer_positive_args,
+)
 from openai import OpenAI
-from pydantic import BaseModel
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from std_msgs.msg import Bool, String
 
 from frida_interfaces.srv import (
+    CategorizeShelves,
     CommonInterest,
     Grammar,
     IsNegative,
@@ -45,10 +49,6 @@ def get_context():
     return CURRENT_CONTEXT.format(CURRENT_DATE=current_date)
 
 
-class ResponseFormat(BaseModel):
-    is_stop: bool
-
-
 class LLMUtils(Node):
     model: Optional[str]
     base_url: Optional[str]
@@ -68,6 +68,7 @@ class LLMUtils(Node):
         self.declare_parameter("COMMON_INTEREST_SERVICE", "/nlp/common_interest")
         self.declare_parameter("IS_POSITIVE_SERVICE", "/nlp/is_positive")
         self.declare_parameter("IS_NEGATIVE_SERVICE", "/nlp/is_negative")
+        self.declare_parameter("CATEGORIZE_SERVICE", "/nlp/categorize_shelves")
 
         self.declare_parameter("temperature", 0.5)
         base_url = self.get_parameter("base_url").get_parameter_value().string_value
@@ -117,6 +118,10 @@ class LLMUtils(Node):
             self.get_parameter("IS_NEGATIVE_SERVICE").get_parameter_value().string_value
         )
 
+        categorize_shelves_service = (
+            self.get_parameter("CATEGORIZE_SERVICE").get_parameter_value().string_value
+        )
+
         self.create_service(Grammar, grammar_service, self.grammar_service)
 
         self.create_service(LLMWrapper, llm_wrapper_service, self.llm_wrapper_service)
@@ -128,51 +133,13 @@ class LLMUtils(Node):
         self.create_service(IsPositive, is_positive_service, self.is_positive)
         self.create_service(IsNegative, is_negative_service, self.is_negative)
 
+        self.create_service(
+            CategorizeShelves, categorize_shelves_service, self.categorize_shelves
+        )
+
         # publisher
         self.publisher = self.create_publisher(Bool, OUT_COMMAND_TOPIC, 10)
-        self.subscription = self.create_subscription(
-            String, SPEECH_COMMAND_TOPIC, self.callback, 10
-        )
         self.logger.info("Initialized llm_utils node")
-
-    def callback(self, data: String) -> None:
-        if data.data == "" or len(data.data) == 0:
-            self.logger.debug("Empty command received")
-            return
-
-        for key in exit_keys:
-            if key in data.data.lower():
-                self.logger.info("Stop command received")
-                msg = Bool()
-                msg.data = True
-                self.publisher.publish(msg)
-                return
-
-        response = self.client.beta.chat.completions.parse(
-            model=self.model,
-            temperature=self.temperature,
-            messages=[
-                {
-                    "role": "system",
-                    "content": f"Please determine if the command is a stop command, here is a sample of stop commands: {exit_keys}",
-                },
-                {"role": "user", "content": data.data},
-            ],
-            response_format=ResponseFormat,
-        )
-
-        response = response.choices[0].message.content
-
-        parse = json.loads(response)
-
-        parsed = ResponseFormat(**parse)
-
-        if parsed.is_stop:
-            self.logger.info("Stop command received")
-            msg = Bool()
-            msg.data = True
-            self.publisher.publish(msg)
-        return
 
     def grammar_service(self, req, res):
         response = (
@@ -219,20 +186,16 @@ class LLMUtils(Node):
         return res
 
     def common_interest(self, req, res):
+        self.get_logger().info("Generating common interest")
+
+        messages = get_common_interests_dialog(
+            req.person1, req.person2, req.interests1, req.interests2
+        )["messages"]
         response = (
             self.client.beta.chat.completions.parse(
                 model=self.model,
                 temperature=self.temperature,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You will be presented with the interests of two people, your task is to get the common interests between them. Give a short answer with one common interest. Don't overthink your response",
-                    },
-                    {
-                        "role": "user",
-                        "content": f"{req.person1} likes {req.interests1} and {req.person2} likes {req.interests2}",
-                    },
-                ],
+                messages=messages,
             )
             .choices[0]
             .message.content
@@ -241,6 +204,91 @@ class LLMUtils(Node):
         res.common_interest = response
 
         return res
+
+    def generic_structured_output(
+        self, system_prompt: str, user_prompt: str, response_format
+    ):
+        self.get_logger().info("Generating structured output")
+        # self.get_logger().info(f"System prompt: {system_prompt}")
+        # self.get_logger().info(f"User prompt: {user_prompt}")
+        # self.get_logger().info(f"Response format: {response_format}")
+        response = (
+            self.client.beta.chat.completions.parse(
+                model=self.model,
+                temperature=self.temperature,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": system_prompt,
+                    },
+                    {"role": "user", "content": user_prompt},
+                ],
+                response_format=response_format,
+            )
+            .choices[0]
+            .message.content
+        )
+        self.get_logger().info(f"Response: {response}")
+        try:
+            response_data = json.loads(response)
+            result = response_format(**response_data)
+        except Exception as e:
+            self.get_logger().error(f"Service error: {e}")
+            raise rclpy.exceptions.ServiceException(str(e))
+        return result
+
+    def categorize_shelves(
+        self, request: CategorizeShelves.Request, response: CategorizeShelves.Response
+    ) -> CategorizeShelves.Response:
+        """Service to categorize shelves."""
+
+        self.get_logger().info("Categorizing shelves")
+        self.get_logger().info("request.shelves: " + str(request.shelves.data))
+
+        shelves: dict[int, list[str]] = eval(request.shelves.data)
+        table_objects: list[str] = [
+            table_object.data for table_object in request.table_objects
+        ]
+        shelves = {int(k): v for k, v in shelves.items()}
+        self.get_logger().info(f"Shelves: {shelves}")
+        self.get_logger().info(f"Table objects: {table_objects}")
+
+        messages, response_format = get_categorize_shelves_args(shelves, table_objects)
+
+        response_content = (
+            self.client.beta.chat.completions.parse(
+                model=self.model,
+                temperature=self.temperature,
+                messages=messages,
+                response_format=response_format,
+            )
+            .choices[0]
+            .message.content
+        )
+
+        try:
+            response_data = json.loads(response_content)
+            result = response_format(**response_data)
+        except Exception as e:
+            self.get_logger().error(f"Service error: {e}")
+            raise rclpy.exceptions.ServiceException(str(e))
+
+        response.objects_to_add = String(
+            data=str(
+                {k: [i for i in v.objects_to_add] for k, v in result.shelves.items()}
+            )
+        )
+
+        response.categorized_shelves = String(
+            data=str({k: v.classification_tag for k, v in result.shelves.items()})
+        )
+
+        self.get_logger().info(f"Response: {str(response.objects_to_add)}")
+        self.get_logger().info(
+            f"Categorized shelves: {str(response.categorized_shelves)}"
+        )
+
+        return response
 
     def is_positive(
         self, request: IsPositive.Request, response: IsPositive.Response
@@ -265,7 +313,7 @@ class LLMUtils(Node):
 
         try:
             response_data = json.loads(response_content)
-            result = IsAnswerPositive(**response_data)
+            result = response_format(**response_data)
         except Exception as e:
             self.get_logger().error(f"Service error: {e}")
             raise rclpy.exceptions.ServiceException(str(e))
@@ -296,7 +344,7 @@ class LLMUtils(Node):
 
         try:
             response_data = json.loads(response_content)
-            result = IsAnswerNegative(**response_data)
+            result = response_format(**response_data)
         except Exception as e:
             self.get_logger().error(f"Service error: {e}")
             raise rclpy.exceptions.ServiceException(str(e))

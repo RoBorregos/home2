@@ -15,7 +15,7 @@ class Gestures(Enum):
 class Poses(Enum):
     """Enum for poses"""
 
-    UNKNWON = "unknown"
+    UNKNOWN = "unknown"
     STANDING = "standing"
     SITTING = "sitting"
     LYING_DOWN = "lying_down"
@@ -28,3 +28,7 @@ class DetectBy(Enum):
     POSES = "poses"
     COLOR = "color"
     CLOTHES = "clothes"
+
+
+def is_value_in_enum(value, enum_class):
+    return value in [member.value for member in enum_class]

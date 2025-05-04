@@ -4,12 +4,18 @@
             <ControllerSelector selected_controller="{selected_controller}" default_controller="FollowPath" topic_name="controller_selector"/>
             <PlannerSelector selected_planner="{selected_planner}" default_planner="GridBased" topic_name="planner_selector"/>
             <RateController hz="1.0">
+                <RecoveryNode number_of_retries="5">        
                 <Sequence>
                     <GoalUpdater input_goal="{goal}" output_goal="{updated_goal}">
                         <ComputePathToPose goal="{updated_goal}" path="{path}" planner_id="{selected_planner}" />
                     </GoalUpdater>
-                    <TruncatePath distance="0.50" input_path="{path}" output_path="{truncated_path}"/>
+                    <TruncatePath distance="0.2" input_path="{path}" output_path="{truncated_path}"/>
                 </Sequence>
+                <Sequence>
+                <ClearEntireCostmap name="ClearGlobalCostmap-Context" service_name="global_costmap/clear_entirely_global_costmap"/>
+                <ClearEntireCostmap name="ClearLocalCostmap-Context" service_name="local_costmap/clear_entirely_local_costmap"/>
+                </Sequence>
+                </RecoveryNode>
             </RateController>
             <FollowPath path="{truncated_path}" controller_id="{selected_controller}" />
         </PipelineSequence>

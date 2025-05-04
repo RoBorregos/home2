@@ -1,7 +1,7 @@
 llm_utils:
   ros__parameters:
     base_url: "http://localhost:11434/v1"
-    model: "deepseek-r1:7b"
+    model: "qwen2.5"
     SPEECH_COMMAND_TOPIC_NAME: "/speech/raw_command"
     OUT_COMMAND_TOPIC_NAME: "/stop_following"
     GRAMMAR_SERVICE: REPLACE
@@ -10,3 +10,4 @@ llm_utils:
     IS_POSITIVE_SERVICE: REPLACE
     IS_NEGATIVE_SERVICE: REPLACE
     LLM_WRAPPER_SERVICE: REPLACE
+    CATEGORIZE_SERVICE: REPLACE

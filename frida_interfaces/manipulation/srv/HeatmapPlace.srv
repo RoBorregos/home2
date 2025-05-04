@@ -1,5 +1,5 @@
 sensor_msgs/PointCloud2 pointcloud
+bool prefer_closest
 ---
-float64 x_center
-float64 y_center
+geometry_msgs/PointStamped place_point
 bool success

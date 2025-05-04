@@ -1,0 +1,5 @@
+launch:
+  ros__parameters:
+    Embeddings_model: all-MiniLM-L12-v2
+    collections_built: 0
+

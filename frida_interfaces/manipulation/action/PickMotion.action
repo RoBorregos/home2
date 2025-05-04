@@ -5,6 +5,7 @@ string object_name
 ---
 #result definition
 int32 success
+PickResult pick_result
 ---
 #feedback
 string execution_state

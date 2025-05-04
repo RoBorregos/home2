@@ -35,16 +35,16 @@ class Respeaker(Node):
         super().__init__("respeaker")
 
         # Ros parameters
-        self.declare_parameter("doa_publish_topic", "/respeaker/doa")
+        self.declare_parameter("RESPEAKER_DOA_TOPIC", "/respeaker/doa")
         self.declare_parameter("doa_timer", 0.5)  # seconds
-        self.declare_parameter("light_subscriber_topic", "/respeaker/light")
+        self.declare_parameter("RESPEAKER_LIGHT_TOPIC", "/respeaker/light")
 
         doa_publish_topic = (
-            self.get_parameter("doa_publish_topic").get_parameter_value().string_value
+            self.get_parameter("RESPEAKER_DOA_TOPIC").get_parameter_value().string_value
         )
         doa_timer = self.get_parameter("doa_timer").get_parameter_value().double_value
         light_subscriber_topic = (
-            self.get_parameter("light_subscriber_topic")
+            self.get_parameter("RESPEAKER_LIGHT_TOPIC")
             .get_parameter_value()
             .string_value
         )
@@ -78,12 +78,8 @@ class Respeaker(Node):
     def callback_light(self, data):
         command = data.data
 
-        if command == "off":
+        if command == "off" or command == "think" or command == "speak":
             pixel_ring.off()
-        elif command == "think":
-            pixel_ring.think()
-        elif command == "speak":
-            pixel_ring.speak()
         elif command == "listen":
             pixel_ring.listen()
         else:

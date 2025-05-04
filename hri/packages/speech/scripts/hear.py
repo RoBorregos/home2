@@ -152,10 +152,10 @@ class HearNode(Node):
                 self.service_text = transcription
                 self.service_active = False
                 self.is_transcribing = False
-            else:
-                # If the service is not active, publish the transcription
-                self.transcription_publisher.publish(msg)
-                self.get_logger().info("Transcription published to ROS topic.")
+
+            # If the service is not active, publish the transcription
+            self.transcription_publisher.publish(msg)
+            self.get_logger().info("Transcription published to ROS topic.")
         except grpc.RpcError as e:
             self.get_logger().error(f"gRPC error: {e.code()}, {e.details()}")
         except Exception as ex:
@@ -165,7 +165,7 @@ class HearNode(Node):
         self.get_logger().info("Keyword mock service activated, recording audio...")
         self.service_active = True
 
-        detection_info = {"keyword": "frida", "score": 1}
+        detection_info = {"keyword": "frida", "score": -1}
         self.KWS_publisher_mock.publish(String(data=str(detection_info)))
         self.service_text = ""
         while self.service_active:

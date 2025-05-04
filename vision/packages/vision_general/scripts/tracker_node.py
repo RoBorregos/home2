@@ -21,7 +21,7 @@ import rclpy
 from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import Point, PointStamped
 
 from vision_general.utils.reid_model import (
     load_network,
@@ -41,6 +41,7 @@ from frida_constants.vision_constants import (
     DEPTH_IMAGE_TOPIC,
     RESULTS_TOPIC,
     CAMERA_INFO_TOPIC,
+    CENTROID_TOIC,
 )
 from frida_constants.vision_enums import DetectBy
 
@@ -72,14 +73,16 @@ class SingleTracker(Node):
             TrackBy, SET_TARGET_BY_TOPIC, self.set_target_by_callback
         )
 
-        self.results_publisher = self.create_publisher(Point, RESULTS_TOPIC, 10)
+        self.results_publisher = self.create_publisher(PointStamped, RESULTS_TOPIC, 10)
 
         self.image_publisher = self.create_publisher(Image, TRACKER_IMAGE_TOPIC, 10)
+
+        self.centroid_publisher = self.create_publisher(Point, CENTROID_TOIC, 10)
 
         self.verbose = self.declare_parameter("verbose", True)
         self.setup()
         self.create_timer(0.1, self.run)
-        self.create_timer(0.1, self.publish_image)
+        self.create_timer(0.01, self.publish_image)
 
     def setup(self):
         """Load models and initial variables"""
@@ -161,10 +164,10 @@ class SingleTracker(Node):
     def publish_image(self):
         """Publish the image to the camera topic"""
         if len(self.output_image) != 0:
-            if self.verbose:
-                cv2.imshow("Tracking", self.output_image)
-                if cv2.waitKey(1) & 0xFF == ord("q"):
-                    cv2.destroyAllWindows()
+            # if self.verbose:
+            #     cv2.imshow("Tracking", self.output_image)
+            #     if cv2.waitKey(1) & 0xFF == ord("q"):
+            #         cv2.destroyAllWindows()
             self.image_publisher.publish(
                 self.bridge.cv2_to_imgmsg(self.output_image, "bgr8")
             )
@@ -178,6 +181,8 @@ class SingleTracker(Node):
         if self.image is None:
             self.get_logger().warn("No image available")
             return False
+
+        self.get_logger().info(f"Setting target by {track_by} with value {value}")
 
         self.frame = self.image
         self.output_image = self.frame.copy()
@@ -222,14 +227,25 @@ class SingleTracker(Node):
                         largest_person["id"] = track_id
                         largest_person["area"] = area
                         largest_person["bbox"] = (x1, y1, x2, y2)
-                elif track_by == DetectBy.GESTURES.value:
-                    print("Gesture detection")
+
+                else:
                     cropped_image = self.frame[y1:y2, x1:x2]
-                    pose = self.pose_detection.detectGesture(cropped_image)
+
+                    if track_by == DetectBy.GESTURES.value:
+                        pose = self.pose_detection.detectGesture(cropped_image)
+
+                    elif track_by == DetectBy.POSES.value:
+                        pose = self.pose_detection.detectPose(cropped_image)
+
                     if pose.value == value:
+                        self.success(f"Target found by {track_by}: {pose.value}")
                         largest_person["id"] = track_id
                         largest_person["area"] = area
                         largest_person["bbox"] = (x1, y1, x2, y2)
+                    else:
+                        self.get_logger().warn(
+                            f"Person detected with {track_by}: {pose.value}"
+                        )
 
         if largest_person["id"] is not None:
             self.person_data["id"] = largest_person["id"]
@@ -397,8 +413,20 @@ class SingleTracker(Node):
                                 break
             if person_in_frame:
                 if len(self.depth_image) > 0:
-                    coords = Point()
+                    coords = PointStamped()
+                    coords.header.frame_id = 'zed_camera_link'
+                    coords.header.stamp = self.get_clock().now().to_msg()
                     point2D = get2DCentroid(self.person_data["coordinates"], self.frame)
+                    point2D_x_coord = float(point2D[1])
+                    point2D_x_coord_normalized = (
+                        point2D_x_coord / (self.frame.shape[1] / 2)
+                    ) - 1
+                    point2Dpoint = Point()
+                    point2Dpoint.x = float(point2D_x_coord_normalized)
+                    point2Dpoint.y = 0.0
+                    point2Dpoint.z = 0.0
+                    # self.get_logger().info(f"frame_shape: {self.frame.shape[1]} Point2D: {point2D[1]} normalized_point2D: {point2D_x_coord_normalized}")
+                    self.centroid_publisher.publish(point2Dpoint)
                     depth = get_depth(self.depth_image, point2D)
                     point3D = deproject_pixel_to_point(self.imageInfo, point2D, depth)
                     point3D = float(point3D[0]), float(point3D[1]), float(point3D[2])

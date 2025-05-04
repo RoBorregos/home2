@@ -11,16 +11,21 @@ from rclpy.node import Node
 from utils.logger import Logger
 
 from frida_interfaces.action import MoveJoints
-from frida_interfaces.srv import GetJoints
+from frida_interfaces.srv import GetJoints, FollowFace, GetOptimalPositionForPlane
 from frida_constants.xarm_configurations import XARM_CONFIGURATIONS
 from rclpy.action import ActionClient
 from typing import List, Union
 from utils.decorators import mockable, service_check
 from utils.status import Status
+from frida_interfaces.action import ManipulationAction
+from frida_interfaces.msg import ManipulationTask
 
 # from utils.decorators import service_check
 from xarm_msgs.srv import SetDigitalIO
 
+from frida_constants.manipulation_constants import (
+    MANIPULATION_ACTION_SERVER,
+)
 # import time as t
 
 XARM_ENABLE_SERVICE = "/xarm/motion_enable"
@@ -37,12 +42,12 @@ DEG_TO_RAD = 3.14159265359 / 180
 class ManipulationTasks:
     """Class to manage the vision tasks"""
 
-    STATE = {
-        "TERMINAL_ERROR": -1,
-        "EXECUTION_ERROR": 0,
-        "EXECUTION_SUCCESS": 1,
-        "TARGET_NOT_FOUND": 2,
-    }
+    # STATE = {
+    #     "TERMINAL_ERROR": -1,
+    #     "EXECUTION_ERROR": 0,
+    #     "EXECUTION_SUCCESS": 1,
+    #     "TARGET_NOT_FOUND": 2,
+    # }
 
     SUBTASKS = {
         "RECEPTIONIST": [],
@@ -72,6 +77,14 @@ class ManipulationTasks:
         self.gripper_client = self.node.create_client(SetDigitalIO, "/xarm/set_tgpio_digital")
 
         self._get_joints_client = self.node.create_client(GetJoints, "/manipulation/get_joints")
+        self.follow_face_client = self.node.create_client(FollowFace, "/follow_face")
+        self._manipulation_action_client = ActionClient(
+            self.node, ManipulationAction, MANIPULATION_ACTION_SERVER
+        )
+        self._fix_position_to_plane_client = self.node.create_client(
+            GetOptimalPositionForPlane,
+            "/manipulation/get_optimal_position_for_plane",
+        )
 
     def open_gripper(self):
         """Opens the gripper"""
@@ -81,18 +94,20 @@ class ManipulationTasks:
         """Closes the gripper"""
         return self._set_gripper_state("close")
 
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
+    @service_check("gripper_client", Status.EXECUTION_ERROR, TIMEOUT)
     def _set_gripper_state(self, state: str):
         """
         Controls the gripper state.
         State: 'open' o 'close'
         """
         try:
-            if not self.gripper_client.wait_for_service(timeout_sec=TIMEOUT):
-                Logger.error(self.node, "Gripper service not available")
-                return self.STATE["EXECUTION_ERROR"]
+            # if not self.gripper_client.wait_for_service(timeout_sec=TIMEOUT):
+            #     Logger.error(self.node, "Gripper service not available")
+            #     return Status.ExecutionError
 
             req = SetDigitalIO.Request()
-            req.ionum = 0
+            req.ionum = 1
             req.value = 0 if state == "open" else 1  # 0=Open, 1=close
 
             future = self.gripper_client.call_async(req)
@@ -100,14 +115,14 @@ class ManipulationTasks:
 
             if future.result() is not None:
                 Logger.info(self.node, f"Gripper {state} successfully")
-                return self.STATE["EXECUTION_SUCCESS"]
+                return Status.EXECUTION_SUCCESS
 
             Logger.error(self.node, "Failure in gripper service")
-            return self.STATE["EXECUTION_ERROR"]
+            return Status.EXECUTION_ERROR
 
         except Exception as e:
             Logger.error(self.node, f"Error gripper: {str(e)}")
-            return self.STATE["TERMINAL_ERROR"]
+            return Status.TERMINAL_ERROR
 
     @mockable(return_value=Status.EXECUTION_SUCCESS, delay=2)
     def move_joint_positions(
@@ -123,7 +138,16 @@ class ManipulationTasks:
         Named position has priority over joint_positions.
         """
         if named_position:
+            # joint_positions = self.get_named_target(named_position)
+            # joint_positions = joint_positions["positions"].keys()
+
             joint_positions = self.get_named_target(named_position)
+
+            degrees = joint_positions.get("degrees", False)
+
+            joint_positions = joint_positions["joints"]
+
+            self.node.get_logger().info(f"dict: {joint_positions}")
 
         # Determine format of joint_positions and apply degree conversion if needed.
         if isinstance(joint_positions, dict):
@@ -138,7 +162,7 @@ class ManipulationTasks:
                 joint_vals = [x * DEG_TO_RAD for x in joint_vals]
         else:
             Logger.error(self.node, "joint_positions must be a list or a dict")
-            return self.STATE["EXECUTION_ERROR"]
+            return Status.EXECUTION_ERROR
 
         future = self._send_joint_goal(
             joint_names=joint_names, joint_positions=joint_vals, velocity=velocity
@@ -146,20 +170,21 @@ class ManipulationTasks:
 
         # Wait for goal to be accepted.
         if not self._wait_for_future(future):
-            return self.STATE["EXECUTION_ERROR"]
-        return self.STATE["EXECUTION_SUCCESS"]
+            return Status.EXECUTION_ERROR
+        return Status.EXECUTION_SUCCESS
 
     def get_named_target(self, target_name: str):
         """Get named target"""
         return XARM_CONFIGURATIONS[target_name]
 
-    # @service_check("get_joints_positions", -1, TIMEOUT)
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
+    @service_check("_get_joints_client", Status.EXECUTION_ERROR, TIMEOUT)
     def get_joint_positions(
         self,
         degrees=False,  # set to true to return in degrees
     ) -> dict:
         """Get the current joint positions"""
-        self._get_joints_client.wait_for_service(timeout_sec=TIMEOUT)
+        # self._get_joints_client.wait_for_service(timeout_sec=TIMEOUT)
         future = self._get_joints_client.call_async(GetJoints.Request())
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
         result = future.result()
@@ -208,6 +233,171 @@ class ManipulationTasks:
         if not result.success:
             return False
         return True
+
+    @mockable(return_value=Status.EXECUTION_SUCCESS, mock=False)
+    @service_check(client="follow_face_client", return_value=Status.TERMINAL_ERROR, timeout=TIMEOUT)
+    def follow_face(self, follow) -> int:
+        """Save the name of the person detected"""
+
+        if follow:
+            Logger.info(self.node, "Following face")
+        else:
+            Logger.info(self.node, "Stopping following face")
+        request = FollowFace.Request()
+        request.follow_face = follow
+
+        try:
+            future = self.follow_face_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+            result = future.result()
+
+            if not result.success:
+                raise Exception("Service call failed")
+
+        except Exception as e:
+            Logger.error(self.node, f"Error following face: {e}")
+            return Status.EXECUTION_ERROR
+
+        Logger.success(self.node, "Following face request successful")
+        return Status.EXECUTION_SUCCESS
+
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
+    @service_check(
+        client="_manipulation_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT
+    )
+    def pick_object(self, object_name: str, in_configuration: bool = False):
+        """Pick an object by name
+        object_name: name of the object to pick
+        in_configuration: True if the object is in the configuration"""
+        # if not self._manipulation_action_client.wait_for_server(timeout_sec=TIMEOUT):
+        #     Logger.error(self.node, "Manipulation action server not available")
+        #     return Status.EXECUTION_ERROR
+
+        goal_msg = ManipulationAction.Goal()
+        goal_msg.task_type = ManipulationTask.PICK
+        goal_msg.pick_params.object_name = object_name
+        goal_msg.pick_params.in_configuration = in_configuration
+
+        future = self._manipulation_action_client.send_goal_async(goal_msg)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+
+        if future.result() is None:
+            Logger.error(self.node, "Failed to send pick request")
+            return Status.EXECUTION_ERROR
+
+        Logger.info(self.node, f"Pick request for {object_name} sent")
+        # wait for result
+        result_future = future.result().get_result_async()
+        rclpy.spin_until_future_complete(self.node, result_future)
+        result = result_future.result().result
+        Logger.info(self.node, f"Pick result: {result}")
+        if result.success:
+            Logger.success(self.node, f"Pick request for {object_name} successful")
+        else:
+            Logger.error(self.node, f"Pick request for {object_name} failed")
+            return Status.EXECUTION_ERROR
+
+        return Status.EXECUTION_SUCCESS
+
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
+    @service_check(
+        client="_manipulation_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT
+    )
+    def place(self):
+        # if not self._manipulation_action_client.wait_for_server(timeout_sec=TIMEOUT):
+        #     Logger.error(self.node, "Manipulation action server not available")
+        #     return Status.EXECUTION_ERROR
+
+        goal_msg = ManipulationAction.Goal()
+        goal_msg.task_type = ManipulationTask.PLACE
+        future = self._manipulation_action_client.send_goal_async(goal_msg)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+        if future.result() is None:
+            Logger.error(self.node, "Failed to send place request")
+            return Status.EXECUTION_ERROR
+        Logger.info(self.node, "Place request sent")
+        # wait for result
+        result_future = future.result().get_result_async()
+        rclpy.spin_until_future_complete(self.node, result_future)
+        result = result_future.result().result
+        Logger.info(self.node, f"Place result: {result}")
+        if result.success:
+            Logger.success(self.node, "Place request successful")
+        else:
+            Logger.error(self.node, "Place request failed")
+            return Status.EXECUTION_ERROR
+        return Status.EXECUTION_SUCCESS
+
+    def place_on_shelf(self, plane_height: int, tolerance: int):
+        # if not self._manipulation_action_client.wait_for_server(timeout_sec=TIMEOUT):
+        #     Logger.error(self.node, "Manipulation action server not available")
+        #     return Status.EXECUTION_ERROR
+
+        goal_msg = ManipulationAction.Goal()
+        goal_msg.task_type = ManipulationTask.PLACE
+        goal_msg.place_params.is_shelf = True
+        goal_msg.scan_environment = True
+        if plane_height is not None and tolerance is not None:
+            goal_msg.place_params.table_height = plane_height
+            goal_msg.place_params.table_height_tolerance = tolerance
+        future = self._manipulation_action_client.send_goal_async(goal_msg)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+        if future.result() is None:
+            Logger.error(self.node, "Failed to send place request")
+            return Status.EXECUTION_ERROR
+        Logger.info(self.node, "Place in shelf request sent")
+        # wait for result
+        result_future = future.result().get_result_async()
+        rclpy.spin_until_future_complete(self.node, result_future)
+        result = result_future.result().result
+        Logger.info(self.node, f"Place in shelf result: {result}")
+        if result.success:
+            Logger.success(self.node, "Place request successful")
+        else:
+            Logger.error(self.node, "Place request failed")
+            return Status.EXECUTION_ERROR
+        return Status.EXECUTION_SUCCESS
+
+    def pan_to(self, degrees: float):
+        joint_positions = self.get_joint_positions(degrees=True)
+        joint_positions["joint1"] = joint_positions["joint1"] - degrees
+        self.move_joint_positions(joint_positions=joint_positions, velocity=0.75, degrees=True)
+
+    def move_to_position(self, named_position: str):
+        self.move_joint_positions(named_position=named_position, velocity=0.75, degrees=True)
+
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
+    @service_check(
+        client="_fix_position_to_plane_client", return_value=Status.TERMINAL_ERROR, timeout=TIMEOUT
+    )
+    def get_optimal_position_for_plane(
+        self,
+        est_heigth: float,
+        tolerance: float = 0.2,
+        table_or_shelf: bool = True,
+        approach_plane=True,
+    ):
+        """Fix the robot to a plane
+        table_or_shelf: True for table, False for shelf
+        """
+        req = GetOptimalPositionForPlane.Request()
+        req.plane_est_min_height = est_heigth - tolerance
+        req.plane_est_max_height = est_heigth + tolerance
+        req.table_or_shelf = table_or_shelf
+        req.approach_plane = approach_plane
+
+        future = self._fix_position_to_plane_client.call_async(req)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=20.0)
+        result = future.result()
+        if result is None:
+            Logger.error(self.node, "Failed to get optimal position for plane")
+            return Status.EXECUTION_ERROR
+        result: GetOptimalPositionForPlane.Response
+        if result.is_valid:
+            Logger.success(self.node, f"Optimal position for plane: {result.pt1}")
+            return
+        Logger.error(self.node, "Invalid position for plane")
+        return Status.EXECUTION_ERROR
 
 
 if __name__ == "__main__":

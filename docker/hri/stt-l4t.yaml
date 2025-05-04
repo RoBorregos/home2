@@ -1,8 +1,9 @@
 services:
   stt-l4t:
-    profiles: [receptionist, carry]
+    profiles: [receptionist, carry, gpsr, storing]
     
     container_name: home2-hri-stt-l4t
+    user: 1000:1000
     image: roborregos/home2:hri-stt-l4t
     runtime: nvidia
     build:
@@ -15,4 +16,4 @@ services:
       - ../../hri/packages/speech/speech/:/app/speech
     network_mode: host
     command: >
-      bash -c "source /tmp/PyAV/scripts/activate.sh && deactivate && python3 -u faster-whisper-l4t.py --port 50051 --model_size base.en"
+      bash -c "source /tmp/PyAV/scripts/activate.sh && deactivate && python3 -u faster-whisper.py --port 50051 --model_size large-v3-turbo --log_transcriptions"

@@ -13,7 +13,7 @@ def generate_launch_description():
             parameters=[
                 {
                     'output_frame': 'odom',
-                    'frequency': 50.0,
+                    'frequency': 20.0,
                     'sensor_timeout': 0.2,
                     'two_d_mode': True,
                     'publish_tf': True,

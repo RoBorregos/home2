@@ -17,6 +17,11 @@ threadpoolctl==3.4.0
 tokenizers==0.15.2
 transformers==4.39.3
 
-# Embeddings dependencies
-# chromadb==0.6.3
-# pandas==2.2.3
+# Data validation and type checking
+pydantic==1.10.12
+
+# Data processing
+pandas==2.2.3
+
+# Embedding and ChromaDB client
+chromadb

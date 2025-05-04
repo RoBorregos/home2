@@ -143,10 +143,23 @@ def launch_setup(context, *args, **kwargs):
             'no_gui_ctrl': no_gui_ctrl,
         }.items(),
     )
-
+    
+    downsample_pcd = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(PathJoinSubstitution([FindPackageShare('perception_3d'), 'launch', 'downsample_pc.launch.py'])),
+        launch_arguments={
+            "input_topic": "/zed/points",
+        }.items(),
+    )
+    
+    objects_spawn = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(PathJoinSubstitution([FindPackageShare('frida_description'), 'launch', 'gazebo_objects.launch.py']))    
+    )
+    
     return [
         robot_gazebo_launch,
         robot_moveit_common_launch,
+        downsample_pcd,
+        objects_spawn,
     ]
 
 

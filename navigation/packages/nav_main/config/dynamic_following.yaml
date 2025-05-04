@@ -184,8 +184,8 @@ controller_server:
 local_costmap:
   local_costmap:
     ros__parameters:
-      update_frequency: 5.0
-      publish_frequency: 2.0
+      update_frequency: 10.0
+      publish_frequency: 5.0
       global_frame: icp_odom
       robot_base_frame: base_link
       use_sim_time: False
@@ -193,7 +193,7 @@ local_costmap:
       width: 3
       height: 3
       resolution: 0.05
-      robot_radius: 0.22
+      footprint: "[ [0.32, 0.21], [0.32, -0.21], [-0.17, -0.21], [-0.17, 0.21] ]"
       plugins: ["voxel_layer", "inflation_layer"]
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
@@ -221,17 +221,17 @@ local_costmap:
           obstacle_min_range: 0.0
         ground:
           topic: /camera/ground
-          max_obstacle_height: 0.4
+          max_obstacle_height: 2.0
           clearing: True
           marking: False
           data_type: "PointCloud2"
           raytrace_max_range: 3.0
           raytrace_min_range: 0.0
-          obstacle_max_range: 2.5
+          obstacle_max_range: 1.5
           obstacle_min_range: 0.0
         obstacles:
           topic: /camera/obstacles
-          max_obstacle_height: 0.4
+          max_obstacle_height: 2.0
           clearing: True
           marking: True
           data_type: "PointCloud2"
@@ -252,24 +252,10 @@ global_costmap:
       global_frame: map
       robot_base_frame: base_link
       use_sim_time: False
-      robot_radius: 0.22
+      robot_radius: 0.25
       resolution: 0.05
       track_unknown_space: true
-      plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
-      obstacle_layer:
-        plugin: "nav2_costmap_2d::ObstacleLayer"
-        enabled: True
-        observation_sources: scan
-        scan:
-          topic: /scan
-          max_obstacle_height: 2.0
-          clearing: True
-          marking: True
-          data_type: "LaserScan"
-          raytrace_max_range: 3.0
-          raytrace_min_range: 0.0
-          obstacle_max_range: 2.5
-          obstacle_min_range: 0.0
+      plugins: ["static_layer", "inflation_layer"]
       static_layer:
         plugin: "nav2_costmap_2d::StaticLayer"
         map_subscribe_transient_local: True

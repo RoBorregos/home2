@@ -21,7 +21,7 @@ def generate_launch_description():
             'urdf_package': 'frida_description',
             'use_sim_time': 'true',
             'jsp_gui': 'false',
-            'urdf_package_path': PathJoinSubstitution(['urdf','FRIDA.urdf.xacro'])}.items(),
+            'urdf_package_path': PathJoinSubstitution(['urdf','RoboCup2024','FRIDA.urdf.xacro'])}.items(),
             
     ))
     

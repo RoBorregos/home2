@@ -19,6 +19,12 @@
   <depend>rclcpp_components</depend>
   <depend>navigation2</depend>
   <depend>nav2_bringup</depend>
+  <depend>robot_localization</depend>
+  <depend>sllidar_ros2</depend>
+  <depend>tf2_ros</depend>
+  <depend>tf2_geometry_msgs</depend>
+  <depend>twist_mux</depend>
+  <depend>dashgo_driver</depend>
   <!-- Action server move -->
   <depend>action_msgs</depend>
 

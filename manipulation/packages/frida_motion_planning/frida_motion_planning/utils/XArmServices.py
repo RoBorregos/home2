@@ -21,6 +21,7 @@ class XArmServices:
                 "Cannot initialize XArmServices as no xArm services are available"
             )
             self.move_velocity_client = None
+            self.gripper_io_client = None
             return
         self.move_velocity_client = self.node.create_client(
             MoveVelocity, XARM_MOVEVELOCITY_SERVICE
@@ -113,9 +114,14 @@ class XArmServices:
                 "Cannot set gripper state as gripper io service is not available"
             )
             return False
+        self.node.get_logger().info(
+            f"Setting gripper state to {state} using SetDigitalIO service"
+        )
+        self.gripper_io_client.wait_for_service()
+        self.node.get_logger().info("Gripper IO service is available")
         request = SetDigitalIO.Request()
-        request.ionum = 0
+        request.ionum = 1
         request.value = int(state)
-        future = self.gripper_io_client.call_async(request)
-        future = wait_for_future(future)
+        self.gripper_io_client.call_async(request)
+        # future = wait_for_future(future)
         return True

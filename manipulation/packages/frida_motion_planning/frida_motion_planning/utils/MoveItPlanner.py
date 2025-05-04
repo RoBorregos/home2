@@ -14,6 +14,7 @@ from xarm_msgs.srv import SetInt16
 from frida_motion_planning.utils.Planner import Planner
 from geometry_msgs.msg import PoseStamped
 from sensor_msgs.msg import JointState
+from controller_manager_msgs.srv import SwitchController
 import time
 import rclpy
 
@@ -47,14 +48,32 @@ class MoveItPlanner(Planner):
         self.joint_states_sub = self.node.create_subscription(
             JointState, self.joint_states_topic, self.joint_states_callback, 10
         )
+
+        """ 
+        For some reason, controller may stop working when using moveit2
+        This ensures the controller is active before sending a new plan
+        ros2 service call /controller_manager/switch_controller controller_manager_msgs/srv/SwitchController {"activate_controllers : [xarm6_traj_controller]}"
+        
+        """
+
         # Wait for set mode service, timeout if we use fake controller
         self.mode_client = self.node.create_client(SetInt16, XARM_SETMODE_SERVICE)
         self.state_client = self.node.create_client(SetInt16, XARM_SETSTATE_SERVICE)
+        self.switch_controller_client = None
         self.mode_enabled = True
         if self.mode_client.wait_for_service(
             timeout_sec=3
-        ) and self.state_client.wait_for_service(timeout_sec=3):
+        ) or self.state_client.wait_for_service(timeout_sec=3):
             self.mode_enabled = True
+            self.switch_controller_client = self.node.create_client(
+                SwitchController, "/controller_manager/switch_controller"
+            )
+            self.switch_controller_client.wait_for_service(timeout_sec=3)
+            if not self.switch_controller_client.service_is_ready():
+                self.node.get_logger().warn(
+                    "Switch controller service not available, \
+                            if using fake controller, ignore this message"
+                )
         else:
             self.node.get_logger().warn(
                 "Motion enable client not initialized, \
@@ -89,6 +108,10 @@ class MoveItPlanner(Planner):
             joint_names = xarm6.joint_names()
         trajectory = self._plan_joint_goal(joint_positions, joint_names)
         if not trajectory:
+            self.node.get_logger().error(
+                "Failed to plan joint goal, \
+                        probably due to timeout, check if MoveIt is running"
+            )
             return False
         self.moveit2.execute(trajectory)
         future = None
@@ -110,6 +133,7 @@ class MoveItPlanner(Planner):
     def plan_pose_goal(
         self,
         pose: PoseStamped,
+        target_link: str = xarm6.end_effector_name(),
         cartesian: bool = False,
         wait: bool = True,
         set_mode: bool = True,
@@ -117,7 +141,13 @@ class MoveItPlanner(Planner):
         if set_mode:
             self.set_mode(MOVEIT_MODE)
         self.node.get_logger().info("Planning pose goal")
-        trajectory = self._plan(pose, cartesian)
+        trajectory = self._plan(
+            pose=pose,
+            cartesian=cartesian,
+            target_link=target_link,
+            tolerance_position=0.02,
+            tolerance_orientation=0.02,
+        )
         if not trajectory:
             return False
         self.node.get_logger().info("Executing trajectory")
@@ -146,11 +176,12 @@ class MoveItPlanner(Planner):
         self,
         pose: PoseStamped,
         cartesian: bool = False,
-        tolerance_position: float = 0.001,
-        tolerance_orientation: float = 0.001,
+        target_link: str = xarm6.end_effector_name(),
+        tolerance_position: float = 0.015,
+        tolerance_orientation: float = 0.05,
         weight_position: float = 1.0,
         weight_orientation: float = 1.0,
-        cartesian_max_step: float = 0.01,
+        cartesian_max_step: float = 0.05,
         cartesian_fraction_threshold: float = 0.8,
     ) -> Union[bool, Future]:
         return self.moveit2.plan(
@@ -161,6 +192,7 @@ class MoveItPlanner(Planner):
                 pose.pose.orientation.z,
                 pose.pose.orientation.w,
             ],
+            target_link=target_link,
             frame_id=pose.header.frame_id,
             cartesian=cartesian,
             tolerance_position=tolerance_position,
@@ -175,7 +207,7 @@ class MoveItPlanner(Planner):
         self,
         joint_positions: List[float],
         joint_names: List[str],
-        tolerance: float = 0.001,
+        tolerance: float = 0.05,
         weight: float = 1.0,
     ):
         return self.moveit2.plan(
@@ -188,33 +220,47 @@ class MoveItPlanner(Planner):
     def set_mode(self, mode: int = 0) -> bool:
         if not self.mode_enabled:
             return True
-        self.mode_client.wait_for_service()
-        request = SetInt16.Request()
-        request.data = mode
-        future = self.mode_client.call_async(request)
-        while rclpy.ok() and not future.done():
-            pass
-        if future.result() is not None:
-            self.node.get_logger().info(
-                f"Set mode service response: {future.result().message}"
-            )
-        else:
-            self.node.get_logger().error("Failed to call set mode service")
-            return False
-
-        self.state_client.wait_for_service()
-        request = SetInt16.Request()
-        request.data = 0
-        future = self.state_client.call_async(request)
-        while rclpy.ok() and not future.done():
-            pass
-        if future.result() is not None:
-            self.node.get_logger().info(
-                f"Set state service response: {future.result().message}"
-            )
-        else:
-            self.node.get_logger().error("Failed to call set state service")
-            return False
+        # self.mode_client.wait_for_service()
+        # request = SetInt16.Request()
+        # request.data = mode
+        # future = self.mode_client.call_async(request)
+        # while rclpy.ok() and not future.done():
+        #     pass
+        # if future.result() is not None:
+        #     self.node.get_logger().info(
+        #         f"Set mode service response: {future.result().message}"
+        #     )
+        # else:
+        #     self.node.get_logger().error("Failed to call set mode service")
+        #     return False
+        # self.state_client.wait_for_service()
+        # request = SetInt16.Request()
+        # request.data = 0
+        # future = self.state_client.call_async(request)
+        # while rclpy.ok() and not future.done():
+        #     pass
+        # if future.result() is not None:
+        #     self.node.get_logger().info(
+        #         f"Set state service response: {future.result().message}"
+        #     )
+        # else:
+        #     self.node.get_logger().error("Failed to call set state service")
+        #     return False
+        time.sleep(0.1)
+        # Activate controller
+        if self.switch_controller_client is not None:
+            request = SwitchController.Request()
+            request.start_controllers = ["xarm6_traj_controller"]
+            future = self.switch_controller_client.call_async(request)
+            while rclpy.ok() and not future.done():
+                pass
+            if future.result() is not None:
+                self.node.get_logger().info(
+                    f"Switch controller service response: {future.result().ok}"
+                )
+            else:
+                self.node.get_logger().error("Failed to call switch controller service")
+                return False
         return True
 
     def get_current_operation_state(self) -> MoveIt2State:
@@ -231,7 +277,16 @@ class MoveItPlanner(Planner):
         return dict(zip(self.joint_states.name, self.joint_states.position))
 
     def joint_states_callback(self, msg: JointState):
-        self.joint_states = msg
+        relevant_indices = []
+        for i, joint_name in enumerate(msg.name):
+            if joint_name in xarm6.joint_names():
+                relevant_indices.append(i)
+        # Filtra solo los joints del brazo
+        if len(relevant_indices) == 0:
+            return
+        self.joint_states = JointState()
+        self.joint_states.name = [msg.name[i] for i in relevant_indices]
+        self.joint_states.position = [msg.position[i] for i in relevant_indices]
 
     def get_fk(self, links: List[str]) -> List[PoseStamped]:
         # Get forward kinematics for current joint state and specified links
@@ -244,19 +299,19 @@ class MoveItPlanner(Planner):
         return self.moveit2.compute_fk(joint_state=joint_positions)
 
     def set_joint_constraints(
-        self, joint_positions: List[float], tolerance: float = 0.001
+        self, joint_positions: List[float], tolerance: float = 0.05
     ) -> None:
         self.moveit2.set_joint_goal(
             joint_positions=joint_positions, tolerance=tolerance
         )
 
     def set_position_constraints(
-        self, position: List[float], tolerance: float = 0.001
+        self, position: List[float], tolerance: float = 0.05
     ) -> None:
         self.moveit2.set_position_goal(position=position, tolerance=tolerance)
 
     def set_orientation_constraints(
-        self, quat_xyzw: List[float], tolerance: float = 0.001
+        self, quat_xyzw: List[float], tolerance: float = 0.05
     ) -> None:
         self.moveit2.set_orientation_goal(quat_xyzw=quat_xyzw, tolerance=tolerance)
 
