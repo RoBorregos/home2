@@ -86,7 +86,7 @@ class HeatmapServer(Node):
 
         # Create heat/cool kernels
         heat_kernel_length = 0.3  # meters
-        cool_kernel_length = 0.2  # meters
+        cool_kernel_length = 0.1  # meters
         heat_multiplier = 1.0
         cool_multiplier = 10.0
 
@@ -132,7 +132,9 @@ class HeatmapServer(Node):
             closeness_map = (closeness_map - np.min(closeness_map)) / (
                 np.max(closeness_map) - np.min(closeness_map)
             )
-            closeness_map = closeness_map**2
+            closeness_map = (
+                closeness_map**3
+            )  # make the decay from close to far sharper -> prefer even closer points
             final_map = final_map * closeness_map
 
             # Normalize final map

@@ -2,6 +2,7 @@ import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch_ros.actions import Node
+from launch.substitutions import LaunchConfiguration
 
 def generate_launch_description():
     config = os.path.join(
@@ -9,6 +10,8 @@ def generate_launch_description():
       'config',
       'dashgo_params.yaml'
       )
+    cmd_topic = LaunchConfiguration('cmd_topic', default='/cmd_vel')
+    
     return LaunchDescription([
         Node(
             package='dashgo_driver',
@@ -18,6 +21,9 @@ def generate_launch_description():
             emulate_tty=True,
             parameters=[
                 config
+            ],
+            remappings=[
+                ('/cmd_vel', cmd_topic),
             ],
         ),
     ])

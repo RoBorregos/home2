@@ -115,6 +115,10 @@ class PlaceManager:
             pick_result.pick_pose.pose.orientation.y = orientation_quat[1]
             pick_result.pick_pose.pose.orientation.z = orientation_quat[2]
             pick_result.pick_pose.pose.orientation.w = orientation_quat[3]
+        else:
+            self.node.get_logger().info(
+                f"Object height detected: {pick_result.object_pick_height}"
+            )
 
         # forget height if placing on shelf
         result_pose.pose.position.z += (

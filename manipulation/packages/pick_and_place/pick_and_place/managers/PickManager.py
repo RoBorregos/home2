@@ -11,9 +11,11 @@ from frida_motion_planning.utils.service_utils import (
 import time
 from typing import Tuple
 
-CFG_PATH = (
-    "/workspace/src/home2/manipulation/packages/arm_pkg/config/frida_eigen_params.cfg"
-)
+
+CFG_PATHS = [
+    "/workspace/src/home2/manipulation/packages/arm_pkg/config/frida_eigen_params_custom_gripper_testing.cfg",
+    "/workspace/src/home2/manipulation/packages/arm_pkg/config/frida_eigen_params_custom_gripper.cfg",
+]
 
 
 class PickManager:
@@ -55,72 +57,72 @@ class PickManager:
             self.node.get_logger().error("No object cluster detected")
             return False, None
 
-        # Call Grasp Pose Detection
-        grasp_poses, grasp_scores = get_grasps(
-            self.node.grasp_detection_client, object_cluster, CFG_PATH
-        )
-
-        if len(grasp_poses) == 0:
-            self.node.get_logger().error("No grasp poses detected")
-            return False, None
-
-        # Call Pick Motion Action
-
-        self.node.get_logger().info(
-            "Grasp poses detected next step is to pick them with the gripper/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////"
-        )
         # open gripper
         gripper_request = SetBool.Request()
         gripper_request.data = True
-        self.node.get_logger().info(
-            "Open gripper ::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
-        )
+        self.node.get_logger().info("Open gripper")
         future = self.node._gripper_set_state_client.call_async(gripper_request)
         future = wait_for_future(future)
         result = future.result()
-        self.node.get_logger().info(f"Gripper Result: {str(gripper_request.data)}")
-        time.sleep(3)
-        self.node.get_logger().info("Returning to position")
+        self.node.get_logger().info(f"2 Gripper Result: {str(gripper_request.data)}")
+        pick_result_success = False
+        print("Gripper Result:", result)
+        for CFG_PATH in CFG_PATHS:
+            self.node.get_logger().info(f"CFG_PATH: {CFG_PATH}")
+            # Call Grasp Pose Detection
+            grasp_poses, grasp_scores = get_grasps(
+                self.node.grasp_detection_client, object_cluster, CFG_PATH
+            )
 
-        # Create goal
-        goal_msg = PickMotion.Goal()
-        goal_msg.grasping_poses = grasp_poses
-        goal_msg.grasping_scores = grasp_scores
+            grasp_poses, grasp_scores = grasp_poses[:5], grasp_scores[:5]
 
-        # Send goal
-        self.node.get_logger().info("Sending pick motion goal...")
-        future = self.node._pick_motion_action_client.send_goal_async(goal_msg)
-        future = wait_for_future(future)
-        # Check result
-        pick_result = future.result().get_result().result
-        self.node.get_logger().info(f"Pick Motion Result: {pick_result}")
+            if len(grasp_poses) == 0:
+                self.node.get_logger().error("No grasp poses detected")
+                continue
 
-        if not pick_result.success:
+            # Call Pick Motion Action
+
+            # Create goal
+            goal_msg = PickMotion.Goal()
+            goal_msg.grasping_poses = grasp_poses
+            goal_msg.grasping_scores = grasp_scores
+
+            # Send goal
+            self.node.get_logger().info("Sending pick motion goal...")
+            future = self.node._pick_motion_action_client.send_goal_async(goal_msg)
+            future = wait_for_future(future)
+            # Check result
+            pick_result = future.result().get_result().result
+            self.node.get_logger().info(f"Pick Motion Result: {pick_result}")
+            if pick_result.success:
+                pick_result_success = True
+                break
+
+        if not pick_result_success:
             self.node.get_logger().error("Pick motion failed")
-            return False
+            return False, None
 
         # close gripper
         gripper_request = SetBool.Request()
         gripper_request.data = False
-        self.node.get_logger().info(
-            "Closing gripper :::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::::"
-        )
+        self.node.get_logger().info("Closing gripper")
         future = self.node._gripper_set_state_client.call_async(gripper_request)
         future = wait_for_future(future)
         result = future.result()
-        self.node.get_logger().info(f"Gripper Result: {str(gripper_request.data)}")
+        self.node.get_logger().info(f"1 Gripper Result: {str(gripper_request.data)}")
 
-        self.node.get_logger().info(
-            "Returning to position............................................."
-        )
+        self.node.get_logger().info("Returning to position")
         time.sleep(5)
 
-        # return to configured position
-        send_joint_goal(
-            move_joints_action_client=self.node._move_joints_client,
-            named_position="table_stare",
-            velocity=0.3,
-        )
+        for i in range(5):
+            # return to configured position
+            return_result = send_joint_goal(
+                move_joints_action_client=self.node._move_joints_client,
+                named_position="table_stare",
+                velocity=0.3,
+            )
+            if return_result:
+                break
         # self.node.get_logger().info("Waiting for 10 seconds")
         # time.sleep(10)
         return result.success, pick_result.pick_result

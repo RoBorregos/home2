@@ -1,7 +1,7 @@
 # Local LLM
 API_KEY = "ollama"
-BASE_URL = "http://10.22.173.172:11434/v1"
-MODEL = "qwen2.5"
+# MODEL = "qwen2.5"
+BASE_URL = "http://localhost:11434/v1"
 TEMPERATURE = 0.0
 
 # OpenAI API

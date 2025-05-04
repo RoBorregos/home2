@@ -13,7 +13,12 @@ def get_common_interests_dialog(
         "messages": [
             {
                 "role": "system",
-                "content": f"You will be presented with the interests of two people, your task is to get the common interests between them. Give me an answer in the format similar to '{person1Name} and {person2Name}'s common interest is movies' or '{person1Name} and {person2Name} don't have a common interest between them' in case they don't share one",
+                "content": f"""You will be presented with the interests of two people, your task is to get the common interests between them.
+Try to ALWAYS find a common interest, only rely in specifying that there is no common interest if there is absolutely no relation at all between both of their interests. For example, if {person1Name} likes 'burgers' and {person2Name} likes 'pizza', you can say that they share a common interest in 'food'.
+
+Always provide an answer in the format: '{person1Name} and {person2Name}'s common interest is movies' if there is a common interest or '{person1Name} and {person2Name} don't have a common interest between them' in case they don't share one.
+Do not add any other information or context to the answer, just the common interest or the lack of it.
+""",
             },
             {
                 "role": "user",
@@ -308,6 +313,7 @@ def format_response(response):
     ]
 
 
+
 def get_command_interpreter_args(full_text):
     return [
         {
@@ -403,3 +409,28 @@ Wait, but in the previous examples, when delivering to a named person, they used
 {\"commands\":[{\"action\":\"go\",\"complement\":\"kitchen table\",\"characteristic\":\"\"},{\"action\":\"find_object\",\"complement\":\"kitchen table\",\"characteristic\":\"pringles\"},{\"action\":\"pick\",\"complement\":\"pringles\",\"characteristic\":\"\"},{\"action\":\"go\",\"complement\":\"bedroom\",\"characteristic\":\"\"},{\"action\":\"find_person\",\"complement\":\"person pointing to the left\",\"characteristic\":\"\"},{\"action\":\"give\",\"complement\":\"\",\"characteristic\":\"\"}]}
 </answer>
 """
+
+def get_answer_question_dialog(contexts, question):
+    if contexts:
+        context_text = "\n".join(contexts)
+        user_content = f"{context_text}\n\n{question}"
+    else:
+        user_content = question
+
+    return [
+        {
+            "role": "system",
+            "content": (
+                "You are a concise and knowledgeable assistant. "
+                "Answer clearly and directly using only the provided information. "
+                "Do not mention where the information came from. "
+                "Avoid long explanations, speculation, or unnecessary details. "
+                "Just provide the best possible answer."
+            ),
+        },
+        {
+            "role": "user",
+            "content": user_content,
+        },
+    ]
+

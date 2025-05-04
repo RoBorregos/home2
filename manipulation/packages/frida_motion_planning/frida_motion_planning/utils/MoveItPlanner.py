@@ -133,6 +133,7 @@ class MoveItPlanner(Planner):
     def plan_pose_goal(
         self,
         pose: PoseStamped,
+        target_link: str = xarm6.end_effector_name(),
         cartesian: bool = False,
         wait: bool = True,
         set_mode: bool = True,
@@ -140,7 +141,13 @@ class MoveItPlanner(Planner):
         if set_mode:
             self.set_mode(MOVEIT_MODE)
         self.node.get_logger().info("Planning pose goal")
-        trajectory = self._plan(pose, cartesian)
+        trajectory = self._plan(
+            pose=pose,
+            cartesian=cartesian,
+            target_link=target_link,
+            tolerance_position=0.02,
+            tolerance_orientation=0.02,
+        )
         if not trajectory:
             return False
         self.node.get_logger().info("Executing trajectory")
@@ -169,8 +176,9 @@ class MoveItPlanner(Planner):
         self,
         pose: PoseStamped,
         cartesian: bool = False,
-        tolerance_position: float = 0.025,
-        tolerance_orientation: float = 0.1,
+        target_link: str = xarm6.end_effector_name(),
+        tolerance_position: float = 0.015,
+        tolerance_orientation: float = 0.05,
         weight_position: float = 1.0,
         weight_orientation: float = 1.0,
         cartesian_max_step: float = 0.05,
@@ -184,6 +192,7 @@ class MoveItPlanner(Planner):
                 pose.pose.orientation.z,
                 pose.pose.orientation.w,
             ],
+            target_link=target_link,
             frame_id=pose.header.frame_id,
             cartesian=cartesian,
             tolerance_position=tolerance_position,
@@ -301,10 +310,17 @@ class MoveItPlanner(Planner):
     ) -> None:
         self.moveit2.set_position_goal(position=position, tolerance=tolerance)
 
-    def set_orientation_constraints(
-        self, quat_xyzw: List[float], tolerance: float = 0.05
-    ) -> None:
-        self.moveit2.set_orientation_goal(quat_xyzw=quat_xyzw, tolerance=tolerance)
+    def set_orientation_constraints(self, goal_handle) -> None:
+        self.moveit2.set_path_orientation_constraint(
+            quat_xyzw=goal_handle.constraint.orientation,
+            frame_id=goal_handle.constraint.frame_id,
+            target_link=goal_handle.constraint.target_link,
+            tolerance=goal_handle.constraint.tolerance_orientation,
+            weight=goal_handle.constraint.weight,
+            parameterization=goal_handle.constraint.parameterization,  # 0: Euler Angles, 1: Rotation Vector
+        )
+        # self.moveit2.set_orientation_goal(quat_xyzw=quat_xyzw, tolerance=tolerance)
+        # self.moveit2.set_path_orientation_constraint(quat_xyzw=quat_xyzw, tolerance=tolerance, parameterization=parameterization)
 
     def delete_all_constraints(self) -> None:
         self.moveit2.clear_goal_constraints()

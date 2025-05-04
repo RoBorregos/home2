@@ -10,7 +10,8 @@ from nlp.assets.dialogs import get_is_answer_positive_args
 from nlp.assets.schemas import IsAnswerPositive
 from openai import OpenAI
 
-from config import API_KEY, BASE_URL, MODEL, TEMPERATURE
+from frida_constants.hri_constants import MODEL
+from config import API_KEY, BASE_URL, TEMPERATURE
 from metrics.json_insensitive_values_match import JsonInsensitiveValuesMatch
 
 
@@ -20,7 +21,7 @@ def generate_response(interpreted_text: str):
     messages, response_format = get_is_answer_positive_args(interpreted_text)
 
     response = client.beta.chat.completions.parse(
-        model=MODEL,
+        model=MODEL.GENERATE_RESPONSE.value,
         temperature=TEMPERATURE,
         messages=messages,
         response_format=response_format,

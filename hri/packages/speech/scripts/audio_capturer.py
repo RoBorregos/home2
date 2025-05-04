@@ -65,7 +65,7 @@ class AudioCapturer(Node):
         # Format for the recorded audio, constants set from the Porcupine demo.py
         CHUNK_SIZE = 512
         self.FORMAT = pyaudio.paInt16  # Signed 2 bytes.
-        self.debug = True
+        self.debug = False
         CHANNELS = 6 if self.use_respeaker else 1
         self.RATE = 16000
         EXTRACT_CHANNEL = 0  # Use channel 0. Tested with TestMic.py. See channel meaning: https://wiki.seeedstudio.com/ReSpeaker-USB-Mic-Array/#update-firmware

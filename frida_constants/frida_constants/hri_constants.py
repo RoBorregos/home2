@@ -1,3 +1,5 @@
+from enum import Enum
+
 SPEAK_SERVICE = "/hri/speech/speak"
 STT_SERVICE_NAME = "/hri/speech/STT"
 HOTWORD_SERVICE_NAME = "/hri/speech/hotword_service"
@@ -19,6 +21,23 @@ ADD_ENTRY_SERVICE = "/hri/nlp/embeddings/add_entry_service"
 QUERY_ENTRY_SERVICE = "/hri/nlp/embeddings/query_entry_service"
 BUILD_EMBEDDINGS_SERVICE = "/hri/nlp/embeddings/build_embeddings_service"
 USE_RESPEAKER = True
+RESPEAKER_LIGHT_TOPIC = "/hri/speech/respeaker/light"
+RESPEAKER_DOA_TOPIC = "/hri/speech/respeaker/doa"
+
+
+class MODEL(Enum):
+    GRAMMAR = "qwen2.5"
+    LLM_WRAPPER = "qwen2.5"
+    COMMON_INTEREST = "qwen2.5"
+    CATEGORIZE_SHELVES = "qwen2.5"
+    IS_POSITIVE = "qwen2.5"
+    IS_NEGATIVE = "qwen2.5"
+    GENERIC_STRUCTURED_OUTPUT = "qwen2.5"
+    GENERATE_RESPONSE = "qwen2.5"
+    STRUCTURED_RESPONSE = "qwen2.5"
+    EXTRACT_INFO_REQUESTED = "qwen2.5"
+    GET_COMMANDS = "qwen2.5"
+
 
 USEFUL_AUDIO_NODE_NAME = "useful_audio_node"
 

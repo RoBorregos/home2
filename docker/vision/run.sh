@@ -137,6 +137,12 @@ case $TASK in
         PROFILES=("vision" "moondream")
         SERVICES=("vision" "moondream-node" "moondream-server")
         ;;
+    "--gpsr")
+        PACKAGES="vision_general object_detector_2d object_detection_handler"
+        RUN="ros2 launch vision_general gpsr_launch.py"
+        PROFILES=("vision" "moondream")
+        SERVICES=("vision" "moondream-node" "moondream-server")
+        ;;
     "--moondream")
         PROFILES=("moondream")
         SERVICES=("moondream-node" "moondream-server")

@@ -27,9 +27,12 @@ file(GLOB PYTHON_SCRIPTS scripts/*.py)
 install(
   PROGRAMS
     scripts/categorization.py  # Path to your Python script
+    scripts/knowledge_base.py
+    scripts/chroma_adapter.py
   DESTINATION lib/${PROJECT_NAME}  # Install to the package's lib directory
 )
-# Install csv files
+
+# Install csv files-TODO remove
 install(DIRECTORY dataframes
   DESTINATION share/${PROJECT_NAME}/
   FILES_MATCHING PATTERN "*.csv"

@@ -4,10 +4,14 @@ from rclpy.node import Node
 from tf2_ros import Buffer, TransformListener
 from tf2_geometry_msgs import do_transform_point
 from rclpy.callback_groups import ReentrantCallbackGroup
-from frida_interfaces.srv import PointTransformation
-
+from frida_interfaces.srv import PointTransformation, ReturnAreas
+import json
+import os
+from ament_index_python.packages import get_package_share_directory
+from geometry_msgs.msg import TransformStamped
 
 POINT_TRANSFORMER_TOPIC = "/integration/point_transformer"
+RETURN_AREAS_TOPIC = "/integration/return_areas"
 
 
 class PointTransformer(Node):
@@ -23,6 +27,7 @@ class PointTransformer(Node):
         self.set_target_service = self.create_service(
             PointTransformation, POINT_TRANSFORMER_TOPIC, self.set_target_callback
         )
+        self.return_areas = self.create_service(ReturnAreas, RETURN_AREAS_TOPIC, self.whereIam)
 
         self.get_logger().info("PointTransformer node has been started.")
 
@@ -56,6 +61,64 @@ class PointTransformer(Node):
             response.success = False
             response.message = "Error converting to height: {e}"
             return response
+
+    def whereIam(self, request, response):
+        # Create a tf2 buffer and listener
+        try:
+            # Wait for the transform to become available (with a timeout)
+            buffer_ = self.tf_buffer.can_transform(
+                "map", "base_link", rclpy.time.Time(), timeout=rclpy.duration.Duration(seconds=5.0)
+            )
+            self.get_logger().info(f"DEBUGG ={buffer_}")
+            rclpy.spin_once(self, timeout_sec=0.1)
+            # Get the transform from base_link to map
+            transform: TransformStamped = self.tf_buffer.lookup_transform(
+                "map", "base_link", rclpy.time.Time()
+            )
+
+            # Extract the pose information
+            posex = transform.transform.translation.x
+            posey = transform.transform.translation.y
+
+            self.get_logger().info(f"Robot's position in the map frame: x={posex}, y={posey}")
+
+        except Exception as e:
+            self.get_logger().error(f"Could not get transform: {str(e)}")
+            response.location = None
+            response.success = False
+            return response
+        package_share_directory = get_package_share_directory("frida_constants")
+        file_path = os.path.join(package_share_directory, "map_areas/areas.json")
+        mylocation = ""
+        with open(file_path, "r") as file:
+            self.areas = json.load(file)
+        for area in self.areas:
+            self.get_logger().info(f"area: {area}")
+            if self.is_inside(posex, posey, self.areas[area]["polygon"]):
+                mylocation = area
+                break
+        if mylocation == "":
+            self.get_logger().warning("I dont know where I am")
+            response.location = None
+            response.success = False
+            return response
+        self.get_logger().info(f"I AM IN: {mylocation}")
+        response.location = mylocation
+        response.success = True
+        return response
+
+    def is_inside(self, x, y, polygon):
+        inside = False
+        n = len(polygon)
+        for i in range(n):
+            x1, y1 = polygon[i]
+            x2, y2 = polygon[(i + 1) % n]
+
+            if (y1 > y) != (y2 > y):
+                xinters = (y - y1) * (x2 - x1) / (y2 - y1 + 1e-10) + x1  # Avoid zero division
+                if x < xinters:
+                    inside = not inside
+        return inside
 
 
 def main(args=None):

@@ -15,6 +15,7 @@
 hri/packages/nlp/assets/**
 .cache
 !hri/packages/nlp/assets/download-model.sh
+!hri/packages/nlp/assets/entrypoint.sh
 **.bag
 **/rtabmapdbs
 **/baml_client
