@@ -3,7 +3,7 @@ import os
 
 import rclpy
 from ament_index_python.packages import get_package_share_directory
-from frida_constants.vision_enums import DetectBy, Gestures, Poses, is_value_in_enum
+from frida_constants.vision_enums import Gestures, Poses, is_value_in_enum
 from utils.status import Status
 
 from subtask_managers.generic_tasks import GenericTask
@@ -15,11 +15,15 @@ class GPSRTask(GenericTask):
     def __init__(self, subtask_manager):
         """Initialize the class"""
         super().__init__(subtask_manager)
-        self.pan_angles = [-45, 0, 45]
+        # Angles are relative to current position
+        self.pan_angles = [-45, 45, 45]
         package_share_directory = get_package_share_directory("frida_constants")
         file_path = os.path.join(package_share_directory, "map_areas/areas.json")
         with open(file_path, "r") as file:
             self.locations = json.load(file)
+
+        self.color_list = ["blue", "yellow", "black", "white", "red", "orange", "gray", "green"]
+        self.clothe_list = ["t shirt", "shirt", "blouse", "sweater", "coat", "jacket", "jeans"]
 
     def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
         """Navigate to the location"""
@@ -67,13 +71,15 @@ class GPSRTask(GenericTask):
         self.subtask_manager.manipulation.move_to_position(named_position="receive_object")
 
         while True:
-            s, res = self.subtask_manager.hri.confirm("Have you grabbed the object?")
+            s, res = self.subtask_manager.hri.confirm(
+                "Have you grabbed the object?", use_hotwords=False
+            )
             if res == "yes":
                 break
             else:
                 self.subtask_manager.hri.say(
                     "I will give you the object. Once you have picked the object, I will open my gripper.",
-                    wait=False,
+                    wait=True,
                 )
 
         self.subtask_manager.hri.say("I will now release the object.", wait=True)
@@ -209,13 +215,18 @@ class GPSRTask(GenericTask):
                 return get_person_name()
         """
 
-        if complement == "gesture":
-            complement = DetectBy.GESTURES.value
-        elif complement == "posture":
-            complement = DetectBy.POSES.value
+        # if complement == "gesture":
+        #     complement = DetectBy.GESTURES.value
+        # elif complement == "posture":
+        #     complement = DetectBy.POSES.value
+        self.subtask_manager.manipulation.move_to_position("front_low_stare")
 
         if complement != "name":
-            return self.subtask_manager.vision.find_person_info(complement)
+            s, res = self.subtask_manager.vision.find_person_info(complement)
+            self.subtask_manager.hri.say(
+                f"The person is {res}.",
+            )
+            return s, res
 
         s, res = self.subtask_manager.vision.get_person_name()
         if s == Status.EXECUTION_SUCCESS:
@@ -323,19 +334,32 @@ class GPSRTask(GenericTask):
         possibilities = [v.value for v in Gestures] + [v.value for v in Poses] + ["clothes"]
 
         status, value = self.subtask_manager.hri.find_closest(possibilities, characteristic)
+        value = value[0]
 
-        # self.subtask_manager.manipulation.move_to_position("front_stare")
+        self.subtask_manager.manipulation.move_to_position("front_low_stare")
 
         counter = 0
+
+        self.subtask_manager.hri.say(
+            f"I am going to count the {characteristic} in the {complement}.",
+        )
+
         for degree in self.pan_angles:
-            # self.subtask_manager.manipulation.pan_to(degree)
+            self.subtask_manager.manipulation.pan_to(degree)
+
             if is_value_in_enum(value, Gestures):
                 status, count = self.subtask_manager.vision.count_by_gesture(value)
             elif is_value_in_enum(value, Poses):
                 status, count = self.subtask_manager.vision.count_by_pose(value)
             else:
-                color = self.subtask_manager.hri.extract_data("color", value)
-                cloth = self.subtask_manager.hri.extract_data("cloth", value)
+                s, color = self.subtask_manager.hri.find_closest(self.color_list, characteristic)
+                color = color[0]
+                s, cloth = self.subtask_manager.hri.find_closest(self.clothe_list, characteristic)
+                cloth = cloth[0]
+
+                # Say actual color that its counting
+                characteristic = f"{color} {cloth}s"
+
                 status, count = self.subtask_manager.vision.count_by_color(color, cloth)
 
             if status == Status.EXECUTION_SUCCESS:
@@ -347,8 +371,11 @@ class GPSRTask(GenericTask):
                 )
 
         self.subtask_manager.hri.say(
-            f"I have counted {counter} {characteristic} in the room.",
+            f"I have finished counting. In total I found {counter} {characteristic} in the {complement}.",
+            wait=False,
         )
+        self.subtask_manager.manipulation.move_to_position("front_stare")
+
         return Status.EXECUTION_SUCCESS, "counted " + str(counter) + " " + characteristic
 
     ## Manipulation, Nav, Vision

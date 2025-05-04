@@ -74,6 +74,9 @@ class GPSRSingleTask(GenericTask):
         while True:
             s, detections = self.subtask_manager.vision.detect_objects()
             current_try += 1
+
+            if len(detections) == 0:
+                self.subtask_manager.hri.say("I didn't found any object.")
             if s == Status.EXECUTION_SUCCESS:
                 break
             if current_try >= RETRIES:
@@ -83,7 +86,7 @@ class GPSRSingleTask(GenericTask):
                 return Status.TARGET_NOT_FOUND, ""
 
         labels = self.subtask_manager.vision.get_labels(detections)
-        s, object_to_pick = self.subtask_manager.hri.find_closest(labels, characteristic)
+        s, object_to_pick = self.subtask_manager.hri.find_closest(labels, complement)
         return self.subtask_manager.manipulation.pick_object(object_to_pick), ""
 
     ## Manipulation

@@ -10,7 +10,7 @@ import time
 
 import rclpy
 from frida_constants.vision_classes import BBOX, ShelfDetection
-from frida_constants.vision_constants import (
+from frida_constants.vision_constants import (  # COUNT_BY_GESTURE_TOPIC,
     BEVERAGE_TOPIC,
     CHECK_PERSON_TOPIC,
     COUNT_BY_COLOR_TOPIC,

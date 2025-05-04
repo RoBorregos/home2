@@ -12,7 +12,7 @@ from utils.logger import Logger
 from utils.status import Status
 from utils.subtask_manager import SubtaskManager, Task
 
-# from subtask_managers.gpsr_test_commands import get_gpsr_comands
+from subtask_managers.gpsr_test_commands import get_gpsr_comands
 
 
 ATTEMPT_LIMIT = 3
@@ -46,9 +46,7 @@ class GPSRTM(Node):
     def __init__(self):
         """Initialize the node"""
         super().__init__("gpsr_task_manager")
-        self.subtask_manager = SubtaskManager(
-            self, task=Task.GPSR, mock_areas=["navigation", "manipulation"]
-        )
+        self.subtask_manager = SubtaskManager(self, task=Task.GPSR, mock_areas=["navigation"])
         self.gpsr_tasks = GPSRTask(self.subtask_manager)
         self.gpsr_individual_tasks = GPSRSingleTask(self.subtask_manager)
 
@@ -57,17 +55,7 @@ class GPSRTM(Node):
         self.current_attempt = 0
         self.executed_commands = 0
         # self.commands = get_gpsr_comands("takeObjFromPlcmt")
-        self.commands = [
-            # {"action": "go", "complement": "kitchen table", "characteristic": ""},
-            {"action": "visual_info", "complement": "biggest", "characteristic": "bottle"},
-            # {"action": "find_person_by_name", "complement": "Oscar", "characteristic": ""},
-            # {"action": "go", "complement": "start_location", "characteristic": ""},
-            {
-                "action": "contextual_say",
-                "complement": "tell me what is the heaviest object in the kitchen",
-                "characteristic": "visual_info",
-            },
-        ]
+        self.commands = get_gpsr_comands("custom")
 
         Logger.info(self, "GPSRTMTaskManager has started.")
 
@@ -125,13 +113,24 @@ class GPSRTM(Node):
                     status, res = exec_commad(command["complement"], command["characteristic"])
                     self.get_logger().info(f"status-> {str(status)}")
                     self.get_logger().info(f"res-> {str(res)}")
+                    status = -2
+
+                    try:
+                        status = status.value
+                    except Exception:
+                        try:
+                            status = int(status)
+                        except Exception:
+                            pass
+
                     self.subtask_manager.hri.add_command_history(
                         command["action"],
                         command["complement"],
                         command["characteristic"],
                         res,
-                        status.value,
+                        status,
                     )
+
         elif self.current_state == GPSRTM.States.FINISHED_COMMAND:
             self.subtask_manager.hri.say(
                 "I have finished executing your command. I will return to the start position to await for new commands.",
