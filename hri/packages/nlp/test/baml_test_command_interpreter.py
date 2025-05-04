@@ -5,7 +5,7 @@ import time
 from typing import Optional
 
 from baml_client.sync_client import b
-from baml_client.types import CommandListLLM_V3
+from baml_client.types import CommandListLLM
 from baml_client.config import set_log_level
 from sentence_transformers import SentenceTransformer
 from scipy.spatial.distance import cosine
@@ -27,13 +27,13 @@ EMBEDDING_MODEL = "all-MiniLM-L6-v2"  # Example model
 # --- Helper Functions ---
 
 
-def parse_expected_output(json_string) -> Optional[CommandListLLM_V3]:
+def parse_expected_output(json_string) -> Optional[CommandListLLM]:
     """Parses the JSON string from the dataset into an ExpectedCommandList model."""
     try:
         # Replace single quotes and None representation if necessary
         # Handle potential variations in JSON string format
         data = {"commands": json_string}
-        return CommandListLLM_V3(**data)
+        return CommandListLLM(**data)
     except (json.JSONDecodeError, TypeError, ValueError) as e:
         print(f"Error parsing JSON string: {json_string}\nError: {e}")
         return None
@@ -95,7 +95,7 @@ def calculate_cosine_similarity(text1: Optional[str], text2: Optional[str]) -> f
         return 1.0 if text1 == text2 else 0.0
 
 
-def compare_commands(actual: CommandListLLM_V3, expected: CommandListLLM_V3) -> float:
+def compare_commands(actual: CommandListLLM, expected: CommandListLLM) -> float:
     """Compares the actual BAML output with the expected output."""
     if len(actual.commands) != len(expected.commands):
         print(f"Mismatch in number of commands: Actual={len(actual.commands)}, Expected={len(expected.commands)}")
@@ -182,7 +182,7 @@ def run_tests():
         try:
             start_time = time.time()
             # Call the BAML function
-            actual_command_list = b.GenerateCommandListV3(request=input_str)
+            actual_command_list = b.GenerateCommandList(request=input_str)
             end_time = time.time()
             duration = end_time - start_time  # <-- Calculate duration
             execution_times.append(duration)  # <-- Store duration
