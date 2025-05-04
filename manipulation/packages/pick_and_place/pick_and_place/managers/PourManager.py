@@ -1,9 +1,10 @@
 from frida_motion_planning.utils.ros_utils import wait_for_future
 from frida_interfaces.srv import PickPerceptionService, DetectionHandler
 from geometry_msgs.msg import PointStamped
-from std_srvs.srv import SetBool
-from pick_and_place.utils.grasp_utils import get_grasps
-from frida_interfaces.action import PickMotion, PourMotion
+
+# from std_srvs.srv import SetBool
+# from pick_and_place.utils.grasp_utils import get_grasps
+from frida_interfaces.action import PourMotion  # PickMotion
 from frida_interfaces.srv import GetCollisionObjects
 from frida_motion_planning.utils.service_utils import (
     move_joint_positions as send_joint_goal,
@@ -25,22 +26,7 @@ class PourManager:
     def execute(self, object_name: str, container_object_name: str) -> bool:
         self.node.get_logger().info("Executing Pour Task")
         self.node.get_logger().info("Setting initial joint positions")
-        point = self.get_object_point(object_name)
-        if not point or point.point.x == 0.0:  # Check for invalid point
-            self.node.get_logger().error(f"Invalid point for {object_name}")
-            return False
 
-        # Get container point
-        container_point = self.get_object_point(container_object_name)
-        if not container_point or container_point.point.x == 0.0:
-            self.node.get_logger().error("Invalid container point")
-            return False
-
-        # Validate clusters
-        object_cluster = self.get_object_cluster(point)
-        container_cluster = self.get_object_cluster(container_point)
-        if not object_cluster or not container_cluster:
-            return False
         # time.sleep(10)
         # Set initial joint positions
         send_joint_goal(
@@ -48,19 +34,19 @@ class PourManager:
             named_position="table_stare",
             velocity=0.3,
         )
-        if (object_name is not None and object_name != "") or (
-            container_object_name is not None and container_object_name != ""
-        ):
-            self.node.get_logger().info(f"Going for object name: {object_name}")
-            point = self.get_object_point(object_name)
-            if point is None:
-                self.node.get_logger().error(
-                    f"Object {object_name} not found, please provide a point"
-                )
-                return False
-        else:
-            self.node.get_logger().error("No object name or point provided")
-            return False
+
+        # get object point
+        # if object_name is not None and object_name != "":
+        #     self.node.get_logger().info(f"Going for object name: {object_name}")
+        #     point = self.get_object_point(object_name)
+        #     if point is None:
+        #         self.node.get_logger().error(
+        #             f"Object {object_name} not found, please provide a point"
+        #         )
+        #         return False
+        # else:
+        #     self.node.get_logger().error("No object name or point provided")
+        #     return False
 
         # get bowl object point
         if container_object_name is not None and container_object_name != "":
@@ -80,83 +66,86 @@ class PourManager:
         # get bowl top height
         bowl_objects = self.get_container_objects(container_object_name)
         if not bowl_objects:
+            self.node.get_logger().error("Not bowl objects - Error")
             return False
 
         obj_lowest = min(bowl_objects, key=lambda o: o.pose.pose.position.z)
         obj_highest = max(bowl_objects, key=lambda o: o.pose.pose.position.z)
 
         # Call Perception Service to get object cluster and generate collision objects
-        object_cluster = self.get_object_cluster(point)
-        if object_cluster is None:
-            self.node.get_logger().error("No object cluster detected")
-            return False
+        # object_cluster = self.get_object_cluster(point)
+        # if object_cluster is None:
+        #     self.node.get_logger().error("No object cluster detected")
+        #     return False
 
+        # Call Perception Service to get container cluster and generate collision objects
         container_cluster = self.get_object_cluster(container_point)
         if container_cluster is None:
             self.node.get_logger().error("No container cluster detected")
             return False
 
-        # open gripper
-        gripper_request = SetBool.Request()
-        gripper_request.data = True
-        self.node.get_logger().info("Open gripper")
-        future = self.node._gripper_set_state_client.call_async(gripper_request)
-        future = wait_for_future(future)
-        result = future.result()
-        self.node.get_logger().info(f"2 Gripper Result: {str(gripper_request.data)}")
-        pick_result_success = False
-        print("Gripper Result:", result)
-        for CFG_PATH in CFG_PATHS:
-            self.node.get_logger().info(f"CFG_PATH: {CFG_PATH}")
-            # Call Grasp Pose Detection
-            grasp_poses, grasp_scores = get_grasps(
-                self.node.grasp_detection_client, object_cluster, CFG_PATH
-            )
+        # # open gripper
+        # gripper_request = SetBool.Request()
+        # gripper_request.data = True
+        # self.node.get_logger().info("Open gripper")
+        # future = self.node._gripper_set_state_client.call_async(gripper_request)
+        # future = wait_for_future(future)
+        # result = future.result()
+        # self.node.get_logger().info(f"2 Gripper Result: {str(gripper_request.data)}")
+        # pick_result_success = False
+        # print("Gripper Result:", result)
+        # for CFG_PATH in CFG_PATHS:
+        #     self.node.get_logger().info(f"CFG_PATH: {CFG_PATH}")
+        #     # Call Grasp Pose Detection
+        #     grasp_poses, grasp_scores = get_grasps(
+        #         self.node.grasp_detection_client, object_cluster, CFG_PATH
+        #     )
 
-            grasp_poses, grasp_scores = grasp_poses[:5], grasp_scores[:5]
+        #     grasp_poses, grasp_scores = grasp_poses[:5], grasp_scores[:5]
 
-            if len(grasp_poses) == 0:
-                self.node.get_logger().error("No grasp poses detected")
-                continue
+        #     if len(grasp_poses) == 0:
+        #         self.node.get_logger().error("No grasp poses detected")
+        #         continue
 
-            # Call Pick Motion Action
+        #     # Call Pick Motion Actio
 
-            # Create goal
-            goal_msg = PickMotion.Goal()
-            goal_msg.grasping_poses = grasp_poses
-            goal_msg.grasping_scores = grasp_scores
+        #     # Create goal
+        #     goal_msg = PickMotion.Goal()
+        #     goal_msg.grasping_poses = grasp_poses
+        #     goal_msg.grasping_scores = grasp_scores
 
-            # Send goal
-            self.node.get_logger().info("Sending pick motion goal...")
-            future = self.node._pick_motion_action_client.send_goal_async(goal_msg)
-            future = wait_for_future(future)
-            # Check result
-            pick_result = future.result().get_result().result
-            self.node.get_logger().info(f"Pick Motion Result: {pick_result}")
-            if pick_result.success:
-                pick_result_success = True
-                break
+        #     # Send goal
+        #     self.node.get_logger().info("Sending pick motion goal...")
+        #     future = self.node._pick_motion_action_client.send_goal_async(goal_msg)
+        #     future = wait_for_future(future)
+        #     # Check result
+        #     pick_result = future.result().get_result().result
+        #     self.node.get_logger().info(f"Pick Motion Result: {pick_result}")
+        #     if pick_result.success:
+        #         pick_result_success = True
+        #         break
 
-        if not pick_result_success:
-            self.node.get_logger().error("Pick motion failed")
-            return False
+        # if not pick_result_success:
+        #     self.node.get_logger().error("Pick motion failed")
+        #     return False
 
         ### Up until here same as PickManager
         # Now go to pour
         # Send bowl object point to pour
-        object_top_height = pick_result.object_height
-        object_centroid_height = pick_result.object_pick_height
+        # object_top_height = pick_result.object_height
+        # object_centroid_height = pick_result.object_pick_height
+
         bowl_top_height = self.calculate_object_height(obj_lowest, obj_highest)
 
         if bowl_top_height is None:
+            self.node.get_logger().error("Bowl top height is none - Error")
             return False
-
         bowl_centroid_height = container_point
 
         goal_msg = PourMotion.Goal(
             object_name=object_name,
-            object_top_height=object_top_height,
-            object_centroid_height=object_centroid_height,
+            # object_top_height=object_top_height,
+            # object_centroid_height=object_centroid_height,
             bowl_top_height=bowl_top_height,
             bowl_position=bowl_centroid_height,
         )
@@ -180,10 +169,11 @@ class PourManager:
                 velocity=0.3,
             )
             if return_result:
+                self.node.get_logger().error("Se metio al fucking fucker - Error")
                 break
         # self.node.get_logger().info("Waiting for 10 seconds")
         # time.sleep(10)
-        return result.success
+        return True
 
     def get_object_point(self, object_name: str) -> PointStamped:
         request = DetectionHandler.Request()

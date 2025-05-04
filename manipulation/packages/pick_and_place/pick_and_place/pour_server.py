@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import numpy as np
 import rclpy
-from geometry_msgs import Pose
+from geometry_msgs.msg import Pose
 from rclpy.action import ActionClient, ActionServer
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.node import Node

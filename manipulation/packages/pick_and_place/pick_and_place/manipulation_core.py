@@ -179,7 +179,7 @@ class ManipulationCore(Node):
                 return False
             return result
         except Exception:
-            self.get_logger().error("Pour failed1000")
+            self.get_logger().error("Pour exeption")
             return False
 
     def manipulation_server_callback(self, goal_handle):
