@@ -312,6 +312,7 @@ def format_response(response):
         },
     ]
 
+
 def get_answer_question_dialog(contexts, question):
     if contexts:
         context_text = "\n".join(contexts)
