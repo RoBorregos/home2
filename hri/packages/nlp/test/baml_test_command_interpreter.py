@@ -8,42 +8,35 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field
 from baml_client.sync_client import b
-from baml_client.types import CommandListLLM, CommandLLM, CommandAction
+from baml_client.types import CommandListLLM_V3
 # We'll need sentence-transformers for cosine similarity later
 from sentence_transformers import SentenceTransformer
 from scipy.spatial.distance import cosine
 from tqdm import tqdm
 import numpy as np
+from baml_client.config import set_log_level
 
-
-# --- Pydantic Models for Expected Output ---
-
-class ExpectedCommand(BaseModel):
-    action: str
-    complement: Optional[str] = None
-
-class ExpectedCommandList(BaseModel):
-    commands: List[ExpectedCommand]
+# Turn off all logging
+set_log_level("ERROR")
 
 
 # --- Configuration ---
 STARTING_CASE = 0 # Adjust if needed
 SIMILARITY_THRESHOLD = 0.8 # Threshold for complement similarity
 OVERALL_THRESHOLD = 0.75 # Threshold for the overall test case score
-TEST_DATA_FILE = "data/command_interpreter_v2.json"
+TEST_DATA_FILE = "data/command_interpreter_v3.json"
 EMBEDDING_MODEL = 'all-MiniLM-L6-v2' # Example model
 
 
 # --- Helper Functions ---
 
-def parse_expected_output(json_string: str) -> Optional[ExpectedCommandList]:
+def parse_expected_output(json_string) -> Optional[CommandListLLM_V3]:
     """Parses the JSON string from the dataset into an ExpectedCommandList model."""
     try:
         # Replace single quotes and None representation if necessary
         # Handle potential variations in JSON string format
-        corrected_json_string = json_string.replace("'", '"').replace("None", "null")
-        data = json.loads(corrected_json_string)
-        return ExpectedCommandList(**data)
+        data = {"commands": json_string}
+        return CommandListLLM_V3(**data)
     except (json.JSONDecodeError, TypeError, ValueError) as e:
         print(f"Error parsing JSON string: {json_string}\nError: {e}")
         return None
@@ -103,7 +96,7 @@ def calculate_cosine_similarity(text1: Optional[str], text2: Optional[str]) -> f
         return 1.0 if text1 == text2 else 0.0
 
 
-def compare_commands(actual: CommandListLLM, expected: ExpectedCommandList) -> float:
+def compare_commands(actual: CommandListLLM_V3, expected: CommandListLLM_V3) -> float:
     """Compares the actual BAML output with the expected output."""
     if len(actual.commands) != len(expected.commands):
         print(f"Mismatch in number of commands: Actual={len(actual.commands)}, Expected={len(expected.commands)}")
@@ -120,11 +113,10 @@ def compare_commands(actual: CommandListLLM, expected: ExpectedCommandList) -> f
 
         # Compare Action (Enum vs String)
         # Convert Enum member to its value (string representation)
-        actual_action_str = act_cmd.action.value if isinstance(act_cmd.action, CommandAction) else str(act_cmd.action)
-        if actual_action_str == exp_cmd.action:
+        if act_cmd.action == exp_cmd.action:
             action_match = True
             # Compare Complement using Cosine Similarity (handles None)
-            similarity = calculate_cosine_similarity(act_cmd.complement, exp_cmd.complement)
+            similarity = calculate_cosine_similarity(str(act_cmd), str(exp_cmd))
 
             # Score for this command: Weighted average? Let's try 40% action, 60% complement
             # command_score = 0.4 + (0.6 * similarity) if similarity >= 0 else 0.0 # Ensure similarity isn't negative
@@ -134,11 +126,11 @@ def compare_commands(actual: CommandListLLM, expected: ExpectedCommandList) -> f
             command_score = (1.0 + similarity) / 2.0 # Simple average of action (1) and similarity
 
         else:
-            print(f"Command {i}: Action mismatch - Actual='{actual_action_str}', Expected='{exp_cmd.action}'")
+            print(f"Command {i}: Action mismatch - Actual='{act_cmd.action}', Expected='{exp_cmd.action}'")
             command_score = 0.0 # Action mismatch means 0 score for the command
 
         scores.append(command_score)
-        print(f"  Cmd {i}: Act='{actual_action_str}'({act_cmd.complement}) vs Exp='{exp_cmd.action}'({exp_cmd.complement}) -> ActionMatch={action_match}, Sim={similarity:.2f}, Score={command_score:.2f}")
+        print(f"  Cmd {i}: Act='{act_cmd.action}' vs Exp='{exp_cmd.action}' -> ActionMatch={action_match}, Sim={similarity:.2f}, Score={command_score:.2f}")
 
     overall_score = np.mean(scores) if scores else 1.0
     return overall_score
@@ -148,6 +140,11 @@ def compare_commands(actual: CommandListLLM, expected: ExpectedCommandList) -> f
 
 def run_tests():
     """Loads data, runs tests, and reports results."""
+    # --- Model Name Input ---
+    model_name = input("Model name for test run (for logging, set the actual client in `GenerateCommandListV3`): ")
+    print(f"Testing with model: {model_name}")
+    # --- End Model Name Input ---
+
     print(f"Loading test data from: {TEST_DATA_FILE}")
     try:
         with open(TEST_DATA_FILE, "r") as f:
@@ -171,10 +168,11 @@ def run_tests():
 
     passed_count = 0
     failed_cases = []
+    execution_times = [] # <-- Add list to store times
 
     for i, (input_str, expected_str) in enumerate(tqdm(test_cases, desc="Running BAML tests")):
         # TODO: Remove delay for local testing, it was used to avoid rate limiting
-        time.sleep(5)
+        #time.sleep(3)
         print(f"\n--- Test Case {STARTING_CASE + i} ---")
         print(f"Input: {input_str}")
 
@@ -193,10 +191,12 @@ def run_tests():
         try:
             start_time = time.time()
             # Call the BAML function
-            actual_command_list = b.GenerateCommandList(request=input_str)
+            actual_command_list = b.GenerateCommandListV3(request=input_str)
             end_time = time.time()
+            duration = end_time - start_time # <-- Calculate duration
+            execution_times.append(duration) # <-- Store duration
             print(f"Expected: {expected_command_list.model_dump_json(indent=2)}")
-            print(f"BAML Response ({end_time - start_time:.2f}s): {actual_command_list.model_dump_json(indent=2)}")
+            print(f"BAML Response ({duration:.2f}s): {actual_command_list.model_dump_json(indent=2)}")
 
             # Compare results
             score = compare_commands(actual_command_list, expected_command_list)
@@ -224,16 +224,14 @@ def run_tests():
                 "expected_str": expected_str,
                 "reason": f"Runtime error: {e}"
             })
+            # Ensure duration is recorded even on error if start_time was set
+            if 'start_time' in locals():
+                 duration = time.time() - start_time
+                 execution_times.append(duration)
         
         # Optional: Add delay between API calls if needed
         # time.sleep(1) 
 
-    # --- Reporting ---
-    print("\n--- Test Summary ---")
-    total_cases = len(test_cases)
-    print(f"Total Cases: {total_cases}")
-    print(f" \x1B[92mPassed: {passed_count}\x1B[0m")
-    print(f" \x1B[91mFailed: {len(failed_cases)}\x1B[0m")
 
     if failed_cases:
         print("\n--- Failed Cases ---")
@@ -252,6 +250,18 @@ def run_tests():
         # with open("baml_test_failures.json", "w") as f:
         #     json.dump(failed_cases, f, indent=2)
         # print("Failed cases saved to baml_test_failures.json")
+    
+    # --- Reporting ---
+    print("\n--- Test Summary ---")
+    total_cases = len(test_cases)
+    print(f"Total Cases: {total_cases}")
+    print(f" \x1B[92mPassed: {passed_count}\x1B[0m")
+    print(f" \x1B[91mFailed: {len(failed_cases)}\x1B[0m")
+    
+    # Calculate average time
+    average_time = np.mean(execution_times) if execution_times else 0
+    print(f"Average Time per Case: {average_time:.2f}s")
+    print(f"Model Tested: {model_name}") # <-- Print model name
 
 
 if __name__ == "__main__":
