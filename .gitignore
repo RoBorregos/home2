@@ -19,3 +19,4 @@ hri/packages/nlp/assets/**
 **.bag
 **/rtabmapdbs
 yolov5/
+**/baml_client

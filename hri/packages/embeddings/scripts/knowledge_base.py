@@ -1,79 +1,103 @@
-import os
-import chromadb
-from sentence_transformers import SentenceTransformer, util
-from llama_cpp import Llama
-
-llm = Llama.from_pretrained(
-    repo_id="lmstudio-community/Qwen2.5-7B-Instruct-1M-GGUF",
-    filename="Qwen2.5-7B-Instruct-1M-Q3_K_L.gguf",
-    verbose=False,
-)
-
-model = SentenceTransformer("all-MiniLM-L6-v2")
-client = chromadb.Client()
-
-frida_knowledge = client.create_collection("frida_knowledge")
-roborregos_knowledge = client.create_collection("roborregos_knowledge")
-tec_knowledge = client.create_collection("tec_knowledge")
-
-directory = "hri/packages/embeddings/embeddings/dataframes/knowledge_base"
-
-file_embeddings = {}
-for filename in os.listdir(directory):
-    if filename.endswith(".txt"):
-        with open(os.path.join(directory, filename), "r") as file:
-            text = file.read()
-            lines = text.split("\n")
-            embeddings = model.encode(lines, convert_to_tensor=True)
-            file_embeddings[filename] = (lines, embeddings)
-
-            # Upload embeddings to Chroma collections
-            for i, line in enumerate(lines):
-                embedding = embeddings[i].tolist()
-                frida_knowledge.add_document(line, embedding)
-                roborregos_knowledge.add_document(line, embedding)
-                tec_knowledge.add_document(line, embedding)
+#!/usr/bin/env python3
+import rclpy
+from rclpy.node import Node
+from frida_interfaces.srv import AnswerQuestion
+from chroma_adapter import ChromaAdapter
+from openai import OpenAI
+from nlp.assets.dialogs import get_answer_question_dialog
 
 
-def answer_question(question):
-    question_embedding = model.encode(question, convert_to_tensor=True)
-    all_similarities = []
+class RAGService(Node):
+    def __init__(self):
+        super().__init__("rag_service")
 
-    for filename, (lines, embeddings) in file_embeddings.items():
-        similarities = util.pytorch_cos_sim(question_embedding, embeddings)
-        for i, similarity in enumerate(similarities[0]):
-            all_similarities.append((similarity.item(), lines[i], filename))
+        self.get_logger().info("Initializing RAG node")
 
-    # Get top 3 results
-    all_similarities.sort(key=lambda x: x[0], reverse=True)
-    top_3_results = all_similarities[:3]
+        # Setup Chroma Adapter
+        self.client = ChromaAdapter()
 
-    # Check if any similarity is above 0.4
-    relevant_contexts = [result for result in top_3_results if result[0] > 0.4]
+        self.api_key = "ollama"
+        self.base_url = "http://localhost:11434/v1"
+        self.model_name = "qwen2.5"
+        self.temperature = 0.0
 
-    # Answer with context from knowledge base
-    if relevant_contexts:
-        context_statements = " ".join([context[1] for context in relevant_contexts])
-        prompt = f"{context_statements} {question}"
-    # Answer with question only
-    else:
-        prompt = question
+        self.llm = OpenAI(api_key=self.api_key, base_url=self.base_url)
+        # Create the service
+        self.srv = self.create_service(
+            AnswerQuestion, "/hri/rag/answer_question", self.answer_question_callback
+        )
+        self.get_logger().info("RAG node initialized")
 
-    response = llm.create_chat_completion(
-        messages=[{"role": "user", "content": prompt}]
-    )
+    def answer_question_callback(self, request, response):
+        question = request.question
+        top_k = request.topk
+        threshold = request.threshold
+        collections = (
+            request.collections
+            if request.collections
+            else ["frida_knowledge", "roborregos_knowledge", "tec_knowledge"]
+        )
 
-    assistant_response = response["choices"][0]["message"]["content"]
-    return assistant_response
+        try:
+            all_context_pairs = []
+
+            for collection_name in collections:
+                try:
+                    collection = self.client.get_collection(collection_name)
+                    results = collection.query(
+                        query_texts=[question],
+                        n_results=top_k,
+                        include=["documents", "distances"],
+                    )
+                    documents = results.get("documents", [[]])[0]
+                    distances = results.get("distances", [[]])[0]
+                    context_pairs = list(zip(distances, documents))
+                    all_context_pairs.extend(context_pairs)
+
+                except Exception as e:
+                    self.get_logger().warn(f"Collection {collection_name} error: {e}")
+
+            all_context_pairs.sort(key=lambda x: -x[0])
+            top_contexts = all_context_pairs[:top_k]
+            best_score = top_contexts[0][0] if top_contexts else 0.0
+
+            relevant_contexts = (
+                [doc for score, doc in top_contexts if score > threshold]
+                if best_score > threshold
+                else []
+            )
+
+            self.get_logger().info(
+                f"Generating LLM answer (threshold={threshold}, best_score={best_score})"
+            )
+
+            messages = get_answer_question_dialog(relevant_contexts, question)
+            completion = self.llm.chat.completions.create(
+                model=self.model_name,
+                temperature=self.temperature,
+                messages=messages,
+            )
+            assistant_response = completion.choices[0].message.content
+
+            response.success = True
+            response.response = assistant_response
+            response.score = best_score
+
+        except Exception as e:
+            self.get_logger().error(f"Error during RAG process: {e}")
+            response.success = False
+            response.response = f"Failed to answer question: {e}"
+            response.score = 0.0
+
+        return response
 
 
-# Example usage
-question = "What is the capital of France?"
-answer = answer_question(question)
-print(answer)
+def main(args=None):
+    rclpy.init(args=args)
+    node = RAGService()
+    rclpy.spin(node)
+    rclpy.shutdown()
 
-# 1. knowledge base upload of txt with embeddings per line to chroma db (there are 3 different knowledge bases)
-# 2. when the query is done we will retrieve the top 3 results from all the files
-# 3. we will return the answer and score to measure
-# 4. if the score is not greater than 0.4 then use normal llm to answer the question (to target potential quizz questions and dates)
-# 5. otherwise return the answer from the knowledge base and pass it on to the local llm for a structured output (knowledge base answer + local llm answer)
+
+if __name__ == "__main__":
+    main()
