@@ -421,8 +421,8 @@ class MoveItPlanner(Planner):
         self.moveit2.update_planning_scene()
 
     def get_planning_scene(self) -> None:
-        self.update_planning_scene()    # check the pymoveit2 library
-        self.moveit2.planning_scene()   # Return the current planning scene after the update
+        self.update_planning_scene()  # check the pymoveit2 library
+        self.moveit2.planning_scene()  # Return the current planning scene after the update
 
     def remove_collision_object(self, id: str) -> None:
         self.moveit2.remove_collision_object(id)
