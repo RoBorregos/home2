@@ -1,6 +1,9 @@
 #! /usr/bin/env python3
 from detectors.ObjectDetector import Detection, ObjectDectectorParams
 from detectors.ZeroShotObjectDetector import ZeroShotObjectDetector
+import logging
+
+logging.getLogger("ultralytics").setLevel(logging.ERROR)
 from ultralytics import YOLOE
 import warnings
 import sys
