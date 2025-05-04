@@ -76,8 +76,8 @@ STATE_RETRIES = {
     ExecutionStates.SAY_5_OBJECTS_CATEGORIZED: 2,
     ExecutionStates.NAV_TO_TABLE: 10,
     ExecutionStates.NAV_TO_SHELF: 10,
-    ExecutionStates.PICK_OBJECT: 3,
-    ExecutionStates.PLACE_OBJECT: 3,
+    ExecutionStates.PICK_OBJECT: 2,
+    ExecutionStates.PLACE_OBJECT: 1,
     ExecutionStates.CEREAL_ANALYSIS: 10,
     ExecutionStates.CEREAL_PICK: 10,
     ExecutionStates.CEREAL_PLACE: 10,
@@ -208,7 +208,7 @@ class StoringGroceriesManager(Node):
                     approach_plane=True,
                 )
                 Logger.info(self, "Moved, now detecting objects")
-                time.sleep(1)
+                time.sleep(3)
                 status, res = self.subtask_manager.vision.detect_objects()
                 rettry = 0
                 while status != Status.EXECUTION_SUCCESS and rettry < 5:
@@ -241,6 +241,16 @@ class StoringGroceriesManager(Node):
                                 f"Detected object {det.classname} in shelf {self.shelves[i].tag}",
                             )
                             break
+                        else:
+                            for j in range(len(self.manual_heights)):
+                                if j != i and j not in self.shelves[j].objects:
+                                    self.shelves[j].objects.append(det.classname)
+                                    self.shelves[j].id = j
+                                    Logger.info(
+                                        self,
+                                        f"Detected object {det.classname} in shelf {self.shelves[j].tag}",
+                                    )
+                                    break
                 self.shelves_count += 1
             # self.subtask_manager.manipulation.move_joint_positions(
             #     named_position="front_stare", velocity=0.5, degrees=True
@@ -285,6 +295,7 @@ class StoringGroceriesManager(Node):
             self.subtask_manager.manipulation.move_joint_positions(
                 named_position="table_stare", velocity=0.5, degrees=True
             )
+            time.sleep(1.5)
             status, result = self.subtask_manager.vision.detect_objects(timeout=10)
             if status == Status.TIMEOUT:
                 # pass
@@ -384,7 +395,7 @@ class StoringGroceriesManager(Node):
             self.state = ExecutionStates.NAV_TO_TABLE
         elif self.state == ExecutionStates.NAV_TO_TABLE:
             print("qpd papu")
-            print(f"self.state: {self.state}")
+            print(f"self.papustate: {self.state}")
             # return
             try:
                 hres: Status = self.nav_to("kitchen", "table")
@@ -403,6 +414,10 @@ class StoringGroceriesManager(Node):
             # status = self.subtask_manager.manipulation.get_optimal_position_for_plane(
             #     0.75, tolerance=0.2, table_or_shelf=True
             # )
+            self.subtask_manager.manipulation.move_joint_positions(
+                named_position="table_stare", velocity=0.5, degrees=True
+            )
+            time.sleep(2.5)
             status, objs = self.subtask_manager.vision.detect_objects(timeout=10)
             if status == Status.TIMEOUT:
                 # pass
@@ -433,7 +448,6 @@ class StoringGroceriesManager(Node):
                 self,
                 f"Detected object: {min_distance_obj.classname} at distance {min_distance_obj.distance}",
             )
-
             # Logger.info(self,
             #     f"Detected object: {min_distance_obj.classname}")
             self.subtask_manager.hri.say(
@@ -445,7 +459,47 @@ class StoringGroceriesManager(Node):
                 # self.state = ExecutionStates.FAILED_NAV_TO_SHELF
                 Logger.error(self, "Failed to pick object")
                 return
+
+            Logger.info(
+                self,
+                f"Picked object: {min_distance_obj.classname} at distance {min_distance_obj.distance}",
+            )
             self.state = ExecutionStates.NAV_TO_SHELF
+
+            status, new_objs = self.subtask_manager.vision.detect_objects(timeout=10)
+            new_objs: list[BBOX]
+            if status == Status.TIMEOUT:
+                # pass
+                return
+            elif not status == Status.EXECUTION_SUCCESS:
+                Logger.error(self, "Unknown status")
+                return
+            if len(new_objs) == 0:
+                Logger.error(self, "No objects detected")
+                # self.subtask_manager.hri.say(text="No objects detected", wait=True)
+                return
+            Logger.info(self, f"Detected objects: {new_objs}")
+
+            # for each object check if classname is same and if less than 0.05 then Logger.info
+            v_obj = [min_distance_obj.px, min_distance_obj.py, min_distance_obj.pz]
+            for obj in new_objs:
+                obj: BBOX
+                if obj.classname == min_distance_obj.classname:
+                    v = [obj.px, obj.py, obj.pz]
+                    distance = (
+                        (v[0] - v_obj[0]) ** 2 + (v[1] - v_obj[1]) ** 2 + (v[2] - v_obj[2]) ** 2
+                    ) ** 0.5
+                    if distance < 0.05:
+                        Logger.info(
+                            self,
+                            f"Detected object: {obj.classname} at distance {distance}",
+                        )
+                        Logger.error(self, "Didnt pick the object, detected it again")
+                        self.state = ExecutionStates.PICK_OBJECT
+                        return
+                        # self.subtask_manager.hri.say(
+                        #     text=f"Detected object: {obj.classname} at distance {distance}", wait=True
+                        # )
         elif self.state == ExecutionStates.NAV_TO_SHELF:
             hres: Status = self.nav_to("kitchen", "shelve")
             hres: Status = self.nav_to("kitchen", "shelve")
@@ -457,8 +511,18 @@ class StoringGroceriesManager(Node):
         elif self.state == ExecutionStates.PLACE_OBJECT:
             # self.state = ExecutionStates.DEUX_PICK_OBJECT
             # return
+            if self.object_to_placing_shelf[self.current_object] == []:
+                # put it in a random shelf
+                Logger.info(self, "No shelf found for object")
+                self.object_to_placing_shelf[self.current_object].append(
+                    self.shelves_count % len(self.manual_heights)
+                )
+            elif self.object_to_placing_shelf[self.current_object][0] > len(self.shelves):
+                self.object_to_placing_shelf[self.current_object][0] = self.object_to_placing_shelf[
+                    self.current_object
+                ][0] % len(self.manual_heights)
 
-            shelf = self.object_to_placing_shelf[self.current_object][0] % len(self.shelves)
+            shelf = self.object_to_placing_shelf[self.current_object][0] % len(self.manual_heights)
             self.subtask_manager.hri.say(
                 text=f"I'm going to place the object: {self.current_object} in shelf number {shelf}"
                 + f". corresponding to {self.shelves[shelf].tag}"
@@ -545,8 +609,12 @@ class StoringGroceriesManager(Node):
                 Logger.info(self, f"Retry count: {self.retry_count}")
                 Logger.info(self, f"Prev: {self.prev_state}")
                 self.retry_count += 1
-
-                if self.retry_count > 10:
+                retries_val = 0
+                if self.state in STATE_RETRIES:
+                    retries_val = STATE_RETRIES[self.state]
+                else:
+                    retries_val = STATE_RETRIES["DEFAULT"]
+                if self.retry_count > retries_val:
                     Logger.error(self, "Retry count exceeded")
                     if self.state in STATE_TO_DEUX:
                         self.prev_state = self.state
