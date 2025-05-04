@@ -10,6 +10,7 @@ pip install -r requirements.txt
 6. If an API Key was set in BAML, make sure to add it as an env var in the terminal:
 ```bash
 export OPENROUTER_API_KEY="super-secret-not-from-work-api-key"
+export OPENAI_API_KEY="ivan-key-xd"
 ```
 7. Run the test file:
 ```bash
