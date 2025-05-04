@@ -26,6 +26,7 @@ from frida_interfaces.srv import (
     PlacePerceptionService,
     HeatmapPlace,
     GetJoints,
+    GetCollisionObjects
 )
 from frida_constants.manipulation_constants import (
     PICK_MOTION_ACTION_SERVER,
@@ -41,6 +42,7 @@ from frida_constants.manipulation_constants import (
     GET_JOINT_SERVICE,
     SCAN_ANGLE_VERTICAL,
     SCAN_ANGLE_HORIZONTAL,
+    GET_COLLISION_OBJECTS_SERVICE,
 )
 from frida_constants.vision_constants import (
     DETECTION_HANDLER_TOPIC_SRV,
@@ -122,6 +124,11 @@ class ManipulationCore(Node):
             GRIPPER_SET_STATE_SERVICE,
         )
 
+        self._get_collision_objects_client = self.create_client(
+            GetCollisionObjects,
+            GET_COLLISION_OBJECTS_SERVICE,
+        )
+
         self._clear_octomap_client = self.create_client(Empty, "/clear_octomap")
 
         self.pick_manager = PickManager(self)
@@ -177,6 +184,7 @@ class ManipulationCore(Node):
                 # object_point=object_point,
                 container_object_name=bowl_name,
             )
+            result = False
             if not result:
                 self.get_logger().error("Pour failed")
                 return False

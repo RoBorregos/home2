@@ -9,8 +9,7 @@ from frida_interfaces.srv import GetCollisionObjects
 from frida_motion_planning.utils.service_utils import (
     move_joint_positions as send_joint_goal,
 )
-# from sensor_msgs.msg import JointState
-
+from frida_constants.manipulation_constants import GET_COLLISION_OBJECTS_SERVICE
 
 CFG_PATHS = [
     "/workspace/src/home2/manipulation/packages/arm_pkg/config/frida_eigen_params_custom_gripper_testing.cfg",
@@ -30,6 +29,7 @@ class PourManager:
 
         # time.sleep(10)
         # Set initial joint positions
+        self.node.get_logger().warning("Set initial joint positions - FFN1")
         send_joint_goal(
             move_joints_action_client=self.node._move_joints_client,
             named_position="table_stare",
@@ -50,6 +50,7 @@ class PourManager:
         #     return False
 
         # get bowl object point
+        self.node.get_logger().warning("Get bowl object point - FFN2")
         if container_object_name is not None and container_object_name != "":
             self.node.get_logger().info(
                 f"Going for bowl object name: {container_object_name}"
@@ -65,13 +66,14 @@ class PourManager:
             return False
 
         # get bowl top height
-        bowl_objects = self.get_container_objects(container_object_name)
-        if not bowl_objects:
-            self.node.get_logger().error("Not bowl objects - Error")
-            return False
+        # self.node.get_logger().error("Get bowl top height - FF3")
+        # bowl_objects = self.get_container_objects(container_object_name)
+        # if not bowl_objects:
+        #     self.node.get_logger().error("Not bowl objects - Error")
+        #     return False
 
-        obj_lowest = min(bowl_objects, key=lambda o: o.pose.pose.position.z)
-        obj_highest = max(bowl_objects, key=lambda o: o.pose.pose.position.z)
+        # obj_lowest = min(bowl_objects, key=lambda o: o.pose.pose.position.z)
+        # obj_highest = max(bowl_objects, key=lambda o: o.pose.pose.position.z)
 
         # Call Perception Service to get object cluster and generate collision objects
         # object_cluster = self.get_object_cluster(point)
@@ -79,6 +81,7 @@ class PourManager:
         #     self.node.get_logger().error("No object cluster detected")
         #     return False
 
+        self.node.get_logger().error("fucking fucker -4")
         # Call Perception Service to get container cluster and generate collision objects
         container_cluster = self.get_object_cluster(container_point)
         if container_cluster is None:
@@ -136,32 +139,37 @@ class PourManager:
         # object_top_height = pick_result.object_height
         # object_centroid_height = pick_result.object_pick_height
 
-        bowl_top_height = self.calculate_object_height(obj_lowest, obj_highest)
+        self.node.get_logger().error("fucking fucker 1")
+        # bowl_top_height = self.calculate_object_height(obj_lowest, obj_highest)
 
-        if bowl_top_height is None:
-            self.node.get_logger().error("Bowl top height is none - Error")
-            return False
-        bowl_centroid_height = container_point
+        # if bowl_top_height is None:
+        #     self.node.get_logger().error("Bowl top height is none - Error")
+        #     return False
+        # bowl_centroid_height = container_point
 
+        self.node.get_logger().error("fucking fucker 2")
         goal_msg = PourMotion.Goal(
             object_name=object_name,
             # object_top_height=object_top_height,
             # object_centroid_height=object_centroid_height,
-            bowl_top_height=bowl_top_height,
-            bowl_position=bowl_centroid_height,
+            # bowl_top_height=bowl_top_height,
+            # bowl_position=bowl_centroid_height,
         )
 
+        self.node.get_logger().error("fucking fucker 3")
         self.node.get_logger().info("Sending pour motion goal...")
 
         future = self.node._pour_motion_action_client.send_goal_async(goal_msg)
         future = wait_for_future(future)
 
+        self.node.get_logger().error("fucking fucker 4")
         if not future.result().result.success:
             self.node.get_logger().error("Pour motion failed")
             return False
 
         self.node.get_logger().info("Returning to position")
 
+        self.node.get_logger().error("fucking fucker 5")
         for i in range(5):
             # return to configured position
             return_result = send_joint_goal(
@@ -174,7 +182,17 @@ class PourManager:
                 break
         # self.node.get_logger().info("Waiting for 10 seconds")
         # time.sleep(10)
+        self.node.get_logger().error("fucking fucker 6")
         return True
+
+    def wait_for_future(self, future):
+        if future is None:
+            self.get_logger().error("Service call failed: future is None")
+            return False
+        while not future.done():
+            pass
+        # self.get_logger().info("Execution done with status: " + str(future.result()))
+        return future  # 4 is the status for success
 
     def get_object_point(self, object_name: str) -> PointStamped:
         request = DetectionHandler.Request()
@@ -248,8 +266,8 @@ class PourManager:
     def get_container_objects(self, container_name: str):
         """Obtiene los objetos de colisión del bowl."""
         request = GetCollisionObjects.Request()
-        future = self.node.get_collision_objects_client.call_async(request)
-        future = wait_for_future(future)
+        future = self.node._get_collision_objects_client.call_async(request)
+        self.wait_for_future(future)
 
         if not future.result():
             self.node.get_logger().error("Error al obtener objetos de colisión")
