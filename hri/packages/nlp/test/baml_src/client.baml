@@ -17,6 +17,15 @@ client<llm> QWEN3_14B {
   }
 }
 
+client<llm> LOCAL_FINETUNED_NEW { 
+  provider "openai-generic"
+  options {
+    base_url "http://10.22.166.224:11434/v1"
+    model "newrbrgs:latest"
+    max_tokens 4096
+  }
+}
+
 client<llm> PRO_2_5 {
   provider "openai-generic"
   retry_policy Constant
@@ -36,6 +45,24 @@ client<llm> FLASH_2_5 {
     api_key env.OPENROUTER_API_KEY
     model "google/gemini-2.5-flash-preview"
     max_tokens 4096
+  }
+}
+
+client<llm> O4_MINI {
+  provider "openai"
+  retry_policy Constant
+  options {
+    api_key env.OPENAI_API_KEY
+    model "o4-mini"
+  }
+}
+
+client<llm> GPT_4_1_MINI {
+  provider "openai"
+  retry_policy Constant
+  options {
+    api_key env.OPENAI_API_KEY
+    model "gpt-4.1-mini"
   }
 }
 
