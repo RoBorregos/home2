@@ -39,10 +39,10 @@ class HelpMeCarryTM(Node):
         self.subtask_manager = SubtaskManager(
             self,
             task=Task.HELP_ME_CARRY,
-            mock_areas=["manipulation", "navigation", "vision"],
+            mock_areas=[],
         )
-        self.generic = GenericTask(self.subtask_manager)
-        self.generic.talk()
+        # self.generic = GenericTask(self.subtask_manager)
+        # self.generic.talk()
         self.current_state = HelpMeCarryTM.TASK_STATES["START"]
         self.current_attempts = 0
         self.running_task = True

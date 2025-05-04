@@ -71,8 +71,8 @@ class PointTransformer(Node):
         else:
             self.get_logger().info("Following disabled")
             # Cancel any active navigation goals
-            # if self.navigation_in_progress:
-                # self.cancel_navigation()
+            if self.navigation_in_progress:
+                self.cancel_navigation()
                 
         response.success = True
         response.message = "Following state changed"
@@ -113,6 +113,7 @@ class PointTransformer(Node):
         """Callback for when the action server responds to our goal request"""
         goal_handle = future.result()
         if not goal_handle.accepted:
+
             self.get_logger().warn('Navigation goal rejected')
             self.navigation_in_progress = False
             return
@@ -128,6 +129,7 @@ class PointTransformer(Node):
             self.get_logger().info('Navigation goal succeeded')
         else:
             self.get_logger().warn(f'Navigation goal failed with status: {status}')
+            
             
         self.navigation_in_progress = False
         
@@ -220,8 +222,8 @@ class PointTransformer(Node):
             self.latest_goal = goal_update
             
             # If we're following and no navigation is in progress, start navigation
-            # if self.is_following and not self.navigation_in_progress:
-            #     self.send_navigation_goal(goal_update)
+            if self.is_following and not self.navigation_in_progress:
+                self.send_navigation_goal(goal_update)
 
         except Exception as e:
             self.get_logger().warn(f'Failed to transform point: {e}')
