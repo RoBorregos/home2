@@ -153,6 +153,42 @@ class FixPositionToPlane(Node):
         print(f"New point: {new_point}")
         return new_point
 
+    @staticmethod
+    def get_line_from_points2(p1: MyPoint, p2: MyPoint, distance: float):
+        # y = mx + b
+        m = (p2.y - p1.y) / (p2.x - p1.x)
+        b = p1.y - m * p1.x
+        print(f"m: {m}, b: {b}")
+        k = p1.y - b
+
+        # d = (p2.x*100 - p1.x*100) ** 2 + (p2.y*100 - p1.y*100) ** 2
+        # print(f"d: {d}")
+        # distance *= 100
+        # print(f"distance: {distance}")
+        # distance += d
+        # print(f"distance: {distance}")
+        # distance = distance / 100
+        # print(f"distance: {distance}")
+
+        # d = ((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2) ** 0.5
+        # print(f"d: {d}")
+        # distance += d
+        # print(f"distance: {distance}")
+        A = m**2 + 1
+        B = -2 * (p1.x + k * m)
+        C = p1.x**2 + k**2 - distance**2
+        print(f"A: {A}, B: {B}, C: {C}")
+        # x = (-B + (B**2 - 4*A*C)**0.5) / (2*A)
+        if B**2 - 4 * A * C < 0:
+            print("No solution")
+            return None
+        x = (-B - (B**2 - 4 * A * C) ** 0.5) / (2 * A)
+        y = m * x + b
+        z = p1.z
+        new_point = MyPoint(x, y, z)
+        print(f"New point: {new_point}")
+        return new_point
+
     def get_optimal_position_for_plane_callback(
         self,
         request: GetOptimalPositionForPlane.Request,
@@ -207,7 +243,7 @@ class FixPositionToPlane(Node):
         req_move.pose.header.stamp = self.get_clock().now().to_msg()
         # req_move.pose.position.z += 0.2
         req_move.pose = look_at_pose
-        req_move.velocity = 0.5
+        req_move.velocity = 0.75
         req_move.target_link = xarm6.camera_frame_name()
         self.get_logger().info(f"Request: {req_move}")
         fut = self._action_client.send_goal_async(req_move)
@@ -296,6 +332,17 @@ class FixPositionToPlane(Node):
             pt1.pose.position.x = closest_point.x
             pt1.pose.position.y = closest_point.y
             pt1.pose.position.z = closest_point.z + ivan
+            if ((pt1.pose.position.x**2 + pt1.pose.position.y**2) ** 0.5) > 0.5:
+                self.get_logger().warn("Point is too far, geting the closest point")
+                # response.is_valid = Fals
+                temp_pt1 = MyPoint().from_point(
+                    self.get_line_from_points2(center, pt1, 0.5)
+                )
+                pt1.pose.position.x = temp_pt1.x
+                pt1.pose.position.y = temp_pt1.y
+                pt1.pose.position.z = temp_pt1.z + ivan
+                self.get_logger().info(f"New point: {pt1}")
+
             pt1.pose.position.z = min(
                 pt1.pose.position.z,
                 ARM_HIGHEST_0_0_HEIGHT,
@@ -318,7 +365,7 @@ class FixPositionToPlane(Node):
             req_move.pose.header.stamp = self.get_clock().now().to_msg()
             req_move.pose = t
 
-            req_move.velocity = 0.5
+            req_move.velocity = 0.75
             req_move.target_link = xarm6.camera_frame_name()
 
             # self.get_logger().info(f"Request: {req_move}")
