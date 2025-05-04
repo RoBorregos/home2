@@ -58,6 +58,13 @@ def generate_launch_description():
                 output="screen",
                 emulate_tty=True,
             ),
+            Node(
+                package="pick_and_place",
+                executable="pour_server.py",
+                name="pour_server",
+                output="screen",
+                emulate_tty=True,
+            ),
             # perception_3d.launch.py
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(

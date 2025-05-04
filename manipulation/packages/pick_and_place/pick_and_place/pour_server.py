@@ -108,6 +108,9 @@ class PourMotionServer(Node):
 
     # TODO: APPLY LOGIC TO THIS FUNCTION
     def pour(self, goal_handle, feedback):
+        isConstrained = (
+            False  # THE MOTION PLANNER IS CONSTRAINED ------------------------
+        )
         """Perform the pour operation."""
         self.get_logger().info(
             f"Trying to pour object: {goal_handle.request.object_name}"
@@ -141,7 +144,9 @@ class PourMotionServer(Node):
         self.get_logger().info(f"Pour pose: {pour_pose}")
 
         # Move to pour pose
-        pour_pose_handler, pour_pose_result = self.move_to_pose(pour_pose, True)
+        pour_pose_handler, pour_pose_result = self.move_to_pose(
+            pour_pose, isConstrained
+        )
         if not pour_pose_result.result.success:
             self.get_logger().error("Failed to reach pour pose")
             result = False
@@ -156,7 +161,9 @@ class PourMotionServer(Node):
 
         self.get_logger().info(f"Pour final orientation: {pour_pose.orientation}")
 
-        pour_pose_handler, pour_pose_result = self.move_to_pose(pour_pose, True)
+        pour_pose_handler, pour_pose_result = self.move_to_pose(
+            pour_pose, isConstrained
+        )
         if not pour_pose_result.result.success:
             self.get_logger().error("Failed to reach pour final orientation")
             result = False

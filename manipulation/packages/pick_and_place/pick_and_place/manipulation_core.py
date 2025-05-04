@@ -12,7 +12,12 @@ from frida_motion_planning.utils.service_utils import (
 from std_srvs.srv import SetBool, Empty
 from frida_interfaces.action import MoveJoints
 from frida_interfaces.msg import ManipulationTask
-from frida_interfaces.action import PickMotion, PlaceMotion, ManipulationAction
+from frida_interfaces.action import (
+    PickMotion,
+    PlaceMotion,
+    ManipulationAction,
+    PourMotion,
+)
 from frida_interfaces.srv import (
     PickPerceptionService,
     GraspDetection,
@@ -70,6 +75,12 @@ class ManipulationCore(Node):
             self,
             PlaceMotion,
             PLACE_MOTION_ACTION_SERVER,
+        )
+
+        self._pour_motion_action_client = ActionClient(
+            self,
+            PourMotion,  # Make sure to import PourMotion
+            "pour_motion_action_server",  # Replace with actual action name
         )
 
         self._move_joints_client = ActionClient(

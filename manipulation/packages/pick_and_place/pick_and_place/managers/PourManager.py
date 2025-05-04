@@ -25,7 +25,22 @@ class PourManager:
     def execute(self, object_name: str, container_object_name: str) -> bool:
         self.node.get_logger().info("Executing Pour Task")
         self.node.get_logger().info("Setting initial joint positions")
+        point = self.get_object_point(object_name)
+        if not point or point.point.x == 0.0:  # Check for invalid point
+            self.node.get_logger().error(f"Invalid point for {object_name}")
+            return False
 
+        # Get container point
+        container_point = self.get_object_point(container_object_name)
+        if not container_point or container_point.point.x == 0.0:
+            self.node.get_logger().error("Invalid container point")
+            return False
+
+        # Validate clusters
+        object_cluster = self.get_object_cluster(point)
+        container_cluster = self.get_object_cluster(container_point)
+        if not object_cluster or not container_cluster:
+            return False
         # time.sleep(10)
         # Set initial joint positions
         send_joint_goal(
