@@ -31,7 +31,7 @@ from frida_constants.vision_constants import (
 )
 from object_detector_node import object_detector_node
 
-MODELS_PATH = str(pathlib.Path(__file__).parent) + "/../models/"
+MODELS_PATH = str(pathlib.Path(__file__).parent) + "/models/"
 
 ARGS = {
     "RGB_IMAGE_TOPIC": CAMERA_TOPIC,

@@ -15,10 +15,11 @@ class YoloV5ObjectDetector(ObjectDectector):
 
     def loadYoloV5Model(self):
         self.model = torch.hub.load(
-            "ultralytics/yolov5",
+            "yolov5",
             "custom",
             path=self.model_path_,
             force_reload=True,
+            source="local",
         )
 
     def _inference(self, frame):
