@@ -53,7 +53,8 @@ private:
 
   // debug point pub
   rclcpp::Publisher<geometry_msgs::msg::PointStamped>::SharedPtr point_pub_;
-
+  // debug pcl pub
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr cloud_pub_;
   std::shared_ptr<tf2_ros::TransformListener> tf_listener;
   std::unique_ptr<tf2_ros::Buffer> tf_buffer;
 
@@ -92,6 +93,9 @@ public:
         point_cloud_topic, qos,
         std::bind(&TableSegmentationNode::pointCloudCallback, this,
                   std::placeholders::_1));
+
+    this->cloud_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
+        "/manipulation/perception_3d_debug/cloud", 10);
 
     RCLCPP_INFO(this->get_logger(), "Subscribed to point cloud topic");
 
@@ -181,14 +185,31 @@ public:
                            "Error filtering point cloud with code %d",
                            response->health_response);
 
+    
+
     response->health_response =
         this->extractPlane(cloud_out, cloud_out, request->extract_or_remove);
+
+    // publish this in debug pcl pub
+    sensor_msgs::msg::PointCloud2 cloud_out_msg;
+    try {
+      pcl::toROSMsg(*cloud_out, cloud_out_msg);
+    } catch (const std::exception &e) {
+      RCLCPP_ERROR(this->get_logger(), "Error converting point cloud: %s",
+                   e.what());
+      response->health_response = COULD_NOT_CONVERT_POINT_CLOUD;
+      return;
+    }
+    //publish
+    cloud_out_msg.header.frame_id = "base_link";
+    cloud_out_msg.header.stamp = this->now();
+    this->cloud_pub_->publish(cloud_out_msg);
 
     ASSERT_AND_RETURN_CODE(response->health_response, OK,
                            "Error extracting plane with code %d",
                            response->health_response);
 
-    response->health_response = this->densest_cluster(cloud_out, cloud_out);
+    // response->health_response = this->densest_cluster(cloud_out, cloud_out);
 
     ASSERT_AND_RETURN_CODE(response->health_response, OK,
                            "Error clustering point cloud with code %d",
@@ -437,6 +458,7 @@ public:
                          std::min(float(point.z + distance), max_height));
 
     pass.filter(*cloud_out);
+    
     pcl::PassThrough<pcl::PointXYZ> pass2;
     pass2.setInputCloud(cloud_out);
     pass2.setFilterFieldName("x");
@@ -622,55 +644,6 @@ public:
     return OK;
   }
 
-  uint32_t removePlane(_IN_ const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
-                       _OUT_ pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out) {
-    uint32_t status = OK;
-
-    pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
-    pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
-    pcl::SACSegmentation<pcl::PointXYZ> seg;
-    seg.setOptimizeCoefficients(true);
-    seg.setModelType(pcl::SACMODEL_PLANE);
-    seg.setMethodType(pcl::SAC_RANSAC);
-    seg.setMaxIterations(1000);
-    seg.setDistanceThreshold(0.01);
-
-    seg.setInputCloud(cloud);
-    seg.segment(*inliers, *coefficients);
-
-    if (inliers->indices.size() == 0) {
-      RCLCPP_ERROR(this->get_logger(), "Could not estimate a planar model");
-      return COULD_NOT_ESTIMATE_PLANAR_MODEL;
-    }
-
-    pcl::ExtractIndices<pcl::PointXYZ> extract;
-    this->copyPointCloud(cloud, cloud_out);
-    extract.setInputCloud(cloud_out);
-    extract.setIndices(inliers);
-    extract.setNegative(false);
-    extract.filter(*cloud_out);
-
-    pcl::ExtractIndices<pcl::PointXYZ> extract2;
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_f(
-        new pcl::PointCloud<pcl::PointXYZ>);
-
-    status = copyPointCloud(cloud, cloud_f);
-
-    extract.setInputCloud(cloud_f);
-    extract.setIndices(inliers);
-    extract.setNegative(false);
-    extract.filter(*cloud_f);
-
-    std::string base_path = this->package_path;
-
-    // this->savePointCloud("/home/ivanromero/Desktop/home2/manipulation/packages/"
-    //                      "perception_3d/pcl_debug/asdasd.pcd",
-    //                      cloud_f);
-
-    this->savePointCloud(base_path + "asdasd.pcd", cloud_f);
-
-    return status;
-  };
 
   /**
    * \brief Extracts the plane from a point cloud. If extract_negative is true,
@@ -697,7 +670,7 @@ public:
     seg.setEpsAngle(5.0f * (M_PI / 180.0f));
     seg.setAxis(Eigen::Vector3f::UnitZ());
     seg.setMaxIterations(1000);
-    seg.setDistanceThreshold(0.015);
+    seg.setDistanceThreshold(0.03);
 
     // segment the largest planar component from the input cloud
     seg.setInputCloud(cloud);
@@ -830,8 +803,8 @@ public:
     tree->setInputCloud(cloud);
     std::vector<pcl::PointIndices> cluster_indices;
     pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
-    ec.setClusterTolerance(0.01);
-    ec.setMinClusterSize(10);   // Minimum number of points in a cluster
+    ec.setClusterTolerance(0.02);
+    ec.setMinClusterSize(100);   // Minimum number of points in a cluster
     ec.setMaxClusterSize(6000); // Maximum number of points in a cluster
     ec.setSearchMethod(tree);
     ec.setInputCloud(cloud);
