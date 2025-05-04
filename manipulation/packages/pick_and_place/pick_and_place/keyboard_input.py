@@ -73,6 +73,22 @@ class KeyboardInput(Node):
         )
         self.get_logger().info("Place request sent")
 
+    def send_pour_request(self, object_name):
+        if not self._action_client.wait_for_server(timeout_sec=5.0):
+            self.get_logger().error("Action server not available!")
+            return
+
+        goal_msg = ManipulationAction.Goal()
+        goal_msg.task_type = ManipulationTask.POUR
+        goal_msg.pour_params.object_name = object_name
+
+        self.get_logger().info(f"Sending pour request for: {object_name}")
+        self._action_client.send_goal_async(
+            goal_msg, feedback_callback=self.feedback_callback
+        )
+
+        self.get_logger().info("Pour request sent")
+
     def feedback_callback(self, feedback_msg):
         self.get_logger().info(f"Feedback received: {feedback_msg.feedback}")
 
@@ -99,6 +115,7 @@ def main(args=None):
             print("-3. Place")
             print("-4. Place on shelf")
             print("-5. Place on shelf (with plane height)")
+            print("-6. Pour")
             print("q. Quit")
 
             choice = input("\nEnter your choice: ")
@@ -132,6 +149,11 @@ def main(args=None):
                     print(
                         "Invalid input. Please enter valid numbers for height and tolerance."
                     )
+            elif choice == "-6":
+                # receive object name
+                object_name = input("Enter object name: ")
+                node.send_pour_request(object_name)
+
             elif choice.isdigit():
                 try:
                     choice_num = int(choice)
