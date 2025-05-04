@@ -336,3 +336,21 @@ def get_answer_question_dialog(contexts, question):
             "content": user_content,
         },
     ]
+
+
+def get_previous_command_answer(context, question):
+    return [
+        {
+            "role": "system",
+            "content": (
+                "You are an intelligent assistant. You will be presented with a question, "
+                "and your task is to answer it to the best of your ability using the provided context. "
+                f"Here is the context:\n\n{context}\n\n"
+                "Answer the question clearly and concisely."
+            ),
+        },
+        {
+            "role": "user",
+            "content": question,
+        },
+    ]
