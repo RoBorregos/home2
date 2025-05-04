@@ -313,7 +313,6 @@ def format_response(response):
     ]
 
 
-
 def get_command_interpreter_args(full_text):
     return [
         {
@@ -410,6 +409,7 @@ Wait, but in the previous examples, when delivering to a named person, they used
 </answer>
 """
 
+
 def get_answer_question_dialog(contexts, question):
     if contexts:
         context_text = "\n".join(contexts)
@@ -433,4 +433,3 @@ def get_answer_question_dialog(contexts, question):
             "content": user_content,
         },
     ]
-
