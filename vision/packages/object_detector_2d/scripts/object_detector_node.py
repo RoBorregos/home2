@@ -35,8 +35,6 @@ from frida_constants.vision_constants import (
 MODELS_PATH = str(pathlib.Path(__file__).parent) + "/models/"
 
 
-
-
 ARGS = {
     "RGB_IMAGE_TOPIC": CAMERA_TOPIC,
     "DEPTH_IMAGE_TOPIC": DEPTH_IMAGE_TOPIC,
