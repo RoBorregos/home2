@@ -5,7 +5,7 @@ pip install -r requirements.txt
 ```
 2. Install the Baml VS Code extension.
 3. In `client.baml` add the desired LLMs either via API or local.
-4. Set the client object in the function `GenerateCommandList` inside `robot_commands.baml`
+4. Set the client object in the function `GenerateCommandListV3` inside `commands_v3/robot_commands.baml`
 5. Save the file and the client will be generated (a notification will appear).
 6. If an API Key was set in BAML, make sure to add it as an env var in the terminal:
 ```bash
