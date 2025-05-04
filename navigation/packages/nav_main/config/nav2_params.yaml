@@ -85,7 +85,7 @@ controller_server:
     # Progress checker parameters
     progress_checker:
       plugin: "nav2_controller::SimpleProgressChecker"
-      required_movement_radius: 0.25
+      required_movement_radius: 0.2
       movement_time_allowance: 10.0
     # Goal checker parameters
     #precise_goal_checker:
@@ -96,8 +96,8 @@ controller_server:
     general_goal_checker:
       stateful: True
       plugin: "nav2_controller::SimpleGoalChecker"
-      xy_goal_tolerance: 0.25
-      yaw_goal_tolerance: 0.25
+      xy_goal_tolerance: 0.2
+      yaw_goal_tolerance: 0.2
     # DWB parameters
     FollowPath:
       plugin: "dwb_core::DWBLocalPlanner"
@@ -112,7 +112,7 @@ controller_server:
       min_speed_theta: 0.0
       # Add high threshold velocity for turtlebot 3 issue.
       # https://github.com/ROBOTIS-GIT/turtlebot3_simulations/issues/75
-      acc_lim_x: 1.0
+      acc_lim_x: 0.5
       acc_lim_y: 0.0
       acc_lim_theta: 2.0
       decel_lim_x: -1.0
@@ -125,7 +125,7 @@ controller_server:
       linear_granularity: 0.05
       angular_granularity: 0.025
       transform_tolerance: 0.2
-      xy_goal_tolerance: 0.25
+      xy_goal_tolerance: 0.2
       trans_stopped_velocity: 0.25
       short_circuit_trajectory_evaluation: True
       stateful: True
@@ -252,7 +252,7 @@ smoother_server:
     simple_smoother:
       plugin: "nav2_smoother::SimpleSmoother"
       tolerance: 1.0e-5
-      max_its: 1000
+      max_its: 500
       do_refinement: True
 
 behavior_server:
@@ -277,8 +277,8 @@ behavior_server:
     use_sim_time: False
     simulate_ahead_time: 2.0
     max_rotational_vel: 1.0
-    min_rotational_vel: 0.4
-    rotational_acc_lim: 3.2
+    min_rotational_vel: 0.25
+    rotational_acc_lim: 1.5
 
 robot_state_publisher:
   ros__parameters:
@@ -303,7 +303,7 @@ velocity_smoother:
     feedback: "OPEN_LOOP"
     max_velocity: [0.26, 0.0, 1.0]
     min_velocity: [-0.26, 0.0, -1.0]
-    max_accel: [1.0, 0.0, 1.0]
+    max_accel: [0.75, 0.0, 0.75]
     max_decel: [-1.0, 0.0, -1.0]
     odom_topic: "odom"
     odom_duration: 0.1
