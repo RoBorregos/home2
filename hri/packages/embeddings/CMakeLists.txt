@@ -27,6 +27,8 @@ file(GLOB PYTHON_SCRIPTS scripts/*.py)
 install(
   PROGRAMS
     scripts/categorization.py  # Path to your Python script
+    scripts/knowledge_base.py
+    scripts/chroma_adapter.py
   DESTINATION lib/${PROJECT_NAME}  # Install to the package's lib directory
 )
 

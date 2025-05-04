@@ -6,43 +6,46 @@ available seats. Tasks for receptionist
 commands.
 """
 
+import time
+
 import rclpy
 from frida_constants.vision_classes import BBOX, ShelfDetection
 from frida_constants.vision_constants import (
+    BEVERAGE_TOPIC,
+    CHECK_PERSON_TOPIC,
+    COUNT_BY_COLOR_TOPIC,
+    COUNT_BY_POSE_TOPIC,
+    COUNT_BY_GESTURE_TOPIC,
+    CROP_QUERY_TOPIC,
+    DETECTION_HANDLER_TOPIC_SRV,
+    FIND_SEAT_TOPIC,
     FOLLOW_BY_TOPIC,
     FOLLOW_TOPIC,
+    PERSON_LIST_TOPIC,
     PERSON_NAME_TOPIC,
+    POINTING_OBJECT_SERVICE,
+    POSE_GESTURE_TOPIC,
+    QUERY_TOPIC,
     SAVE_NAME_TOPIC,
+    SET_TARGET_BY_TOPIC,
     SET_TARGET_TOPIC,
     SHELF_DETECTION_TOPIC,
-    SET_TARGET_BY_TOPIC,
-    FIND_SEAT_TOPIC,
-    CHECK_PERSON_TOPIC,
-    QUERY_TOPIC,
-    CROP_QUERY_TOPIC,
-    BEVERAGE_TOPIC,
-    POINTING_OBJECT_SERVICE,
-    PERSON_LIST_TOPIC,
-    COUNT_BY_POSE_TOPIC,
-    POSE_GESTURE_TOPIC,
-    COUNT_BY_COLOR_TOPIC,
-    DETECTION_HANDLER_TOPIC_SRV,
 )
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.msg import ObjectDetection, PersonList
 from frida_interfaces.srv import (
     BeverageLocation,
+    CountByColor,
+    CountByPose,
     CropQuery,
+    DetectionHandler,
     DetectPointingObject,
     FindSeat,
+    PersonPoseGesture,
     Query,
     SaveName,
     ShelfDetectionHandler,
-    DetectionHandler,
     TrackBy,
-    CountByPose,
-    CountByColor,
-    PersonPoseGesture,
 )
 from geometry_msgs.msg import Point, PointStamped
 from rclpy.action import ActionClient
@@ -52,8 +55,6 @@ from std_srvs.srv import SetBool
 from utils.decorators import mockable, service_check
 from utils.logger import Logger
 from utils.status import Status
-import time
-
 from utils.task import Task
 
 TIMEOUT = 5.0
@@ -105,9 +106,12 @@ class VisionTasks:
 
         self.count_by_pose_client = self.node.create_client(CountByPose, COUNT_BY_POSE_TOPIC)
 
+        self.count_by_gesture_client = self.node.create_client(CountByPose, COUNT_BY_GESTURE_TOPIC)
+
         self.find_person_info_client = self.node.create_client(
             PersonPoseGesture, POSE_GESTURE_TOPIC
         )
+
         self.count_by_color_client = self.node.create_client(CountByColor, COUNT_BY_COLOR_TOPIC)
 
         self.services = {
@@ -147,6 +151,10 @@ class VisionTasks:
                 },
                 "find_person_info": {
                     "client": self.find_person_info_client,
+                    "type": "service",
+                },
+                "count_by_gesture": {
+                    "client": self.count_by_gesture_client,
                     "type": "service",
                 },
                 "count_by_pose": {
@@ -584,12 +592,11 @@ class VisionTasks:
 
     @mockable(return_value=[Status.EXECUTION_SUCCESS, 100])
     @service_check("count_by_pose_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
-    def count_by_pose(self, pose: str, type_requested: str) -> tuple[int, int]:
+    def count_by_pose(self, pose: str) -> tuple[int, int]:
         """Count the number of people with the requested pose or gesture"""
 
         Logger.info(self.node, "Counting people by pose or gesture")
         request = CountByPose.Request()
-        request.type_requested = type_requested
         request.pose_requested = pose
         request.request = True
 
@@ -599,14 +606,39 @@ class VisionTasks:
             result = future.result()
 
             if not result.success:
-                Logger.warn(self.node, f"No {type_requested} found")
                 return Status.TARGET_NOT_FOUND, 300
 
         except Exception as e:
-            Logger.error(self.node, f"Error counting people by {type_requested}: {e}")
+            Logger.error(self.node, f"Error counting people by pose: {e}")
             return Status.EXECUTION_ERROR, 300
 
-        Logger.success(self.node, f"People with {type_requested} {pose}: {result.count}")
+        Logger.success(self.node, f"People with pose {pose}: {result.count}")
+        return Status.EXECUTION_SUCCESS, result.count
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, 100))
+    @service_check("count_by_gesture_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
+    def count_by_gesture(self, gesture: str) -> tuple[int, int]:
+        """Count the number of people with the requested gesture"""
+
+        Logger.info(self.node, "Counting people by gesture")
+        request = CountByPose.Request()
+        request.pose_requested = gesture
+        request.request = True
+
+        try:
+            future = self.count_by_gesture_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+            result = future.result()
+
+            if not result.success:
+                Logger.warn(self.node, "No gesture found")
+                return Status.TARGET_NOT_FOUND, 300
+
+        except Exception as e:
+            Logger.error(self.node, f"Error counting people by gesture: {e}")
+            return Status.EXECUTION_ERROR, 300
+
+        Logger.success(self.node, f"People with {gesture}: {result.count}")
         return Status.EXECUTION_SUCCESS, result.count
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, 100))
