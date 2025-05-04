@@ -63,12 +63,12 @@ PICK_STARE_AT_TABLE = {
 
 NAV_POSE = {
     "joints": {
-        "joint1": -88.7,
-        "joint2": -56.0,
-        "joint3": -106.0,
-        "joint4": 0.1,
-        "joint5": 66.9,
-        "joint6": 43.3,
+        "joint1": -90.0,
+        "joint2": -60.0,
+        "joint3": -55.0,
+        "joint4": 0,
+        "joint5": 25.0,
+        "joint6": 45.0,
     },
     "degrees": True,
 }

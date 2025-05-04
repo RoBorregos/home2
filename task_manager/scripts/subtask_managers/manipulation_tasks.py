@@ -328,6 +328,36 @@ class ManipulationTasks:
             return Status.EXECUTION_ERROR
         return Status.EXECUTION_SUCCESS
 
+    def place_on_shelf(self, plane_height: int, tolerance: int):
+        # if not self._manipulation_action_client.wait_for_server(timeout_sec=TIMEOUT):
+        #     Logger.error(self.node, "Manipulation action server not available")
+        #     return Status.EXECUTION_ERROR
+
+        goal_msg = ManipulationAction.Goal()
+        goal_msg.task_type = ManipulationTask.PLACE
+        goal_msg.place_params.is_shelf = True
+        goal_msg.scan_environment = True
+        if plane_height is not None and tolerance is not None:
+            goal_msg.place_params.table_height = plane_height
+            goal_msg.place_params.table_height_tolerance = tolerance
+        future = self._manipulation_action_client.send_goal_async(goal_msg)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+        if future.result() is None:
+            Logger.error(self.node, "Failed to send place request")
+            return Status.EXECUTION_ERROR
+        Logger.info(self.node, "Place in shelf request sent")
+        # wait for result
+        result_future = future.result().get_result_async()
+        rclpy.spin_until_future_complete(self.node, result_future)
+        result = result_future.result().result
+        Logger.info(self.node, f"Place in shelf result: {result}")
+        if result.success:
+            Logger.success(self.node, "Place request successful")
+        else:
+            Logger.error(self.node, "Place request failed")
+            return Status.EXECUTION_ERROR
+        return Status.EXECUTION_SUCCESS
+
     def pan_to(self, degrees: float):
         joint_positions = self.get_joint_positions(degrees=True)
         joint_positions["joint1"] = joint_positions["joint1"] - degrees
@@ -341,7 +371,11 @@ class ManipulationTasks:
         client="_fix_position_to_plane_client", return_value=Status.TERMINAL_ERROR, timeout=TIMEOUT
     )
     def get_optimal_position_for_plane(
-        self, est_heigth: float, tolerance: float = 0.2, table_or_shelf: bool = True
+        self,
+        est_heigth: float,
+        tolerance: float = 0.2,
+        table_or_shelf: bool = True,
+        approach_plane=True,
     ):
         """Fix the robot to a plane
         table_or_shelf: True for table, False for shelf
@@ -350,6 +384,7 @@ class ManipulationTasks:
         req.plane_est_min_height = est_heigth - tolerance
         req.plane_est_max_height = est_heigth + tolerance
         req.table_or_shelf = table_or_shelf
+        req.approach_plane = approach_plane
 
         future = self._fix_position_to_plane_client.call_async(req)
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=20.0)

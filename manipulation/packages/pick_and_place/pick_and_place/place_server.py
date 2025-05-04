@@ -158,10 +158,9 @@ class PlaceMotionServer(Node):
                 ee_link_pre_pose.pose.position.x = new_position[0]
                 ee_link_pre_pose.pose.position.y = new_position[1]
                 ee_link_pre_pose.pose.position.z = new_position[2]
-
+            else:
+                self.target_link = GRASP_LINK_FRAME
             place_poses.append([ee_link_pre_pose, ee_link_pose])
-        else:
-            self.target_link = GRASP_LINK_FRAME
         for i, poses in enumerate(place_poses):
             # Move to pre-grasp pose
 
@@ -188,7 +187,7 @@ class PlaceMotionServer(Node):
                 # open gripper
                 self.get_logger().info("Opening gripper")
                 open_gripper(self._gripper_set_state_client)
-                time.sleep(3)
+                time.sleep(1)
                 self.get_logger().info("Gripper opened")
 
                 if is_shelf:

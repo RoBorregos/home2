@@ -164,7 +164,7 @@ class ManipulationCore(Node):
             self.get_logger().info("Scanning environment")
             self.scan_environment()
             # give time to see
-            time.sleep(1)
+            time.sleep(2.0)
 
         if task_type == ManipulationTask.PICK:
             self.get_logger().info("Executing Pick Task")

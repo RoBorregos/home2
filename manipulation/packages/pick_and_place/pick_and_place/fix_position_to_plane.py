@@ -22,6 +22,8 @@ from frida_constants.manipulation_constants import (
 TABLE_Z_OFFSET = 0.75
 SHELF_Z_OFFSET = 0.4
 
+DISTANCE = 0.5
+
 
 def wait_for_future(future, timeout=10):
     start_time = time.time()
@@ -214,6 +216,11 @@ class FixPositionToPlane(Node):
         future = wait_for_future(fut, timeout=20)
         action_result = future.result().get_result()
         self.get_logger().info(f"Move to lookat result: {action_result}")
+
+        if not request.approach_plane:
+            response.is_valid = True
+            return response
+
         # Call the get_plane_bbox service
         self.get_logger().info("Calling get_plane_bbox service")
         plane_bbox_request = GetPlaneBbox.Request()
@@ -221,7 +228,7 @@ class FixPositionToPlane(Node):
         plane_bbox_request.min_height = min_h
         ivan = TABLE_Z_OFFSET if request.table_or_shelf else SHELF_Z_OFFSET
 
-        time.sleep(0.5)  # wait for pointcloud to update
+        time.sleep(3)  # wait for pointcloud to update
         future = self.get_plane_bbox_client.call_async(plane_bbox_request)
         # rclpy.spin_until_future_complete(self, future, timeout_sec=5)
         wait_for_future(future)
@@ -254,10 +261,18 @@ class FixPositionToPlane(Node):
 
             self.get_logger().info(f"p12: {p12}, p34: {p34}, p23: {p23}, p41: {p41}")
 
-            p_12 = MyPoint().from_point(self.get_line_from_points(center, p12, 0.35))
-            p_34 = MyPoint().from_point(self.get_line_from_points(center, p34, 0.35))
-            p_23 = MyPoint().from_point(self.get_line_from_points(center, p23, 0.35))
-            p_41 = MyPoint().from_point(self.get_line_from_points(center, p41, 0.35))
+            p_12 = MyPoint().from_point(
+                self.get_line_from_points(center, p12, DISTANCE)
+            )
+            p_34 = MyPoint().from_point(
+                self.get_line_from_points(center, p34, DISTANCE)
+            )
+            p_23 = MyPoint().from_point(
+                self.get_line_from_points(center, p23, DISTANCE)
+            )
+            p_41 = MyPoint().from_point(
+                self.get_line_from_points(center, p41, DISTANCE)
+            )
 
             self.get_logger().info(
                 f"p_12: {p_12}, p_34: {p_34}, p_23: {p_23}, p_41: {p_41}"
@@ -281,6 +296,14 @@ class FixPositionToPlane(Node):
             pt1.pose.position.x = closest_point.x
             pt1.pose.position.y = closest_point.y
             pt1.pose.position.z = closest_point.z + ivan
+            pt1.pose.position.z = min(
+                pt1.pose.position.z,
+                ARM_HIGHEST_0_0_HEIGHT,
+            )
+            pt1.pose.position.z = max(
+                pt1.pose.position.z,
+                ARM_LOWEST_0_0_HEIGHT,
+            )
 
             # Broadcast the transform
             self.broadcast_transform(pt1, "base_link", "optimal_position")
