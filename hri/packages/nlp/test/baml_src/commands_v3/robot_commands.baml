@@ -180,7 +180,7 @@ You can ask for clarification if the task is not clear enough.
 
 "#
 function GenerateCommandListV3(request: string) -> CommandListLLM_V3 {
-  client GPT_4_1_MINI
+  client LOCAL_FINETUNED_NEW
   prompt #"
     {{ _.role("system") }}
     {{ RobotServiceSystem_V3() }}
