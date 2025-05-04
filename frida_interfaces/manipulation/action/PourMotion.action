@@ -1,9 +1,10 @@
 # Goal definition
-geometry_msgs/PointStamped bowl_position    # [x, y, z]
-string object_name
-float64 object_top_height            # Height of the top of the object
-float64 object_centroid_height       # Height of the object's centroid
-float64 bowl_top_height              # Height of the top of the bowl
+geometry_msgs/PoseStamped pour_pose
+# geometry_msgs/PointStamped bowl_position    # [x, y, z]
+# string object_name
+# float64 object_top_height            # Height of the top of the object
+# float64 object_centroid_height       # Height of the object's centroid
+# float64 bowl_top_height              # Height of the top of the bowl
 ---
 # Result definition
 int32 success
