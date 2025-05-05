@@ -20,3 +20,4 @@ hri/packages/nlp/assets/**
 **/rtabmapdbs
 yolov5/
 **/baml_client
+mobileclip_blt.ts
