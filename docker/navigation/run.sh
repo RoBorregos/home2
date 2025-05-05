@@ -89,6 +89,9 @@ esac
 export LOCAL_USER_ID=$(id -u)
 export LOCAL_GROUP_ID=$(id -g)
 
+# Create dirs with current user to avoid permission problems
+mkdir -p install build log
+
 #_________________________RUN_________________________
 
 NAV_NAME="home2-navigation"

@@ -88,7 +88,7 @@ set(msg_files
 )
 
 set(srv_files
-  "task_manager/srv/HearMultiThread.srv"
+  # "task_manager/srv/HearMultiThread.srv"
   "hri/srv/AddEntry.srv"
   "hri/srv/AudioText.srv"
   "hri/srv/BuildEmbeddings.srv"

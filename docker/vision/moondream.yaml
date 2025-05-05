@@ -48,6 +48,9 @@ services:
       - /dev/video0:/dev/video0
       - /tmp:/tmp
       - /tmp/.X11-unix:/tmp/.X11-unix
+      - ./moondream/build:/workspace/build
+      - ./moondream/install:/workspace/install
+      - ./moondream/log:/workspace/log
 
     network_mode: host
     user: 1000:1000
