@@ -8,7 +8,7 @@ import json
 import os
 import re
 from datetime import datetime
-from typing import Union
+from typing import Union, List
 
 import rclpy
 from ament_index_python.packages import get_package_share_directory
@@ -52,8 +52,20 @@ from utils.decorators import service_check
 from utils.logger import Logger
 from utils.status import Status
 from utils.task import Task
+from utils.baml_client.sync_client import b
+from utils.baml_client.types import (
+    CommandListLLM, GoTo, PickObject, FindPersonByName, FindPerson, Count,
+    GetPersonInfo, GetVisualInfo, AnswerQuestion, FollowPersonUntil, GuidePersonTo,
+    GiveObject, PlaceObject, SayWithContext
+)
 
 from subtask_managers.subtask_meta import SubtaskMeta
+
+InterpreterAvailableCommands = Union[
+    CommandListLLM, GoTo, PickObject, FindPersonByName, FindPerson, Count,
+    GetPersonInfo, GetVisualInfo, AnswerQuestion, FollowPersonUntil, GuidePersonTo,
+    GiveObject, PlaceObject, SayWithContext
+]
 
 TIMEOUT = 5.0
 
@@ -71,10 +83,6 @@ class HRITasks(metaclass=SubtaskMeta):
         self.speak_service = self.node.create_client(Speak, SPEAK_SERVICE)
         self.hear_service = self.node.create_client(STT, STT_SERVICE_NAME)
         self.extract_data_service = self.node.create_client(ExtractInfo, EXTRACT_DATA_SERVICE)
-
-        self.command_interpreter_client = self.node.create_client(
-            CommandInterpreter, COMMAND_INTERPRETER_SERVICE
-        )
         self.task = task
         self.grammar_service = self.node.create_client(Grammar, GRAMMAR_SERVICE)
         self.common_interest_service = self.node.create_client(
@@ -430,22 +438,19 @@ class HRITasks(metaclass=SubtaskMeta):
         rclpy.spin_until_future_complete(self.node, future)
         return Status.EXECUTION_SUCCESS, future.result().answer
 
-    @service_check("command_interpreter_client", (Status.SERVICE_CHECK, ""), TIMEOUT)
-    def command_interpreter(self, text: str) -> CommandInterpreter.Response:
+    def command_interpreter(self, text: str) -> List[InterpreterAvailableCommands]:
         Logger.info(
             self.node,
             "Received command for interpretation: " + text,
         )
-        request = CommandInterpreter.Request(text=text)
-        future = self.command_interpreter_client.call_async(request)
-        rclpy.spin_until_future_complete(self.node, future)
+        command_list = b.GenerateCommandList(request=text)
 
         Logger.info(
             self.node,
-            "command_interpreter result: " + str(future.result().commands),
+            "command_interpreter result: " + str(command_list.commands),
         )
 
-        return Status.EXECUTION_SUCCESS, future.result().commands
+        return Status.EXECUTION_SUCCESS, command_list.commands
 
     @service_check("useful_audio_params", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def set_double_param(self, name, value):
@@ -520,15 +525,15 @@ class HRITasks(metaclass=SubtaskMeta):
 
     # /////////////////embeddings services/////
     def add_command_history(
-        self, command: str, complement: str, characteristic: str, result, status
+        self, command: InterpreterAvailableCommands, result, status
     ):
         collection = "command_history"
 
-        document = [command]
+        document = [command.action]
         metadata = [
             {
-                "complement": complement,
-                "characteristic": characteristic,
+                "action": command.action,
+                "command": str(command),
                 "result": result,
                 "status": status,
                 "timestamp": datetime.now().isoformat(),
@@ -621,7 +626,8 @@ class HRITasks(metaclass=SubtaskMeta):
 
     def get_context(self, query_result):
         return self.get_metadata_key(query_result, "context")
-
+    
+    # TODO: Fix since we removed the complement from the command
     def get_complement(self, query_result):
         return self.get_metadata_key(query_result, "complement")
 
