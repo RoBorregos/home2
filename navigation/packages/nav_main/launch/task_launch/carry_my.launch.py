@@ -11,11 +11,11 @@ from launch.conditions import UnlessCondition, IfCondition
 def launch_setup(context, *args, **kwargs):
     rviz_config_dir = os.path.join(get_package_share_directory('nav_main'), 'rviz_configs', 'receptionist.rviz')
     nav_dir = get_package_share_directory('nav_main')
-    params_slam_file = os.path.join(nav_dir, 'config', 'mapper_params_online_async.yaml')
+    params_slam_file = os.path.join(nav_dir, 'config', 'mapper_params_online_sync.yaml')
     use_sim = LaunchConfiguration('use_sim', default='false')
     localization = LaunchConfiguration('localization', default='false')
     rtabmap_viz = LaunchConfiguration('rtabmap_viz', default='false')
-    default_value=os.path.join(nav_dir, 'config', 'nav2_params.yaml'),
+    default_value=os.path.join(nav_dir, 'config', 'nav_following_params.yaml'),
     params_file = LaunchConfiguration('params_file', default=default_value)
     use_amcl = LaunchConfiguration('use_slam', default='true')
     show_rviz = LaunchConfiguration('show_rviz', default='true')
@@ -60,7 +60,7 @@ def launch_setup(context, *args, **kwargs):
                 [
                     FindPackageShare("slam_toolbox"),
                     "launch",
-                    "online_async_launch.py",
+                    "online_sync_launch.py",
                 ]
             )),
             launch_arguments={'params_file': params_slam_file, 'use_sim_time': use_sim}.items(),
