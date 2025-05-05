@@ -414,7 +414,7 @@ class SingleTracker(Node):
             if person_in_frame:
                 if len(self.depth_image) > 0:
                     coords = PointStamped()
-                    coords.header.frame_id = 'zed_camera_link'
+                    coords.header.frame_id = "zed_camera_link"
                     coords.header.stamp = self.get_clock().now().to_msg()
                     point2D = get2DCentroid(self.person_data["coordinates"], self.frame)
                     point2D_x_coord = float(point2D[1])
