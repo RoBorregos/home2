@@ -1,9 +1,8 @@
 #! /usr/bin/env python3
 from detectors.ObjectDetector import Detection, ObjectDectectorParams
 from detectors.ZeroShotObjectDetector import ZeroShotObjectDetector
-import logging
+# import logging
 
-logging.getLogger("ultralytics").setLevel(logging.ERROR)
 from ultralytics import YOLOE
 import warnings
 import sys
@@ -12,9 +11,10 @@ from contextlib import contextmanager
 
 warnings.filterwarnings("ignore", category=FutureWarning)
 
+
 @contextmanager
 def suppress_stdout():
-    with open(os.devnull, 'w') as fnull:
+    with open(os.devnull, "w") as fnull:
         old_stdout = sys.stdout
         sys.stdout = fnull
         try:
@@ -22,10 +22,11 @@ def suppress_stdout():
         finally:
             sys.stdout = old_stdout
 
+
 class YoloEObjectDetector(ZeroShotObjectDetector):
     def __init__(self, model_path: str, object_detector_params: ObjectDectectorParams):
         super().__init__(model_path, object_detector_params)
-        
+
         self.loadYoloEModel()
 
     def loadYoloEModel(self):
@@ -35,7 +36,8 @@ class YoloEObjectDetector(ZeroShotObjectDetector):
 
     def _inference(self, frame):
         # Execute prediction for specified categories on an image
-        results = self.model.predict(frame, verbose=False)
+        with suppress_stdout():
+            results = self.model.predict(frame, verbose=False)
 
         return self._generate_detections(results, frame)
 

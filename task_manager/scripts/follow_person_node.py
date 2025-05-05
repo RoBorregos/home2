@@ -13,6 +13,12 @@ from rclpy.node import Node
 from utils.logger import Logger
 from xarm_msgs.srv import MoveVelocity, SetInt16
 import numpy as np
+from frida_constants.manipulation_constants import (
+    # FACE_RECOGNITION_LIFETIME,
+    # FOLLOW_FACE_SPEED,
+    MOVEIT_MODE,
+    # FOLLOW_FACE_TOLERANCE,
+)
 
 XARM_MOVEVELOCITY_SERVICE = "/xarm/vc_set_joint_velocity"
 XARM_SETMODE_SERVICE = "/xarm/set_mode"
@@ -25,7 +31,7 @@ DASHGO_CMD_VEL = "/cmd_vel"
 
 TIMEOUT = 5.0
 MAX_ERROR = 0.2
-MAX_ROTATIONAL_VEL = 1.0
+MAX_ROTATIONAL_VEL = 0.5
 CENTROID_TOIC = "/vision/tracker_centroid"
 
 
@@ -109,6 +115,29 @@ class FollowPersonNode(Node):
         except Exception as e:
             Logger.error(self, f"Error Activating arm: {e}")
 
+    def set_state_moveit(self):
+        Logger.info(self, "Activating arm for moveit")
+
+        # Set state
+        state_request = SetInt16.Request()
+        state_request.data = 0
+        # Set mode
+        mode_request = SetInt16.Request()
+        mode_request.data = MOVEIT_MODE
+
+        try:
+            self.mode_client.call_async(mode_request)
+            # future_mode, success = wait_for_future(future_mode)
+            # if not success:
+            #     Logger.error(self, "Failed to set mode")
+
+            self.state_client.call_async(state_request)
+            # future_state, success = wait_for_future(future_state)
+            # if not success:
+            #     Logger.error(self, "Failed to set state")
+        except Exception as e:
+            Logger.error(self, f"Error Activating arm: {e}")
+
     def get_dashgo_cmd_vel_callback(self, msg: PoseStamped):
         """Callback to get the dashgo rotational velocity"""
         self.dashgo_cmd_vel = msg.pose.orientation.z
@@ -127,11 +156,16 @@ class FollowPersonNode(Node):
         else:
             return None, None
 
+    # def evaluate_joint_state(self):
+    #     self.
+
     def follow_person_callback(self, request: FollowFace.Request, response: FollowFace.Response):
         self.is_following_person = request.follow_face
         if not self.is_following_person:
             self.move_to(0.0, 0.0)
+            self.set_state_moveit()
         else:
+            self.set_state_moveit()
             self.set_state()
         response.success = True
         return response
@@ -204,17 +238,18 @@ class FollowPersonNode(Node):
             return
         """Running main loop"""
         # Follow face task
-        Logger.state(self, "Follow face task")
+        Logger.state(self, "Follow person task")
         x, y = self.get_follow_face()
         print(x, y)
         if x is None:
+            self.send_joint_velocity(self.error_to_velocity(0, 0))
             return
         elif x is not None:
             self.send_joint_velocity(self.error_to_velocity(x, y))
 
     def error_to_velocity(self, x: float, y: float):
         """Convert error to velocity"""
-        KP = 0.1
+        KP = 0.8
         x_vel = KP * x
         x_vel = max(min(x_vel, MAX_ROTATIONAL_VEL), -MAX_ROTATIONAL_VEL)
 

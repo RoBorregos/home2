@@ -13,7 +13,7 @@ bt_navigator:
     # nav2_bt_navigator/navigate_to_pose_w_replanning_and_recovery.xml
     # nav2_bt_navigator/navigate_through_poses_w_replanning_and_recovery.xml
     # They can be set here or via a RewrittenYaml remap from a parent launch file to Nav2.
-    #default_nav_to_pose_bt_xml: "$(find-pkg-share nav_main)/bt/follow_dynamic_point.xml"
+    default_nav_to_pose_bt_xml: "$(find-pkg-share nav_main)/bt/follow_dynamic_point.xml"
     plugin_lib_names:
       - nav2_compute_path_to_pose_action_bt_node
       - nav2_compute_path_through_poses_action_bt_node
@@ -103,19 +103,19 @@ controller_server:
     FollowPath:
       plugin: "dwb_core::DWBLocalPlanner"
       debug_trajectory_details: True
-      min_vel_x: -0.5
+      min_vel_x: -0.3
       min_vel_y: 0.0
-      max_vel_x: 0.15
+      max_vel_x: 0.17
       max_vel_y: 0.0
-      max_vel_theta: 0.75
+      max_vel_theta: 0.56
       min_speed_xy: 0.0
-      max_speed_xy: 0.16
+      max_speed_xy: 0.1
       min_speed_theta: 0.0
       # Add high threshold velocity for turtlebot 3 issue.
       # https://github.com/ROBOTIS-GIT/turtlebot3_simulations/issues/75
-      acc_lim_x: 0.5
+      acc_lim_x: 0.46
       acc_lim_y: 0.0
-      acc_lim_theta: 2.0
+      acc_lim_theta: 0.5
       decel_lim_x: -1.0
       decel_lim_y: 0.0
       decel_lim_theta: -1.0

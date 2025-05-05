@@ -33,6 +33,8 @@ ZERO_SHOT_DEFAULT_CLASSES = [
     "white_can",
     "cereal_box",
     "blue_box",
+    "bag",
+    "hand_bag",
 ]
 
 ZERO_SHOT_MODEL = "yoloe-11l-seg.pt"
