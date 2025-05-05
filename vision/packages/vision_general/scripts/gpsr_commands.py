@@ -35,7 +35,7 @@ from frida_constants.vision_constants import (
     COUNT_BY_GESTURE_TOPIC,
 )
 
-from frida_constants.vision_enums import Poses, Gestures
+from frida_constants.vision_enums import Poses, Gestures, DetectBy
 
 from pose_detection import PoseDetection
 
@@ -317,28 +317,35 @@ class GPSRCommands(Node):
         # Detect gesture for the person with the biggest bounding box
         biggest_person = max(self.people, key=lambda p: p["area"], default=None)
         x1, y1, x2, y2 = biggest_person["bbox"]
+        cropped_frame = frame[y1:y2, x1:x2]
 
         # Crop the frame to the bounding box of the person
         type_requested = request.type_requested
 
-        if type_requested == "pose":
+        if type_requested == DetectBy.POSES.value:
             prompt = "Respond 'standing' if the person in the image is standing, 'sitting' if the person in the image is sitting, 'lying down' if the person in the image is lying down or 'unknown' if the person is not doing any of the previous."
+            status, response_q = self.moondream_crop_query(
+                prompt, [float(y1), float(x1), float(y2), float(x2)]
+            )
+
+            if status:
+                self.get_logger().info(f"The person is {response_q}.")
+                response_clean = response_q.replace(" ", "_")
+                response_clean = response_clean.replace("_", "", 1)
+
+            response.result = response_clean
+
+        elif type_requested == DetectBy.GESTURES.value:
+            gesture = self.detect_gesture(cropped_frame)
+            response.result = gesture
+            response_clean = gesture
+            self.get_logger().info(f"The person is {gesture}")
         else:
             self.get_logger().warn(f"Type {type_requested} is not valid.")
             response.success = False
             response.result = ""
             return response
 
-        status, response_q = self.moondream_crop_query(
-            prompt, [float(y1), float(x1), float(y2), float(x2)]
-        )
-        response_clean = response_q.replace(" ", "_")
-        response_clean = response_clean.replace("_", "", 1)
-
-        if status:
-            self.get_logger().info(f"The person is {response_q}.")
-
-        response.result = response_clean
         response.success = True
         self.get_logger().info(f"{type_requested} detected: {response_clean}")
         return response
@@ -356,7 +363,7 @@ class GPSRCommands(Node):
                 self.bridge.cv2_to_imgmsg(self.output_image, "bgr8")
             )
 
-    def detect_gesture(self, frame):
+    def detect_gesture(self, cropped_frame):
         """Detect the pose in the image."""
         gestures = [
             Gestures.UNKNOWN,
@@ -367,17 +374,7 @@ class GPSRCommands(Node):
             Gestures.POINTING_RIGHT,
         ]
 
-        # Detect gesture for the person with the biggest bounding box
-        biggest_person = max(self.people, key=lambda p: p["area"], default=None)
-        x1, y1, x2, y2 = biggest_person["bbox"]
-
-        # Crop the frame to the bounding box of the person
-        cropped_frame = frame[y1:y2, x1:x2]
-
         gesture = self.pose_detection.detectGesture(cropped_frame)
-
-        # Put the cropped frame back into the output image
-        self.output_image[y1:y2, x1:x2] = cropped_frame
 
         if gesture in gestures:
             return gesture.value

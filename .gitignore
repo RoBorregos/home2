@@ -18,3 +18,5 @@ hri/packages/nlp/assets/**
 !hri/packages/nlp/assets/entrypoint.sh
 **.bag
 **/rtabmapdbs
+yolov5/
+**/baml_client

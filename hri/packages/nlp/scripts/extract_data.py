@@ -17,6 +17,7 @@ from pydantic import BaseModel
 from rclpy.node import Node
 
 from frida_interfaces.srv import ExtractInfo
+from frida_constants.hri_constants import MODEL
 
 EXTRACT_DATA_SERVICE = "/extract_data"
 
@@ -37,7 +38,6 @@ class DataExtractor(Node):
         super().__init__("data_extractor")
 
         self.declare_parameter("base_url", "None")
-        self.declare_parameter("model", "gpt-4o-2024-08-06")
         self.declare_parameter("EXTRACT_DATA_SERVICE", EXTRACT_DATA_SERVICE)
         self.declare_parameter("temperature", 0.5)
 
@@ -52,9 +52,6 @@ class DataExtractor(Node):
         self.client = OpenAI(
             api_key=os.getenv("OPENAI_API_KEY", "ollama"), base_url=base_url
         )
-
-        model = self.get_parameter("model").get_parameter_value().string_value
-        self.model = model
 
         EXTRACT_DATA_SERVICE = (
             self.get_parameter("EXTRACT_DATA_SERVICE")
@@ -83,7 +80,7 @@ class DataExtractor(Node):
 
         response_content = (
             self.client.beta.chat.completions.parse(
-                model=self.model,
+                model=MODEL.EXTRACT_INFO_REQUESTED.value,
                 temperature=self.temperature,
                 messages=messages,
                 response_format=response_format,

@@ -2,8 +2,8 @@
 
 # Download model and Modelfile to the directory where this script is located
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
-[ ! -f "$SCRIPT_DIR/Modelfile" ] && curl -L https://huggingface.co/diegohc/robollm/resolve/main/Modelfile -o "$SCRIPT_DIR/Modelfile"
-[ ! -f "$SCRIPT_DIR/rbrgs-finetuned.F16.gguf" ] && curl -L https://huggingface.co/diegohc/robollm/resolve/main/rbrgs-finetuned-unsloth.F16.gguf -o "$SCRIPT_DIR/rbrgs-finetuned.F16.gguf"
+[ ! -f "$SCRIPT_DIR/NewModelfile" ] && curl -L https://huggingface.co/diegohc/rbrgs-finetuning/resolve/new-format/f16/Modelfile -o "$SCRIPT_DIR/NewModelfile"
+[ ! -f "$SCRIPT_DIR/new-rbrgs-finetuned.F16.gguf" ] && curl -L https://huggingface.co/diegohc/rbrgs-finetuning/resolve/new-format/f16/unsloth.F16.gguf -o "$SCRIPT_DIR/new-rbrgs-finetuned.F16.gguf"
 
 # Detect available image
 if docker images | grep -q "dustynv/ollama"; then
@@ -23,7 +23,7 @@ echo "Running: docker run -d --rm --runtime=nvidia -v \"$SCRIPT_DIR\":/ollama -e
 
 CONTAINER_ID=$(docker run -d --rm --runtime=nvidia -v $SCRIPT_DIR:/ollama -e OLLAMA_MODELS=/ollama "$IMAGE" $COMMAND)
 
-docker exec "$CONTAINER_ID" ollama create -f /ollama/Modelfile robollm
+docker exec "$CONTAINER_ID" ollama create -f /ollama/NewModelfile rbrgs-finetuning
 docker exec "$CONTAINER_ID" ollama pull nomic-embed-text
 docker exec "$CONTAINER_ID" ollama pull qwen2.5
 
