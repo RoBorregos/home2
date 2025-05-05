@@ -26,6 +26,7 @@ ZERO_SHOT_DETECTIONS_POSES_TOPIC = "/vision/zero_shot_detections_poses"
 ZERO_SHOT_DETECTIONS_3D_TOPIC = "/vision/zero_shot_detections_3d"
 ZERO_SHOT_DETECTIONS_ACTIVE_TOPIC = "/vision/zero_shot_detections_active"
 SET_DETECTOR_CLASSES_SERVICE = "/vision/set_detector_classes"
+IS_TRACKING_TOPIC = "/vision/is_tracking"
 
 ZERO_SHOT_DEFAULT_CLASSES = [
     "red_can",

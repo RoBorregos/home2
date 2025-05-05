@@ -5,114 +5,29 @@ Task Manager for testing the subtask managers
 """
 
 import rclpy
-# import json
-
-# from config.hri.debug import config as test_hri_config
 from rclpy.node import Node
-
-# from subtask_managers.hri_tasks import HRITasks
-
-from subtask_managers.manipulation_tasks import ManipulationTasks
-from subtask_managers.nav_tasks import NavigationTasks
-# import time as t
+from utils.subtask_manager import SubtaskManager, Task
+from utils.logger import Logger
+import time as t
 
 
 class TestTaskManager(Node):
     def __init__(self):
         super().__init__("test_task_manager")
-        self.subtask_manager = {}
-        # self.subtask_manager["hri"] = HRITasks(self, config=test_hri_config)
-
-        self.subtask_manager["manipulation"] = ManipulationTasks(self, task="DEMO", mock_data=False)
-        self.subtask_manager["navigation"] = NavigationTasks(self, mock_data=False)
-
-        # self.subtask_manager["hri"] = HRITasks(self, task="DEMO")
-        # wait for a bit
-        rclpy.spin_once(self, timeout_sec=1.0)
+        self.subtask_manager = SubtaskManager(
+            self,
+            task=Task.HELP_ME_CARRY,
+            mock_areas=["manipulation","hri","navigation"],
+        )
         self.get_logger().info("TestTaskManager has started.")
         self.run()
 
     def run(self):
-        # """testing vision tasks"""
-        # self.subtask_manager["vision"].track_person()
-
-        # self.subtask_manager["hri"].say(
-        #     "Hi, my name is frida. What is your favorite drink?", wait=True
-        # )
-        # self.get_logger().info("Hearing from the user...")
-
-        # # This line does run
-        # user_request = self.subtask_manager["hri"].hear()
-
-        # self.get_logger().info(f"Heard: {user_request}")
-
-        # drink = self.subtask_manager["hri"].extract_data("Drink", user_request)
-
-        # self.get_logger().info(f"Extracted data: {drink}")
-
-        # commands = self.subtask_manager["hri"].command_interpreter(user_request)
-
-        # self.get_logger().info(f"Interpreted commands: {commands}")
-
-        # command_strs = [
-        #     f"I will do action:{command.action}, ({command.complement}), ({command.characteristic})"
-        #     for command in commands
-        # ]
-        # command_str = " and ".join(command_strs)
-
-        # fixed_text = self.subtask_manager["hri"].refactor_text(command_str)
-        # self.subtask_manager["hri"].say(fixed_text)
-
-        # self.subtask_manager["hri"].say("I'm frida, Can you tell me where to go?")
-        # location_hint = self.subtask_manager["hri"].hear()
-
-        # joint_positions = self.subtask_manager["manipulation"].get_joint_positions()
-        # joint_positions["joint1"] = joint_positions["joint1"] - 180
-        # print(joint_positions)
-
-        # new_joint_positions = [-55.0, -3.0, -52.0, 0.0, 53.0, -55.0]
-        # res = self.subtask_manager["manipulation"].move_joint_positions(
-        #     joint_positions=joint_positions, velocity=0.5, degrees=True
-        # )
-        # print("Move joint positions result: ", res)
-        # joint_positions = self.subtask_manager["manipulation"].get_joint_positions(degrees=True)
-        # print(joint_positions)
-
-        # self.subtask_manager["manipulation"].close_gripper()
-        # self.subtask_manager.open_gripper()
-
-        ###NAV TESTS
-        # future = self.subtask_manager.nav.move_to_location("entrance")
-        # rclpy.spin_until_future_complete(self, future)
-        # t.sleep(20)
-        # future = self.subtask_manager.nav.move_to_location("kitchen", "beverages")
-        # rclpy.spin_until_future_complete(self, future)
-        # t.sleep(20)
-
-        # future = self.subtask_manager.nav.move_to_location("living_room", "couches")
-        # rclpy.spin_until_future_complete(self, future)
-        # t.sleep(20)
-        # future = self.subtask_manager.nav.move_to_location("entrance")
-        # rclpy.spin_until_future_complete(self, future)
-        # t.sleep(20)
-        self.subtask_manager["navigation"].whereIam()
-        ###
-
-        ####### EXAMPLE: Move to named position then move only the first joint #######
-        # Move to a named position
-        # joint_positions = self.subtask_manager["manipulation"].get_joint_positions()
-        # print(joint_positions)
-        # res = self.subtask_manager["manipulation"].move_joint_positions(
-        #     named_position="front_stare", velocity=0.5, degrees=True
-        # )
-        # print("Move to named position result: ", res)
-        # joint_positions = self.subtask_manager["manipulation"].get_joint_positions(degrees=True)
-        # joint_positions["joint1"] = joint_positions["joint1"] - 45
-        # res = self.subtask_manager["manipulation"].move_joint_positions(
-        #     joint_positions=joint_positions, velocity=0.5, degrees=True
-        # )
-        # print("Move joint positions result: ", res)
-
+        while True:
+            response = self.subtask_manager.vision.get_track_person()
+            Logger.info(self,f"Status tracker = {response}")
+            t.sleep(3)
+        
 
 def main(args=None):
     rclpy.init(args=args)

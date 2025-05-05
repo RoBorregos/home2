@@ -135,10 +135,7 @@ class VisionTasks:
             },
             Task.HELP_ME_CARRY: {
                 "track_person": {"client": self.track_person_client, "type": "service"},
-                "is_tracking_person": {
-                    "client": self.get_track_person_client,
-                    "type": "service",
-                },
+                "is_tracking_person": {"client": self.get_track_person_client,"type": "service"},
                 "moondream_crop_query": {
                     "client": self.moondream_crop_query_client,
                     "type": "service",
@@ -554,6 +551,8 @@ class VisionTasks:
         Logger.success(self.node, f"Following face success: {name}")
         return Status.EXECUTION_SUCCESS
 
+    @mockable(return_value=None, delay=2)
+    @service_check("get_track_person_client", Status.EXECUTION_ERROR, TIMEOUT)
     def get_track_person(self):
         """Get the track person status"""
         Logger.info(self.node, "Getting track person status")
@@ -572,7 +571,7 @@ class VisionTasks:
             return Status.EXECUTION_ERROR
 
         Logger.success(self.node, "Track person status success")
-        return True
+        return Status.EXECUTION_SUCCESS
 
 
     @mockable(return_value=Status.EXECUTION_SUCCESS, delay=2)

@@ -44,6 +44,7 @@ from frida_constants.vision_constants import (
     CAMERA_INFO_TOPIC,
     CENTROID_TOIC,
     CROP_QUERY_TOPIC,
+    IS_TRACKING_TOPIC
 )
 from frida_constants.vision_enums import DetectBy
 
@@ -77,11 +78,7 @@ class SingleTracker(Node):
         )
 
         self.get_is_tracking_service = self.create_service(
-            Trigger, "/vision/is_tracking", self.get_is_tracking_callback
-        )
-
-        self.get_is_tracking_service = self.create_service(
-            Trigger, "/vision/is_tracking", self.get_is_tracking_callback
+            Trigger, IS_TRACKING_TOPIC, self.get_is_tracking_callback
         )
 
         self.results_publisher = self.create_publisher(Point, RESULTS_TOPIC, 10)
@@ -98,8 +95,6 @@ class SingleTracker(Node):
         self.setup()
         self.create_timer(0.1, self.run)
         self.create_timer(0.01, self.publish_image)
-
-        self.is_tracking_result = False
 
         self.is_tracking_result = False
 
@@ -320,10 +315,8 @@ class SingleTracker(Node):
                 2,
                 cv2.LINE_AA,
             )
-            self.is_tracking_result = True
             return True
         else:
-            self.is_tracking_result = False
             self.get_logger().warn("No person found")
             return False
 
@@ -506,6 +499,7 @@ class SingleTracker(Node):
                                 break
             if person_in_frame:
                 if len(self.depth_image) > 0:
+                    self.is_tracking_result = True
                     coords = Point()
                     cropped_image = self.frame[
                         self.person_data["coordinates"][1] : self.person_data[
@@ -543,7 +537,11 @@ class SingleTracker(Node):
                     self.results_publisher.publish(coords)
                 else:
                     self.get_logger().warn("Depth image not available")
-
+                    self.is_tracking_result = False
+            else:
+                self.is_tracking_result = False
+        else:
+            self.is_tracking_result = False
 
 def main(args=None):
     rclpy.init(args=args)

@@ -146,8 +146,6 @@ class PointTransformer(Node):
         """Cancel the current navigation goal"""
         if self.navigation_in_progress:
             self.get_logger().info('Canceling navigation goal')
-            # This is a simple implementation - in a more robust system you'd
-            # want to track the active goal handle and cancel it directly
             cancel_future = self.nav_action_client.cancel_all_goals_async()
             self.navigation_in_progress = False
 
