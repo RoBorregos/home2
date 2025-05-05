@@ -15,7 +15,16 @@ import io
 class TTSService(tts_pb2_grpc.TTSServiceServicer):
     def __init__(self):
         # Initialize the TTS pipeline once at service startup
-        self.pipeline = KPipeline(lang_code="a", device="cuda")
+        device = "cpu"
+        try:
+            import torch
+
+            if torch.cuda.is_available():
+                device = "cuda"
+        except Exception:
+            pass
+        print("Using device:", device)
+        self.pipeline = KPipeline(lang_code="a", device=device)
         # Original sample rate from kokoro
         self.original_sample_rate = 24000  # Hz
         # Target sample rate for audio playback - match ROS2 node's frequency
