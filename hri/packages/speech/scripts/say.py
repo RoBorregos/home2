@@ -2,6 +2,7 @@
 
 import json
 import os
+import sys
 import subprocess
 from collections import OrderedDict
 
@@ -15,6 +16,14 @@ from std_msgs.msg import Bool, String
 
 from frida_constants.hri_constants import SPEAK_SERVICE
 from frida_interfaces.srv import Speak
+
+import grpc
+
+# Add the directory containing the protos to the Python path
+sys.path.append(os.path.join(os.path.dirname(__file__), "tts"))
+
+import tts_pb2
+import tts_pb2_grpc
 
 CURRENT_FILE_PATH = os.path.abspath(__file__)
 
@@ -193,7 +202,7 @@ class Say(Node):
                 audio_files.append(cached_path)
             else:
                 output_path = os.path.join(VOICE_DIRECTORY, f"{hash(chunk)}.wav")
-                self.synthesize_voice_offline(output_path, chunk)
+                self.synthesize_voice_offline(f"{hash(chunk)}.wav", chunk)
                 self._add_to_cache(chunk, output_path)
                 audio_files.append(output_path)
 
@@ -238,37 +247,21 @@ class Say(Node):
         return limited_chunks
 
     def synthesize_voice_offline(self, output_path, text):
-        """Synthesize text using the offline voice model."""
+        try:
+            with grpc.insecure_channel('127.0.0.1:50050') as channel:
+                stub = tts_pb2_grpc.TTSServiceStub(channel)
+                response = stub.Synthesize(tts_pb2.SynthesizeRequest(
+                    text=text,
+                    model=self.model,
+                    output_path=output_path
+                ))
 
-        executable = (
-            "/workspace/piper/install/piper"
-            if os.path.exists("/workspace/piper/install/piper")
-            else "python3.10 -m piper"
-        )
+            if not response.success:
+                raise RuntimeError(f"TTS failed: {response.error_message}")
+        except Exception as e:
+            self.get_logger().error(f"[gRPC] Synthesis failed: {e}")
+            raise
 
-        model_path = os.path.join(VOICE_DIRECTORY, self.model + ".onnx")
-
-        download_model = not os.path.exists(model_path)
-
-        if download_model:
-            self.get_logger().info("Downloading voice model...")
-
-        command = [
-            "echo",
-            f'"{text}"',
-            "|",
-            executable,
-            "--model",
-            self.model if download_model else model_path,
-            "--data-dir",
-            VOICE_DIRECTORY,
-            "--download-dir",
-            VOICE_DIRECTORY,
-            "--output_file",
-            output_path,
-        ]
-
-        subprocess.run(" ".join(command), shell=True)
 
 
 def main(args=None):

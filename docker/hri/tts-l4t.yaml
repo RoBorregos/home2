@@ -1,0 +1,17 @@
+services:
+  tts-l4t:
+    profiles: [receptionist, carry, gpsr]
+    
+    container_name: home2-hri-tts-l4t
+    # user: 1000:1000
+    image: roborregos/home2:hri-tts-l4t
+    build:
+      context: ../..
+      dockerfile: docker/hri/Dockerfile.tts-l4t
+    runtime: nvidia
+    volumes:
+      - ../../hri/packages/speech/scripts/tts/:/app
+      - ../../hri/packages/speech/assets/downloads/offline_voice/:/app/models
+    network_mode: host
+    command: "python3 -u piper.py"
+    # command: "tail -f /dev/null"

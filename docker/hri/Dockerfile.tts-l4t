@@ -1,0 +1,9 @@
+FROM dustynv/piper-tts:r36.2.0
+
+RUN pip install \
+    grpcio==1.70.0 \
+    grpcio-tools==1.70.0
+
+RUN pip install --upgrade protobuf
+
+WORKDIR /app
