@@ -31,6 +31,7 @@ from frida_interfaces.srv import (
 from frida_constants.manipulation_constants import (
     PICK_MOTION_ACTION_SERVER,
     PLACE_MOTION_ACTION_SERVER,
+    POUR_MOTION_ACTION_SERVER,
     MANIPULATION_ACTION_SERVER,
     PICK_PERCEPTION_SERVICE,
     GRASP_DETECTION_SERVICE,
@@ -85,7 +86,7 @@ class ManipulationCore(Node):
         self._pour_motion_action_client = ActionClient(
             self,
             PourMotion,  # Make sure to import PourMotion
-            "pour_motion_action_server",  # Replace with actual action name
+            POUR_MOTION_ACTION_SERVER,
         )
 
         self._move_joints_client = ActionClient(
@@ -184,7 +185,6 @@ class ManipulationCore(Node):
                 # object_point=object_point,
                 container_object_name=bowl_name,
             )
-            result = False
             if not result:
                 self.get_logger().error("Pour failed")
                 return False
