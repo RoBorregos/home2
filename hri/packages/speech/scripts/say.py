@@ -250,7 +250,6 @@ class Say(Node):
         if download_model:
             self.get_logger().info("Downloading voice model...")
 
-
         raw_temp = os.path.join(VOICE_DIRECTORY, f"{hash(text)}.raw")
 
         # Build the shell command to:
@@ -273,7 +272,6 @@ class Say(Node):
             os.remove(raw_temp)
         except Exception as e:
             self.get_logger().warn(f"Could not delete raw temp file: {e}")
-
 
 
 def main(args=None):
