@@ -15,15 +15,47 @@ else
     exit 1
 fi
 
-# Define tmux sessions to view
-SESSIONS=(
-    "hri-gpsr"
-    "integration-gpsr"
-    "m-gpsr-planning"
-    "m-gpsr-arm"
-    "navigation-receptionist"
-    "vision-gpsr"
-)
+TERMINAL_TYPE="gnome-terminal"
+
+
+get_remote_sessions() {
+    # Check SSH connection and get tmux sessions from remote server
+    echo "Connecting to $REMOTE_SERVER to fetch tmux sessions..."
+    
+    # Try to connect and list sessions
+    remote_sessions=$(ssh "$REMOTE_SERVER" "tmux list-sessions -F '#{session_name}' 2>/dev/null" 2>/dev/null)
+    
+    # Check if connection was successful
+    if [ $? -ne 0 ]; then
+        echo "Error: Could not connect to $REMOTE_SERVER"
+        exit 1
+    fi
+    
+    # Check if we got any sessions
+    if [ -z "$remote_sessions" ]; then
+        echo "No tmux sessions found on $REMOTE_SERVER"
+        exit 1
+    fi
+    
+    # Convert to array
+    readarray -t SESSIONS <<< "$remote_sessions"
+    
+    echo "Found ${#SESSIONS[@]} tmux sessions on $REMOTE_SERVER:"
+    for session in "${SESSIONS[@]}"; do
+        echo "- $session"
+    done
+}
+
+
+# # Define tmux sessions to view
+# SESSIONS=(
+#     "hri-gpsr"
+#     "integration-gpsr"
+#     "m-gpsr-planning"
+#     "m-gpsr-arm"
+#     "navigation-receptionist"
+#     "vision-gpsr"
+# )
 
 # Create a layout configuration for terminator
 create_terminator_config() {
@@ -109,6 +141,14 @@ open_sessions() {
             ;;
     esac
 }
+
+get_remote_sessions
+
+if [ ${#SESSIONS[@]} -eq 0 ]; then
+    echo "No tmux sessions found on $REMOTE_SERVER."
+    exit 1
+fi
+
 
 # Main execution
 echo "Opening terminals to view tmux sessions..."
