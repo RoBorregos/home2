@@ -451,13 +451,6 @@ class HRITasks(metaclass=SubtaskMeta):
         rclpy.spin_until_future_complete(self.node, future)
         return Status.EXECUTION_SUCCESS, future.result().corrected_text
 
-    @service_check("llm_wrapper_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
-    def ask(self, question: str) -> str:
-        request = LLMWrapper.Request(question=question)
-        future = self.llm_wrapper_service.call_async(request)
-        rclpy.spin_until_future_complete(self.node, future)
-        return Status.EXECUTION_SUCCESS, future.result().answer
-
     def command_interpreter(self, text: str) -> List[InterpreterAvailableCommands]:
         Logger.info(
             self.node,
@@ -602,6 +595,22 @@ class HRITasks(metaclass=SubtaskMeta):
         Results = self.get_name(Results)
         Logger.info(self.node, f"find_closest result({query}): {str(Results)}")
         return Status.EXECUTION_SUCCESS, Results
+
+    @service_check("llm_wrapper_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
+    def answer_with_context(self, question: str, context: str) -> str:
+        """
+        Method to answer a question with context.
+        Args:
+            question: the question to answer
+            context: the context to use
+        Returns:
+            Status: the status of the execution
+            str: the answer to the question
+        """
+        request = LLMWrapper.Request(question=question, context=context)
+        future = self.llm_wrapper_service.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+        return Status.EXECUTION_SUCCESS, future.result().answer
 
     def query_command_history(self, query: str, top_k: int = 1):
         """
