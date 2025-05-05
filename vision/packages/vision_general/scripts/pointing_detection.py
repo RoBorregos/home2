@@ -28,14 +28,14 @@ USE_LEFT_HAND = False
 INFERENCE_TIMEOUT = 2.0  # seconds
 DEFAULT_CLASSES = [
     "bag",
-    "handbag",
+    "hand_bag",
 ]
 
 
 class DetectPointingObjectServer(Node):
     def __init__(self):
         super().__init__("detect_pointing_object_server")
-
+        self._default_callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
         self.get_logger().info("Initializing Detect Pointing Object Server")
 
         self.mp_pose = mp.solutions.pose
