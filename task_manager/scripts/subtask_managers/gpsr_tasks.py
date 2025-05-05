@@ -203,6 +203,8 @@ class GPSRTask(GenericTask):
 
     ## HRI, Vision
     def get_person_info(self, command: GetPersonInfo):
+        if isinstance(command, dict):
+            command = GetPersonInfo(**command)
         """
         Get specific information about a person.
 

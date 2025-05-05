@@ -30,7 +30,7 @@ client<llm> LOCAL_FINETUNED_NEW {
   provider "openai-generic"
   options {
     base_url "http://localhost:11434/v1"
-    model "newrbrgs:latest"
+    model "new-format:latest"
     max_tokens 4096
   }
 }

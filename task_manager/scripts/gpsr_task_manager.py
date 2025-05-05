@@ -44,7 +44,9 @@ class GPSRTM(Node):
     def __init__(self):
         """Initialize the node"""
         super().__init__("gpsr_task_manager")
-        self.subtask_manager = SubtaskManager(self, task=Task.GPSR, mock_areas=["navigation"])
+        self.subtask_manager = SubtaskManager(
+            self, task=Task.GPSR, mock_areas=["navigation", "vision", "manipulation"]
+        )
         self.gpsr_tasks = GPSRTask(self.subtask_manager)
         self.gpsr_individual_tasks = GPSRSingleTask(self.subtask_manager)
 
@@ -70,15 +72,17 @@ class GPSRTM(Node):
                 self.current_state = GPSRTM.States.DONE
                 return
 
-            s, user_command = self.subtask_manager.hri.ask_and_confirm(
-                "What is your command?",
-                "command",
-                context="The user was asked to say a command. We want to infer his complete instruction from the response",
-                confirm_question=confirm_command,
-                use_hotwords=False,
-                retries=ATTEMPT_LIMIT,
-                min_wait_between_retries=5.0,
-            )
+            # s, user_command = self.subtask_manager.hri.ask_and_confirm(
+            #     "What is your command?",
+            #     "command",
+            #     context="The user was asked to say a command. We want to infer his complete instruction from the response",
+            #     confirm_question=confirm_command,
+            #     use_hotwords=False,
+            #     retries=ATTEMPT_LIMIT,
+            #     min_wait_between_retries=5.0,
+            # )
+            s = Status.EXECUTION_SUCCESS
+            user_command = "Bring me a knife from the kitchen"
             if s != Status.EXECUTION_SUCCESS:
                 self.subtask_manager.hri.say("I am sorry, I could not understand you.")
                 self.current_attempt += 1
@@ -97,6 +101,7 @@ class GPSRTM(Node):
                 self.current_state = GPSRTM.States.FINISHED_COMMAND
             else:
                 command = self.commands.pop(0)
+                self.get_logger().info(f"Executing command: {str(command)}")
                 exec_commad = search_command(
                     command.action,
                     [self.gpsr_tasks, self.gpsr_individual_tasks],
@@ -106,7 +111,6 @@ class GPSRTM(Node):
                         f"Command {command} is not implemented in GPSRTask or in the subtask managers."
                     )
                 else:
-                    Logger.info(self, f"Executing command: {command}")
                     # self.subtask_manager.hri.say(f"Executing command: {command}")
                     status, res = exec_commad(command)
                     self.get_logger().info(f"status-> {str(status)}")
