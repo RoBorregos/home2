@@ -13,7 +13,7 @@ import tqdm
 import torch.nn as nn
 import torch
 from vision_general.utils.calculations import (
-    # get2DCentroid,
+    get2DCentroid,
     get_depth,
     deproject_pixel_to_point,
 )
@@ -498,23 +498,47 @@ class SingleTracker(Node):
                                 )
                                 break
             if person_in_frame:
+                # if len(self.depth_image) > 0:
+                #     self.is_tracking_result = True
+                #     coords = Point()
+                #     cropped_image = self.frame[
+                #         self.person_data["coordinates"][1] : self.person_data[
+                #             "coordinates"
+                #         ][3],
+                #         self.person_data["coordinates"][0] : self.person_data[
+                #             "coordinates"
+                #         ][2],
+                #     ]
+                #     point2D = self.pose_detection.getCenterPerson(cropped_image)
+                #     if point2D[0] is None:
+                #         self.get_logger().warn("No person detected")
+                #         return
+                #     print(point2D[0], point2D[1])
+                #     # point2D = get2DCentroid(self.person_data["coordinates"], self.frame)
+                #     point2D_x_coord = float(point2D[1])
+                #     point2D_x_coord_normalized = (
+                #         point2D_x_coord / (self.frame.shape[1] / 2)
+                #     ) - 1
+                #     point2Dpoint = Point()
+                #     point2Dpoint.x = float(point2D_x_coord_normalized)
+                #     point2Dpoint.y = 0.0
+                #     point2Dpoint.z = 0.0
+                #     # self.get_logger().info(f"frame_shape: {self.frame.shape[1]} Point2D: {point2D[1]} normalized_point2D: {point2D_x_coord_normalized}")
+                #     self.centroid_publisher.publish(point2Dpoint)
+
+                #     depth = get_depth(
+                #         self.depth_image, [int(point2D[0]), int(point2D[1])]
+                #     )
+                #     point3D = deproject_pixel_to_point(self.imageInfo, point2D, depth)
+                #     point3D = float(point3D[0]), float(point3D[1]), float(point3D[2])
+                #     coords.x = point3D[0]
+                #     coords.y = point3D[1]
+                #     coords.z = point3D[2]
+                #     self.results_publisher.publish(coords)
                 if len(self.depth_image) > 0:
                     self.is_tracking_result = True
                     coords = Point()
-                    cropped_image = self.frame[
-                        self.person_data["coordinates"][1] : self.person_data[
-                            "coordinates"
-                        ][3],
-                        self.person_data["coordinates"][0] : self.person_data[
-                            "coordinates"
-                        ][2],
-                    ]
-                    point2D = self.pose_detection.getCenterPerson(cropped_image)
-                    if point2D[0] is None:
-                        self.get_logger().warn("No person detected")
-                        return
-                    print(point2D[0], point2D[1])
-                    # point2D = get2DCentroid(self.person_data["coordinates"], self.frame)
+                    point2D = get2DCentroid(self.person_data["coordinates"], self.frame)
                     point2D_x_coord = float(point2D[1])
                     point2D_x_coord_normalized = (
                         point2D_x_coord / (self.frame.shape[1] / 2)
@@ -525,10 +549,7 @@ class SingleTracker(Node):
                     point2Dpoint.z = 0.0
                     # self.get_logger().info(f"frame_shape: {self.frame.shape[1]} Point2D: {point2D[1]} normalized_point2D: {point2D_x_coord_normalized}")
                     self.centroid_publisher.publish(point2Dpoint)
-
-                    depth = get_depth(
-                        self.depth_image, [int(point2D[0]), int(point2D[1])]
-                    )
+                    depth = get_depth(self.depth_image, point2D)
                     point3D = deproject_pixel_to_point(self.imageInfo, point2D, depth)
                     point3D = float(point3D[0]), float(point3D[1]), float(point3D[2])
                     coords.x = point3D[0]

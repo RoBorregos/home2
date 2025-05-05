@@ -30,6 +30,7 @@ from frida_constants.hri_constants import (
     WAKEWORD_TOPIC,
 )
 from frida_interfaces.srv import (
+    HearMultiThread,
     STT,
     AddEntry,
     CategorizeShelves,
@@ -70,6 +71,7 @@ class HRITasks(metaclass=SubtaskMeta):
         self.keyword = ""
         self.speak_service = self.node.create_client(Speak, SPEAK_SERVICE)
         self.hear_service = self.node.create_client(STT, STT_SERVICE_NAME)
+        self.hear_multi_service = self.node.create_client(HearMultiThread, "/integration/multi_stop")
         self.extract_data_service = self.node.create_client(ExtractInfo, EXTRACT_DATA_SERVICE)
 
         self.command_interpreter_client = self.node.create_client(
@@ -248,6 +250,32 @@ class HRITasks(metaclass=SubtaskMeta):
             Logger.warn(self.node, "hearing: no text heard")
 
         return execution_status, future.result().text_heard
+    
+    @service_check("hear_multi_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
+    def hear_multi(self, status: int) -> bool:
+        request = HearMultiThread.Request()
+        if status == 0:
+            request.stop_service = True
+            request.start_service = False
+        elif status == 1:
+            request.stop_service = False
+            request.start_service = True
+        else:
+            request.stop_service = False
+            request.start_service = False
+            
+        future = self.hear_multi_service.call_async(request)
+        Logger.info(
+            self.node,
+            "Checking if stopped",
+        )
+
+        rclpy.spin_until_future_complete(self.node, future)
+        if future.result() is None:
+            Logger.error(self.node, "Failed receiving status word")
+            return False
+        
+        return future.result().stopped
 
     @service_check("hotwords_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def set_hotwords(self, hotwords) -> str:

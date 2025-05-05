@@ -11,7 +11,7 @@ def launch_setup(context, *args, **kwargs):
     use_sim_time = LaunchConfiguration('use_sim_time',default='false')
     localization = LaunchConfiguration('localization', default='true')
     rtabmap_viz = LaunchConfiguration('rtabmap_viz', default='false')
-    use_3d_grid = LaunchConfiguration('3d_grid', default='true')
+    use_3d_grid = LaunchConfiguration('3d_grid', default='false')
 
     icp_parameters={
           'odom_frame_id':'icp_odom',
@@ -66,6 +66,7 @@ def launch_setup(context, *args, **kwargs):
             'Grid/MaxGroundHeight':'0.1', 
             'Grid/MaxObstacleHeight':'2',  
             'RGBD/NeighborLinkRefining':'True',
+            'Grid/CellSize': '0.2',
             #   'Grid/RayTracing':'true', # Fill empty space
             'Grid/3D':'false', # Use 2D occupancy
             'Grid/RangeMax':'3',
@@ -85,7 +86,7 @@ def launch_setup(context, *args, **kwargs):
         # Nodes to launch
         Node(
             package='rtabmap_sync', executable='rgbd_sync', output='screen',
-            parameters=[{'approx_sync':True, 'use_sim_time':use_sim_time}],
+            parameters=[{'approx_sync':True, 'use_sim_time':use_sim_time, 'approx_sync_max_interval': 0.01}],
             remappings=remappings),
 
         Node(

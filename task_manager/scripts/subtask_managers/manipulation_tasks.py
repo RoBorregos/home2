@@ -78,6 +78,7 @@ class ManipulationTasks:
 
         self._get_joints_client = self.node.create_client(GetJoints, "/manipulation/get_joints")
         self.follow_face_client = self.node.create_client(FollowFace, "/follow_face")
+        self.follow_person_client = self.node.create_client(FollowFace, "/follow_person")
         self._manipulation_action_client = ActionClient(
             self.node, ManipulationAction, MANIPULATION_ACTION_SERVER
         )
@@ -259,6 +260,34 @@ class ManipulationTasks:
             return Status.EXECUTION_ERROR
 
         Logger.success(self.node, "Following face request successful")
+        return Status.EXECUTION_SUCCESS
+
+    @mockable(return_value=Status.EXECUTION_SUCCESS, mock=False)
+    @service_check(client="follow_person_client", return_value=Status.TERMINAL_ERROR, timeout=TIMEOUT)
+    def follow_person(self, follow: bool) -> int:
+        """Save the name of the person detected"""
+
+        if follow:
+            Logger.info(self.node, "Following face")
+        else:
+            Logger.info(self.node, "Stopping following face")
+        request = FollowFace.Request()
+        request.follow_face = follow
+
+        try:
+            future = self.follow_person_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=20.0)
+            result = future.result()
+            if result is None:
+                raise Exception("Timeout Exceed")
+            if not result.success:
+                raise Exception("Service call failed")
+
+        except Exception as e:
+            Logger.error(self.node, f"Error following person: {e}")
+            return Status.EXECUTION_ERROR
+
+        Logger.success(self.node, "Following person request successful")
         return Status.EXECUTION_SUCCESS
 
     @mockable(return_value=Status.EXECUTION_SUCCESS)
