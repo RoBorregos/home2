@@ -81,15 +81,31 @@ class GPSRSingleTask(GenericTask):
             s, detections = self.subtask_manager.vision.detect_objects()
             current_try += 1
 
-            if len(detections) == 0:
-                self.subtask_manager.hri.say("I didn't found any object.")
-            if s == Status.EXECUTION_SUCCESS:
-                break
             if current_try >= RETRIES:
                 self.subtask_manager.hri.say(
-                    "I am sorry, I could not see the object. I will try again."
+                    f"I am sorry, I could not see the object. Please hand me the {command.object_to_pick}."
                 )
-                return Status.TARGET_NOT_FOUND, ""
+                deus_machina_retries = 0
+                while True:
+                    if deus_machina_retries >= RETRIES:
+                        self.subtask_manager.hri.say(
+                            "I am sorry, I could not see the object. I will have to abort picking the object."
+                        )
+                        return Status.TARGET_NOT_FOUND, ""
+                    s, res = self.subtask_manager.hri.confirm(
+                        f"Have you given me the {command.object_to_pick}?", use_hotwords=False
+                    )
+                    if res == "yes":
+                        self.subtask_manager.hri.say("Thank you. I will close my gripper")
+                        return self.subtask_manager.manipulation.close_gripper(), ""
+                    else:
+                        deus_machina_retries += 1
+
+            if len(detections) == 0:
+                self.subtask_manager.hri.say("I didn't find any object. I will try again.")
+                continue
+            if s == Status.EXECUTION_SUCCESS:
+                break
 
         labels = self.subtask_manager.vision.get_labels(detections)
         s, object_to_pick = self.subtask_manager.hri.find_closest(labels, command.object_to_pick)

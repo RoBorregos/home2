@@ -50,12 +50,13 @@ class GPSRTM(Node):
         self.gpsr_tasks = GPSRTask(self.subtask_manager)
         self.gpsr_individual_tasks = GPSRSingleTask(self.subtask_manager)
 
-        self.current_state = GPSRTM.States.EXECUTING_COMMAND
+        self.current_state = GPSRTM.States.START
         self.running_task = True
         self.current_attempt = 0
         self.executed_commands = 0
         # self.commands = get_gpsr_comands("takeObjFromPlcmt")
         self.commands = get_gpsr_comands("custom")
+        # self.commands = get_gpsr_comands("custom")
 
         Logger.info(self, "GPSRTMTaskManager has started.")
 
@@ -72,17 +73,15 @@ class GPSRTM(Node):
                 self.current_state = GPSRTM.States.DONE
                 return
 
-            # s, user_command = self.subtask_manager.hri.ask_and_confirm(
-            #     "What is your command?",
-            #     "command",
-            #     context="The user was asked to say a command. We want to infer his complete instruction from the response",
-            #     confirm_question=confirm_command,
-            #     use_hotwords=False,
-            #     retries=ATTEMPT_LIMIT,
-            #     min_wait_between_retries=5.0,
-            # )
-            s = Status.EXECUTION_SUCCESS
-            user_command = "Bring me a knife from the kitchen"
+            s, user_command = self.subtask_manager.hri.ask_and_confirm(
+                "What is your command?",
+                "command",
+                context="The user was asked to say a command. We want to infer his complete instruction from the response",
+                confirm_question=confirm_command,
+                use_hotwords=False,
+                retries=ATTEMPT_LIMIT,
+                min_wait_between_retries=5.0,
+            )
             if s != Status.EXECUTION_SUCCESS:
                 self.subtask_manager.hri.say("I am sorry, I could not understand you.")
                 self.current_attempt += 1
