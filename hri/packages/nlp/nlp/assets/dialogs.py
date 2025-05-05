@@ -254,7 +254,7 @@ Instructions:
 - Provide, for each shelf:
   1. 'objects_to_add': a list of new objects (from the table) that should be placed on that shelf.
   2. 'classification_tag': a short descriptive name of the shelf's category (e.g., "dairy", "fruit", "snacks").
-- For the empty shelf, you can assign any object from the table that doesn't fit into the other shelves.
+- For the empty shelf, you can assign any object from the table that doesn't fit into the other shelves. Only for shelves that are empty and have no objects to add, otherwise, you shouldnt add any other shelves and should fit all categories in the given shelves.
 
 Output format:
 A dictionary where:

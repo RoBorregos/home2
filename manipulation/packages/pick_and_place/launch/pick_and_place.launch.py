@@ -78,5 +78,12 @@ def generate_launch_description():
                 package="frida_motion_planning",
                 executable="motion_planning_server.py",
             ),
+            Node(
+                package="pick_and_place",
+                executable="fix_position_to_plane.py",
+                name="fix_position_to_plane",
+                output="screen",
+                emulate_tty=True,
+            ),
         ]
     )
