@@ -8,7 +8,7 @@ import json
 import os
 import re
 from datetime import datetime
-from typing import Union, List
+from typing import List, Union
 
 import rclpy
 from ament_index_python.packages import get_package_share_directory
@@ -48,23 +48,45 @@ from rcl_interfaces.msg import Parameter, ParameterType, ParameterValue
 from rcl_interfaces.srv import SetParameters
 from rclpy.node import Node
 from std_msgs.msg import String
+from utils.baml_client.sync_client import b
+from utils.baml_client.types import (
+    AnswerQuestion,
+    CommandListLLM,
+    Count,
+    FindPerson,
+    FindPersonByName,
+    FollowPersonUntil,
+    GetPersonInfo,
+    GetVisualInfo,
+    GiveObject,
+    GoTo,
+    GuidePersonTo,
+    PickObject,
+    PlaceObject,
+    SayWithContext,
+)
 from utils.decorators import service_check
 from utils.logger import Logger
 from utils.status import Status
 from utils.task import Task
-from utils.baml_client.sync_client import b
-from utils.baml_client.types import (
-    CommandListLLM, GoTo, PickObject, FindPersonByName, FindPerson, Count,
-    GetPersonInfo, GetVisualInfo, AnswerQuestion, FollowPersonUntil, GuidePersonTo,
-    GiveObject, PlaceObject, SayWithContext
-)
 
 from subtask_managers.subtask_meta import SubtaskMeta
 
 InterpreterAvailableCommands = Union[
-    CommandListLLM, GoTo, PickObject, FindPersonByName, FindPerson, Count,
-    GetPersonInfo, GetVisualInfo, AnswerQuestion, FollowPersonUntil, GuidePersonTo,
-    GiveObject, PlaceObject, SayWithContext
+    CommandListLLM,
+    GoTo,
+    PickObject,
+    FindPersonByName,
+    FindPerson,
+    Count,
+    GetPersonInfo,
+    GetVisualInfo,
+    AnswerQuestion,
+    FollowPersonUntil,
+    GuidePersonTo,
+    GiveObject,
+    PlaceObject,
+    SayWithContext,
 ]
 
 TIMEOUT = 5.0
@@ -524,9 +546,7 @@ class HRITasks(metaclass=SubtaskMeta):
         return Status.EXECUTION_SUCCESS, future.result().is_negative
 
     # /////////////////embeddings services/////
-    def add_command_history(
-        self, command: InterpreterAvailableCommands, result, status
-    ):
+    def add_command_history(self, command: InterpreterAvailableCommands, result, status):
         collection = "command_history"
 
         document = [command.action]
@@ -626,7 +646,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
     def get_context(self, query_result):
         return self.get_metadata_key(query_result, "context")
-    
+
     # TODO: Fix since we removed the complement from the command
     def get_complement(self, query_result):
         return self.get_metadata_key(query_result, "complement")

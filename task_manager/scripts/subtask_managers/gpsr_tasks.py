@@ -8,9 +8,15 @@ from utils.status import Status
 
 from subtask_managers.generic_tasks import GenericTask
 from utils.baml_client.types import (
-    GiveObject, FollowPersonUntil, GuidePersonTo, GetPersonInfo, Count,
-    FindPerson, FindPersonByName    
+    GiveObject,
+    FollowPersonUntil,
+    GuidePersonTo,
+    GetPersonInfo,
+    Count,
+    FindPerson,
+    FindPersonByName,
 )
+
 
 class GPSRTask(GenericTask):
     """Class to manage the GPS task"""
@@ -129,7 +135,7 @@ class GPSRTask(GenericTask):
         #   self.subtask_manager.hri.say(
         #       f"I will now follow you, {characteristic}.",
         #   )
-            # status = self.subtask_manager.vision.follow_by_name(characteristic)
+        # status = self.subtask_manager.vision.follow_by_name(characteristic)
         #   self.subtask_manager.nav.follow_person()
 
         # TODO (@nav, hri): fix conditions to stop
@@ -328,7 +334,9 @@ class GPSRTask(GenericTask):
 
         possibilities = [v.value for v in Gestures] + [v.value for v in Poses] + ["clothes"]
 
-        status, value = self.subtask_manager.hri.find_closest(possibilities, command.target_to_count)
+        status, value = self.subtask_manager.hri.find_closest(
+            possibilities, command.target_to_count
+        )
 
         # self.subtask_manager.manipulation.move_to_position("front_stare")
 

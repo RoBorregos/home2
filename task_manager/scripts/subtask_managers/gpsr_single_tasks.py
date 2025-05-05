@@ -2,7 +2,12 @@ from utils.status import Status
 
 from subtask_managers.generic_tasks import GenericTask
 from utils.baml_client.types import (
-    GoTo, PickObject, PlaceObject, SayWithContext, AnswerQuestion, GetVisualInfo
+    GoTo,
+    PickObject,
+    PlaceObject,
+    SayWithContext,
+    AnswerQuestion,
+    GetVisualInfo,
 )
 
 RETRIES = 3
@@ -119,7 +124,7 @@ class GPSRSingleTask(GenericTask):
         return self.subtask_manager.manipulation.place(), ""
 
     ## HRI
-    def say_with_context(self, command: SayWithContext|str):
+    def say_with_context(self, command: SayWithContext | str):
         """
         Say something grounded on the information known to the robot, which can include the results of
         previous executions, robot information, and general knowledge information.
@@ -148,8 +153,9 @@ class GPSRSingleTask(GenericTask):
             say(llm_response(complement, fetch_info(characteristic)))
         """
         history = self.subtask_manager.hri.query_command_history(
-            command.user_instruction + command.previous_command_info)
-        # TODO: Verify this works, because now there are two complements 
+            command.user_instruction + command.previous_command_info
+        )
+        # TODO: Verify this works, because now there are two complements
         context = self.subtask_manager.hri.get_context(history)
         # complement = self.subtask_manager.hri.get_complement(history)
         # characteristic = self.subtask_manager.hri.get_characteristic(history)
@@ -234,9 +240,7 @@ class GPSRSingleTask(GenericTask):
             self.subtask_manager.hri.say("I am sorry, I could not understand your question.")
             return Status.TARGET_NOT_FOUND, ""
 
-        return self.say_with_context(
-            f"Please answer my question: {question}"
-        )
+        return self.say_with_context(f"Please answer my question: {question}")
 
     ## Vision
     def get_visual_info(self, command: GetVisualInfo):
@@ -265,5 +269,4 @@ class GPSRSingleTask(GenericTask):
         Postconditions:
             The robot saves the specified information for further use.
         """
-        return self.subtask_manager.vision.visual_info(
-            command.measure, command.object_category)
+        return self.subtask_manager.vision.visual_info(command.measure, command.object_category)

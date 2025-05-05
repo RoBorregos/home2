@@ -8,10 +8,10 @@ import rclpy
 from rclpy.node import Node
 from subtask_managers.gpsr_single_tasks import GPSRSingleTask
 from subtask_managers.gpsr_tasks import GPSRTask
+from utils.baml_client.types import CommandListLLM
 from utils.logger import Logger
 from utils.status import Status
 from utils.subtask_manager import SubtaskManager, Task
-from utils.baml_client.types import CommandListLLM
 
 # from subtask_managers.gpsr_test_commands import get_gpsr_comands
 
@@ -58,17 +58,17 @@ class GPSRTM(Node):
         self.current_attempt = 0
         self.executed_commands = 0
         self.commands = None
-        #self.commands = [ For testing
-            # {"action": "go", "complement": "kitchen table", "characteristic": ""},
-            # {"action": "visual_info", "complement": "biggest", "characteristic": "bottle"},
-            # {"action": "find_person_by_name", "complement": "Oscar", "characteristic": ""},
-            # {"action": "go", "complement": "start_location", "characteristic": ""},
-            # {
-            #     "action": "contextual_say",
-            #     "complement": "tell me what is the heaviest object in the kitchen",
-            #     "characteristic": "visual_info",
-            # },
-        #]
+        # self.commands = [ For testing
+        # {"action": "go", "complement": "kitchen table", "characteristic": ""},
+        # {"action": "visual_info", "complement": "biggest", "characteristic": "bottle"},
+        # {"action": "find_person_by_name", "complement": "Oscar", "characteristic": ""},
+        # {"action": "go", "complement": "start_location", "characteristic": ""},
+        # {
+        #     "action": "contextual_say",
+        #     "complement": "tell me what is the heaviest object in the kitchen",
+        #     "characteristic": "visual_info",
+        # },
+        # ]
 
         Logger.info(self, "GPSRTMTaskManager has started.")
 
