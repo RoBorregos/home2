@@ -56,18 +56,18 @@ class GPSRTM(Node):
         self.running_task = True
         self.current_attempt = 0
         self.executed_commands = 0
-        # self.commands = get_gpsr_comands("takeObjFromPlcmt")
-        self.commands = [
-            # {"action": "go", "complement": "kitchen table", "characteristic": ""},
-            {"action": "visual_info", "complement": "biggest", "characteristic": "bottle"},
-            # {"action": "find_person_by_name", "complement": "Oscar", "characteristic": ""},
-            # {"action": "go", "complement": "start_location", "characteristic": ""},
-            {
-                "action": "contextual_say",
-                "complement": "tell me what is the heaviest object in the kitchen",
-                "characteristic": "visual_info",
-            },
-        ]
+        self.commands = None
+        # self.commands = [ For testing
+        # {"action": "go", "complement": "kitchen table", "characteristic": ""},
+        # {"action": "visual_info", "complement": "biggest", "characteristic": "bottle"},
+        # {"action": "find_person_by_name", "complement": "Oscar", "characteristic": ""},
+        # {"action": "go", "complement": "start_location", "characteristic": ""},
+        # {
+        #     "action": "contextual_say",
+        #     "complement": "tell me what is the heaviest object in the kitchen",
+        #     "characteristic": "visual_info",
+        # },
+        # ]
 
         Logger.info(self, "GPSRTMTaskManager has started.")
 
@@ -112,7 +112,7 @@ class GPSRTM(Node):
             else:
                 command = self.commands.pop(0)
                 exec_commad = search_command(
-                    command["action"],
+                    command.action,
                     [self.gpsr_tasks, self.gpsr_individual_tasks],
                 )
                 if exec_commad is None:
@@ -122,13 +122,11 @@ class GPSRTM(Node):
                 else:
                     Logger.info(self, f"Executing command: {command}")
                     # self.subtask_manager.hri.say(f"Executing command: {command}")
-                    status, res = exec_commad(command["complement"], command["characteristic"])
+                    status, res = exec_commad(command)
                     self.get_logger().info(f"status-> {str(status)}")
                     self.get_logger().info(f"res-> {str(res)}")
                     self.subtask_manager.hri.add_command_history(
-                        command["action"],
-                        command["complement"],
-                        command["characteristic"],
+                        command,
                         res,
                         status.value,
                     )
