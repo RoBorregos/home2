@@ -8,7 +8,7 @@ COPY task_manager/requirements /workspace/requirements
 WORKDIR /workspace/requirements
 RUN pip install -r requirements.txt
 
-COPY task_manager/utils /workspace/utils
+COPY task_manager/scripts/utils /workspace/utils
 WORKDIR /workspace/utils
 RUN baml-cli generate
 

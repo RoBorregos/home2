@@ -14,8 +14,8 @@ from frida_constants.vision_constants import (
     BEVERAGE_TOPIC,
     CHECK_PERSON_TOPIC,
     COUNT_BY_COLOR_TOPIC,
-    COUNT_BY_POSE_TOPIC,
     COUNT_BY_GESTURE_TOPIC,
+    COUNT_BY_POSE_TOPIC,
     CROP_QUERY_TOPIC,
     DETECTION_HANDLER_TOPIC_SRV,
     FIND_SEAT_TOPIC,
@@ -643,7 +643,7 @@ class VisionTasks:
             Logger.error(self.node, f"Error counting people by gesture: {e}")
             return Status.EXECUTION_ERROR, 300
 
-        Logger.success(self.node, f"People with {gesture}: {result.count}")
+        Logger.success(self.node, f"People with gesture {gesture}: {result.count}")
         return Status.EXECUTION_SUCCESS, result.count
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, 100))

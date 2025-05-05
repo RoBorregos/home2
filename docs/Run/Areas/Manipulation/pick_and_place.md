@@ -27,6 +27,9 @@ These represent core functionalities that are used within the pipeline.
 To run the object detector, run the following command:
 ```bash
 ros2 launch object_detector_2d object_detector_node.launch.py
+
+# Use yolo 11 classes:
+ros2 launch object_detector_2d object_detector_node.launch.py yolo_model_path:=src/home2/vision/packages/object_detector_2d/models/yolo11classes.pt
 ```
 For this, be sure that the topics on [vision constants](../../../../frida_constants/frida_constants/vision_constants.py) are set to your published image and depth topics. These may change if you are using simulation or the real robot.
 
