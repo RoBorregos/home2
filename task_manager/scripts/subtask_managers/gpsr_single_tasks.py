@@ -1,14 +1,14 @@
-from utils.status import Status
-
-from subtask_managers.generic_tasks import GenericTask
 from utils.baml_client.types import (
+    AnswerQuestion,
+    GetVisualInfo,
     GoTo,
     PickObject,
     PlaceObject,
     SayWithContext,
-    AnswerQuestion,
-    GetVisualInfo,
 )
+from utils.status import Status
+
+from subtask_managers.generic_tasks import GenericTask
 
 RETRIES = 3
 
@@ -39,15 +39,13 @@ class GPSRSingleTask(GenericTask):
             - The robot is in the specified location
         """
         self.subtask_manager.hri.say(f"I will go to {command.location_to_go}.", wait=False)
-        # location = self.subtask_manager.hri.query_location(complement)
-        # area = self.subtask_manager.hri.get_area(location)
-        # subarea = self.subtask_manager.hri.get_subarea(location)
+        location = self.subtask_manager.hri.query_location(command.location_to_go)
+        area = self.subtask_manager.hri.get_area(location)
+        subarea = self.subtask_manager.hri.get_subarea(location)
 
-        # self.subtask_manager.hri.node.get_logger().info(
-        #     f"Moving to {complement} in area: {area}, subarea: {subarea}"
-        # )
+        self.subtask_manager.hri.node.get_logger().info(f"Moving to {subarea} in {area}")
 
-        self.subtask_manager.nav.move_to_location("area", "subarea")
+        self.subtask_manager.nav.move_to_location(area, subarea)
 
         return Status.EXECUTION_SUCCESS, "arrived to:" + command.location_to_go
 
@@ -82,6 +80,9 @@ class GPSRSingleTask(GenericTask):
         while True:
             s, detections = self.subtask_manager.vision.detect_objects()
             current_try += 1
+
+            if len(detections) == 0:
+                self.subtask_manager.hri.say("I didn't found any object.")
             if s == Status.EXECUTION_SUCCESS:
                 break
             if current_try >= RETRIES:
@@ -91,7 +92,7 @@ class GPSRSingleTask(GenericTask):
                 return Status.TARGET_NOT_FOUND, ""
 
         labels = self.subtask_manager.vision.get_labels(detections)
-        s, object_to_pick = self.subtask_manager.hri.find_closest(labels, "")
+        s, object_to_pick = self.subtask_manager.hri.find_closest(labels, command.object_to_pick)
         return self.subtask_manager.manipulation.pick_object(object_to_pick), ""
 
     ## Manipulation

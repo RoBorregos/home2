@@ -181,7 +181,7 @@ You can ask for clarification if the task is not clear enough.
 
 "#
 function GenerateCommandList(request: string) -> CommandListLLM {
-  client PRO_2_5
+  client LOCAL_FINETUNED_NEW
   prompt #"
     {{ _.role("system") }}
     {{ RobotServiceSystem() }}
