@@ -178,7 +178,7 @@ class PoseDetection:
                 pose_result = Poses.SITTING
 
         if pose_result != Poses.UNKNOWN:
-            print(f"Pose detected: {pose_result.value}")
+            # print(f"Pose detected: {pose_result.value}")
             time.sleep(0.5)
         return (pose_result, results) if return_results else pose_result
 
@@ -323,7 +323,7 @@ class PoseDetection:
                             gesture = Gestures.WAVING
                             break
                         elif self.is_pointing_left(
-                            hand_landmarks, mid_x, pose_landmarks
+                            hand_landmarks, mid_x, results_p.pose_landmarks
                         ):
                             gesture = Gestures.POINTING_LEFT
                             break
@@ -341,7 +341,7 @@ class PoseDetection:
                             gesture = Gestures.WAVING
                             break
                         elif self.is_pointing_right(
-                            hand_landmarks, mid_x, pose_landmarks
+                            hand_landmarks, mid_x, results_p.pose_landmarks
                         ):
                             gesture = Gestures.POINTING_RIGHT
                             break
@@ -391,7 +391,7 @@ class PoseDetection:
         distance_elbow_hip = 0
 
         if self.is_visible(
-            pose_landmarks,
+            pose_landmarks.landmark,
             [self.mp_pose.PoseLandmark.LEFT_HIP, self.mp_pose.PoseLandmark.LEFT_ELBOW],
         ):
             right_hip = pose_landmarks.landmark[self.mp_pose.PoseLandmark.RIGHT_HIP]
@@ -415,7 +415,7 @@ class PoseDetection:
         distance_elbow_hip = 0
         # check if hip and elbow are visible
         if self.is_visible(
-            pose_landmarks,
+            pose_landmarks.landmark,
             [self.mp_pose.PoseLandmark.LEFT_HIP, self.mp_pose.PoseLandmark.LEFT_ELBOW],
         ):
             left_hip = pose_landmarks.landmark[self.mp_pose.PoseLandmark.LEFT_HIP]
@@ -448,10 +448,10 @@ class PoseDetection:
         # print(f"distance left : {distance_elbow_hip}")
 
         if (
-            angle < 30
+            angle < 18
             and left_wrist.y < left_shoulder.y
             and left_elbow.y < left_shoulder.y
-            and distance_elbow_hip > 0.85
+            and distance_elbow_hip < 0.75
         ):
             return True
 
@@ -471,16 +471,16 @@ class PoseDetection:
         # distance_shoulder_elbow = abs(right_shoulder.y - right_elbow.y)
         # Distance between elbow and hip
         distance_elbow_hip = abs(right_elbow.y - right_hip.y)
-        # print(f"angle: {angle}")
-        # print(f"right wrist: {right_wrist.y < right_shoulder.y}")
-        # print(f"right elbow: {right_elbow.y < right_shoulder.y}")
-        # print(f"distance right: {distance_elbow_hip}")
+        print(f"angle: {angle}")
+        print(f"right wrist: {right_wrist.y < right_shoulder.y}")
+        print(f"right elbow: {right_elbow.y < right_shoulder.y}")
+        print(f"distance right: {distance_elbow_hip}")
 
         if (
-            angle < 30
+            angle < 18
             and right_wrist.y < right_shoulder.y
             and right_elbow.y < right_shoulder.y
-            and distance_elbow_hip > 0.85
+            and distance_elbow_hip < 0.75
         ):
             return True
 
