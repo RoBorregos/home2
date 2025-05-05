@@ -111,44 +111,53 @@ class PourMotionServer(Node):
         # Initialize result
         feedback = PourMotion.Feedback()
         result = PourMotion.Result()
+        self.get_logger().info("Pouring...")
         try:
-            (result.success,) = self.pour(goal_handle, feedback)
+            self.get_logger().info("Pouring...........................")
+            success, _ = self.pour(goal_handle, feedback)
+            result.success = int(success)
+            
             goal_handle.succeed()
             return result
         except Exception as e:
             self.get_logger().error(f"Pour failed: {str(e)}")
             goal_handle.abort()
-            result.success = False
+            result.success =  0
             return result
 
     # TODO: APPLY LOGIC TO THIS FUNCTION
     def pour(self, goal_handle, feedback):
         """Perform the pour operation."""
+        self.get_logger().info(
+            "Trying to pour object"
+        )
         isConstrained = (
             False  # THE MOTION PLANNER IS CONSTRAINED ------------------------
         )
 
         pose = self.receive_pose(goal_handle.request.pour_pose)
+        
 
         # call the move_to_pose function
-        pour_pose_result = self.move_to_pose(pose, isConstrained)
-        if not pour_pose_result.result.success:
+        goal_handle_result, action_result = self.move_to_pose(pose, isConstrained)
+        self.get_logger().info(f"Pour pose result: ({goal_handle_result}, {action_result})")
+        # self.get_logger().info(f"Pour pose: {pose}")
+        if not action_result.result.success:
             self.get_logger().error("Failed to reach pour pose")
-            result = False
-            return False, result
-        self.get_logger().info("Pour pose reached")
+            return False, action_result.result.success
 
         # Now we can only rotate the joint 6 to pour
         # Rotate joint 6 to perform the pour motion
 
-        pour_angle = 3.14159
+        # pour_angle = 3.14159
+        pour_angle = 0.0
 
         # get the current pose
         current_pose = self.get_joint_positions()
         if not current_pose:
             self.get_logger().error("Failed to get current pose")
-            result = False
-            return False, result
+            
+            return True, action_result.result.success
 
         # Rotate joint 6
         current_pose["joint6"] = pour_angle
@@ -157,7 +166,7 @@ class PourMotionServer(Node):
         future = self._move_to_pose_action_client.send_goal_async(
             MoveToPose.Goal(
                 pose=pose,
-                velocity=POUR_VELOCITY,
+                velocity=POUR_VELOCITY, 
                 acceleration=POUR_ACCELERATION,
                 planner_id=PICK_PLANNER,
                 apply_constraint=isConstrained,
@@ -165,15 +174,15 @@ class PourMotionServer(Node):
             )
         )
         self.wait_for_future(future)
-        action_result = future.result().get_result()
+        action_result = future.result()
         if action_result is None:
             self.get_logger().error("Failed to get action result")
-            result = False
-            return False, result
-        if not action_result.success:
+            return False, action_result.result.success
+        
+        if not action_result.result.success:
             self.get_logger().error("Failed to move to pour pose")
-            result = False
-            return False, result
+            return False, action_result.result.success
+        
         self.get_logger().info("Moved to pour pose successfully")
 
         # Move to the updated pose
@@ -184,8 +193,8 @@ class PourMotionServer(Node):
         #     return False, result
 
         self.get_logger().info("Pour motion completed successfully")
-        result = True
-        return True, result
+        
+        return False, action_result.result.success
 
         # isConstrained = (
         #     False  # THE MOTION PLANNER IS CONSTRAINED ------------------------
