@@ -65,7 +65,9 @@ class ChromaAdapter:
     def _get_or_create_collection(self, collection_name: str):
         """Helper method to get or create a collection"""
         try:
-            return self.client.get_or_create_collection(name=collection_name)
+            return self.client.get_or_create_collection(
+                name=collection_name, embedding_functions=self.sentence_transformer_ef
+            )
         except Exception:
             raise ValueError(f"The collection is missing {collection_name}")
 
