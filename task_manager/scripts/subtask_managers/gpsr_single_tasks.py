@@ -13,6 +13,15 @@ from subtask_managers.generic_tasks import GenericTask
 RETRIES = 3
 
 
+def search_command(command, objects: list[object]):
+    for object in objects:
+        if hasattr(object, command):
+            method = getattr(object, command)
+            if callable(method):
+                return method
+    return None
+
+
 class GPSRSingleTask(GenericTask):
     """Class to manage the GPS task"""
 
@@ -169,9 +178,18 @@ class GPSRSingleTask(GenericTask):
         Pseudocode:
             say(llm_response(complement, fetch_info(characteristic)))
         """
-        history = self.subtask_manager.hri.query_command_history(
-            command.user_instruction + command.previous_command_info
+
+        context = command.previous_command_info[0]
+
+        # if context in "say_with_context"
+        command = search_command(
+            context,
+            [
+                self,
+            ],
         )
+
+        history = self.subtask_manager.hri.query_command_history(command.previous_command_info[0])
         # TODO: Verify this works, because now there are two complements
         context = self.subtask_manager.hri.get_context(history)
         # complement = self.subtask_manager.hri.get_complement(history)

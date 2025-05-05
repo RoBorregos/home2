@@ -1,7 +1,7 @@
 #!/bin/bash
-
+export DISPLAY=:0
 # Configuration
-REMOTE_SERVER="orin@192.168.31.10"  # Change this to your server details
+REMOTE_SERVER="orin@100.108.245.54"  # Change this to your server details
 
 # Terminal emulator detection
 if command -v terminator &> /dev/null; then
