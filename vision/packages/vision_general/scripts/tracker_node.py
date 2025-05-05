@@ -12,6 +12,8 @@ from PIL import Image as PILImage
 import tqdm
 import torch.nn as nn
 import torch
+import math as m
+from std_msgs.msg import Header
 from vision_general.utils.calculations import (
     get2DCentroid,
     get_depth,
@@ -92,6 +94,10 @@ class SingleTracker(Node):
         )
 
         self.verbose = self.declare_parameter("verbose", True)
+
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self)
+
         self.setup()
         self.create_timer(0.1, self.run)
         self.create_timer(0.01, self.publish_image)
