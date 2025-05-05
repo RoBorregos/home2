@@ -2,11 +2,10 @@ import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch_ros.actions import Node
-from launch.actions import IncludeLaunchDescription, OpaqueFunction
+from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument,OpaqueFunction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
-from launch.conditions import UnlessCondition, IfCondition
 from launch.conditions import UnlessCondition, IfCondition
 
 def launch_setup(context, *args, **kwargs):
@@ -32,7 +31,6 @@ def launch_setup(context, *args, **kwargs):
             )),
         launch_arguments={'use_sim': use_sim,}.items()
     )
-    )
     nav2_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution(
@@ -42,7 +40,6 @@ def launch_setup(context, *args, **kwargs):
                     "nav2.launch.py",
                 ]
             )),
-        launch_arguments={'use_sim_time': use_sim, 'params_file': params_file}.items()
         launch_arguments={'use_sim_time': use_sim, 'params_file': params_file}.items()
         )
     rtabmap = IncludeLaunchDescription(
@@ -61,13 +58,14 @@ def launch_setup(context, *args, **kwargs):
         PythonLaunchDescriptionSource(
             PathJoinSubstitution(
                 [
-                    FindPackageShare("slam_toolbox"),
+                    FindPackageShare("nav_main"),
                     "launch",
                     "online_sync_launch.py",
                 ]
             )),
             launch_arguments={'params_file': params_slam_file, 'use_sim_time': use_sim}.items(),
-            condition=IfCondition(use_amcl)
+            condition=IfCondition(use_amcl),
+            
         )
 
     rviz_node = Node(
@@ -78,12 +76,18 @@ def launch_setup(context, *args, **kwargs):
         arguments=['-d', rviz_config_dir],
         condition=IfCondition(show_rviz)
     )
+    transform_point = Node(
+        package='nav_main',
+        executable='transform_target.py',
+        output='screen',
+    )
     return [
         nav_basics,
         rtabmap,
         nav2_launch,
         rviz_node,
-        slam_toolbox
+        slam_toolbox,
+        transform_point
     ]
 
 def generate_launch_description():

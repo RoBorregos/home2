@@ -15,10 +15,16 @@ def launch_setup(context, *args, **kwargs):
             executable='follow_person_node.py',
             output='screen'
     )
+    hri_multi = Node(
+            package='task_manager',
+            executable='run_while_hearing.py',
+            output='screen'
+    )
 
     return_launch = [
         task_manager,
-        follow_person
+        follow_person,
+        hri_multi
     ]
     return return_launch
 
