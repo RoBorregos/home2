@@ -20,7 +20,7 @@ CFG_PATHS = [
 
 
 class PourManager:
-    node = None
+    node = None 
 
     def __init__(self, node):
         self.node = node
@@ -32,11 +32,14 @@ class PourManager:
         # time.sleep(10)
         # Set initial joint positions
         self.node.get_logger().warning("Set initial joint positions - FFN1")
-        send_joint_goal(
+        future = send_joint_goal(
             move_joints_action_client=self.node._move_joints_client,
             named_position="table_stare",
             velocity=0.3,
         )
+        # self.node.get_logger().warning("FF before wait_for_future")
+        # future = self.wait_for_future(future)
+        
 
         # get bowl object point
         self.node.get_logger().warning("Get bowl object point - FFN2")
@@ -57,27 +60,36 @@ class PourManager:
         # get cluster for bowl object
         self.node.get_logger().warning("Get cluster for bowl object - FFN3")
         container_cluster = self.get_object_cluster(container_point)
+        self.node.get_logger().warning("FF after the container cluster")
         if container_cluster is None:
             self.node.get_logger().error("No bowl object cluster detected")
             return False
+        self.node.get_logger().warning("FF before TODO")
 
         # TODO: computer the bowl top height since container cluster
         # TODO: computer the bowl centroid height since container cluster
 
-        if container_cluster.header.frame_id != robot.base_link_name():
+        self.node.get_logger().warning("FF 1.1")
+        if container_cluster.header.frame_id != "base_link":
+            self.node.get_logger().warning("FF 1.1.1")
+            self.node.get_logger().warning(f"Result: {container_cluster.header.frame_id}")
             self.get_logger().warn(
-                f"PointCloud2 frame_id is {container_cluster.header.frame_id}, expected {robot.base_link_name()}"
+                f"PointCloud2 frame_id is {container_cluster.header.frame_id}, expected base_link"
             )
             return False
         else:
-            self.get_logger().info(
-                "PointCloud2 frame_id is {container_cluster.header.frame_id}"
-            )
+            self.node.get_logger().warning("FF 1.1.2")
+            self.node.get_logger().warning("FF 1.1.3")
+            # self.get_logger().info(
+            #     f"PointCloud2 frame_id is {container_cluster.header.frame_id}"
+            # )
 
+        self.node.get_logger().warning("FF 1.2")
         cloud_gen = point_cloud2.read_points(
             container_cluster, field_names=("x", "y", "z"), skip_nans=True
         )
 
+        self.node.get_logger().warning("FF 1.2.1")
         points = []
         max_z = float("-inf")
         for p in cloud_gen:
@@ -85,6 +97,7 @@ class PourManager:
             if p[2] > max_z:
                 max_z = p[2]
 
+        self.node.get_logger().warning("FF 1.2.2")
         if not points:
             self.get_logger().error("Empty cluster received")
             return False
@@ -92,62 +105,83 @@ class PourManager:
         points_np = np.array(points)
         centroid = np.mean(points_np, axis=0)
 
-        self.get_logger().info(f"Centroid: {centroid.point}")
-        self.get_logger().info(f"Max Z: {max_z:.3f}")
+        self.node.get_logger().warning("FF 1.2.3")
+        self.node.get_logger().info(f"Centroid: {centroid}")
+        self.node.get_logger().warning("FF 1.2.4")
+        self.node.get_logger().info(f"Max Z: {max_z:.3f}")
 
         # Set the final pose
-        self.node.get_logger().error("Setting final pose - FFN4")
+        self.node.get_logger().warning("FF 1.2.5")
+        self.node.get_logger().warning("Setting final pose - FFN4")
         pose_msg = PoseStamped()
-        pose_msg.msg.header.frame_id = robot.base_link_name()
-        pose_msg.msg.header.stamp = self.node.get_clock().now().to_msg()
-        pose_msg.msg.pose.position.x = centroid.point.x
-        pose_msg.msg.pose.position.y = centroid.point.y + 0.05  # TODO: set the offset
-        pose_msg.msg.pose.position.z = (
+        pose_msg.header.frame_id = robot.base_link_name()
+        pose_msg.header.stamp = self.node.get_clock().now().to_msg()
+        self.node.get_logger().warning("FF 1.2.6")
+        pose_msg.pose.position.x = container_point.point.x + centroid[0]
+        pose_msg.pose.position.y = container_point.point.y + centroid[1] + 0.05  # TODO: set the offset
+        pose_msg.pose.position.z = (
             float(max_z) + 0.15
         )  # TODO: set the height of the bowl
-        pose_msg.msg.pose.orientation.x = 0.7071
-        pose_msg.msg.pose.orientation.y = 0.0
-        pose_msg.msg.pose.orientation.z = 0.0
-        pose_msg.msg.pose.orientation.w = -0.7071
+        self.node.get_logger().warning("FF 1.2.7")
+        pose_msg.pose.orientation.x = 0.7071
+        pose_msg.pose.orientation.y = 0.0
+        pose_msg.pose.orientation.z = 0.0
+        pose_msg.pose.orientation.w = -0.7071
         self.node.get_logger().info(f"Final pose: {pose_msg}")
 
+        self.node.get_logger().warning("FF 1.3")
         goal_msg = PourMotion.Goal(
             pour_pose=pose_msg,
         )
 
+        self.node.get_logger().warning("FF 1.4")
         # Call Pour Motion Action
-        self.node.get_logger().info("Sending pour motion goal - FFN5")
+        self.node.get_logger().warning("Sending pour motion goal - FFN5")
+
         future = self.node._pour_motion_action_client.send_goal_async(goal_msg)
+        self.node.get_logger().warning("after futurepour motion goal - FFN5")
         future = wait_for_future(future)
 
         # Print the result of the pour motion
-        self.node.get_logger().error("Result of pour motion - FFN5")
-        if not future.result().result.success:
-            self.node.get_logger().error("Pour motion failed")
-            return False
+        self.node.get_logger().warning("Result of pour motion - FFN5")
+        
+        # result_pour = future.result()
+        # if not result_pour.success:
+        #     self.node.get_logger().error("Pour motion failed")
+        #     return False
+
+        # try:
+        #     goal_handle = future.result()
+        #     if not goal_handle.accepted:
+        #         self.node.get_logger().error("Pour motion failed (reported by action server)")
+        #         return False
+        #     return True
+        # except Exception as e:
+        #     self.node.get_logger().error(f"Pour exception: {repr(e)}")
+        #     return False
 
         # Return to the initial position
-        self.node.get_logger().info("Returning to position - FFN6")
+        self.node.get_logger().warning("Returning to position - FFN6")
         for i in range(5):
             # return to configured position
-            return_result = send_joint_goal(
+            future = send_joint_goal(
                 move_joints_action_client=self.node._move_joints_client,
                 named_position="table_stare",
                 velocity=0.3,
             )
-            if return_result:
-                self.node.get_logger().error("Se metio al fucking fucker - Error")
-                break
+            wait_for_future(future)
         # self.node.get_logger().info("Waiting for 10 seconds")
         # time.sleep(10)
-        self.node.get_logger().error("fucking fucker 6")
         return True
 
     def wait_for_future(self, future):
+        self.node.get_logger().warning("Waiting for future FF")
         if future is None:
-            self.get_logger().error("Service call failed: future is None")
+            self.node.get_logger().info("Waiting for future FF1")
+            self.node.get_logger().error("Service call failed: future is None")
             return False
         while not future.done():
+            self.node.get_logger().info("Waiting for future FF2")
             pass
         # self.get_logger().info("Execution done with status: " + str(future.result()))
         return future  # 4 is the status for success
@@ -197,11 +231,15 @@ class PourManager:
         self.node.pick_perception_3d_client.wait_for_service()
         future = self.node.pick_perception_3d_client.call_async(request)
         future = wait_for_future(future)
-
+        
         pcl_result = future.result().cluster_result
+        self.node.get_logger().info(f"Cluster result: {pcl_result}")
+
         if len(pcl_result.data) == 0:
+            self.node.get_logger().warning("FF1")
             self.node.get_logger().error("No object cluster detected")
             return None
+        self.node.get_logger().warning("FF2")
         self.node.get_logger().info(
             f"Object cluster detected: {len(pcl_result.data)} points"
         )
