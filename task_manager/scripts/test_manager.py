@@ -17,7 +17,7 @@ class TestTaskManager(Node):
         self.subtask_manager = SubtaskManager(
             self,
             task=Task.HELP_ME_CARRY,
-            mock_areas=["manipulation","hri","navigation"],
+            mock_areas=["manipulation", "hri", "navigation"],
         )
         self.get_logger().info("TestTaskManager has started.")
         self.run()
@@ -25,9 +25,9 @@ class TestTaskManager(Node):
     def run(self):
         while True:
             response = self.subtask_manager.vision.get_track_person()
-            Logger.info(self,f"Status tracker = {response}")
+            Logger.info(self, f"Status tracker = {response}")
             t.sleep(3)
-        
+
 
 def main(args=None):
     rclpy.init(args=args)

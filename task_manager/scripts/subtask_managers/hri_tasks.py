@@ -103,7 +103,9 @@ class HRITasks(metaclass=SubtaskMeta):
         self.keyword = ""
         self.speak_service = self.node.create_client(Speak, SPEAK_SERVICE)
         self.hear_service = self.node.create_client(STT, STT_SERVICE_NAME)
-        self.hear_multi_service = self.node.create_client(HearMultiThread, "/integration/multi_stop")
+        self.hear_multi_service = self.node.create_client(
+            HearMultiThread, "/integration/multi_stop"
+        )
         self.extract_data_service = self.node.create_client(ExtractInfo, EXTRACT_DATA_SERVICE)
         self.task = task
         self.grammar_service = self.node.create_client(Grammar, GRAMMAR_SERVICE)
@@ -278,7 +280,7 @@ class HRITasks(metaclass=SubtaskMeta):
             Logger.warn(self.node, "hearing: no text heard")
 
         return execution_status, future.result().text_heard
-    
+
     @service_check("hear_multi_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def hear_multi(self, status: int) -> bool:
         request = HearMultiThread.Request()
@@ -291,7 +293,7 @@ class HRITasks(metaclass=SubtaskMeta):
         else:
             request.stop_service = False
             request.start_service = False
-            
+
         future = self.hear_multi_service.call_async(request)
         Logger.info(
             self.node,
@@ -302,7 +304,7 @@ class HRITasks(metaclass=SubtaskMeta):
         if future.result() is None:
             Logger.error(self.node, "Failed receiving status word")
             return False
-        
+
         return future.result().stopped
 
     @service_check("hotwords_service", (Status.SERVICE_CHECK, ""), TIMEOUT)

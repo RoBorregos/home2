@@ -12,8 +12,6 @@ from PIL import Image as PILImage
 import tqdm
 import torch.nn as nn
 import torch
-import math as m
-from std_msgs.msg import Header
 from vision_general.utils.calculations import (
     get2DCentroid,
     get_depth,
@@ -46,7 +44,7 @@ from frida_constants.vision_constants import (
     CAMERA_INFO_TOPIC,
     CENTROID_TOIC,
     CROP_QUERY_TOPIC,
-    IS_TRACKING_TOPIC
+    IS_TRACKING_TOPIC,
 )
 from frida_constants.vision_enums import DetectBy
 
@@ -94,9 +92,6 @@ class SingleTracker(Node):
         )
 
         self.verbose = self.declare_parameter("verbose", True)
-
-        self.tf_buffer = Buffer()
-        self.tf_listener = TransformListener(self.tf_buffer, self)
 
         self.setup()
         self.create_timer(0.1, self.run)
@@ -569,6 +564,7 @@ class SingleTracker(Node):
                 self.is_tracking_result = False
         else:
             self.is_tracking_result = False
+
 
 def main(args=None):
     rclpy.init(args=args)

@@ -12,11 +12,11 @@ from utils.logger import Logger
 from utils.status import Status
 from utils.subtask_manager import SubtaskManager, Task
 import time as t
-from std_srvs.srv import Trigger
 
 ATTEMPT_LIMIT = 3
 
 FOLLOWING_TIMEOUT = 10
+
 
 class HelpMeCarryTM(Node):
     """Class to manage the Help Me Carry task"""
@@ -43,14 +43,14 @@ class HelpMeCarryTM(Node):
             task=Task.HELP_ME_CARRY,
             mock_areas=[],
         )
-        
+
         self.is_tracking = False
-        
+
         self.generic = GenericTask(self.subtask_manager)
         self.current_state = HelpMeCarryTM.TASK_STATES["START"]
         self.current_attempts = 0
         self.running_task = True
-        
+
         Logger.info(self, "HelpMeCarryTaskManager has started.")
         self.subtask_manager.vision.track_person(False)
         self.subtask_manager.manipulation.follow_person(False)
@@ -72,7 +72,7 @@ class HelpMeCarryTM(Node):
             Logger.state(self, "Starting task")
             self.subtask_manager.hri.say("I am ready to start my task.")
             self.current_state = HelpMeCarryTM.TASK_STATES["FIND_GUEST"]
-            #self.current_state = HelpMeCarryTM.TASK_STATES["FOLLOWING_TO_DESTINATION"]
+            # self.current_state = HelpMeCarryTM.TASK_STATES["FOLLOWING_TO_DESTINATION"]
 
         if self.current_state == HelpMeCarryTM.TASK_STATES["FIND_GUEST"]:
             Logger.state(self, "Finding guest")
@@ -102,8 +102,8 @@ class HelpMeCarryTM(Node):
             self.subtask_manager.manipulation.follow_person(True)
             self.subtask_manager.nav.follow_person(True)
             self.subtask_manager.hri.hear_multi(1)
-            #Encender Tracker
-            #Encender brazo
+            # Encender Tracker
+            # Encender brazo
             # self.subtask_manager.nav.follow_person(True)
             tracking_time = self.get_clock().now()
             prev_status = True
@@ -124,28 +124,28 @@ class HelpMeCarryTM(Node):
                 is_tracking = self.subtask_manager.vision.get_track_person()
 
                 if not is_tracking == Status.EXECUTION_SUCCESS:
-                    Logger.info(self,"Person not found stoping arm")
+                    Logger.info(self, "Person not found stoping arm")
                     self.subtask_manager.manipulation.follow_person(False)
                     prev_status = False
                 else:
                     if not prev_status:
-                        Logger.info(self,"Starting arm")
+                        Logger.info(self, "Starting arm")
                         self.subtask_manager.manipulation.follow_person(True)
                     prev_status = True
                     tracking_time = self.get_clock().now()
 
                 if self.get_clock().now() - tracking_time > Duration(seconds=FOLLOWING_TIMEOUT):
-
-                    Logger.info(self,"Activating deux ex machina")
+                    Logger.info(self, "Activating deux ex machina")
                     self.subtask_manager.hri.hear_multi(0)
                     self.subtask_manager.nav.follow_person(False)
                     self.subtask_manager.manipulation.follow_person(False)
                     self.subtask_manager.vision.track_person(False)
-                    self.subtask_manager.hri.say("I lost you, please come back to the front of the camera")
+                    self.subtask_manager.hri.say(
+                        "I lost you, please come back to the front of the camera"
+                    )
                     self.current_state = HelpMeCarryTM.TASK_STATES["FIND_GUEST"]
                     break
 
-        
         if self.current_state == HelpMeCarryTM.TASK_STATES["ASK_TO_POINT_THE_BAG"]:
             Logger.state(self, "Asking to point the bag")
             self.subtask_manager.hri.say("Please point to the bag you want me to carry")
@@ -167,9 +167,9 @@ class HelpMeCarryTM(Node):
             else:
                 self.get_logger().info("Vision task failed")
                 status, description = self.subtask_manager.vision.describe_bag_moondream()
-            
+
             # desription = self.subtask_manager.vision.describe_bag_moondream()
-            Logger.error(self,description)
+            Logger.error(self, description)
             self.subtask_manager.hri.say("I have detected the bag, now I will describe it")
             self.subtask_manager.hri.say(description)
 
@@ -218,7 +218,7 @@ class HelpMeCarryTM(Node):
             self.subtask_manager.hri.say("I will now return to the starting location")
             future = self.subtask_manager.nav.move_to_zero()
             rclpy.spin_until_future_complete(self, future)
-            
+
             self.current_state = HelpMeCarryTM.TASK_STATES["END"]
 
         if self.current_state == HelpMeCarryTM.TASK_STATES["PLACE_THE_BAG"]:
@@ -230,6 +230,7 @@ class HelpMeCarryTM(Node):
             Logger.state(self, "Ending task")
             self.subtask_manager.hri.say("I have finished my task, I will rest now.")
             self.running_task = False
+
 
 def main(args=None):
     """Main function"""

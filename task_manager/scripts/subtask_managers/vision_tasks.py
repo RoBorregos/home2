@@ -116,7 +116,7 @@ class VisionTasks:
         )
 
         self.count_by_color_client = self.node.create_client(CountByColor, COUNT_BY_COLOR_TOPIC)
-        
+
         self.get_track_person_client = self.node.create_client(Trigger, IS_TRACKING_TOPIC)
 
         self.services = {
@@ -133,7 +133,7 @@ class VisionTasks:
             },
             Task.HELP_ME_CARRY: {
                 "track_person": {"client": self.track_person_client, "type": "service"},
-                "is_tracking_person": {"client": self.get_track_person_client,"type": "service"},
+                "is_tracking_person": {"client": self.get_track_person_client, "type": "service"},
                 "moondream_crop_query": {
                     "client": self.moondream_crop_query_client,
                     "type": "service",
@@ -570,7 +570,6 @@ class VisionTasks:
 
         Logger.success(self.node, "Track person status success")
         return Status.EXECUTION_SUCCESS
-
 
     @mockable(return_value=Status.EXECUTION_SUCCESS, delay=2)
     @service_check("track_person_client", Status.EXECUTION_ERROR, TIMEOUT)

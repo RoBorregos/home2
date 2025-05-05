@@ -263,7 +263,9 @@ class ManipulationTasks:
         return Status.EXECUTION_SUCCESS
 
     @mockable(return_value=Status.EXECUTION_SUCCESS, mock=False)
-    @service_check(client="follow_person_client", return_value=Status.TERMINAL_ERROR, timeout=TIMEOUT)
+    @service_check(
+        client="follow_person_client", return_value=Status.TERMINAL_ERROR, timeout=TIMEOUT
+    )
     def follow_person(self, follow: bool) -> int:
         """Save the name of the person detected"""
 

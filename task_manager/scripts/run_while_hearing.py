@@ -3,10 +3,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.callback_groups import ReentrantCallbackGroup
-from frida_interfaces.srv import (
-    STT,
-    HearMultiThread
-)
+from frida_interfaces.srv import STT, HearMultiThread
 from frida_constants.hri_constants import (
     STT_SERVICE_NAME,
 )
@@ -14,8 +11,8 @@ from frida_constants.hri_constants import (
 
 class ServiceClientServerNode(Node):
     def __init__(self):
-        super().__init__('run_while_hearing')
-        
+        super().__init__("run_while_hearing")
+
         self.stopped = False
         self.listen_hri = False
         self.cb_group = ReentrantCallbackGroup()
@@ -23,17 +20,17 @@ class ServiceClientServerNode(Node):
         # Create the server
         self.srv = self.create_service(
             HearMultiThread,
-            '/integration/multi_stop',
+            "/integration/multi_stop",
             self.handle_stop,
-            callback_group=self.cb_group
+            callback_group=self.cb_group,
         )
 
         # Create the client
-        self.hear_service = self.create_client(STT, STT_SERVICE_NAME,callback_group=self.cb_group)
+        self.hear_service = self.create_client(STT, STT_SERVICE_NAME, callback_group=self.cb_group)
 
         # Wait for server to be available
         while not self.hear_service.wait_for_service(timeout_sec=3.0):
-            self.get_logger().info('Waiting for server...')
+            self.get_logger().info("Waiting for server...")
 
         # Timer to send requests periodically
         self.timer = self.create_timer(3.0, self.send_request, callback_group=self.cb_group)
@@ -42,17 +39,17 @@ class ServiceClientServerNode(Node):
         response.stopped = False
 
         if request.stop_service:
-            self.listen_hri=False
+            self.listen_hri = False
             self.stopped = False
 
         if request.start_service:
-            self.listen_hri=True
+            self.listen_hri = True
             self.stopped = False
 
         if self.stopped:
             response.stopped = True
             self.stopped = False
-            
+
         return response
 
     def send_request(self):
@@ -86,6 +83,7 @@ def main():
     finally:
         node.destroy_node()
         rclpy.shutdown()
+
 
 if __name__ == "__main__":
     main()
