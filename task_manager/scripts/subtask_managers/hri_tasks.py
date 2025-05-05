@@ -15,7 +15,6 @@ from ament_index_python.packages import get_package_share_directory
 from frida_constants.hri_constants import (
     ADD_ENTRY_SERVICE,
     CATEGORIZE_SERVICE,
-    COMMAND_INTERPRETER_SERVICE,
     COMMON_INTEREST_SERVICE,
     EXTRACT_DATA_SERVICE,
     GRAMMAR_SERVICE,
@@ -33,7 +32,6 @@ from frida_interfaces.srv import (
     STT,
     AddEntry,
     CategorizeShelves,
-    CommandInterpreter,
     CommonInterest,
     ExtractInfo,
     Grammar,
