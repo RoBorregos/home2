@@ -1,5 +1,6 @@
 # Local LLM
 API_KEY = "ollama"
+# MODEL = "qwen2.5"
 BASE_URL = "http://localhost:11434/v1"
 TEMPERATURE = 0.0
 
