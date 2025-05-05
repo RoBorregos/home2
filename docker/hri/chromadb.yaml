@@ -10,6 +10,6 @@ services:
       - ANONYMIZED_TELEMETRY=False
       - CHROMA_HOST_PORT=8000
     volumes:
-      - /src/hri/packages/embeddings/chromadb:/chroma/chroma
+      - ./embeddings/chromadb:/chroma/chroma
     restart: unless-stopped
 

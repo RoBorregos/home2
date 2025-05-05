@@ -25,7 +25,6 @@ RUN sudo usermod -aG audio ros
 
 RUN sudo chown -R ros /usr/lib/python3.10/
 RUN sudo chown -R ros /usr/local/lib/python3.10/
-
 RUN sudo pip install chromadb
 
 # Install piper from source (in some devices, pip installation may fail on runtime)

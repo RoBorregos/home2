@@ -14,6 +14,9 @@ from action_msgs.msg import GoalStatus
 from frida_constants.navigation_constants import (
     FOLLOWING_SERVICE,
 )
+from frida_constants.navigation_constants import (
+    FOLLOWING_SERVICE,
+)
 
 class PointTransformer(Node):
     def __init__(self):
@@ -171,19 +174,31 @@ class PointTransformer(Node):
 
         # Process the point as before
         point_to_be_filtered = Point()
+        point_to_be_filtered = Point()
     
+        original_point_x = msg.x
+        original_point_y = msg.y
         original_point_x = msg.x
         original_point_y = msg.y
 
         original_orientation = m.atan2(original_point_y, original_point_x)
         original_distance = m.sqrt(original_point_x ** 2 + original_point_y ** 2)
+        original_orientation = m.atan2(original_point_y, original_point_x)
+        original_distance = m.sqrt(original_point_x ** 2 + original_point_y ** 2)
 
+        # Transform the point
+        transformed_orientation = original_orientation + m.pi*(1.25)
         # Transform the point
         transformed_orientation = original_orientation + m.pi*(1.25)
 
         transformed_x = original_distance * m.cos(transformed_orientation)
         transformed_y = original_distance * m.sin(transformed_orientation)
+        transformed_x = original_distance * m.cos(transformed_orientation)
+        transformed_y = original_distance * m.sin(transformed_orientation)
         
+        point_to_be_filtered.x = transformed_x
+        point_to_be_filtered.y = transformed_y
+        point_to_be_filtered.z = 0.0
         point_to_be_filtered.x = transformed_x
         point_to_be_filtered.y = transformed_y
         point_to_be_filtered.z = 0.0
