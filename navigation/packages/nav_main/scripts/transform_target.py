@@ -49,6 +49,7 @@ class PointTransformer(Node):
         )
 
         self.accumulated_points = []
+        self.acc_sum = [0.0, 0.0]
         # Subscribe to the vision/tracking_results topic
         self.point_sub = self.create_subscription(
             Point,
@@ -176,12 +177,19 @@ class PointTransformer(Node):
 
         # Append the new point to the list
         self.accumulated_points.append(point_to_be_filtered)
+        self.acc_sum[0] += point_to_be_filtered.x
+        self.acc_sum[1] += point_to_be_filtered.y
         # Limit the number of points to the last 5
         if len(self.accumulated_points) > 5:
+            self.acc_sum[0] -= self.accumulated_points[0].x
+            self.acc_sum[1] -= self.accumulated_points[0].y
             self.accumulated_points.pop(0)
         # Calculate the median of the accumulated points
-        median_x = self.median_filter([p.x for p in self.accumulated_points])
-        median_y = self.median_filter([p.y for p in self.accumulated_points])
+        # median_x = self.median_filter([p.x for p in self.accumulated_points])
+        # median_y = self.median_filter([p.y for p in self.accumulated_points])
+        median_x = self.acc_sum[0] / len(self.accumulated_points)
+        median_y = self.acc_sum[1] / len(self.accumulated_points)
+
 
         stamped_point = PointStamped()
         stamped_point.header.frame_id = 'zed_camera_link'  # Adjust to match your actual camera frame

@@ -11,6 +11,7 @@ from utils.logger import Logger
 from utils.status import Status
 from utils.subtask_manager import SubtaskManager, Task
 import time as t
+from std_srvs.srv import Trigger
 
 ATTEMPT_LIMIT = 3
 
@@ -40,10 +41,19 @@ class HelpMeCarryTM(Node):
             task=Task.HELP_ME_CARRY,
             mock_areas=[],
         )
+        
+        self.is_tracking = False
+        
         self.generic = GenericTask(self.subtask_manager)
         self.current_state = HelpMeCarryTM.TASK_STATES["START"]
         self.current_attempts = 0
         self.running_task = True
+        
+        self.is_tracking_client = self.create_client(
+        Trigger,
+        "/vision/is_tracking",
+        )
+        
         Logger.info(self, "HelpMeCarryTaskManager has started.")
 
     def navigate_to(self, location: str, sublocation: str = ""):
@@ -106,6 +116,7 @@ class HelpMeCarryTM(Node):
                 if "stop" in result.lower():
                     self.subtask_manager.nav.follow_person(False)
                     break
+                
 
             # while not self.subtask_manager.hri.interpret_keyword("STOP"):
             #     # TODO: person_pose = self.subtask_manager.vision.follow_person() /It must return the person pose and the person position towards the center of the camera

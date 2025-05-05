@@ -30,6 +30,7 @@ from frida_constants.vision_constants import (
     SET_TARGET_BY_TOPIC,
     SET_TARGET_TOPIC,
     SHELF_DETECTION_TOPIC,
+    IS_TRACKING_TOPIC,
 )
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.msg import ObjectDetection, PersonList
@@ -51,7 +52,7 @@ from geometry_msgs.msg import Point, PointStamped
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from std_msgs.msg import String
-from std_srvs.srv import SetBool
+from std_srvs.srv import SetBool, Trigger
 from utils.decorators import mockable, service_check
 from utils.logger import Logger
 from utils.status import Status
@@ -117,6 +118,8 @@ class VisionTasks:
         )
 
         self.count_by_color_client = self.node.create_client(CountByColor, COUNT_BY_COLOR_TOPIC)
+        
+        self.get_track_person_client = self.node.create_client(Trigger, IS_TRACKING_TOPIC)
 
         self.services = {
             Task.RECEPTIONIST: {
@@ -132,6 +135,10 @@ class VisionTasks:
             },
             Task.HELP_ME_CARRY: {
                 "track_person": {"client": self.track_person_client, "type": "service"},
+                "is_tracking_person": {
+                    "client": self.get_track_person_client,
+                    "type": "service",
+                },
                 "moondream_crop_query": {
                     "client": self.moondream_crop_query_client,
                     "type": "service",
@@ -546,6 +553,27 @@ class VisionTasks:
 
         Logger.success(self.node, f"Following face success: {name}")
         return Status.EXECUTION_SUCCESS
+
+    def get_track_person(self):
+        """Get the track person status"""
+        Logger.info(self.node, "Getting track person status")
+        request = Trigger.Request()
+        try:
+            future = self.get_track_person_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+            result = future.result()
+
+            if not result.success:
+                Logger.warn(self.node, "No person found")
+                return Status.TARGET_NOT_FOUND
+
+        except Exception as e:
+            Logger.error(self.node, f"Error getting track person status: {e}")
+            return Status.EXECUTION_ERROR
+
+        Logger.success(self.node, "Track person status success")
+        return True
+
 
     @mockable(return_value=Status.EXECUTION_SUCCESS, delay=2)
     @service_check("track_person_client", Status.EXECUTION_ERROR, TIMEOUT)
