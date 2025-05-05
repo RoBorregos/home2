@@ -39,8 +39,10 @@ class KeyboardInput(Node):
                 self.objects.append(detection.label_text)
 
     def send_pick_request(self, object_name):
+        self.get_logger().warning(f"Sending pick request for: {object_name}")
+
         if not self._action_client.wait_for_server(timeout_sec=5.0):
-            self.get_logger().error("Action server not available!")
+            self.get_logger().error("Action server in pick not available!")
             return
 
         goal_msg = ManipulationAction.Goal()
@@ -56,8 +58,10 @@ class KeyboardInput(Node):
     def send_place_request(
         self, is_shelf=False, table_height=None, table_height_tolerance=None
     ):
+        self.get_logger().warning("Sending place request")
+
         if not self._action_client.wait_for_server(timeout_sec=5.0):
-            self.get_logger().error("Action server not available!")
+            self.get_logger().error("Action server in place not available!")
             return
 
         goal_msg = ManipulationAction.Goal()
@@ -74,8 +78,10 @@ class KeyboardInput(Node):
         self.get_logger().info("Place request sent")
 
     def send_pour_request(self, object_name, bowl_name):
+        self.get_logger().warning(f"Sending pour request for: {object_name}")
+
         if not self._action_client.wait_for_server(timeout_sec=5.0):
-            self.get_logger().error("Action server not available!")
+            self.get_logger().error("Action server in pour request not available!")
             return
 
         goal_msg = ManipulationAction.Goal()
