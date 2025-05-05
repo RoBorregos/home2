@@ -195,7 +195,6 @@ class Say(Node):
                 self.synthesize_voice_offline(output_path, chunk)
                 self._add_to_cache(chunk, output_path)
 
-
     def connectedVoice(self, text):
         cached_path = self._get_cached_audio(text)
         if cached_path and os.path.exists(cached_path):
@@ -263,7 +262,9 @@ class Say(Node):
         subprocess.run(command, shell=True, executable="/bin/bash")
 
         # Convert raw audio to WAV using ffmpeg
-        convert_command = f'ffmpeg -y -f s16le -ar 22050 -ac 1 -i "{raw_temp}" "{output_path}"'
+        convert_command = (
+            f'ffmpeg -y -f s16le -ar 22050 -ac 1 -i "{raw_temp}" "{output_path}"'
+        )
         subprocess.run(convert_command, shell=True)
 
         # Clean up raw file
