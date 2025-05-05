@@ -17,7 +17,7 @@ from vision_general.utils.calculations import (
     get_depth,
     deproject_pixel_to_point,
 )
-
+import copy
 import rclpy
 from rclpy.node import Node
 from cv_bridge import CvBridge
@@ -211,13 +211,7 @@ class SingleTracker(Node):
 
         self.frame = self.image
         self.output_image = self.frame.copy()
-        results = self.model.track(
-            self.frame,
-            persist=True,
-            tracker="bytetrack.yaml",
-            classes=0,
-            verbose=False,
-        )
+        results = copy.deepcopy(self.results)
 
         largest_person = {
             "id": None,
@@ -361,7 +355,7 @@ class SingleTracker(Node):
 
     def run(self):
         """Main loop to run the tracker"""
-        if self.target_set:
+        if True:  # self.target_set:
             self.frame = self.image
 
             if self.frame is None or self.person_data["id"] is None:
@@ -369,7 +363,7 @@ class SingleTracker(Node):
 
             self.output_image = self.frame.copy()
 
-            results = self.model.track(
+            self.results = self.model.track(
                 self.frame,
                 persist=True,
                 tracker="bytetrack.yaml",
@@ -382,7 +376,7 @@ class SingleTracker(Node):
             people = []
 
             # Check each detection
-            for out in results:
+            for out in self.results:
                 for box in out.boxes:
                     x1, y1, x2, y2 = [round(x) for x in box.xyxy[0].tolist()]
 
