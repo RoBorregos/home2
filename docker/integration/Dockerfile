@@ -6,12 +6,15 @@ RUN mkdir -p /workspace/requirements
 # Requirements
 COPY task_manager/requirements /workspace/requirements
 WORKDIR /workspace/requirements
-
 RUN pip install -r requirements.txt
+
+COPY task_manager/utils /workspace/utils
+WORKDIR /workspace/utils
+RUN baml-cli generate
 
 WORKDIR /workspace
 # 
 
 # CV-bridge
-RUN apt update 
+RUN apt update
 RUN apt install -y ros-humble-nav2-msgs

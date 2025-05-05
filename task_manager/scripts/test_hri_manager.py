@@ -42,10 +42,10 @@ class TestHriManager(Node):
         #     self.compound_functions()
 
         # if TEST_INDIVIDUAL_FUNCTIONS:
-        #     self.individual_functions()
+        self.individual_functions()
 
         # if TEST_EMBEDDINGS:
-        self.test_embeddings()
+        # self.test_embeddings()
 
     def individual_functions(self):
         # Test say

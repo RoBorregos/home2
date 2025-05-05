@@ -96,6 +96,53 @@ class NavigationTasks:
             future.set_result(self.STATE["EXECUTION_ERROR"])
             return future
 
+    @mockable(return_value=True, delay=10)
+    @service_check("pose_client", False, TIMEOUT)
+    def move_to_zero(self) -> Future:
+        """Attempts to move to the original location and returns a Future that completes when the action finishes.
+        Call the function on this way
+
+        future = self.subtask_manager["navigation"].move_to_zero()
+        # Wait for the action result
+        rclpy.spin_until_future_complete(self, future)
+        result = future.result()
+
+        """
+        future = Future()
+        try:
+            coordinates = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+            self.node.get_logger().info(f"{coordinates}")
+        except Exception as e:
+            self.node.get_logger().error(f"Error moving to original location: {e}")
+            future.set_result(self.STATE["EXECUTION_ERROR"])
+            return future
+
+        try:
+            self.node.get_logger().info("Sending move request to original location")
+            client_goal = NavigateToPose.Goal()
+            goal = PoseStamped()
+            goal.header.frame_id = "map"
+            goal.pose.position.x = coordinates[0]
+            goal.pose.position.y = coordinates[1]
+            goal.pose.position.z = coordinates[2]
+            goal.pose.orientation.x = coordinates[3]
+            goal.pose.orientation.y = coordinates[4]
+            goal.pose.orientation.z = coordinates[5]
+            goal.pose.orientation.w = coordinates[6]
+
+            client_goal.pose = goal
+            self.goal_state = None
+            self._send_goal_future = self.pose_client.send_goal_async(client_goal)
+
+            self._send_goal_future.add_done_callback(
+                lambda future_goal: self.goal_response_callback(future_goal, future)
+            )
+            return future
+        except Exception as e:
+            self.node.get_logger().error(f"Error moving to original location: {e}")
+            future.set_result(self.STATE["EXECUTION_ERROR"])
+            return future
+
     def goal_response_callback(self, future, result_future):
         goal_handle = future.result()
 

@@ -6,8 +6,9 @@ import time
 from deepeval.test_case import LLMTestCase
 from nlp.assets.dialogs import format_response, get_common_interests_dialog
 from openai import OpenAI
+from frida_constants.hri_constants import MODEL
 
-from config import API_KEY, BASE_URL, MODEL, TEMPERATURE
+from config import API_KEY, BASE_URL, TEMPERATURE
 from metrics.embeddings_similarity import EmbeddingSimilarity
 
 
@@ -17,7 +18,7 @@ def generate_response(person1Name, person2Name, person1Interests, person2Interes
     messages = get_common_interests_dialog(person1Name, person2Name, person1Interests, person2Interests)
 
     response = client.beta.chat.completions.parse(
-        model=MODEL,
+        model=MODEL.GENERATE_RESPONSE.value,
         temperature=TEMPERATURE,
         messages=messages["messages"],
     )
@@ -28,7 +29,7 @@ def generate_response(person1Name, person2Name, person1Interests, person2Interes
 def structured_response(response, response_format):
     client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
     formatted_response = client.beta.chat.completions.parse(
-        model=MODEL,
+        model=MODEL.STRUCTURED_RESPONSE.value,
         temperature=TEMPERATURE,
         messages=format_response(response),
         response_format=response_format,

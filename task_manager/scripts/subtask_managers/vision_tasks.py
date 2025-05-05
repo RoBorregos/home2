@@ -10,12 +10,12 @@ import time
 
 import rclpy
 from frida_constants.vision_classes import BBOX, ShelfDetection
-from frida_constants.vision_constants import (  # COUNT_BY_GESTURE_TOPIC,
+from frida_constants.vision_constants import (
     BEVERAGE_TOPIC,
     CHECK_PERSON_TOPIC,
     COUNT_BY_COLOR_TOPIC,
-    COUNT_BY_POSE_TOPIC,
     COUNT_BY_GESTURE_TOPIC,
+    COUNT_BY_POSE_TOPIC,
     CROP_QUERY_TOPIC,
     DETECTION_HANDLER_TOPIC_SRV,
     FIND_SEAT_TOPIC,
@@ -155,6 +155,10 @@ class VisionTasks:
                 },
                 "count_by_gesture": {
                     "client": self.count_by_gesture_client,
+                    "type": "service",
+                },
+                "count_by_pose": {
+                    "client": self.count_by_pose_client,
                     "type": "service",
                 },
                 "count_by_color": {

@@ -14,12 +14,14 @@ from nlp.assets.dialogs import (
     get_common_interests_dialog,
     get_is_answer_negative_args,
     get_is_answer_positive_args,
+    get_previous_command_answer,
 )
 from openai import OpenAI
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from std_msgs.msg import Bool, String
 
+from frida_constants.hri_constants import MODEL
 from frida_interfaces.srv import (
     CategorizeShelves,
     CommonInterest,
@@ -50,7 +52,6 @@ def get_context():
 
 
 class LLMUtils(Node):
-    model: Optional[str]
     base_url: Optional[str]
 
     def __init__(self) -> None:
@@ -60,7 +61,6 @@ class LLMUtils(Node):
         self.logger.info("Initializing llm_utils node")
 
         self.declare_parameter("base_url", "None")
-        self.declare_parameter("model", "gpt-4o-2024-08-06")
         self.declare_parameter("SPEECH_COMMAND_TOPIC_NAME", SPEECH_COMMAND_TOPIC)
         self.declare_parameter("OUT_COMMAND_TOPIC_NAME", OUT_COMMAND_TOPIC)
         self.declare_parameter("GRAMMAR_SERVICE", "/nlp/grammar")
@@ -76,8 +76,6 @@ class LLMUtils(Node):
         if base_url == "None":
             base_url = None
 
-        model = self.get_parameter("model").get_parameter_value().string_value
-        self.model = model
         self.client = OpenAI(
             api_key=os.getenv("OPENAI_API_KEY", "ollama"), base_url=base_url
         )
@@ -144,7 +142,7 @@ class LLMUtils(Node):
     def grammar_service(self, req, res):
         response = (
             self.client.beta.chat.completions.parse(
-                model=self.model,
+                model=MODEL.GRAMMAR.value,
                 temperature=self.temperature,
                 messages=[
                     {
@@ -165,24 +163,22 @@ class LLMUtils(Node):
         return res
 
     def llm_wrapper_service(self, req, res):
+        context = req.context
+        question = req.question
+
+        messages = get_previous_command_answer(context, question)
+
         response = (
             self.client.beta.chat.completions.parse(
-                model=self.model,
+                model=MODEL.LLM_WRAPPER.value,
                 temperature=self.temperature,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": f"You will be presented with some a question. Your task is to answer it to the best of your ability. Here is some related context: {get_context()}",
-                    },
-                    {"role": "user", "content": req.question},
-                ],
+                messages=messages,
             )
             .choices[0]
             .message.content
         )
 
         res.answer = response
-
         return res
 
     def common_interest(self, req, res):
@@ -193,7 +189,7 @@ class LLMUtils(Node):
         )["messages"]
         response = (
             self.client.beta.chat.completions.parse(
-                model=self.model,
+                model=MODEL.CommonInterest.value,
                 temperature=self.temperature,
                 messages=messages,
             )
@@ -214,7 +210,7 @@ class LLMUtils(Node):
         # self.get_logger().info(f"Response format: {response_format}")
         response = (
             self.client.beta.chat.completions.parse(
-                model=self.model,
+                model=MODEL.GENERIC_STRUCTURED_OUTPUT.value,
                 temperature=self.temperature,
                 messages=[
                     {
@@ -257,7 +253,7 @@ class LLMUtils(Node):
 
         response_content = (
             self.client.beta.chat.completions.parse(
-                model=self.model,
+                model=MODEL.CATEGORIZE_SHELVES.value,
                 temperature=self.temperature,
                 messages=messages,
                 response_format=response_format,
@@ -300,7 +296,7 @@ class LLMUtils(Node):
 
         response_content = (
             self.client.beta.chat.completions.parse(
-                model=self.model,
+                model=MODEL.IS_POSITIVE.value,
                 temperature=self.temperature,
                 messages=messages,
                 response_format=response_format,
@@ -331,7 +327,7 @@ class LLMUtils(Node):
 
         response_content = (
             self.client.beta.chat.completions.parse(
-                model=self.model,
+                model=MODEL.IS_NEGATIVE.value,
                 temperature=self.temperature,
                 messages=messages,
                 response_format=response_format,
