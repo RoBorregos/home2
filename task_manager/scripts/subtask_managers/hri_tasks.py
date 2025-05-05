@@ -685,9 +685,12 @@ class HRITasks(metaclass=SubtaskMeta):
 
             future = self.categorize_service.call_async(request)
             Logger.info(self.node, "generated request")
-            rclpy.spin_until_future_complete(self.node, future)
-            res: CategorizeShelves.Response = future.result()
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=20)
+            res = future.result()
             Logger.info(self.node, "request finished")
+            # if res.status != Status.EXECUTION_SUCCESS:
+            #     Logger.error(self.node, f"Error in categorize_objects: {res.status}")
+            #     return Status.EXECUTION_ERROR, {}, {}
 
             categorized_shelves = eval(res.categorized_shelves.data)
             categorized_shelves = {int(k): v for k, v in categorized_shelves.items()}

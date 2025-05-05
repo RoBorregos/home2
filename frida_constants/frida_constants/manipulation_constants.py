@@ -28,13 +28,16 @@ GET_JOINT_SERVICE = "/manipulation/get_joints"
 TOGGLE_SERVO_SERVICE = "/manipulation/toggle_servo"
 
 MIN_CONFIGURATION_DISTANCE_TRESHOLD = 0.01
-PICK_VELOCITY = 0.2
+PICK_VELOCITY = 0.25
 PICK_ACCELERATION = 0.15
 PICK_PLANNER = "RRTConnect"
 
 # Scan
 SCAN_ANGLE_VERTICAL = 30.0  # degrees
 SCAN_ANGLE_HORIZONTAL = 30.0  # degrees
+
+ARM_HIGHEST_0_0_HEIGHT = 1.6
+ARM_LOWEST_0_0_HEIGHT = 0.95
 
 # Pick
 PICK_MOTION_ACTION_SERVER_NODE = "manipulation/pick_motion_server"
@@ -52,7 +55,7 @@ GRASP_LINK_FRAME = "gripper_grasp_frame"
 PLACE_PERCEPTION_SERVICE = "/manipulation/place_perception_service"
 HEATMAP_PLACE_SERVICE = "/manipulation/heatmap_place_service"
 PLACE_POINT_DEBUG_TOPIC = "/manipulation/table_place_point_debug"
-PLACE_MAX_DISTANCE = 0.85
+PLACE_MAX_DISTANCE = 1.1
 PLACE_MOTION_ACTION_SERVER = "/manipulation/place_motion_action_server"
 
 MANIPULATION_ACTION_SERVER = "/manipulation/manipulation_action_server"
