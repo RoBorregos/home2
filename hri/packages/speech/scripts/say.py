@@ -3,7 +3,6 @@
 import json
 import os
 import sys
-import subprocess
 from collections import OrderedDict
 
 import rclpy
@@ -181,12 +180,6 @@ class Say(Node):
                 self.get_logger().warn("Retrying with offline mode")
                 self.offline_voice(text)
 
-        # Wait for audio to finish playing before returning
-        try:
-            while mixer.music.get_busy():
-                pass
-        except Exception as e:
-            self.get_logger().error(f"Error while waiting for audio: {e}")
         self.publisher_.publish(Bool(data=False))
         return success
 
@@ -200,17 +193,15 @@ class Say(Node):
             if cached_path and os.path.exists(cached_path):
                 self.get_logger().debug(f"Using cached audio for chunk {i}")
                 audio_files.append(cached_path)
+                self.get_logger().debug(f"Playing {len(audio_files)} audio files")
+
+                # Play all audio files
+                for filepath in audio_files:
+                    self.play_audio(filepath)
             else:
                 output_path = os.path.join(VOICE_DIRECTORY, f"{hash(chunk)}.wav")
                 self.synthesize_voice_offline(f"{hash(chunk)}.wav", chunk)
                 self._add_to_cache(chunk, output_path)
-                audio_files.append(output_path)
-
-        self.get_logger().debug(f"Playing {len(audio_files)} audio files")
-
-        # Play all audio files
-        for filepath in audio_files:
-            self.play_audio(filepath)
 
     def connectedVoice(self, text):
         cached_path = self._get_cached_audio(text)
@@ -233,6 +224,12 @@ class Say(Node):
             pass
         mixer.music.load(file_path)
         mixer.music.play()
+        # Wait for audio to finish playing before returning
+        try:
+            while mixer.music.get_busy():
+                pass
+        except Exception as e:
+            self.get_logger().error(f"Error while waiting for audio: {e}")
 
     @staticmethod
     def split_text(text: str, max_len, split_sentences=False):
@@ -248,20 +245,19 @@ class Say(Node):
 
     def synthesize_voice_offline(self, output_path, text):
         try:
-            with grpc.insecure_channel('127.0.0.1:50050') as channel:
+            with grpc.insecure_channel("127.0.0.1:50050") as channel:
                 stub = tts_pb2_grpc.TTSServiceStub(channel)
-                response = stub.Synthesize(tts_pb2.SynthesizeRequest(
-                    text=text,
-                    model=self.model,
-                    output_path=output_path
-                ))
+                response = stub.Synthesize(
+                    tts_pb2.SynthesizeRequest(
+                        text=text, model=self.model, output_path=output_path
+                    )
+                )
 
             if not response.success:
                 raise RuntimeError(f"TTS failed: {response.error_message}")
         except Exception as e:
             self.get_logger().error(f"[gRPC] Synthesis failed: {e}")
             raise
-
 
 
 def main(args=None):

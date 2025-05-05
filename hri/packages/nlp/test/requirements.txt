@@ -1,2 +1,4 @@
 datasets==3.5.0
 deepeval==2.7.3
+sentence-transformers==4.1.0
+baml-py==0.86.1

@@ -44,16 +44,30 @@ ament_python_install_package(${PROJECT_NAME})
 
 
 file (GLOB PYTHON_SCRIPTS scripts/*.py)
-#Install python scripts
-# install(PROGRAMS
-#   scripts/object_detector_node.py
-#   scripts/zero_shot_object_detector_node.py
-#   scripts/local_camera.py
-#   DESTINATION lib/${PROJECT_NAME}
-# )
+
 install(PROGRAMS
   ${PYTHON_SCRIPTS}
   DESTINATION lib/${PROJECT_NAME}
+)
+
+file (GLOB SCRIPTS_DETECTORS scripts/detectors/*.py)
+
+install(PROGRAMS
+  ${SCRIPTS_DETECTORS}
+  DESTINATION lib/${PROJECT_NAME}/detectors
+)
+
+file (GLOB SCRIPTS_INCLUDE scripts/include/*.py)
+
+install(PROGRAMS
+  ${SCRIPTS_INCLUDE}
+  DESTINATION lib/${PROJECT_NAME}/include
+)
+
+file (GLOB MODELS models/*.pt)
+install(PROGRAMS
+  ${MODELS}
+  DESTINATION lib/${PROJECT_NAME}/models
 )
 
 ######################### Testing  #########################

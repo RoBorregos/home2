@@ -32,7 +32,8 @@ from frida_constants.vision_constants import (
     CAMERA_FRAME,
 )
 
-MODELS_PATH = str(pathlib.Path(__file__).parent) + "/../models/"
+MODELS_PATH = str(pathlib.Path(__file__).parent) + "/models/"
+
 
 ARGS = {
     "RGB_IMAGE_TOPIC": CAMERA_TOPIC,
