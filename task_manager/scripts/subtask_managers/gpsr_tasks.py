@@ -7,7 +7,10 @@ from frida_constants.vision_enums import DetectBy, Gestures, Poses, is_value_in_
 from utils.status import Status
 
 from subtask_managers.generic_tasks import GenericTask
-
+from utils.baml_client.types import (
+    GiveObject, FollowPersonUntil, GuidePersonTo, GetPersonInfo, Count,
+    FindPerson, FindPersonByName    
+)
 
 class GPSRTask(GenericTask):
     """Class to manage the GPS task"""
@@ -36,7 +39,7 @@ class GPSRTask(GenericTask):
             rclpy.spin_until_future_complete(self, future)
 
     ## HRI, Manipulation
-    def give(self, complement="", characteristic=""):
+    def give_object(self, command: GiveObject):
         """
         Handles the action of giving an object to a person.
 
@@ -82,7 +85,7 @@ class GPSRTask(GenericTask):
         return Status.EXECUTION_SUCCESS, "object given"
 
     ## HRI, Nav
-    def follow_person_until(self, complement: str, characteristic: str):
+    def follow_person_until(self, command: FollowPersonUntil):
         """
         Follow a person until a specific condition is triggered.
 
@@ -114,25 +117,28 @@ class GPSRTask(GenericTask):
 
         """
 
-        if characteristic == "":
-            self.subtask_manager.hri.say(
-                "I will now follow you.",
-            )
-            # status = self.subtask_manager.vision.track_person(True)
-        else:
-            self.subtask_manager.hri.say(
-                f"I will now follow you, {characteristic}.",
-            )
+        # TODO: fix this, now follow person until only has destination because
+        # it can only be triggered after a find_person action, my suggestion for
+        # all is to read the hri subtask manager log to find
+        # if characteristic == "":
+        #   self.subtask_manager.hri.say(
+        #       "I will now follow you.",
+        #   )
+        # status = self.subtask_manager.vision.track_person(True)
+        # else:
+        #   self.subtask_manager.hri.say(
+        #       f"I will now follow you, {characteristic}.",
+        #   )
             # status = self.subtask_manager.vision.follow_by_name(characteristic)
-            self.subtask_manager.nav.follow_person()
+        #   self.subtask_manager.nav.follow_person()
 
         # TODO (@nav, hri): fix conditions to stop
-        if complement == "canceled":
+        if command.destination == "cancelled":
             while self.subtask_manager.hri.hear() != "cancel":
                 pass
 
         else:
-            while self.subtask_manager.nav.get_location() != complement:
+            while self.subtask_manager.nav.get_location() != command.destination:
                 pass
 
         self.subtask_manager.vision.track_person(False)
@@ -142,7 +148,7 @@ class GPSRTask(GenericTask):
         pass
 
     ## HRI, Nav
-    def guide_to(self, complement="", characteristic=""):
+    def guide_person_to(self, command: GuidePersonTo):
         """
         Guides a person to a specified target location.
 
@@ -172,19 +178,19 @@ class GPSRTask(GenericTask):
 
         """
 
-        location = self.subtask_manager.hri.query_location(complement)
+        location = self.subtask_manager.hri.query_location(command.destination)
         area = self.subtask_manager.hri.get_area(location)
         subarea = self.subtask_manager.hri.get_subarea(location)
 
         self.navigate_to(area, subarea)
 
-        if complement == "person":
-            self.subtask_manager.hri.say(f"We have arrived to {characteristic}!", wait=True)
+        if command.destination == "person":
+            self.subtask_manager.hri.say(f"We have arrived to {command.destination}!", wait=True)
         else:
-            self.subtask_manager.hri.say(f"We have arrived, {complement}!", wait=True)
+            self.subtask_manager.hri.say(f"We have arrived, {command.destination}!", wait=True)
 
     ## HRI, Vision
-    def find_person_info(self, complement="", characteristic=""):
+    def get_person_info(self, command: GetPersonInfo):
         """
         Get specific information about a person.
 
@@ -208,14 +214,13 @@ class GPSRTask(GenericTask):
             else:
                 return get_person_name()
         """
+        if command.info_type == "gesture":
+            command.info_type = DetectBy.GESTURES.value
+        elif command.info_type == "posture":
+            command.info_type = DetectBy.POSES.value
 
-        if complement == "gesture":
-            complement = DetectBy.GESTURES.value
-        elif complement == "posture":
-            complement = DetectBy.POSES.value
-
-        if complement != "name":
-            return self.subtask_manager.vision.find_person_info(complement)
+        if command.info_type != "name":
+            return self.subtask_manager.vision.find_person_info(command.info_type)
 
         s, res = self.subtask_manager.vision.get_person_name()
         if s == Status.EXECUTION_SUCCESS:
@@ -241,6 +246,7 @@ class GPSRTask(GenericTask):
                 return Status.EXECUTION_ERROR, "name not found"
 
     ## Nav, Vision
+    # TODO: We removed this in command dataset
     def find_object(self, complement: str, characteristic: str):
         """
         Finds an object in a specified location and approaches it for picking.
@@ -282,7 +288,7 @@ class GPSRTask(GenericTask):
         return Status.TARGET_NOT_FOUND, "object not found"
 
     ## Manipulation, Vision
-    def count(self, complement="", characteristic=""):
+    def count(self, command: Count):
         """
         Count the number of specific targets based on the given parameters.
 
@@ -322,7 +328,7 @@ class GPSRTask(GenericTask):
 
         possibilities = [v.value for v in Gestures] + [v.value for v in Poses] + ["clothes"]
 
-        status, value = self.subtask_manager.hri.find_closest(possibilities, characteristic)
+        status, value = self.subtask_manager.hri.find_closest(possibilities, command.target_to_count)
 
         # self.subtask_manager.manipulation.move_to_position("front_stare")
 
@@ -340,19 +346,19 @@ class GPSRTask(GenericTask):
 
             if status == Status.EXECUTION_SUCCESS:
                 counter += count
-                self.subtask_manager.hri.say(f"I have counted {count} {characteristic}.")
+                self.subtask_manager.hri.say(f"I have counted {count} {command.target_to_count}.")
             elif status == Status.TARGET_NOT_FOUND:
                 self.subtask_manager.hri.say(
-                    f"I didn't find any {characteristic}.",
+                    f"I didn't find any {command.target_to_count}.",
                 )
 
         self.subtask_manager.hri.say(
-            f"I have counted {counter} {characteristic} in the room.",
+            f"I have counted {counter} {command.target_to_count} in the room.",
         )
-        return Status.EXECUTION_SUCCESS, "counted " + str(counter) + " " + characteristic
+        return Status.EXECUTION_SUCCESS, "counted " + str(counter) + " " + command.target_to_count
 
     ## Manipulation, Nav, Vision
-    def find_person(self, complement="", characteristic=""):
+    def find_person(self, command: FindPerson):
         """
         Finds and approaches a person for further interaction.
 
@@ -390,12 +396,13 @@ class GPSRTask(GenericTask):
         self.subtask_manager.manipulation.move_to_position("front_stare")
         for degree in self.pan_angles:
             self.subtask_manager.manipulation.pan_to(degree)
-            if complement == "":
+            if command.attribute_value == "":
                 result = self.subtask_manager.vision.track_person(track=True)
             else:
                 result = self.subtask_manager.vision.track_person_by(
-                    by=complement, value=characteristic, track=True
+                    by=command.attribute_value, value="", track=True
                 )
+                # TODO: We removed the second param from the command
             # TODO (@nav): approach the person
             if result == Status.EXECUTION_SUCCESS:
                 return Status.EXECUTION_SUCCESS, "person found"
@@ -403,7 +410,7 @@ class GPSRTask(GenericTask):
         return Status.TARGET_NOT_FOUND, "person not found"
 
     ## HRI, Manipulation, Nav, Vision
-    def find_person_by_name(self, complement="", characteristic=""):
+    def find_person_by_name(self, command: FindPersonByName):
         """
         Find a person by their name and save the information for further interactions. Further interaction may include: following the person,
         guiding the person, interacting with the person, describing the person, give an object to a person.
@@ -454,12 +461,12 @@ class GPSRTask(GenericTask):
                 self.subtask_manager.vision.save_face_name(new_name)
                 name = new_name
 
-            if name == complement:
+            if name == command.name:
                 self.subtask_manager.hri.say("Nice to meet you, " + name + ".")
                 return Status.EXECUTION_SUCCESS, f"found {name}"
             else:
                 self.subtask_manager.hri.say(
-                    "Hi, " + name + ", but I am looking for " + complement + "."
+                    "Hi, " + name + ", but I am looking for " + command.name + "."
                 )
                 self.subtask_manager.vision.save_face_name(name)
         return Status.TARGET_NOT_FOUND, "person not found"
