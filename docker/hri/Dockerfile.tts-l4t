@@ -1,9 +1,18 @@
-FROM dustynv/piper-tts:r36.2.0
-
-RUN pip install \
-    grpcio==1.70.0 \
-    grpcio-tools==1.70.0
-
-RUN pip install --upgrade protobuf
+FROM roborregos/home2:l4t_base
 
 WORKDIR /app
+
+COPY ../../hri/packages/speech/scripts/tts/requirements.txt .
+RUN python3 -m pip install --upgrade pip
+RUN pip install --no-cache-dir -r /app/requirements.txt
+RUN pip install --upgrade protobuf
+RUN python3 -m spacy download en_core_web_sm
+
+RUN sudo apt update && \
+    sudo apt install -y \
+    libopenmpi-dev \
+    libportaudio2 \
+    libportaudiocpp0 \
+    portaudio19-dev
+
+run apt-get -qq -y install espeak-ng > /dev/null 2>&1

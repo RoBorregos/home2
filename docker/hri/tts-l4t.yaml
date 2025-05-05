@@ -1,9 +1,7 @@
 services:
   tts-l4t:
     profiles: [receptionist, carry, gpsr]
-    
     container_name: home2-hri-tts-l4t
-    # user: 1000:1000
     image: roborregos/home2:hri-tts-l4t
     build:
       context: ../..
@@ -12,6 +10,11 @@ services:
     volumes:
       - ../../hri/packages/speech/scripts/tts/:/app
       - ../../hri/packages/speech/assets/downloads/offline_voice/:/app/models
+      - ~/.config/pulse:/tmp/pulse
     network_mode: host
-    command: "python3 -u piper.py"
-    # command: "tail -f /dev/null"
+    user: 1000:1000
+    privileged: true
+    environment:
+      PULSE_SERVER: unix:/tmp/pulse/pulseaudio.socket
+      PULSE_COOKIE: /tmp/pulse/pulseaudio.cookie
+    command: "python3 kokoro-tts.py"
