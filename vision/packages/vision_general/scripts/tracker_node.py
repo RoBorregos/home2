@@ -218,7 +218,7 @@ class SingleTracker(Node):
             "area": 0,
             "bbox": None,
         }
-
+        response_clean = ""
         # Check each detection
         for out in results:
             for box in out.boxes:
@@ -228,7 +228,7 @@ class SingleTracker(Node):
                 try:
                     track_id = box.id[0].item()
                 except Exception as e:
-                    print("Track id exception: ", e)
+                    print("CALLBACK Track id exception: ", e)
                     track_id = -1
 
                 print(track_id)
@@ -251,6 +251,7 @@ class SingleTracker(Node):
                     cropped_image = self.frame[y1:y2, x1:x2]
 
                     if track_by == DetectBy.GESTURES.value:
+                        self.get_logger().info(f"Detecting gesture {value} ")
                         pose = self.pose_detection.detectGesture(cropped_image)
                         response_clean = pose.value
 
@@ -358,7 +359,7 @@ class SingleTracker(Node):
         if True:  # self.target_set:
             self.frame = self.image
 
-            if self.frame is None or self.person_data["id"] is None:
+            if self.frame is None:
                 return
 
             self.output_image = self.frame.copy()
@@ -370,7 +371,10 @@ class SingleTracker(Node):
                 classes=0,
                 verbose=False,
             )
-
+            
+            if self.person_data["id"] is None:
+                return
+            
             person_in_frame = False
 
             people = []
@@ -552,7 +556,7 @@ class SingleTracker(Node):
                     coords.z = point3D[2]
                     self.results_publisher.publish(coords)
                 else:
-                    self.get_logger().warn("Depth image not available")
+                    # self.get_logger().warn("Depth image not available")
                     self.is_tracking_result = False
             else:
                 self.is_tracking_result = False
