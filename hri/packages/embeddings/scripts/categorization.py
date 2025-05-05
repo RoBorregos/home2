@@ -306,8 +306,6 @@ class Embeddings(Node):
         # Define the folder where the CSV files are located
         dataframes_folder = script_dir / "../embeddings/dataframes"
 
-        # Define the folder where the JSON files are located
-        dataframes_folder = script_dir / "../embeddings/dataframes"
         # Ensure the folder exists
         if not (dataframes_folder.exists() and dataframes_folder.is_dir()):
             raise FileNotFoundError(
