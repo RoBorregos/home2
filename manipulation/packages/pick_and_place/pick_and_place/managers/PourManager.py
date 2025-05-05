@@ -20,7 +20,7 @@ CFG_PATHS = [
 
 
 class PourManager:
-    node = None 
+    node = None
 
     def __init__(self, node):
         self.node = node
@@ -39,7 +39,6 @@ class PourManager:
         )
         # self.node.get_logger().warning("FF before wait_for_future")
         # future = self.wait_for_future(future)
-        
 
         # get bowl object point
         self.node.get_logger().warning("Get bowl object point - FFN2")
@@ -72,7 +71,9 @@ class PourManager:
         self.node.get_logger().warning("FF 1.1")
         if container_cluster.header.frame_id != "base_link":
             self.node.get_logger().warning("FF 1.1.1")
-            self.node.get_logger().warning(f"Result: {container_cluster.header.frame_id}")
+            self.node.get_logger().warning(
+                f"Result: {container_cluster.header.frame_id}"
+            )
             self.get_logger().warn(
                 f"PointCloud2 frame_id is {container_cluster.header.frame_id}, expected base_link"
             )
@@ -118,7 +119,9 @@ class PourManager:
         pose_msg.header.stamp = self.node.get_clock().now().to_msg()
         self.node.get_logger().warning("FF 1.2.6")
         pose_msg.pose.position.x = container_point.point.x + centroid[0]
-        pose_msg.pose.position.y = container_point.point.y + centroid[1] + 0.05  # TODO: set the offset
+        pose_msg.pose.position.y = (
+            container_point.point.y + centroid[1] + 0.05
+        )  # TODO: set the offset
         pose_msg.pose.position.z = (
             float(max_z) + 0.15
         )  # TODO: set the height of the bowl
@@ -144,7 +147,7 @@ class PourManager:
 
         # Print the result of the pour motion
         self.node.get_logger().warning("Result of pour motion - FFN5")
-        
+
         # result_pour = future.result()
         # if not result_pour.success:
         #     self.node.get_logger().error("Pour motion failed")
@@ -231,7 +234,7 @@ class PourManager:
         self.node.pick_perception_3d_client.wait_for_service()
         future = self.node.pick_perception_3d_client.call_async(request)
         future = wait_for_future(future)
-        
+
         pcl_result = future.result().cluster_result
         self.node.get_logger().info(f"Cluster result: {pcl_result}")
 

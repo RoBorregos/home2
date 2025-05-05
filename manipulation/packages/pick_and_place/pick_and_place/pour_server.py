@@ -116,31 +116,30 @@ class PourMotionServer(Node):
             self.get_logger().info("Pouring...........................")
             success, _ = self.pour(goal_handle, feedback)
             result.success = int(success)
-            
+
             goal_handle.succeed()
             return result
         except Exception as e:
             self.get_logger().error(f"Pour failed: {str(e)}")
             goal_handle.abort()
-            result.success =  0
+            result.success = 0
             return result
 
     # TODO: APPLY LOGIC TO THIS FUNCTION
     def pour(self, goal_handle, feedback):
         """Perform the pour operation."""
-        self.get_logger().info(
-            "Trying to pour object"
-        )
+        self.get_logger().info("Trying to pour object")
         isConstrained = (
             False  # THE MOTION PLANNER IS CONSTRAINED ------------------------
         )
 
         pose = self.receive_pose(goal_handle.request.pour_pose)
-        
 
         # call the move_to_pose function
         goal_handle_result, action_result = self.move_to_pose(pose, isConstrained)
-        self.get_logger().info(f"Pour pose result: ({goal_handle_result}, {action_result})")
+        self.get_logger().info(
+            f"Pour pose result: ({goal_handle_result}, {action_result})"
+        )
         # self.get_logger().info(f"Pour pose: {pose}")
         if not action_result.result.success:
             self.get_logger().error("Failed to reach pour pose")
@@ -156,7 +155,7 @@ class PourMotionServer(Node):
         current_pose = self.get_joint_positions()
         if not current_pose:
             self.get_logger().error("Failed to get current pose")
-            
+
             return True, action_result.result.success
 
         # Rotate joint 6
@@ -166,7 +165,7 @@ class PourMotionServer(Node):
         future = self._move_to_pose_action_client.send_goal_async(
             MoveToPose.Goal(
                 pose=pose,
-                velocity=POUR_VELOCITY, 
+                velocity=POUR_VELOCITY,
                 acceleration=POUR_ACCELERATION,
                 planner_id=PICK_PLANNER,
                 apply_constraint=isConstrained,
@@ -178,11 +177,11 @@ class PourMotionServer(Node):
         if action_result is None:
             self.get_logger().error("Failed to get action result")
             return False, action_result.result.success
-        
+
         if not action_result.result.success:
             self.get_logger().error("Failed to move to pour pose")
             return False, action_result.result.success
-        
+
         self.get_logger().info("Moved to pour pose successfully")
 
         # Move to the updated pose
@@ -193,7 +192,7 @@ class PourMotionServer(Node):
         #     return False, result
 
         self.get_logger().info("Pour motion completed successfully")
-        
+
         return False, action_result.result.success
 
         # isConstrained = (
