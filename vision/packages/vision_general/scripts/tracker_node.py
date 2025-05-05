@@ -24,7 +24,7 @@ import rclpy
 from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import Point, PointStamped
 
 from vision_general.utils.reid_model import (
     load_network,
