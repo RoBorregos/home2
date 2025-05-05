@@ -172,12 +172,6 @@ class Say(Node):
                 self.get_logger().warn("Retrying with offline mode")
                 self.offline_voice(text)
 
-        # Wait for audio to finish playing before returning
-        try:
-            while mixer.music.get_busy():
-                pass
-        except Exception as e:
-            self.get_logger().error(f"Error while waiting for audio: {e}")
         self.publisher_.publish(Bool(data=False))
         return success
 
@@ -191,17 +185,16 @@ class Say(Node):
             if cached_path and os.path.exists(cached_path):
                 self.get_logger().debug(f"Using cached audio for chunk {i}")
                 audio_files.append(cached_path)
+                self.get_logger().debug(f"Playing {len(audio_files)} audio files")
+
+                # Play all audio files
+                for filepath in audio_files:
+                    self.play_audio(filepath)
             else:
                 output_path = os.path.join(VOICE_DIRECTORY, f"{hash(chunk)}.wav")
                 self.synthesize_voice_offline(output_path, chunk)
                 self._add_to_cache(chunk, output_path)
-                audio_files.append(output_path)
 
-        self.get_logger().debug(f"Playing {len(audio_files)} audio files")
-
-        # Play all audio files
-        for filepath in audio_files:
-            self.play_audio(filepath)
 
     def connectedVoice(self, text):
         cached_path = self._get_cached_audio(text)
@@ -224,6 +217,12 @@ class Say(Node):
             pass
         mixer.music.load(file_path)
         mixer.music.play()
+        # Wait for audio to finish playing before returning
+        try:
+            while mixer.music.get_busy():
+                pass
+        except Exception as e:
+            self.get_logger().error(f"Error while waiting for audio: {e}")
 
     @staticmethod
     def split_text(text: str, max_len, split_sentences=False):
@@ -238,7 +237,7 @@ class Say(Node):
         return limited_chunks
 
     def synthesize_voice_offline(self, output_path, text):
-        """Synthesize text using the offline voice model."""
+        """Synthesize text using the offline voice model, stream with aplay, and save to .wav."""
 
         executable = (
             "/workspace/piper/install/piper"
@@ -247,28 +246,31 @@ class Say(Node):
         )
 
         model_path = os.path.join(VOICE_DIRECTORY, self.model + ".onnx")
-
         download_model = not os.path.exists(model_path)
 
         if download_model:
             self.get_logger().info("Downloading voice model...")
 
-        command = [
-            "echo",
-            f'"{text}"',
-            "|",
-            executable,
-            "--model",
-            self.model if download_model else model_path,
-            "--data-dir",
-            VOICE_DIRECTORY,
-            "--download-dir",
-            VOICE_DIRECTORY,
-            "--output_file",
-            output_path,
-        ]
+        raw_temp = os.path.join(VOICE_DIRECTORY, f"{hash(text)}.raw")
 
-        subprocess.run(" ".join(command), shell=True)
+        # Build the shell command to:
+        # 1. Generate raw audio with piper
+        # 2. Save it using tee
+        # 3. Stream it using aplay
+        command = f'echo "{text}" | {executable} --model {"--download-dir" if download_model else model_path} --data-dir {VOICE_DIRECTORY} --output-raw | tee "{raw_temp}" | aplay -r 22050 -f S16_LE -t raw -'
+
+        self.get_logger().info(f"Synthesizing and playing: {text}")
+        subprocess.run(command, shell=True, executable="/bin/bash")
+
+        # Convert raw audio to WAV using ffmpeg
+        convert_command = f'ffmpeg -y -f s16le -ar 22050 -ac 1 -i "{raw_temp}" "{output_path}"'
+        subprocess.run(convert_command, shell=True)
+
+        # Clean up raw file
+        try:
+            os.remove(raw_temp)
+        except Exception as e:
+            self.get_logger().warn(f"Could not delete raw temp file: {e}")
 
 
 def main(args=None):
