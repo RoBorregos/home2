@@ -9,6 +9,9 @@ services:
     image: ${IMAGE_NAME:-roborregos/home2:manipulation-cpu}
     volumes:
       - ../../:/workspace/src/home2
+      - ./build:/workspace/build
+      - ./install:/workspace/install
+      - ./log:/workspace/log
       - /tmp:/tmp
     deploy:
       resources:
