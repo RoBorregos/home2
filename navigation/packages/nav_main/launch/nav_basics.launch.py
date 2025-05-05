@@ -15,7 +15,7 @@ def launch_setup(context, *args, **kwargs):
     publish_urdf = LaunchConfiguration('publish_tf', default='false')
     use_sim = LaunchConfiguration('use_sim', default='false')
     use_dualshock = LaunchConfiguration('use_dualshock', default='true')
-    cmd_topic = LaunchConfiguration('cmd_topic', default='/cmd_vel_dashgo')
+    cmd_topic = LaunchConfiguration('cmd_topic', default='/cmd_vel')
     cmd_topic_joy = LaunchConfiguration('cmd_topic_joy', default='/cmd_vel_joy')
 
     dashgo_driver = IncludeLaunchDescription(
@@ -91,9 +91,9 @@ def launch_setup(context, *args, **kwargs):
             ),
             
         ),
-        launch_arguments={
-            'topic_name': cmd_topic_joy
-            }.items(),
+        # launch_arguments={
+        #     'topic_name': cmd_topic_joy
+        #     }.items(),
         condition=IfCondition(use_dualshock)
         )
    
@@ -121,8 +121,8 @@ def launch_setup(context, *args, **kwargs):
         joint_state,
         laser_launch,
         dualshock_launch,
-        tmux_node,
-        emergency_node,
+        # tmux_node,
+        # emergency_node,
         
     ]
     else:
@@ -132,8 +132,8 @@ def launch_setup(context, *args, **kwargs):
         ekf_launch,
         laser_launch,
         dualshock_launch,
-        tmux_node,
-        emergency_node,
+        # tmux_node,
+        # emergency_node,
         
     ]
     return return_launch
