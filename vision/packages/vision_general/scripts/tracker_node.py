@@ -31,7 +31,7 @@ from vision_general.utils.reid_model import (
     get_structure,
 )
 
-from std_srvs.srv import SetBool
+from std_srvs.srv import SetBool, Trigger
 from frida_interfaces.srv import TrackBy, CropQuery
 from pose_detection import PoseDetection
 from frida_constants.vision_constants import (
@@ -75,6 +75,10 @@ class SingleTracker(Node):
         self.set_target_by_service = self.create_service(
             TrackBy, SET_TARGET_BY_TOPIC, self.set_target_by_callback
         )
+        
+        self.get_is_tracking_service = self.create_service(
+            Trigger, "/vision/is_tracking", self.get_is_tracking_callback
+        )
 
         self.results_publisher = self.create_publisher(PointStamped, RESULTS_TOPIC, 10)
 
@@ -90,6 +94,8 @@ class SingleTracker(Node):
         self.setup()
         self.create_timer(0.1, self.run)
         self.create_timer(0.01, self.publish_image)
+        
+        self.is_tracking_result = False
 
     def setup(self):
         """Load models and initial variables"""
@@ -127,6 +133,16 @@ class SingleTracker(Node):
 
         pbar.close()
         self.get_logger().info("Single Tracker Ready")
+
+    def get_is_tracking_callback(self, request, response):
+        request = Trigger.Request()
+        response = Trigger.Response()
+        response.success = self.is_tracking_result
+        if self.is_tracking_result:
+            self.get_logger().info("Tracking")
+        else:
+            self.get_logger().info("Not racking")
+        return response
 
     def image_callback(self, data):
         """Callback to receive image from camera"""
@@ -187,6 +203,7 @@ class SingleTracker(Node):
         """Set the target to track (Default: Largest person in frame)"""
         if self.image is None:
             self.get_logger().warn("No image available")
+            self.is_tracking_result = False
             return False
 
         self.get_logger().info(f"Setting target by {track_by} with value {value}")
@@ -298,8 +315,10 @@ class SingleTracker(Node):
                 2,
                 cv2.LINE_AA,
             )
+            self.is_tracking_result = True
             return True
         else:
+            self.is_tracking_result = False
             self.get_logger().warn("No person found")
             return False
 
