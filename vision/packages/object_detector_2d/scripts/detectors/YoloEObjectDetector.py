@@ -1,24 +1,43 @@
 #! /usr/bin/env python3
 from detectors.ObjectDetector import Detection, ObjectDectectorParams
 from detectors.ZeroShotObjectDetector import ZeroShotObjectDetector
+# import logging
+
 from ultralytics import YOLOE
 import warnings
+import sys
+import os
+from contextlib import contextmanager
 
 warnings.filterwarnings("ignore", category=FutureWarning)
+
+
+@contextmanager
+def suppress_stdout():
+    with open(os.devnull, "w") as fnull:
+        old_stdout = sys.stdout
+        sys.stdout = fnull
+        try:
+            yield
+        finally:
+            sys.stdout = old_stdout
 
 
 class YoloEObjectDetector(ZeroShotObjectDetector):
     def __init__(self, model_path: str, object_detector_params: ObjectDectectorParams):
         super().__init__(model_path, object_detector_params)
+
         self.loadYoloEModel()
 
     def loadYoloEModel(self):
-        self.model = YOLOE(self.model_path_)
+        with suppress_stdout():
+            self.model = YOLOE(self.model_path_)
         print("Model loaded: ", self.model_path_)
 
     def _inference(self, frame):
         # Execute prediction for specified categories on an image
-        results = self.model.predict(frame, verbose=False)
+        with suppress_stdout():
+            results = self.model.predict(frame, verbose=False)
 
         return self._generate_detections(results, frame)
 

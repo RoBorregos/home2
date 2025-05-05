@@ -18,11 +18,23 @@ from frida_constants.navigation_constants import (
 class PointTransformer(Node):
     def __init__(self):
         super().__init__('goal_transformer')
-
+        ##TEST##
+        self.goal_test = PoseStamped()
+        self.goal_test.header.frame_id = 'map'
+        self.goal_test.header.stamp = self.get_clock().now().to_msg()
+        self.goal_test.pose.position.x = 0.0
+        self.goal_test.pose.position.y = 0.0
+        self.goal_test.pose.position.z = 0.0
+        self.goal_test.pose.orientation.w = 1.0
+        self.goal_test.pose.orientation.x = 0.0
+        self.goal_test.pose.orientation.y = 0.0
+        self.goal_test.pose.orientation.z = 0.0
         # Initialize flags
+        self.actual_goal_handle = None
         self.is_following = False
         self.navigation_in_progress = False
-        self.latest_goal = None
+        self.accumulated_points = []
+        self.acc_sum = [0.0, 0.0]
         
         # Create a callback group for concurrent callbacks
         self.callback_group = ReentrantCallbackGroup()
@@ -32,7 +44,6 @@ class PointTransformer(Node):
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
         # Marker publisher
-        self.marker_pub = self.create_publisher(Marker, 'visualization_marker', 10)
         self.point_pub = self.create_publisher(PointStamped, 'point_visualize', 10)
         self.goal_pub = self.create_publisher(PoseStamped, 'goal_update', 10)
         
@@ -45,16 +56,17 @@ class PointTransformer(Node):
         )
         
         self.set_target_service = self.create_service(
-            SetBool, FOLLOWING_SERVICE, self.set_target_callback
+            SetBool, FOLLOWING_SERVICE, self.set_target_callback,
+            callback_group=self.callback_group
         )
 
-        self.accumulated_points = []
         # Subscribe to the vision/tracking_results topic
         self.point_sub = self.create_subscription(
             Point,
             '/vision/tracking_results',
             self.point_callback,
-            10
+            10,
+            callback_group=self.callback_group
         )
         
         self.get_logger().info("PointTransformer with Navigation Action Client initialized")
@@ -63,17 +75,26 @@ class PointTransformer(Node):
         """Callback to set the target to track"""
         self.is_following = request.data
         
-        if self.is_following:
+        if request.data:
             self.get_logger().info("Following enabled")
-            # Send initial goal if we have a valid point
-            # if self.latest_goal is not None:
-            #     self.send_navigation_goal(self.latest_goal)
+            ###### TEST ##########
+            # goal_update = PoseStamped()
+            # goal_update.header.frame_id = 'map'
+            # goal_update.header.stamp = self.get_clock().now().to_msg()
+            # goal_update.pose.position.x = 0.0
+            # goal_update.pose.position.y = 0.0
+            # goal_update.pose.position.z = 0.0
+            # goal_update.pose.orientation.w = 1.0
+            # goal_update.pose.orientation.x = 0.0
+            # goal_update.pose.orientation.y = 0.0
+            # goal_update.pose.orientation.z = 0.0
+            # self.get_logger().info("sending test_goal")
+            # self.send_navigation_goal(goal_update)
+
         else:
+            self.cancel_navigation()
             self.get_logger().info("Following disabled")
-            # Cancel any active navigation goals
-            # if self.navigation_in_progress:
-                # self.cancel_navigation()
-                
+
         response.success = True
         response.message = "Following state changed"
         return response
@@ -107,33 +128,27 @@ class PointTransformer(Node):
             goal_msg, 
             feedback_callback=self.feedback_callback
         )
+
         send_goal_future.add_done_callback(self.goal_response_callback)
     
     def goal_response_callback(self, future):
         """Callback for when the action server responds to our goal request"""
         goal_handle = future.result()
+        self.get_logger().warn(f"function_papu? = {goal_handle}")
         if not goal_handle.accepted:
             self.get_logger().warn('Navigation goal rejected')
             self.navigation_in_progress = False
             return
-
+        self.navigation_in_progress = True
         self.get_logger().info('Navigation goal accepted')
+        self.actual_goal_handle = goal_handle
         self._get_result_future = goal_handle.get_result_async()
         self._get_result_future.add_done_callback(self.get_result_callback)
     
     def get_result_callback(self, future):
         """Callback for when the action server returns a result"""
-        status = future.result().status
-        if status == GoalStatus.STATUS_SUCCEEDED:
-            self.get_logger().info('Navigation goal succeeded')
-        else:
-            self.get_logger().warn(f'Navigation goal failed with status: {status}')
-            
         self.navigation_in_progress = False
-        
-        # If we're still following, send the next goal
-        if self.is_following and self.latest_goal is not None:
-            self.send_navigation_goal(self.latest_goal)
+        self.actual_goal_handle = None
     
     def feedback_callback(self, feedback_msg):
         """Callback for navigation feedback"""
@@ -143,18 +158,17 @@ class PointTransformer(Node):
     
     def cancel_navigation(self):
         """Cancel the current navigation goal"""
-        if self.navigation_in_progress:
+        if self.navigation_in_progress and self.actual_goal_handle is not None:
             self.get_logger().info('Canceling navigation goal')
-            # This is a simple implementation - in a more robust system you'd
-            # want to track the active goal handle and cancel it directly
-            cancel_future = self.nav_action_client.cancel_all_goals_async()
+            self.actual_goal_handle.cancel_goal_async()
             self.navigation_in_progress = False
 
     def point_callback(self, msg: Point):
         # Skip processing if not following
         if not self.is_following:
             return
-            
+        
+
         # Process the point as before
         point_to_be_filtered = Point()
     
@@ -176,12 +190,19 @@ class PointTransformer(Node):
 
         # Append the new point to the list
         self.accumulated_points.append(point_to_be_filtered)
+        self.acc_sum[0] += point_to_be_filtered.x
+        self.acc_sum[1] += point_to_be_filtered.y
         # Limit the number of points to the last 5
         if len(self.accumulated_points) > 5:
+            self.acc_sum[0] -= self.accumulated_points[0].x
+            self.acc_sum[1] -= self.accumulated_points[0].y
             self.accumulated_points.pop(0)
         # Calculate the median of the accumulated points
-        median_x = self.median_filter([p.x for p in self.accumulated_points])
-        median_y = self.median_filter([p.y for p in self.accumulated_points])
+        # median_x = self.median_filter([p.x for p in self.accumulated_points])
+        # median_y = self.median_filter([p.y for p in self.accumulated_points])
+        median_x = self.acc_sum[0] / len(self.accumulated_points)
+        median_y = self.acc_sum[1] / len(self.accumulated_points)
+
 
         stamped_point = PointStamped()
         stamped_point.header.frame_id = 'zed_camera_link'  # Adjust to match your actual camera frame
@@ -212,17 +233,11 @@ class PointTransformer(Node):
             goal_update.pose.orientation.x = 0.0
             goal_update.pose.orientation.y = 0.0
             goal_update.pose.orientation.z = 0.0
-            
+            if self.navigation_in_progress == False:
+                self.send_navigation_goal(goal_update)
             # Publish for debugging/visualization
             self.goal_pub.publish(goal_update)
             
-            # Save this as our latest goal
-            self.latest_goal = goal_update
-            
-            # If we're following and no navigation is in progress, start navigation
-            # if self.is_following and not self.navigation_in_progress:
-            #     self.send_navigation_goal(goal_update)
-
         except Exception as e:
             self.get_logger().warn(f'Failed to transform point: {e}')
 

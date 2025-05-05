@@ -138,10 +138,10 @@ class StoringGroceriesCommands(Node):
 
     def publish_image(self):
         """Publish the image with the detections and show it in real-time."""
-        if self.image is not None and len(self.image) != 0:
+        if self.image is not None and len(self.image) != 0 or False:
             # Show image in real-time
-            cv2.imshow("Shelf Detection", self.image)
-            cv2.waitKey(1)  # Wait 1 ms to update OpenCV window
+            # cv2.imshow("Shelf Detection", self.image)
+            # cv2.waitKey(1)  # Wait 1 ms to update OpenCV window
 
             # Publish the processed image with detections
             img_msg = self.bridge.cv2_to_imgmsg(self.image, "bgr8")

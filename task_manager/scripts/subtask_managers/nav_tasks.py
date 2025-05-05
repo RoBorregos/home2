@@ -36,7 +36,7 @@ class NavigationTasks:
         self.mock_data = mock_data
         self.task = task
         self.goal_state = None
-        #Closed door variables
+        # Closed door variables
         self.range_max = 870
         self.range_min = 750
         self.closed_distance = 0.7
@@ -44,24 +44,21 @@ class NavigationTasks:
         # Action clients and services
         self.goal_client = ActionClient(self.node, NavigateToPose, GOAL_TOPIC)
         self.activate_follow = self.node.create_client(SetBool, FOLLOWING_SERVICE)
-        self.scan_topic = self.node.create_subscription(LaserScan,'/scan',self.update_laser,10)
+        self.scan_topic = self.node.create_subscription(LaserScan, "/scan", self.update_laser, 10)
 
         self.services = {
-            Task.RECEPTIONIST: {
-                "goal_client": {"client": self.goal_client, "type": "action"}
-            },
+            Task.RECEPTIONIST: {"goal_client": {"client": self.goal_client, "type": "action"}},
             Task.HELP_ME_CARRY: {
                 "activate_follow": {"client": self.activate_follow, "type": "service"}
             },
             Task.GPSR: {
                 "goal_client": {"client": self.goal_client, "type": "action"},
-                "activate_follow": {"client": self.activate_follow, "type": "service"}
+                "activate_follow": {"client": self.activate_follow, "type": "service"},
             },
             Task.STORING_GROCERIES: {
                 "goal_client": {"client": self.goal_client, "type": "action"},
             },
-            Task.DEBUG: {
-            },
+            Task.DEBUG: {},
         }
 
         if not self.mock_data:
@@ -81,7 +78,7 @@ class NavigationTasks:
             elif service["type"] == "action":
                 if not service["client"].wait_for_server(timeout_sec=TIMEOUT):
                     Logger.warn(self.node, f"{key} action server not initialized. ({self.task})")
-                    
+
     def update_laser(self, msg: LaserScan):
         self.laser_sub = msg
 
@@ -108,14 +105,14 @@ class NavigationTasks:
             else:
                 coordinates = data[location]["safe_place"]
                 sublocation = "safe_place"
-            Logger.info(self.node,f"{coordinates}")
+            Logger.info(self.node, f"{coordinates}")
         except Exception as e:
-            Logger.error(self.node,f"Error fetching coordinates: {e}")
+            Logger.error(self.node, f"Error fetching coordinates: {e}")
             future.set_result(Status.EXECUTION_ERROR)
             return future
 
         try:
-            Logger.info(self.node,f"Sending move request to: {location} {sublocation}")
+            Logger.info(self.node, f"Sending move request to: {location} {sublocation}")
             client_goal = NavigateToPose.Goal()
             goal = PoseStamped()
             goal.header.frame_id = "map"
@@ -136,34 +133,81 @@ class NavigationTasks:
             )
             return future
         except Exception as e:
-            Logger.error(self.node,f"Error moving to location: {e}")
+            Logger.error(self.node, f"Error moving to location: {e}")
             future.set_result(Status.EXECUTION_ERROR)
+            return future
+
+    @mockable(return_value=True, delay=10)
+    @service_check("pose_client", False, TIMEOUT)
+    def move_to_zero(self) -> Future:
+        """Attempts to move to the original location and returns a Future that completes when the action finishes.
+        Call the function on this way
+
+        future = self.subtask_manager["navigation"].move_to_zero()
+        # Wait for the action result
+        rclpy.spin_until_future_complete(self, future)
+        result = future.result()
+
+        """
+        future = Future()
+        try:
+            coordinates = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+            self.node.get_logger().info(f"{coordinates}")
+        except Exception as e:
+            self.node.get_logger().error(f"Error moving to original location: {e}")
+            future.set_result(self.STATE["EXECUTION_ERROR"])
+            return future
+
+        try:
+            self.node.get_logger().info("Sending move request to original location")
+            client_goal = NavigateToPose.Goal()
+            goal = PoseStamped()
+            goal.header.frame_id = "map"
+            goal.pose.position.x = coordinates[0]
+            goal.pose.position.y = coordinates[1]
+            goal.pose.position.z = coordinates[2]
+            goal.pose.orientation.x = coordinates[3]
+            goal.pose.orientation.y = coordinates[4]
+            goal.pose.orientation.z = coordinates[5]
+            goal.pose.orientation.w = coordinates[6]
+
+            client_goal.pose = goal
+            self.goal_state = None
+            self._send_goal_future = self.pose_client.send_goal_async(client_goal)
+
+            self._send_goal_future.add_done_callback(
+                lambda future_goal: self.goal_response_callback(future_goal, future)
+            )
+            return future
+        except Exception as e:
+            self.node.get_logger().error(f"Error moving to original location: {e}")
+            future.set_result(self.STATE["EXECUTION_ERROR"])
             return future
 
     def goal_response_callback(self, future, result_future):
         goal_handle = future.result()
 
         if not goal_handle.accepted:
-            Logger.info(self.node,"Goal rejected.")
+            Logger.info(self.node, "Goal rejected.")
             result_future.set_result(Status.EXECUTION_ERROR)
             return
 
-        Logger.info(self.node,"Goal accepted! Waiting for result...")
+        Logger.info(self.node, "Goal accepted! Waiting for result...")
         self._get_result_future = goal_handle.get_result_async()
         self._get_result_future.add_done_callback(
             lambda future_result: self.result_callback(result_future)
         )
 
     def result_callback(self, result_future):
-        Logger.info(self.node,"Goal execution completed!")
+        Logger.info(self.node, "Goal execution completed!")
         goal_handle = self._get_result_future.result()
         print(f"Goal handle papu pro: {goal_handle.status}")
         if goal_handle.status != 4:
-            Logger.info(self.node,"Goal execution failed")
+            Logger.info(self.node, "Goal execution failed")
             result_future.set_result(Status.EXECUTION_ERROR)
             return
         result_future.set_result(Status.EXECUTION_SUCCESS)
-    
+
     @mockable(return_value=Status.EXECUTION_SUCCESS, delay=3)
     @service_check("activate_follow", False, TIMEOUT)
     def follow_person(self, activate: bool):
@@ -182,9 +226,9 @@ class NavigationTasks:
         if activate:
             Logger.info(self.node, "Follow person activated")
         else:
-            Logger.info(self.node,"Follow person deactivated")
+            Logger.info(self.node, "Follow person deactivated")
         return Status.EXECUTION_SUCCESS
-    
+
     @mockable(return_value=(Status.EXECUTION_SUCCESS, "open"), delay=3)
     def check_door(self) -> tuple[int, str]:
         """Check if the door is open or closed"""
@@ -192,19 +236,20 @@ class NavigationTasks:
         timeout_count = 0
         spin_rate = 10  # Hz
         max_tries = int(timeout_sec * spin_rate)
-        
+
         Logger.info(self.node, "Waiting for laser scan data...")
         while self.laser_sub is None and timeout_count < max_tries:
-            rclpy.spin_once(self.node, timeout_sec=0.1)  # 100ms timeout per spin
+            # 100ms timeout per spin
+            rclpy.spin_once(self.node, timeout_sec=0.1)
             timeout_count += 1
-        
+
         if self.laser_sub is None:
-            Logger.error(self.node,"No points detected")
+            Logger.error(self.node, "No points detected")
             return (Status.EXECUTION_ERROR, "")
-        
+
         door_points = []
         for count, r in enumerate(self.laser_sub.ranges):
-            if  self.range_min <= count <= self.range_max:
+            if self.range_min <= count <= self.range_max:
                 door_points.append(r)
 
         # Check if the door is open
@@ -212,16 +257,17 @@ class NavigationTasks:
             # Calculate the average distance of the door points
             avg_distance = sum(door_points) / len(door_points)
             # Check if the average distance is less than a threshold
-            Logger.info(self.node,f'Average distance: {avg_distance}')
+            Logger.info(self.node, f"Average distance: {avg_distance}")
             if avg_distance < self.closed_distance:
-                Logger.info(self.node,f'Door closed')
+                Logger.info(self.node, "Door closed")
                 return (Status.EXECUTION_SUCCESS, "closed")
             else:
-                Logger.info(self.node,'Door open')
+                Logger.info(self.node, "Door open")
                 return (Status.EXECUTION_SUCCESS, "open")
         else:
-            Logger.error(self.node,"No points detected")
+            Logger.error(self.node, "No points detected")
             return (Status.EXECUTION_ERROR, "")
+
 
 if __name__ == "__main__":
     rclpy.init()

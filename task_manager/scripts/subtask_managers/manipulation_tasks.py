@@ -11,7 +11,7 @@ from rclpy.node import Node
 from utils.logger import Logger
 
 from frida_interfaces.action import MoveJoints
-from frida_interfaces.srv import GetJoints, FollowFace
+from frida_interfaces.srv import GetJoints, FollowFace, GetOptimalPositionForPlane
 from frida_constants.xarm_configurations import XARM_CONFIGURATIONS
 from rclpy.action import ActionClient
 from typing import List, Union
@@ -78,8 +78,13 @@ class ManipulationTasks:
 
         self._get_joints_client = self.node.create_client(GetJoints, "/manipulation/get_joints")
         self.follow_face_client = self.node.create_client(FollowFace, "/follow_face")
+        self.follow_person_client = self.node.create_client(FollowFace, "/follow_person")
         self._manipulation_action_client = ActionClient(
             self.node, ManipulationAction, MANIPULATION_ACTION_SERVER
+        )
+        self._fix_position_to_plane_client = self.node.create_client(
+            GetOptimalPositionForPlane,
+            "/manipulation/get_optimal_position_for_plane",
         )
 
     def open_gripper(self):
@@ -103,7 +108,7 @@ class ManipulationTasks:
             #     return Status.ExecutionError
 
             req = SetDigitalIO.Request()
-            req.ionum = 0
+            req.ionum = 1
             req.value = 0 if state == "open" else 1  # 0=Open, 1=close
 
             future = self.gripper_client.call_async(req)
@@ -257,12 +262,42 @@ class ManipulationTasks:
         Logger.success(self.node, "Following face request successful")
         return Status.EXECUTION_SUCCESS
 
+    @mockable(return_value=Status.EXECUTION_SUCCESS, mock=False)
+    @service_check(client="follow_person_client", return_value=Status.TERMINAL_ERROR, timeout=TIMEOUT)
+    def follow_person(self, follow: bool) -> int:
+        """Save the name of the person detected"""
+
+        if follow:
+            Logger.info(self.node, "Following face")
+        else:
+            Logger.info(self.node, "Stopping following face")
+        request = FollowFace.Request()
+        request.follow_face = follow
+
+        try:
+            future = self.follow_person_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=20.0)
+            result = future.result()
+            if result is None:
+                raise Exception("Timeout Exceed")
+            if not result.success:
+                raise Exception("Service call failed")
+
+        except Exception as e:
+            Logger.error(self.node, f"Error following person: {e}")
+            return Status.EXECUTION_ERROR
+
+        Logger.success(self.node, "Following person request successful")
+        return Status.EXECUTION_SUCCESS
+
     @mockable(return_value=Status.EXECUTION_SUCCESS)
     @service_check(
         client="_manipulation_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT
     )
-    def pick_object(self, object_name: str):
-        """Pick an object by name"""
+    def pick_object(self, object_name: str, in_configuration: bool = False):
+        """Pick an object by name
+        object_name: name of the object to pick
+        in_configuration: True if the object is in the configuration"""
         # if not self._manipulation_action_client.wait_for_server(timeout_sec=TIMEOUT):
         #     Logger.error(self.node, "Manipulation action server not available")
         #     return Status.EXECUTION_ERROR
@@ -270,6 +305,7 @@ class ManipulationTasks:
         goal_msg = ManipulationAction.Goal()
         goal_msg.task_type = ManipulationTask.PICK
         goal_msg.pick_params.object_name = object_name
+        goal_msg.pick_params.in_configuration = in_configuration
 
         future = self._manipulation_action_client.send_goal_async(goal_msg)
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
@@ -321,13 +357,76 @@ class ManipulationTasks:
             return Status.EXECUTION_ERROR
         return Status.EXECUTION_SUCCESS
 
+    def place_on_shelf(self, plane_height: int, tolerance: int):
+        # if not self._manipulation_action_client.wait_for_server(timeout_sec=TIMEOUT):
+        #     Logger.error(self.node, "Manipulation action server not available")
+        #     return Status.EXECUTION_ERROR
+
+        goal_msg = ManipulationAction.Goal()
+        goal_msg.task_type = ManipulationTask.PLACE
+        goal_msg.place_params.is_shelf = True
+        goal_msg.scan_environment = True
+        if plane_height is not None and tolerance is not None:
+            goal_msg.place_params.table_height = plane_height
+            goal_msg.place_params.table_height_tolerance = tolerance
+        future = self._manipulation_action_client.send_goal_async(goal_msg)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+        if future.result() is None:
+            Logger.error(self.node, "Failed to send place request")
+            return Status.EXECUTION_ERROR
+        Logger.info(self.node, "Place in shelf request sent")
+        # wait for result
+        result_future = future.result().get_result_async()
+        rclpy.spin_until_future_complete(self.node, result_future)
+        result = result_future.result().result
+        Logger.info(self.node, f"Place in shelf result: {result}")
+        if result.success:
+            Logger.success(self.node, "Place request successful")
+        else:
+            Logger.error(self.node, "Place request failed")
+            return Status.EXECUTION_ERROR
+        return Status.EXECUTION_SUCCESS
+
     def pan_to(self, degrees: float):
         joint_positions = self.get_joint_positions(degrees=True)
         joint_positions["joint1"] = joint_positions["joint1"] - degrees
-        self.move_joint_positions(joint_positions=joint_positions, velocity=0.5, degrees=True)
+        self.move_joint_positions(joint_positions=joint_positions, velocity=0.75, degrees=True)
 
     def move_to_position(self, named_position: str):
-        self.move_joint_positions(named_position=named_position, velocity=0.5, degrees=True)
+        self.move_joint_positions(named_position=named_position, velocity=0.75, degrees=True)
+
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
+    @service_check(
+        client="_fix_position_to_plane_client", return_value=Status.TERMINAL_ERROR, timeout=TIMEOUT
+    )
+    def get_optimal_position_for_plane(
+        self,
+        est_heigth: float,
+        tolerance: float = 0.2,
+        table_or_shelf: bool = True,
+        approach_plane=True,
+    ):
+        """Fix the robot to a plane
+        table_or_shelf: True for table, False for shelf
+        """
+        req = GetOptimalPositionForPlane.Request()
+        req.plane_est_min_height = est_heigth - tolerance
+        req.plane_est_max_height = est_heigth + tolerance
+        req.table_or_shelf = table_or_shelf
+        req.approach_plane = approach_plane
+
+        future = self._fix_position_to_plane_client.call_async(req)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=20.0)
+        result = future.result()
+        if result is None:
+            Logger.error(self.node, "Failed to get optimal position for plane")
+            return Status.EXECUTION_ERROR
+        result: GetOptimalPositionForPlane.Response
+        if result.is_valid:
+            Logger.success(self.node, f"Optimal position for plane: {result.pt1}")
+            return
+        Logger.error(self.node, "Invalid position for plane")
+        return Status.EXECUTION_ERROR
 
 
 if __name__ == "__main__":

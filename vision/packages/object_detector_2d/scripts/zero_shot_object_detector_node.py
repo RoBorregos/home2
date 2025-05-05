@@ -19,7 +19,7 @@ from frida_constants.vision_constants import (
     CAMERA_TOPIC,
     DEPTH_IMAGE_TOPIC,
     CAMERA_INFO_TOPIC,
-    DETECTIONS_TOPIC,
+    ZERO_SHOT_DETECTIONS_TOPIC,
     ZERO_SHOT_DETECTIONS_IMAGE_TOPIC,
     ZERO_SHOT_DETECTIONS_POSES_TOPIC,
     ZERO_SHOT_DETECTIONS_3D_TOPIC,
@@ -31,13 +31,13 @@ from frida_constants.vision_constants import (
 )
 from object_detector_node import object_detector_node
 
-MODELS_PATH = str(pathlib.Path(__file__).parent) + "/../models/"
+MODELS_PATH = str(pathlib.Path(__file__).parent) + "/models/"
 
 ARGS = {
     "RGB_IMAGE_TOPIC": CAMERA_TOPIC,
     "DEPTH_IMAGE_TOPIC": DEPTH_IMAGE_TOPIC,
     "CAMERA_INFO_TOPIC": CAMERA_INFO_TOPIC,
-    "DETECTIONS_TOPIC": DETECTIONS_TOPIC,
+    "DETECTIONS_TOPIC": ZERO_SHOT_DETECTIONS_TOPIC,
     "DETECTIONS_IMAGE_TOPIC": ZERO_SHOT_DETECTIONS_IMAGE_TOPIC,
     "DETECTIONS_POSES_TOPIC": ZERO_SHOT_DETECTIONS_POSES_TOPIC,
     "DETECTIONS_3D_TOPIC": ZERO_SHOT_DETECTIONS_3D_TOPIC,

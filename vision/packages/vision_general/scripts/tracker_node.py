@@ -6,6 +6,7 @@ re-id them if necessary
 """
 
 import cv2
+import time
 from ultralytics import YOLO
 from PIL import Image as PILImage
 import tqdm
@@ -23,9 +24,7 @@ import rclpy
 from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo
-from geometry_msgs.msg import Point, PointStamped
-from tf2_ros import Buffer, TransformListener
-from tf2_geometry_msgs import do_transform_point
+from geometry_msgs.msg import Point
 
 from vision_general.utils.reid_model import (
     load_network,
@@ -34,9 +33,9 @@ from vision_general.utils.reid_model import (
     get_structure,
 )
 
-from std_srvs.srv import SetBool
-from frida_interfaces.srv import TrackBy
-from vision_general.pose_detection import PoseDetection
+from std_srvs.srv import SetBool, Trigger
+from frida_interfaces.srv import TrackBy, CropQuery
+from pose_detection import PoseDetection
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
     SET_TARGET_TOPIC,
@@ -46,6 +45,8 @@ from frida_constants.vision_constants import (
     RESULTS_TOPIC,
     CAMERA_INFO_TOPIC,
     CENTROID_TOIC,
+    CROP_QUERY_TOPIC,
+    IS_TRACKING_TOPIC
 )
 from frida_constants.vision_enums import DetectBy
 
@@ -56,6 +57,7 @@ class SingleTracker(Node):
     def __init__(self):
         super().__init__("tracker_node")
         self.bridge = CvBridge()
+        self.callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
 
         self.image_subscriber = self.create_subscription(
             Image, CAMERA_TOPIC, self.image_callback, 10
@@ -77,11 +79,19 @@ class SingleTracker(Node):
             TrackBy, SET_TARGET_BY_TOPIC, self.set_target_by_callback
         )
 
-        self.results_publisher = self.create_publisher(PointStamped, RESULTS_TOPIC, 10)
+        self.get_is_tracking_service = self.create_service(
+            Trigger, IS_TRACKING_TOPIC, self.get_is_tracking_callback
+        )
+
+        self.results_publisher = self.create_publisher(Point, RESULTS_TOPIC, 10)
 
         self.image_publisher = self.create_publisher(Image, TRACKER_IMAGE_TOPIC, 10)
 
         self.centroid_publisher = self.create_publisher(Point, CENTROID_TOIC, 10)
+
+        self.moondream_client = self.create_client(
+            CropQuery, CROP_QUERY_TOPIC, callback_group=self.callback_group
+        )
 
         self.verbose = self.declare_parameter("verbose", True)
 
@@ -91,7 +101,9 @@ class SingleTracker(Node):
         self.setup()
         self.create_timer(0.1, self.run)
         self.create_timer(0.01, self.publish_image)
-        
+
+        self.is_tracking_result = False
+
     def setup(self):
         """Load models and initial variables"""
         self.target_set = False
@@ -128,6 +140,15 @@ class SingleTracker(Node):
 
         pbar.close()
         self.get_logger().info("Single Tracker Ready")
+
+    def get_is_tracking_callback(self, request, response):
+        response = Trigger.Response()
+        response.success = self.is_tracking_result
+        if self.is_tracking_result:
+            self.get_logger().info("Tracking")
+        else:
+            self.get_logger().info("Not racking")
+        return response
 
     def image_callback(self, data):
         """Callback to receive image from camera"""
@@ -188,6 +209,7 @@ class SingleTracker(Node):
         """Set the target to track (Default: Largest person in frame)"""
         if self.image is None:
             self.get_logger().warn("No image available")
+            self.is_tracking_result = False
             return False
 
         self.get_logger().info(f"Setting target by {track_by} with value {value}")
@@ -215,7 +237,7 @@ class SingleTracker(Node):
 
                 # Get class name
                 try:
-                    track_id = 1
+                    track_id = box.id[0].item()
                 except Exception as e:
                     print("Track id exception: ", e)
                     track_id = -1
@@ -241,18 +263,42 @@ class SingleTracker(Node):
 
                     if track_by == DetectBy.GESTURES.value:
                         pose = self.pose_detection.detectGesture(cropped_image)
+                        response_clean = pose.value
 
                     elif track_by == DetectBy.POSES.value:
-                        pose = self.pose_detection.detectPose(cropped_image)
+                        prompt = "Respond 'standing' if the person in the image is standing, 'sitting' if the person in the image is sitting, 'lying down' if the person in the image is lying down or 'unknown' if the person is not doing any of the previous."
+                        status, response_q = self.moondream_crop_query(
+                            prompt, [float(y1), float(x1), float(y2), float(x2)]
+                        )
 
-                    if pose.value == value:
-                        self.success(f"Target found by {track_by}: {pose.value}")
+                        if status:
+                            self.get_logger().info(f"The person is {response_q}.")
+                            response_clean = response_q.replace(" ", "_")
+                            response_clean = response_clean.replace("_", "", 1)
+
+                    elif track_by == DetectBy.COLOR.value:
+                        prompt = f"Reply only with 1 if the person is wearing {value}. Otherwise, reply only with 0."
+                        status, response_q = self.moondream_crop_query(
+                            prompt, [float(y1), float(x1), float(y2), float(x2)]
+                        )
+                        if status:
+                            response_clean = response_q.strip()
+
+                    if response_clean == value or response_clean == "1":
+                        if pose.value == value:
+                            self.success(f"Target found by {track_by}: {pose.value}")
+                        elif response_clean == value:
+                            self.success(
+                                f"Target found by {track_by}: {response_clean}"
+                            )
+                        elif response_clean == "1":
+                            self.success(f"Target found by {track_by}: {value}")
                         largest_person["id"] = track_id
                         largest_person["area"] = area
                         largest_person["bbox"] = (x1, y1, x2, y2)
                     else:
                         self.get_logger().warn(
-                            f"Person detected with {track_by}: {pose.value}"
+                            f"Person detected with {track_by}: {response_clean} but not {value}"
                         )
 
         if largest_person["id"] is not None:
@@ -279,6 +325,44 @@ class SingleTracker(Node):
         else:
             self.get_logger().warn("No person found")
             return False
+
+    def wait_for_future(self, future, timeout=5):
+        start_time = time.time()
+        while future is None and (time.time() - start_time) < timeout:
+            pass
+        if future is None:
+            return False
+        while not future.done() and (time.time() - start_time) < timeout:
+            print("Waiting for future to complete...")
+        return future
+
+    def moondream_crop_query(self, prompt: str, bbox: list[float]) -> tuple[int, str]:
+        """Makes a query of the current image using moondream."""
+        self.get_logger().info(f"Querying image with prompt: {prompt}")
+
+        height, width = self.image.shape[:2]
+
+        ymin = bbox[0] / height
+        xmin = bbox[1] / width
+        ymax = bbox[2] / height
+        xmax = bbox[3] / width
+
+        request = CropQuery.Request()
+        request.query = prompt
+        request.ymin = ymin
+        request.xmin = xmin
+        request.ymax = ymax
+        request.xmax = xmax
+
+        future = self.moondream_client.call_async(request)
+        future = self.wait_for_future(future, 15)
+        result = future.result()
+        if result is None:
+            self.get_logger().error("Moondream service returned None.")
+            return 0, "0"
+        if result.success:
+            self.get_logger().info(f"Moondream result: {result.result}")
+            return 1, result.result
 
     def run(self):
         """Main loop to run the tracker"""
@@ -420,54 +504,71 @@ class SingleTracker(Node):
                                 )
                                 break
             if person_in_frame:
+                # if len(self.depth_image) > 0:
+                #     self.is_tracking_result = True
+                #     coords = Point()
+                #     cropped_image = self.frame[
+                #         self.person_data["coordinates"][1] : self.person_data[
+                #             "coordinates"
+                #         ][3],
+                #         self.person_data["coordinates"][0] : self.person_data[
+                #             "coordinates"
+                #         ][2],
+                #     ]
+                #     point2D = self.pose_detection.getCenterPerson(cropped_image)
+                #     if point2D[0] is None:
+                #         self.get_logger().warn("No person detected")
+                #         return
+                #     print(point2D[0], point2D[1])
+                #     # point2D = get2DCentroid(self.person_data["coordinates"], self.frame)
+                #     point2D_x_coord = float(point2D[1])
+                #     point2D_x_coord_normalized = (
+                #         point2D_x_coord / (self.frame.shape[1] / 2)
+                #     ) - 1
+                #     point2Dpoint = Point()
+                #     point2Dpoint.x = float(point2D_x_coord_normalized)
+                #     point2Dpoint.y = 0.0
+                #     point2Dpoint.z = 0.0
+                #     # self.get_logger().info(f"frame_shape: {self.frame.shape[1]} Point2D: {point2D[1]} normalized_point2D: {point2D_x_coord_normalized}")
+                #     self.centroid_publisher.publish(point2Dpoint)
+
+                #     depth = get_depth(
+                #         self.depth_image, [int(point2D[0]), int(point2D[1])]
+                #     )
+                #     point3D = deproject_pixel_to_point(self.imageInfo, point2D, depth)
+                #     point3D = float(point3D[0]), float(point3D[1]), float(point3D[2])
+                #     coords.x = point3D[0]
+                #     coords.y = point3D[1]
+                #     coords.z = point3D[2]
+                #     self.results_publisher.publish(coords)
                 if len(self.depth_image) > 0:
-                    try:
-                        point2D = get2DCentroid(self.person_data["coordinates"], self.frame)
-                        point2D_x_coord = float(point2D[1])
-                        point2D_x_coord_normalized = (
-                            point2D_x_coord / (self.frame.shape[1] / 2)
-                        ) - 1
-                        point2Dpoint = Point()
-                        point2Dpoint.x = float(point2D_x_coord_normalized)
-                        point2Dpoint.y = 0.0
-                        point2Dpoint.z = 0.0
-                        # self.get_logger().info(f"frame_shape: {self.frame.shape[1]} Point2D: {point2D[1]} normalized_point2D: {point2D_x_coord_normalized}")
-                        self.centroid_publisher.publish(point2Dpoint)
-
-                        point_3D = PointStamped(
-                        header=Header(frame_id="zed_camera_link", stamp = self.get_clock().now().to_msg()),
-                        point=Point(),
-                        )
-                        point_centroid = get2DCentroid(self.person_data["coordinates"], self.depth_image)
-                        depth = get_depth(self.depth_image, point_centroid)
-                        point_3D_ = deproject_pixel_to_point(self.imageInfo, point_centroid, depth)
-                    
-                        point_3D.point.x = float(point_3D_[0])
-                        point_3D.point.y = float(point_3D_[1])
-                        point_3D.point.z = float(point_3D_[2])
-
-                        original_orientation = m.atan2(point_3D.point.y, point_3D.point.x)
-                        original_distance = m.sqrt(point_3D.point.x ** 2 + point_3D.point.y ** 2)
-
-                        # Transform the point
-                        transformed_orientation = original_orientation + m.pi*(1.25)
-
-                        point_3D.point.x = original_distance * m.cos(transformed_orientation)
-                        point_3D.point.y = original_distance * m.sin(transformed_orientation)
-
-                        transform = self.tf_buffer.lookup_transform(
-                        'map',
-                        point_3D.header.frame_id,
-                        rclpy.time.Time(),
-                        )   
-                        transformed_point = do_transform_point(point_3D, transform)
-                        
-                        self.results_publisher.publish(transformed_point)
-                    except Exception as e:
-                        self.get_logger().warn(f"Failed to transform point: {e}")
+                    self.is_tracking_result = True
+                    coords = Point()
+                    point2D = get2DCentroid(self.person_data["coordinates"], self.frame)
+                    point2D_x_coord = float(point2D[1])
+                    point2D_x_coord_normalized = (
+                        point2D_x_coord / (self.frame.shape[1] / 2)
+                    ) - 1
+                    point2Dpoint = Point()
+                    point2Dpoint.x = float(point2D_x_coord_normalized)
+                    point2Dpoint.y = 0.0
+                    point2Dpoint.z = 0.0
+                    # self.get_logger().info(f"frame_shape: {self.frame.shape[1]} Point2D: {point2D[1]} normalized_point2D: {point2D_x_coord_normalized}")
+                    self.centroid_publisher.publish(point2Dpoint)
+                    depth = get_depth(self.depth_image, point2D)
+                    point3D = deproject_pixel_to_point(self.imageInfo, point2D, depth)
+                    point3D = float(point3D[0]), float(point3D[1]), float(point3D[2])
+                    coords.x = point3D[0]
+                    coords.y = point3D[1]
+                    coords.z = point3D[2]
+                    self.results_publisher.publish(coords)
                 else:
                     self.get_logger().warn("Depth image not available")
-
+                    self.is_tracking_result = False
+            else:
+                self.is_tracking_result = False
+        else:
+            self.is_tracking_result = False
 
 def main(args=None):
     rclpy.init(args=args)

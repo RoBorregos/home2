@@ -6,57 +6,61 @@ available seats. Tasks for receptionist
 commands.
 """
 
+import time
+
 import rclpy
 from frida_constants.vision_classes import BBOX, ShelfDetection
 from frida_constants.vision_constants import (
+    BEVERAGE_TOPIC,
+    CHECK_PERSON_TOPIC,
+    COUNT_BY_COLOR_TOPIC,
+    COUNT_BY_POSE_TOPIC,
+    COUNT_BY_GESTURE_TOPIC,
+    CROP_QUERY_TOPIC,
+    DETECTION_HANDLER_TOPIC_SRV,
+    FIND_SEAT_TOPIC,
     FOLLOW_BY_TOPIC,
     FOLLOW_TOPIC,
+    PERSON_LIST_TOPIC,
     PERSON_NAME_TOPIC,
+    POINTING_OBJECT_SERVICE,
+    POSE_GESTURE_TOPIC,
+    QUERY_TOPIC,
     SAVE_NAME_TOPIC,
+    SET_TARGET_BY_TOPIC,
     SET_TARGET_TOPIC,
     SHELF_DETECTION_TOPIC,
-    SET_TARGET_BY_TOPIC,
-    FIND_SEAT_TOPIC,
-    CHECK_PERSON_TOPIC,
-    QUERY_TOPIC,
-    CROP_QUERY_TOPIC,
-    BEVERAGE_TOPIC,
-    POINTING_OBJECT_SERVICE,
-    PERSON_LIST_TOPIC,
-    COUNT_BY_GESTURES_TOPIC,
-    COUNT_BY_POSE_TOPIC,
-    POSE_GESTURE_TOPIC,
-    COUNT_BY_COLOR_TOPIC,
-    DETECTION_HANDLER_TOPIC_SRV,
+    IS_TRACKING_TOPIC,
 )
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.msg import ObjectDetection, PersonList
 from frida_interfaces.srv import (
     BeverageLocation,
+    CountByColor,
+    CountByPose,
     CropQuery,
+    DetectionHandler,
     DetectPointingObject,
     FindSeat,
+    PersonPoseGesture,
     Query,
     SaveName,
     ShelfDetectionHandler,
-    DetectionHandler,
     TrackBy,
-    CountByPose,
-    CountByGesture,
-    CountByColor,
-    PersonPoseGesture,
 )
 from geometry_msgs.msg import Point, PointStamped
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from std_msgs.msg import String
-from std_srvs.srv import SetBool
+from std_srvs.srv import SetBool, Trigger
 from utils.decorators import mockable, service_check
 from utils.logger import Logger
 from utils.status import Status
 import time
+import math
 
 from utils.task import Task
+
 
 TIMEOUT = 5.0
 DETECTION_HANDLER_TOPIC_SRV = DETECTION_HANDLER_TOPIC_SRV
@@ -106,13 +110,16 @@ class VisionTasks:
         self.detect_person_action_client = ActionClient(self.node, DetectPerson, CHECK_PERSON_TOPIC)
 
         self.count_by_pose_client = self.node.create_client(CountByPose, COUNT_BY_POSE_TOPIC)
-        self.count_by_gesture_client = self.node.create_client(
-            CountByGesture, COUNT_BY_GESTURES_TOPIC
-        )
+
+        self.count_by_gesture_client = self.node.create_client(CountByPose, COUNT_BY_GESTURE_TOPIC)
+
         self.find_person_info_client = self.node.create_client(
             PersonPoseGesture, POSE_GESTURE_TOPIC
         )
+
         self.count_by_color_client = self.node.create_client(CountByColor, COUNT_BY_COLOR_TOPIC)
+        
+        self.get_track_person_client = self.node.create_client(Trigger, IS_TRACKING_TOPIC)
 
         self.services = {
             Task.RECEPTIONIST: {
@@ -128,6 +135,7 @@ class VisionTasks:
             },
             Task.HELP_ME_CARRY: {
                 "track_person": {"client": self.track_person_client, "type": "service"},
+                "is_tracking_person": {"client": self.get_track_person_client,"type": "service"},
                 "moondream_crop_query": {
                     "client": self.moondream_crop_query_client,
                     "type": "service",
@@ -153,12 +161,12 @@ class VisionTasks:
                     "client": self.find_person_info_client,
                     "type": "service",
                 },
-                "count_by_pose": {
-                    "client": self.count_by_pose_client,
-                    "type": "service",
-                },
                 "count_by_gesture": {
                     "client": self.count_by_gesture_client,
+                    "type": "service",
+                },
+                "count_by_pose": {
+                    "client": self.count_by_pose_client,
                     "type": "service",
                 },
                 "count_by_color": {
@@ -323,7 +331,7 @@ class VisionTasks:
             future = self.object_detector_client.call_async(request)
             rclpy.spin_until_future_complete(self.node, future, timeout_sec=timeout)
             result = future.result()
-            print(f"result: {result}")
+            # print(f"result: {result}")
 
             if not result.success:
                 Logger.warn(self.node, "No object detected")
@@ -354,11 +362,14 @@ class VisionTasks:
                 object_detection.y = (detection.ymin + detection.ymax) / 2
 
                 # TODO transorm if the frame_id is not 'zed...camera_frame'
-                object_detection.distance = detection.point3d.point.z
+                object_detection.distance = math.sqrt(
+                    detection.point3d.point.x**2
+                    + detection.point3d.point.y**2
+                    + detection.point3d.point.z**2
+                )
                 object_detection.px = detection.point3d.point.x
                 object_detection.py = detection.point3d.point.y
                 object_detection.pz = detection.point3d.point.z
-                print(f"example_detection: {detection}")
                 detections.append(object_detection)
         except Exception as e:
             Logger.error(self.node, f"Error detecting objects: {e}")
@@ -540,6 +551,29 @@ class VisionTasks:
         Logger.success(self.node, f"Following face success: {name}")
         return Status.EXECUTION_SUCCESS
 
+    @mockable(return_value=None, delay=2)
+    @service_check("get_track_person_client", Status.EXECUTION_ERROR, TIMEOUT)
+    def get_track_person(self):
+        """Get the track person status"""
+        Logger.info(self.node, "Getting track person status")
+        request = Trigger.Request()
+        try:
+            future = self.get_track_person_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+            result = future.result()
+
+            if not result.success:
+                Logger.warn(self.node, "No person found")
+                return Status.TARGET_NOT_FOUND
+
+        except Exception as e:
+            Logger.error(self.node, f"Error getting track person status: {e}")
+            return Status.EXECUTION_ERROR
+
+        Logger.success(self.node, "Track person status success")
+        return Status.EXECUTION_SUCCESS
+
+
     @mockable(return_value=Status.EXECUTION_SUCCESS, delay=2)
     @service_check("track_person_client", Status.EXECUTION_ERROR, TIMEOUT)
     def track_person(self, track: bool = True):
@@ -593,9 +627,9 @@ class VisionTasks:
     @mockable(return_value=[Status.EXECUTION_SUCCESS, 100])
     @service_check("count_by_pose_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
     def count_by_pose(self, pose: str) -> tuple[int, int]:
-        """Count the number of people with the requested pose"""
+        """Count the number of people with the requested pose or gesture"""
 
-        Logger.info(self.node, "Counting people by pose")
+        Logger.info(self.node, "Counting people by pose or gesture")
         request = CountByPose.Request()
         request.pose_requested = pose
         request.request = True
@@ -606,7 +640,6 @@ class VisionTasks:
             result = future.result()
 
             if not result.success:
-                Logger.warn(self.node, "No pose found")
                 return Status.TARGET_NOT_FOUND, 300
 
         except Exception as e:
@@ -623,7 +656,7 @@ class VisionTasks:
 
         Logger.info(self.node, "Counting people by gesture")
         request = CountByPose.Request()
-        request.gesture_requested = gesture
+        request.pose_requested = gesture
         request.request = True
 
         try:
@@ -639,7 +672,7 @@ class VisionTasks:
             Logger.error(self.node, f"Error counting people by gesture: {e}")
             return Status.EXECUTION_ERROR, 300
 
-        Logger.success(self.node, f"People with gesture {gesture}: {result.count}")
+        Logger.success(self.node, f"People with {gesture}: {result.count}")
         return Status.EXECUTION_SUCCESS, result.count
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, 100))

@@ -11,6 +11,8 @@ CONTAINER_NAME="home2-manipulation" # Service name in docker-compose yaml file
 
 rebuild=0
 
+mkdir -p install build log
+
 # Check if --rebuild flag is passed
 if [ "$1" == "--rebuild" ]; then
     echo "Rebuilding image..."

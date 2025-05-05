@@ -24,17 +24,20 @@ class PickManager:
     def __init__(self, node):
         self.node = node
 
-    def execute(self, object_name: str, point: PointStamped) -> Tuple[bool, PickResult]:
+    def execute(
+        self, object_name: str, point: PointStamped, pick_params
+    ) -> Tuple[bool, PickResult]:
         self.node.get_logger().info("Executing Pick Task")
         self.node.get_logger().info("Setting initial joint positions")
 
         # time.sleep(10)
         # Set initial joint positions
-        send_joint_goal(
-            move_joints_action_client=self.node._move_joints_client,
-            named_position="table_stare",
-            velocity=0.3,
-        )
+        if not pick_params.in_configuration:
+            send_joint_goal(
+                move_joints_action_client=self.node._move_joints_client,
+                named_position="table_stare",
+                velocity=0.75,
+            )
         if point is not None and (
             point.point.x != 0 and point.point.y != 0 and point.point.z != 0
         ):
@@ -74,7 +77,15 @@ class PickManager:
                 self.node.grasp_detection_client, object_cluster, CFG_PATH
             )
 
-            grasp_poses, grasp_scores = grasp_poses[:5], grasp_scores[:5]
+            # sort by score
+            grasp_poses, grasp_scores = zip(
+                *sorted(
+                    zip(grasp_poses, grasp_scores),
+                    key=lambda x: x[1],
+                    reverse=True,
+                )
+            )
+            grasp_poses, grasp_scores = grasp_poses[:7], grasp_scores[:7]
 
             if len(grasp_poses) == 0:
                 self.node.get_logger().error("No grasp poses detected")
@@ -97,6 +108,9 @@ class PickManager:
             if pick_result.success:
                 pick_result_success = True
                 break
+            else:
+                # give time for new gpd
+                time.sleep(1)
 
         if not pick_result_success:
             self.node.get_logger().error("Pick motion failed")

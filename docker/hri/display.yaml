@@ -1,6 +1,5 @@
 services:
   display:
-    profiles: [receptionist, carry, gpsr]
 
     container_name: home2-hri-display
     image: roborregos/home2:hri-display

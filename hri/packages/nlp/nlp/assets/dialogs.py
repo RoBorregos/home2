@@ -254,7 +254,7 @@ Instructions:
 - Provide, for each shelf:
   1. 'objects_to_add': a list of new objects (from the table) that should be placed on that shelf.
   2. 'classification_tag': a short descriptive name of the shelf's category (e.g., "dairy", "fruit", "snacks").
-- For the empty shelf, you can assign any object from the table that doesn't fit into the other shelves.
+- For the empty shelf, you can assign any object from the table that doesn't fit into the other shelves. Only for shelves that are empty and have no objects to add, otherwise, you shouldnt add any other shelves and should fit all categories in the given shelves.
 
 Output format:
 A dictionary where:
@@ -309,5 +309,48 @@ def format_response(response):
         {
             "role": "user",
             "content": response,
+        },
+    ]
+
+
+def get_answer_question_dialog(contexts, question):
+    if contexts:
+        context_text = "\n".join(contexts)
+        user_content = f"{context_text}\n\n{question}"
+    else:
+        user_content = question
+
+    return [
+        {
+            "role": "system",
+            "content": (
+                "You are a concise and knowledgeable assistant. "
+                "Answer clearly and directly using only the provided information. "
+                "Do not mention where the information came from. "
+                "Avoid long explanations, speculation, or unnecessary details. "
+                "Just provide the best possible answer."
+            ),
+        },
+        {
+            "role": "user",
+            "content": user_content,
+        },
+    ]
+
+
+def get_previous_command_answer(context, question):
+    return [
+        {
+            "role": "system",
+            "content": (
+                "You are an intelligent assistant. You will be presented with a question, "
+                "and your task is to answer it to the best of your ability using the provided context. "
+                f"Here is the context:\n\n{context}\n\n"
+                "Answer the question clearly and concisely."
+            ),
+        },
+        {
+            "role": "user",
+            "content": question,
         },
     ]

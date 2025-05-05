@@ -9,16 +9,16 @@ from launch_ros.substitutions import FindPackageShare
 from launch.conditions import UnlessCondition, IfCondition
 
 def launch_setup(context, *args, **kwargs):
-    lifecycle_nodes = ['map_server', 'amcl']
+    lifecycle_nodes = ['map_server','amcl']
     rviz_config_dir = os.path.join(get_package_share_directory('nav_main'), 'rviz_configs', 'receptionist.rviz')
     nav_dir = get_package_share_directory('nav_main')
     use_sim = LaunchConfiguration('use_sim', default='false')
     localization = LaunchConfiguration('localization', default='true')
     rtabmap_viz = LaunchConfiguration('rtabmap_viz', default='false')
-    default_value=os.path.join(nav_dir, 'config', 'new_params.yaml'),
+    default_value=os.path.join(nav_dir, 'config', 'nav2_params.yaml'),
     params_file = LaunchConfiguration('params_file', default=default_value)
-    use_amcl = LaunchConfiguration('use_amcl', default='false')
-    map_route = LaunchConfiguration('map', default=os.path.join(get_package_share_directory('nav_main'), 'maps', 'Lab14marzo.yaml'))
+    use_amcl = LaunchConfiguration('use_amcl', default='true')
+    map_route = LaunchConfiguration('map', default=os.path.join(get_package_share_directory('nav_main'), 'maps', 'may2map.yaml'))
     show_rviz = LaunchConfiguration('show_rviz', default='true')
     
     nav_basics = IncludeLaunchDescription(
@@ -56,13 +56,19 @@ def launch_setup(context, *args, **kwargs):
         condition=UnlessCondition(use_amcl)
         )
     
-    map_server = Node(
+    map_server_amcl = Node(
          package='nav2_map_server',
             executable='map_server',
             name='map_server',
             output='screen',
             parameters=[{'yaml_filename': map_route,
                          'use_sim_time': use_sim}],
+    )
+    map_server = Node(
+         package='nav_main',
+        executable='map_publisher.py',
+        name='map_publisher',
+        output='screen',
         condition=IfCondition(use_amcl)
     )
     amcl_server = Node(
@@ -70,7 +76,8 @@ def launch_setup(context, *args, **kwargs):
             executable='amcl',
             name='amcl',
             output='screen',
-            parameters=[{'use_sim_time': use_sim}],
+            parameters=[{'use_sim_time': use_sim},
+                        {'always_send_full_map': True}],
             condition=IfCondition(use_amcl)
     )
     
@@ -100,6 +107,7 @@ def launch_setup(context, *args, **kwargs):
         amcl_server,
         lifecycle_node,
         rviz_node,
+        map_server_amcl,
     ]
 
 def generate_launch_description():
