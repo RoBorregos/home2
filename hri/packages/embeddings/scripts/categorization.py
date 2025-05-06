@@ -225,6 +225,7 @@ class Embeddings(Node):
                 context = ""
 
             grouped_results = []
+            self.get_logger().info(f"Query Entry request received{request.query}")
             for query in request.query:
                 query_with_context = query + context
                 if request.collection == "command_history":
@@ -236,15 +237,19 @@ class Embeddings(Node):
                     results_raw = self.chroma_adapter.query(
                         request.collection, [query_with_context], request.topk
                     )
+
                 docs = results_raw.get("documents", [[]])
                 metas = results_raw.get("metadatas", [[]])
+                embeddings = results_raw.get("embeddings", [[]])
+
                 formatted_results = []
-                for doc, meta in zip(docs, metas):
+                for doc, meta, embedding in zip(docs, metas, embeddings):
                     if isinstance(meta, list):
                         meta = meta[0]
                     entry = {
                         "document": [doc],
                         "metadata": meta,
+                        "embedding": embedding,
                     }
                     if "original_name" in meta:
                         entry["document"] = meta["original_name"]

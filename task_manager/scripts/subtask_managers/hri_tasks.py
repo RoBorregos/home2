@@ -714,6 +714,20 @@ class HRITasks(metaclass=SubtaskMeta):
     def get_timestamps(self, query_result):
         return self.get_metadata_key(query_result, "timestamp")
 
+    def get_embeddings(self, query_result):
+        """
+        Extracts the field from the metadata of a query result.
+
+        Args:
+            query_result (tuple): The query result tuple (status, list of JSON strings)
+
+        Returns:
+            list: The 'context' field from metadata, or empty string if not found
+        """
+        query_result = query_result[1]
+        self.node.get_logger().info(f"EMBEDDINGS : {query_result}")
+        return
+
 
 if __name__ == "__main__":
     rclpy.init()

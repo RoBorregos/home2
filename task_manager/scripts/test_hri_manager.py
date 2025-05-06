@@ -143,10 +143,11 @@ class TestHriManager(Node):
         results_location = hri.query_location("kitchen table", top_k=1)
         subarea = hri.get_subarea(results_location)
         area = hri.get_area(results_location)
+        embeddings = hri.get_embeddings(results_location)
         self.get_logger().info(f"Subarea: {subarea}")
         self.get_logger().info(f"Area: {area}")
         self.get_logger().info(f"Query results: {results_location}")
-
+        self.get_logger().info(f"Embeddings{embeddings}")
         # ---- save_command_history ----
         self.get_logger().info("Saving command history for add_item command")
 

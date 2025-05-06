@@ -52,7 +52,9 @@ class ChromaAdapter:
     def get_collection(self, collection_name):
         """Method to get a collection; returns a collection object"""
         try:
-            return self.client.get_collection(collection_name)
+            return self.client.get_collection(
+                collection_name, embedding_function=self.sentence_transformer_ef
+            )
         except Exception:
             raise ValueError(f"The collection is missing {collection_name}")
 
@@ -78,7 +80,7 @@ class ChromaAdapter:
         results = collection_.query(
             query_texts=query,
             n_results=top_k,
-            include=["metadatas", "documents", "distances"],
+            include=["embeddings", "documents", "metadatas", "distances"],
         )
 
         return results  # Return only the extracted names
@@ -175,8 +177,7 @@ class ChromaAdapter:
 
 def main():
     client_ = ChromaAdapter()
-    results = client_.list_collections()
-    print(results)
+    print(client_.list_collections())
 
 
 if __name__ == "__main__":
