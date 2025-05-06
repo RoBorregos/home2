@@ -1,3 +1,11 @@
+from utils.baml_client.types import (
+    AnswerQuestion,
+    GetVisualInfo,
+    GoTo,
+    PickObject,
+    PlaceObject,
+    SayWithContext,
+)
 from utils.status import Status
 
 from subtask_managers.generic_tasks import GenericTask
@@ -10,7 +18,7 @@ class GPSRSingleTask(GenericTask):
 
     ## Nav
 
-    def go(self, complement="", characteristic=""):
+    def go_to(self, command: GoTo):
         """
         Navigate to a given location.
 
@@ -30,21 +38,19 @@ class GPSRSingleTask(GenericTask):
         Postconditions:
             - The robot is in the specified location
         """
-        self.subtask_manager.hri.say(f"I will go to {complement}.", wait=False)
-        # location = self.subtask_manager.hri.query_location(complement)
-        # area = self.subtask_manager.hri.get_area(location)
-        # subarea = self.subtask_manager.hri.get_subarea(location)
+        self.subtask_manager.hri.say(f"I will go to {command.location_to_go}.", wait=False)
+        location = self.subtask_manager.hri.query_location(command.location_to_go)
+        area = self.subtask_manager.hri.get_area(location)
+        subarea = self.subtask_manager.hri.get_subarea(location)
 
-        # self.subtask_manager.hri.node.get_logger().info(
-        #     f"Moving to {complement} in area: {area}, subarea: {subarea}"
-        # )
+        self.subtask_manager.hri.node.get_logger().info(f"Moving to {subarea} in {area}")
 
-        self.subtask_manager.nav.move_to_location("area", "subarea")
+        self.subtask_manager.nav.move_to_location(area, subarea)
 
-        return Status.EXECUTION_SUCCESS, "arrived to:" + complement
+        return Status.EXECUTION_SUCCESS, "arrived to:" + command.location_to_go
 
     ## Manipulation
-    def pick(self, complement: str, characteristic=""):
+    def pick_object(self, command: PickObject):
         """
         Picks an object from a designated picking spot.
 
@@ -68,12 +74,15 @@ class GPSRSingleTask(GenericTask):
         Pseudocode:
             - pick_object(complement)
         """
-        self.subtask_manager.hri.say(f"I will pick the {complement}.", wait=False)
+        self.subtask_manager.hri.say(f"I will pick the {command.object_to_pick}.", wait=False)
         current_try = 0
 
         while True:
             s, detections = self.subtask_manager.vision.detect_objects()
             current_try += 1
+
+            if len(detections) == 0:
+                self.subtask_manager.hri.say("I didn't found any object.")
             if s == Status.EXECUTION_SUCCESS:
                 break
             if current_try >= RETRIES:
@@ -83,11 +92,11 @@ class GPSRSingleTask(GenericTask):
                 return Status.TARGET_NOT_FOUND, ""
 
         labels = self.subtask_manager.vision.get_labels(detections)
-        s, object_to_pick = self.subtask_manager.hri.find_closest(labels, characteristic)
+        s, object_to_pick = self.subtask_manager.hri.find_closest(labels, command.object_to_pick)
         return self.subtask_manager.manipulation.pick_object(object_to_pick), ""
 
     ## Manipulation
-    def place(self, complement="", characteristic=""):
+    def place_object(self, command: PlaceObject):
         """
         Places an object in the available location.
 
@@ -116,7 +125,7 @@ class GPSRSingleTask(GenericTask):
         return self.subtask_manager.manipulation.place(), ""
 
     ## HRI
-    def contextual_say(self, complement: str, characteristic: str):
+    def say_with_context(self, command: SayWithContext | str):
         """
         Say something grounded on the information known to the robot, which can include the results of
         previous executions, robot information, and general knowledge information.
@@ -144,9 +153,12 @@ class GPSRSingleTask(GenericTask):
         Pseudocode:
             say(llm_response(complement, fetch_info(characteristic)))
         """
-        history = self.subtask_manager.hri.query_command_history(complement)
+        history = self.subtask_manager.hri.query_command_history(
+            command.user_instruction + command.previous_command_info
+        )
+        # TODO: Verify this works, because now there are two complements
         context = self.subtask_manager.hri.get_context(history)
-        complement = self.subtask_manager.hri.get_complement(history)
+        # complement = self.subtask_manager.hri.get_complement(history)
         # characteristic = self.subtask_manager.hri.get_characteristic(history)
         result = self.subtask_manager.hri.get_result(history)
         # status = self.subtask_manager.hri.get_status(history)
@@ -157,6 +169,7 @@ class GPSRSingleTask(GenericTask):
         return Status.EXECUTION_SUCCESS, "success"
 
     ## HRI
+    # Removed from the command dataset
     def say(self, complement: str, characteristic=""):
         """
         Makes the robot say the provided text to the user.
@@ -183,7 +196,7 @@ class GPSRSingleTask(GenericTask):
         return self.subtask_manager.hri.say(complement, wait=True), ""
 
     ## HRI
-    def ask_answer_question(self, complement="", characteristic=""):
+    def answer_question(self, command: AnswerQuestion):
         """
         Answers a user's question by asking, confirming, and responding.
 
@@ -228,13 +241,10 @@ class GPSRSingleTask(GenericTask):
             self.subtask_manager.hri.say("I am sorry, I could not understand your question.")
             return Status.TARGET_NOT_FOUND, ""
 
-        return self.contextual_say(
-            f"Please answer my question: {question}",
-            question,
-        )
+        return self.say_with_context(f"Please answer my question: {question}")
 
     ## Vision
-    def visual_info(self, complement: str, characteristic=""):
+    def get_visual_info(self, command: GetVisualInfo):
         """
         Retrieves visual information about an object based on the specified complement
         and optional characteristic.
@@ -260,5 +270,4 @@ class GPSRSingleTask(GenericTask):
         Postconditions:
             The robot saves the specified information for further use.
         """
-        characteristic = characteristic if len(characteristic) > 1 else None
-        return self.subtask_manager.vision.visual_info(complement, characteristic)
+        return self.subtask_manager.vision.visual_info(command.measure, command.object_category)

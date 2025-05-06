@@ -24,11 +24,12 @@ class PlaceManager:
         self.node.get_logger().info("Executing Place Task")
         self.node.get_logger().info("Setting initial joint positions")
         # Set initial joint positions
-        send_joint_goal(
-            move_joints_action_client=self.node._move_joints_client,
-            named_position="table_stare",
-            velocity=0.3,
-        )
+        if not place_params.is_shelf:
+            send_joint_goal(
+                move_joints_action_client=self.node._move_joints_client,
+                named_position="table_stare",
+                velocity=0.3,
+            )
 
         # Call Perception Service to get object cluster and generate collision objects
         self.node.get_logger().info("Generating place pose")
