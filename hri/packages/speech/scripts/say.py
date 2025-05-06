@@ -59,6 +59,7 @@ class Say(Node):
         self.declare_parameter("SPEAK_SERVICE", SPEAK_SERVICE)
         self.declare_parameter("model", "en_US-amy-medium")
         self.declare_parameter("offline", True)
+        self.declare_parameter("TTS_SERVER_IP", "127.0.0.1:50050")
 
         self.declare_parameter("SPEAKER_DEVICE_NAME", "default")
         self.declare_parameter("SPEAKER_INPUT_CHANNELS", 32)
@@ -95,6 +96,9 @@ class Say(Node):
 
         self.model = self.get_parameter("model").get_parameter_value().string_value
         self.offline = self.get_parameter("offline").get_parameter_value().bool_value
+        self.server_ip = (
+            self.get_parameter("TTS_SERVER_IP").get_parameter_value().string_value
+        )
 
         if not self.offline:
             self.connected = SpeechApiUtils.is_connected()
@@ -245,7 +249,7 @@ class Say(Node):
 
     def synthesize_voice_offline(self, output_path, text):
         try:
-            with grpc.insecure_channel("127.0.0.1:50050") as channel:
+            with grpc.insecure_channel(self.server_ip) as channel:
                 stub = tts_pb2_grpc.TTSServiceStub(channel)
                 response = stub.Synthesize(
                     tts_pb2.SynthesizeRequest(

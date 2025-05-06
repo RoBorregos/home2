@@ -10,3 +10,4 @@ say:
 
     model: "af_heart"
     offline: True
+    TTS_SERVER_IP: "127.0.0.1:50050"

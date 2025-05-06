@@ -1,3 +1,4 @@
+import argparse
 import grpc
 from concurrent import futures
 import os
@@ -14,7 +15,7 @@ import io
 
 class TTSService(tts_pb2_grpc.TTSServiceServicer):
     def __init__(self):
-        # Initialize the TTS pipeline once at service startup
+        # Initialize device
         device = "cpu"
         try:
             import torch
@@ -24,27 +25,36 @@ class TTSService(tts_pb2_grpc.TTSServiceServicer):
         except Exception:
             pass
         print("Using device:", device)
-        self.pipeline = KPipeline(lang_code="a", device=device)
-        # Original sample rate from kokoro
-        self.original_sample_rate = 24000  # Hz
-        # Target sample rate for audio playback - match ROS2 node's frequency
-        self.target_sample_rate = 48000  # Hz (match the ROS2 node's mixer.pre_init)
-        # Make sure the models directory exists
-        os.makedirs("models", exist_ok=True)
 
-        # Initialize pygame mixer once
+        # Initialize the TTS pipeline
+        self.pipeline = KPipeline(lang_code="a", device=device)
+        self.original_sample_rate = 24000
+        self.target_sample_rate = 48000
+
+        # Initialize pygame mixer
         mixer.pre_init(frequency=self.target_sample_rate, buffer=2048)
         mixer.init()
+
+        # Warm up the model
+        try:
+            print("Warming up Kokoro model...")
+            warmup_generator = self.pipeline(
+                "Hola, soy tu asistente.", voice="af_heart"
+            )
+            for i, (_, _, audio) in enumerate(warmup_generator):
+                if i > 0:
+                    break  # Just do one chunk to warm up
+            print("Model warm-up complete.")
+        except Exception as e:
+            print(f"Warm-up failed: {e}")
 
     def Synthesize(self, request, context):
         print(f"Received request to synthesize text: {request.text}")
         try:
-            output_path = "models/" + request.output_path
+            output_path = "audios/" + request.output_path
 
             # Process voice selection - default to af_heart if not specified
             voice = request.model if request.model else "af_heart"
-            if voice.endswith(".onnx"):  # Handle legacy piper model paths
-                voice = "af_heart"  # Default to af_heart for kokoro
 
             print(f"Using kokoro with voice: {voice}")
 
@@ -138,14 +148,20 @@ class TTSService(tts_pb2_grpc.TTSServiceServicer):
         print(f"Saved audio to {output_path}")
 
 
-def serve():
+def serve(port):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=4))
     tts_pb2_grpc.add_TTSServiceServicer_to_server(TTSService(), server)
-    server.add_insecure_port("[::]:50050")
-    print("Starting Kokoro TTS server on port 50050...")
+    server.add_insecure_port(f"[::]:{port}")
+    print(f"Starting Kokoro TTS server on port {port}...")
     server.start()
     server.wait_for_termination()
 
 
 if __name__ == "__main__":
-    serve()
+    print("Starting Kokoro TTS server...")
+    parser = argparse.ArgumentParser(description="Kokoro gRPC server")
+    parser.add_argument(
+        "--port", type=int, default=50050, help="Port to run the gRPC server on"
+    )
+    args = parser.parse_args()
+    serve(args.port)

@@ -16,4 +16,4 @@ RUN sudo apt update && \
     libportaudiocpp0 \
     portaudio19-dev
 
-run apt-get -qq -y install espeak-ng > /dev/null 2>&1
+RUN apt-get -qq -y install espeak-ng > /dev/null 2>&1

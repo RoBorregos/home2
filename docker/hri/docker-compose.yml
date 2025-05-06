@@ -4,3 +4,4 @@ include:
   - path: ollama-jetson.yaml
   - path: chromadb.yaml
   - path: display-l4t.yaml
+  - path: tts-l4t.yaml
