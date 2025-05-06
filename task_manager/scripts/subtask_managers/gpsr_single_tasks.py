@@ -1,3 +1,5 @@
+import rclpy
+from frida_constants.hri_constants import GPSR_COMMANDS
 from utils.baml_client.types import (
     AnswerQuestion,
     GetVisualInfo,
@@ -54,7 +56,9 @@ class GPSRSingleTask(GenericTask):
 
         self.subtask_manager.hri.node.get_logger().info(f"Moving to {subarea} in {area}")
 
-        self.subtask_manager.nav.move_to_location(area, subarea)
+        future = self.subtask_manager.nav.move_to_location(area, subarea)
+        if "navigation" not in self.subtask_manager.get_mocked_areas():
+            rclpy.spin_until_future_complete(self, future)
 
         return Status.EXECUTION_SUCCESS, "arrived to:" + command.location_to_go
 
@@ -181,26 +185,26 @@ class GPSRSingleTask(GenericTask):
 
         context = command.previous_command_info[0]
 
-        # if context in "say_with_context"
-        command = search_command(
-            context,
-            [
-                self,
-            ],
-        )
+        if context in GPSR_COMMANDS:
+            history = self.subtask_manager.hri.query_command_history(
+                command.previous_command_info[0]
+            )
+            command = self.subtask_manager.hri.get_command(history)
+            result = self.subtask_manager.hri.get_result(history)
+            status = self.subtask_manager.hri.get_status(history)
+            s, answer = self.subtask_manager.hri.answer_with_context(
+                command.user_instruction,
+                f"{context}: {command}. RESULT: {result}. STATUS: {status}",
+            )
+            self.subtask_manager.hri.say(answer, wait=True)
+            return Status.EXECUTION_SUCCESS, "success"
+        else:
+            s, response, score = self.subtask_manager.hri.answer_question(
+                command.user_instruction,
+            )
 
-        history = self.subtask_manager.hri.query_command_history(command.previous_command_info[0])
-        # TODO: Verify this works, because now there are two complements
-        context = self.subtask_manager.hri.get_context(history)
-        # complement = self.subtask_manager.hri.get_complement(history)
-        # characteristic = self.subtask_manager.hri.get_characteristic(history)
-        result = self.subtask_manager.hri.get_result(history)
-        # status = self.subtask_manager.hri.get_status(history)
-        self.subtask_manager.hri.say(
-            f"Okay, the result of {context} is: {result}.",
-            wait=True,
-        )
-        return Status.EXECUTION_SUCCESS, "success"
+            self.subtask_manager.hri.say(response, wait=True)
+            return Status.EXECUTION_SUCCESS, "success"
 
     ## HRI
     # Removed from the command dataset
@@ -275,7 +279,10 @@ class GPSRSingleTask(GenericTask):
             self.subtask_manager.hri.say("I am sorry, I could not understand your question.")
             return Status.TARGET_NOT_FOUND, ""
 
-        return self.say_with_context(f"Please answer my question: {question}")
+        question = SayWithContext(
+            user_instruction=f"Please answer my question: {question}", action=[]
+        )
+        return self.say_with_context(question)
 
     ## Vision
     def get_visual_info(self, command: GetVisualInfo):
