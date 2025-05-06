@@ -77,10 +77,12 @@ class ChromaAdapter:
     def query(self, collection_name: str, query, top_k):
         """Method to query the collection and return only the original names from metadata"""
         collection_ = self.get_collection(collection_name)
+        if collection_name == "items":
+            include_list = ["embeddings", "documents", "metadatas"]
+        else:
+            include_list = ["documents", "metadatas"]
         results = collection_.query(
-            query_texts=query,
-            n_results=top_k,
-            include=["embeddings", "documents", "metadatas", "distances"],
+            query_texts=query, n_results=top_k, include=include_list
         )
 
         return results  # Return only the extracted names
@@ -178,6 +180,8 @@ class ChromaAdapter:
 def main():
     client_ = ChromaAdapter()
     print(client_.list_collections())
+    collection_name = client_.get_collection("command_history")
+    print(collection_name.get())
 
 
 if __name__ == "__main__":

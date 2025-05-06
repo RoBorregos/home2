@@ -11,6 +11,43 @@ from config.hri.debug import config as test_hri_config
 from rclpy.node import Node
 from subtask_managers.hri_tasks import HRITasks
 from utils.task import Task
+from typing import Union
+
+
+# from subtask_managers.subtask_meta import SubtaskMeta
+from utils.baml_client.types import (
+    AnswerQuestion,
+    CommandListLLM,
+    Count,
+    FindPerson,
+    FindPersonByName,
+    FollowPersonUntil,
+    GetPersonInfo,
+    GetVisualInfo,
+    GiveObject,
+    GoTo,
+    GuidePersonTo,
+    PickObject,
+    PlaceObject,
+    SayWithContext,
+)
+
+InterpreterAvailableCommands = Union[
+    CommandListLLM,
+    GoTo,
+    PickObject,
+    FindPersonByName,
+    FindPerson,
+    Count,
+    GetPersonInfo,
+    GetVisualInfo,
+    AnswerQuestion,
+    FollowPersonUntil,
+    GuidePersonTo,
+    GiveObject,
+    PlaceObject,
+    SayWithContext,
+]
 
 
 def confirm_preference(interpreted_text, extracted_data):
@@ -34,18 +71,18 @@ class TestHriManager(Node):
     def run(self):
         # Testing compound commands
 
-        s, res = self.hri_manager.common_interest("John", "Football", "Gilbert", "Basketball")
+        # s, res = self.hri_manager.common_interest("John", "Football", "Gilbert", "Basketball")
 
-        self.get_logger().info(f"Common interest: {res}")
+        # self.get_logger().info(f"Common interest: {res}")
 
         # if TEST_COMPOUND:
         #     self.compound_functions()
 
         # if TEST_INDIVIDUAL_FUNCTIONS:
-        self.individual_functions()
+        # self.individual_functions()
 
         # if TEST_EMBEDDINGS:
-        # self.test_embeddings()
+        self.test_embeddings()
 
     def individual_functions(self):
         # Test say
@@ -131,45 +168,42 @@ class TestHriManager(Node):
 
         # Querying items
         self.get_logger().info("Querying 'potatoes' from item collection")
-        results = hri.query_item("potatoes", top_k=1)
-        self.get_logger().info(f"Query results: {results}")
 
+        results = hri.query_item("potatoes", top_k=1)
+        self.get_logger().info(f"Query results: {hri.get_name(results)}")
+        embeddings = hri.get_embeddings_average(results)
+
+        self.get_logger().info(f"Embeddings: {embeddings}")
         self.get_logger().info("Querying 'cinnamon' from item collection")
         results = hri.query_item("cinnamon", top_k=3)
-        self.get_logger().info(f"Query results: {results}")
+        self.get_logger().info(f"Query results: {hri.get_name(results)}")
         # Adding and querying location
         self.get_logger().info("Querying 'kitchen' from location collection")
 
         results_location = hri.query_location("kitchen table", top_k=1)
         subarea = hri.get_subarea(results_location)
         area = hri.get_area(results_location)
-        embeddings = hri.get_embeddings(results_location)
         self.get_logger().info(f"Subarea: {subarea}")
         self.get_logger().info(f"Area: {area}")
-        self.get_logger().info(f"Query results: {results_location}")
-        self.get_logger().info(f"Embeddings{embeddings}")
+        self.get_logger().info(f"Query results: {hri.get_name(results_location)}")
+
         # ---- save_command_history ----
-        self.get_logger().info("Saving command history for add_item command")
+        self.get_logger().info("Saving command history for go_to command")
+        command = GoTo(action="go_to", location_to_go="kitchen")
 
         hri.add_command_history(
-            command="add_item",
-            complement="complement for testing 6",
-            characteristic="items 6",
+            command=command,
             result="Success",
             status=1,
         )
 
         self.get_logger().info("Querying command_history collection for the saved command")
-        history = hri.query_command_history("add_item", 2)
-        context = hri.get_context(history)
-        complement = hri.get_complement(history)
-        characteristic = hri.get_characteristic(history)
+        history = hri.query_command_history("go_to", 2)
+        # context = hri.get_context(history)
         result = hri.get_result(history)
         status = hri.get_status(history)
 
-        self.get_logger().info(f"context history query results: {context}")
-        self.get_logger().info(f"complement history query results: {complement}")
-        self.get_logger().info(f"characteristic history query results: {characteristic}")
+        self.get_logger().info(f"history query results: {history}")
         self.get_logger().info(f"result history query results: {result}")
         self.get_logger().info(f"status history query results: {status}")
         # ---- end save_command_history ----

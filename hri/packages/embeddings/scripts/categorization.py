@@ -36,6 +36,7 @@ class MetadataModel(BaseModel):
     status: Optional[int] = None
     timestamp: Optional[str] = None
     subarea: Optional[str] = None
+    embeddings: Optional[list] = None
 
     PROFILES: ClassVar[Dict[MetadataProfile, Dict[str, str]]] = {
         MetadataProfile.ITEMS: {"context": " item for household use"},
@@ -225,7 +226,8 @@ class Embeddings(Node):
                 context = ""
 
             grouped_results = []
-            self.get_logger().info(f"Query Entry request received{request.query}")
+            self.get_logger().info(f"Query Entry request received {(request.query)}")
+
             for query in request.query:
                 query_with_context = query + context
                 if request.collection == "command_history":
@@ -237,19 +239,27 @@ class Embeddings(Node):
                     results_raw = self.chroma_adapter.query(
                         request.collection, [query_with_context], request.topk
                     )
+                embeddings = results_raw.get("embeddings", [[]])
+                if embeddings is None:
+                    embeddings = [[]]
+                else:
+                    embeddings = [embedding.tolist() for embedding in embeddings]
 
                 docs = results_raw.get("documents", [[]])
                 metas = results_raw.get("metadatas", [[]])
-                embeddings = results_raw.get("embeddings", [[]])
 
                 formatted_results = []
+                # Convert embeddings to a list of lists
+
+                # embeddings = [embedding.tolist() for embedding in embeddings]
+
                 for doc, meta, embedding in zip(docs, metas, embeddings):
                     if isinstance(meta, list):
                         meta = meta[0]
                     entry = {
-                        "document": [doc],
+                        "document": doc,
                         "metadata": meta,
-                        "embedding": embedding,
+                        "embeddings": embedding,
                     }
                     if "original_name" in meta:
                         entry["document"] = meta["original_name"]
@@ -259,11 +269,11 @@ class Embeddings(Node):
                 grouped_results.append({"query": query, "results": formatted_results})
 
             response.results = [json.dumps(entry) for entry in grouped_results]
-
             response.success = bool(grouped_results)
             response.message = (
                 "Query successful" if grouped_results else "No matching items found"
             )
+
             self.get_logger().info("Query request handled successfully")
         except Exception as e:
             response.success = False

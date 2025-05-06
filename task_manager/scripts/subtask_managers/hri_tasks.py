@@ -9,9 +9,10 @@ import os
 import re
 from datetime import datetime
 from typing import List, Union
-
+import numpy as np
 import rclpy
 from ament_index_python.packages import get_package_share_directory
+
 from frida_constants.hri_constants import (
     ADD_ENTRY_SERVICE,
     CATEGORIZE_SERVICE,
@@ -42,6 +43,7 @@ from frida_interfaces.srv import (
     Speak,
     UpdateHotwords,
 )
+from sentence_transformers import SentenceTransformer
 from rcl_interfaces.msg import Parameter, ParameterType, ParameterValue
 from rcl_interfaces.srv import SetParameters
 from rclpy.node import Node
@@ -98,6 +100,7 @@ class HRITasks(metaclass=SubtaskMeta):
     """Class to manage the vision tasks"""
 
     def __init__(self, task_manager: Node, config=None, task=Task.RECEPTIONIST) -> None:
+        self.model = SentenceTransformer("all-MiniLM-L12-v2")
         self.node = task_manager
         self.keyword = ""
         self.speak_service = self.node.create_client(Speak, SPEAK_SERVICE)
@@ -621,6 +624,7 @@ class HRITasks(metaclass=SubtaskMeta):
         future = self.query_item_client.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
         if collection == "command_history":
+            self.node.get_logger().info(f"Querying command history: {future.result().results}")
             results_loaded = json.loads(future.result().results[0])
             sorted_results = sorted(
                 results_loaded["results"], key=lambda x: x["metadata"]["timestamp"], reverse=True
@@ -644,13 +648,6 @@ class HRITasks(metaclass=SubtaskMeta):
 
     def get_context(self, query_result):
         return self.get_metadata_key(query_result, "context")
-
-    # TODO: Fix since we removed the complement from the command
-    def get_complement(self, query_result):
-        return self.get_metadata_key(query_result, "complement")
-
-    def get_characteristic(self, query_result):
-        return self.get_metadata_key(query_result, "characteristic")
 
     def get_result(self, query_result):
         return self.get_metadata_key(query_result, "result")
@@ -751,8 +748,49 @@ class HRITasks(metaclass=SubtaskMeta):
         Returns:
             list: The 'context' field from metadata, or empty string if not found
         """
-        query_result = query_result[1]
-        self.node.get_logger().info(f"EMBEDDINGS : {query_result}")
+        embeddings = query_result[1][0]["embeddings"]
+
+        self.node.get_logger().info(f"EMBEDDINGS : {len(embeddings)}")
+        return embeddings
+
+    def get_embeddings_average(self, query_result):
+        """
+        Extracts the field from the metadata of a query result.
+
+        Args:
+            embeddings list
+
+        Returns:
+            list: average of each embeddings
+        """
+        # TODO ADAPT TO TAKE A EMBEDDING LIST
+        embeddings = self.get_embeddings(query_result)
+        average_embedding = []
+        for embedding in embeddings:
+            if embedding is None or len(embedding) == 0:
+                self.node.get_logger().warning("Empty embedding found")
+                return []
+            else:
+                average_embedding.append(np.mean(embedding, axis=0))
+
+        return average_embedding
+
+    def register_shelf(self, shelf_name, items):
+        """
+        Register a shelf and compute its average embedding.
+
+        Args:
+            shelf_name (str): The name/ID of the shelf.
+            items (list[str]): List of item names/descriptions on the shelf.
+        """
+        if not items:
+            raise ValueError(f"Shelf '{shelf_name}' has no items.")
+
+        embeddings = self.model.encode(items)
+        avg_embedding = np.mean(embeddings, axis=0)
+        self.shelf_embeddings[shelf_name] = avg_embedding
+        self.node.get_logger().info(f"Registered shelf '{shelf_name}' with average embedding.")
+        # TODO add the add_item to the collection, add the metadata with the shelf name and the average embedding
         return
 
 
