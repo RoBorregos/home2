@@ -1,9 +1,7 @@
 #!/bin/bash
-export DISPLAY=:0
+
 # Configuration
-# REMOTE_SERVER="orin@10.22.131.69"  # Change this to your server details
-# REMOTE_SERVER="orin@100.108.245.54"  # Change this to your server details
-REMOTE_SERVER="orin@192.168.31.10"
+REMOTE_SERVER="orin@10.22.131.69"  # Change this to your server details
 
 # Terminal emulator detection
 if command -v terminator &> /dev/null; then
@@ -82,6 +80,11 @@ create_terminator() {
         xdotool keyup alt
         xdotool key Return
     done
+
+    xdotool windowactivate "$window_id"
+    xdotool keydown super
+    xdotool key Up
+    xdotool keyup super
 
     for ((i=1; i<${#SESSIONS[@]}; i++)); do
         session="${SESSIONS[i]}"
