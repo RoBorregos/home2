@@ -4,6 +4,26 @@ from detectors.ZeroShotObjectDetector import ZeroShotObjectDetector
 from ultralytics import YOLOE
 import warnings
 
+import sys
+import os
+
+
+class SuppressStream(object):
+    def __init__(self):
+        self.orig_stream_fileno = sys.stderr.fileno()
+
+    def __enter__(self):
+        self.orig_stream_dup = os.dup(self.orig_stream_fileno)
+        self.devnull = open(os.devnull, "w")
+        os.dup2(self.devnull.fileno(), self.orig_stream_fileno)
+
+    def __exit__(self, type, value, traceback):
+        os.close(self.orig_stream_fileno)
+        os.dup2(self.orig_stream_dup, self.orig_stream_fileno)
+        os.close(self.orig_stream_dup)
+        self.devnull.close()
+
+
 warnings.filterwarnings("ignore", category=FutureWarning)
 
 
@@ -13,12 +33,14 @@ class YoloEObjectDetector(ZeroShotObjectDetector):
         self.loadYoloEModel()
 
     def loadYoloEModel(self):
-        self.model = YOLOE(self.model_path_)
+        with SuppressStream():
+            self.model = YOLOE(self.model_path_)
         print("Model loaded: ", self.model_path_)
 
     def _inference(self, frame):
         # Execute prediction for specified categories on an image
-        results = self.model.predict(frame, verbose=False)
+        with SuppressStream():
+            results = self.model.predict(frame, verbose=False)
 
         return self._generate_detections(results, frame)
 

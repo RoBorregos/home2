@@ -18,7 +18,7 @@ class YoloV8ObjectDetector(ObjectDectector):
 
     def _inference(self, frame):
         # Execute prediction for specified categories on an image
-        results = self.model.predict(frame, verbose=True)
+        results = self.model.predict(frame, verbose=False)
 
         return self._generate_detections(results, frame)
 

@@ -32,7 +32,7 @@ from frida_constants.hri_constants import (
 from frida_interfaces.srv import (
     STT,
     AddEntry,
-    AnswerQuestion,
+    AnswerQuestion as AnswerQuestionLLM,
     CategorizeShelves,
     CommonInterest,
     ExtractInfo,
@@ -49,7 +49,7 @@ from rcl_interfaces.srv import SetParameters
 from rclpy.node import Node
 from std_msgs.msg import String
 from utils.baml_client.sync_client import b
-from utils.baml_client.types import AnswerQuestion as AnswerQuestionLLM
+from utils.baml_client.types import AnswerQuestion
 from utils.baml_client.types import (
     CommandListLLM,
     Count,
@@ -363,6 +363,7 @@ class HRITasks(metaclass=SubtaskMeta):
         use_hotwords: bool = True,
         retries: int = 3,
         min_wait_between_retries: float = 5,
+        skip_extract_data: bool = False,
     ):
         """
         Method to confirm a specific question.
@@ -390,7 +391,11 @@ class HRITasks(metaclass=SubtaskMeta):
             s, interpreted_text = self.hear()
 
             if s == Status.EXECUTION_SUCCESS:
-                s, target_info = self.extract_data(query, interpreted_text, context)
+                if not skip_extract_data:
+                    s, target_info = self.extract_data(query, interpreted_text, context)
+                else:
+                    s = Status.EXECUTION_SUCCESS
+                    target_info = interpreted_text
 
                 if s == Status.TARGET_NOT_FOUND:
                     target_info = interpreted_text
@@ -540,7 +545,7 @@ class HRITasks(metaclass=SubtaskMeta):
         Logger.info(self.node, f"is_negative result ({text}): {future.result().is_negative}")
         return Status.EXECUTION_SUCCESS, future.result().is_negative
 
-    @service_check("answer_question_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
+    @service_check("answer_question_service", (Status.SERVICE_CHECK, "", 0.5), TIMEOUT)
     def answer_question(
         self, question: str, top_k: int = None, threshold: float = None, collections: list = None
     ) -> tuple[Status, str]:

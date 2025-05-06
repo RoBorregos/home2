@@ -196,7 +196,7 @@ if [ -z "$TASK" ]; then
 else
     if [ "$NEEDS_BUILD" = true ]; then
         echo "Building and starting containers..."
-        docker compose up --build -d
+        docker compose up --build 
     else
         echo "All containers exist. Starting without build..."
         docker compose up

@@ -155,7 +155,7 @@ public:
       req_point.y = 0.0;
       req_point.z = 0.0;
       response->health_response = this->DistanceFilterFromPoint(
-          cloud_out, req_point, cloud_out, 2.0, request->min_height,
+          cloud_out, req_point, cloud_out, 0.75, request->min_height,
           request->max_height);
     } else {
       geometry_msgs::msg::PointStamped point;
@@ -177,7 +177,7 @@ public:
       req_point.z = point.point.z;
 
       response->health_response = this->DistanceFilterFromPoint(
-          cloud_out, req_point, cloud_out, 1.5, request->min_height,
+          cloud_out, req_point, cloud_out, 0.75, request->min_height,
           request->max_height);
     }
 
