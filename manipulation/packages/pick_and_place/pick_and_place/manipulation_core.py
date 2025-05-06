@@ -12,7 +12,12 @@ from frida_motion_planning.utils.service_utils import (
 from std_srvs.srv import SetBool, Empty
 from frida_interfaces.action import MoveJoints
 from frida_interfaces.msg import ManipulationTask
-from frida_interfaces.action import PickMotion, PlaceMotion, ManipulationAction
+from frida_interfaces.action import (
+    PickMotion,
+    PlaceMotion,
+    ManipulationAction,
+    MoveToPose,
+)
 from frida_interfaces.srv import (
     PickPerceptionService,
     GraspDetection,
@@ -36,12 +41,14 @@ from frida_constants.manipulation_constants import (
     GET_JOINT_SERVICE,
     SCAN_ANGLE_VERTICAL,
     SCAN_ANGLE_HORIZONTAL,
+    MOVE_TO_POSE_ACTION_SERVER,
 )
 from frida_constants.vision_constants import (
     DETECTION_HANDLER_TOPIC_SRV,
 )
 from pick_and_place.managers.PickManager import PickManager
 from pick_and_place.managers.PlaceManager import PlaceManager
+from pick_and_place.managers.PourManager import PourManager
 from frida_interfaces.msg import PickResult
 import time
 
@@ -75,6 +82,12 @@ class ManipulationCore(Node):
             self,
             MoveJoints,
             MOVE_JOINTS_ACTION_SERVER,
+        )
+
+        self._move_to_pose_action_client = ActionClient(
+            self,
+            MoveToPose,
+            MOVE_TO_POSE_ACTION_SERVER,
         )
 
         self._get_joints_client = self.create_client(GetJoints, GET_JOINT_SERVICE)
@@ -111,10 +124,16 @@ class ManipulationCore(Node):
 
         self.pick_manager = PickManager(self)
         self.pick_result = PickResult()
-
+        self.pour_manager = PourManager(self)
         self.place_manager = PlaceManager(self)
 
-        self.get_logger().info("Manipulation Core has been started")
+        # wait for pick and place action servers
+        self._pick_motion_action_client.wait_for_server()
+        self._place_motion_action_client.wait_for_server()
+
+        self.get_logger().info(
+            "\033[92mSUCCESS:\033[0m  Manipulation Core has been started"
+        )
 
     def pick_execute(self, object_name=None, object_point=None, pick_params=None):
         self.get_logger().info(f"Goal: {object_point}")
@@ -144,6 +163,19 @@ class ManipulationCore(Node):
             )
             if not result:
                 self.get_logger().error("Place failed")
+                return False
+            return result
+        except Exception:
+            return False
+
+    def pour_execute(self, pour_params=None):
+        self.get_logger().info("Executing pour")
+        try:
+            result = self.pour_manager.execute(
+                pour_params=pour_params,
+            )
+            if not result:
+                self.get_logger().error("Pour failed")
                 return False
             return result
         except Exception:
@@ -182,6 +214,13 @@ class ManipulationCore(Node):
         elif task_type == ManipulationTask.PLACE:
             self.get_logger().info("Executing Place Task")
             result = self.place_execute(place_params=goal_handle.request.place_params)
+            goal_handle.succeed()
+            if result:
+                self.remove_all_collision_object(attached=True)
+            response.success = result
+        elif task_type == ManipulationTask.POUR:
+            self.get_logger().info("Executing Pour Task")
+            result = self.pour_execute(pour_params=goal_handle.request.pour_params)
             goal_handle.succeed()
             if result:
                 self.remove_all_collision_object(attached=True)

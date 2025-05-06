@@ -3,7 +3,7 @@
 
   <xacro:macro name="zed_gazebo" params="prefix:='zed' ">
     <!-- Depth camera sensor -->
-    <gazebo reference="${prefix}_left_camera_frame">
+    <gazebo reference="zed_left_camera_frame">
       <sensor name="zed" type="depth">
         <update_rate>20</update_rate>
         <camera>

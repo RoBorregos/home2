@@ -73,6 +73,24 @@ class KeyboardInput(Node):
         )
         self.get_logger().info("Place request sent")
 
+    def send_pour_request(self, object_to_pour, container_to_pour_into):
+        if not self._action_client.wait_for_server(timeout_sec=5.0):
+            self.get_logger().error("Action server not available!")
+            return
+
+        goal_msg = ManipulationAction.Goal()
+        goal_msg.task_type = ManipulationTask.POUR
+        goal_msg.pour_params.object_name = object_to_pour
+        goal_msg.pour_params.container_name = container_to_pour_into
+
+        self.get_logger().info(
+            f"Sending pour request for {object_to_pour} into {container_to_pour_into}"
+        )
+        self._action_client.send_goal_async(
+            goal_msg, feedback_callback=self.feedback_callback
+        )
+        self.get_logger().info("Pour request sent")
+
     def feedback_callback(self, feedback_msg):
         self.get_logger().info(f"Feedback received: {feedback_msg.feedback}")
 
@@ -99,6 +117,7 @@ def main(args=None):
             print("-3. Place")
             print("-4. Place on shelf")
             print("-5. Place on shelf (with plane height)")
+            print("-6. Pour")
             print("q. Quit")
 
             choice = input("\nEnter your choice: ")
@@ -132,6 +151,17 @@ def main(args=None):
                     print(
                         "Invalid input. Please enter valid numbers for height and tolerance."
                     )
+            elif choice == "-6":
+                # receive two names, one object to pour and one container to pour into
+                object_to_pour = input("Enter object to pour: ")
+                container_to_pour_into = input("Enter container to pour into: ")
+                node.get_logger().info(
+                    f"Sending pour request for {object_to_pour} into {container_to_pour_into}"
+                )
+                node.send_pour_request(
+                    object_to_pour=object_to_pour,
+                    container_to_pour_into=container_to_pour_into,
+                )
             elif choice.isdigit():
                 try:
                     choice_num = int(choice)

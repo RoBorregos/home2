@@ -1,4 +1,5 @@
-geometry_msgs/PoseStamped pick_pose
+eometry_msgs/PoseStamped pick_pose
 float32 grasp_score
 string object_name
 float32 object_pick_height
+float32 object_height

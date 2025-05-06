@@ -341,6 +341,8 @@ class MoveItConfigsBuilder(ParameterBuilder):
 
         self.__robot_description = 'robot_description'
 
+        self._joint_limits_file = Path(get_package_share_directory("arm_pkg")) / 'config' / 'joint_limits.yaml'
+        
     def robot_description(
         self,
         file_path = None,
@@ -453,6 +455,17 @@ class MoveItConfigsBuilder(ParameterBuilder):
         key = self.__robot_description + '_planning'
 
         params = [self.__prefix, self.__robot_type, self.__robot_dof, self.__add_gripper, self.__add_bio_gripper]
+        
+        try:
+            joint_limits_yaml = load_yaml(self._joint_limits_file)
+            self.__moveit_configs.joint_limits = {
+                key: joint_limits_yaml
+            }
+            return self
+        except Exception as e:
+            logging.warning('\x1b[33;21m{}\x1b[0m'.format(e))
+            logging.warning('\x1b[33;21mThe joint limits will be loaded from /joint_limits topic \x1b[0m')
+            
         if all(isinstance(value, str) for value in params):
             robot_name = '{}{}'.format(self.__robot_type, self.__robot_dof if self.__robot_type == 'xarm' else '6' if self.__robot_type == 'lite' else '')
             
@@ -463,6 +476,7 @@ class MoveItConfigsBuilder(ParameterBuilder):
                 file_path = self._package_path / file_path
                 joint_limits = load_yaml(file_path) if file_path else {}
             joint_limits = joint_limits if joint_limits else {}
+            
             if self.__robot_type != 'lite' and self.__add_gripper in ('True', 'true'):
                 gripper_joint_limits_yaml = load_yaml(self._package_path / 'config' / '{}_gripper'.format(self.__robot_type) / 'joint_limits.yaml')
                 if gripper_joint_limits_yaml and 'joint_limits' in gripper_joint_limits_yaml:

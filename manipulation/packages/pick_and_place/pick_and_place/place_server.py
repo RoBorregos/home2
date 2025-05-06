@@ -42,14 +42,6 @@ class PlaceMotionServer(Node):
         super().__init__("place_server")
         self.callback_group = ReentrantCallbackGroup()
 
-        self._action_server = ActionServer(
-            self,
-            PlaceMotion,
-            PLACE_MOTION_ACTION_SERVER,
-            self.execute_callback,
-            callback_group=self.callback_group,
-        )
-
         self._move_to_pose_action_client = ActionClient(
             self,
             MoveToPose,
@@ -77,6 +69,14 @@ class PlaceMotionServer(Node):
         )
 
         self._move_to_pose_action_client.wait_for_server()
+
+        self._action_server = ActionServer(
+            self,
+            PlaceMotion,
+            PLACE_MOTION_ACTION_SERVER,
+            self.execute_callback,
+            callback_group=self.callback_group,
+        )
 
         self.target_link = EEF_LINK_NAME
 

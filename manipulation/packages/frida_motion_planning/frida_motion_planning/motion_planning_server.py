@@ -310,7 +310,7 @@ class MotionPlanningServer(Node):
                         ),
                         pose=collision_object.pose,
                     )
-                    self.get_logger().info(f"Added collision box: {object_id}")
+                    # self.get_logger().info(f"Added collision box: {object_id}")
 
                 elif collision_object.type == "sphere":
                     # For spheres, use the x component of dimensions as radius
@@ -319,7 +319,7 @@ class MotionPlanningServer(Node):
                         radius=collision_object.dimensions.x,
                         pose=collision_object.pose,
                     )
-                    self.get_logger().info(f"Added collision sphere: {object_id}")
+                    # self.get_logger().info(f"Added collision sphere: {object_id}")
 
                 elif collision_object.type == "cylinder":
                     # For cylinders, use x as radius, z as height
@@ -329,7 +329,7 @@ class MotionPlanningServer(Node):
                         radius=collision_object.dimensions.x,
                         pose=collision_object.pose,
                     )
-                    self.get_logger().info(f"Added collision cylinder: {object_id}")
+                    # self.get_logger().info(f"Added collision cylinder: {object_id}")
 
                 elif collision_object.type == "mesh":
                     # Add collision mesh from file path -> Priority to file path
