@@ -431,12 +431,12 @@ class PoseDetection:
         )
 
     def is_raising_right_arm(self, pose_landmarks):
-        left_elbow = pose_landmarks.landmark[self.mp_pose.PoseLandmark.LEFT_ELBOW]
+        # left_elbow = pose_landmarks.landmark[self.mp_pose.PoseLandmark.LEFT_ELBOW]
         left_shoulder = pose_landmarks.landmark[self.mp_pose.PoseLandmark.LEFT_SHOULDER]
         left_wrist = pose_landmarks.landmark[self.mp_pose.PoseLandmark.LEFT_WRIST]
-        left_hip = pose_landmarks.landmark[self.mp_pose.PoseLandmark.LEFT_HIP]
+        # left_hip = pose_landmarks.landmark[self.mp_pose.PoseLandmark.LEFT_HIP]
 
-        #angle = self.get_angle(left_shoulder, left_elbow, left_wrist)
+        # angle = self.get_angle(left_shoulder, left_elbow, left_wrist)
 
         # Distance between shoulder and elbow
         # distance_shoulder_elbow = abs(left_shoulder.y - left_elbow.y)
@@ -458,19 +458,19 @@ class PoseDetection:
         return False
 
     def is_raising_left_arm(self, pose_landmarks):
-        #right_elbow = pose_landmarks.landmark[self.mp_pose.PoseLandmark.RIGHT_ELBOW]
+        # right_elbow = pose_landmarks.landmark[self.mp_pose.PoseLandmark.RIGHT_ELBOW]
         right_shoulder = pose_landmarks.landmark[
             self.mp_pose.PoseLandmark.RIGHT_SHOULDER
         ]
         right_wrist = pose_landmarks.landmark[self.mp_pose.PoseLandmark.RIGHT_WRIST]
-        #right_hip = pose_landmarks.landmark[self.mp_pose.PoseLandmark.RIGHT_HIP]
+        # right_hip = pose_landmarks.landmark[self.mp_pose.PoseLandmark.RIGHT_HIP]
 
-        #angle = self.get_angle(right_shoulder, right_elbow, right_wrist)
+        # angle = self.get_angle(right_shoulder, right_elbow, right_wrist)
 
         # Distance between shoulder and elbow
         # distance_shoulder_elbow = abs(right_shoulder.y - right_elbow.y)
         # Distance between elbow and hip
-        #distance_elbow_hip = abs(right_elbow.y - right_hip.y)
+        # distance_elbow_hip = abs(right_elbow.y - right_hip.y)
         # print(f"angle: {angle}")
         # print(f"right wrist: {right_wrist.y < right_shoulder.y}")
         # print(f"right elbow: {right_elbow.y < right_shoulder.y}")
