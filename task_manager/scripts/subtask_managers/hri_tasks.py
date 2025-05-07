@@ -645,7 +645,6 @@ class HRITasks(metaclass=SubtaskMeta):
         Logger.info(self.node, f"find_closest result({query}): {str(Results)}")
         return Status.EXECUTION_SUCCESS, Results
 
-
     def find_closest_raw(self, documents: str, query: str, top_k: int = 1) -> list[str]:
         """
         Method to find the closest item to the query.
@@ -660,6 +659,7 @@ class HRITasks(metaclass=SubtaskMeta):
         Results = self._query_(query, "closest_items", top_k)
         Logger.info(self.node, f"find_closest result({query}): {str(Results)}")
         return Results
+
     @service_check("llm_wrapper_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def answer_with_context(self, question: str, context: str) -> str:
         """
