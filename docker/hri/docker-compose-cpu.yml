@@ -4,3 +4,4 @@ include:
   - path: ollama.yaml
   - path: chromadb.yaml
   - path: display.yaml
+  - path: tts.yaml

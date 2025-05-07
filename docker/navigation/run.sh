@@ -117,7 +117,7 @@ echo "RUN=$RUN"
 
 
 if [ -n "$TASK" ]; then
-    COMMAND="source /opt/ros/humble/setup.bash && source /home/ros/ros_packages/install/setup.bash && colcon build --symlink-install --packages-up-to $PACKAGES && source install/setup.bash && $RUN"
+    COMMAND="source /opt/ros/humble/setup.bash && colcon build --symlink-install --packages-up-to $PACKAGES && source install/setup.bash && $RUN"
     echo "COMMAND= $COMMAND " >> .env
 fi
 
@@ -130,6 +130,7 @@ if [ -z "$CONTAINER" ]; then
     NEEDS_BUILD=true
     break 
 fi
+# NEEDS_BUILD=true
 
 
 # If no task set, enter with bash
