@@ -2,6 +2,7 @@ import numpy as np
 from frida_motion_planning.utils.ros_utils import wait_for_future
 from frida_interfaces.srv import PickPerceptionService, DetectionHandler
 from geometry_msgs.msg import PointStamped, PoseStamped
+import rclpy
 from sensor_msgs_py import point_cloud2
 
 # from std_srvs.srv import SetBool
@@ -14,6 +15,8 @@ from frida_motion_planning.utils.service_utils import (
 from frida_pymoveit2.robots import xarm6 as robot
 from rclpy.duration import Duration
 from tf2_ros import Buffer, TransformListener
+from tf2_geometry_msgs.tf2_geometry_msgs import do_transform_point
+
 
 CFG_PATHS = [
     "/workspace/src/home2/manipulation/packages/arm_pkg/config/frida_eigen_params_custom_gripper_testing.cfg",
@@ -144,23 +147,36 @@ class PourManager:
         # pose_msg.pose.position.x = (0.15) # Red axe
         # pose_msg.pose.position.y = -(0.4)  # Blue axe
 
-        transformed_point = self.tf_buffer.transform(
-            container_point, robot.base_link_name(), Duration(seconds=1.0)
-        )
-        self.node.get_logger().warning("FF 1.2.6")
 
-        self.node.get_logger().warning(
-            f"container frame_id: {container_point.header.frame_id} tranformed frame: {transformed_point.header.frame_id}"
+        self.node.get_logger().warn("FF 1.2.6.1")
+        transform = self.tf_buffer.lookup_transform(
+            target_frame=robot.base_link_name(),
+            source_frame=container_point.header.frame_id,
+            time=rclpy.time.Time(),
+            timeout=Duration(seconds=1.0),
         )
-        self.node.get_logger().warning(
-            f"container point in x: {container_point.point.x} transformed: {transformed_point.point.x}"
-        )
-        self.node.get_logger().warning(
-            f"container point in y: {container_point.point.y} transformed: {transformed_point.point.y}"
-        )
-        self.node.get_logger().warning(
-            f"container point in z: {container_point.point.z} transformed: {transformed_point.point.z}"
-        )
+        transformed_point = do_transform_point(container_point, transform)
+
+
+        # transformed_point = self.tf_buffer.transform(
+        #     container_point, robot.base_link_name(), Duration(seconds=1.0)
+        # )
+
+        self.node.get_logger().warning("FF 1.2.6.2")
+
+        # self.node.get_logger().warning(
+        #     f"container frame_id: {container_point.header.frame_id} tranformed frame: {transformed_point.header.frame_id}"
+        # )
+        # self.node.get_logger().warning(
+        #     f"container point in x: {container_point.point.x} transformed: {transformed_point.point.x}"
+        # )
+        # self.node.get_logger().warning(
+        #     f"container point in y: {container_point.point.y} transformed: {transformed_point.point.y}"
+        # )
+        # self.node.get_logger().warning(
+        #     f"container point in z: {container_point.point.z} transformed: {transformed_point.point.z}"
+        # )
+        self.node.get_logger().warning("FF 1.2.6.2")
 
         pose_msg.pose.position.z = transformed_point.point.z + 0.30  # Green axe
         pose_msg.pose.position.x = transformed_point.point.x  # Red axe
@@ -198,6 +214,8 @@ class PourManager:
         if not result_pour.success:
             self.node.get_logger().error("Pour motion failed")
             return False
+        
+        self.node.get_logger().warning("Finished Pour Manager - FFN5.0")
 
         # try:
         #     goal_handle = future.result()
