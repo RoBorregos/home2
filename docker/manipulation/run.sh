@@ -113,7 +113,7 @@ case $TASK in
         RUN="ros2 launch vision_general storing_groceries_launch.py"
         ;;
     "--gpsr")
-        RUN="ros2 launch vision_general storing_groceries_launch.py"
+        RUN="ros2 launch manipulation_general gpsr.launch.py"
         ;;
     *)
         RUN="/bin/bash"
@@ -131,7 +131,73 @@ export LOCAL_GROUP_ID=$(id -g)
 
 #_________________________RUN_________________________
 xhost +
-# Check if the container exists
+SERVICE=manipulation
+NEEDS_BUILD=false
+
+# CONTAINER=$(docker ps -a --filter "name=${SERVICE}" --format "{{.ID}}")
+# if [ -z "$CONTAINER" ]; then
+#     echo "No container found for service '$SERVICE'."
+#     NEEDS_BUILD=true
+# fi
+# echo "Needs build: $NEEDS_BUILD"
+
+# # If it needs build 
+# if [ "$NEEDS_BUILD" = true ]; then
+
+#     if [ -z "$TASK" ]; then
+        
+#         if [ $ENV_TYPE == "cpu" ]; then
+#             docker compose -f docker-compose-cpu.yaml up --build -d
+#         elif [ $ENV_TYPE == "cuda" ]; then
+#             docker compose -f docker-compose-cuda.yaml up --build -d
+#         elif [ $ENV_TYPE == "jetson" ]; then
+#             docker compose -f docker-compose-jetson.yaml up --build -d
+#         fi
+
+#         docker compose exec manipulation /bin/bash
+    
+#     else
+#         if [ $ENV_TYPE == "cpu" ]; then
+#             docker compose -f docker-compose-cpu.yaml up --build
+#         elif [ $ENV_TYPE == "cuda" ]; then
+#             docker compose -f docker-compose-cuda.yaml up --build
+#         elif [ $ENV_TYPE == "jetson" ]; then
+#             docker compose -f docker-compose-jetson.yaml up --build
+#         fi
+#     fi
+
+# else
+
+#     if [ -z "$TASK" ]; then
+#     echo "NO TASK"
+#         RUNNING=$(docker ps --filter "name=manipulation" --format "{{.ID}}")
+#         echo "FUN $RUNNING"
+#         if [ -z "$RUNNING" ]; then
+#             echo "Starting manipulation service..."
+#             if [ $ENV_TYPE == "cpu" ]; then
+#                 docker compose -f docker-compose-cpu.yaml up -d
+#             elif [ $ENV_TYPE == "cuda" ]; then
+#                 docker compose -f docker-compose-cuda.yaml up  -d
+#             elif [ $ENV_TYPE == "jetson" ]; then
+#             echo "JETSOON"
+#                 docker compose -f docker-compose-jetson.yaml up -d
+#             fi
+#         fi
+#         docker compose exec manipulation /bin/bash
+#     else    
+#         echo "Starting manipulation service..."
+#         if [ $ENV_TYPE == "cpu" ]; then
+#             docker compose -f docker-compose-cpu.yaml up
+#         elif [ $ENV_TYPE == "cuda" ]; then
+#             docker compose -f docker-compose-cuda.yaml up 
+#         elif [ $ENV_TYPE == "jetson" ]; then
+#             docker compose -f docker-compose-jetson.yaml up
+#         fi
+#     fi
+# fi
+
+
+Check if the container exists
 EXISTING_CONTAINER=$(docker ps -a -q -f "name=$CONTAINER_NAME")
 if [ -z "$EXISTING_CONTAINER" ]; then
     echo "No container with the name $CONTAINER_NAME exists. Building and starting the container now..."

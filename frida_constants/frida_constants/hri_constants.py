@@ -16,6 +16,7 @@ ITEM_CATEGORIZATION_SERVICE = "/hri/nlp/item_categorization"
 CONVESATION_SERVICE = "/hri/nlp/conversation"
 GRAMMAR_SERVICE = "/hri/nlp/grammar"
 COMMON_INTEREST_SERVICE = "/hri/nlp/common_interest"
+RAG_SERVICE = "/hri/rag/answer_question"
 
 ADD_ENTRY_SERVICE = "/hri/nlp/embeddings/add_entry_service"
 QUERY_ENTRY_SERVICE = "/hri/nlp/embeddings/query_entry_service"
@@ -23,6 +24,23 @@ BUILD_EMBEDDINGS_SERVICE = "/hri/nlp/embeddings/build_embeddings_service"
 USE_RESPEAKER = True
 RESPEAKER_LIGHT_TOPIC = "/hri/speech/respeaker/light"
 RESPEAKER_DOA_TOPIC = "/hri/speech/respeaker/doa"
+
+GPSR_COMMANDS = {
+    "go_to",
+    "pick_object",
+    "place_object",
+    "say_with_context",
+    "say",
+    "answer_question",
+    "get_visual_info",
+    "give_object",
+    "follow_person_until",
+    "guide_person_to",
+    "get_person_info",
+    "find_object",
+    "count" "find_person",
+    "find_person_by_name",
+}
 
 
 class MODEL(Enum):

@@ -316,14 +316,14 @@ class PoseDetection:
                             pose_landmarks[self.mp_pose.PoseLandmark.LEFT_WRIST],
                         )
 
-                        print(f"Left hand angle: {angle}")
+                        # print(f"Left hand angle: {angle}")
                         # time.sleep(0.5)
                         # Check gestures for the left hand
                         if self.is_waving(hand_landmarks) or angle > 45:
                             gesture = Gestures.WAVING
                             break
                         elif self.is_pointing_left(
-                            hand_landmarks, mid_x, pose_landmarks
+                            hand_landmarks, mid_x, results_p.pose_landmarks
                         ):
                             gesture = Gestures.POINTING_LEFT
                             break
@@ -334,14 +334,14 @@ class PoseDetection:
                             pose_landmarks[self.mp_pose.PoseLandmark.RIGHT_ELBOW],
                             pose_landmarks[self.mp_pose.PoseLandmark.RIGHT_WRIST],
                         )
-                        print(f"Right hand angle: {angle}")
+                        # print(f"Right hand angle: {angle}")
                         # time.sleep(0.5)
                         # Check gestures for the right hand
                         if self.is_waving(hand_landmarks) or angle > 45:
                             gesture = Gestures.WAVING
                             break
                         elif self.is_pointing_right(
-                            hand_landmarks, mid_x, pose_landmarks
+                            hand_landmarks, mid_x, results_p.pose_landmarks
                         ):
                             gesture = Gestures.POINTING_RIGHT
                             break
@@ -362,7 +362,7 @@ class PoseDetection:
         distance = sqrt((thumb.x - pinky.x) ** 2 + (thumb.y - pinky.y) ** 2)
 
         # Print the distance for debugging purposes
-        print(f"Distance between thumb and pinky: {distance}")
+        # print(f"Distance between thumb and pinky: {distance}")
 
         # Set a threshold based on the expected distance for a waving gesture
         waving_threshold = 0.13
@@ -391,7 +391,7 @@ class PoseDetection:
         distance_elbow_hip = 0
 
         if self.is_visible(
-            pose_landmarks,
+            pose_landmarks.landmark,
             [self.mp_pose.PoseLandmark.LEFT_HIP, self.mp_pose.PoseLandmark.LEFT_ELBOW],
         ):
             right_hip = pose_landmarks.landmark[self.mp_pose.PoseLandmark.RIGHT_HIP]
@@ -415,7 +415,7 @@ class PoseDetection:
         distance_elbow_hip = 0
         # check if hip and elbow are visible
         if self.is_visible(
-            pose_landmarks,
+            pose_landmarks.landmark,
             [self.mp_pose.PoseLandmark.LEFT_HIP, self.mp_pose.PoseLandmark.LEFT_ELBOW],
         ):
             left_hip = pose_landmarks.landmark[self.mp_pose.PoseLandmark.LEFT_HIP]
@@ -430,58 +430,61 @@ class PoseDetection:
             or distance_elbow_hip > 0.5
         )
 
-    def is_raising_left_arm(self, pose_landmarks):
-        left_elbow = pose_landmarks.landmark[self.mp_pose.PoseLandmark.LEFT_ELBOW]
+    def is_raising_right_arm(self, pose_landmarks):
+        # left_elbow = pose_landmarks.landmark[self.mp_pose.PoseLandmark.LEFT_ELBOW]
         left_shoulder = pose_landmarks.landmark[self.mp_pose.PoseLandmark.LEFT_SHOULDER]
         left_wrist = pose_landmarks.landmark[self.mp_pose.PoseLandmark.LEFT_WRIST]
-        left_hip = pose_landmarks.landmark[self.mp_pose.PoseLandmark.LEFT_HIP]
+        # left_hip = pose_landmarks.landmark[self.mp_pose.PoseLandmark.LEFT_HIP]
 
-        angle = self.get_angle(left_shoulder, left_elbow, left_wrist)
+        # angle = self.get_angle(left_shoulder, left_elbow, left_wrist)
 
         # Distance between shoulder and elbow
         # distance_shoulder_elbow = abs(left_shoulder.y - left_elbow.y)
         # Distance between elbow and hip
-        distance_elbow_hip = abs(left_elbow.y - left_hip.y)
+        # distance_elbow_hip = abs(left_elbow.y - left_hip.y)
         # print(f"angle: {angle}")
         # print(f"right wrist: {left_wrist.y < left_shoulder.y}")
         # print(f"right elbow: {left_elbow.y < left_shoulder.y}")
         # print(f"distance left : {distance_elbow_hip}")
 
-        if (
-            angle < 30
-            and left_wrist.y < left_shoulder.y
-            and left_elbow.y < left_shoulder.y
-            and distance_elbow_hip > 0.85
-        ):
+        # if (
+        #     and left_wrist.y > left_shoulder.y
+        #     and left_elbow.y < left_shoulder.y
+        #     and distance_elbow_hip < 0.75
+        # ):
+        if left_wrist.y > left_shoulder.y:
             return True
 
         return False
 
-    def is_raising_right_arm(self, pose_landmarks):
-        right_elbow = pose_landmarks.landmark[self.mp_pose.PoseLandmark.RIGHT_ELBOW]
+    def is_raising_left_arm(self, pose_landmarks):
+        # right_elbow = pose_landmarks.landmark[self.mp_pose.PoseLandmark.RIGHT_ELBOW]
         right_shoulder = pose_landmarks.landmark[
             self.mp_pose.PoseLandmark.RIGHT_SHOULDER
         ]
         right_wrist = pose_landmarks.landmark[self.mp_pose.PoseLandmark.RIGHT_WRIST]
-        right_hip = pose_landmarks.landmark[self.mp_pose.PoseLandmark.RIGHT_HIP]
+        # right_hip = pose_landmarks.landmark[self.mp_pose.PoseLandmark.RIGHT_HIP]
 
-        angle = self.get_angle(right_shoulder, right_elbow, right_wrist)
+        # angle = self.get_angle(right_shoulder, right_elbow, right_wrist)
 
         # Distance between shoulder and elbow
         # distance_shoulder_elbow = abs(right_shoulder.y - right_elbow.y)
         # Distance between elbow and hip
-        distance_elbow_hip = abs(right_elbow.y - right_hip.y)
+        # distance_elbow_hip = abs(right_elbow.y - right_hip.y)
         # print(f"angle: {angle}")
         # print(f"right wrist: {right_wrist.y < right_shoulder.y}")
         # print(f"right elbow: {right_elbow.y < right_shoulder.y}")
         # print(f"distance right: {distance_elbow_hip}")
 
-        if (
-            angle < 30
-            and right_wrist.y < right_shoulder.y
-            and right_elbow.y < right_shoulder.y
-            and distance_elbow_hip > 0.85
-        ):
+        # if (
+        #     angle < 18
+        #     and right_wrist.y < right_shoulder.y
+        #     and right_elbow.y < right_shoulder.y
+        #     and distance_elbow_hip < 0.75
+        # ):
+        print(f"right wrist: {right_wrist.y}")
+        print(f"right shoulder: {right_shoulder.y}")
+        if right_wrist.y > right_shoulder.y:
             return True
 
         return False

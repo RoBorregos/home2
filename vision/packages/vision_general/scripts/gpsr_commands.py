@@ -69,11 +69,17 @@ class GPSRCommands(Node):
         )
 
         self.count_by_gestures_service = self.create_service(
-            CountByPose, COUNT_BY_GESTURE_TOPIC, self.count_by_gestures_callback
+            CountByPose,
+            COUNT_BY_GESTURE_TOPIC,
+            self.count_by_gestures_callback,
+            callback_group=self.callback_group,
         )
 
         self.count_by_person_service = self.create_service(
-            CountBy, COUNT_BY_PERSON_TOPIC, self.count_by_person_callback
+            CountBy,
+            COUNT_BY_PERSON_TOPIC,
+            self.count_by_person_callback,
+            callback_group=self.callback_group,
         )
 
         self.count_by_color_service = self.create_service(
@@ -420,7 +426,9 @@ class GPSRCommands(Node):
         if future is None:
             return False
         while not future.done() and (time.time() - start_time) < timeout:
-            print("Waiting for future to complete...")
+            # print("Waiting for future to complete...")
+            pass
+
         return future
 
     def moondream_crop_query(self, prompt: str, bbox: list[float]) -> tuple[int, str]:
@@ -455,7 +463,7 @@ class GPSRCommands(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = GPSRCommands()
-    executor = rclpy.executors.MultiThreadedExecutor(5)
+    executor = rclpy.executors.MultiThreadedExecutor(8)
     executor.add_node(node)
     executor.spin()
     rclpy.shutdown()

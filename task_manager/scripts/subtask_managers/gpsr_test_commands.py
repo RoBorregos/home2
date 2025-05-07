@@ -26,6 +26,16 @@ def get_gpsr_comands(command_type: str, structured_cmd=True):
 
 
 custom_command = [
+    {
+        "action": "say_with_context",
+        "user_instruction": "say what day is tomorrow to the person pointing to the left in the office",
+        "previous_command_info": "what day is tomorrow",
+    },
+    {
+        "action": "say_with_context",
+        "user_instruction": "say what day is tomorrow to the person pointing to the left in the office",
+        "previous_command_info": "what day is tomorrow",
+    },
     # Manipulation
     # {"action": "pick", "complement": "zote", "characteristic": ""},
     # {"action": "give", "complement": "", "characteristic": ""},

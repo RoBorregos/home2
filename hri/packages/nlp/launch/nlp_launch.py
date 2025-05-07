@@ -62,6 +62,13 @@ def generate_launch_description():
             emulate_tty=True,
             parameters=[llm_utils_config],
         ),
+        Node(
+            package="embeddings",
+            executable="knowledge_base.py",
+            name="llm_uknowledge_basetils",
+            output="screen",
+            emulate_tty=True,
+        ),
     ]
 
     if os.getenv("COMPOSE_PROFILES", "receptionist") == "gpsr":
