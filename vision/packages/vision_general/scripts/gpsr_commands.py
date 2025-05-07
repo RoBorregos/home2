@@ -239,11 +239,6 @@ class GPSRCommands(Node):
             if gesture in gesture_count:
                 gesture_count[gesture] += 1
 
-        gesture_count[Gestures.RAISING_RIGHT_ARM] += gesture_count[Gestures.WAVING]
-        gesture_count[Gestures.RAISING_LEFT_ARM] += gesture_count[Gestures.WAVING]
-        gesture_count[Gestures.WAVING] += gesture_count[Gestures.RAISING_LEFT_ARM]
-        gesture_count[Gestures.WAVING] += gesture_count[Gestures.RAISING_RIGHT_ARM]
-
         return gesture_count
 
     def count_by_person_callback(self, request, response):
