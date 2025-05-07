@@ -107,8 +107,7 @@ class TestHriManager(Node):
         self.get_logger().info(f"Extracted data: {drink}")
 
         # Test categorize objects
-        s, categorized_shelves, objects_to_add = self.hri_manager.categorize_objects(
-            ["butter", "pear", "oats", "turkey", "pineapple"],
+        s, categorized_shelves = self.hri_manager.get_shelves_categories(
             {
                 "1": ["milk", "cheese", "yogurt"],
                 "2": ["apple", "banana", "grapes"],
@@ -118,7 +117,6 @@ class TestHriManager(Node):
         )
 
         self.get_logger().info(f"categorized_shelves: {str(categorized_shelves)}")
-        self.get_logger().info(f"objects_to_add: {str(objects_to_add)}")
 
     def compound_functions(self):
         s, interest1 = self.hri_manager.ask_and_confirm(
