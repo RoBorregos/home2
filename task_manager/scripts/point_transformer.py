@@ -9,6 +9,7 @@ import json
 import os
 from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import TransformStamped
+from utils.status import Status
 
 POINT_TRANSFORMER_TOPIC = "/integration/point_transformer"
 RETURN_AREAS_TOPIC = "/integration/return_areas"
@@ -60,6 +61,31 @@ class PointTransformer(Node):
             self.get_logger().error(self, f"Error converting to height: {e}")
             response.success = False
             response.message = "Error converting to height: {e}"
+            return response
+
+    def get_actual_pose(self, request, response):
+        try:
+            # Wait for the transform to become available (with a timeout)
+            buffer_ = self.tf_buffer.can_transform(
+                "map", "base_link", rclpy.time.Time(), timeout=rclpy.duration.Duration(seconds=5.0)
+            )
+            self.get_logger().info(f"DEBUGG ={buffer_}")
+            rclpy.spin_once(self, timeout_sec=0.2)
+            # Get the transform from base_link to map
+            transform: TransformStamped = self.tf_buffer.lookup_transform(
+                "map", "base_link", rclpy.time.Time()
+            )
+
+            # Extract the pose information
+            posex = transform.transform.translation.x
+            posey = transform.transform.translation.y
+
+            response.posex = posex
+            response.posey = posey
+            response.status = Status.EXECUTION_SUCCESS
+        except Exception as e:
+            self.get_logger().info(f"Error getting position: {e}")
+            response.status = Status.EXECUTION_ERROR
             return response
 
     def whereIam(self, request, response):
