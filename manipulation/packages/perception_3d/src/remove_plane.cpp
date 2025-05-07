@@ -155,7 +155,7 @@ public:
       req_point.y = 0.0;
       req_point.z = 0.0;
       response->health_response = this->DistanceFilterFromPoint(
-          cloud_out, req_point, cloud_out, 2.0, request->min_height,
+          cloud_out, req_point, cloud_out, 1.0, request->min_height,
           request->max_height);
     } else {
       geometry_msgs::msg::PointStamped point;
@@ -177,7 +177,7 @@ public:
       req_point.z = point.point.z;
 
       response->health_response = this->DistanceFilterFromPoint(
-          cloud_out, req_point, cloud_out, 1.5, request->min_height,
+          cloud_out, req_point, cloud_out, 1.0, request->min_height,
           request->max_height);
     }
 
@@ -190,32 +190,36 @@ public:
     response->health_response =
         this->extractPlane(cloud_out, cloud_out, request->extract_or_remove);
 
-    // publish this in debug pcl pub
-    sensor_msgs::msg::PointCloud2 cloud_out_msg;
-    try {
-      pcl::toROSMsg(*cloud_out, cloud_out_msg);
-    } catch (const std::exception &e) {
-      RCLCPP_ERROR(this->get_logger(), "Error converting point cloud: %s",
-                   e.what());
-      response->health_response = COULD_NOT_CONVERT_POINT_CLOUD;
-      return;
-    }
-    //publish
-    cloud_out_msg.header.frame_id = "base_link";
-    cloud_out_msg.header.stamp = this->now();
-    this->cloud_pub_->publish(cloud_out_msg);
+   
 
     ASSERT_AND_RETURN_CODE(response->health_response, OK,
                            "Error extracting plane with code %d",
                            response->health_response);
+    
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_result(
+        new pcl::PointCloud<pcl::PointXYZ>);
+    response->health_response = this->largest_cluster(cloud_out, cloud_result);
 
-    // response->health_response = this->densest_cluster(cloud_out, cloud_out);
+    //publish
+    // publish this in debug pcl pub
+    sensor_msgs::msg::PointCloud2 cloud_result_msg;
+    try {
+      pcl::toROSMsg(*cloud_result, cloud_result_msg);
+    } catch (const std::exception &e) {
+      RCLCPP_ERROR(this->get_logger(), "Error converting point cloud: %s",
+                  e.what());
+      response->health_response = COULD_NOT_CONVERT_POINT_CLOUD;
+      return;
+    }
+    cloud_result_msg.header.frame_id = "base_link";
+    cloud_result_msg.header.stamp = this->now();
+    this->cloud_pub_->publish(cloud_result_msg);
 
     ASSERT_AND_RETURN_CODE(response->health_response, OK,
                            "Error clustering point cloud with code %d",
                            response->health_response);
 
-    pcl::toROSMsg(*cloud_out, response->cloud);
+    pcl::toROSMsg(*cloud_result, response->cloud);
     response->health_response = OK;
 
     RCLCPP_INFO(this->get_logger(), "Publishing point cloud");
@@ -781,7 +785,7 @@ public:
   }
 
   STATUS_RESPONSE
-  densest_cluster(_IN_ const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
+  largest_cluster(_IN_ const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
                   _OUT_ pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out) {
     // Using kdTree to get the closest point FROM the pointcloud to the point
     // given as input
@@ -803,12 +807,15 @@ public:
     tree->setInputCloud(cloud);
     std::vector<pcl::PointIndices> cluster_indices;
     pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
-    ec.setClusterTolerance(0.02);
+    ec.setClusterTolerance(0.015);
     ec.setMinClusterSize(100);   // Minimum number of points in a cluster
-    ec.setMaxClusterSize(6000); // Maximum number of points in a cluster
+    ec.setMaxClusterSize(20000); // Maximum number of points in a cluster
     ec.setSearchMethod(tree);
     ec.setInputCloud(cloud);
     ec.extract(cluster_indices);
+
+    RCLCPP_INFO(this->get_logger(), "Found %lu clusters",
+                cluster_indices.size());
     // Find which cluster our point belongs to
     int targetPointIdx = pointIdxNKNSearch[0];
     int targetClusterIdx = -1;
@@ -816,6 +823,8 @@ public:
     // cluster that most dense
     int max_points = 0;
     for (size_t i = 0; i < cluster_indices.size(); i++) {
+      RCLCPP_INFO(this->get_logger(), "Cluster %lu, size %lu", i,
+                    cluster_indices[i].indices.size());
       if (cluster_indices[i].indices.size() > max_points) {
         max_points = cluster_indices[i].indices.size();
         targetClusterIdx = i;

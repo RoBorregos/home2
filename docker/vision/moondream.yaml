@@ -48,6 +48,9 @@ services:
       - /dev/video0:/dev/video0
       - /tmp:/tmp
       - /tmp/.X11-unix:/tmp/.X11-unix
+      - ./moondream/build:/workspace/build
+      - ./moondream/install:/workspace/install
+      - ./moondream/log:/workspace/log
 
     network_mode: host
     user: 1000:1000
@@ -61,6 +64,8 @@ services:
       TERM: xterm-256color
       QT_X11_NO_MITSHM: 1
       QT_DEBUG_PLUGINS: 1
+      ROS_LOCALHOST_ONLY: 1
+
     tty: true
     stdin_open: true
     working_dir: /workspace

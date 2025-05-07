@@ -15,7 +15,7 @@ fi
 # Clear sudo timeout to ensure the password gets checked
 sudo -k
 
-# bash zed.sh
+bash zed.sh
 
 cd ./gpsr
 for script in ./*.sh; do

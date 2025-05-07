@@ -18,8 +18,8 @@ def generate_launch_description():
         [
             Node(
                 package="vision_general",
-                executable="face_recognition_node.py",
-                name="face_recognition",
+                executable="receptionist_commands.py",
+                name="receptionist_commands",
                 output="screen",
                 emulate_tty=True,
                 # parameters=[config],
@@ -28,6 +28,22 @@ def generate_launch_description():
                 package="vision_general",
                 executable="gpsr_commands.py",
                 name="gpsr_commands",
+                output="screen",
+                emulate_tty=True,
+                # parameters=[config],
+            ),
+            Node(
+                package="vision_general",
+                executable="tracker_node.py",
+                name="tracker_node",
+                output="screen",
+                emulate_tty=True,
+                # parameters=[config],
+            ),
+            Node(
+                package="vision_general",
+                executable="face_recognition_node.py",
+                name="face_recognition",
                 output="screen",
                 emulate_tty=True,
                 # parameters=[config],

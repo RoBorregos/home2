@@ -44,18 +44,17 @@ class GPSRTM(Node):
     def __init__(self):
         """Initialize the node"""
         super().__init__("gpsr_task_manager")
-        self.subtask_manager = SubtaskManager(
-            self, task=Task.GPSR, mock_areas=["navigation", "vision", "manipulation"]
-        )
+        self.subtask_manager = SubtaskManager(self, task=Task.GPSR, mock_areas=[])
         self.gpsr_tasks = GPSRTask(self.subtask_manager)
         self.gpsr_individual_tasks = GPSRSingleTask(self.subtask_manager)
 
-        self.current_state = GPSRTM.States.EXECUTING_COMMAND
+        self.current_state = GPSRTM.States.START
         self.running_task = True
         self.current_attempt = 0
         self.executed_commands = 0
         # self.commands = get_gpsr_comands("takeObjFromPlcmt")
         self.commands = get_gpsr_comands("custom")
+        # self.commands = get_gpsr_comands("custom")
 
         Logger.info(self, "GPSRTMTaskManager has started.")
 
@@ -63,6 +62,9 @@ class GPSRTM(Node):
         """State machine"""
 
         if self.current_state == GPSRTM.States.START:
+            self.subtask_manager.manipulation.move_joint_positions(
+                named_position="front_stare", velocity=0.5, degrees=True
+            )
             self.subtask_manager.hri.say(
                 "Hi, my name is Frida. I am a general purpose robot. I can help you with some tasks."
             )
@@ -72,6 +74,9 @@ class GPSRTM(Node):
                 self.current_state = GPSRTM.States.DONE
                 return
 
+            self.subtask_manager.manipulation.move_joint_positions(
+                named_position="front_stare", velocity=0.5, degrees=True
+            )
             # s, user_command = self.subtask_manager.hri.ask_and_confirm(
             #     "What is your command?",
             #     "command",
@@ -81,8 +86,15 @@ class GPSRTM(Node):
             #     retries=ATTEMPT_LIMIT,
             #     min_wait_between_retries=5.0,
             # )
+            # gesture_person_list = ["waving person", "person raising their left arm", "person raising their right arm",
+            #                "person pointing to the left", "person pointing to the right"]
+            # pose_person_plural_list = ["sitting persons", "standing persons", "lying persons"]
+
             s = Status.EXECUTION_SUCCESS
-            user_command = "Bring me a knife from the kitchen"
+            # user_command = "go to the living room and count standing persons"
+            # user_command = "Go to the kitchen table find Ale and tell her you"
+            user_command = "tell me how many standing persons are in the living room"
+
             if s != Status.EXECUTION_SUCCESS:
                 self.subtask_manager.hri.say("I am sorry, I could not understand you.")
                 self.current_attempt += 1
@@ -138,6 +150,9 @@ class GPSRTM(Node):
             )
             self.executed_commands += 1
             self.current_state = GPSRTM.States.WAITING_FOR_COMMAND
+            self.subtask_manager.manipulation.move_joint_positions(
+                named_position="front_stare", velocity=0.5, degrees=True
+            )
         elif self.current_state == GPSRTM.States.DONE:
             self.subtask_manager.hri.say(
                 "I am done with the task. I will now return to my home position.",

@@ -23,7 +23,7 @@ def generate_launch_description():
                 name="ObjectDetect2D",
                 respawn=True,
                 output="screen",
-                emulate_tty=True,
+                emulate_tty=False,
                 parameters=[config],
             ),
             IncludeLaunchDescription(

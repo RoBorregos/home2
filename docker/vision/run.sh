@@ -101,6 +101,9 @@ esac
 export LOCAL_USER_ID=$(id -u)
 export LOCAL_GROUP_ID=$(id -g)
 
+mkdir -p install build log
+mkdir -p moondream/install moondream/build moondream/log
+
 # Setup camera permissions
 # if [ -e /dev/video0 ]; then
 #     echo "Setting permissions for /dev/video0..."
@@ -193,7 +196,7 @@ if [ -z "$TASK" ]; then
 else
     if [ "$NEEDS_BUILD" = true ]; then
         echo "Building and starting containers..."
-        docker compose up --build -d
+        docker compose up --build 
     else
         echo "All containers exist. Starting without build..."
         docker compose up

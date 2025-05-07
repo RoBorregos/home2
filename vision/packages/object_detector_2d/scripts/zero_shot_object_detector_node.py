@@ -12,7 +12,6 @@ from frida_interfaces.msg import ObjectDetectionArray
 from frida_interfaces.srv import SetDetectorClasses
 from dataclasses import dataclass
 import pathlib
-import threading
 from detectors.YoloEObjectDetector import YoloEObjectDetector
 from detectors.ObjectDetector import ObjectDectectorParams
 from frida_constants.vision_constants import (
@@ -109,9 +108,6 @@ class zero_shot_object_detector_node(object_detector_node):
 
         # Frames per second throughput estimator
         self.curr_clock = 0
-        self.fps = None
-        callFpsThread = threading.Thread(target=self.callFps, args=(), daemon=True)
-        callFpsThread.start()
 
         self.get_logger().info("Object Detector 2D Node has been started")
 

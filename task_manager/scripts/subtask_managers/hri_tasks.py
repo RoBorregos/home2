@@ -23,6 +23,7 @@ from frida_constants.hri_constants import (
     IS_POSITIVE_SERVICE,
     LLM_WRAPPER_SERVICE,
     QUERY_ENTRY_SERVICE,
+    RAG_SERVICE,
     SPEAK_SERVICE,
     STT_SERVICE_NAME,
     USEFUL_AUDIO_NODE_NAME,
@@ -31,6 +32,7 @@ from frida_constants.hri_constants import (
 from frida_interfaces.srv import (
     STT,
     AddEntry,
+    AnswerQuestion as AnswerQuestionLLM,
     CategorizeShelves,
     CommonInterest,
     ExtractInfo,
@@ -47,8 +49,8 @@ from rcl_interfaces.srv import SetParameters
 from rclpy.node import Node
 from std_msgs.msg import String
 from utils.baml_client.sync_client import b
+from utils.baml_client.types import AnswerQuestion
 from utils.baml_client.types import (
-    AnswerQuestion,
     CommandListLLM,
     Count,
     FindPerson,
@@ -63,6 +65,7 @@ from utils.baml_client.types import (
     PlaceObject,
     SayWithContext,
 )
+from baml_client.config import set_log_level
 from utils.decorators import service_check
 from utils.logger import Logger
 from utils.status import Status
@@ -88,6 +91,7 @@ InterpreterAvailableCommands = Union[
 ]
 
 TIMEOUT = 5.0
+set_log_level("INFO")  # Set to "ERROR" in prod
 
 
 def confirm_query(interpreted_text, target_info):
@@ -124,6 +128,8 @@ class HRITasks(metaclass=SubtaskMeta):
         self.useful_audio_params = self.node.create_client(
             SetParameters, f"/{USEFUL_AUDIO_NODE_NAME}/set_parameters"
         )
+
+        self.answer_question_service = self.node.create_client(AnswerQuestionLLM, RAG_SERVICE)
 
         all_services = {
             "hear": {
@@ -359,6 +365,7 @@ class HRITasks(metaclass=SubtaskMeta):
         use_hotwords: bool = True,
         retries: int = 3,
         min_wait_between_retries: float = 5,
+        skip_extract_data: bool = False,
     ):
         """
         Method to confirm a specific question.
@@ -386,7 +393,11 @@ class HRITasks(metaclass=SubtaskMeta):
             s, interpreted_text = self.hear()
 
             if s == Status.EXECUTION_SUCCESS:
-                s, target_info = self.extract_data(query, interpreted_text, context)
+                if not skip_extract_data:
+                    s, target_info = self.extract_data(query, interpreted_text, context)
+                else:
+                    s = Status.EXECUTION_SUCCESS
+                    target_info = interpreted_text
 
                 if s == Status.TARGET_NOT_FOUND:
                     target_info = interpreted_text
@@ -450,13 +461,6 @@ class HRITasks(metaclass=SubtaskMeta):
         future = self.grammar_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
         return Status.EXECUTION_SUCCESS, future.result().corrected_text
-
-    @service_check("llm_wrapper_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
-    def ask(self, question: str) -> str:
-        request = LLMWrapper.Request(question=question)
-        future = self.llm_wrapper_service.call_async(request)
-        rclpy.spin_until_future_complete(self.node, future)
-        return Status.EXECUTION_SUCCESS, future.result().answer
 
     def command_interpreter(self, text: str) -> List[InterpreterAvailableCommands]:
         Logger.info(
@@ -543,6 +547,44 @@ class HRITasks(metaclass=SubtaskMeta):
         Logger.info(self.node, f"is_negative result ({text}): {future.result().is_negative}")
         return Status.EXECUTION_SUCCESS, future.result().is_negative
 
+    @service_check("answer_question_service", (Status.SERVICE_CHECK, "", 0.5), TIMEOUT)
+    def answer_question(
+        self, question: str, top_k: int = None, threshold: float = None, collections: list = None
+    ) -> tuple[Status, str]:
+        """
+        Method to answer a question using the RAG service.
+
+        Args:
+            question: The question to answer
+            top_k: Number of top results to consider (default: use service default)
+            threshold: Similarity threshold for including context (default: use service default)
+            collections: List of collections to search in (default: use service default)
+
+        Returns:
+            Status: The status of the execution
+            str: The answer to the question
+            float: Confidence score of the answer
+        """
+        Logger.info(self.node, f"Sending question to RAG service: {question}")
+
+        request = AnswerQuestionLLM.Request(
+            question=question,
+            topk=top_k if top_k is not None else 0,
+            threshold=threshold if threshold is not None else 0.0,
+            collections=collections if collections is not None else [],
+        )
+
+        future = self.answer_question_service.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+
+        result = future.result()
+        if result.success:
+            Logger.info(self.node, f"RAG answer received with score: {result.score}")
+            return Status.EXECUTION_SUCCESS, result.response, result.score
+        else:
+            Logger.warn(self.node, f"RAG service failed: {result.response}")
+            return Status.EXECUTION_ERROR, result.response, result.score
+
     # /////////////////embeddings services/////
     def add_command_history(self, command: InterpreterAvailableCommands, result, status):
         collection = "command_history"
@@ -603,6 +645,22 @@ class HRITasks(metaclass=SubtaskMeta):
         Logger.info(self.node, f"find_closest result({query}): {str(Results)}")
         return Status.EXECUTION_SUCCESS, Results
 
+    @service_check("llm_wrapper_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
+    def answer_with_context(self, question: str, context: str) -> str:
+        """
+        Method to answer a question with context.
+        Args:
+            question: the question to answer
+            context: the context to use
+        Returns:
+            Status: the status of the execution
+            str: the answer to the question
+        """
+        request = LLMWrapper.Request(question=question, context=context)
+        future = self.llm_wrapper_service.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+        return Status.EXECUTION_SUCCESS, future.result().answer
+
     def query_command_history(self, query: str, top_k: int = 1):
         """
         Method to query the command history collection.
@@ -648,6 +706,9 @@ class HRITasks(metaclass=SubtaskMeta):
     # TODO: Fix since we removed the complement from the command
     def get_complement(self, query_result):
         return self.get_metadata_key(query_result, "complement")
+
+    def get_command(self, query_result):
+        return self.get_metadata_key(query_result, "command")
 
     def get_characteristic(self, query_result):
         return self.get_metadata_key(query_result, "characteristic")
