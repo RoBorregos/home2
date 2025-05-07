@@ -20,7 +20,10 @@ services:
       - ./install:/workspace/install
       - ./log:/workspace/log
     network_mode: host
+    user: 1000:1000
     privileged: true
+    group_add: 
+      - video
     environment:
       <<:
         - *speech-devices
