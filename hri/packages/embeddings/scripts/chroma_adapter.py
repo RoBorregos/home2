@@ -34,12 +34,12 @@ class ChromaAdapter:
     def remove_categorization_collections(self):
         """Method to remove all collections from categorization node"""
         collections = [
-            "items",
             "actions",
             "categories",
             "locations",
             "names",
             "command_history",
+            "items",
         ]
         for collection in collections:
             self.client.delete_collection(collection)
@@ -77,10 +77,7 @@ class ChromaAdapter:
     def query(self, collection_name: str, query, top_k):
         """Method to query the collection and return only the original names from metadata"""
         collection_ = self.get_collection(collection_name)
-        if collection_name == "items":
-            include_list = ["embeddings", "documents", "metadatas"]
-        else:
-            include_list = ["documents", "metadatas"]
+        include_list = ["documents", "metadatas", "distances"]
         results = collection_.query(
             query_texts=query, n_results=top_k, include=include_list
         )
@@ -146,9 +143,11 @@ class ChromaAdapter:
             if "timestamp" not in meta:
                 meta["timestamp"] = datetime.now().isoformat()
         # Add documents and metadata to the collection
-        return collection_.add(
-            ids=ids, documents=documents, metadatas=cleaned_metadatas
-        )
+
+        else:
+            return collection_.add(
+                ids=ids, documents=documents, metadatas=cleaned_metadatas
+            )
 
     def remove_item_by_document(self, collection_name, document):
         """Method to remove an item by document"""
@@ -180,7 +179,7 @@ class ChromaAdapter:
 def main():
     client_ = ChromaAdapter()
     print(client_.list_collections())
-    collection_name = client_.get_collection("command_history")
+    collection_name = client_.get_collection("items")
     print(collection_name.get())
 
 

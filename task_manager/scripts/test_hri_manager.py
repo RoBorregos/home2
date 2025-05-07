@@ -4,8 +4,6 @@
 Task Manager for testing the subtask managers
 """
 
-import json
-
 import rclpy
 from config.hri.debug import config as test_hri_config
 from rclpy.node import Node
@@ -154,26 +152,40 @@ class TestHriManager(Node):
 
         hri = self.hri_manager
 
-        # Adding single item
-        self.get_logger().info("Adding single item: rotten_potatoes")
-        result = hri.add_item(["rotten_potatoes"], json.dumps([{}]))
-        self.get_logger().info(f"Result: {result}")
+        # # Adding single item
+        # self.get_logger().info("Adding single item: rotten_potatoes")
+        # result = hri.add_item(["rotten_potatoes"], json.dumps([{}]))
+        # self.get_logger().info(f"Result: {result}")
 
-        # Adding multiple items with metadata
-        self.get_logger().info("Adding multiple items with metadata")
-        documents = ["apple pie with cinnamon", "banana_pie", "mango_pie_with milk"]
-        metadata = [{"category": "500"}, {"characteristic": "400"}, {"complement": "450"}]
-        result = hri.add_item(documents, json.dumps(metadata))
-        self.get_logger().info(f"Result: {result}")
+        # # Adding multiple items with metadata
+        # self.get_logger().info("Adding multiple items with metadata")
+        # documents = ["apple pie with cinnamon", "banana_pie", "mango_pie_with milk"]
+        # metadata = [{"category": "500"}, {"characteristic": "400"}, {"complement": "450"}]
+        # result = hri.add_item(documents, json.dumps(metadata))
+        # self.get_logger().info(f"Result: {result}")
 
-        # Querying items
-        self.get_logger().info("Querying 'potatoes' from item collection")
+        # # Querying items
+        # self.get_logger().info("Querying 'potatoes' from item collection")
 
-        results = hri.query_item("potatoes", top_k=1)
-        self.get_logger().info(f"Query results: {hri.get_name(results)}")
-        embeddings = hri.get_embeddings_average(results)
+        # results = hri.query_item("potatoes", top_k=1)
+        # self.get_logger().info(f"Query results: {hri.get_name(results)}")
+        # New implementation of additems for item categorization in shelves
 
-        self.get_logger().info(f"Embeddings: {embeddings}")
+        objects_to_categorize = ["yogurt", "peach", "can"]
+        objects_shelve_1 = ["milk", "cheese", "cream"]
+        objects_shelve_2 = ["beans", "tommato_soup", "corn_soup"]
+        objects_shelve_3 = ["mango", "banana", "apple"]
+        objects = [objects_shelve_1, objects_shelve_2, objects_shelve_3]
+        shelf_1 = "1"
+        shelf_2 = "2"
+        shelf_3 = "3"
+        shelves = [shelf_1, shelf_2, shelf_3]
+        shelves_with_objects = dict(zip(shelves, objects))
+        self.get_logger().info(f"OBJECTS TO CLASSIFY : {objects_to_categorize}")
+        objects_categorized = hri.categorize_objects([objects_to_categorize], shelves_with_objects)
+
+        self.get_logger().info(f"classification : {objects_categorized}")
+
         self.get_logger().info("Querying 'cinnamon' from item collection")
         results = hri.query_item("cinnamon", top_k=3)
         self.get_logger().info(f"Query results: {hri.get_name(results)}")
@@ -210,6 +222,8 @@ class TestHriManager(Node):
 
         self.get_logger().info("TESTING THE FIND CLOSEST FUNCTION")
         # Test find_closest
+
+        documents = ["cheese", "milk", "yogurt"]
         result_closest = hri.find_closest(documents, "milk")
         self.get_logger().info(f"Closest result: {result_closest}")
 

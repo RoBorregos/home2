@@ -27,16 +27,15 @@ class MetadataProfile(str, Enum):
 
 # Metadata validation model for metadata
 class MetadataModel(BaseModel):
-    shelve: Optional[str] = None
+    shelve: Optional[str] = ""
     category: Optional[str] = None
     context: Optional[str] = ""
-    complement: Optional[str] = None
-    characteristic: Optional[str] = None
     result: Optional[str] = None
     status: Optional[int] = None
     timestamp: Optional[str] = None
     subarea: Optional[str] = None
     embeddings: Optional[list] = None
+    items_inside: Optional[str] = None
 
     PROFILES: ClassVar[Dict[MetadataProfile, Dict[str, str]]] = {
         MetadataProfile.ITEMS: {"context": " item for household use"},
@@ -143,6 +142,7 @@ class Embeddings(Node):
             # self.get_logger().info("Adding entries to ChromaDB")
             if request.collection == "closest_items":
                 self.chroma_adapter._get_or_create_collection("closest_items")
+
             self.chroma_adapter.add_entries(
                 request.collection, documents, metadata_objects
             )
@@ -234,16 +234,13 @@ class Embeddings(Node):
                     results_raw = self.chroma_adapter.query_where(
                         request.collection, [query_with_context]
                     )
-
                 else:
                     results_raw = self.chroma_adapter.query(
                         request.collection, [query_with_context], request.topk
                     )
-                embeddings = results_raw.get("embeddings", [[]])
-                if embeddings is None:
-                    embeddings = [[]]
-                else:
-                    embeddings = [embedding.tolist() for embedding in embeddings]
+                distances = results_raw.get("distances", [[]])
+                if distances is None:
+                    distances = [[]]
 
                 docs = results_raw.get("documents", [[]])
                 metas = results_raw.get("metadatas", [[]])
@@ -253,13 +250,13 @@ class Embeddings(Node):
 
                 # embeddings = [embedding.tolist() for embedding in embeddings]
 
-                for doc, meta, embedding in zip(docs, metas, embeddings):
+                for doc, meta, distance in zip(docs, metas, distances):
                     if isinstance(meta, list):
                         meta = meta[0]
                     entry = {
                         "document": doc,
                         "metadata": meta,
-                        "embeddings": embedding,
+                        "distance": distance,
                     }
                     if "original_name" in meta:
                         entry["document"] = meta["original_name"]
@@ -369,11 +366,11 @@ class Embeddings(Node):
             # Add entries to the collection
             self.chroma_adapter.add_entries(collection_name, documents, metadatas_)
         self.add_locations()
+        self.chroma_adapter._get_or_create_collection("command_history")
         # self.print_all_collections()
         return
 
     def add_locations(self):
-        self.chroma_adapter._get_or_create_collection("command_history")
         areas_document = []
         areas_metadatas = []
         package_share_directory = get_package_share_directory("frida_constants")

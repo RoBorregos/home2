@@ -9,7 +9,8 @@ import os
 import re
 from datetime import datetime
 from typing import List, Union
-import numpy as np
+
+
 import rclpy
 from ament_index_python.packages import get_package_share_directory
 
@@ -43,7 +44,6 @@ from frida_interfaces.srv import (
     Speak,
     UpdateHotwords,
 )
-from sentence_transformers import SentenceTransformer
 from rcl_interfaces.msg import Parameter, ParameterType, ParameterValue
 from rcl_interfaces.srv import SetParameters
 from rclpy.node import Node
@@ -100,7 +100,6 @@ class HRITasks(metaclass=SubtaskMeta):
     """Class to manage the vision tasks"""
 
     def __init__(self, task_manager: Node, config=None, task=Task.RECEPTIONIST) -> None:
-        self.model = SentenceTransformer("all-MiniLM-L12-v2")
         self.node = task_manager
         self.keyword = ""
         self.speak_service = self.node.create_client(Speak, SPEAK_SERVICE)
@@ -598,11 +597,8 @@ class HRITasks(metaclass=SubtaskMeta):
             Status: the status of the execution
             list[str]: the results of the query
         """
-        Logger.info(self.node, f"Finding closest items to: {query} in {str(documents)}")
         self._add_to_collection(document=documents, metadata="", collection="closest_items")
-        self.node.get_logger().info(f"Adding closest items: {documents}")
         Results = self._query_(query, "closest_items", top_k)
-        Results = self.get_name(Results)
         Logger.info(self.node, f"find_closest result({query}): {str(Results)}")
         return Status.EXECUTION_SUCCESS, Results
 
@@ -632,6 +628,7 @@ class HRITasks(metaclass=SubtaskMeta):
             results_list = sorted_results[:top_k]
         else:
             results = future.result().results
+
             results_loaded = json.loads(results[0])
             results_list = results_loaded["results"]
         return Status.EXECUTION_SUCCESS, results_list
@@ -738,60 +735,18 @@ class HRITasks(metaclass=SubtaskMeta):
     def get_timestamps(self, query_result):
         return self.get_metadata_key(query_result, "timestamp")
 
-    def get_embeddings(self, query_result):
-        """
-        Extracts the field from the metadata of a query result.
+    # def categorize_objects(self, categories: list, obj: str):
+    #     """Method to categorize a list of objects in an array of objects depending on similarity"""
 
-        Args:
-            query_result (tuple): The query result tuple (status, list of JSON strings)
+    #     try:
+    #         self.find_closest(categories, obj)
+    #         return
 
-        Returns:
-            list: The 'context' field from metadata, or empty string if not found
-        """
-        embeddings = query_result[1][0]["embeddings"]
+    #     except Exception as e:
+    #         self.node.get_logger().error(f"FAILED TO CATEGORIZE: {obj} with error: {e}")
 
-        self.node.get_logger().info(f"EMBEDDINGS : {len(embeddings)}")
-        return embeddings
-
-    def get_embeddings_average(self, query_result):
-        """
-        Extracts the field from the metadata of a query result.
-
-        Args:
-            embeddings list
-
-        Returns:
-            list: average of each embeddings
-        """
-        # TODO ADAPT TO TAKE A EMBEDDING LIST
-        embeddings = self.get_embeddings(query_result)
-        average_embedding = []
-        for embedding in embeddings:
-            if embedding is None or len(embedding) == 0:
-                self.node.get_logger().warning("Empty embedding found")
-                return []
-            else:
-                average_embedding.append(np.mean(embedding, axis=0))
-
-        return average_embedding
-
-    def register_shelf(self, shelf_name, items):
-        """
-        Register a shelf and compute its average embedding.
-
-        Args:
-            shelf_name (str): The name/ID of the shelf.
-            items (list[str]): List of item names/descriptions on the shelf.
-        """
-        if not items:
-            raise ValueError(f"Shelf '{shelf_name}' has no items.")
-
-        embeddings = self.model.encode(items)
-        avg_embedding = np.mean(embeddings, axis=0)
-        self.shelf_embeddings[shelf_name] = avg_embedding
-        self.node.get_logger().info(f"Registered shelf '{shelf_name}' with average embedding.")
-        # TODO add the add_item to the collection, add the metadata with the shelf name and the average embedding
-        return
+    def get_distances(self, results):
+        return results[2]
 
 
 if __name__ == "__main__":
