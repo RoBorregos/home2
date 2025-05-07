@@ -3,3 +3,4 @@ tqdm
 pillow
 timm
 imutils
+git+https://github.com/ultralytics/CLIP.git

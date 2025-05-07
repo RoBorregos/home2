@@ -19,6 +19,32 @@ class PoseDetection:
         )
         self.mp_hands = mp.solutions.hands
 
+    def getCenterPerson(self, image):
+        # Process the image
+        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        results = self.pose.process(image_rgb)
+
+        if results.pose_landmarks is not None:
+            landmarks = results.pose_landmarks.landmark
+            shoulder_right = landmarks[12]
+            shoulder_left = landmarks[11]
+
+            x_center = (shoulder_right.x + shoulder_left.x) / 2
+            y_center = (shoulder_right.y + shoulder_left.y) / 2
+
+            cv2.circle(
+                image,
+                (int(x_center * image.shape[1]), int(y_center * image.shape[0])),
+                5,
+                (0, 0, 255),
+                -1,
+            )
+            # cv2.imshow("Annotated Image", image)
+
+            return x_center * image.shape[1], y_center * image.shape[0]
+
+        return None, None
+
     def draw_landmarks(self, image, results, mp_pose):
         image_height, image_width, _ = image.shape
         landmarks_to_draw = [

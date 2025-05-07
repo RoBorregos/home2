@@ -17,12 +17,12 @@ from vision_general.utils.calculations import (
     get_depth,
     deproject_pixel_to_point,
 )
-
+import copy
 import rclpy
 from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo
-from geometry_msgs.msg import Point, PointStamped
+from geometry_msgs.msg import Point
 
 from vision_general.utils.reid_model import (
     load_network,
@@ -31,7 +31,7 @@ from vision_general.utils.reid_model import (
     get_structure,
 )
 
-from std_srvs.srv import SetBool
+from std_srvs.srv import SetBool, Trigger
 from frida_interfaces.srv import TrackBy, CropQuery
 from pose_detection import PoseDetection
 from frida_constants.vision_constants import (
@@ -44,6 +44,7 @@ from frida_constants.vision_constants import (
     CAMERA_INFO_TOPIC,
     CENTROID_TOIC,
     CROP_QUERY_TOPIC,
+    IS_TRACKING_TOPIC,
 )
 from frida_constants.vision_enums import DetectBy
 
@@ -76,7 +77,11 @@ class SingleTracker(Node):
             TrackBy, SET_TARGET_BY_TOPIC, self.set_target_by_callback
         )
 
-        self.results_publisher = self.create_publisher(PointStamped, RESULTS_TOPIC, 10)
+        self.get_is_tracking_service = self.create_service(
+            Trigger, IS_TRACKING_TOPIC, self.get_is_tracking_callback
+        )
+
+        self.results_publisher = self.create_publisher(Point, RESULTS_TOPIC, 10)
 
         self.image_publisher = self.create_publisher(Image, TRACKER_IMAGE_TOPIC, 10)
 
@@ -87,9 +92,12 @@ class SingleTracker(Node):
         )
 
         self.verbose = self.declare_parameter("verbose", True)
+
         self.setup()
         self.create_timer(0.1, self.run)
         self.create_timer(0.01, self.publish_image)
+
+        self.is_tracking_result = False
 
     def setup(self):
         """Load models and initial variables"""
@@ -127,6 +135,15 @@ class SingleTracker(Node):
 
         pbar.close()
         self.get_logger().info("Single Tracker Ready")
+
+    def get_is_tracking_callback(self, request, response):
+        response = Trigger.Response()
+        response.success = self.is_tracking_result
+        if self.is_tracking_result:
+            self.get_logger().info("Tracking")
+        else:
+            self.get_logger().info("Not racking")
+        return response
 
     def image_callback(self, data):
         """Callback to receive image from camera"""
@@ -187,26 +204,21 @@ class SingleTracker(Node):
         """Set the target to track (Default: Largest person in frame)"""
         if self.image is None:
             self.get_logger().warn("No image available")
+            self.is_tracking_result = False
             return False
 
         self.get_logger().info(f"Setting target by {track_by} with value {value}")
 
         self.frame = self.image
         self.output_image = self.frame.copy()
-        results = self.model.track(
-            self.frame,
-            persist=True,
-            tracker="bytetrack.yaml",
-            classes=0,
-            verbose=False,
-        )
+        results = copy.deepcopy(self.results)
 
         largest_person = {
             "id": None,
             "area": 0,
             "bbox": None,
         }
-
+        response_clean = ""
         # Check each detection
         for out in results:
             for box in out.boxes:
@@ -214,9 +226,9 @@ class SingleTracker(Node):
 
                 # Get class name
                 try:
-                    track_id = 1
+                    track_id = box.id[0].item()
                 except Exception as e:
-                    print("Track id exception: ", e)
+                    print("CALLBACK Track id exception: ", e)
                     track_id = -1
 
                 print(track_id)
@@ -239,6 +251,7 @@ class SingleTracker(Node):
                     cropped_image = self.frame[y1:y2, x1:x2]
 
                     if track_by == DetectBy.GESTURES.value:
+                        self.get_logger().info(f"Detecting gesture {value} ")
                         pose = self.pose_detection.detectGesture(cropped_image)
                         response_clean = pose.value
 
@@ -343,28 +356,31 @@ class SingleTracker(Node):
 
     def run(self):
         """Main loop to run the tracker"""
-        if self.target_set:
+        if True:  # self.target_set:
             self.frame = self.image
 
-            if self.frame is None or self.person_data["id"] is None:
+            if self.frame is None:
                 return
 
             self.output_image = self.frame.copy()
 
-            results = self.model.track(
+            self.results = self.model.track(
                 self.frame,
                 persist=True,
                 tracker="bytetrack.yaml",
                 classes=0,
                 verbose=False,
             )
-
+            
+            if self.person_data["id"] is None:
+                return
+            
             person_in_frame = False
 
             people = []
 
             # Check each detection
-            for out in results:
+            for out in self.results:
                 for box in out.boxes:
                     x1, y1, x2, y2 = [round(x) for x in box.xyxy[0].tolist()]
 
@@ -481,10 +497,46 @@ class SingleTracker(Node):
                                 )
                                 break
             if person_in_frame:
+                # if len(self.depth_image) > 0:
+                #     self.is_tracking_result = True
+                #     coords = Point()
+                #     cropped_image = self.frame[
+                #         self.person_data["coordinates"][1] : self.person_data[
+                #             "coordinates"
+                #         ][3],
+                #         self.person_data["coordinates"][0] : self.person_data[
+                #             "coordinates"
+                #         ][2],
+                #     ]
+                #     point2D = self.pose_detection.getCenterPerson(cropped_image)
+                #     if point2D[0] is None:
+                #         self.get_logger().warn("No person detected")
+                #         return
+                #     print(point2D[0], point2D[1])
+                #     # point2D = get2DCentroid(self.person_data["coordinates"], self.frame)
+                #     point2D_x_coord = float(point2D[1])
+                #     point2D_x_coord_normalized = (
+                #         point2D_x_coord / (self.frame.shape[1] / 2)
+                #     ) - 1
+                #     point2Dpoint = Point()
+                #     point2Dpoint.x = float(point2D_x_coord_normalized)
+                #     point2Dpoint.y = 0.0
+                #     point2Dpoint.z = 0.0
+                #     # self.get_logger().info(f"frame_shape: {self.frame.shape[1]} Point2D: {point2D[1]} normalized_point2D: {point2D_x_coord_normalized}")
+                #     self.centroid_publisher.publish(point2Dpoint)
+
+                #     depth = get_depth(
+                #         self.depth_image, [int(point2D[0]), int(point2D[1])]
+                #     )
+                #     point3D = deproject_pixel_to_point(self.imageInfo, point2D, depth)
+                #     point3D = float(point3D[0]), float(point3D[1]), float(point3D[2])
+                #     coords.x = point3D[0]
+                #     coords.y = point3D[1]
+                #     coords.z = point3D[2]
+                #     self.results_publisher.publish(coords)
                 if len(self.depth_image) > 0:
-                    coords = PointStamped()
-                    coords.header.frame_id = "zed_camera_link"
-                    coords.header.stamp = self.get_clock().now().to_msg()
+                    self.is_tracking_result = True
+                    coords = Point()
                     point2D = get2DCentroid(self.person_data["coordinates"], self.frame)
                     point2D_x_coord = float(point2D[1])
                     point2D_x_coord_normalized = (
@@ -504,7 +556,12 @@ class SingleTracker(Node):
                     coords.z = point3D[2]
                     self.results_publisher.publish(coords)
                 else:
-                    self.get_logger().warn("Depth image not available")
+                    # self.get_logger().warn("Depth image not available")
+                    self.is_tracking_result = False
+            else:
+                self.is_tracking_result = False
+        else:
+            self.is_tracking_result = False
 
 
 def main(args=None):

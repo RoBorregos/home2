@@ -63,7 +63,7 @@ def generate_launch_description():
     return LaunchDescription([
         declare_publish_tf,
         declare_use_sim,
-        nav_basics,
+        # nav_basics,
         slam_toolbox,
         declare_dualshock
     ])
