@@ -36,10 +36,6 @@ def generate_launch_description():
                 ),
             ),
             Node(
-                package="frida_motion_planning",
-                executable="motion_planning_server.py",
-            ),
-            Node(
                 package="task_manager",
                 executable="follow_face_node.py",
                 name="follow_face_node",

@@ -19,7 +19,7 @@ from subtask_managers.generic_tasks import GenericTask
 
 
 class GPSRTask(GenericTask):
-    """Class to manage the GPS task"""
+    """Class to manage the GPSR task"""
 
     def __init__(self, subtask_manager):
         """Initialize the class"""
@@ -46,7 +46,7 @@ class GPSRTask(GenericTask):
             )
         future = self.subtask_manager.nav.move_to_location(location, sublocation)
         if "navigation" not in self.subtask_manager.get_mocked_areas():
-            rclpy.spin_until_future_complete(self, future)
+            rclpy.spin_until_future_complete(self.subtask_manager.nav.node, future)
 
     ## HRI, Manipulation
     def give_object(self, command: GiveObject):
@@ -190,16 +190,25 @@ class GPSRTask(GenericTask):
 
         """
 
-        location = self.subtask_manager.hri.query_location(command.destination)
+        location = self.subtask_manager.hri.query_location(command.destination_room)
         area = self.subtask_manager.hri.get_area(location)
-        subarea = self.subtask_manager.hri.get_subarea(location)
+        if isinstance(area, list):
+            area = area[0]
 
+        subarea = self.subtask_manager.hri.get_subarea(location)
+        if isinstance(subarea, list):
+            if len(subarea) == 0:
+                subarea = ""
+            else:
+                subarea = subarea[0]
         self.navigate_to(area, subarea)
 
-        if command.destination == "person":
-            self.subtask_manager.hri.say(f"We have arrived to {command.destination}!", wait=True)
+        if command.destination_room == "person":
+            self.subtask_manager.hri.say(
+                f"We have arrived to {command.destination_room}!", wait=True
+            )
         else:
-            self.subtask_manager.hri.say(f"We have arrived, {command.destination}!", wait=True)
+            self.subtask_manager.hri.say(f"We have arrived, {command.destination_room}!", wait=True)
 
     ## HRI, Vision
     def get_person_info(self, command: GetPersonInfo):
@@ -214,7 +223,7 @@ class GPSRTask(GenericTask):
 
         Preconditions:
             - The robot must be in front of the person.
-
+[
         Behaviour:
             - If the complement is "gesture" or "posture", the robot computes the information visually.
             - If the complement is "name", the robot fetches the name from previously known names or interacts with the person if the name is not known.
@@ -342,10 +351,6 @@ class GPSRTask(GenericTask):
 
         # TODO (@nav): go to a location given only one value
 
-        # TODO (@hri):
-        # TODO: get category and value that matches vision_enums
-        # Ex: "poses", "standing" , "clothes", "red t-shirt"
-
         possibilities = [v.value for v in Gestures] + [v.value for v in Poses] + ["clothes"]
 
         status, value = self.subtask_manager.hri.find_closest(
@@ -360,6 +365,9 @@ class GPSRTask(GenericTask):
             f"I am going to count the {value}.",
         )
 
+        cache_color = None
+        cache_cloth = None
+
         for degree in self.pan_angles:
             self.subtask_manager.manipulation.pan_to(degree)
 
@@ -368,15 +376,18 @@ class GPSRTask(GenericTask):
             elif is_value_in_enum(value, Poses):
                 status, count = self.subtask_manager.vision.count_by_pose(value)
             else:
-                s, color = self.subtask_manager.hri.find_closest(
-                    self.color_list, command.target_to_count
-                )
-                color = color[0]
-                s, cloth = self.subtask_manager.hri.find_closest(
-                    self.clothe_list, command.target_to_count
-                )
-                cloth = cloth[0]
+                if cache_color is None or cache_cloth is None:
+                    s, color = self.subtask_manager.hri.find_closest(
+                        self.color_list, command.target_to_count
+                    )
+                    cache_color = color[0]
+                    s, cloth = self.subtask_manager.hri.find_closest(
+                        self.clothe_list, command.target_to_count
+                    )
+                    cache_cloth = cloth[0]
 
+                color = cache_color
+                cloth = cache_cloth
                 # Say actual color that its counting
                 characteristic = f"{color} {cloth}s"
                 self.subtask_manager.hri.say(

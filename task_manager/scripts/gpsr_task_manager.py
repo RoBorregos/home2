@@ -44,7 +44,7 @@ class GPSRTM(Node):
     def __init__(self):
         """Initialize the node"""
         super().__init__("gpsr_task_manager")
-        self.subtask_manager = SubtaskManager(self, task=Task.GPSR, mock_areas=["navigation"])
+        self.subtask_manager = SubtaskManager(self, task=Task.GPSR, mock_areas=[])
         self.gpsr_tasks = GPSRTask(self.subtask_manager)
         self.gpsr_individual_tasks = GPSRSingleTask(self.subtask_manager)
 
@@ -62,6 +62,9 @@ class GPSRTM(Node):
         """State machine"""
 
         if self.current_state == GPSRTM.States.START:
+            self.subtask_manager.manipulation.move_joint_positions(
+                named_position="front_stare", velocity=0.5, degrees=True
+            )
             self.subtask_manager.hri.say(
                 "Hi, my name is Frida. I am a general purpose robot. I can help you with some tasks."
             )
@@ -71,6 +74,9 @@ class GPSRTM(Node):
                 self.current_state = GPSRTM.States.DONE
                 return
 
+            self.subtask_manager.manipulation.move_joint_positions(
+                named_position="front_stare", velocity=0.5, degrees=True
+            )
             s, user_command = self.subtask_manager.hri.ask_and_confirm(
                 "What is your command?",
                 "command",
@@ -135,6 +141,9 @@ class GPSRTM(Node):
             )
             self.executed_commands += 1
             self.current_state = GPSRTM.States.WAITING_FOR_COMMAND
+            self.subtask_manager.manipulation.move_joint_positions(
+                named_position="front_stare", velocity=0.5, degrees=True
+            )
         elif self.current_state == GPSRTM.States.DONE:
             self.subtask_manager.hri.say(
                 "I am done with the task. I will now return to my home position.",

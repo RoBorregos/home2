@@ -25,10 +25,13 @@ def search_command(command, objects: list[object]):
 
 
 class GPSRSingleTask(GenericTask):
-    """Class to manage the GPS task"""
+    """Class to manage the GPSR task"""
+
+    def __init__(self, subtask_manager):
+        """Initialize the class"""
+        super().__init__(subtask_manager)
 
     ## Nav
-
     def go_to(self, command: GoTo):
         """
         Navigate to a given location.
@@ -52,15 +55,40 @@ class GPSRSingleTask(GenericTask):
         self.subtask_manager.hri.say(f"I will go to {command.location_to_go}.", wait=False)
         location = self.subtask_manager.hri.query_location(command.location_to_go)
         area = self.subtask_manager.hri.get_area(location)
+
+        if isinstance(area, list):
+            area = area[0]
+
         subarea = self.subtask_manager.hri.get_subarea(location)
+        if isinstance(area, list):
+            if len(subarea) == 0:
+                subarea = ""
+            else:
+                subarea = subarea[0]
 
         self.subtask_manager.hri.node.get_logger().info(f"Moving to {subarea} in {area}")
+        self.subtask_manager.hri.node.get_logger().info("Subarea")
+        self.subtask_manager.hri.node.get_logger().info(subarea)
 
         future = self.subtask_manager.nav.move_to_location(area, subarea)
         if "navigation" not in self.subtask_manager.get_mocked_areas():
-            rclpy.spin_until_future_complete(self, future)
+            rclpy.spin_until_future_complete(self.subtask_manager.nav.node, future)
 
         return Status.EXECUTION_SUCCESS, "arrived to:" + command.location_to_go
+
+    def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
+        """Navigate to the location"""
+        if say:
+            self.subtask_manager.hri.say(
+                f"I will now guide you to the {location}. Please follow me."
+            )
+            self.subtask_manager.manipulation.follow_face(False)
+            self.subtask_manager.manipulation.move_joint_positions(
+                named_position="front_stare", velocity=0.5, degrees=True
+            )
+        future = self.subtask_manager.nav.move_to_location(location, sublocation)
+        if "navigation" not in self.subtask_manager.get_mocked_areas():
+            rclpy.spin_until_future_complete(self, future)
 
     ## Manipulation
     def pick_object(self, command: PickObject):
@@ -122,6 +150,9 @@ class GPSRSingleTask(GenericTask):
 
         labels = self.subtask_manager.vision.get_labels(detections)
         s, object_to_pick = self.subtask_manager.hri.find_closest(labels, command.object_to_pick)
+        if isinstance(object_to_pick, list):
+            object_to_pick = object_to_pick[0]
+        print("OBJECT TO PICK", object_to_pick)
         return self.subtask_manager.manipulation.pick_object(object_to_pick), ""
 
     ## Manipulation
@@ -184,6 +215,7 @@ class GPSRSingleTask(GenericTask):
         """
 
         context = command.previous_command_info[0]
+        print("COMAANSSASF", command)
 
         if context in GPSR_COMMANDS:
             history = self.subtask_manager.hri.query_command_history(
@@ -273,6 +305,7 @@ class GPSRSingleTask(GenericTask):
             use_hotwords=False,
             retries=3,
             min_wait_between_retries=5.0,
+            skip_extract_data=True,
         )
 
         if status != Status.EXECUTION_SUCCESS:

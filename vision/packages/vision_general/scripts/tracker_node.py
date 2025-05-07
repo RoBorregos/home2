@@ -31,7 +31,7 @@ from vision_general.utils.reid_model import (
     get_structure,
 )
 
-from std_srvs.srv import SetBool, Trigger
+from std_srvs.srv import SetBool
 from frida_interfaces.srv import TrackBy, CropQuery
 from pose_detection import PoseDetection
 from frida_constants.vision_constants import (
@@ -44,7 +44,7 @@ from frida_constants.vision_constants import (
     CAMERA_INFO_TOPIC,
     CENTROID_TOIC,
     CROP_QUERY_TOPIC,
-    IS_TRACKING_TOPIC,
+    # IS_TRACKING_TOPIC,
 )
 from frida_constants.vision_enums import DetectBy
 
@@ -77,9 +77,9 @@ class SingleTracker(Node):
             TrackBy, SET_TARGET_BY_TOPIC, self.set_target_by_callback
         )
 
-        self.get_is_tracking_service = self.create_service(
-            Trigger, IS_TRACKING_TOPIC, self.get_is_tracking_callback
-        )
+        # self.get_is_tracking_service = self.create_service(
+        #     Trigger, IS_TRACKING_TOPIC, self.get_is_tracking_callback
+        # )
 
         self.results_publisher = self.create_publisher(Point, RESULTS_TOPIC, 10)
 
@@ -136,14 +136,14 @@ class SingleTracker(Node):
         pbar.close()
         self.get_logger().info("Single Tracker Ready")
 
-    def get_is_tracking_callback(self, request, response):
-        response = Trigger.Response()
-        response.success = self.is_tracking_result
-        if self.is_tracking_result:
-            self.get_logger().info("Tracking")
-        else:
-            self.get_logger().info("Not racking")
-        return response
+    # def get_is_tracking_callback(self, request, response):
+    #     response = Trigger.Response()
+    #     response.success = self.is_tracking_result
+    #     if self.is_tracking_result:
+    #         self.get_logger().info("Tracking")
+    #     else:
+    #         self.get_logger().info("Not racking")
+    #     return response
 
     def image_callback(self, data):
         """Callback to receive image from camera"""
@@ -323,7 +323,8 @@ class SingleTracker(Node):
         if future is None:
             return False
         while not future.done() and (time.time() - start_time) < timeout:
-            print("Waiting for future to complete...")
+            # print("Waiting for future to complete...")
+            pass
         return future
 
     def moondream_crop_query(self, prompt: str, bbox: list[float]) -> tuple[int, str]:
@@ -371,10 +372,10 @@ class SingleTracker(Node):
                 classes=0,
                 verbose=False,
             )
-            
+
             if self.person_data["id"] is None:
                 return
-            
+
             person_in_frame = False
 
             people = []

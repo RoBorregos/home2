@@ -13,6 +13,9 @@ services:
       - /dev/video0:/dev/video0
       - /tmp:/tmp
       - /tmp/.X11-unix:/tmp/.X11-unix
+      - ./build/:/workspace/build
+      - ./install/:/workspace/install
+      - ./log/:/workspace/log
   
     network_mode: host
     user: 1000:1000
@@ -29,7 +32,7 @@ services:
     tty: true
     stdin_open: true    
     working_dir: /workspace
-    command: ["/bin/bash", "-i", "-l"]
+    # command: ["/bin/bash", "-i", "-l"]
 
-    # command: >    
-    #   bash -c "${COMMAND:-/bin/bash}"
+    command: >    
+      bash -c "${COMMAND:-/bin/bash}"

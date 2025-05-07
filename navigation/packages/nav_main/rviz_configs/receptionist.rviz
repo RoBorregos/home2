@@ -6,6 +6,8 @@ Panels:
       Expanded:
         - /Global Options1
         - /Map1/Update Topic1
+        - /LaserScan1
+        - /LaserScan1/Topic1
       Splitter Ratio: 0.46875
     Tree Height: 284
   - Class: rviz_common/Selection
@@ -77,6 +79,8 @@ Visualization Manager:
           Value: true
         link_eef:
           Value: true
+        map:
+          Value: true
         odom:
           Value: true
         right_finger:
@@ -113,7 +117,50 @@ Visualization Manager:
       Show Axes: true
       Show Names: false
       Tree:
-        {}
+        map:
+          odom:
+            base_link:
+              base_footprint:
+                {}
+              intel_realsense:
+                {}
+              laser:
+                {}
+              xarm_base:
+                link_base:
+                  link1:
+                    link2:
+                      link3:
+                        link4:
+                          link5:
+                            link6:
+                              link_eef:
+                                gripper:
+                                  left_finger:
+                                    {}
+                                  right_finger:
+                                    {}
+                                  zed:
+                                    zed_camera_link:
+                                      zed_camera_center:
+                                        zed_baro_link:
+                                          {}
+                                        zed_left_camera_frame:
+                                          zed_imu_link:
+                                            {}
+                                          zed_left_camera_optical_frame:
+                                            {}
+                                          zed_temp_left_link:
+                                            {}
+                                        zed_mag_link:
+                                          {}
+                                        zed_right_camera_frame:
+                                          zed_right_camera_optical_frame:
+                                            {}
+                                          zed_temp_right_link:
+                                            {}
+                                gripper_grasp_frame:
+                                  {}
       Update Interval: 0
       Value: true
     - Alpha: 0.699999988079071
@@ -255,6 +302,40 @@ Visualization Manager:
         Value: /local_costmap/costmap_updates
       Use Timestamp: false
       Value: true
+    - Alpha: 1
+      Autocompute Intensity Bounds: true
+      Autocompute Value Bounds:
+        Max Value: 10
+        Min Value: -10
+        Value: true
+      Axis: Z
+      Channel Name: intensity
+      Class: rviz_default_plugins/LaserScan
+      Color: 255; 255; 255
+      Color Transformer: Intensity
+      Decay Time: 0
+      Enabled: true
+      Invert Rainbow: false
+      Max Color: 255; 255; 255
+      Max Intensity: 47
+      Min Color: 0; 0; 0
+      Min Intensity: 47
+      Name: LaserScan
+      Position Transformer: XYZ
+      Selectable: true
+      Size (Pixels): 3
+      Size (m): 0.05000000074505806
+      Style: Flat Squares
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        Filter size: 10
+        History Policy: Keep Last
+        Reliability Policy: Best Effort
+        Value: /scan
+      Use Fixed Frame: true
+      Use rainbow: true
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -301,16 +382,16 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 10.046144485473633
+      Distance: 8.177728652954102
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: -0.1745232194662094
-        Y: 0.33514904975891113
-        Z: -0.694349467754364
+        X: -0.20150959491729736
+        Y: 0.8103402256965637
+        Z: -0.677221417427063
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
@@ -336,4 +417,4 @@ Window Geometry:
     collapsed: false
   Width: 796
   X: 70
-  Y: 113
+  Y: 146
