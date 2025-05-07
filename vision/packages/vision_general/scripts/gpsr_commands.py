@@ -219,7 +219,6 @@ class GPSRCommands(Node):
         """Count the gestures in the image and return a dictionary."""
         gesture_count = {
             Gestures.UNKNOWN: 0,
-            Gestures.UNKNOWN: 0,
             Gestures.WAVING: 0,
             Gestures.RAISING_LEFT_ARM: 0,
             Gestures.RAISING_RIGHT_ARM: 0,
@@ -239,6 +238,11 @@ class GPSRCommands(Node):
             # Increment the gesture count based on detected gesture
             if gesture in gesture_count:
                 gesture_count[gesture] += 1
+
+        gesture_count[Gestures.RAISING_RIGHT_ARM] += gesture_count[Gestures.WAVING]
+        gesture_count[Gestures.RAISING_LEFT_ARM] += gesture_count[Gestures.WAVING]
+        gesture_count[Gestures.WAVING] += gesture_count[Gestures.RAISING_LEFT_ARM]
+        gesture_count[Gestures.WAVING] += gesture_count[Gestures.RAISING_RIGHT_ARM]
 
         return gesture_count
 
