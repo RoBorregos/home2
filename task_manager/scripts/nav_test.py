@@ -23,11 +23,15 @@ class TestTaskManager(Node):
 
     def run(self):
         Logger.info(self, "Running test task manager")
-        status, res = self.subtask_manager.nav.check_door()
-        if status == Status.EXECUTION_SUCCESS:
-            Logger.info(self, f"Door status: {res}")
-        else:
-            Logger.error(self, "Failed to check door status")
+        res = "closed"
+        while res == "closed":
+            status, res = self.subtask_manager.nav.check_door()
+            if status == Status.EXECUTION_SUCCESS:
+                Logger.info(self, f"Door status: {res}")
+            else:
+                Logger.error(self, "Failed to check door status")
+
+        Logger.info(self, "Door OPENED GOING TO NEXT STAT")
 
 
 def main(args=None):

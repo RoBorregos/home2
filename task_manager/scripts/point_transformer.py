@@ -4,15 +4,17 @@ from rclpy.node import Node
 from tf2_ros import Buffer, TransformListener
 from tf2_geometry_msgs import do_transform_point
 from rclpy.callback_groups import ReentrantCallbackGroup
-from frida_interfaces.srv import PointTransformation, ReturnAreas
+from frida_interfaces.srv import PointTransformation, ReturnAreas, LaserGet
 import json
 import os
+from sensor_msgs.msg import LaserScan
 from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import TransformStamped
 from utils.status import Status
 
 POINT_TRANSFORMER_TOPIC = "/integration/point_transformer"
 RETURN_AREAS_TOPIC = "/integration/return_areas"
+RETURN_LASER_DATA = "/integration/Laserscan"
 
 
 class PointTransformer(Node):
@@ -22,6 +24,7 @@ class PointTransformer(Node):
         self.callback_group = ReentrantCallbackGroup()
 
         # TF2 setup
+        self.laser_sub = None
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
@@ -29,8 +32,12 @@ class PointTransformer(Node):
             PointTransformation, POINT_TRANSFORMER_TOPIC, self.set_target_callback
         )
         self.return_areas = self.create_service(ReturnAreas, RETURN_AREAS_TOPIC, self.whereIam)
-
+        self.return_areas = self.create_service(LaserGet, RETURN_LASER_DATA, self.send_laser_data)
+        self.scan_topic = self.create_subscription(LaserScan, "/scan", self.update_laser, 10)
         self.get_logger().info("PointTransformer node has been started.")
+
+    def update_laser(self, msg: LaserScan):
+        self.laser_sub = msg
 
     def set_target_callback(self, request, response):
         """Convert the object to height"""
@@ -86,6 +93,19 @@ class PointTransformer(Node):
         except Exception as e:
             self.get_logger().info(f"Error getting position: {e}")
             response.status = Status.EXECUTION_ERROR
+            return
+
+    def send_laser_data(self, request, response):
+        try:
+            if self.laser_sub is not None:
+                response.data = self.laser_sub
+                response.status = True
+            else:
+                response.status = False
+            return response
+        except Exception as e:
+            self.get_logger().debug(e)
+            response.status = False
             return response
 
     def whereIam(self, request, response):

@@ -9,6 +9,7 @@ import os
 def generate_launch_description():
     bringup_dir = get_package_share_directory('nav_main')
     params=os.path.join(bringup_dir, 'config', 'nav2_params.yaml'),
+    params_file = LaunchConfiguration('params_file', default=default_value)
     param_substitutions = {
         'use_sim_time': 'false',
         'autostart': 'true'}
