@@ -82,14 +82,6 @@ class SingleTracker(Node):
             Trigger, "/vision/is_tracking", self.get_is_tracking_callback
         )
 
-        self.get_is_tracking_service = self.create_service(
-            Trigger, "/vision/is_tracking", self.get_is_tracking_callback
-        )
-
-        self.get_is_tracking_service = self.create_service(
-            Trigger, "/vision/is_tracking", self.get_is_tracking_callback
-        )
-
         self.results_publisher = self.create_publisher(Point, RESULTS_TOPIC, 10)
 
         self.image_publisher = self.create_publisher(Image, TRACKER_IMAGE_TOPIC, 10)
@@ -105,10 +97,6 @@ class SingleTracker(Node):
         self.setup()
         self.create_timer(0.1, self.run)
         self.create_timer(0.01, self.publish_image)
-
-        self.is_tracking_result = False
-
-        self.is_tracking_result = False
 
         self.is_tracking_result = False
 

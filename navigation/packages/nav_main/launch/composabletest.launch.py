@@ -19,7 +19,7 @@ def generate_launch_description():
     param_substitutions = {
         'use_sim_time': 'false',
         'autostart': 'true'}
-    
+
     configured_params = ParameterFile(
         RewrittenYaml(
             source_file=params_file,
@@ -27,10 +27,10 @@ def generate_launch_description():
             param_rewrites=param_substitutions,
             convert_types=True),
         allow_substs=True)
-    
+
     remappings = [('/tf', 'tf'),
                   ('/tf_static', 'tf_static')]
-    
+
     nav2_nodes = [
         ComposableNode(
                 package='nav2_controller',
@@ -109,7 +109,7 @@ def generate_launch_description():
                 ]
             }],
         ),
-        
+
     ]
 
     container = ComposableNodeContainer(
