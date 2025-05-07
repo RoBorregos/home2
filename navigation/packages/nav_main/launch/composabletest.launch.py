@@ -8,12 +8,12 @@ import os
 
 def generate_launch_description():
     bringup_dir = get_package_share_directory('nav_main')
-    params=os.path.join(bringup_dir, 'config', 'nav2_params.yaml'),
+    params = os.path.join(bringup_dir, 'config', 'nav2_params.yaml'),
     params_file = LaunchConfiguration('params_file', default=default_value)
     param_substitutions = {
         'use_sim_time': 'false',
         'autostart': 'true'}
-    
+
     configured_params = ParameterFile(
         RewrittenYaml(
             source_file=params,
@@ -21,53 +21,53 @@ def generate_launch_description():
             param_rewrites=param_substitutions,
             convert_types=True),
         allow_substs=True)
-    
+
     remappings = [('/tf', 'tf'),
                   ('/tf_static', 'tf_static')]
-    
+
     nav2_nodes = [
         ComposableNode(
-                package='nav2_controller',
-                plugin='nav2_controller::ControllerServer',
-                name='controller_server',
-                parameters=[configured_params],
-                remappings=remappings ),
-            ComposableNode(
-                package='nav2_smoother',
-                plugin='nav2_smoother::SmootherServer',
-                name='smoother_server',
-                parameters=[configured_params],
-                remappings=remappings),
-            ComposableNode(
-                package='nav2_planner',
-                plugin='nav2_planner::PlannerServer',
-                name='planner_server',
-                parameters=[configured_params],
-                remappings=remappings),
-            ComposableNode(
-                package='nav2_behaviors',
-                plugin='behavior_server::BehaviorServer',
-                name='behavior_server',
-                parameters=[configured_params],
-                remappings=remappings),
-            ComposableNode(
-                package='nav2_bt_navigator',
-                plugin='nav2_bt_navigator::BtNavigator',
-                name='bt_navigator',
-                parameters=[configured_params],
-                remappings=remappings),
-            ComposableNode(
-                package='nav2_velocity_smoother',
-                plugin='nav2_velocity_smoother::VelocitySmoother',
-                name='velocity_smoother',
-                parameters=[configured_params],
-                remappings=remappings),
-            # ComposableNode(
-            #     package='nav2_costmap_2d',
-            #     plugin='nav2_costmap_2d::CostmapClient',
-            #     name='local_costmap',
-            #     parameters=[configured_params],
-            # ),
+            package='nav2_controller',
+            plugin='nav2_controller::ControllerServer',
+            name='controller_server',
+            parameters=[configured_params],
+            remappings=remappings),
+        ComposableNode(
+            package='nav2_smoother',
+            plugin='nav2_smoother::SmootherServer',
+            name='smoother_server',
+            parameters=[configured_params],
+            remappings=remappings),
+        ComposableNode(
+            package='nav2_planner',
+            plugin='nav2_planner::PlannerServer',
+            name='planner_server',
+            parameters=[configured_params],
+            remappings=remappings),
+        ComposableNode(
+            package='nav2_behaviors',
+            plugin='behavior_server::BehaviorServer',
+            name='behavior_server',
+            parameters=[configured_params],
+            remappings=remappings),
+        ComposableNode(
+            package='nav2_bt_navigator',
+            plugin='nav2_bt_navigator::BtNavigator',
+            name='bt_navigator',
+            parameters=[configured_params],
+            remappings=remappings),
+        ComposableNode(
+            package='nav2_velocity_smoother',
+            plugin='nav2_velocity_smoother::VelocitySmoother',
+            name='velocity_smoother',
+            parameters=[configured_params],
+            remappings=remappings),
+        # ComposableNode(
+        #     package='nav2_costmap_2d',
+        #     plugin='nav2_costmap_2d::CostmapClient',
+        #     name='local_costmap',
+        #     parameters=[configured_params],
+        # ),
         ComposableNode(
             package='nav2_lifecycle_manager',
             plugin='nav2_lifecycle_manager::LifecycleManager',
@@ -82,11 +82,11 @@ def generate_launch_description():
                     'behavior_server',
                     'bt_navigator',
                     'velocity_smoother',
-                    #'local_costmap'
+                    # 'local_costmap'
                 ]
             }],
         ),
-        
+
     ]
 
     container = ComposableNodeContainer(

@@ -28,8 +28,24 @@ ZERO_SHOT_DETECTIONS_ACTIVE_TOPIC = "/vision/zero_shot_detections_active"
 SET_DETECTOR_CLASSES_SERVICE = "/vision/set_detector_classes"
 
 ZERO_SHOT_DEFAULT_CLASSES = [
-    "person",
-    "door",
+    "apple",
+    "banana",
+    "orange",
+    "can",
+    "bottle",
+    "cup",
+    "bowl",
+    "plate",
+    "spoon",
+    "fork",
+    "knife",
+    "pringles",
+    "cereal",
+    "cereal_box",
+    "milk",
+    "milk_carton",
+    "water",
+    "water_bottle",
 ]
 
 ZERO_SHOT_MODEL = "yoloe-11l-seg.pt"
