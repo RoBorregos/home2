@@ -12,6 +12,7 @@ from subtask_managers.gpsr_test_commands import get_gpsr_comands
 from utils.logger import Logger
 from utils.status import Status
 from utils.subtask_manager import SubtaskManager, Task
+import time
 
 ATTEMPT_LIMIT = 3
 MAX_COMMANDS = 3
@@ -62,6 +63,16 @@ class GPSRTM(Node):
         """State machine"""
 
         if self.current_state == GPSRTM.States.START:
+            res = "closed"
+            while res == "closed":
+                time.sleep(1)
+                status, res = self.subtask_manager.nav.check_door()
+                if status == Status.EXECUTION_SUCCESS:
+                    Logger.info(self, f"Door status: {res}")
+                else:
+                    Logger.error(self, "Failed to check door status")
+            # TODO: LOCATION
+            self.subtask_manager.nav.move_to_location(location="", sublocation="")  # LOCATION
             self.subtask_manager.manipulation.move_joint_positions(
                 named_position="front_stare", velocity=0.5, degrees=True
             )

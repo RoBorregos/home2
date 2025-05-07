@@ -25,6 +25,7 @@ services:
     group_add: 
       - video
     environment:
+      ROS_LOCALHOST_ONLY: 1
       <<:
         - *speech-devices
       DISPLAY: ${DISPLAY}

@@ -1,7 +1,7 @@
 services:
   stt-l4t:
     profiles: [receptionist, carry, gpsr, storing]
-    
+
     container_name: home2-hri-stt-l4t
     user: 1000:1000
     image: roborregos/home2:hri-stt-l4t
@@ -14,6 +14,8 @@ services:
     volumes:
       - ../../hri/packages/speech/scripts/stt/:/app
       - ../../hri/packages/speech/speech/:/app/speech
+    environment:
+      ROS_LOCALHOST_ONLY: 1
     network_mode: host
     command: >
       bash -c "source /tmp/PyAV/scripts/activate.sh && deactivate && python3 -u faster-whisper.py --port 50051 --model_size large-v3-turbo --log_transcriptions"

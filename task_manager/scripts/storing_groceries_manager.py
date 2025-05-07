@@ -12,6 +12,7 @@ from utils.status import Status
 from utils.subtask_manager import SubtaskManager, Task
 from geometry_msgs.msg import PointStamped
 from frida_interfaces.srv import PointTransformation
+import random
 import time
 
 POINT_TRANSFORMER_TOPIC = "/integration/point_transformer"
@@ -51,22 +52,28 @@ class ExecutionStates(Enum):
     CEREAL_PICK = 110
     CEREAL_PLACE = 120
 
+    NOT_ALL_OBJECTS_PICKED = 130
+
     END = 200
 
 
-for i in ExecutionStates:
-    for j in ExecutionStates:
-        if i.value == j.value and i.name != j.name:
-            raise ValueError(f"Duplicate value found: {i.value} for {i.name} and {j.name}")
-
 STATE_TO_DEUX = {
+    ExecutionStates.START: ExecutionStates.INIT_NAV_TO_SHELF,
+    ExecutionStates.SUCCEDED_NAV_TO_SHELF: ExecutionStates.VIEW_SHELF_AND_SAVE_OBJECTS,
+    ExecutionStates.VIEW_SHELF_AND_SAVE_OBJECTS: ExecutionStates.INIT_NAV_TO_TABLE,
     ExecutionStates.PICK_OBJECT: ExecutionStates.DEUX_PICK_OBJECT,
     ExecutionStates.PLACE_OBJECT: ExecutionStates.DEUX_PLACE_OBJECT,
     ExecutionStates.INIT_NAV_TO_SHELF: ExecutionStates.SUCCEDED_NAV_TO_SHELF,
     ExecutionStates.INIT_NAV_TO_TABLE: ExecutionStates.VIEW_AND_SAVE_OBJECTS_ON_TABLE,
+    ExecutionStates.VIEW_AND_SAVE_OBJECTS_ON_TABLE: ExecutionStates.PLAN_NEXT,
+    ExecutionStates.CATEGORIZE_OBJECTS: ExecutionStates.CATEGORIZE_OBJECTS2,
+    ExecutionStates.SAY_5_OBJECTS_CATEGORIZED: ExecutionStates.PLAN_NEXT,
+    ExecutionStates.PLAN_NEXT: ExecutionStates.NAV_TO_TABLE,
     ExecutionStates.NAV_TO_SHELF: ExecutionStates.PLACE_OBJECT,
     ExecutionStates.NAV_TO_TABLE: ExecutionStates.PICK_OBJECT,
+    ExecutionStates.NOT_ALL_OBJECTS_PICKED: ExecutionStates.PICK_OBJECT,
 }
+
 STATE_RETRIES = {
     ExecutionStates.INIT_NAV_TO_SHELF: 5,
     ExecutionStates.VIEW_SHELF_AND_SAVE_OBJECTS: 2,
@@ -83,6 +90,11 @@ STATE_RETRIES = {
     ExecutionStates.CEREAL_PLACE: 10,
     "DEFAULT": 10,
 }
+
+for i in ExecutionStates:
+    for j in ExecutionStates:
+        if i.value == j.value and i.name != j.name:
+            raise ValueError(f"Duplicate value found: {i.value} for {i.name} and {j.name}")
 
 
 class Shelf(BaseModel):
@@ -115,6 +127,9 @@ class StoringGroceriesManager(Node):
         ]  # remember rest 15cm from the base_link and the measure is in m
         self.shelf_level_threshold = 0.30
         self.shelf_level_down_threshold = 0.05
+        self.picked_objects = 0
+        self.prev_uid = None
+        self.pick_uid = None
         self.transform_tf = self.create_client(PointTransformation, POINT_TRANSFORMER_TOPIC)
 
     def generate_manual_levels(self):
@@ -182,6 +197,16 @@ class StoringGroceriesManager(Node):
             self.subtask_manager.hri.say(text="Ending Storing Groceries Manager...", wait=True)
             return
         elif self.state == ExecutionStates.INIT_NAV_TO_SHELF:
+            res = "closed"
+            while res == "closed":
+                time.sleep(1)
+                status, res = self.subtask_manager.nav.check_door()
+                if status == Status.EXECUTION_SUCCESS:
+                    Logger.info(self, f"Door status: {res}")
+                else:
+                    Logger.error(self, "Failed to check door status")
+
+            Logger.info(self, "Door OPENED GOING TO NEXT STAT")
             hres: Status = self.nav_to("kitchen", "shelve")
             hres: Status = self.nav_to("kitchen", "shelve")
             if hres == Status.EXECUTION_SUCCESS:
@@ -389,10 +414,44 @@ class StoringGroceriesManager(Node):
                     continue
             self.state = ExecutionStates.PLAN_NEXT
         elif self.state == ExecutionStates.PLAN_NEXT:
-            if len(self.object_names_on_table) == 0:
+            if len(self.object_names_on_table) == 0 or self.picked_objects >= 5:
+                self.subtask_manager.hri.say(text="I have finished placing the objects", wait=True)
                 self.state = ExecutionStates.END
                 return
+            self.pick_uid = random.random()
+            if self.prev_uid != self.pick_uid:
+                self.picked_objects += 1
+                self.prev_uid = self.pick_uid
             self.state = ExecutionStates.NAV_TO_TABLE
+        elif self.state == ExecutionStates.NOT_ALL_OBJECTS_PICKED:
+            if len([i for k, i in self.object_to_placing_shelf.values() if k == 0]) == 0:
+                status, res = self.subtask_manager.hri.confirm(
+                    text="Did I pick all the objects?", wait=True
+                )
+                if res == "yes":
+                    self.subtask_manager.hri.say(
+                        text="I have finished placing the objects", wait=True
+                    )
+                    self.state = ExecutionStates.END
+                    return
+                else:
+                    self.subtask_manager.hri.say(text="I will pick the objects again", wait=True)
+                    self.state = ExecutionStates.PICK_OBJECT
+                    return
+
+            # if nothing works then go to deux: ask the user if there are more objects to pick
+            status, res = self.subtask_manager.hri.confirm(
+                text="Did I pick all the objects?", wait=True
+            )
+            if res == "yes":
+                self.subtask_manager.hri.say(text="I have finished placing the objects", wait=True)
+                self.state = ExecutionStates.END
+                return
+            else:
+                self.subtask_manager.hri.say(text="I will pick the objects again", wait=True)
+                self.state = ExecutionStates.PICK_OBJECT
+                return
+
         elif self.state == ExecutionStates.NAV_TO_TABLE:
             print("qpd papu")
             print(f"self.papustate: {self.state}")
@@ -448,6 +507,7 @@ class StoringGroceriesManager(Node):
                 self,
                 f"Detected object: {min_distance_obj.classname} at distance {min_distance_obj.distance}",
             )
+
             # Logger.info(self,
             #     f"Detected object: {min_distance_obj.classname}")
             self.subtask_manager.hri.say(
@@ -514,9 +574,32 @@ class StoringGroceriesManager(Node):
             if self.object_to_placing_shelf[self.current_object] == []:
                 # put it in a random shelf
                 Logger.info(self, "No shelf found for object")
-                self.object_to_placing_shelf[self.current_object].append(
-                    self.shelves_count % len(self.manual_heights)
+                # self.object_to_placing_shelf[self.current_object].append(
+                #     self.shelves_count % len(self.manual_heights)
+                # )
+                status, resulting_clas, objects_to_add_2 = (
+                    self.subtask_manager.hri.categorize_objects(
+                        table_objects=[self.current_object],
+                        shelfs={i: self.shelves[i].objects for i in range(self.shelves_count)},
+                    )
                 )
+                if not status == Status.EXECUTION_SUCCESS:
+                    Logger.error(self, "Failed to categorize objects")
+                    return
+                resulting_clas: dict[int, str]
+                objects_to_add_2: dict[int, list[str]]
+                shelf_to_be_placed = None
+                for i in objects_to_add_2.values():
+                    indx, objectooo = i
+                    if objectooo == self.current_object:
+                        shelf_to_be_placed = indx
+                        self.object_to_placing_shelf[self.current_object].append(shelf_to_be_placed)
+                        self.subtask_manager.hri.say(
+                            f"I have classified the object: {self.current_object} as {resulting_clas[indx]}, im going to place it in shelf number {shelf_to_be_placed}",
+                            wait=True,
+                        )
+                        break
+
             elif self.object_to_placing_shelf[self.current_object][0] > len(self.shelves):
                 self.object_to_placing_shelf[self.current_object][0] = self.object_to_placing_shelf[
                     self.current_object

@@ -6,4 +6,6 @@ services:
       dockerfile: Dockerfile.ROS
       args:
         BASE_IMAGE: dustynv/l4t-pytorch:r36.4.0
+    environment:
+      ROS_LOCALHOST_ONLY: 1
     image: roborregos/home2:l4t_base

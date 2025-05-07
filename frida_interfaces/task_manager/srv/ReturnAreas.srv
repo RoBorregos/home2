@@ -3,4 +3,5 @@
 ---
 # Response
 string location
+string[] nearest_locations
 bool success

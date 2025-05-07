@@ -2,6 +2,6 @@
 
 ---
 # Response
-float posex
-float posey
-int status
+float64 posex
+float64 posey
+uint32 status

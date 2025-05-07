@@ -65,7 +65,8 @@ from utils.baml_client.types import (
     PlaceObject,
     SayWithContext,
 )
-from baml_client.config import set_log_level
+
+# from baml_client.config import #set_log_level
 from utils.decorators import service_check
 from utils.logger import Logger
 from utils.status import Status
@@ -91,7 +92,7 @@ InterpreterAvailableCommands = Union[
 ]
 
 TIMEOUT = 5.0
-set_log_level("INFO")  # Set to "ERROR" in prod
+# set_log_level("INFO")  # Set to "ERROR" in prod
 
 
 def confirm_query(interpreted_text, target_info):

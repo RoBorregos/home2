@@ -9,6 +9,7 @@ services:
     environment:
       - NVIDIA_DRIVER_CAPABILITIES=all
       - DISPLAY=${DISPLAY}
+      - ROS_LOCALHOST_ONLY=1
     volumes:
       - /tmp/.X11-unix/:/tmp/.X11-unix
       - /dev:/dev
