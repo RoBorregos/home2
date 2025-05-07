@@ -35,7 +35,7 @@ public:
 
     // create timer -> This timer kills the node when the service runs once, as I have not found a way to properly use GPD more than once on a single runtime
     timer_ = this->create_wall_timer(
-      std::chrono::milliseconds(50),
+      std::chrono::milliseconds(500),
       [this]() {
         if (exit_) {
           kill_timer();

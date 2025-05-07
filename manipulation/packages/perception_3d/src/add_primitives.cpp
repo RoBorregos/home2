@@ -632,27 +632,25 @@ public:
             RCLCPP_INFO(this->get_logger(), "add_collision_object");
           });
 
-      std::shared_ptr<frida_interfaces::srv::AttachCollisionObject::Request>
-          attach_req = std::make_shared<
-              frida_interfaces::srv::AttachCollisionObject::Request>();
-
       // Wros2 service call /manipulation/attach_collision_object frida_interfaces/srv/AttachCollisionObject {"id : frida_pick_object_1, attached_link : link_base, touch_links : [link_base, base_link], detach : false }
 
       RCLCPP_INFO(this->get_logger(), "Plane primitive added");
       // res.wait();e
+      // std::shared_ptr<frida_interfaces::srv::AttachCollisionObject::Request>
+      //     attach_req = std::make_shared<
+      //         frida_interfaces::srv::AttachCollisionObject::Request>();
+      // attach_req->id = "plane";
+      // attach_req->attached_link = "link_base";
+      // attach_req->touch_links.push_back("link_base");
+      // attach_req->touch_links.push_back("link_base");
+      // attach_req->detach = false;
 
-      attach_req->id = "plane";
-      attach_req->attached_link = "link_base";
-      attach_req->touch_links.push_back("link_base");
-      attach_req->touch_links.push_back("link_base");
-      attach_req->detach = false;
-
-      auto attach_res = this->attach_collision_object_client->async_send_request(
-          attach_req,
-          [this](rclcpp::Client<frida_interfaces::srv::AttachCollisionObject>::
-                     SharedFuture future) {
-            RCLCPP_INFO(this->get_logger(), "attach_collision_object");
-          });
+      // auto attach_res = this->attach_collision_object_client->async_send_request(
+      //     attach_req,
+      //     [this](rclcpp::Client<frida_interfaces::srv::AttachCollisionObject>::
+      //                SharedFuture future) {
+      //       RCLCPP_INFO(this->get_logger(), "attach_collision_object");
+      //     });
 
       RCLCPP_INFO(this->get_logger(), "Plane primitive attached");
     } else {
