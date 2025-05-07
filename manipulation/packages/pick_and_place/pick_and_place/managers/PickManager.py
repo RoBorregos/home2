@@ -59,7 +59,7 @@ class PickManager:
         if object_cluster is None:
             self.node.get_logger().error("No object cluster detected")
             return False, None
-
+        return True, None
         # open gripper
         gripper_request = SetBool.Request()
         gripper_request.data = True

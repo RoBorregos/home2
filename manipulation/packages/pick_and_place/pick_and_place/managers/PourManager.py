@@ -122,6 +122,7 @@ class PourManager:
             if pick_result.success:
                 pick_result_success = True
                 break
+            time.sleep(1)
 
         if not pick_result_success:
             self.node.get_logger().error("Pick motion failed")
