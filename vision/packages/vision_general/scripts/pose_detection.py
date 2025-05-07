@@ -6,6 +6,7 @@ import numpy as np
 from frida_constants.vision_enums import Gestures
 from math import degrees, acos
 
+
 class PoseDetection:
     def __init__(self):
         print("Pose Detection Ready")
@@ -62,7 +63,10 @@ class PoseDetection:
                 results.pose_landmarks.landmark[end_idx],
             )
             if start.visibility > 0.5 and mid.visibility > 0.5 and end.visibility > 0.5:
-                start_point = (int(start.x * image.shape[1]), int(start.y * image.shape[0]))
+                start_point = (
+                    int(start.x * image.shape[1]),
+                    int(start.y * image.shape[0]),
+                )
                 mid_point = (int(mid.x * image.shape[1]), int(mid.y * image.shape[0]))
                 end_point = (int(end.x * image.shape[1]), int(end.y * image.shape[0]))
                 cv2.line(image, start_point, mid_point, (0, 0, 255), 2)
@@ -153,7 +157,7 @@ class PoseDetection:
 
             elif self.is_pointing_right(mid_x, results_p):
                 gestures = Gestures.POINTING_RIGHT
-            
+
             elif self.is_waving(results_p):
                 gestures = Gestures.WAVING
 
@@ -166,29 +170,28 @@ class PoseDetection:
         landmarks = results.pose_landmarks.landmark
 
         left_shoulder = landmarks[11]  # mp_pose.PoseLandmark.LEFT_SHOULDER
-        left_elbow = landmarks[13]     # mp_pose.PoseLandmark.LEFT_ELBOW
-        left_wrist = landmarks[15]     # mp_pose.PoseLandmark.LEFT_WRIST
+        left_elbow = landmarks[13]  # mp_pose.PoseLandmark.LEFT_ELBOW
+        left_wrist = landmarks[15]  # mp_pose.PoseLandmark.LEFT_WRIST
 
         right_shoulder = landmarks[12]  # mp_pose.PoseLandmark.RIGHT_SHOULDER
-        right_elbow = landmarks[14]     # mp_pose.PoseLandmark.RIGHT_ELBOW
-        right_wrist = landmarks[16]     # mp_pose.PoseLandmark.RIGHT_WRIST
+        right_elbow = landmarks[14]  # mp_pose.PoseLandmark.RIGHT_ELBOW
+        right_wrist = landmarks[16]  # mp_pose.PoseLandmark.RIGHT_WRIST
 
         angle_r = self.get_angle(right_shoulder, right_elbow, right_wrist)
 
         angle_l = self.get_angle(left_shoulder, left_elbow, left_wrist)
-      
+
         if (
             angle_l > 27
-            #and left_wrist.y < left_shoulder.y
-        ):
-            return True
-        
-        elif (
-            angle_r > 27
-            #and right_wrist.y < right_shoulder.y
+            # and left_wrist.y < left_shoulder.y
         ):
             return True
 
+        elif (
+            angle_r > 27
+            # and right_wrist.y < right_shoulder.y
+        ):
+            return True
 
     def get_midpoint_x(self, results):
         landmarks = results.pose_landmarks.landmark
@@ -209,10 +212,10 @@ class PoseDetection:
         left_shoulder = landmarks[11]
         left_index = landmarks[19]
 
-        distance_left = left_index.x - left_shoulder.x 
+        distance_left = left_index.x - left_shoulder.x
 
-        if (right_index.x > mid_x or 0.28 < distance_left < 0.6):
-            return True    
+        if right_index.x > mid_x or 0.28 < distance_left < 0.6:
+            return True
 
     def is_pointing_right(self, mid_x, results):
         """Detects if the hand is pointing right across the chest."""
@@ -223,55 +226,55 @@ class PoseDetection:
 
         left_index = landmarks[19]
 
-        distance_right = right_shoulder.x - right_index.x 
+        distance_right = right_shoulder.x - right_index.x
 
-        if (left_index.x < mid_x or 0.28 < distance_right < 0.6):
-            return True        
+        if left_index.x < mid_x or 0.28 < distance_right < 0.6:
+            return True
 
     def is_raising_left_arm(self, mid_x, results):
         landmarks = results.pose_landmarks.landmark
 
         left_shoulder = landmarks[11]  # mp_pose.PoseLandmark.LEFT_SHOULDER
-        left_elbow = landmarks[13]     # mp_pose.PoseLandmark.LEFT_ELBOW
-        left_wrist = landmarks[15]     # mp_pose.PoseLandmark.LEFT_WRIST
+        left_elbow = landmarks[13]  # mp_pose.PoseLandmark.LEFT_ELBOW
+        left_wrist = landmarks[15]  # mp_pose.PoseLandmark.LEFT_WRIST
         left_index = landmarks[19]
 
         angle = self.get_angle(left_shoulder, left_elbow, left_wrist)
         distance_left = left_shoulder.y - left_index.y
 
         if (
-            angle < 27 and
-            left_wrist.y < left_shoulder.y and
-            left_elbow.y < left_shoulder.y and
-            left_index.x > mid_x and 
-            distance_left > 0.25
+            angle < 27
+            and left_wrist.y < left_shoulder.y
+            and left_elbow.y < left_shoulder.y
+            and left_index.x > mid_x
+            and distance_left > 0.25
         ):
             return True
 
         return False
 
-
     def is_raising_right_arm(self, mid_x, results):
         landmarks = results.pose_landmarks.landmark
 
         right_shoulder = landmarks[12]  # mp_pose.PoseLandmark.RIGHT_SHOULDER
-        right_elbow = landmarks[14]     # mp_pose.PoseLandmark.RIGHT_ELBOW
-        right_wrist = landmarks[16]     # mp_pose.PoseLandmark.RIGHT_WRIST
+        right_elbow = landmarks[14]  # mp_pose.PoseLandmark.RIGHT_ELBOW
+        right_wrist = landmarks[16]  # mp_pose.PoseLandmark.RIGHT_WRIST
         right_index = landmarks[20]
 
         angle = self.get_angle(right_shoulder, right_elbow, right_wrist)
         distance_right = right_shoulder.y - right_index.y
 
         if (
-            angle < 27 and
-            right_wrist.y < right_shoulder.y and
-            right_elbow.y < right_shoulder.y and
-            right_index.x < mid_x and
-            distance_right > 0.25
+            angle < 27
+            and right_wrist.y < right_shoulder.y
+            and right_elbow.y < right_shoulder.y
+            and right_index.x < mid_x
+            and distance_right > 0.25
         ):
             return True
 
         return False
+
 
 def main():
     pose_detection = PoseDetection()
@@ -303,7 +306,7 @@ def main():
 
         cv2.imshow("Pose and Gesture Detection", frame)
 
-        if cv2.waitKey(1) & 0xFF == ord('q'):
+        if cv2.waitKey(1) & 0xFF == ord("q"):
             break
 
     cap.release()
