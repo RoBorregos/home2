@@ -55,12 +55,11 @@ class GPSRSingleTask(GenericTask):
         self.subtask_manager.hri.say(f"I will go to {command.location_to_go}.", wait=False)
         location = self.subtask_manager.hri.query_location(command.location_to_go)
         area = self.subtask_manager.hri.get_area(location)
-
         if isinstance(area, list):
             area = area[0]
 
         subarea = self.subtask_manager.hri.get_subarea(location)
-        if isinstance(area, list):
+        if isinstance(subarea, list):
             if len(subarea) == 0:
                 subarea = ""
             else:
@@ -152,8 +151,28 @@ class GPSRSingleTask(GenericTask):
         s, object_to_pick = self.subtask_manager.hri.find_closest(labels, command.object_to_pick)
         if isinstance(object_to_pick, list):
             object_to_pick = object_to_pick[0]
-        print("OBJECT TO PICK", object_to_pick)
-        return self.subtask_manager.manipulation.pick_object(object_to_pick), ""
+        # print("OBJECT TO PICK", object_to_pick)
+        current_try = 0
+        while True:
+            if current_try >= RETRIES:
+                return self.deus_pick(command)
+            s = self.subtask_manager.manipulation.pick_object(object_to_pick), ""
+            current_try += 1
+
+    def deus_pick(self, command: PickObject):
+        deus_machina_retries = 0
+        while True:
+            if deus_machina_retries >= RETRIES:
+                self.subtask_manager.hri.say("I am sorry, I will abort picking the object.")
+                return Status.TARGET_NOT_FOUND, ""
+            s, res = self.subtask_manager.hri.confirm(
+                f"Have you given me the {command.object_to_pick}?", use_hotwords=False
+            )
+            if res == "yes":
+                self.subtask_manager.hri.say("Thank you. I will close my gripper")
+                return self.subtask_manager.manipulation.close_gripper(), ""
+            else:
+                deus_machina_retries += 1
 
     ## Manipulation
     def place_object(self, command: PlaceObject):

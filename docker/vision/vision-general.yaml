@@ -30,6 +30,7 @@ services:
       TERM: xterm-256color
       QT_X11_NO_MITSHM: 1
       QT_DEBUG_PLUGINS: 1 
+      ROS_LOCALHOST_ONLY: 1
     tty: true
     stdin_open: true    
     working_dir: /workspace

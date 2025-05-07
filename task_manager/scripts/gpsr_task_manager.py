@@ -77,15 +77,24 @@ class GPSRTM(Node):
             self.subtask_manager.manipulation.move_joint_positions(
                 named_position="front_stare", velocity=0.5, degrees=True
             )
-            s, user_command = self.subtask_manager.hri.ask_and_confirm(
-                "What is your command?",
-                "command",
-                context="The user was asked to say a command. We want to infer his complete instruction from the response",
-                confirm_question=confirm_command,
-                use_hotwords=False,
-                retries=ATTEMPT_LIMIT,
-                min_wait_between_retries=5.0,
-            )
+            # s, user_command = self.subtask_manager.hri.ask_and_confirm(
+            #     "What is your command?",
+            #     "command",
+            #     context="The user was asked to say a command. We want to infer his complete instruction from the response",
+            #     confirm_question=confirm_command,
+            #     use_hotwords=False,
+            #     retries=ATTEMPT_LIMIT,
+            #     min_wait_between_retries=5.0,
+            # )
+            # gesture_person_list = ["waving person", "person raising their left arm", "person raising their right arm",
+            #                "person pointing to the left", "person pointing to the right"]
+            # pose_person_plural_list = ["sitting persons", "standing persons", "lying persons"]
+
+            s = Status.EXECUTION_SUCCESS
+            # user_command = "go to the living room and count standing persons"
+            # user_command = "Go to the kitchen table find Ale and tell her you"
+            user_command = "tell me how many standing persons are in the living room"
+
             if s != Status.EXECUTION_SUCCESS:
                 self.subtask_manager.hri.say("I am sorry, I could not understand you.")
                 self.current_attempt += 1

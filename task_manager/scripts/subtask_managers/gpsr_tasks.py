@@ -128,6 +128,8 @@ class GPSRTask(GenericTask):
                 follow_person()
 
         """
+        if isinstance(command, dict):
+            command = FollowPersonUntil(**command)
 
         # TODO: fix this, now follow person until only has destination because
         # it can only be triggered after a find_person action, my suggestion for
@@ -189,18 +191,24 @@ class GPSRTask(GenericTask):
             - go(characteristic)
 
         """
+        if isinstance(command, dict):
+            command = GuidePersonTo(**command)
 
         location = self.subtask_manager.hri.query_location(command.destination_room)
         area = self.subtask_manager.hri.get_area(location)
+        self.subtask_manager.hri.node.get_logger().info(f"Initial area: {area}.")
+
         if isinstance(area, list):
             area = area[0]
 
         subarea = self.subtask_manager.hri.get_subarea(location)
+
         if isinstance(subarea, list):
             if len(subarea) == 0:
                 subarea = ""
             else:
                 subarea = subarea[0]
+
         self.navigate_to(area, subarea)
 
         if command.destination_room == "person":
@@ -212,31 +220,33 @@ class GPSRTask(GenericTask):
 
     ## HRI, Vision
     def get_person_info(self, command: GetPersonInfo):
+        """
+                Get specific information about a person.
+
+                Args:
+                    complement (str): The type of information to retrieve. If "gesture" or "posture", the robot computes the information visually. If "name", the robot fetches the name from known names or interacts with the person if the name is unknown.
+                    characteristic (str): Always empty string.
+
+                Preconditions:
+                    - The robot must be in front of the person.
+        [
+                Behaviour:
+                    - If the complement is "gesture" or "posture", the robot computes the information visually.
+                    - If the complement is "name", the robot fetches the name from previously known names or interacts with the person if the name is not known.
+
+                Postconditions:
+                    - The robot saves the specified information about the person in the database.
+
+                Pseudocode:
+                    if complement == 'gesture' or complement == 'posture':
+                        return gest_posture_analyzer()
+                    else:
+                        return get_person_name()
+        """
+
         if isinstance(command, dict):
             command = GetPersonInfo(**command)
-        """
-        Get specific information about a person.
 
-        Args:
-            complement (str): The type of information to retrieve. If "gesture" or "posture", the robot computes the information visually. If "name", the robot fetches the name from known names or interacts with the person if the name is unknown.
-            characteristic (str): Always empty string.
-
-        Preconditions:
-            - The robot must be in front of the person.
-[
-        Behaviour:
-            - If the complement is "gesture" or "posture", the robot computes the information visually.
-            - If the complement is "name", the robot fetches the name from previously known names or interacts with the person if the name is not known.
-
-        Postconditions:
-            - The robot saves the specified information about the person in the database.
-
-        Pseudocode:
-            if complement == 'gesture' or complement == 'posture':
-                return gest_posture_analyzer()
-            else:
-                return get_person_name()
-        """
         if command.info_type == "gesture":
             command.info_type = DetectBy.GESTURES.value
         elif command.info_type == "posture":
@@ -349,7 +359,8 @@ class GPSRTask(GenericTask):
             Store the total count.
         """
 
-        # TODO (@nav): go to a location given only one value
+        if isinstance(command, dict):
+            command = Count(**command)
 
         possibilities = [v.value for v in Gestures] + [v.value for v in Poses] + ["clothes"]
 
@@ -357,7 +368,7 @@ class GPSRTask(GenericTask):
             possibilities, command.target_to_count
         )
         value = value[0]
-        self.subtask_manager.manipulation.move_to_position("front_low_stare")
+        self.subtask_manager.manipulation.move_to_position("front_stare")
 
         counter = 0
 
