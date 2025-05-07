@@ -73,6 +73,7 @@ STATE_TO_DEUX = {
     ExecutionStates.NAV_TO_TABLE: ExecutionStates.PICK_OBJECT,
     ExecutionStates.NOT_ALL_OBJECTS_PICKED: ExecutionStates.PICK_OBJECT,
 }
+
 STATE_RETRIES = {
     ExecutionStates.INIT_NAV_TO_SHELF: 5,
     ExecutionStates.VIEW_SHELF_AND_SAVE_OBJECTS: 2,
@@ -89,6 +90,7 @@ STATE_RETRIES = {
     ExecutionStates.CEREAL_PLACE: 10,
     "DEFAULT": 10,
 }
+
 for i in ExecutionStates:
     for j in ExecutionStates:
         if i.value == j.value and i.name != j.name:
@@ -195,6 +197,16 @@ class StoringGroceriesManager(Node):
             self.subtask_manager.hri.say(text="Ending Storing Groceries Manager...", wait=True)
             return
         elif self.state == ExecutionStates.INIT_NAV_TO_SHELF:
+            res = "closed"
+            while res == "closed":
+                time.sleep(1)
+                status, res = self.subtask_manager.nav.check_door()
+                if status == Status.EXECUTION_SUCCESS:
+                    Logger.info(self, f"Door status: {res}")
+                else:
+                    Logger.error(self, "Failed to check door status")
+
+            Logger.info(self, "Door OPENED GOING TO NEXT STAT")
             hres: Status = self.nav_to("kitchen", "shelve")
             hres: Status = self.nav_to("kitchen", "shelve")
             if hres == Status.EXECUTION_SUCCESS:
