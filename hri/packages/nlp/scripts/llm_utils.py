@@ -10,12 +10,12 @@ from typing import Optional
 import pytz
 import rclpy
 from nlp.assets.dialogs import (
+    format_response,
     get_categorize_shelves_args,
     get_common_interests_dialog,
     get_is_answer_negative_args,
     get_is_answer_positive_args,
     get_previous_command_answer,
-    format_response,
 )
 from openai import OpenAI
 from rclpy.executors import ExternalShutdownException
@@ -256,7 +256,9 @@ class LLMUtils(Node):
         try:
             categorized_shelves = json.loads(response_content)
             self.get_logger().info(f"Categorized shelves: {categorized_shelves}")
-            response.categorized_shelves = [str(c) for c in categorized_shelves]
+            response.categorized_shelves = [
+                str(c) for c in categorized_shelves["categories"]
+            ]
 
             return response
         except Exception as e:

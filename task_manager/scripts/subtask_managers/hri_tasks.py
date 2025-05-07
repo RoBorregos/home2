@@ -10,10 +10,8 @@ import re
 from datetime import datetime
 from typing import List, Union
 
-
 import rclpy
 from ament_index_python.packages import get_package_share_directory
-
 from frida_constants.hri_constants import (
     ADD_ENTRY_SERVICE,
     CATEGORIZE_SERVICE,
@@ -34,7 +32,6 @@ from frida_constants.hri_constants import (
 from frida_interfaces.srv import (
     STT,
     AddEntry,
-    AnswerQuestion as AnswerQuestionLLM,
     CategorizeShelves,
     CommonInterest,
     ExtractInfo,
@@ -46,13 +43,14 @@ from frida_interfaces.srv import (
     Speak,
     UpdateHotwords,
 )
+from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
 from rcl_interfaces.msg import Parameter, ParameterType, ParameterValue
 from rcl_interfaces.srv import SetParameters
 from rclpy.node import Node
 from std_msgs.msg import String
 from utils.baml_client.sync_client import b
-from utils.baml_client.types import AnswerQuestion
 from utils.baml_client.types import (
+    AnswerQuestion,
     CommandListLLM,
     Count,
     FindPerson,
@@ -67,7 +65,6 @@ from utils.baml_client.types import (
     PlaceObject,
     SayWithContext,
 )
-from baml_client.config import set_log_level
 from utils.decorators import service_check
 from utils.logger import Logger
 from utils.status import Status
@@ -93,7 +90,6 @@ InterpreterAvailableCommands = Union[
 ]
 
 TIMEOUT = 5.0
-set_log_level("INFO")  # Set to "ERROR" in prod
 
 
 def confirm_query(interpreted_text, target_info):
@@ -794,7 +790,7 @@ class HRITasks(metaclass=SubtaskMeta):
             self.node.get_logger().error(f"Error: {e}")
             return Status.EXECUTION_ERROR, {}
 
-        Logger.info(self.node, "Finished executing categorize_objects")
+        Logger.info(self.node, "get_shelves_categories:" + str(categorized_shelves))
 
         return Status.EXECUTION_SUCCESS, categorized_shelves
 

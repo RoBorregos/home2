@@ -1,19 +1,31 @@
 import json
+import os
 from datetime import datetime
 from uuid import uuid4
 
 import chromadb
 from chromadb.utils import embedding_functions
 from filter import remove_empty_lists, remove_nulls
+from sentence_transformers import SentenceTransformer
+
+MODEL_PATH = "/workspace/src/hri/packages/nlp/assets/all-MiniLM-L12-v2"
 
 
 class ChromaAdapter:
     def __init__(self):
         self.client = chromadb.HttpClient(host="localhost", port=8000)
+
+        if not os.path.exists(MODEL_PATH):
+            print(f"Model not found at {MODEL_PATH}. Downloading...")
+            model = SentenceTransformer("all-MiniLM-L12-v2")
+            model.save(MODEL_PATH)
+        else:
+            print(f"Loading model from {MODEL_PATH}")
+
         # Configure the embedding function
         self.sentence_transformer_ef = (
             embedding_functions.SentenceTransformerEmbeddingFunction(
-                model_name="all-MiniLM-L12-v2"
+                model_name=MODEL_PATH
             )
         )
 
@@ -34,12 +46,12 @@ class ChromaAdapter:
     def remove_categorization_collections(self):
         """Method to remove all collections from categorization node"""
         collections = [
+            "items",
             "actions",
             "categories",
             "locations",
             "names",
             "command_history",
-            "items",
         ]
         for collection in collections:
             self.client.delete_collection(collection)
@@ -70,16 +82,16 @@ class ChromaAdapter:
             return self.client.get_or_create_collection(
                 name=collection_name, embedding_function=self.sentence_transformer_ef
             )
-
         except Exception:
             raise ValueError(f"The collection is missing {collection_name}")
 
     def query(self, collection_name: str, query, top_k):
         """Method to query the collection and return only the original names from metadata"""
         collection_ = self.get_collection(collection_name)
-        include_list = ["documents", "metadatas", "distances"]
         results = collection_.query(
-            query_texts=query, n_results=top_k, include=include_list
+            query_texts=query,
+            n_results=top_k,
+            include=["metadatas", "documents", "distances"],
         )
 
         return results  # Return only the extracted names
@@ -178,9 +190,8 @@ class ChromaAdapter:
 
 def main():
     client_ = ChromaAdapter()
-    print(client_.list_collections())
-    collection_name = client_.get_collection("items")
-    print(collection_name.get())
+    results = client_.list_collections()
+    print(results)
 
 
 if __name__ == "__main__":
