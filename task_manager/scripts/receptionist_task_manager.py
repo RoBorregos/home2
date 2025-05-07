@@ -309,18 +309,16 @@ class ReceptionistTM(Node):
             self.subtask_manager.manipulation.move_to_position("front_low_stare")
             self.subtask_manager.manipulation.follow_face(True)
 
-
             if self.current_guest == 1:
                 person_found = False
                 for seat_angle in self.seat_angles:
-
                     if person_found:
                         break
 
                     self.subtask_manager.manipulation.pan_to(seat_angle)
                     host = self.guests[0]
                     self.current_attempts = 0
-                    
+
                     while self.current_attempts < ATTEMPT_LIMIT:
                         result = self.subtask_manager.vision.follow_by_name("Unknown")
                         if result == Status.EXECUTION_SUCCESS:
@@ -331,13 +329,12 @@ class ReceptionistTM(Node):
                             self.check_angles[self.current_attempts]
                         )
                         self.current_attempts += 1
-                    
+
                 self.subtask_manager.hri.say(f"Hello {host.name}. This is {self.get_guest().name}")
 
             else:
                 person_found = False
                 for seat_angle in self.seat_angles:
-
                     if person_found:
                         break
 
@@ -360,7 +357,6 @@ class ReceptionistTM(Node):
 
                 person_found = False
                 for seat_angle in self.seat_angles:
-
                     if person_found:
                         break
 
