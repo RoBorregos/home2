@@ -1,19 +1,31 @@
 import json
+import os
 from datetime import datetime
 from uuid import uuid4
 
 import chromadb
 from chromadb.utils import embedding_functions
 from filter import remove_empty_lists, remove_nulls
+from sentence_transformers import SentenceTransformer
+
+MODEL_PATH = "/workspace/src/hri/packages/nlp/assets/all-MiniLM-L12-v2"
 
 
 class ChromaAdapter:
     def __init__(self):
         self.client = chromadb.HttpClient(host="localhost", port=8000)
+
+        if not os.path.exists(MODEL_PATH):
+            print(f"Model not found at {MODEL_PATH}. Downloading...")
+            model = SentenceTransformer("all-MiniLM-L12-v2")
+            model.save(MODEL_PATH)
+        else:
+            print(f"Loading model from {MODEL_PATH}")
+
         # Configure the embedding function
         self.sentence_transformer_ef = (
             embedding_functions.SentenceTransformerEmbeddingFunction(
-                model_name="all-MiniLM-L12-v2"
+                model_name=MODEL_PATH
             )
         )
 
@@ -52,7 +64,9 @@ class ChromaAdapter:
     def get_collection(self, collection_name):
         """Method to get a collection; returns a collection object"""
         try:
-            return self.client.get_collection(collection_name)
+            return self.client.get_collection(
+                collection_name, embedding_function=self.sentence_transformer_ef
+            )
         except Exception:
             raise ValueError(f"The collection is missing {collection_name}")
 
@@ -65,7 +79,9 @@ class ChromaAdapter:
     def _get_or_create_collection(self, collection_name: str):
         """Helper method to get or create a collection"""
         try:
-            return self.client.get_or_create_collection(name=collection_name)
+            return self.client.get_or_create_collection(
+                name=collection_name, embedding_function=self.sentence_transformer_ef
+            )
         except Exception:
             raise ValueError(f"The collection is missing {collection_name}")
 
