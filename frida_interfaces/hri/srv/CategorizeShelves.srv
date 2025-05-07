@@ -2,4 +2,4 @@ std_msgs/String[] table_objects
 std_msgs/String shelves
 ---
 std_msgs/String objects_to_add
-std_msgs/String categorized_shelves
+string[] categorized_shelves

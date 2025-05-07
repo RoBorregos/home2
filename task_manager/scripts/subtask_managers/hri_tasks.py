@@ -698,6 +698,43 @@ class HRITasks(metaclass=SubtaskMeta):
 
         return Status.EXECUTION_SUCCESS, categorized_shelves, objects_to_add
 
+    def get_shelves_categories(
+        self, shelves: dict[int, list[str]]
+    ) -> tuple[Status, dict[int, str]]:
+        """
+        Categorize objects based on their shelf levels.
+
+        Args:
+            shelves (dict[int, list[str]]): Dictionary mapping shelf levels to object names.
+
+        Returns:
+            dict[int, str]: Dictionary mapping shelf levels to its category.
+        """
+        Logger.info(self.node, "Sending request to categorize_objects")
+
+        try:
+            request = CategorizeShelves.Request(shelves=String(data=str(shelves)), table_objects=[])
+
+            future = self.categorize_service.call_async(request)
+            Logger.info(self.node, "generated request")
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=-1)
+            res = future.result()
+            Logger.info(self.node, "request finished")
+            Logger.info(self.node, "categorize_objects result: " + str(res))
+            # if res.status != Status.EXECUTION_SUCCESS:
+            #     Logger.error(self.node, f"Error in categorize_objects: {res.status}")
+            #     return Status.EXECUTION_ERROR, {}, {}
+
+            categorized_shelves = res.categorized_shelves
+            categorized_shelves = {k: v for k, v in enumerate(categorized_shelves, start=1)}
+        except Exception as e:
+            self.node.get_logger().error(f"Error: {e}")
+            return Status.EXECUTION_ERROR, {}
+
+        Logger.info(self.node, "Finished executing categorize_objects")
+
+        return Status.EXECUTION_SUCCESS, categorized_shelves
+
     def get_subarea(self, query_result):
         return self.get_metadata_key(query_result, "subarea")
 

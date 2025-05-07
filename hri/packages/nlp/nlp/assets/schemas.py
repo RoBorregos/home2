@@ -37,4 +37,4 @@ class Shelf(BaseModel):
 
 
 class CategorizeShelvesResult(BaseModel):
-    shelves: dict[int, Shelf] = {}
+    categories: list[str]
