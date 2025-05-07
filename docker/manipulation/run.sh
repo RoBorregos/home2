@@ -121,7 +121,8 @@ case $TASK in
 esac
 
 COMMAND="source /opt/ros/humble/setup.bash && $RUN"
-echo "COMMAND= $COMMAND" >> .env
+# COMMAND='echo "hi"'
+echo "COMMAND=$COMMAND" >> .env
 
 #_________________________SETUP_________________________
 
@@ -131,6 +132,7 @@ export LOCAL_GROUP_ID=$(id -g)
 
 #_________________________RUN_________________________
 xhost +
+<<<<<<< Updated upstream
 # Check if the container exists
 EXISTING_CONTAINER=$(docker ps -a -q -f "name=$CONTAINER_NAME")
 if [ -z "$EXISTING_CONTAINER" ]; then
@@ -141,22 +143,101 @@ if [ -z "$EXISTING_CONTAINER" ]; then
         docker compose -f docker-compose-cuda.yaml up --build -d
     elif [ $ENV_TYPE == "jetson" ]; then
         docker compose -f docker-compose-jetson.yaml up --build -d
+=======
+SERVICE=manipulation
+NEEDS_BUILD=false
+
+CONTAINER=$(docker ps -a --filter "name=${SERVICE}" --format "{{.ID}}")
+if [ -z "$CONTAINER" ]; then
+    echo "No container found for service '$SERVICE'."
+    NEEDS_BUILD=true
+fi
+echo "Needs build: $NEEDS_BUILD"
+
+# If it needs build 
+if [ "$NEEDS_BUILD" = true ]; then
+
+    if [ -z "$TASK" ]; then
+        
+        if [ $ENV_TYPE == "cpu" ]; then
+            docker compose -f docker-compose-cpu.yaml up --build -d
+        elif [ $ENV_TYPE == "cuda" ]; then
+            docker compose -f docker-compose-cuda.yaml up --build -d
+        elif [ $ENV_TYPE == "jetson" ]; then
+            docker compose -f docker-compose-jetson.yaml up --build -d
+        fi
+        docker exec -it $CONTAINER_NAME /bin/bash -c "./src/home2/prebuild.sh"
+        docker exec -it $CONTAINER_NAME /bin/bash
+    
+    else
+        if [ $ENV_TYPE == "cpu" ]; then
+            docker compose -f docker-compose-cpu.yaml up --build
+        elif [ $ENV_TYPE == "cuda" ]; then
+            docker compose -f docker-compose-cuda.yaml up --build
+        elif [ $ENV_TYPE == "jetson" ]; then
+            docker compose -f docker-compose-jetson.yaml up --build
+        fi
     fi
-    echo "Running prebuild script..."
-    docker start $CONTAINER_NAME
-    docker exec -it $CONTAINER_NAME /bin/bash -c "./src/home2/prebuild.sh"
-fi
 
-# Check if the container is running
-RUNNING_CONTAINER=$(docker ps -q -f "name=$CONTAINER_NAME")
-
-if [ -n "$RUNNING_CONTAINER" ]; then
-    echo "Container $CONTAINER_NAME is already running. Executing bash..."
-    docker start $CONTAINER_NAME
-    docker exec -it $CONTAINER_NAME /bin/bash
 else
-    echo "Container $CONTAINER_NAME is stopped. Starting it now..."
-    docker compose up --build -d
-    docker start $CONTAINER_NAME
-    docker exec $CONTAINER_NAME /bin/bash
+
+    if [ -z "$TASK" ]; then
+    echo "NO TASK"
+        RUNNING=$(docker ps --filter "name=manipulation" --format "{{.ID}}")
+        echo "FUN $RUNNING"
+        if [ -z "$RUNNING" ]; then
+            echo "Starting manipulation service... (-d)"
+            if [ $ENV_TYPE == "cpu" ]; then
+                docker compose -f docker-compose-cpu.yaml up -d
+            elif [ $ENV_TYPE == "cuda" ]; then
+                docker compose -f docker-compose-cuda.yaml up  -d
+            elif [ $ENV_TYPE == "jetson" ]; then
+            echo "JETSOON"
+                docker compose -f docker-compose-jetson.yaml up -d
+            fi
+        fi
+        # docker compose exec manipulation /bin/bash
+        docker exec -it $CONTAINER_NAME /bin/bash
+    else    
+        echo "Starting manipulation service...(up)"
+        if [ $ENV_TYPE == "cpu" ]; then
+            docker compose -f docker-compose-cpu.yaml up
+        elif [ $ENV_TYPE == "cuda" ]; then
+            docker compose -f docker-compose-cuda.yaml up 
+        elif [ $ENV_TYPE == "jetson" ]; then
+            docker compose -f docker-compose-jetson.yaml up 
+        fi
+>>>>>>> Stashed changes
+    fi
 fi
+
+
+# Check if the container exists
+# EXISTING_CONTAINER=$(docker ps -a -q -f "name=$CONTAINER_NAME")
+# if [ -z "$EXISTING_CONTAINER" ]; then
+#     echo "No container with the name $CONTAINER_NAME exists. Building and starting the container now..."
+#     if [ $ENV_TYPE == "cpu" ]; then
+#         docker compose -f docker-compose-cpu.yaml up --build -d
+#     elif [ $ENV_TYPE == "cuda" ]; then
+#         docker compose -f docker-compose-cuda.yaml up --build -d
+#     elif [ $ENV_TYPE == "jetson" ]; then
+#         docker compose -f docker-compose-jetson.yaml up --build -d
+#     fi
+#     echo "Running prebuild script..."
+#     docker start $CONTAINER_NAME
+#     docker exec -it $CONTAINER_NAME /bin/bash -c "./src/home2/prebuild.sh"
+# fi
+
+# # Check if the container is running
+# RUNNING_CONTAINER=$(docker ps -q -f "name=$CONTAINER_NAME")
+
+# if [ -n "$RUNNING_CONTAINER" ]; then
+#     echo "Container $CONTAINER_NAME is already running. Executing bash..."
+#     docker start $CONTAINER_NAME
+#     docker exec -it $CONTAINER_NAME /bin/bash
+# else
+#     echo "Container $CONTAINER_NAME is stopped. Starting it now..."
+#     docker compose up --build -d
+#     docker start $CONTAINER_NAME
+#     docker exec $CONTAINER_NAME /bin/bash
+# fi
