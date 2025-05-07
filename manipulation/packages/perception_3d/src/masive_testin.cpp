@@ -170,7 +170,8 @@ public:
 
   STATUS_RESPONSE
   service_from_point(geometry_msgs::msg::PointStamped point,
-                     sensor_msgs::msg::PointCloud2::SharedPtr cloud) {
+                     sensor_msgs::msg::PointCloud2::SharedPtr cloud,
+                     bool add_primitives = true) {
 
     auto request = std::make_shared<
         frida_interfaces::srv::ClusterObjectFromPoint::Request>();
@@ -385,7 +386,7 @@ public:
     std::shared_ptr<sensor_msgs::msg::PointCloud2> cloud =
         std::make_shared<sensor_msgs::msg::PointCloud2>();
 
-    auto res = this->service_from_point(request->point, cloud);
+    auto res = this->service_from_point(request->point, cloud, request->add_collision_objects);
 
     response->cluster_result = *cloud;
     // response->status = res;
