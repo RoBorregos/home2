@@ -37,7 +37,9 @@ def generate_launch_description():
                 plugin='nav2_controller::ControllerServer',
                 name='controller_server',
                 parameters=[configured_params],
-                remappings=remappings ),
+                remappings=[('/tf', 'tf'),
+                  ('/tf_static', 'tf_static'),
+                  ('/cmd_vel', 'cmd_vel_nav')] ),
             ComposableNode(
                 package='nav2_smoother',
                 plugin='nav2_smoother::SmootherServer',
