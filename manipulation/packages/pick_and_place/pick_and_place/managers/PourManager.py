@@ -210,8 +210,8 @@ class PourManager:
         # Print the result of the pour motion?
         self.node.get_logger().warning("Result of pour motion - FFN5")
 
-        result_pour = future.result()
-        if not result_pour.success:
+        result_pour = future.result().get_result()
+        if not result_pour.result.success:
             self.node.get_logger().error("Pour motion failed")
             return False
         
