@@ -12,6 +12,8 @@ from frida_motion_planning.utils.service_utils import (
     move_joint_positions as send_joint_goal,
 )
 from frida_pymoveit2.robots import xarm6 as robot
+from rclpy.duration import Duration
+from tf2_ros import Buffer, TransformListener
 
 CFG_PATHS = [
     "/workspace/src/home2/manipulation/packages/arm_pkg/config/frida_eigen_params_custom_gripper_testing.cfg",
@@ -25,20 +27,20 @@ class PourManager:
     def __init__(self, node):
         self.node = node
 
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self.node)
+
     def execute(self, object_name: str, container_object_name: str) -> bool:
         self.node.get_logger().info("Executing Pour Task")
         self.node.get_logger().info("Setting initial joint positions")
 
-        # time.sleep(10)
         # Set initial joint positions
         self.node.get_logger().warning("Set initial joint positions - FFN1")
-        future = send_joint_goal(
+        send_joint_goal(
             move_joints_action_client=self.node._move_joints_client,
             named_position="table_stare",
             velocity=0.3,
         )
-        # self.node.get_logger().warning("FF before wait_for_future")
-        # future = self.wait_for_future(future)
 
         # get bowl object point
         self.node.get_logger().warning("Get bowl object point - FFN2")
@@ -81,9 +83,6 @@ class PourManager:
         else:
             self.node.get_logger().warning("FF 1.1.2")
             self.node.get_logger().warning("FF 1.1.3")
-            # self.get_logger().info(
-            #     f"PointCloud2 frame_id is {container_cluster.header.frame_id}"
-            # )
 
         self.node.get_logger().warning("FF 1.2")
         cloud_gen = point_cloud2.read_points(
@@ -114,17 +113,64 @@ class PourManager:
         # Set the final pose
         self.node.get_logger().warning("FF 1.2.5")
         self.node.get_logger().warning("Setting final pose - FFN4")
+
+        # try:
+        #     transform = self.tf_buffer.lookup_transform(
+        #         target_frame="base_link",
+        #         source_frame=container_point.header.frame_id,
+        #         time=container_point.header.stamp,
+        #         timeout=Duration(seconds=1.0),
+        #     )
+        #     transformed_point = tf2_geometry_msgs.do_transform_point(container_point, transform)
+        #     self.node.get_logger().info(f"Transformed point: {transformed_point}")
+        # except Exception as e:
+        #     self.node.get_logger().error(f"Failed to transform point: {repr(e)}")
+        #     return False
+
+        # transform = self.tf_buffer.lookup_transform(
+        #     robot.base_link_name(),
+        #     container_point.header.frame_id,
+        #     container_point.header.stamp,
+        #     timeout=self.node.get_clock().now() + Duration(seconds=1),
+        # )
+
         pose_msg = PoseStamped()
         pose_msg.header.frame_id = robot.base_link_name()
         pose_msg.header.stamp = self.node.get_clock().now().to_msg()
         self.node.get_logger().warning("FF 1.2.6")
-        pose_msg.pose.position.x = container_point.point.x + centroid[0]
-        pose_msg.pose.position.y = (
-            container_point.point.y + centroid[1] + 0.05
-        )  # TODO: set the offset
-        pose_msg.pose.position.z = (
-            float(max_z) + 0.15
-        )  # TODO: set the height of the bowl
+
+        # pose_msg.pose.position.x = -(container_point.point.x) # + centroid[0]
+        # pose_msg.pose.position.z = (0.5)  # Green axe
+        # pose_msg.pose.position.x = (0.15) # Red axe
+        # pose_msg.pose.position.y = -(0.4)  # Blue axe
+
+        transformed_point = self.tf_buffer.transform(
+            container_point, robot.base_link_name(), Duration(seconds=1.0)
+        )
+        self.node.get_logger().warning("FF 1.2.6")
+
+        self.node.get_logger().warning(
+            f"container frame_id: {container_point.header.frame_id} tranformed frame: {transformed_point.header.frame_id}"
+        )
+        self.node.get_logger().warning(
+            f"container point in x: {container_point.point.x} transformed: {transformed_point.point.x}"
+        )
+        self.node.get_logger().warning(
+            f"container point in y: {container_point.point.y} transformed: {transformed_point.point.y}"
+        )
+        self.node.get_logger().warning(
+            f"container point in z: {container_point.point.z} transformed: {transformed_point.point.z}"
+        )
+
+        pose_msg.pose.position.z = transformed_point.point.z + 0.30  # Green axe
+        pose_msg.pose.position.x = transformed_point.point.x  # Red axe
+        pose_msg.pose.position.y = transformed_point.point.y + 0.05  # Blue axe
+
+        # pose_msg.pose.position.x = -(container_point.point.x)
+        # pose_msg.pose.position.y = -(container_point.point.y)
+        # pose_msg.pose.position.z = -(container_point.point.z)
+
+        # )  # TODO: set the height of the bowl
         self.node.get_logger().warning("FF 1.2.7")
         pose_msg.pose.orientation.x = 0.7071
         pose_msg.pose.orientation.y = 0.0
@@ -145,13 +191,13 @@ class PourManager:
         self.node.get_logger().warning("after futurepour motion goal - FFN5")
         future = wait_for_future(future)
 
-        # Print the result of the pour motion
+        # Print the result of the pour motion?
         self.node.get_logger().warning("Result of pour motion - FFN5")
 
-        # result_pour = future.result()
-        # if not result_pour.success:
-        #     self.node.get_logger().error("Pour motion failed")
-        #     return False
+        result_pour = future.result()
+        if not result_pour.success:
+            self.node.get_logger().error("Pour motion failed")
+            return False
 
         # try:
         #     goal_handle = future.result()
@@ -163,16 +209,16 @@ class PourManager:
         #     self.node.get_logger().error(f"Pour exception: {repr(e)}")
         #     return False
 
-        # Return to the initial position
-        self.node.get_logger().warning("Returning to position - FFN6")
-        for i in range(5):
-            # return to configured position
-            future = send_joint_goal(
-                move_joints_action_client=self.node._move_joints_client,
-                named_position="table_stare",
-                velocity=0.3,
-            )
-            wait_for_future(future)
+        # # Return to the initial position
+        # self.node.get_logger().warning("Returning to position - FFN6")
+        # for i in range(5):
+        #     # return to configured position
+        #     future = send_joint_goal(
+        #         move_joints_action_client=self.node._move_joints_client,
+        #         named_position="table_stare",
+        #         velocity=0.3,
+        #     )
+        #     wait_for_future(future)
         # self.node.get_logger().info("Waiting for 10 seconds")
         # time.sleep(10)
         return True
@@ -236,7 +282,6 @@ class PourManager:
         future = wait_for_future(future)
 
         pcl_result = future.result().cluster_result
-        self.node.get_logger().info(f"Cluster result: {pcl_result}")
 
         if len(pcl_result.data) == 0:
             self.node.get_logger().warning("FF1")

@@ -180,6 +180,9 @@ class PourMotionServer(Node):
 
         if not action_result.result.success:
             self.get_logger().error("Failed to move to pour pose")
+            self.get_logger().warning(
+                f"Action result: {action_result.result.error_code}"
+            )
             return False, action_result.result.success
 
         self.get_logger().info("Moved to pour pose successfully")
