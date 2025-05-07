@@ -16,7 +16,7 @@ def launch_setup(context, *args, **kwargs):
     rtabmap_viz = LaunchConfiguration('rtabmap_viz', default='false')
     default_value=os.path.join(nav_dir, 'config', 'dynamic_2.yaml'),
     params_file = LaunchConfiguration('params_file', default=default_value)
-    # use_amcl = LaunchConfiguration('use_amcl', default='false')
+    use_amcl = LaunchConfiguration('use_amcl', default='false')
     show_rviz = LaunchConfiguration('show_rviz', default='true')
     
     nav_basics = IncludeLaunchDescription(
@@ -51,7 +51,7 @@ def launch_setup(context, *args, **kwargs):
                 ]
             )),
         launch_arguments={'use_sim_time': use_sim, 'localization': localization, 'rtabmap_viz': rtabmap_viz}.items(),
-        # condition=UnlessCondition(use_amcl)
+        condition=UnlessCondition(use_amcl)
         )
     
     rviz_node = Node(

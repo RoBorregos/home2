@@ -52,11 +52,9 @@ class NavigationTasks:
         self.services = {
             Task.RECEPTIONIST: {
                 "goal_client": {"client": self.goal_client, "type": "action"},
-                "laser_send": {"client": self.laser_send, "type": "service"},
             },
             Task.HELP_ME_CARRY: {
                 "activate_follow": {"client": self.activate_follow, "type": "service"},
-                "laser_send": {"client": self.laser_send, "type": "service"},
             },
             Task.GPSR: {
                 "goal_client": {"client": self.goal_client, "type": "action"},
