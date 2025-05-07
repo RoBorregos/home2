@@ -599,8 +599,24 @@ class HRITasks(metaclass=SubtaskMeta):
         """
         self._add_to_collection(document=documents, metadata="", collection="closest_items")
         Results = self._query_(query, "closest_items", top_k)
+        Results = self.get_name(Results)
         Logger.info(self.node, f"find_closest result({query}): {str(Results)}")
         return Status.EXECUTION_SUCCESS, Results
+
+    def find_closest_raw(self, documents: str, query: str, top_k: int = 1) -> list[str]:
+        """
+        Method to find the closest item to the query.
+        Args:
+            documents: the documents to search among
+            query: the query to search for
+        Returns:
+            Status: the status of the execution
+            list[str]: the results of the query
+        """
+        self._add_to_collection(document=documents, metadata="", collection="closest_items")
+        Results = self._query_(query, "closest_items", top_k)
+        Logger.info(self.node, f"find_closest result({query}): {str(Results)}")
+        return Results
 
     def query_command_history(self, query: str, top_k: int = 1):
         """
@@ -671,25 +687,11 @@ class HRITasks(metaclass=SubtaskMeta):
         Logger.info(self.node, "Sending request to categorize_objects")
 
         try:
-            request = CategorizeShelves.Request()
-            table_objects = [String(data=str(obj)) for obj in table_objects]
-            request = CategorizeShelves.Request(
-                table_objects=table_objects, shelves=String(data=str(shelves))
-            )
+            categories = self.get_shelves_categories(shelves)[1]
+            results = self.categorize_objects_with_embeddings(categories, table_objects)
 
-            future = self.categorize_service.call_async(request)
-            Logger.info(self.node, "generated request")
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=20)
-            res = future.result()
-            Logger.info(self.node, "request finished")
-            # if res.status != Status.EXECUTION_SUCCESS:
-            #     Logger.error(self.node, f"Error in categorize_objects: {res.status}")
-            #     return Status.EXECUTION_ERROR, {}, {}
-
-            categorized_shelves = eval(res.categorized_shelves.data)
-            categorized_shelves = {int(k): v for k, v in categorized_shelves.items()}
-            objects_to_add = eval(res.objects_to_add.data)
-            objects_to_add = {int(k): v for k, v in objects_to_add.items()}
+            categorized_shelves = {key: value["objects_to_add"] for key, value in results.items()}
+            objects_to_add = {key: value["classification_tag"] for key, value in results.items()}
         except Exception as e:
             self.node.get_logger().error(f"Error: {e}")
             return Status.EXECUTION_ERROR, {}, {}
@@ -772,18 +774,49 @@ class HRITasks(metaclass=SubtaskMeta):
     def get_timestamps(self, query_result):
         return self.get_metadata_key(query_result, "timestamp")
 
-    # def categorize_objects(self, categories: list, obj: str):
-    #     """Method to categorize a list of objects in an array of objects depending on similarity"""
+    def categorize_object(self, categories: dict, obj: str):
+        """Method to categorize a list of objects in an array of objects depending on similarity"""
 
-    #     try:
-    #         self.find_closest(categories, obj)
-    #         return
+        try:
+            category_list = []
+            categories_aux = categories.copy()
+            for key in list(categories_aux.keys()):
+                if categories_aux[key] == "empty":
+                    del categories_aux[key]
 
-    #     except Exception as e:
-    #         self.node.get_logger().error(f"FAILED TO CATEGORIZE: {obj} with error: {e}")
+            for category in categories_aux.values():
+                category_list.append(category)
 
-    def get_distances(self, results):
-        return results[2]
+            results = self.find_closest_raw(category_list, obj)
+            results_distances = results[1][0]["distance"]
+
+            result_category = results[1][0]["document"]
+            if results_distances[0] > 0.8:
+                result_category = "empty"
+
+            self.node.get_logger().info(f"INFO PARA DEBUGGEAR GOD: {result_category}")
+            for key in list(categories.keys()):
+                self.node.get_logger().info(
+                    f"INFO PARA DEBUGGEAR GOD: {categories[key]}, {result_category}"
+                )
+
+                if str(categories[key]) == str(result_category):
+                    key_resulted = key
+
+            return key_resulted
+
+        except Exception as e:
+            self.node.get_logger().error(f"FAILED TO CATEGORIZE: {obj} with error: {e}")
+
+    def categorize_objects_with_embeddings(self, categories: dict, obj_list: list):
+        results = {
+            key: {"classification_tag": categories[key], "objects_to_add": []}
+            for key in categories.keys()
+        }
+        for obj in obj_list:
+            index = self.categorize_object(categories, obj)
+            results[index]["objects_to_add"].append(obj)
+        return results
 
 
 if __name__ == "__main__":

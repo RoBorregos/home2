@@ -169,18 +169,19 @@ class TestHriManager(Node):
         # self.get_logger().info(f"Query results: {hri.get_name(results)}")
         # New implementation of additems for item categorization in shelves
 
-        objects_to_categorize = ["yogurt", "peach", "can"]
-        objects_shelve_1 = ["milk", "cheese", "cream"]
-        objects_shelve_2 = ["beans", "tommato_soup", "corn_soup"]
-        objects_shelve_3 = ["mango", "banana", "apple"]
-        objects = [objects_shelve_1, objects_shelve_2, objects_shelve_3]
-        shelf_1 = "1"
-        shelf_2 = "2"
-        shelf_3 = "3"
-        shelves = [shelf_1, shelf_2, shelf_3]
-        shelves_with_objects = dict(zip(shelves, objects))
-        self.get_logger().info(f"OBJECTS TO CLASSIFY : {objects_to_categorize}")
-        objects_categorized = hri.categorize_objects([objects_to_categorize], shelves_with_objects)
+        # objects_to_categorize = ["yogurt", "peach", "can"]
+        # objects_shelve_1 = ["milk", "cheese", "cream"]
+        # objects_shelve_2 = ["beans", "tommato_soup", "corn_soup"]
+        # objects_shelve_3 = ["mango", "banana", "apple"]
+        # objects = [objects_shelve_1, objects_shelve_2, objects_shelve_3]
+        # shelf_1 = "1"
+        # shelf_2 = "2"
+        # shelf_3 = "3"
+        # shelves = [shelf_1, shelf_2, shelf_3]
+        # shelves_with_objects = dict(zip(shelves, objects))
+        categories = {1: "dairy", 2: "fruit", 3: "empty", 4: "meat"}
+        obj = ["watermelon", "sausage", "milk", "pencil case"]
+        objects_categorized = hri.categorize_objects(obj, categories)
 
         self.get_logger().info(f"classification : {objects_categorized}")
 
