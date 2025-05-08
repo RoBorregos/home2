@@ -281,10 +281,13 @@ class NavigationTasks:
     def ReturnLocation_callback(self):
         try:
             request = ReturnLocation.Request()
+
             future = self.ReturnLocation_client.call_async(request)
-            rclpy.spin_until_future_complete(self.node, future, TIMEOUT)
+
+            rclpy.spin_until_future_complete(self.node, future)
+
             results = future.result()
-            Logger("el papu pro ")
+
             if results is not None:
                 return Status.EXECUTION_SUCCESS, results
             else:

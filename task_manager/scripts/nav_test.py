@@ -27,7 +27,9 @@ class TestTaskManager(Node):
         #     Logger.info(self, f"Door status: {res}")
         # else:
         #     Logger.error(self, "Failed to check door status")
+
         data = self.subtask_manager.nav.ReturnLocation_callback()
+
         Logger.info(self, f"data: {data}")
 
 
