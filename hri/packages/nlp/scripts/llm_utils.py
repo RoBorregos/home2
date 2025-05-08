@@ -10,6 +10,7 @@ from typing import Optional
 import pytz
 import rclpy
 from nlp.assets.dialogs import (
+    format_response,
     get_categorize_shelves_args,
     get_common_interests_dialog,
     get_is_answer_negative_args,
@@ -19,7 +20,7 @@ from nlp.assets.dialogs import (
 from openai import OpenAI
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
-from std_msgs.msg import Bool, String
+from std_msgs.msg import Bool
 
 from frida_constants.hri_constants import MODEL
 from frida_interfaces.srv import (
@@ -201,9 +202,7 @@ class LLMUtils(Node):
 
         return res
 
-    def generic_structured_output(
-        self, system_prompt: str, user_prompt: str, response_format
-    ):
+    def generic_structured_output(self, messages, response_format):
         self.get_logger().info("Generating structured output")
         # self.get_logger().info(f"System prompt: {system_prompt}")
         # self.get_logger().info(f"User prompt: {user_prompt}")
@@ -212,13 +211,7 @@ class LLMUtils(Node):
             self.client.beta.chat.completions.parse(
                 model=MODEL.GENERIC_STRUCTURED_OUTPUT.value,
                 temperature=self.temperature,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": system_prompt,
-                    },
-                    {"role": "user", "content": user_prompt},
-                ],
+                messages=messages,
                 response_format=response_format,
             )
             .choices[0]
@@ -242,42 +235,47 @@ class LLMUtils(Node):
         self.get_logger().info("request.shelves: " + str(request.shelves.data))
 
         shelves: dict[int, list[str]] = eval(request.shelves.data)
-        table_objects: list[str] = [
-            table_object.data for table_object in request.table_objects
-        ]
         shelves = {int(k): v for k, v in shelves.items()}
         self.get_logger().info(f"Shelves: {shelves}")
-        self.get_logger().info(f"Table objects: {table_objects}")
 
-        messages, response_format = get_categorize_shelves_args(shelves, table_objects)
+        messages, response_format = get_categorize_shelves_args(shelves)
 
         response_content = (
             self.client.beta.chat.completions.parse(
                 model=MODEL.CATEGORIZE_SHELVES.value,
                 temperature=self.temperature,
                 messages=messages,
-                response_format=response_format,
             )
             .choices[0]
             .message.content
         )
 
+        if "</think>" in response_content:
+            response_content = response_content.split("</think>")[-1].strip()
+
         try:
-            response_data = json.loads(response_content)
-            result = response_format(**response_data)
+            categorized_shelves = json.loads(response_content)
+            self.get_logger().info(f"Categorized shelves: {categorized_shelves}")
+            response.categorized_shelves = [
+                str(c) for c in categorized_shelves["categories"]
+            ]
+
+            return response
+        except Exception as e:
+            print(f"Error parsing JSON: {e}")
+            self.get_logger().error(f"Service error: {e}")
+            categorized_shelves = self.generic_structured_output(
+                format_response(response_content), response_format
+            )
+            print(f"Structured response: {categorized_shelves}")
+
+        try:
+            response.categorized_shelves = [
+                str(c) for c in categorized_shelves.categories
+            ]
         except Exception as e:
             self.get_logger().error(f"Service error: {e}")
             raise rclpy.exceptions.ServiceException(str(e))
-
-        response.objects_to_add = String(
-            data=str(
-                {k: [i for i in v.objects_to_add] for k, v in result.shelves.items()}
-            )
-        )
-
-        response.categorized_shelves = String(
-            data=str({k: v.classification_tag for k, v in result.shelves.items()})
-        )
 
         self.get_logger().info(f"Response: {str(response.objects_to_add)}")
         self.get_logger().info(

@@ -32,7 +32,6 @@ from frida_constants.hri_constants import (
 from frida_interfaces.srv import (
     STT,
     AddEntry,
-    AnswerQuestion as AnswerQuestionLLM,
     CategorizeShelves,
     CommonInterest,
     ExtractInfo,
@@ -44,13 +43,14 @@ from frida_interfaces.srv import (
     Speak,
     UpdateHotwords,
 )
+from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
 from rcl_interfaces.msg import Parameter, ParameterType, ParameterValue
 from rcl_interfaces.srv import SetParameters
 from rclpy.node import Node
 from std_msgs.msg import String
 from utils.baml_client.sync_client import b
-from utils.baml_client.types import AnswerQuestion
 from utils.baml_client.types import (
+    AnswerQuestion,
     CommandListLLM,
     Count,
     FindPerson,
@@ -67,6 +67,7 @@ from utils.baml_client.types import (
 )
 
 # from baml_client.config import #set_log_level
+
 from utils.decorators import service_check
 from utils.logger import Logger
 from utils.status import Status
@@ -92,7 +93,9 @@ InterpreterAvailableCommands = Union[
 ]
 
 TIMEOUT = 5.0
+
 # set_log_level("INFO")  # Set to "ERROR" in prod
+
 
 
 def confirm_query(interpreted_text, target_info):
@@ -642,13 +645,26 @@ class HRITasks(metaclass=SubtaskMeta):
             Status: the status of the execution
             list[str]: the results of the query
         """
-        Logger.info(self.node, f"Finding closest items to: {query} in {str(documents)}")
         self._add_to_collection(document=documents, metadata="", collection="closest_items")
-        self.node.get_logger().info(f"Adding closest items: {documents}")
         Results = self._query_(query, "closest_items", top_k)
         Results = self.get_name(Results)
         Logger.info(self.node, f"find_closest result({query}): {str(Results)}")
         return Status.EXECUTION_SUCCESS, Results
+
+    def find_closest_raw(self, documents: str, query: str, top_k: int = 1) -> list[str]:
+        """
+        Method to find the closest item to the query.
+        Args:
+            documents: the documents to search among
+            query: the query to search for
+        Returns:
+            Status: the status of the execution
+            list[str]: the results of the query
+        """
+        self._add_to_collection(document=documents, metadata="", collection="closest_items")
+        Results = self._query_(query, "closest_items", top_k)
+        Logger.info(self.node, f"find_closest result({query}): {str(Results)}")
+        return Results
 
     @service_check("llm_wrapper_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def answer_with_context(self, question: str, context: str) -> str:
@@ -684,6 +700,7 @@ class HRITasks(metaclass=SubtaskMeta):
         future = self.query_item_client.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
         if collection == "command_history":
+            self.node.get_logger().info(f"Querying command history: {future.result().results}")
             results_loaded = json.loads(future.result().results[0])
             sorted_results = sorted(
                 results_loaded["results"], key=lambda x: x["metadata"]["timestamp"], reverse=True
@@ -691,6 +708,7 @@ class HRITasks(metaclass=SubtaskMeta):
             results_list = sorted_results[:top_k]
         else:
             results = future.result().results
+
             results_loaded = json.loads(results[0])
             results_list = results_loaded["results"]
         return Status.EXECUTION_SUCCESS, results_list
@@ -708,15 +726,8 @@ class HRITasks(metaclass=SubtaskMeta):
     def get_context(self, query_result):
         return self.get_metadata_key(query_result, "context")
 
-    # TODO: Fix since we removed the complement from the command
-    def get_complement(self, query_result):
-        return self.get_metadata_key(query_result, "complement")
-
     def get_command(self, query_result):
         return self.get_metadata_key(query_result, "command")
-
-    def get_characteristic(self, query_result):
-        return self.get_metadata_key(query_result, "characteristic")
 
     def get_result(self, query_result):
         return self.get_metadata_key(query_result, "result")
@@ -743,25 +754,11 @@ class HRITasks(metaclass=SubtaskMeta):
         Logger.info(self.node, "Sending request to categorize_objects")
 
         try:
-            request = CategorizeShelves.Request()
-            table_objects = [String(data=str(obj)) for obj in table_objects]
-            request = CategorizeShelves.Request(
-                table_objects=table_objects, shelves=String(data=str(shelves))
-            )
+            categories = self.get_shelves_categories(shelves)[1]
+            results = self.categorize_objects_with_embeddings(categories, table_objects)
 
-            future = self.categorize_service.call_async(request)
-            Logger.info(self.node, "generated request")
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=20)
-            res = future.result()
-            Logger.info(self.node, "request finished")
-            # if res.status != Status.EXECUTION_SUCCESS:
-            #     Logger.error(self.node, f"Error in categorize_objects: {res.status}")
-            #     return Status.EXECUTION_ERROR, {}, {}
-
-            categorized_shelves = eval(res.categorized_shelves.data)
-            categorized_shelves = {int(k): v for k, v in categorized_shelves.items()}
-            objects_to_add = eval(res.objects_to_add.data)
-            objects_to_add = {int(k): v for k, v in objects_to_add.items()}
+            categorized_shelves = {key: value["objects_to_add"] for key, value in results.items()}
+            objects_to_add = {key: value["classification_tag"] for key, value in results.items()}
         except Exception as e:
             self.node.get_logger().error(f"Error: {e}")
             return Status.EXECUTION_ERROR, {}, {}
@@ -769,6 +766,43 @@ class HRITasks(metaclass=SubtaskMeta):
         Logger.info(self.node, "Finished executing categorize_objects")
 
         return Status.EXECUTION_SUCCESS, categorized_shelves, objects_to_add
+
+    def get_shelves_categories(
+        self, shelves: dict[int, list[str]]
+    ) -> tuple[Status, dict[int, str]]:
+        """
+        Categorize objects based on their shelf levels.
+
+        Args:
+            shelves (dict[int, list[str]]): Dictionary mapping shelf levels to object names.
+
+        Returns:
+            dict[int, str]: Dictionary mapping shelf levels to its category.
+        """
+        Logger.info(self.node, "Sending request to categorize_objects")
+
+        try:
+            request = CategorizeShelves.Request(shelves=String(data=str(shelves)), table_objects=[])
+
+            future = self.categorize_service.call_async(request)
+            Logger.info(self.node, "generated request")
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=-1)
+            res = future.result()
+            Logger.info(self.node, "request finished")
+            Logger.info(self.node, "categorize_objects result: " + str(res))
+            # if res.status != Status.EXECUTION_SUCCESS:
+            #     Logger.error(self.node, f"Error in categorize_objects: {res.status}")
+            #     return Status.EXECUTION_ERROR, {}, {}
+
+            categorized_shelves = res.categorized_shelves
+            categorized_shelves = {k: v for k, v in enumerate(categorized_shelves, start=1)}
+        except Exception as e:
+            self.node.get_logger().error(f"Error: {e}")
+            return Status.EXECUTION_ERROR, {}
+
+        Logger.info(self.node, "get_shelves_categories:" + str(categorized_shelves))
+
+        return Status.EXECUTION_SUCCESS, categorized_shelves
 
     def get_subarea(self, query_result):
         return self.get_metadata_key(query_result, "subarea")
@@ -806,6 +840,50 @@ class HRITasks(metaclass=SubtaskMeta):
 
     def get_timestamps(self, query_result):
         return self.get_metadata_key(query_result, "timestamp")
+
+    def categorize_object(self, categories: dict, obj: str):
+        """Method to categorize a list of objects in an array of objects depending on similarity"""
+
+        try:
+            category_list = []
+            categories_aux = categories.copy()
+            for key in list(categories_aux.keys()):
+                if categories_aux[key] == "empty":
+                    del categories_aux[key]
+
+            for category in categories_aux.values():
+                category_list.append(category)
+
+            results = self.find_closest_raw(category_list, obj)
+            results_distances = results[1][0]["distance"]
+
+            result_category = results[1][0]["document"]
+            if results_distances[0] > 0.8:
+                result_category = "empty"
+
+            self.node.get_logger().info(f"INFO PARA DEBUGGEAR GOD: {result_category}")
+            for key in list(categories.keys()):
+                self.node.get_logger().info(
+                    f"INFO PARA DEBUGGEAR GOD: {categories[key]}, {result_category}"
+                )
+
+                if str(categories[key]) == str(result_category):
+                    key_resulted = key
+
+            return key_resulted
+
+        except Exception as e:
+            self.node.get_logger().error(f"FAILED TO CATEGORIZE: {obj} with error: {e}")
+
+    def categorize_objects_with_embeddings(self, categories: dict, obj_list: list):
+        results = {
+            key: {"classification_tag": categories[key], "objects_to_add": []}
+            for key in categories.keys()
+        }
+        for obj in obj_list:
+            index = self.categorize_object(categories, obj)
+            results[index]["objects_to_add"].append(obj)
+        return results
 
 
 if __name__ == "__main__":

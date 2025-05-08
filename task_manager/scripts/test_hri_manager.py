@@ -4,13 +4,48 @@
 Task Manager for testing the subtask managers
 """
 
-import json
-
 import rclpy
 from config.hri.debug import config as test_hri_config
 from rclpy.node import Node
 from subtask_managers.hri_tasks import HRITasks
 from utils.task import Task
+from typing import Union
+
+
+# from subtask_managers.subtask_meta import SubtaskMeta
+from utils.baml_client.types import (
+    AnswerQuestion,
+    CommandListLLM,
+    Count,
+    FindPerson,
+    FindPersonByName,
+    FollowPersonUntil,
+    GetPersonInfo,
+    GetVisualInfo,
+    GiveObject,
+    GoTo,
+    GuidePersonTo,
+    PickObject,
+    PlaceObject,
+    SayWithContext,
+)
+
+InterpreterAvailableCommands = Union[
+    CommandListLLM,
+    GoTo,
+    PickObject,
+    FindPersonByName,
+    FindPerson,
+    Count,
+    GetPersonInfo,
+    GetVisualInfo,
+    AnswerQuestion,
+    FollowPersonUntil,
+    GuidePersonTo,
+    GiveObject,
+    PlaceObject,
+    SayWithContext,
+]
 
 
 def confirm_preference(interpreted_text, extracted_data):
@@ -41,14 +76,16 @@ class TestHriManager(Node):
 
         self.get_logger().info(f"Common interest: {common_message_guest1}")
 
+
         # # if TEST_COMPOUND:
         # #     self.compound_functions()
 
-        # # if TEST_INDIVIDUAL_FUNCTIONS:
+
+        # if TEST_INDIVIDUAL_FUNCTIONS:
         # self.individual_functions()
 
         # if TEST_EMBEDDINGS:
-        # self.test_embeddings()
+        self.test_embeddings()
 
     def individual_functions(self):
         # Test say
@@ -75,8 +112,7 @@ class TestHriManager(Node):
         self.get_logger().info(f"Extracted data: {drink}")
 
         # Test categorize objects
-        s, categorized_shelves, objects_to_add = self.hri_manager.categorize_objects(
-            ["butter", "pear", "oats", "turkey", "pineapple"],
+        s, categorized_shelves = self.hri_manager.get_shelves_categories(
             {
                 "1": ["milk", "cheese", "yogurt"],
                 "2": ["apple", "banana", "grapes"],
@@ -86,7 +122,6 @@ class TestHriManager(Node):
         )
 
         self.get_logger().info(f"categorized_shelves: {str(categorized_shelves)}")
-        self.get_logger().info(f"objects_to_add: {str(objects_to_add)}")
 
     def compound_functions(self):
         s, interest1 = self.hri_manager.ask_and_confirm(
@@ -120,26 +155,44 @@ class TestHriManager(Node):
 
         hri = self.hri_manager
 
-        # Adding single item
-        self.get_logger().info("Adding single item: rotten_potatoes")
-        result = hri.add_item(["rotten_potatoes"], json.dumps([{}]))
-        self.get_logger().info(f"Result: {result}")
+        # # Adding single item
+        # self.get_logger().info("Adding single item: rotten_potatoes")
+        # result = hri.add_item(["rotten_potatoes"], json.dumps([{}]))
+        # self.get_logger().info(f"Result: {result}")
 
-        # Adding multiple items with metadata
-        self.get_logger().info("Adding multiple items with metadata")
-        documents = ["apple pie with cinnamon", "banana_pie", "mango_pie_with milk"]
-        metadata = [{"category": "500"}, {"characteristic": "400"}, {"complement": "450"}]
-        result = hri.add_item(documents, json.dumps(metadata))
-        self.get_logger().info(f"Result: {result}")
+        # # Adding multiple items with metadata
+        # self.get_logger().info("Adding multiple items with metadata")
+        # documents = ["apple pie with cinnamon", "banana_pie", "mango_pie_with milk"]
+        # metadata = [{"category": "500"}, {"characteristic": "400"}, {"complement": "450"}]
+        # result = hri.add_item(documents, json.dumps(metadata))
+        # self.get_logger().info(f"Result: {result}")
 
-        # Querying items
-        self.get_logger().info("Querying 'potatoes' from item collection")
-        results = hri.query_item("potatoes", top_k=1)
-        self.get_logger().info(f"Query results: {results}")
+        # # Querying items
+        # self.get_logger().info("Querying 'potatoes' from item collection")
+
+        # results = hri.query_item("potatoes", top_k=1)
+        # self.get_logger().info(f"Query results: {hri.get_name(results)}")
+        # New implementation of additems for item categorization in shelves
+
+        # objects_to_categorize = ["yogurt", "peach", "can"]
+        # objects_shelve_1 = ["milk", "cheese", "cream"]
+        # objects_shelve_2 = ["beans", "tommato_soup", "corn_soup"]
+        # objects_shelve_3 = ["mango", "banana", "apple"]
+        # objects = [objects_shelve_1, objects_shelve_2, objects_shelve_3]
+        # shelf_1 = "1"
+        # shelf_2 = "2"
+        # shelf_3 = "3"
+        # shelves = [shelf_1, shelf_2, shelf_3]
+        # shelves_with_objects = dict(zip(shelves, objects))
+        categories = {1: "dairy", 2: "fruit", 3: "empty", 4: "meat"}
+        obj = ["watermelon", "sausage", "milk", "pencil case"]
+        objects_categorized = hri.categorize_objects(obj, categories)
+
+        self.get_logger().info(f"classification : {objects_categorized}")
 
         self.get_logger().info("Querying 'cinnamon' from item collection")
         results = hri.query_item("cinnamon", top_k=3)
-        self.get_logger().info(f"Query results: {results}")
+        self.get_logger().info(f"Query results: {hri.get_name(results)}")
         # Adding and querying location
         self.get_logger().info("Querying 'kitchen' from location collection")
 
@@ -148,36 +201,33 @@ class TestHriManager(Node):
         area = hri.get_area(results_location)
         self.get_logger().info(f"Subarea: {subarea}")
         self.get_logger().info(f"Area: {area}")
-        self.get_logger().info(f"Query results: {results_location}")
+        self.get_logger().info(f"Query results: {hri.get_name(results_location)}")
 
         # ---- save_command_history ----
-        self.get_logger().info("Saving command history for add_item command")
+        self.get_logger().info("Saving command history for go_to command")
+        command = GoTo(action="go_to", location_to_go="kitchen")
 
         hri.add_command_history(
-            command="add_item",
-            complement="complement for testing 6",
-            characteristic="items 6",
+            command=command,
             result="Success",
             status=1,
         )
 
         self.get_logger().info("Querying command_history collection for the saved command")
-        history = hri.query_command_history("add_item", 2)
-        context = hri.get_context(history)
-        complement = hri.get_complement(history)
-        characteristic = hri.get_characteristic(history)
+        history = hri.query_command_history("go_to", 2)
+        # context = hri.get_context(history)
         result = hri.get_result(history)
         status = hri.get_status(history)
 
-        self.get_logger().info(f"context history query results: {context}")
-        self.get_logger().info(f"complement history query results: {complement}")
-        self.get_logger().info(f"characteristic history query results: {characteristic}")
+        self.get_logger().info(f"history query results: {history}")
         self.get_logger().info(f"result history query results: {result}")
         self.get_logger().info(f"status history query results: {status}")
         # ---- end save_command_history ----
 
         self.get_logger().info("TESTING THE FIND CLOSEST FUNCTION")
         # Test find_closest
+
+        documents = ["cheese", "milk", "yogurt"]
         result_closest = hri.find_closest(documents, "milk")
         self.get_logger().info(f"Closest result: {result_closest}")
 
