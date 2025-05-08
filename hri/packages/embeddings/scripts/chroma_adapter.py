@@ -155,9 +155,11 @@ class ChromaAdapter:
             if "timestamp" not in meta:
                 meta["timestamp"] = datetime.now().isoformat()
         # Add documents and metadata to the collection
-        return collection_.add(
-            ids=ids, documents=documents, metadatas=cleaned_metadatas
-        )
+
+        else:
+            return collection_.add(
+                ids=ids, documents=documents, metadatas=cleaned_metadatas
+            )
 
     def remove_item_by_document(self, collection_name, document):
         """Method to remove an item by document"""
