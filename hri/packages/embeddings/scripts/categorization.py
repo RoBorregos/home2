@@ -340,6 +340,12 @@ class Embeddings(Node):
         documents = []
         metadatas_ = []
         for file in dataframes:
+            collection_name = self.chroma_adapter._sanitize_collection_name(file.stem)
+            self.get_logger().info(f"Processing: {collection_name}")
+            collections_ = self.chroma_adapter.list_collections()
+            self.get_logger().info(f"Processing list: {collections_}")
+            if collection_name in collections_:
+                continue
             print("Processing file:", file)
             # Read the JSON file into a Python dictionary
             with open(file, "r") as f:
@@ -363,12 +369,17 @@ class Embeddings(Node):
             )
             # Add entries to the collection
             self.chroma_adapter.add_entries(collection_name, documents, metadatas_)
+
         self.add_locations()
         self.chroma_adapter._get_or_create_collection("command_history")
         # self.print_all_collections()
         return
 
     def add_locations(self):
+        collection_name = "locations"
+        collections_ = self.chroma_adapter.list_collections()
+        if collection_name in collections_:
+            self.chroma_adapter.delete_collection(collection_name)
         areas_document = []
         areas_metadatas = []
         package_share_directory = get_package_share_directory("frida_constants")
