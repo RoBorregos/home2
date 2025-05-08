@@ -92,7 +92,7 @@ class NavigationTasks:
                     Logger.warn(self.node, f"{key} action server not initialized. ({self.task})")
 
     @mockable(return_value=Status.EXECUTION_SUCCESS, delay=10)
-    @service_check("goal_client", False, TIMEOUT)
+    @service_check("goal_client", False, timeout=3)
     def move_to_location(self, location: str, sublocation: str) -> Future:
         """Attempts to move to the given location and returns a Future that completes when the action finishes.
         Call the function on this way
