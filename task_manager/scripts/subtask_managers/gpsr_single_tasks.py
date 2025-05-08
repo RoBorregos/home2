@@ -52,6 +52,10 @@ class GPSRSingleTask(GenericTask):
         Postconditions:
             - The robot is in the specified location
         """
+
+        if isinstance(command, dict):
+            command = GoTo(**command)
+
         self.subtask_manager.hri.say(f"I will go to {command.location_to_go}.", wait=False)
         location = self.subtask_manager.hri.query_location(command.location_to_go)
         area = self.subtask_manager.hri.get_area(location)
@@ -114,6 +118,10 @@ class GPSRSingleTask(GenericTask):
         Pseudocode:
             - pick_object(complement)
         """
+
+        if isinstance(command, dict):
+            command = PickObject(**command)
+
         self.subtask_manager.hri.say(f"I will pick the {command.object_to_pick}.", wait=False)
         current_try = 0
 
@@ -199,12 +207,13 @@ class GPSRSingleTask(GenericTask):
         Pseudocode:
             place()
         """
+
         self.subtask_manager.hri.say("I will place the object.", wait=False)
 
         return self.subtask_manager.manipulation.place(), ""
 
     ## HRI
-    def say_with_context(self, command: SayWithContext | str):
+    def say_with_context(self, command: SayWithContext):
         """
         Say something grounded on the information known to the robot, which can include the results of
         previous executions, robot information, and general knowledge information.
@@ -233,8 +242,10 @@ class GPSRSingleTask(GenericTask):
             say(llm_response(complement, fetch_info(characteristic)))
         """
 
+        if isinstance(command, dict):
+            command = SayWithContext(**command)
+
         context = command.previous_command_info[0]
-        print("COMAANSSASF", command)
 
         if context in GPSR_COMMANDS:
             history = self.subtask_manager.hri.query_command_history(
@@ -363,4 +374,7 @@ class GPSRSingleTask(GenericTask):
         Postconditions:
             The robot saves the specified information for further use.
         """
+        if isinstance(command, dict):
+            command = GetVisualInfo(**command)
+
         return self.subtask_manager.vision.visual_info(command.measure, command.object_category)
