@@ -413,6 +413,7 @@ class VisionTasks:
         pass
 
     def isPerson(self, name: str = ""):
+        print(f"DEBUGGGGGG {name}, current: {self.person_name}")
         return self.person_name == name
 
     @mockable(return_value=True, delay=2)
