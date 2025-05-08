@@ -1,22 +1,20 @@
 #!/usr/bin/env python3
 
-import rclpy
-from rclpy.node import Node
-from pydantic import BaseModel, ValidationError
-from typing import Optional, ClassVar, Dict
-from enum import Enum
-from ament_index_python.packages import get_package_share_directory
-import os
 import json
+import os
+from enum import Enum
 from pathlib import Path
-from frida_interfaces.srv import (
-    AddEntry,
-    BuildEmbeddings,
-    QueryEntry,
-)
+from typing import ClassVar, Dict, Optional
+
+import rclpy
+from ament_index_python.packages import get_package_share_directory
 
 # Assuming ChromaAdapter handles Chroma client and embedding functions
 from chroma_adapter import ChromaAdapter
+from pydantic import BaseModel, ValidationError
+from rclpy.node import Node
+
+from frida_interfaces.srv import AddEntry, BuildEmbeddings, QueryEntry
 
 
 class MetadataProfile(str, Enum):
@@ -287,7 +285,7 @@ class Embeddings(Node):
             # Call the build_embeddings_callback of ChromaAdapter to handle the actual embedding process
             if request.rebuild:
                 self.get_logger().info("Rebuilding embeddings")
-                self.chroma_adapter.remove_categorization_collections()
+                self.chroma_adapter.remove_all_collections()
                 self.build_embeddings()
             else:
                 self.build_embeddings()
