@@ -3,7 +3,8 @@
 import cv2
 import mediapipe as mp
 import numpy as np
-from frida_constants.vision_enums import Poses, Gestures
+from frida_constants.vision_enums import Gestures
+from math import degrees, acos
 
 
 class PoseDetection:
@@ -13,187 +14,303 @@ class PoseDetection:
         self.pose = self.mp_pose.Pose()
         self.mp_drawing = mp.solutions.drawing_utils
 
-    def detectPose(self, image):
+    def draw_landmarks(self, image, results, mp_pose):
+        image_height, image_width, _ = image.shape
+        landmarks_to_draw = [
+            self.mp_pose.PoseLandmark.LEFT_SHOULDER,
+            self.mp_pose.PoseLandmark.LEFT_ELBOW,
+            self.mp_pose.PoseLandmark.LEFT_WRIST,
+            self.mp_pose.PoseLandmark.RIGHT_SHOULDER,
+            self.mp_pose.PoseLandmark.RIGHT_ELBOW,
+            self.mp_pose.PoseLandmark.RIGHT_WRIST,
+            self.mp_pose.PoseLandmark.LEFT_HIP,
+            self.mp_pose.PoseLandmark.RIGHT_HIP,
+        ]
+
+        for landmark in landmarks_to_draw:
+            if results.pose_landmarks is not None:
+                landmark_data = results.pose_landmarks.landmark[landmark]
+                if landmark_data.visibility > 0.5:
+                    x, y = (
+                        int(landmark_data.x * image_width),
+                        int(landmark_data.y * image_height),
+                    )
+                    cv2.circle(image, (x, y), 5, (0, 255, 0), -1)
+            self.draw_connections(image, results, mp_pose)
+
+    def draw_connections(self, image, results, mp_pose):
+        # Define relevant connections (Shoulders -> Elbows -> Wrists and Hips -> Knees -> Ankles)
+        connections = [
+            (
+                mp_pose.PoseLandmark.LEFT_SHOULDER,
+                mp_pose.PoseLandmark.LEFT_ELBOW,
+                mp_pose.PoseLandmark.LEFT_WRIST,
+            ),
+            (
+                mp_pose.PoseLandmark.RIGHT_SHOULDER,
+                mp_pose.PoseLandmark.RIGHT_ELBOW,
+                mp_pose.PoseLandmark.RIGHT_WRIST,
+            ),
+        ]
+        for start_idx, mid_idx, end_idx in connections:
+            self.draw_line_and_angle(image, results, start_idx, mid_idx, end_idx)
+
+    def draw_line_and_angle(self, image, results, start_idx, mid_idx, end_idx):
+        if results.pose_landmarks:
+            start, mid, end = (
+                results.pose_landmarks.landmark[start_idx],
+                results.pose_landmarks.landmark[mid_idx],
+                results.pose_landmarks.landmark[end_idx],
+            )
+            if start.visibility > 0.5 and mid.visibility > 0.5 and end.visibility > 0.5:
+                start_point = (
+                    int(start.x * image.shape[1]),
+                    int(start.y * image.shape[0]),
+                )
+                mid_point = (int(mid.x * image.shape[1]), int(mid.y * image.shape[0]))
+                end_point = (int(end.x * image.shape[1]), int(end.y * image.shape[0]))
+                cv2.line(image, start_point, mid_point, (0, 0, 255), 2)
+                cv2.line(image, mid_point, end_point, (0, 0, 255), 2)
+                angle = self.get_angle(start, mid, end)
+                cv2.putText(
+                    image,
+                    f"{int(angle)} - {start_idx} {end_idx}",
+                    (mid_point[0] - 20, mid_point[1] - 20),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.5,
+                    (255, 255, 0),
+                    2,
+                )
+
+    def get_angle(self, p1, p2, p3):
+        p1, p2, p3 = (
+            np.array([p1.x, p1.y]),
+            np.array([p2.x, p2.y]),
+            np.array([p3.x, p3.y]),
+        )
+        l1, l2, l3 = (
+            np.linalg.norm(p2 - p3),
+            np.linalg.norm(p1 - p3),
+            np.linalg.norm(p1 - p2),
+        )
+        return abs(degrees(acos((l1**2 + l2**2 - l3**2) / (2 * l1 * l2))))
+
+    def is_visible(self, landmarks, indices):
+        return all(landmarks.landmark[idx].visibility > 0.5 for idx in indices)
+
+    def is_chest_visible(self, image):
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         results = self.pose.process(image_rgb)
-        if results.pose_landmarks:
-            landmarks = results.pose_landmarks.landmark
-            left_hip = landmarks[self.mp_pose.PoseLandmark.LEFT_HIP]
-            right_hip = landmarks[self.mp_pose.PoseLandmark.RIGHT_HIP]
-            left_knee = landmarks[self.mp_pose.PoseLandmark.LEFT_KNEE]
-            right_knee = landmarks[self.mp_pose.PoseLandmark.RIGHT_KNEE]
-            left_ankle = landmarks[self.mp_pose.PoseLandmark.LEFT_ANKLE]
-            right_ankle = landmarks[self.mp_pose.PoseLandmark.RIGHT_ANKLE]
+        if not results.pose_landmarks:
+            return False
 
-            if left_hip.y < left_knee.y and right_hip.y < right_knee.y:
-                return Poses.SITTING
-            elif left_hip.y > left_knee.y and right_hip.y > right_knee.y:
-                return Poses.STANDING
-            elif left_knee.y > left_ankle.y and right_knee.y > right_ankle.y:
-                return Poses.LYING_DOWN
-        return Poses.UNKNOWN
+        landmarks = results.pose_landmarks.landmark
+
+        # Extract required landmarks using the preferred format
+        required = [
+            landmarks[self.mp_pose.PoseLandmark.LEFT_SHOULDER],
+            landmarks[self.mp_pose.PoseLandmark.RIGHT_SHOULDER],
+        ]
+
+        # Check if all landmarks are confidently visible (threshold: 0.5)
+        return all(lm.visibility > 0.5 for lm in required)
+
+    def are_arms_down(self, pose_landmarks):
+        left_wrist = pose_landmarks.landmark[self.mp_pose.PoseLandmark.LEFT_WRIST]
+        right_wrist = pose_landmarks.landmark[self.mp_pose.PoseLandmark.RIGHT_WRIST]
+        left_shoulder = pose_landmarks.landmark[self.mp_pose.PoseLandmark.LEFT_SHOULDER]
+        right_shoulder = pose_landmarks.landmark[
+            self.mp_pose.PoseLandmark.RIGHT_SHOULDER
+        ]
+
+        # If both wrists are below their respective shoulders by a significant margin, arms are considered down
+        left_arm_down = left_wrist.y > left_shoulder.y + 0.1
+        right_arm_down = right_wrist.y > right_shoulder.y + 0.1
+
+        return left_arm_down and right_arm_down
 
     def detectGesture(self, image):
+        # Detect hand gestures using mediapipe hands
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        results = self.pose.process(image_rgb)
-        if results.pose_landmarks:
-            landmarks = results.pose_landmarks.landmark
-            left_wrist = landmarks[self.mp_pose.PoseLandmark.LEFT_WRIST]
-            right_wrist = landmarks[self.mp_pose.PoseLandmark.RIGHT_WRIST]
-            left_elbow = landmarks[self.mp_pose.PoseLandmark.LEFT_ELBOW]
-            right_elbow = landmarks[self.mp_pose.PoseLandmark.RIGHT_ELBOW]
-            left_shoulder = landmarks[self.mp_pose.PoseLandmark.LEFT_SHOULDER]
-            right_shoulder = landmarks[self.mp_pose.PoseLandmark.RIGHT_SHOULDER]
+        results_p = self.pose.process(image_rgb)
 
-            if left_wrist.y < left_shoulder.y and right_wrist.y < right_shoulder.y:
-                return Gestures.WAVING
-            elif left_wrist.y < left_shoulder.y:
-                return Gestures.RAISING_LEFT_ARM
-            elif right_wrist.y < right_shoulder.y:
-                return Gestures.RAISING_RIGHT_ARM
-            elif left_wrist.x < left_elbow.x and left_elbow.x < left_shoulder.x:
-                return Gestures.POINTING_LEFT
-            elif right_wrist.x > right_elbow.x and right_elbow.x > right_shoulder.x:
-                return Gestures.POINTING_RIGHT
-        return Gestures.UNKNOWN
+        gestures = Gestures.UNKNOWN
 
-    def detectClothes(self):
-        pass
+        if results_p.pose_landmarks:
+            mid_x = self.get_midpoint_x(results_p)
 
-    def isChestVisible(self, image):
-        # Preprocess the image
-        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+            if not self.is_chest_visible(image) or self.are_arms_down(
+                results_p.pose_landmarks
+            ):
+                return gestures
 
-        # Process the image
-        results = self.pose.process(image_rgb)
+            # Left hand
+            elif self.is_raising_left_arm(mid_x, results_p):
+                gestures = Gestures.RAISING_LEFT_ARM
 
-        # Check for landmarks
-        if results.pose_landmarks:
-            landmarks = results.pose_landmarks.landmark
+            elif self.is_pointing_left(mid_x, results_p):
+                gestures = Gestures.POINTING_LEFT
 
-            # Get key points for shoulders and chest (sternum approximate region)
-            left_shoulder = landmarks[self.mp_pose.PoseLandmark.LEFT_SHOULDER]
-            right_shoulder = landmarks[self.mp_pose.PoseLandmark.RIGHT_SHOULDER]
+            # Right hand
+            elif self.is_raising_right_arm(mid_x, results_p):
+                gestures = Gestures.RAISING_RIGHT_ARM
 
-            # Check visibility and positioning
-            if left_shoulder.visibility > 0.5 and right_shoulder.visibility > 0.5:
-                print("Chest is visible.")
-                return True
-            else:
-                print("Chest is not fully visible.")
-        else:
-            print("No pose detected.")
+            elif self.is_pointing_right(mid_x, results_p):
+                gestures = Gestures.POINTING_RIGHT
+
+            elif self.is_waving(results_p):
+                gestures = Gestures.WAVING
+
+        return gestures
+
+    def is_closer_to_left_shoulder(self, wrist, left_shoulder, right_shoulder):
+        return abs(wrist.x - left_shoulder.x) < abs(wrist.x - right_shoulder.x)
+
+    def is_waving(self, results):
+        landmarks = results.pose_landmarks.landmark
+
+        left_shoulder = landmarks[11]  # mp_pose.PoseLandmark.LEFT_SHOULDER
+        left_elbow = landmarks[13]  # mp_pose.PoseLandmark.LEFT_ELBOW
+        left_wrist = landmarks[15]  # mp_pose.PoseLandmark.LEFT_WRIST
+
+        right_shoulder = landmarks[12]  # mp_pose.PoseLandmark.RIGHT_SHOULDER
+        right_elbow = landmarks[14]  # mp_pose.PoseLandmark.RIGHT_ELBOW
+        right_wrist = landmarks[16]  # mp_pose.PoseLandmark.RIGHT_WRIST
+
+        angle_r = self.get_angle(right_shoulder, right_elbow, right_wrist)
+
+        angle_l = self.get_angle(left_shoulder, left_elbow, left_wrist)
+
+        if (
+            angle_l > 27
+            # and left_wrist.y < left_shoulder.y
+        ):
+            return True
+
+        elif (
+            angle_r > 27
+            # and right_wrist.y < right_shoulder.y
+        ):
+            return True
+
+    def get_midpoint_x(self, results):
+        landmarks = results.pose_landmarks.landmark
+
+        left_shoulder = landmarks[11]  # mp_pose.PoseLandmark.LEFT_SHOULDER
+        right_shoulder = landmarks[12]  # mp_pose.PoseLandmark.RIGHT_SHOULDER
+
+        mid = (left_shoulder.x + right_shoulder.x) / 2
+
+        return mid
+
+    def is_pointing_left(self, mid_x, results):
+        """Detects if the hand is pointing left across the chest."""
+        landmarks = results.pose_landmarks.landmark
+
+        right_index = landmarks[20]
+
+        left_shoulder = landmarks[11]
+        left_index = landmarks[19]
+
+        distance_left = left_index.x - left_shoulder.x
+
+        if right_index.x > mid_x or 0.28 < distance_left < 0.6:
+            return True
+
+    def is_pointing_right(self, mid_x, results):
+        """Detects if the hand is pointing right across the chest."""
+        landmarks = results.pose_landmarks.landmark
+
+        right_shoulder = landmarks[12]
+        right_index = landmarks[20]
+
+        left_index = landmarks[19]
+
+        distance_right = right_shoulder.x - right_index.x
+
+        if left_index.x < mid_x or 0.28 < distance_right < 0.6:
+            return True
+
+    def is_raising_left_arm(self, mid_x, results):
+        landmarks = results.pose_landmarks.landmark
+
+        left_shoulder = landmarks[11]  # mp_pose.PoseLandmark.LEFT_SHOULDER
+        left_elbow = landmarks[13]  # mp_pose.PoseLandmark.LEFT_ELBOW
+        left_wrist = landmarks[15]  # mp_pose.PoseLandmark.LEFT_WRIST
+        left_index = landmarks[19]
+
+        angle = self.get_angle(left_shoulder, left_elbow, left_wrist)
+        distance_left = left_shoulder.y - left_index.y
+
+        if (
+            angle < 27
+            and left_wrist.y < left_shoulder.y
+            and left_elbow.y < left_shoulder.y
+            and left_index.x > mid_x
+            and distance_left > 0.25
+        ):
+            return True
+
         return False
 
-    def chestPosition(self, image, save_image=False):
-        # Preprocess the image
-        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    def is_raising_right_arm(self, mid_x, results):
+        landmarks = results.pose_landmarks.landmark
 
-        # Process the image to detect pose landmarks
-        results = self.pose.process(image_rgb)
+        right_shoulder = landmarks[12]  # mp_pose.PoseLandmark.RIGHT_SHOULDER
+        right_elbow = landmarks[14]  # mp_pose.PoseLandmark.RIGHT_ELBOW
+        right_wrist = landmarks[16]  # mp_pose.PoseLandmark.RIGHT_WRIST
+        right_index = landmarks[20]
 
-        # Check for landmarks
-        if results.pose_landmarks:
-            landmarks = results.pose_landmarks.landmark
+        angle = self.get_angle(right_shoulder, right_elbow, right_wrist)
+        distance_right = right_shoulder.y - right_index.y
 
-            left_shoulder = landmarks[self.mp_pose.PoseLandmark.LEFT_SHOULDER]
-            right_shoulder = landmarks[self.mp_pose.PoseLandmark.RIGHT_SHOULDER]
+        if (
+            angle < 27
+            and right_wrist.y < right_shoulder.y
+            and right_elbow.y < right_shoulder.y
+            and right_index.x < mid_x
+            and distance_right > 0.25
+        ):
+            return True
 
-            # Approximate chest region as below the nose and between shoulders
-            if left_shoulder.visibility > 0.5 and right_shoulder.visibility > 0.5:
-                chest_x = int((left_shoulder.x + right_shoulder.x) / 2 * image.shape[1])
-                chest_y = int((left_shoulder.y + right_shoulder.y) / 2 * image.shape[0])
-
-                # Save the image with the chest center marked
-                if save_image:
-                    # Draw a circle at the approximated chest position
-                    cv2.circle(image, (chest_x, chest_y), 10, (255, 0, 0), -1)
-                    cv2.imwrite("./testImages/chest_position.jpg", image)
-
-                return (chest_x, chest_y)
-
-        print("Chest landmarks not detected or not fully visible.")
-        return None
-
-    def personAngle(self, image, save_image=False):
-        # Preprocess the image
-        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-        # Process the image to detect pose landmarks
-        results = self.pose.process(image_rgb)
-
-        # Check if pose landmarks are detected
-        if results.pose_landmarks:
-            landmarks = results.pose_landmarks.landmark
-
-            # Extract the key landmarks: shoulders, hips, and nose
-            left_shoulder = landmarks[self.mp_pose.PoseLandmark.LEFT_SHOULDER]
-            right_shoulder = landmarks[self.mp_pose.PoseLandmark.RIGHT_SHOULDER]
-            left_hip = landmarks[self.mp_pose.PoseLandmark.LEFT_HIP]
-            right_hip = landmarks[self.mp_pose.PoseLandmark.RIGHT_HIP]
-            nose = landmarks[self.mp_pose.PoseLandmark.NOSE]
-
-            # Ensure all key landmarks have sufficient visibility
-            if (
-                left_shoulder.visibility > 0.5
-                and right_shoulder.visibility > 0.5
-                and left_hip.visibility > 0.5
-                and right_hip.visibility > 0.5
-            ):
-                # Calculate shoulder width and torso height
-                shoulder_width = np.sqrt(
-                    (left_shoulder.x - right_shoulder.x) ** 2
-                    + (left_shoulder.y - right_shoulder.y) ** 2
-                )
-                torso_height = np.sqrt(
-                    (left_shoulder.x - left_hip.x) ** 2
-                    + (left_shoulder.y - left_hip.y) ** 2
-                )
-
-                # Handle cases where the torso height is zero
-                if torso_height == 0:
-                    print("Error: Torso height is zero.")
-                    return None
-
-                # Calculate S2T ratio
-                s2t_ratio = shoulder_width / torso_height
-
-                # Determine orientation based on heuristic thresholds
-                if s2t_ratio > 0.5:  # Forward or backward
-                    if nose.z < 0:  # Face is visible
-                        orientation = "forward"
-                    else:  # Face is not visible
-                        orientation = "backward"
-                elif s2t_ratio <= 0.5:  # Side views
-                    # Check which side is closer
-                    if left_shoulder.z < right_shoulder.z:
-                        orientation = "left"
-                    else:
-                        orientation = "right"
-                else:
-                    orientation = None
-
-                # Optionally, draw landmarks on the image and save
-                if save_image:
-                    annotated_image = image.copy()
-                    self.mp_drawing.draw_landmarks(
-                        annotated_image,
-                        results.pose_landmarks,
-                        self.mp_pose.POSE_CONNECTIONS,
-                    )
-                    cv2.imwrite("../Utils/tests/person_angle.jpg", annotated_image)
-
-                return orientation
-
-        return None
+        return False
 
 
 def main():
     pose_detection = PoseDetection()
+    cap = cv2.VideoCapture(0)
 
-    img = cv2.imread("../Utils/pose_test_images/standing3.jpg")
-    pose = pose_detection.detectPose(img, save_image=True)
-    print(f"Detected pose: {pose}")
+    if not cap.isOpened():
+        print("Error: Could not open camera.")
+        return
+
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            print("Error: Could not read frame.")
+            break
+
+        gesture = pose_detection.detectGesture(frame)
+
+        # pose_detection.draw_landmarks(frame, results, pose_detection.mp_pose)
+
+        cv2.putText(
+            frame,
+            f"Gesture: {gesture.value}",
+            (10, 60),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.8,
+            (0, 255, 0),
+            2,
+        )
+
+        cv2.imshow("Pose and Gesture Detection", frame)
+
+        if cv2.waitKey(1) & 0xFF == ord("q"):
+            break
+
+    cap.release()
+    cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":
