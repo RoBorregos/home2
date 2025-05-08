@@ -67,10 +67,9 @@ class PointTransformer(Node):
     def get_actual_pose(self, request, response):
         try:
             # Wait for the transform to become available (with a timeout)
-            buffer_ = self.tf_buffer.can_transform(
+            self.tf_buffer.can_transform(
                 "map", "base_link", rclpy.time.Time(), timeout=rclpy.duration.Duration(seconds=5.0)
             )
-            self.get_logger().info(f"DEBUGG ={buffer_}")
             rclpy.spin_once(self, timeout_sec=0.2)
             # Get the transform from base_link to map
             transform: TransformStamped = self.tf_buffer.lookup_transform(
@@ -99,11 +98,11 @@ class PointTransformer(Node):
 
         # Load areas from the JSON file
         with open(file_path, "r") as file:
-            self.areas = json.load(file)
+            areas = json.load(file)
 
         # Check which area the robot is in
-        for area in self.areas:
-            polygon = self.areas.get(area, {}).get("polygon", [])
+        for area in areas:
+            polygon = areas.get(area, {}).get("polygon", [])
 
             # Skip if "polygon" does not exist or is empty
             if not polygon:
@@ -119,17 +118,17 @@ class PointTransformer(Node):
 
         self.get_logger().info(f"I AM IN: {mylocation}")
 
-        places = list(self.areas[mylocation].keys())
+        places = list(areas[mylocation].keys())
         distances = []
         results = []
 
         for place in places:
-            if len(self.areas[mylocation][place]) == 0:
+            if len(areas[mylocation][place]) == 0:
                 continue
             if place == "polygon":
                 continue
-            place_x = self.areas[mylocation][place][0]
-            place_y = self.areas[mylocation][place][1]
+            place_x = areas[mylocation][place][0]
+            place_y = areas[mylocation][place][1]
             distance = sqrt((pow(place_x - posex, 2)) + (pow(place_y - posey, 2)))
             dist = {"subarea": place, "distance": distance}
             distances.append(dist)
@@ -137,8 +136,7 @@ class PointTransformer(Node):
         distances.sort(key=lambda d: d["distance"])
         for distance in distances:
             results.append(distance["subarea"])
-        self.get_logger().info(f"DEBUGGING dist: {distances}")
-        self.get_logger().info(f"DEBUGGING results: {results}")
+
         return mylocation, results
 
     def is_inside(self, x, y, polygon):
@@ -179,7 +177,6 @@ class PointTransformer(Node):
 
             # Use the callback to get the location
             mylocation, nearest_locations = self.get_location_from_pose(posex, posey)
-            self.get_logger().info(f"DEBUGGER: {mylocation,nearest_locations}")
             if mylocation is None:
                 response.location = ""
                 response.nearest_locations = []
@@ -193,8 +190,9 @@ class PointTransformer(Node):
 
         except Exception as e:
             self.get_logger().error(f"Could not get transform: {str(e)}")
-            response.location = None
+            response.location = ""
             response.success = False
+            response.nearest_locations = []
         return response
 
 
