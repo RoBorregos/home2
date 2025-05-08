@@ -9,7 +9,6 @@ from utils.subtask_manager import SubtaskManager, Task
 
 # from utils.task import Task
 from utils.logger import Logger
-from utils.status import Status
 
 
 class TestTaskManager(Node):
@@ -23,11 +22,12 @@ class TestTaskManager(Node):
 
     def run(self):
         Logger.info(self, "Running test task manager")
-        status, res = self.subtask_manager.nav.check_door()
-        if status == Status.EXECUTION_SUCCESS:
-            Logger.info(self, f"Door status: {res}")
-        else:
-            Logger.error(self, "Failed to check door status")
+        # status, res = self.subtask_manager.nav.check_door()
+        # if status == Status.EXECUTION_SUCCESS:
+        #     Logger.info(self, f"Door status: {res}")
+        # else:
+        #     Logger.error(self, "Failed to check door status")
+        self.subtask_manager.nav.ReturnLocation_callback()
 
 
 def main(args=None):

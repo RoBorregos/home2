@@ -20,12 +20,16 @@ from utils.decorators import mockable, service_check
 from utils.status import Status
 from utils.task import Task
 from utils.logger import Logger
+
 from frida_constants.navigation_constants import (
     GOAL_TOPIC,
     FOLLOWING_SERVICE,
 )
+from frida_interfaces.srv import ReturnLocation
 
 TIMEOUT = 10.0
+
+RETURN_LOCATION = "/integration/ReturnLocation"
 
 
 class NavigationTasks:
@@ -45,7 +49,7 @@ class NavigationTasks:
         self.goal_client = ActionClient(self.node, NavigateToPose, GOAL_TOPIC)
         self.activate_follow = self.node.create_client(SetBool, FOLLOWING_SERVICE)
         self.scan_topic = self.node.create_subscription(LaserScan, "/scan", self.update_laser, 10)
-
+        self.ReturnLocation_client = self.node.create_client(ReturnLocation, RETURN_LOCATION)
         self.services = {
             Task.RECEPTIONIST: {"goal_client": {"client": self.goal_client, "type": "action"}},
             Task.HELP_ME_CARRY: {
@@ -267,6 +271,17 @@ class NavigationTasks:
         else:
             Logger.error(self.node, "No points detected")
             return (Status.EXECUTION_ERROR, "")
+
+    def ReturnLocation_callback(self):
+        try:
+            request = ReturnLocation.Request()
+            future = self.ReturnLocation_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future)
+            results = future.result()
+            return Status.EXECUTION_SUCCESS, results
+        except Exception as e:
+            Logger.error(self.node, f"Error getting location: {e}")
+            return Status.EXECUTION_ERROR, []
 
 
 if __name__ == "__main__":

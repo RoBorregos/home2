@@ -4,7 +4,7 @@ from rclpy.node import Node
 from tf2_ros import Buffer, TransformListener
 from tf2_geometry_msgs import do_transform_point
 from rclpy.callback_groups import ReentrantCallbackGroup
-from frida_interfaces.srv import PointTransformation, ReturnAreas
+from frida_interfaces.srv import PointTransformation, ReturnLocation
 import json
 import os
 from ament_index_python.packages import get_package_share_directory
@@ -13,7 +13,7 @@ from utils.status import Status
 from math import sqrt
 
 POINT_TRANSFORMER_TOPIC = "/integration/point_transformer"
-RETURN_AREAS_TOPIC = "/integration/return_areas"
+RETURN_LOCATION = "/integration/ReturnLocation"
 
 
 class PointTransformer(Node):
@@ -29,7 +29,9 @@ class PointTransformer(Node):
         self.set_target_service = self.create_service(
             PointTransformation, POINT_TRANSFORMER_TOPIC, self.set_target_callback
         )
-        self.return_areas = self.create_service(ReturnAreas, RETURN_AREAS_TOPIC, self.whereIam)
+        self.return_areas = self.create_service(
+            ReturnLocation, RETURN_LOCATION, self.get_current_location
+        )
 
         self.get_logger().info("PointTransformer node has been started.")
 
@@ -152,7 +154,7 @@ class PointTransformer(Node):
                     inside = not inside
         return inside
 
-    def whereIam(self, request, response):
+    def get_current_location(self, request, response):
         """
         Original method to handle the request/response for determining the robot's location.
         """
