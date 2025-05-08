@@ -76,10 +76,8 @@ class TestHriManager(Node):
 
         self.get_logger().info(f"Common interest: {common_message_guest1}")
 
-
         # # if TEST_COMPOUND:
         # #     self.compound_functions()
-
 
         # if TEST_INDIVIDUAL_FUNCTIONS:
         # self.individual_functions()

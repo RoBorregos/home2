@@ -97,7 +97,6 @@ TIMEOUT = 5.0
 # set_log_level("INFO")  # Set to "ERROR" in prod
 
 
-
 def confirm_query(interpreted_text, target_info):
     return f"Did you say {target_info}?"
 
