@@ -142,7 +142,7 @@ class PoseDetection:
             if not self.is_chest_visible(image) or self.are_arms_down(
                 results_p.pose_landmarks
             ):
-                return gestures
+                return gestures, results_p
 
             # Left hand
             elif self.is_raising_left_arm(mid_x, results_p):
@@ -161,7 +161,7 @@ class PoseDetection:
             elif self.is_waving(results_p):
                 gestures.append(Gestures.WAVING)
 
-        return gestures
+        return gestures, results_p
 
     def is_closer_to_left_shoulder(self, wrist, left_shoulder, right_shoulder):
         return abs(wrist.x - left_shoulder.x) < abs(wrist.x - right_shoulder.x)
@@ -243,11 +243,9 @@ class PoseDetection:
         distance_left = left_shoulder.y - left_index.y
 
         if (
-            angle < 27
+            angle < 35
             and left_wrist.y < left_shoulder.y
             and left_elbow.y < left_shoulder.y
-            and left_index.x > mid_x
-            and distance_left > 0.25
         ):
             return True
 
@@ -265,11 +263,9 @@ class PoseDetection:
         distance_right = right_shoulder.y - right_index.y
 
         if (
-            angle < 27
+            angle < 35
             and right_wrist.y < right_shoulder.y
             and right_elbow.y < right_shoulder.y
-            and right_index.x < mid_x
-            and distance_right > 0.25
         ):
             return True
 
@@ -290,13 +286,13 @@ def main():
             print("Error: Could not read frame.")
             break
 
-        gesture = pose_detection.detectGesture(frame)
+        gesture, results = pose_detection.detectGesture(frame)
 
-        # pose_detection.draw_landmarks(frame, results, pose_detection.mp_pose)
+        pose_detection.draw_landmarks(frame, results, pose_detection.mp_pose)
 
         cv2.putText(
             frame,
-            f"Gesture: {gesture.value}",
+            f"Gesture: {[g.value for g in gesture]}",
             (10, 60),
             cv2.FONT_HERSHEY_SIMPLEX,
             0.8,
