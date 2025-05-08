@@ -57,8 +57,8 @@ docker exec -it home2-hri-cuda-devices bash
 
 ## Running the project
 
-Most of the final commands will be executed using the docker compose file.
 
+Most of the final commands will be executed using the docker compose file.
 However, some testing commands are the following:
 
 ```bash

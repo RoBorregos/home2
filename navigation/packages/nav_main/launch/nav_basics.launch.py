@@ -10,13 +10,9 @@ from launch.substitutions import PythonExpression
 from launch import LaunchDescription
 import os
 def launch_setup(context, *args, **kwargs):
-    config_topics = os.path.join(get_package_share_directory('nav_main'),
-                                         'config', 'tmux_config.yaml')
     publish_urdf = LaunchConfiguration('publish_tf', default='false')
     use_sim = LaunchConfiguration('use_sim', default='false')
     use_dualshock = LaunchConfiguration('use_dualshock', default='true')
-    cmd_topic = LaunchConfiguration('cmd_topic', default='/cmd_vel')
-    cmd_topic_joy = LaunchConfiguration('cmd_topic_joy', default='/cmd_vel_joy')
 
     dashgo_driver = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -29,9 +25,6 @@ def launch_setup(context, *args, **kwargs):
             )
             ),
         condition=UnlessCondition(use_sim),
-        launch_arguments={
-            'cmd_topic': cmd_topic
-        }.items(),
         )
     
     ekf_launch = IncludeLaunchDescription(
@@ -91,26 +84,8 @@ def launch_setup(context, *args, **kwargs):
             ),
             
         ),
-        # launch_arguments={
-        #     'topic_name': cmd_topic_joy
-        #     }.items(),
-        condition=IfCondition(use_dualshock)
+        condition=IfCondition(use_dualshock),
         )
-   
-    tmux_node = Node(
-            package='twist_mux',
-            executable='twist_mux',
-            output='screen',
-            remappings=[
-                ('/cmd_vel_out', cmd_topic),
-            ],
-            parameters=[config_topics],
-    )
-    emergency_node = Node(
-            package='nav_main',
-            executable='virtual_stop_button.py',
-            condition=IfCondition(use_dualshock)
-    )
 
     if(publish_urdf.perform(context) == 'true' and use_sim.perform(context) == 'false'):
         print("entre papu")
@@ -121,8 +96,6 @@ def launch_setup(context, *args, **kwargs):
         joint_state,
         laser_launch,
         dualshock_launch,
-        # tmux_node,
-        # emergency_node,
         
     ]
     else:
@@ -132,8 +105,6 @@ def launch_setup(context, *args, **kwargs):
         ekf_launch,
         laser_launch,
         dualshock_launch,
-        # tmux_node,
-        # emergency_node,
         
     ]
     return return_launch

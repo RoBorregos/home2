@@ -10,7 +10,6 @@ import time
 from ultralytics import YOLO
 from PIL import Image as PILImage
 import tqdm
-import torch.nn as nn
 import torch
 from vision_general.utils.calculations import (
     get2DCentroid,
@@ -25,10 +24,8 @@ from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import Point
 
 from vision_general.utils.reid_model import (
-    load_network,
     compare_images,
     extract_feature_from_img,
-    get_structure,
 )
 
 from std_srvs.srv import SetBool, Trigger
@@ -51,9 +48,9 @@ from frida_constants.vision_enums import DetectBy
 CONF_THRESHOLD = 0.6
 
 
-class SingleTracker(Node):
+class SingleTracker2(Node):
     def __init__(self):
-        super().__init__("tracker_node")
+        super().__init__("tracker_node2")
         self.bridge = CvBridge()
         self.callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
 
@@ -120,16 +117,16 @@ class SingleTracker(Node):
         self.pose_detection = PoseDetection()
 
         # Load the ReID model
-        structure = get_structure()
-        pbar.update(1)
-        self.model_reid = load_network(structure)
-        pbar.update(1)
-        self.model_reid.classifier.classifier = nn.Sequential()
-        pbar.update(1)
-        use_gpu = torch.cuda.is_available()
-        if use_gpu:
-            self.model_reid = self.model_reid.cuda()
-        pbar.update(1)
+        # structure = get_structure()
+        # pbar.update(1)
+        # self.model_reid = load_network(structure)
+        # pbar.update(1)
+        # self.model_reid.classifier.classifier = nn.Sequential()
+        # pbar.update(1)
+        # use_gpu = torch.cuda.is_available()
+        # if use_gpu:
+        #     self.model_reid = self.model_reid.cuda()
+        # pbar.update(1)
 
         self.output_image = []
         self.depth_image = []
@@ -423,27 +420,27 @@ class SingleTracker(Node):
                         cropped_image = self.frame[y1:y2, x1:x2]
                         embedding = None
 
-                        if self.person_data["embeddings"] is None:
-                            pil_image = PILImage.fromarray(cropped_image)
+                        # if self.person_data["embeddings"] is None:
+                        #     pil_image = PILImage.fromarray(cropped_image)
 
-                            with torch.no_grad():
-                                embedding = extract_feature_from_img(
-                                    pil_image, self.model_reid
-                                )
+                        #     with torch.no_grad():
+                        #         embedding = extract_feature_from_img(
+                        #             pil_image, self.model_reid
+                        #         )
 
-                            self.person_data["embeddings"] = embedding
+                        #     self.person_data["embeddings"] = embedding
 
                         angle = self.pose_detection.personAngle(cropped_image)
                         if angle is not None and self.person_data[angle] is None:
                             print("Added angle: ", angle)
-                            if embedding is None:
-                                pil_image = PILImage.fromarray(cropped_image)
-                                with torch.no_grad():
-                                    embedding = extract_feature_from_img(
-                                        pil_image, self.model_reid
-                                    )
+                            # if embedding is None:
+                            #     pil_image = PILImage.fromarray(cropped_image)
+                            #     with torch.no_grad():
+                            #         embedding = extract_feature_from_img(
+                            #             pil_image, self.model_reid
+                            #         )
 
-                            self.person_data[angle] = embedding
+                            # self.person_data[angle] = embedding
 
                     else:
                         cv2.rectangle(
@@ -566,7 +563,7 @@ class SingleTracker(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = SingleTracker()
+    node = SingleTracker2()
 
     try:
         rclpy.spin(node)

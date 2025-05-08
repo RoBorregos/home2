@@ -90,18 +90,18 @@ class HelpMeCarryTM(Node):
 
         if self.current_state == HelpMeCarryTM.TASK_STATES["CONFIRM_FOLLOWING"]:
             Logger.state(self, "Confirming following to guest")
-            self.subtask_manager.hri.say("I will follow you now")
             Logger.state(self, "Following to guest")
             Logger.state(self, "Executing following to guest")
             self.current_state = HelpMeCarryTM.TASK_STATES["FOLLOWING_TO_DESTINATION"]
 
         if self.current_state == HelpMeCarryTM.TASK_STATES["FOLLOWING_TO_DESTINATION"]:
-            Logger.state(self, "Following to destination")
-            self.subtask_manager.hri.say("Please say stop when you want me to stop")
             self.subtask_manager.vision.track_person(True)
             self.subtask_manager.manipulation.follow_person(True)
             self.subtask_manager.nav.follow_person(True)
             self.subtask_manager.hri.hear_multi(1)
+            Logger.state(self, "Following to destination")
+            self.subtask_manager.hri.say("I will follow you now")
+            self.subtask_manager.hri.say("Please say stop when you want me to stop")
             # Encender Tracker
             # Encender brazo
             # self.subtask_manager.nav.follow_person(True)
@@ -188,14 +188,13 @@ class HelpMeCarryTM(Node):
             # self.subtask_manager.manipulation.open_gripper()
 
             while True:
-                self.subtask_manager.hri.say("I have opened my gripper, please put the bag in it.")
+                self.subtask_manager.hri.say("Please hang the bag in my antena")
                 s, confirmation = self.subtask_manager.hri.confirm(
-                    "Have you put the bag in my gripper?", False, retries=8, wait_between_retries=4
+                    "Have you hang the bag?", False, retries=8, wait_between_retries=2
                 )
 
                 if confirmation == "yes":
-                    self.subtask_manager.hri.say("I will now close the gripper")
-                    self.subtask_manager.manipulation.close_gripper()
+                    self.subtask_manager.hri.say("ok")
                     break
 
             # self.subtask_manager.manipulation.close_gripper()
