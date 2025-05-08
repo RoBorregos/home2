@@ -151,7 +151,8 @@ class ManipulationCore(Node):
                 self.remove_all_collision_object(attached=True)
                 return (False, PickResult())
             return (result, pick_result)
-        except Exception:
+        except Exception as e:
+            self.get_logger().error(f"Pick failed: {e}")
             return (False, PickResult())
 
     def place_execute(self, place_params=None):
