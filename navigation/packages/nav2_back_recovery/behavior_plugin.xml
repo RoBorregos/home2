@@ -1,5 +1,0 @@
-<library path="nav2_sms_behavior_plugin">
-  <class type="nav2_sms_behavior::BackRecovery" base_class_type="nav2_core::Behavior">
-    <description>This is a plugin to go back and recovery behavior.</description>
-  </class>
-</library>
