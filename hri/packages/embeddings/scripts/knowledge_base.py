@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import rclpy
+import datetime
 from rclpy.node import Node
 from frida_interfaces.srv import AnswerQuestion
 from chroma_adapter import ChromaAdapter
@@ -71,7 +72,11 @@ class RAGService(Node):
                 f"Generating LLM answer (threshold={threshold}, best_score={best_score})"
             )
 
-            messages = get_answer_question_dialog(relevant_contexts, question)
+            current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+            messages = get_answer_question_dialog(
+                relevant_contexts, question, current_time
+            )
             completion = self.llm.chat.completions.create(
                 model=self.model_name,
                 temperature=self.temperature,
