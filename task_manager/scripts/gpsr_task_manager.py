@@ -9,13 +9,13 @@ from rclpy.node import Node
 from subtask_managers.gpsr_single_tasks import GPSRSingleTask
 from subtask_managers.gpsr_tasks import GPSRTask
 from subtask_managers.gpsr_test_commands import get_gpsr_comands
+from utils.baml_client.types import CommandListLLM
 from utils.logger import Logger
 from utils.status import Status
 from utils.subtask_manager import SubtaskManager, Task
 
 ATTEMPT_LIMIT = 3
 MAX_COMMANDS = 3
-START = "START"
 
 
 def confirm_command(interpreted_text, target_info):
@@ -44,16 +44,22 @@ class GPSRTM(Node):
     def __init__(self):
         """Initialize the node"""
         super().__init__("gpsr_task_manager")
-        self.subtask_manager = SubtaskManager(self, task=Task.GPSR, mock_areas=[])
+        self.subtask_manager = SubtaskManager(
+            self, task=Task.GPSR, mock_areas=["navigation", "vision", "manipulation"]
+        )
         self.gpsr_tasks = GPSRTask(self.subtask_manager)
         self.gpsr_individual_tasks = GPSRSingleTask(self.subtask_manager)
 
-        self.current_state = GPSRTM.States.START
+        self.current_state = GPSRTM.States.EXECUTING_COMMAND
         self.running_task = True
         self.current_attempt = 0
         self.executed_commands = 0
         # self.commands = get_gpsr_comands("takeObjFromPlcmt")
         self.commands = get_gpsr_comands("custom")
+
+        if isinstance(self.commands, dict):
+            self.commands = CommandListLLM(**self.commands).commands
+
         # self.commands = get_gpsr_comands("custom")
 
         Logger.info(self, "GPSRTMTaskManager has started.")
@@ -113,34 +119,40 @@ class GPSRTM(Node):
                 self.current_state = GPSRTM.States.FINISHED_COMMAND
             else:
                 command = self.commands.pop(0)
+
                 self.get_logger().info(f"Executing command: {str(command)}")
-                exec_commad = search_command(
-                    command.action,
-                    [self.gpsr_tasks, self.gpsr_individual_tasks],
-                )
-                if exec_commad is None:
-                    self.get_logger().error(
-                        f"Command {command} is not implemented in GPSRTask or in the subtask managers."
+
+                try:
+                    exec_commad = search_command(
+                        command.action,
+                        [self.gpsr_tasks, self.gpsr_individual_tasks],
                     )
-                else:
-                    # self.subtask_manager.hri.say(f"Executing command: {command}")
-                    status, res = exec_commad(command)
-                    self.get_logger().info(f"status-> {str(status)}")
-                    self.get_logger().info(f"res-> {str(res)}")
-                    status = -2
+                    if exec_commad is None:
+                        self.get_logger().error(
+                            f"Command {command} is not implemented in GPSRTask or in the subtask managers."
+                        )
+                    else:
+                        status, res = exec_commad(command)
+                        self.get_logger().info(f"status-> {str(status)}")
+                        self.get_logger().info(f"res-> {str(res)}")
+                        status = -2
 
-                    try:
-                        status = status.value
-                    except Exception:
                         try:
-                            status = int(status)
+                            status = status.value
                         except Exception:
-                            pass
+                            try:
+                                status = int(status)
+                            except Exception:
+                                pass
 
-                    self.subtask_manager.hri.add_command_history(
-                        command,
-                        res,
-                        status,
+                        self.subtask_manager.hri.add_command_history(
+                            command,
+                            res,
+                            status,
+                        )
+                except Exception as e:
+                    self.get_logger().warning(
+                        f"Error occured while executing command ({str(command)}): " + str(e)
                     )
 
         elif self.current_state == GPSRTM.States.FINISHED_COMMAND:
