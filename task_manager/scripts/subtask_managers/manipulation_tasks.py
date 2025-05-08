@@ -363,6 +363,14 @@ class ManipulationTasks:
         joint_positions["joint1"] = joint_positions["joint1"] - degrees
         self.move_joint_positions(joint_positions=joint_positions, velocity=0.75, degrees=True)
 
+    def point(self, degrees: float):
+        joint_positions = self.get_joint_positions(degrees=True)
+        joint_positions["joint2"] = joint_positions["joint2"] + degrees
+        self.move_joint_positions(joint_positions=joint_positions, velocity=0.75, degrees=True)
+
+        joint_positions["joint2"] = joint_positions["joint2"] - degrees
+        self.move_joint_positions(joint_positions=joint_positions, velocity=0.75, degrees=True)
+
     def move_to_position(self, named_position: str):
         self.move_joint_positions(named_position=named_position, velocity=0.75, degrees=True)
 

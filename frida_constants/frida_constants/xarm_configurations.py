@@ -25,10 +25,10 @@ FRONT_LOW_STARE = {
 TABLE_STARE = {
     "joints": {
         "joint1": -90.0,
-        "joint2": -20.0,
-        "joint3": -150.0,
+        "joint2": -80.0,
+        "joint3": -70.0,
         "joint4": 0.0,
-        "joint5": 90.0,
+        "joint5": 60.0,
         "joint6": 45.0,
     },
     "degrees": True,

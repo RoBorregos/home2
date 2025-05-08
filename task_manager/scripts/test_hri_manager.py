@@ -70,11 +70,9 @@ class TestHriManager(Node):
         # Testing compound commands
 
         # s, res = self.hri_manager.common_interest("John", "Football", "Gilbert", "Basketball")
-        status, common_message_guest1 = self.hri_manager.common_interest(
-            "Oscar", "football", "Rodrigo", "baseball"
-        )
-
-        self.get_logger().info(f"Common interest: {common_message_guest1}")
+        # status, common_message_guest1 = self.hri_manager.common_interest(
+        #    "Oscar", "football", "Rodrigo", "baseball"
+        # )
 
         # # if TEST_COMPOUND:
         # #     self.compound_functions()
