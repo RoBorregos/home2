@@ -770,6 +770,9 @@ class HRITasks(metaclass=SubtaskMeta):
             categorized_shelves = {
                 key: value["classification_tag"] for key, value in results.items()
             }
+            for k, v in categorized_shelves.items():
+                if v == "empty":
+                    categorized_shelves[k] = categories[k]
         except Exception as e:
             self.node.get_logger().error(f"Error: {e}")
             return Status.EXECUTION_ERROR, {}, {}

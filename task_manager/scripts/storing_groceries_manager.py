@@ -126,7 +126,7 @@ class StoringGroceriesManager(Node):
         #     # 1.525,  # 1.525 (0.1 +-) -> 1.425 1.625
         # ]  # remember rest 15cm from the base_link and the measure is in m
         self.manual_heights = [0.04, 0.43, 0.67]
-        self.shelf_level_threshold = 0.30
+        self.shelf_level_threshold = 0.20
         self.shelf_level_down_threshold = 0.05
         self.picked_objects = 0
         self.prev_uid = None
@@ -231,7 +231,7 @@ class StoringGroceriesManager(Node):
                 Logger.info(self, f"Moving to height {self.manual_heights[i]}")
                 self.subtask_manager.manipulation.get_optimal_position_for_plane(
                     self.manual_heights[i],
-                    tolerance=0.2,
+                    tolerance=0.1,
                     table_or_shelf=False,
                     approach_plane=True,
                 )
@@ -642,11 +642,11 @@ class StoringGroceriesManager(Node):
             shelf_height = self.manual_heights[shelf]
 
             self.subtask_manager.manipulation.get_optimal_position_for_plane(
-                shelf_height, tolerance=0.2, table_or_shelf=False, approach_plane=True
+                shelf_height, tolerance=0.1, table_or_shelf=False, approach_plane=True
             )
 
             status = self.subtask_manager.manipulation.place_on_shelf(
-                plane_height=shelf_height, tolerance=0.2
+                plane_height=shelf_height, tolerance=0.1
             )
 
             # status = self.subtask_manager.manipulation.place(
