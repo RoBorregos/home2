@@ -858,8 +858,10 @@ class HRITasks(metaclass=SubtaskMeta):
         try:
             category_list = []
             categories_aux = categories.copy()
+            self.node.get_logger().info(f"OBJECT TO CATEGORIZE: {obj}")
             for key in list(categories_aux.keys()):
                 if categories_aux[key] == "empty":
+                    self.node.get_logger().info("THERE IS AN EMPTY SHELVE")
                     del categories_aux[key]
 
             for category in categories_aux.values():
@@ -869,20 +871,19 @@ class HRITasks(metaclass=SubtaskMeta):
             results_distances = results[1][0]["distance"]
 
             result_category = results[1][0]["document"]
-
-            Logger.info(self.node, f"category: {result_category}")
+            self.node.get_logger().info(f"CATEGORY PREDICTED BEFORE THRESHOLD: {result_category}")
             if "empty" in categories.values() and results_distances[0] > 1:
                 result_category = "empty"
 
-            self.node.get_logger().info(f"INFO PARA DEBUGGEAR GOD: {result_category}")
+            self.node.get_logger().info(f"CATEGORY PREDICTED: {result_category}")
             key_resulted = 2
             for key in list(categories.keys()):
-                self.node.get_logger().info(
-                    f"INFO PARA DEBUGGEAR GOD: {categories[key]}, {result_category}"
-                )
-
                 if str(categories[key]) == str(result_category):
                     key_resulted = key
+                else:
+                    self.node.get_logger().info(
+                        "THE CATEGORY PREDICTED IS NOT CONTAINED IN THE REQUEST, RETURNING SHELVE 2"
+                    )
 
             return key_resulted
 
@@ -890,6 +891,10 @@ class HRITasks(metaclass=SubtaskMeta):
             self.node.get_logger().error(f"FAILED TO CATEGORIZE: {obj} with error: {e}")
 
     def categorize_objects_with_embeddings(self, categories: dict, obj_list: list):
+        """
+        Categorize objects based on their embeddings."""
+        self.node.get_logger().info(f"THIS IS THE CATEGORIES dict RECEIVED: {categories}")
+        self.node.get_logger().info(f"THIS IS THE obj_list LIST RECEIVED: {obj_list}")
         results = {
             key: {"classification_tag": categories[key], "objects_to_add": []}
             for key in categories.keys()
@@ -897,6 +902,8 @@ class HRITasks(metaclass=SubtaskMeta):
         for obj in obj_list:
             index = self.categorize_object(categories, obj)
             results[index]["objects_to_add"].append(obj)
+
+        self.node.get_logger().info(f"THIS IS THE RESULTS OF THE CATEGORIZATION: {results}")
         return results
 
 
