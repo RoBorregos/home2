@@ -345,6 +345,21 @@ class GPSRTask(GenericTask):
         while (time.time() - start_time) < timeout:
             pass
 
+    def count_objects(self, object_name: str):
+        self.subtask_manager.manipulation.move_to_position("table_stare")
+        self.subtask_manager.hri.say(
+            f"I am going to count {object_name}.",
+        )
+        status, result = self.subtask_manager.vision.count_objects(object_name)
+        if status == Status.EXECUTION_SUCCESS:
+            self.subtask_manager.hri.say(
+                f"I have counted {result} {object_name}.",
+            )
+        elif status == Status.TARGET_NOT_FOUND:
+            self.subtask_manager.hri.say(
+                f"I didn't find any {object_name}.",
+            )
+
     ## Manipulation, Vision
     def count(self, command: Count):
         """
@@ -387,6 +402,16 @@ class GPSRTask(GenericTask):
             possibilities, command.target_to_count
         )
         value = value[0]
+
+        print(f"Value: {value}", command.target_to_count)
+
+        if (
+            "person" not in command.target_to_count.lower()
+            and "people" not in command.target_to_count.lower()
+        ):
+            self.count_objects(command.target_to_count)
+            return Status.EXECUTION_SUCCESS, "counted objects"
+
         self.subtask_manager.manipulation.move_to_position("front_stare")
 
         counter = 0
