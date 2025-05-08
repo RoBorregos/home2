@@ -279,7 +279,7 @@ def format_response(response):
     ]
 
 
-def get_answer_question_dialog(contexts, question):
+def get_answer_question_dialog(contexts, question, current_time):
     if contexts:
         context_text = "\n".join(contexts)
         user_content = f"{context_text}\n\n{question}"
@@ -295,6 +295,7 @@ def get_answer_question_dialog(contexts, question):
                 "Do not mention where the information came from. "
                 "Avoid long explanations, speculation, or unnecessary details. "
                 "Just provide the best possible answer."
+                f"\n\nCurrent time: {current_time}\n\n"
             ),
         },
         {
