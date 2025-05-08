@@ -206,6 +206,10 @@ class Say(Node):
                 output_path = os.path.join(VOICE_DIRECTORY, f"{hash(chunk)}.wav")
                 self.synthesize_voice_offline(f"{hash(chunk)}.wav", chunk)
                 self._add_to_cache(chunk, output_path)
+                mixer.pre_init(frequency=48000, buffer=2048)
+                mixer.init()
+                while mixer.music.get_busy():
+                    pass
 
     def connectedVoice(self, text):
         cached_path = self._get_cached_audio(text)
