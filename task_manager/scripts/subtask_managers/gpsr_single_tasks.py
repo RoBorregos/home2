@@ -118,6 +118,7 @@ class GPSRSingleTask(GenericTask):
         Pseudocode:
             - pick_object(complement)
         """
+        # @TODO: get locations where the robot is currently located and iterate between them
 
         if isinstance(command, dict):
             command = PickObject(**command)
@@ -131,23 +132,9 @@ class GPSRSingleTask(GenericTask):
 
             if current_try >= RETRIES:
                 self.subtask_manager.hri.say(
-                    f"I am sorry, I could not see the object. Please hand me the {command.object_to_pick}."
+                    f"I could not see the object. Please hand me the {command.object_to_pick}."
                 )
-                deus_machina_retries = 0
-                while True:
-                    if deus_machina_retries >= RETRIES:
-                        self.subtask_manager.hri.say(
-                            "I am sorry, I could not see the object. I will have to abort picking the object."
-                        )
-                        return Status.TARGET_NOT_FOUND, ""
-                    s, res = self.subtask_manager.hri.confirm(
-                        f"Have you given me the {command.object_to_pick}?", use_hotwords=False
-                    )
-                    if res == "yes":
-                        self.subtask_manager.hri.say("Thank you. I will close my gripper")
-                        return self.subtask_manager.manipulation.close_gripper(), ""
-                    else:
-                        deus_machina_retries += 1
+                return self.deus_pick(command)
 
             if len(detections) == 0:
                 self.subtask_manager.hri.say("I didn't find any object. I will try again.")
@@ -159,7 +146,6 @@ class GPSRSingleTask(GenericTask):
         s, object_to_pick = self.subtask_manager.hri.find_closest(labels, command.object_to_pick)
         if isinstance(object_to_pick, list):
             object_to_pick = object_to_pick[0]
-        # print("OBJECT TO PICK", object_to_pick)
         current_try = 0
         while True:
             if current_try >= RETRIES:
@@ -171,7 +157,9 @@ class GPSRSingleTask(GenericTask):
         deus_machina_retries = 0
         while True:
             if deus_machina_retries >= RETRIES:
-                self.subtask_manager.hri.say("I am sorry, I will abort picking the object.")
+                self.subtask_manager.hri.say(
+                    "I couldn't hear your confirmation, I will abort picking the object."
+                )
                 return Status.TARGET_NOT_FOUND, ""
             s, res = self.subtask_manager.hri.confirm(
                 f"Have you given me the {command.object_to_pick}?", use_hotwords=False
@@ -208,9 +196,38 @@ class GPSRSingleTask(GenericTask):
             place()
         """
 
+        place_retries = 0
         self.subtask_manager.hri.say("I will place the object.", wait=False)
 
-        return self.subtask_manager.manipulation.place(), ""
+        while place_retries < RETRIES:
+            s = self.subtask_manager.manipulation.place()
+            if s == Status.EXECUTION_SUCCESS:
+                self.subtask_manager.hri.say("I have placed the object.")
+                return Status.EXECUTION_SUCCESS, "placed"
+            place_retries += 1
+
+        self.subtask_manager.hri.say(
+            "I couldn't place the object. Please help me place the object. When you confirm you have grabbed the object, I will open my gripper, so that you can place it."
+        )
+
+        deus_place_retries = 0
+        while True:
+            if deus_place_retries >= RETRIES:
+                self.subtask_manager.hri.say(
+                    "I couldn't hear your confirmation, I will abort placing the object."
+                )
+                return Status.EXECUTION_ERROR, ""
+            s, res = self.subtask_manager.hri.confirm(
+                "Have you picked the object in my gripper?", use_hotwords=False
+            )
+            if res == "yes":
+                self.subtask_manager.hri.say("Thank you. I will open my gripper")
+                return (
+                    self.subtask_manager.manipulation.open_gripper(),
+                    "placed with deus ex machina",
+                )
+            else:
+                deus_place_retries += 1
 
     ## HRI
     def say_with_context(self, command: SayWithContext):
@@ -261,8 +278,11 @@ class GPSRSingleTask(GenericTask):
             self.subtask_manager.hri.say(answer, wait=True)
             return Status.EXECUTION_SUCCESS, "success"
         else:
+            # s, response, score = self.subtask_manager.hri.answer_question(
+            #     command.user_instruction,
+            # )
             s, response, score = self.subtask_manager.hri.answer_question(
-                command.user_instruction,
+                "what is your teams country?",
             )
 
             self.subtask_manager.hri.say(response, wait=True)

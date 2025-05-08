@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-import rclpy
-import datetime
-from rclpy.node import Node
-from frida_interfaces.srv import AnswerQuestion
-from chroma_adapter import ChromaAdapter
-from openai import OpenAI
-from nlp.assets.dialogs import get_answer_question_dialog
+
 import numpy as np
-from frida_constants.hri_constants import RAG_SERVICE, MODEL
-import pytz
+import rclpy
+from chroma_adapter import ChromaAdapter
+from nlp.assets.dialogs import get_answer_question_dialog
+from openai import OpenAI
+from rclpy.node import Node
+
+from frida_constants.hri_constants import MODEL, RAG_SERVICE
+from frida_interfaces.srv import AnswerQuestion
 
 
 def compute_cosine_similarity(vec1, vec2):
@@ -221,13 +221,7 @@ class RAGService(Node):
                 f"Generating LLM answer (threshold={threshold}, best_score={best_score})"
             )
 
-            current_time = datetime.now(pytz.timezone("America/Mexico_City")).strftime(
-                "%Y-%m-%d %H:%M:%S"
-            )
-
-            messages = get_answer_question_dialog(
-                relevant_contexts, question, current_time
-            )
+            messages = get_answer_question_dialog(relevant_contexts, question)
             completion = self.llm.chat.completions.create(
                 model=self.model_name,
                 temperature=self.temperature,
