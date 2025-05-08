@@ -30,12 +30,20 @@ class PointTransformer(Node):
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
         self.set_target_service = self.create_service(
-            PointTransformation, POINT_TRANSFORMER_TOPIC, self.set_target_callback
+            PointTransformation,
+            POINT_TRANSFORMER_TOPIC,
+            self.set_target_callback,
+            callback_group=self.callback_group,
         )
         self.return_areas = self.create_service(
-            ReturnLocation, RETURN_LOCATION, self.get_current_location
+            ReturnLocation,
+            RETURN_LOCATION,
+            self.get_current_location,
+            callback_group=self.callback_group,
         )
-        self.return_areas = self.create_service(LaserGet, RETURN_LASER_DATA, self.send_laser_data)
+        self.return_areas = self.create_service(
+            LaserGet, RETURN_LASER_DATA, self.send_laser_data, callback_group=self.callback_group
+        )
         self.scan_topic = self.create_subscription(LaserScan, "/scan", self.update_laser, 10)
         self.get_logger().info("PointTransformer node has been started.")
 

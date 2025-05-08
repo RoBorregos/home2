@@ -26,8 +26,7 @@ from frida_constants.navigation_constants import (
     GOAL_TOPIC,
     FOLLOWING_SERVICE,
 )
-from frida_interfaces.srv import ReturnLocation
-from frida_interfaces.srv import LaserGet
+from frida_interfaces.srv import ReturnLocation, LaserGet
 
 TIMEOUT = 4
 RETURN_LASER_DATA = "/integration/Laserscan"
@@ -285,6 +284,7 @@ class NavigationTasks:
             future = self.ReturnLocation_client.call_async(request)
             rclpy.spin_until_future_complete(self.node, future, TIMEOUT)
             results = future.result()
+            Logger("el papu pro ")
             if results is not None:
                 return Status.EXECUTION_SUCCESS, results
             else:

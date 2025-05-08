@@ -28,9 +28,7 @@ class TestTaskManager(Node):
         # else:
         #     Logger.error(self, "Failed to check door status")
         data = self.subtask_manager.nav.ReturnLocation_callback()
-        print(data)
-
-        Logger.info(self, "Door OPENED GOING TO NEXT STAT")
+        Logger.info(self, f"data: {data}")
 
 
 def main(args=None):
