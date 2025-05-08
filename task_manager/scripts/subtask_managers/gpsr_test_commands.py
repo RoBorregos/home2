@@ -31,10 +31,14 @@ custom_command = [
     #     "user_instruction": "say what day is tomorrow to the person pointing to the left in the office",
     #     "previous_command_info": ["what day is tomorrow"],
     # },
+    # {
+    #     "action": "count",
+    #     "target_to_count": "waving",
+    # },
     {
-        "action": "count",
-        "target_to_count": "raising left arm",
-    },
+        "action": "find_person",
+        "attribute_value": "waving person",
+    }
     # {"action": "count", "target_to_count": "standing persons"},
     # {"action": "count", "target_to_count": "drinks"},
     # {

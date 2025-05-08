@@ -57,6 +57,9 @@ class GPSRSingleTask(GenericTask):
             command = GoTo(**command)
 
         self.subtask_manager.hri.say(f"I will go to {command.location_to_go}.", wait=False)
+        self.subtask_manager.manipulation.move_joint_positions(
+            named_position="nav_pose", velocity=0.5, degrees=True
+        )
         location = self.subtask_manager.hri.query_location(command.location_to_go)
         area = self.subtask_manager.hri.get_area(location)
         if isinstance(area, list):

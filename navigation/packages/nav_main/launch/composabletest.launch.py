@@ -10,11 +10,12 @@ from launch.conditions import UnlessCondition, IfCondition
 
 def generate_launch_description():
     bringup_dir = get_package_share_directory('nav_main')
-    params=os.path.join(bringup_dir, 'config', 'nav2_params_original.yaml')
-    nav_yaml=os.path.join(bringup_dir, 'maps', 'tmr2025.yaml')
+    # params=os.path.join(bringup_dir, 'config', 'nav2_params_original.yaml')
+    params=os.path.join(bringup_dir, 'config', 'nav2_params_tmr.yaml')
+    # nav_yaml=os.path.join(bringup_dir, 'maps', 'tmr2025.yaml')
     params_file = LaunchConfiguration('params_file', default=params)
-    use_amcl = LaunchConfiguration('use_amcl', default='true')
-    map_file = LaunchConfiguration('map', default=nav_yaml)
+    # use_amcl = LaunchConfiguration('use_amcl', default='true')
+    # map_file = LaunchConfiguration('map', default=nav_yaml)
     
     param_substitutions = {
         'use_sim_time': 'false',

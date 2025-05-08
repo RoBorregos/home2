@@ -134,7 +134,7 @@ class PoseDetection:
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         results_p = self.pose.process(image_rgb)
 
-        gestures = []
+        gestures = Gestures.UNKNOWN
 
         if results_p.pose_landmarks:
             mid_x = self.get_midpoint_x(results_p)
@@ -142,26 +142,28 @@ class PoseDetection:
             if not self.is_chest_visible(image) or self.are_arms_down(
                 results_p.pose_landmarks
             ):
-                return gestures, results_p
+                print(f"Detected gesture: {gestures}")
+                return gestures
 
             # Left hand
             elif self.is_raising_left_arm(mid_x, results_p):
-                gestures.append(Gestures.RAISING_LEFT_ARM)
+                gestures = Gestures.RAISING_LEFT_ARM
 
             elif self.is_pointing_left(mid_x, results_p):
-                gestures.append(Gestures.POINTING_LEFT)
+                gestures = Gestures.POINTING_LEFT
 
             # Right hand
             elif self.is_raising_right_arm(mid_x, results_p):
-                gestures.append(Gestures.RAISING_RIGHT_ARM)
+                gestures = Gestures.RAISING_RIGHT_ARM
 
             elif self.is_pointing_right(mid_x, results_p):
-                gestures.append(Gestures.POINTING_RIGHT)
+                gestures = Gestures.POINTING_RIGHT
 
             elif self.is_waving(results_p):
-                gestures.append(Gestures.WAVING)
+                gestures = Gestures.WAVING
 
-        return gestures, results_p
+        print(f"Detected gesture: {gestures}")
+        return gestures
 
     def is_closer_to_left_shoulder(self, wrist, left_shoulder, right_shoulder):
         return abs(wrist.x - left_shoulder.x) < abs(wrist.x - right_shoulder.x)
@@ -237,10 +239,9 @@ class PoseDetection:
         left_shoulder = landmarks[11]  # mp_pose.PoseLandmark.LEFT_SHOULDER
         left_elbow = landmarks[13]  # mp_pose.PoseLandmark.LEFT_ELBOW
         left_wrist = landmarks[15]  # mp_pose.PoseLandmark.LEFT_WRIST
-        left_index = landmarks[19]
+        # left_index = landmarks[19]
 
         angle = self.get_angle(left_shoulder, left_elbow, left_wrist)
-        distance_left = left_shoulder.y - left_index.y
 
         if (
             angle < 35
@@ -257,10 +258,9 @@ class PoseDetection:
         right_shoulder = landmarks[12]  # mp_pose.PoseLandmark.RIGHT_SHOULDER
         right_elbow = landmarks[14]  # mp_pose.PoseLandmark.RIGHT_ELBOW
         right_wrist = landmarks[16]  # mp_pose.PoseLandmark.RIGHT_WRIST
-        right_index = landmarks[20]
+        # right_index = landmarks[20]
 
         angle = self.get_angle(right_shoulder, right_elbow, right_wrist)
-        distance_right = right_shoulder.y - right_index.y
 
         if (
             angle < 35

@@ -13,7 +13,7 @@ from utils.baml_client.types import CommandListLLM
 from utils.logger import Logger
 from utils.status import Status
 from utils.subtask_manager import SubtaskManager, Task
-import time
+# import time
 
 ATTEMPT_LIMIT = 3
 MAX_COMMANDS = 3
@@ -45,11 +45,11 @@ class GPSRTM(Node):
     def __init__(self):
         """Initialize the node"""
         super().__init__("gpsr_task_manager")
-        self.subtask_manager = SubtaskManager(self, task=Task.GPSR, mock_areas=["navigation"])
+        self.subtask_manager = SubtaskManager(self, task=Task.GPSR, mock_areas=[])
         self.gpsr_tasks = GPSRTask(self.subtask_manager)
         self.gpsr_individual_tasks = GPSRSingleTask(self.subtask_manager)
 
-        self.current_state = GPSRTM.States.EXECUTING_COMMAND
+        self.current_state = GPSRTM.States.START  # GPSRTM.States.EXECUTING_COMMAND
         self.running_task = True
         self.current_attempt = 0
         self.executed_commands = 0
@@ -67,19 +67,19 @@ class GPSRTM(Node):
         """State machine"""
 
         if self.current_state == GPSRTM.States.START:
-            res = "closed"
-            while res == "closed":
-                time.sleep(1)
-                status, res = self.subtask_manager.nav.check_door()
-                if status == Status.EXECUTION_SUCCESS:
-                    Logger.info(self, f"Door status: {res}")
-                else:
-                    Logger.error(self, "Failed to check door status")
-            # TODO: LOCATION
-            self.subtask_manager.nav.move_to_location(location="", sublocation="")  # LOCATION
-            self.subtask_manager.manipulation.move_joint_positions(
-                named_position="front_stare", velocity=0.5, degrees=True
-            )
+            # res = "closed"
+            # while res == "closed":
+            #     time.sleep(1)
+            #     status, res = self.subtask_manager.nav.check_door()
+            #     if status == Status.EXECUTION_SUCCESS:
+            #         Logger.info(self, f"Door status: {res}")
+            #     else:
+            #         Logger.error(self, "Failed to check door status")
+
+            # self.subtask_manager.nav.move_to_location(location="start_area", sublocation="")  # LOCATION
+            # self.subtask_manager.manipulation.move_joint_positions(
+            #     named_position="front_stare", velocity=0.5, degrees=True
+            # )
             self.subtask_manager.hri.say(
                 "Hi, my name is Frida. I am a general purpose robot. I can help you with some tasks."
             )
@@ -92,23 +92,23 @@ class GPSRTM(Node):
             self.subtask_manager.manipulation.move_joint_positions(
                 named_position="front_stare", velocity=0.5, degrees=True
             )
-            # s, user_command = self.subtask_manager.hri.ask_and_confirm(
-            #     "What is your command?",
-            #     "command",
-            #     context="The user was asked to say a command. We want to infer his complete instruction from the response",
-            #     confirm_question=confirm_command,
-            #     use_hotwords=False,
-            #     retries=ATTEMPT_LIMIT,
-            #     min_wait_between_retries=5.0,
-            # )
+            s, user_command = self.subtask_manager.hri.ask_and_confirm(
+                "What is your command?",
+                "command",
+                context="The user was asked to say a command. We want to infer his complete instruction from the response",
+                confirm_question=confirm_command,
+                use_hotwords=False,
+                retries=ATTEMPT_LIMIT,
+                min_wait_between_retries=5.0,
+            )
             # gesture_person_list = ["waving person", "person raising their left arm", "person raising their right arm",
             #                "person pointing to the left", "person pointing to the right"]
             # pose_person_plural_list = ["sitting persons", "standing persons", "lying persons"]
 
-            s = Status.EXECUTION_SUCCESS
+            # s = Status.EXECUTION_SUCCESS
             # user_command = "go to the living room and count standing persons"
             # user_command = "Go to the kitchen table find Ale and tell her you"
-            user_command = "tell me how many standing persons are in the living room"
+            # user_command = "tell me how many standing persons are in the living room"
 
             if s != Status.EXECUTION_SUCCESS:
                 self.subtask_manager.hri.say("I am sorry, I could not understand you.")
