@@ -276,9 +276,13 @@ class NavigationTasks:
         try:
             request = ReturnLocation.Request()
             future = self.ReturnLocation_client.call_async(request)
-            rclpy.spin_until_future_complete(self.node, future)
+            rclpy.spin_until_future_complete(self.node, future, TIMEOUT)
             results = future.result()
-            return Status.EXECUTION_SUCCESS, results
+            if results is not None:
+                return Status.EXECUTION_SUCCESS, results
+            else:
+                Logger.error(self.node, "Error getting location")
+                return Status.EXECUTION_ERROR, []
         except Exception as e:
             Logger.error(self.node, f"Error getting location: {e}")
             return Status.EXECUTION_ERROR, []

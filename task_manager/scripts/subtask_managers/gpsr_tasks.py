@@ -1,5 +1,6 @@
 import json
 import os
+import time
 
 import rclpy
 from ament_index_python.packages import get_package_share_directory
@@ -339,6 +340,11 @@ class GPSRTask(GenericTask):
 
         return Status.TARGET_NOT_FOUND, "object not found"
 
+    def timeout(self, timeout: int = 2):
+        start_time = time.time()
+        while (time.time() - start_time) < timeout:
+            pass
+
     ## Manipulation, Vision
     def count(self, command: Count):
         """
@@ -422,7 +428,9 @@ class GPSRTask(GenericTask):
 
             if status == Status.EXECUTION_SUCCESS:
                 counter += count
+                self.timeout(5)
                 self.subtask_manager.hri.say(f"I have counted {count} {command.target_to_count}.")
+
             elif status == Status.TARGET_NOT_FOUND:
                 self.subtask_manager.hri.say(
                     f"I didn't find any {command.target_to_count}.",

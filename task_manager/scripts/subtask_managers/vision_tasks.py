@@ -705,6 +705,12 @@ class VisionTasks:
         prompt = f"What is the {description} {object} in the image?"
         return self.moondream_query(prompt, query_person=False)
 
+    def count_objects(self, object: str):
+        """Count the number of objects in the image"""
+        Logger.info(self.node, "Counting objects")
+        prompt = f"How many {object} are in the image? Please return only a number"
+        return self.moondream_query(prompt, query_person=False)
+
     def describe_person(self, callback):
         """Describe the person in the image"""
         Logger.info(self.node, "Describing person")

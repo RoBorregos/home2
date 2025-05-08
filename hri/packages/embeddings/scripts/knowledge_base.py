@@ -8,6 +8,7 @@ from openai import OpenAI
 from nlp.assets.dialogs import get_answer_question_dialog
 import numpy as np
 from frida_constants.hri_constants import RAG_SERVICE, MODEL
+import pytz
 
 
 def compute_cosine_similarity(vec1, vec2):
@@ -220,7 +221,9 @@ class RAGService(Node):
                 f"Generating LLM answer (threshold={threshold}, best_score={best_score})"
             )
 
-            current_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            current_time = datetime.now(pytz.timezone("America/Mexico_City")).strftime(
+                "%Y-%m-%d %H:%M:%S"
+            )
 
             messages = get_answer_question_dialog(
                 relevant_contexts, question, current_time

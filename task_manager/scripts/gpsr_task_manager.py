@@ -44,9 +44,7 @@ class GPSRTM(Node):
     def __init__(self):
         """Initialize the node"""
         super().__init__("gpsr_task_manager")
-        self.subtask_manager = SubtaskManager(
-            self, task=Task.GPSR, mock_areas=["navigation", "vision", "manipulation"]
-        )
+        self.subtask_manager = SubtaskManager(self, task=Task.GPSR, mock_areas=["navigation"])
         self.gpsr_tasks = GPSRTask(self.subtask_manager)
         self.gpsr_individual_tasks = GPSRSingleTask(self.subtask_manager)
 
