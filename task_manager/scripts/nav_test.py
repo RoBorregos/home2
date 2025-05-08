@@ -30,6 +30,8 @@ class TestTaskManager(Node):
         data = self.subtask_manager.nav.ReturnLocation_callback()
         print(data)
 
+        Logger.info(self, "Door OPENED GOING TO NEXT STAT")
+
 
 def main(args=None):
     print("Starting test task manager")

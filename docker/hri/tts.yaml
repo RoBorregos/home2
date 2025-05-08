@@ -21,4 +21,5 @@ services:
     environment:
       PULSE_SERVER: unix:/tmp/pulse/pulseaudio.socket
       PULSE_COOKIE: /tmp/pulse/pulseaudio.cookie
+      ROS_LOCALHOST_ONLY: 1
     command: "python3 kokoro-tts.py --port 50050"

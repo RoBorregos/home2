@@ -34,7 +34,7 @@ from frida_constants.vision_constants import (
 
 MODELS_PATH = str(pathlib.Path(__file__).parent) + "/models/"
 
-
+print("PATH   ", MODELS_PATH)
 ARGS = {
     "RGB_IMAGE_TOPIC": CAMERA_TOPIC,
     "DEPTH_IMAGE_TOPIC": DEPTH_IMAGE_TOPIC,
@@ -173,6 +173,7 @@ class object_detector_node(rclpy.node.Node):
         self.node_params.YOLO_MODEL_PATH = MODELS_PATH + (
             self.get_parameter("YOLO_MODEL_PATH").get_parameter_value().string_value
         )
+        print("PATH_FINALLLLL: ", self.node_params.YOLO_MODEL_PATH)
         self.get_logger().info(f"path: {self.node_params.YOLO_MODEL_PATH}")
         self.node_params.USE_ACTIVE_FLAG = (
             self.get_parameter("USE_ACTIVE_FLAG").get_parameter_value().bool_value

@@ -126,6 +126,7 @@ set(srv_files
   "task_manager/srv/FollowFace.srv"
   "task_manager/srv/PointTransformation.srv"
   "task_manager/srv/ReturnLocation.srv"
+  "task_manager/srv/LaserGet.srv"
   "vision/srv/BeverageLocation.srv"
   "vision/srv/CountByColor.srv"
   "vision/srv/CountByPose.srv"
