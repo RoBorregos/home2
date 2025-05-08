@@ -4,7 +4,7 @@ from rclpy.node import Node
 from tf2_ros import Buffer, TransformListener
 from tf2_geometry_msgs import do_transform_point
 from rclpy.callback_groups import ReentrantCallbackGroup
-from frida_interfaces.srv import PointTransformation, ReturnAreas, LaserGet
+from frida_interfaces.srv import PointTransformation, ReturnLocation, LaserGet
 import json
 import os
 from sensor_msgs.msg import LaserScan
@@ -14,7 +14,7 @@ from utils.status import Status
 from math import sqrt
 
 POINT_TRANSFORMER_TOPIC = "/integration/point_transformer"
-RETURN_AREAS_TOPIC = "/integration/return_areas"
+RETURN_LOCATION = "/integration/ReturnLocation"
 RETURN_LASER_DATA = "/integration/Laserscan"
 
 
@@ -30,10 +30,20 @@ class PointTransformer(Node):
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
         self.set_target_service = self.create_service(
-            PointTransformation, POINT_TRANSFORMER_TOPIC, self.set_target_callback
+            PointTransformation,
+            POINT_TRANSFORMER_TOPIC,
+            self.set_target_callback,
+            callback_group=self.callback_group,
         )
-        self.return_areas = self.create_service(ReturnAreas, RETURN_AREAS_TOPIC, self.whereIam)
-        self.return_areas = self.create_service(LaserGet, RETURN_LASER_DATA, self.send_laser_data)
+        self.return_areas = self.create_service(
+            ReturnLocation,
+            RETURN_LOCATION,
+            self.get_current_location,
+            callback_group=self.callback_group,
+        )
+        self.return_areas = self.create_service(
+            LaserGet, RETURN_LASER_DATA, self.send_laser_data, callback_group=self.callback_group
+        )
         self.scan_topic = self.create_subscription(LaserScan, "/scan", self.update_laser, 10)
         self.get_logger().info("PointTransformer node has been started.")
 
@@ -172,7 +182,7 @@ class PointTransformer(Node):
                     inside = not inside
         return inside
 
-    def whereIam(self, request, response):
+    def get_current_location(self, request, response):
         """
         Original method to handle the request/response for determining the robot's location.
         """

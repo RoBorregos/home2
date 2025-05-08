@@ -556,7 +556,11 @@ class HRITasks(metaclass=SubtaskMeta):
 
     @service_check("answer_question_service", (Status.SERVICE_CHECK, "", 0.5), TIMEOUT)
     def answer_question(
-        self, question: str, top_k: int = None, threshold: float = None, collections: list = None
+        self,
+        question: str,
+        top_k: int = 3,
+        threshold: float = 0.7,
+        collections: list = ["frida_knowledge", "roborregos_knowledge", "tec_knowledge"],
     ) -> tuple[Status, str]:
         """
         Method to answer a question using the RAG service.

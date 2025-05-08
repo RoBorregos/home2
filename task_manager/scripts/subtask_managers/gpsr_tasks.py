@@ -1,5 +1,6 @@
 import json
 import os
+import time
 
 import rclpy
 from ament_index_python.packages import get_package_share_directory
@@ -211,12 +212,7 @@ class GPSRTask(GenericTask):
 
         self.navigate_to(area, subarea)
 
-        if command.destination_room == "person":
-            self.subtask_manager.hri.say(
-                f"We have arrived to {command.destination_room}!", wait=True
-            )
-        else:
-            self.subtask_manager.hri.say(f"We have arrived, {command.destination_room}!", wait=True)
+        self.subtask_manager.hri.say(f"We have arrived to {command.destination_room}!", wait=True)
 
     ## HRI, Vision
     def get_person_info(self, command: GetPersonInfo):
@@ -260,29 +256,47 @@ class GPSRTask(GenericTask):
                 f"The person is {res}.",
             )
             return s, res
-
-        s, res = self.subtask_manager.vision.get_person_name()
-        if s == Status.EXECUTION_SUCCESS:
-            return (Status.EXECUTION_SUCCESS,)
-
         else:
-            self.subtask_manager.hri.say(
-                "Hi, I'm Frida.",
-            )
-            s, name = self.subtask_manager.hri.ask_and_confirm(
-                question="Can you please tell me your name?",
-                query="name",
-                use_hotwords=False,
-                context="The user was asked to say their name. We want to infer his name from the response",
-            )
+            s, res = self.subtask_manager.vision.get_person_name()
             if s == Status.EXECUTION_SUCCESS:
-                self.subtask_manager.hri.say(
-                    "Please stand in front .",
-                )
-                self.subtask_manager.vision.save_face_name(res)
                 return Status.EXECUTION_SUCCESS, res
             else:
-                return Status.EXECUTION_ERROR, "name not found"
+                self.subtask_manager.hri.say(
+                    "Hi, I'm Frida.",
+                )
+                s, response = self.subtask_manager.hri.ask_and_confirm(
+                    question="Can you please tell me your name?",
+                    query="name",
+                    use_hotwords=False,
+                    context="The user was asked to say their name. We want to infer his name from the response",
+                )
+                if s == Status.EXECUTION_SUCCESS:
+                    save_name_retires = 0
+                    while save_name_retires < 3:
+                        self.subtask_manager.hri.say(
+                            "Please stand in front of me so I can save your name.",
+                        )
+
+                        if (
+                            self.subtask_manager.vision.save_face_name(response)
+                            == Status.EXECUTION_SUCCESS
+                        ):
+                            self.subtask_manager.hri.say(
+                                f"Nice to meet you, {response}. I have saved your name.",
+                            )
+                            return Status.EXECUTION_SUCCESS, response
+
+                        save_name_retires += 1
+
+                    self.subtask_manager.hri.say(
+                        "Sorry, I couldn't save your name.",
+                    )
+                    return Status.EXECUTION_SUCCESS, response
+                else:
+                    self.subtask_manager.hri.say(
+                        "I couldn't undestand your name",
+                    )
+                    return Status.EXECUTION_ERROR, "name not found"
 
     ## Nav, Vision
     # TODO: We removed this in command dataset
@@ -326,6 +340,26 @@ class GPSRTask(GenericTask):
 
         return Status.TARGET_NOT_FOUND, "object not found"
 
+    def timeout(self, timeout: int = 2):
+        start_time = time.time()
+        while (time.time() - start_time) < timeout:
+            pass
+
+    def count_objects(self, object_name: str):
+        self.subtask_manager.manipulation.move_to_position("table_stare")
+        self.subtask_manager.hri.say(
+            f"I am going to count {object_name}.",
+        )
+        status, result = self.subtask_manager.vision.count_objects(object_name)
+        if status == Status.EXECUTION_SUCCESS:
+            self.subtask_manager.hri.say(
+                f"I have counted {result} {object_name}.",
+            )
+        elif status == Status.TARGET_NOT_FOUND:
+            self.subtask_manager.hri.say(
+                f"I didn't find any {object_name}.",
+            )
+
     ## Manipulation, Vision
     def count(self, command: Count):
         """
@@ -368,6 +402,16 @@ class GPSRTask(GenericTask):
             possibilities, command.target_to_count
         )
         value = value[0]
+
+        print(f"Value: {value}", command.target_to_count)
+
+        if (
+            "person" not in command.target_to_count.lower()
+            and "people" not in command.target_to_count.lower()
+        ):
+            self.count_objects(command.target_to_count)
+            return Status.EXECUTION_SUCCESS, "counted objects"
+
         self.subtask_manager.manipulation.move_to_position("front_stare")
 
         counter = 0
@@ -409,7 +453,9 @@ class GPSRTask(GenericTask):
 
             if status == Status.EXECUTION_SUCCESS:
                 counter += count
+                self.timeout(5)
                 self.subtask_manager.hri.say(f"I have counted {count} {command.target_to_count}.")
+
             elif status == Status.TARGET_NOT_FOUND:
                 self.subtask_manager.hri.say(
                     f"I didn't find any {command.target_to_count}.",
@@ -456,6 +502,9 @@ class GPSRTask(GenericTask):
                 deus_machina()
         """
 
+        if isinstance(command, dict):
+            command = FindPerson(**command)
+
         self.subtask_manager.manipulation.move_to_position("front_stare")
         for degree in self.pan_angles:
             self.subtask_manager.manipulation.pan_to(degree)
@@ -496,6 +545,8 @@ class GPSRTask(GenericTask):
             - The robot approaches the person with the specified name.
             - The robot saves information about all the people it encounters.
         """
+        if isinstance(command, dict):
+            command = FindPersonByName(**command)
 
         # self.subtask_manager.manipulation.move_to_position("front_stare")
         for degree in self.pan_angles:
