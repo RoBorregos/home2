@@ -114,17 +114,18 @@ class StoringGroceriesManager(Node):
         self.objects_on_table: list[BBOX] = []
         self.object_names_on_table: list[str] = []
         self.shelves_count = 0
-        self.object_to_placing_shelf: dict[str, list[int]]
+        self.object_to_placing_shelf: dict[str, list[int]] = defaultdict(list)
         self.current_object: str = None
         self.point_pub = self.create_publisher(PointStamped, "point_visualize", 10)
         self.retry_count = 0
         self.prev_state = None
-        self.manual_heights = [  # 0.2
-            0.45,  # 0.45 +- 0.2 -> 0.25 0.65
-            0.8,  # 0.8 +- 0.2 -> 0.6 1.0
-            1.17,  # 1.17 +- 0.2 -> 0.97 1.37
-            # 1.525,  # 1.525 (0.1 +-) -> 1.425 1.625
-        ]  # remember rest 15cm from the base_link and the measure is in m
+        # self.manual_heights = [  # 0.2
+        #     0.45,  # 0.45 +- 0.2 -> 0.25 0.65
+        #     0.8,  # 0.8 +- 0.2 -> 0.6 1.0
+        #     1.17,  # 1.17 +- 0.2 -> 0.97 1.37
+        #     # 1.525,  # 1.525 (0.1 +-) -> 1.425 1.625
+        # ]  # remember rest 15cm from the base_link and the measure is in m
+        self.manual_heights = [0.04, 0.43, 0.67]
         self.shelf_level_threshold = 0.30
         self.shelf_level_down_threshold = 0.05
         self.picked_objects = 0
@@ -141,7 +142,7 @@ class StoringGroceriesManager(Node):
             self.shelves_count += 1
 
     def nav_to(self, location: str, sub_location: str = "", say: bool = True) -> Status:
-        Logger.info(self, f"Navigating to {location} {sub_location}")
+        Logger.info(self, f"Navigating to {location} {sub_location} ")
         try:
             if say:
                 self.subtask_manager.hri.say(text=f"Going to {location} {sub_location}", wait=True)
@@ -190,7 +191,9 @@ class StoringGroceriesManager(Node):
     def exec_state(self):
         Logger.info(self, f"Executing state: {self.state.name}")
         if self.state == ExecutionStates.START:
-            self.state = ExecutionStates.INIT_NAV_TO_SHELF
+            Logger.info(self, "Starting Storing Groceries Manager...")
+            # self.state = ExecutionStates.INIT_NAV_TO_SHELF
+            self.state = ExecutionStates.CATEGORIZE_OBJECTS
 
         elif self.state == ExecutionStates.END:
             Logger.info(self, "Ending Storing Groceries Manager...")
@@ -268,15 +271,35 @@ class StoringGroceriesManager(Node):
                             break
                         else:
                             for j in range(len(self.manual_heights)):
-                                if j != i and j not in self.shelves[j].objects:
-                                    self.shelves[j].objects.append(det.classname)
-                                    self.shelves[j].id = j
-                                    Logger.info(
-                                        self,
-                                        f"Detected object {det.classname} in shelf {self.shelves[j].tag}",
-                                    )
-                                    break
-                self.shelves_count += 1
+                                distance_check = height - self.manual_heights[j]
+                                if (
+                                    distance_check < 0
+                                    and abs(distance_check) < self.shelf_level_down_threshold
+                                ) or (
+                                    distance_check >= 0
+                                    and distance_check < self.shelf_level_threshold
+                                ):
+                                    if j != i and j not in self.shelves[j].objects:
+                                        self.shelves[j].objects.append(det.classname)
+                                        self.shelves[j].id = j
+                                        Logger.info(
+                                            self,
+                                            f"Detected object {det.classname} in shelf {self.shelves[j].tag}",
+                                        )
+                                        break
+                                # if j != i and j not in self.shelves[j].objects:
+                                #     self.shelves[j].objects.append(det.classname)
+                                #     self.shelves[j].id = j
+                                #     Logger.info(
+                                #         self,
+                                #         f"Detected object {det.classname} in shelf {self.shelves[j].tag}",
+                                #     )
+                                #     break
+                # self.shelves_count += 1
+
+            Logger.info(self, f"Shelves: {self.shelves}")
+            Logger.info(self, f"Objects: {[i.objects for i in self.shelves.values()]}")
+
             # self.subtask_manager.manipulation.move_joint_positions(
             #     named_position="front_stare", velocity=0.5, degrees=True
             # )
@@ -350,6 +373,8 @@ class StoringGroceriesManager(Node):
             for i in self.shelves:
                 shelfs[i] = self.shelves[i].objects
             try:
+                self.object_names_on_table = ["apple", "squash", "coke", "bowl"]
+                shelfs = {0: [], 1: ["apple", "orange"], 2: ["fanta"]}
                 status, categorized_shelfs, objects_to_add = (
                     self.subtask_manager.hri.categorize_objects(self.object_names_on_table, shelfs)
                 )

@@ -44,18 +44,18 @@ GPSR_COMMANDS = {
 
 
 class MODEL(Enum):
-    GRAMMAR = "qwen2.5"
-    LLM_WRAPPER = "qwen2.5"
-    COMMON_INTEREST = "qwen2.5"
-    CATEGORIZE_SHELVES = "qwen3"
-    IS_POSITIVE = "qwen2.5"
-    IS_NEGATIVE = "qwen2.5"
-    GENERIC_STRUCTURED_OUTPUT = "qwen2.5"
-    GENERATE_RESPONSE = "qwen2.5"
-    STRUCTURED_RESPONSE = "qwen3"
+    GRAMMAR = "qwen3:0.6b"
+    LLM_WRAPPER = "qwen3:0.6b"
+    COMMON_INTEREST = "qwen3:0.6b"
+    CATEGORIZE_SHELVES = "qwen3:0.6b"
+    IS_POSITIVE = "qwen3:0.6b"
+    IS_NEGATIVE = "qwen3:0.6b"
+    GENERIC_STRUCTURED_OUTPUT = "qwen3:0.6b"
+    GENERATE_RESPONSE = "qwen3:0.6b"
+    STRUCTURED_RESPONSE = "qwen3:0.6b"
     EXTRACT_INFO_REQUESTED = "qwen2.5"
-    GET_COMMANDS = "qwen2.5"
-    CommonInterest = "qwen2.5"
+    GET_COMMANDS = "qwen3:0.6b"
+    CommonInterest = "qwen3:0.6b"
 
 
 USEFUL_AUDIO_NODE_NAME = "useful_audio_node"
