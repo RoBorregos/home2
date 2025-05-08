@@ -36,14 +36,18 @@ def launch_setup(context, *args, **kwargs):
             'wait_for_transform_duration': 0.8,
             'queue_size': 3,
             'approx_sync ': True,
+            'approx_sync_max_interval': '0.04',
             # RTAB-Map's parameters should be strings:
             'Reg/Strategy':'1',
             'Reg/Force3DoF':'true',
             'Mem/NotLinkedNodesKept':'false',
-            'Icp/PointToPlaneMinComplexity':'0.04',
+            'Icp/PointToPlaneMinComplexity':'0.05',
             'Grid/MaxGroundHeight':'0.1', 
             'Grid/MaxObstacleHeight':'2',  
             'RGBD/NeighborLinkRefining':'True',
+            'Grid/CellSize': '0.04',
+            'Vis/MaxFeatures': '100',
+            'Rtabmap/DetectionRate': '15',
             #   'Grid/RayTracing':'true', # Fill empty space
             'Grid/3D':'false', # Use 2D occupancy
             'Grid/RangeMax':'3',
@@ -56,17 +60,23 @@ def launch_setup(context, *args, **kwargs):
             'frame_id':'base_link',
             'use_sim_time':use_sim_time,
             'wait_for_transform_duration': 0.8,
-            'queue_size': 3,
-            'approx_sync ': True,
+            'queue_size': 200,
+            'approx_sync ': False,
             # RTAB-Map's parameters should be strings:
             'Reg/Strategy':'1',
+            'Mem/BinDataKept': 'false',
+            'RGBD/CreateOccupancyGrid': 'false',
             'Reg/Force3DoF':'true',
             'Mem/NotLinkedNodesKept':'false',
-            'Icp/PointToPlaneMinComplexity':'0.04',
+            'Icp/PointToPlaneMinComplexity':'0.05',
             'Grid/MaxGroundHeight':'0.1', 
             'Grid/MaxObstacleHeight':'2',  
             'RGBD/NeighborLinkRefining':'True',
-            #   'Grid/RayTracing':'true', # Fill empty space
+            'Grid/CellSize': '0.04',
+            'Vis/MaxFeatures': '100',
+            'Rtabmap/DetectionRate': '30',
+            # 'Optimizer/Iterations': '60',
+            'Grid/RayTracing':'false', # Fill empty space
             'Grid/3D':'false', # Use 2D occupancy
             'Grid/RangeMax':'3',
             'Grid/NormalsSegmentation':'false', # Use passthrough filter to detect obstacles

@@ -31,8 +31,9 @@ class WhisperClient:
             request = speech_pb2.AudioRequest(audio_data=audio_data, hotwords=hotwords)
             response = self.stub.Transcribe(request)
             return response.text
-        except grpc.RpcError as e:
-            raise RuntimeError(f"gRPC error: {e.code()}, {e.details()}")
+        except grpc.RpcError:
+            return ""
+            # raise RuntimeError(f"gRPC error: {e.code()}, {e.details()}")
 
 
 class HearNode(Node):

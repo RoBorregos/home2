@@ -11,6 +11,7 @@ services:
     environment:
       - OLLAMA_MODELS=/ollama
       - ROLE=${ROLE}
+      # - ROS_LOCALHOST_ONLY: 1
     stdin_open: true
     tty: true
     entrypoint:

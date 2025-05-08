@@ -65,6 +65,9 @@ from utils.baml_client.types import (
     PlaceObject,
     SayWithContext,
 )
+
+# from baml_client.config import #set_log_level
+
 from utils.decorators import service_check
 from utils.logger import Logger
 from utils.status import Status
@@ -90,6 +93,8 @@ InterpreterAvailableCommands = Union[
 ]
 
 TIMEOUT = 5.0
+
+# set_log_level("INFO")  # Set to "ERROR" in prod
 
 
 def confirm_query(interpreted_text, target_info):
@@ -502,24 +507,28 @@ class HRITasks(metaclass=SubtaskMeta):
 
     @service_check("common_interest_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def common_interest(self, person1, interest1, person2, interest2, remove_thinking=True):
-        Logger.info(
-            self.node,
-            f"Finding common interest between {person1}({interest1}) and {person2}({interest2})",
-        )
-        request = CommonInterest.Request(
-            person1=person1, interests1=interest1, person2=person2, interests2=interest2
-        )
-        future = self.common_interest_service.call_async(request)
-        rclpy.spin_until_future_complete(self.node, future)
+        try:
+            Logger.info(
+                self.node,
+                f"Finding common interest between {person1}({interest1}) and {person2}({interest2})",
+            )
+            request = CommonInterest.Request(
+                person1=person1, interests1=interest1, person2=person2, interests2=interest2
+            )
+            future = self.common_interest_service.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=15)
 
-        result = future.result().common_interest
+            result = future.result().common_interest
 
-        if remove_thinking:
-            result = re.sub(r"<think>.*?</think>", "", result, flags=re.DOTALL)
+            if remove_thinking:
+                result = re.sub(r"<think>.*?</think>", "", result, flags=re.DOTALL)
 
-        Logger.info(
-            self.node, f"Common interest computed between {person1} and {person2}: {result}"
-        )
+            Logger.info(
+                self.node, f"Common interest computed between {person1} and {person2}: {result}"
+            )
+        except Exception as e:
+            Logger.error(self.node, f"Error in common interest service: {e}")
+            return Status.EXECUTION_ERROR, ""
 
         return Status.EXECUTION_SUCCESS, result
 
