@@ -196,30 +196,28 @@ public:
                            "Error extracting plane with code %d",
                            response->health_response);
     
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_result(
-        new pcl::PointCloud<pcl::PointXYZ>);
-    response->health_response = this->largest_cluster(cloud_out, cloud_result);
+    response->health_response = this->largest_cluster(cloud_out, cloud_out);
 
     //publish
     // publish this in debug pcl pub
-    sensor_msgs::msg::PointCloud2 cloud_result_msg;
+    sensor_msgs::msg::PointCloud2 cloud_out_msg;
     try {
-      pcl::toROSMsg(*cloud_result, cloud_result_msg);
+      pcl::toROSMsg(*cloud_out, cloud_out_msg);
     } catch (const std::exception &e) {
       RCLCPP_ERROR(this->get_logger(), "Error converting point cloud: %s",
                   e.what());
       response->health_response = COULD_NOT_CONVERT_POINT_CLOUD;
       return;
     }
-    cloud_result_msg.header.frame_id = "base_link";
-    cloud_result_msg.header.stamp = this->now();
-    this->cloud_pub_->publish(cloud_result_msg);
+    cloud_out_msg.header.frame_id = "base_link";
+    cloud_out_msg.header.stamp = this->now();
+    this->cloud_pub_->publish(cloud_out_msg);
 
     ASSERT_AND_RETURN_CODE(response->health_response, OK,
                            "Error clustering point cloud with code %d",
                            response->health_response);
 
-    pcl::toROSMsg(*cloud_result, response->cloud);
+    pcl::toROSMsg(*cloud_out, response->cloud);
     response->health_response = OK;
 
     RCLCPP_INFO(this->get_logger(), "Publishing point cloud");

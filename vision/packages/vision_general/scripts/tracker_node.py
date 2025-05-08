@@ -47,6 +47,7 @@ from frida_constants.vision_constants import (
     # IS_TRACKING_TOPIC,
 )
 from frida_constants.vision_enums import DetectBy
+from std_srvs.srv import Trigger
 
 CONF_THRESHOLD = 0.6
 
@@ -77,9 +78,9 @@ class SingleTracker(Node):
             TrackBy, SET_TARGET_BY_TOPIC, self.set_target_by_callback
         )
 
-        # self.get_is_tracking_service = self.create_service(
-        #     Trigger, IS_TRACKING_TOPIC, self.get_is_tracking_callback
-        # )
+        self.get_is_tracking_service = self.create_service(
+            Trigger, "/vision/is_tracking", self.get_is_tracking_callback
+        )
 
         self.results_publisher = self.create_publisher(Point, RESULTS_TOPIC, 10)
 
@@ -136,14 +137,15 @@ class SingleTracker(Node):
         pbar.close()
         self.get_logger().info("Single Tracker Ready")
 
-    # def get_is_tracking_callback(self, request, response):
-    #     response = Trigger.Response()
-    #     response.success = self.is_tracking_result
-    #     if self.is_tracking_result:
-    #         self.get_logger().info("Tracking")
-    #     else:
-    #         self.get_logger().info("Not racking")
-    #     return response
+    def get_is_tracking_callback(self, request, response):
+        # request = Trigger.Request()
+        response = Trigger.Response()
+        response.success = self.is_tracking_result
+        if self.is_tracking_result:
+            self.get_logger().info("Tracking")
+        else:
+            self.get_logger().info("Not racking")
+        return response
 
     def image_callback(self, data):
         """Callback to receive image from camera"""
