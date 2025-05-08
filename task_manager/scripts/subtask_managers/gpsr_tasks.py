@@ -148,19 +148,67 @@ class GPSRTask(GenericTask):
         #   self.subtask_manager.nav.follow_person()
 
         # TODO (@nav, hri): fix conditions to stop
-        if command.destination == "cancelled":
-            while self.subtask_manager.hri.hear() != "cancel":
-                pass
 
+        loc = command.destination
+        
+        if command.destination == "cancelled":            
+            self.subtask_manager.hri.say(
+                "I'm sorry, I can't follow you. Please tell me where to go"
+            )
+            status, loc = self.subtask_manager.hri.ask_and_confirm(
+                question="Please tell me where to go.",
+                query="location",
+                use_hotwords=False,
+                context="The user was asked to say the location. We want to infer the location from the response",
+            )
+        
         else:
-            while self.subtask_manager.nav.get_location() != command.destination:
-                pass
+            self.subtask_manager.hri.say(
+                f"I'm sorry, I can't follow you, but I'll go to the {command.destination}",
+            )
 
-        self.subtask_manager.vision.track_person(False)
-        self.subtask_manager.vision.follow_by_name("area")
-        self.subtask_manager.nav.activate_follow(False)
 
-        pass
+        # infer location from the response
+        # go to
+
+        self.subtask_manager.manipulation.move_joint_positions(
+            named_position="nav_pose", velocity=0.5, degrees=True
+        )
+        location = self.subtask_manager.hri.query_location(loc)
+        area = self.subtask_manager.hri.get_area(location)
+        if isinstance(area, list):
+            area = area[0]
+
+        subarea = self.subtask_manager.hri.get_subarea(location)
+        if isinstance(subarea, list):
+            if len(subarea) == 0:
+                subarea = ""
+            else:
+                subarea = subarea[0]
+
+        self.subtask_manager.hri.node.get_logger().info(f"Moving to {subarea} in {area}")
+        self.subtask_manager.hri.node.get_logger().info("Subarea")
+        self.subtask_manager.hri.node.get_logger().info(subarea)
+
+        future = self.subtask_manager.nav.move_to_location(area, subarea)
+        if "navigation" not in self.subtask_manager.get_mocked_areas():
+            rclpy.spin_until_future_complete(self.subtask_manager.nav.node, future)
+
+
+        # xd 
+        # if command.destination == "cancelled":
+        #     while self.subtask_manager.hri.hear() != "cancel":
+        #         pass
+
+        # else:
+        #     while self.subtask_manager.nav.get_location() != command.destination:
+        #         pass
+
+        # self.subtask_manager.vision.track_person(False)
+        # self.subtask_manager.vision.follow_by_name("area")
+        # self.subtask_manager.nav.activate_follow(False)
+
+        # pass
 
     ## HRI, Nav
     def guide_person_to(self, command: GuidePersonTo):
@@ -467,7 +515,7 @@ class GPSRTask(GenericTask):
         return Status.EXECUTION_SUCCESS, "counted " + str(counter) + " " + command.target_to_count
 
     ## Manipulation, Nav, Vision
-    def find_person(self, command: FindPerson):
+    def find_person_og(self, command: FindPerson):
         """
         Finds and approaches a person for further interaction.
 
@@ -517,10 +565,80 @@ class GPSRTask(GenericTask):
                 # TODO: We removed the second param from the command
             # TODO (@nav): approach the person
             if result == Status.EXECUTION_SUCCESS:
+                self.subtask_manager.hri.say(
+                    f"I found a person with {command.attribute_value}. Please get closer to me.",
+                )
                 return Status.EXECUTION_SUCCESS, "person found"
 
+        self.subtask_manager.hri.say(
+            f"I didn't find a person with {command.attribute_value}.",
+        )
         return Status.TARGET_NOT_FOUND, "person not found"
 
+    def find_person(self, command: FindPersonByName):
+        if isinstance(command, dict):
+            command = Count(**command)
+
+        possibilities = [v.value for v in Gestures] + [v.value for v in Poses] + ["clothes"]
+
+        status, value = self.subtask_manager.hri.find_closest(
+            possibilities, command.target_to_count
+        )
+        value = value[0]
+
+        self.subtask_manager.manipulation.move_to_position("front_stare")
+
+
+        self.subtask_manager.hri.say(
+            f"Searching for {value}.",
+        )
+
+        cache_color = None
+        cache_cloth = None
+
+        for degree in self.pan_angles:
+            self.subtask_manager.manipulation.pan_to(degree)
+
+            if command.target_to_count == "":
+                status, count = self.subtask_manager.vision.count_by_pose(Poses.STANDING.value)
+            elif is_value_in_enum(value, Gestures):
+                status, count = self.subtask_manager.vision.count_by_gesture(value)
+            elif is_value_in_enum(value, Poses):
+                status, count = self.subtask_manager.vision.count_by_pose(value)
+            else:
+                if cache_color is None or cache_cloth is None:
+                    s, color = self.subtask_manager.hri.find_closest(
+                        self.color_list, command.target_to_count
+                    )
+                    cache_color = color[0]
+                    s, cloth = self.subtask_manager.hri.find_closest(
+                        self.clothe_list, command.target_to_count
+                    )
+                    cache_cloth = cloth[0]
+
+                color = cache_color
+                cloth = cache_cloth
+                # Say actual color that its counting
+                characteristic = f"{color} {cloth}s"
+                self.subtask_manager.hri.say(
+                    f"I am going to count the {characteristic}.",
+                    wait=False,
+                )
+                status, count = self.subtask_manager.vision.count_by_color(color, cloth)
+
+            if status == Status.EXECUTION_SUCCESS and count > 0:
+                self.subtask_manager.hri.say(
+                    f"I found a person with {command.target_to_count}. Please get approach me.",
+                )
+                break
+
+            elif status == Status.TARGET_NOT_FOUND:
+                self.subtask_manager.hri.say(
+                    f"I didn't find any person with {command.target_to_count}.",
+                )
+
+        return Status.EXECUTION_SUCCESS, "found" + command.target_to_count
+        
     ## HRI, Manipulation, Nav, Vision
     def find_person_by_name(self, command: FindPersonByName):
         """
