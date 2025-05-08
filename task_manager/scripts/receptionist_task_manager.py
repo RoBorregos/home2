@@ -377,6 +377,7 @@ class ReceptionistTM(Node):
                             self.check_angles[self.current_attempts]
                         )
                         self.current_attempts += 1
+                    self.subtask_manager.manipulation.follow_face(True)
                     self.subtask_manager.hri.say(
                         f"{self.get_guest().name}. This is {guest1.name} and they like {guest1.drink}"
                     )
