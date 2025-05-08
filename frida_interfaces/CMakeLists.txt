@@ -125,7 +125,7 @@ set(srv_files
   "manipulation/srv/ToggleServo.srv"
   "task_manager/srv/FollowFace.srv"
   "task_manager/srv/PointTransformation.srv"
-  "task_manager/srv/ReturnAreas.srv"
+  "task_manager/srv/ReturnLocation.srv"
   "task_manager/srv/LaserGet.srv"
   "vision/srv/BeverageLocation.srv"
   "vision/srv/CountByColor.srv"

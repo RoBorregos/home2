@@ -62,6 +62,11 @@ def launch_setup(context, *args, **kwargs):
             'wait_for_transform_duration': 0.8,
             'queue_size': 200,
             'approx_sync ': False,
+
+            ##### TEST ####
+            # 'approx_sync ': True,
+            # 'approx_sync_max_interval': '0.04',
+            ###############
             # RTAB-Map's parameters should be strings:
             'Reg/Strategy':'1',
             'Mem/BinDataKept': 'false',

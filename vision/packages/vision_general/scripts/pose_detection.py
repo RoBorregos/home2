@@ -142,6 +142,7 @@ class PoseDetection:
             if not self.is_chest_visible(image) or self.are_arms_down(
                 results_p.pose_landmarks
             ):
+                print(f"Detected gesture: {gestures}")
                 return gestures
 
             # Left hand
@@ -161,6 +162,7 @@ class PoseDetection:
             elif self.is_waving(results_p):
                 gestures = Gestures.WAVING
 
+        print(f"Detected gesture: {gestures}")
         return gestures
 
     def is_closer_to_left_shoulder(self, wrist, left_shoulder, right_shoulder):
@@ -237,17 +239,14 @@ class PoseDetection:
         left_shoulder = landmarks[11]  # mp_pose.PoseLandmark.LEFT_SHOULDER
         left_elbow = landmarks[13]  # mp_pose.PoseLandmark.LEFT_ELBOW
         left_wrist = landmarks[15]  # mp_pose.PoseLandmark.LEFT_WRIST
-        left_index = landmarks[19]
+        # left_index = landmarks[19]
 
         angle = self.get_angle(left_shoulder, left_elbow, left_wrist)
-        distance_left = left_shoulder.y - left_index.y
 
         if (
-            angle < 27
+            angle < 35
             and left_wrist.y < left_shoulder.y
             and left_elbow.y < left_shoulder.y
-            and left_index.x > mid_x
-            and distance_left > 0.25
         ):
             return True
 
@@ -259,17 +258,14 @@ class PoseDetection:
         right_shoulder = landmarks[12]  # mp_pose.PoseLandmark.RIGHT_SHOULDER
         right_elbow = landmarks[14]  # mp_pose.PoseLandmark.RIGHT_ELBOW
         right_wrist = landmarks[16]  # mp_pose.PoseLandmark.RIGHT_WRIST
-        right_index = landmarks[20]
+        # right_index = landmarks[20]
 
         angle = self.get_angle(right_shoulder, right_elbow, right_wrist)
-        distance_right = right_shoulder.y - right_index.y
 
         if (
-            angle < 27
+            angle < 35
             and right_wrist.y < right_shoulder.y
             and right_elbow.y < right_shoulder.y
-            and right_index.x < mid_x
-            and distance_right > 0.25
         ):
             return True
 
@@ -290,13 +286,13 @@ def main():
             print("Error: Could not read frame.")
             break
 
-        gesture = pose_detection.detectGesture(frame)
+        gesture, results = pose_detection.detectGesture(frame)
 
-        # pose_detection.draw_landmarks(frame, results, pose_detection.mp_pose)
+        pose_detection.draw_landmarks(frame, results, pose_detection.mp_pose)
 
         cv2.putText(
             frame,
-            f"Gesture: {gesture.value}",
+            f"Gesture: {[g.value for g in gesture]}",
             (10, 60),
             cv2.FONT_HERSHEY_SIMPLEX,
             0.8,

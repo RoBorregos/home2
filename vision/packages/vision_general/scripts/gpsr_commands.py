@@ -238,6 +238,9 @@ class GPSRCommands(Node):
             # Increment the gesture count based on detected gesture
             if gesture in gesture_count:
                 gesture_count[gesture] += 1
+                if gesture == Gestures.WAVING:
+                    gesture_count[Gestures.RAISING_LEFT_ARM] += 1
+                    gesture_count[Gestures.RAISING_RIGHT_ARM] += 1
 
         return gesture_count
 

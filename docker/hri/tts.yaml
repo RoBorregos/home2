@@ -1,6 +1,5 @@
 services:
   tts:
-    profiles: [receptionist, carry, gpsr]
     container_name: home2-hri-tts
     image: roborregos/home2:hri-tts
     build:
