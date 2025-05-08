@@ -760,8 +760,16 @@ class HRITasks(metaclass=SubtaskMeta):
             categories = self.get_shelves_categories(shelves)[1]
             results = self.categorize_objects_with_embeddings(categories, table_objects)
 
-            categorized_shelves = {key: value["objects_to_add"] for key, value in results.items()}
-            objects_to_add = {key: value["classification_tag"] for key, value in results.items()}
+            objects_to_add = {key: value["objects_to_add"] for key, value in results.items()}
+            if "empty" in categories.values():
+                # add objects to add in shelves
+                for k, v in objects_to_add.items():
+                    for i in v:
+                        shelves[k].append(i)
+                categories = self.get_shelves_categories(shelves)[1]
+            categorized_shelves = {
+                key: value["classification_tag"] for key, value in results.items()
+            }
         except Exception as e:
             self.node.get_logger().error(f"Error: {e}")
             return Status.EXECUTION_ERROR, {}, {}
@@ -789,7 +797,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
             future = self.categorize_service.call_async(request)
             Logger.info(self.node, "generated request")
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=-1)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=25)
             res = future.result()
             Logger.info(self.node, "request finished")
             Logger.info(self.node, "categorize_objects result: " + str(res))
@@ -798,7 +806,7 @@ class HRITasks(metaclass=SubtaskMeta):
             #     return Status.EXECUTION_ERROR, {}, {}
 
             categorized_shelves = res.categorized_shelves
-            categorized_shelves = {k: v for k, v in enumerate(categorized_shelves, start=1)}
+            categorized_shelves = {k: v for k, v in enumerate(categorized_shelves)}
         except Exception as e:
             self.node.get_logger().error(f"Error: {e}")
             return Status.EXECUTION_ERROR, {}
@@ -861,10 +869,13 @@ class HRITasks(metaclass=SubtaskMeta):
             results_distances = results[1][0]["distance"]
 
             result_category = results[1][0]["document"]
-            if results_distances[0] > 0.8:
+
+            Logger.info(self.node, f"category: {result_category}")
+            if "empty" in categories.values() and results_distances[0] > 1:
                 result_category = "empty"
 
             self.node.get_logger().info(f"INFO PARA DEBUGGEAR GOD: {result_category}")
+            key_resulted = 2
             for key in list(categories.keys()):
                 self.node.get_logger().info(
                     f"INFO PARA DEBUGGEAR GOD: {categories[key]}, {result_category}"

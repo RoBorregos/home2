@@ -245,6 +245,7 @@ class LLMUtils(Node):
                 model=MODEL.CATEGORIZE_SHELVES.value,
                 temperature=self.temperature,
                 messages=messages,
+                response_format=response_format,
             )
             .choices[0]
             .message.content
