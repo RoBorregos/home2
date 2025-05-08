@@ -134,7 +134,7 @@ class PoseDetection:
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         results_p = self.pose.process(image_rgb)
 
-        gestures = Gestures.UNKNOWN
+        gestures = []
 
         if results_p.pose_landmarks:
             mid_x = self.get_midpoint_x(results_p)
@@ -146,20 +146,20 @@ class PoseDetection:
 
             # Left hand
             elif self.is_raising_left_arm(mid_x, results_p):
-                gestures = Gestures.RAISING_LEFT_ARM
+                gestures.append(Gestures.RAISING_LEFT_ARM)
 
             elif self.is_pointing_left(mid_x, results_p):
-                gestures = Gestures.POINTING_LEFT
+                gestures.append(Gestures.POINTING_LEFT)
 
             # Right hand
             elif self.is_raising_right_arm(mid_x, results_p):
-                gestures = Gestures.RAISING_RIGHT_ARM
+                gestures.append(Gestures.RAISING_RIGHT_ARM)
 
             elif self.is_pointing_right(mid_x, results_p):
-                gestures = Gestures.POINTING_RIGHT
+                gestures.append(Gestures.POINTING_RIGHT)
 
             elif self.is_waving(results_p):
-                gestures = Gestures.WAVING
+                gestures.append(Gestures.WAVING)
 
         return gestures
 

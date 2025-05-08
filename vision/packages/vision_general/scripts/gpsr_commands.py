@@ -233,11 +233,12 @@ class GPSRCommands(Node):
             # Crop the frame to the bounding box of the person
             cropped_frame = frame[y1:y2, x1:x2]
 
-            gesture = self.pose_detection.detectGesture(cropped_frame)
+            gestures = self.pose_detection.detectGesture(cropped_frame)
 
             # Increment the gesture count based on detected gesture
-            if gesture in gesture_count:
-                gesture_count[gesture] += 1
+            for gesture in gestures:
+                if gesture in gesture_count:
+                    gesture_count[gesture] += 1
 
         return gesture_count
 
@@ -379,10 +380,11 @@ class GPSRCommands(Node):
             Gestures.POINTING_RIGHT,
         ]
 
-        gesture = self.pose_detection.detectGesture(cropped_frame)
+        gestures = self.pose_detection.detectGesture(cropped_frame)
 
-        if gesture in gestures:
-            return gesture.value
+        for gesture in gestures:
+            if gesture in gestures:
+                return gesture.value
 
         return Gestures.UNKNOWN.value
 
