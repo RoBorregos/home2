@@ -249,7 +249,7 @@ smoother_server:
     smoother_plugins: ["simple_smoother"]
     simple_smoother:
       plugin: "nav2_smoother::SimpleSmoother"
-      tolerance: 1.0e-10
+      tolerance: 1.0e-7
       max_its: 1000
       do_refinement: True
 
@@ -271,12 +271,12 @@ behavior_server:
       plugin: "nav2_behaviors/AssistedTeleop"
     global_frame: odom
     robot_base_frame: base_link
-    transform_tolerance: 0.1
+    transform_tolerance: 0.2
     use_sim_time: False
     simulate_ahead_time: 2.0
-    max_rotational_vel: 1.0
+    max_rotational_vel: 0.3
     min_rotational_vel: 0.4
-    rotational_acc_lim: 3.2
+    rotational_acc_lim: 1.2
 
 robot_state_publisher:
   ros__parameters:
