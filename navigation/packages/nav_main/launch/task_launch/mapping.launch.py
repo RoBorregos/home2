@@ -15,7 +15,7 @@ def generate_launch_description():
     use_sim = LaunchConfiguration('use_sim', default='false')
     localization = LaunchConfiguration('localization', default='false')
     rtabmap_viz = LaunchConfiguration('rtabmap_viz', default='false')
-    use_3d = LaunchConfiguration('use_3d', default='true')
+    use_3d = LaunchConfiguration('use_3d', default='false')
     show_rviz = LaunchConfiguration('show_rviz', default='true')
 
     use_slamtoolbox = LaunchConfiguration('use_slam', default='false')

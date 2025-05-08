@@ -27,7 +27,7 @@ from frida_constants.navigation_constants import (
 )
 from frida_interfaces.srv import LaserGet
 
-TIMEOUT = 10.0
+TIMEOUT = 4
 RETURN_LASER_DATA = "/integration/Laserscan"
 
 

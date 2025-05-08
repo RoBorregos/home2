@@ -10,8 +10,8 @@ from launch.conditions import UnlessCondition, IfCondition
 
 def generate_launch_description():
     bringup_dir = get_package_share_directory('nav_main')
-    params=os.path.join(bringup_dir, 'config', 'nav2_params.yaml')
-    nav_yaml=os.path.join(bringup_dir, 'maps', 'may2map.yaml')
+    params=os.path.join(bringup_dir, 'config', 'nav2_params_original.yaml')
+    nav_yaml=os.path.join(bringup_dir, 'maps', 'tmr2025.yaml')
     params_file = LaunchConfiguration('params_file', default=params)
     use_amcl = LaunchConfiguration('use_amcl', default='true')
     map_file = LaunchConfiguration('map', default=nav_yaml)
@@ -39,7 +39,7 @@ def generate_launch_description():
                 parameters=[configured_params],
                 remappings=[('/tf', 'tf'),
                   ('/tf_static', 'tf_static'),
-                  ('/cmd_vel', 'cmd_vel_nav')] ),
+                 ] ),
             ComposableNode(
                 package='nav2_smoother',
                 plugin='nav2_smoother::SmootherServer',
@@ -70,27 +70,27 @@ def generate_launch_description():
                 name='velocity_smoother',
                 parameters=[configured_params],
                 remappings=remappings),
-            ComposableNode(
-                package='nav2_amcl',
-                plugin='nav2_amcl::AmclNode',
-                name='amcl',
-                parameters=[configured_params],
-                remappings=remappings,
-                condition=IfCondition(use_amcl)
-            ),
-            ComposableNode(
-                package='nav2_map_server',
-                plugin='nav2_map_server::MapServer',
-                name='map_server',
-                parameters=[{'yaml_filename': map_file}],
-                condition=IfCondition(use_amcl)
-                ),
-            ComposableNode(
-                package='nav2_collision_monitor',
-                plugin='nav2_collision_monitor::CollisionMonitor',
-                name='collision_monitor',
-                parameters=[configured_params],
-                ),
+            # ComposableNode(
+            #     package='nav2_amcl',
+            #     plugin='nav2_amcl::AmclNode',
+            #     name='amcl',
+            #     parameters=[configured_params],
+            #     remappings=remappings,
+            #     condition=IfCondition(use_amcl)
+            # ),
+            # ComposableNode(
+            #     package='nav2_map_server',
+            #     plugin='nav2_map_server::MapServer',
+            #     name='map_server',
+            #     parameters=[{'yaml_filename': map_file}],
+            #     condition=IfCondition(use_amcl)
+            #     ),
+            # ComposableNode(
+            #     package='nav2_collision_monitor',
+            #     plugin='nav2_collision_monitor::CollisionMonitor',
+            #     name='collision_monitor',
+            #     parameters=[configured_params],
+            #     ),
         ComposableNode(
             package='nav2_lifecycle_manager',
             plugin='nav2_lifecycle_manager::LifecycleManager',
@@ -106,8 +106,8 @@ def generate_launch_description():
                     'bt_navigator',
                     'velocity_smoother',
                     # 'map_server',
-                    # 'amcl'
-                    'collision_monitor'
+                    # 'amcl',
+                    # 'collision_monitor'
                 ]
             }],
         ),

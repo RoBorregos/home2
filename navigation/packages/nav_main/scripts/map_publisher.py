@@ -13,7 +13,7 @@ class SimpleMapServer(Node):
     def __init__(self):
         super().__init__('simple_map_server')
         package_share_dir = get_package_share_directory('nav_main')
-        default_map_path = os.path.join(package_share_dir, 'maps', 'may2map.yaml')
+        default_map_path = os.path.join(package_share_dir, 'maps', 'map_afuera.yaml')
         self.declare_parameter('map_yaml_file', default_map_path)
 
         # Declare and get the map YAML path

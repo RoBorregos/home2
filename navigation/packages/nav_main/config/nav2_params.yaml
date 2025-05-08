@@ -114,7 +114,7 @@ controller_server:
       # https://github.com/ROBOTIS-GIT/turtlebot3_simulations/issues/75
       acc_lim_x: 0.5
       acc_lim_y: 0.0
-      acc_lim_theta: 2.0
+      acc_lim_theta: 0.25
       decel_lim_x: -1.0
       decel_lim_y: 0.0
       decel_lim_theta: -1.0
@@ -125,7 +125,7 @@ controller_server:
       linear_granularity: 0.05
       angular_granularity: 0.025
       transform_tolerance: 0.25
-      xy_goal_tolerance: 0.25
+      xy_goal_tolerance: 0.35
       trans_stopped_velocity: 0.25
       short_circuit_trajectory_evaluation: True
       stateful: True
@@ -276,9 +276,9 @@ behavior_server:
     transform_tolerance: 0.1
     use_sim_time: False
     simulate_ahead_time: 2.0
-    max_rotational_vel: 1.0
-    min_rotational_vel: 0.25
-    rotational_acc_lim: 1.5
+    max_rotational_vel: 0.5
+    min_rotational_vel: 0.5
+    rotational_acc_lim: 0.25
 
 robot_state_publisher:
   ros__parameters:

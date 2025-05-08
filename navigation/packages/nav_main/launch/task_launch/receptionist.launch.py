@@ -9,17 +9,19 @@ from launch_ros.substitutions import FindPackageShare
 from launch.conditions import UnlessCondition, IfCondition
 
 def launch_setup(context, *args, **kwargs):
-    lifecycle_nodes = ['map_server','amcl']
-    rviz_config_dir = os.path.join(get_package_share_directory('nav_main'), 'rviz_configs', 'receptionist.rviz')
     nav_dir = get_package_share_directory('nav_main')
+    rviz_config_dir = os.path.join(get_package_share_directory('nav_main'), 'rviz_configs', 'receptionist.rviz')
+    params_amcl = os.path.join(get_package_share_directory('nav_main'), 'config', 'amcl_config.yaml')
+    map_route = LaunchConfiguration('map', default=os.path.join(get_package_share_directory('nav_main'), 'maps', 'tmr2025.yaml'))
+    default_value=os.path.join(nav_dir, 'config', 'nav2_params_original.yaml'),
+
     use_sim = LaunchConfiguration('use_sim', default='false')
     localization = LaunchConfiguration('localization', default='true')
     rtabmap_viz = LaunchConfiguration('rtabmap_viz', default='false')
-    default_value=os.path.join(nav_dir, 'config', 'nav2_params.yaml'),
     params_file = LaunchConfiguration('params_file', default=default_value)
     use_amcl = LaunchConfiguration('use_amcl', default='false')
-    map_route = LaunchConfiguration('map', default=os.path.join(get_package_share_directory('nav_main'), 'maps', 'may2map.yaml'))
     show_rviz = LaunchConfiguration('show_rviz', default='true')
+    
     
     nav_basics = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -41,7 +43,7 @@ def launch_setup(context, *args, **kwargs):
                     "composabletest.launch.py",
                 ]
             )),
-        launch_arguments={'params_file': params_file, 'map': map_route, 'use_amcl': use_amcl}.items()
+        launch_arguments={'params_file': params_file}.items()
         )
     rtabmap = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -57,7 +59,7 @@ def launch_setup(context, *args, **kwargs):
         )
     
     map_server = Node(
-         package='nav_main',
+        package='nav_main',
         executable='map_publisher.py',
         name='map_publisher',
         output='screen',
@@ -71,12 +73,46 @@ def launch_setup(context, *args, **kwargs):
         arguments=['-d', rviz_config_dir],
         condition=IfCondition(show_rviz)
     )
+
+    map_server_nav = Node(
+         package='nav2_map_server',
+            executable='map_server',
+            name='map_server',
+            output='screen',
+            parameters=[{'yaml_filename': map_route,
+                         'use_sim_time': use_sim}],
+            condition=IfCondition(use_amcl),
+    )
+    amcl_server = Node(
+         package='nav2_amcl',
+            executable='amcl',
+            name='amcl',
+            output='screen',
+            parameters=[{'use_sim_time': use_sim},
+                        params_amcl],
+            condition=IfCondition(use_amcl),
+    )
+    
+    lifecycle_node = Node(
+            package='nav2_lifecycle_manager',
+            executable='lifecycle_manager',
+            name='lifecycle_manager_localization',
+            output='screen',
+            parameters=[{'use_sim_time': use_sim},
+                        {'autostart': True},
+                        {'node_names': ['amcl', 'map_server']}],
+            condition=IfCondition(use_amcl)
+                        
+                        )
     return [
         nav_basics,
         rtabmap,
-        nav2_launch,
-        map_server,
-        rviz_node,
+        # nav2_launch,
+        # rviz_node,
+        # map_server,
+        # amcl_server,
+        # lifecycle_node,
+        # map_server_nav
     ]
 
 def generate_launch_description():

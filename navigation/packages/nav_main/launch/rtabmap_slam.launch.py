@@ -36,6 +36,7 @@ def launch_setup(context, *args, **kwargs):
             'wait_for_transform_duration': 0.8,
             'queue_size': 3,
             'approx_sync ': True,
+            'approx_sync_max_interval': '0.04',
             # RTAB-Map's parameters should be strings:
             'Reg/Strategy':'1',
             'Reg/Force3DoF':'true',
@@ -60,7 +61,7 @@ def launch_setup(context, *args, **kwargs):
             'use_sim_time':use_sim_time,
             'wait_for_transform_duration': 0.8,
             'queue_size': 200,
-            'approx_sync ': True,
+            'approx_sync ': False,
             # RTAB-Map's parameters should be strings:
             'Reg/Strategy':'1',
             'Mem/BinDataKept': 'false',
