@@ -54,7 +54,7 @@ def generate_launch_description():
                 [
                     FindPackageShare("slam_toolbox"),
                     "launch",
-                    "online_async_launch.py",
+                    "online_sync_launch.py",
                 ]
             )),
             launch_arguments={'params_file': params_file, 'use_sim_time': use_sim}.items()

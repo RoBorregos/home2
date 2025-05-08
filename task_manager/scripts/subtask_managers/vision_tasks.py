@@ -412,6 +412,9 @@ class VisionTasks:
         """Returns true when the guest is detected"""
         pass
 
+    def isPerson(self, name: str = ""):
+        return self.person_name == name
+
     @mockable(return_value=True, delay=2)
     @service_check("beverage_location_client", [Status.EXECUTION_ERROR, ""], TIMEOUT)
     def find_drink(self, drink: str, timeout: float = TIMEOUT) -> tuple[int, str]:

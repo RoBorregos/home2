@@ -55,6 +55,7 @@ class MODEL(Enum):
     STRUCTURED_RESPONSE = "qwen3"
     EXTRACT_INFO_REQUESTED = "qwen2.5"
     GET_COMMANDS = "qwen2.5"
+    CommonInterest = "qwen2.5"
 
 
 USEFUL_AUDIO_NODE_NAME = "useful_audio_node"

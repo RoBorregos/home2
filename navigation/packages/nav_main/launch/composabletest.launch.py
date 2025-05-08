@@ -4,33 +4,42 @@ from launch_ros.descriptions import ComposableNode, ParameterFile
 from nav2_common.launch import RewrittenYaml
 from ament_index_python.packages import get_package_share_directory
 import os
+from launch.substitutions import LaunchConfiguration
+from launch.conditions import UnlessCondition, IfCondition
 
 
 def generate_launch_description():
     bringup_dir = get_package_share_directory('nav_main')
-    params=os.path.join(bringup_dir, 'config', 'nav2_params.yaml'),
+    params=os.path.join(bringup_dir, 'config', 'nav2_params_original.yaml')
+    nav_yaml=os.path.join(bringup_dir, 'maps', 'tmr2025.yaml')
+    params_file = LaunchConfiguration('params_file', default=params)
+    use_amcl = LaunchConfiguration('use_amcl', default='true')
+    map_file = LaunchConfiguration('map', default=nav_yaml)
+    
     param_substitutions = {
         'use_sim_time': 'false',
         'autostart': 'true'}
-    
+
     configured_params = ParameterFile(
         RewrittenYaml(
-            source_file=params,
+            source_file=params_file,
             root_key='',
             param_rewrites=param_substitutions,
             convert_types=True),
         allow_substs=True)
-    
+
     remappings = [('/tf', 'tf'),
                   ('/tf_static', 'tf_static')]
-    
+
     nav2_nodes = [
         ComposableNode(
                 package='nav2_controller',
                 plugin='nav2_controller::ControllerServer',
                 name='controller_server',
                 parameters=[configured_params],
-                remappings=remappings ),
+                remappings=[('/tf', 'tf'),
+                  ('/tf_static', 'tf_static'),
+                 ] ),
             ComposableNode(
                 package='nav2_smoother',
                 plugin='nav2_smoother::SmootherServer',
@@ -62,11 +71,26 @@ def generate_launch_description():
                 parameters=[configured_params],
                 remappings=remappings),
             # ComposableNode(
-            #     package='nav2_costmap_2d',
-            #     plugin='nav2_costmap_2d::CostmapClient',
-            #     name='local_costmap',
+            #     package='nav2_amcl',
+            #     plugin='nav2_amcl::AmclNode',
+            #     name='amcl',
             #     parameters=[configured_params],
+            #     remappings=remappings,
+            #     condition=IfCondition(use_amcl)
             # ),
+            # ComposableNode(
+            #     package='nav2_map_server',
+            #     plugin='nav2_map_server::MapServer',
+            #     name='map_server',
+            #     parameters=[{'yaml_filename': map_file}],
+            #     condition=IfCondition(use_amcl)
+            #     ),
+            # ComposableNode(
+            #     package='nav2_collision_monitor',
+            #     plugin='nav2_collision_monitor::CollisionMonitor',
+            #     name='collision_monitor',
+            #     parameters=[configured_params],
+            #     ),
         ComposableNode(
             package='nav2_lifecycle_manager',
             plugin='nav2_lifecycle_manager::LifecycleManager',
@@ -81,11 +105,13 @@ def generate_launch_description():
                     'behavior_server',
                     'bt_navigator',
                     'velocity_smoother',
-                    #'local_costmap'
+                    # 'map_server',
+                    # 'amcl',
+                    # 'collision_monitor'
                 ]
             }],
         ),
-        
+
     ]
 
     container = ComposableNodeContainer(

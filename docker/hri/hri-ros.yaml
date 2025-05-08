@@ -24,6 +24,7 @@ services:
     network_mode: host
     privileged: true
     environment:
+      ROS_LOCALHOST_ONLY: 1
       <<:
         - *speech-devices
       DISPLAY: ${DISPLAY}
@@ -31,6 +32,4 @@ services:
       - .env
     tty: true
     entrypoint: ["bash", "-il", "-c"]
-    command: [
-        "${COMMAND:-/bin/bash}"
-      ]
+    command: ["${COMMAND:-/bin/bash}"]
