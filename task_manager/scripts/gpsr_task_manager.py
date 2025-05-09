@@ -13,6 +13,7 @@ from utils.baml_client.types import CommandListLLM
 from utils.logger import Logger
 from utils.status import Status
 from utils.subtask_manager import SubtaskManager, Task
+
 # import time
 
 ATTEMPT_LIMIT = 3
@@ -144,7 +145,6 @@ class GPSRTM(Node):
                         status, res = exec_commad(command)
                         self.get_logger().info(f"status-> {str(status)}")
                         self.get_logger().info(f"res-> {str(res)}")
-                        status = -2
 
                         try:
                             status = status.value
