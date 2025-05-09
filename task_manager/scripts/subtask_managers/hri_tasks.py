@@ -65,9 +65,6 @@ from utils.baml_client.types import (
     PlaceObject,
     SayWithContext,
 )
-
-# from baml_client.config import #set_log_level
-
 from utils.decorators import service_check
 from utils.logger import Logger
 from utils.status import Status
@@ -187,6 +184,8 @@ class HRITasks(metaclass=SubtaskMeta):
     def say(self, text: str, wait: bool = True) -> None:
         """Method to publish directly text to the speech node"""
         Logger.info(self.node, f"Sending to saying service: {text}")
+
+        # return Status.EXECUTION_SUCCESS
 
         request = Speak.Request(text=text)
 
@@ -680,6 +679,8 @@ class HRITasks(metaclass=SubtaskMeta):
             Status: the status of the execution
             str: the answer to the question
         """
+        self.node.get_logger().info(f"answer_with_context called with: {question}, {context}")
+
         request = LLMWrapper.Request(question=question, context=context)
         future = self.llm_wrapper_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)

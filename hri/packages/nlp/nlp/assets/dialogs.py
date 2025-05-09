@@ -287,7 +287,6 @@ def get_answer_question_dialog(contexts, question):
         context_text = "\n".join(contexts)
         user_content = f"{context_text}\n\n{question}"
 
-        print("CONTEXT:", user_content)
     else:
         user_content = question
 
@@ -297,10 +296,6 @@ def get_answer_question_dialog(contexts, question):
     tomorrow_time = tomorrow.strftime("%Y-%m-%d %H:%M:%S")
     day_of_week = now.strftime("%A")
     day_of_month = now.strftime("%d")
-
-    print(f"Tomorrow: {tomorrow_time}")
-    print(f"Day of the week: {day_of_week}")
-    print(f"Day of the month: {day_of_month}")
 
     return [
         {
@@ -318,10 +313,10 @@ def get_answer_question_dialog(contexts, question):
                 "Salute the person wearing a blue shirt in the office and say your teams country = Just say the teams country."
                 "Say hello to Axel in the living room and answer a quiz = Begin your response with a greeting, then answer the quiz naturally."
                 "Meet Morgan in the bedroom and tell something about yourself = Share a short personal fact about being FRIDA, no need to mention location or name."
-                f"Tomorrow: {tomorrow_time}\n\n"
-                f"Day of the week: {day_of_week}\n\n"
-                f"Day of the month: {day_of_month}\n\n"
                 f"Current time: {current_time}\n\n"
+                f"Today's day of the week: {day_of_week}\n\n"
+                f"Today's day Day of the month: {day_of_month}\n\n"
+                f"Tomorrow time: {tomorrow_time}\n\n"
                 f"Don't ask additional questions or ask for clarifications, just answer the question."
             ),
         },

@@ -269,23 +269,20 @@ class GPSRSingleTask(GenericTask):
 
         if context in GPSR_COMMANDS:
             history = self.subtask_manager.hri.query_command_history(
-                command.previous_command_info[0]
+                command.previous_command_info[0], top_k=1000
             )
-            command = self.subtask_manager.hri.get_command(history)
+            # command_type = self.subtask_manager.hri.get_command(history)
             result = self.subtask_manager.hri.get_result(history)
             status = self.subtask_manager.hri.get_status(history)
             s, answer = self.subtask_manager.hri.answer_with_context(
                 command.user_instruction,
-                f"{context}: {command}. RESULT: {result}. STATUS: {status}",
+                f"Result of executing {context}: {result}. STATUS: {status}",
             )
             self.subtask_manager.hri.say(answer, wait=True)
             return Status.EXECUTION_SUCCESS, "success"
         else:
-            # s, response, score = self.subtask_manager.hri.answer_question(
-            #     command.user_instruction,
-            # )
             s, response, score = self.subtask_manager.hri.answer_question(
-                "what is your teams country?",
+                command.user_instruction,
             )
 
             self.subtask_manager.hri.say(response, wait=True)
