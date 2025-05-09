@@ -26,6 +26,7 @@ def get_gpsr_comands(command_type: str, structured_cmd=True):
 
 
 custom_command = [
+    {"action": "answer_question"},
     #  get_person_info
     #  {"action": "get_person_info", "info_type": "name"},
     # {"action": "get_person_info", "info_type": "name"},
@@ -48,26 +49,26 @@ custom_command = [
     #     "user_instruction": "say what day is tomorrow to the person pointing to the left in the office",
     #     "previous_command_info": ["what day is tomorrow"],
     # },
-    {
-        "action": "say_with_context",
-        "user_instruction": "salute the person wearing a blue shirt in the office and say your teams country",
-        "previous_command_info": ["your teams country"],
-    },
-    {
-        "action": "say_with_context",
-        "user_instruction": "meet Morgan in the bedroom and tell something about yourself",
-        "previous_command_info": ["something about yourself"],
-    },
-    {
-        "action": "say_with_context",
-        "user_instruction": "say the time to the person raising their right arm in the bathroom",
-        "previous_command_info": ["the time"],
-    },
-    {
-        "action": "say_with_context",
-        "user_instruction": "look for a person pointing to the left in the bedroom and tell the day of the month",
-        "previous_command_info": ["the day of the month"],
-    },
+    # {
+    #     "action": "say_with_context",
+    #     "user_instruction": "salute the person wearing a blue shirt in the office and say your teams country",
+    #     "previous_command_info": ["your teams country"],
+    # },
+    # {
+    #     "action": "say_with_context",
+    #     "user_instruction": "meet Morgan in the bedroom and tell something about yourself",
+    #     "previous_command_info": ["something about yourself"],
+    # },
+    # {
+    #     "action": "say_with_context",
+    #     "user_instruction": "say the time to the person raising their right arm in the bathroom",
+    #     "previous_command_info": ["the time"],
+    # },
+    # {
+    #     "action": "say_with_context",
+    #     "user_instruction": "look for a person pointing to the left in the bedroom and tell the day of the month",
+    #     "previous_command_info": ["the day of the month"],
+    # },
     # {"action": "give_object"},
     # {
     #     "action": "say_with_context",

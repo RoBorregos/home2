@@ -370,6 +370,7 @@ class GPSRSingleTask(GenericTask):
             return Status.TARGET_NOT_FOUND, ""
 
         question = SayWithContext(
+            action="say_with_context",
             user_instruction=f"Please answer my question: {question}",
             previous_command_info=[question],
         )
