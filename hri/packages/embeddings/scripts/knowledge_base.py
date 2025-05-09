@@ -3,9 +3,10 @@
 import numpy as np
 import rclpy
 from chroma_adapter import ChromaAdapter
-from nlp.assets.dialogs import get_answer_question_dialog
+from nlp.assets.dialogs import get_answer_question_dialog, clean_question_rag
 from openai import OpenAI
 from rclpy.node import Node
+from sentence_transformers import util
 
 from frida_constants.hri_constants import MODEL, RAG_SERVICE
 from frida_interfaces.srv import AnswerQuestion
@@ -180,64 +181,73 @@ class RAGService(Node):
         else:
             return 0.0
 
+    def clean_question(self, question):
+        """
+        Cleans the question to ensure it is in a proper format for the LLM, before RAG
+        """
+        messages = clean_question_rag(question)
+        response = self.llm.chat.completions.create(messages=messages, model="qwen3")
+        cleaned_question = response.choices[0].message.content.strip()
+        return cleaned_question
+
     def answer_question_callback(self, request, response):
+        """
+        Handles the AnswerQuestion service request and generates a response using the RAG pipeline.
+        """
         question = request.question
         top_k = request.topk if request.topk else self.default_topk
         threshold = request.threshold if request.threshold else self.default_threshold
-        collections = (
-            request.collections if request.collections else self.default_collections
-        )
 
         try:
-            all_context_pairs = []
+            # Step 1: Clean the question
+            cleaned_question = self.clean_question(question)
 
-            for collection_name in collections:
-                try:
-                    collection = self.client.get_collection(collection_name)
-                    results = collection.query(
-                        query_texts=[question],
-                        n_results=top_k,
-                        include=["documents", "distances"],
-                    )
-                    documents = results.get("documents", [[]])[0]
-                    distances = results.get("distances", [[]])[0]
-                    context_pairs = list(zip(distances, documents))
-                    all_context_pairs.extend(context_pairs)
-
-                except Exception as e:
-                    self.get_logger().warn(f"Collection {collection_name} error: {e}")
-
-            all_context_pairs.sort(key=lambda x: -x[0])
-            top_contexts = all_context_pairs[:top_k]
-            best_score = top_contexts[0][0] if top_contexts else 0.0
-
-            relevant_contexts = (
-                [doc for score, doc in top_contexts if score > threshold]
-                if best_score > threshold
-                else []
+            # Step 2: Encode the cleaned question
+            question_embedding = self.model.encode(
+                cleaned_question, convert_to_tensor=True
             )
+            all_similarities = []
 
-            self.get_logger().info(
-                f"Generating LLM answer (threshold={threshold}, best_score={best_score})"
-            )
+            # Compare the question embedding with each document in the knowledge base
+            for entry in self.file_embeddings:
+                similarity = util.pytorch_cos_sim(
+                    question_embedding, entry["embedding"]
+                )[0][0].item()
+                all_similarities.append(
+                    (similarity, entry["document"], entry["metadata"])
+                )
 
-            messages = get_answer_question_dialog(relevant_contexts, question)
+            # Get the top results
+            all_similarities.sort(key=lambda x: x[0], reverse=True)
+            top_results = all_similarities[:top_k]
+
+            # Filter results with a similarity score above the threshold
+            relevant_contexts = [
+                result for result in top_results if result[0] > threshold
+            ]
+
+            # Prepare the context for the LLM using dialogs.py
+            contexts = [context[1] for context in relevant_contexts]
+            messages = get_answer_question_dialog(contexts, cleaned_question)
+
+            # Step 3: Generate the response using the LLM
             completion = self.llm.chat.completions.create(
-                model=self.model_name,
-                temperature=self.temperature,
-                messages=messages,
+                messages=messages, model=self.model_name
             )
-            assistant_response = completion.choices[0].message.content
+            assistant_response = completion.choices[0].message.content.strip()
 
+            # Step 4: Remove think section
+            if "<think>" in assistant_response:
+                assistant_response = assistant_response.split("</think>")[-1].strip()
+
+            # Step 5: Return the response
             response.success = True
             response.response = assistant_response
-            response.score = best_score
 
         except Exception as e:
             self.get_logger().error(f"Error during RAG process: {e}")
             response.success = False
             response.response = f"Failed to answer question: {e}"
-            response.score = 0.0
 
         return response
 
