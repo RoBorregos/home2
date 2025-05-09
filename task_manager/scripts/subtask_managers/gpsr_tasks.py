@@ -150,8 +150,8 @@ class GPSRTask(GenericTask):
         # TODO (@nav, hri): fix conditions to stop
 
         loc = command.destination
-        
-        if command.destination == "cancelled":            
+
+        if command.destination == "cancelled":
             self.subtask_manager.hri.say(
                 "I'm sorry, I can't follow you. Please tell me where to go"
             )
@@ -161,12 +161,11 @@ class GPSRTask(GenericTask):
                 use_hotwords=False,
                 context="The user was asked to say the location. We want to infer the location from the response",
             )
-        
+
         else:
             self.subtask_manager.hri.say(
                 f"I'm sorry, I can't follow you, but I'll go to the {command.destination}",
             )
-
 
         # infer location from the response
         # go to
@@ -194,8 +193,7 @@ class GPSRTask(GenericTask):
         if "navigation" not in self.subtask_manager.get_mocked_areas():
             rclpy.spin_until_future_complete(self.subtask_manager.nav.node, future)
 
-
-        # xd 
+        # xd
         # if command.destination == "cancelled":
         #     while self.subtask_manager.hri.hear() != "cancel":
         #         pass
@@ -345,48 +343,6 @@ class GPSRTask(GenericTask):
                         "I couldn't undestand your name",
                     )
                     return Status.EXECUTION_ERROR, "name not found"
-
-    ## Nav, Vision
-    # TODO: We removed this in command dataset
-    def find_object(self, complement: str, characteristic: str):
-        """
-        Finds an object in a specified location and approaches it for picking.
-
-        Args:
-            complement (str): Specifies additional context for the search.
-                If it is a room, the robot will search all placements in the room.
-            characteristic (str): Specifies the object to find.
-
-        Purpose:
-            - Locate an object in a given place and approach it to a position suitable for picking.
-
-        Preconditions:
-            - Assumes the robot is already at a location.
-
-        Behavior:
-            - If the location is a placement location, the robot will search for the object only in that placement.
-            - If the complement specifies a room, the robot will navigate to all placements in the room and search for the object.
-            - Once the object is found, the robot will approach it to a position where it can pick the object.
-
-        Postconditions:
-            - The robot will be positioned at a location where it can pick the object.
-
-        Pseudocode:
-            For each location in specified_room:
-                Navigate to the location.
-                If the object is detected in the location:
-                    Approach the object to a position suitable for picking.
-        """
-
-        # for location in self.locations[complement]:
-        #     self.navigate_to(complement, location, False)
-
-        result_status = self.subtask_manager.vision.find_object(characteristic)
-        if result_status == Status.EXECUTION_SUCCESS:
-            self.subtask_manager.hri.say(f"I found the {characteristic}.")
-            return Status.EXECUTION_SUCCESS, "object found"
-
-        return Status.TARGET_NOT_FOUND, "object not found"
 
     def timeout(self, timeout: int = 2):
         start_time = time.time()
@@ -588,7 +544,6 @@ class GPSRTask(GenericTask):
 
         self.subtask_manager.manipulation.move_to_position("front_stare")
 
-
         self.subtask_manager.hri.say(
             f"Searching for {value}.",
         )
@@ -638,7 +593,7 @@ class GPSRTask(GenericTask):
                 )
 
         return Status.EXECUTION_SUCCESS, "found" + command.target_to_count
-        
+
     ## HRI, Manipulation, Nav, Vision
     def find_person_by_name(self, command: FindPersonByName):
         """

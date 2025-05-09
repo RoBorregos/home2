@@ -121,10 +121,45 @@ class GPSRSingleTask(GenericTask):
         Pseudocode:
             - pick_object(complement)
         """
-        # @TODO: get locations where the robot is currently located and iterate between them
+
+        def find_object(obj: str):
+            """
+            Finds an object in a specified location and approaches it for picking.
+            """
+
+            def check_found_object():
+                # TODO: implement detections correctly
+                s, detections = self.subtask_manager.vision.detect_objects()
+                # result_status = self.subtask_manager.vision.find_object(obj)
+
+                # labels = self.subtask_manager.vision.get_labels(detections)
+                # s, object_to_pick = self.subtask_manager.hri.find_closest(labels, command.object_to_pick)
+
+                # if result_status == Status.EXECUTION_SUCCESS:
+                #     self.subtask_manager.hri.say(f"I found the {obj}.")
+                #     return Status.EXECUTION_SUCCESS
+
+                return Status.TARGET_NOT_FOUND
+
+            status, results = self.subtask_manager.nav.ReturnLocation_callback()
+
+            if status == Status.EXECUTION_ERROR:
+                status = check_found_object()
+                return status
+
+            area, locations = results
+            for location in locations:
+                self.navigate_to(area, location, False)
+                status = check_found_object()
+                if status == Status.EXECUTION_SUCCESS:
+                    return status
+
+            return Status.EXECUTION_ERROR
 
         if isinstance(command, dict):
             command = PickObject(**command)
+
+        find_object()
 
         self.subtask_manager.hri.say(f"I will pick the {command.object_to_pick}.", wait=False)
         current_try = 0
