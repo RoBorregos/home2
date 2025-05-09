@@ -48,6 +48,7 @@ class MODEL(Enum):
     LLM_WRAPPER = "qwen3:0.6b"
     COMMON_INTEREST = "qwen3:0.6b"
     CATEGORIZE_SHELVES = "qwen3"
+
     IS_POSITIVE = "qwen3:0.6b"
     IS_NEGATIVE = "qwen3:0.6b"
     GENERIC_STRUCTURED_OUTPUT = "qwen3:0.6b"

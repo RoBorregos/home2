@@ -762,12 +762,14 @@ class HRITasks(metaclass=SubtaskMeta):
 
             objects_to_add = {key: value["objects_to_add"] for key, value in results.items()}
             Logger.error(self.node, f"categories {categories}")
+
             if "empty" in categories.values():
                 # add objects to add in shelves
                 for k, v in objects_to_add.items():
                     for i in v:
                         shelves[k].append(i)
                 categories = self.get_shelves_categories(shelves)[1]
+
             Logger.error(self.node, f"THIS IS THE CATEGORIZED SHELVES: {categories}")
             categorized_shelves = {
                 key: value["classification_tag"] for key, value in results.items()
@@ -775,6 +777,10 @@ class HRITasks(metaclass=SubtaskMeta):
             for k, v in categorized_shelves.items():
                 if v == "empty":
                     categorized_shelves[k] = categories[k]
+#             categorized_shelves = {
+#                 key: value["classification_tag"] for key, value in results.items()
+#             }
+
         except Exception as e:
             self.node.get_logger().error(f"Error: {e}")
             return Status.EXECUTION_ERROR, {}, {}
@@ -881,6 +887,7 @@ class HRITasks(metaclass=SubtaskMeta):
                 result_category = "empty"
 
             self.node.get_logger().info(f"CATEGORY PREDICTED: {result_category}")
+
             key_resulted = 2
             for key in list(categories.keys()):
                 if str(categories[key]) == str(result_category):

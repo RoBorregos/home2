@@ -43,6 +43,11 @@ ZERO_SHOT_DEFAULT_CLASSES = [
     "soap",
     "rubikCube",
     "coke_bottle",
+    "yellow_bowl",
+    "apple",
+    "fanta_can",
+    "orange",
+    "cup",
 ]
 
 ZERO_SHOT_MODEL = "yoloe-11l-seg.pt"

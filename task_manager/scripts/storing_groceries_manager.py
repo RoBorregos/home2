@@ -132,6 +132,10 @@ class StoringGroceriesManager(Node):
         # ]
         self.manual_heights = [0.21, 0.65]
         self.shelf_level_threshold = 0.20
+
+#         self.manual_heights = [0.04, 0.43, 0.67]
+#         self.shelf_level_threshold = 0.30
+
         self.shelf_level_down_threshold = 0.05
         self.picked_objects = 0
         self.prev_uid = None
@@ -199,6 +203,10 @@ class StoringGroceriesManager(Node):
             Logger.info(self, "Starting Storing Groceries Manager...")
             self.state = ExecutionStates.INIT_NAV_TO_SHELF
             # self.state = ExecutionStates.CATEGORIZE_OBJECTS
+
+            # self.state = ExecutionStates.INIT_NAV_TO_SHELF
+#             self.state = ExecutionStates.CATEGORIZE_OBJECTS
+
 
         elif self.state == ExecutionStates.END:
             Logger.info(self, "Ending Storing Groceries Manager...")
@@ -379,8 +387,12 @@ class StoringGroceriesManager(Node):
             for i in self.shelves:
                 shelfs[i] = self.shelves[i].objects
             try:
+
                 # self.object_names_on_table = ["apple", "squash", "coke", "bowl"]
                 # shelfs = {0: [], 1: ["apple", "orange"], 2: ["orange_soda"]}
+
+#                 self.object_names_on_table = ["apple", "squash", "coke", "bowl"]
+#                 shelfs = {0: [], 1: ["apple", "orange"], 2: ["fanta"]}
                 status, categorized_shelfs, objects_to_add = (
                     self.subtask_manager.hri.categorize_objects(self.object_names_on_table, shelfs)
                 )
