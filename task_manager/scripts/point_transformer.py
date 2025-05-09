@@ -41,7 +41,7 @@ class PointTransformer(Node):
             self.get_current_location,
             callback_group=self.callback_group,
         )
-        self.return_areas = self.create_service(
+        self.return_laser = self.create_service(
             LaserGet, RETURN_LASER_DATA, self.send_laser_data, callback_group=self.callback_group
         )
         self.scan_topic = self.create_subscription(LaserScan, "/scan", self.update_laser, 10)
