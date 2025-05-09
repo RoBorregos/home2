@@ -602,7 +602,6 @@ class HRITasks(metaclass=SubtaskMeta):
         document = [command.action]
         metadata = [
             {
-                "action": command.action,
                 "command": str(command),
                 "result": result,
                 "status": status,
