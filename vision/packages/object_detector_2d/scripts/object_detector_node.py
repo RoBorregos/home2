@@ -47,7 +47,7 @@ ARGS = {
     "DEBUG_IMAGE_TOPIC": DEBUG_IMAGE_TOPIC,
     "CAMERA_FRAME": CAMERA_FRAME,
     "TARGET_FRAME": "base_link",
-    "YOLO_MODEL_PATH": "tmr2025.pt",
+    "YOLO_MODEL_PATH": "tmr_30classes_v2.pt",
     "USE_ACTIVE_FLAG": False,
     "DEPTH_ACTIVE": True,
     "VERBOSE": False,

@@ -28,6 +28,8 @@ elif [ "$ROLE" = "carry" ]; then
   curl http://localhost:11434/api/embeddings -d '{"model": "nomic-embed-text", "keep_alive": -1}'
 elif [ "$ROLE" = "gpsr" ]; then
   curl http://localhost:11434/api/generate -d '{"model": "qwen2.5", "keep_alive": -1}'
+elif [ "$ROLE" = "storing" ]; then
+  curl http://localhost:11434/api/generate -d '{"model": "qwen3", "keep_alive": -1}'
 else
   echo "Unknown ROLE: $ROLE"
 fi

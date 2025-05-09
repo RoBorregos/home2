@@ -18,6 +18,7 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <cmath>
 
 struct DetectionRecord {
   frida_interfaces::msg::ObjectDetection detection;
@@ -43,6 +44,7 @@ class DetectionsHandlerNode : public rclcpp::Node
     rclcpp::Subscription<frida_interfaces::msg::ObjectDetectionArray>::SharedPtr oda_zero_shot_subscriber;
     rclcpp::TimerBase::SharedPtr timer_;
     std::vector<frida_interfaces::msg::ObjectDetection> object_detection_vector_;
+    std::vector<frida_interfaces::msg::ObjectDetection> pretrained_object_detection_vector_;
     std::unordered_multimap<std::string, DetectionRecord> umm_; 
     size_t frame_id_;
     std::chrono::time_point<std::chrono::system_clock> timestamp_;
@@ -58,7 +60,7 @@ class DetectionsHandlerNode : public rclcpp::Node
       oda_subscriber_ = this->create_subscription<frida_interfaces::msg::ObjectDetectionArray>(
         params_.DETECTIONS_TOPIC, 10, std::bind(&DetectionsHandlerNode::oda_callback, this, std::placeholders::_1));
       oda_zero_shot_subscriber = this->create_subscription<frida_interfaces::msg::ObjectDetectionArray>(
-        params_.ZERO_SHOT_DETECTIONS_TOPIC, 10, std::bind(&DetectionsHandlerNode::oda_callback, this, std::placeholders::_1));
+        params_.ZERO_SHOT_DETECTIONS_TOPIC, 10, std::bind(&DetectionsHandlerNode::zero_shot_oda_callback, this, std::placeholders::_1));
       service_ = this->create_service<frida_interfaces::srv::DetectionHandler>(
         DETECTION_HANDLER_TOPIC_SV, std::bind(&DetectionsHandlerNode::detection_handler_callback, this, std::placeholders::_1, std::placeholders::_2));
       timer_ = this->create_wall_timer(std::chrono::milliseconds(100), std::bind(&DetectionsHandlerNode::timer_callback, this));
@@ -134,6 +136,7 @@ class DetectionsHandlerNode : public rclcpp::Node
     }
 
     object_detection_vector_ = msg->detections;
+    pretrained_object_detection_vector_ = msg->detections;
 
     if (object_detection_vector_.empty() && params_.VERBOSE) {
       RCLCPP_INFO(this->get_logger(), "Empty object detection array received");
@@ -141,6 +144,67 @@ class DetectionsHandlerNode : public rclcpp::Node
     }
 
     for (int i = 0; i < object_detection_vector_.size(); i++) {
+      DetectionRecord dr;
+      dr.detection = object_detection_vector_[i];
+      dr.frame_id = frame_id_;
+      dr.timestamp = std::chrono::system_clock::now();
+      if (umm_.find(object_detection_vector_[i].label_text) != umm_.end()) {
+        for (auto it =
+                 umm_.equal_range(object_detection_vector_[i].label_text).first;
+             it !=
+             umm_.equal_range(object_detection_vector_[i].label_text).second;
+             ++it) {
+          if (getIoU(it->second.detection, dr.detection) >
+              params_.IOU_THRESHOLD) {
+            if (params_.VERBOSE) {
+              RCLCPP_INFO(this->get_logger(),
+                          "SAME OBJECT DETECTED WITH LABEL %s",
+                          object_detection_vector_[i].label_text.c_str());
+            }
+            umm_.erase(it);
+            break;
+          }
+        }
+      }
+      umm_.insert(std::make_pair(object_detection_vector_[i].label_text, dr));
+    }
+
+    // frame_id_++;
+  }
+
+  void
+  zero_shot_oda_callback(frida_interfaces::msg::ObjectDetectionArray::SharedPtr msg) {
+    if (true) {
+      RCLCPP_INFO(this->get_logger(), "Received ObjectDetectionArray message");
+    }
+    
+    object_detection_vector_ = msg->detections;
+
+    if (object_detection_vector_.empty() && params_.VERBOSE) {
+      RCLCPP_INFO(this->get_logger(), "Empty object detection array received");
+      return;
+    }
+
+    for (int i = 0; i < object_detection_vector_.size(); i++) {
+      auto curr_detection = object_detection_vector_[i];
+      // compare against all pretrained detections and dismiss those matching (0.05 difference on point2d)
+      bool repeated = false;
+      for (int j=0; j < pretrained_object_detection_vector_.size(); j++){
+        auto zeroshot_centroidx = (curr_detection.xmin + curr_detection.xmax) / 2;
+        auto zeroshot_centroidy = (curr_detection.ymin + curr_detection.ymax) / 2;
+        auto pretrained_detection = pretrained_object_detection_vector_[j];
+        auto centroidx = (pretrained_detection.xmin + pretrained_detection.xmax) / 2;
+        auto centroidy = (pretrained_detection.ymin + pretrained_detection.ymax) / 2;
+        auto distance = sqrt(pow(zeroshot_centroidx - centroidx, 2) + pow(zeroshot_centroidy - centroidy, 2));
+        // RCLCPP_INFO(this->get_logger(), "Distance : %g", distance);
+        if (distance < 0.15){
+          repeated = true;
+        }
+      }
+      if (repeated) {
+        RCLCPP_INFO(this->get_logger(), "Repeated object");
+        continue;
+      }
       DetectionRecord dr;
       dr.detection = object_detection_vector_[i];
       dr.frame_id = frame_id_;

@@ -761,12 +761,14 @@ class HRITasks(metaclass=SubtaskMeta):
             results = self.categorize_objects_with_embeddings(categories, table_objects)
 
             objects_to_add = {key: value["objects_to_add"] for key, value in results.items()}
+            Logger.error(self.node, f"categories {categories}")
             if "empty" in categories.values():
                 # add objects to add in shelves
                 for k, v in objects_to_add.items():
                     for i in v:
                         shelves[k].append(i)
                 categories = self.get_shelves_categories(shelves)[1]
+            Logger.error(self.node, f"THIS IS THE CATEGORIZED SHELVES: {categories}")
             categorized_shelves = {
                 key: value["classification_tag"] for key, value in results.items()
             }

@@ -28,13 +28,21 @@ ZERO_SHOT_DETECTIONS_ACTIVE_TOPIC = "/vision/zero_shot_detections_active"
 SET_DETECTOR_CLASSES_SERVICE = "/vision/set_detector_classes"
 
 ZERO_SHOT_DEFAULT_CLASSES = [
-    "yellow_bowl",
-    "squash",
+    "bowl",
+    "whiteBaseball",
     "apple",
-    "coke_bottle",
-    "fanta_can",
-    "orange",
     "cup",
+    "plate",
+    "yellow_mustard_container",
+    "apple",
+    "blue_tuna_can",
+    "soup_can",
+    "neon_ball",
+    "squash",
+    "banana",
+    "soap",
+    "rubikCube",
+    "coke_bottle",
 ]
 
 ZERO_SHOT_MODEL = "yoloe-11l-seg.pt"
