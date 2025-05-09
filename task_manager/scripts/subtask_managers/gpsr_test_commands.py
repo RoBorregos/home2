@@ -26,7 +26,8 @@ def get_gpsr_comands(command_type: str, structured_cmd=True):
 
 
 custom_command = [
-    {"action": "answer_question"},
+    {"action": "pick_object", "object_to_pick": "zucaritas"},
+    # {"action": "answer_question"},
     #  get_person_info
     #  {"action": "get_person_info", "info_type": "name"},
     # {"action": "get_person_info", "info_type": "name"},

@@ -186,27 +186,8 @@ class GPSRTask(GenericTask):
                 subarea = subarea[0]
 
         self.subtask_manager.hri.node.get_logger().info(f"Moving to {subarea} in {area}")
-        self.subtask_manager.hri.node.get_logger().info("Subarea")
-        self.subtask_manager.hri.node.get_logger().info(subarea)
 
-        future = self.subtask_manager.nav.move_to_location(area, subarea)
-        if "navigation" not in self.subtask_manager.get_mocked_areas():
-            rclpy.spin_until_future_complete(self.subtask_manager.nav.node, future)
-
-        # xd
-        # if command.destination == "cancelled":
-        #     while self.subtask_manager.hri.hear() != "cancel":
-        #         pass
-
-        # else:
-        #     while self.subtask_manager.nav.get_location() != command.destination:
-        #         pass
-
-        # self.subtask_manager.vision.track_person(False)
-        # self.subtask_manager.vision.follow_by_name("area")
-        # self.subtask_manager.nav.activate_follow(False)
-
-        # pass
+        self.navigate_to(area, subarea, say=False)
 
     ## HRI, Nav
     def guide_person_to(self, command: GuidePersonTo):
@@ -289,7 +270,6 @@ class GPSRTask(GenericTask):
         if isinstance(command, dict):
             command = GetPersonInfo(**command)
 
-        print("RECEIVED COMMAND", command.info_type)
         if command.info_type == "gesture":
             command.info_type = DetectBy.GESTURES.value
         elif command.info_type == "pose":
@@ -303,7 +283,6 @@ class GPSRTask(GenericTask):
             person_retries = 0
             while person_retries < 2:
                 self.timeout(1)
-                print("AAAA", command.info_type)
                 s, res = self.subtask_manager.vision.find_person_info(command.info_type)
 
                 if s == Status.EXECUTION_SUCCESS:
