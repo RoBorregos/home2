@@ -135,10 +135,10 @@ case $TASK in
         SERVICES=("vision" "moondream-node" "moondream-server")
         ;;
     "--storing-groceries")
-        PACKAGES="vision_general"
-        RUN="ros2 launch vision_general storing_groceries_launch.py"
-        PROFILES=("vision" "moondream")
-        SERVICES=("vision" "moondream-node" "moondream-server")
+        PACKAGES="object_detector_2d"
+        RUN="ros2 launch object_detector_2d object_detector_combined.launch.py"
+        PROFILES=("vision")
+        SERVICES=("vision")
         ;;
     "--gpsr")
         PACKAGES="vision_general object_detector_2d object_detection_handler"

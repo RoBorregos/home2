@@ -11,7 +11,7 @@ def launch_setup(context, *args, **kwargs):
     use_sim_time = LaunchConfiguration('use_sim_time',default='false')
     localization = LaunchConfiguration('localization', default='true')
     rtabmap_viz = LaunchConfiguration('rtabmap_viz', default='false')
-    use_3d_grid = LaunchConfiguration('3d_grid', default='true')
+    use_3d_grid = LaunchConfiguration('3d_grid', default='false')
 
     icp_parameters={
           'odom_frame_id':'icp_odom',
