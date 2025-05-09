@@ -6,6 +6,7 @@ Task Manager for testing the subtask managers
 
 import rclpy
 from config.hri.debug import config as test_hri_config
+from rclpy.duration import Duration
 from rclpy.node import Node
 from subtask_managers.hri_tasks import HRITasks
 from utils.task import Task
@@ -180,37 +181,58 @@ class TestHriManager(Node):
         # shelf_3 = "3"
         # shelves = [shelf_1, shelf_2, shelf_3]
         # shelves_with_objects = dict(zip(shelves, objects))
-        categories = {1: "dairy", 2: "fruit", 3: "empty", 4: "meat"}
-        obj = ["watermelon", "sausage", "milk", "pencil case"]
-        objects_categorized = hri.categorize_objects(obj, categories)
+        # categories = {1: "dairy", 2: "fruit", 3: "empty", 4: "meat"}
+        # obj = ["watermelon", "sausage", "milk", "pencil case"]
+        # objects_categorized = hri.categorize_objects(obj, categories)
 
-        self.get_logger().info(f"classification : {objects_categorized}")
+        # self.get_logger().info(f"classification : {objects_categorized}")
 
-        self.get_logger().info("Querying 'cinnamon' from item collection")
-        results = hri.query_item("cinnamon", top_k=3)
-        self.get_logger().info(f"Query results: {hri.get_name(results)}")
-        # Adding and querying location
-        self.get_logger().info("Querying 'kitchen' from location collection")
+        # self.get_logger().info("Querying 'cinnamon' from item collection")
+        # results = hri.query_item("cinnamon", top_k=3)
+        # self.get_logger().info(f"Query results: {hri.get_name(results)}")
+        # # Adding and querying location
+        # self.get_logger().info("Querying 'kitchen' from location collection")
 
-        results_location = hri.query_location("kitchen table", top_k=1)
-        subarea = hri.get_subarea(results_location)
-        area = hri.get_area(results_location)
-        self.get_logger().info(f"Subarea: {subarea}")
-        self.get_logger().info(f"Area: {area}")
-        self.get_logger().info(f"Query results: {hri.get_name(results_location)}")
+        # results_location = hri.query_location("kitchen table", top_k=1)
+        # subarea = hri.get_subarea(results_location)
+        # area = hri.get_area(results_location)
+        # self.get_logger().info(f"Subarea: {subarea}")
+        # self.get_logger().info(f"Area: {area}")
+        # self.get_logger().info(f"Query results: {hri.get_name(results_location)}")
 
         # ---- save_command_history ----
         self.get_logger().info("Saving command history for go_to command")
         command = GoTo(action="go_to", location_to_go="kitchen")
+        command_2 = GoTo(action="go_to", location_to_go="living_room")
+        command_3 = GoTo(action="go_to", location_to_go="entrance")
+        command_4 = GoTo(action="go_to", location_to_go="bathroom")
 
         hri.add_command_history(
             command=command,
             result="Success",
             status=1,
         )
-
+        self.get_clock().sleep_for(Duration(seconds=2))
+        hri.add_command_history(
+            command=command_2,
+            result="Success",
+            status=1,
+        )
+        self.get_clock().sleep_for(Duration(seconds=2))
+        hri.add_command_history(
+            command=command_3,
+            result="Failure",
+            status=1,
+        )
+        self.get_clock().sleep_for(Duration(seconds=2))
+        hri.add_command_history(
+            command=command_4,
+            result="Success",
+            status=1,
+        )
+        self.get_clock().sleep_for(Duration(seconds=2))
         self.get_logger().info("Querying command_history collection for the saved command")
-        history = hri.query_command_history("go_to", 2)
+        history = hri.query_command_history("go_to", 3)
         # context = hri.get_context(history)
         result = hri.get_result(history)
         status = hri.get_status(history)
@@ -218,14 +240,15 @@ class TestHriManager(Node):
         self.get_logger().info(f"history query results: {history}")
         self.get_logger().info(f"result history query results: {result}")
         self.get_logger().info(f"status history query results: {status}")
-        # ---- end save_command_history ----
 
-        self.get_logger().info("TESTING THE FIND CLOSEST FUNCTION")
-        # Test find_closest
+        # # ---- end save_command_history ----
 
-        documents = ["cheese", "milk", "yogurt"]
-        result_closest = hri.find_closest(documents, "milk")
-        self.get_logger().info(f"Closest result: {result_closest}")
+        # self.get_logger().info("TESTING THE FIND CLOSEST FUNCTION")
+        # # Test find_closest
+
+        # documents = ["cheese", "milk", "yogurt"]
+        # result_closest = hri.find_closest(documents, "milk")
+        # self.get_logger().info(f"Closest result: {result_closest}")
 
 
 def main(args=None):
