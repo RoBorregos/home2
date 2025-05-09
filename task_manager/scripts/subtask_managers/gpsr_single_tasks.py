@@ -158,6 +158,9 @@ class GPSRSingleTask(GenericTask):
 
     def deus_pick(self, command: PickObject):
         deus_machina_retries = 0
+        self.subtask_manager.hri.say(
+            f"I couldn't make a pick on my own. I will require some help picking the {command.object_to_pick}!"
+        )
         while True:
             if deus_machina_retries >= RETRIES:
                 self.subtask_manager.hri.say(
@@ -165,7 +168,7 @@ class GPSRSingleTask(GenericTask):
                 )
                 return Status.TARGET_NOT_FOUND, ""
             s, res = self.subtask_manager.hri.confirm(
-                f"Have you given me the {command.object_to_pick}?", use_hotwords=False
+                f"Have you placed the {command.object_to_pick} on my gripper?", use_hotwords=False
             )
             if res == "yes":
                 self.subtask_manager.hri.say("Thank you. I will close my gripper")

@@ -13,8 +13,7 @@ from utils.baml_client.types import CommandListLLM
 from utils.logger import Logger
 from utils.status import Status
 from utils.subtask_manager import SubtaskManager, Task
-
-# import time
+import time
 
 ATTEMPT_LIMIT = 3
 MAX_COMMANDS = 3
@@ -46,11 +45,13 @@ class GPSRTM(Node):
     def __init__(self):
         """Initialize the node"""
         super().__init__("gpsr_task_manager")
-        self.subtask_manager = SubtaskManager(self, task=Task.GPSR, mock_areas=[])
+        self.subtask_manager = SubtaskManager(self, task=Task.GPSR, mock_areas=["navigation"])
         self.gpsr_tasks = GPSRTask(self.subtask_manager)
         self.gpsr_individual_tasks = GPSRSingleTask(self.subtask_manager)
 
-        self.current_state = GPSRTM.States.START  # GPSRTM.States.EXECUTING_COMMAND
+        self.current_state = (
+            GPSRTM.States.EXECUTING_COMMAND
+        )  # GPSRTM.States.START  # GPSRTM.States.EXECUTING_COMMAND
         self.running_task = True
         self.current_attempt = 0
         self.executed_commands = 0
@@ -63,6 +64,11 @@ class GPSRTM(Node):
         # self.commands = get_gpsr_comands("custom")
 
         Logger.info(self, "GPSRTMTaskManager has started.")
+
+    def timeout(self, timeout: int = 2):
+        start_time = time.time()
+        while (time.time() - start_time) < timeout:
+            pass
 
     def run(self):
         """State machine"""
@@ -163,6 +169,7 @@ class GPSRTM(Node):
                     self.get_logger().warning(
                         f"Error occured while executing command ({str(command)}): " + str(e)
                     )
+            self.timeout(3)
 
         elif self.current_state == GPSRTM.States.FINISHED_COMMAND:
             self.subtask_manager.hri.say(

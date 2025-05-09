@@ -59,7 +59,7 @@ import math
 from utils.task import Task
 
 
-TIMEOUT = 5.0
+TIMEOUT = 8.0
 DETECTION_HANDLER_TOPIC_SRV = DETECTION_HANDLER_TOPIC_SRV
 
 
@@ -691,8 +691,8 @@ class VisionTasks:
             rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
             result = future.result()
 
-            if not result.success:
-                Logger.warn(self.node, f"No {type_requested} detected")
+            if not result.success or result.result == "unknown":
+                Logger.warn(self.node, f"No {type_requested} detected.")
                 return Status.TARGET_NOT_FOUND, ""
 
         except Exception as e:

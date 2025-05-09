@@ -26,6 +26,18 @@ def get_gpsr_comands(command_type: str, structured_cmd=True):
 
 
 custom_command = [
+    #  get_person_info
+    #  {"action": "get_person_info", "info_type": "name"},
+    # {"action": "get_person_info", "info_type": "name"},
+    # {"action": "get_person_info", "info_type": "pose"},
+    # {"action": "get_person_info", "info_type": "gesture"},
+    # Counting
+    # {"action": "count", "target_to_count": "people pointing right"},
+    # {"action": "count", "target_to_count": "drinks"},
+    # {"action": "count", "target_to_count": "toys"},
+    # {"action": "count", "target_to_count": "sitting persons"},
+    {"action": "pick_object", "object_to_pick": "coke"},
+    # {"action": "give_object"},
     # {
     #     "action": "say_with_context",
     #     "user_instruction": "say what day is tomorrow to the person pointing to the left in the office",
@@ -35,12 +47,10 @@ custom_command = [
     #     "action": "count",
     #     "target_to_count": "waving",
     # },
-    {
-        "action": "find_person",
-        "attribute_value": "waving person",
-    }
-    # {"action": "count", "target_to_count": "standing persons"},
-    # {"action": "count", "target_to_count": "drinks"},
+    # {
+    #     "action": "find_person",
+    #     "attribute_value": "waving person",
+    # }
     # {
     #     "action": "say_with_context",
     #     "user_instruction": "say what day is tomorrow to the person pointing to the left in the office",
@@ -56,6 +66,8 @@ custom_command = [
     # {"action": "find_person", "complement": "lying person", "characteristic": ""},
     # {"action": "find_person_by_name", "complement": "Robin", "characteristic": ""},
     # {"action": "visual_info", "complement": "biggest", "characteristic": "bottle"},
+    # {"action": "get_person_info", "info_type": "pose"},
+    # {"action": "get_person_info", "info_type": "pose"},
     # {"action": "get_person_info", "info_type": "pose"},
     # {
     #     "action": "count",
