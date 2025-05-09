@@ -150,8 +150,8 @@ class GPSRTask(GenericTask):
         # TODO (@nav, hri): fix conditions to stop
 
         loc = command.destination
-        
-        if command.destination == "cancelled":            
+
+        if command.destination == "cancelled":
             self.subtask_manager.hri.say(
                 "I'm sorry, I can't follow you. Please tell me where to go"
             )
@@ -161,12 +161,11 @@ class GPSRTask(GenericTask):
                 use_hotwords=False,
                 context="The user was asked to say the location. We want to infer the location from the response",
             )
-        
+
         else:
             self.subtask_manager.hri.say(
                 f"I'm sorry, I can't follow you, but I'll go to the {command.destination}",
             )
-
 
         # infer location from the response
         # go to
@@ -194,8 +193,7 @@ class GPSRTask(GenericTask):
         if "navigation" not in self.subtask_manager.get_mocked_areas():
             rclpy.spin_until_future_complete(self.subtask_manager.nav.node, future)
 
-
-        # xd 
+        # xd
         # if command.destination == "cancelled":
         #     while self.subtask_manager.hri.hear() != "cancel":
         #         pass
@@ -588,7 +586,6 @@ class GPSRTask(GenericTask):
 
         self.subtask_manager.manipulation.move_to_position("front_stare")
 
-
         self.subtask_manager.hri.say(
             f"Searching for {value}.",
         )
@@ -638,7 +635,7 @@ class GPSRTask(GenericTask):
                 )
 
         return Status.EXECUTION_SUCCESS, "found" + command.target_to_count
-        
+
     ## HRI, Manipulation, Nav, Vision
     def find_person_by_name(self, command: FindPersonByName):
         """
