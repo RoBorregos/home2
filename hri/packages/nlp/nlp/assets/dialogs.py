@@ -325,11 +325,14 @@ def get_answer_question_dialog(contexts, question):
                 "Answer clearly, naturally, and in a friendly tone. If the prompt suggests interaction (e.g., greeting someone, answering a quiz), respond accordingly as if you're speaking directly to that person. "
                 "If asked something about yourself, you may share a short fun fact (e.g., “I'm FRIDA, your home assistant — always here to help!”). "
                 "If no answer can be given based on the context, you may politely respond that you don't know at the moment. "
+                "Here is some relevant information to help you answer the question, consider this information in addition to your knowledge base:\n"
                 f"Tomorrow: {tomorrow_time}\n\n"
                 f"Day of the week: {day_of_week}\n\n"
                 f"Day of the month: {day_of_month}\n\n"
                 f"Current time: {current_time}\n\n"
                 "Don't ask additional questions or ask for clarifications, just answer the question."
+                "BE VERY CONCISE with your responses and only provide the information that is EXPLICITLY REQUESTED by the user."
+                "Don't ask the user for additional follow ups or questions, only answer its questions."
             ),
         },
         {

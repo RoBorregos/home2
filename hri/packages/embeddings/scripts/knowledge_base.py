@@ -3,7 +3,7 @@
 import numpy as np
 import rclpy
 from chroma_adapter import ChromaAdapter
-from nlp.assets.dialogs import get_answer_question_dialog, clean_question_rag
+from nlp.assets.dialogs import clean_question_rag, get_answer_question_dialog
 from openai import OpenAI
 from rclpy.node import Node
 
@@ -198,46 +198,61 @@ class RAGService(Node):
     def answer_question_callback(self, request, response):
         question = request.question  # self.clean_question(request.question)
         print("CLEANED QUESTION:", question)
-        top_k = request.topk if request.topk else self.default_topk
-        threshold = request.threshold if request.threshold else self.default_threshold
-        collections = (
-            request.collections if request.collections else self.default_collections
-        )
+        # top_k = request.topk if request.topk else self.default_topk
+        # threshold = request.threshold if request.threshold else self.default_threshold
+        # collections = (
+        #     request.collections if request.collections else self.default_collections
+        # )
+
+        # collection = self.client.get_collection("roborregos_knowledge")
+        # results = collection.get()
+        # print("RESULTS:", results)
 
         try:
-            all_context_pairs = []
+            # all_context_pairs = []
 
-            for collection_name in collections:
-                try:
-                    collection = self.client.get_collection(collection_name)
-                    results = collection.query(
-                        query_texts=[question],
-                        n_results=top_k,
-                        include=["documents", "distances"],
-                    )
-                    documents = results.get("documents", [[]])[0]
-                    distances = results.get("distances", [[]])[0]
-                    context_pairs = list(zip(distances, documents))
-                    all_context_pairs.extend(context_pairs)
+            # for collection_name in collections:
+            #     try:
+            #         collection = self.client.get_collection(collection_name)
+            #         results = collection.query(
+            #             query_texts=[question],
+            #             n_results=top_k,
+            #             include=["documents", "distances"],
+            #         )
+            #         documents = results.get("documents", [[]])[0]
+            #         distances = results.get("distances", [[]])[0]
+            #         context_pairs = list(zip(distances, documents))
+            #         all_context_pairs.extend(context_pairs)
 
-                except Exception as e:
-                    self.get_logger().warn(f"Collection {collection_name} error: {e}")
+            #     except Exception as e:
+            #         self.get_logger().warn(f"Collection {collection_name} error: {e}")
 
-            all_context_pairs.sort(key=lambda x: -x[0])
-            top_contexts = all_context_pairs[:top_k]
-            best_score = top_contexts[0][0] if top_contexts else 0.0
+            # all_context_pairs.sort(key=lambda x: -x[0])
+            # top_contexts = all_context_pairs[:top_k]
+            # best_score = top_contexts[0][0] if top_contexts else 0.0
 
-            relevant_contexts = (
-                [doc for score, doc in top_contexts if score > threshold]
-                if best_score > threshold
-                else []
-            )
+            # relevant_contexts = (
+            #     [doc for score, doc in top_contexts if score > threshold]
+            #     if best_score > threshold
+            #     else []
+            # )
 
-            self.get_logger().info(
-                f"Generating LLM answer (threshold={threshold}, best_score={best_score})"
-            )
+            # self.get_logger().info(
+            #     f"Generating LLM answer (threshold={threshold}, best_score={best_score})"
+            # )
 
-            print("RELEVANT CONTEXTS:", relevant_contexts)
+            # print("RELEVANT CONTEXTS:", relevant_contexts)
+
+            relevant_contexts = [
+                "We are RoBorregos, the official robotics team of Tec de Monterrey, made up of 53 talented students specializing in autonomous robotics, IoT, and web development.",
+                "We were founded in August 2015 and actively participate in national and international robotics competitions such as TMR, RoboCup, and IEEE LARC.",
+                "Our team's name is RoBorregos.",
+                "We proudly represent Mexico in robotics competitions.",
+                "We are affiliated with Tecnológico de Monterrey (Tec de Monterrey), a private research university in Mexico.",
+                "We hold events like TechTalks, Candidates, and RoboChamp to engage with students and the community.",
+                "We were inspired by a 2015 experience at TMR that showed us Mexico’s potential in robotics.",
+                "Our team values open source, good documentation, knowledge sharing, and active community engagement.",
+            ]
 
             messages = get_answer_question_dialog(relevant_contexts, question)
 
@@ -251,9 +266,11 @@ class RAGService(Node):
             if "</think>" in assistant_response:
                 assistant_response = assistant_response.split("</think>")[-1].strip()
 
+            assistant_response = assistant_response.replace("*", "")
+
             response.success = True
             response.response = assistant_response
-            response.score = best_score
+            response.score = 1.0
 
         except Exception as e:
             self.get_logger().error(f"Error during RAG process: {e}")
