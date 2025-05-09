@@ -34,6 +34,8 @@ class MetadataModel(BaseModel):
     subarea: Optional[str] = None
     embeddings: Optional[list] = None
     items_inside: Optional[str] = None
+    action: Optional[str] = None
+    command: Optional[str] = None
 
     PROFILES: ClassVar[Dict[MetadataProfile, Dict[str, str]]] = {
         MetadataProfile.ITEMS: {"context": " item for household use"},
@@ -237,20 +239,31 @@ class Embeddings(Node):
                 # Convert embeddings to a list of lists
 
                 # embeddings = [embedding.tolist() for embedding in embeddings]
+                if request.collection == "command_history":
+                    for doc, meta in zip(docs, metas):
+                        if isinstance(meta, list):
+                            meta = meta[0]
+                        entry = {
+                            "document": doc,
+                            "metadata": meta,
+                        }
+                        if "original_name" in meta:
+                            entry["document"] = meta["original_name"]
 
-                for doc, meta, distance in zip(docs, metas, distances):
-                    if isinstance(meta, list):
-                        meta = meta[0]
-                    entry = {
-                        "document": doc,
-                        "metadata": meta,
-                        "distance": distance,
-                    }
-                    if "original_name" in meta:
-                        entry["document"] = meta["original_name"]
+                        formatted_results.append(entry)
+                else:
+                    for doc, meta, dist in zip(docs, metas, distances):
+                        if isinstance(meta, list):
+                            meta = meta[0]
+                        entry = {
+                            "document": doc,
+                            "metadata": meta,
+                            "distance": dist,
+                        }
+                        if "original_name" in meta:
+                            entry["document"] = meta["original_name"]
 
-                    formatted_results.append(entry)
-
+                        formatted_results.append(entry)
                 grouped_results.append({"query": query, "results": formatted_results})
 
             response.results = [json.dumps(entry) for entry in grouped_results]
@@ -331,9 +344,7 @@ class Embeddings(Node):
         metadatas_ = []
         for file in dataframes:
             collection_name = self.chroma_adapter._sanitize_collection_name(file.stem)
-            self.get_logger().info(f"Processing: {collection_name}")
             collections_ = self.chroma_adapter.list_collections()
-            self.get_logger().info(f"Processing list: {collections_}")
             if collection_name in collections_:
                 continue
             print("Processing file:", file)
