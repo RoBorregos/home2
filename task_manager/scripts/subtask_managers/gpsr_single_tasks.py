@@ -270,9 +270,13 @@ class GPSRSingleTask(GenericTask):
 
         context = command.previous_command_info[0]
 
+        if context == "introduction":
+            self.subtask_manager.hri.say("Hello, I am Frida. Nice to meet you.")
+            return Status.EXECUTION_SUCCESS, "success"
+
         if context in GPSR_COMMANDS:
             history = self.subtask_manager.hri.query_command_history(
-                command.previous_command_info[0], top_k=1000
+                command.previous_command_info[0]
             )
             # command_type = self.subtask_manager.hri.get_command(history)
             result = self.subtask_manager.hri.get_result(history)
@@ -285,7 +289,7 @@ class GPSRSingleTask(GenericTask):
             return Status.EXECUTION_SUCCESS, "success"
         else:
             s, response, score = self.subtask_manager.hri.answer_question(
-                command.user_instruction,
+                command.previous_command_info[0]
             )
 
             self.subtask_manager.hri.say(response, wait=True)
@@ -366,7 +370,8 @@ class GPSRSingleTask(GenericTask):
             return Status.TARGET_NOT_FOUND, ""
 
         question = SayWithContext(
-            user_instruction=f"Please answer my question: {question}", action=[]
+            user_instruction=f"Please answer my question: {question}",
+            previous_command_info=[question],
         )
         return self.say_with_context(question)
 

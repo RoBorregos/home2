@@ -282,18 +282,35 @@ def format_response(response):
     ]
 
 
+def clean_question_rag(question):
+    return [
+        {
+            "role": "system",
+            "content": """You will be given a command. Your task is to determine which information should be fetched
+            from the context in order to answer the question.
+            Only pass the information we should fetch.           
+            """,
+        },
+        {
+            "role": "user",
+            "content": question,
+        },
+    ]
+
+
 def get_answer_question_dialog(contexts, question):
     if contexts:
         context_text = "\n".join(contexts)
         user_content = f"{context_text}\n\n{question}"
 
+        print("CONTEXT:", user_content)
     else:
         user_content = question
 
     now = datetime.now(pytz.timezone("America/Mexico_City"))
-    current_time = now.strftime("%Y-%m-%d %H:%M:%S")
     tomorrow = now + timedelta(days=1)
-    tomorrow_time = tomorrow.strftime("%Y-%m-%d %H:%M:%S")
+    current_time = now.strftime("%Y-%m-%d %H:%M:%S")
+    tomorrow_time = tomorrow.strftime("%Y-%m-%d")
     day_of_week = now.strftime("%A")
     day_of_month = now.strftime("%d")
 
@@ -301,23 +318,18 @@ def get_answer_question_dialog(contexts, question):
         {
             "role": "system",
             "content": (
-                "You are FRIDA, a warm, efficient, and helpful robot assistant that lives in a smart home. Your purpose is to assist and host guests naturally, always responding politely and directly."
-                "When given a task, ignore the setting, names, gestures, or commands in the phrasing — focus only on the actual question or request."
-                "Use the provided context if available, and do not mention the source of your knowledge or that it came from any documents. Do not explain your reasoning."
-                "Answer clearly, naturally, and in a friendly tone. If the prompt suggests interaction (e.g., greeting someone, answering a quiz), respond accordingly as if you're speaking directly to that person."
-                "If asked something about yourself, you may share a short fun fact (e.g., “Im FRIDA, your home assistant — always here to help!”)."
-                "If no answer can be given based on the context, you may politely respond that you dont know at the moment."
-                "Examples:"
-                "Look for a person pointing to the right in the living room and say the time = Just answer the current time."
-                "Say your teams name to the person pointing to the right in the bedroom = Just say the teams name."
-                "Salute the person wearing a blue shirt in the office and say your teams country = Just say the teams country."
-                "Say hello to Axel in the living room and answer a quiz = Begin your response with a greeting, then answer the quiz naturally."
-                "Meet Morgan in the bedroom and tell something about yourself = Share a short personal fact about being FRIDA, no need to mention location or name."
+                "You are FRIDA, a warm, efficient, and helpful robot assistant that lives in a smart home. "
+                "Your purpose is to assist and host guests naturally, always responding politely and directly. "
+                "When given a task, ignore the setting, names, gestures, or commands in the phrasing — focus only on the actual question or request. "
+                "Use the provided context if available, and do not mention the source of your knowledge or that it came from any documents. Do not explain your reasoning. "
+                "Answer clearly, naturally, and in a friendly tone. If the prompt suggests interaction (e.g., greeting someone, answering a quiz), respond accordingly as if you're speaking directly to that person. "
+                "If asked something about yourself, you may share a short fun fact (e.g., “I'm FRIDA, your home assistant — always here to help!”). "
+                "If no answer can be given based on the context, you may politely respond that you don't know at the moment. "
+                f"Tomorrow: {tomorrow_time}\n\n"
+                f"Day of the week: {day_of_week}\n\n"
+                f"Day of the month: {day_of_month}\n\n"
                 f"Current time: {current_time}\n\n"
-                f"Today's day of the week: {day_of_week}\n\n"
-                f"Today's day Day of the month: {day_of_month}\n\n"
-                f"Tomorrow time: {tomorrow_time}\n\n"
-                f"Don't ask additional questions or ask for clarifications, just answer the question."
+                "Don't ask additional questions or ask for clarifications, just answer the question."
             ),
         },
         {
@@ -336,6 +348,7 @@ def get_previous_command_answer(context, question):
                 "and your task is to answer it to the best of your ability using the provided context. "
                 f"Here is the context:\n\n{context}\n\n"
                 "Answer the question clearly and concisely."
+                "Summarize as much as possible."
             ),
         },
         {

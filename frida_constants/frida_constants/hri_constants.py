@@ -38,7 +38,8 @@ GPSR_COMMANDS = {
     "guide_person_to",
     "get_person_info",
     # "find_object",
-    "count" "find_person",
+    "count",
+    "find_person",
     "find_person_by_name",
 }
 

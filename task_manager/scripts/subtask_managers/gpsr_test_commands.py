@@ -36,7 +36,38 @@ custom_command = [
     # {"action": "count", "target_to_count": "drinks"},
     # {"action": "count", "target_to_count": "toys"},
     # {"action": "count", "target_to_count": "sitting persons"},
-    {"action": "pick_object", "object_to_pick": "coke"},
+    # {"action": "pick_object", "object_to_pick": "lime"},
+    # {"action": "count", "target_to_count": "sitting persons"},
+    # {
+    #             "action": "say_with_context",
+    #             "user_instruction": "tell me how many sitting persons are in the living room",
+    #             "previous_command_info": ["count"],
+    #         },
+    {
+        "action": "say_with_context",
+        "user_instruction": "say what day is tomorrow to the person pointing to the left in the office",
+        "previous_command_info": ["what day is tomorrow"],
+    },
+    {
+        "action": "say_with_context",
+        "user_instruction": "salute the person wearing a blue shirt in the office and say your teams country",
+        "previous_command_info": ["your teams country"],
+    },
+    {
+        "action": "say_with_context",
+        "user_instruction": "meet Morgan in the bedroom and tell something about yourself",
+        "previous_command_info": ["something about yourself"],
+    },
+    {
+        "action": "say_with_context",
+        "user_instruction": "say the time to the person raising their right arm in the bathroom",
+        "previous_command_info": ["the time"],
+    },
+    {
+        "action": "say_with_context",
+        "user_instruction": "look for a person pointing to the left in the bedroom and tell the day of the month",
+        "previous_command_info": ["the day of the month"],
+    },
     # {"action": "give_object"},
     # {
     #     "action": "say_with_context",
@@ -57,15 +88,7 @@ custom_command = [
     #     "previous_command_info": "what day is tomorrow",
     # },
     # Manipulation
-    # {"action": "pick", "complement": "zote", "characteristic": ""},
-    # {"action": "give", "complement": "", "characteristic": ""},
-    # {"action": "pick", "complement": "lysol", "characteristic": ""},
-    # {"action": "place", "complement": "", "characteristic": ""},
     # Vision
-    # {"action": "find_object", "complement": "bathroom", "characteristic": "rubiks cube"},
-    # {"action": "find_person", "complement": "lying person", "characteristic": ""},
-    # {"action": "find_person_by_name", "complement": "Robin", "characteristic": ""},
-    # {"action": "visual_info", "complement": "biggest", "characteristic": "bottle"},
     # {"action": "get_person_info", "info_type": "pose"},
     # {"action": "get_person_info", "info_type": "pose"},
     # {"action": "get_person_info", "info_type": "pose"},
@@ -115,16 +138,7 @@ custom_command = [
     #     "characteristic": "lying",
     # },
     # Nav
-    # {"action": "go", "complement": "start_location", "characteristic": ""},
-    # {"action": "follow_person_until", "complement": "canceled", "characteristic": ""},
-    # {"action": "guide_to", "complement": "Simone", "characteristic": "office"},
     # HRI
-    # {
-    #     "action": "contextual_say",
-    #     "complement": "tell me what is the heaviest object in the kitchen",
-    #     "characteristic": "visual_info",
-    # },
-    # {"action": "ask_answer_question", "complement": "", "characteristic": ""}
 ]
 
 GPSR_COMMANDS = [

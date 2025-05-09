@@ -3,7 +3,7 @@
 import numpy as np
 import rclpy
 from chroma_adapter import ChromaAdapter
-from nlp.assets.dialogs import get_answer_question_dialog
+from nlp.assets.dialogs import get_answer_question_dialog, clean_question_rag
 from openai import OpenAI
 from rclpy.node import Node
 
@@ -180,8 +180,24 @@ class RAGService(Node):
         else:
             return 0.0
 
+    def clean_question(self, question):
+        """
+        Cleans the question to ensure it is in a proper format for the LLM, before RAG
+        """
+        messages = clean_question_rag(question)
+
+        response = self.llm.beta.chat.completions.parse(
+            messages=messages, model="qwen2.5"
+        )
+        cleaned_question = response.choices[0].message.content.strip()
+        if "</think>" in cleaned_question:
+            cleaned_question = cleaned_question.split("</think>")[-1].strip()
+
+        return cleaned_question
+
     def answer_question_callback(self, request, response):
-        question = request.question
+        question = request.question  # self.clean_question(request.question)
+        print("CLEANED QUESTION:", question)
         top_k = request.topk if request.topk else self.default_topk
         threshold = request.threshold if request.threshold else self.default_threshold
         collections = (
@@ -221,13 +237,19 @@ class RAGService(Node):
                 f"Generating LLM answer (threshold={threshold}, best_score={best_score})"
             )
 
+            print("RELEVANT CONTEXTS:", relevant_contexts)
+
             messages = get_answer_question_dialog(relevant_contexts, question)
-            completion = self.llm.chat.completions.create(
+
+            completion = self.llm.beta.chat.completions.parse(
                 model=self.model_name,
                 temperature=self.temperature,
                 messages=messages,
             )
             assistant_response = completion.choices[0].message.content
+
+            if "</think>" in assistant_response:
+                assistant_response = assistant_response.split("</think>")[-1].strip()
 
             response.success = True
             response.response = assistant_response

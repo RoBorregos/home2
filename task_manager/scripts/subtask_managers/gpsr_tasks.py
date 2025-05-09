@@ -590,6 +590,10 @@ class GPSRTask(GenericTask):
         if isinstance(command, dict):
             command = FindPerson(**command)
 
+        self.subtask_manager.hri.say(
+            f"I will search for a person with {command.attribute_value}.",
+        )
+
         self.subtask_manager.manipulation.move_to_position("front_stare")
         for degree in self.pan_angles:
             self.subtask_manager.manipulation.pan_to(degree)

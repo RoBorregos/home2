@@ -558,7 +558,7 @@ class HRITasks(metaclass=SubtaskMeta):
         self,
         question: str,
         top_k: int = 3,
-        threshold: float = 0.7,
+        threshold: float = 0.1,
         collections: list = ["frida_knowledge", "roborregos_knowledge", "tec_knowledge"],
     ) -> tuple[Status, str]:
         """
