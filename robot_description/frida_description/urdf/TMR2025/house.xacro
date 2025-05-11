@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro" name="house">
+
+  <!-- Define the mesh path and the scale as properties -->
+  <xacro:property name="house_mesh" value="$(find frida_description)/urdf/meshes/TMR2025/house.STL"/>
+  <xacro:property name="mesh_scale" value="0.001 0.001 0.001"/>  <!-- Scale property -->
+
+
+  <link name="house_link">
+
+    <!-- Visual using STL -->
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <mesh filename="file://${house_mesh}" scale="${mesh_scale}"/>
+      </geometry>
+      <material name="gray">
+        <color rgba="0.5 0.5 0.5 1"/>
+      </material>
+    </visual>
+
+    <!-- Collision using the same mesh -->
+    <collision>
+      <geometry>
+        <mesh filename="file://${house_mesh}" scale="${mesh_scale}"/>  <!-- Use the scale property -->
+      </geometry>
+    </collision>
+
+    <!-- Inertial properties -->
+    <inertial>
+      <mass value="1.0"/>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <inertia
+        ixx="0.001" ixy="0.0" ixz="0.0"
+        iyy="0.001" iyz="0.0"
+        izz="0.001"/>
+    </inertial>
+
+  </link>
+
+    <!-- Gazebo Material -->
+  <gazebo reference="house_link">
+    <material>Gazebo/Blue</material>
+  </gazebo>
+
+</robot>
