@@ -53,7 +53,8 @@ private:
 
   // debug point pub
   rclcpp::Publisher<geometry_msgs::msg::PointStamped>::SharedPtr point_pub_;
-
+  // debug pcl pub
+  rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr cloud_pub_;
   std::shared_ptr<tf2_ros::TransformListener> tf_listener;
   std::unique_ptr<tf2_ros::Buffer> tf_buffer;
 
@@ -92,6 +93,9 @@ public:
         point_cloud_topic, qos,
         std::bind(&TableSegmentationNode::pointCloudCallback, this,
                   std::placeholders::_1));
+
+    this->cloud_pub_ = this->create_publisher<sensor_msgs::msg::PointCloud2>(
+        "/manipulation/perception_3d_debug/cloud", 10);
 
     RCLCPP_INFO(this->get_logger(), "Subscribed to point cloud topic");
 
@@ -151,7 +155,7 @@ public:
       req_point.y = 0.0;
       req_point.z = 0.0;
       response->health_response = this->DistanceFilterFromPoint(
-          cloud_out, req_point, cloud_out, 2.0, request->min_height,
+          cloud_out, req_point, cloud_out, 1.0, request->min_height,
           request->max_height);
     } else {
       geometry_msgs::msg::PointStamped point;
@@ -173,25 +177,50 @@ public:
       req_point.z = point.point.z;
 
       response->health_response = this->DistanceFilterFromPoint(
-          cloud_out, req_point, cloud_out, 1.5, request->min_height,
+          cloud_out, req_point, cloud_out, 1.0, request->min_height,
           request->max_height);
     }
+
+    ASSERT_AND_RETURN_CODE(response->health_response, OK,
+                           "Error filtering point cloud with code %d",
+                           response->health_response);
+
+    
 
     response->health_response =
         this->extractPlane(cloud_out, cloud_out, request->extract_or_remove);
 
-    if (response->health_response != OK) {
-      return;
-    }
+   
 
-    response->health_response = this->densest_cluster(cloud_out, cloud_out);
-    if (response->health_response != OK) {
+    ASSERT_AND_RETURN_CODE(response->health_response, OK,
+                           "Error extracting plane with code %d",
+                           response->health_response);
+    
+    response->health_response = this->largest_cluster(cloud_out, cloud_out);
+
+    //publish
+    // publish this in debug pcl pub
+    sensor_msgs::msg::PointCloud2 cloud_out_msg;
+    try {
+      pcl::toROSMsg(*cloud_out, cloud_out_msg);
+    } catch (const std::exception &e) {
+      RCLCPP_ERROR(this->get_logger(), "Error converting point cloud: %s",
+                  e.what());
+      response->health_response = COULD_NOT_CONVERT_POINT_CLOUD;
       return;
     }
+    cloud_out_msg.header.frame_id = "base_link";
+    cloud_out_msg.header.stamp = this->now();
+    this->cloud_pub_->publish(cloud_out_msg);
+
+    ASSERT_AND_RETURN_CODE(response->health_response, OK,
+                           "Error clustering point cloud with code %d",
+                           response->health_response);
 
     pcl::toROSMsg(*cloud_out, response->cloud);
     response->health_response = OK;
 
+    RCLCPP_INFO(this->get_logger(), "Publishing point cloud");
     return;
   }
 
@@ -352,7 +381,7 @@ public:
     // radial filter, to eliminate chance of error by planes far from the point
     response->status = this->DistanceFilterFromPoint(
         last_, point, cloud_radius_out, 0.5, point.z - 0.3, point.z + 0.3);
-    std::string base_path = "/workspace";
+    std::string base_path = this->package_path;
     response->status =
         savePointCloud(base_path + "/radial_filtered.pcd", cloud_radius_out);
 
@@ -421,7 +450,7 @@ public:
       _IN_ const std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud,
       _IN_ const pcl::PointXYZ point,
       _OUT_ std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud_out,
-      const float distance = 0.5, const float min_height = 0.15,
+      const float distance = 0.5, const float min_height = 0.1,
       const float max_height = 2.0) {
 
     pcl::PassThrough<pcl::PointXYZ> pass;
@@ -429,43 +458,30 @@ public:
     pass.setFilterFieldName("z");
     pass.setFilterLimits(std::max(float(point.z - distance), min_height),
                          std::min(float(point.z + distance), max_height));
+
     pass.filter(*cloud_out);
-    RCLCPP_INFO(this->get_logger(),
-                "Filtering point cloud by height with min %f and max %f",
-                std::max(float(point.z - distance), min_height),
-                std::min(float(point.z + distance), max_height));
-      
     
-    if (point.x > 0.0 || point.x < 0.0 || point.y > 0.0 ||
-        point.y < 0.0) {
-          RCLCPP_INFO(this->get_logger(),
-                      "Filtering point cloud by x and y with min %f and max %f",
-                      point.x - distance, point.x + distance);
-          pass.filter(*cloud_out);
-          pcl::PassThrough<pcl::PointXYZ> pass2;
-          pass2.setInputCloud(cloud_out);
-          pass2.setFilterFieldName("x");
-          pass2.setFilterLimits(point.x - distance, point.x + distance);
+    pcl::PassThrough<pcl::PointXYZ> pass2;
+    pass2.setInputCloud(cloud_out);
+    pass2.setFilterFieldName("x");
+    pass2.setFilterLimits(point.x - distance, point.x + distance);
 
-          pass2.filter(*cloud_out);
+    pass2.filter(*cloud_out);
 
-          pcl::PassThrough<pcl::PointXYZ> pass3;
-          pass3.setInputCloud(cloud_out);
+    pcl::PassThrough<pcl::PointXYZ> pass3;
+    pass3.setInputCloud(cloud_out);
 
-          pass3.setFilterFieldName("y");
-          pass3.setFilterLimits(point.y - distance, point.y + distance);
-          pass3.filter(*cloud_out);
-        }
+    pass3.setFilterFieldName("y");
+    pass3.setFilterLimits(point.y - distance, point.y + distance);
+    pass3.filter(*cloud_out);
 
     // filter points closest to the robot arm in xy
     float min_distance = 0.15; // lower than this are excluded
-    float max_distance = 2.0;
     for (auto it = cloud_out->points.begin(); it != cloud_out->points.end();) {
       float dx = it->x;
       float dy = it->y;
       float distance = std::sqrt(dx * dx + dy * dy);
-      if (distance < min_distance ||
-          distance > max_distance) { // filter points too close or too far
+      if (distance < min_distance) {
         it = cloud_out->points.erase(it);
       } else {
         ++it;
@@ -630,55 +646,6 @@ public:
     return OK;
   }
 
-  uint32_t removePlane(_IN_ const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
-                       _OUT_ pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out) {
-    uint32_t status = OK;
-
-    pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
-    pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
-    pcl::SACSegmentation<pcl::PointXYZ> seg;
-    seg.setOptimizeCoefficients(true);
-    seg.setModelType(pcl::SACMODEL_PLANE);
-    seg.setMethodType(pcl::SAC_RANSAC);
-    seg.setMaxIterations(1000);
-    seg.setDistanceThreshold(0.01);
-
-    seg.setInputCloud(cloud);
-    seg.segment(*inliers, *coefficients);
-
-    if (inliers->indices.size() == 0) {
-      RCLCPP_ERROR(this->get_logger(), "Could not estimate a planar model");
-      return COULD_NOT_ESTIMATE_PLANAR_MODEL;
-    }
-
-    pcl::ExtractIndices<pcl::PointXYZ> extract;
-    this->copyPointCloud(cloud, cloud_out);
-    extract.setInputCloud(cloud_out);
-    extract.setIndices(inliers);
-    extract.setNegative(false);
-    extract.filter(*cloud_out);
-
-    pcl::ExtractIndices<pcl::PointXYZ> extract2;
-    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_f(
-        new pcl::PointCloud<pcl::PointXYZ>);
-
-    status = copyPointCloud(cloud, cloud_f);
-
-    extract.setInputCloud(cloud_f);
-    extract.setIndices(inliers);
-    extract.setNegative(false);
-    extract.filter(*cloud_f);
-
-    std::string base_path = this->package_path;
-
-    // this->savePointCloud("/home/ivanromero/Desktop/home2/manipulation/packages/"
-    //                      "perception_3d/pcl_debug/asdasd.pcd",
-    //                      cloud_f);
-
-    this->savePointCloud(base_path + "asdasd.pcd", cloud_f);
-
-    return status;
-  };
 
   /**
    * \brief Extracts the plane from a point cloud. If extract_negative is true,
@@ -700,10 +667,12 @@ public:
 
     // set segmentation parameters
     seg.setOptimizeCoefficients(true);
-    seg.setModelType(pcl::SACMODEL_PLANE);
+    seg.setModelType(pcl::SACMODEL_PERPENDICULAR_PLANE);
     seg.setMethodType(pcl::SAC_RANSAC);
+    seg.setEpsAngle(5.0f * (M_PI / 180.0f));
+    seg.setAxis(Eigen::Vector3f::UnitZ());
     seg.setMaxIterations(1000);
-    seg.setDistanceThreshold(0.02);
+    seg.setDistanceThreshold(0.03);
 
     // segment the largest planar component from the input cloud
     seg.setInputCloud(cloud);
@@ -814,7 +783,7 @@ public:
   }
 
   STATUS_RESPONSE
-  densest_cluster(_IN_ const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
+  largest_cluster(_IN_ const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
                   _OUT_ pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out) {
     // Using kdTree to get the closest point FROM the pointcloud to the point
     // given as input
@@ -836,12 +805,15 @@ public:
     tree->setInputCloud(cloud);
     std::vector<pcl::PointIndices> cluster_indices;
     pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
-    ec.setClusterTolerance(0.02);
-    ec.setMinClusterSize(10);   // Minimum number of points in a cluster
-    ec.setMaxClusterSize(15000); // Maximum number of points in a cluster
+    ec.setClusterTolerance(0.015);
+    ec.setMinClusterSize(100);   // Minimum number of points in a cluster
+    ec.setMaxClusterSize(20000); // Maximum number of points in a cluster
     ec.setSearchMethod(tree);
     ec.setInputCloud(cloud);
     ec.extract(cluster_indices);
+
+    RCLCPP_INFO(this->get_logger(), "Found %lu clusters",
+                cluster_indices.size());
     // Find which cluster our point belongs to
     int targetPointIdx = pointIdxNKNSearch[0];
     int targetClusterIdx = -1;
@@ -849,6 +821,8 @@ public:
     // cluster that most dense
     int max_points = 0;
     for (size_t i = 0; i < cluster_indices.size(); i++) {
+      RCLCPP_INFO(this->get_logger(), "Cluster %lu, size %lu", i,
+                    cluster_indices[i].indices.size());
       if (cluster_indices[i].indices.size() > max_points) {
         max_points = cluster_indices[i].indices.size();
         targetClusterIdx = i;

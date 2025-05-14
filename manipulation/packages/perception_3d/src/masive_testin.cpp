@@ -170,7 +170,8 @@ public:
 
   STATUS_RESPONSE
   service_from_point(geometry_msgs::msg::PointStamped point,
-                     sensor_msgs::msg::PointCloud2::SharedPtr cloud) {
+                     sensor_msgs::msg::PointCloud2::SharedPtr cloud,
+                    bool add_collision_objects = true) {
 
     auto request = std::make_shared<
         frida_interfaces::srv::ClusterObjectFromPoint::Request>();
@@ -239,50 +240,53 @@ public:
       //   return;
     }
 
-    auto req3 =
-        std::make_shared<frida_interfaces::srv::AddPickPrimitives::Request>();
 
-    req3->is_plane = true;
+    if (add_collision_objects) {
+      auto req3 =
+          std::make_shared<frida_interfaces::srv::AddPickPrimitives::Request>();
 
-    req3->is_object = false;
+      req3->is_plane = true;
 
-    req3->cloud = result2table->cloud;
+      req3->is_object = false;
 
-    RCLCPP_INFO(this->get_logger(), "Sending request to add plane");
+      req3->cloud = result2table->cloud;
 
-    auto res3 = this->call_services_node->add_pick_primitives_client
-                    ->async_send_request(req3);
+      RCLCPP_INFO(this->get_logger(), "Sending request to add plane");
 
-    RCLCPP_INFO(this->get_logger(), "Waiting for response");
+      auto res3 = this->call_services_node->add_pick_primitives_client
+                      ->async_send_request(req3);
 
-    auto status3 =
-        wait_for_future_with_timeout<frida_interfaces::srv::AddPickPrimitives>(
-            res3, this->call_services_node->get_node_base_interface(), 500ms);
+      RCLCPP_INFO(this->get_logger(), "Waiting for response");
 
-    RCLCPP_INFO(this->get_logger(), "Response received");
+      auto status3 =
+          wait_for_future_with_timeout<frida_interfaces::srv::AddPickPrimitives>(
+              res3, this->call_services_node->get_node_base_interface(), 500ms);
 
-    auto req4 =
-        std::make_shared<frida_interfaces::srv::AddPickPrimitives::Request>();
+      RCLCPP_INFO(this->get_logger(), "Response received");
 
-    req4->is_plane = false;
+      auto req4 =
+          std::make_shared<frida_interfaces::srv::AddPickPrimitives::Request>();
 
-    req4->is_object = true;
+      req4->is_plane = false;
 
-    req4->cloud = result->cluster;
+      req4->is_object = true;
 
-    RCLCPP_INFO(this->get_logger(), "Sending request to add object");
+      req4->cloud = result->cluster;
 
-    auto res4 = this->call_services_node->add_pick_primitives_client
-                    ->async_send_request(req4);
+      RCLCPP_INFO(this->get_logger(), "Sending request to add object");
 
-    RCLCPP_INFO(this->get_logger(), "Waiting for response");
+      auto res4 = this->call_services_node->add_pick_primitives_client
+                      ->async_send_request(req4);
 
-    auto status4 =
-        wait_for_future_with_timeout<frida_interfaces::srv::AddPickPrimitives>(
-            res4, this->call_services_node->get_node_base_interface(), 500ms);
+      RCLCPP_INFO(this->get_logger(), "Waiting for response");
 
-    RCLCPP_INFO(this->get_logger(), "Response: %d", res4.get()->status);
+      auto status4 =
+          wait_for_future_with_timeout<frida_interfaces::srv::AddPickPrimitives>(
+              res4, this->call_services_node->get_node_base_interface(), 500ms);
 
+      RCLCPP_INFO(this->get_logger(), "Response: %d", res4.get()->status);  
+    }
+    
     return OK;
   }
 
@@ -386,7 +390,7 @@ public:
     std::shared_ptr<sensor_msgs::msg::PointCloud2> cloud =
         std::make_shared<sensor_msgs::msg::PointCloud2>();
 
-    auto res = this->service_from_point(request->point, cloud);
+    auto res = this->service_from_point(request->point, cloud, request->add_collision_objects);
 
     response->cluster_result = *cloud;
     // response->status = res;

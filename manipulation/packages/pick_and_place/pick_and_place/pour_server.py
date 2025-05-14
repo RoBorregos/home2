@@ -52,7 +52,7 @@ from frida_interfaces.srv import (
 # import time
 
 
-class PourMotionServer(Node):
+class PourMotionServer(Node):   
     def __init__(self):
         super().__init__("pour_server")
         self.callback_group = ReentrantCallbackGroup()
@@ -111,7 +111,6 @@ class PourMotionServer(Node):
         # Initialize result
         feedback = PourMotion.Feedback()
         result = PourMotion.Result()
-        self.get_logger().info("Pouring...")
         try:
             self.get_logger().info("Pouring...........................")
             success, _ = self.pour(goal_handle, feedback)
@@ -126,38 +125,120 @@ class PourMotionServer(Node):
             return result
 
     # TODO: APPLY LOGIC TO THIS FUNCTION
+
+
+
+    # def pour(self, goal_handle, feedback):
+    #     """Perform the pour operation."""
+    #     self.get_logger().info("Starting pour operation")
+    #     isConstrained = False
+
+    #     pose = self.receive_pose(goal_handle.request.pour_pose)
+    #     tries=3
+    #     distance_between_tries=0.1
+    #     pour_angle=0.0
+
+    #     for i in range(tries):
+    #         self.get_logger().warn(f"Attempt {i + 1} to reach pour pose")
+    #         pose.pose.position.z += distance_between_tries
+    #         self.get_logger().info(f"Updated pour pose: {pose.pose}")
+
+    #         try:
+    #             goal_handle_result, action_result = self.move_to_pose(pose, isConstrained)
+    #         except Exception as e:
+    #             self.get_logger().error(f"Exception during move_to_pose: {e}")
+    #             return False, None
+
+    #         if action_result.result.success:
+    #             self.get_logger().info("Successfully reached pour pose")
+    #             break
+    #         else:
+    #             self.get_logger().error("Failed to reach pour pose")
+    #             if i == tries - 1:
+    #                 self.get_logger().error("Max retries reached")
+    #                 return False, None
+
+    #     # Get current joint positions
+    #     current_pose = self.get_joint_positions()
+    #     if not current_pose:
+    #         self.get_logger().error("Failed to get current joint positions")
+    #         return False, None
+
+    #     if "joint6" not in current_pose:
+    #         self.get_logger().error("Joint6 not found in current pose")
+    #         return False, None
+
+    #     # Rotate joint 6
+    #     current_pose["joint6"] = pour_angle
+    #     self.get_logger().info(f"Rotating joint 6 to {pour_angle} radians")
+
+    #     # Move to the updated joint position
+    #     future = self._move_to_pose_action_client.send_goal_async(
+    #         MoveToPose.Goal(
+    #             pose=pose,
+    #             velocity=POUR_VELOCITY,
+    #             acceleration=POUR_ACCELERATION,
+    #             planner_id=PICK_PLANNER,
+    #             apply_constraint=isConstrained,
+    #             target_link=GRASP_LINK_FRAME,
+    #         )
+    #     )
+    #     self.wait_for_future(future)
+    #     action_result = future.result()
+
+    #     if action_result is None or not action_result.result.success:
+    #         self.get_logger().error("Failed to move to pour pose")
+    #         return False, None
+
+    #     self.get_logger().info("Pour operation completed successfully")
+    #     return True, action_result.result.success
+
+
+
     def pour(self, goal_handle, feedback):
         """Perform the pour operation."""
         self.get_logger().info("Trying to pour object")
         isConstrained = (
-            False  # THE MOTION PLANNER IS CONSTRAINED ------------------------
+            True  # THE MOTION PLANNER IS CONSTRAINED ------------------------
         )
 
         pose = self.receive_pose(goal_handle.request.pour_pose)
 
-        # call the move_to_pose function
-        goal_handle_result, action_result = self.move_to_pose(pose, isConstrained)
-        self.get_logger().info(
-            f"Pour pose result: ({goal_handle_result}, {action_result})"
-        )
-        # self.get_logger().info(f"Pour pose: {pose}")
-        if not action_result.result.success:
-            self.get_logger().error("Failed to reach pour pose")
-            return False, action_result.result.success
-
-        # Now we can only rotate the joint 6 to pour
-        # Rotate joint 6 to perform the pour motion
-
-        # pour_angle = 3.14159
+        tries = 3
+        distance_between_tries=0.1
+        for i in range(tries):
+            # self.get_logger().warn(f"Trying to pour object: {self.node.pour.request.object_name}")
+            self.get_logger().warn("Trying to pour object")
+            pose.pose.position.z += distance_between_tries
+            self.get_logger().info(f"Pour pose: {pose.pose}")
+            # call the move_to_pose function
+            try: 
+                goal_handle_result, action_result = self.move_to_pose(pose, isConstrained)
+            except Exception as e:
+                self.get_logger().error(f"Failed to move to pour pose: {e}")
+                return False, None
+            
+            # self.get_logger().info(
+            #     f"Pour pose result: ({goal_handle_result}, {action_result})"
+            # )
+            if action_result.result.success:
+                self.get_logger().info("Pour pose reached")
+                break 
+            else:
+                self.get_logger().error("Failed to reach pour pose")
+                if i == tries - 1:
+                    self.get_logger().error("Max tries reached")
+                    return False, None
+                else:
+                    self.get_logger().info(
+                        f"Retrying pour pose: {pose.pose}"
+                    )
+        time.sleep(10.0)
         pour_angle = 0.0
-
-        # get the current pose
         current_pose = self.get_joint_positions()
         if not current_pose:
             self.get_logger().error("Failed to get current pose")
-
-            return True, action_result.result.success
-
+            return False, action_result.result.success
         # Rotate joint 6
         current_pose["joint6"] = pour_angle
         self.get_logger().info(f"Rotating joint 6 to {pour_angle} radians")
@@ -173,30 +254,76 @@ class PourMotionServer(Node):
             )
         )
         self.wait_for_future(future)
-        action_result = future.result()
+        action_result = future.result().get_result()
         if action_result is None:
             self.get_logger().error("Failed to get action result")
             return False, action_result.result.success
-
         if not action_result.result.success:
             self.get_logger().error("Failed to move to pour pose")
             self.get_logger().warning(
                 f"Action result: {action_result.result.error_code}"
             )
             return False, action_result.result.success
-
         self.get_logger().info("Moved to pour pose successfully")
-
         # Move to the updated pose
-        # pour_motion_result = self.move_to_pose(pose, isConstrained)
-        # if not pour_motion_result.result.success:
-        #     self.get_logger().error("Failed to perform pour motion")
-        #     result = False
-        #     return False, result
+        return True, action_result.result.success
+        # # self.get_logger().info(f"Pour pose: {pose}")
+        # if not action_result.result.success:
+        #     self.get_logger().error("Failed to reach pour pose")
+        #     return False, action_result.result.success
 
-        self.get_logger().info("Pour motion completed successfully")
+        # # Now we can only rotate the joint 6 to pour
+        # # Rotate joint 6 to perform the pour motion
 
-        return False, action_result.result.success
+        # # pour_angle = 3.14159
+        # pour_angle = 0.0
+
+        # # get the current pose
+        # current_pose = self.get_joint_positions()
+        # if not current_pose:
+        #     self.get_logger().error("Failed to get current pose")
+
+        #     return True, action_result.result.success
+
+        # # Rotate joint 6
+        # current_pose["joint6"] = pour_angle
+        # self.get_logger().info(f"Rotating joint 6 to {pour_angle} radians")
+        # # Move to the new joint position
+        # future = self._move_to_pose_action_client.send_goal_async(
+        #     MoveToPose.Goal(
+        #         pose=pose,
+        #         velocity=POUR_VELOCITY,
+        #         acceleration=POUR_ACCELERATION,
+        #         planner_id=PICK_PLANNER,
+        #         apply_constraint=isConstrained,
+        #         target_link=GRASP_LINK_FRAME,
+        #     )
+        # )
+        # self.wait_for_future(future)
+        # action_result = future.result()
+        # if action_result is None:
+        #     self.get_logger().error("Failed to get action result")
+        #     return False, action_result.result.success
+
+        # if not action_result.result.success:
+        #     self.get_logger().error("Failed to move to pour pose")
+        #     self.get_logger().warning(
+        #         f"Action result: {action_result.result.error_code}"
+        #     )
+        #     return False, action_result.result.success
+
+        # self.get_logger().info("Moved to pour pose successfully")
+
+        # # Move to the updated pose
+        # # pour_motion_result = self.move_to_pose(pose, isConstrained)
+        # # if not pour_motion_result.result.success:
+        # #     self.get_logger().error("Failed to perform pour motion")
+        # #     result = False
+        # #     return False, result
+
+        # self.get_logger().info("Pour motion completed successfully")
+
+        # return False, action_result.result.success
 
         # isConstrained = (
         #     False  # THE MOTION PLANNER IS CONSTRAINED ------------------------
@@ -264,6 +391,7 @@ class PourMotionServer(Node):
 
     def move_to_pose(self, pose, useConstraint: bool = False):
         """Move the robot to the given pose."""
+        self.get_logger().warn(f"Moving to pose: {pose}")
         request = MoveToPose.Goal()
         request.pose = pose
         request.velocity = POUR_VELOCITY
@@ -271,6 +399,8 @@ class PourMotionServer(Node):
         request.planner_id = PICK_PLANNER
         request.apply_constraint = useConstraint
         request.target_link = GRASP_LINK_FRAME
+
+        self.get_logger().warn("FACKIN SHIT")
 
         # Set the constraint
         if useConstraint:
@@ -283,9 +413,12 @@ class PourMotionServer(Node):
             constraint_msg.weight = 0.5
             constraint_msg.parameterization = 1
             request.constraint = constraint_msg
+        
+        self.get_logger().warn("FACKIN Fucker")
 
         future = self._move_to_pose_action_client.send_goal_async(request)
         self.wait_for_future(future)
+        self.get_logger().warn("FACK IN Fucker")
         action_result = future.result().get_result()
         return future.result(), action_result
 

@@ -189,8 +189,8 @@ class ManipulationCore(Node):
                 self.get_logger().error("Pour failed")
                 return False
             return result
-        except Exception:
-            self.get_logger().error("Pour exeption")
+        except Exception as e:
+            self.get_logger().error(f"Pour exeption: {e}")
             return False
 
     def manipulation_server_callback(self, goal_handle):
