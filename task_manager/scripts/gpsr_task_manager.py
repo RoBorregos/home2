@@ -8,13 +8,13 @@ import rclpy
 from rclpy.node import Node
 from subtask_managers.gpsr_single_tasks import GPSRSingleTask
 from subtask_managers.gpsr_tasks import GPSRTask
-from subtask_managers.gpsr_test_commands import get_gpsr_comands
+
+# from subtask_managers.gpsr_test_commands import get_gpsr_comands
 from utils.baml_client.types import CommandListLLM
 from utils.logger import Logger
 from utils.status import Status
 from utils.subtask_manager import SubtaskManager, Task
-
-# import time
+import time
 
 ATTEMPT_LIMIT = 3
 MAX_COMMANDS = 3
@@ -46,16 +46,20 @@ class GPSRTM(Node):
     def __init__(self):
         """Initialize the node"""
         super().__init__("gpsr_task_manager")
-        self.subtask_manager = SubtaskManager(self, task=Task.GPSR, mock_areas=[])
+        self.subtask_manager = SubtaskManager(self, task=Task.GPSR, mock_areas=[""])
         self.gpsr_tasks = GPSRTask(self.subtask_manager)
         self.gpsr_individual_tasks = GPSRSingleTask(self.subtask_manager)
 
-        self.current_state = GPSRTM.States.START  # GPSRTM.States.EXECUTING_COMMAND
+        self.current_state = (
+            GPSRTM.States.START
+            # GPSRTM.States.EXECUTING_COMMAND
+        )  # GPSRTM.States.START  # GPSRTM.States.EXECUTING_COMMAND
         self.running_task = True
         self.current_attempt = 0
         self.executed_commands = 0
         # self.commands = get_gpsr_comands("takeObjFromPlcmt")
-        self.commands = get_gpsr_comands("custom")
+        # self.commands = get_gpsr_comands("custom")
+        self.commands = []
 
         if isinstance(self.commands, dict):
             self.commands = CommandListLLM(**self.commands).commands
@@ -64,10 +68,30 @@ class GPSRTM(Node):
 
         Logger.info(self, "GPSRTMTaskManager has started.")
 
+    def timeout(self, timeout: int = 2):
+        start_time = time.time()
+        while (time.time() - start_time) < timeout:
+            pass
+
+    def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
+        """Navigate to the location"""
+        if say:
+            self.subtask_manager.hri.say(
+                f"I will now guide you to the {location}. Please follow me."
+            )
+            self.subtask_manager.manipulation.follow_face(False)
+
+        self.subtask_manager.manipulation.move_joint_positions(
+            named_position="nav_pose", velocity=0.5, degrees=True
+        )
+        future = self.subtask_manager.nav.move_to_location(location, sublocation)
+        if "navigation" not in self.subtask_manager.get_mocked_areas():
+            rclpy.spin_until_future_complete(self.subtask_manager.nav.node, future)
+
     def run(self):
         """State machine"""
-
         if self.current_state == GPSRTM.States.START:
+            self.navigate_to("start_area", "", False)
             # res = "closed"
             # while res == "closed":
             #     time.sleep(1)
@@ -86,6 +110,8 @@ class GPSRTM(Node):
             )
             self.current_state = GPSRTM.States.WAITING_FOR_COMMAND
         elif self.current_state == GPSRTM.States.WAITING_FOR_COMMAND:
+            self.navigate_to("start_area", "", False)
+
             if self.executed_commands >= MAX_COMMANDS:
                 self.current_state = GPSRTM.States.DONE
                 return
@@ -101,6 +127,7 @@ class GPSRTM(Node):
                 use_hotwords=False,
                 retries=ATTEMPT_LIMIT,
                 min_wait_between_retries=5.0,
+                skip_extract_data=True,
             )
             # gesture_person_list = ["waving person", "person raising their left arm", "person raising their right arm",
             #                "person pointing to the left", "person pointing to the right"]
@@ -119,9 +146,11 @@ class GPSRTM(Node):
                     "I am planning how to perform your command, please wait a moment", wait=False
                 )
                 s, self.commands = self.subtask_manager.hri.command_interpreter(user_command)
+
                 self.get_logger().info(
                     f"Interpreted command: {user_command} -> {str(self.commands)}"
                 )
+                # self.subtask_manager.hri.say("Okay, I will perform the following commands " + str(self.commands), wait=False)
                 self.subtask_manager.hri.say("I will now execute your command")
                 self.current_state = GPSRTM.States.EXECUTING_COMMAND
         elif self.current_state == GPSRTM.States.EXECUTING_COMMAND:
@@ -163,6 +192,7 @@ class GPSRTM(Node):
                     self.get_logger().warning(
                         f"Error occured while executing command ({str(command)}): " + str(e)
                     )
+            self.timeout(3)
 
         elif self.current_state == GPSRTM.States.FINISHED_COMMAND:
             self.subtask_manager.hri.say(

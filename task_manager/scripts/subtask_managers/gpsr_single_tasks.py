@@ -11,6 +11,7 @@ from utils.baml_client.types import (
 from utils.status import Status
 
 from subtask_managers.generic_tasks import GenericTask
+import time
 
 RETRIES = 3
 
@@ -89,12 +90,12 @@ class GPSRSingleTask(GenericTask):
                 f"I will now guide you to the {location}. Please follow me."
             )
             self.subtask_manager.manipulation.follow_face(False)
-            self.subtask_manager.manipulation.move_joint_positions(
-                named_position="front_stare", velocity=0.5, degrees=True
-            )
+        self.subtask_manager.manipulation.move_joint_positions(
+            named_position="nav_pose", velocity=0.5, degrees=True
+        )
         future = self.subtask_manager.nav.move_to_location(location, sublocation)
         if "navigation" not in self.subtask_manager.get_mocked_areas():
-            rclpy.spin_until_future_complete(self, future)
+            rclpy.spin_until_future_complete(self.subtask_manager.nav.node, future)
 
     ## Manipulation
     def pick_object(self, command: PickObject):
@@ -121,10 +122,79 @@ class GPSRSingleTask(GenericTask):
         Pseudocode:
             - pick_object(complement)
         """
-        # @TODO: get locations where the robot is currently located and iterate between them
-
         if isinstance(command, dict):
             command = PickObject(**command)
+
+        # self.subtask_manager.hri.say(f"I will try to pick {command.object_to_pick}.")
+
+        # def check_found_object():
+        #     check_retries = 0
+
+        #     while check_retries < RETRIES:
+        #         self.timeout(1.5)
+        #         s, detections = self.subtask_manager.vision.detect_objects()
+        #         if s == Status.EXECUTION_SUCCESS:
+        #             s, object_to_pick = self.subtask_manager.hri.find_closest_raw(
+        #                 self.subtask_manager.vision.get_labels(detections), command.object_to_pick
+        #             )
+
+        #             print("object_to_pick", object_to_pick)
+
+        #             if object_to_pick[0]["distance"][0] < 0.5:
+        #                 return Status.EXECUTION_SUCCESS
+        #         check_retries += 1
+        #     return Status.TARGET_NOT_FOUND
+
+        # self.subtask_manager.hri.node.get_logger().info("computing loc")
+
+        # loc_retires = 0
+        # while loc_retires < RETRIES:
+        #     status, results = self.subtask_manager.nav.ReturnLocation_callback()
+
+        #     if status != Status.EXECUTION_SUCCESS:
+        #         self.timeout(1.0)
+        #     loc_retires += 1
+
+        # self.subtask_manager.hri.node.get_logger().info("loc computed")
+
+        # if status != Status.EXECUTION_SUCCESS:
+        #     self.subtask_manager.hri.say(
+        #         "I couldn't distinguish picking areas. Please help me pick the object."
+        #     )
+        #     return self.deus_pick(command)
+
+        # area = results.location
+        # locations = results.nearest_locations
+
+        # self.subtask_manager.hri.node.get_logger().info("area: " + str(area))
+        # self.subtask_manager.hri.node.get_logger().info("locations: " + str(locations))
+
+        # found_object = False
+        # for location in locations:
+        #     self.subtask_manager.hri.node.get_logger().info("iterating: " + str(location))
+        #     if found_object:
+        #         break
+        #     if location == "safe_place":
+        #         continue
+
+        #     self.navigate_to(area, location, False)
+        #     self.subtask_manager.hri.node.get_logger().info("navigate to done")
+        #     status = check_found_object()
+        #     if status == Status.EXECUTION_SUCCESS:
+        #         found_object = True
+        #         self.subtask_manager.hri.say(
+        #             f"I found the {command.object_to_pick} in the {location}. I will pick it up."
+        #         )
+        #     else:
+        #         self.subtask_manager.hri.say(
+        #             f"I couldn't find the {command.object_to_pick} in the {location}."
+        #         )
+
+        # if not found_object:
+        #     self.subtask_manager.hri.say(
+        #         f"I couldn't find the {command.object_to_pick} in any picking area. Please help me pick it up."
+        #     )
+        #     return self.deus_pick(command)
 
         self.subtask_manager.hri.say(f"I will pick the {command.object_to_pick}.", wait=False)
         current_try = 0
@@ -156,8 +226,16 @@ class GPSRSingleTask(GenericTask):
             s = self.subtask_manager.manipulation.pick_object(object_to_pick), ""
             current_try += 1
 
+    def timeout(self, timeout: int = 2):
+        start_time = time.time()
+        while (time.time() - start_time) < timeout:
+            pass
+
     def deus_pick(self, command: PickObject):
         deus_machina_retries = 0
+        self.subtask_manager.hri.say(
+            f"I couldn't make a pick on my own. I will require some help picking the {command.object_to_pick}!"
+        )
         while True:
             if deus_machina_retries >= RETRIES:
                 self.subtask_manager.hri.say(
@@ -165,7 +243,7 @@ class GPSRSingleTask(GenericTask):
                 )
                 return Status.TARGET_NOT_FOUND, ""
             s, res = self.subtask_manager.hri.confirm(
-                f"Have you given me the {command.object_to_pick}?", use_hotwords=False
+                f"Have you placed the {command.object_to_pick} on my gripper?", use_hotwords=False
             )
             if res == "yes":
                 self.subtask_manager.hri.say("Thank you. I will close my gripper")
@@ -267,9 +345,13 @@ class GPSRSingleTask(GenericTask):
 
         context = command.previous_command_info[0]
 
+        if context == "introduction":
+            self.subtask_manager.hri.say("Hello, I am Frida. Nice to meet you.")
+            return Status.EXECUTION_SUCCESS, "success"
+
         if context in GPSR_COMMANDS:
             history = self.subtask_manager.hri.query_command_history(
-                command.previous_command_info[0], top_k=1000
+                command.previous_command_info[0]
             )
             # command_type = self.subtask_manager.hri.get_command(history)
             result = self.subtask_manager.hri.get_result(history)
@@ -282,7 +364,7 @@ class GPSRSingleTask(GenericTask):
             return Status.EXECUTION_SUCCESS, "success"
         else:
             s, response, score = self.subtask_manager.hri.answer_question(
-                command.user_instruction,
+                command.previous_command_info[0]
             )
 
             self.subtask_manager.hri.say(response, wait=True)
@@ -363,7 +445,9 @@ class GPSRSingleTask(GenericTask):
             return Status.TARGET_NOT_FOUND, ""
 
         question = SayWithContext(
-            user_instruction=f"Please answer my question: {question}", action=[]
+            action="say_with_context",
+            user_instruction=f"Please answer my question: {question}",
+            previous_command_info=[question],
         )
         return self.say_with_context(question)
 

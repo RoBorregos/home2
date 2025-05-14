@@ -3,7 +3,8 @@ import rclpy
 from rclpy.node import Node
 from tf2_ros import Buffer, TransformListener
 from tf2_geometry_msgs import do_transform_point
-from rclpy.callback_groups import ReentrantCallbackGroup
+
+# from rclpy.callback_groups import ReentrantCallbackGroup
 from frida_interfaces.srv import PointTransformation, ReturnLocation, LaserGet
 import json
 import os
@@ -22,7 +23,6 @@ class PointTransformer(Node):
     def __init__(self):
         super().__init__("point_transformer")
         # Create a callback group for concurrent callbacks
-        self.callback_group = ReentrantCallbackGroup()
 
         # TF2 setup
         self.laser_sub = None
@@ -30,20 +30,15 @@ class PointTransformer(Node):
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
         self.set_target_service = self.create_service(
-            PointTransformation,
-            POINT_TRANSFORMER_TOPIC,
-            self.set_target_callback,
-            callback_group=self.callback_group,
+            PointTransformation, POINT_TRANSFORMER_TOPIC, self.set_target_callback
         )
+
         self.return_areas = self.create_service(
-            ReturnLocation,
-            RETURN_LOCATION,
-            self.get_current_location,
-            callback_group=self.callback_group,
+            ReturnLocation, RETURN_LOCATION, self.get_current_location
         )
-        self.return_laser = self.create_service(
-            LaserGet, RETURN_LASER_DATA, self.send_laser_data, callback_group=self.callback_group
-        )
+
+        self.return_laser = self.create_service(LaserGet, RETURN_LASER_DATA, self.send_laser_data)
+
         self.scan_topic = self.create_subscription(LaserScan, "/scan", self.update_laser, 10)
         self.get_logger().info("PointTransformer node has been started.")
 
@@ -122,6 +117,7 @@ class PointTransformer(Node):
         """
         Callback to determine the location of the robot based on its pose.
         """
+
         package_share_directory = get_package_share_directory("frida_constants")
         file_path = os.path.join(package_share_directory, "map_areas/areas.json")
         mylocation = ""
@@ -133,7 +129,7 @@ class PointTransformer(Node):
         # Check which area the robot is in
         for area in areas:
             polygon = areas.get(area, {}).get("polygon", [])
-
+            print(f"polygion: {polygon}")
             # Skip if "polygon" does not exist or is empty
             if not polygon:
                 continue
@@ -192,8 +188,6 @@ class PointTransformer(Node):
                 "map", "base_link", rclpy.time.Time(), timeout=rclpy.duration.Duration(seconds=5.0)
             )
 
-            rclpy.spin_once(self, timeout_sec=0.1)
-
             # Get the transform from base_link to map
             transform: TransformStamped = self.tf_buffer.lookup_transform(
                 "map", "base_link", rclpy.time.Time()
@@ -230,14 +224,10 @@ def main(args=None):
     rclpy.init(args=args)
     node = PointTransformer()
 
-    # Use MultiThreadedExecutor to handle concurrent callbacks
-    from rclpy.executors import MultiThreadedExecutor
-
-    executor = MultiThreadedExecutor()
-    executor.add_node(node)
+    # Use MultiThreadedExecutor to handle concurrent callback
 
     try:
-        executor.spin()
+        rclpy.spin(node)
     except KeyboardInterrupt:
         pass
     finally:

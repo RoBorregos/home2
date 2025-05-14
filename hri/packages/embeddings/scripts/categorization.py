@@ -95,7 +95,7 @@ class Embeddings(Node):
         self.query_entry_service = self.create_service(
             QueryEntry, query_entry_service, self.query_entry_callback
         )
-        # self.build_embeddings()
+        self.build_embeddings()
         self.get_logger().info("Categorization node initialized.")
 
     def add_entry_callback(self, request, response):
