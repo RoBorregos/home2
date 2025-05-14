@@ -26,7 +26,10 @@ def get_gpsr_comands(command_type: str, structured_cmd=True):
 
 
 custom_command = [
-    {"action": "pick_object", "object_to_pick": "zucaritas"},
+    # {"action": "follow_person_until", "destination": "canceled"},
+    {"action": "follow_person_until", "destination": "lamp"},
+    {"action": "guide_person_to", "destination_room": "dishwasher"},
+    # {"action": "pick_object", "object_to_pick": "zucaritas"},
     # {"action": "answer_question"},
     #  get_person_info
     #  {"action": "get_person_info", "info_type": "name"},
@@ -82,8 +85,11 @@ custom_command = [
     # },
     # {
     #     "action": "find_person",
-    #     "attribute_value": "waving person",
-    # }
+    #     "attribute_value": "sitting person",
+    # },
+    # {
+    #     "action": "find_person_by_name",
+    #     "name": "ale"},
     # {
     #     "action": "say_with_context",
     #     "user_instruction": "say what day is tomorrow to the person pointing to the left in the office",
@@ -188,7 +194,7 @@ GPSR_COMMANDS = [
         "string_cmd": "meet Jane in the bathroom and follow them",
         "structured_cmd": [
             {"action": "go_to", "location_to_go": "bathroom"},
-            {"action": "find_person_by_name", "name": "Jane"},
+            {"action": "find_person_by_name", "name": "jane"},
             {"action": "follow_person_until", "destination": "canceled"},
         ],
     },
@@ -276,7 +282,7 @@ GPSR_COMMANDS = [
         "string_cmd": "follow Paris from the sink to the office",
         "structured_cmd": [
             {"action": "go_to", "location_to_go": "sink"},
-            {"action": "find_person_by_name", "name": "Paris"},
+            {"action": "find_person_by_name", "name": "paris"},
             {"action": "follow_person_until", "destination": "office"},
         ],
     },
@@ -285,7 +291,7 @@ GPSR_COMMANDS = [
         "string_cmd": "take Simone from the sofa to the office",
         "structured_cmd": [
             {"action": "go_to", "location_to_go": "sofa"},
-            {"action": "find_person_by_name", "name": "Simone"},
+            {"action": "find_person_by_name", "name": "simone"},
             {"action": "guide_person_to", "destination_room": "office"},
         ],
     },
@@ -350,7 +356,7 @@ GPSR_COMMANDS = [
         "string_cmd": "salute Jane in the office and take them to the storage rack",
         "structured_cmd": [
             {"action": "go_to", "location_to_go": "office"},
-            {"action": "find_person_by_name", "name": "Jane"},
+            {"action": "find_person_by_name", "name": "jane"},
             {
                 "action": "say_with_context",
                 "user_instruction": "salute Jane in the office and take them to the storage rack",
@@ -364,9 +370,9 @@ GPSR_COMMANDS = [
         "string_cmd": "meet Robin at the waste basket then look for them in the bathroom",
         "structured_cmd": [
             {"action": "go_to", "location_to_go": "waste basket"},
-            {"action": "find_person_by_name", "name": "Robin"},
+            {"action": "find_person_by_name", "name": "robin"},
             {"action": "go_to", "location_to_go": "bathroom"},
-            {"action": "find_person_by_name", "name": "Robin"},
+            {"action": "find_person_by_name", "name": "robin"},
         ],
     },
     {

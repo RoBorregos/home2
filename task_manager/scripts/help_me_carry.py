@@ -53,7 +53,7 @@ class HelpMeCarryTM(Node):
 
         Logger.info(self, "HelpMeCarryTaskManager has started.")
         self.subtask_manager.vision.track_person(False)
-        self.subtask_manager.manipulation.follow_person(False)
+        # self.subtask_manager.manipulation.follow_person(False)
         self.subtask_manager.hri.hear_multi(0)
         self.subtask_manager.nav.follow_person(False)
 
@@ -96,10 +96,10 @@ class HelpMeCarryTM(Node):
 
         if self.current_state == HelpMeCarryTM.TASK_STATES["FOLLOWING_TO_DESTINATION"]:
             self.subtask_manager.vision.track_person(True)
-            self.subtask_manager.manipulation.follow_person(True)
+            # self.subtask_manager.manipulation.follow_person(True)
             self.subtask_manager.nav.follow_person(True)
             self.subtask_manager.hri.hear_multi(1)
-            Logger.state(self, "Following to destination")
+            Logger.state(self, "Please stand 2 meters away from me ")
             self.subtask_manager.hri.say("I will follow you now")
             self.subtask_manager.hri.say("Please say stop when you want me to stop")
             # Encender Tracker
@@ -112,7 +112,7 @@ class HelpMeCarryTM(Node):
                 if result:
                     self.subtask_manager.hri.hear_multi(0)
                     self.subtask_manager.nav.follow_person(False)
-                    self.subtask_manager.manipulation.follow_person(False)
+                    # self.subtask_manager.manipulation.follow_person(False)
                     self.subtask_manager.vision.track_person(False)
                     Logger.info(self, "Simulating follow disable")
                     self.subtask_manager.hri.say("I heard STOP, stopping now")
@@ -125,12 +125,12 @@ class HelpMeCarryTM(Node):
 
                 if not is_tracking == Status.EXECUTION_SUCCESS:
                     Logger.info(self, "Person not found stoping arm")
-                    self.subtask_manager.manipulation.follow_person(False)
+                    # self.subtask_manager.manipulation.follow_person(False)
                     prev_status = False
                 else:
                     if not prev_status:
                         Logger.info(self, "Starting arm")
-                        self.subtask_manager.manipulation.follow_person(True)
+                        # self.subtask_manager.manipulation.follow_person(True)
                     prev_status = True
                     tracking_time = self.get_clock().now()
 
@@ -138,7 +138,7 @@ class HelpMeCarryTM(Node):
                     Logger.info(self, "Activating deux ex machina")
                     self.subtask_manager.hri.hear_multi(0)
                     self.subtask_manager.nav.follow_person(False)
-                    self.subtask_manager.manipulation.follow_person(False)
+                    # self.subtask_manager.manipulation.follow_person(False)
                     self.subtask_manager.vision.track_person(False)
                     self.subtask_manager.hri.say(
                         "I lost you, please come back to the front of the camera"
@@ -190,7 +190,10 @@ class HelpMeCarryTM(Node):
             while True:
                 self.subtask_manager.hri.say("Please hang the bag in my antena")
                 s, confirmation = self.subtask_manager.hri.confirm(
-                    "Have you hang the bag?", False, retries=8, wait_between_retries=2
+                    "Have you hang the bag? say yes when the speaker turns blue",
+                    False,
+                    retries=8,
+                    wait_between_retries=2,
                 )
 
                 if confirmation == "yes":

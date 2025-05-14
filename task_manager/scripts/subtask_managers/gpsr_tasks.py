@@ -26,7 +26,7 @@ class GPSRTask(GenericTask):
         """Initialize the class"""
         super().__init__(subtask_manager)
         # Angles are relative to current position
-        self.pan_angles = [-45, 45, 45]
+        self.pan_angles = [90, -90]
         package_share_directory = get_package_share_directory("frida_constants")
         file_path = os.path.join(package_share_directory, "map_areas/areas.json")
         with open(file_path, "r") as file:
@@ -42,9 +42,9 @@ class GPSRTask(GenericTask):
                 f"I will now guide you to the {location}. Please follow me."
             )
             self.subtask_manager.manipulation.follow_face(False)
-            self.subtask_manager.manipulation.move_joint_positions(
-                named_position="front_stare", velocity=0.5, degrees=True
-            )
+        self.subtask_manager.manipulation.move_joint_positions(
+            named_position="nav_pose", velocity=0.5, degrees=True
+        )
         future = self.subtask_manager.nav.move_to_location(location, sublocation)
         if "navigation" not in self.subtask_manager.get_mocked_areas():
             rclpy.spin_until_future_complete(self.subtask_manager.nav.node, future)
@@ -151,10 +151,8 @@ class GPSRTask(GenericTask):
 
         loc = command.destination
 
-        if command.destination == "cancelled":
-            self.subtask_manager.hri.say(
-                "I'm sorry, I can't follow you. Please tell me where to go"
-            )
+        if command.destination == "canceled":
+            self.subtask_manager.hri.say("I'm sorry, I can't follow you.")
             status, loc = self.subtask_manager.hri.ask_and_confirm(
                 question="Please tell me where to go.",
                 query="location",
@@ -169,15 +167,19 @@ class GPSRTask(GenericTask):
 
         # infer location from the response
         # go to
+        self.subtask_manager.hri.node.get_logger().info("arm to move")
 
         self.subtask_manager.manipulation.move_joint_positions(
             named_position="nav_pose", velocity=0.5, degrees=True
         )
         location = self.subtask_manager.hri.query_location(loc)
+        self.subtask_manager.hri.node.get_logger().info("query location")
+
         area = self.subtask_manager.hri.get_area(location)
         if isinstance(area, list):
             area = area[0]
 
+        self.subtask_manager.hri.node.get_logger().info("query subarea")
         subarea = self.subtask_manager.hri.get_subarea(location)
         if isinstance(subarea, list):
             if len(subarea) == 0:
@@ -188,6 +190,7 @@ class GPSRTask(GenericTask):
         self.subtask_manager.hri.node.get_logger().info(f"Moving to {subarea} in {area}")
 
         self.navigate_to(area, subarea, say=False)
+        return Status.EXECUTION_SUCCESS, "arrived to " + command.destination
 
     ## HRI, Nav
     def guide_person_to(self, command: GuidePersonTo):
@@ -240,6 +243,7 @@ class GPSRTask(GenericTask):
         self.navigate_to(area, subarea)
 
         self.subtask_manager.hri.say(f"We have arrived to {command.destination_room}!", wait=True)
+        return Status.EXECUTION_SUCCESS, "arrived to " + command.destination_room
 
     ## HRI, Vision
     def get_person_info(self, command: GetPersonInfo):
@@ -602,7 +606,7 @@ class GPSRTask(GenericTask):
         possibilities = [v.value for v in Gestures] + [v.value for v in Poses] + ["clothes"]
 
         status, value = self.subtask_manager.hri.find_closest(
-            possibilities, command.target_to_count
+            possibilities, command.attribute_value
         )
         value = value[0]
 
@@ -618,7 +622,7 @@ class GPSRTask(GenericTask):
         for degree in self.pan_angles:
             self.subtask_manager.manipulation.pan_to(degree)
 
-            if command.target_to_count == "":
+            if command.attribute_value == "":
                 status, count = self.subtask_manager.vision.count_by_pose(Poses.STANDING.value)
             elif is_value_in_enum(value, Gestures):
                 status, count = self.subtask_manager.vision.count_by_gesture(value)
@@ -627,11 +631,11 @@ class GPSRTask(GenericTask):
             else:
                 if cache_color is None or cache_cloth is None:
                     s, color = self.subtask_manager.hri.find_closest(
-                        self.color_list, command.target_to_count
+                        self.color_list, command.attribute_value
                     )
                     cache_color = color[0]
                     s, cloth = self.subtask_manager.hri.find_closest(
-                        self.clothe_list, command.target_to_count
+                        self.clothe_list, command.attribute_value
                     )
                     cache_cloth = cloth[0]
 
@@ -647,16 +651,16 @@ class GPSRTask(GenericTask):
 
             if status == Status.EXECUTION_SUCCESS and count > 0:
                 self.subtask_manager.hri.say(
-                    f"I found a person with {command.target_to_count}. Please get approach me.",
+                    f"I found a {command.attribute_value}. Please approach me.",
                 )
                 break
 
             elif status == Status.TARGET_NOT_FOUND:
                 self.subtask_manager.hri.say(
-                    f"I didn't find any person with {command.target_to_count}.",
+                    f"I didn't find any person with {command.attribute_value}.",
                 )
 
-        return Status.EXECUTION_SUCCESS, "found" + command.target_to_count
+        return Status.EXECUTION_SUCCESS, "found" + command.attribute_value
 
     ## HRI, Manipulation, Nav, Vision
     def find_person_by_name(self, command: FindPersonByName):
@@ -685,7 +689,7 @@ class GPSRTask(GenericTask):
         if isinstance(command, dict):
             command = FindPersonByName(**command)
 
-        # self.subtask_manager.manipulation.move_to_position("front_stare")
+        self.subtask_manager.manipulation.move_to_position("front_stare")
         for degree in self.pan_angles:
             # self.subtask_manager.manipulation.pan_to(degree)
             while True:

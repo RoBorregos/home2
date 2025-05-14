@@ -30,6 +30,7 @@ from frida_constants.hri_constants import (
     WAKEWORD_TOPIC,
 )
 from frida_interfaces.srv import (
+    HearMultiThread,
     STT,
     AddEntry,
     CategorizeShelves,
@@ -124,7 +125,9 @@ class HRITasks(metaclass=SubtaskMeta):
         self.keyword_client = self.node.create_subscription(
             String, WAKEWORD_TOPIC, self._get_keyword, 10
         )
-
+        self.hear_multi_service = self.node.create_client(
+            HearMultiThread, "/integration/multi_stop"
+        )
         self.useful_audio_params = self.node.create_client(
             SetParameters, f"/{USEFUL_AUDIO_NODE_NAME}/set_parameters"
         )
@@ -243,6 +246,31 @@ class HRITasks(metaclass=SubtaskMeta):
         else:
             self.say(f"Sorry, I don't know how to {command}")
             return Status.TARGET_NOT_FOUND
+
+    def hear_multi(self, status: int) -> bool:
+        request = HearMultiThread.Request()
+        if status == 0:
+            request.stop_service = True
+            request.start_service = False
+        elif status == 1:
+            request.stop_service = False
+            request.start_service = True
+        else:
+            request.stop_service = False
+            request.start_service = False
+
+        future = self.hear_multi_service.call_async(request)
+        Logger.info(
+            self.node,
+            "Checking if stopped",
+        )
+
+        rclpy.spin_until_future_complete(self.node, future)
+        if future.result() is None:
+            Logger.error(self.node, "Failed receiving status word")
+            return False
+
+        return future.result().stopped
 
     def _get_keyword(self, msg: String) -> None:
         try:

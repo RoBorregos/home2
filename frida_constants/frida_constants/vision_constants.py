@@ -64,6 +64,7 @@ SET_TARGET_BY_TOPIC = "/vision/set_tracking_target_by"
 RESULTS_TOPIC = "/vision/tracking_results"
 TRACKER_IMAGE_TOPIC = "/vision/tracker_image"
 CENTROID_TOIC = "/vision/tracker_centroid"
+IS_TRACKING_TOPIC = "/vision/is_tracking"
 
 # Pointing
 POINTING_OBJECT_SERVICE = "/vision/pointing_object_service"

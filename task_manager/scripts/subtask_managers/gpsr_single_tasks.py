@@ -90,9 +90,9 @@ class GPSRSingleTask(GenericTask):
                 f"I will now guide you to the {location}. Please follow me."
             )
             self.subtask_manager.manipulation.follow_face(False)
-            self.subtask_manager.manipulation.move_joint_positions(
-                named_position="front_stare", velocity=0.5, degrees=True
-            )
+        self.subtask_manager.manipulation.move_joint_positions(
+            named_position="nav_pose", velocity=0.5, degrees=True
+        )
         future = self.subtask_manager.nav.move_to_location(location, sublocation)
         if "navigation" not in self.subtask_manager.get_mocked_areas():
             rclpy.spin_until_future_complete(self.subtask_manager.nav.node, future)
@@ -125,76 +125,76 @@ class GPSRSingleTask(GenericTask):
         if isinstance(command, dict):
             command = PickObject(**command)
 
-        self.subtask_manager.hri.say(f"I will try to pick {command.object_to_pick}.")
+        # self.subtask_manager.hri.say(f"I will try to pick {command.object_to_pick}.")
 
-        def check_found_object():
-            check_retries = 0
+        # def check_found_object():
+        #     check_retries = 0
 
-            while check_retries < RETRIES:
-                self.timeout(1.5)
-                s, detections = self.subtask_manager.vision.detect_objects()
-                if s == Status.EXECUTION_SUCCESS:
-                    s, object_to_pick = self.subtask_manager.hri.find_closest_raw(
-                        self.subtask_manager.vision.get_labels(detections), command.object_to_pick
-                    )
+        #     while check_retries < RETRIES:
+        #         self.timeout(1.5)
+        #         s, detections = self.subtask_manager.vision.detect_objects()
+        #         if s == Status.EXECUTION_SUCCESS:
+        #             s, object_to_pick = self.subtask_manager.hri.find_closest_raw(
+        #                 self.subtask_manager.vision.get_labels(detections), command.object_to_pick
+        #             )
 
-                    print("object_to_pick", object_to_pick)
+        #             print("object_to_pick", object_to_pick)
 
-                    if object_to_pick[0]["distance"][0] < 0.5:
-                        return Status.EXECUTION_SUCCESS
-                check_retries += 1
-            return Status.TARGET_NOT_FOUND
+        #             if object_to_pick[0]["distance"][0] < 0.5:
+        #                 return Status.EXECUTION_SUCCESS
+        #         check_retries += 1
+        #     return Status.TARGET_NOT_FOUND
 
-        self.subtask_manager.hri.node.get_logger().info("computing loc")
+        # self.subtask_manager.hri.node.get_logger().info("computing loc")
 
-        loc_retires = 0
-        while loc_retires < RETRIES:
-            status, results = self.subtask_manager.nav.ReturnLocation_callback()
+        # loc_retires = 0
+        # while loc_retires < RETRIES:
+        #     status, results = self.subtask_manager.nav.ReturnLocation_callback()
 
-            if status != Status.EXECUTION_SUCCESS:
-                self.timeout(1.0)
-            loc_retires += 1
+        #     if status != Status.EXECUTION_SUCCESS:
+        #         self.timeout(1.0)
+        #     loc_retires += 1
 
-        self.subtask_manager.hri.node.get_logger().info("loc computed")
+        # self.subtask_manager.hri.node.get_logger().info("loc computed")
 
-        if status != Status.EXECUTION_SUCCESS:
-            self.subtask_manager.hri.say(
-                "I couldn't distinguish picking areas. Please help me pick the object."
-            )
-            return self.deus_pick(command)
+        # if status != Status.EXECUTION_SUCCESS:
+        #     self.subtask_manager.hri.say(
+        #         "I couldn't distinguish picking areas. Please help me pick the object."
+        #     )
+        #     return self.deus_pick(command)
 
-        area = results.location
-        locations = results.nearest_locations
+        # area = results.location
+        # locations = results.nearest_locations
 
-        self.subtask_manager.hri.node.get_logger().info("area: " + str(area))
-        self.subtask_manager.hri.node.get_logger().info("locations: " + str(locations))
+        # self.subtask_manager.hri.node.get_logger().info("area: " + str(area))
+        # self.subtask_manager.hri.node.get_logger().info("locations: " + str(locations))
 
-        found_object = False
-        for location in locations:
-            self.subtask_manager.hri.node.get_logger().info("iterating: " + str(location))
-            if found_object:
-                break
-            if location == "safe_place":
-                continue
+        # found_object = False
+        # for location in locations:
+        #     self.subtask_manager.hri.node.get_logger().info("iterating: " + str(location))
+        #     if found_object:
+        #         break
+        #     if location == "safe_place":
+        #         continue
 
-            self.navigate_to(area, location, False)
-            self.subtask_manager.hri.node.get_logger().info("navigate to done")
-            status = check_found_object()
-            if status == Status.EXECUTION_SUCCESS:
-                found_object = True
-                self.subtask_manager.hri.say(
-                    f"I found the {command.object_to_pick} in the {location}. I will pick it up."
-                )
-            else:
-                self.subtask_manager.hri.say(
-                    f"I couldn't find the {command.object_to_pick} in the {location}."
-                )
+        #     self.navigate_to(area, location, False)
+        #     self.subtask_manager.hri.node.get_logger().info("navigate to done")
+        #     status = check_found_object()
+        #     if status == Status.EXECUTION_SUCCESS:
+        #         found_object = True
+        #         self.subtask_manager.hri.say(
+        #             f"I found the {command.object_to_pick} in the {location}. I will pick it up."
+        #         )
+        #     else:
+        #         self.subtask_manager.hri.say(
+        #             f"I couldn't find the {command.object_to_pick} in the {location}."
+        #         )
 
-        if not found_object:
-            self.subtask_manager.hri.say(
-                f"I couldn't find the {command.object_to_pick} in any picking area. Please help me pick it up."
-            )
-            return self.deus_pick(command)
+        # if not found_object:
+        #     self.subtask_manager.hri.say(
+        #         f"I couldn't find the {command.object_to_pick} in any picking area. Please help me pick it up."
+        #     )
+        #     return self.deus_pick(command)
 
         self.subtask_manager.hri.say(f"I will pick the {command.object_to_pick}.", wait=False)
         current_try = 0
