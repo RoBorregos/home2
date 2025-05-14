@@ -3,19 +3,21 @@ services:
     profiles: [receptionist, carry, gpsr, storing]
 
     container_name: home2-hri-stt-l4t
-    user: 1000:1000
+    user: root
     image: roborregos/home2:hri-stt-l4t
     runtime: nvidia
     build:
       context: ../..
       dockerfile: docker/hri/Dockerfile.stt-l4t
-    ports:
-      - 50051:50051
     volumes:
       - ../../hri/packages/speech/scripts/stt/:/app
-      - ../../hri/packages/speech/speech/:/app/speech
+      # - ../../hri/packages/speech/speech/:/app/speech
     environment:
       ROS_LOCALHOST_ONLY: 1
     network_mode: host
-    command: >
-      bash -c "source /tmp/PyAV/scripts/activate.sh && deactivate && python3 -u faster-whisper.py --port 50051 --model_size large-v3-turbo --log_transcriptions"
+    command: [
+        "bash",
+        "-c",
+        # "python3 -u faster-whisper.py --port 50052 --model_size base.en --log_transcriptions",
+        "python3 whisper_online_server.py --min-chunk-size 1 --task transcribe --model base.en --vad --backend faster-whisper --port 3000",
+      ]

@@ -15,14 +15,14 @@ services:
     volumes:
       - ../../hri/packages/speech/scripts/stt/:/app
       # - ../../hri/packages/speech/speech/:/app/speech
-      - /dev/snd:/dev/snd
+      # - /dev/snd:/dev/snd
       # - /run/user/1000/pulse:/run/user/1000/pulse
-      - /etc/asound.conf:/etc/asound.conf:ro
+      # - /etc/asound.conf:/etc/asound.conf:ro
     environment:
       ROS_LOCALHOST_ONLY: 1
-      PULSE_SERVER: unix:/run/user/1000/pulse/native
-    devices:
-      - "/dev/snd:/dev/snd"
+      # PULSE_SERVER: unix:/run/user/1000/pulse/native
+    # devices:
+    #   - "/dev/snd:/dev/snd"
     privileged: true
     command: [
         "bash",

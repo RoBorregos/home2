@@ -2,13 +2,13 @@ FROM dustynv/l4t-pytorch:r36.4.0
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
-libsndfile1 \
-libxml2-dev \
-portaudio19-dev \
-git \
-cmake \
-g++ \
-&& rm -rf /var/lib/apt/lists/*
+    libsndfile1 \
+    libxml2-dev \
+    portaudio19-dev \
+    git \
+    cmake \
+    g++ \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install CTranslate2 from source
 WORKDIR /tmp
@@ -38,3 +38,10 @@ COPY ../../hri/packages/speech/scripts/stt/requirements.txt .
 RUN python3 -m pip install --upgrade pip
 RUN pip install --no-cache-dir -r /app/requirements.txt
 RUN pip install --upgrade protobuf
+
+RUN pip install librosa torch torchaudio PyAudio
+
+RUN apt-get update && apt-get install -y \
+    gcc \
+    portaudio19-dev \
+    && rm -rf /var/lib/apt/lists/*
