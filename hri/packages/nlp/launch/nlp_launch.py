@@ -62,24 +62,12 @@ def generate_launch_description():
             emulate_tty=True,
             parameters=[llm_utils_config],
         ),
-        Node(
-            package="embeddings",
-            executable="knowledge_base.py",
-            name="llm_uknowledge_basetils",
-            output="screen",
-            emulate_tty=True,
-        ),
-        Node(
-            package="embeddings",
-            executable="categorization.py",
-            name="embeddings_categorization",
-            output="screen",
-            emulate_tty=True,
-        ),
     ]
 
-    # if os.getenv("COMPOSE_PROFILES", "receptionist") == "gpsr" or os.getenv("COMPOSE_PROFILES", "receptionist") == "storing":
-    if os.getenv("COMPOSE_PROFILES", "receptionist") == "gpsr":
+    if (
+        os.getenv("COMPOSE_PROFILES", "receptionist") == "gpsr"
+        or os.getenv("COMPOSE_PROFILES", "receptionist") == "storing"
+    ):
         embeddings_launch_path = os.path.join(
             get_package_share_directory("embeddings"),
             "launch",

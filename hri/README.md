@@ -76,7 +76,13 @@ ros2 service call /hri/nlp/data_extractor frida_interfaces/srv/ExtractInfo "{ful
 
 # Is positive
 ros2 service call /hri/nlp/is_positive frida_interfaces/srv/IsPositive "{text: 'I confirm'}"
+
+# Is negative
+ros2 service call /hri/nlp/is_negative frida_interfaces/srv/IsNegative "{text: 'Incorrect'}"
+
+# Hear something
 ros2 service call /hri/speech/STT frida_interfaces/srv/STT {}
+
 
 # NLP
 ros2 launch nlp nlp_launch.py
