@@ -19,5 +19,5 @@ services:
         "bash",
         "-c",
         # "python3 -u faster-whisper.py --port 50052 --model_size base.en --log_transcriptions",
-        "python3 whisper_online_server.py --min-chunk-size 1 --task transcribe --model base.en --vad --backend faster-whisper --port 3000",
+        "source /tmp/PyAV/scripts/activate.sh && deactivate && python3 whisper_online_server.py --min-chunk-size 1 --task transcribe --model large-v3-turbo --vad --backend faster-whisper --port 3000",
       ]
