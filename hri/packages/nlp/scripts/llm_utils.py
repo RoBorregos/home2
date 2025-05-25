@@ -179,6 +179,9 @@ class LLMUtils(Node):
             .message.content
         )
 
+        if "</think>" in response:
+            response = response.split("</think>")[-1].strip()
+
         res.answer = response
         return res
 

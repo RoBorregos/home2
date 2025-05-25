@@ -9,9 +9,13 @@
       <!-- Start moving -->
       <RateController hz="5.0">
         <RecoveryNode number_of_retries="5" name="FollowPathWithRecovery">
-
+        <sequence>
+        <ClearEntireCostmap name="ClearLocalCostmap-Context" service_name="local_costmap/clear_entirely_local_costmap"/>
+        <ClearEntireCostmap name="ClearGlobalCostmap-Context" service_name="global_costmap/clear_entirely_global_costmap"/>
         <FollowPath path="{path}" controller_id="FollowPath"/>
+        
 
+        </sequence>
         <!-- Recovery sequence -->
         <SequenceStar name="ClearAndBackupRecovery">
             <!-- First clear costmap around robot -->

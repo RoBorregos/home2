@@ -160,37 +160,28 @@ class NavigationTasks:
         """
         future = Future()
         try:
-            coordinates = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-            self.node.get_logger().info(f"{coordinates}")
-        except Exception as e:
-            self.node.get_logger().error(f"Error moving to original location: {e}")
-            future.set_result(self.STATE["EXECUTION_ERROR"])
-            return future
-
-        try:
-            self.node.get_logger().info("Sending move request to original location")
             client_goal = NavigateToPose.Goal()
             goal = PoseStamped()
             goal.header.frame_id = "map"
-            goal.pose.position.x = coordinates[0]
-            goal.pose.position.y = coordinates[1]
-            goal.pose.position.z = coordinates[2]
-            goal.pose.orientation.x = coordinates[3]
-            goal.pose.orientation.y = coordinates[4]
-            goal.pose.orientation.z = coordinates[5]
-            goal.pose.orientation.w = coordinates[6]
+            goal.pose.position.x = 0.0
+            goal.pose.position.y = 0.0
+            goal.pose.position.z = 0.0
+            goal.pose.orientation.x = 0.0
+            goal.pose.orientation.y = 0.0
+            goal.pose.orientation.z = 0.0
+            goal.pose.orientation.w = 1.0
 
             client_goal.pose = goal
             self.goal_state = None
-            self._send_goal_future = self.pose_client.send_goal_async(client_goal)
+            self._send_goal_future = self.goal_client.send_goal_async(client_goal)
 
             self._send_goal_future.add_done_callback(
                 lambda future_goal: self.goal_response_callback(future_goal, future)
             )
             return future
         except Exception as e:
-            self.node.get_logger().error(f"Error moving to original location: {e}")
-            future.set_result(self.STATE["EXECUTION_ERROR"])
+            Logger.error(self.node, f"Error moving to location: {e}")
+            future.set_result(Status.EXECUTION_ERROR)
             return future
 
     def goal_response_callback(self, future, result_future):
@@ -289,13 +280,13 @@ class NavigationTasks:
             results = future.result()
 
             if results is not None:
-                return Status.EXECUTION_SUCCESS, results
+                return (Status.EXECUTION_SUCCESS, results)
             else:
                 Logger.error(self.node, "Error getting location")
-                return Status.EXECUTION_ERROR, []
+                return (Status.EXECUTION_ERROR, None)
         except Exception as e:
             Logger.error(self.node, f"Error getting location: {e}")
-            return Status.EXECUTION_ERROR, []
+            return (Status.EXECUTION_ERROR, None)
 
 
 if __name__ == "__main__":
