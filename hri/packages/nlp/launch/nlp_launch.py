@@ -69,13 +69,6 @@ def generate_launch_description():
             output="screen",
             emulate_tty=True,
         ),
-        Node(
-            package="embeddings",
-            executable="categorization.py",
-            name="embeddings_categorization",
-            output="screen",
-            emulate_tty=True,
-        ),
     ]
 
     # if os.getenv("COMPOSE_PROFILES", "receptionist") == "gpsr" or os.getenv("COMPOSE_PROFILES", "receptionist") == "storing":

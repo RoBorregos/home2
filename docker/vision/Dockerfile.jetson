@@ -32,4 +32,7 @@ RUN apt update && apt install -y ros-humble-cv-bridge
 WORKDIR /workspace
 RUN git clone https://github.com/ultralytics/yolov5.git
 
+RUN pip install timm && \
+    python3 -c "import timm; timm.create_model('swin_b ase_patch4_window7_224', pretrained=True)" 
+
 USER ros
