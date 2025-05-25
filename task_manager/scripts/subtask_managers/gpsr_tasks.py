@@ -428,6 +428,7 @@ class GPSRTask(GenericTask):
             self.subtask_manager.hri.say(
                 f"I didn't find any {object_name}.",
             )
+        return status, result
 
     ## Manipulation, Vision
     def count(self, command: Count):
@@ -478,8 +479,7 @@ class GPSRTask(GenericTask):
             "person" not in command.target_to_count.lower()
             and "people" not in command.target_to_count.lower()
         ):
-            self.count_objects(command.target_to_count)
-            return Status.EXECUTION_SUCCESS, "counted objects"
+            return self.count_objects(command.target_to_count)
 
         self.subtask_manager.manipulation.move_to_position("front_stare")
 
