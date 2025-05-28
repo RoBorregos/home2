@@ -1,10 +1,10 @@
 services:
-  stt-l4t:
+  stt-l4t-old:
     profiles: [receptionist, carry, gpsr, storing]
 
-    container_name: home2-hri-stt-l4t
+    container_name: home2-hri-stt-l4t-old
     user: 1000:1000
-    image: roborregos/home2:hri-stt-l4t
+    image: roborregos/home2:hri-stt-l4t-old
     runtime: nvidia
     build:
       context: ../..

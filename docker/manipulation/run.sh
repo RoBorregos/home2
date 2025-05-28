@@ -197,7 +197,7 @@ NEEDS_BUILD=false
 # fi
 
 
-Check if the container exists
+# Check if the container exists
 EXISTING_CONTAINER=$(docker ps -a -q -f "name=$CONTAINER_NAME")
 if [ -z "$EXISTING_CONTAINER" ]; then
     echo "No container with the name $CONTAINER_NAME exists. Building and starting the container now..."

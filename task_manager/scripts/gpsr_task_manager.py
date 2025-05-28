@@ -53,7 +53,7 @@ class GPSRTM(Node):
         self.current_state = (
             GPSRTM.States.START
             # GPSRTM.States.EXECUTING_COMMAND
-        )  # GPSRTM.States.START  # GPSRTM.States.EXECUTING_COMMAND
+        )
         self.running_task = True
         self.current_attempt = 0
         self.executed_commands = 0
