@@ -1,32 +1,32 @@
+x-speech-devices: &speech-devices
+  PULSE_SERVER: unix:/tmp/pulse/pulseaudio.socket
+  PULSE_COOKIE: /tmp/pulse/pulseaudio.cookie
+
 services:
   stt:
     profiles: [receptionist, carry, gpsr, storing]
 
     container_name: home2-hri-stt
-    user: root
+    user: 1000:1000
     image: roborregos/home2:hri-stt
     build:
       context: ../..
       dockerfile: docker/hri/Dockerfile.stt
-    # ports:
-    #   # - "50052:50052"
-    #   - "3000:3000"
     network_mode: host
     volumes:
-      - ../../hri/packages/speech/scripts/stt/:/app
-      # - ../../hri/packages/speech/speech/:/app/speech
-      # - /dev/snd:/dev/snd
-      # - /run/user/1000/pulse:/run/user/1000/pulse
-      # - /etc/asound.conf:/etc/asound.conf:ro
+      - ../../hri/packages/speech/scripts/stt/:/app/models
+      - ~/.config/pulse:/tmp/pulse
+      - /dev:/dev
     environment:
-      ROS_LOCALHOST_ONLY: 1
-      # PULSE_SERVER: unix:/run/user/1000/pulse/native
-    # devices:
-    #   - "/dev/snd:/dev/snd"
+      <<:
+        - *speech-devices
+    group_add:
+      - audio
     privileged: true
     command: [
-        "bash",
-        "-c",
+        # "bash",
+        # "-c",
         # "python3 -u faster-whisper.py --port 50052 --model_size base.en --log_transcriptions",
-        "python3 whisper_online_server.py --min-chunk-size 1 --task transcribe --model base.en --vad --backend faster-whisper --port 3000",
+        # "python3 whisper_online_server.py --min-chunk-size 1 --task transcribe --model base.en --vad --backend faster-whisper --port 3000",
+        "./build/bin/whisper-stream -m ./models/ggml-base.bin -t 8 --step 500 --length 5000",
       ]

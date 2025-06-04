@@ -1,58 +1,13 @@
-# JUST FASTER-WHISPER
-# FROM python:3.9-slim
+FROM ghcr.io/ggml-org/whisper.cpp:main
 
-# WORKDIR /app
+RUN apt-get update && \
+    apt install -y build-essential
 
-# COPY ../../hri/packages/speech/scripts/stt/requirements.txt .
-
-# # Install dependencies
-# RUN apt-get update && apt-get install -y \
-#     portaudio19-dev \
-#     && rm -rf /var/lib/apt/lists/*
-
-# RUN pip install --no-cache-dir -r requirements.txt
-
-# RUN apt-get update && apt-get install -y \
-#     gcc \
-#     portaudio19-dev \
-#     python3-dev \
-#     ffmpeg \
-#     && rm -rf /var/lib/apt/lists/*
-
-# RUN pip install "numpy<2.0.0"
-
-# RUN pip install PyAudio
-
-# RUN pip install whisper-live
-
-# RUN apt-get install -y git
-
-# RUN git clone https://github.com/collabora/WhisperLive.git
-
-# RUN apt-get install -y libasound2 alsa-utils
-
-# WHISPERLIVE
-# FROM ghcr.io/collabora/whisperlive-cpu:latest
-
-# WHISPER_STREAMING
-FROM python:3.9-slim
-
-WORKDIR /app
-
-RUN pip install librosa soundfile faster-whisper torch torchaudio
-
-RUN apt-get update && apt-get install -y \
-    gcc \
-    portaudio19-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN pip install PyAudio
-
-# RUN apt-get update && apt-get install -y \
-#     git \
-#     && rm -rf /var/lib/apt/lists/*
-
-# RUN git clone https://github.com/ufal/whisper_streaming.git
-
-
-
+RUN cmake -B build -DWHISPER_SDL2=ON
+RUN cmake --build build --config Release
+RUN apt-get install sudo
+RUN useradd -m -s /bin/bash whisper && \
+    usermod -aG audio whisper && \
+    echo 'whisper ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+USER whisper
+RUN sudo usermod -aG audio whisper
