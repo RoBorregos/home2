@@ -1,23 +1,32 @@
+x-speech-devices: &speech-devices
+  PULSE_SERVER: unix:/tmp/pulse/pulseaudio.socket
+  PULSE_COOKIE: /tmp/pulse/pulseaudio.cookie
+
 services:
   stt-l4t:
     profiles: [receptionist, carry, gpsr, storing]
 
     container_name: home2-hri-stt-l4t
-    user: root
+    user: 1000:1000
     image: roborregos/home2:hri-stt-l4t
     runtime: nvidia
     build:
       context: ../..
       dockerfile: docker/hri/Dockerfile.stt-l4t
     volumes:
-      - ../../hri/packages/speech/scripts/stt/:/app
+      # - ../../hri/packages/speech/scripts/stt/:/app/stt
       # - ../../hri/packages/speech/speech/:/app/speech
+      - ~/.config/pulse:/tmp/pulse
+      - /dev:/dev
     environment:
       ROS_LOCALHOST_ONLY: 1
+      <<:
+        - *speech-devices
     network_mode: host
+    group_add: 
+      - video
     command: [
         "bash",
         "-c",
-        # "python3 -u faster-whisper.py --port 50052 --model_size base.en --log_transcriptions",
-        "python3 whisper_online_server.py --min-chunk-size 1 --task transcribe --model base.en --vad --backend faster-whisper --port 3000",
+        "./build/bin/whisper-command -m ./models/ggml-large-v3.bin -t 8"
       ]
