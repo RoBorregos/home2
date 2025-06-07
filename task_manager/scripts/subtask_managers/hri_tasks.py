@@ -4,11 +4,13 @@
 HRI Subtask manager
 """
 
+import functools
 import json
 import os
 import re
+import time
 from datetime import datetime
-from typing import List, Union
+from typing import Callable, List, TypeVar, Union
 
 import rclpy
 from ament_index_python.packages import get_package_share_directory
@@ -30,13 +32,13 @@ from frida_constants.hri_constants import (
     WAKEWORD_TOPIC,
 )
 from frida_interfaces.srv import (
-    HearMultiThread,
     STT,
     AddEntry,
     CategorizeShelves,
     CommonInterest,
     ExtractInfo,
     Grammar,
+    HearMultiThread,
     IsNegative,
     IsPositive,
     LLMWrapper,
@@ -73,6 +75,8 @@ from utils.task import Task
 
 from subtask_managers.subtask_meta import SubtaskMeta
 
+T = TypeVar("T")
+
 InterpreterAvailableCommands = Union[
     CommandListLLM,
     GoTo,
@@ -97,6 +101,28 @@ TIMEOUT = 5.0
 
 def confirm_query(interpreted_text, target_info):
     return f"Did you say {target_info}?"
+
+
+def time_execution(func: Callable[..., T]) -> Callable[..., T]:
+    """
+    Decorator that measures and prints the execution time of a function.
+
+    Args:
+        func: The function to be timed
+
+    Returns:
+        Wrapped function with timing functionality
+    """
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs) -> T:
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        print(f"Time taken for {func.__name__}: {end_time - start_time:.2f} seconds")
+        return result
+
+    return wrapper
 
 
 class HRITasks(metaclass=SubtaskMeta):
@@ -532,6 +558,7 @@ class HRITasks(metaclass=SubtaskMeta):
         else:
             self.node.get_logger().error(f"Failed to set parameter {name}")
 
+    @time_execution
     @service_check("common_interest_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def common_interest(self, person1, interest1, person2, interest2, remove_thinking=True):
         try:
@@ -559,6 +586,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
         return Status.EXECUTION_SUCCESS, result
 
+    @time_execution
     @service_check("is_positive_service", (Status.SERVICE_CHECK, False), TIMEOUT)
     def is_positive(self, text, async_call=False):
         Logger.info(self.node, f"Checking if text is positive: {text}")
@@ -570,6 +598,7 @@ class HRITasks(metaclass=SubtaskMeta):
         Logger.info(self.node, f"is_positive result ({text}): {future.result().is_positive}")
         return Status.EXECUTION_SUCCESS, future.result().is_positive
 
+    @time_execution
     @service_check("is_negative_service", (Status.SERVICE_CHECK, False), TIMEOUT)
     def is_negative(self, text, async_call=False):
         Logger.info(self.node, f"Checking if text is negative: {text}")
@@ -581,6 +610,7 @@ class HRITasks(metaclass=SubtaskMeta):
         Logger.info(self.node, f"is_negative result ({text}): {future.result().is_negative}")
         return Status.EXECUTION_SUCCESS, future.result().is_negative
 
+    @time_execution
     @service_check("answer_question_service", (Status.SERVICE_CHECK, "", 0.5), TIMEOUT)
     def answer_question(
         self,

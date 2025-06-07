@@ -20,7 +20,7 @@ def confirm_preference(interpreted_text, extracted_data):
 
 
 TEST_TASK = Task.RECEPTIONIST
-TEST_COMPOUND = True
+TEST_COMPOUND = False
 TEST_INDIVIDUAL_FUNCTIONS = True
 TEST_EMBEDDINGS = False
 
@@ -51,40 +51,52 @@ class TestHriManager(Node):
             self.test_embeddings()
 
     def individual_functions(self):
+        positive_text = "I confirm."
+        negative_text = "I don't confirm."
+
+        # Test is_positive
+        self.get_logger().info("Testing is_positive function")
+        is_positive_response = self.hri_manager.is_positive(positive_text)
+        self.get_logger().info(f"Is the text positive? {is_positive_response}")
+        # Test is_negative
+        self.get_logger().info("Testing is_negative function")
+        is_negative_response = self.hri_manager.is_negative(negative_text)
+        self.get_logger().info(f"Is the text negative? {is_negative_response}")
+
         # Test say
-        self.hri_manager.say("Hi, my name is frida. What is your favorite drink?", wait=True)
-        self.get_logger().info("Hearing from the user...")
+        # self.hri_manager.say("Hi, my name is frida. What is your favorite drink?", wait=True)
+        # self.get_logger().info("Hearing from the user...")
 
-        # Test hear
-        s, user_request = self.hri_manager.hear(min_audio_length=10.0)
-        self.get_logger().info(f"Heard: {user_request}")
+        # # Test hear
+        # s, user_request = self.hri_manager.hear(min_audio_length=10.0)
+        # self.get_logger().info(f"Heard: {user_request}")
 
-        # Test extract_data
-        s, drink = self.hri_manager.extract_data("Drink", user_request)
-        self.get_logger().info(f"Extracted data: {drink}")
+        # # Test extract_data
+        # s, drink = self.hri_manager.extract_data("Drink", user_request)
+        # self.get_logger().info(f"Extracted data: {drink}")
 
-        self.hri_manager.say("Hi, my name is frida. What is your name?", wait=True)
-        self.get_logger().info("Hearing from the user...")
+        # self.hri_manager.say("Hi, my name is frida. What is your name?", wait=True)
+        # self.get_logger().info("Hearing from the user...")
 
-        # Test hear
-        s, user_request = self.hri_manager.hear()
-        self.get_logger().info(f"Heard: {user_request}")
+        # # Test hear
+        # s, user_request = self.hri_manager.hear()
+        # self.get_logger().info(f"Heard: {user_request}")
 
-        # Test extract_data
-        s, drink = self.hri_manager.extract_data("name", user_request)
-        self.get_logger().info(f"Extracted data: {drink}")
+        # # Test extract_data
+        # s, drink = self.hri_manager.extract_data("name", user_request)
+        # self.get_logger().info(f"Extracted data: {drink}")
 
-        # Test categorize objects
-        s, categorized_shelves = self.hri_manager.get_shelves_categories(
-            {
-                "1": ["milk", "cheese", "yogurt"],
-                "2": ["apple", "banana", "grapes"],
-                "3": [],
-                "4": ["chicken", "beef"],
-            },
-        )
+        # # Test categorize objects
+        # s, categorized_shelves = self.hri_manager.get_shelves_categories(
+        #     {
+        #         "1": ["milk", "cheese", "yogurt"],
+        #         "2": ["apple", "banana", "grapes"],
+        #         "3": [],
+        #         "4": ["chicken", "beef"],
+        #     },
+        # )
 
-        self.get_logger().info(f"categorized_shelves: {str(categorized_shelves)}")
+        # self.get_logger().info(f"categorized_shelves: {str(categorized_shelves)}")
 
     def compound_functions(self):
         s, name = self.hri_manager.ask_and_confirm(

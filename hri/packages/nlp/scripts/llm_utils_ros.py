@@ -2,9 +2,11 @@
 
 """Miscellanous functions that interact with an LLM."""
 
+import functools
 import json
 import os
-from typing import Optional
+import time
+from typing import Callable, Optional, TypeVar
 
 import rclpy
 from nlp.assets.dialogs import (
@@ -27,6 +29,32 @@ from frida_interfaces.srv import (
     IsPositive,
     LLMWrapper,
 )
+
+# Type variable for function return type
+T = TypeVar("T")
+
+
+def time_execution(func: Callable[..., T]) -> Callable[..., T]:
+    """
+    Decorator that measures and prints the execution time of a function.
+
+    Args:
+        func: The function to be timed
+
+    Returns:
+        Wrapped function with timing functionality
+    """
+
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs) -> T:
+        start_time = time.time()
+        result = func(*args, **kwargs)
+        end_time = time.time()
+        print(f"Time taken for {func.__name__}: {end_time - start_time:.2f} seconds")
+        return result
+
+    return wrapper
+
 
 CURRENT_FILE_PATH = os.path.abspath(__file__)
 
@@ -151,6 +179,7 @@ class LLMUtils(Node):
         res.corrected_text = response
         return res
 
+    @time_execution
     def llm_wrapper_service(self, req, res):
         context = req.context
         question = req.question
@@ -173,6 +202,7 @@ class LLMUtils(Node):
         res.answer = response
         return res
 
+    @time_execution
     def common_interest(self, req, res):
         self.get_logger().info("Generating common interest")
 
@@ -276,6 +306,7 @@ class LLMUtils(Node):
 
         return response
 
+    @time_execution
     def is_positive(
         self, request: IsPositive.Request, response: IsPositive.Response
     ) -> IsPositive.Response:
@@ -288,6 +319,7 @@ class LLMUtils(Node):
 
         return response
 
+    @time_execution
     def is_negative(
         self, request: IsNegative.Request, response: IsNegative.Response
     ) -> IsNegative.Response:
