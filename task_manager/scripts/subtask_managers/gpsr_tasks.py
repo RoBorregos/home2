@@ -26,7 +26,7 @@ class GPSRTask(GenericTask):
         """Initialize the class"""
         super().__init__(subtask_manager)
         # Angles are relative to current position
-        self.pan_angles = [-45, 45, 45]
+        self.pan_angles = [90, -90]
         package_share_directory = get_package_share_directory("frida_constants")
         file_path = os.path.join(package_share_directory, "map_areas/areas.json")
         with open(file_path, "r") as file:
@@ -42,9 +42,9 @@ class GPSRTask(GenericTask):
                 f"I will now guide you to the {location}. Please follow me."
             )
             self.subtask_manager.manipulation.follow_face(False)
-            self.subtask_manager.manipulation.move_joint_positions(
-                named_position="front_stare", velocity=0.5, degrees=True
-            )
+        self.subtask_manager.manipulation.move_joint_positions(
+            named_position="nav_pose", velocity=0.5, degrees=True
+        )
         future = self.subtask_manager.nav.move_to_location(location, sublocation)
         if "navigation" not in self.subtask_manager.get_mocked_areas():
             rclpy.spin_until_future_complete(self.subtask_manager.nav.node, future)
@@ -151,10 +151,8 @@ class GPSRTask(GenericTask):
 
         loc = command.destination
 
-        if command.destination == "cancelled":
-            self.subtask_manager.hri.say(
-                "I'm sorry, I can't follow you. Please tell me where to go"
-            )
+        if command.destination == "canceled":
+            self.subtask_manager.hri.say("I'm sorry, I can't follow you.")
             status, loc = self.subtask_manager.hri.ask_and_confirm(
                 question="Please tell me where to go.",
                 query="location",
@@ -169,15 +167,19 @@ class GPSRTask(GenericTask):
 
         # infer location from the response
         # go to
+        self.subtask_manager.hri.node.get_logger().info("arm to move")
 
         self.subtask_manager.manipulation.move_joint_positions(
             named_position="nav_pose", velocity=0.5, degrees=True
         )
         location = self.subtask_manager.hri.query_location(loc)
+        self.subtask_manager.hri.node.get_logger().info("query location")
+
         area = self.subtask_manager.hri.get_area(location)
         if isinstance(area, list):
             area = area[0]
 
+        self.subtask_manager.hri.node.get_logger().info("query subarea")
         subarea = self.subtask_manager.hri.get_subarea(location)
         if isinstance(subarea, list):
             if len(subarea) == 0:
@@ -186,27 +188,9 @@ class GPSRTask(GenericTask):
                 subarea = subarea[0]
 
         self.subtask_manager.hri.node.get_logger().info(f"Moving to {subarea} in {area}")
-        self.subtask_manager.hri.node.get_logger().info("Subarea")
-        self.subtask_manager.hri.node.get_logger().info(subarea)
 
-        future = self.subtask_manager.nav.move_to_location(area, subarea)
-        if "navigation" not in self.subtask_manager.get_mocked_areas():
-            rclpy.spin_until_future_complete(self.subtask_manager.nav.node, future)
-
-        # xd
-        # if command.destination == "cancelled":
-        #     while self.subtask_manager.hri.hear() != "cancel":
-        #         pass
-
-        # else:
-        #     while self.subtask_manager.nav.get_location() != command.destination:
-        #         pass
-
-        # self.subtask_manager.vision.track_person(False)
-        # self.subtask_manager.vision.follow_by_name("area")
-        # self.subtask_manager.nav.activate_follow(False)
-
-        # pass
+        self.navigate_to(area, subarea, say=False)
+        return Status.EXECUTION_SUCCESS, "arrived to " + command.destination
 
     ## HRI, Nav
     def guide_person_to(self, command: GuidePersonTo):
@@ -259,31 +243,32 @@ class GPSRTask(GenericTask):
         self.navigate_to(area, subarea)
 
         self.subtask_manager.hri.say(f"We have arrived to {command.destination_room}!", wait=True)
+        return Status.EXECUTION_SUCCESS, "arrived to " + command.destination_room
 
     ## HRI, Vision
     def get_person_info(self, command: GetPersonInfo):
         """
-                Get specific information about a person.
+        Get specific information about a person.
 
-                Args:
-                    complement (str): The type of information to retrieve. If "gesture" or "posture", the robot computes the information visually. If "name", the robot fetches the name from known names or interacts with the person if the name is unknown.
-                    characteristic (str): Always empty string.
+        Args:
+            complement (str): The type of information to retrieve. If "gesture" or "posture", the robot computes the information visually. If "name", the robot fetches the name from known names or interacts with the person if the name is unknown.
+            characteristic (str): Always empty string.
 
-                Preconditions:
-                    - The robot must be in front of the person.
-        [
-                Behaviour:
-                    - If the complement is "gesture" or "posture", the robot computes the information visually.
-                    - If the complement is "name", the robot fetches the name from previously known names or interacts with the person if the name is not known.
+        Preconditions:
+            - The robot must be in front of the person.
 
-                Postconditions:
-                    - The robot saves the specified information about the person in the database.
+        Behaviour:
+            - If the complement is "gesture" or "posture", the robot computes the information visually.
+            - If the complement is "name", the robot fetches the name from previously known names or interacts with the person if the name is not known.
 
-                Pseudocode:
-                    if complement == 'gesture' or complement == 'posture':
-                        return gest_posture_analyzer()
-                    else:
-                        return get_person_name()
+        Postconditions:
+            - The robot saves the specified information about the person in the database.
+
+        Pseudocode:
+            if complement == 'gesture' or complement == 'posture':
+                return gest_posture_analyzer()
+            else:
+                return get_person_name()
         """
 
         if isinstance(command, dict):
@@ -291,24 +276,62 @@ class GPSRTask(GenericTask):
 
         if command.info_type == "gesture":
             command.info_type = DetectBy.GESTURES.value
-        elif command.info_type == "posture":
+        elif command.info_type == "pose":
             command.info_type = DetectBy.POSES.value
 
-        # self.subtask_manager.manipulation.move_to_position("front_low_stare")
+        self.subtask_manager.manipulation.move_to_position("front_stare")
+
+        self.subtask_manager.hri.say(f"I will search for the {command.info_type} of a person.")
 
         if command.info_type != "name":
-            s, res = self.subtask_manager.vision.find_person_info(command.info_type)
+            person_retries = 0
+            while person_retries < 2:
+                self.timeout(1)
+                s, res = self.subtask_manager.vision.find_person_info(command.info_type)
+
+                if s == Status.EXECUTION_SUCCESS:
+                    self.subtask_manager.hri.say(
+                        f"The person is {res}.",
+                    )
+                    return s, res
+                person_retries += 1
+
+            # Look for the person again but at a lower degree
+            self.subtask_manager.manipulation.check_lower(30)
+            person_retries = 0
+
+            while person_retries < 2:
+                self.timeout(1)
+                s, res = self.subtask_manager.vision.find_person_info(command.info_type)
+
+                if s == Status.EXECUTION_SUCCESS:
+                    self.subtask_manager.hri.say(
+                        f"The person is {res}.",
+                    )
+                    return s, res
+                person_retries += 1
+
             self.subtask_manager.hri.say(
-                f"The person is {res}.",
+                f"I couldn't find the person's {command.info_type}.",
             )
-            return s, res
+            return Status.TARGET_NOT_FOUND, "Unkown"
+
         else:
-            s, res = self.subtask_manager.vision.get_person_name()
-            if s == Status.EXECUTION_SUCCESS:
-                return Status.EXECUTION_SUCCESS, res
+            # get name
+            self.subtask_manager.hri.say(
+                "I will check if I know your name.",
+            )
+            current_attempt = 0
+            while current_attempt < 3:
+                current_attempt += 1
+                s, res = self.subtask_manager.vision.get_person_name()
+                print(f"Person name: {res}")
+                if s == Status.EXECUTION_SUCCESS and res != "Unknown":
+                    self.subtask_manager.hri.say(f"Hi {res}, nice to meet you again!")
+                    return Status.EXECUTION_SUCCESS, res
             else:
                 self.subtask_manager.hri.say(
-                    "Hi, I'm Frida.",
+                    "Hi, I'm Frida. I don't think I know you yet.",
                 )
                 s, response = self.subtask_manager.hri.ask_and_confirm(
                     question="Can you please tell me your name?",
@@ -317,10 +340,10 @@ class GPSRTask(GenericTask):
                     context="The user was asked to say their name. We want to infer his name from the response",
                 )
                 if s == Status.EXECUTION_SUCCESS:
-                    save_name_retires = 0
-                    while save_name_retires < 3:
+                    save_name_retries = 0
+                    while save_name_retries < 3:
                         self.subtask_manager.hri.say(
-                            "Please stand in front of me so I can save your name.",
+                            "Please stand in front of me so I can save your face.",
                         )
 
                         if (
@@ -332,12 +355,12 @@ class GPSRTask(GenericTask):
                             )
                             return Status.EXECUTION_SUCCESS, response
 
-                        save_name_retires += 1
+                        save_name_retries += 1
 
                     self.subtask_manager.hri.say(
                         "Sorry, I couldn't save your name.",
                     )
-                    return Status.EXECUTION_SUCCESS, response
+                    return Status.TARGET_NOT_FOUND, response
                 else:
                     self.subtask_manager.hri.say(
                         "I couldn't undestand your name",
@@ -405,6 +428,7 @@ class GPSRTask(GenericTask):
             self.subtask_manager.hri.say(
                 f"I didn't find any {object_name}.",
             )
+        return status, result
 
     ## Manipulation, Vision
     def count(self, command: Count):
@@ -455,8 +479,7 @@ class GPSRTask(GenericTask):
             "person" not in command.target_to_count.lower()
             and "people" not in command.target_to_count.lower()
         ):
-            self.count_objects(command.target_to_count)
-            return Status.EXECUTION_SUCCESS, "counted objects"
+            return self.count_objects(command.target_to_count)
 
         self.subtask_manager.manipulation.move_to_position("front_stare")
 
@@ -499,7 +522,6 @@ class GPSRTask(GenericTask):
 
             if status == Status.EXECUTION_SUCCESS:
                 counter += count
-                self.timeout(5)
                 self.subtask_manager.hri.say(f"I have counted {count} {command.target_to_count}.")
 
             elif status == Status.TARGET_NOT_FOUND:
@@ -551,6 +573,10 @@ class GPSRTask(GenericTask):
         if isinstance(command, dict):
             command = FindPerson(**command)
 
+        self.subtask_manager.hri.say(
+            f"I will search for a person with {command.attribute_value}.",
+        )
+
         self.subtask_manager.manipulation.move_to_position("front_stare")
         for degree in self.pan_angles:
             self.subtask_manager.manipulation.pan_to(degree)
@@ -580,7 +606,7 @@ class GPSRTask(GenericTask):
         possibilities = [v.value for v in Gestures] + [v.value for v in Poses] + ["clothes"]
 
         status, value = self.subtask_manager.hri.find_closest(
-            possibilities, command.target_to_count
+            possibilities, command.attribute_value
         )
         value = value[0]
 
@@ -596,7 +622,7 @@ class GPSRTask(GenericTask):
         for degree in self.pan_angles:
             self.subtask_manager.manipulation.pan_to(degree)
 
-            if command.target_to_count == "":
+            if command.attribute_value == "":
                 status, count = self.subtask_manager.vision.count_by_pose(Poses.STANDING.value)
             elif is_value_in_enum(value, Gestures):
                 status, count = self.subtask_manager.vision.count_by_gesture(value)
@@ -605,11 +631,11 @@ class GPSRTask(GenericTask):
             else:
                 if cache_color is None or cache_cloth is None:
                     s, color = self.subtask_manager.hri.find_closest(
-                        self.color_list, command.target_to_count
+                        self.color_list, command.attribute_value
                     )
                     cache_color = color[0]
                     s, cloth = self.subtask_manager.hri.find_closest(
-                        self.clothe_list, command.target_to_count
+                        self.clothe_list, command.attribute_value
                     )
                     cache_cloth = cloth[0]
 
@@ -625,16 +651,16 @@ class GPSRTask(GenericTask):
 
             if status == Status.EXECUTION_SUCCESS and count > 0:
                 self.subtask_manager.hri.say(
-                    f"I found a person with {command.target_to_count}. Please get approach me.",
+                    f"I found a {command.attribute_value}. Please approach me.",
                 )
                 break
 
             elif status == Status.TARGET_NOT_FOUND:
                 self.subtask_manager.hri.say(
-                    f"I didn't find any person with {command.target_to_count}.",
+                    f"I didn't find any person with {command.attribute_value}.",
                 )
 
-        return Status.EXECUTION_SUCCESS, "found" + command.target_to_count
+        return Status.EXECUTION_SUCCESS, "found" + command.attribute_value
 
     ## HRI, Manipulation, Nav, Vision
     def find_person_by_name(self, command: FindPersonByName):
@@ -663,7 +689,7 @@ class GPSRTask(GenericTask):
         if isinstance(command, dict):
             command = FindPersonByName(**command)
 
-        # self.subtask_manager.manipulation.move_to_position("front_stare")
+        self.subtask_manager.manipulation.move_to_position("front_stare")
         for degree in self.pan_angles:
             # self.subtask_manager.manipulation.pan_to(degree)
             while True:

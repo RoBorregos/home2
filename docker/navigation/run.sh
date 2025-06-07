@@ -100,7 +100,7 @@ echo "TASK=$TASK"
 case $TASK in
     "--receptionist")
         PACKAGES="nav_main dashgo_driver sllidar_ros2"
-        RUN="cp /workspace/src/navigation/rtabmapdbs/lab_3d_grid.db /home/ros/.ros/rtabmap.db && ros2 launch nav_main receptionist.launch.py"
+        RUN="cp /workspace/src/navigation/rtabmapdbs/lab.db /home/ros/.ros/rtabmap.db && ros2 launch nav_main receptionist.launch.py"
         ;;
     "--help-me-carry")
         PACKAGES="nav_main dashgo_driver sllidar_ros2"
