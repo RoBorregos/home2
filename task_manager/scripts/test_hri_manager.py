@@ -4,8 +4,6 @@
 Task Manager for testing the subtask managers
 """
 
-from typing import Union
-
 import rclpy
 from config.hri.debug import config as test_hri_config
 from rclpy.duration import Duration
@@ -13,40 +11,8 @@ from rclpy.node import Node
 from subtask_managers.hri_tasks import HRITasks
 
 # from subtask_managers.subtask_meta import SubtaskMeta
-from utils.baml_client.types import (
-    AnswerQuestion,
-    CommandListLLM,
-    Count,
-    FindPerson,
-    FindPersonByName,
-    FollowPersonUntil,
-    GetPersonInfo,
-    GetVisualInfo,
-    GiveObject,
-    GoTo,
-    GuidePersonTo,
-    PickObject,
-    PlaceObject,
-    SayWithContext,
-)
+from utils.baml_client.types import GoTo
 from utils.task import Task
-
-InterpreterAvailableCommands = Union[
-    CommandListLLM,
-    GoTo,
-    PickObject,
-    FindPersonByName,
-    FindPerson,
-    Count,
-    GetPersonInfo,
-    GetVisualInfo,
-    AnswerQuestion,
-    FollowPersonUntil,
-    GuidePersonTo,
-    GiveObject,
-    PlaceObject,
-    SayWithContext,
-]
 
 
 def confirm_preference(interpreted_text, extracted_data):
@@ -55,7 +21,7 @@ def confirm_preference(interpreted_text, extracted_data):
 
 TEST_TASK = Task.RECEPTIONIST
 TEST_COMPOUND = True
-TEST_INDIVIDUAL_FUNCTIONS = False
+TEST_INDIVIDUAL_FUNCTIONS = True
 TEST_EMBEDDINGS = False
 
 

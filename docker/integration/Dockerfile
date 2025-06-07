@@ -13,8 +13,7 @@ WORKDIR /workspace/utils
 RUN baml-cli generate
 
 WORKDIR /workspace
-# 
 
 # CV-bridge
-RUN apt update
-RUN apt install -y ros-humble-nav2-msgs
+RUN apt update --fix-missing && \
+    apt install -y ros-humble-cv-bridge
