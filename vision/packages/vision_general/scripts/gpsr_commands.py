@@ -13,6 +13,8 @@ from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 import time
+import os
+import json
 
 from frida_interfaces.srv import (
     CountBy,
@@ -40,6 +42,9 @@ from frida_constants.vision_enums import Poses, Gestures, DetectBy
 from pose_detection import PoseDetection
 
 package_share_dir = get_package_share_directory("vision_general")
+
+constants = get_package_share_directory("frida_constants")
+file_path = os.path.join(constants, "map_areas/areas.json")
 
 YOLO_LOCATION = str(pathlib.Path(__file__).parent) + "/Utils/yolov8n.pt"
 PERCENTAGE = 0.3
@@ -109,6 +114,10 @@ class GPSRCommands(Node):
         self.moondream_client = self.create_client(
             CropQuery, CROP_QUERY_TOPIC, callback_group=self.callback_group
         )
+
+        # Load areas from the JSON file
+        with open(file_path, "r") as file:
+            self.areas = json.load(file)
 
     def image_callback(self, data):
         """Callback to receive the image from the camera."""
@@ -460,6 +469,19 @@ class GPSRCommands(Node):
         if result.success:
             self.get_logger().info(f"Moondream result: {result.result}")
             return 1, result.result
+        
+    def is_inside(self, x, y, polygon):
+        inside = False
+        n = len(polygon)
+        for i in range(n):
+            x1, y1 = polygon[i]
+            x2, y2 = polygon[(i + 1) % n]
+
+            if (y1 > y) != (y2 > y):
+                xinters = (y - y1) * (x2 - x1) / (y2 - y1 + 1e-10) + x1  # Avoid zero division
+                if x < xinters:
+                    inside = not inside
+        return inside
 
 
 def main(args=None):

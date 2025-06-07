@@ -14,10 +14,11 @@ from geometry_msgs.msg import TransformStamped
 from utils.status import Status
 from math import sqrt
 
-POINT_TRANSFORMER_TOPIC = "/integration/point_transformer"
-RETURN_LOCATION = "/integration/ReturnLocation"
-RETURN_LASER_DATA = "/integration/Laserscan"
-
+from frida_constants.integration_constants import (
+    POINT_TRANSFORMER_TOPIC,
+    RETURN_LOCATION,
+    RETURN_LASER_DATA,
+)
 
 class PointTransformer(Node):
     def __init__(self):
@@ -129,7 +130,7 @@ class PointTransformer(Node):
         # Check which area the robot is in
         for area in areas:
             polygon = areas.get(area, {}).get("polygon", [])
-            print(f"polygion: {polygon}")
+            print(f"polygon: {polygon}")
             # Skip if "polygon" does not exist or is empty
             if not polygon:
                 continue
