@@ -107,6 +107,7 @@ def generate_launch_description():
             )
         )
     else:
+        # Deprecated: use oww instead
         nodes.append(
             Node(
                 package="speech",
