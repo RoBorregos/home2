@@ -20,6 +20,7 @@ from frida_constants.vision_constants import (
 
 ATTEMPT_LIMIT = 3
 
+
 class Guest:
     """Class to manage the guest information"""
 
@@ -40,6 +41,7 @@ class ReceptionistTM(Node):
 
     class TaskStates:
         """Class to manage the task states"""
+
         START = "START"
         WAIT_FOR_GUEST = "WAIT_FOR_GUEST"
         GREETING = "GREETING"
@@ -257,10 +259,12 @@ class ReceptionistTM(Node):
 
             detections = self.subtask_manager.vision.detect_objects()
             labels = self.subtask_manager.vision.get_labels(detections)
-            status, detected_drink = self.subtask_manager.hri.find_closest(labels, self.get_guest().drink)
+            status, detected_drink = self.subtask_manager.hri.find_closest(
+                labels, self.get_guest().drink
+            )
             # if isinstance(detected_drink, list):
             #     detected_drink = detected_drink[0]
-            
+
             # Moondream
             # status, position = self.subtask_manager.vision.find_drink(
             #     self.get_guest().drink, timeout=40
@@ -269,7 +273,9 @@ class ReceptionistTM(Node):
             if status == Status.EXECUTION_SUCCESS:
                 if isinstance(detected_drink, list):
                     detected_drink = detected_drink[0]
-                s, position = self.subtask_manager.vision.get_drink_position(detections, detected_drink)
+                s, position = self.subtask_manager.vision.get_drink_position(
+                    detections, detected_drink
+                )
                 self.subtask_manager.hri.say(
                     f"There is {self.get_guest().drink} at the table in the {position}."
                 )

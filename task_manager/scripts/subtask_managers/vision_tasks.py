@@ -830,14 +830,14 @@ class VisionTasks:
                     location = "right"
                 else:
                     location = "center"
-                
+
                 if detection.y < 0.35:
                     location += " top"
                 elif detection.y > 0.65:
                     location += " bottom"
 
                 return Status.EXECUTION_SUCCESS, location
-            
+
         return Status.TARGET_NOT_FOUND, "Not found"
 
 
