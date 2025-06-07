@@ -21,6 +21,15 @@ def generate_launch_description():
         [ModuleNames.HRI.value],
     )["extract_data"]["ros__parameters"]
 
+    llm_utils_config = parse_ros_config(
+        os.path.join(
+            get_package_share_directory("nlp"),
+            "config",
+            "llm_utils.yaml",
+        ),
+        [ModuleNames.HRI.value],
+    )["llm_utils"]["ros__parameters"]
+
     nodes = [
         Node(
             package="nlp",
@@ -29,6 +38,14 @@ def generate_launch_description():
             output="screen",
             emulate_tty=True,
             parameters=[extract_data_config],
+        ),
+        Node(
+            package="nlp",
+            executable="llm_utils_ros.py",
+            name="llm_utils",
+            output="screen",
+            emulate_tty=True,
+            parameters=[llm_utils_config],
         ),
     ]
 
