@@ -818,6 +818,28 @@ class VisionTasks:
             labels.append(detection.classname)
         return labels
 
+    def get_drink_position(self, detections: list[BBOX], drink: str) -> tuple[int, str]:
+        """Get the position of the drink in the detected objects"""
+        location = ""
+
+        for detection in detections:
+            if detection.classname.lower() == drink.lower():
+                if detection.x < 0.35:
+                    location = "left"
+                elif detection.x > 0.65:
+                    location = "right"
+                else:
+                    location = "center"
+                
+                if detection.y < 0.35:
+                    location += " top"
+                elif detection.y > 0.65:
+                    location += " bottom"
+
+                return Status.EXECUTION_SUCCESS, location
+            
+        return Status.TARGET_NOT_FOUND, "Not found"
+
 
 if __name__ == "__main__":
     rclpy.init()
