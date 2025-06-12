@@ -25,7 +25,7 @@ class ChromaAdapter:
         # Configure the embedding function
         self.sentence_transformer_ef = (
             embedding_functions.SentenceTransformerEmbeddingFunction(
-                model_name=MODEL_PATH
+                model_name="all-MiniLM-L12-v2"
             )
         )
 

@@ -607,11 +607,11 @@ class HRITasks(metaclass=SubtaskMeta):
 
         request = AnswerQuestionLLM.Request(
             question=question,
-            topk=top_k if top_k is not None else 0,
-            threshold=threshold if threshold is not None else 0.0,
-            collections=collections if collections is not None else [],
+            topk=top_k,
+            threshold=threshold,
+            collections=collections,
         )
-
+        self.node.get_logger().info(f"RAG request: {request}")
         future = self.answer_question_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
 

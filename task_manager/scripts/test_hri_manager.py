@@ -241,6 +241,14 @@ class TestHriManager(Node):
         self.get_logger().info(f"result history query results: {result}")
         self.get_logger().info(f"status history query results: {status}")
 
+        self.get_logger().info("TESTITNG RAG QUERY")
+        hri.answer_question(
+            "What is the mission of Roborregos",
+            1,
+            0.1,
+            ["frida_knowledge", "roborregos_knowledge", "tec_knowledge"],
+        )
+
         # # ---- end save_command_history ----
 
         # self.get_logger().info("TESTING THE FIND CLOSEST FUNCTION")
