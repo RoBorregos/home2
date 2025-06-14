@@ -41,12 +41,13 @@ from pose_detection import PoseDetection
 
 package_share_dir = get_package_share_directory("vision_general")
 
+from is_person_inside import PersonInsideClient
+
 YOLO_LOCATION = str(pathlib.Path(__file__).parent) + "/Utils/yolov8n.pt"
 PERCENTAGE = 0.3
 MAX_DEGREE = 30
 AREA_PERCENTAGE_THRESHOLD = 0.2
 CONF_THRESHOLD = 0.5
-TIMEOUT = 5.0
 TIMEOUT = 5.0
 
 
@@ -98,11 +99,12 @@ class GPSRCommands(Node):
         self.output_image = []
 
         self.get_logger().info("GPSRCommands Ready.")
-        # self.create_timer(0.1, self.publish_image)
 
         self.moondream_client = self.create_client(
             CropQuery, CROP_QUERY_TOPIC, callback_group=self.callback_group
         )
+
+        self.person_inside = PersonInsideClient(self)
 
     def image_callback(self, data):
         """Callback to receive the image from the camera."""
@@ -224,6 +226,10 @@ class GPSRCommands(Node):
         # Detect gestures for each detected person
         for person in self.people:
             x1, y1, x2, y2 = person["bbox"]
+
+            self.person_inside.call(
+                float(y1), float(x1), float(y2), float(x2)
+            )
 
             # Crop the frame to the bounding box of the person
             cropped_frame = frame[y1:y2, x1:x2]

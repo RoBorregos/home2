@@ -4,10 +4,6 @@
 Node to send the 3D coordinates of a person detected in the camera feed.
 """
 
-from vision_general.utils.calculations import (
-    get_depth,
-    deproject_pixel_to_point,
-)
 import rclpy
 from rclpy.node import Node
 from cv_bridge import CvBridge
@@ -15,7 +11,7 @@ from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import PointStamped, Point
 from std_msgs.msg import Header
 
-from frida_interfaces.srv import PersonInside
+from frida_interfaces.srv import PersonInsideReq
 
 from pose_detection import PoseDetection
 from frida_constants.vision_constants import (
@@ -26,6 +22,55 @@ from frida_constants.vision_constants import (
     CAMERA_FRAME,
     PERSON_INSIDE_REQUEST_TOPIC,
 )
+
+from object_detector_2d.scripts.include.vision_3d_utils import estimate_3d_from_pose
+
+class PersonInsideClient:
+    def __init__(self, node: Node, service_name=PERSON_INSIDE_REQUEST_TOPIC):
+        self.node = node
+        self.client = node.create_client(PersonInside, service_name)
+
+        self.node.get_logger().info(f'Initializing PersonInsideClient with service name: {service_name}')
+        print(f'Initializing PersonInsideClient with service name: {service_name}')
+
+        while not self.client.wait_for_service(timeout_sec=5.0):
+            self.node.get_logger().info(f'Waiting for {service_name}...')
+            print(f'Waiting for {service_name}...')
+
+        self.node.get_logger().info(f'Service {service_name} is now available.')
+        print(f'Service {service_name} is now available.')
+
+    def call(self, ymin, xmin, ymax, xmax, callback=None):
+        self.node.get_logger().info(f'Preparing request with coordinates: ymin={ymin}, xmin={xmin}, ymax={ymax}, xmax={xmax}')
+        print(f'Preparing request with coordinates: ymin={ymin}, xmin={xmin}, ymax={ymax}, xmax={xmax}')
+
+        request = PersonInsideReq.Request()
+        request.ymin = float(ymin)
+        request.xmin = float(xmin)
+        request.ymax = float(ymax)
+        request.xmax = float(xmax)
+
+        future = self.client.call_async(request)
+        self.node.get_logger().info('Request sent asynchronously.')
+        print('Request sent asynchronously.')
+
+        if callback:
+            self.node.get_logger().info('Adding custom callback to future.')
+            print('Adding custom callback to future.')
+            future.add_done_callback(lambda fut: callback(fut.result()))
+        else:
+            self.node.get_logger().info('Adding default callback to future.')
+            print('Adding default callback to future.')
+            future.add_done_callback(self._default_callback)
+
+    def _default_callback(self, response):
+        if response.success:
+            self.node.get_logger().info('Person detected and coordinates published.')
+            print('Person detected and coordinates published.')
+        else:
+            self.node.get_logger().warn('No person detected.')
+            print('No person detected.')
+
 
 class IsPersonInside(Node):
     def __init__(self):
@@ -45,7 +90,7 @@ class IsPersonInside(Node):
         )
 
         self.request_person_inside = self.create_service(
-            PersonInside, PERSON_INSIDE_REQUEST_TOPIC, self.handle_person_inside_request
+            PersonInsideReq, PERSON_INSIDE_REQUEST_TOPIC, self.handle_person_inside_request
         )
 
         self.person_inside = self.create_publisher(PointStamped, PERSON_POINT_TOPIC, 10)
@@ -103,26 +148,14 @@ class IsPersonInside(Node):
         """Main loop to run the tracker"""
         results = self.pose_detector.detect(frame)
 
-        if not results.pose_landmarks:
+        if not results.pose_landmarks or len(results.pose_landmarks.landmark) <= 12:
             return
 
-        landmarks = results.pose_landmarks.landmark
-
-        left_shoulder = landmarks[11]
-        right_shoulder = landmarks[12]
-
-        h, w, _ = frame.shape
-
-        # Coordinates in pixels
-        left = (int(left_shoulder.x * w), int(left_shoulder.y * h))
-        right = (int(right_shoulder.x * w), int(right_shoulder.y * h))
-
-        # Midpoint between shoulders
-        mid_neck = (int((left[0] + right[0]) / 2), int((left[1] + right[1]) / 2))
-
-        # Get the depth at the midpoint and deproject to 3D point
-        depth = get_depth(self.depth_image, mid_neck)
-        point3D = deproject_pixel_to_point(self.imageInfo, mid_neck, depth)
+        point3D = estimate_3d_from_pose(
+            frame, results.pose_landmarks.landmark, self.imageInfo, self.depth_image
+        )
+        if point3D is None:
+            return
 
         coords = PointStamped(header=Header(frame_id=self.camera_frame),
                 point=Point(),)
