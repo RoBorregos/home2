@@ -1,0 +1,25 @@
+var namespacetrain__net =
+[
+    [ "H5Dataset", "classtrain__net_1_1H5Dataset.html", "classtrain__net_1_1H5Dataset" ],
+    [ "Net", "classtrain__net_1_1Net.html", "classtrain__net_1_1Net" ],
+    [ "_", "namespacetrain__net.html#a6eb25c92f6fb9ff22d79d91243cbaebd", null ],
+    [ "correct", "namespacetrain__net.html#af41cb5f122a02cebe423a52b34e45de5", null ],
+    [ "criterion", "namespacetrain__net.html#a71e1fd3df5d628d5f13ec1a5236d55a9", null ],
+    [ "device", "namespacetrain__net.html#afe8538ea83a0a673956f9653e8976921", null ],
+    [ "dset", "namespacetrain__net.html#ab66e328e035a1891dfaf685f52635b44", null ],
+    [ "images", "namespacetrain__net.html#aff664367110dbc9c605723cac11f62d9", null ],
+    [ "input_channels", "namespacetrain__net.html#a61b361f1f4b84441c74325ef288d4332", null ],
+    [ "inputs", "namespacetrain__net.html#a1b8859c0e151ff91163d33b414185ce8", null ],
+    [ "labels", "namespacetrain__net.html#a78e22df0fe102300b7ffde11604a2a53", null ],
+    [ "loss", "namespacetrain__net.html#a8e9e69d9ec0022726e4c22f1fc4b1f81", null ],
+    [ "net", "namespacetrain__net.html#a6ac3fb3a116cd4eaea24ffe0882e5737", null ],
+    [ "num_epochs", "namespacetrain__net.html#a733ca9e6cd0f7424c16a569ee3d98c99", null ],
+    [ "optimizer", "namespacetrain__net.html#ad61c7a3224a5ad67633c8ded4cfee45a", null ],
+    [ "outputs", "namespacetrain__net.html#a799b8bd475bdf280d1ae4b118f1b6eb7", null ],
+    [ "predicted", "namespacetrain__net.html#a206fd2f4ec599cae067d9cf6b19d0e90", null ],
+    [ "running_loss", "namespacetrain__net.html#af35bed2541f8fdafea6c27639903f097", null ],
+    [ "test_loader", "namespacetrain__net.html#a9cfb6e79d592cd518f0e695ac4a80869", null ],
+    [ "test_set", "namespacetrain__net.html#a232feafa024474ef9ba557b6127cfb2e", null ],
+    [ "total", "namespacetrain__net.html#a440f1e5afa96f9326216a9f3923e9623", null ],
+    [ "train_loader", "namespacetrain__net.html#a48e8d2ff248339aebad0bbadb343f945", null ]
+];

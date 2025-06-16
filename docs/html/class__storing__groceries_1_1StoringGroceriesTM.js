@@ -1,0 +1,28 @@
+var class__storing__groceries_1_1StoringGroceriesTM =
+[
+    [ "_init_", "class__storing__groceries_1_1StoringGroceriesTM.html#a1e0a38ced598c0c1b352e0a9fcef0a5f", null ],
+    [ "apply_penalty", "class__storing__groceries_1_1StoringGroceriesTM.html#a0d49a461a7d5eb1eebb81305e9341579", null ],
+    [ "categorize_object", "class__storing__groceries_1_1StoringGroceriesTM.html#a9e1506be2518c266bab4a910402e88f3", null ],
+    [ "determine_cabinet_layer", "class__storing__groceries_1_1StoringGroceriesTM.html#a8b2052c6509778eed839ab8a7a79b496", null ],
+    [ "handle_cereal_spill", "class__storing__groceries_1_1StoringGroceriesTM.html#a9769f3bb6034d1f7a287411e3c327af6", null ],
+    [ "handle_leftover_cereal", "class__storing__groceries_1_1StoringGroceriesTM.html#ab3f1ddba0a564ce4d2a3eefa9fa03ed9", null ],
+    [ "navigate_to", "class__storing__groceries_1_1StoringGroceriesTM.html#aba0261da9ff6692d5d48ef31c60abe7a", null ],
+    [ "request_human_handover", "class__storing__groceries_1_1StoringGroceriesTM.html#ad6cec43307095e178f08fb624b318cc4", null ],
+    [ "request_human_placement", "class__storing__groceries_1_1StoringGroceriesTM.html#a5f4aa8311987b16b7e5fa190ba4e10c6", null ],
+    [ "request_human_pointing", "class__storing__groceries_1_1StoringGroceriesTM.html#afdb192764bbb7e5b05a9eab5ff3c63f7", null ],
+    [ "request_human_pour_cereal", "class__storing__groceries_1_1StoringGroceriesTM.html#a9073733ce9c04d3b2da8b8fe6464d7be", null ],
+    [ "request_open_cabinet", "class__storing__groceries_1_1StoringGroceriesTM.html#afc10e04b8922643e641849800a19c94b", null ],
+    [ "run", "class__storing__groceries_1_1StoringGroceriesTM.html#a16309d3816d9cc561c70d584d244c455", null ],
+    [ "cabinet_layers", "class__storing__groceries_1_1StoringGroceriesTM.html#a98bd8c3e5fd72a8e65fc8a6f492288d3", null ],
+    [ "cereal_container_found", "class__storing__groceries_1_1StoringGroceriesTM.html#a2ed93b05883a9b2f222bbd0ace2b7ff9", null ],
+    [ "cereal_found", "class__storing__groceries_1_1StoringGroceriesTM.html#a67c3bba8f5f80b32f4222d2b3747a040", null ],
+    [ "current_attempts", "class__storing__groceries_1_1StoringGroceriesTM.html#ab5663e953139d62c6579df8f4a1ca2c8", null ],
+    [ "current_object", "class__storing__groceries_1_1StoringGroceriesTM.html#ab643f873c2635c127b536dd5ae97ea2f", null ],
+    [ "current_object_category", "class__storing__groceries_1_1StoringGroceriesTM.html#ac4e3e87f10ee95b77b54580e7bfe4076", null ],
+    [ "current_state", "class__storing__groceries_1_1StoringGroceriesTM.html#aa7a66f085b3241f83b4df25b5e36839e", null ],
+    [ "objects_to_organize", "class__storing__groceries_1_1StoringGroceriesTM.html#aeabb3fa849342786d5811a5bd540119a", null ],
+    [ "penalties", "class__storing__groceries_1_1StoringGroceriesTM.html#a5600d637dd5176c9541b4415dc5b1a5d", null ],
+    [ "running_task", "class__storing__groceries_1_1StoringGroceriesTM.html#a2538386fe13801ce73d2e1f8f206a11f", null ],
+    [ "subtask_manager", "class__storing__groceries_1_1StoringGroceriesTM.html#a16466b290aeaf4602e114c5adb8b1c25", null ],
+    [ "total_score", "class__storing__groceries_1_1StoringGroceriesTM.html#af46ce73c4fb2490c47e70a217079f451", null ]
+];

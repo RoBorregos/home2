@@ -1,0 +1,26 @@
+var overfit_8py =
+[
+    [ "overfit.H5Dataset", "classoverfit_1_1H5Dataset.html", "classoverfit_1_1H5Dataset" ],
+    [ "overfit.Net", "classoverfit_1_1Net.html", "classoverfit_1_1Net" ],
+    [ "overfit._", "namespaceoverfit.html#a588d244986aede270feb4adb9940cbc6", null ],
+    [ "overfit.correct", "namespaceoverfit.html#a4031bd52899109527c4a38930b3855fd", null ],
+    [ "overfit.criterion", "namespaceoverfit.html#a6e08b203c5f1bbe764760e991a985c18", null ],
+    [ "overfit.device", "namespaceoverfit.html#a68bf22427467393bf0f711c8f4255376", null ],
+    [ "overfit.dset", "namespaceoverfit.html#a191801803a2c320a7c847b01aedf82f2", null ],
+    [ "overfit.input_channels", "namespaceoverfit.html#a72e52861a172cea4d85fd2057c702559", null ],
+    [ "overfit.inputs", "namespaceoverfit.html#aa91fe92f4f4c72e58470984b9dbd1fbb", null ],
+    [ "overfit.labels", "namespaceoverfit.html#ab3674b55adbb00a6b3018a01cf40b76d", null ],
+    [ "overfit.loss", "namespaceoverfit.html#a9e672fca7e2815973907312c2b00d844", null ],
+    [ "overfit.max_in_memory", "namespaceoverfit.html#adf02ed39428a71e6bb5c210025272e3f", null ],
+    [ "overfit.net", "namespaceoverfit.html#a7dcbc25f1dc20c2f7cba54d39e87609f", null ],
+    [ "overfit.num_epochs", "namespaceoverfit.html#a2542ed98e07e13f7d9bb1a27b36750dc", null ],
+    [ "overfit.num_train", "namespaceoverfit.html#a1d7df3cd7988d61ee157a119ee03b4f3", null ],
+    [ "overfit.optimizer", "namespaceoverfit.html#a082ceeb7347dd6e3b2b9a341b1a84597", null ],
+    [ "overfit.outputs", "namespaceoverfit.html#aebb80658b1057dd96ca87bc79fc83f83", null ],
+    [ "overfit.predicted", "namespaceoverfit.html#a5139c66e8327983540f16fa9f47011ca", null ],
+    [ "overfit.running_loss", "namespaceoverfit.html#a53d018b3dad678e4eb2af790a7590cb6", null ],
+    [ "overfit.test_loader", "namespaceoverfit.html#a1c13985ec4520e7a08f020ea32441ae6", null ],
+    [ "overfit.test_set", "namespaceoverfit.html#ab083a1a3d9729a16e5c5e4f9f8154e48", null ],
+    [ "overfit.total", "namespaceoverfit.html#a3f5c26b34ce05bd505ff8787437cb73d", null ],
+    [ "overfit.train_loader", "namespaceoverfit.html#a19923a2c5e9707f36b25b2272d6848ed", null ]
+];
