@@ -1,9 +1,0 @@
-var classserial_1_1IOException =
-[
-    [ "IOException", "classserial_1_1IOException.html#acb2f2cf7a5cc8090945f6cbfcef3ef1e", null ],
-    [ "IOException", "classserial_1_1IOException.html#acc1d2c650832cc8127f2cd777072b2cd", null ],
-    [ "~IOException", "classserial_1_1IOException.html#a026ae2e6abc57c6069915f0f8c701390", null ],
-    [ "IOException", "classserial_1_1IOException.html#af65196a71b800d11b5e5c367caf5b354", null ],
-    [ "getErrorNumber", "classserial_1_1IOException.html#af6b35e13d3d212ab2f7ecbb28a231de4", null ],
-    [ "what", "classserial_1_1IOException.html#afc5d3913cb722d914d333d5a6de65095", null ]
-];

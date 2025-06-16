@@ -1,6 +1,0 @@
-var searchData=
-[
-  ['nav_5fto_0',['nav_to',['../classstoring__groceries__manager_1_1StoringGroceriesManager.html#a5c4cb76bb06fe615bf8e0135c4c873fe',1,'storing_groceries_manager::StoringGroceriesManager']]],
-  ['navigate_5fto_1',['navigate_to',['../class__storing__groceries_1_1StoringGroceriesTM.html#aba0261da9ff6692d5d48ef31c60abe7a',1,'_storing_groceries.StoringGroceriesTM.navigate_to()'],['../classgpsr__task__manager_1_1GPSRTM.html#a91782bae0945fa576e6bf71036254bf6',1,'gpsr_task_manager.GPSRTM.navigate_to()'],['../classhelp__me__carry_1_1HelpMeCarryTM.html#a1dfc7f7c3a52f9874809e92f922db28c',1,'help_me_carry.HelpMeCarryTM.navigate_to()'],['../classreceptionist__task__manager_1_1ReceptionistTM.html#a9484d716e26839b905d991ad7e351be3',1,'receptionist_task_manager.ReceptionistTM.navigate_to()'],['../classsubtask__managers_1_1gpsr__single__tasks_1_1GPSRSingleTask.html#a4cc1a9d61003aa7010fc7c51acb51b16',1,'subtask_managers.gpsr_single_tasks.GPSRSingleTask.navigate_to()'],['../classsubtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#ad17b5f57c1167fde11df40bf3b4e797f',1,'subtask_managers.gpsr_tasks.GPSRTask.navigate_to()']]],
-  ['new_5fname_5fcallback_2',['new_name_callback',['../classface__recognition__node_1_1FaceRecognition.html#a835ff443f07664dc0ebd2212ab23bedf',1,'face_recognition_node::FaceRecognition']]]
-];
