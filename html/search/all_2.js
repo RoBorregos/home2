@@ -1,0 +1,28 @@
+var searchData=
+[
+  ['bad_5fencoder_5fcount_0',['bad_encoder_count',['../classdashgo__driver2_1_1DashgoDriver.html#aea8cbb057e4777b8e498af459b8e811a',1,'dashgo_driver2::DashgoDriver']]],
+  ['base_5fcontroller_1',['base_controller',['../classdashgo__driver2_1_1DashgoDriver.html#a8e89471354b5627a73b8abe5123494a6',1,'dashgo_driver2::DashgoDriver']]],
+  ['base_5fframe_2',['base_frame',['../classdashgo__driver2_1_1DashgoDriver.html#ab5ba7c82fffb7e91e974da5e9275bfb7',1,'dashgo_driver2::DashgoDriver']]],
+  ['base_5flink_5fname_3',['base_link_name',['../namespacexarm6.html#a26baf8750ec84dc6d4deea500c98907a',1,'xarm6']]],
+  ['batch_5fsize_4',['batch_size',['../namespacereid__model.html#aa3618009d6e7524b0bc74f1995eec942',1,'reid_model']]],
+  ['baud_5',['baud',['../classdashgo__driver2_1_1DashgoDriver.html#a4e8570d977fd49aee1200ef0f5707a52',1,'dashgo_driver2::DashgoDriver']]],
+  ['baudrate_6',['baudrate',['../classdashgo__driver_1_1dashgo__stm32_1_1Stm32.html#a1172a39e9df6255be0b4658c8a3985b1',1,'dashgo_driver::dashgo_stm32::Stm32']]],
+  ['bbox_7',['BBOX',['../classfrida__constants_1_1vision__classes_1_1BBOX.html',1,'frida_constants.vision_classes.BBOX'],['../classObjectDetector_1_1BBOX.html',1,'ObjectDetector.BBOX']]],
+  ['bbox_8',['BBox',['../classShelf__OCV_1_1BBox.html',1,'Shelf_OCV']]],
+  ['bbox_5f_9',['bbox_',['../classShelf__OCV_1_1ShelfDetection.html#aef8f9721913eddec8e7c9ed32bfeb25b',1,'Shelf_OCV::ShelfDetection']]],
+  ['beverage_5flocation_5fcallback_10',['beverage_location_callback',['../classmoondream__node_1_1MoondreamNode.html#aa293f5c5670213594434f9320acd7594',1,'moondream_node::MoondreamNode']]],
+  ['beverage_5flocation_5fclient_11',['beverage_location_client',['../classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a040c274fad01e7373f18b11345a74556',1,'subtask_managers::vision_tasks::VisionTasks']]],
+  ['beverage_5flocation_5fservice_12',['beverage_location_service',['../classmoondream__node_1_1MoondreamNode.html#a45ba0eab06740fdbd8a5b234669bdac4',1,'moondream_node::MoondreamNode']]],
+  ['beverage_5ftopic_13',['BEVERAGE_TOPIC',['../namespacefrida__constants_1_1vision__constants.html#acda94204316d127125cb8c635a12a998',1,'frida_constants::vision_constants']]],
+  ['beveragelocation_2esrv_14',['BeverageLocation.srv',['../BeverageLocation_8srv.html',1,'']]],
+  ['bgr_5fimg_15',['bgr_img',['../classpointing__detection_1_1DetectPointingObjectServer.html#a59d22d44b599fffc407cab495113aa63',1,'pointing_detection::DetectPointingObjectServer']]],
+  ['boxprimitiveparams_16',['BoxPrimitiveParams',['../structBoxPrimitiveParams.html',1,'']]],
+  ['bridge_17',['bridge',['../classobject__detector__node_1_1object__detector__node.html#ac449c700a2f8a471785776e1b0352c4c',1,'object_detector_node.object_detector_node.bridge()'],['../classzed__simulator_1_1ZedSimulator.html#a0184d2ba114844c0b27bcc6aed3db347',1,'zed_simulator.ZedSimulator.bridge()'],['../classtracker__node_1_1SingleTracker.html#a051d4336f964eeb27d40dbe82e8b2b06',1,'tracker_node.SingleTracker.bridge()'],['../classstoring__groceries__commands_1_1StoringGroceriesCommands.html#a1c85cdb6a6ed0828b600ab2836be97bb',1,'storing_groceries_commands.StoringGroceriesCommands.bridge()'],['../classreceptionist__commands_1_1ReceptionistCommands.html#ab3a1642a830a74acb9d1fd2db9289b66',1,'receptionist_commands.ReceptionistCommands.bridge()'],['../classpointing__detection_1_1DetectPointingObjectServer.html#ae7b0dd2f17784d1fae513f74354692ce',1,'pointing_detection.DetectPointingObjectServer.bridge()'],['../classgpsr__commands_1_1GPSRCommands.html#a2bf3849027b0522adbdb37289c178860',1,'gpsr_commands.GPSRCommands.bridge()'],['../classget__positon__3d_1_1SingleTracker.html#a04d6e361444eb8e331eb1c9b767c771e',1,'get_positon_3d.SingleTracker.bridge()'],['../classface__recognition__node_1_1FaceRecognition.html#a5f6c046f428d47b528e30d776fd03a3b',1,'face_recognition_node.FaceRecognition.bridge()'],['../classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a21508b33a70d52824a1d93fd534fd5ca',1,'zero_shot_object_detector_node.zero_shot_object_detector_node.bridge()'],['../classlocal__camera_1_1Camera.html#afec7d0caf06b44e55f17a148bc25e679',1,'local_camera.Camera.bridge()'],['../classmoondream__node_1_1MoondreamNode.html#a6a6f6bab5623700f3a164dc84f65aa1f',1,'moondream_node.MoondreamNode.bridge()']]],
+  ['broadcast_5ftransform_18',['broadcast_transform',['../classpick__and__place_1_1fix__position__to__plane_1_1FixPositionToPlane.html#a691584434a667ced175f24a7563b83af',1,'pick_and_place::fix_position_to_plane::FixPositionToPlane']]],
+  ['buffer_19',['buffer',['../namespacemoondream__lib.html#adb038b52a38e3ae02b1571585802ebb8',1,'moondream_lib']]],
+  ['build_5fembeddings_5fservice_20',['BUILD_EMBEDDINGS_SERVICE',['../namespacefrida__constants_1_1hri__constants.html#a280937af230738ee4ba40ccbb327caed',1,'frida_constants::hri_constants']]],
+  ['buildembeddings_2esrv_21',['BuildEmbeddings.srv',['../BuildEmbeddings_8srv.html',1,'']]],
+  ['busy_5fgripper_22',['busy_gripper',['../classds4__demo_1_1ServoDS4.html#a9e067c356378d3c060f4806f6086b651',1,'ds4_demo::ServoDS4']]],
+  ['busy_5fplanner_23',['busy_planner',['../classds4__demo_1_1ServoDS4.html#aed6e9918d1c4a1ca32853ff44202db6d',1,'ds4_demo::ServoDS4']]],
+  ['byte_5fcount_5f_24',['byte_count_',['../classdashgo__driver_1_1dashgo__stm32_1_1Stm32.html#a62ae7ca0f013cd6500a1d41d649efd6d',1,'dashgo_driver::dashgo_stm32::Stm32']]]
+];

@@ -1,0 +1,25 @@
+var gpsr__test__commands_8py =
+[
+    [ "get_gpsr_comands", "gpsr__test__commands_8py.html#a10ca0398e0b0a7241df2ae42ea22976c", null ],
+    [ "AVAILABLE_COMMANDS", "gpsr__test__commands_8py.html#a7ec1ac68bc2c97b7f2ff77f3be166cf6", null ],
+    [ "cmd_type", "gpsr__test__commands_8py.html#abf7ee6d141b2e9ccaf7a46465b311a1b", null ],
+    [ "color", "gpsr__test__commands_8py.html#a2286a48161c0b2a1d5d81a5d8567558a", null ],
+    [ "command_statistics", "gpsr__test__commands_8py.html#ac3bee4bf5fb634df18b9e37ebcb9e186", null ],
+    [ "custom_command", "gpsr__test__commands_8py.html#ad073f80419b58cd912161e378963b11a", null ],
+    [ "else", "gpsr__test__commands_8py.html#a8b43f8799b5da00c514c5b0698931ef8", null ],
+    [ "GPSR_COMMANDS", "gpsr__test__commands_8py.html#a05ab4bcafeee38c420da272ab10cf24a", null ],
+    [ "GREEN", "gpsr__test__commands_8py.html#a1a38321f657ff18d9f60e1fdf5780380", null ],
+    [ "implemented", "gpsr__test__commands_8py.html#afb80298f63f6ea8e4c26e1c82b35b435", null ],
+    [ "implemented_count", "gpsr__test__commands_8py.html#a4083b9303ad06e4e029f1628bcc46981", null ],
+    [ "key", "gpsr__test__commands_8py.html#a7803fd636add05ea3711d79b5b2a3066", null ],
+    [ "ORANGE", "gpsr__test__commands_8py.html#a67fe8986c1f07187d3efe207b9fa2fd2", null ],
+    [ "percentage", "gpsr__test__commands_8py.html#a13108a4d1d64ace5d0874f7350fe68a7", null ],
+    [ "RED", "gpsr__test__commands_8py.html#a84816510afb515fad2e73d7b5e6bb9a0", null ],
+    [ "RESET", "gpsr__test__commands_8py.html#a112cb6ca82a8e9ac34bf013ef38aa25b", null ],
+    [ "structured_cmd", "gpsr__test__commands_8py.html#adab6ef159d03b2a2657820467d1337aa", null ],
+    [ "total", "gpsr__test__commands_8py.html#a27fa6ff7e973e4272608cf5666d46af3", null ],
+    [ "total_commands", "gpsr__test__commands_8py.html#a1a953742a9743f1421ee3f2646f58aaf", null ],
+    [ "total_count", "gpsr__test__commands_8py.html#a2871fbde253634ceb01614ff7a7c28d5", null ],
+    [ "total_implemented", "gpsr__test__commands_8py.html#aa03e1e368b97d99d52d1c4ef88d7fa90", null ],
+    [ "total_percentage", "gpsr__test__commands_8py.html#ae9daadf5b9517850cde941a4cfceeef5", null ]
+];

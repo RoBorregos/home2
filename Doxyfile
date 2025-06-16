@@ -74,7 +74,7 @@ PROJECT_ICON           =
 # entered, it will be relative to the location where Doxygen was started. If
 # left blank the current directory will be used.
 
-OUTPUT_DIRECTORY       =
+OUTPUT_DIRECTORY       = "./docs"
 
 # If the CREATE_SUBDIRS tag is set to YES then Doxygen will create up to 4096
 # sub-directories (in 2 levels) under the output directory of each output format
@@ -991,7 +991,7 @@ WARN_LOGFILE           =
 # spaces. See also FILE_PATTERNS and EXTENSION_MAPPING
 # Note: If this tag is empty the current directory is searched.
 
-INPUT                  = ../manipulation ../navigation ../vision ../robot_description ../task_manager ../frida_interfaces ../frida_constants ../docs/interfaces.md
+INPUT                  = manipulation navigation vision robot_description task_manager frida_interfaces frida_constants docs
 
 
 
@@ -1101,11 +1101,11 @@ RECURSIVE              = YES
 # Note that relative paths are relative to the directory from which Doxygen is
 # run.
 
-EXCLUDE                = ../manipulation/packages/xarm_ros2 \
-                         ../manipulation/packages/pymoveit2 \
-                         ../manipulation/packages/gpd \
-                         ../navigation/packages/PlayStation-JoyInterface-ROS2 \
-                         ../navigation/packages/sllidar_ros2
+EXCLUDE                = manipulation/packages/xarm_ros2 \
+                         manipulation/packages/pymoveit2 \
+                         manipulation/packages/gpd \
+                         navigation/packages/PlayStation-JoyInterface-ROS2 \
+                         navigation/packages/sllidar_ros2
 
 # The EXCLUDE_SYMLINKS tag can be used to select whether or not files or
 # directories that are symbolic links (a Unix file system feature) are excluded
@@ -1216,7 +1216,7 @@ FILTER_SOURCE_PATTERNS =
 # (index.html). This can be useful if you have a project on for instance GitHub
 # and want to reuse the introduction page also for the Doxygen output.
 
-USE_MDFILE_AS_MAINPAGE =
+USE_MDFILE_AS_MAINPAGE = ./docs/ROS2.md
 
 # If the IMPLICIT_DIR_DOCS tag is set to YES, any README.md file found in sub-
 # directories of the project's root, is used as the documentation for that sub-
@@ -1905,7 +1905,7 @@ MATHJAX_FORMAT         = HTML-CSS
 # output directory using the MATHJAX_RELPATH option. The destination directory
 # should contain the MathJax.js script. For instance, if the mathjax directory
 # is located at the same level as the HTML output directory, then
-# MATHJAX_RELPATH should be ../mathjax. The default value points to the MathJax
+# MATHJAX_RELPATH should be mathjax. The default value points to the MathJax
 # Content Delivery Network so you can quickly see the result without installing
 # MathJax. However, it is strongly recommended to install a local copy of
 # MathJax from https://www.mathjax.org before deployment. The default value is:
