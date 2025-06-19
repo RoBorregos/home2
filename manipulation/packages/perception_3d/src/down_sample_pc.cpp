@@ -1,9 +1,11 @@
 #include "rclcpp/rclcpp.hpp"
 #include <chrono>
 #include <climits>
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <iostream>
+#include <cmath>
 #include <memory>
 #include <pcl/filters/voxel_grid.h>
 #include <pcl/point_cloud.h>
@@ -34,7 +36,12 @@ private:
 
   std::string input_topic = ZED_POINT_CLOUD_TOPIC;
   std::string output_topic = POINT_CLOUD_TOPIC;
-  float leaf_size = 0.01f;
+  float small_size = 0.01f;
+  float medium_size = 0.05f;
+  float large_size = 0.10f;
+
+  float small_cloud_radius = 1.5;
+  float medium_cloud_radius  = 2.5;
 
 public:
   DownSamplePointCloud() : Node("downsample_pointcloud") {
@@ -43,7 +50,9 @@ public:
     this->input_topic = this->declare_parameter("input_topic", input_topic);
     this->output_topic =
         this->declare_parameter("OutputPointCloudTopic", output_topic);
-    this->leaf_size = this->declare_parameter("leaf_size", leaf_size);
+    this->small_size = this->declare_parameter("small_size", small_size);
+    this->medium_size = this->declare_parameter("medium_size", medium_size);
+    this->large_size = this->declare_parameter("large_size", large_size);
 
     rclcpp::QoS qos = rclcpp::QoS(rclcpp::SensorDataQoS());
     qos.reliability(rclcpp::ReliabilityPolicy::Reliable);
@@ -59,14 +68,40 @@ public:
 
   void pointcloud_callback(const sensor_msgs::msg::PointCloud2::SharedPtr msg) {
     PointCloudNS::Ptr in_cloud(new PointCloudNS);
+    PointCloudNS::Ptr small_cloud(new PointCloudNS);
+    PointCloudNS::Ptr medium_cloud(new PointCloudNS);
+    PointCloudNS::Ptr large_cloud(new PointCloudNS);
+    PointCloudNS::Ptr temporal_cloud(new PointCloudNS);
     PointCloudNS::Ptr sampled_cloud(new PointCloudNS);
 
     pcl::fromROSMsg(*msg, *in_cloud);
 
-    pcl::VoxelGrid<pointCloudType> sor;
-    sor.setInputCloud(in_cloud);
-    sor.setLeafSize(leaf_size, leaf_size, leaf_size);
-    sor.filter(*sampled_cloud);
+    for(size_t i=0; i < in_cloud->points.size(); i++){
+      float radius = std::sqrt(std::pow(in_cloud->points[i].x, 2) + std::pow(in_cloud->points[i].y, 2) + std::pow(in_cloud->points[i].z, 2));
+      if(radius < small_cloud_radius) small_cloud->points.push_back(in_cloud->points[i]); 
+      else if(radius >= small_cloud_radius && radius < medium_cloud_radius) medium_cloud->points.push_back(in_cloud->points[i]);
+      else if(radius >= medium_cloud_radius) large_cloud->points.push_back(in_cloud->points[i]);
+    }
+    //insert small cloud
+    pcl::VoxelGrid<pointCloudType> small_sor;
+    small_sor.setInputCloud(small_cloud);
+    small_sor.setLeafSize(small_size, small_size, small_size);
+    small_sor.filter(*temporal_cloud);
+    sampled_cloud->insert(sampled_cloud->end(), temporal_cloud->begin(), temporal_cloud->end());
+
+    //insert medium cloud
+    pcl::VoxelGrid<pointCloudType> medium_sor;
+    medium_sor.setInputCloud(medium_cloud);
+    medium_sor.setLeafSize(medium_size, medium_size, medium_size);
+    medium_sor.filter(*temporal_cloud);
+    sampled_cloud->insert(sampled_cloud->end(), temporal_cloud->begin(), temporal_cloud->end());
+
+    //insert large cloud
+    pcl::VoxelGrid<pointCloudType> large_sor;
+    large_sor.setInputCloud(large_cloud);
+    large_sor.setLeafSize(large_size, large_size, large_size);
+    large_sor.filter(*temporal_cloud);
+    sampled_cloud->insert(sampled_cloud->end(), temporal_cloud->begin(), temporal_cloud->end());
 
     sensor_msgs::msg::PointCloud2 response;
     pcl::toROSMsg(*sampled_cloud, response);
