@@ -3,7 +3,7 @@ services:
     profiles: [receptionist, carry, gpsr, storing]
 
     container_name: home2-hri-ollama
-    image: ollama:r36.4.3-ollama
+    image: dustynv/ollama:0.6.8-r36.4
     runtime: nvidia
     network_mode: host
     volumes:
