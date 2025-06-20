@@ -5,7 +5,6 @@ import mediapipe as mp
 import numpy as np
 from frida_constants.vision_enums import Gestures
 from math import degrees, acos
-import time
 
 
 class PoseDetection:
@@ -14,6 +13,9 @@ class PoseDetection:
         self.mp_pose = mp.solutions.pose
         self.pose = self.mp_pose.Pose()
         self.mp_drawing = mp.solutions.drawing_utils
+
+    def detect(self, image_rgb):
+        return self.pose.process(image_rgb)
 
     def draw_landmarks(self, image, results, mp_pose):
         image_height, image_width, _ = image.shape
@@ -171,7 +173,6 @@ class PoseDetection:
 
     def is_waving(self, results):
         landmarks = results.pose_landmarks.landmark
-
         left_shoulder = landmarks[11]  # mp_pose.PoseLandmark.LEFT_SHOULDER
         left_elbow = landmarks[13]  # mp_pose.PoseLandmark.LEFT_ELBOW
         left_wrist = landmarks[15]  # mp_pose.PoseLandmark.LEFT_WRIST
@@ -271,69 +272,6 @@ class PoseDetection:
             return True
 
         return False
-
-    def personAngle(self, image):
-        # Preprocess the image
-        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-        # Process the image to detect pose landmarks
-        results = self.pose.process(image_rgb)
-
-        # Check if pose landmarks are detected
-        if results.pose_landmarks:
-            landmarks = results.pose_landmarks.landmark
-
-            # Extract the key landmarks: shoulders, hips, and nose
-            left_shoulder = landmarks[self.mp_pose.PoseLandmark.LEFT_SHOULDER]
-            right_shoulder = landmarks[self.mp_pose.PoseLandmark.RIGHT_SHOULDER]
-            left_hip = landmarks[self.mp_pose.PoseLandmark.LEFT_HIP]
-            right_hip = landmarks[self.mp_pose.PoseLandmark.RIGHT_HIP]
-            nose = landmarks[self.mp_pose.PoseLandmark.NOSE]
-
-            # Ensure all key landmarks have sufficient visibility
-            if (
-                left_shoulder.visibility > 0.5
-                and right_shoulder.visibility > 0.5
-                and left_hip.visibility > 0.5
-                and right_hip.visibility > 0.5
-            ):
-                # Calculate shoulder width and torso height
-                shoulder_width = np.sqrt(
-                    (left_shoulder.x - right_shoulder.x) ** 2
-                    + (left_shoulder.y - right_shoulder.y) ** 2
-                )
-                torso_height = np.sqrt(
-                    (left_shoulder.x - left_hip.x) ** 2
-                    + (left_shoulder.y - left_hip.y) ** 2
-                )
-
-                # Handle cases where the torso height is zero
-                if torso_height == 0:
-                    print("Error: Torso height is zero.")
-                    time.sleep(0.5)
-                    return None
-
-                # Calculate S2T ratio
-                s2t_ratio = shoulder_width / torso_height
-
-                # Determine orientation based on heuristic thresholds
-                if s2t_ratio > 0.5:  # Forward or backward
-                    if nose.z < 0:  # Face is visible
-                        orientation = "forward"
-                    else:  # Face is not visible
-                        orientation = "backward"
-                elif s2t_ratio <= 0.5:  # Side views
-                    # Check which side is closer
-                    if left_shoulder.z < right_shoulder.z:
-                        orientation = "left"
-                    else:
-                        orientation = "right"
-                else:
-                    orientation = None
-
-                return orientation
-
-        return None
 
 
 def main():
