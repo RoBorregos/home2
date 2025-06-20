@@ -2,7 +2,6 @@
 
 import math
 import sys
-import numpy as np
 
 FLT_EPSILON = sys.float_info.epsilon
 
@@ -270,24 +269,5 @@ def deproject_pixel_to_point(cv_image_rgb_info, pixel, depth):
 
     return (depth * x, depth * y, depth)
 
-def estimate_3d_from_pose(frame, landmarks, image_info, depth_image):
-    h, w, _ = frame.shape
-
-    left_shoulder = landmarks[11]
-    right_shoulder = landmarks[12]
-
-    left = (int(left_shoulder.x * w), int(left_shoulder.y * h))
-    right = (int(right_shoulder.x * w), int(right_shoulder.y * h))
-
-    mid_neck = (
-        int((left[0] + right[0]) / 2),
-        int((left[1] + right[1]) / 2),
-    )
-
-    depth = get_depth(depth_image, mid_neck)
-    if depth == 0.0 or np.isnan(depth):
-        return None
-
-    return deproject_pixel_to_point(image_info, mid_neck, depth)
 
 

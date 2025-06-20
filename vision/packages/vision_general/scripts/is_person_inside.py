@@ -8,166 +8,164 @@ import rclpy
 from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo
-from geometry_msgs.msg import PointStamped, Point
-from std_msgs.msg import Header
+from geometry_msgs.msg import PointStamped
+import cv2
+import os
+import json
+from ament_index_python.packages import get_package_share_directory
 
-from frida_interfaces.srv import PersonInsideReq
+from frida_interfaces.srv import PersonInsideReq, PointTransformation
 
 from pose_detection import PoseDetection
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
     DEPTH_IMAGE_TOPIC,
     CAMERA_INFO_TOPIC,
-    PERSON_POINT_TOPIC,
     CAMERA_FRAME,
     PERSON_INSIDE_REQUEST_TOPIC,
 )
 
-from object_detector_2d.scripts.include.vision_3d_utils import estimate_3d_from_pose
+from frida_constants.integration_constants import POINT_TRANSFORMER_TOPIC
 
-class PersonInsideClient:
-    def __init__(self, node: Node, service_name=PERSON_INSIDE_REQUEST_TOPIC):
-        self.node = node
-        self.client = node.create_client(PersonInside, service_name)
+from vision_general.utils.calculations import estimate_3d_from_pose
 
-        self.node.get_logger().info(f'Initializing PersonInsideClient with service name: {service_name}')
-        print(f'Initializing PersonInsideClient with service name: {service_name}')
+class Person3DEstimator:
+    def __init__(self, camera_frame=CAMERA_FRAME):
+        self.pose_detector = PoseDetection()
+        self.camera_frame = camera_frame
 
-        while not self.client.wait_for_service(timeout_sec=5.0):
-            self.node.get_logger().info(f'Waiting for {service_name}...')
-            print(f'Waiting for {service_name}...')
+    def estimate(self, image_bgr, depth_image, camera_info):
+        image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+        results = self.pose_detector.detect(image_rgb)
 
-        self.node.get_logger().info(f'Service {service_name} is now available.')
-        print(f'Service {service_name} is now available.')
+        if not results.pose_landmarks or len(results.pose_landmarks.landmark) <= 12:
+            return None
 
-    def call(self, ymin, xmin, ymax, xmax, callback=None):
-        self.node.get_logger().info(f'Preparing request with coordinates: ymin={ymin}, xmin={xmin}, ymax={ymax}, xmax={xmax}')
-        print(f'Preparing request with coordinates: ymin={ymin}, xmin={xmin}, ymax={ymax}, xmax={xmax}')
+        return estimate_3d_from_pose(image_bgr, results.pose_landmarks.landmark, camera_info, depth_image)
 
-        request = PersonInsideReq.Request()
-        request.ymin = float(ymin)
-        request.xmin = float(xmin)
-        request.ymax = float(ymax)
-        request.xmax = float(xmax)
+class ImageBuffer:
+    def __init__(self):
+        self.image = None
+        self.depth = None
+        self.info = None
 
-        future = self.client.call_async(request)
-        self.node.get_logger().info('Request sent asynchronously.')
-        print('Request sent asynchronously.')
-
-        if callback:
-            self.node.get_logger().info('Adding custom callback to future.')
-            print('Adding custom callback to future.')
-            future.add_done_callback(lambda fut: callback(fut.result()))
-        else:
-            self.node.get_logger().info('Adding default callback to future.')
-            print('Adding default callback to future.')
-            future.add_done_callback(self._default_callback)
-
-    def _default_callback(self, response):
-        if response.success:
-            self.node.get_logger().info('Person detected and coordinates published.')
-            print('Person detected and coordinates published.')
-        else:
-            self.node.get_logger().warn('No person detected.')
-            print('No person detected.')
-
+    def ready(self):
+        return self.image is not None and self.depth is not None and self.info is not None
 
 class IsPersonInside(Node):
     def __init__(self):
         super().__init__("tracker_node")
         self.bridge = CvBridge()
+        self.buffer = ImageBuffer()
+        self.estimator = Person3DEstimator()
 
-        self.image_subscriber = self.create_subscription(
-            Image, CAMERA_TOPIC, self.image_callback, 10
+        self.create_subscription(Image, CAMERA_TOPIC, self.image_callback, 10)
+        self.create_subscription(Image, DEPTH_IMAGE_TOPIC, self.depth_callback, 10)
+        self.create_subscription(CameraInfo, CAMERA_INFO_TOPIC, self.image_info_callback, 10)
+
+        self.create_service(PersonInsideReq, PERSON_INSIDE_REQUEST_TOPIC, self.handle_request)
+
+        self.point_transform_client = self.create_client(
+            PointTransformation, POINT_TRANSFORMER_TOPIC
         )
 
-        self.depth_subscriber = self.create_subscription(
-            Image, DEPTH_IMAGE_TOPIC, self.depth_callback, 10
-        )
+        while not self.point_transform_client.wait_for_service(timeout_sec=5.0):
+            self.get_logger().warn("Waiting for point_transformer service...")
 
-        self.image_info_subscriber = self.create_subscription(
-            CameraInfo, CAMERA_INFO_TOPIC, self.image_info_callback, 10
-        )
-
-        self.request_person_inside = self.create_service(
-            PersonInsideReq, PERSON_INSIDE_REQUEST_TOPIC, self.handle_person_inside_request
-        )
-
-        self.person_inside = self.create_publisher(PointStamped, PERSON_POINT_TOPIC, 10)
-
-        self.pose_detector = PoseDetection()
-
-        self.is_tracking_result = False
-
-        self.image = None
-        self.depth_image = []
-        self.camera_frame = CAMERA_FRAME
 
     def image_callback(self, data):
-        """Callback to receive image from camera"""
-        self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
+        self.buffer.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
 
     def depth_callback(self, data):
-        """Callback to receive depth image from camera"""
         try:
-            depth_image = self.bridge.imgmsg_to_cv2(data, "32FC1")
-            self.depth_image = depth_image
+            self.buffer.depth = self.bridge.imgmsg_to_cv2(data, "32FC1")
         except Exception as e:
-            print(f"Error: {e}")
+            self.get_logger().error(f"Error: {e}")
 
     def image_info_callback(self, data):
-        """Callback to receive camera info"""
-        self.imageInfo = data
+        self.buffer.info = data
 
-    def success(self, message) -> None:
-        """Print success message"""
-        self.get_logger().info(f"\033[92mSUCCESS:\033[0m {message}")
+    def transform_point_to_map(self, point_stamped):
+        request = PointTransformation.Request()
+        request.target_frame = "map"
+        request.point = point_stamped
 
-    def handle_person_inside_request(self, request, response):
-        """Handle the request to check if a person is inside"""
-        if self.image is None or self.depth_image is None:
+        future = self.point_transform_client.call_async(request)
+
+        rclpy.spin_until_future_complete(self, future)
+
+        if future.result() and future.result().success:
+            return future.result().transformed_point
+        else:
+            self.get_logger().error("Transform failed or service unavailable")
+            return None
+        
+    def is_inside_polygon(self, x, y, polygon):
+        inside = False
+        n = len(polygon)
+        for i in range(n):
+            x1, y1 = polygon[i]
+            x2, y2 = polygon[(i + 1) % n]
+
+            if (y1 > y) != (y2 > y):
+                xinters = (y - y1) * (x2 - x1) / (y2 - y1 + 1e-10) + x1
+                if x < xinters:
+                    inside = not inside
+        return inside
+    
+    def get_area_from_position(self, x, y):
+        package_share_directory = get_package_share_directory("frida_constants")
+        path = os.path.join(package_share_directory, "map_areas/areas.json")
+
+        with open(path, "r") as file:
+            areas = json.load(file)
+
+        for area in areas:
+            self.get_logger().info(f"Looking in area: {area}")
+            if self.is_inside_polygon(x, y, self.areas[area]["polygon"]):
+                return area
+            
+        return None
+
+    def handle_request(self, request, response):
+        if not self.buffer.ready():
             response.success = False
             return response
-        
-        # Get the coordinates of the person in the image
-        y1 = request.ymin
-        x1 = request.xmin
-        y2 = request.ymax
-        x2 = request.xmax
 
-        cropped_frame = self.image[y1:y2, x1:x2]
+        frame = self.buffer.image[int(request.ymin):int(request.ymax), int(request.xmin):int(request.xmax)]
+        point3d = self.estimator.estimate(frame, self.buffer.depth, self.buffer.info)
 
-        # Run the main loop to detect person and get coordinates
-        self.run(cropped_frame)
+        if point3d is None:
+            response.success = False
+            return response
 
-        response.success = True
-        response.message = "Person coordinates published successfully."
+        person_coords = PointStamped()
+        person_coords.header.frame_id = self.estimator.camera_frame
+        person_coords.point.x = float(point3d[0])
+        person_coords.point.y = float(point3d[1])
+        person_coords.point.z = float(point3d[2])
+
+        transformed = self.transform_point_to_map(person_coords)
+
+        if transformed:
+            x = transformed.point.x
+            y = transformed.point.y
+            self.get_logger().info(f"Person is at x={x:.2f}, y={y:.2f} in map")
+
+            area = self.get_area_from_position(x, y)
+            if area:
+                self.get_logger().info(f"Person is inside: {area}")
+                response.location = area
+            else:
+                self.get_logger().warn("Person is not inside any known area.")
+                response.location = "Unknown"
+                response.success = True
+        else:
+            self.get_logger().error("Failed to transform point to map frame")
+            response.success = False
+            response.location = "Unknown"
         return response
 
-    def run(self, frame=None):
-        """Main loop to run the tracker"""
-        results = self.pose_detector.detect(frame)
-
-        if not results.pose_landmarks or len(results.pose_landmarks.landmark) <= 12:
-            return
-
-        point3D = estimate_3d_from_pose(
-            frame, results.pose_landmarks.landmark, self.imageInfo, self.depth_image
-        )
-        if point3D is None:
-            return
-
-        coords = PointStamped(header=Header(frame_id=self.camera_frame),
-                point=Point(),)
-        coords.x = float(point3D[0])
-        coords.y = float(point3D[1])
-        coords.z = float(point3D[2])
-
-        self.get_logger().info(
-            f"Person detected at coordinates: x={coords.x}, y={coords.y}, z={coords.z}"
-        )
-
-        self.person_inside.publish(coords)
 
 def main(args=None):
     rclpy.init(args=args)

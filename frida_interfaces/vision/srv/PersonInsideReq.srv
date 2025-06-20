@@ -4,3 +4,4 @@ float32 ymax
 float32 xmax
 ---
 bool success
+string location

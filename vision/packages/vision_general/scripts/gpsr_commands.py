@@ -41,13 +41,14 @@ from pose_detection import PoseDetection
 
 package_share_dir = get_package_share_directory("vision_general")
 
-from is_person_inside import PersonInsideClient
+from person_inside_client import PersonInsideClient
 
 YOLO_LOCATION = str(pathlib.Path(__file__).parent) + "/Utils/yolov8n.pt"
 PERCENTAGE = 0.3
 MAX_DEGREE = 30
 AREA_PERCENTAGE_THRESHOLD = 0.2
 CONF_THRESHOLD = 0.5
+TIMEOUT = 5.0
 TIMEOUT = 5.0
 
 
@@ -70,11 +71,17 @@ class GPSRCommands(Node):
         )
 
         self.count_by_gestures_service = self.create_service(
-            CountByPose, COUNT_BY_GESTURE_TOPIC, self.count_by_gestures_callback
+            CountByPose,
+            COUNT_BY_GESTURE_TOPIC,
+            self.count_by_gestures_callback,
+            callback_group=self.callback_group,
         )
 
         self.count_by_person_service = self.create_service(
-            CountBy, COUNT_BY_PERSON_TOPIC, self.count_by_person_callback
+            CountBy,
+            COUNT_BY_PERSON_TOPIC,
+            self.count_by_person_callback,
+            callback_group=self.callback_group,
         )
 
         self.count_by_color_service = self.create_service(
@@ -99,12 +106,13 @@ class GPSRCommands(Node):
         self.output_image = []
 
         self.get_logger().info("GPSRCommands Ready.")
+        # self.create_timer(0.1, self.publish_image)
 
         self.moondream_client = self.create_client(
             CropQuery, CROP_QUERY_TOPIC, callback_group=self.callback_group
         )
 
-        self.person_inside = PersonInsideClient(self)
+        self.person_inside_client = PersonInsideClient(self, self.callback_group)
 
     def image_callback(self, data):
         """Callback to receive the image from the camera."""
@@ -215,7 +223,6 @@ class GPSRCommands(Node):
         """Count the gestures in the image and return a dictionary."""
         gesture_count = {
             Gestures.UNKNOWN: 0,
-            Gestures.UNKNOWN: 0,
             Gestures.WAVING: 0,
             Gestures.RAISING_LEFT_ARM: 0,
             Gestures.RAISING_RIGHT_ARM: 0,
@@ -227,18 +234,22 @@ class GPSRCommands(Node):
         for person in self.people:
             x1, y1, x2, y2 = person["bbox"]
 
-            self.person_inside.call(
-                float(y1), float(x1), float(y2), float(x2)
-            )
-
             # Crop the frame to the bounding box of the person
             cropped_frame = frame[y1:y2, x1:x2]
+
+            is_inside = self.person_inside_client.call(y1, x1, y2, x2)
+            if not is_inside or is_inside.location == "Unknown":
+                self.get_logger().info("Person is not inside the house, skipping gesture detection.")
+                continue
 
             gesture = self.pose_detection.detectGesture(cropped_frame)
 
             # Increment the gesture count based on detected gesture
             if gesture in gesture_count:
                 gesture_count[gesture] += 1
+                if gesture == Gestures.WAVING:
+                    gesture_count[Gestures.RAISING_LEFT_ARM] += 1
+                    gesture_count[Gestures.RAISING_RIGHT_ARM] += 1
 
         return gesture_count
 
@@ -426,7 +437,9 @@ class GPSRCommands(Node):
         if future is None:
             return False
         while not future.done() and (time.time() - start_time) < timeout:
-            print("Waiting for future to complete...")
+            # print("Waiting for future to complete...")
+            pass
+
         return future
 
     def moondream_crop_query(self, prompt: str, bbox: list[float]) -> tuple[int, str]:
@@ -461,7 +474,7 @@ class GPSRCommands(Node):
 def main(args=None):
     rclpy.init(args=args)
     node = GPSRCommands()
-    executor = rclpy.executors.MultiThreadedExecutor(5)
+    executor = rclpy.executors.MultiThreadedExecutor(8)
     executor.add_node(node)
     executor.spin()
     rclpy.shutdown()
