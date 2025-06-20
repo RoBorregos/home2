@@ -5,6 +5,7 @@ import sys
 
 FLT_EPSILON = sys.float_info.epsilon
 
+
 def map(x, in_min, in_max, out_min, out_max):
     return int((x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min)
 
@@ -268,6 +269,3 @@ def deproject_pixel_to_point(cv_image_rgb_info, pixel, depth):
         y *= r / rd
 
     return (depth * x, depth * y, depth)
-
-
-

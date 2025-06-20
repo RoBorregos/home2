@@ -29,6 +29,7 @@ from frida_constants.integration_constants import POINT_TRANSFORMER_TOPIC
 
 from vision_general.utils.calculations import estimate_3d_from_pose
 
+
 class Person3DEstimator:
     def __init__(self, camera_frame=CAMERA_FRAME):
         self.pose_detector = PoseDetection()
@@ -41,7 +42,10 @@ class Person3DEstimator:
         if not results.pose_landmarks or len(results.pose_landmarks.landmark) <= 12:
             return None
 
-        return estimate_3d_from_pose(image_bgr, results.pose_landmarks.landmark, camera_info, depth_image)
+        return estimate_3d_from_pose(
+            image_bgr, results.pose_landmarks.landmark, camera_info, depth_image
+        )
+
 
 class ImageBuffer:
     def __init__(self):
@@ -50,7 +54,10 @@ class ImageBuffer:
         self.info = None
 
     def ready(self):
-        return self.image is not None and self.depth is not None and self.info is not None
+        return (
+            self.image is not None and self.depth is not None and self.info is not None
+        )
+
 
 class IsPersonInside(Node):
     def __init__(self):
@@ -61,9 +68,13 @@ class IsPersonInside(Node):
 
         self.create_subscription(Image, CAMERA_TOPIC, self.image_callback, 10)
         self.create_subscription(Image, DEPTH_IMAGE_TOPIC, self.depth_callback, 10)
-        self.create_subscription(CameraInfo, CAMERA_INFO_TOPIC, self.image_info_callback, 10)
+        self.create_subscription(
+            CameraInfo, CAMERA_INFO_TOPIC, self.image_info_callback, 10
+        )
 
-        self.create_service(PersonInsideReq, PERSON_INSIDE_REQUEST_TOPIC, self.handle_request)
+        self.create_service(
+            PersonInsideReq, PERSON_INSIDE_REQUEST_TOPIC, self.handle_request
+        )
 
         self.point_transform_client = self.create_client(
             PointTransformation, POINT_TRANSFORMER_TOPIC
@@ -71,7 +82,6 @@ class IsPersonInside(Node):
 
         while not self.point_transform_client.wait_for_service(timeout_sec=5.0):
             self.get_logger().warn("Waiting for point_transformer service...")
-
 
     def image_callback(self, data):
         self.buffer.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
@@ -99,7 +109,7 @@ class IsPersonInside(Node):
         else:
             self.get_logger().error("Transform failed or service unavailable")
             return None
-        
+
     def is_inside_polygon(self, x, y, polygon):
         inside = False
         n = len(polygon)
@@ -112,7 +122,7 @@ class IsPersonInside(Node):
                 if x < xinters:
                     inside = not inside
         return inside
-    
+
     def get_area_from_position(self, x, y):
         package_share_directory = get_package_share_directory("frida_constants")
         path = os.path.join(package_share_directory, "map_areas/areas.json")
@@ -124,7 +134,7 @@ class IsPersonInside(Node):
             self.get_logger().info(f"Looking in area: {area}")
             if self.is_inside_polygon(x, y, self.areas[area]["polygon"]):
                 return area
-            
+
         return None
 
     def handle_request(self, request, response):
@@ -132,7 +142,9 @@ class IsPersonInside(Node):
             response.success = False
             return response
 
-        frame = self.buffer.image[int(request.ymin):int(request.ymax), int(request.xmin):int(request.xmax)]
+        frame = self.buffer.image[
+            int(request.ymin) : int(request.ymax), int(request.xmin) : int(request.xmax)
+        ]
         point3d = self.estimator.estimate(frame, self.buffer.depth, self.buffer.info)
 
         if point3d is None:

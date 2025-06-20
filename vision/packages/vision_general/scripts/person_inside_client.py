@@ -13,17 +13,24 @@ from frida_constants.vision_constants import (
     PERSON_INSIDE_REQUEST_TOPIC,
 )
 
-class PersonInsideClient:
-    def __init__(self, node: Node, callback_group, service_name=PERSON_INSIDE_REQUEST_TOPIC):
-        self.node = node
-        self.client = node.create_client(PersonInsideReq, service_name, callback_group=callback_group)
 
-        self.node.get_logger().info(f'Initializing PersonInsideClient with service name: {service_name}')
+class PersonInsideClient:
+    def __init__(
+        self, node: Node, callback_group, service_name=PERSON_INSIDE_REQUEST_TOPIC
+    ):
+        self.node = node
+        self.client = node.create_client(
+            PersonInsideReq, service_name, callback_group=callback_group
+        )
+
+        self.node.get_logger().info(
+            f"Initializing PersonInsideClient with service name: {service_name}"
+        )
 
         while not self.client.wait_for_service(timeout_sec=5.0):
-            self.node.get_logger().info(f'Waiting for {service_name}...')
+            self.node.get_logger().info(f"Waiting for {service_name}...")
 
-        self.node.get_logger().info(f'Service {service_name} is now available.')
+        self.node.get_logger().info(f"Service {service_name} is now available.")
 
     def call(self, ymin, xmin, ymax, xmax):
         request = PersonInsideReq.Request()
@@ -39,9 +46,9 @@ class PersonInsideClient:
             self.get_logger().error("PersonInside service call failed or timed out.")
             return None
         if result.success:
-            self.get_logger().info(f"PersonInside service call successful.")
+            self.get_logger().info("PersonInside service call successful.")
             return result
-        
+
     def wait_for_future(self, future, timeout=5):
         start_time = time.time()
         while future is None and (time.time() - start_time) < timeout:
@@ -53,5 +60,3 @@ class PersonInsideClient:
             pass
 
         return future
-     
-

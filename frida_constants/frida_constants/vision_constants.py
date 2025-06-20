@@ -89,5 +89,5 @@ POSE_GESTURE_TOPIC = "/vision/gpsr/pose_gesture_detection"
 # Storing Groceries Commands node
 SHELF_DETECTION_TOPIC = "/vision/storing_grocPeries/shelf_detection"
 
-# Person inside a room 
+# Person inside a room
 PERSON_INSIDE_REQUEST_TOPIC = "/vision/person_inside_request"

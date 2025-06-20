@@ -281,6 +281,7 @@ def deproject_pixel_to_point(cv_image_rgb_info, pixel, depth):
 
     return (depth * x, depth * y, depth)
 
+
 def estimate_3d_from_pose(frame, landmarks, image_info, depth_image):
     h, w, _ = frame.shape
 
