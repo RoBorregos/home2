@@ -11,8 +11,6 @@ cffi==1.16.0
 pygame==2.6.1
 
 # KWS
-pvporcupine==3.0.2
-pvrecorder==1.2.2
 openwakeword==0.6.0
 
 # Respeaker
