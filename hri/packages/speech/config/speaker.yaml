@@ -8,5 +8,6 @@ say:
     speak_topic: "/speech/speak_now"
     speaking_topic: "saying"
 
-    model: "en_US-amy-medium"
+    model: "af_heart"
     offline: True
+    TTS_SERVER_IP: "127.0.0.1:50050"

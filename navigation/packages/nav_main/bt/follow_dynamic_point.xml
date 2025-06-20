@@ -4,8 +4,11 @@
             <ControllerSelector selected_controller="{selected_controller}" default_controller="FollowPath" topic_name="controller_selector"/>
             <PlannerSelector selected_planner="{selected_planner}" default_planner="GridBased" topic_name="planner_selector"/>
             <RateController hz="1.0">
-                <RecoveryNode number_of_retries="5">        
+                <RecoveryNode number_of_retries="25">        
                 <Sequence>
+                    <ClearEntireCostmap name="ClearLocalCostmap-Context" service_name="local_costmap/clear_entirely_local_costmap"/>
+                    <ClearEntireCostmap name="ClearGlobalCostmap-Context" service_name="global_costmap/clear_entirely_global_costmap"/>
+                    <FollowPath path="{path}" controller_id="FollowPath"/>
                     <GoalUpdater input_goal="{goal}" output_goal="{updated_goal}">
                         <ComputePathToPose goal="{updated_goal}" path="{path}" planner_id="{selected_planner}" />
                     </GoalUpdater>

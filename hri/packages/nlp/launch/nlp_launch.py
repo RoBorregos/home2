@@ -12,12 +12,12 @@ from frida_constants import ModuleNames, parse_ros_config
 
 
 def generate_launch_description():
-    command_interpreter_config = parse_ros_config(
-        os.path.join(
-            get_package_share_directory("nlp"), "config", "command_interpreter.yaml"
-        ),
-        [ModuleNames.HRI.value],
-    )["command_interpreter"]["ros__parameters"]
+    # command_interpreter_config = parse_ros_config(
+    #     os.path.join(
+    #         get_package_share_directory("nlp"), "config", "command_interpreter.yaml"
+    #     ),
+    #     [ModuleNames.HRI.value],
+    # )["command_interpreter"]["ros__parameters"]
 
     extract_data_config = parse_ros_config(
         os.path.join(
@@ -38,14 +38,14 @@ def generate_launch_description():
     )["llm_utils"]["ros__parameters"]
 
     nodes = [
-        Node(
-            package="nlp",
-            executable="command_interpreter.py",
-            name="command_interpreter",
-            output="screen",
-            emulate_tty=True,
-            parameters=[command_interpreter_config],
-        ),
+        # Node(
+        #     package="nlp",
+        #     executable="command_interpreter.py",
+        #     name="command_interpreter",
+        #     output="screen",
+        #     emulate_tty=True,
+        #     parameters=[command_interpreter_config],
+        # ),
         Node(
             package="nlp",
             executable="extract_data.py",
@@ -64,7 +64,10 @@ def generate_launch_description():
         ),
     ]
 
-    if os.getenv("COMPOSE_PROFILES", "receptionist") == "gpsr":
+    if (
+        os.getenv("COMPOSE_PROFILES", "receptionist") == "gpsr"
+        or os.getenv("COMPOSE_PROFILES", "receptionist") == "storing"
+    ):
         embeddings_launch_path = os.path.join(
             get_package_share_directory("embeddings"),
             "launch",

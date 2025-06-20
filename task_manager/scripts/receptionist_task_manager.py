@@ -61,14 +61,15 @@ class ReceptionistTM(Node):
     def __init__(self):
         """Initialize the node"""
         super().__init__("receptionist_task_manager")
-        self.subtask_manager = SubtaskManager(self, task=Task.RECEPTIONIST, mock_areas=[])
+        self.subtask_manager = SubtaskManager(self, task=Task.RECEPTIONIST, mock_areas=[""])
         self.current_state = ReceptionistTM.TASK_STATES[START]
         self.current_guest = 1
-        self.seat_angles = [0, 90]
+        self.seat_angles = [-90, 90, 90]
         self.check_angles = [-10, 10, 10]
 
         self.guests = [Guest() for _ in range(3)]
         self.guests[0] = Guest("ale", "Juice", "Football")
+        # self.guests[1] = Guest("mario", "Water", "Tennis")
 
         self.current_attempts = 0
         self.running_task = True
@@ -87,7 +88,7 @@ class ReceptionistTM(Node):
             self.subtask_manager.manipulation.follow_face(False)
             self.subtask_manager.manipulation.move_to_position("nav_pose")
             self.subtask_manager.hri.say(
-                f"I will now guide you to the {location}. Please follow me.", wait=False
+                f"I'll guide you to the {location}. Please follow me.", wait=False
             )
         result = Status.EXECUTION_ERROR
         retry = 0
@@ -95,7 +96,7 @@ class ReceptionistTM(Node):
             future = self.subtask_manager.nav.move_to_location(location, sublocation)
             if "navigation" not in self.subtask_manager.get_mocked_areas():
                 rclpy.spin_until_future_complete(self, future)
-            result = future.result()
+                result = future.result()
             retry += 1
 
     def confirm(self, statement: str) -> bool:
@@ -127,23 +128,23 @@ class ReceptionistTM(Node):
             Logger.state(self, "Starting task")
             self.subtask_manager.manipulation.follow_face(False)
             self.navigate_to("entrance", say=False)
-            self.subtask_manager.hri.say("I am ready to start my task.", wait=False)
+            self.subtask_manager.hri.say("I am ready.", wait=False)
             self.current_state = ReceptionistTM.TASK_STATES["WAIT_FOR_GUEST"]
 
         if self.current_state == ReceptionistTM.TASK_STATES["WAIT_FOR_GUEST"]:
             Logger.state(self, "Waiting for guest")
 
             self.subtask_manager.manipulation.move_to_position("front_stare")
-            self.subtask_manager.hri.say(
-                "I am ready to receive guests, please open the door.", wait=True
-            )
+            # self.subtask_manager.hri.say(
+            #     "Please open the door.", wait=True
+            # )
 
             self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_RECEPTIONIST)
             result = self.subtask_manager.vision.detect_person(timeout=10)
             if result == Status.EXECUTION_SUCCESS:
                 self.subtask_manager.vision.follow_by_name("area")
                 self.subtask_manager.manipulation.follow_face(True)
-                self.subtask_manager.hri.say("Hello, I am FRIDA, your receptionist today.")
+                # self.subtask_manager.hri.say("Hello, I am Frida, your receptionist today.")
                 self.current_state = ReceptionistTM.TASK_STATES["GREETING"]
             else:
                 self.subtask_manager.hri.say("I am waiting for a guest.")
@@ -167,7 +168,7 @@ class ReceptionistTM(Node):
 
         if self.current_state == ReceptionistTM.TASK_STATES["SAVE_FACE"]:
             Logger.state(self, "Saving face")
-            self.subtask_manager.hri.say("I will save your face now. Please stand in front of me")
+            self.subtask_manager.hri.say("I'll save your face. Please stand in front of me")
             result = self.subtask_manager.vision.save_face_name(self.get_guest().name)
             self.timeout(2)
 
@@ -196,7 +197,7 @@ class ReceptionistTM(Node):
             if status == Status.EXECUTION_SUCCESS:
                 self.get_guest().interest = interest
             else:
-                self.get_guest().interest = "Nothing"
+                self.get_guest().interest = "None"
 
             Logger.info(self, f"Interest: {self.get_guest().interest}")
 
@@ -255,9 +256,7 @@ class ReceptionistTM(Node):
 
             Logger.info(self, f"Guest drink: {self.get_guest().drink}")
 
-            self.subtask_manager.hri.say(
-                f"Great! I will check if we have {self.get_guest().drink}."
-            )
+            self.subtask_manager.hri.say(f"I will check if we have {self.get_guest().drink}.")
             self.current_state = ReceptionistTM.TASK_STATES["DRINK_AVAILABLE"]
 
         if self.current_state == ReceptionistTM.TASK_STATES["DRINK_AVAILABLE"]:
@@ -289,14 +288,11 @@ class ReceptionistTM(Node):
                 named_position="front_low_stare", velocity=0.5, degrees=True
             )
 
+            angle = 0
+
             for seat_angle in self.seat_angles:
-                joint_positions = self.subtask_manager.manipulation.get_joint_positions(
-                    degrees=True
-                )
-                joint_positions["joint1"] = joint_positions["joint1"] - seat_angle
-                self.subtask_manager.manipulation.move_joint_positions(
-                    joint_positions=joint_positions, velocity=0.5, degrees=True
-                )
+                self.subtask_manager.manipulation.pan_to(seat_angle)
+
                 self.timeout(1)
                 status, angle = self.subtask_manager.vision.find_seat()
                 if status == Status.EXECUTION_SUCCESS:
@@ -304,59 +300,115 @@ class ReceptionistTM(Node):
 
             self.subtask_manager.hri.say("Please take a seat where my arm points at.", wait=False)
             self.subtask_manager.manipulation.pan_to(angle)
+            self.subtask_manager.manipulation.point(10)
             self.timeout(2)
             self.current_state = ReceptionistTM.TASK_STATES["INTRODUCTION"]
 
         if self.current_state == ReceptionistTM.TASK_STATES["INTRODUCTION"]:
             Logger.state(self, "Introducing guest")
             self.subtask_manager.hri.publish_display_topic(FACE_RECOGNITION_IMAGE)
-            self.subtask_manager.manipulation.move_to_position("front_low_stare")
-            self.subtask_manager.manipulation.follow_face(True)
+            # self.subtask_manager.manipulation.follow_face(True)
 
+            self.subtask_manager.manipulation.follow_face(False)
+            host = self.guests[0]
             if self.current_guest == 1:
-                host = self.guests[0]
-                self.current_attempts = 0
-                while self.current_attempts < ATTEMPT_LIMIT:
-                    result = self.subtask_manager.vision.follow_by_name(host.name)
-                    if result == Status.EXECUTION_SUCCESS:
+                self.subtask_manager.manipulation.move_to_position("front_low_stare")
+                person_found = False
+                for seat_angle in self.seat_angles:
+                    if person_found:
                         break
-                    self.subtask_manager.manipulation.pan_to(
-                        self.check_angles[self.current_attempts]
-                    )
-                    self.current_attempts += 1
+                    self.subtask_manager.manipulation.pan_to(seat_angle)
 
+                    self.current_attempts = 0
+
+                    while self.current_attempts < ATTEMPT_LIMIT:
+                        self.subtask_manager.vision.follow_by_name(host.name)
+                        result = self.subtask_manager.vision.isPerson(host.name)
+
+                        if result:
+                            # self.subtask_manager.vision.save_face_name(host.name)
+                            person_found = True
+                            break
+                        self.timeout(1)
+                        # self.subtask_manager.manipulation.pan_to(
+                        #     self.check_angles[self.current_attempts]
+                        # )
+                        self.current_attempts += 1
+                self.subtask_manager.manipulation.follow_face(True)
                 self.subtask_manager.hri.say(f"Hello {host.name}. This is {self.get_guest().name}")
+                self.timeout(3)
+                self.subtask_manager.manipulation.follow_face(False)
+
             else:
                 guest1 = self.guests[1]
-                self.current_attempts = 0
-                while self.current_attempts < ATTEMPT_LIMIT:
-                    result = self.subtask_manager.vision.follow_by_name(guest1.name)
-                    if result == Status.EXECUTION_SUCCESS:
+                self.timeout(3)
+                self.subtask_manager.hri.say(
+                    f"Thanks for taking a seat {self.get_guest().name}. I will now introduce you to {guest1.name}.",
+                    wait=True,
+                )
+
+                # self.timeout(2)
+                self.subtask_manager.manipulation.move_to_position("front_low_stare")
+
+                self.subtask_manager.manipulation.follow_face(False)
+                self.subtask_manager.vision.follow_by_name(guest1.name)
+                person_found = False
+                for seat_angle in self.seat_angles:
+                    if person_found:
                         break
-                    self.subtask_manager.manipulation.pan_to(
-                        self.check_angles[self.current_attempts]
-                    )
-                    self.current_attempts += 1
+
+                    self.subtask_manager.manipulation.pan_to(seat_angle)
+                    self.current_attempts = 0
+
+                    while self.current_attempts < ATTEMPT_LIMIT:
+                        result = self.subtask_manager.vision.isPerson(guest1.name)
+                        if result:
+                            person_found = True
+                            break
+
+                        self.timeout(1)
+                        self.current_attempts += 1
+                        # self.subtask_manager.manipulation.pan_to(
+                        #     self.check_angles[self.current_attempts]
+                        # )
+
+                    # self.current_attempts += 1
+                self.subtask_manager.manipulation.follow_face(True)
+                self.timeout(1)
                 self.subtask_manager.hri.say(
                     f"Hello {guest1.name}. This is {self.get_guest().name} and they like {self.get_guest().drink}"
                 )
+                self.subtask_manager.manipulation.follow_face(False)
 
-                while self.current_attempts < ATTEMPT_LIMIT:
-                    result = self.subtask_manager.vision.follow_by_name(self.get_guest().name)
-                    if result == Status.EXECUTION_SUCCESS:
-                        break
-                    self.subtask_manager.manipulation.pan_to(
-                        self.check_angles[self.current_attempts]
-                    )
-                    self.current_attempts += 1
-                self.subtask_manager.hri.say(
-                    f"{self.get_guest().name}. This is {guest1.name} and they like {guest1.drink}"
-                )
+                # self.subtask_manager.manipulation.move_to_position("front_low_stare")
+                # person_found = False
+                # for seat_angle in self.seat_angles:
+                #     if person_found:
+                #         break
+                #     self.subtask_manager.manipulation.follow_face(False)
+                #     self.subtask_manager.manipulation.pan_to(seat_angle)
+                #     while self.current_attempts < ATTEMPT_LIMIT:
+                #         self.subtask_manager.vision.follow_by_name(self.get_guest().name)
+                #         result = self.subtask_manager.vision.isPerson(self.get_guest().name)
+                #         if result:
+                #             person_found = True
+                #             break
+                #         self.subtask_manager.manipulation.pan_to(
+                #             self.check_angles[self.current_attempts]
+                #         )
+                #         self.current_attempts += 1
+                #     self.subtask_manager.manipulation.follow_face(True)
+                #     self.subtask_manager.hri.say(
+                #         f"{self.get_guest().name}. This is {guest1.name} and they like {guest1.drink}"
+                #     )
 
             self.current_state = ReceptionistTM.TASK_STATES["NAVIGATE_TO_ENTRANCE"]
 
         if self.current_state == ReceptionistTM.TASK_STATES["NAVIGATE_TO_ENTRANCE"]:
             Logger.state(self, "Navigating to entrance")
+            self.subtask_manager.manipulation.follow_face(False)
+            self.timeout(1)
+            self.subtask_manager.manipulation.move_to_position("nav_pose")
             self.current_guest += 1
             if self.current_guest == 3:
                 self.current_state = ReceptionistTM.TASK_STATES["END"]

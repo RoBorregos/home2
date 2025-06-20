@@ -5,6 +5,7 @@ import mediapipe as mp
 import numpy as np
 from frida_constants.vision_enums import Gestures
 from math import degrees, acos
+import time
 
 
 class PoseDetection:
@@ -173,7 +174,6 @@ class PoseDetection:
 
     def is_waving(self, results):
         landmarks = results.pose_landmarks.landmark
-
         left_shoulder = landmarks[11]  # mp_pose.PoseLandmark.LEFT_SHOULDER
         left_elbow = landmarks[13]  # mp_pose.PoseLandmark.LEFT_ELBOW
         left_wrist = landmarks[15]  # mp_pose.PoseLandmark.LEFT_WRIST

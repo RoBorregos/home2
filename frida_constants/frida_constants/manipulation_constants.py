@@ -47,7 +47,7 @@ PICK_PERCEPTION_SERVICE = "/manipulation/pick_perception_service"
 GRASP_DETECTION_SERVICE = "/manipulation/detect_grasps"
 GRIPPER_SET_STATE_SERVICE = "/manipulation/gripper/set_state"
 XARM_SET_DIGITAL_TGPIO_SERVICE = "/xarm/set_tgpio_digital"
-SAFETY_HEIGHT = 0.025
+SAFETY_HEIGHT = 0.05
 PICK_MIN_HEIGHT = 0.08
 GRASP_LINK_FRAME = "gripper_grasp_frame"
 
@@ -55,7 +55,7 @@ GRASP_LINK_FRAME = "gripper_grasp_frame"
 PLACE_PERCEPTION_SERVICE = "/manipulation/place_perception_service"
 HEATMAP_PLACE_SERVICE = "/manipulation/heatmap_place_service"
 PLACE_POINT_DEBUG_TOPIC = "/manipulation/table_place_point_debug"
-PLACE_MAX_DISTANCE = 1.1
+PLACE_MAX_DISTANCE = 0.8
 PLACE_MOTION_ACTION_SERVER = "/manipulation/place_motion_action_server"
 
 MANIPULATION_ACTION_SERVER = "/manipulation/manipulation_action_server"

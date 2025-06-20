@@ -51,7 +51,7 @@ from geometry_msgs.msg import Point, PointStamped
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from std_msgs.msg import String
-from std_srvs.srv import SetBool
+from std_srvs.srv import SetBool, Trigger
 from utils.decorators import mockable, service_check
 from utils.logger import Logger
 from utils.status import Status
@@ -59,8 +59,9 @@ import math
 from utils.task import Task
 
 
-TIMEOUT = 5.0
+TIMEOUT = 8.0
 DETECTION_HANDLER_TOPIC_SRV = DETECTION_HANDLER_TOPIC_SRV
+IS_TRACKING_TOPIC = "/vision/is_tracking"
 
 
 class VisionTasks:
@@ -95,6 +96,7 @@ class VisionTasks:
         self.pointing_object_client = self.node.create_client(
             DetectPointingObject, POINTING_OBJECT_SERVICE
         )
+        self.get_track_person_client = self.node.create_client(Trigger, IS_TRACKING_TOPIC)
         self.shelf_detections_client = self.node.create_client(
             ShelfDetectionHandler, SHELF_DETECTION_TOPIC
         )
@@ -210,6 +212,26 @@ class VisionTasks:
         """Callback for the face list subscriber"""
         self.person_list = msg.list
 
+    def get_track_person(self):
+        """Get the track person status"""
+        Logger.info(self.node, "Getting track person status")
+        request = Trigger.Request()
+        try:
+            future = self.get_track_person_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+            result = future.result()
+
+            if not result.success:
+                Logger.warn(self.node, "No person found")
+                return Status.TARGET_NOT_FOUND
+
+        except Exception as e:
+            Logger.error(self.node, f"Error getting track person status: {e}")
+            return Status.EXECUTION_ERROR
+
+        Logger.success(self.node, "Track person status success")
+        return Status.EXECUTION_SUCCESS
+
     def person_name_callback(self, msg: String):
         """Callback for the face name subscriber"""
         self.person_name = msg.data
@@ -235,6 +257,7 @@ class VisionTasks:
 
         Logger.info(self.node, f"Saving name: {name}")
         request = SaveName.Request()
+        name = name.lower()
         request.name = name
 
         try:
@@ -412,6 +435,9 @@ class VisionTasks:
         """Returns true when the guest is detected"""
         pass
 
+    def isPerson(self, name: str = ""):
+        return self.person_name == name
+
     @mockable(return_value=True, delay=2)
     @service_check("beverage_location_client", [Status.EXECUTION_ERROR, ""], TIMEOUT)
     def find_drink(self, drink: str, timeout: float = TIMEOUT) -> tuple[int, str]:
@@ -528,6 +554,7 @@ class VisionTasks:
         """Follow a person by name or area"""
         Logger.info(self.node, f"Following face by: {name}")
         request = SaveName.Request()
+        name = name.lower()
         request.name = name
 
         try:
@@ -688,8 +715,8 @@ class VisionTasks:
             rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
             result = future.result()
 
-            if not result.success:
-                Logger.warn(self.node, f"No {type_requested} detected")
+            if not result.success or result.result == "unknown":
+                Logger.warn(self.node, f"No {type_requested} detected.")
                 return Status.TARGET_NOT_FOUND, ""
 
         except Exception as e:
@@ -703,6 +730,12 @@ class VisionTasks:
         """Return the object matching the description"""
         Logger.info(self.node, "Detecting object matching description")
         prompt = f"What is the {description} {object} in the image?"
+        return self.moondream_query(prompt, query_person=False)
+
+    def count_objects(self, object: str):
+        """Count the number of objects in the image"""
+        Logger.info(self.node, "Counting objects")
+        prompt = f"How many {object} are in the image? Please return only a number"
         return self.moondream_query(prompt, query_person=False)
 
     def describe_person(self, callback):

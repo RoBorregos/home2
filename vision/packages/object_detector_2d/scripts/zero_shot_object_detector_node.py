@@ -12,14 +12,13 @@ from frida_interfaces.msg import ObjectDetectionArray
 from frida_interfaces.srv import SetDetectorClasses
 from dataclasses import dataclass
 import pathlib
-import threading
 from detectors.YoloEObjectDetector import YoloEObjectDetector
 from detectors.ObjectDetector import ObjectDectectorParams
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
     DEPTH_IMAGE_TOPIC,
     CAMERA_INFO_TOPIC,
-    DETECTIONS_TOPIC,
+    ZERO_SHOT_DETECTIONS_TOPIC,
     ZERO_SHOT_DETECTIONS_IMAGE_TOPIC,
     ZERO_SHOT_DETECTIONS_POSES_TOPIC,
     ZERO_SHOT_DETECTIONS_3D_TOPIC,
@@ -37,7 +36,7 @@ ARGS = {
     "RGB_IMAGE_TOPIC": CAMERA_TOPIC,
     "DEPTH_IMAGE_TOPIC": DEPTH_IMAGE_TOPIC,
     "CAMERA_INFO_TOPIC": CAMERA_INFO_TOPIC,
-    "DETECTIONS_TOPIC": DETECTIONS_TOPIC,
+    "DETECTIONS_TOPIC": ZERO_SHOT_DETECTIONS_TOPIC,
     "DETECTIONS_IMAGE_TOPIC": ZERO_SHOT_DETECTIONS_IMAGE_TOPIC,
     "DETECTIONS_POSES_TOPIC": ZERO_SHOT_DETECTIONS_POSES_TOPIC,
     "DETECTIONS_3D_TOPIC": ZERO_SHOT_DETECTIONS_3D_TOPIC,
@@ -45,7 +44,7 @@ ARGS = {
     "SET_DETECTOR_CLASSES_SERVICE": SET_DETECTOR_CLASSES_SERVICE,
     "CAMERA_FRAME": CAMERA_FRAME,
     "TARGET_FRAME": "base_link",
-    "YOLO_MODEL_PATH": MODELS_PATH + ZERO_SHOT_MODEL,
+    "YOLO_MODEL_PATH": ZERO_SHOT_MODEL,
     "USE_ACTIVE_FLAG": False,
     "DEPTH_ACTIVE": True,
     "VERBOSE": False,
@@ -109,9 +108,6 @@ class zero_shot_object_detector_node(object_detector_node):
 
         # Frames per second throughput estimator
         self.curr_clock = 0
-        self.fps = None
-        callFpsThread = threading.Thread(target=self.callFps, args=(), daemon=True)
-        callFpsThread.start()
 
         self.get_logger().info("Object Detector 2D Node has been started")
 

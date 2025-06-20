@@ -23,12 +23,14 @@ from frida_constants.hri_constants import (
     IS_POSITIVE_SERVICE,
     LLM_WRAPPER_SERVICE,
     QUERY_ENTRY_SERVICE,
+    RAG_SERVICE,
     SPEAK_SERVICE,
     STT_SERVICE_NAME,
     USEFUL_AUDIO_NODE_NAME,
     WAKEWORD_TOPIC,
 )
 from frida_interfaces.srv import (
+    HearMultiThread,
     STT,
     AddEntry,
     CategorizeShelves,
@@ -42,6 +44,7 @@ from frida_interfaces.srv import (
     Speak,
     UpdateHotwords,
 )
+from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
 from rcl_interfaces.msg import Parameter, ParameterType, ParameterValue
 from rcl_interfaces.srv import SetParameters
 from rclpy.node import Node
@@ -89,6 +92,8 @@ InterpreterAvailableCommands = Union[
 
 TIMEOUT = 5.0
 
+# set_log_level("INFO")  # Set to "ERROR" in prod
+
 
 def confirm_query(interpreted_text, target_info):
     return f"Did you say {target_info}?"
@@ -120,10 +125,14 @@ class HRITasks(metaclass=SubtaskMeta):
         self.keyword_client = self.node.create_subscription(
             String, WAKEWORD_TOPIC, self._get_keyword, 10
         )
-
+        self.hear_multi_service = self.node.create_client(
+            HearMultiThread, "/integration/multi_stop"
+        )
         self.useful_audio_params = self.node.create_client(
             SetParameters, f"/{USEFUL_AUDIO_NODE_NAME}/set_parameters"
         )
+
+        self.answer_question_service = self.node.create_client(AnswerQuestionLLM, RAG_SERVICE)
 
         all_services = {
             "hear": {
@@ -178,6 +187,8 @@ class HRITasks(metaclass=SubtaskMeta):
     def say(self, text: str, wait: bool = True) -> None:
         """Method to publish directly text to the speech node"""
         Logger.info(self.node, f"Sending to saying service: {text}")
+
+        # return Status.EXECUTION_SUCCESS
 
         request = Speak.Request(text=text)
 
@@ -235,6 +246,31 @@ class HRITasks(metaclass=SubtaskMeta):
         else:
             self.say(f"Sorry, I don't know how to {command}")
             return Status.TARGET_NOT_FOUND
+
+    def hear_multi(self, status: int) -> bool:
+        request = HearMultiThread.Request()
+        if status == 0:
+            request.stop_service = True
+            request.start_service = False
+        elif status == 1:
+            request.stop_service = False
+            request.start_service = True
+        else:
+            request.stop_service = False
+            request.start_service = False
+
+        future = self.hear_multi_service.call_async(request)
+        Logger.info(
+            self.node,
+            "Checking if stopped",
+        )
+
+        rclpy.spin_until_future_complete(self.node, future)
+        if future.result() is None:
+            Logger.error(self.node, "Failed receiving status word")
+            return False
+
+        return future.result().stopped
 
     def _get_keyword(self, msg: String) -> None:
         try:
@@ -359,6 +395,7 @@ class HRITasks(metaclass=SubtaskMeta):
         use_hotwords: bool = True,
         retries: int = 3,
         min_wait_between_retries: float = 5,
+        skip_extract_data: bool = False,
     ):
         """
         Method to confirm a specific question.
@@ -386,7 +423,11 @@ class HRITasks(metaclass=SubtaskMeta):
             s, interpreted_text = self.hear()
 
             if s == Status.EXECUTION_SUCCESS:
-                s, target_info = self.extract_data(query, interpreted_text, context)
+                if not skip_extract_data:
+                    s, target_info = self.extract_data(query, interpreted_text, context)
+                else:
+                    s = Status.EXECUTION_SUCCESS
+                    target_info = interpreted_text
 
                 if s == Status.TARGET_NOT_FOUND:
                     target_info = interpreted_text
@@ -451,13 +492,6 @@ class HRITasks(metaclass=SubtaskMeta):
         rclpy.spin_until_future_complete(self.node, future)
         return Status.EXECUTION_SUCCESS, future.result().corrected_text
 
-    @service_check("llm_wrapper_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
-    def ask(self, question: str) -> str:
-        request = LLMWrapper.Request(question=question)
-        future = self.llm_wrapper_service.call_async(request)
-        rclpy.spin_until_future_complete(self.node, future)
-        return Status.EXECUTION_SUCCESS, future.result().answer
-
     def command_interpreter(self, text: str) -> List[InterpreterAvailableCommands]:
         Logger.info(
             self.node,
@@ -500,24 +534,28 @@ class HRITasks(metaclass=SubtaskMeta):
 
     @service_check("common_interest_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def common_interest(self, person1, interest1, person2, interest2, remove_thinking=True):
-        Logger.info(
-            self.node,
-            f"Finding common interest between {person1}({interest1}) and {person2}({interest2})",
-        )
-        request = CommonInterest.Request(
-            person1=person1, interests1=interest1, person2=person2, interests2=interest2
-        )
-        future = self.common_interest_service.call_async(request)
-        rclpy.spin_until_future_complete(self.node, future)
+        try:
+            Logger.info(
+                self.node,
+                f"Finding common interest between {person1}({interest1}) and {person2}({interest2})",
+            )
+            request = CommonInterest.Request(
+                person1=person1, interests1=interest1, person2=person2, interests2=interest2
+            )
+            future = self.common_interest_service.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=15)
 
-        result = future.result().common_interest
+            result = future.result().common_interest
 
-        if remove_thinking:
-            result = re.sub(r"<think>.*?</think>", "", result, flags=re.DOTALL)
+            if remove_thinking:
+                result = re.sub(r"<think>.*?</think>", "", result, flags=re.DOTALL)
 
-        Logger.info(
-            self.node, f"Common interest computed between {person1} and {person2}: {result}"
-        )
+            Logger.info(
+                self.node, f"Common interest computed between {person1} and {person2}: {result}"
+            )
+        except Exception as e:
+            Logger.error(self.node, f"Error in common interest service: {e}")
+            return Status.EXECUTION_ERROR, ""
 
         return Status.EXECUTION_SUCCESS, result
 
@@ -543,6 +581,48 @@ class HRITasks(metaclass=SubtaskMeta):
         Logger.info(self.node, f"is_negative result ({text}): {future.result().is_negative}")
         return Status.EXECUTION_SUCCESS, future.result().is_negative
 
+    @service_check("answer_question_service", (Status.SERVICE_CHECK, "", 0.5), TIMEOUT)
+    def answer_question(
+        self,
+        question: str,
+        top_k: int = 3,
+        threshold: float = 0.1,
+        collections: list = ["frida_knowledge", "roborregos_knowledge", "tec_knowledge"],
+    ) -> tuple[Status, str]:
+        """
+        Method to answer a question using the RAG service.
+
+        Args:
+            question: The question to answer
+            top_k: Number of top results to consider (default: use service default)
+            threshold: Similarity threshold for including context (default: use service default)
+            collections: List of collections to search in (default: use service default)
+
+        Returns:
+            Status: The status of the execution
+            str: The answer to the question
+            float: Confidence score of the answer
+        """
+        Logger.info(self.node, f"Sending question to RAG service: {question}")
+
+        request = AnswerQuestionLLM.Request(
+            question=question,
+            topk=top_k if top_k is not None else 0,
+            threshold=threshold if threshold is not None else 0.0,
+            collections=collections if collections is not None else [],
+        )
+
+        future = self.answer_question_service.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+
+        result = future.result()
+        if result.success:
+            Logger.info(self.node, f"RAG answer received with score: {result.score}")
+            return Status.EXECUTION_SUCCESS, result.response, result.score
+        else:
+            Logger.warn(self.node, f"RAG service failed: {result.response}")
+            return Status.EXECUTION_ERROR, result.response, result.score
+
     # /////////////////embeddings services/////
     def add_command_history(self, command: InterpreterAvailableCommands, result, status):
         collection = "command_history"
@@ -550,7 +630,6 @@ class HRITasks(metaclass=SubtaskMeta):
         document = [command.action]
         metadata = [
             {
-                "action": command.action,
                 "command": str(command),
                 "result": result,
                 "status": status,
@@ -595,13 +674,44 @@ class HRITasks(metaclass=SubtaskMeta):
             Status: the status of the execution
             list[str]: the results of the query
         """
-        Logger.info(self.node, f"Finding closest items to: {query} in {str(documents)}")
         self._add_to_collection(document=documents, metadata="", collection="closest_items")
-        self.node.get_logger().info(f"Adding closest items: {documents}")
         Results = self._query_(query, "closest_items", top_k)
         Results = self.get_name(Results)
         Logger.info(self.node, f"find_closest result({query}): {str(Results)}")
         return Status.EXECUTION_SUCCESS, Results
+
+    def find_closest_raw(self, documents: str, query: str, top_k: int = 1) -> list[str]:
+        """
+        Method to find the closest item to the query.
+        Args:
+            documents: the documents to search among
+            query: the query to search for
+        Returns:
+            Status: the status of the execution
+            list[str]: the results of the query
+        """
+        self._add_to_collection(document=documents, metadata="", collection="closest_items")
+        Results = self._query_(query, "closest_items", top_k)
+        Logger.info(self.node, f"find_closest result({query}): {str(Results)}")
+        return Results
+
+    @service_check("llm_wrapper_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
+    def answer_with_context(self, question: str, context: str) -> str:
+        """
+        Method to answer a question with context.
+        Args:
+            question: the question to answer
+            context: the context to use
+        Returns:
+            Status: the status of the execution
+            str: the answer to the question
+        """
+        self.node.get_logger().info(f"answer_with_context called with: {question}, {context}")
+
+        request = LLMWrapper.Request(question=question, context=context)
+        future = self.llm_wrapper_service.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+        return Status.EXECUTION_SUCCESS, future.result().answer
 
     def query_command_history(self, query: str, top_k: int = 1):
         """
@@ -621,6 +731,7 @@ class HRITasks(metaclass=SubtaskMeta):
         future = self.query_item_client.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
         if collection == "command_history":
+            self.node.get_logger().info(f"Querying command history: {future.result().results}")
             results_loaded = json.loads(future.result().results[0])
             sorted_results = sorted(
                 results_loaded["results"], key=lambda x: x["metadata"]["timestamp"], reverse=True
@@ -628,6 +739,7 @@ class HRITasks(metaclass=SubtaskMeta):
             results_list = sorted_results[:top_k]
         else:
             results = future.result().results
+
             results_loaded = json.loads(results[0])
             results_list = results_loaded["results"]
         return Status.EXECUTION_SUCCESS, results_list
@@ -645,12 +757,8 @@ class HRITasks(metaclass=SubtaskMeta):
     def get_context(self, query_result):
         return self.get_metadata_key(query_result, "context")
 
-    # TODO: Fix since we removed the complement from the command
-    def get_complement(self, query_result):
-        return self.get_metadata_key(query_result, "complement")
-
-    def get_characteristic(self, query_result):
-        return self.get_metadata_key(query_result, "characteristic")
+    def get_command(self, query_result):
+        return self.get_metadata_key(query_result, "command")
 
     def get_result(self, query_result):
         return self.get_metadata_key(query_result, "result")
@@ -677,25 +785,30 @@ class HRITasks(metaclass=SubtaskMeta):
         Logger.info(self.node, "Sending request to categorize_objects")
 
         try:
-            request = CategorizeShelves.Request()
-            table_objects = [String(data=str(obj)) for obj in table_objects]
-            request = CategorizeShelves.Request(
-                table_objects=table_objects, shelves=String(data=str(shelves))
-            )
+            categories = self.get_shelves_categories(shelves)[1]
+            results = self.categorize_objects_with_embeddings(categories, table_objects)
 
-            future = self.categorize_service.call_async(request)
-            Logger.info(self.node, "generated request")
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=20)
-            res = future.result()
-            Logger.info(self.node, "request finished")
-            # if res.status != Status.EXECUTION_SUCCESS:
-            #     Logger.error(self.node, f"Error in categorize_objects: {res.status}")
-            #     return Status.EXECUTION_ERROR, {}, {}
+            objects_to_add = {key: value["objects_to_add"] for key, value in results.items()}
+            Logger.error(self.node, f"categories {categories}")
 
-            categorized_shelves = eval(res.categorized_shelves.data)
-            categorized_shelves = {int(k): v for k, v in categorized_shelves.items()}
-            objects_to_add = eval(res.objects_to_add.data)
-            objects_to_add = {int(k): v for k, v in objects_to_add.items()}
+            if "empty" in categories.values():
+                # add objects to add in shelves
+                for k, v in objects_to_add.items():
+                    for i in v:
+                        shelves[k].append(i)
+                categories = self.get_shelves_categories(shelves)[1]
+
+            Logger.error(self.node, f"THIS IS THE CATEGORIZED SHELVES: {categories}")
+            categorized_shelves = {
+                key: value["classification_tag"] for key, value in results.items()
+            }
+            for k, v in categorized_shelves.items():
+                if v == "empty":
+                    categorized_shelves[k] = categories[k]
+        #             categorized_shelves = {
+        #                 key: value["classification_tag"] for key, value in results.items()
+        #             }
+
         except Exception as e:
             self.node.get_logger().error(f"Error: {e}")
             return Status.EXECUTION_ERROR, {}, {}
@@ -703,6 +816,43 @@ class HRITasks(metaclass=SubtaskMeta):
         Logger.info(self.node, "Finished executing categorize_objects")
 
         return Status.EXECUTION_SUCCESS, categorized_shelves, objects_to_add
+
+    def get_shelves_categories(
+        self, shelves: dict[int, list[str]]
+    ) -> tuple[Status, dict[int, str]]:
+        """
+        Categorize objects based on their shelf levels.
+
+        Args:
+            shelves (dict[int, list[str]]): Dictionary mapping shelf levels to object names.
+
+        Returns:
+            dict[int, str]: Dictionary mapping shelf levels to its category.
+        """
+        Logger.info(self.node, "Sending request to categorize_objects")
+
+        try:
+            request = CategorizeShelves.Request(shelves=String(data=str(shelves)), table_objects=[])
+
+            future = self.categorize_service.call_async(request)
+            Logger.info(self.node, "generated request")
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=25)
+            res = future.result()
+            Logger.info(self.node, "request finished")
+            Logger.info(self.node, "categorize_objects result: " + str(res))
+            # if res.status != Status.EXECUTION_SUCCESS:
+            #     Logger.error(self.node, f"Error in categorize_objects: {res.status}")
+            #     return Status.EXECUTION_ERROR, {}, {}
+
+            categorized_shelves = res.categorized_shelves
+            categorized_shelves = {k: v for k, v in enumerate(categorized_shelves)}
+        except Exception as e:
+            self.node.get_logger().error(f"Error: {e}")
+            return Status.EXECUTION_ERROR, {}
+
+        Logger.info(self.node, "get_shelves_categories:" + str(categorized_shelves))
+
+        return Status.EXECUTION_SUCCESS, categorized_shelves
 
     def get_subarea(self, query_result):
         return self.get_metadata_key(query_result, "subarea")
@@ -740,6 +890,61 @@ class HRITasks(metaclass=SubtaskMeta):
 
     def get_timestamps(self, query_result):
         return self.get_metadata_key(query_result, "timestamp")
+
+    def categorize_object(self, categories: dict, obj: str):
+        """Method to categorize a list of objects in an array of objects depending on similarity"""
+
+        try:
+            category_list = []
+            categories_aux = categories.copy()
+            self.node.get_logger().info(f"OBJECT TO CATEGORIZE: {obj}")
+            for key in list(categories_aux.keys()):
+                if categories_aux[key] == "empty":
+                    self.node.get_logger().info("THERE IS AN EMPTY SHELVE")
+                    del categories_aux[key]
+
+            for category in categories_aux.values():
+                category_list.append(category)
+
+            results = self.find_closest_raw(category_list, obj)
+            results_distances = results[1][0]["distance"]
+
+            result_category = results[1][0]["document"]
+            self.node.get_logger().info(f"CATEGORY PREDICTED BEFORE THRESHOLD: {result_category}")
+            if "empty" in categories.values() and results_distances[0] > 1:
+                result_category = "empty"
+
+            self.node.get_logger().info(f"CATEGORY PREDICTED: {result_category}")
+
+            key_resulted = 2
+            for key in list(categories.keys()):
+                if str(categories[key]) == str(result_category):
+                    key_resulted = key
+                else:
+                    self.node.get_logger().info(
+                        "THE CATEGORY PREDICTED IS NOT CONTAINED IN THE REQUEST, RETURNING SHELVE 2"
+                    )
+
+            return key_resulted
+
+        except Exception as e:
+            self.node.get_logger().error(f"FAILED TO CATEGORIZE: {obj} with error: {e}")
+
+    def categorize_objects_with_embeddings(self, categories: dict, obj_list: list):
+        """
+        Categorize objects based on their embeddings."""
+        self.node.get_logger().info(f"THIS IS THE CATEGORIES dict RECEIVED: {categories}")
+        self.node.get_logger().info(f"THIS IS THE obj_list LIST RECEIVED: {obj_list}")
+        results = {
+            key: {"classification_tag": categories[key], "objects_to_add": []}
+            for key in categories.keys()
+        }
+        for obj in obj_list:
+            index = self.categorize_object(categories, obj)
+            results[index]["objects_to_add"].append(obj)
+
+        self.node.get_logger().info(f"THIS IS THE RESULTS OF THE CATEGORIZATION: {results}")
+        return results
 
 
 if __name__ == "__main__":

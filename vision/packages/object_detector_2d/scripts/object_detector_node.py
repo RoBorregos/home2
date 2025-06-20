@@ -10,7 +10,6 @@ from std_msgs.msg import Bool
 from sensor_msgs.msg import Image, CameraInfo
 from visualization_msgs.msg import Marker, MarkerArray
 from frida_interfaces.msg import ObjectDetectionArray
-from imutils.video import FPS
 from dataclasses import dataclass
 import pathlib
 import threading
@@ -18,6 +17,7 @@ import copy
 from typing import List
 import cv2 as cv
 from detectors.YoloV5ObjectDetector import YoloV5ObjectDetector
+from detectors.YoloV8ObjectDetector import YoloV8ObjectDetector
 from detectors.ObjectDetector import Detection, ObjectDectectorParams
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
@@ -34,7 +34,7 @@ from frida_constants.vision_constants import (
 
 MODELS_PATH = str(pathlib.Path(__file__).parent) + "/models/"
 
-
+print("PATH   ", MODELS_PATH)
 ARGS = {
     "RGB_IMAGE_TOPIC": CAMERA_TOPIC,
     "DEPTH_IMAGE_TOPIC": DEPTH_IMAGE_TOPIC,
@@ -47,14 +47,14 @@ ARGS = {
     "DEBUG_IMAGE_TOPIC": DEBUG_IMAGE_TOPIC,
     "CAMERA_FRAME": CAMERA_FRAME,
     "TARGET_FRAME": "base_link",
-    "YOLO_MODEL_PATH": MODELS_PATH + "yolov5s.pt",
+    "YOLO_MODEL_PATH": "tmr_30classes_v2.pt",
     "USE_ACTIVE_FLAG": False,
     "DEPTH_ACTIVE": True,
     "VERBOSE": False,
-    "USE_YOLO8": False,
+    "USE_YOLO8": True,
     "FLIP_IMAGE": False,
     "USE_ZED_TRANSFORM": True,
-    "MIN_SCORE_THRESH": 0.75,
+    "MIN_SCORE_THRESH": 0.3,
 }
 
 
@@ -95,7 +95,9 @@ class object_detector_node(rclpy.node.Node):
         self.active_flag = not self.node_params.USE_ACTIVE_FLAG
 
         if self.node_params.USE_YOLO8:
-            self.object_detector_2d = None
+            self.object_detector_2d = YoloV8ObjectDetector(
+                self.node_params.YOLO_MODEL_PATH, self.object_detector_parameters
+            )
         else:
             self.object_detector_2d = YoloV5ObjectDetector(
                 self.node_params.YOLO_MODEL_PATH, self.object_detector_parameters
@@ -110,9 +112,6 @@ class object_detector_node(rclpy.node.Node):
 
         # Frames per second throughput estimator
         self.curr_clock = 0
-        self.fps = None
-        callFpsThread = threading.Thread(target=self.callFps, args=(), daemon=True)
-        callFpsThread.start()
 
         self.get_logger().info("Object Detector 2D Node has been started")
 
@@ -171,9 +170,10 @@ class object_detector_node(rclpy.node.Node):
         self.node_params.DEBUG_IMAGE_TOPIC = (
             self.get_parameter("DEBUG_IMAGE_TOPIC").get_parameter_value().string_value
         )
-        self.node_params.YOLO_MODEL_PATH = (
+        self.node_params.YOLO_MODEL_PATH = MODELS_PATH + (
             self.get_parameter("YOLO_MODEL_PATH").get_parameter_value().string_value
         )
+        print("PATH_FINALLLLL: ", self.node_params.YOLO_MODEL_PATH)
         self.get_logger().info(f"path: {self.node_params.YOLO_MODEL_PATH}")
         self.node_params.USE_ACTIVE_FLAG = (
             self.get_parameter("USE_ACTIVE_FLAG").get_parameter_value().bool_value
@@ -183,6 +183,10 @@ class object_detector_node(rclpy.node.Node):
         )
         self.node_params.USE_YOLO8 = (
             self.get_parameter("USE_YOLO8").get_parameter_value().bool_value
+        )
+
+        self.get_logger().info(
+            "Listening to image on topic: " + self.node_params.RGB_IMAGE_TOPIC
         )
 
     def handlePublishers(self):
@@ -295,20 +299,6 @@ class object_detector_node(rclpy.node.Node):
                 self.bridge.cv2_to_imgmsg(self.detections_frame, "bgr8")
             )
 
-    # Handle FPS calculation.
-    def callFps(self):
-        if self.fps is not None:
-            self.fps.stop()
-            if self.node_params.VERBOSE:
-                print("[INFO] elapsed time: {:.2f}".format(self.fps.elapsed()))
-                print("[INFO] approx. FPS: {:.2f}".format(self.fps.fps()))
-            self.fpsValue = self.fps.fps()
-
-        self.fps = FPS().start()
-
-        callFpsThread = threading.Timer(2.0, self.callFps, args=())
-        callFpsThread.start()
-
     def visualize_detections(
         self,
         image,
@@ -340,7 +330,7 @@ class object_detector_node(rclpy.node.Node):
                 int(top * image.shape[0]),
                 int(bottom * image.shape[0]),
             )
-            cv.rectangle(image, (left, top), (right, bottom), color, 2)
+            cv.rectangle(image, (left, top), (right, bottom), color, 1)
             # draw label, name and score
             cv.putText(
                 image,
@@ -349,7 +339,7 @@ class object_detector_node(rclpy.node.Node):
                 cv.FONT_HERSHEY_SIMPLEX,
                 0.5,
                 color,
-                2,
+                1,
             )
             # draw centroid
             cv.circle(
@@ -438,7 +428,6 @@ class object_detector_node(rclpy.node.Node):
                 detections=self.object_detector_2d.getFridaDetections(detected_objects)
             )
         )
-        self.fps.update()
 
 
 def main(args=None):

@@ -2,7 +2,7 @@
 
 import json
 import os
-import subprocess
+import sys
 from collections import OrderedDict
 
 import rclpy
@@ -15,6 +15,14 @@ from std_msgs.msg import Bool, String
 
 from frida_constants.hri_constants import SPEAK_SERVICE
 from frida_interfaces.srv import Speak
+
+import grpc
+
+# Add the directory containing the protos to the Python path
+sys.path.append(os.path.join(os.path.dirname(__file__), "tts"))
+
+import tts_pb2
+import tts_pb2_grpc
 
 CURRENT_FILE_PATH = os.path.abspath(__file__)
 
@@ -51,6 +59,7 @@ class Say(Node):
         self.declare_parameter("SPEAK_SERVICE", SPEAK_SERVICE)
         self.declare_parameter("model", "en_US-amy-medium")
         self.declare_parameter("offline", True)
+        self.declare_parameter("TTS_SERVER_IP", "127.0.0.1:50050")
 
         self.declare_parameter("SPEAKER_DEVICE_NAME", "default")
         self.declare_parameter("SPEAKER_INPUT_CHANNELS", 32)
@@ -87,6 +96,9 @@ class Say(Node):
 
         self.model = self.get_parameter("model").get_parameter_value().string_value
         self.offline = self.get_parameter("offline").get_parameter_value().bool_value
+        self.server_ip = (
+            self.get_parameter("TTS_SERVER_IP").get_parameter_value().string_value
+        )
 
         if not self.offline:
             self.connected = SpeechApiUtils.is_connected()
@@ -192,8 +204,12 @@ class Say(Node):
                     self.play_audio(filepath)
             else:
                 output_path = os.path.join(VOICE_DIRECTORY, f"{hash(chunk)}.wav")
-                self.synthesize_voice_offline(output_path, chunk)
+                self.synthesize_voice_offline(f"{hash(chunk)}.wav", chunk)
                 self._add_to_cache(chunk, output_path)
+                mixer.pre_init(frequency=48000, buffer=2048)
+                mixer.init()
+                while mixer.music.get_busy():
+                    pass
 
     def connectedVoice(self, text):
         cached_path = self._get_cached_audio(text)
@@ -236,42 +252,20 @@ class Say(Node):
         return limited_chunks
 
     def synthesize_voice_offline(self, output_path, text):
-        """Synthesize text using the offline voice model, stream with aplay, and save to .wav."""
-
-        executable = (
-            "/workspace/piper/install/piper"
-            if os.path.exists("/workspace/piper/install/piper")
-            else "python3.10 -m piper"
-        )
-
-        model_path = os.path.join(VOICE_DIRECTORY, self.model + ".onnx")
-        download_model = not os.path.exists(model_path)
-
-        if download_model:
-            self.get_logger().info("Downloading voice model...")
-
-        raw_temp = os.path.join(VOICE_DIRECTORY, f"{hash(text)}.raw")
-
-        # Build the shell command to:
-        # 1. Generate raw audio with piper
-        # 2. Save it using tee
-        # 3. Stream it using aplay
-        command = f'echo "{text}" | {executable} --model {"--download-dir" if download_model else model_path} --data-dir {VOICE_DIRECTORY} --output-raw | tee "{raw_temp}" | aplay -r 22050 -f S16_LE -t raw -'
-
-        self.get_logger().info(f"Synthesizing and playing: {text}")
-        subprocess.run(command, shell=True, executable="/bin/bash")
-
-        # Convert raw audio to WAV using ffmpeg
-        convert_command = (
-            f'ffmpeg -y -f s16le -ar 22050 -ac 1 -i "{raw_temp}" "{output_path}"'
-        )
-        subprocess.run(convert_command, shell=True)
-
-        # Clean up raw file
         try:
-            os.remove(raw_temp)
+            with grpc.insecure_channel(self.server_ip) as channel:
+                stub = tts_pb2_grpc.TTSServiceStub(channel)
+                response = stub.Synthesize(
+                    tts_pb2.SynthesizeRequest(
+                        text=text, model=self.model, output_path=output_path
+                    )
+                )
+
+            if not response.success:
+                raise RuntimeError(f"TTS failed: {response.error_message}")
         except Exception as e:
-            self.get_logger().warn(f"Could not delete raw temp file: {e}")
+            self.get_logger().error(f"[gRPC] Synthesis failed: {e}")
+            raise
 
 
 def main(args=None):

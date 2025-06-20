@@ -11,15 +11,28 @@ import os
 from typing import Optional
 
 import rclpy
+import spacy
+from nlp.assets.data_extraction_priority import (
+    LOC_PRIORITY_LABELS,
+    NAME_PRIORITY_LABELS,
+    extract_by_priority,
+)
 from nlp.assets.dialogs import get_extract_data_args
 from openai import OpenAI
 from pydantic import BaseModel
 from rclpy.node import Node
 
-from frida_interfaces.srv import ExtractInfo
 from frida_constants.hri_constants import MODEL
+from frida_interfaces.srv import ExtractInfo
 
 EXTRACT_DATA_SERVICE = "/extract_data"
+
+CURRENT_FILE_PATH = os.path.abspath(__file__)
+
+FILE_DIR = CURRENT_FILE_PATH[: CURRENT_FILE_PATH.index("install")]
+ASSETS_DIR = os.path.join(
+    FILE_DIR, "src", "hri", "packages", "nlp", "assets", "extract_data"
+)
 
 
 class ExtractedData(BaseModel):
@@ -40,6 +53,21 @@ class DataExtractor(Node):
         self.declare_parameter("base_url", "None")
         self.declare_parameter("EXTRACT_DATA_SERVICE", EXTRACT_DATA_SERVICE)
         self.declare_parameter("temperature", 0.5)
+        self.declare_parameter("spacy_model", "en_core_web_md")
+
+        spacy_model = (
+            self.get_parameter("spacy_model").get_parameter_value().string_value
+        )
+
+        # Initialize spacy
+        os.makedirs(ASSETS_DIR, exist_ok=True)
+
+        try:
+            self.nlp = spacy.load(os.path.join(ASSETS_DIR, spacy_model))
+        except OSError:
+            spacy.cli.download(spacy_model)
+            self.nlp = spacy.load(spacy_model)
+            self.nlp.to_disk(os.path.join(ASSETS_DIR, spacy_model))
 
         base_url = self.get_parameter("base_url").get_parameter_value().string_value
         if base_url == "None":
@@ -72,7 +100,25 @@ class DataExtractor(Node):
     ) -> ExtractInfo.Response:
         """Service to extract information from text."""
 
-        self.get_logger().info("Extracting information from text")
+        self.get_logger().info(f"Extracting {request.data} from text")
+
+        # Optimized implementations for specific data extraction requests
+        if request.data == "name":
+            response.result = self.extract_name(request.full_text)
+            return response
+        elif request.data == "loc" or request.data == "location":
+            response.result = self.extract_loc(request.full_text)
+            return response
+
+        # Check if the data extraction must be performed using the LLM
+        if "LLM_" not in request.data:
+            self.get_logger().error(
+                "Invalid data type requested. Prepend with LLM_ to use a generic LLM for data extraction."
+            )
+            response.result = ""
+            return response
+
+        request.data = request.data.replace("LLM_", "")
 
         messages, response_format = get_extract_data_args(
             request.full_text, request.data, request.context
@@ -100,6 +146,28 @@ class DataExtractor(Node):
 
         response.result = result.data
         return response
+
+    def extract_name(self, text: str) -> str:
+        name = extract_by_priority(self.nlp(text).ents, NAME_PRIORITY_LABELS)
+        # Add a fallback to the text if no name is found
+        if len(name) == 0:
+            self.get_logger().error(
+                f"No name found in {text}. Defaulting to returning the same input"
+            )
+            name = text
+
+        return name
+
+    def extract_loc(self, text: str) -> str:
+        loc = extract_by_priority(self.nlp(text).ents, LOC_PRIORITY_LABELS)
+        # Add a fallback to the text if no loc is found
+        if len(loc) == 0:
+            self.get_logger().error(
+                f"No location found in {text}. Defaulting to returning the same input"
+            )
+            loc = text
+
+        return loc
 
 
 def main(args=None):

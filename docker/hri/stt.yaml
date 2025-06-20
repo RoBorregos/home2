@@ -13,6 +13,8 @@ services:
     volumes:
       - ../../hri/packages/speech/scripts/stt/:/app
       - ../../hri/packages/speech/speech/:/app/speech
+    environment:
+      ROS_LOCALHOST_ONLY: 1
     command:
       [
         "bash",

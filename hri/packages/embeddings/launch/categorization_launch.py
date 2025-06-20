@@ -21,5 +21,12 @@ def generate_launch_description():
                 output="screen",
                 parameters=[config_file],
             ),
+            Node(
+                package="embeddings",
+                executable="knowledge_base.py",
+                name="knowledge_base",
+                output="screen",
+                emulate_tty=True,
+            ),
         ]
     )

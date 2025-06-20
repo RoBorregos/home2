@@ -14,18 +14,24 @@ from rclpy.task import Future
 from ament_index_python.packages import get_package_share_directory
 from geometry_msgs.msg import PoseStamped
 from nav2_msgs.action import NavigateToPose
-from sensor_msgs.msg import LaserScan
+
+# from sensor_msgs.msg import LaserScan
 from std_srvs.srv import SetBool
 from utils.decorators import mockable, service_check
 from utils.status import Status
 from utils.task import Task
 from utils.logger import Logger
+
 from frida_constants.navigation_constants import (
     GOAL_TOPIC,
     FOLLOWING_SERVICE,
 )
+from frida_interfaces.srv import ReturnLocation, LaserGet
 
-TIMEOUT = 10.0
+TIMEOUT = 4
+RETURN_LASER_DATA = "/integration/Laserscan"
+
+RETURN_LOCATION = "/integration/ReturnLocation"
 
 
 class NavigationTasks:
@@ -44,21 +50,27 @@ class NavigationTasks:
         # Action clients and services
         self.goal_client = ActionClient(self.node, NavigateToPose, GOAL_TOPIC)
         self.activate_follow = self.node.create_client(SetBool, FOLLOWING_SERVICE)
-        self.scan_topic = self.node.create_subscription(LaserScan, "/scan", self.update_laser, 10)
-
+        self.laser_send = self.node.create_client(LaserGet, RETURN_LASER_DATA)
+        self.ReturnLocation_client = self.node.create_client(ReturnLocation, RETURN_LOCATION)
         self.services = {
-            Task.RECEPTIONIST: {"goal_client": {"client": self.goal_client, "type": "action"}},
+            Task.RECEPTIONIST: {
+                "goal_client": {"client": self.goal_client, "type": "action"},
+            },
             Task.HELP_ME_CARRY: {
-                "activate_follow": {"client": self.activate_follow, "type": "service"}
+                "activate_follow": {"client": self.activate_follow, "type": "service"},
             },
             Task.GPSR: {
                 "goal_client": {"client": self.goal_client, "type": "action"},
                 "activate_follow": {"client": self.activate_follow, "type": "service"},
+                "laser_send": {"client": self.laser_send, "type": "service"},
             },
             Task.STORING_GROCERIES: {
                 "goal_client": {"client": self.goal_client, "type": "action"},
+                "laser_send": {"client": self.laser_send, "type": "service"},
             },
-            Task.DEBUG: {},
+            Task.DEBUG: {
+                "laser_send": {"client": self.laser_send, "type": "service"},
+            },
         }
 
         if not self.mock_data:
@@ -79,11 +91,8 @@ class NavigationTasks:
                 if not service["client"].wait_for_server(timeout_sec=TIMEOUT):
                     Logger.warn(self.node, f"{key} action server not initialized. ({self.task})")
 
-    def update_laser(self, msg: LaserScan):
-        self.laser_sub = msg
-
     @mockable(return_value=Status.EXECUTION_SUCCESS, delay=10)
-    @service_check("goal_client", False, TIMEOUT)
+    @service_check("goal_client", False, timeout=3)
     def move_to_location(self, location: str, sublocation: str) -> Future:
         """Attempts to move to the given location and returns a Future that completes when the action finishes.
         Call the function on this way
@@ -151,37 +160,28 @@ class NavigationTasks:
         """
         future = Future()
         try:
-            coordinates = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-            self.node.get_logger().info(f"{coordinates}")
-        except Exception as e:
-            self.node.get_logger().error(f"Error moving to original location: {e}")
-            future.set_result(self.STATE["EXECUTION_ERROR"])
-            return future
-
-        try:
-            self.node.get_logger().info("Sending move request to original location")
             client_goal = NavigateToPose.Goal()
             goal = PoseStamped()
             goal.header.frame_id = "map"
-            goal.pose.position.x = coordinates[0]
-            goal.pose.position.y = coordinates[1]
-            goal.pose.position.z = coordinates[2]
-            goal.pose.orientation.x = coordinates[3]
-            goal.pose.orientation.y = coordinates[4]
-            goal.pose.orientation.z = coordinates[5]
-            goal.pose.orientation.w = coordinates[6]
+            goal.pose.position.x = 0.0
+            goal.pose.position.y = 0.0
+            goal.pose.position.z = 0.0
+            goal.pose.orientation.x = 0.0
+            goal.pose.orientation.y = 0.0
+            goal.pose.orientation.z = 0.0
+            goal.pose.orientation.w = 1.0
 
             client_goal.pose = goal
             self.goal_state = None
-            self._send_goal_future = self.pose_client.send_goal_async(client_goal)
+            self._send_goal_future = self.goal_client.send_goal_async(client_goal)
 
             self._send_goal_future.add_done_callback(
                 lambda future_goal: self.goal_response_callback(future_goal, future)
             )
             return future
         except Exception as e:
-            self.node.get_logger().error(f"Error moving to original location: {e}")
-            future.set_result(self.STATE["EXECUTION_ERROR"])
+            Logger.error(self.node, f"Error moving to location: {e}")
+            future.set_result(Status.EXECUTION_ERROR)
             return future
 
     def goal_response_callback(self, future, result_future):
@@ -230,21 +230,22 @@ class NavigationTasks:
         return Status.EXECUTION_SUCCESS
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, "open"), delay=3)
+    @service_check("laser_send", False, TIMEOUT)
     def check_door(self) -> tuple[int, str]:
         """Check if the door is open or closed"""
-        timeout_sec = 5.0  # timeout in seconds
-        timeout_count = 0
-        spin_rate = 10  # Hz
-        max_tries = int(timeout_sec * spin_rate)
 
-        Logger.info(self.node, "Waiting for laser scan data...")
-        while self.laser_sub is None and timeout_count < max_tries:
-            # 100ms timeout per spin
-            rclpy.spin_once(self.node, timeout_sec=0.1)
-            timeout_count += 1
-
-        if self.laser_sub is None:
-            Logger.error(self.node, "No points detected")
+        request = LaserGet.Request()
+        future = self.laser_send.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+        result = future.result()
+        if result is not None:
+            if result.status:
+                self.laser_sub = result.data
+            else:
+                Logger.error(self.node, "Error with request")
+                return (Status.EXECUTION_ERROR, "")
+        else:
+            Logger.error(self.node, "Error with request")
             return (Status.EXECUTION_ERROR, "")
 
         door_points = []
@@ -267,6 +268,25 @@ class NavigationTasks:
         else:
             Logger.error(self.node, "No points detected")
             return (Status.EXECUTION_ERROR, "")
+
+    def ReturnLocation_callback(self):
+        try:
+            request = ReturnLocation.Request()
+
+            future = self.ReturnLocation_client.call_async(request)
+
+            rclpy.spin_until_future_complete(self.node, future)
+
+            results = future.result()
+
+            if results is not None:
+                return (Status.EXECUTION_SUCCESS, results)
+            else:
+                Logger.error(self.node, "Error getting location")
+                return (Status.EXECUTION_ERROR, None)
+        except Exception as e:
+            Logger.error(self.node, f"Error getting location: {e}")
+            return (Status.EXECUTION_ERROR, None)
 
 
 if __name__ == "__main__":

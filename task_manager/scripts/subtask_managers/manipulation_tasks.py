@@ -78,6 +78,7 @@ class ManipulationTasks:
 
         self._get_joints_client = self.node.create_client(GetJoints, "/manipulation/get_joints")
         self.follow_face_client = self.node.create_client(FollowFace, "/follow_face")
+        self.follow_person_client = self.node.create_client(FollowFace, "/follow_person")
         self._manipulation_action_client = ActionClient(
             self.node, ManipulationAction, MANIPULATION_ACTION_SERVER
         )
@@ -93,6 +94,32 @@ class ManipulationTasks:
     def close_gripper(self):
         """Closes the gripper"""
         return self._set_gripper_state("close")
+
+    def follow_person(self, follow: bool) -> int:
+        """Save the name of the person detected"""
+
+        if follow:
+            Logger.info(self.node, "Following face")
+        else:
+            Logger.info(self.node, "Stopping following face")
+        request = FollowFace.Request()
+        request.follow_face = follow
+
+        try:
+            future = self.follow_person_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=20.0)
+            result = future.result()
+            if result is None:
+                raise Exception("Timeout Exceed")
+            if not result.success:
+                raise Exception("Service call failed")
+
+        except Exception as e:
+            Logger.error(self.node, f"Error following person: {e}")
+            return Status.EXECUTION_ERROR
+
+        Logger.success(self.node, "Following person request successful")
+        return Status.EXECUTION_SUCCESS
 
     @mockable(return_value=Status.EXECUTION_SUCCESS)
     @service_check("gripper_client", Status.EXECUTION_ERROR, TIMEOUT)
@@ -361,6 +388,24 @@ class ManipulationTasks:
     def pan_to(self, degrees: float):
         joint_positions = self.get_joint_positions(degrees=True)
         joint_positions["joint1"] = joint_positions["joint1"] - degrees
+        self.move_joint_positions(joint_positions=joint_positions, velocity=0.75, degrees=True)
+
+    def point(self, degrees: float):
+        joint_positions = self.get_joint_positions(degrees=True)
+        joint_positions["joint2"] = joint_positions["joint2"] + degrees
+        self.move_joint_positions(joint_positions=joint_positions, velocity=0.75, degrees=True)
+
+        joint_positions["joint2"] = joint_positions["joint2"] - degrees
+        self.move_joint_positions(joint_positions=joint_positions, velocity=0.75, degrees=True)
+
+    def check_lower(self, degrees: float):
+        joint_positions = self.get_joint_positions(degrees=True)
+        joint_positions["joint5"] = joint_positions["joint5"] + degrees
+        self.move_joint_positions(joint_positions=joint_positions, velocity=0.75, degrees=True)
+
+    def check_upper(self, degrees: float):
+        joint_positions = self.get_joint_positions(degrees=True)
+        joint_positions["joint5"] = joint_positions["joint5"] - degrees
         self.move_joint_positions(joint_positions=joint_positions, velocity=0.75, degrees=True)
 
     def move_to_position(self, named_position: str):

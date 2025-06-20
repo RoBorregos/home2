@@ -16,6 +16,7 @@ ITEM_CATEGORIZATION_SERVICE = "/hri/nlp/item_categorization"
 CONVESATION_SERVICE = "/hri/nlp/conversation"
 GRAMMAR_SERVICE = "/hri/nlp/grammar"
 COMMON_INTEREST_SERVICE = "/hri/nlp/common_interest"
+RAG_SERVICE = "/hri/rag/answer_question"
 
 ADD_ENTRY_SERVICE = "/hri/nlp/embeddings/add_entry_service"
 QUERY_ENTRY_SERVICE = "/hri/nlp/embeddings/query_entry_service"
@@ -24,19 +25,39 @@ USE_RESPEAKER = True
 RESPEAKER_LIGHT_TOPIC = "/hri/speech/respeaker/light"
 RESPEAKER_DOA_TOPIC = "/hri/speech/respeaker/doa"
 
+GPSR_COMMANDS = {
+    "go_to",
+    "pick_object",
+    "place_object",
+    "say_with_context",
+    "say",
+    "answer_question",
+    "get_visual_info",
+    "give_object",
+    "follow_person_until",
+    "guide_person_to",
+    "get_person_info",
+    # "find_object",
+    "count",
+    "find_person",
+    "find_person_by_name",
+}
+
 
 class MODEL(Enum):
-    GRAMMAR = "qwen2.5"
-    LLM_WRAPPER = "qwen2.5"
-    COMMON_INTEREST = "qwen2.5"
-    CATEGORIZE_SHELVES = "qwen2.5"
-    IS_POSITIVE = "qwen2.5"
-    IS_NEGATIVE = "qwen2.5"
-    GENERIC_STRUCTURED_OUTPUT = "qwen2.5"
-    GENERATE_RESPONSE = "qwen2.5"
-    STRUCTURED_RESPONSE = "qwen2.5"
+    GRAMMAR = "qwen3:0.6b"
+    LLM_WRAPPER = "qwen3:0.6b"
+    COMMON_INTEREST = "qwen3:0.6b"
+    CATEGORIZE_SHELVES = "qwen3"
+
+    IS_POSITIVE = "qwen3:0.6b"
+    IS_NEGATIVE = "qwen3:0.6b"
+    GENERIC_STRUCTURED_OUTPUT = "qwen3:0.6b"
+    GENERATE_RESPONSE = "qwen3:0.6b"
+    STRUCTURED_RESPONSE = "qwen3:0.6b"
     EXTRACT_INFO_REQUESTED = "qwen2.5"
-    GET_COMMANDS = "qwen2.5"
+    GET_COMMANDS = "qwen3:0.6b"
+    CommonInterest = "qwen3:0.6b"
 
 
 USEFUL_AUDIO_NODE_NAME = "useful_audio_node"

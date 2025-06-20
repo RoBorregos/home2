@@ -1,0 +1,18 @@
+syntax = "proto3";
+
+package tts;
+
+service TTSService {
+  rpc Synthesize (SynthesizeRequest) returns (SynthesizeResponse);
+}
+
+message SynthesizeRequest {
+  string text = 1;
+  string model = 2;
+  string output_path = 3;
+}
+
+message SynthesizeResponse {
+  bool success = 1;
+  string error_message = 2;
+}
