@@ -6,6 +6,7 @@ import numpy as np
 from frida_constants.vision_enums import Gestures
 from math import degrees, acos
 
+
 class PoseDetection:
     def __init__(self):
         print("Pose Detection Ready")
