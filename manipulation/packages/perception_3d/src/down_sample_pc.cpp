@@ -40,9 +40,6 @@ private:
   float medium_size = 0.05f;
   float large_size = 0.10f;
 
-  float small_cloud_radius = 1.5;
-  float medium_cloud_radius  = 2.5;
-
 public:
   DownSamplePointCloud() : Node("downsample_pointcloud") {
     RCLCPP_INFO(this->get_logger(), "Starting Publish Node");
@@ -77,32 +74,17 @@ public:
     pcl::fromROSMsg(*msg, *in_cloud);
 
     for(size_t i=0; i < in_cloud->points.size(); i++){
-      float radius = std::sqrt(std::pow(in_cloud->points[i].x, 2) + std::pow(in_cloud->points[i].y, 2) + std::pow(in_cloud->points[i].z, 2));
-      if(radius < small_cloud_radius) small_cloud->points.push_back(in_cloud->points[i]); 
-      else if(radius >= small_cloud_radius && radius < medium_cloud_radius) medium_cloud->points.push_back(in_cloud->points[i]);
-      else if(radius >= medium_cloud_radius) large_cloud->points.push_back(in_cloud->points[i]);
+      const auto& pt = in_cloud->points[i];
+      float sq_radius = (pt.x * pt.x + pt.y * pt.y + pt.z * pt.z);
+      if(sq_radius < SQ_SMALL_CLOUD_RADIUS) small_cloud->points.push_back(pt); 
+      else if(sq_radius < SQ_MEDIUM_CLOUD_RADIUS) medium_cloud->points.push_back(pt);
+      else large_cloud->points.push_back(pt);
     }
-    //insert small cloud
-    pcl::VoxelGrid<pointCloudType> small_sor;
-    small_sor.setInputCloud(small_cloud);
-    small_sor.setLeafSize(small_size, small_size, small_size);
-    small_sor.filter(*temporal_cloud);
-    sampled_cloud->insert(sampled_cloud->end(), temporal_cloud->begin(), temporal_cloud->end());
-
-    //insert medium cloud
-    pcl::VoxelGrid<pointCloudType> medium_sor;
-    medium_sor.setInputCloud(medium_cloud);
-    medium_sor.setLeafSize(medium_size, medium_size, medium_size);
-    medium_sor.filter(*temporal_cloud);
-    sampled_cloud->insert(sampled_cloud->end(), temporal_cloud->begin(), temporal_cloud->end());
-
-    //insert large cloud
-    pcl::VoxelGrid<pointCloudType> large_sor;
-    large_sor.setInputCloud(large_cloud);
-    large_sor.setLeafSize(large_size, large_size, large_size);
-    large_sor.filter(*temporal_cloud);
-    sampled_cloud->insert(sampled_cloud->end(), temporal_cloud->begin(), temporal_cloud->end());
-
+    //insert clouds
+    insert_cloud(small_cloud, sampled_cloud, small_size);
+    insert_cloud(medium_cloud, sampled_cloud, medium_size);
+    insert_cloud(large_cloud, sampled_cloud, large_size);
+    
     sensor_msgs::msg::PointCloud2 response;
     pcl::toROSMsg(*sampled_cloud, response);
     // response.header.frame_id = msg->header.frame_id;
@@ -112,6 +94,15 @@ public:
     // response.header.stamp = this->now();
 
     publisher->publish(response);
+  }
+  void insert_cloud(const PointCloudNS::Ptr& input_cloud,PointCloudNS::Ptr& output_cloud,float& leaf_size){
+    PointCloudNS::Ptr temporal_cloud(new PointCloudNS);
+    pcl::VoxelGrid<pointCloudType> large_sor;
+    large_sor.setInputCloud(input_cloud);
+    large_sor.setLeafSize(leaf_size, leaf_size, leaf_size);
+    large_sor.filter(*temporal_cloud);
+    output_cloud->insert(output_cloud->end(), temporal_cloud->begin(), temporal_cloud->end());
+    
   }
 };
 
