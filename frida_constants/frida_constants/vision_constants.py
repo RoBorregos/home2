@@ -90,5 +90,4 @@ POSE_GESTURE_TOPIC = "/vision/gpsr/pose_gesture_detection"
 SHELF_DETECTION_TOPIC = "/vision/storing_grocPeries/shelf_detection"
 
 # Person inside a room 
-PERSON_POINT_TOPIC = "/vision/person_inside_point"
 PERSON_INSIDE_REQUEST_TOPIC = "/vision/person_inside_request"
