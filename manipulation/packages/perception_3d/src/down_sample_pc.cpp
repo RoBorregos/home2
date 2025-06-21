@@ -41,7 +41,7 @@ private:
   float large_size = 0.10f;
   float small_radius = 1.5f; // 1.5m
   float medium_radius = 2.5f; // 2.5m
-  float sqr_small_rad = std::pow(small_radius, 2); // x^2 + y^2+ z^2
+  float sqr_small_rad = std::pow(small_radius, 2);
   float sqr_med_rad = std::pow(medium_radius, 2);
 
 public:
