@@ -38,8 +38,10 @@ from frida_constants.vision_constants import (
 from frida_constants.vision_enums import Poses, Gestures, DetectBy
 
 from pose_detection import PoseDetection
+from person_inside_client import PersonInsideClient
 
 package_share_dir = get_package_share_directory("vision_general")
+
 
 YOLO_LOCATION = str(pathlib.Path(__file__).parent) + "/Utils/yolov8n.pt"
 PERCENTAGE = 0.3
@@ -109,6 +111,8 @@ class GPSRCommands(Node):
         self.moondream_client = self.create_client(
             CropQuery, CROP_QUERY_TOPIC, callback_group=self.callback_group
         )
+
+        self.person_inside_client = PersonInsideClient(self, self.callback_group)
 
     def image_callback(self, data):
         """Callback to receive the image from the camera."""
@@ -232,6 +236,13 @@ class GPSRCommands(Node):
 
             # Crop the frame to the bounding box of the person
             cropped_frame = frame[y1:y2, x1:x2]
+
+            is_inside = self.person_inside_client.call(y1, x1, y2, x2)
+            if not is_inside or is_inside.location == "Unknown":
+                self.get_logger().info(
+                    "Person is not inside the house, skipping gesture detection."
+                )
+                continue
 
             gesture = self.pose_detection.detectGesture(cropped_frame)
 
