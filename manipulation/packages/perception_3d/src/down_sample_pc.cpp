@@ -41,8 +41,8 @@ private:
   float large_size = 0.10f;
   float small_radius = 1.5f; // 1.5m
   float medium_radius = 2.5f; // 2.5m
-  float sqr_small_rad = std::pow(small_radius, 2);
-  float sqr_med_rad = std::pow(medium_radius, 2);
+  float sqr_small_rad;
+  float sqr_med_rad;
 
 public:
   DownSamplePointCloud() : Node("downsample_pointcloud") {
@@ -54,7 +54,11 @@ public:
     this->small_size = this->declare_parameter("small_size", small_size);
     this->medium_size = this->declare_parameter("medium_size", medium_size);
     this->large_size = this->declare_parameter("large_size", large_size);
+    this->small_radius = this->declare_parameter("small_radius", small_radius);
+    this->medium_radius = this->declare_parameter("medium_radius", medium_radius);
 
+    this->sqr_small_rad =  std::pow(small_radius, 2);
+    this->sqr_med_rad = std::pow(medium_radius, 2);
     rclcpp::QoS qos = rclcpp::QoS(rclcpp::SensorDataQoS());
     qos.reliability(rclcpp::ReliabilityPolicy::Reliable);
 
@@ -101,10 +105,10 @@ public:
   }
   void insert_cloud(const PointCloudNS::Ptr& input_cloud,PointCloudNS::Ptr& output_cloud,float& leaf_size){
     PointCloudNS::Ptr temporal_cloud(new PointCloudNS);
-    pcl::VoxelGrid<pointCloudType> large_sor;
-    large_sor.setInputCloud(input_cloud);
-    large_sor.setLeafSize(leaf_size, leaf_size, leaf_size);
-    large_sor.filter(*temporal_cloud);
+    pcl::VoxelGrid<pointCloudType> sor;
+    sor.setInputCloud(input_cloud);
+    sor.setLeafSize(leaf_size, leaf_size, leaf_size);
+    sor.filter(*temporal_cloud);
     output_cloud->insert(output_cloud->end(), temporal_cloud->begin(), temporal_cloud->end());
     
   }
