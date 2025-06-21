@@ -1,12 +1,13 @@
+import os
 import torch
 import torch.nn as nn
 from torch.nn import init
 from torchvision import models
 from torch.autograd import Variable
+from safetensors import safe_open
 import pretrainedmodels
 import timm
 from .utils import load_state_dict_mute
-
 
 ######################################################################
 def weights_init_kaiming(m):
@@ -134,9 +135,26 @@ class ft_net(nn.Module):
 class ft_net_swin(nn.Module):
     def __init__(self, class_num, droprate=0.5, stride=2, circle=False, linear_num=512):
         super(ft_net_swin, self).__init__()
+        model_path = os.path.join(os.path.dirname(__file__), "model.safetensors")
         model_ft = timm.create_model(
             "swin_base_patch4_window7_224", pretrained=True, drop_path_rate=0.2
         )
+
+        if os.path.exists(model_path):
+            if model_path.endswith('.safetensors'):
+                # For .safetensors format
+                with safe_open(model_path, framework="pt") as f:
+                    state_dict = {k: f.get_tensor(k) for k in f.keys()}
+            else:
+                # For .pth format
+                state_dict = torch.load(model_path)
+            
+            model_ft.load_state_dict(state_dict)
+        else:
+            raise FileNotFoundError(
+                f"Swin Transformer weights not found at {model_path}\n"
+                f"Please download the weights file and place it in: {os.path.dirname(__file__)}"
+            )
         # avg pooling to global pooling
         # model_ft.avgpool = nn.AdaptiveAvgPool2d((1,1))
         model_ft.head = nn.Sequential()  # save memory
