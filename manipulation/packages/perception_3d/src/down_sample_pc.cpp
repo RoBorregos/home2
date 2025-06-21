@@ -39,8 +39,8 @@ private:
   float small_size = 0.01f;
   float medium_size = 0.05f;
   float large_size = 0.10f;
-  const float SMALL_CLOUD_RADIUS = 1.5f * 1.5f;
-  const float MEDIUM_CLOUD_RADIUS = 2.5f * 2.5f;
+  const float SMALL_CLOUD_RADIUS = 1.5f;
+  const float MEDIUM_CLOUD_RADIUS = 2.5f;
 
 public:
   DownSamplePointCloud() : Node("downsample_pointcloud") {
