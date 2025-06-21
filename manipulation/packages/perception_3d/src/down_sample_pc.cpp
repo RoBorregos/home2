@@ -39,6 +39,8 @@ private:
   float small_size = 0.01f;
   float medium_size = 0.05f;
   float large_size = 0.10f;
+  const float SMALL_CLOUD_RADIUS = 1.5f * 1.5f;
+  const float MEDIUM_CLOUD_RADIUS = 2.5f * 2.5f;
 
 public:
   DownSamplePointCloud() : Node("downsample_pointcloud") {
@@ -76,8 +78,8 @@ public:
     for(size_t i=0; i < in_cloud->points.size(); i++){
       const auto& pt = in_cloud->points[i];
       float sq_radius = (pt.x * pt.x + pt.y * pt.y + pt.z * pt.z);
-      if(sq_radius < SQ_SMALL_CLOUD_RADIUS) small_cloud->points.push_back(pt); 
-      else if(sq_radius < SQ_MEDIUM_CLOUD_RADIUS) medium_cloud->points.push_back(pt);
+      if(sq_radius < SMALL_CLOUD_RADIUS * SMALL_CLOUD_RADIUS) small_cloud->points.push_back(pt); 
+      else if(sq_radius < MEDIUM_CLOUD_RADIUS * MEDIUM_CLOUD_RADIUS) medium_cloud->points.push_back(pt);
       else large_cloud->points.push_back(pt);
     }
     //insert clouds

@@ -70,6 +70,4 @@ conststr DEBUG_POSE_GOAL_TOPIC = "/manipulation/debug_pose_goal";
 conststr GET_JOINT_SERVICE = "/manipulation/get_joints";
 conststr TOGGLE_SERVO_SERVICE = "/manipulation/toggle_servo";
 
-constexpr float SQ_SMALL_CLOUD_RADIUS = 1.5f * 1.5f;
-constexpr float SQ_MEDIUM_CLOUD_RADIUS = 2.5f * 2.5f;
 #endif // MANIPULATION_CONSTANTS_CPP
