@@ -425,16 +425,27 @@ class SingleTracker(Node):
                         )
                         cropped_image = self.frame[y1:y2, x1:x2]
                         embedding = None
+                        pil_image = PILImage.fromarray(cropped_image)
 
+                        with torch.no_grad():
+                            embedding = extract_feature_from_img(
+                                pil_image, self.model_reid
+                            )
                         if self.person_data["embeddings"] is None:
-                            pil_image = PILImage.fromarray(cropped_image)
+                            self.person_data["embeddings"] = []
+                            self.person_data["embeddings"].append(embedding)
+                        else:
+                            """ Compare embeddings from the person with the current one
+                            if they are different, we can add a new embedding as we have "certainty this is the same person
+                            with a different view -- not necessarily from a different angle"""
+                            embedding_exists = False
+                            for emb in self.person_data["embeddings"]:
+                                if compare_images(embedding, emb, threshold=0.7):
+                                    embedding_exists = True
+                                    break
 
-                            with torch.no_grad():
-                                embedding = extract_feature_from_img(
-                                    pil_image, self.model_reid
-                                )
-
-                            self.person_data["embeddings"] = embedding
+                            if not embedding_exists:
+                                self.person_data["embeddings"].append(embedding)
 
                         angle = self.pose_detection.personAngle(cropped_image)
                         if angle is not None and self.person_data[angle] is None:
@@ -470,14 +481,24 @@ class SingleTracker(Node):
                     ]
                     pil_image = PILImage.fromarray(cropped_image)
                     with torch.no_grad():
+                        self.get_logger().info(
+                            f"Extracting feature from person {person['track_id']}"
+                        )
                         embedding = extract_feature_from_img(pil_image, self.model_reid)
+                    print("extracting angle for person: ", person["track_id"])
                     person_angle = self.pose_detection.personAngle(cropped_image)
-
+                    print("person angle: ", person_angle)
                     if person_angle is not None:
+                        self.get_logger().info(
+                            f"Checking re-id person with angle {person_angle} and id {person['track_id']}"
+                        )
                         if self.person_data[person_angle] is not None:
                             if compare_images(
                                 embedding, self.person_data[person_angle], threshold=0.7
                             ):
+                                self.success(
+                                    f"Person re-identified: {person['track_id']} with angle {person_angle}"
+                                )
                                 self.person_data["id"] = person["track_id"]
                                 self.person_data["coordinates"] = (
                                     person["x1"],
@@ -490,15 +511,39 @@ class SingleTracker(Node):
                                 )
                                 person_in_frame = True
                                 break
-                        else:
+                    else:
+                        self.get_logger().info(
+                            f"Angle {person_angle} not found in person data"
+                        )
+                        self.get_logger().info(
+                            f"Checking re-id person without angle {person['track_id']}"
+                        )
+                        person_found = False
+                        for stored_embedding in self.person_data["embeddings"]:
                             if compare_images(
-                                embedding, self.person_data["embeddings"], threshold=0.7
+                                embedding, stored_embedding, threshold=0.7
                             ):
+                                self.success(
+                                    f"Person re-identified: {person['track_id']} without angle"
+                                )
                                 self.person_data["id"] = person["track_id"]
                                 self.success(
                                     f"Person re-identified: {person['track_id']} without angle"
                                 )
+                                person_in_frame = True
+                                person_found = True
                                 break
+                        if person_found:
+                            break
+                        # Check if person is re-identified without angle
+                        # if compare_images(
+                        #     embedding, self.person_data["embeddings"], threshold=0.7
+                        # ):
+                        #     self.person_data["id"] = person["track_id"]
+                        #     self.success(
+                        #         f"Person re-identified: {person['track_id']} without angle"
+                        #     )
+                        #     break
             if person_in_frame:
                 # if len(self.depth_image) > 0:
                 #     self.is_tracking_result = True
