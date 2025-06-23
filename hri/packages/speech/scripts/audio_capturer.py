@@ -107,7 +107,7 @@ class AudioCapturer(Node):
                     run_frames.append(msg)
                     self.publisher_.publish(AudioData(data=msg))
 
-                    yield speech_pb2.AudioChunk(audio_data=in_data)
+                    yield speech_pb2.AudioRequest(audio_data=in_data)
 
                     nonlocal iteration_step
                     iteration_step += 1

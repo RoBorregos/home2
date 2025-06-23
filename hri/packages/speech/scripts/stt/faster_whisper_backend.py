@@ -59,6 +59,7 @@ class ServeClientFasterWhisper(ServeClientBase):
             clip_audio,
             same_output_threshold,
         )
+        self.segments = []
         self.cache_path = cache_path
         self.model_sizes = [
             "tiny", "tiny.en", "base", "base.en", "small", "small.en",
@@ -71,7 +72,7 @@ class ServeClientFasterWhisper(ServeClientBase):
         self.language = "en" if self.model_size_or_path.endswith("en") else language
         self.task = task
         self.initial_prompt = initial_prompt
-        self.vad_parameters = vad_parameters or {"onset": 0.5}
+        self.vad_parameters = None #vad_parameters or {"onset": 0.5}
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
         if device == "cuda":
