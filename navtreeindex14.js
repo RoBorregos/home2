@@ -1,5 +1,6 @@
 var NAVTREEINDEX14 =
 {
+"dir_a0a5b44e0f983c57c16e360386b6863a.html":[20,0,5,0,1],
 "dir_a0b03da75d850fb8c73a41ea004cbab2.html":[20,0,3,0,6,1],
 "dir_a3a0f15ea511cfdb665e1d966dd51714.html":[20,0,7,0,2,1],
 "dir_a7af80369b90afd6abb55340b6e2a2b1.html":[20,0,6,1,0,0],
@@ -149,8 +150,8 @@ var NAVTREEINDEX14 =
 "functions_d.html":[19,3,0,4],
 "functions_e.html":[19,3,0,5],
 "functions_f.html":[19,3,0,6],
-"functions_func.html":[19,3,1,0],
 "functions_func.html":[19,3,1],
+"functions_func.html":[19,3,1,0],
 "functions_func_a.html":[19,3,1,1],
 "functions_func_b.html":[19,3,1,2],
 "functions_func_c.html":[19,3,1,3],
@@ -191,8 +192,8 @@ var NAVTREEINDEX14 =
 "functions_t.html":[19,3,0,20],
 "functions_u.html":[19,3,0,21],
 "functions_v.html":[19,3,0,22],
-"functions_vars.html":[19,3,2,0],
 "functions_vars.html":[19,3,2],
+"functions_vars.html":[19,3,2,0],
 "functions_vars_a.html":[19,3,2,1],
 "functions_vars_b.html":[19,3,2,2],
 "functions_vars_c.html":[19,3,2,3],
@@ -248,6 +249,5 @@ var NAVTREEINDEX14 =
 "gpsr__commands_8py.html#a4292ad4e66f3e6a03184f22f1a6d7284":[20,0,7,0,3,1,3,2],
 "gpsr__commands_8py.html#a484ae2eeab4a4147c109d5a656b09152":[20,0,7,0,3,1,3,7],
 "gpsr__commands_8py.html#a55786ce0a5b15d1f380ed6036188233d":[20,0,7,0,3,1,3,3],
-"gpsr__commands_8py.html#a5783abd6bc09633fca3b65604586f3cb":[20,0,7,0,3,1,3,1],
-"gpsr__commands_8py.html#a6aa54a5ec71fdb350f9ca4e52ecff8df":[20,0,7,0,3,1,3,8]
+"gpsr__commands_8py.html#a5783abd6bc09633fca3b65604586f3cb":[20,0,7,0,3,1,3,1]
 };

@@ -1,5 +1,6 @@
 var NAVTREEINDEX17 =
 {
+"namespacedemo__ds4.html":[18,0,17],
 "namespacedemo__ds4.html#a3b92a5a114f0a71450f4b47c440d3352":[18,0,17,0],
 "namespacedemo__face.html":[18,0,18],
 "namespacedemo__face.html#ae3adde7c73c08762a4607a57106cd131":[18,0,18,0],
@@ -248,6 +249,5 @@ var NAVTREEINDEX17 =
 "namespacegazebo__objects.html":[18,0,44],
 "namespacegazebo__objects.html#ae772c64528c2799ae896221ae540da16":[18,0,44,0],
 "namespaceget__positon__3d.html":[18,0,45],
-"namespaceget__positon__3d.html#a29b604174b61b6f8d610527f246be96e":[18,0,45,2],
-"namespaceget__positon__3d.html#a6ad20450ab6872c25d1c6f224047e8e6":[18,0,45,1]
+"namespaceget__positon__3d.html#a29b604174b61b6f8d610527f246be96e":[18,0,45,2]
 };

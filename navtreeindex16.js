@@ -1,5 +1,6 @@
 var NAVTREEINDEX16 =
 {
+"manipulation__constants__cpp_8hpp.html#aea79927e7322982d7468107318fe548c":[20,0,1,1,0,0,28],
 "manipulation__constants__cpp_8hpp.html#aeda8763f7b4ae11a3b5bd280d44cbebe":[20,0,1,1,0,0,15],
 "manipulation__constants__cpp_8hpp.html#aeede76ff0f1954547a24d2dd81f2ec64":[20,0,1,1,0,0,26],
 "manipulation__constants__cpp_8hpp.html#af852638f6bb2230f875e0d7578e1841f":[20,0,1,1,0,0,27],
@@ -248,6 +249,5 @@ var NAVTREEINDEX16 =
 "namespacedashgo__driver_1_1dashgo__stm32.html":[18,0,14,0],
 "namespacedebug.html":[18,0,16],
 "namespacedebug.html#a2a2ea829f61015ff6529ee756ac35d9d":[18,0,16,1],
-"namespacedebug.html#aa47889ce4161b7b36eb8c72cc7fcf016":[18,0,16,0],
-"namespacedemo__ds4.html":[18,0,17]
+"namespacedebug.html#aa47889ce4161b7b36eb8c72cc7fcf016":[18,0,16,0]
 };

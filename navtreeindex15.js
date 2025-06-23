@@ -1,5 +1,6 @@
 var NAVTREEINDEX15 =
 {
+"gpsr__commands_8py.html#a6aa54a5ec71fdb350f9ca4e52ecff8df":[20,0,7,0,3,1,3,8],
 "gpsr__commands_8py.html#a7dce31766c14809575920f9d6ebe53a2":[20,0,7,0,3,1,3,5],
 "gpsr__commands_8py.html#ad5d6792a5e386f37d9e2c0d65900de25":[20,0,7,0,3,1,3,6],
 "gpsr__launch_8py.html":[20,0,7,0,3,0,1],
@@ -248,6 +249,5 @@ var NAVTREEINDEX15 =
 "manipulation__constants__cpp_8hpp.html#ada7628b7b7ccf0546436b9904cd76cd1":[20,0,1,1,0,0,31],
 "manipulation__constants__cpp_8hpp.html#adcf969b505b3e8538db5c95bfec95c04":[20,0,1,1,0,0,36],
 "manipulation__constants__cpp_8hpp.html#ae54ec5c188b74ed3ecb73e5c5240d56b":[20,0,1,1,0,0,9],
-"manipulation__constants__cpp_8hpp.html#aea766fdbe17f3de366801110b6f9b382":[20,0,1,1,0,0,5],
-"manipulation__constants__cpp_8hpp.html#aea79927e7322982d7468107318fe548c":[20,0,1,1,0,0,28]
+"manipulation__constants__cpp_8hpp.html#aea766fdbe17f3de366801110b6f9b382":[20,0,1,1,0,0,5]
 };
