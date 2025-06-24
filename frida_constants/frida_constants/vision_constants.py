@@ -87,6 +87,9 @@ PERSON_NAME_TOPIC = "/vision/person_detected_name"
 FACE_RECOGNITION_IMAGE = "/vision/face_recognition_image"
 FOLLOW_BY_TOPIC = "/vision/follow_by_name"
 
+#Count people
+PEOPLE_TOPIC = "/vision/num_persons"
+
 # Receptionist commands node
 CHECK_PERSON_TOPIC = "/vision/receptionist/detect_person"
 FIND_SEAT_TOPIC = "/vision/receptionist/find_seat"
