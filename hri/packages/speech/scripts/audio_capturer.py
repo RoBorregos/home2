@@ -56,6 +56,8 @@ class AudioCapturer(Node):
         self.input_device_index = SpeechApiUtils.getIndexByNameAndChannels(
             mic_device_name, mic_input_channels, mic_out_channels
         )
+        
+        self.input_device_index = None
 
         self.get_logger().info("Input device index: " + str(self.input_device_index))
 
@@ -71,7 +73,7 @@ class AudioCapturer(Node):
         iteration_step = 0
         CHUNK_SIZE = 512
         self.FORMAT = pyaudio.paInt16
-        self.debug = False
+        self.debug = True
         CHANNELS = 6 if self.use_respeaker else 1
         self.RATE = 16000
         EXTRACT_CHANNEL = 0
@@ -88,9 +90,7 @@ class AudioCapturer(Node):
 
         # GRPC client setup
         grpc_channel = grpc.insecure_channel('localhost:50051')
-        print("before")
         stub = speech_pb2_grpc.SpeechStreamStub(grpc_channel)
-        print("after")
 
         stop_flag = threading.Event()
 
@@ -103,11 +103,12 @@ class AudioCapturer(Node):
                         in_data = np.frombuffer(in_data, dtype=np.int16)[EXTRACT_CHANNEL::6]
                         in_data = in_data.tobytes()
 
-                    msg = in_data
-                    run_frames.append(msg)
-                    self.publisher_.publish(AudioData(data=msg))
-
-                    yield speech_pb2.AudioRequest(audio_data=in_data)
+                    local_audio = bytes(in_data)
+                    run_frames.append(local_audio)
+                    ros_audio = bytes(local_audio)
+                    self.publisher_.publish(AudioData(data=ros_audio))
+                    grpc_audio = bytes(local_audio)
+                    yield speech_pb2.AudioRequest(audio_data=grpc_audio)
 
                     nonlocal iteration_step
                     iteration_step += 1
