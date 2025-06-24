@@ -7,7 +7,6 @@ import torch
 import ctranslate2
 from huggingface_hub import snapshot_download
 
-# from upd_whisper import WhisperModel
 from transcriber_faster_whisper import WhisperModel
 from base import ServeClientBase
 
@@ -193,29 +192,12 @@ class ServeClientFasterWhisper(ServeClientBase):
             vad_filter=self.use_vad,
             vad_parameters=self.vad_parameters if self.use_vad else None)
 
-        # print("info:bef")
-        # for segment in result[0]:
-        #     print(segment)
-        #     break
-        # print("info:after")
-        
-        # print("info:", info)
-        # res = result[0]
-        # transcription = "".join(
-        #     [segment.text for segment in res]
-        # ) 
-        # print("res:", res)
-        # print("res:", res)
-        # print("transcription:", transcription)
-        
-        # return None, None
         if ServeClientFasterWhisper.SINGLE_MODEL:
             ServeClientFasterWhisper.SINGLE_MODEL_LOCK.release()
 
         if self.language is None and info is not None:
             self.set_language(info)
             
-        print("finished transcribing audio")
         return result
 
     def handle_transcription_output(self, result, duration):

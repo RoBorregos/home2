@@ -16,6 +16,7 @@ class WhisperServicer(speech_pb2_grpc.SpeechStreamServicer):
         
         first_chunk = next(request_iterator)
         self.client = ServeClientFasterWhisper(initial_prompt=first_chunk.hotwords,send_last_n_segments=10,clip_audio=False,
+                                               model="large-v3-turbo",
                                       # language=options["language"],
                                       # task=options["task"],
                                       # model=options["model"],
@@ -23,16 +24,14 @@ class WhisperServicer(speech_pb2_grpc.SpeechStreamServicer):
         
         first_audio = WhisperServicer.bytes_to_float_array(first_chunk.audio_data)
         self.client.add_frames(first_audio)
-        prev_len = 0
-        
+        prev_text = ""
+
         for chunk in request_iterator:
             frame_np = WhisperServicer.bytes_to_float_array(chunk.audio_data)
             self.client.add_frames(frame_np)
-            if len(self.client.segments) != prev_len:
-                prev_len = len(self.client.segments)
-                print("client segments:", self.client.segments)
-                text = "".join([segment['text'] for segment in self.client.segments])
-                print("client text:", text)
+            text = "".join([segment['text'] for segment in self.client.segments])
+            if text != prev_text:
+                prev_text = text
                 yield speech_pb2.TextResponse(text=text)
 
     @staticmethod
