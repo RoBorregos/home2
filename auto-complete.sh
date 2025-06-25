@@ -22,6 +22,7 @@ _run_sh_autocomplete() {
 }
 
 complete -F _run_sh_autocomplete ./run.sh
+complete -F _run_sh_autocomplete ./status.sh
 
 # To use this script:
 # Source this script in your terminal: `source auto-complete.sh` or 

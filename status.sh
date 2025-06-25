@@ -1,0 +1,48 @@
+#!/bin/bash
+
+ARGS=("$@")
+ARG1=${ARGS[0]}
+ARG2=${ARGS[1]}
+
+# Check if the parameter is passed, if not, set a default value (e.g., "vision")
+if [ -z "$ARG1" ]; then
+  echo "No area or task provided. Valid areas are: --vision, --manipulation, etc. Or tasks like --carry, --receptionist, etc."
+  exit 1
+fi
+
+# check arguments passed as --help or -h
+if [ "$ARG1" == "--help" ] || [ "$ARG1" == "-h" ]; then
+  echo "Usage: ./run.sh [area_name] [task] or ./run.sh [task]"
+  echo "Example: ./run.sh vision --receptionist or ./run.sh --receptionist"
+  exit 0
+fi
+
+CONFIG_DIR="$(dirname "$0")/configs"
+LIB_DIR="$(dirname "$0")/lib"
+CONFIG_PATH="status/configs"
+
+# Load lib to check nodes required from each area
+source "status/check_nodes.sh"
+source_colors
+
+if [ -n "$ARG2" ]; then
+    # Run status for a specific task in a specific area
+    TASK=${ARG2}
+    case $ARG1 in
+        "--vision")
+            source "${CONFIG_PATH}/vision.cfg"
+            check_nodes VISION_NODES[$TASK] "Vision Status ${TASK}"
+            ;;
+        *)
+            echo -e "${RED}Error${NC}"
+            exit 1
+            ;;
+    esac
+else
+    # Run status for a specific task in all areas
+    TASK=${ARG1}
+    source "${CONFIG_PATH}/vision.cfg"
+    check_nodes VISION_NODES[$TASK] "Vision Status ${TASK}"
+
+    # TODO(@pms): Add other areas like manipulation, navigation, etc.
+fi
