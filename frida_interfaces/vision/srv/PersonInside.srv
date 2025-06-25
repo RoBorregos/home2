@@ -1,0 +1,6 @@
+# Request: empty
+---
+bool success
+string message
+string area
+string[] subareas

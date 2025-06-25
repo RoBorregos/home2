@@ -9,7 +9,7 @@ from launch_ros.substitutions import FindPackageShare
 
 def generate_launch_description():
     nav_main_package = get_package_share_directory('nav_main')
-    params_file = os.path.join(nav_main_package, 'config', 'mapper_params_online_async.yaml')
+    params_file = os.path.join(nav_main_package, 'config', 'mapper_params_online_sync.yaml')
     
     publish_urdf = LaunchConfiguration('publish_tf')
     use_sim = LaunchConfiguration('use_sim')
@@ -23,7 +23,7 @@ def generate_launch_description():
 
     declare_dualshock = DeclareLaunchArgument(
         'use_dualshock',
-        default_value='false',  # LaunchConfiguration values are strings, so use 'true'/'false'
+        default_value='true',  # LaunchConfiguration values are strings, so use 'true'/'false'
         description='Whether to use dualshock'
     )
 
@@ -63,7 +63,7 @@ def generate_launch_description():
     return LaunchDescription([
         declare_publish_tf,
         declare_use_sim,
+        declare_dualshock,
         nav_basics,
         slam_toolbox,
-        declare_dualshock
     ])

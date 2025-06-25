@@ -23,7 +23,7 @@ def generate_launch_description():
 
     declare_dualshock = DeclareLaunchArgument(
         'use_dualshock',
-        default_value='false',  # LaunchConfiguration values are strings, so use 'true'/'false'
+        default_value='true',  # LaunchConfiguration values are strings, so use 'true'/'false'
         description='Whether to use dualshock'
     )
 
@@ -35,7 +35,7 @@ def generate_launch_description():
 
     declare_map_route = DeclareLaunchArgument(
         'map',
-        default_value=os.path.join(get_package_share_directory('nav_main'), 'maps', 'Lab14marzo.yaml'),
+        default_value=os.path.join(get_package_share_directory('nav_main'), 'maps', 'mapculero2025.yaml'),
         description='Path to the map file'
     )
 
@@ -78,12 +78,11 @@ def generate_launch_description():
     
     return LaunchDescription([
         declare_publish_tf,
-        nav_basics,
         declare_map_route,
+        declare_dualshock,
+        declare_use_sim,
+        nav_basics,
         map_server,
         amcl_server,
         lifecycle_node,
-        declare_dualshock,
-        declare_use_sim
-
     ])
