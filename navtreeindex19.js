@@ -1,5 +1,6 @@
 var NAVTREEINDEX19 =
 {
+"namespacemoondream__lib.html#a96f271e464064797e7edcff4e9851282":[18,0,66,8],
 "namespacemoondream__lib.html#a982a539331047f39736ef58952c3e722":[18,0,66,12],
 "namespacemoondream__lib.html#abe40f656e14ad3a830e4548b2a3f436d":[18,0,66,9],
 "namespacemoondream__lib.html#ac84395d9ed2025a9e954251124789ae7":[18,0,66,11],
@@ -248,6 +249,5 @@ var NAVTREEINDEX19 =
 "namespacesubtask__managers_1_1nav__tasks.html#a736666918ed4f70d5cf2d995c1e7351e":[18,0,115,6,6],
 "namespacesubtask__managers_1_1nav__tasks.html#ad3bd539f5cb55fdd51c9fc250cfbc35d":[18,0,115,6,5],
 "namespacesubtask__managers_1_1nav__tasks.html#add335a5f17a44eb14de8877023fea371":[18,0,115,6,2],
-"namespacesubtask__managers_1_1subtask__meta.html":[18,0,115,7],
-"namespacesubtask__managers_1_1vision__tasks.html":[18,0,115,8]
+"namespacesubtask__managers_1_1subtask__meta.html":[18,0,115,7]
 };

@@ -175,9 +175,9 @@ var NAVTREEINDEX =
 [
 "AddCollisionObjects_8srv.html",
 "classMoveItPlanner_1_1MoveItPlanner.html#ae1a58dc80f14a46c48946da363ff1a08",
-"classYoloEObjectDetector_1_1YoloEObjectDetector.html#a6a975467142fa632d24f57d2c38054a5",
-"classcamera__test_1_1ZedSimulator.html#afb1f41bb13f9c2a9b86524bc46be77a2",
-"classds4__demo_1_1ServoDS4.html#a1f2627e51f8cd7126e855408e9808b5a",
+"classYoloEObjectDetector_1_1YoloEObjectDetector.html#a4da2685d6f98a36483fb2d48d471e2d1",
+"classcamera__test_1_1ZedSimulator.html#ad8ff7f0a226ef1d14ec514761667c10a",
+"classds4__demo_1_1ServoDS4.html#a0d0e39268965250cc1e113b5c685228a",
 "classfollow__person__node_1_1FollowPersonNode.html#a2db5613b703d71279b001b994025ee15",
 "classgpsr__commands_1_1GPSRCommands.html#af81aef4d6e6284d7223fc15b338f9df5",
 "classmodel_1_1ft__net__NAS.html",
@@ -188,13 +188,13 @@ var NAVTREEINDEX =
 "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#aa46c6a6bc0d987dda8732db70bc6de4a",
 "classtracker__node_1_1SingleTracker.html#a8e4cf28559cacc413ab810ae820ea53b",
 "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#acf72ea3bacd4232fd222b96bd37bbe8a",
-"functions_b.html",
-"macros_8hpp.html#ad8f1e5a99ab940794a5a94f8d3f74299",
-"moondream__lib_8py.html#ac84395d9ed2025a9e954251124789ae7",
-"namespacefrida__constants_1_1manipulation__constants.html#aaccddbdec7541f9e856c14beed78d764",
-"namespacemoondream__lib.html#a982a539331047f39736ef58952c3e722",
-"namespacesubtask__managers_1_1vision__tasks.html#a3a4bd0269cff5c8d45098a6a0baed265",
-"status_8py.html"
+"functions_a.html",
+"macros_8hpp.html#acea63f67b814167fbfea2bf8eb6d69db",
+"moondream__lib_8py.html#abe40f656e14ad3a830e4548b2a3f436d",
+"namespacefrida__constants_1_1manipulation__constants.html#aa6dedb5c9f72415daca739d19d817619",
+"namespacemoondream__lib.html#a96f271e464064797e7edcff4e9851282",
+"namespacesubtask__managers_1_1vision__tasks.html",
+"service__utils_8py.html#aa8e9262e7f52c324189d06f29a06f6da"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';
