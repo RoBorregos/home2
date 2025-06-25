@@ -15,6 +15,11 @@ class PoseDetection:
         self.pose = self.mp_pose.Pose()
         self.mp_drawing = mp.solutions.drawing_utils
 
+    def detect(self, frame):
+        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        results = self.pose.process(rgb_frame)
+        return results
+
     def draw_landmarks(self, image, results, mp_pose):
         image_height, image_width, _ = image.shape
         landmarks_to_draw = [
