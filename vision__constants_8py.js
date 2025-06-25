@@ -31,6 +31,7 @@ var vision__constants_8py =
     [ "LOCAL_CAMERA_TOPIC", "vision__constants_8py.html#a36dd44d3155495112c9e8ccff83938c9", null ],
     [ "PERSON_LIST_TOPIC", "vision__constants_8py.html#a5535fa1e092a0095142e3dd8abb8d5bc", null ],
     [ "PERSON_NAME_TOPIC", "vision__constants_8py.html#a8e81034e2ea26a11b42cc545ef7a8aca", null ],
+    [ "PERSON_POINT_TOPIC", "vision__constants_8py.html#a579f0626129c0aec714636ae8b9cbff1", null ],
     [ "PERSON_POSTURE_TOPIC", "vision__constants_8py.html#a6d96f71b12768490ba56fa9f15276494", null ],
     [ "POINTING_DETECTION_IMAGE_TOPIC", "vision__constants_8py.html#a6ba95f0c96f9ebfc1519c97553250532", null ],
     [ "POINTING_OBJECT_SERVICE", "vision__constants_8py.html#a28ae7767028a1fb6be896bcdef1aae7e", null ],

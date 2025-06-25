@@ -8,6 +8,7 @@ var dir_7a69767df254487fc5e7775facb143b2 =
     [ "DetectionHandler.srv", "DetectionHandler_8srv.html", null ],
     [ "DetectPointingObject.srv", "DetectPointingObject_8srv.html", null ],
     [ "FindSeat.srv", "FindSeat_8srv.html", null ],
+    [ "PersonInside.srv", "PersonInside_8srv.html", null ],
     [ "PersonPoseGesture.srv", "PersonPoseGesture_8srv.html", null ],
     [ "PersonPosture.srv", "PersonPosture_8srv.html", null ],
     [ "Query.srv", "Query_8srv.html", null ],

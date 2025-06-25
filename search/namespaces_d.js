@@ -1,16 +1,18 @@
 var searchData=
 [
-  ['receptionist_0',['receptionist',['../namespacereceptionist.html',1,'']]],
-  ['receptionist_5fcommands_1',['receptionist_commands',['../namespacereceptionist__commands.html',1,'']]],
-  ['receptionist_5flaunch_2',['receptionist_launch',['../namespacereceptionist__launch.html',1,'']]],
-  ['receptionist_5ftask_5fmanager_3',['receptionist_task_manager',['../namespacereceptionist__task__manager.html',1,'']]],
-  ['reid_5fmodel_4',['reid_model',['../namespacereid__model.html',1,'']]],
-  ['remove_5fcollision_5fobject_5',['remove_collision_object',['../namespaceremove__collision__object.html',1,'']]],
-  ['restaurant_5ftask_5fmanager_6',['restaurant_task_manager',['../namespacerestaurant__task__manager.html',1,'']]],
-  ['robot_5fsim_7',['robot_sim',['../namespacerobot__sim.html',1,'']]],
-  ['ros_5futils_8',['ros_utils',['../namespaceros__utils.html',1,'']]],
-  ['rplidar_5ffixed_9',['rplidar_fixed',['../namespacerplidar__fixed.html',1,'']]],
-  ['rtabmap_5fslam_10',['rtabmap_slam',['../namespacertabmap__slam.html',1,'']]],
-  ['rtabmap_5fslam_5fcarry_11',['rtabmap_slam_carry',['../namespacertabmap__slam__carry.html',1,'']]],
-  ['run_5fwhile_5fhearing_12',['run_while_hearing',['../namespacerun__while__hearing.html',1,'']]]
+  ['fix_5fposition_5fto_5fplane_0',['fix_position_to_plane',['../namespacepick__and__place_1_1fix__position__to__plane.html',1,'pick_and_place']]],
+  ['keyboard_5finput_1',['keyboard_input',['../namespacepick__and__place_1_1keyboard__input.html',1,'pick_and_place']]],
+  ['manipulation_5fclient_2',['manipulation_client',['../namespacepick__and__place_1_1manipulation__client.html',1,'pick_and_place']]],
+  ['manipulation_5fcore_3',['manipulation_core',['../namespacepick__and__place_1_1manipulation__core.html',1,'pick_and_place']]],
+  ['perception_5f3d_4',['perception_3d',['../namespaceperception__3d.html',1,'']]],
+  ['person_5fin_5fmap_5',['person_in_map',['../namespaceperson__in__map.html',1,'']]],
+  ['pick_5fand_5fplace_6',['pick_and_place',['../namespacepick__and__place.html',1,'']]],
+  ['pick_5fserver_7',['pick_server',['../namespacepick__and__place_1_1pick__server.html',1,'pick_and_place']]],
+  ['pickmanager_8',['PickManager',['../namespacePickManager.html',1,'']]],
+  ['place_5fserver_9',['place_server',['../namespacepick__and__place_1_1place__server.html',1,'pick_and_place']]],
+  ['placemanager_10',['PlaceManager',['../namespacePlaceManager.html',1,'']]],
+  ['planner_11',['Planner',['../namespacePlanner.html',1,'']]],
+  ['point_5ftransformer_12',['point_transformer',['../namespacepoint__transformer.html',1,'']]],
+  ['pointing_5fdetection_13',['pointing_detection',['../namespacepointing__detection.html',1,'']]],
+  ['pose_5fdetection_14',['pose_detection',['../namespacepose__detection.html',1,'']]]
 ];

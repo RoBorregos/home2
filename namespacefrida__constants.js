@@ -1,6 +1,11 @@
 var namespacefrida__constants =
 [
     [ "hri_constants", "namespacefrida__constants_1_1hri__constants.html", "namespacefrida__constants_1_1hri__constants" ],
+    [ "integration_constants", "namespacefrida__constants_1_1integration__constants.html", [
+      [ "POINT_TRANSFORMER_TOPIC", "namespacefrida__constants_1_1integration__constants.html#a11ddde52afff1d42912d1949fd60d27e", null ],
+      [ "RETURN_LASER_DATA", "namespacefrida__constants_1_1integration__constants.html#a6afb4839f1987ec652b6d312adee8407", null ],
+      [ "RETURN_LOCATION", "namespacefrida__constants_1_1integration__constants.html#a92bf4c688dac25bab266591c51f2956a", null ]
+    ] ],
     [ "manipulation_constants", "namespacefrida__constants_1_1manipulation__constants.html", [
       [ "ADD_COLLISION_OBJECT_SERVICE", "namespacefrida__constants_1_1manipulation__constants.html#a05480f19a8f62082d5be5c02acc98f72", null ],
       [ "AIM_STRAIGHT_FRONT_QUAT", "namespacefrida__constants_1_1manipulation__constants.html#af9d0103144937989c937241d2944eae5", null ],
@@ -103,6 +108,7 @@ var namespacefrida__constants =
       [ "LOCAL_CAMERA_TOPIC", "namespacefrida__constants_1_1vision__constants.html#a36dd44d3155495112c9e8ccff83938c9", null ],
       [ "PERSON_LIST_TOPIC", "namespacefrida__constants_1_1vision__constants.html#a5535fa1e092a0095142e3dd8abb8d5bc", null ],
       [ "PERSON_NAME_TOPIC", "namespacefrida__constants_1_1vision__constants.html#a8e81034e2ea26a11b42cc545ef7a8aca", null ],
+      [ "PERSON_POINT_TOPIC", "namespacefrida__constants_1_1vision__constants.html#a579f0626129c0aec714636ae8b9cbff1", null ],
       [ "PERSON_POSTURE_TOPIC", "namespacefrida__constants_1_1vision__constants.html#a6d96f71b12768490ba56fa9f15276494", null ],
       [ "POINTING_DETECTION_IMAGE_TOPIC", "namespacefrida__constants_1_1vision__constants.html#a6ba95f0c96f9ebfc1519c97553250532", null ],
       [ "POINTING_OBJECT_SERVICE", "namespacefrida__constants_1_1vision__constants.html#a28ae7767028a1fb6be896bcdef1aae7e", null ],

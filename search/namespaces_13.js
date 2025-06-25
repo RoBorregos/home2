@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['yoloeobjectdetector_0',['YoloEObjectDetector',['../namespaceYoloEObjectDetector.html',1,'']]],
-  ['yolov5objectdetector_1',['YoloV5ObjectDetector',['../namespaceYoloV5ObjectDetector.html',1,'']]],
-  ['yolov8objectdetector_2',['YoloV8ObjectDetector',['../namespaceYoloV8ObjectDetector.html',1,'']]]
+  ['xarm6_0',['xarm6',['../namespacexarm6.html',1,'']]],
+  ['xarm_5flaunch_1',['xarm_launch',['../namespacexarm__launch.html',1,'']]],
+  ['xarmservices_2',['XArmServices',['../namespaceXArmServices.html',1,'']]]
 ];

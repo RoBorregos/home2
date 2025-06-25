@@ -2,6 +2,7 @@ var classpose__detection_1_1PoseDetection =
 [
     [ "__init__", "classpose__detection_1_1PoseDetection.html#a12578d18c579ca2a03b0732d7880dc56", null ],
     [ "are_arms_down", "classpose__detection_1_1PoseDetection.html#a709d6401bbe407280ce5ef0158adfcca", null ],
+    [ "detect", "classpose__detection_1_1PoseDetection.html#a07f1c9aa7f707ac4d8e076ac270890a8", null ],
     [ "detectGesture", "classpose__detection_1_1PoseDetection.html#aebaea0078464790f8aeb7c543fe130ca", null ],
     [ "draw_connections", "classpose__detection_1_1PoseDetection.html#ac98c542ce10626909a2998949a9afa70", null ],
     [ "draw_landmarks", "classpose__detection_1_1PoseDetection.html#a497e6521561e5360e9b5c4ed3232664a", null ],

@@ -10,12 +10,13 @@ var searchData=
   ['frida_5fmoveit_5fcommon_7',['frida_moveit_common',['../namespacefrida__moveit__common.html',1,'']]],
   ['frida_5fmoveit_5fconfig_8',['frida_moveit_config',['../namespacefrida__moveit__config.html',1,'']]],
   ['hri_5fconstants_9',['hri_constants',['../namespacefrida__constants_1_1hri__constants.html',1,'frida_constants']]],
-  ['manipulation_5fconstants_10',['manipulation_constants',['../namespacefrida__constants_1_1manipulation__constants.html',1,'frida_constants']]],
-  ['motion_5fplanning_5fserver_11',['motion_planning_server',['../namespacefrida__motion__planning_1_1motion__planning__server.html',1,'frida_motion_planning']]],
-  ['navigation_5fconstants_12',['navigation_constants',['../namespacefrida__constants_1_1navigation__constants.html',1,'frida_constants']]],
-  ['utils_13',['utils',['../namespacefrida__constants_1_1utils.html',1,'frida_constants']]],
-  ['vision_5fclasses_14',['vision_classes',['../namespacefrida__constants_1_1vision__classes.html',1,'frida_constants']]],
-  ['vision_5fconstants_15',['vision_constants',['../namespacefrida__constants_1_1vision__constants.html',1,'frida_constants']]],
-  ['vision_5fenums_16',['vision_enums',['../namespacefrida__constants_1_1vision__enums.html',1,'frida_constants']]],
-  ['xarm_5fconfigurations_17',['xarm_configurations',['../namespacefrida__constants_1_1xarm__configurations.html',1,'frida_constants']]]
+  ['integration_5fconstants_10',['integration_constants',['../namespacefrida__constants_1_1integration__constants.html',1,'frida_constants']]],
+  ['manipulation_5fconstants_11',['manipulation_constants',['../namespacefrida__constants_1_1manipulation__constants.html',1,'frida_constants']]],
+  ['motion_5fplanning_5fserver_12',['motion_planning_server',['../namespacefrida__motion__planning_1_1motion__planning__server.html',1,'frida_motion_planning']]],
+  ['navigation_5fconstants_13',['navigation_constants',['../namespacefrida__constants_1_1navigation__constants.html',1,'frida_constants']]],
+  ['utils_14',['utils',['../namespacefrida__constants_1_1utils.html',1,'frida_constants']]],
+  ['vision_5fclasses_15',['vision_classes',['../namespacefrida__constants_1_1vision__classes.html',1,'frida_constants']]],
+  ['vision_5fconstants_16',['vision_constants',['../namespacefrida__constants_1_1vision__constants.html',1,'frida_constants']]],
+  ['vision_5fenums_17',['vision_enums',['../namespacefrida__constants_1_1vision__enums.html',1,'frida_constants']]],
+  ['xarm_5fconfigurations_18',['xarm_configurations',['../namespacefrida__constants_1_1xarm__configurations.html',1,'frida_constants']]]
 ];

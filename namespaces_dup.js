@@ -136,6 +136,7 @@ var namespaces_dup =
     [ "help_me_carry_launch", "namespacehelp__me__carry__launch.html", [
       [ "generate_launch_description", "namespacehelp__me__carry__launch.html#a127c9132b150657886963992c6269da4", null ]
     ] ],
+    [ "is_person_inside", "namespaceis__person__inside.html", "namespaceis__person__inside" ],
     [ "local_camera", "namespacelocal__camera.html", "namespacelocal__camera" ],
     [ "look_at_example", "namespacelook__at__example.html", "namespacelook__at__example" ],
     [ "map_publisher", "namespacemap__publisher.html", "namespacemap__publisher" ],
@@ -200,6 +201,7 @@ var namespaces_dup =
     [ "perception_3d", "namespaceperception__3d.html", [
       [ "generate_launch_description", "namespaceperception__3d.html#a0e9c55f0d673d8e39208565acad51d8d", null ]
     ] ],
+    [ "person_in_map", "namespaceperson__in__map.html", "namespaceperson__in__map" ],
     [ "pick_and_place", "namespacepick__and__place.html", "namespacepick__and__place" ],
     [ "PickManager", "namespacePickManager.html", "namespacePickManager" ],
     [ "PlaceManager", "namespacePlaceManager.html", "namespacePlaceManager" ],
@@ -256,6 +258,7 @@ var namespaces_dup =
     [ "remove_collision_object", "namespaceremove__collision__object.html", [
       [ "main", "namespaceremove__collision__object.html#a86366d327b8fa51f26394d0524fdc193", null ]
     ] ],
+    [ "remove_person", "namespaceremove__person.html", "namespaceremove__person" ],
     [ "restaurant_task_manager", "namespacerestaurant__task__manager.html", "namespacerestaurant__task__manager" ],
     [ "robot_sim", "namespacerobot__sim.html", [
       [ "generate_launch_description", "namespacerobot__sim.html#aa1de369c762aa456d4c9e31388d6f617", null ],

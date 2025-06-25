@@ -24,10 +24,11 @@ var searchData=
   ['example_5fsubscriber_21',['example_subscriber',['../classexample__node_1_1ExampleNode.html#a1d9a18177725eb7a4d11628484e48e6f',1,'example_node::ExampleNode']]],
   ['executed_5fcommands_22',['executed_commands',['../classgpsr__task__manager_1_1GPSRTM.html#acb531c8fe459394ab090c6282404ce03',1,'gpsr_task_manager::GPSRTM']]],
   ['executing_5fcommand_23',['EXECUTING_COMMAND',['../classgpsr__task__manager_1_1GPSRTM_1_1States.html#a0e9549fcf83e3bb5b81dfcb18435fe33',1,'gpsr_task_manager::GPSRTM::States']]],
-  ['execution_5ferror_24',['EXECUTION_ERROR',['../classutils_1_1status_1_1Status.html#a15faa20b6023f558103c7bab393a65b5',1,'utils::status::Status']]],
-  ['execution_5fsuccess_25',['EXECUTION_SUCCESS',['../classutils_1_1status_1_1Status.html#a6686cfc854bc91507e391d8ce1ab0d3a',1,'utils::status::Status']]],
-  ['extra_26',['extra',['../classutils_1_1config_1_1SubtaskConfig_1_1Config.html#a093f38ef449c85e8ecab963964125c59',1,'utils.config.SubtaskConfig.Config.extra()'],['../classutils_1_1config_1_1MockConfig_1_1Config.html#af47c1d7891b529958433cd97ff1b2b99',1,'utils.config.MockConfig.Config.extra()'],['../classutils_1_1config_1_1TopicConfig_1_1Config.html#a4cabbad1d51d7a0aaebe2709d62c13d0',1,'utils.config.TopicConfig.Config.extra()']]],
-  ['extract_5fdata_5fservice_27',['extract_data_service',['../classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a948142d5d524387bd2973eaa028e5875',1,'subtask_managers::hri_tasks::HRITasks']]],
-  ['extract_5fdata_5fservice_28',['EXTRACT_DATA_SERVICE',['../namespacefrida__constants_1_1hri__constants.html#ae336bc5e472cc38814ce9b4eb0928c31',1,'frida_constants::hri_constants']]],
-  ['extract_5finfo_5frequested_29',['EXTRACT_INFO_REQUESTED',['../classfrida__constants_1_1hri__constants_1_1MODEL.html#ab04c700ba61f8a4ed5826126968006a9',1,'frida_constants::hri_constants::MODEL']]]
+  ['executing_5fgoal_24',['executing_goal',['../classremove__person_1_1RemovePerson.html#a2fd29bbd5d5a0231b815af76cfda6e6c',1,'remove_person::RemovePerson']]],
+  ['execution_5ferror_25',['EXECUTION_ERROR',['../classutils_1_1status_1_1Status.html#a15faa20b6023f558103c7bab393a65b5',1,'utils::status::Status']]],
+  ['execution_5fsuccess_26',['EXECUTION_SUCCESS',['../classutils_1_1status_1_1Status.html#a6686cfc854bc91507e391d8ce1ab0d3a',1,'utils::status::Status']]],
+  ['extra_27',['extra',['../classutils_1_1config_1_1SubtaskConfig_1_1Config.html#a093f38ef449c85e8ecab963964125c59',1,'utils.config.SubtaskConfig.Config.extra()'],['../classutils_1_1config_1_1MockConfig_1_1Config.html#af47c1d7891b529958433cd97ff1b2b99',1,'utils.config.MockConfig.Config.extra()'],['../classutils_1_1config_1_1TopicConfig_1_1Config.html#a4cabbad1d51d7a0aaebe2709d62c13d0',1,'utils.config.TopicConfig.Config.extra()']]],
+  ['extract_5fdata_5fservice_28',['extract_data_service',['../classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a948142d5d524387bd2973eaa028e5875',1,'subtask_managers::hri_tasks::HRITasks']]],
+  ['extract_5fdata_5fservice_29',['EXTRACT_DATA_SERVICE',['../namespacefrida__constants_1_1hri__constants.html#ae336bc5e472cc38814ce9b4eb0928c31',1,'frida_constants::hri_constants']]],
+  ['extract_5finfo_5frequested_30',['EXTRACT_INFO_REQUESTED',['../classfrida__constants_1_1hri__constants_1_1MODEL.html#ab04c700ba61f8a4ed5826126968006a9',1,'frida_constants::hri_constants::MODEL']]]
 ];

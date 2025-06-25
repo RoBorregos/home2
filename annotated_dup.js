@@ -101,6 +101,9 @@ var annotated_dup =
     [ "help_me_carry", "namespacehelp__me__carry.html", [
       [ "HelpMeCarryTM", "classhelp__me__carry_1_1HelpMeCarryTM.html", "classhelp__me__carry_1_1HelpMeCarryTM" ]
     ] ],
+    [ "is_person_inside", "namespaceis__person__inside.html", [
+      [ "IsPersonInside", "classis__person__inside_1_1IsPersonInside.html", "classis__person__inside_1_1IsPersonInside" ]
+    ] ],
     [ "local_camera", "namespacelocal__camera.html", [
       [ "Camera", "classlocal__camera_1_1Camera.html", "classlocal__camera_1_1Camera" ],
       [ "NodeParams", "classlocal__camera_1_1NodeParams.html", null ]
@@ -160,6 +163,9 @@ var annotated_dup =
       [ "ObjectDectector", "classObjectDetector_1_1ObjectDectector.html", "classObjectDetector_1_1ObjectDectector" ],
       [ "ObjectDectectorParams", "classObjectDetector_1_1ObjectDectectorParams.html", "classObjectDetector_1_1ObjectDectectorParams" ]
     ] ],
+    [ "person_in_map", "namespaceperson__in__map.html", [
+      [ "PersonLocation", "classperson__in__map_1_1PersonLocation.html", "classperson__in__map_1_1PersonLocation" ]
+    ] ],
     [ "pick_and_place", "namespacepick__and__place.html", [
       [ "fix_position_to_plane", "namespacepick__and__place_1_1fix__position__to__plane.html", [
         [ "FixPositionToPlane", "classpick__and__place_1_1fix__position__to__plane_1_1FixPositionToPlane.html", "classpick__and__place_1_1fix__position__to__plane_1_1FixPositionToPlane" ],
@@ -205,6 +211,9 @@ var annotated_dup =
     [ "receptionist_task_manager", "namespacereceptionist__task__manager.html", [
       [ "Guest", "classreceptionist__task__manager_1_1Guest.html", "classreceptionist__task__manager_1_1Guest" ],
       [ "ReceptionistTM", "classreceptionist__task__manager_1_1ReceptionistTM.html", "classreceptionist__task__manager_1_1ReceptionistTM" ]
+    ] ],
+    [ "remove_person", "namespaceremove__person.html", [
+      [ "RemovePerson", "classremove__person_1_1RemovePerson.html", "classremove__person_1_1RemovePerson" ]
     ] ],
     [ "restaurant_task_manager", "namespacerestaurant__task__manager.html", [
       [ "RestaurantTaskManager", "classrestaurant__task__manager_1_1RestaurantTaskManager.html", "classrestaurant__task__manager_1_1RestaurantTaskManager" ]
