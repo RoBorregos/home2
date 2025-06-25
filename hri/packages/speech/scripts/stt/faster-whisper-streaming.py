@@ -1,11 +1,12 @@
-from faster_whisper_backend import ServeClientFasterWhisper
+import argparse
+from concurrent import futures
 
 import grpc
-from concurrent import futures
+import numpy as np
 import speech_pb2
 import speech_pb2_grpc
-import argparse
-import numpy as np
+from faster_whisper_backend import ServeClientFasterWhisper
+
 
 class WhisperServicer(speech_pb2_grpc.SpeechStreamServicer):
     def __init__(self, model, log_transcriptions=False):
@@ -13,26 +14,30 @@ class WhisperServicer(speech_pb2_grpc.SpeechStreamServicer):
         self.model = model
 
     def Transcribe(self, request_iterator, context):
-        
         first_chunk = next(request_iterator)
-        self.client = ServeClientFasterWhisper(initial_prompt=first_chunk.hotwords,send_last_n_segments=10,clip_audio=False,
-                                               model="large-v3-turbo",
-                                      # language=options["language"],
-                                      # task=options["task"],
-                                      # model=options["model"],
-                                      same_output_threshold=10)
-        
+        client = ServeClientFasterWhisper(
+            initial_prompt=first_chunk.hotwords,
+            send_last_n_segments=10,
+            clip_audio=False,
+            model=self.model,
+            # language=options["language"],
+            # task=options["task"],
+            same_output_threshold=10,
+        )
+
         first_audio = WhisperServicer.bytes_to_float_array(first_chunk.audio_data)
-        self.client.add_frames(first_audio)
+        client.add_frames(first_audio)
         prev_text = ""
 
         for chunk in request_iterator:
             frame_np = WhisperServicer.bytes_to_float_array(chunk.audio_data)
-            self.client.add_frames(frame_np)
-            text = "".join([segment['text'] for segment in self.client.segments])
+            client.add_frames(frame_np)
+            text = "".join([segment["text"] for segment in self.client.segments])
             if text != prev_text:
                 prev_text = text
                 yield speech_pb2.TextResponse(text=text)
+
+        client.cleanup()
 
     @staticmethod
     def bytes_to_float_array(audio_bytes):
@@ -51,6 +56,7 @@ class WhisperServicer(speech_pb2_grpc.SpeechStreamServicer):
         raw_data = np.frombuffer(buffer=audio_bytes, dtype=np.int16)
         return raw_data.astype(np.float32) / 32768.0
 
+
 def serve(port, model, log_transcriptions):
     # Create the gRPC server
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
@@ -63,7 +69,7 @@ def serve(port, model, log_transcriptions):
     print(f"Whisper gRPC server is running on port {port}...")
     server.start()
     server.wait_for_termination()
-    
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Whisper gRPC server")
@@ -83,4 +89,3 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     serve(args.port, args.model, args.log_transcriptions)
-

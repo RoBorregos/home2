@@ -1,14 +1,11 @@
-import os
-import json
 import logging
+import os
 import threading
-import time
-import torch
-import ctranslate2
-from huggingface_hub import snapshot_download
 
-from transcriber_faster_whisper import WhisperModel
+import ctranslate2
 from base import ServeClientBase
+from huggingface_hub import snapshot_download
+from transcriber_faster_whisper import WhisperModel
 
 
 class ServeClientFasterWhisper(ServeClientBase):
@@ -30,7 +27,7 @@ class ServeClientFasterWhisper(ServeClientBase):
         no_speech_thresh=0.45,
         clip_audio=False,
         same_output_threshold=10,
-        cache_path="~/.cache/whisper-live/"
+        cache_path="~/.cache/whisper-live/",
     ):
         """
         Initialize a ServeClient instance.
@@ -62,29 +59,43 @@ class ServeClientFasterWhisper(ServeClientBase):
         self.segments = []
         self.cache_path = cache_path
         self.model_sizes = [
-            "tiny", "tiny.en", "base", "base.en", "small", "small.en",
-            "medium", "medium.en", "large-v2", "large-v3", "distil-small.en",
-            "distil-medium.en", "distil-large-v2", "distil-large-v3",
-            "large-v3-turbo", "turbo"
+            "tiny",
+            "tiny.en",
+            "base",
+            "base.en",
+            "small",
+            "small.en",
+            "medium",
+            "medium.en",
+            "large-v2",
+            "large-v3",
+            "distil-small.en",
+            "distil-medium.en",
+            "distil-large-v2",
+            "distil-large-v3",
+            "large-v3-turbo",
+            "turbo",
         ]
 
         self.model_size_or_path = model
         self.language = "en" if self.model_size_or_path.endswith("en") else language
         self.task = task
         self.initial_prompt = initial_prompt
-        self.vad_parameters = None #vad_parameters or {"onset": 0.5}
+        self.vad_parameters = None  # vad_parameters or {"onset": 0.5}
+        try:
+            import torch
 
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-        if device == "cuda":
+            device = "cuda" if torch.cuda.is_available() else "cpu"
             major, _ = torch.cuda.get_device_capability(device)
             self.compute_type = "float16" if major >= 7 else "float32"
-        else:
+        except ImportError:
+            device = "cpu"
             self.compute_type = "int8"
 
         if self.model_size_or_path is None:
             return
         logging.info(f"Using Device={device} with precision {self.compute_type}")
-    
+
         try:
             if single_model:
                 if ServeClientFasterWhisper.SINGLE_MODEL is None:
@@ -104,7 +115,6 @@ class ServeClientFasterWhisper(ServeClientBase):
         self.trans_thread = threading.Thread(target=self.speech_to_text)
         self.trans_thread.start()
 
-
     def create_model(self, device):
         """
         Instantiates a new model, sets it as the transcriber. If model is a huggingface model_id
@@ -115,27 +125,31 @@ class ServeClientFasterWhisper(ServeClientBase):
         if model_ref in self.model_sizes:
             model_to_load = model_ref
         else:
-            logging.info(f"Model not in model_sizes")
+            logging.info("Model not in model_sizes")
             if os.path.isdir(model_ref) and ctranslate2.contains_model(model_ref):
                 model_to_load = model_ref
             else:
                 local_snapshot = snapshot_download(
-                    repo_id = model_ref,
-                    repo_type = "model",
+                    repo_id=model_ref,
+                    repo_type="model",
                 )
                 if ctranslate2.contains_model(local_snapshot):
                     model_to_load = local_snapshot
                 else:
-                    cache_root = os.path.expanduser(os.path.join(self.cache_path, "whisper-ct2-models/"))
+                    cache_root = os.path.expanduser(
+                        os.path.join(self.cache_path, "whisper-ct2-models/")
+                    )
                     os.makedirs(cache_root, exist_ok=True)
                     safe_name = model_ref.replace("/", "--")
                     ct2_dir = os.path.join(cache_root, safe_name)
 
                     if not ctranslate2.contains_model(ct2_dir):
-                        logging.info(f"Converting '{model_ref}' to CTranslate2 @ {ct2_dir}")
+                        logging.info(
+                            f"Converting '{model_ref}' to CTranslate2 @ {ct2_dir}"
+                        )
                         ct2_converter = ctranslate2.converters.TransformersConverter(
-                            local_snapshot, 
-                            copy_files=["tokenizer.json", "preprocessor_config.json"]
+                            local_snapshot,
+                            copy_files=["tokenizer.json", "preprocessor_config.json"],
                         )
                         ct2_converter.convert(
                             output_dir=ct2_dir,
@@ -164,7 +178,9 @@ class ServeClientFasterWhisper(ServeClientBase):
         """
         if info.language_probability > 0.5:
             self.language = info.language
-            logging.info(f"Detected language {self.language} with probability {info.language_probability}")
+            logging.info(
+                f"Detected language {self.language} with probability {info.language_probability}"
+            )
 
     def transcribe_audio(self, input_sample):
         """
@@ -190,14 +206,15 @@ class ServeClientFasterWhisper(ServeClientBase):
             language=self.language,
             task=self.task,
             vad_filter=self.use_vad,
-            vad_parameters=self.vad_parameters if self.use_vad else None)
+            vad_parameters=self.vad_parameters if self.use_vad else None,
+        )
 
         if ServeClientFasterWhisper.SINGLE_MODEL:
             ServeClientFasterWhisper.SINGLE_MODEL_LOCK.release()
 
         if self.language is None and info is not None:
             self.set_language(info)
-            
+
         return result
 
     def handle_transcription_output(self, result, duration):
