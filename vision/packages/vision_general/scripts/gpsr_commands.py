@@ -34,7 +34,7 @@ from frida_constants.vision_constants import (
     POSE_GESTURE_TOPIC,
     CROP_QUERY_TOPIC,
     COUNT_BY_GESTURE_TOPIC,
-    READ_QR_TOPIC
+    READ_QR_TOPIC,
 )
 
 from frida_constants.vision_enums import Poses, Gestures, DetectBy
@@ -369,7 +369,7 @@ class GPSRCommands(Node):
         return response
     
     def read_qr_callback(self, request, response):
-        """"Callback to detect and decode QR code in the image"""
+        """Callback to detect and decode QR code in the image"""
         self.get_logger().info("Executing service Read Qr")
         if self.image is None:
             response.success = False
@@ -379,7 +379,7 @@ class GPSRCommands(Node):
         frame = self.image
         self.output_image = frame.copy()
 
-        #Detect QR using cv2.QRCodeDetector 
+        # Detect QR using cv2.QRCodeDetector 
         retval, _, _ = self.qr_detector.detectAndDecode(frame)
         
         response.result = retval
