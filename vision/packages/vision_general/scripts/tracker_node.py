@@ -48,13 +48,21 @@ from frida_constants.vision_constants import (
 )
 from frida_constants.vision_enums import DetectBy
 from std_srvs.srv import Trigger
+from ament_index_python.packages import get_package_share_directory
+import os
 
 CONF_THRESHOLD = 0.6
+
+# Get config folder from package
+PACKAGE_NAME = "vision_general"
+CONFIG_FOLDER = os.path.join(get_package_share_directory(PACKAGE_NAME), "config")
+BOTSORT_REID_YAML = os.path.join(CONFIG_FOLDER, "botsort-reid.yaml")
 
 
 class SingleTracker(Node):
     def __init__(self):
         super().__init__("tracker_node")
+
         self.bridge = CvBridge()
         self.callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
 
@@ -229,11 +237,9 @@ class SingleTracker(Node):
                 # Get class name
                 try:
                     track_id = box.id[0].item()
-                except Exception as e:
-                    print("CALLBACK Track id exception: ", e)
+                except Exception:
                     track_id = -1
 
-                print(track_id)
                 # Get confidence
                 prob = round(box.conf[0].item(), 2)
 
@@ -370,7 +376,7 @@ class SingleTracker(Node):
             self.results = self.model.track(
                 self.frame,
                 persist=True,
-                tracker="bytetrack.yaml",
+                tracker=BOTSORT_REID_YAML,
                 classes=0,
                 verbose=False,
             )
@@ -449,7 +455,6 @@ class SingleTracker(Node):
 
                         angle = self.pose_detection.personAngle(cropped_image)
                         if angle is not None and self.person_data[angle] is None:
-                            print("Added angle: ", angle)
                             if embedding is None:
                                 pil_image = PILImage.fromarray(cropped_image)
                                 with torch.no_grad():
@@ -481,17 +486,9 @@ class SingleTracker(Node):
                     ]
                     pil_image = PILImage.fromarray(cropped_image)
                     with torch.no_grad():
-                        self.get_logger().info(
-                            f"Extracting feature from person {person['track_id']}"
-                        )
                         embedding = extract_feature_from_img(pil_image, self.model_reid)
-                    print("extracting angle for person: ", person["track_id"])
                     person_angle = self.pose_detection.personAngle(cropped_image)
-                    print("person angle: ", person_angle)
                     if person_angle is not None:
-                        self.get_logger().info(
-                            f"Checking re-id person with angle {person_angle} and id {person['track_id']}"
-                        )
                         if self.person_data[person_angle] is not None:
                             if compare_images(
                                 embedding, self.person_data[person_angle], threshold=0.7
@@ -512,12 +509,6 @@ class SingleTracker(Node):
                                 person_in_frame = True
                                 break
                     else:
-                        self.get_logger().info(
-                            f"Angle {person_angle} not found in person data"
-                        )
-                        self.get_logger().info(
-                            f"Checking re-id person without angle {person['track_id']}"
-                        )
                         person_found = False
                         for stored_embedding in self.person_data["embeddings"]:
                             if compare_images(
@@ -527,9 +518,6 @@ class SingleTracker(Node):
                                     f"Person re-identified: {person['track_id']} without angle"
                                 )
                                 self.person_data["id"] = person["track_id"]
-                                self.success(
-                                    f"Person re-identified: {person['track_id']} without angle"
-                                )
                                 person_in_frame = True
                                 person_found = True
                                 break
