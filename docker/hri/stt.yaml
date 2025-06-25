@@ -18,5 +18,5 @@ services:
       [
         "bash",
         "-c",
-        "python3 -u faster-whisper-streaming.py --port 50051 --model_size large-v3-turbo --log_transcriptions",
+        "python3 -u faster-whisper-streaming.py --port 50051 --model large-v3-turbo --log_transcriptions",
       ]
