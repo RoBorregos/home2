@@ -8,14 +8,6 @@ pypng==0.20220715.0
 pillow==10.3.0
 qrcode==7.4.2
 
-# Stop Commands
-huggingface-hub==0.22.2
-safetensors==0.4.3
-scikit-learn==1.5.0
-sentence-transformers==2.6.1
-threadpoolctl==3.4.0
-tokenizers==0.15.2
-transformers==4.39.3
 
 # Data validation and type checking
 pydantic==1.10.11
@@ -24,4 +16,10 @@ pydantic==1.10.11
 pandas==2.2.3
 
 # Embedding and ChromaDB client
-# chromadb
+sentence-transformers==2.6.1
+
+# Extract Data
+spacy
+
+# Is positive
+transformers==4.51.3
