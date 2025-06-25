@@ -67,7 +67,6 @@ class HearStreaming(Node):
 
         self.input_device_index = None
         self.audio_buffer = collections.deque(maxlen=10000)
-        self.buffer_lock = threading.Lock()
         self.get_logger().info("Input device index: " + str(self.input_device_index))
 
         if self.input_device_index is None:
@@ -78,66 +77,30 @@ class HearStreaming(Node):
         self.get_logger().info("HearStreaming node initialized.")
 
     def audio_callback(self, msg):
-        self.get_logger().info("self.audio_buffer len:" + str(len(self.audio_buffer)))
-
         audio_data = np.frombuffer(msg.data, dtype=np.int16)
-        with self.buffer_lock:
-            self.audio_buffer.append(audio_data)
+        self.audio_buffer.append(audio_data)
 
     def record_subscribed(self):
         self.get_logger().info("HearStreaming node recording.")
-        # iteration_step = 0
-        # CHUNK_SIZE = 512
-        # self.FORMAT = pyaudio.paInt16
-        # self.debug = True
-        # CHANNELS = 6 if self.use_respeaker else 1
-        # self.RATE = 16000
-        # EXTRACT_CHANNEL = 0
-
-        # self.p = pyaudio.PyAudio()
-        # stream = self.p.open(
-        #     input_device_index=self.input_device_index,
-        #     format=self.FORMAT,
-        #     channels=CHANNELS,
-        #     rate=self.RATE,
-        #     input=True,
-        #     frames_per_buffer=CHUNK_SIZE,
-        # )
 
         # GRPC client setup
-        grpc_channel = grpc.insecure_channel("localhost:50051")
+        grpc_channel = grpc.insecure_channel("100.108.245.54:50051")
         stub = speech_pb2_grpc.SpeechStreamStub(grpc_channel)
 
         stop_flag = threading.Event()
 
         def request_generator():
             while not stop_flag.is_set() and rclpy.ok():
-                # self.get_logger().info("In request generator.")
-                # self.get_logger().info(
-                #     "self.audio_buffer len:" + str(len(self.audio_buffer))
-                # )
-
                 try:
-                    with self.buffer_lock:
-                        if not self.audio_buffer:
-                            time.sleep(0.1)
-                            continue
-                        local_audio = self.audio_buffer.popleft()
+                    if not self.audio_buffer:
+                        time.sleep(0.1)
+                        continue
+                    local_audio = self.audio_buffer.popleft()
 
                     # Validate audio length
-                    if len(local_audio) < 10:  # Skip tiny chunks
+                    if len(local_audio) < 10:
                         continue
 
-                    # if self.use_respeaker:
-                    #     in_data = np.frombuffer(in_data, dtype=np.int16)[
-                    #         EXTRACT_CHANNEL::6
-                    #     ]
-                    #     in_data = in_data.tobytes()
-
-                    # local_audio = bytes(in_data)
-                    # run_frames.append(local_audio)
-                    # ros_audio = bytes(local_audio)
-                    # self.publisher_.publish(AudioData(data=ros_audio))
                     grpc_audio = local_audio.tobytes()
                     yield speech_pb2.AudioRequest(
                         audio_data=grpc_audio, hotwords="Roborregos"
@@ -152,11 +115,8 @@ class HearStreaming(Node):
             try:
                 for response in responses:
                     self.get_logger().info(f"Transcript: {response.text}")
-                    # Optionally publish to ROS topic here if needed
             except grpc.RpcError as e:
                 self.get_logger().error(f"gRPC stream error: {e}")
-
-        # Start receiving responses in a background thread
 
         responses = stub.Transcribe(request_generator())
         response_thread = threading.Thread(target=handle_transcripts, args=(responses,))
@@ -178,7 +138,6 @@ def main(args=None):
     try:
         n = HearStreaming()
         n.record_subscribed()
-        # rclpy.spin(HearStreaming())
     except (ExternalShutdownException, KeyboardInterrupt):
         pass
     finally:

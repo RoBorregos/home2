@@ -24,7 +24,7 @@ class WhisperServicer(speech_pb2_grpc.SpeechStreamServicer):
                 send_last_n_segments=10,
                 clip_audio=False,
                 model=self.model,
-                # language=options["language"],
+                language="en",
                 # task=options["task"],
                 same_output_threshold=10,
             )
