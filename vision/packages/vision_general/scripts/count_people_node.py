@@ -21,6 +21,7 @@ class CountPeople(Node):
         self.person_id = 0
 
     def get_people(self):
+        #results = self.yolo_model("vision/packages/vision_general/Utils/pose_test_images/standing.jpg", verbose = False, classes = self.person_id)
         if self.image is not None:
             results = self.yolo_model(self.image, verbose = False, classes = self.person_id)
             total_people = Int16()

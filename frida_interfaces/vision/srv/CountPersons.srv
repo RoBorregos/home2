@@ -1,0 +1,4 @@
+sensor_msgs/Image img
+---
+std_msgs/Int16 result
+bool success
