@@ -20,6 +20,7 @@ from frida_interfaces.srv import (
     PersonPoseGesture,
     CropQuery,
     CountByColor,
+    ReadQr,
 )
 
 from ament_index_python.packages import get_package_share_directory
@@ -33,6 +34,7 @@ from frida_constants.vision_constants import (
     POSE_GESTURE_TOPIC,
     CROP_QUERY_TOPIC,
     COUNT_BY_GESTURE_TOPIC,
+    READ_QR_TOPIC
 )
 
 from frida_constants.vision_enums import Poses, Gestures, DetectBy
@@ -96,11 +98,19 @@ class GPSRCommands(Node):
             callback_group=self.callback_group,
         )
 
+        self.read_qr_service = self.create_service(
+            ReadQr,
+            READ_QR_TOPIC,
+            self.read_qr_callback,
+            callback_group=self.callback_group,
+        )
+
         self.image_publisher = self.create_publisher(Image, IMAGE_TOPIC, 10)
 
         self.image = None
         self.yolo_model = YOLO(YOLO_LOCATION)
         self.pose_detection = PoseDetection()
+        self.qr_detector = cv2.QRCodeDetector()
         self.output_image = []
 
         self.get_logger().info("GPSRCommands Ready.")
@@ -357,7 +367,25 @@ class GPSRCommands(Node):
         response.success = True
         self.get_logger().info(f"{type_requested} detected: {response_clean}")
         return response
+    
+    def read_qr_callback(self, request, response):
+        """"Callback to detect and decode QR code in the image"""
+        self.get_logger().info("Executing service Read Qr")
+        if self.image is None:
+            response.success = False
+            response.result = ""
+            return response
+        
+        frame = self.image
+        self.output_image = frame.copy()
 
+        #Detect QR using cv2.QRCodeDetector 
+        retval, _, _ = self.qr_detector.detectAndDecode(frame)
+        
+        response.result = retval
+        response.success = True
+        return response
+        
     def success(self, message):
         """Log a success message."""
         self.get_logger().info(f"\033[92mSUCCESS:\033[0m {message}")
