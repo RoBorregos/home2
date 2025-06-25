@@ -22,6 +22,6 @@ services:
       ROS_LOCALHOST_ONLY: 1
     network_mode: host
     command: >
-      bash -c "tail -f /dev/null"
-    # bash -c "source /tmp/PyAV/scripts/activate.sh && deactivate && python3 -u faster-whisper-streaming.py --port 50051 --model_size large-v3-turbo --log_transcriptions"
+      bash -c "source /tmp/PyAV/scripts/activate.sh && deactivate && python3 -u faster-whisper-streaming.py --port 50051 --model large-v3-turbo --log_transcriptions"
+    # bash -c "tail -f /dev/null"
 # pip install websockets scipy av
