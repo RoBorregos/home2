@@ -35,7 +35,7 @@ class HearNode(Node):
         )
 
         audio_topic = (
-            self.declare_parameter("publish_topic", "/rawAudioChunk")
+            self.declare_parameter("AUDIO_TOPIC", "/rawAudioChunk")
             .get_parameter_value()
             .string_value
         )
@@ -79,8 +79,14 @@ class HearNode(Node):
     def request_generator(self):
         while not self.stop_flag.is_set() and rclpy.ok() and self.active_transcription:
             if self.audio_buffer:
-                chunk = self.audio_buffer.popleft().tobytes()
-                yield speech_pb2.AudioRequest(audio_data=chunk, hotwords=self.hotwords)
+                chunk = self.audio_buffer.popleft()
+                audio_bytes = bytes(chunk)
+                print("audio_bytes size:", len(audio_bytes))
+                self.get_logger().debug(
+                    f"Sending chunk of type {type(audio_bytes)}, length: {len(audio_bytes)}"
+                )
+
+                yield speech_pb2.AudioRequest(audio_data=audio_bytes)
             else:
                 time.sleep(0.01)  # Avoid busy waiting
 
@@ -107,7 +113,9 @@ class HearNode(Node):
             self.hotwords = goal_handle.request.hotwords
             self.get_logger().info(f"Updated hotwords: {self.hotwords}")
 
+        self.get_logger().info("Calling stub.Transcribe()")
         responses = self.stub.Transcribe(self.request_generator())
+        self.get_logger().info("After stub.Transcribe()")
         response_thread = threading.Thread(
             target=self.handle_transcripts, args=(responses, goal_handle)
         )

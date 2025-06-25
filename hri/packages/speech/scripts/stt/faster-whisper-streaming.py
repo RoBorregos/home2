@@ -14,6 +14,7 @@ class WhisperServicer(speech_pb2_grpc.SpeechStreamServicer):
         self.model = model
 
     def Transcribe(self, request_iterator, context):
+        print("Starting transcription...")
         first_chunk = next(request_iterator)
         client = ServeClientFasterWhisper(
             initial_prompt=first_chunk.hotwords,
@@ -29,10 +30,12 @@ class WhisperServicer(speech_pb2_grpc.SpeechStreamServicer):
         client.add_frames(first_audio)
         prev_text = ""
 
+        print("Starting audio loop recording")
+
         for chunk in request_iterator:
             frame_np = WhisperServicer.bytes_to_float_array(chunk.audio_data)
             client.add_frames(frame_np)
-            text = "".join([segment["text"] for segment in self.client.segments])
+            text = "".join([segment["text"] for segment in client.segments])
             if text != prev_text:
                 prev_text = text
                 yield speech_pb2.TextResponse(text=text)
