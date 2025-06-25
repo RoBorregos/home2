@@ -1,0 +1,9 @@
+#goal definition
+float32 timeout
+string hotwords
+---
+#result definition
+string transcription
+---
+#feedback
+string current_transcription
