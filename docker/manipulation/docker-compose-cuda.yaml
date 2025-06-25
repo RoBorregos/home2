@@ -10,6 +10,9 @@ services:
     volumes:
       - ../../:/workspace/src/home2
       - /tmp:/tmp
+      - ./build:/workspace/build
+      - ./install:/workspace/install
+      
     deploy:
       resources:
         reservations:
