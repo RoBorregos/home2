@@ -14,33 +14,52 @@ class WhisperServicer(speech_pb2_grpc.SpeechStreamServicer):
         self.model = model
 
     def Transcribe(self, request_iterator, context):
-        print("Starting transcription...")
-        first_chunk = next(request_iterator)
-        client = ServeClientFasterWhisper(
-            initial_prompt=first_chunk.hotwords,
-            send_last_n_segments=10,
-            clip_audio=False,
-            model=self.model,
-            # language=options["language"],
-            # task=options["task"],
-            same_output_threshold=10,
-        )
+        client = None
+        try:
+            print("Starting transcription...")
+            first_chunk = next(request_iterator)
 
-        first_audio = WhisperServicer.bytes_to_float_array(first_chunk.audio_data)
-        client.add_frames(first_audio)
-        prev_text = ""
+            client = ServeClientFasterWhisper(
+                initial_prompt=first_chunk.hotwords,
+                send_last_n_segments=10,
+                clip_audio=False,
+                model=self.model,
+                # language=options["language"],
+                # task=options["task"],
+                same_output_threshold=10,
+            )
+            print("Hotwords set for transcription:", first_chunk.hotwords)
 
-        print("Starting audio loop recording")
+            first_audio = WhisperServicer.bytes_to_float_array(first_chunk.audio_data)
+            client.add_frames(first_audio)
 
-        for chunk in request_iterator:
-            frame_np = WhisperServicer.bytes_to_float_array(chunk.audio_data)
-            client.add_frames(frame_np)
-            text = "".join([segment["text"] for segment in client.segments])
-            if text != prev_text:
-                prev_text = text
-                yield speech_pb2.TextResponse(text=text)
+            prev_text = ""
 
-        client.cleanup()
+            for chunk in request_iterator:
+                try:
+                    if len(chunk.audio_data) < 4:
+                        continue
+
+                    frame_np = self.bytes_to_float_array(chunk.audio_data)
+
+                    if len(frame_np) < 10:
+                        continue
+
+                    client.add_frames(frame_np)
+                    text = "".join([segment["text"] for segment in client.segments])
+
+                    if text != prev_text:
+                        prev_text = text
+                        yield speech_pb2.TextResponse(text=text)
+
+                except Exception as e:
+                    print(f"Error processing chunk: {str(e)}")
+                    continue
+        except Exception as e:
+            print("Transcription failed:", str(e))
+        finally:
+            if client:
+                client.cleanup()
 
     @staticmethod
     def bytes_to_float_array(audio_bytes):
