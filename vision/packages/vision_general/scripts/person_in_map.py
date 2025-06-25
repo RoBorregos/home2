@@ -6,9 +6,10 @@ Node to detect if a person is inside the house.
 
 import rclpy
 from rclpy.node import Node
-from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import PointStamped
-from frida_interfaces.srv import PointTransformation, DetectPersonLocation  # ajusta los nombres
+from frida_interfaces.srv import (
+    PointTransformation,
+)  # ajusta los nombres
 import json
 import os
 from math import sqrt
@@ -16,8 +17,6 @@ from ament_index_python.packages import get_package_share_directory
 
 from frida_constants.integration_constants import (
     POINT_TRANSFORMER_TOPIC,
-    RETURN_LOCATION,
-    RETURN_LASER_DATA,
 )
 
 from frida_constants.vision_constants import (
@@ -26,31 +25,27 @@ from frida_constants.vision_constants import (
 )
 
 ###
-import rclpy
-from rclpy.node import Node
-from geometry_msgs.msg import PointStamped, Point
+from geometry_msgs.msg import Point
 from frida_interfaces.srv import PersonInside
 
-import json
-import os
-from math import sqrt
-from ament_index_python.packages import get_package_share_directory
 
 class PersonLocation(Node):
     def __init__(self):
-        super().__init__('person_location_service_node')
+        super().__init__("person_location_service_node")
 
         self.person_point_sub = self.create_subscription(
             Point, PERSON_POINT_TOPIC, self.person_point_callback, 10
         )
         self.latest_person_point = None
 
-        self.tf_client = self.create_client(PointTransformation, POINT_TRANSFORMER_TOPIC)
+        self.tf_client = self.create_client(
+            PointTransformation, POINT_TRANSFORMER_TOPIC
+        )
         while not self.tf_client.wait_for_service(timeout_sec=2.0):
             self.get_logger().info("Waiting for PointTransformation service...")
 
-        self.srv = self.create_service(PersonInside, PERSON_INSIDE_REQUEST_TOPIC,
-            self.handle_person_inside_request
+        self.srv = self.create_service(
+            PersonInside, PERSON_INSIDE_REQUEST_TOPIC, self.handle_person_inside_request
         )
 
         self.get_logger().info("Node PersonLocation ready.")
@@ -67,7 +62,7 @@ class PersonLocation(Node):
             return response
 
         point_stamped = PointStamped()
-        point_stamped.header.frame_id = "zed_camera_link"  
+        point_stamped.header.frame_id = "zed_camera_link"
         point_stamped.point = self.latest_person_point
 
         # Transform the point to the 'map' frame
@@ -85,7 +80,9 @@ class PersonLocation(Node):
 
         transformed_point = future.result().transformed_point.point
 
-        area, subareas = self.get_location_from_pose(transformed_point.x, transformed_point.y)
+        area, subareas = self.get_location_from_pose(
+            transformed_point.x, transformed_point.y
+        )
 
         if area is None:
             response.success = False
@@ -100,7 +97,9 @@ class PersonLocation(Node):
         return response
 
     def get_location_from_pose(self, x, y):
-        path = os.path.join(get_package_share_directory("frida_constants"), "map_areas/areas.json")
+        path = os.path.join(
+            get_package_share_directory("frida_constants"), "map_areas/areas.json"
+        )
         with open(path, "r") as file:
             areas = json.load(file)
 
@@ -130,6 +129,7 @@ class PersonLocation(Node):
                     inside = not inside
         return inside
 
+
 def main(args=None):
     rclpy.init(args=args)
     node = PersonLocation()
@@ -139,6 +139,7 @@ def main(args=None):
         pass
     node.destroy_node()
     rclpy.shutdown()
+
 
 if __name__ == "__main__":
     main()

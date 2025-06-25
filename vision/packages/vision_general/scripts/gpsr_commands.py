@@ -469,7 +469,7 @@ class GPSRCommands(Node):
         if result.success:
             self.get_logger().info(f"Moondream result: {result.result}")
             return 1, result.result
-        
+
     def is_inside(self, x, y, polygon):
         inside = False
         n = len(polygon)
@@ -478,7 +478,9 @@ class GPSRCommands(Node):
             x2, y2 = polygon[(i + 1) % n]
 
             if (y1 > y) != (y2 > y):
-                xinters = (y - y1) * (x2 - x1) / (y2 - y1 + 1e-10) + x1  # Avoid zero division
+                xinters = (y - y1) * (x2 - x1) / (
+                    y2 - y1 + 1e-10
+                ) + x1  # Avoid zero division
                 if x < xinters:
                     inside = not inside
         return inside

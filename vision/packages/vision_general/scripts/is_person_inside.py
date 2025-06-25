@@ -21,8 +21,9 @@ from frida_constants.vision_constants import (
     DEPTH_IMAGE_TOPIC,
     CAMERA_INFO_TOPIC,
     PERSON_POINT_TOPIC,
-    CAMERA_FRAME
+    CAMERA_FRAME,
 )
+
 
 class IsPersonInside(Node):
     def __init__(self):
@@ -102,8 +103,10 @@ class IsPersonInside(Node):
         depth = get_depth(self.depth_image, mid_neck)
         point3D = deproject_pixel_to_point(self.imageInfo, mid_neck, depth)
 
-        coords = PointStamped(header=Header(frame_id=self.camera_frame),
-                point=Point(),)
+        coords = PointStamped(
+            header=Header(frame_id=self.camera_frame),
+            point=Point(),
+        )
         coords.x = float(point3D[0])
         coords.y = float(point3D[1])
         coords.z = float(point3D[2])
@@ -113,6 +116,7 @@ class IsPersonInside(Node):
         )
 
         self.person_inside.publish(coords)
+
 
 def main(args=None):
     rclpy.init(args=args)

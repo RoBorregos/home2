@@ -20,6 +20,7 @@ from frida_constants.integration_constants import (
     RETURN_LASER_DATA,
 )
 
+
 class PointTransformer(Node):
     def __init__(self):
         super().__init__("point_transformer")
