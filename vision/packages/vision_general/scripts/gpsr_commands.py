@@ -367,7 +367,7 @@ class GPSRCommands(Node):
         response.success = True
         self.get_logger().info(f"{type_requested} detected: {response_clean}")
         return response
-    
+
     def read_qr_callback(self, request, response):
         """Callback to detect and decode QR code in the image"""
         self.get_logger().info("Executing service Read Qr")
@@ -375,17 +375,17 @@ class GPSRCommands(Node):
             response.success = False
             response.result = ""
             return response
-        
+
         frame = self.image
         self.output_image = frame.copy()
 
-        # Detect QR using cv2.QRCodeDetector 
+        # Detect QR using cv2.QRCodeDetector
         retval, _, _ = self.qr_detector.detectAndDecode(frame)
-        
+
         response.result = retval
         response.success = True
         return response
-        
+
     def success(self, message):
         """Log a success message."""
         self.get_logger().info(f"\033[92mSUCCESS:\033[0m {message}")
