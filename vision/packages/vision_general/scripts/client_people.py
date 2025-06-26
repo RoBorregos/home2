@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
-import sys
 import cv2
 from frida_interfaces.srv import CountPersons
 import rclpy
 from rclpy.node import Node
 from cv_bridge import CvBridge
-from sensor_msgs.msg import Image
 
 
 class client_persons(Node):

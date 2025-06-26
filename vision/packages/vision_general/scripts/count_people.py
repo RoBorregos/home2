@@ -3,10 +3,9 @@ import cv2
 import rclpy  # python interface to ros2
 from rclpy.node import Node
 from ultralytics import YOLO
-from sensor_msgs.msg import Image
 from std_msgs.msg import Int16
-from frida_constants.vision_constants import CAMERA_TOPIC, PEOPLE_TOPIC
-from cv_bridge import CvBridge, CvBridgeError
+from frida_constants.vision_constants import CAMERA_TOPIC
+from cv_bridge import CvBridge
 from frida_interfaces.srv import CountPersons
 
 
