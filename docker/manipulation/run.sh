@@ -224,5 +224,5 @@ else
     echo "Container $CONTAINER_NAME is stopped. Starting it now..."
     docker compose up --build -d
     docker start $CONTAINER_NAME
-    docker exec $CONTAINER_NAME /bin/bash
+    docker exec -it $CONTAINER_NAME /bin/bash
 fi

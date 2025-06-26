@@ -19,6 +19,7 @@ RUN git clone https://github.com/RoBorregos/home2 --recursive /workspace/src/hom
 RUN rosdep init && rosdep update && rosdep install --from-paths /workspace/src/home2 --ignore-src -r --skip-keys "gpd opencv message_package eigen3 pcl-ros gazebo_ros gazebo_plugins libpcl-dev gazebo_ros2_control" -y
 RUN rosdep fix-permissions
 
-RUN apt update && apt install -y ros-humble-moveit*
+RUN apt update && apt install -y ros-humble-moveit* ros-humble-zed-msgs
+
 
 ENTRYPOINT [ "/bin/bash", "-l", "-c" ]

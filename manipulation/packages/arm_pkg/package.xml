@@ -21,6 +21,9 @@
   <!-- <depend>eigen3</depend> -->
   <!-- <depend>gpd</depend> -->
   <depend>pcl_ros</depend> 
+  <depend>uf_ros_lib</depend>
+  <depend>xarm_moveit_config</depend>
+  <depend>frida_description</depend>
   <!-- <depend>libpcl_dev</depend>  -->
 
 

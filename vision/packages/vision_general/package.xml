@@ -19,6 +19,8 @@
   <depend>frida_interfaces</depend>
   <depend>frida_constants</depend>
   <depend>task_manager</depend>
+  <depend>object_detector_2d</depend>
+  <depend>object_detection_handler</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

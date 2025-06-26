@@ -61,7 +61,7 @@ case $ENV_TYPE in
     ;;
   "gpu")
     #_____GPU_____
-    echo "DOCKERFILE=docker/vision/Dockerfile.gpu" >> .env
+    echo "DOCKERFILE=docker/vision/Dockerfile.cuda" >> .env
     echo "BASE_IMAGE=roborregos/home2:cuda_base" >> .env
     echo "IMAGE_NAME=roborregos/home2:vision-gpu" >> .env
 
