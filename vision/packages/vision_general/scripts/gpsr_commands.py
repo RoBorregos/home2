@@ -382,6 +382,13 @@ class GPSRCommands(Node):
         # Detect QR using cv2.QRCodeDetector
         retval, _, _ = self.qr_detector.detectAndDecode(frame)
 
+        if retval == "":
+            response.success = False
+            response.result = ""
+            self.get_logger().warn("No qr code detected")
+            return response
+
+        self.success(f"QR code read successfully: {retval}")
         response.result = retval
         response.success = True
         return response
