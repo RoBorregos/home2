@@ -132,53 +132,87 @@ class ft_net(nn.Module):
 
 # Define the swin_base_patch4_window7_224 Model
 # pytorch > 1.6
+# class ft_net_swin(nn.Module):
+#     def __init__(self, class_num, droprate=0.5, stride=2, circle=False, linear_num=512):
+#         super(ft_net_swin, self).__init__()
+#         model_path = os.path.join(os.path.dirname(__file__), "model.safetensors")
+#         model_ft = timm.create_model(
+#             "swin_base_patch4_window7_224", pretrained=True, drop_path_rate=0.2
+#         )
+
+#         if os.path.exists(model_path):
+#             if model_path.endswith('.safetensors'):
+#                 # For .safetensors format
+#                 with safe_open(model_path, framework="pt") as f:
+#                     state_dict = {k: f.get_tensor(k) for k in f.keys()}
+#             else:
+#                 # For .pth format
+#                 state_dict = torch.load(model_path)
+            
+#             model_ft.load_state_dict(state_dict)
+#         else:
+#             raise FileNotFoundError(
+#                 f"Swin Transformer weights not found at {model_path}\n"
+#                 f"Please download the weights file and place it in: {os.path.dirname(__file__)}"
+#             )
+#         # avg pooling to global pooling
+#         # model_ft.avgpool = nn.AdaptiveAvgPool2d((1,1))
+#         model_ft.head = nn.Sequential()  # save memory
+#         self.model = model_ft
+#         self.circle = circle
+#         self.avgpool1d = nn.AdaptiveAvgPool1d(1)
+#         self.avgpool2d = nn.AdaptiveAvgPool2d((1, 1))
+#         self.classifier = ClassBlock(
+#             1024, class_num, droprate, linear=linear_num, return_f=circle
+#         )
+#         print(
+#             "Make sure timm > 0.6.0 and you can install latest timm version by pip install git+https://github.com/rwightman/pytorch-image-models.git"
+#         )
 class ft_net_swin(nn.Module):
     def __init__(self, class_num, droprate=0.5, stride=2, circle=False, linear_num=512):
         super(ft_net_swin, self).__init__()
-        model_path = os.path.join(os.path.dirname(__file__), "model.safetensors")
-        model_ft = timm.create_model(
-            "swin_base_patch4_window7_224", pretrained=True, drop_path_rate=0.2
-        )
-
-        if os.path.exists(model_path):
-            if model_path.endswith('.safetensors'):
-                # For .safetensors format
-                with safe_open(model_path, framework="pt") as f:
-                    state_dict = {k: f.get_tensor(k) for k in f.keys()}
-            else:
-                # For .pth format
-                state_dict = torch.load(model_path)
-            
-            model_ft.load_state_dict(state_dict)
-        else:
-            raise FileNotFoundError(
-                f"Swin Transformer weights not found at {model_path}\n"
-                f"Please download the weights file and place it in: {os.path.dirname(__file__)}"
-            )
-        # avg pooling to global pooling
-        # model_ft.avgpool = nn.AdaptiveAvgPool2d((1,1))
-        model_ft.head = nn.Sequential()  # save memory
-        self.model = model_ft
+        self._model_initialized = False  # Track if model is initialized
         self.circle = circle
         self.avgpool1d = nn.AdaptiveAvgPool1d(1)
         self.avgpool2d = nn.AdaptiveAvgPool2d((1, 1))
         self.classifier = ClassBlock(
             1024, class_num, droprate, linear=linear_num, return_f=circle
         )
-        print(
-            "Make sure timm > 0.6.0 and you can install latest timm version by pip install git+https://github.com/rwightman/pytorch-image-models.git"
-        )
+
+    def _init_model(self):
+        """Initialize Swin model structure (only when needed)"""
+        if not self._model_initialized:
+            model_ft = timm.create_model(
+                "swin_base_patch4_window7_224",
+                pretrained=False,
+                drop_path_rate=0.2,
+                num_classes=0,  # No head
+            )
+            model_ft.head = nn.Sequential()  # Remove head
+            self.model = model_ft
+            self._model_initialized = True
+
+    def load_state_dict(self, state_dict, strict=True):
+        """Override load_state_dict to init model before loading weights"""
+        self._init_model()  # Initialize model before loading
+        super().load_state_dict(state_dict, strict=strict)
 
     def forward(self, x):
-        x = self.model.forward_features(x)
-        # swin is update in latest timm>0.6.0, so I add the following two lines.
-        if x.dim() == 3:
-            x = self.avgpool1d(x.permute((0, 2, 1)))
-        else:
-            x = self.avgpool2d(x.permute((0, 3, 1, 2)))
-        x = x.view(x.size(0), x.size(1))
-        x = self.classifier(x)
-        return x
+        """Initialize model on first forward pass if needed"""
+        if not hasattr(self, 'model'):
+            self._init_model()
+        return self.model(x)
+
+    # def forward(self, x):
+    #     x = self.model.forward_features(x)
+    #     # swin is update in latest timm>0.6.0, so I add the following two lines.
+    #     if x.dim() == 3:
+    #         x = self.avgpool1d(x.permute((0, 2, 1)))
+    #     else:
+    #         x = self.avgpool2d(x.permute((0, 3, 1, 2)))
+    #     x = x.view(x.size(0), x.size(1))
+    #     x = self.classifier(x)
+    #     return x
 
 
 class ft_net_swinv2(nn.Module):
