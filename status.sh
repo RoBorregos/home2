@@ -6,7 +6,7 @@ ARG2=${ARGS[1]}
 
 # Check if the parameter is passed, if not, set a default value (e.g., "vision")
 if [ -z "$ARG1" ]; then
-  echo "No area or task provided. Valid areas are: --vision, --manipulation, etc. Or tasks like --carry, --receptionist, etc."
+  echo "No area or task provided. Valid areas are: vision, manipulation, etc. Or tasks like --carry, --receptionist, etc."
   exit 1
 fi
 
@@ -28,21 +28,24 @@ source_colors
 if [ -n "$ARG2" ]; then
     # Run status for a specific task in a specific area
     TASK=${ARG2}
-    case $ARG1 in
-        "--vision")
-            source "${CONFIG_PATH}/vision.cfg"
-            check_nodes VISION_NODES[$TASK] "Vision Status ${TASK}"
-            ;;
-        *)
-            echo -e "${RED}Error${NC}"
-            exit 1
-            ;;
-    esac
+    AREA=${ARG1}
+    AREA_TITLE=$(echo "$AREA" | awk '{print toupper(substr($0,1,1)) substr($0,2)}')
+    AREA_CAPS=$(echo "$AREA" | tr '[:lower:]' '[:upper:]')
+
+    source "${CONFIG_PATH}/${AREA}_nodes.cfg"
+    check_nodes ${AREA_CAPS}_NODES[$TASK] "${AREA_TITLE} Status ${TASK}"
+
 else
     # Run status for a specific task in all areas
     TASK=${ARG1}
-    source "${CONFIG_PATH}/vision.cfg"
-    check_nodes VISION_NODES[$TASK] "Vision Status ${TASK}"
+    AREAS=("vision" "manipulation" "hri" "manipulation")
 
-    # TODO(@pms): Add other areas like manipulation, navigation, etc.
+    for AREA in "${AREAS[@]}"; do
+        AREA_TITLE=$(echo "$AREA" | awk '{print toupper(substr($0,1,1)) substr($0,2)}')
+        AREA_CAPS=$(echo "$AREA" | tr '[:lower:]' '[:upper:]')
+
+        source "${CONFIG_PATH}/${AREA}_nodes.cfg"
+        check_nodes ${AREA_CAPS}_NODES[$TASK] "${AREA_TITLE} Status ${TASK}"
+        echo ""
+    done
 fi
