@@ -11,7 +11,6 @@ from scipy.spatial.distance import cosine
 import pathlib
 import timm
 
-
 version = torch.__version__
 use_swin = True
 use_dense = False
@@ -43,6 +42,7 @@ data_transforms = transforms.Compose(
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
     ]
 )
+
 
 config_path = os.path.join(folder_path, name, "opts.yaml")
 with open(config_path, "r") as stream:
@@ -186,6 +186,67 @@ def extract_feature_from_img(image, model):
             # print(features)
             # features = features.cpu()
         return features.cpu()
+
+
+def extract_feature_from_img_batch(images, model, batch_size=64):
+    batch_data_transforms = transforms.Compose(
+        [
+            transforms.Resize((h, w), interpolation=interpolation_mode),
+            transforms.ToTensor(),
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+        ]
+    )
+    images_tensor = torch.zeros(len(images), 3, h, w)
+    # images: a batch of images in PIL format
+    if isinstance(images, list):
+        for i, image in enumerate(images):
+            images_tensor[i] = batch_data_transforms(image)
+    elif isinstance(images, torch.Tensor):
+        if images.ndim == 3:
+            # If images is a single image tensor, add batch dimension
+            images_tensor[0] = batch_data_transforms(images)
+        elif images.ndim == 4:
+            # If images is already a batch of images, apply transforms to each image
+            for i in range(images.shape[0]):
+                images_tensor[i] = batch_data_transforms(images[i])
+
+    else:
+        raise ValueError("Input images must be a list of PIL images or a tensor.")
+    # Extract features from the images
+    model.eval()
+    features_list = []
+    with torch.no_grad():
+        for i in range(0, images.shape[0], batch_size):
+            end = min(i + batch_size, images.shape[0])
+            batch_images = images[i:end]
+
+            features = (
+                torch.zeros(batch_images.shape[0], linear_num).cuda()
+                if use_gpu
+                else torch.zeros(batch_images.shape[0], linear_num)
+            )
+            for j in range(2):
+                if j == 1:
+                    # Apply horizontal flipping for augmentation
+                    batch_images = fliplr(batch_images)
+
+                input_img = Variable(batch_images)
+                for scale in ms:
+                    if scale != 1:
+                        input_img = torch.nn.functional.interpolate(
+                            input_img,
+                            scale_factor=scale,
+                            mode="bicubic",
+                            align_corners=False,
+                        )
+                    outputs = model(input_img)
+                    features += outputs
+
+            # Normalize features
+            features /= torch.norm(features, p=2, dim=1, keepdim=True)
+            features_list.append(features.cpu())
+        features = torch.cat(features_list, dim=0)
+    return features
 
 
 def compare_images(features1, features2, threshold=0.55):

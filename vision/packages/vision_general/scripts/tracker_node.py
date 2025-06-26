@@ -452,27 +452,13 @@ class SingleTracker(Node):
                             if they are different, we can add a new embedding as we have "certainty this is the same person
                             with a different view -- not necessarily from a different angle"""
                             embedding_exists = False
-                            start_time = time.time()
-                            print(
-                                f"Evaluating on {len(self.person_data['embeddings'])} embeddings"
-                            )
                             for emb in self.person_data["embeddings"]:
-                                start_time2 = time.time()
                                 if compare_images(embedding, emb, threshold=0.7):
                                     embedding_exists = True
-                                print(
-                                    f"Single Embedding comparison took {time.time() - start_time2} seconds"
-                                )
-                            print(
-                                f"Sequential Embedding comparison took {time.time() - start_time} seconds"
-                            )
+                                    break
 
-                            start_time = time.time()
                             compare_images_batch(
                                 embedding, self.person_data["embeddings"], threshold=0.7
-                            )
-                            print(
-                                f"Batch Embedding comparison took {time.time() - start_time} seconds"
                             )
 
                             if not embedding_exists:
@@ -510,13 +496,37 @@ class SingleTracker(Node):
                     )
 
             if not person_in_frame and len(people) > 0:
-                for person in people:
+                # img_list = []
+                # for person in people:
+                #     cropped_image = self.frame[
+                #         person["y1"] : person["y2"], person["x1"] : person["x2"]
+                #     ]
+                #     pil_image = PILImage.fromarray(cropped_image)
+                #     img_list.append(pil_image)
+
+                # with torch.no_grad():
+                #     embeddings_batch = extract_feature_from_img_batch(
+                #         img_list, self.model_reid
+                #     )
+
+                for i, person in enumerate(people):
                     cropped_image = self.frame[
                         person["y1"] : person["y2"], person["x1"] : person["x2"]
                     ]
                     pil_image = PILImage.fromarray(cropped_image)
                     with torch.no_grad():
                         embedding = extract_feature_from_img(pil_image, self.model_reid)
+
+                    # check if embedding and embeddings_batch[i] are similar
+                    # print("comparing againts batch embedding")
+                    # if compare_images(embedding, embeddings_batch[i], threshold=0.7):
+                    #     self.success(
+                    #         f"embedding is the same!"
+                    #     )
+                    # else:
+                    #     self.success(
+                    #         f"embedding is different!"
+                    #     )
                     person_angle = self.pose_detection.personAngle(cropped_image)
                     if person_angle is not None:
                         if self.person_data[person_angle] is not None:
@@ -562,6 +572,8 @@ class SingleTracker(Node):
                         #         f"Person re-identified: {person['track_id']} without angle"
                         #     )
                         #     break
+
+                # check if
             if person_in_frame:
                 # if len(self.depth_image) > 0:
                 #     self.is_tracking_result = True
