@@ -27,6 +27,7 @@ from geometry_msgs.msg import Point
 from vision_general.utils.reid_model import (
     load_network,
     compare_images,
+    compare_images_batch,
     extract_feature_from_img,
     get_structure,
 )
@@ -438,20 +439,49 @@ class SingleTracker(Node):
                                 pil_image, self.model_reid
                             )
                         if self.person_data["embeddings"] is None:
-                            self.person_data["embeddings"] = []
-                            self.person_data["embeddings"].append(embedding)
+                            self.person_data["embeddings"] = torch.Tensor([])
+                            # append the first embedding
+                            self.person_data["embeddings"] = torch.cat(
+                                (
+                                    self.person_data["embeddings"],
+                                    embedding.squeeze(0).unsqueeze(0),
+                                )
+                            )
                         else:
                             """ Compare embeddings from the person with the current one
                             if they are different, we can add a new embedding as we have "certainty this is the same person
                             with a different view -- not necessarily from a different angle"""
                             embedding_exists = False
+                            start_time = time.time()
+                            print(
+                                f"Evaluating on {len(self.person_data['embeddings'])} embeddings"
+                            )
                             for emb in self.person_data["embeddings"]:
+                                start_time2 = time.time()
                                 if compare_images(embedding, emb, threshold=0.7):
                                     embedding_exists = True
-                                    break
+                                print(
+                                    f"Single Embedding comparison took {time.time() - start_time2} seconds"
+                                )
+                            print(
+                                f"Sequential Embedding comparison took {time.time() - start_time} seconds"
+                            )
+
+                            start_time = time.time()
+                            compare_images_batch(
+                                embedding, self.person_data["embeddings"], threshold=0.7
+                            )
+                            print(
+                                f"Batch Embedding comparison took {time.time() - start_time} seconds"
+                            )
 
                             if not embedding_exists:
-                                self.person_data["embeddings"].append(embedding)
+                                self.person_data["embeddings"] = torch.cat(
+                                    (
+                                        self.person_data["embeddings"],
+                                        embedding.squeeze(0).unsqueeze(0),
+                                    )
+                                )
 
                         angle = self.pose_detection.personAngle(cropped_image)
                         if angle is not None and self.person_data[angle] is None:
