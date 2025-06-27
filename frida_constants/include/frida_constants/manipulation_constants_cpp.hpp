@@ -12,6 +12,7 @@ conststr REMOVE_PC_TEST = "/manipulation/test_service";
 conststr REMOVE_PLANE_SERVICE = "/manipulation/extract_plane";
 conststr CLUSTER_OBJECT_SERVICE =
     "/manipulation/cluster_object"; // Kept original
+conststr REMOVE_VERTICAL_PLANE_SERVICE = "/manipulation/remove_vertical_plane";
 conststr ADD_PICK_PRIMITIVES_SERVICE = "/manipulation/add_pick_primitives";
 conststr ADD_COLLISION_SERVICE = "/manipulation/add_collision_objects";
 conststr PICK_PERCEPTION_SERVICE =
