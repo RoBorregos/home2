@@ -1,34 +1,126 @@
 [
-    {"document": "RoboCup@Home league is the largest annual competition for autonomous service robots.", "metadata": {"context": "project overview"}},
-    {"document": "It aims to develop service and assistive robot technology for future domestic applications.", "metadata": {"context": "project overview"}},
-    {"document": "The competition evaluates robots' abilities in a realistic home environment through benchmark tests.", "metadata": {"context": "project overview"}},
-    {"document": "Frida is Friendly Robotic Interactive Domestic Assistant, a service robot designed for domestic tasks to assist in our home.", "metadata": {"context": "project overview"}},
-    {"document": "The project consists of a main repository and several submodules.", "metadata": {"context": "repository structure"}},
-    {"document": "The main repository contains the high-level code corresponding to the logic for each of the tasks in the competition.", "metadata": {"context": "repository structure"}},
-    {"document": "Additionally, every repository contains a ROS workspace which contains the code executed during the competition.", "metadata": {"context": "repository structure"}},
-    {"document": "The submodules are divided according to the internal subteams: HRI, Manipulation, Navigation, Vision.", "metadata": {"context": "repository structure"}},
-    {"document": "The main idea of this structure is to divide the development into individual areas such that developers only need to build and compile the code in a specific submodule.", "metadata": {"context": "repository structure"}},
-    {"document": "This allows for faster development and testing of the code.", "metadata": {"context": "repository structure"}},
-    {"document": "To standardize the development process, we have migrated the development environment to a containerized system.", "metadata": {"context": "development process"}},
-    {"document": "This allows us to have a consistent setup across all team members and ensures that the code runs in the same way on all machines.", "metadata": {"context": "development process"}},
-    {"document": "The containerized system is based on Docker and Docker Compose.", "metadata": {"context": "development process"}},
-    {"document": "Navigation: Describes the software modules that allow the robot to navigate autonomously in an environment.", "metadata": {"context": "module descriptions"}},
-    {"document": "Manipulation: Describes the software modules that allow the robot to manipulate objects.", "metadata": {"context": "module descriptions"}},
-    {"document": "Integraction and Networks: Describes the software modules that allow the robot to interact with other devices and networks.", "metadata": {"context": "module descriptions"}},
-    {"document": "HRI: Describes the software modules that allow the robot to interact with humans.", "metadata": {"context": "module descriptions"}},
-    {"document": "Electronics and Control: Describes the hardware modules that allow the robot to control its movements and interact with the environment.", "metadata": {"context": "module descriptions"}},
-    {"document": "Computer Vision: Describes the software modules that allow the robot to perceive the environment through cameras and other sensors.", "metadata": {"context": "module descriptions"}},
-    {"document": "Mechanics: Describes the hardware modules that allow the robot to integrate their physical parts and interact with the environment.", "metadata": {"context": "module descriptions"}},
-    {"document": "Frida robot uses a modified EAI Dashgo B1 for mobility.", "metadata": {"context": "hardware specifications"}},
-    {"document": "Frida robot uses a uFactory xArm 6 for manipulation.", "metadata": {"context": "hardware specifications"}},
-    {"document": "Frida robot uses Jetson Xavier AGX and Jetson Nano for computing.", "metadata": {"context": "hardware specifications"}},
-    {"document": "Frida robot uses 24V and 14.8V batteries.", "metadata": {"context": "hardware specifications"}},
-    {"document": "Frida robot uses a Stereolabs ZED2 camera.", "metadata": {"context": "hardware specifications"}},
-    {"document": "Frida robot uses a Seed Studio ReSpeaker Microphone Array.", "metadata": {"context": "hardware specifications"}},
-    {"document": "Frida robot uses a Logitech X100 speaker.", "metadata": {"context": "hardware specifications"}},
-    {"document": "Frida robot uses an HDMI LCD touchscreen.", "metadata": {"context": "hardware specifications"}},
-    {"document": "Frida robot uses an RP Lidar A1 for navigation.", "metadata": {"context": "hardware specifications"}},
-    {"document": "Frida robot includes a custom sheet metal base cover.", "metadata": {"context": "hardware specifications"}},
-    {"document": "Frida robot includes additional devices like power indicators, 5V Ethernet switch, emergency stop devices, and a customized gripper controller.", "metadata": {"context": "hardware specifications"}}
-  ]
-  
+  {
+    "document": "RoboCup@Home league is the largest annual competition for autonomous service robots.",
+    "context": "project overview"
+  },
+  {
+    "document": "It aims to develop service and assistive robot technology for future domestic applications.",
+    "context": "project overview"
+  },
+  {
+    "document": "The competition evaluates robots' abilities in a realistic home environment through benchmark tests.",
+    "context": "project overview"
+  },
+  {
+    "document": "Frida is Friendly Robotic Interactive Domestic Assistant, a service robot designed for domestic tasks to assist in our home.",
+    "context": "project overview"
+  },
+  {
+    "document": "The project consists of a main repository and several submodules.",
+    "context": "repository structure"
+  },
+  {
+    "document": "The main repository contains the high-level code corresponding to the logic for each of the tasks in the competition.",
+    "context": "repository structure"
+  },
+  {
+    "document": "Additionally, every repository contains a ROS workspace which contains the code executed during the competition.",
+    "context": "repository structure"
+  },
+  {
+    "document": "The submodules are divided according to the internal subteams: HRI, Manipulation, Navigation, Vision.",
+    "context": "repository structure"
+  },
+  {
+    "document": "The main idea of this structure is to divide the development into individual areas such that developers only need to build and compile the code in a specific submodule.",
+    "context": "repository structure"
+  },
+  {
+    "document": "This allows for faster development and testing of the code.",
+    "context": "repository structure"
+  },
+  {
+    "document": "To standardize the development process, we have migrated the development environment to a containerized system.",
+    "context": "development process"
+  },
+  {
+    "document": "This allows us to have a consistent setup across all team members and ensures that the code runs in the same way on all machines.",
+    "context": "development process"
+  },
+  {
+    "document": "The containerized system is based on Docker and Docker Compose.",
+    "context": "development process"
+  },
+  {
+    "document": "Navigation: Describes the software modules that allow the robot to navigate autonomously in an environment.",
+    "context": "module descriptions"
+  },
+  {
+    "document": "Manipulation: Describes the software modules that allow the robot to manipulate objects.",
+    "context": "module descriptions"
+  },
+  {
+    "document": "Integraction and Networks: Describes the software modules that allow the robot to interact with other devices and networks.",
+    "context": "module descriptions"
+  },
+  {
+    "document": "HRI: Describes the software modules that allow the robot to interact with humans.",
+    "context": "module descriptions"
+  },
+  {
+    "document": "Electronics and Control: Describes the hardware modules that allow the robot to control its movements and interact with the environment.",
+    "context": "module descriptions"
+  },
+  {
+    "document": "Computer Vision: Describes the software modules that allow the robot to perceive the environment through cameras and other sensors.",
+    "context": "module descriptions"
+  },
+  {
+    "document": "Mechanics: Describes the hardware modules that allow the robot to integrate their physical parts and interact with the environment.",
+    "context": "module descriptions"
+  },
+  {
+    "document": "Frida robot uses a modified EAI Dashgo B1 for mobility.",
+    "context": "hardware specifications"
+  },
+  {
+    "document": "Frida robot uses a uFactory xArm 6 for manipulation.",
+    "context": "hardware specifications"
+  },
+  {
+    "document": "Frida robot uses Jetson Xavier AGX and Jetson Nano for computing.",
+    "context": "hardware specifications"
+  },
+  {
+    "document": "Frida robot uses 24V and 14.8V batteries.",
+    "context": "hardware specifications"
+  },
+  {
+    "document": "Frida robot uses a Stereolabs ZED2 camera.",
+    "context": "hardware specifications"
+  },
+  {
+    "document": "Frida robot uses a Seed Studio ReSpeaker Microphone Array.",
+    "context": "hardware specifications"
+  },
+  {
+    "document": "Frida robot uses a Logitech X100 speaker.",
+    "context": "hardware specifications"
+  },
+  {
+    "document": "Frida robot uses an HDMI LCD touchscreen.",
+    "context": "hardware specifications"
+  },
+  {
+    "document": "Frida robot uses an RP Lidar A1 for navigation.",
+    "context": "hardware specifications"
+  },
+  {
+    "document": "Frida robot includes a custom sheet metal base cover.",
+    "context": "hardware specifications"
+  },
+  {
+    "document": "Frida robot includes additional devices like power indicators, 5V Ethernet switch, emergency stop devices, and a customized gripper controller.",
+    "context": "hardware specifications"
+  }
+]
