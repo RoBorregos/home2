@@ -86,12 +86,13 @@ class HearStreaming(Node):
         self.get_logger().info("*Hear Streaming Node is ready*")
 
     def audio_callback(self, msg):
-        self.get_logger().info("Audio received in callback.")
         audio_data = np.frombuffer(msg.data, dtype=np.int16)
         self.audio_buffer.append(audio_data)
 
     def record_subscribed(self, hotwords):
         self.get_logger().info("HearStreaming node recording.")
+        # TODO: unsure if this is the best way to cancel the stream request
+        call = None
 
         def request_generator():
             while not self.stop_flag.is_set() and rclpy.ok():
@@ -113,7 +114,8 @@ class HearStreaming(Node):
                 except IOError as e:
                     self.get_logger().error(f"I/O error({e.errno}): {e.strerror}")
                     break
-            self.stub.cancel()
+            # Cancel the grpc request if the stop flag is set
+            call.cancel()
 
         def handle_transcripts(responses):
             try:
@@ -123,9 +125,11 @@ class HearStreaming(Node):
                     self.get_logger().info(f"Transcript: {response.text}")
                     self.current_transcription = response.text
             except grpc.RpcError as e:
-                self.get_logger().error(f"gRPC stream error: {e}")
+                if "locally cancelled" not in e.details().lower():
+                    self.get_logger().error(f"gRPC stream error: {e}")
 
         responses = self.stub.Transcribe(request_generator())
+        call = responses
         self.transcript_thread = threading.Thread(
             target=handle_transcripts, args=(responses,)
         )

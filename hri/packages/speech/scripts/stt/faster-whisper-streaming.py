@@ -50,14 +50,19 @@ class WhisperServicer(speech_pb2_grpc.SpeechStreamServicer):
 
                     if text != prev_text:
                         prev_text = text
+                        print("Transcription updated:", str(text))
+
                         yield speech_pb2.TextResponse(text=text)
 
                 except Exception as e:
                     print(f"Error processing chunk: {str(e)}")
                     continue
         except Exception as e:
-            print("Transcription failed:", str(e))
+            print("Transcription ended")
+            if len(str(e)) > 0:
+                print("Transcription failed:", str(e))
         finally:
+            print("Cleaning up client resources...")
             if client:
                 client.cleanup()
 
