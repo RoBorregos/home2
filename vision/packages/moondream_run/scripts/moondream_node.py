@@ -55,7 +55,7 @@ CONF_THRESHOLD = 0.5
 
 class MoondreamNode(Node):
     def __init__(self):
-        super().__init__("receptionist_commands")
+        super().__init__("moondream_node")
         self.bridge = CvBridge()
         self.image = None
 

@@ -5,7 +5,7 @@ _run_sh_autocomplete() {
     _init_completion || return
 
     local areas="manipulation navigation hri vision integration"
-    local tasks="--carry --receptionist --storing-groceries --gpsr --moondream"
+    local tasks="--carry --receptionist --storing-groceries --gpsr --moondream --egpsr --clean-table --hand --restaurant"
     local flags="--rebuild --help -h -d"
 
     case ${COMP_CWORD} in
@@ -22,6 +22,7 @@ _run_sh_autocomplete() {
 }
 
 complete -F _run_sh_autocomplete ./run.sh
+complete -F _run_sh_autocomplete ./status.sh
 
 # To use this script:
 # Source this script in your terminal: `source auto-complete.sh` or 
