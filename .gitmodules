@@ -16,3 +16,6 @@
 	path = navigation/packages/PlayStation-JoyInterface-ROS2
 	url = https://github.com/HarvestX/PlayStation-JoyInterface-ROS2.git
 	branch = humble
+[submodule "navigation/packages/sllidar_ros2"]
+	path = navigation/packages/sllidar_ros2
+	url = https://github.com/Slamtec/sllidar_ros2
