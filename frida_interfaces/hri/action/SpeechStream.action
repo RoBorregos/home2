@@ -1,6 +1,7 @@
 #goal definition
 float32 timeout
 string hotwords
+float32 silence_time
 ---
 #result definition
 string transcription
