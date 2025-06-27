@@ -57,6 +57,7 @@ TEST_TASK = Task.RECEPTIONIST
 TEST_COMPOUND = True
 TEST_INDIVIDUAL_FUNCTIONS = False
 TEST_EMBEDDINGS = False
+TEST_ASYNC_LLM = True
 
 
 class TestHriManager(Node):
@@ -83,6 +84,9 @@ class TestHriManager(Node):
 
         if TEST_EMBEDDINGS:
             self.test_embeddings()
+
+        if TEST_ASYNC_LLM:
+            self.async_llm_test()
 
     def individual_functions(self):
         # Test say
@@ -261,6 +265,22 @@ class TestHriManager(Node):
         # documents = ["cheese", "milk", "yogurt"]
         # result_closest = hri.find_closest(documents, "milk")
         # self.get_logger().info(f"Closest result: {result_closest}")
+
+    def async_llm_test(self):
+        test = self.hri_manager.extract_data("LLM_name", "My name is John Doe", is_async=True)
+
+        self.get_logger().info(f"Extract data future: {test}")
+        self.get_logger().info(f"Extract data future status: {test.done(), test.result()}")
+
+        self.get_logger().info("Waiting for the future to complete...")
+
+        rclpy.spin_until_future_complete(self, test)
+
+        self.get_logger().info(f"Extracted data: {test.result()}")
+
+        # Test original functionality
+        test = self.hri_manager.extract_data("LLM_name", "My name is John Doe")
+        self.get_logger().info(f"Extract data result: {test}")
 
 
 def main(args=None):

@@ -48,6 +48,7 @@ from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
 from rcl_interfaces.msg import Parameter, ParameterType, ParameterValue
 from rcl_interfaces.srv import SetParameters
 from rclpy.node import Node
+from rclpy.task import Future
 from std_msgs.msg import String
 from utils.baml_client.sync_client import b
 from utils.baml_client.types import (
@@ -202,13 +203,14 @@ class HRITasks(metaclass=SubtaskMeta):
         return Status.EXECUTION_SUCCESS
 
     @service_check("extract_data_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
-    def extract_data(self, query, complete_text, context="") -> str:
+    def extract_data(self, query, complete_text, context="", is_async=False) -> str | Future:
         """
         Extracts data from the given query and complete text.
 
         Args:
             query (str): specifies what to extract from complete_text.
             complete_text (str): The complete text from which data is to be extracted.
+            is_async (bool): If True, the method will return a Future object instead of waiting for the result.
 
         Returns:
             str: The extracted data as a string. If no data is found, an empty string is returned.
@@ -216,6 +218,25 @@ class HRITasks(metaclass=SubtaskMeta):
         Logger.info(
             self.node, f"Sending to extract data service: query={query}, text={complete_text}"
         )
+
+        if is_async:
+            future = Future()
+
+            request = ExtractInfo.Request(data=query, full_text=complete_text, context=context)
+            extract_data_future = self.extract_data_service.call_async(request)
+
+            def callback(f):
+                future.set_result(
+                    (
+                        Status.EXECUTION_SUCCESS
+                        if len(f.result().result) > 0
+                        else Status.TARGET_NOT_FOUND,
+                        f.result().result,
+                    )
+                )
+
+            extract_data_future.add_done_callback(callback)
+            return future
 
         request = ExtractInfo.Request(data=query, full_text=complete_text, context=context)
         future = self.extract_data_service.call_async(request)
@@ -492,6 +513,7 @@ class HRITasks(metaclass=SubtaskMeta):
         rclpy.spin_until_future_complete(self.node, future)
         return Status.EXECUTION_SUCCESS, future.result().corrected_text
 
+    # TODO: Make async
     def command_interpreter(self, text: str) -> List[InterpreterAvailableCommands]:
         Logger.info(
             self.node,
@@ -532,6 +554,7 @@ class HRITasks(metaclass=SubtaskMeta):
         else:
             self.node.get_logger().error(f"Failed to set parameter {name}")
 
+    # TODO: Make async
     @service_check("common_interest_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def common_interest(self, person1, interest1, person2, interest2, remove_thinking=True):
         try:
@@ -559,6 +582,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
         return Status.EXECUTION_SUCCESS, result
 
+    # TODO: Make async
     @service_check("is_positive_service", (Status.SERVICE_CHECK, False), TIMEOUT)
     def is_positive(self, text, async_call=False):
         Logger.info(self.node, f"Checking if text is positive: {text}")
@@ -570,6 +594,7 @@ class HRITasks(metaclass=SubtaskMeta):
         Logger.info(self.node, f"is_positive result ({text}): {future.result().is_positive}")
         return Status.EXECUTION_SUCCESS, future.result().is_positive
 
+    # TODO: Make async
     @service_check("is_negative_service", (Status.SERVICE_CHECK, False), TIMEOUT)
     def is_negative(self, text, async_call=False):
         Logger.info(self.node, f"Checking if text is negative: {text}")
@@ -695,6 +720,7 @@ class HRITasks(metaclass=SubtaskMeta):
         Logger.info(self.node, f"find_closest result({query}): {str(Results)}")
         return Results
 
+    # TODO: Make async
     @service_check("llm_wrapper_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def answer_with_context(self, question: str, context: str) -> str:
         """
@@ -769,6 +795,7 @@ class HRITasks(metaclass=SubtaskMeta):
     def get_name(self, query_result):
         return self.get_metadata_key(query_result, "original_name")
 
+    # TODO: Make async
     def categorize_objects(
         self, table_objects: list[str], shelves: dict[int, list[str]]
     ) -> tuple[Status, dict[int, list[str]], dict[int, list[str]]]:
