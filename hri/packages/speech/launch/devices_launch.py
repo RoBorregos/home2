@@ -43,13 +43,6 @@ def generate_launch_description():
         [ModuleNames.HRI.value],
     )["kws_oww"]["ros__parameters"]
 
-    # useful_audio_config = parse_ros_config(
-    #     os.path.join(
-    #         get_package_share_directory("speech"), "config", "useful_audio.yaml"
-    #     ),
-    #     [ModuleNames.HRI.value],
-    # )["useful_audio"]["ros__parameters"]
-
     nodes = [
         Node(
             package="speech",
@@ -59,14 +52,6 @@ def generate_launch_description():
             emulate_tty=True,
             parameters=[mic_config],
         ),
-        # Node(
-        #     package="speech",
-        #     executable="hear.py",
-        #     name="hear",
-        #     output="screen",
-        #     emulate_tty=True,
-        #     parameters=[hear_config],
-        # ),
         Node(
             package="speech",
             executable="hear_streaming.py",
@@ -83,14 +68,6 @@ def generate_launch_description():
             emulate_tty=True,
             parameters=[speaker_config],
         ),
-        # Node(
-        #     package="speech",
-        #     executable="useful_audio.py",
-        #     name=USEFUL_AUDIO_NODE_NAME,
-        #     output="screen",
-        #     emulate_tty=True,
-        #     parameters=[useful_audio_config],
-        # ),
     ]
 
     if USE_RESPEAKER:

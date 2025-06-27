@@ -25,6 +25,7 @@ from frida_constants.hri_constants import (
     QUERY_ENTRY_SERVICE,
     RAG_SERVICE,
     SPEAK_SERVICE,
+    STT_ACTION_SERVER_NAME,
     STT_SERVICE_NAME,
     USEFUL_AUDIO_NODE_NAME,
     WAKEWORD_TOPIC,
@@ -137,7 +138,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
         self.answer_question_service = self.node.create_client(AnswerQuestionLLM, RAG_SERVICE)
 
-        self._action_client = ActionClient(self.node, SpeechStream, "/stt_streaming")
+        self._action_client = ActionClient(self.node, SpeechStream, STT_ACTION_SERVER_NAME)
 
         all_services = {
             # "hear": {
