@@ -17,7 +17,7 @@ def generate_launch_description():
     
     declare_publish_tf = DeclareLaunchArgument(
         'publish_tf',
-        default_value='true',  # LaunchConfiguration values are strings, so use 'true'/'false'
+        default_value='false',  # LaunchConfiguration values are strings, so use 'true'/'false'
         description='Whether to publish URDF'
     )
 

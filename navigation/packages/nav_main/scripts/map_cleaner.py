@@ -12,7 +12,7 @@ class MapCleaner(Node):
         super().__init__("map_cleaner")
 
         self.subscription = self.create_subscription(
-            OccupancyGrid, "/map_view", self.map_callback, 10
+            OccupancyGrid, "/map", self.map_callback, 10
         )
 
         self.publisher = self.create_publisher(OccupancyGrid, "/map_cleaned", 10)

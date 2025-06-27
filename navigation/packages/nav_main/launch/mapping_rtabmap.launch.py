@@ -10,7 +10,7 @@ from launch_ros.substitutions import FindPackageShare
 def launch_setup(context, *args, **kwargs):
     use_sim = LaunchConfiguration('use_sim', default='false')
     localization = LaunchConfiguration('localization', default='false')
-    rtabmap_viz = LaunchConfiguration('rtabmap_viz', default='true')
+    rtabmap_viz = LaunchConfiguration('rtabmap_viz', default='false')
 
     
     

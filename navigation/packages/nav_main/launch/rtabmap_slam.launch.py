@@ -9,9 +9,9 @@ from launch_ros.actions import Node
 def launch_setup(context, *args, **kwargs):
 
     use_sim_time = LaunchConfiguration('use_sim_time',default='false')
-    localization = LaunchConfiguration('localization', default='true')
+    localization = LaunchConfiguration('localization', default='false')
     rtabmap_viz = LaunchConfiguration('rtabmap_viz', default='false')
-    use_3d_grid = LaunchConfiguration('3d_grid', default='false')
+    use_3d_grid = LaunchConfiguration('3d_grid', default='true')
 
     icp_parameters={
           'odom_frame_id':'icp_odom',
@@ -36,17 +36,24 @@ def launch_setup(context, *args, **kwargs):
             'wait_for_transform_duration': 0.8,
             'queue_size': 3,
             'approx_sync ': True,
-            'approx_sync_max_interval': '0.04',
+            'approx_sync_max_interval': 0.01,    
             # RTAB-Map's parameters should be strings:
             'Reg/Strategy':'1',
             'Reg/Force3DoF':'true',
+            'Vis/MinInliers': '15',
+            'Vis/EstimationType': '1',
+            'Vis/CorType': '2',
+            'Vis/FeatureType': '6',
+            'Vis/MaxFeatures': '500',
+            'Odom/Strategy': '0',
+            'Odom/GuessMotion': 'True',
+            'Odom/FeatureType': '6',
             'Mem/NotLinkedNodesKept':'false',
             'Icp/PointToPlaneMinComplexity':'0.05',
             'Grid/MaxGroundHeight':'0.1', 
             'Grid/MaxObstacleHeight':'2',  
             'RGBD/NeighborLinkRefining':'True',
             'Grid/CellSize': '0.04',
-            'Vis/MaxFeatures': '100',
             'Rtabmap/DetectionRate': '15',
             #   'Grid/RayTracing':'true', # Fill empty space
             'Grid/3D':'false', # Use 2D occupancy
@@ -64,8 +71,9 @@ def launch_setup(context, *args, **kwargs):
             'approx_sync ': False,
 
             ##### TEST ####
-            # 'approx_sync ': True,
+            'approx_sync ': True,
             # 'approx_sync_max_interval': '0.04',
+            'approx_sync_max_interval': '0.1',
             ###############
             # RTAB-Map's parameters should be strings:
             'Reg/Strategy':'1',
@@ -100,7 +108,7 @@ def launch_setup(context, *args, **kwargs):
         # Nodes to launch
         Node(
             package='rtabmap_sync', executable='rgbd_sync', output='screen',
-            parameters=[{'approx_sync':True, 'use_sim_time':use_sim_time}],
+            parameters=[{'approx_sync':True, 'use_sim_time':use_sim_time}, shared_parameters],
             remappings=remappings),
 
         Node(
