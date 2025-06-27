@@ -1,0 +1,16 @@
+services:
+  postgres:
+    # image: postgres:15
+    build:
+      context: .
+      dockerfile: Dockerfile.postgres
+    container_name: postgres-db
+    restart: always
+    environment:
+      POSTGRES_USER: rbrgs
+      POSTGRES_PASSWORD: rbrgs
+      POSTGRES_DB: postgres
+    # volumes:
+    #   - ./postgres:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"

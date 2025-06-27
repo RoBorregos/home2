@@ -1,9 +1,26 @@
 [
-    {"document": "Monterrey Institute of Technology and Higher Education (ITESM; Spanish: Instituto Tecnológico y de Estudios Superiores de Monterrey), also known as Technological Institute of Monterrey (Spanish: Tecnológico de Monterrey) or just Tec, is a private research university based in Monterrey, Mexico.", "metadata": {"context": "university overview"}},
-    {"document": "It has grown to include 35 campuses located across 25 cities in the country and 22 liaison offices in other 15 countries.", "metadata": {"context": "university overview"}},
-    {"document": "The university was founded in 1943 by Eugenio Garza Sada, an MIT-educated industrialist.", "metadata": {"context": "university history"}},
-    {"document": "As of 2019, it is the 15th university in the world with the highest number of billionaire alumni according to Times Higher Education and the only university in Latin America to appear in the ranking.", "metadata": {"context": "university rankings"}},
-    {"document": "Tec is also known as being the first university to be connected to the Internet in Ibero-America and being one of the leaders in patent applications among Mexican universities.", "metadata": {"context": "university achievements"}},
-    {"document": "Tec de Monterrey has different student groups and RoBorregos is part of one of those, it is the robotics representative team of the university.", "metadata": {"context": "student groups"}}
-  ]
-  
+  {
+    "document": "Monterrey Institute of Technology and Higher Education (ITESM; Spanish: Instituto Tecnológico y de Estudios Superiores de Monterrey), also known as Technological Institute of Monterrey (Spanish: Tecnológico de Monterrey) or just Tec, is a private research university based in Monterrey, Mexico.",
+    "context": "university overview"
+  },
+  {
+    "document": "It has grown to include 35 campuses located across 25 cities in the country and 22 liaison offices in other 15 countries.",
+    "context": "university overview"
+  },
+  {
+    "document": "The university was founded in 1943 by Eugenio Garza Sada, an MIT-educated industrialist.",
+    "context": "university history"
+  },
+  {
+    "document": "As of 2019, it is the 15th university in the world with the highest number of billionaire alumni according to Times Higher Education and the only university in Latin America to appear in the ranking.",
+    "context": "university rankings"
+  },
+  {
+    "document": "Tec is also known as being the first university to be connected to the Internet in Ibero-America and being one of the leaders in patent applications among Mexican universities.",
+    "context": "university achievements"
+  },
+  {
+    "document": "Tec de Monterrey has different student groups and RoBorregos is part of one of those, it is the robotics representative team of the university.",
+    "context": "student groups"
+  }
+]

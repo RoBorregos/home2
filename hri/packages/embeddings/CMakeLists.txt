@@ -29,6 +29,8 @@ install(
     scripts/categorization.py  # Path to your Python script
     scripts/knowledge_base.py
     scripts/chroma_adapter.py
+    scripts/postgres_adapter.py
+    scripts/create_sql_dump.py
   DESTINATION lib/${PROJECT_NAME}  # Install to the package's lib directory
 )
 

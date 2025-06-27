@@ -1,18 +1,17 @@
 [
-    {"document": "approach", "metadata": {"context": "household actions"}},
-    {"document": "ask", "metadata": {"context": "household actions"}},
-    {"document": "count", "metadata": {"context": "household actions"}},
-    {"document": "find", "metadata": {"context": "household actions"}},
-    {"document": "follow", "metadata": {"context": "household actions"}},
-    {"document": "give", "metadata": {"context": "household actions"}},
-    {"document": "go", "metadata": {"context": "household actions"}},
-    {"document": "grab", "metadata": {"context": "household actions"}},
-    {"document": "identify", "metadata": {"context": "household actions"}},
-    {"document": "interact", "metadata": {"context": "household actions"}},
-    {"document": "open", "metadata": {"context": "household actions"}},
-    {"document": "close", "metadata": {"context": "household actions"}},
-    {"document": "pick", "metadata": {"context": "household actions"}},
-    {"document": "place", "metadata": {"context": "household actions"}},
-    {"document": "remember", "metadata": {"context": "household actions"}}
-  ]
-  
+  { "document": "approach", "context": "household actions" },
+  { "document": "ask", "context": "household actions" },
+  { "document": "count", "context": "household actions" },
+  { "document": "find", "context": "household actions" },
+  { "document": "follow", "context": "household actions" },
+  { "document": "give", "context": "household actions" },
+  { "document": "go", "context": "household actions" },
+  { "document": "grab", "context": "household actions" },
+  { "document": "identify", "context": "household actions" },
+  { "document": "interact", "context": "household actions" },
+  { "document": "open", "context": "household actions" },
+  { "document": "close", "context": "household actions" },
+  { "document": "pick", "context": "household actions" },
+  { "document": "place", "context": "household actions" },
+  { "document": "remember", "context": "household actions" }
+]

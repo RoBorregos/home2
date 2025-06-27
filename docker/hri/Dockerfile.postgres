@@ -1,0 +1,22 @@
+FROM pgvector/pgvector:0.8.0-pg17
+
+# CMD ["postgres"]
+
+# EXPOSE 5432
+
+ENV POSTGRES_USER=rbrgs
+ENV POSTGRES_PASSWORD=rbrgs
+ENV POSTGRES_DB=postgres
+
+RUN touch /docker-entrypoint-initdb.d/init.sql
+RUN echo "CREATE USER docker; \n CREATE DATABASE docker; \n GRANT ALL PRIVILEGES ON DATABASE docker TO docker;" > /docker-entrypoint-initdb.d/init.sql
+RUN echo "CREATE EXTENSION IF NOT EXISTS vector;" > /docker-entrypoint-initdb.d/00-create-extension.sql
+
+COPY ./init.sql /docker-entrypoint-initdb.d/01-init.sql
+COPY ./sql_dumps/*.sql /docker-entrypoint-initdb.d/
+
+# The scripts in docker-entrypoint-initdb.d with .sql extension will be automatically executed at startup
+# in alphabetical order, so we don't need additional scripts to run them
+
+# CMD ["postgres", "-c", "config_file=/var/lib/postgresql/data/postgresql.conf"]
+CMD ["postgres"]
