@@ -114,6 +114,7 @@ var namespacefrida__constants =
       [ "POINTING_OBJECT_SERVICE", "namespacefrida__constants_1_1vision__constants.html#a28ae7767028a1fb6be896bcdef1aae7e", null ],
       [ "POSE_GESTURE_TOPIC", "namespacefrida__constants_1_1vision__constants.html#afeb805efc563abd1a5aa8255cbbaa0a6", null ],
       [ "QUERY_TOPIC", "namespacefrida__constants_1_1vision__constants.html#ab6f09741cb770fc257e257b6fd02fea0", null ],
+      [ "READ_QR_TOPIC", "namespacefrida__constants_1_1vision__constants.html#a0f1e21b2876c5aff0a6ce0bb081cd000", null ],
       [ "RESULTS_TOPIC", "namespacefrida__constants_1_1vision__constants.html#ac8a0b118ce5720f4ebf6377d410a6513", null ],
       [ "SAVE_NAME_TOPIC", "namespacefrida__constants_1_1vision__constants.html#a84bae216de4143026b94ae627c8bb4a8", null ],
       [ "SET_DETECTOR_CLASSES_SERVICE", "namespacefrida__constants_1_1vision__constants.html#a03983d3f159310b7d5cd63db4c94cca2", null ],

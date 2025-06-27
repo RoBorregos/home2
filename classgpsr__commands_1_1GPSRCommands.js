@@ -13,6 +13,7 @@ var classgpsr__commands_1_1GPSRCommands =
     [ "is_inside", "classgpsr__commands_1_1GPSRCommands.html#a9a752904ba82ff3a27caa9baa458c397", null ],
     [ "moondream_crop_query", "classgpsr__commands_1_1GPSRCommands.html#a758d3b60afd37459b07c4274205cd1d7", null ],
     [ "publish_image", "classgpsr__commands_1_1GPSRCommands.html#a189b2d11b148acfd29d57196fc37bb0b", null ],
+    [ "read_qr_callback", "classgpsr__commands_1_1GPSRCommands.html#aedca1e7336c3e484c36e28e462590673", null ],
     [ "success", "classgpsr__commands_1_1GPSRCommands.html#a44fd2508682f74bbc718af3bb9550181", null ],
     [ "wait_for_future", "classgpsr__commands_1_1GPSRCommands.html#a84567759a732df818847918ce2a829b4", null ],
     [ "areas", "classgpsr__commands_1_1GPSRCommands.html#a928bee0668cea771ab24a95f6b34ec16", null ],
@@ -30,5 +31,7 @@ var classgpsr__commands_1_1GPSRCommands =
     [ "people", "classgpsr__commands_1_1GPSRCommands.html#a0098f10cc04efcf527d815497f1619e2", null ],
     [ "pose_detection", "classgpsr__commands_1_1GPSRCommands.html#a8f89fade140ca424d2ea96a4b38b9fb6", null ],
     [ "pose_gesture_detection_service", "classgpsr__commands_1_1GPSRCommands.html#a4e9ca299b34636b20eae3c1b7f3fba85", null ],
+    [ "qr_detector", "classgpsr__commands_1_1GPSRCommands.html#accc36be2604f905aa0ef065064401fa0", null ],
+    [ "read_qr_service", "classgpsr__commands_1_1GPSRCommands.html#a62c245e3ac401ab9a64daddf86484d48", null ],
     [ "yolo_model", "classgpsr__commands_1_1GPSRCommands.html#abe493d61b583b871da925e584118fb5e", null ]
 ];
