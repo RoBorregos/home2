@@ -77,6 +77,10 @@ class TestHriManager(Node):
         #    "Oscar", "football", "Rodrigo", "baseball"
         # )
 
+        if True:
+            s, res = self.hear()
+            self.get_logger.info("Heard: " + res)
+
         if TEST_COMPOUND:
             self.compound_functions()
 

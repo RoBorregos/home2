@@ -18,7 +18,6 @@ from frida_constants.hri_constants import (
     COMMON_INTEREST_SERVICE,
     EXTRACT_DATA_SERVICE,
     GRAMMAR_SERVICE,
-    HOTWORD_SERVICE_NAME,
     IS_NEGATIVE_SERVICE,
     IS_POSITIVE_SERVICE,
     LLM_WRAPPER_SERVICE,
@@ -26,13 +25,10 @@ from frida_constants.hri_constants import (
     RAG_SERVICE,
     SPEAK_SERVICE,
     STT_ACTION_SERVER_NAME,
-    STT_SERVICE_NAME,
-    USEFUL_AUDIO_NODE_NAME,
     WAKEWORD_TOPIC,
 )
 from frida_interfaces.action import SpeechStream
 from frida_interfaces.srv import (
-    STT,
     AddEntry,
     CategorizeShelves,
     CommonInterest,
@@ -44,11 +40,8 @@ from frida_interfaces.srv import (
     LLMWrapper,
     QueryEntry,
     Speak,
-    UpdateHotwords,
 )
 from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
-from rcl_interfaces.msg import Parameter, ParameterType, ParameterValue
-from rcl_interfaces.srv import SetParameters
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from rclpy.task import Future
@@ -103,6 +96,24 @@ def confirm_query(interpreted_text, target_info):
     return f"Did you say {target_info}?"
 
 
+def contains_any(text: str, keywords: List[str]) -> bool:
+    """
+    Check if any of the keywords are present in the text.
+
+    Args:
+        text (List[str]): The text to check.
+        keywords (List[str]): The list of keywords to search for.
+
+    Returns:
+        bool: True if any keyword is found in the text, False otherwise.
+    """
+
+    for keyword in keywords:
+        if keyword.lower() in text.lower():
+            return keyword
+    return None
+
+
 class HRITasks(metaclass=SubtaskMeta):
     """Class to manage the vision tasks"""
 
@@ -110,7 +121,6 @@ class HRITasks(metaclass=SubtaskMeta):
         self.node = task_manager
         self.keyword = ""
         self.speak_service = self.node.create_client(Speak, SPEAK_SERVICE)
-        self.hear_service = self.node.create_client(STT, STT_SERVICE_NAME)
         self.extract_data_service = self.node.create_client(ExtractInfo, EXTRACT_DATA_SERVICE)
         self.task = task
         self.grammar_service = self.node.create_client(Grammar, GRAMMAR_SERVICE)
@@ -125,15 +135,13 @@ class HRITasks(metaclass=SubtaskMeta):
         self.add_item_client = self.node.create_client(AddEntry, ADD_ENTRY_SERVICE)
         self.llm_wrapper_service = self.node.create_client(LLMWrapper, LLM_WRAPPER_SERVICE)
         self.categorize_service = self.node.create_client(CategorizeShelves, CATEGORIZE_SERVICE)
-        self.hotwords_service = self.node.create_client(UpdateHotwords, HOTWORD_SERVICE_NAME)
         self.keyword_client = self.node.create_subscription(
             String, WAKEWORD_TOPIC, self._get_keyword, 10
         )
+
+        self.current_transcription = ""
         self.hear_multi_service = self.node.create_client(
             HearMultiThread, "/integration/multi_stop"
-        )
-        self.useful_audio_params = self.node.create_client(
-            SetParameters, f"/{USEFUL_AUDIO_NODE_NAME}/set_parameters"
         )
 
         self.answer_question_service = self.node.create_client(AnswerQuestionLLM, RAG_SERVICE)
@@ -141,10 +149,6 @@ class HRITasks(metaclass=SubtaskMeta):
         self._action_client = ActionClient(self.node, SpeechStream, STT_ACTION_SERVER_NAME)
 
         all_services = {
-            # "hear": {
-            #     "client": self.hear_service,
-            #     "type": "service",
-            # },
             # "say": {
             #     "client": self.speak_service,
             #     "type": "service",
@@ -307,37 +311,33 @@ class HRITasks(metaclass=SubtaskMeta):
             self.keyword = ""
 
     @service_check("hear_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
-    def hear(self, min_audio_length=1.0, max_audio_length=10.0) -> str:
-        if min_audio_length > 0:
-            self.set_double_param("MIN_AUDIO_DURATION", float(min_audio_length))
-
-        if max_audio_length > 0:
-            self.set_double_param("MAX_AUDIO_DURATION", float(max_audio_length))
-
-        request = STT.Request()
-
-        future = self.hear_service.call_async(request)
+    def hear(self, hotwords, silence_time=1.0, max_audio_length=10.0) -> str:
         Logger.info(
             self.node,
             "Hearing from the user...",
         )
-        rclpy.spin_until_future_complete(self.node, future)
+
+        future = self.hear_streaming(
+            hotwords=hotwords, silence_time=silence_time, timeout=max_audio_length
+        )
+
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
 
         execution_status = (
             Status.EXECUTION_SUCCESS
-            if len(future.result().text_heard) > 0
+            if len(future.result().transcription) > 0
             else Status.TARGET_NOT_FOUND
         )
 
         if execution_status == Status.EXECUTION_SUCCESS:
             Logger.info(
                 self.node,
-                f"hearing result: {future.result().text_heard}",
+                f"hearing result: {future.result().transcription}",
             )
         else:
-            Logger.warn(self.node, "hearing: no text heard")
+            Logger.warn(self.node, "hearing result: no text heard")
 
-        return execution_status, future.result().text_heard
+        return execution_status, future.result().transcription
 
     def hear_streaming(self, timeout: float = 10.0, hotwords: str = "", silence_time: float = 5.0):
         """Method to hear streaming audio from the user.
@@ -348,60 +348,20 @@ class HRITasks(metaclass=SubtaskMeta):
             silence_time (float): The time to wait after the last interpreted word to stop the transcription. i.e. if no words are heard for this time, the transcription will stop.
         """
         Logger.info(self.node, "Hearing streaming from the user...")
+        self.current_transcription = ""
 
         goal_msg = SpeechStream.Goal()
         goal_msg.timeout = timeout
         goal_msg.hotwords = hotwords
         goal_msg.silence_time = silence_time
 
-        self._send_goal_future = self._action_client.send_goal_async(
+        return self._action_client.send_goal_async(
             goal_msg, feedback_callback=self.feedback_callback
         )
 
-        self._send_goal_future.add_done_callback(self.goal_response_callback)
-
-        while self._send_goal_future.done() is False:
-            rclpy.spin_once(self.node, timeout_sec=0.1)
-
-        return Status.EXECUTION_SUCCESS, "Goal sent successfully"
-
-    def goal_response_callback(self, future):
-        goal_handle = future.result()
-        if not goal_handle.accepted:
-            self.node.get_logger().info("Goal rejected :(")
-            return
-
-        self.node.get_logger().info("Goal accepted :)")
-
-        self._get_result_future = goal_handle.get_result_async()
-        self._get_result_future.add_done_callback(self.get_result_callback)
-
-        while not self._get_result_future.done():
-            rclpy.spin_once(self.node, timeout_sec=0.1)
-
-    def get_result_callback(self, future):
-        result = future.result().result
-        self.node.get_logger().info("Result: {0}".format(result.sequence))
-
     def feedback_callback(self, feedback_msg):
-        feedback = feedback_msg.feedback
-        self.node.get_logger().info("Received feedback: {0}".format(feedback.current_transcription))
-
-    @service_check("hotwords_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
-    def set_hotwords(self, hotwords) -> str:
-        Logger.info(
-            self.node,
-            "Setting hotwords: " + str(hotwords),
-        )
-        request = UpdateHotwords.Request(hotwords=hotwords)
-        future = self.hotwords_service.call_async(request)
-        rclpy.spin_until_future_complete(self.node, future)
-
-        execution_status = (
-            Status.EXECUTION_SUCCESS if future.result().success else Status.EXECUTION_ERROR
-        )
-
-        return execution_status, ""
+        self.current_transcription = feedback_msg.feedback
+        self.node.get_logger().info("Received feedback: {0}".format(self.current_transcription))
 
     def confirm(
         self,
@@ -530,26 +490,38 @@ class HRITasks(metaclass=SubtaskMeta):
         return Status.TIMEOUT, ""
 
     def interpret_keyword(self, keywords: list[str], timeout: float) -> str:
+        self.cancel_action()
+
+        self.hear_streaming(timeout=timeout, silence_time=timeout)
+
         start_time = self.node.get_clock().now()
         self.keyword = ""
+
         Logger.info(
             self.node,
             f"Listening for keywords: {str(keywords)}",
         )
+
         while (
             self.keyword not in keywords
+            and contains_any(self.current_transcription, self.keywords)
             and ((self.node.get_clock().now() - start_time).nanoseconds / 1e9) < timeout
         ):
             rclpy.spin_once(self.node, timeout_sec=0.1)
 
+        keyword_listened = contains_any(self.current_transcription, self.keywords)
+
+        if not keyword_listened:
+            keyword_listened = self.keyword
+
         execution_status = (
-            Status.EXECUTION_SUCCESS if self.keyword in keywords else Status.TARGET_NOT_FOUND
+            Status.EXECUTION_SUCCESS if keyword_listened in keywords else Status.TARGET_NOT_FOUND
         )
 
         if execution_status == Status.EXECUTION_SUCCESS:
             Logger.info(
                 self.node,
-                f"Keyword recognized: {self.keyword}",
+                f"Keyword recognized: {keyword_listened}",
             )
         else:
             Logger.warn(
@@ -557,7 +529,8 @@ class HRITasks(metaclass=SubtaskMeta):
                 "interpret_keyword: no keyword recognized",
             )
 
-        return execution_status, self.keyword
+        self.cancel_action()
+        return execution_status, keyword_listened
 
     @service_check("grammar_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def refactor_text(self, text: str) -> str:
@@ -580,32 +553,6 @@ class HRITasks(metaclass=SubtaskMeta):
         )
 
         return Status.EXECUTION_SUCCESS, command_list.commands
-
-    @service_check("useful_audio_params", (Status.SERVICE_CHECK, ""), TIMEOUT)
-    def set_double_param(self, name, value):
-        param = Parameter()
-
-        param.name = name
-
-        param.value = ParameterValue(type=ParameterType.PARAMETER_DOUBLE)
-
-        param.value.double_value = value
-
-        request = SetParameters.Request()
-
-        request.parameters = [param]
-
-        future = self.useful_audio_params.call_async(request)
-
-        while not future.done():
-            # self.node.get_logger().info(f"Setting parameter {name} to {value}")
-            rclpy.spin_once(self.node, timeout_sec=0.1)
-
-        if future.result() is not None:
-            pass
-            # self.node.get_logger().info(f"Parameter {name} set to {value}")
-        else:
-            self.node.get_logger().error(f"Failed to set parameter {name}")
 
     # TODO: Make async
     @service_check("common_interest_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
@@ -658,6 +605,25 @@ class HRITasks(metaclass=SubtaskMeta):
         rclpy.spin_until_future_complete(self.node, future)
         Logger.info(self.node, f"is_negative result ({text}): {future.result().is_negative}")
         return Status.EXECUTION_SUCCESS, future.result().is_negative
+
+    def cancel_action(self):
+        # Cancel all goals sent by this action client
+        future = self._action_client.cancel_all_goals()
+
+        # Optionally, wait for the cancel response
+        rclpy.spin_until_future_complete(self.node, future)
+
+        # Check the result
+        if future.result() is not None:
+            cancel_response = future.result()
+            if cancel_response.goals_canceling:
+                self.node.get_logger().info(
+                    f"Cancelled {len(cancel_response.goals_canceling)} goal(s)."
+                )
+            else:
+                self.node.get_logger().info("No goals were actively being canceled.")
+        else:
+            self.node.get_logger().warn("Failed to cancel goals.")
 
     @service_check("answer_question_service", (Status.SERVICE_CHECK, "", 0.5), TIMEOUT)
     def answer_question(
