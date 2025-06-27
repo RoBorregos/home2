@@ -18,7 +18,9 @@ DETECTIONS_POSES_TOPIC = "/vision/detection_poses"
 DETECTIONS_3D_TOPIC = "/vision/detections_3d"
 DETECTIONS_ACTIVE_TOPIC = "/detections_active"
 DEBUG_IMAGE_TOPIC = "/vision/debug_image"
+
 PEOPLE_DETECTIONS_TOPIC = "/vision/enum_persons"
+WHAT_DETECTIONS_TOPIC = "/vision/what_detections"
 
 # ZERO SHOT OBJECT DETECTOR TOPICS
 ZERO_SHOT_DETECTIONS_TOPIC = "/vision/zero_shot_detections"

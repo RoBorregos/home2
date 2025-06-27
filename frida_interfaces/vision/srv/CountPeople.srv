@@ -1,5 +1,3 @@
 bool request
-Image Image
----
-int32 numberOfPersons
-bool sucess
+...
+int32 people
