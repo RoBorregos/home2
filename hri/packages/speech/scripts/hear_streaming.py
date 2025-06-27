@@ -29,7 +29,7 @@ class HearStreaming(Node):
         self.get_logger().info("*Starting Hear Streaming Node*")
 
         server_ip = (
-            self.declare_parameter("STT_SERVER_IP", "100.98.86.80:50051")
+            self.declare_parameter("STT_SERVER_IP", "127.0.0.1:50051")
             .get_parameter_value()
             .string_value
         )

@@ -29,14 +29,15 @@ from frida_constants.hri_constants import (
     USEFUL_AUDIO_NODE_NAME,
     WAKEWORD_TOPIC,
 )
+from frida_interfaces.action import SpeechStream
 from frida_interfaces.srv import (
-    HearMultiThread,
     STT,
     AddEntry,
     CategorizeShelves,
     CommonInterest,
     ExtractInfo,
     Grammar,
+    HearMultiThread,
     IsNegative,
     IsPositive,
     LLMWrapper,
@@ -47,6 +48,7 @@ from frida_interfaces.srv import (
 from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
 from rcl_interfaces.msg import Parameter, ParameterType, ParameterValue
 from rcl_interfaces.srv import SetParameters
+from rclpy.action import ActionClient
 from rclpy.node import Node
 from rclpy.task import Future
 from std_msgs.msg import String
@@ -135,19 +137,21 @@ class HRITasks(metaclass=SubtaskMeta):
 
         self.answer_question_service = self.node.create_client(AnswerQuestionLLM, RAG_SERVICE)
 
+        self._action_client = ActionClient(self.node, SpeechStream, "/stt_streaming")
+
         all_services = {
-            "hear": {
-                "client": self.hear_service,
-                "type": "service",
-            },
-            "say": {
-                "client": self.speak_service,
-                "type": "service",
-            },
-            "extract_data_service": {
-                "client": self.extract_data_service,
-                "type": "service",
-            },
+            # "hear": {
+            #     "client": self.hear_service,
+            #     "type": "service",
+            # },
+            # "say": {
+            #     "client": self.speak_service,
+            #     "type": "service",
+            # },
+            # "extract_data_service": {
+            #     "client": self.extract_data_service,
+            #     "type": "service",
+            # },
             "common_interest_service": {
                 "client": self.common_interest_service,
                 "type": "service",
@@ -333,6 +337,54 @@ class HRITasks(metaclass=SubtaskMeta):
             Logger.warn(self.node, "hearing: no text heard")
 
         return execution_status, future.result().text_heard
+
+    def hear_streaming(self, timeout: float = 10.0, hotwords: str = "", silence_time: float = 5.0):
+        """Method to hear streaming audio from the user.
+
+        Args:
+            timeout (float): The maximum time to stop the transcription.
+            hotwords (str): Hotwords to improve the transcription accuracy.
+            silence_time (float): The time to wait after the last interpreted word to stop the transcription. i.e. if no words are heard for this time, the transcription will stop.
+        """
+        Logger.info(self.node, "Hearing streaming from the user...")
+
+        goal_msg = SpeechStream.Goal()
+        goal_msg.timeout = timeout
+        goal_msg.hotwords = hotwords
+        goal_msg.silence_time = silence_time
+
+        self._send_goal_future = self._action_client.send_goal_async(
+            goal_msg, feedback_callback=self.feedback_callback
+        )
+
+        self._send_goal_future.add_done_callback(self.goal_response_callback)
+
+        while self._send_goal_future.done() is False:
+            rclpy.spin_once(self.node, timeout_sec=0.1)
+
+        return Status.EXECUTION_SUCCESS, "Goal sent successfully"
+
+    def goal_response_callback(self, future):
+        goal_handle = future.result()
+        if not goal_handle.accepted:
+            self.node.get_logger().info("Goal rejected :(")
+            return
+
+        self.node.get_logger().info("Goal accepted :)")
+
+        self._get_result_future = goal_handle.get_result_async()
+        self._get_result_future.add_done_callback(self.get_result_callback)
+
+        while not self._get_result_future.done():
+            rclpy.spin_once(self.node, timeout_sec=0.1)
+
+    def get_result_callback(self, future):
+        result = future.result().result
+        self.node.get_logger().info("Result: {0}".format(result.sequence))
+
+    def feedback_callback(self, feedback_msg):
+        feedback = feedback_msg.feedback
+        self.node.get_logger().info("Received feedback: {0}".format(feedback.current_transcription))
 
     @service_check("hotwords_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def set_hotwords(self, hotwords) -> str:
