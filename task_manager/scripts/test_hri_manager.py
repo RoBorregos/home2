@@ -54,7 +54,7 @@ def confirm_preference(interpreted_text, extracted_data):
 
 
 TEST_TASK = Task.RECEPTIONIST
-TEST_COMPOUND = True
+TEST_COMPOUND = False
 TEST_INDIVIDUAL_FUNCTIONS = False
 TEST_EMBEDDINGS = False
 TEST_ASYNC_LLM = True
@@ -281,6 +281,19 @@ class TestHriManager(Node):
         # Test original functionality
         test = self.hri_manager.extract_data("LLM_name", "My name is John Doe")
         self.get_logger().info(f"Extract data result: {test}")
+
+        # Test original functionality
+        # test = self.hri_manager.command_interpreter("Bring me an apple from the kitchen")
+        # self.get_logger().info(f"Sync Command interpreter result: {test}")
+
+        # test = self.hri_manager.command_interpreter("Bring me an apple from the kitchen", is_async=True)
+
+        # self.get_logger().info(f"Command interpreter future: {test}")
+        # self.get_logger().info(f"Command interpreter future status: {test.done()}, {test.result()}")
+        # self.get_logger().info("Waiting for the future to complete...")
+
+        # rclpy.spin_until_future_complete(self, test)
+        # self.get_logger().info(f"Async Command interpreter result: {test.result()}")
 
 
 def main(args=None):
