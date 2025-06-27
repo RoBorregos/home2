@@ -186,15 +186,15 @@ var NAVTREEINDEX =
 "classreceptionist__task__manager_1_1ReceptionistTM.html#aaaf73634eb4b4fa62a356612afac93fe",
 "classsubtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a8b51a39f981ad5f2bb8d52623f47a609",
 "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#aa46c6a6bc0d987dda8732db70bc6de4a",
-"classtracker__node_1_1SingleTracker.html#a8e4cf28559cacc413ab810ae820ea53b",
-"classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#acf72ea3bacd4232fd222b96bd37bbe8a",
-"functions_a.html",
-"macros_8hpp.html#acea63f67b814167fbfea2bf8eb6d69db",
-"moondream__lib_8py.html#abe40f656e14ad3a830e4548b2a3f436d",
-"namespacefrida__constants_1_1manipulation__constants.html#aa6dedb5c9f72415daca739d19d817619",
-"namespacemoondream__lib.html#a96f271e464064797e7edcff4e9851282",
-"namespacesubtask__managers_1_1vision__tasks.html",
-"service__utils_8py.html#aa8e9262e7f52c324189d06f29a06f6da"
+"classtracker__node_1_1SingleTracker.html#a8d6a82844e14511d39f00cff93c0a6d5",
+"classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#ab2660ef7f1d57db5f7fe6ebcf134fa66",
+"functions.html",
+"macros_8hpp.html#ac0a53cb5ed7356485105c7adf5dff4bf",
+"moondream__lib_8py.html#a96f271e464064797e7edcff4e9851282",
+"namespacefrida__constants_1_1manipulation__constants.html#a9b9987aeceb6769406e0b2598f23bd4e",
+"namespacemoondream__lib.html#a8d8bb5f069489653e33e9848b85dad40",
+"namespacesubtask__managers_1_1nav__tasks.html#add335a5f17a44eb14de8877023fea371",
+"service__utils_8py.html#a4518b7fb3dfa02b7b1dfff5bf0e306b8"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

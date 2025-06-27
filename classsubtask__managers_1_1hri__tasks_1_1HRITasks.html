@@ -116,8 +116,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a7d2e844fa32fad9b41c58f766997fc4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4ec9fca0b2f6607ffd6b70cad59c0eb6"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a4ec9fca0b2f6607ffd6b70cad59c0eb6">say</a> (self, str text, bool wait=True)</td></tr>
 <tr class="separator:a4ec9fca0b2f6607ffd6b70cad59c0eb6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a502300f9df5af373f2a1553f01406400"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a502300f9df5af373f2a1553f01406400">extract_data</a> (self, query, complete_text, context=&quot;&quot;)</td></tr>
-<tr class="separator:a502300f9df5af373f2a1553f01406400"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab1d1586a91c8bdf01b8c6b034d678aa3"><td class="memItemLeft" align="right" valign="top">str|Future&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#ab1d1586a91c8bdf01b8c6b034d678aa3">extract_data</a> (self, query, complete_text, context=&quot;&quot;, is_async=False)</td></tr>
+<tr class="separator:ab1d1586a91c8bdf01b8c6b034d678aa3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a579a2698905fceb2e83cbb4015d0f6db"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a579a2698905fceb2e83cbb4015d0f6db">execute_command</a> (self, str command, str complement, str characteristic)</td></tr>
 <tr class="separator:a579a2698905fceb2e83cbb4015d0f6db"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a33483fe9e849793f0deaa68860712dad"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a33483fe9e849793f0deaa68860712dad">hear_multi</a> (self, int status)</td></tr>
@@ -1005,14 +1005,14 @@ Returns:
 
 </div>
 </div>
-<a id="a502300f9df5af373f2a1553f01406400" name="a502300f9df5af373f2a1553f01406400"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a502300f9df5af373f2a1553f01406400">&#9670;&#160;</a></span>extract_data()</h2>
+<a id="ab1d1586a91c8bdf01b8c6b034d678aa3" name="ab1d1586a91c8bdf01b8c6b034d678aa3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab1d1586a91c8bdf01b8c6b034d678aa3">&#9670;&#160;</a></span>extract_data()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"> str subtask_managers.hri_tasks.HRITasks.extract_data </td>
+          <td class="memname"> str | Future subtask_managers.hri_tasks.HRITasks.extract_data </td>
           <td>(</td>
           <td class="paramtype">&#160;</td>
           <td class="paramname"><em>self</em>, </td>
@@ -1033,7 +1033,13 @@ Returns:
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>context</em> = <code>&quot;&quot;</code>&#160;</td>
+          <td class="paramname"><em>context</em> = <code>&quot;&quot;</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>is_async</em> = <code>False</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -1047,6 +1053,7 @@ Returns:
 Args:
     query (str): specifies what to extract from complete_text.
     complete_text (str): The complete text from which data is to be extracted.
+    is_async (bool): If True, the method will return a Future object instead of waiting for the result.
 
 Returns:
     str: The extracted data as a string. If no data is found, an empty string is returned.

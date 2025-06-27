@@ -1,5 +1,7 @@
 var NAVTREEINDEX20 =
 {
+"namespacesubtask__managers_1_1nav__tasks.html#add335a5f17a44eb14de8877023fea371":[18,0,115,6,2],
+"namespacesubtask__managers_1_1subtask__meta.html":[18,0,115,7],
 "namespacesubtask__managers_1_1vision__tasks.html":[18,0,115,8],
 "namespacesubtask__managers_1_1vision__tasks.html#a3a4bd0269cff5c8d45098a6a0baed265":[18,0,115,8,6],
 "namespacesubtask__managers_1_1vision__tasks.html#a613490136e213d97ade508e328ab85e2":[18,0,115,8,1],
@@ -10,13 +12,14 @@ var NAVTREEINDEX20 =
 "namespacetest__env.html":[18,0,116],
 "namespacetest__env.html#a0d88c2075e691d0fe1872f8c78bc5bea":[18,0,116,1],
 "namespacetest__hri__manager.html":[18,0,117],
-"namespacetest__hri__manager.html#a0103d8be7196ba99bf9b56a12808fa85":[18,0,117,5],
+"namespacetest__hri__manager.html#a0103d8be7196ba99bf9b56a12808fa85":[18,0,117,6],
 "namespacetest__hri__manager.html#a10ad79e1fb8596318d88a288b07d9741":[18,0,117,3],
 "namespacetest__hri__manager.html#a1d345e1c23e0096c46baaa89be53f927":[18,0,117,2],
-"namespacetest__hri__manager.html#a50907fc62e1b5d0848b30afd0d8c656a":[18,0,117,7],
+"namespacetest__hri__manager.html#a413f9c068afedd81078d3f34c44b4ab2":[18,0,117,4],
+"namespacetest__hri__manager.html#a50907fc62e1b5d0848b30afd0d8c656a":[18,0,117,8],
 "namespacetest__hri__manager.html#a66dffd1e474ea9bb91b2de082c4e4e42":[18,0,117,1],
-"namespacetest__hri__manager.html#a914b4542d179c1bd4ffea5b5fd5917b4":[18,0,117,6],
-"namespacetest__hri__manager.html#af084794917df55eb7c98942b498ec083":[18,0,117,4],
+"namespacetest__hri__manager.html#a914b4542d179c1bd4ffea5b5fd5917b4":[18,0,117,7],
+"namespacetest__hri__manager.html#af084794917df55eb7c98942b498ec083":[18,0,117,5],
 "namespacetest__manager.html":[18,0,118],
 "namespacetest__manager.html#a493f4e40d62cf85e734ad364fce0608a":[18,0,118,1],
 "namespacetest__manipulation__manager.html":[18,0,119],
@@ -203,8 +206,8 @@ var NAVTREEINDEX20 =
 "remove__person_8py.html#ad50da48b8b7f8f5f2ce3d5768cc46928":[20,0,4,0,1,2,4,1],
 "remove__plane_8cpp.html":[20,0,3,0,4,3,5],
 "remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59":[20,0,3,0,4,3,5,1],
-"remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a02129bb861061d1a052c592e2dc6b383":[20,0,3,0,4,3,5,1,3],
 "remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a02129bb861061d1a052c592e2dc6b383":[20,0,3,0,4,3,5,1,0],
+"remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a02129bb861061d1a052c592e2dc6b383":[20,0,3,0,4,3,5,1,3],
 "remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a21c2e59531c8710156d34a3c30ac81d5":[20,0,3,0,4,3,5,1,2],
 "remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a21c2e59531c8710156d34a3c30ac81d5":[20,0,3,0,4,3,5,1,5],
 "remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a57cec4137b614c87cb4e24a3d003a3e0":[20,0,3,0,4,3,5,1,4],
@@ -246,8 +249,5 @@ var NAVTREEINDEX20 =
 "server_8py.html#a8420e06a376c4d5feae2faf31fb7c9cf":[20,0,7,0,0,2,4,7],
 "server_8py.html#aa8e0e44f25a6911d78eb1af3ff58e07a":[20,0,7,0,0,2,4,8],
 "server_8py.html#ae3f6e1599e27626aa2ed68baa4311afd":[20,0,7,0,0,2,4,3],
-"service__utils_8py.html":[20,0,3,0,1,1,0,4],
-"service__utils_8py.html#a4518b7fb3dfa02b7b1dfff5bf0e306b8":[20,0,3,0,1,1,0,4,3],
-"service__utils_8py.html#a479ef9705921d2c4e6c2549e4731ef57":[20,0,3,0,1,1,0,4,0],
-"service__utils_8py.html#a71accfcb34b0efa3659b647054fb840b":[20,0,3,0,1,1,0,4,1]
+"service__utils_8py.html":[20,0,3,0,1,1,0,4]
 };

@@ -1,5 +1,7 @@
 var NAVTREEINDEX16 =
 {
+"macros_8hpp.html#ac0a53cb5ed7356485105c7adf5dff4bf":[20,0,3,0,4,0,0,0,3],
+"macros_8hpp.html#acceb21363936fb79d3fe63e9d00a5500":[20,0,3,0,4,0,0,0,5],
 "macros_8hpp.html#acea63f67b814167fbfea2bf8eb6d69db":[20,0,3,0,4,0,0,0,2],
 "macros_8hpp.html#ad8f1e5a99ab940794a5a94f8d3f74299":[20,0,3,0,4,0,0,0,4],
 "macros_8hpp_source.html":[20,0,3,0,4,0,0,0],
@@ -247,7 +249,5 @@ var NAVTREEINDEX16 =
 "moondream__lib_8py.html#a773941f5062b211dc408f7760ba8c37e":[20,0,7,0,0,2,1,15],
 "moondream__lib_8py.html#a7a93bbfb0f1d7131b55cfd161a52f340":[20,0,7,0,0,2,1,6],
 "moondream__lib_8py.html#a8d8bb5f069489653e33e9848b85dad40":[20,0,7,0,0,2,1,5],
-"moondream__lib_8py.html#a9424832bdb6a9f4a1bbe60ce2004f8e7":[20,0,7,0,0,2,1,2],
-"moondream__lib_8py.html#a96f271e464064797e7edcff4e9851282":[20,0,7,0,0,2,1,8],
-"moondream__lib_8py.html#a982a539331047f39736ef58952c3e722":[20,0,7,0,0,2,1,12]
+"moondream__lib_8py.html#a9424832bdb6a9f4a1bbe60ce2004f8e7":[20,0,7,0,0,2,1,2]
 };

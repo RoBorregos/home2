@@ -56,7 +56,7 @@ var searchData=
   ['expo_5fdemo_2emd_53',['expo_demo.md',['../expo__demo_8md.html',1,'']]],
   ['extra_54',['extra',['../classutils_1_1config_1_1SubtaskConfig_1_1Config.html#a093f38ef449c85e8ecab963964125c59',1,'utils.config.SubtaskConfig.Config.extra()'],['../classutils_1_1config_1_1MockConfig_1_1Config.html#af47c1d7891b529958433cd97ff1b2b99',1,'utils.config.MockConfig.Config.extra()'],['../classutils_1_1config_1_1TopicConfig_1_1Config.html#a4cabbad1d51d7a0aaebe2709d62c13d0',1,'utils.config.TopicConfig.Config.extra()']]],
   ['extract3d_55',['extract3D',['../classObjectDetector_1_1ObjectDectector.html#a27d0fa07c0c29137b6c34c9312860095',1,'ObjectDetector::ObjectDectector']]],
-  ['extract_5fdata_56',['extract_data',['../classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a502300f9df5af373f2a1553f01406400',1,'subtask_managers::hri_tasks::HRITasks']]],
+  ['extract_5fdata_56',['extract_data',['../classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#ab1d1586a91c8bdf01b8c6b034d678aa3',1,'subtask_managers::hri_tasks::HRITasks']]],
   ['extract_5fdata_5fservice_57',['extract_data_service',['../classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a948142d5d524387bd2973eaa028e5875',1,'subtask_managers::hri_tasks::HRITasks']]],
   ['extract_5fdata_5fservice_58',['EXTRACT_DATA_SERVICE',['../namespacefrida__constants_1_1hri__constants.html#ae336bc5e472cc38814ce9b4eb0928c31',1,'frida_constants::hri_constants']]],
   ['extract_5ffeature_5ffrom_5fimg_59',['extract_feature_from_img',['../namespacereid__model.html#a4921d9ffed49b6abfe727c73800629b2',1,'reid_model']]],

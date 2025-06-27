@@ -17,7 +17,7 @@ var classsubtask__managers_1_1hri__tasks_1_1HRITasks =
     [ "common_interest", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a13169c123dc04231ae6b72561107ec78", null ],
     [ "confirm", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#af52e9abccaba88bca06910b256dd8862", null ],
     [ "execute_command", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a579a2698905fceb2e83cbb4015d0f6db", null ],
-    [ "extract_data", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a502300f9df5af373f2a1553f01406400", null ],
+    [ "extract_data", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#ab1d1586a91c8bdf01b8c6b034d678aa3", null ],
     [ "find_closest", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#acd646a9927b181428ee48b791460fc36", null ],
     [ "find_closest_raw", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a8c7fe6afcdae35863bdd03824fbcdd5d", null ],
     [ "get_area", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a1f82f062abe39e0585a202965085f608", null ],
