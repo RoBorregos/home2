@@ -1,3 +1,5 @@
+# Original from: https://github.com/collabora/WhisperLive/blob/main/whisper_live/backend/faster_whisper_backend.py
+
 import logging
 import os
 import threading

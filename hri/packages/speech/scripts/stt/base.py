@@ -1,3 +1,4 @@
+# Original from: https://github.com/collabora/WhisperLive/blob/main/whisper_live/backend/base.py
 import logging
 import threading
 import time

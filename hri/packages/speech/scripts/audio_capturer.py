@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import os
-import sys
 import wave
 
 import numpy as np
@@ -12,12 +11,6 @@ from rclpy.node import Node
 from speech.speech_api_utils import SpeechApiUtils
 
 from frida_interfaces.msg import AudioData
-
-sys.path.append(os.path.join(os.path.dirname(__file__), "stt"))
-
-# import grpc
-# import speech_pb2
-# import speech_pb2_grpc
 
 SAVE_PATH = "/workspace/src/hri/packages/speech/debug/"
 run_frames = []
@@ -57,8 +50,6 @@ class AudioCapturer(Node):
             mic_device_name, mic_input_channels, mic_out_channels
         )
 
-        self.input_device_index = None
-
         self.get_logger().info("Input device index: " + str(self.input_device_index))
 
         if self.input_device_index is None:
@@ -72,15 +63,15 @@ class AudioCapturer(Node):
         self.get_logger().info("AudioCapturer node recording.")
         iteration_step = 0
         CHUNK_SIZE = 512
-        self.FORMAT = pyaudio.paInt16
+        self.FORMAT = pyaudio.paInt16  # Signed 2 bytes.
         self.debug = False
         CHANNELS = 6 if self.use_respeaker else 1
         self.RATE = 16000
-        EXTRACT_CHANNEL = 0
+        EXTRACT_CHANNEL = 0  # Use channel 0. Tested with microphone.py. See channel meaning: https://wiki.seeedstudio.com/ReSpeaker-USB-Mic-Array/#update-firmware
 
         self.p = pyaudio.PyAudio()
         stream = self.p.open(
-            input_device_index=self.input_device_index,
+            input_device_index=self.input_device_index,  # See list_audio_devices() or set it to None for default
             format=self.FORMAT,
             channels=CHANNELS,
             rate=self.RATE,

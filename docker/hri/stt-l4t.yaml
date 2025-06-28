@@ -1,27 +1,21 @@
 services:
-  stt-l4t-new:
+  stt-l4t:
     profiles: [receptionist, carry, gpsr, storing]
 
-    container_name: home2-hri-stt-l4t-new
+    container_name: home2-hri-stt-l4t
     # user: 1000:1000
-    image: roborregos/home2:hri-stt-l4t-new
+    image: roborregos/home2:hri-stt-l4t
     runtime: nvidia
     build:
       context: ../..
       dockerfile: docker/hri/Dockerfile.stt-l4t
     ports:
       - 50051:50051
-      - 9000:9000
-
     volumes:
       - ../../hri/packages/speech/scripts/stt/:/app
-      - ../../hri/packages/speech/speech/:/app/speech
-      - ../../../WhisperLive:/WhisperLive
-      
+      - ../../hri/packages/speech/speech/:/app/speech      
     environment:
       ROS_LOCALHOST_ONLY: 1
     network_mode: host
     command: >
       bash -c "source /tmp/PyAV/scripts/activate.sh && deactivate && python3 -u faster-whisper-streaming.py --port 50051 --model large-v3-turbo --log_transcriptions"
-    # bash -c "tail -f /dev/null"
-# pip install websockets scipy av

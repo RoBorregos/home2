@@ -164,14 +164,14 @@ class HRITasks(metaclass=SubtaskMeta):
         self._action_client = ActionClient(self.node, SpeechStream, STT_ACTION_SERVER_NAME)
 
         all_services = {
-            # "say": {
-            #     "client": self.speak_service,
-            #     "type": "service",
-            # },
-            # "extract_data_service": {
-            #     "client": self.extract_data_service,
-            #     "type": "service",
-            # },
+            "say": {
+                "client": self.speak_service,
+                "type": "service",
+            },
+            "extract_data_service": {
+                "client": self.extract_data_service,
+                "type": "service",
+            },
             "common_interest_service": {
                 "client": self.common_interest_service,
                 "type": "service",
