@@ -1,7 +1,7 @@
-import json
 import logging
 import threading
 import time
+
 import numpy as np
 
 
@@ -78,7 +78,7 @@ class ServeClientBase(object):
 
             input_bytes, duration = self.get_audio_chunk_for_processing()
             if duration < 1.0:
-                time.sleep(0.1)     # wait for audio chunks to arrive
+                time.sleep(0.1)  # wait for audio chunks to arrive
                 continue
             try:
                 input_sample = input_bytes.copy()
@@ -86,7 +86,9 @@ class ServeClientBase(object):
 
                 if result is None or self.language is None:
                     self.timestamp_offset += duration
-                    time.sleep(0.25)    # wait for voice activity, result is None when no voice activity
+                    time.sleep(
+                        0.25
+                    )  # wait for voice activity, result is None when no voice activity
                     continue
                 self.handle_transcription_output(result, duration)
 
@@ -99,7 +101,7 @@ class ServeClientBase(object):
 
     def handle_transcription_output(self, result, duration):
         raise NotImplementedError
-    
+
     def format_segment(self, start, end, text, completed=False):
         """
         Formats a transcription segment with precise start and end times alongside the transcribed text.
@@ -115,10 +117,10 @@ class ServeClientBase(object):
                 of the transcription.
         """
         return {
-            'start': "{:.3f}".format(start),
-            'end': "{:.3f}".format(end),
-            'text': text,
-            'completed': completed
+            "start": "{:.3f}".format(start),
+            "end": "{:.3f}".format(end),
+            "text": text,
+            "completed": completed,
         }
 
     def add_frames(self, frame_np):
@@ -138,9 +140,9 @@ class ServeClientBase(object):
 
         """
         self.lock.acquire()
-        if self.frames_np is not None and self.frames_np.shape[0] > 45*self.RATE:
+        if self.frames_np is not None and self.frames_np.shape[0] > 45 * self.RATE:
             self.frames_offset += 30.0
-            self.frames_np = self.frames_np[int(30*self.RATE):]
+            self.frames_np = self.frames_np[int(30 * self.RATE) :]
             # check timestamp offset(should be >= self.frame_offset)
             # this basically means that there is no speech as timestamp offset hasnt updated
             # and is less than frame_offset
@@ -159,7 +161,12 @@ class ServeClientBase(object):
         no valid segment for the last 30 seconds from whisper
         """
         with self.lock:
-            if self.frames_np[int((self.timestamp_offset - self.frames_offset)*self.RATE):].shape[0] > 25 * self.RATE:
+            if (
+                self.frames_np[
+                    int((self.timestamp_offset - self.frames_offset) * self.RATE) :
+                ].shape[0]
+                > 25 * self.RATE
+            ):
                 duration = self.frames_np.shape[0] / self.RATE
                 self.timestamp_offset = self.frames_offset + duration - 5
 
@@ -178,8 +185,10 @@ class ServeClientBase(object):
                 - duration (float): The duration of the audio chunk in seconds.
         """
         with self.lock:
-            samples_take = max(0, (self.timestamp_offset - self.frames_offset) * self.RATE)
-            input_bytes = self.frames_np[int(samples_take):].copy()
+            samples_take = max(
+                0, (self.timestamp_offset - self.frames_offset) * self.RATE
+            )
+            input_bytes = self.frames_np[int(samples_take) :].copy()
         duration = input_bytes.shape[0] / self.RATE
         return input_bytes, duration
 
@@ -201,7 +210,7 @@ class ServeClientBase(object):
         """
         segments = []
         if len(self.transcript) >= self.send_last_n_segments:
-            segments = self.transcript[-self.send_last_n_segments:].copy()
+            segments = self.transcript[-self.send_last_n_segments :].copy()
         else:
             segments = self.transcript.copy()
         if last_segment is not None:
@@ -220,39 +229,6 @@ class ServeClientBase(object):
         """
         return input_bytes.shape[0] / self.RATE
 
-    def send_transcription_to_client(self, segments):
-        """
-        Sends the specified transcription segments to the client over the websocket connection.
-
-        This method formats the transcription segments into a JSON object and attempts to send
-        this object to the client. If an error occurs during the send operation, it logs the error.
-
-        Returns:
-            segments (list): A list of transcription segments to be sent to the client.
-        """
-        try:
-            self.websocket.send(
-                json.dumps({
-                    "uid": self.client_uid,
-                    "segments": segments,
-                })
-            )
-        except Exception as e:
-            logging.error(f"[ERROR]: Sending data to client: {e}")
-
-    def disconnect(self):
-        """
-        Notify the client of disconnection and send a disconnect message.
-
-        This method sends a disconnect message to the client via the WebSocket connection to notify them
-        that the transcription service is disconnecting gracefully.
-
-        """
-        self.websocket.send(json.dumps({
-            "uid": self.client_uid,
-            "message": self.DISCONNECT
-        }))
-
     def cleanup(self):
         """
         Perform cleanup tasks before exiting the transcription service.
@@ -264,7 +240,7 @@ class ServeClientBase(object):
         """
         logging.info("Cleaning up.")
         self.exit = True
-    
+
     def get_segment_no_speech_prob(self, segment):
         return getattr(segment, "no_speech_prob", 0)
 
@@ -278,21 +254,24 @@ class ServeClientBase(object):
         """
         Processes the segments from Whisper and updates the transcript.
         Uses helper methods to account for differences between backends.
-        
+
         Args:
             segments (list): List of segments returned by the transcriber.
             duration (float): Duration of the current audio chunk.
-        
+
         Returns:
             dict or None: The last processed segment (if any).
         """
         offset = None
-        self.current_out = ''
+        self.current_out = ""
         last_segment = None
 
         # Process complete segments only if there are more than one
         # and if the last segment's no_speech_prob is below the threshold.
-        if len(segments) > 1 and self.get_segment_no_speech_prob(segments[-1]) <= self.no_speech_thresh:
+        if (
+            len(segments) > 1
+            and self.get_segment_no_speech_prob(segments[-1]) <= self.no_speech_thresh
+        ):
             for s in segments[:-1]:
                 text_ = s.text
                 self.text.append(text_)
@@ -303,7 +282,9 @@ class ServeClientBase(object):
                     continue
                 if self.get_segment_no_speech_prob(s) > self.no_speech_thresh:
                     continue
-                self.transcript.append(self.format_segment(start, end, text_, completed=True))
+                self.transcript.append(
+                    self.format_segment(start, end, text_, completed=True)
+                )
                 offset = min(duration, self.get_segment_end(s))
 
         # Process the last segment if its no_speech_prob is acceptable.
@@ -312,16 +293,17 @@ class ServeClientBase(object):
             with self.lock:
                 last_segment = self.format_segment(
                     self.timestamp_offset + self.get_segment_start(segments[-1]),
-                    self.timestamp_offset + min(duration, self.get_segment_end(segments[-1])),
+                    self.timestamp_offset
+                    + min(duration, self.get_segment_end(segments[-1])),
                     self.current_out,
-                    completed=False
+                    completed=False,
                 )
 
         # Handle repeated output logic.
-        if self.current_out.strip() == self.prev_out.strip() and self.current_out != '':
+        if self.current_out.strip() == self.prev_out.strip() and self.current_out != "":
             self.same_output_count += 1
 
-            # if we remove the audio because of same output on the nth reptition we might remove the 
+            # if we remove the audio because of same output on the nth reptition we might remove the
             # audio thats not yet transcribed so, capturing the time when it was repeated for the first time
             if self.end_time_for_same_output is None:
                 self.end_time_for_same_output = self.get_segment_end(segments[-1])
@@ -333,16 +315,22 @@ class ServeClientBase(object):
         # If the same incomplete segment is repeated too many times,
         # append it to the transcript and update the offset.
         if self.same_output_count > self.same_output_threshold:
-            if not self.text or self.text[-1].strip().lower() != self.current_out.strip().lower():
+            if (
+                not self.text
+                or self.text[-1].strip().lower() != self.current_out.strip().lower()
+            ):
                 self.text.append(self.current_out)
                 with self.lock:
-                    self.transcript.append(self.format_segment(
-                        self.timestamp_offset,
-                        self.timestamp_offset + min(duration, self.end_time_for_same_output),
-                        self.current_out,
-                        completed=True
-                    ))
-            self.current_out = ''
+                    self.transcript.append(
+                        self.format_segment(
+                            self.timestamp_offset,
+                            self.timestamp_offset
+                            + min(duration, self.end_time_for_same_output),
+                            self.current_out,
+                            completed=True,
+                        )
+                    )
+            self.current_out = ""
             offset = min(duration, self.end_time_for_same_output)
             self.same_output_count = 0
             last_segment = None
