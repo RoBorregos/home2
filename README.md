@@ -58,3 +58,5 @@ $ colcon build --symlink-install
 $ source install/setup.bash
 ```
 
+# Rule Book
+[Rule book](https://robocupathome.github.io/RuleBook/rulebook/master.pdf)
