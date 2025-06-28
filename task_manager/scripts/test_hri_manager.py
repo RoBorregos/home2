@@ -77,10 +77,6 @@ class TestHriManager(Node):
         #    "Oscar", "football", "Rodrigo", "baseball"
         # )
 
-        if True:
-            s, res = self.hear()
-            self.get_logger.info("Heard: " + res)
-
         if TEST_COMPOUND:
             self.compound_functions()
 
@@ -133,11 +129,11 @@ class TestHriManager(Node):
         self.get_logger().info(f"categorized_shelves: {str(categorized_shelves)}")
 
     def test_streaming(self):
-        """Testing the streaming service via HRITasks"""
-
-        # Test hear_streaming
-        s, user_request = self.hri_manager.hear_streaming()
+        s, user_request = self.hri_manager.hear()
         self.get_logger().info(f"Heard: {user_request}")
+
+        s, keyword = self.hri_manager.interpret_keyword(["yes", "no", "maybe"], timeout=5.0)
+        self.get_logger().info(f"Interpreted keyword: {keyword}")
 
     def compound_functions(self):
         s, name = self.hri_manager.ask_and_confirm(

@@ -96,7 +96,7 @@ def confirm_query(interpreted_text, target_info):
     return f"Did you say {target_info}?"
 
 
-def contains_any(text: str, keywords: List[str]) -> bool:
+def contains_any(text: List[str], keywords: List[str]) -> bool:
     """
     Check if any of the keywords are present in the text.
 
@@ -109,9 +109,23 @@ def contains_any(text: str, keywords: List[str]) -> bool:
     """
 
     for keyword in keywords:
-        if keyword.lower() in text.lower():
-            return keyword
+        for word in text:
+            if keyword.lower() == word.lower():
+                return keyword
     return None
+
+
+def remove_punctuation(text: str) -> str:
+    """
+    Remove punctuation from the text.
+
+    Args:
+        text (str): The text to process.
+
+    Returns:
+        str: The text without punctuation.
+    """
+    return re.sub(r"[^\w\s]", "", text).strip().lower()
 
 
 class HRITasks(metaclass=SubtaskMeta):
@@ -140,6 +154,7 @@ class HRITasks(metaclass=SubtaskMeta):
         )
 
         self.current_transcription = ""
+        self._active_goals = []
         self.hear_multi_service = self.node.create_client(
             HearMultiThread, "/integration/multi_stop"
         )
@@ -310,34 +325,40 @@ class HRITasks(metaclass=SubtaskMeta):
             self.node.get_logger().error(f"Error: {e}")
             self.keyword = ""
 
-    @service_check("hear_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
-    def hear(self, hotwords, silence_time=1.0, max_audio_length=10.0) -> str:
+    @service_check("_action_client", (Status.SERVICE_CHECK, ""), TIMEOUT)
+    def hear(self, hotwords="", silence_time=4.0, max_audio_length=13.0) -> str:
         Logger.info(
             self.node,
             "Hearing from the user...",
         )
 
-        future = self.hear_streaming(
+        accepted_future = self.hear_streaming(
             hotwords=hotwords, silence_time=silence_time, timeout=max_audio_length
         )
 
-        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+        rclpy.spin_until_future_complete(
+            self.node, accepted_future, timeout_sec=max_audio_length + 1
+        )
+        goal_future = accepted_future.result().get_result_async()
+
+        # Add an extra second to ensure the action server has enough time to process the request
+        rclpy.spin_until_future_complete(self.node, goal_future, timeout_sec=max_audio_length + 1)
 
         execution_status = (
             Status.EXECUTION_SUCCESS
-            if len(future.result().transcription) > 0
+            if len(goal_future.result().result.transcription) > 0
             else Status.TARGET_NOT_FOUND
         )
 
         if execution_status == Status.EXECUTION_SUCCESS:
             Logger.info(
                 self.node,
-                f"hearing result: {future.result().transcription}",
+                f"hearing result: {goal_future.result().result.transcription}",
             )
         else:
             Logger.warn(self.node, "hearing result: no text heard")
 
-        return execution_status, future.result().transcription
+        return execution_status, goal_future.result().result.transcription
 
     def hear_streaming(self, timeout: float = 10.0, hotwords: str = "", silence_time: float = 5.0):
         """Method to hear streaming audio from the user.
@@ -355,12 +376,17 @@ class HRITasks(metaclass=SubtaskMeta):
         goal_msg.hotwords = hotwords
         goal_msg.silence_time = silence_time
 
-        return self._action_client.send_goal_async(
-            goal_msg, feedback_callback=self.feedback_callback
+        future = self._action_client.send_goal_async(
+            goal_msg,
+            feedback_callback=self.feedback_callback,
         )
 
+        future.add_done_callback(lambda f: self._active_goals.append(f.result()))
+
+        return future
+
     def feedback_callback(self, feedback_msg):
-        self.current_transcription = feedback_msg.feedback
+        self.current_transcription = feedback_msg.feedback.current_transcription
         self.node.get_logger().info("Received feedback: {0}".format(self.current_transcription))
 
     def confirm(
@@ -502,14 +528,18 @@ class HRITasks(metaclass=SubtaskMeta):
             f"Listening for keywords: {str(keywords)}",
         )
 
+        def format_transcription(text: str) -> str:
+            """Format the interpreted text to remove punctuation and convert to lowercase."""
+            return remove_punctuation(text).split(" ")
+
         while (
             self.keyword not in keywords
-            and contains_any(self.current_transcription, self.keywords)
+            and not contains_any(format_transcription(self.current_transcription), keywords)
             and ((self.node.get_clock().now() - start_time).nanoseconds / 1e9) < timeout
         ):
             rclpy.spin_once(self.node, timeout_sec=0.1)
 
-        keyword_listened = contains_any(self.current_transcription, self.keywords)
+        keyword_listened = contains_any(format_transcription(self.current_transcription), keywords)
 
         if not keyword_listened:
             keyword_listened = self.keyword
@@ -608,22 +638,14 @@ class HRITasks(metaclass=SubtaskMeta):
 
     def cancel_action(self):
         # Cancel all goals sent by this action client
-        future = self._action_client.cancel_all_goals()
 
-        # Optionally, wait for the cancel response
-        rclpy.spin_until_future_complete(self.node, future)
+        cancel_future = []
+        for goal_handle in self._active_goals:
+            future = goal_handle.cancel_goal_async()
+            cancel_future.append(future)
 
-        # Check the result
-        if future.result() is not None:
-            cancel_response = future.result()
-            if cancel_response.goals_canceling:
-                self.node.get_logger().info(
-                    f"Cancelled {len(cancel_response.goals_canceling)} goal(s)."
-                )
-            else:
-                self.node.get_logger().info("No goals were actively being canceled.")
-        else:
-            self.node.get_logger().warn("Failed to cancel goals.")
+        for f in cancel_future:
+            rclpy.spin_until_future_complete(self.node, f, timeout_sec=1)
 
     @service_check("answer_question_service", (Status.SERVICE_CHECK, "", 0.5), TIMEOUT)
     def answer_question(
