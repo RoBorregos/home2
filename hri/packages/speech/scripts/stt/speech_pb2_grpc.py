@@ -99,3 +99,76 @@ class SpeechService(object):
             timeout,
             metadata,
             _registered_method=True)
+
+
+class SpeechStreamStub(object):
+    """Missing associated documentation comment in .proto file."""
+
+    def __init__(self, channel):
+        """Constructor.
+
+        Args:
+            channel: A grpc.Channel.
+        """
+        self.Transcribe = channel.stream_stream(
+                '/speech.SpeechStream/Transcribe',
+                request_serializer=speech__pb2.AudioRequest.SerializeToString,
+                response_deserializer=speech__pb2.TextResponse.FromString,
+                _registered_method=True)
+
+
+class SpeechStreamServicer(object):
+    """Missing associated documentation comment in .proto file."""
+
+    def Transcribe(self, request_iterator, context):
+        """Sends audio data and gets the transcribed text
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+
+def add_SpeechStreamServicer_to_server(servicer, server):
+    rpc_method_handlers = {
+            'Transcribe': grpc.stream_stream_rpc_method_handler(
+                    servicer.Transcribe,
+                    request_deserializer=speech__pb2.AudioRequest.FromString,
+                    response_serializer=speech__pb2.TextResponse.SerializeToString,
+            ),
+    }
+    generic_handler = grpc.method_handlers_generic_handler(
+            'speech.SpeechStream', rpc_method_handlers)
+    server.add_generic_rpc_handlers((generic_handler,))
+    server.add_registered_method_handlers('speech.SpeechStream', rpc_method_handlers)
+
+
+ # This class is part of an EXPERIMENTAL API.
+class SpeechStream(object):
+    """Missing associated documentation comment in .proto file."""
+
+    @staticmethod
+    def Transcribe(request_iterator,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.stream_stream(
+            request_iterator,
+            target,
+            '/speech.SpeechStream/Transcribe',
+            speech__pb2.AudioRequest.SerializeToString,
+            speech__pb2.TextResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)

@@ -62,13 +62,12 @@ class AudioCapturer(Node):
     def record(self):
         self.get_logger().info("AudioCapturer node recording.")
         iteration_step = 0
-        # Format for the recorded audio, constants set from the Porcupine demo.py
         CHUNK_SIZE = 512
         self.FORMAT = pyaudio.paInt16  # Signed 2 bytes.
         self.debug = False
         CHANNELS = 6 if self.use_respeaker else 1
         self.RATE = 16000
-        EXTRACT_CHANNEL = 0  # Use channel 0. Tested with TestMic.py. See channel meaning: https://wiki.seeedstudio.com/ReSpeaker-USB-Mic-Array/#update-firmware
+        EXTRACT_CHANNEL = 0  # Use channel 0. Tested with microphone.py. See channel meaning: https://wiki.seeedstudio.com/ReSpeaker-USB-Mic-Array/#update-firmware
 
         self.p = pyaudio.PyAudio()
         stream = self.p.open(
@@ -80,32 +79,34 @@ class AudioCapturer(Node):
             frames_per_buffer=CHUNK_SIZE,
         )
 
-        while stream.is_active() and rclpy.ok():
-            try:
+        try:
+            while stream.is_active() and rclpy.ok():
                 in_data = stream.read(CHUNK_SIZE, exception_on_overflow=False)
-                iteration_step += 1
-
-                if iteration_step % SAVE_IT == 0:
-                    iteration_step = 0
-                    self.save_audio()
 
                 if self.use_respeaker:
                     in_data = np.frombuffer(in_data, dtype=np.int16)[EXTRACT_CHANNEL::6]
                     in_data = in_data.tobytes()
-                msg = in_data
-                run_frames.append(msg)
-                self.publisher_.publish(AudioData(data=msg))
-            except IOError as e:
-                self.get_logger().error(
-                    "I/O error({0}): {1}".format(e.errno, e.strerror)
-                )
 
-        if not stream.is_active():
-            self.get_logger().error("Audio stream is not active.")
+                local_audio = bytes(in_data)
 
-        stream.stop_stream()
-        stream.close()
-        self.p.terminate()
+                ros_audio = bytes(local_audio)
+                self.publisher_.publish(AudioData(data=ros_audio))
+
+                if self.debug:
+                    run_frames.append(local_audio)
+
+                iteration_step += 1
+                if iteration_step % SAVE_IT == 0:
+                    iteration_step = 0
+                    self.save_audio()
+
+        except KeyboardInterrupt:
+            self.get_logger().info("Stopping on user interrupt.")
+        finally:
+            stream.stop_stream()
+            stream.close()
+            self.p.terminate()
+            self.get_logger().info("Audio stream closed.")
 
     def save_audio(self):
         if not self.debug:
