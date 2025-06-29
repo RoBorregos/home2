@@ -16,19 +16,18 @@ import rclpy
 from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
-from frida_interfaces.vision.srv import ( 
+
+YOLO_LOCATION = str(pathlib.Path(__file__).parent) + "/Utils/yolov8n.pt"
+CONF_THRESHOLD = 0.5
+from frida_interfaces.srv import ( 
     CountBy,
     CountSpecifiedObjects
 ) 
 from frida_constants.vision_constants import (
-    CAMARA_TOPIC,
-    IMAGE_TOPIC,
+    CAMERA_TOPIC,
     COUNT_PEOPLE_ONBOARDING_TOPIC,
     COUNT_OBJECT_ONBOARDING_TOPIC
 )
-
-YOLO_LOCATION = str(pathlib.Path(__file__).parent) + "/Utils/yolov8n.pt"
-CONF_THRESHOLD = 0.5
 
 class CameraDetections(Node):
     def __init__(self):
@@ -40,7 +39,7 @@ class CameraDetections(Node):
         self.bridge = CvBridge()
 
         self.camara_view = self.create_subscription(
-            Image, CAMARA_TOPIC, self.image_callback, 10
+            Image, CAMERA_TOPIC, self.image_callback, 10
         )
     
         self.how_many_people_service = self.create_service(
@@ -71,6 +70,7 @@ class CameraDetections(Node):
                     if label == comp_class:
                         object_count += 1
         
+
         return object_count
 
                     
