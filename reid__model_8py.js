@@ -1,7 +1,9 @@
 var reid__model_8py =
 [
     [ "compare_images", "reid__model_8py.html#a09e0afec43f563971591076d0a91a556", null ],
+    [ "compare_images_batch", "reid__model_8py.html#aa51284f7e83456e804bdfabfb93c06fd", null ],
     [ "extract_feature_from_img", "reid__model_8py.html#a4921d9ffed49b6abfe727c73800629b2", null ],
+    [ "extract_feature_from_img_batch", "reid__model_8py.html#a9d2fa5cd96d1d77a54412fa812689833", null ],
     [ "fliplr", "reid__model_8py.html#a03dbf938a17f020c33a65cb86f86ce24", null ],
     [ "get_structure", "reid__model_8py.html#ae68f17bec5313be51d1ab808ef2755d0", null ],
     [ "load_network", "reid__model_8py.html#a4a574d476e5b12bd347146b9ae5c1cb0", null ],

@@ -193,8 +193,8 @@ var NAVTREEINDEX =
 "moondream__lib_8py.html#a3e80178be0f550fe0c9f3ba9acae5445",
 "namespacefrida__constants_1_1manipulation__constants.html#a854557db27a8ca25b4ee83b5abde6945",
 "namespacemodel.html#ad4ec7ba67909d57c52c609d1fa094b1f",
-"namespacesubtask__managers_1_1manipulation__tasks.html#ac0225f54469354bcbd28e798d082fb09",
-"server_8py.html#a692f59b384dd93287c366eb7e7c0608b"
+"namespacesubtask__managers_1_1manipulation__tasks.html#aa0c6cffd222753ff2e3e37325f58ea7a",
+"run__while__hearing_8py.html#aebdd0761631fc7404d7fddc38cde38a6"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

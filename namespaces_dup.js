@@ -220,7 +220,9 @@ var namespaces_dup =
     [ "receptionist_task_manager", "namespacereceptionist__task__manager.html", "namespacereceptionist__task__manager" ],
     [ "reid_model", "namespacereid__model.html", [
       [ "compare_images", "namespacereid__model.html#a09e0afec43f563971591076d0a91a556", null ],
+      [ "compare_images_batch", "namespacereid__model.html#aa51284f7e83456e804bdfabfb93c06fd", null ],
       [ "extract_feature_from_img", "namespacereid__model.html#a4921d9ffed49b6abfe727c73800629b2", null ],
+      [ "extract_feature_from_img_batch", "namespacereid__model.html#a9d2fa5cd96d1d77a54412fa812689833", null ],
       [ "fliplr", "namespacereid__model.html#a03dbf938a17f020c33a65cb86f86ce24", null ],
       [ "get_structure", "namespacereid__model.html#ae68f17bec5313be51d1ab808ef2755d0", null ],
       [ "load_network", "namespacereid__model.html#a4a574d476e5b12bd347146b9ae5c1cb0", null ],

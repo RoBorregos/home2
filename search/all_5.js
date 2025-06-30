@@ -60,7 +60,8 @@ var searchData=
   ['extract_5fdata_5fservice_57',['extract_data_service',['../classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a948142d5d524387bd2973eaa028e5875',1,'subtask_managers::hri_tasks::HRITasks']]],
   ['extract_5fdata_5fservice_58',['EXTRACT_DATA_SERVICE',['../namespacefrida__constants_1_1hri__constants.html#ae336bc5e472cc38814ce9b4eb0928c31',1,'frida_constants::hri_constants']]],
   ['extract_5ffeature_5ffrom_5fimg_59',['extract_feature_from_img',['../namespacereid__model.html#a4921d9ffed49b6abfe727c73800629b2',1,'reid_model']]],
-  ['extract_5finfo_5frequested_60',['EXTRACT_INFO_REQUESTED',['../classfrida__constants_1_1hri__constants_1_1MODEL.html#ab04c700ba61f8a4ed5826126968006a9',1,'frida_constants::hri_constants::MODEL']]],
-  ['extractinfo_2esrv_61',['ExtractInfo.srv',['../ExtractInfo_8srv.html',1,'']]],
-  ['extractplane_62',['extractPlane',['../classTableSegmentationNode.html#a04770a379a6a0d7c661c989c2184f279',1,'TableSegmentationNode']]]
+  ['extract_5ffeature_5ffrom_5fimg_5fbatch_60',['extract_feature_from_img_batch',['../namespacereid__model.html#a9d2fa5cd96d1d77a54412fa812689833',1,'reid_model']]],
+  ['extract_5finfo_5frequested_61',['EXTRACT_INFO_REQUESTED',['../classfrida__constants_1_1hri__constants_1_1MODEL.html#ab04c700ba61f8a4ed5826126968006a9',1,'frida_constants::hri_constants::MODEL']]],
+  ['extractinfo_2esrv_62',['ExtractInfo.srv',['../ExtractInfo_8srv.html',1,'']]],
+  ['extractplane_63',['extractPlane',['../classTableSegmentationNode.html#a04770a379a6a0d7c661c989c2184f279',1,'TableSegmentationNode']]]
 ];

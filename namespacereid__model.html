@@ -107,8 +107,12 @@ Functions</h2></td></tr>
 <tr class="separator:a03dbf938a17f020c33a65cb86f86ce24"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4921d9ffed49b6abfe727c73800629b2"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacereid__model.html#a4921d9ffed49b6abfe727c73800629b2">extract_feature_from_img</a> (<a class="el" href="namespacereid__model.html#aeac2a4399a707658142eb7782e9d8ad0">image</a>, <a class="el" href="namespacereid__model.html#a330bb3a57fa3351d22e3fe3a9435e542">model</a>)</td></tr>
 <tr class="separator:a4921d9ffed49b6abfe727c73800629b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9d2fa5cd96d1d77a54412fa812689833"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacereid__model.html#a9d2fa5cd96d1d77a54412fa812689833">extract_feature_from_img_batch</a> (images, <a class="el" href="namespacereid__model.html#a330bb3a57fa3351d22e3fe3a9435e542">model</a>, <a class="el" href="namespacereid__model.html#aa3618009d6e7524b0bc74f1995eec942">batch_size</a>=64)</td></tr>
+<tr class="separator:a9d2fa5cd96d1d77a54412fa812689833"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a09e0afec43f563971591076d0a91a556"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacereid__model.html#a09e0afec43f563971591076d0a91a556">compare_images</a> (<a class="el" href="namespacereid__model.html#a349b140df65272177c7efe47a2cb070c">features1</a>, <a class="el" href="namespacereid__model.html#afaac96bf9ea7e027827946c8584dbac6">features2</a>, threshold=0.55)</td></tr>
 <tr class="separator:a09e0afec43f563971591076d0a91a556"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa51284f7e83456e804bdfabfb93c06fd"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacereid__model.html#aa51284f7e83456e804bdfabfb93c06fd">compare_images_batch</a> (torch.Tensor <a class="el" href="namespacereid__model.html#a349b140df65272177c7efe47a2cb070c">features1</a>, torch.Tensor features2_list, threshold=0.55, <a class="el" href="namespacereid__model.html#aa3618009d6e7524b0bc74f1995eec942">batch_size</a>=64)</td></tr>
+<tr class="separator:aa51284f7e83456e804bdfabfb93c06fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
@@ -208,6 +212,46 @@ Variables</h2></td></tr>
 
 </div>
 </div>
+<a id="aa51284f7e83456e804bdfabfb93c06fd" name="aa51284f7e83456e804bdfabfb93c06fd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa51284f7e83456e804bdfabfb93c06fd">&#9670;&#160;</a></span>compare_images_batch()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def reid_model.compare_images_batch </td>
+          <td>(</td>
+          <td class="paramtype">torch.Tensor&#160;</td>
+          <td class="paramname"><em>features1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">torch.Tensor&#160;</td>
+          <td class="paramname"><em>features2_list</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>threshold</em> = <code>0.55</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>batch_size</em> = <code>64</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a4921d9ffed49b6abfe727c73800629b2" name="a4921d9ffed49b6abfe727c73800629b2"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a4921d9ffed49b6abfe727c73800629b2">&#9670;&#160;</a></span>extract_feature_from_img()</h2>
 
@@ -225,6 +269,40 @@ Variables</h2></td></tr>
           <td></td>
           <td class="paramtype">&#160;</td>
           <td class="paramname"><em>model</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a9d2fa5cd96d1d77a54412fa812689833" name="a9d2fa5cd96d1d77a54412fa812689833"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9d2fa5cd96d1d77a54412fa812689833">&#9670;&#160;</a></span>extract_feature_from_img_batch()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def reid_model.extract_feature_from_img_batch </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>images</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>model</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>batch_size</em> = <code>64</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
