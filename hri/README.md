@@ -83,11 +83,23 @@ ros2 service call /hri/nlp/is_negative frida_interfaces/srv/IsNegative "{text: '
 # Hear something
 ros2 service call /hri/speech/STT frida_interfaces/srv/STT {}
 
+# Interact with robot's display
+## Simulate hear text
+ros2 topic pub /speech/raw_command std_msgs/msg/String '{data: "hello"}' -1
 
-# NLP
-ros2 launch nlp nlp_launch.py
+## Simulate the robot saying something
+ros2 topic pub /speech/text_spoken std_msgs/msg/String '{data: "My name is Frida"}' -1
 
-ros2 topic pub /speech/raw_command std_msgs/msg/String "data: Go to the kitchen and grab cookies" --once
+## Simulate keyword detection
+ros2 topic pub /hri/speech/oww std_msgs/msg/String '{data: "Frida"}' -1
+
+## Simulate voice activity
+ros2 topic pub /AudioState std_msgs/msg/String '{data: "listening"}' -1
+
+ros2 topic pub /hri/speech/vad std_msgs/msg/Float32 '{data: 0.8}' -1
+
+## Stop voice simulation
+ros2 topic pub /AudioState std_msgs/msg/String '{data: "idle"}' -1
 ```
 
 ## Other useful commands
