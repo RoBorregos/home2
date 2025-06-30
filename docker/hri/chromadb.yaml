@@ -1,6 +1,6 @@
 services:
   chromadb:
-    profiles: [storing-groceries, gpsr]
+    profiles: [storing, gpsr]
     network_mode: host
     image: chromadb/chroma:latest
     ports:
@@ -10,6 +10,4 @@ services:
       - ANONYMIZED_TELEMETRY=False
       - CHROMA_HOST_PORT=8000
     volumes:
-      - /src/hri/packages/embeddings/chromadb:/chroma/chroma
-    restart: unless-stopped
-
+      - ./embeddings/chromadb:/chroma/chroma

@@ -13,6 +13,8 @@ from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 import time
+import os
+import json
 
 from frida_interfaces.srv import (
     CountBy,
@@ -40,6 +42,9 @@ from frida_constants.vision_enums import Poses, Gestures, DetectBy
 from pose_detection import PoseDetection
 
 package_share_dir = get_package_share_directory("vision_general")
+
+constants = get_package_share_directory("frida_constants")
+file_path = os.path.join(constants, "map_areas/areas.json")
 
 YOLO_LOCATION = str(pathlib.Path(__file__).parent) + "/Utils/yolov8n.pt"
 PERCENTAGE = 0.3
@@ -69,11 +74,17 @@ class GPSRCommands(Node):
         )
 
         self.count_by_gestures_service = self.create_service(
-            CountByPose, COUNT_BY_GESTURE_TOPIC, self.count_by_gestures_callback
+            CountByPose,
+            COUNT_BY_GESTURE_TOPIC,
+            self.count_by_gestures_callback,
+            callback_group=self.callback_group,
         )
 
         self.count_by_person_service = self.create_service(
-            CountBy, COUNT_BY_PERSON_TOPIC, self.count_by_person_callback
+            CountBy,
+            COUNT_BY_PERSON_TOPIC,
+            self.count_by_person_callback,
+            callback_group=self.callback_group,
         )
 
         self.count_by_color_service = self.create_service(
@@ -103,6 +114,10 @@ class GPSRCommands(Node):
         self.moondream_client = self.create_client(
             CropQuery, CROP_QUERY_TOPIC, callback_group=self.callback_group
         )
+
+        # Load areas from the JSON file
+        with open(file_path, "r") as file:
+            self.areas = json.load(file)
 
     def image_callback(self, data):
         """Callback to receive the image from the camera."""
@@ -213,7 +228,6 @@ class GPSRCommands(Node):
         """Count the gestures in the image and return a dictionary."""
         gesture_count = {
             Gestures.UNKNOWN: 0,
-            Gestures.UNKNOWN: 0,
             Gestures.WAVING: 0,
             Gestures.RAISING_LEFT_ARM: 0,
             Gestures.RAISING_RIGHT_ARM: 0,
@@ -233,6 +247,9 @@ class GPSRCommands(Node):
             # Increment the gesture count based on detected gesture
             if gesture in gesture_count:
                 gesture_count[gesture] += 1
+                if gesture == Gestures.WAVING:
+                    gesture_count[Gestures.RAISING_LEFT_ARM] += 1
+                    gesture_count[Gestures.RAISING_RIGHT_ARM] += 1
 
         return gesture_count
 
@@ -358,7 +375,7 @@ class GPSRCommands(Node):
         """Publish the image with the detections if available."""
         if len(self.output_image) != 0:
             # cv2.imshow("GPSR Commands", self.output_image)
-            cv2.waitKey(1)
+            # cv2.waitKey(1)
             self.image_publisher.publish(
                 self.bridge.cv2_to_imgmsg(self.output_image, "bgr8")
             )
@@ -420,7 +437,9 @@ class GPSRCommands(Node):
         if future is None:
             return False
         while not future.done() and (time.time() - start_time) < timeout:
-            print("Waiting for future to complete...")
+            # print("Waiting for future to complete...")
+            pass
+
         return future
 
     def moondream_crop_query(self, prompt: str, bbox: list[float]) -> tuple[int, str]:
@@ -451,11 +470,26 @@ class GPSRCommands(Node):
             self.get_logger().info(f"Moondream result: {result.result}")
             return 1, result.result
 
+    def is_inside(self, x, y, polygon):
+        inside = False
+        n = len(polygon)
+        for i in range(n):
+            x1, y1 = polygon[i]
+            x2, y2 = polygon[(i + 1) % n]
+
+            if (y1 > y) != (y2 > y):
+                xinters = (y - y1) * (x2 - x1) / (
+                    y2 - y1 + 1e-10
+                ) + x1  # Avoid zero division
+                if x < xinters:
+                    inside = not inside
+        return inside
+
 
 def main(args=None):
     rclpy.init(args=args)
     node = GPSRCommands()
-    executor = rclpy.executors.MultiThreadedExecutor(5)
+    executor = rclpy.executors.MultiThreadedExecutor(8)
     executor.add_node(node)
     executor.spin()
     rclpy.shutdown()

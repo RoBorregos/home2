@@ -1,22 +1,20 @@
 #!/usr/bin/env python3
 
-import rclpy
-from rclpy.node import Node
-from pydantic import BaseModel, ValidationError
-from typing import Optional, ClassVar, Dict
-from enum import Enum
-from ament_index_python.packages import get_package_share_directory
-import os
 import json
+import os
+from enum import Enum
 from pathlib import Path
-from frida_interfaces.srv import (
-    AddEntry,
-    BuildEmbeddings,
-    QueryEntry,
-)
+from typing import ClassVar, Dict, Optional
+
+import rclpy
+from ament_index_python.packages import get_package_share_directory
 
 # Assuming ChromaAdapter handles Chroma client and embedding functions
 from chroma_adapter import ChromaAdapter
+from pydantic import BaseModel, ValidationError
+from rclpy.node import Node
+
+from frida_interfaces.srv import AddEntry, BuildEmbeddings, QueryEntry
 
 
 class MetadataProfile(str, Enum):
@@ -27,15 +25,17 @@ class MetadataProfile(str, Enum):
 
 # Metadata validation model for metadata
 class MetadataModel(BaseModel):
-    shelve: Optional[str] = None
+    shelve: Optional[str] = ""
     category: Optional[str] = None
     context: Optional[str] = ""
-    complement: Optional[str] = None
-    characteristic: Optional[str] = None
     result: Optional[str] = None
     status: Optional[int] = None
     timestamp: Optional[str] = None
     subarea: Optional[str] = None
+    embeddings: Optional[list] = None
+    items_inside: Optional[str] = None
+    action: Optional[str] = None
+    command: Optional[str] = None
 
     PROFILES: ClassVar[Dict[MetadataProfile, Dict[str, str]]] = {
         MetadataProfile.ITEMS: {"context": " item for household use"},
@@ -142,6 +142,7 @@ class Embeddings(Node):
             # self.get_logger().info("Adding entries to ChromaDB")
             if request.collection == "closest_items":
                 self.chroma_adapter._get_or_create_collection("closest_items")
+
             self.chroma_adapter.add_entries(
                 request.collection, documents, metadata_objects
             )
@@ -200,7 +201,6 @@ class Embeddings(Node):
         except Exception as e:
             self.get_logger().error(f"Failed to process command history: {str(e)}")
             return []
-        # Placeholder for actual processing logic
 
     def query_entry_callback(self, request, response):
         """Service callback to query items from ChromaDB"""
@@ -212,53 +212,66 @@ class Embeddings(Node):
                 context = MetadataModel.PROFILES[MetadataProfile.LOCATIONS]["context"]
             elif request.collection == "actions":
                 context = MetadataModel.PROFILES[MetadataProfile.ACTIONS]["context"]
-            # elif request.collection == "command_history":
-            #     asd = self.process_command_history(request.query[0], request.topk)
-            #     response.results = [json.dumps(entry) for entry in asd]
-            #     response.success = bool(asd)
-            #     response.message = (
-            #         "Query successful" if asd else "No matching items found"
-            #     )
-            #     self.get_logger().info("Query request handled successfully")
-            #     return response
             else:
                 context = ""
 
             grouped_results = []
+            self.get_logger().info(f"Query Entry request received {(request.query)}")
+
             for query in request.query:
                 query_with_context = query + context
                 if request.collection == "command_history":
                     results_raw = self.chroma_adapter.query_where(
                         request.collection, [query_with_context]
                     )
-
                 else:
                     results_raw = self.chroma_adapter.query(
                         request.collection, [query_with_context], request.topk
                     )
+                distances = results_raw.get("distances", [[]])
+                if distances is None:
+                    distances = [[]]
+
                 docs = results_raw.get("documents", [[]])
                 metas = results_raw.get("metadatas", [[]])
+
                 formatted_results = []
-                for doc, meta in zip(docs, metas):
-                    if isinstance(meta, list):
-                        meta = meta[0]
-                    entry = {
-                        "document": [doc],
-                        "metadata": meta,
-                    }
-                    if "original_name" in meta:
-                        entry["document"] = meta["original_name"]
+                # Convert embeddings to a list of lists
 
-                    formatted_results.append(entry)
+                # embeddings = [embedding.tolist() for embedding in embeddings]
+                if request.collection == "command_history":
+                    for doc, meta in zip(docs, metas):
+                        if isinstance(meta, list):
+                            meta = meta[0]
+                        entry = {
+                            "document": doc,
+                            "metadata": meta,
+                        }
+                        if "original_name" in meta:
+                            entry["document"] = meta["original_name"]
 
+                        formatted_results.append(entry)
+                else:
+                    for doc, meta, dist in zip(docs, metas, distances):
+                        if isinstance(meta, list):
+                            meta = meta[0]
+                        entry = {
+                            "document": doc,
+                            "metadata": meta,
+                            "distance": dist,
+                        }
+                        if "original_name" in meta:
+                            entry["document"] = meta["original_name"]
+
+                        formatted_results.append(entry)
                 grouped_results.append({"query": query, "results": formatted_results})
 
             response.results = [json.dumps(entry) for entry in grouped_results]
-
             response.success = bool(grouped_results)
             response.message = (
                 "Query successful" if grouped_results else "No matching items found"
             )
+
             self.get_logger().info("Query request handled successfully")
         except Exception as e:
             response.success = False
@@ -275,7 +288,7 @@ class Embeddings(Node):
             # Call the build_embeddings_callback of ChromaAdapter to handle the actual embedding process
             if request.rebuild:
                 self.get_logger().info("Rebuilding embeddings")
-                self.chroma_adapter.remove_categorization_collections()
+                self.chroma_adapter.remove_all_collections()
                 self.build_embeddings()
             else:
                 self.build_embeddings()
@@ -306,8 +319,6 @@ class Embeddings(Node):
         # Define the folder where the CSV files are located
         dataframes_folder = script_dir / "../embeddings/dataframes"
 
-        # Define the folder where the JSON files are located
-        dataframes_folder = script_dir / "../embeddings/dataframes"
         # Ensure the folder exists
         if not (dataframes_folder.exists() and dataframes_folder.is_dir()):
             raise FileNotFoundError(
@@ -332,6 +343,10 @@ class Embeddings(Node):
         documents = []
         metadatas_ = []
         for file in dataframes:
+            collection_name = self.chroma_adapter._sanitize_collection_name(file.stem)
+            collections_ = self.chroma_adapter.list_collections()
+            if collection_name in collections_:
+                continue
             print("Processing file:", file)
             # Read the JSON file into a Python dictionary
             with open(file, "r") as f:
@@ -355,12 +370,17 @@ class Embeddings(Node):
             )
             # Add entries to the collection
             self.chroma_adapter.add_entries(collection_name, documents, metadatas_)
+
         self.add_locations()
+        self.chroma_adapter._get_or_create_collection("command_history")
         # self.print_all_collections()
         return
 
     def add_locations(self):
-        self.chroma_adapter._get_or_create_collection("command_history")
+        collection_name = "locations"
+        collections_ = self.chroma_adapter.list_collections()
+        if collection_name in collections_:
+            self.chroma_adapter.delete_collection(collection_name)
         areas_document = []
         areas_metadatas = []
         package_share_directory = get_package_share_directory("frida_constants")

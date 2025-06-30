@@ -20,3 +20,5 @@ hri/packages/nlp/assets/**
 **/rtabmapdbs
 yolov5/
 **/baml_client
+mobileclip_blt.ts
+!vision/packages/object_detector_2d/models/tmr2025.pt

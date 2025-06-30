@@ -2,7 +2,7 @@
 
 import json
 import os
-import subprocess
+import sys
 from collections import OrderedDict
 
 import rclpy
@@ -15,6 +15,14 @@ from std_msgs.msg import Bool, String
 
 from frida_constants.hri_constants import SPEAK_SERVICE
 from frida_interfaces.srv import Speak
+
+import grpc
+
+# Add the directory containing the protos to the Python path
+sys.path.append(os.path.join(os.path.dirname(__file__), "tts"))
+
+import tts_pb2
+import tts_pb2_grpc
 
 CURRENT_FILE_PATH = os.path.abspath(__file__)
 
@@ -51,6 +59,7 @@ class Say(Node):
         self.declare_parameter("SPEAK_SERVICE", SPEAK_SERVICE)
         self.declare_parameter("model", "en_US-amy-medium")
         self.declare_parameter("offline", True)
+        self.declare_parameter("TTS_SERVER_IP", "127.0.0.1:50050")
 
         self.declare_parameter("SPEAKER_DEVICE_NAME", "default")
         self.declare_parameter("SPEAKER_INPUT_CHANNELS", 32)
@@ -87,6 +96,9 @@ class Say(Node):
 
         self.model = self.get_parameter("model").get_parameter_value().string_value
         self.offline = self.get_parameter("offline").get_parameter_value().bool_value
+        self.server_ip = (
+            self.get_parameter("TTS_SERVER_IP").get_parameter_value().string_value
+        )
 
         if not self.offline:
             self.connected = SpeechApiUtils.is_connected()
@@ -172,12 +184,6 @@ class Say(Node):
                 self.get_logger().warn("Retrying with offline mode")
                 self.offline_voice(text)
 
-        # Wait for audio to finish playing before returning
-        try:
-            while mixer.music.get_busy():
-                pass
-        except Exception as e:
-            self.get_logger().error(f"Error while waiting for audio: {e}")
         self.publisher_.publish(Bool(data=False))
         return success
 
@@ -191,17 +197,19 @@ class Say(Node):
             if cached_path and os.path.exists(cached_path):
                 self.get_logger().debug(f"Using cached audio for chunk {i}")
                 audio_files.append(cached_path)
+                self.get_logger().debug(f"Playing {len(audio_files)} audio files")
+
+                # Play all audio files
+                for filepath in audio_files:
+                    self.play_audio(filepath)
             else:
                 output_path = os.path.join(VOICE_DIRECTORY, f"{hash(chunk)}.wav")
-                self.synthesize_voice_offline(output_path, chunk)
+                self.synthesize_voice_offline(f"{hash(chunk)}.wav", chunk)
                 self._add_to_cache(chunk, output_path)
-                audio_files.append(output_path)
-
-        self.get_logger().debug(f"Playing {len(audio_files)} audio files")
-
-        # Play all audio files
-        for filepath in audio_files:
-            self.play_audio(filepath)
+                mixer.pre_init(frequency=48000, buffer=2048)
+                mixer.init()
+                while mixer.music.get_busy():
+                    pass
 
     def connectedVoice(self, text):
         cached_path = self._get_cached_audio(text)
@@ -224,6 +232,12 @@ class Say(Node):
             pass
         mixer.music.load(file_path)
         mixer.music.play()
+        # Wait for audio to finish playing before returning
+        try:
+            while mixer.music.get_busy():
+                pass
+        except Exception as e:
+            self.get_logger().error(f"Error while waiting for audio: {e}")
 
     @staticmethod
     def split_text(text: str, max_len, split_sentences=False):
@@ -238,37 +252,20 @@ class Say(Node):
         return limited_chunks
 
     def synthesize_voice_offline(self, output_path, text):
-        """Synthesize text using the offline voice model."""
+        try:
+            with grpc.insecure_channel(self.server_ip) as channel:
+                stub = tts_pb2_grpc.TTSServiceStub(channel)
+                response = stub.Synthesize(
+                    tts_pb2.SynthesizeRequest(
+                        text=text, model=self.model, output_path=output_path
+                    )
+                )
 
-        executable = (
-            "/workspace/piper/install/piper"
-            if os.path.exists("/workspace/piper/install/piper")
-            else "python3.10 -m piper"
-        )
-
-        model_path = os.path.join(VOICE_DIRECTORY, self.model + ".onnx")
-
-        download_model = not os.path.exists(model_path)
-
-        if download_model:
-            self.get_logger().info("Downloading voice model...")
-
-        command = [
-            "echo",
-            f'"{text}"',
-            "|",
-            executable,
-            "--model",
-            self.model if download_model else model_path,
-            "--data-dir",
-            VOICE_DIRECTORY,
-            "--download-dir",
-            VOICE_DIRECTORY,
-            "--output_file",
-            output_path,
-        ]
-
-        subprocess.run(" ".join(command), shell=True)
+            if not response.success:
+                raise RuntimeError(f"TTS failed: {response.error_message}")
+        except Exception as e:
+            self.get_logger().error(f"[gRPC] Synthesis failed: {e}")
+            raise
 
 
 def main(args=None):

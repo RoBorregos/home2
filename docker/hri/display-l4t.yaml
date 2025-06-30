@@ -1,7 +1,5 @@
 services:
   display:
-    profiles: [receptionist, carry, gpsr]
-
     container_name: home2-hri-display-l4t
     image: roborregos/home2:hri-display-l4t
     build:
@@ -12,6 +10,8 @@ services:
     volumes:
       - ../../hri/display/:/app
       - /dev:/dev
+    environment:
+      ROS_LOCALHOST_ONLY: 1
     ports:
       - "3000:3000"
       - "8001:8001"

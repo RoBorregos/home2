@@ -101,6 +101,9 @@ esac
 export LOCAL_USER_ID=$(id -u)
 export LOCAL_GROUP_ID=$(id -g)
 
+mkdir -p install build log
+mkdir -p moondream/install moondream/build moondream/log
+
 # Setup camera permissions
 # if [ -e /dev/video0 ]; then
 #     echo "Setting permissions for /dev/video0..."
@@ -132,10 +135,10 @@ case $TASK in
         SERVICES=("vision" "moondream-node" "moondream-server")
         ;;
     "--storing-groceries")
-        PACKAGES="vision_general"
-        RUN="ros2 launch vision_general storing_groceries_launch.py"
-        PROFILES=("vision" "moondream")
-        SERVICES=("vision" "moondream-node" "moondream-server")
+        PACKAGES="object_detector_2d"
+        RUN="ros2 launch object_detector_2d object_detector_combined.launch.py"
+        PROFILES=("vision")
+        SERVICES=("vision")
         ;;
     "--gpsr")
         PACKAGES="vision_general object_detector_2d object_detection_handler"
@@ -193,7 +196,7 @@ if [ -z "$TASK" ]; then
 else
     if [ "$NEEDS_BUILD" = true ]; then
         echo "Building and starting containers..."
-        docker compose up --build -d
+        docker compose up --build 
     else
         echo "All containers exist. Starting without build..."
         docker compose up

@@ -89,6 +89,9 @@ esac
 export LOCAL_USER_ID=$(id -u)
 export LOCAL_GROUP_ID=$(id -g)
 
+# Create dirs with current user to avoid permission problems
+mkdir -p install build log
+
 #_________________________RUN_________________________
 
 NAV_NAME="home2-navigation"
@@ -97,7 +100,7 @@ echo "TASK=$TASK"
 case $TASK in
     "--receptionist")
         PACKAGES="nav_main dashgo_driver sllidar_ros2"
-        RUN="cp /workspace/src/navigation/rtabmapdbs/lab_3d_grid.db /home/ros/.ros/rtabmap.db && ros2 launch nav_main receptionist.launch.py"
+        RUN="cp /workspace/src/navigation/rtabmapdbs/lab.db /home/ros/.ros/rtabmap.db && ros2 launch nav_main receptionist.launch.py"
         ;;
     "--help-me-carry")
         PACKAGES="nav_main dashgo_driver sllidar_ros2"
@@ -114,7 +117,7 @@ echo "RUN=$RUN"
 
 
 if [ -n "$TASK" ]; then
-    COMMAND="source /opt/ros/humble/setup.bash && source /home/ros/ros_packages/install/setup.bash && colcon build --symlink-install --packages-up-to $PACKAGES && source install/setup.bash && $RUN"
+    COMMAND="source /opt/ros/humble/setup.bash && colcon build --symlink-install --packages-up-to $PACKAGES && source install/setup.bash && $RUN"
     echo "COMMAND= $COMMAND " >> .env
 fi
 
@@ -127,6 +130,7 @@ if [ -z "$CONTAINER" ]; then
     NEEDS_BUILD=true
     break 
 fi
+# NEEDS_BUILD=true
 
 
 # If no task set, enter with bash

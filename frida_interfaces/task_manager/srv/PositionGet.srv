@@ -1,0 +1,7 @@
+# Request
+
+---
+# Response
+float64 posex
+float64 posey
+uint32 status

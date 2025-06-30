@@ -1,9 +1,9 @@
 services:
   ollama:
-    profiles: [receptionist, carry, gpsr]
+    profiles: [receptionist, carry, gpsr, storing]
 
     container_name: home2-hri-ollama
-    image: dustynv/ollama:r36.4.0
+    image: dustynv/ollama:0.6.8-r36.4
     runtime: nvidia
     network_mode: host
     volumes:
@@ -11,6 +11,8 @@ services:
     environment:
       - OLLAMA_MODELS=/ollama
       - ROLE=${ROLE}
+      # - ROS_LOCALHOST_ONLY: 1
     stdin_open: true
     tty: true
-    entrypoint: ["/bin/bash", "-c", "/ollama/entrypoint.sh && tail -f /dev/null"]
+    entrypoint:
+      ["/bin/bash", "-c", "/ollama/entrypoint.sh && tail -f /dev/null"]

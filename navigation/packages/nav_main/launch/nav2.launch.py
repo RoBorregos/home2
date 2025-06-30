@@ -19,12 +19,11 @@ from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import DeclareLaunchArgument, GroupAction, SetEnvironmentVariable
 from launch.conditions import IfCondition
-from launch.substitutions import LaunchConfiguration, PythonExpression
 from launch_ros.actions import LoadComposableNodes
 from launch_ros.actions import Node
 from launch_ros.descriptions import ComposableNode, ParameterFile
 from nav2_common.launch import RewrittenYaml
-from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
+from launch.substitutions import LaunchConfiguration, PathJoinSubstitution, PythonExpression
 from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument,OpaqueFunction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.substitutions import FindPackageShare
@@ -88,7 +87,7 @@ def generate_launch_description():
 
     declare_params_file_cmd = DeclareLaunchArgument(
         'params_file',
-        default_value=os.path.join(bringup_dir, 'config', 'chat_params.yaml'),
+        default_value=os.path.join(bringup_dir, 'config', 'nav2_params.yaml'),
         description='Full path to the ROS2 parameters file to use for all launched nodes')
 
     declare_autostart_cmd = DeclareLaunchArgument(
@@ -122,7 +121,7 @@ def generate_launch_description():
                 respawn_delay=2.0,
                 parameters=[configured_params],
                 arguments=['--ros-args', '--log-level', log_level],
-                remappings=remappings + [('cmd_vel', 'cmd_vel_nav')]),
+                remappings=remappings + [('cmd_vel', 'cmd_vel')]),
             Node(
                 package='nav2_smoother',
                 executable='smoother_server',
@@ -183,7 +182,7 @@ def generate_launch_description():
                 parameters=[configured_params],
                 arguments=['--ros-args', '--log-level', log_level],
                 remappings=remappings +
-                        [('cmd_vel', 'cmd_vel_nav')]),
+                        [('cmd_vel', 'cmd_vel')]),
             Node(
                 package='nav2_lifecycle_manager',
                 executable='lifecycle_manager',
@@ -284,6 +283,6 @@ def generate_launch_description():
     # Add the actions to launch all of the navigation nodes
     ld.add_action(load_nodes)
     ld.add_action(load_composable_nodes)
-    ld.add_action(collision_launch)
+    # ld.add_action(collision_launch)
 
     return ld

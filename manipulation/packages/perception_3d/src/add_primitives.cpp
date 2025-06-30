@@ -3,6 +3,7 @@
 // #include <Eigen/src/Geometry/Quaternion.h>
 #include <cstdint>
 
+#include <exception>
 #include <memory>
 #include <pcl/common/centroid.h>
 #include <pcl/common/common.h>
@@ -17,6 +18,7 @@
 #include <pcl/segmentation/extract_clusters.h>
 #include <pcl/visualization/pcl_visualizer.h>
 #include <queue>
+#include <rclcpp/callback_group.hpp>
 #include <rclcpp/client.hpp>
 #include <rclcpp/duration.hpp>
 #include <rclcpp/logging.hpp>
@@ -59,6 +61,46 @@ struct BoxPrimitiveParams {
   pcl::PointXYZ xy4;
 };
 
+using namespace std::chrono_literals;
+
+template <typename T>
+std::future_status wait_for_future_with_timeout(
+    typename rclcpp::Client<T>::FutureAndRequestId &future,
+    rclcpp::node_interfaces::NodeBaseInterface::SharedPtr node,
+    std::chrono::milliseconds timeout = 500ms) {
+  try {
+
+    auto status = future.wait_for(timeout);
+    auto start_time = std::chrono::steady_clock::now();
+    while (status != std::future_status::ready) {
+      rclcpp::spin_some(node);
+      std::this_thread::sleep_for(10ms);
+      status = future.wait_for(10ms);
+      auto current_time = std::chrono::steady_clock::now();
+      if (current_time - start_time > timeout) {
+        return status;
+      }
+    }
+    return status;
+  } catch (const std::exception &e) {
+    RCLCPP_ERROR(rclcpp::get_logger("wait_for_future_with_timeout"),
+                 "Error waiting for future: %s", e.what());
+    return std::future_status::timeout;
+  }
+}
+
+class ClientNode : public rclcpp::Node {
+public:
+  rclcpp::Client<frida_interfaces::srv::RemovePlane>::SharedPtr
+      remove_plane_client;
+
+  ClientNode() : Node("client_node") {
+    this->remove_plane_client =
+        this->create_client<frida_interfaces::srv::RemovePlane>(
+            REMOVE_PLANE_SERVICE);
+  }
+};
+
 class AddPrimitivesNode : public rclcpp::Node {
 private:
   rclcpp::Service<frida_interfaces::srv::AddPickPrimitives>::SharedPtr
@@ -67,16 +109,17 @@ private:
       get_plane_bbox_srv;
   rclcpp::Client<frida_interfaces::srv::AddCollisionObjects>::SharedPtr
       add_collision_object_client;
-  rclcpp::Client<frida_interfaces::srv::RemovePlane>::SharedPtr
-      remove_plane_client;
 
   std::shared_ptr<tf2_ros::TransformListener> tf_listener;
   std::unique_ptr<tf2_ros::Buffer> tf_buffer;
 
   std::unique_ptr<tf2_ros::TransformBroadcaster> tf_broadcaster;
 
+  std::shared_ptr<ClientNode> client_node;
+
 public:
-  AddPrimitivesNode() : Node("add_primitives_node") {
+  AddPrimitivesNode(std::shared_ptr<ClientNode> client_node)
+      : Node("add_primitives_node") {
 
     this->tf_buffer = std::make_unique<tf2_ros::Buffer>(this->get_clock());
     this->tf_listener =
@@ -106,9 +149,10 @@ public:
     this->add_collision_object_client =
         this->create_client<frida_interfaces::srv::AddCollisionObjects>(
             ADD_COLLISION_SERVICE);
-    this->remove_plane_client =
-        this->create_client<frida_interfaces::srv::RemovePlane>(
-            REMOVE_PLANE_SERVICE);
+    this->client_node = client_node;
+    // this->remove_plane_client =
+    //     this->create_client<frida_interfaces::srv::RemovePlane>(
+    //         REMOVE_PLANE_SERVICE);
 
     RCLCPP_INFO(this->get_logger(), "Service created");
   }
@@ -207,7 +251,7 @@ public:
     rotation = pca.getEigenVectors();
 
     // get euler angles
-    //Eigen::Vector3f euler_angles = (rotation).eulerAngles(2, 1, 0);
+    // Eigen::Vector3f euler_angles = (rotation).eulerAngles(2, 1, 0);
 
     // Ensure we have a right-handed coordinate system
     // If the determinant is negative, flip the last column
@@ -245,7 +289,7 @@ public:
 
     // Transform the center offset back to the original coordinate system
     // Eigen::Vector3f ident =
-    //center += rotation * center_offset;
+    // center += rotation * center_offset;
 
     // Calculate the four corners of the box in the transformed space
     pcl::PointXYZ xy1, xy2, xy3, xy4;
@@ -327,6 +371,7 @@ public:
     return status;
   }
 
+  /* **
   // STATUS_RESPONSE
   // RansacNormals(_IN_ std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud,
   //               _OUT_ BoxPrimitiveParams &box_params) {
@@ -488,7 +533,7 @@ public:
 
   //   return status;
   // }
-
+  */
   STATUS_RESPONSE DownSampleObject(
       _IN_ const std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud,
       _OUT_ std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud_out) {
@@ -654,171 +699,230 @@ public:
     req->min_height = request->min_height;
     req->max_height = request->max_height;
 
-    this->remove_plane_client->async_send_request(
-        req,
-        [this, response](
-            rclcpp::Client<frida_interfaces::srv::RemovePlane>::SharedFuture
-                future) {
-          RCLCPP_INFO(this->get_logger(), "remove_plane");
-          if (future.get()->health_response != OK) {
-            response->health_response = future.get()->health_response;
-            return;
-          }
-          pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out(
-              new pcl::PointCloud<pcl::PointXYZ>);
-          pcl::fromROSMsg(future.get()->cloud, *cloud_out);
-          if (cloud_out->points.size() == 0) {
-            response->health_response = NO_POINT_DETECTED;
-            return;
-          }
-          RCLCPP_INFO(this->get_logger(), "Computing box primitive");
-          RCLCPP_INFO(this->get_logger(), "Cloud size: %zu",
-                      cloud_out->points.size());
-          BoxPrimitiveParams box_params;
-          try {
-            RCLCPP_INFO(this->get_logger(), "Computing box primitive");
-            response->health_response = RansacNormals(cloud_out, box_params);
-          } catch (const std::exception &exeption) {
-            RCLCPP_ERROR(this->get_logger(), "Exception: %s", exeption.what());
-            response->health_response = INVALID_INPUT_FILTER;
-            return;
-          }
-          // response->health_response = RansacNormals(cloud_out, box_params);
-          // response->health_response = RansacNormals(cloud_out, box_params);
-          ASSERT_AND_RETURN_CODE(response->health_response, OK,
-                                 "Error computing box primitive with code %d",
-                                 response->health_response);
-          box_params.height = 0.035;
-          // pcl::PointXYZ min_pt, max_pt2;
-          // pcl::getMinMax3D(*cloud_out, min_pt, max_pt2);
-          // box_params.centroid.x = min_pt.x + (max_pt2.x - min_pt.x) / 2;
-          // box_params.centroid.y = min_pt.y + (max_pt2.y - min_pt.y) / 2;
-          // box_params.centroid.z = min_pt.z + (max_pt2.z - min_pt.z) / 2;
-          // box_params.width = max_pt2.x - min_pt.x;
-          // box_params.depth = max_pt2.y - min_pt.y;
-          RCLCPP_INFO(this->get_logger(), "Box params: %Lf %Lf %Lf",
-                      box_params.width, box_params.depth, box_params.height);
-          // // box_params.height = std::max(max_pt2.z - min_pt.z - 0.01, 0.01);
+    RCLCPP_INFO(this->get_logger(), "Sending remove_plane request");
 
-          response->min_x = box_params.centroid.x - box_params.width / 2;
-          response->min_y = box_params.centroid.y - box_params.depth / 2;
-          response->min_z = box_params.centroid.z - box_params.height / 2;
-          response->max_x = box_params.centroid.x + box_params.width / 2;
-          response->max_y = box_params.centroid.y + box_params.depth / 2;
-          response->max_z = box_params.centroid.z + box_params.height / 2;
+    // auto res = this->remove_plane_client->async_send_request(req);
+    auto res = this->client_node->remove_plane_client->async_send_request(req);
+    RCLCPP_INFO(this->get_logger(), "remove_plane request sent");
+    try {
+      auto status =
+          wait_for_future_with_timeout<frida_interfaces::srv::RemovePlane>(
+              res, this->client_node->get_node_base_interface());
+    } catch (const std::exception &e) {
+      RCLCPP_ERROR(this->get_logger(), "Exception: %s", e.what());
+      response->health_response = INVALID_INPUT_FILTER;
+      return;
+    }
+    RCLCPP_INFO(this->get_logger(), "remove_plane request received");
+    // if (res.wait_for(std::chrono::seconds(20)) ==
+    // std::future_status::timeout) {
+    //   RCLCPP_ERROR(this->get_logger(), "remove_plane timed out");
+    //   response->health_response = -2;
+    //   return;
+    // }
+    auto ress = res.get();
+    if (ress->health_response != OK) {
+      response->health_response = ress->health_response;
+      return;
+    }
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out(
+        new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::fromROSMsg(ress->cloud, *cloud_out);
+    if (cloud_out->points.size() == 0) {
+      response->health_response = NO_POINT_DETECTED;
+      return;
+    }
+    RCLCPP_INFO(this->get_logger(), "Computing box primitive");
+    RCLCPP_INFO(this->get_logger(), "Cloud size: %zu",
+                cloud_out->points.size());
+    BoxPrimitiveParams box_params;
+    try {
+      RCLCPP_INFO(this->get_logger(), "Computing box primitive");
+      response->health_response = RansacNormals(cloud_out, box_params);
+    } catch (const std::exception &exeption) {
+      RCLCPP_ERROR(this->get_logger(), "Exception: %s", exeption.what());
+      response->health_response = INVALID_INPUT_FILTER;
+      return;
+    }
+    ASSERT_AND_RETURN_CODE(response->health_response, OK,
+                           "Error computing box primitive with code %d",
+                           response->health_response);
+    box_params.height = 0.035;
 
-          // response->min_x = box_params.xy1.x;
-          // response->min_y = min_pt.y;
-          // response->min_z = min_pt.z;
-          // response->max_x = max_pt2.x;
+    if (true) {
 
-          if (true) {
-            // publish tfs 8 corners and center
-            double minn[3] = {response->min_x, response->min_y,
-                              response->min_z};
-            double maxx[3] = {response->max_x, response->max_y,
-                              response->max_z};
+      // Send and lookup plane center transform
+      geometry_msgs::msg::TransformStamped transform;
+      transform.header.stamp = this->now();
+      transform.header.frame_id = "base_link";
+      transform.child_frame_id = "plane_center";
+      transform.transform.translation.x = box_params.centroid.x;
+      transform.transform.translation.y = box_params.centroid.y;
+      transform.transform.translation.z = box_params.centroid.z;
+      transform.transform.rotation = box_params.orientation;
+      this->tf_broadcaster->sendTransform(transform);
 
-            geometry_msgs::msg::TransformStamped transform;
+      geometry_msgs::msg::TransformStamped tf_center;
+      bool valid = false;
+      for (int i = 0; i < 3 && !valid; i++) {
+        try {
+          this->tf_broadcaster->sendTransform(transform);
+          tf_center = this->tf_buffer->lookupTransform(
+              "base_link", "plane_center", tf2::TimePointZero);
+          valid = true;
+        } catch (std::exception &e) {
+          RCLCPP_WARN(this->get_logger(), "Exception: %s", e.what());
+        }
+      }
+      if (!valid) {
+        RCLCPP_ERROR(this->get_logger(),
+                     "FAILED lookupTransform for tf_center to baselink");
+        response->health_response = INVALID_INPUT_FILTER;
+        return;
+      }
 
-            transform.header.stamp = this->now();
-            transform.header.frame_id = "base_link";
+      // Transform setup for corners
+      transform.header.frame_id = "plane_center";
+      transform.transform.rotation = box_params.orientation2;
 
-            transform.child_frame_id = "plane_center";
-            // transform.transform.translation.x = (minn[0] + maxx[0]) / 2.0;
-            // transform.transform.translation.y = (minn[1] + maxx[1]) / 2.0;
-            // transform.transform.translation.z = (minn[2] + maxx[2]) / 2.0;
-            transform.transform.translation.x = box_params.centroid.x;
-            transform.transform.translation.y = box_params.centroid.y;
-            transform.transform.translation.z = box_params.centroid.z;
+      // Send and lookup corner 1
+      transform.child_frame_id = "plane_corner_1";
+      transform.transform.translation.x = box_params.xy1.x;
+      transform.transform.translation.y = box_params.xy1.y;
+      transform.transform.translation.z = box_params.xy1.z;
+      this->tf_broadcaster->sendTransform(transform);
 
-            transform.transform.rotation = box_params.orientation;
-            this->tf_broadcaster->sendTransform(transform);
+      geometry_msgs::msg::TransformStamped tf_corner_1;
+      bool valid_corner_1 = false;
+      for (int i = 0; i < 3 && !valid_corner_1; i++) {
+        try {
+          this->tf_broadcaster->sendTransform(transform);
+          tf_corner_1 = this->tf_buffer->lookupTransform(
+              "base_link", "plane_corner_1", tf2::TimePointZero);
+          valid_corner_1 = true;
+        } catch (std::exception &e) {
+          RCLCPP_WARN(this->get_logger(), "Exception looking up corner 1: %s",
+                      e.what());
+        }
+      }
+      if (!valid_corner_1) {
+        RCLCPP_ERROR(this->get_logger(),
+                     "FAILED lookupTransform for tf_corner_1 to baselink");
+        response->health_response = INVALID_INPUT_FILTER;
+        return;
+      }
 
-            transform.header.stamp = this->now();
-            transform.header.frame_id = "plane_center";
+      // Send and lookup corner 2
+      transform.child_frame_id = "plane_corner_2";
+      transform.transform.translation.x = box_params.xy2.x;
+      transform.transform.translation.y = box_params.xy2.y;
+      transform.transform.translation.z = box_params.xy2.z;
+      this->tf_broadcaster->sendTransform(transform);
 
-            transform.transform.translation.x = box_params.xy1.x;
-            transform.transform.translation.y = box_params.xy1.y;
-            // transform.transform.translation.z = (minn[2] + maxx[2]) / 2.0;
-            transform.transform.translation.z = box_params.xy2.z;
-            // transform.transform.rotation.x = 0.0;
-            // transform.transform.rotation.y = 0.0;
-            // transform.transform.rotation.z = 0.0;
-            // transform.transform.rotation.w = 1.0;
-            transform.transform.rotation = box_params.orientation2;
-            transform.child_frame_id = "plane_corner_1";
-            RCLCPP_INFO(this->get_logger(), "Sending transform");
-            this->tf_broadcaster->sendTransform(transform);
-            transform.transform.translation.x = box_params.xy2.x;
-            transform.transform.translation.y = box_params.xy2.y;
-            // transform.transform.translation.z = (minn[2] + maxx[2]) / 2.0;
-            transform.transform.translation.z = box_params.xy2.z;
-            transform.transform.rotation = box_params.orientation2;
-            // transform.transform.rotation.x = 0.0;
-            // transform.transform.rotation.y = 0.0;
-            // transform.transform.rotation.z = 0.0;
-            // transform.transform.rotation.w = 1.0;
-            transform.child_frame_id = "plane_corner_2";
-            this->tf_broadcaster->sendTransform(transform);
-            transform.transform.translation.x = box_params.xy3.x;
-            transform.transform.translation.y = box_params.xy3.y;
-            // transform.transform.translation.z = (minn[2] + maxx[2]) / 2.0;
-            transform.transform.translation.z = box_params.xy2.z;
-            transform.transform.rotation = box_params.orientation2;
-            // transform.transform.rotation.x = 0.0;
-            // transform.transform.rotation.y = 0.0;
-            // transform.transform.rotation.z = 0.0;
-            // transform.transform.rotation.w = 1.0;
-            transform.child_frame_id = "plane_corner_3";
-            this->tf_broadcaster->sendTransform(transform);
-            transform.transform.translation.x = box_params.xy4.x;
-            transform.transform.translation.y = box_params.xy4.y;
-            // transform.transform.translation.z = (minn[2] + maxx[2]) / 2.0;
-            transform.transform.translation.z = box_params.xy2.z;
-            transform.transform.rotation = box_params.orientation2;
-            // transform.transform.rotation.x = 0.0;
-            // transform.transform.rotation.y = 0.0;
-            // transform.transform.rotation.z = 0.0;
-            // transform.transform.rotation.w = 1.0;
-            transform.child_frame_id = "plane_corner_4";
-            this->tf_broadcaster->sendTransform(transform);
+      geometry_msgs::msg::TransformStamped tf_corner_2;
+      bool valid_corner_2 = false;
+      for (int i = 0; i < 3 && !valid_corner_2; i++) {
+        try {
+          this->tf_broadcaster->sendTransform(transform);
+          tf_corner_2 = this->tf_buffer->lookupTransform(
+              "base_link", "plane_corner_2", tf2::TimePointZero);
+          valid_corner_2 = true;
+        } catch (std::exception &e) {
+          RCLCPP_WARN(this->get_logger(), "Exception looking up corner 2: %s",
+                      e.what());
+        }
+      }
+      if (!valid_corner_2) {
+        RCLCPP_ERROR(this->get_logger(),
+                     "FAILED lookupTransform for tf_corner_2 to baselink");
+        response->health_response = INVALID_INPUT_FILTER;
+        return;
+      }
 
-            // // Publish transforms for all 8 corners
-            // for (int i = 0; i < 2; ++i) {
-            //   for (int j = 0; j < 2; ++j) {
-            //     for (int k = 0; k < 2; ++k) {
-            //       std::string corner_id = "plane_corner_" + std::to_string(i)
-            //       +
-            //                               std::to_string(j) +
-            //                               std::to_string(k);
-            //       transform.child_frame_id = corner_id;
+      // Send and lookup corner 3
+      transform.child_frame_id = "plane_corner_3";
+      transform.transform.translation.x = box_params.xy3.x;
+      transform.transform.translation.y = box_params.xy3.y;
+      transform.transform.translation.z = box_params.xy3.z;
+      this->tf_broadcaster->sendTransform(transform);
 
-            //       double x = (i == 0) ? minn[0] : maxx[0];
-            //       double y = (j == 0) ? minn[1] : maxx[1];
-            //       double z = (k == 0) ? minn[2] : maxx[2];
+      geometry_msgs::msg::TransformStamped tf_corner_3;
+      bool valid_corner_3 = false;
+      for (int i = 0; i < 3 && !valid_corner_3; i++) {
+        try {
+          this->tf_broadcaster->sendTransform(transform);
+          tf_corner_3 = this->tf_buffer->lookupTransform(
+              "base_link", "plane_corner_3", tf2::TimePointZero);
+          valid_corner_3 = true;
+        } catch (std::exception &e) {
+          RCLCPP_WARN(this->get_logger(), "Exception looking up corner 3: %s",
+                      e.what());
+        }
+      }
+      if (!valid_corner_3) {
+        RCLCPP_ERROR(this->get_logger(),
+                     "FAILED lookupTransform for tf_corner_3 to baselink");
+        response->health_response = INVALID_INPUT_FILTER;
+        return;
+      }
 
-            //       transform.transform.translation.x = x;
-            //       transform.transform.translation.y = y;
-            //       transform.transform.translation.z = z;
+      // Send and lookup corner 4
+      transform.child_frame_id = "plane_corner_4";
+      transform.transform.translation.x = box_params.xy4.x;
+      transform.transform.translation.y = box_params.xy4.y;
+      transform.transform.translation.z = box_params.xy4.z;
+      this->tf_broadcaster->sendTransform(transform);
 
-            //       // transform.transform.rotation.x = 0.0;
-            //       // transform.transform.rotation.y = 0.0;
-            //       // transform.transform.rotation.z = 0.0;
-            //       // transform.transform.rotation.w = 1.0;
-            //       transform.transform.rotation = box_params.orientation;
+      geometry_msgs::msg::TransformStamped tf_corner_4;
+      bool valid_corner_4 = false;
+      for (int i = 0; i < 3 && !valid_corner_4; i++) {
+        try {
+          this->tf_broadcaster->sendTransform(transform);
+          tf_corner_4 = this->tf_buffer->lookupTransform(
+              "base_link", "plane_corner_4", tf2::TimePointZero);
+          valid_corner_4 = true;
+        } catch (std::exception &e) {
+          RCLCPP_WARN(this->get_logger(), "Exception looking up corner 4: %s",
+                      e.what());
+        }
+      }
+      if (!valid_corner_4) {
+        RCLCPP_ERROR(this->get_logger(),
+                     "FAILED lookupTransform for tf_corner_4 to baselink");
+        response->health_response = INVALID_INPUT_FILTER;
+        return;
+      }
 
-            //       this->tf_broadcaster->sendTransform(transform);
-            //     }
-            //   }
-            // }
+      response->center.point.x = tf_center.transform.translation.x;
+      response->center.point.y = tf_center.transform.translation.y;
+      response->center.point.z = tf_center.transform.translation.z;
+      response->pt1.point.x = tf_corner_1.transform.translation.x;
+      response->pt1.point.y = tf_corner_1.transform.translation.y;
+      response->pt1.point.z = tf_corner_1.transform.translation.z;
+      response->pt2.point.x = tf_corner_2.transform.translation.x;
+      response->pt2.point.y = tf_corner_2.transform.translation.y;
+      response->pt2.point.z = tf_corner_2.transform.translation.z;
+      response->pt3.point.x = tf_corner_3.transform.translation.x;
+      response->pt3.point.y = tf_corner_3.transform.translation.y;
+      response->pt3.point.z = tf_corner_3.transform.translation.z;
+      response->pt4.point.x = tf_corner_4.transform.translation.x;
+      response->pt4.point.y = tf_corner_4.transform.translation.y;
+      response->pt4.point.z = tf_corner_4.transform.translation.z;
 
-            // Publish center transform
-          }
+      response->center.header.frame_id = "base_link";
+      response->pt1.header.frame_id = "base_link";
+      response->pt2.header.frame_id = "base_link";
+      response->pt3.header.frame_id = "base_link";
+      response->pt4.header.frame_id = "base_link";
+      response->center.header.stamp = this->now();
+      response->pt1.header.stamp = this->now();
+      response->pt2.header.stamp = this->now();
+      response->pt3.header.stamp = this->now();
+      response->pt4.header.stamp = this->now();
+    }
 
-          response->health_response = OK;
-          return;
-        });
+    response->health_response = OK;
+    return;
   }
 };
 
@@ -827,9 +931,14 @@ int main(int argc, _IN_ char *argv[]) {
 
   RCLCPP_INFO(rclcpp::get_logger("add_primitives_main"),
               "Starting Add Primitives Node");
+  rclcpp::executors::MultiThreadedExecutor::SharedPtr multithreaded_executor =
+      std::make_shared<rclcpp::executors::MultiThreadedExecutor>();
 
-  rclcpp::spin(std::make_shared<AddPrimitivesNode>());
-
-  rclcpp::shutdown();
+  std::shared_ptr<ClientNode> client_node = std::make_shared<ClientNode>();
+  std::shared_ptr<AddPrimitivesNode> add_primitives_node =
+      std::make_shared<AddPrimitivesNode>(client_node);
+  // multithreaded_executor->add_node(client_node);
+  multithreaded_executor->add_node(add_primitives_node);
+  multithreaded_executor->spin();
   return 0;
 }

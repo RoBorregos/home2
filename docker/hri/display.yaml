@@ -1,7 +1,5 @@
 services:
   display:
-    profiles: [receptionist, carry, gpsr]
-
     container_name: home2-hri-display
     image: roborregos/home2:hri-display
     build:
@@ -16,4 +14,6 @@ services:
       - "3000:3000"
       - "8001:8001"
       - "8080:8080"
+    environment:
+      ROS_LOCALHOST_ONLY: 1
     command: ["/bin/bash", "/display-entrypoint.sh"]

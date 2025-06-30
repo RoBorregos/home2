@@ -1,3 +1,6 @@
+from datetime import datetime, timedelta
+
+import pytz
 from nlp.assets.schemas import (
     CategorizeShelvesResult,
     ExtractedData,
@@ -237,63 +240,29 @@ But does **not** include:
     )
 
 
-def get_categorize_shelves_args(shelves, table_objects):
+def get_categorize_shelves_args(shelves):
     return (
         [
             {
                 "role": "system",
-                "content": """You are tasked with categorizing grocery objects onto shelves based on similarity.
+                "content": """
+You are tasked with assigning a category to some shelves based on the objects they contain. Each shelf has a different set of objects, and you need to determine the most appropriate category for each shelf. There cannot be two or more shelves with the same category.
+Return a list where each element is the category to the corresponding shelf. Do not return any extra information or explanation, just the list of categories.
 
-Given:
-- A set of existing shelves, where each shelf contains a list of objects.
-- A list of table objects that need to be assigned to the correct shelf.
+For example, if you have the following shelves:
+[
+  ["milk", "buttermilk"],
+  [],
+  ["apple", "banana"]
+]
 
-Instructions:
-- Group each table object with the shelf whose existing objects are most similar.
-- If a table object isn't similar to any of the objects in the shelves, you may assign it to the empty shelf.
-- Provide, for each shelf:
-  1. 'objects_to_add': a list of new objects (from the table) that should be placed on that shelf.
-  2. 'classification_tag': a short descriptive name of the shelf's category (e.g., "dairy", "fruit", "snacks").
-- For the empty shelf, you can assign any object from the table that doesn't fit into the other shelves.
-
-Output format:
-A dictionary where:
-- The keys are shelf numbers (integers).
-- The values are objects with two properties: 'objects_to_add' and 'classification_tag'.
-
-Example:
-Shelves:
-{
-  1: ["milk", "buttermilk"],
-  2: [],
-  3: ["apple", "banana"]
-}
-
-Table objects:
-["butter", "orange", "cookies", "cheese", "watermelon", "pringles"]
-
-Expected output:
-"""
-                + CategorizeShelvesResult(
-                    shelves={
-                        1: {
-                            "objects_to_add": ["butter", "cheese"],
-                            "classification_tag": "dairy",
-                        },
-                        2: {
-                            "objects_to_add": ["cookies", "pringles"],
-                            "classification_tag": "snacks",
-                        },
-                        3: {
-                            "objects_to_add": ["orange", "watermelon"],
-                            "classification_tag": "fruit",
-                        },
-                    }
-                ).model_dump_json(),
+You should return:
+{"categories": ["dairy","empty","fruit"]}
+""",
             },
             {
                 "role": "user",
-                "content": f"Shelves: {shelves}, Table objects: {table_objects}",
+                "content": f"Shelves: {shelves}",
             },
         ],
         CategorizeShelvesResult,
@@ -313,22 +282,57 @@ def format_response(response):
     ]
 
 
+def clean_question_rag(question):
+    return [
+        {
+            "role": "system",
+            "content": """You will be given a command. Your task is to determine which information should be fetched
+            from the context in order to answer the question.
+            Only pass the information we should fetch.           
+            """,
+        },
+        {
+            "role": "user",
+            "content": question,
+        },
+    ]
+
+
 def get_answer_question_dialog(contexts, question):
     if contexts:
         context_text = "\n".join(contexts)
         user_content = f"{context_text}\n\n{question}"
+
+        print("CONTEXT:", user_content)
     else:
         user_content = question
+
+    now = datetime.now(pytz.timezone("America/Mexico_City"))
+    tomorrow = now + timedelta(days=1)
+    current_time = now.strftime("%Y-%m-%d %H:%M:%S")
+    tomorrow_time = tomorrow.strftime("%Y-%m-%d")
+    day_of_week = now.strftime("%A")
+    day_of_month = now.strftime("%d")
 
     return [
         {
             "role": "system",
             "content": (
-                "You are a concise and knowledgeable assistant. "
-                "Answer clearly and directly using only the provided information. "
-                "Do not mention where the information came from. "
-                "Avoid long explanations, speculation, or unnecessary details. "
-                "Just provide the best possible answer."
+                "You are FRIDA, a warm, efficient, and helpful robot assistant that lives in a smart home. "
+                "Your purpose is to assist and host guests naturally, always responding politely and directly. "
+                "When given a task, ignore the setting, names, gestures, or commands in the phrasing — focus only on the actual question or request. "
+                "Use the provided context if available, and do not mention the source of your knowledge or that it came from any documents. Do not explain your reasoning. "
+                "Answer clearly, naturally, and in a friendly tone. If the prompt suggests interaction (e.g., greeting someone, answering a quiz), respond accordingly as if you're speaking directly to that person. "
+                "If asked something about yourself, you may share a short fun fact (e.g., “I'm FRIDA, your home assistant — always here to help!”). "
+                "If no answer can be given based on the context, you may politely respond that you don't know at the moment. "
+                "Here is some relevant information to help you answer the question, consider this information in addition to your knowledge base:\n"
+                f"Tomorrow: {tomorrow_time}\n\n"
+                f"Day of the week: {day_of_week}\n\n"
+                f"Day of the month: {day_of_month}\n\n"
+                f"Current time: {current_time}\n\n"
+                "Don't ask additional questions or ask for clarifications, just answer the question."
+                "BE VERY CONCISE with your responses and only provide the information that is EXPLICITLY REQUESTED by the user."
+                "Don't ask the user for additional follow ups or questions, only answer its questions."
             ),
         },
         {
@@ -347,6 +351,7 @@ def get_previous_command_answer(context, question):
                 "and your task is to answer it to the best of your ability using the provided context. "
                 f"Here is the context:\n\n{context}\n\n"
                 "Answer the question clearly and concisely."
+                "Summarize as much as possible."
             ),
         },
         {

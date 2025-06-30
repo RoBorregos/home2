@@ -28,12 +28,26 @@ ZERO_SHOT_DETECTIONS_ACTIVE_TOPIC = "/vision/zero_shot_detections_active"
 SET_DETECTOR_CLASSES_SERVICE = "/vision/set_detector_classes"
 
 ZERO_SHOT_DEFAULT_CLASSES = [
-    "red_can",
-    "grey_box",
-    "white_can",
-    "cereal_box",
-    "blue_box",
+    "bowl",
+    "whiteBaseball",
+    "apple",
+    "cup",
+    "plate",
+    "yellow_mustard_container",
+    "apple",
+    "blue_tuna_can",
+    "soup_can",
+    "neon_ball",
+    "squash",
+    "banana",
+    "soap",
+    "rubikCube",
+    "coke_bottle",
     "yellow_bowl",
+    "apple",
+    "fanta_can",
+    "orange",
+    "cup",
 ]
 
 ZERO_SHOT_MODEL = "yoloe-11l-seg.pt"
@@ -50,6 +64,7 @@ SET_TARGET_BY_TOPIC = "/vision/set_tracking_target_by"
 RESULTS_TOPIC = "/vision/tracking_results"
 TRACKER_IMAGE_TOPIC = "/vision/tracker_image"
 CENTROID_TOIC = "/vision/tracker_centroid"
+IS_TRACKING_TOPIC = "/vision/is_tracking"
 
 # Pointing
 POINTING_OBJECT_SERVICE = "/vision/pointing_object_service"
@@ -89,3 +104,6 @@ POSE_GESTURE_TOPIC = "/vision/gpsr/pose_gesture_detection"
 
 # Storing Groceries Commands node
 SHELF_DETECTION_TOPIC = "/vision/storing_grocPeries/shelf_detection"
+
+# Person inside a room
+PERSON_POINT_TOPIC = "/vision/person_inside_point"

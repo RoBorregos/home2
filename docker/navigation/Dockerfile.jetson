@@ -3,17 +3,23 @@ FROM ${BASE_IMAGE}
 
 USER ros
 SHELL ["/bin/bash", "-c"]
-RUN mkdir /home/ros/ros_packages
-WORKDIR /home/ros/ros_packages
+
+#Building rtabmap packages
+RUN mkdir /home/ros/ros_packages3
+WORKDIR /home/ros/ros_packages3
 RUN git clone https://github.com/introlab/rtabmap.git src/rtabmap
 RUN git clone --branch ros2 https://github.com/introlab/rtabmap_ros.git src/rtabmap_ros
 RUN sudo apt update
 RUN sudo rosdep init && rosdep update && rosdep install --from-paths src --ignore-src -r -y
-RUN source /opt/ros/humble/setup.bash && colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
-RUN echo "source /home/ros/ros_packages/install/setup.bash" >> /home/ros/.bashrc
-# Install and compile 
+RUN source /opt/ros/humble/setup.bash && colcon build --symlink-install 
+RUN echo "source /home/ros/ros_packages3/install/setup.bash" >> /home/ros/.bashrc
+
+# Install and compile home2 repo
 RUN sudo apt update && pip install pyserial
-COPY . /workspace/src
+RUN mkdir -p /workspace
+WORKDIR /workspace 
+RUN git clone https://github.com/RoBorregos/home2 --recursive /workspace/src
 RUN cd /workspace/src && sudo apt update && rosdep update && rosdep install --from-paths . --ignore-src --skip-keys "gpd gazebo_ros gazebo_plugins gazebo_ros2_control" -y
 RUN sudo rm -rf /workspace/src/
+
 WORKDIR /workspace
