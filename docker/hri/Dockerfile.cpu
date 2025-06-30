@@ -27,3 +27,4 @@ RUN sudo chown -R ros /usr/lib/python3.10/
 RUN sudo chown -R ros /usr/local/lib/python3.10/
 
 RUN sudo pip install chromadb
+RUN sudo pip install baml-py==0.86.1
