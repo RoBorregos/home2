@@ -54,10 +54,11 @@ def confirm_preference(interpreted_text, extracted_data):
 
 
 TEST_TASK = Task.RECEPTIONIST
-TEST_COMPOUND = True
+TEST_COMPOUND = False
 TEST_INDIVIDUAL_FUNCTIONS = False
 TEST_EMBEDDINGS = False
-TEST_ASYNC_LLM = True
+TEST_ASYNC_LLM = False
+TEST_STREAMING = True
 
 
 class TestHriManager(Node):
@@ -87,6 +88,9 @@ class TestHriManager(Node):
 
         if TEST_ASYNC_LLM:
             self.async_llm_test()
+
+        if TEST_STREAMING:
+            self.test_streaming()
 
     def individual_functions(self):
         # Test say
@@ -123,6 +127,13 @@ class TestHriManager(Node):
         )
 
         self.get_logger().info(f"categorized_shelves: {str(categorized_shelves)}")
+
+    def test_streaming(self):
+        s, user_request = self.hri_manager.hear()
+        self.get_logger().info(f"Heard: {user_request}")
+
+        s, keyword = self.hri_manager.interpret_keyword(["yes", "no", "maybe"], timeout=5.0)
+        self.get_logger().info(f"Interpreted keyword: {keyword}")
 
     def compound_functions(self):
         s, name = self.hri_manager.ask_and_confirm(
