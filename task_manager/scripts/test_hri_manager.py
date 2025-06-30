@@ -271,7 +271,9 @@ class TestHriManager(Node):
         test = self.hri_manager.command_interpreter("Bring me an apple from the kitchen")
         self.get_logger().info(f"Sync Command interpreter result: {test}")
 
-        test = self.hri_manager.command_interpreter("Bring me an apple from the kitchen", is_async=True)
+        test = self.hri_manager.command_interpreter(
+            "Bring me an apple from the kitchen", is_async=True
+        )
 
         self.get_logger().info(f"Command interpreter future: {test}")
         self.get_logger().info(f"Command interpreter future status: {test.done()}, {test.result()}")
