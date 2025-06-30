@@ -13,13 +13,14 @@ var searchData=
   ['shelfdetection_2emsg_10',['ShelfDetection.msg',['../ShelfDetection_8msg.html',1,'']]],
   ['shelfdetectionhandler_2esrv_11',['ShelfDetectionHandler.srv',['../ShelfDetectionHandler_8srv.html',1,'']]],
   ['speak_2esrv_12',['Speak.srv',['../Speak_8srv.html',1,'']]],
-  ['status_2epy_13',['status.py',['../status_8py.html',1,'']]],
-  ['storing_2dgroceries_2emd_14',['storing-groceries.md',['../storing-groceries_8md.html',1,'']]],
-  ['storing_5fgroceries_2elaunch_2epy_15',['storing_groceries.launch.py',['../storing__groceries_8launch_8py.html',1,'']]],
-  ['storing_5fgroceries_5fcommands_2epy_16',['storing_groceries_commands.py',['../storing__groceries__commands_8py.html',1,'']]],
-  ['storing_5fgroceries_5flaunch_2epy_17',['storing_groceries_launch.py',['../storing__groceries__launch_8py.html',1,'']]],
-  ['storing_5fgroceries_5fmanager_2epy_18',['storing_groceries_manager.py',['../storing__groceries__manager_8py.html',1,'']]],
-  ['stt_2esrv_19',['STT.srv',['../STT_8srv.html',1,'']]],
-  ['subtask_5fmanager_2epy_20',['subtask_manager.py',['../subtask__manager_8py.html',1,'']]],
-  ['subtask_5fmeta_2epy_21',['subtask_meta.py',['../subtask__meta_8py.html',1,'']]]
+  ['speechstream_2eaction_13',['SpeechStream.action',['../SpeechStream_8action.html',1,'']]],
+  ['status_2epy_14',['status.py',['../status_8py.html',1,'']]],
+  ['storing_2dgroceries_2emd_15',['storing-groceries.md',['../storing-groceries_8md.html',1,'']]],
+  ['storing_5fgroceries_2elaunch_2epy_16',['storing_groceries.launch.py',['../storing__groceries_8launch_8py.html',1,'']]],
+  ['storing_5fgroceries_5fcommands_2epy_17',['storing_groceries_commands.py',['../storing__groceries__commands_8py.html',1,'']]],
+  ['storing_5fgroceries_5flaunch_2epy_18',['storing_groceries_launch.py',['../storing__groceries__launch_8py.html',1,'']]],
+  ['storing_5fgroceries_5fmanager_2epy_19',['storing_groceries_manager.py',['../storing__groceries__manager_8py.html',1,'']]],
+  ['stt_2esrv_20',['STT.srv',['../STT_8srv.html',1,'']]],
+  ['subtask_5fmanager_2epy_21',['subtask_manager.py',['../subtask__manager_8py.html',1,'']]],
+  ['subtask_5fmeta_2epy_22',['subtask_meta.py',['../subtask__meta_8py.html',1,'']]]
 ];

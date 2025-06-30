@@ -23,6 +23,7 @@ var hri__constants_8py =
     [ "RESPEAKER_LIGHT_TOPIC", "hri__constants_8py.html#a3eafbf8ea957a6995529edc2d3fcc7e8", null ],
     [ "SENSITIVITY_THRESHOLD", "hri__constants_8py.html#a451ff86158f7fdd9ed1e85902b264df4", null ],
     [ "SPEAK_SERVICE", "hri__constants_8py.html#a1405902be9440099af248e891e6a796d", null ],
+    [ "STT_ACTION_SERVER_NAME", "hri__constants_8py.html#a5a3605a4415d25cb9c77f3f904c2da29", null ],
     [ "STT_SERVICE_NAME", "hri__constants_8py.html#a05d8fa1eccd50686fbaff0e84170dcb9", null ],
     [ "threshold", "hri__constants_8py.html#a57a8000db92c380cf72a62b5afca2ba8", null ],
     [ "USE_OWW", "hri__constants_8py.html#a21cf28c03858cd41c9c109e65272477e", null ],

@@ -9,11 +9,10 @@ var searchData=
   ['use_5frespeaker_6',['USE_RESPEAKER',['../namespacefrida__constants_1_1hri__constants.html#ab84e29b708c588f21ca855005806888b',1,'frida_constants::hri_constants']]],
   ['use_5fright_5fhand_7',['USE_RIGHT_HAND',['../namespacepointing__detection.html#a197c3d9ed96b3db5850117c5d78e684a',1,'pointing_detection']]],
   ['use_5fswin_8',['use_swin',['../namespacereid__model.html#afd0c502aecc7fb1b4bdc4ebf9acda11f',1,'reid_model']]],
-  ['use_5fyolo8_9',['USE_YOLO8',['../classzero__shot__object__detector__node_1_1NodeParams.html#af8d5ca2947c98fe927d4998a063ee5b5',1,'zero_shot_object_detector_node.NodeParams.USE_YOLO8()'],['../classobject__detector__node_1_1NodeParams.html#a6c09cb3350298d0f480081e965870d29',1,'object_detector_node.NodeParams.USE_YOLO8()']]],
+  ['use_5fyolo8_9',['USE_YOLO8',['../classobject__detector__node_1_1NodeParams.html#a6c09cb3350298d0f480081e965870d29',1,'object_detector_node.NodeParams.USE_YOLO8()'],['../classzero__shot__object__detector__node_1_1NodeParams.html#af8d5ca2947c98fe927d4998a063ee5b5',1,'zero_shot_object_detector_node.NodeParams.USE_YOLO8()']]],
   ['use_5fzed_10',['use_zed',['../classzed__simulator_1_1ZedSimulator.html#a51ea3acb3de2294481c6d53d9cfd9f77',1,'zed_simulator::ZedSimulator']]],
   ['use_5fzed_5ftransfrom_11',['use_zed_transfrom',['../classObjectDetector_1_1ObjectDectectorParams.html#a7f0c76ff9f8c54c6f399f1bca2d9b095',1,'ObjectDetector::ObjectDectectorParams']]],
   ['useful_5faudio_5fnode_5fname_12',['USEFUL_AUDIO_NODE_NAME',['../namespacefrida__constants_1_1hri__constants.html#ab6800c1a435eaa0006c92a38068e003a',1,'frida_constants::hri_constants']]],
-  ['useful_5faudio_5fparams_13',['useful_audio_params',['../classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#aebcba31e03755f9979aae06a3b31064e',1,'subtask_managers::hri_tasks::HRITasks']]],
-  ['useful_5faudio_5ftopic_14',['USEFUL_AUDIO_TOPIC',['../namespacefrida__constants_1_1hri__constants.html#a3d4f04c35947523a35babc6389309733',1,'frida_constants::hri_constants']]],
-  ['useimu_15',['useImu',['../classdashgo__driver2_1_1DashgoDriver.html#a44242a5b500095dc84d451bb3d24e7d5',1,'dashgo_driver2::DashgoDriver']]]
+  ['useful_5faudio_5ftopic_13',['USEFUL_AUDIO_TOPIC',['../namespacefrida__constants_1_1hri__constants.html#a3d4f04c35947523a35babc6389309733',1,'frida_constants::hri_constants']]],
+  ['useimu_14',['useImu',['../classdashgo__driver2_1_1DashgoDriver.html#a44242a5b500095dc84d451bb3d24e7d5',1,'dashgo_driver2::DashgoDriver']]]
 ];
