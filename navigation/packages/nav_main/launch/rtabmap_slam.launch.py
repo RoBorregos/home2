@@ -24,7 +24,6 @@ def launch_setup(context, *args, **kwargs):
           'use_action_for_goal':True,
           'odom_sensor_sync': True,
           # RTAB-Map's parameters should be strings:
-          'Mem/NotLinkedNodesKept':'false'
     }
 
     if(use_3d_grid.perform(context) == 'true'):
@@ -37,7 +36,6 @@ def launch_setup(context, *args, **kwargs):
             'queue_size': 3,
             'approx_sync ': True,
             'approx_sync_max_interval': 0.01,    
-            # RTAB-Map's parameters should be strings:
             'Reg/Strategy':'1',
             'Reg/Force3DoF':'true',
             'Vis/MinInliers': '15',
@@ -55,12 +53,11 @@ def launch_setup(context, *args, **kwargs):
             'RGBD/NeighborLinkRefining':'True',
             'Grid/CellSize': '0.04',
             'Rtabmap/DetectionRate': '15',
-            #   'Grid/RayTracing':'true', # Fill empty space
-            'Grid/3D':'false', # Use 2D occupancy
+            'Grid/3D':'false',
             'Grid/RangeMax':'3',
-            'Grid/NormalsSegmentation':'false', # Use passthrough filter to detect obstacles
-            'Grid/Sensor':'2', # Use both laser scan and camera for obstacle detection in global map
-            'Optimizer/GravitySigma':'0' # Disable imu constraints (we are already in 2D)
+            'Grid/NormalsSegmentation':'false',
+            'Grid/Sensor':'2',
+            'Optimizer/GravitySigma':'0'
         }
     else:
          shared_parameters={
@@ -69,13 +66,8 @@ def launch_setup(context, *args, **kwargs):
             'wait_for_transform_duration': 0.8,
             'queue_size': 200,
             'approx_sync ': False,
-
-            ##### TEST ####
             'approx_sync ': True,
-            # 'approx_sync_max_interval': '0.04',
             'approx_sync_max_interval': '0.1',
-            ###############
-            # RTAB-Map's parameters should be strings:
             'Reg/Strategy':'1',
             'Mem/BinDataKept': 'false',
             'RGBD/CreateOccupancyGrid': 'false',
@@ -88,13 +80,12 @@ def launch_setup(context, *args, **kwargs):
             'Grid/CellSize': '0.04',
             'Vis/MaxFeatures': '100',
             'Rtabmap/DetectionRate': '30',
-            # 'Optimizer/Iterations': '60',
-            'Grid/RayTracing':'false', # Fill empty space
-            'Grid/3D':'false', # Use 2D occupancy
+            'Grid/RayTracing':'false',
+            'Grid/3D':'false',
             'Grid/RangeMax':'3',
-            'Grid/NormalsSegmentation':'false', # Use passthrough filter to detect obstacles
-            #   'Grid/Sensor':'2', # Use both laser scan and camera for obstacle detection in global map
-            'Optimizer/GravitySigma':'0' # Disable imu constraints (we are already in 2D)
+            'Grid/NormalsSegmentation':'false', 
+            'Grid/Sensor':'2',
+            'Optimizer/GravitySigma':'0'
         }
 
 
@@ -104,7 +95,6 @@ def launch_setup(context, *args, **kwargs):
           ('depth/image', '/zed/zed_node/depth/depth_registered')]
 
     return_list = [
-
         # Nodes to launch
         Node(
             package='rtabmap_sync', executable='rgbd_sync', output='screen',
@@ -116,6 +106,7 @@ def launch_setup(context, *args, **kwargs):
             parameters=[icp_parameters, shared_parameters],
             remappings=remappings,
             arguments=["--ros-args", "--log-level", 'icp_odometry:=warn']),
+
 
         # SLAM Mode:
         Node(
@@ -134,18 +125,17 @@ def launch_setup(context, *args, **kwargs):
               {'Mem/IncrementalMemory':'False',
                'Mem/InitWMWithAllNodes':'True'}],
             remappings=remappings),
-
+        # Node(
+        #     package='rtabmap_util', executable='obstacles_detection', output='screen',
+        #     parameters=[rtabmap_parameters,shared_parameters],
+        #     remappings=[('cloud', '/zed/zed_node/point_cloud/cloud_registered'),
+        #                 ('obstacles', '/camera/obstacles'),
+        #                 ('ground', '/camera/ground')]),
         Node(
             condition=IfCondition(rtabmap_viz),
             package='rtabmap_viz', executable='rtabmap_viz', output='screen',
             parameters=[rtabmap_parameters, shared_parameters],
             remappings=remappings),
-        Node(
-            package='rtabmap_util', executable='obstacles_detection', output='screen',
-            parameters=[rtabmap_parameters,shared_parameters],
-            remappings=[('cloud', '/zed/zed_node/point_cloud/cloud_registered'),
-                        ('obstacles', '/camera/obstacles'),
-                        ('ground', '/camera/ground')]),
     ]
     return return_list
 def generate_launch_description():
