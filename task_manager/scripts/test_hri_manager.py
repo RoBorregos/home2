@@ -4,14 +4,13 @@
 Task Manager for testing the subtask managers
 """
 
+from typing import Union
+
 import rclpy
 from config.hri.debug import config as test_hri_config
 from rclpy.duration import Duration
 from rclpy.node import Node
 from subtask_managers.hri_tasks import HRITasks
-from utils.task import Task
-from typing import Union
-
 
 # from subtask_managers.subtask_meta import SubtaskMeta
 from utils.baml_client.types import (
@@ -30,6 +29,7 @@ from utils.baml_client.types import (
     PlaceObject,
     SayWithContext,
 )
+from utils.task import Task
 
 InterpreterAvailableCommands = Union[
     CommandListLLM,
@@ -54,9 +54,10 @@ def confirm_preference(interpreted_text, extracted_data):
 
 
 TEST_TASK = Task.RECEPTIONIST
-TEST_COMPOUND = False
-TEST_INDIVIDUAL_FUNCTIONS = True
+TEST_COMPOUND = True
+TEST_INDIVIDUAL_FUNCTIONS = False
 TEST_EMBEDDINGS = False
+TEST_ASYNC_LLM = True
 
 
 class TestHriManager(Node):
@@ -75,14 +76,17 @@ class TestHriManager(Node):
         #    "Oscar", "football", "Rodrigo", "baseball"
         # )
 
-        # # if TEST_COMPOUND:
-        # #     self.compound_functions()
+        if TEST_COMPOUND:
+            self.compound_functions()
 
-        # if TEST_INDIVIDUAL_FUNCTIONS:
-        # self.individual_functions()
+        if TEST_INDIVIDUAL_FUNCTIONS:
+            self.individual_functions()
 
-        # if TEST_EMBEDDINGS:
-        self.test_embeddings()
+        if TEST_EMBEDDINGS:
+            self.test_embeddings()
+
+        if TEST_ASYNC_LLM:
+            self.async_llm_test()
 
     def individual_functions(self):
         # Test say
@@ -121,31 +125,43 @@ class TestHriManager(Node):
         self.get_logger().info(f"categorized_shelves: {str(categorized_shelves)}")
 
     def compound_functions(self):
-        s, interest1 = self.hri_manager.ask_and_confirm(
-            "What is your favorite main interest?",
-            "interest",
-            "The question 'What is your favorite main interest?' was asked, full_text corresponds to the response.",
-            confirm_preference,
-            False,
-            3,
-            5,
+        s, name = self.hri_manager.ask_and_confirm(
+            "What is your name?",
+            "LLM_name",
+            # "The question 'What is your favorite main interest?' was asked, full_text corresponds to the response.",
+            # confirm_preference,
+            use_hotwords=False,
+            # 3,
+            # 5,
         )
 
-        s, interest2 = self.hri_manager.ask_and_confirm(
-            "What is your favorite second interest?",
-            "interest",
-            "The question 'What is your favorite main interest?' was asked, full_text corresponds to the response.",
-            confirm_preference,
-            False,
-            3,
-            5,
-        )
+        self.hri_manager.say(f"Hi {name}, nice to meet you!", wait=True)
 
-        s, common_interest = self.hri_manager.common_interest(
-            "mike", interest1, "rodrigo", interest2
-        )
+        # s, interest1 = self.hri_manager.ask_and_confirm(
+        #     "What is your favorite main interest?",
+        #     "LLM_interest",
+        #     "The question 'What is your favorite main interest?' was asked, full_text corresponds to the response.",
+        #     confirm_preference,
+        #     False,
+        #     3,
+        #     5,
+        # )
 
-        self.hri_manager.say(common_interest)
+        # s, interest2 = self.hri_manager.ask_and_confirm(
+        #     "What is your favorite second interest?",
+        #     "LLM_interest",
+        #     "The question 'What is your favorite main interest?' was asked, full_text corresponds to the response.",
+        #     confirm_preference,
+        #     False,
+        #     3,
+        #     5,
+        # )
+
+        # s, common_interest = self.hri_manager.common_interest(
+        #     "mike", interest1, "rodrigo", interest2
+        # )
+
+        # self.hri_manager.say(common_interest)
 
     def test_embeddings(self):
         """Testing the embeddings service via HRITasks"""
@@ -249,6 +265,22 @@ class TestHriManager(Node):
         # documents = ["cheese", "milk", "yogurt"]
         # result_closest = hri.find_closest(documents, "milk")
         # self.get_logger().info(f"Closest result: {result_closest}")
+
+    def async_llm_test(self):
+        test = self.hri_manager.extract_data("LLM_name", "My name is John Doe", is_async=True)
+
+        self.get_logger().info(f"Extract data future: {test}")
+        self.get_logger().info(f"Extract data future status: {test.done(), test.result()}")
+
+        self.get_logger().info("Waiting for the future to complete...")
+
+        rclpy.spin_until_future_complete(self, test)
+
+        self.get_logger().info(f"Extracted data: {test.result()}")
+
+        # Test original functionality
+        test = self.hri_manager.extract_data("LLM_name", "My name is John Doe")
+        self.get_logger().info(f"Extract data result: {test}")
 
 
 def main(args=None):

@@ -11,5 +11,3 @@ services:
       - CHROMA_HOST_PORT=8000
     volumes:
       - ./embeddings/chromadb:/chroma/chroma
-    restart: unless-stopped
-

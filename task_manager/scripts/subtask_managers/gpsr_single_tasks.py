@@ -224,6 +224,11 @@ class GPSRSingleTask(GenericTask):
             if current_try >= RETRIES:
                 return self.deus_pick(command)
             s = self.subtask_manager.manipulation.pick_object(object_to_pick), ""
+            if s == Status.EXECUTION_SUCCESS:
+                self.subtask_manager.hri.say(
+                    f"I have picked the {command.object_to_pick}.", wait=True
+                )
+                return s, f"picked {command.object_to_pick}"
             current_try += 1
 
     def timeout(self, timeout: int = 2):

@@ -13,6 +13,8 @@ from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 import time
+import os
+import json
 
 from frida_interfaces.srv import (
     CountBy,
@@ -20,6 +22,7 @@ from frida_interfaces.srv import (
     PersonPoseGesture,
     CropQuery,
     CountByColor,
+    ReadQr,
 )
 
 from ament_index_python.packages import get_package_share_directory
@@ -33,6 +36,7 @@ from frida_constants.vision_constants import (
     POSE_GESTURE_TOPIC,
     CROP_QUERY_TOPIC,
     COUNT_BY_GESTURE_TOPIC,
+    READ_QR_TOPIC,
 )
 
 from frida_constants.vision_enums import Poses, Gestures, DetectBy
@@ -40,6 +44,9 @@ from frida_constants.vision_enums import Poses, Gestures, DetectBy
 from pose_detection import PoseDetection
 
 package_share_dir = get_package_share_directory("vision_general")
+
+constants = get_package_share_directory("frida_constants")
+file_path = os.path.join(constants, "map_areas/areas.json")
 
 YOLO_LOCATION = str(pathlib.Path(__file__).parent) + "/Utils/yolov8n.pt"
 PERCENTAGE = 0.3
@@ -96,11 +103,19 @@ class GPSRCommands(Node):
             callback_group=self.callback_group,
         )
 
+        self.read_qr_service = self.create_service(
+            ReadQr,
+            READ_QR_TOPIC,
+            self.read_qr_callback,
+            callback_group=self.callback_group,
+        )
+
         self.image_publisher = self.create_publisher(Image, IMAGE_TOPIC, 10)
 
         self.image = None
         self.yolo_model = YOLO(YOLO_LOCATION)
         self.pose_detection = PoseDetection()
+        self.qr_detector = cv2.QRCodeDetector()
         self.output_image = []
 
         self.get_logger().info("GPSRCommands Ready.")
@@ -109,6 +124,10 @@ class GPSRCommands(Node):
         self.moondream_client = self.create_client(
             CropQuery, CROP_QUERY_TOPIC, callback_group=self.callback_group
         )
+
+        # Load areas from the JSON file
+        with open(file_path, "r") as file:
+            self.areas = json.load(file)
 
     def image_callback(self, data):
         """Callback to receive the image from the camera."""
@@ -358,6 +377,31 @@ class GPSRCommands(Node):
         self.get_logger().info(f"{type_requested} detected: {response_clean}")
         return response
 
+    def read_qr_callback(self, request, response):
+        """Callback to detect and decode QR code in the image"""
+        self.get_logger().info("Executing service Read Qr")
+        if self.image is None:
+            response.success = False
+            response.result = ""
+            return response
+
+        frame = self.image
+        self.output_image = frame.copy()
+
+        # Detect QR using cv2.QRCodeDetector
+        retval, _, _ = self.qr_detector.detectAndDecode(frame)
+
+        if retval == "":
+            response.success = False
+            response.result = ""
+            self.get_logger().warn("No qr code detected")
+            return response
+
+        self.success(f"QR code read successfully: {retval}")
+        response.result = retval
+        response.success = True
+        return response
+
     def success(self, message):
         """Log a success message."""
         self.get_logger().info(f"\033[92mSUCCESS:\033[0m {message}")
@@ -460,6 +504,21 @@ class GPSRCommands(Node):
         if result.success:
             self.get_logger().info(f"Moondream result: {result.result}")
             return 1, result.result
+
+    def is_inside(self, x, y, polygon):
+        inside = False
+        n = len(polygon)
+        for i in range(n):
+            x1, y1 = polygon[i]
+            x2, y2 = polygon[(i + 1) % n]
+
+            if (y1 > y) != (y2 > y):
+                xinters = (y - y1) * (x2 - x1) / (
+                    y2 - y1 + 1e-10
+                ) + x1  # Avoid zero division
+                if x < xinters:
+                    inside = not inside
+        return inside
 
 
 def main(args=None):

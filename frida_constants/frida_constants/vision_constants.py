@@ -101,6 +101,10 @@ COUNT_BY_POSE_TOPIC = "/vision/gpsr/count_by_pose"
 COUNT_BY_GESTURE_TOPIC = "/vision/gpsr/count_by_gesture"
 IMAGE_TOPIC = "/vision/gpsr/img_detection"
 POSE_GESTURE_TOPIC = "/vision/gpsr/pose_gesture_detection"
+READ_QR_TOPIC = "/vision/gpsr/read_qr"
 
 # Storing Groceries Commands node
 SHELF_DETECTION_TOPIC = "/vision/storing_grocPeries/shelf_detection"
+
+# Person inside a room
+PERSON_POINT_TOPIC = "/vision/person_inside_point"
