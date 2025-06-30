@@ -10,6 +10,7 @@ from torch.autograd import Variable
 from scipy.spatial.distance import cosine
 import pathlib
 import timm
+import time
 
 version = torch.__version__
 use_swin = True
@@ -84,6 +85,7 @@ def load_network(network):
     save_path = os.path.join(folder_path, name, "net_%s.pth" % epoch)
     try:
         if use_gpu:
+            print("Loading model from GPU")
             network.load_state_dict(torch.load(save_path))
         else:
             network.load_state_dict(
@@ -121,21 +123,25 @@ def fliplr(img):
 
 def extract_feature_from_img(image, model):
     if use_gpu:
+        start_time = time.time()
         image = data_transforms(image).unsqueeze(0)  # Add batch dimension
-
+        print(f"Data preprocessing time: {time.time() - start_time:.4f} seconds")
         # Extract features from the image
         model.eval()
         with torch.no_grad():
+            start_time = time.time()
             features = (
                 torch.zeros(1, linear_num).cuda()
                 if torch.cuda.is_available()
                 else torch.zeros(1, linear_num)
             )
-            for i in range(2):
+            print(f"Create features time: {time.time() - start_time:.4f} seconds")
+            start_time = time.time()
+            for i in range(1):
                 if i == 1:
                     # Apply horizontal flipping for augmentation
                     image = torch.flip(image, dims=[3])
-                input_img = Variable(image.cuda())
+                input_img = image.cuda()
                 for scale in ms:
                     if scale != 1:
                         input_img = torch.nn.functional.interpolate(
@@ -144,13 +150,20 @@ def extract_feature_from_img(image, model):
                             mode="bicubic",
                             align_corners=False,
                         )
+                    start_time = time.time()
                     outputs = model(input_img)
+                    print(
+                        f"Model inference time for scale {scale}: {time.time() - start_time:.4f} seconds"
+                    )
                     features += outputs
 
             # Normalize features
             features /= torch.norm(features, p=2, dim=1, keepdim=True)
+            print(
+                f"Feature extraction time: {time.time() - start_time:.4f} seconds"
+            )
             # features = features.cpu()
-        return features.cpu()
+        return features
     else:
         image = data_transforms(image)  # Add batch dimension
         # ff = torch.FloatTensor(n,opt.linear_num).zero_().cuda()
@@ -272,7 +285,14 @@ def compare_images(features1, features2, threshold=0.55):
     # Compute cosine similarity between feature vectors
     # features1 = features1.reshape(features1.shape[0], -1)
     # features2 = features2.reshape(features2.shape[0], -1)
-    similarity_score = 1 - cosine(features1, features2)
+    if not use_gpu:
+        similarity_score = 1 - cosine(features1, features2)
+    else:
+        features1 = features1.cuda()
+        features2 = features2.cuda()
+        similarity_score = 1 - torch.nn.functional.cosine_similarity(
+            features1.unsqueeze(0), features2.unsqueeze(0)
+        ).item()
 
     # Compare similarity score with threshold
     print(f"Similarity score: {similarity_score}")

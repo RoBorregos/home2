@@ -17,13 +17,13 @@ from vision_general.utils.calculations import (
     get_depth,
     deproject_pixel_to_point,
 )
+
 import copy
 import rclpy
 from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import Point
-
 from vision_general.utils.reid_model import (
     load_network,
     compare_images,
@@ -58,6 +58,7 @@ CONF_THRESHOLD = 0.6
 PACKAGE_NAME = "vision_general"
 CONFIG_FOLDER = os.path.join(get_package_share_directory(PACKAGE_NAME), "config")
 BOTSORT_REID_YAML = os.path.join(CONFIG_FOLDER, "botsort-reid.yaml")
+REID_EXTRACT_FREQ = 3
 
 
 class SingleTracker(Node):
@@ -67,16 +68,21 @@ class SingleTracker(Node):
         self.bridge = CvBridge()
         self.callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
 
+        qos = rclpy.qos.QoSProfile(
+            history=rclpy.qos.HistoryPolicy.KEEP_LAST,
+            depth=1,
+            reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
+        )
         self.image_subscriber = self.create_subscription(
-            Image, CAMERA_TOPIC, self.image_callback, 10
+            Image, CAMERA_TOPIC, self.image_callback, qos
         )
 
         self.depth_subscriber = self.create_subscription(
-            Image, DEPTH_IMAGE_TOPIC, self.depth_callback, 10
+            Image, DEPTH_IMAGE_TOPIC, self.depth_callback, qos
         )
 
         self.image_info_subscriber = self.create_subscription(
-            CameraInfo, CAMERA_INFO_TOPIC, self.image_info_callback, 10
+            CameraInfo, CAMERA_INFO_TOPIC, self.image_info_callback, qos
         )
 
         self.set_target_service = self.create_service(
@@ -104,8 +110,10 @@ class SingleTracker(Node):
         self.verbose = self.declare_parameter("verbose", True)
 
         self.setup()
-        self.create_timer(0.1, self.run)
+        self.last_reid_extraction = time.time()
+        self.create_timer(0.05, self.run)
         self.create_timer(0.01, self.publish_image)
+        
 
         self.is_tracking_result = False
 
@@ -123,7 +131,7 @@ class SingleTracker(Node):
             "coordinates": [],
         }
 
-        pbar = tqdm.tqdm(total=1, desc="Loading models")
+        pbar = tqdm.tqdm(total=4, desc="Loading models")
 
         self.model = YOLO("yolov8n.pt")
         self.pose_detection = PoseDetection()
@@ -368,18 +376,22 @@ class SingleTracker(Node):
         """Main loop to run the tracker"""
         if True:  # self.target_set:
             self.frame = self.image
-
+            print("cuda available: ", torch.cuda.is_available())
             if self.frame is None:
                 return
 
             self.output_image = self.frame.copy()
 
+            start_time = time.time()
             self.results = self.model.track(
                 self.frame,
                 persist=True,
                 tracker=BOTSORT_REID_YAML,
                 classes=0,
                 verbose=False,
+            )
+            self.get_logger().info(
+                f"Det+Tracking took {time.time() - start_time:.2f} seconds"
             )
 
             if self.person_data["id"] is None:
@@ -434,12 +446,21 @@ class SingleTracker(Node):
                         embedding = None
                         pil_image = PILImage.fromarray(cropped_image)
 
+                        if self.person_data["embeddings"] is not None and time.time() - self.last_reid_extraction < REID_EXTRACT_FREQ:
+                            self.get_logger().info(
+                                f"Skipping embedding extraction, last extraction was {time.time() - self.last_reid_extraction:.2f} seconds ago"
+                            )
+                            
                         with torch.no_grad():
+                            start_time = time.time()
                             embedding = extract_feature_from_img(
                                 pil_image, self.model_reid
                             )
+                            self.get_logger().info(
+                                f"Extracted embedding in {time.time() - start_time:.2f} seconds"
+                            )
                         if self.person_data["embeddings"] is None:
-                            self.person_data["embeddings"] = torch.Tensor([])
+                            self.person_data["embeddings"] = torch.Tensor([]).cuda() if torch.cuda.is_available() else torch.Tensor([])
                             # append the first embedding
                             self.person_data["embeddings"] = torch.cat(
                                 (
@@ -451,14 +472,23 @@ class SingleTracker(Node):
                             """ Compare embeddings from the person with the current one
                             if they are different, we can add a new embedding as we have "certainty this is the same person
                             with a different view -- not necessarily from a different angle"""
+                            start_time = time.time()
                             embedding_exists = False
-                            for emb in self.person_data["embeddings"]:
-                                if compare_images(embedding, emb, threshold=0.7):
-                                    embedding_exists = True
-                                    break
-
-                            compare_images_batch(
-                                embedding, self.person_data["embeddings"], threshold=0.7
+                            # for emb in self.person_data["embeddings"]:
+                            #     if compare_images(embedding, emb, threshold=0.7):
+                            #         embedding_exists = True
+                            #         break
+                                
+                            # self.get_logger().info(
+                            #     f"Compared embedding sequentially in {time.time() - start_time:.2f} seconds"
+                            # )
+                            
+                            start_time = time.time()
+                            embedding_exists = compare_images_batch(
+                                embedding, self.person_data["embeddings"], threshold=0.8
+                            )
+                            self.get_logger().info(
+                                f"Compared embedding in batch in {time.time() - start_time:.2f} seconds"
                             )
 
                             if not embedding_exists:
@@ -515,7 +545,11 @@ class SingleTracker(Node):
                     ]
                     pil_image = PILImage.fromarray(cropped_image)
                     with torch.no_grad():
+                        start_time = time.time()
                         embedding = extract_feature_from_img(pil_image, self.model_reid)
+                        self.get_logger().info(
+                            f"Extracted embedding for person {person['track_id']} in {time.time() - start_time:.2f} seconds"
+                        )
 
                     # check if embedding and embeddings_batch[i] are similar
                     # print("comparing againts batch embedding")
@@ -530,9 +564,13 @@ class SingleTracker(Node):
                     person_angle = self.pose_detection.personAngle(cropped_image)
                     if person_angle is not None:
                         if self.person_data[person_angle] is not None:
+                            start_time = time.time()
                             if compare_images(
-                                embedding, self.person_data[person_angle], threshold=0.7
+                                embedding, self.person_data[person_angle], threshold=0.8
                             ):
+                                self.get_logger().info(
+                                    f"Compared embedding with angle {person_angle} in {time.time() - start_time:.2f} seconds"
+                                )
                                 self.success(
                                     f"Person re-identified: {person['track_id']} with angle {person_angle}"
                                 )
@@ -550,17 +588,21 @@ class SingleTracker(Node):
                                 break
                     else:
                         person_found = False
-                        for stored_embedding in self.person_data["embeddings"]:
-                            if compare_images(
-                                embedding, stored_embedding, threshold=0.7
-                            ):
+                        if self.person_data["embeddings"] is not None and len(self.person_data["embeddings"]) > 0:
+                            start_time = time.time()
+                            embedding_exists = compare_images_batch(
+                                embedding, self.person_data["embeddings"], threshold=0.7
+                            )
+                            self.get_logger().info(
+                                f"Compared embedding without angle in batch in {time.time() - start_time:.2f} seconds"
+                            )
+                            if embedding_exists:
                                 self.success(
                                     f"Person re-identified: {person['track_id']} without angle"
                                 )
                                 self.person_data["id"] = person["track_id"]
                                 person_in_frame = True
                                 person_found = True
-                                break
                         if person_found:
                             break
                         # Check if person is re-identified without angle
