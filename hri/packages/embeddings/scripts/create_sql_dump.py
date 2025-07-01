@@ -114,7 +114,7 @@ def write_to_file(filename: str, content: str):
 
 def main():
     print("Loading JSON files...")
-    jsons = get_jsons("/home/ivan/home2/hri/packages/embeddings/embeddings/dataframes")
+    jsons = get_jsons("/workspace/hri/packages/embeddings/embeddings/dataframes")
     print(f"Found {len(jsons)} JSON files.")
 
     print(jsons)
