@@ -161,7 +161,10 @@ class HearStreaming(Node):
                     (
                         time.time() - start_time
                         < goal_handle.request.start_silence_time
-                        and len(self.current_transcription) == 0
+                        and (
+                            len(self.current_transcription) == 0
+                            or self.current_transcription != self.hotwords
+                        )
                     )
                     or time.time() - last_word_time < goal_handle.request.silence_time
                 )
