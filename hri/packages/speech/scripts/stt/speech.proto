@@ -8,6 +8,11 @@ service SpeechService {
   rpc Transcribe (AudioRequest) returns (TextResponse);
 }
 
+service SpeechStream {
+  // Sends audio data and gets the transcribed text
+  rpc Transcribe (stream AudioRequest) returns (stream TextResponse);
+}
+
 // The message containing audio data
 message AudioRequest {
     bytes audio_data = 1;

@@ -9,7 +9,13 @@ services:
     image: ${IMAGE_NAME:-roborregos/home2:manipulation-cpu}
     volumes:
       - ../../:/workspace/src/home2
+      - /dev:/dev
       - /tmp:/tmp
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - ./build:/workspace/build
+      - ./install:/workspace/install
+      - ./log:/workspace/log
+      
     deploy:
       resources:
         reservations:
@@ -35,4 +41,5 @@ services:
     tty: true
     stdin_open: true    
     working_dir: /workspace
-    command: ["/bin/bash", "-i", "-l"]
+    command: >    
+      bash -c "${COMMAND:-/bin/bash}"
