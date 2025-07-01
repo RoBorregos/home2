@@ -14,7 +14,6 @@ from rclpy.node import Node
 
 
 class ShowDetectionNode(Node):
-
     def __init__(self):
         super().__init__("Show_detection_node")
         self.bridge = CvBridge()
@@ -68,8 +67,14 @@ class ShowDetectionNode(Node):
 
             cv2.rectangle(
                 image,
-                (xmin - int(thickness_rec / 2), max(ymin - text_height - thickness_rec, 0)),
-                (xmin + text_width + thickness_rec, max(ymin, text_height + thickness_rec)),
+                (
+                    xmin - int(thickness_rec / 2),
+                    max(ymin - text_height - thickness_rec, 0),
+                ),
+                (
+                    xmin + text_width + thickness_rec,
+                    max(ymin, text_height + thickness_rec),
+                ),
                 color,
                 -1,
             )
