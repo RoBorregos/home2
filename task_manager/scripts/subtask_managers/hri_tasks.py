@@ -328,14 +328,19 @@ class HRITasks(metaclass=SubtaskMeta):
             self.keyword = ""
 
     @service_check("_action_client", (Status.SERVICE_CHECK, ""), TIMEOUT)
-    def hear(self, hotwords="", silence_time=4.0, max_audio_length=13.0) -> str:
+    def hear(
+        self, hotwords="", silence_time=2.0, start_silence_time=4.0, max_audio_length=13.0
+    ) -> str:
         Logger.info(
             self.node,
             "Hearing from the user...",
         )
 
         accepted_future = self.hear_streaming(
-            hotwords=hotwords, silence_time=silence_time, timeout=max_audio_length
+            hotwords=hotwords,
+            silence_time=silence_time,
+            start_silence_time=start_silence_time,
+            timeout=max_audio_length,
         )
 
         rclpy.spin_until_future_complete(
@@ -362,13 +367,20 @@ class HRITasks(metaclass=SubtaskMeta):
 
         return execution_status, goal_future.result().result.transcription
 
-    def hear_streaming(self, timeout: float = 10.0, hotwords: str = "", silence_time: float = 5.0):
+    def hear_streaming(
+        self,
+        timeout: float = 10.0,
+        hotwords: str = "",
+        silence_time: float = 5.0,
+        start_silence_time: float = 4.0,
+    ):
         """Method to hear streaming audio from the user.
 
         Args:
             timeout (float): The maximum time to stop the transcription.
             hotwords (str): Hotwords to improve the transcription accuracy.
             silence_time (float): The time to wait after the last interpreted word to stop the transcription. i.e. if no words are heard for this time, the transcription will stop.
+            start_silence_time (float): The minimum duration of the transcription before hearing any words. Useful to handle initial silence in audio.
         """
         self.current_transcription = ""
 
@@ -376,6 +388,7 @@ class HRITasks(metaclass=SubtaskMeta):
         goal_msg.timeout = timeout
         goal_msg.hotwords = hotwords
         goal_msg.silence_time = silence_time
+        goal_msg.start_silence_time = start_silence_time
 
         future = self._action_client.send_goal_async(
             goal_msg,

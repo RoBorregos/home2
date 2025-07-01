@@ -157,7 +157,14 @@ class HearStreaming(Node):
             while (
                 not goal_handle.is_cancel_requested
                 and time.time() - start_time < goal_handle.request.timeout
-                and time.time() - last_word_time < goal_handle.request.silence_time
+                and (
+                    (
+                        time.time() - start_time
+                        < goal_handle.request.start_silence_time
+                        and len(self.current_transcription) == 0
+                    )
+                    or time.time() - last_word_time < goal_handle.request.silence_time
+                )
             ):
                 if self.prev_transcription != self.current_transcription:
                     last_word_time = time.time()
