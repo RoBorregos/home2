@@ -584,10 +584,12 @@ class HRITasks(metaclass=SubtaskMeta):
 
         return Status.EXECUTION_SUCCESS, command_list.commands
 
-    # TODO: Make async
     @service_check("common_interest_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
-    def common_interest(self, person1, interest1, person2, interest2, remove_thinking=True):
+    def common_interest(
+        self, person1, interest1, person2, interest2, remove_thinking=True, is_async=False
+    ):
         try:
+            future = Future()
             Logger.info(
                 self.node,
                 f"Finding common interest between {person1}({interest1}) and {person2}({interest2})",
@@ -595,22 +597,31 @@ class HRITasks(metaclass=SubtaskMeta):
             request = CommonInterest.Request(
                 person1=person1, interests1=interest1, person2=person2, interests2=interest2
             )
-            future = self.common_interest_service.call_async(request)
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=15)
+            common_interest_future = self.common_interest_service.call_async(request)
 
-            result = future.result().common_interest
+            def callback(f):
+                result = f.result().common_interest
+                if remove_thinking:
+                    result = re.sub(r"<think>.*?</think>", "", result, flags=re.DOTALL)
 
-            if remove_thinking:
-                result = re.sub(r"<think>.*?</think>", "", result, flags=re.DOTALL)
+                Logger.info(
+                    self.node, f"Common interest computed between {person1} and {person2}: {result}"
+                )
+                future.set_result(
+                    (
+                        Status.EXECUTION_SUCCESS,
+                        result,
+                    )
+                )
 
-            Logger.info(
-                self.node, f"Common interest computed between {person1} and {person2}: {result}"
-            )
+            common_interest_future.add_done_callback(callback)
+            if not is_async:
+                rclpy.spin_until_future_complete(self.node, future, timeout_sec=15)
+                return future.result()
+            return future
         except Exception as e:
             Logger.error(self.node, f"Error in common interest service: {e}")
             return Status.EXECUTION_ERROR, ""
-
-        return Status.EXECUTION_SUCCESS, result
 
     # TODO: Make async
     @service_check("is_positive_service", (Status.SERVICE_CHECK, False), TIMEOUT)
