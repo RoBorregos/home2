@@ -144,6 +144,7 @@ set(srv_files
   "vision/srv/SetPointingObjectClasses.srv"
   "vision/srv/ShelfDetectionHandler.srv"
   "vision/srv/TrackBy.srv"
+  "vision/srv/ShowDetection.srv"
 )
 
 # Generate interfaces only keep the necessary runtimes (python, c++)
