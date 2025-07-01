@@ -17,4 +17,4 @@ services:
       - "8001:8001"
       - "8080:8080"
     network_mode: host
-    command: ["/bin/bash", "/display-entrypoint.sh"]
+    command: ["/bin/bash", "-c", "source /opt/ros/humble/setup.bash && npm run dev"]
