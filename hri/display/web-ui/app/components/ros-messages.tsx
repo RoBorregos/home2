@@ -257,23 +257,22 @@ function AudioStateIndicator({ state }: AudioStateIndicatorProps) {
 
   // For listening state, show the mic with audio level bars
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[oklch(0.488_0.243_264.376/20%)]">
-      <Mic className="h-4 w-4 text-[oklch(0.488_0.243_264.376)]" />
-      <div className="flex items-end h-4 gap-0.5">
-        {Array.from({ length: maxBars }).map((_, i) => (
-          <div
-            key={i}
-            className={`w-2 h-full rounded-sm transition-all duration-150 ${
-              i < activeBars
-                ? "bg-[oklch(0.488_0.243_264.376)]"
-                : "bg-[oklch(0.488_0.243_264.376/30%)]"
-            }`}
-          />
-        ))}
+    <div className="flex inset-0 z-50 flex items-center justify-center bg-black/10">
+      <div className="relative">
+        <div className="absolute insert-0 rounded-full bg-[oklch(0.5_0.25_260)] opacity-10 animate-[pulse_3s_infinite] "/>
+        <div className="absolute insert-0 rounded-full bg-[oklch(0.5_0.25_260)] opacity-15 animate-[pulse_3s_infinite_1s] "/>
+        <div className="absolute insert-0 rounded-full bg-[oklch(0.5_0.25_260)] opacity-20 animate-[pulse_3s_infinite_2s] "/>
+        <div className="relative z-10 h-24 w-24 rounded-full bg-[oklch(0.5_0.25_260)] to-[oklch(0.4_0.3_260)] shadow-lg flex items-center justify-center">
+        <Mic className="h-14 w-14 text-white/90 drop-shadow-md" />
+        </div>
+        <div className="absolute inset-0 rounded-full border-4 border-[oklch(0.5_0.25_260)] opacity-0 transition-all duration-300"
+          style={{
+            transform: `scale(${1 + vadLevel})`,
+            opacity: vadLevel * 0.8
+          }}
+        />
       </div>
-      <span className="text-xs font-medium text-[oklch(0.488_0.243_264.376)]">
-        Listening
-      </span>
-    </div>
+    </div>   
+      
   );
 }
