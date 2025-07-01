@@ -184,6 +184,8 @@ class HRITasks(metaclass=SubtaskMeta):
             Task.HELP_ME_CARRY: all_services,
             Task.STORING_GROCERIES: all_services,
         }
+        # TODO: preload model and remove this
+        self.hear_streaming()
 
         package_share_directory = get_package_share_directory("frida_constants")
         file_path = os.path.join(package_share_directory, "data/positive.json")
@@ -368,7 +370,6 @@ class HRITasks(metaclass=SubtaskMeta):
             hotwords (str): Hotwords to improve the transcription accuracy.
             silence_time (float): The time to wait after the last interpreted word to stop the transcription. i.e. if no words are heard for this time, the transcription will stop.
         """
-        Logger.info(self.node, "Hearing streaming from the user...")
         self.current_transcription = ""
 
         goal_msg = SpeechStream.Goal()

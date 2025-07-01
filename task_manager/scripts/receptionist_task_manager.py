@@ -61,7 +61,7 @@ class ReceptionistTM(Node):
     def __init__(self):
         """Initialize the node"""
         super().__init__("receptionist_task_manager")
-        self.subtask_manager = SubtaskManager(self, task=Task.RECEPTIONIST, mock_areas=[""])
+        self.subtask_manager = SubtaskManager(self, task=Task.RECEPTIONIST, mock_areas=[])
         self.seat_angles = [0, -90, 180]
         self.check_angles = [0, -10, 20]
 
@@ -74,7 +74,7 @@ class ReceptionistTM(Node):
         self.message = ""
 
         self.current_state = ReceptionistTM.TaskStates.START
-
+        self.subtask_manager.manipulation.move_to_position("nav_pose")
         Logger.info(self, "ReceptionistTaskManager has started.")
 
     def get_guest(self) -> Guest:
@@ -97,21 +97,8 @@ class ReceptionistTM(Node):
             if "navigation" not in self.subtask_manager.get_mocked_areas():
                 rclpy.spin_until_future_complete(self, future)
                 result = future.result()
+
             retry += 1
-
-    def confirm(self, statement: str) -> bool:
-        """Confirm the name is correct"""
-        self.subtask_manager.hri.say(f"I heard {statement}, is that correct?")
-        response = self.subtask_manager.hri.hear()
-        return self.subtask_manager.hri.is_positive(response)
-
-    def hear_word(self, word: str) -> bool:
-        """Check if the word is heard"""
-        status, statement = self.subtask_manager.hri.hear()
-        status, name = self.subtask_manager.hri.extract_data(word, statement)
-        if name is None:
-            name = statement
-        return name
 
     def timeout(self, timeout: int = 2):
         start_time = time.time()
@@ -188,7 +175,7 @@ class ReceptionistTM(Node):
             self.subtask_manager.manipulation.follow_face(True)
 
             status, interest = self.subtask_manager.hri.ask_and_confirm(
-                question="What is your main interest?", query="interest", use_hotwords=False
+                question="What is your main interest?", query="LLM_interest", use_hotwords=False
             )
 
             if status == Status.EXECUTION_SUCCESS:
@@ -239,7 +226,7 @@ class ReceptionistTM(Node):
             self.subtask_manager.manipulation.follow_face(True)
 
             status, drink = self.subtask_manager.hri.ask_and_confirm(
-                question="What is your favorite drink?", query="drink", use_hotwords=False
+                question="What is your favorite drink?", query="LLM_drink", use_hotwords=False
             )
 
             if status == Status.EXECUTION_SUCCESS:
@@ -257,20 +244,13 @@ class ReceptionistTM(Node):
             self.subtask_manager.manipulation.follow_face(False)
             self.subtask_manager.manipulation.move_to_position("table_stare")
 
-            detections = self.subtask_manager.vision.detect_objects()
-            labels = self.subtask_manager.vision.get_labels(detections)
-            status, detected_drink = self.subtask_manager.hri.find_closest(
-                labels, self.get_guest().drink
-            )
-            # if isinstance(detected_drink, list):
-            #     detected_drink = detected_drink[0]
+            s, detections = self.subtask_manager.vision.detect_objects()
 
-            # Moondream
-            # status, position = self.subtask_manager.vision.find_drink(
-            #     self.get_guest().drink, timeout=40
-            # )
-
-            if status == Status.EXECUTION_SUCCESS:
+            if s == Status.EXECUTION_SUCCESS:
+                labels = self.subtask_manager.vision.get_labels(detections)
+                status, detected_drink = self.subtask_manager.hri.find_closest(
+                    labels, self.get_guest().drink
+                )
                 if isinstance(detected_drink, list):
                     detected_drink = detected_drink[0]
                 s, position = self.subtask_manager.vision.get_drink_position(

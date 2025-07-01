@@ -60,7 +60,6 @@ from utils.task import Task
 
 
 TIMEOUT = 8.0
-DETECTION_HANDLER_TOPIC_SRV = DETECTION_HANDLER_TOPIC_SRV
 IS_TRACKING_TOPIC = "/vision/is_tracking"
 
 
@@ -336,7 +335,7 @@ class VisionTasks:
         return Status.EXECUTION_SUCCESS, detections
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, []), delay=2)
-    @service_check("object_detector_client", Status.EXECUTION_ERROR, TIMEOUT)
+    @service_check("object_detector_client", (Status.EXECUTION_ERROR, []), TIMEOUT)
     def detect_objects(self, timeout: float = TIMEOUT) -> tuple[Status, list[BBOX]]:
         """Detect the object in the image"""
         Logger.info(self.node, "Waiting for object detection")
@@ -815,7 +814,8 @@ class VisionTasks:
         """Get the labels of the detected objects"""
         labels = []
         for detection in detections:
-            labels.append(detection.classname)
+            if hasattr(detection, "classname") and detection.classname:
+                labels.append(detection.classname)
         return labels
 
     def get_drink_position(self, detections: list[BBOX], drink: str) -> tuple[int, str]:
