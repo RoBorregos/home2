@@ -12,13 +12,11 @@ fi
 
 # check arguments passed as --help or -h
 if [ "$ARG1" == "--help" ] || [ "$ARG1" == "-h" ]; then
-  echo "Usage: ./run.sh [area_name] [task] or ./run.sh [task]"
-  echo "Example: ./run.sh vision --receptionist or ./run.sh --receptionist"
+  echo "Usage: ./status.sh [area_name] [task] or ./status.sh [task]"
+  echo "Example: ./status.sh vision --receptionist or ./status.sh --receptionist"
   exit 0
 fi
 
-CONFIG_DIR="$(dirname "$0")/configs"
-LIB_DIR="$(dirname "$0")/lib"
 CONFIG_PATH="status/configs"
 
 # Load lib to check nodes required from each area
