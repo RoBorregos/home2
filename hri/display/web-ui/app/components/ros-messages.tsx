@@ -257,7 +257,7 @@ function AudioStateIndicator({ state }: AudioStateIndicatorProps) {
 
   // For listening state, show the mic with audio level bars
   return (
-    <div className="inset-0 z-50 flex items-center justify-center bg-black/10">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 pointer-events-none">
       <div className="relative">
         <div className="absolute insert-0 rounded-full bg-[oklch(0.5_0.25_260)] opacity-10 animate-[pulse_3s_infinite] "/>
         <div className="absolute insert-0 rounded-full bg-[oklch(0.5_0.25_260)] opacity-15 animate-[pulse_3s_infinite_1s] "/>
