@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 
 """
-Task Manager for Clean the Table 
+Task Manager for Clean the Table
 Robocup @Home 2025
 
-Required nav locations: 
+Required nav locations:
 - kitchen table
 - kitchen trashbin
 -kitchen dishwasher
@@ -20,11 +20,13 @@ import time
 
 ATTEMPT_LIMIT = 3
 
+
 class CleanTableTM(Node):
     """Class to manage the clean the table task."""
 
     class TaskStates:
         """Class to manage task states."""
+
         START = "START"
         WAIT_FOR_DOOR = "WAIT_FOR_DOOR"
         DETECT_OBJECTS = "DETECT_OBJECTS"
@@ -33,7 +35,6 @@ class CleanTableTM(Node):
         NAVIGATE_TO_DROPOFF = "NAVIGATE_TO_PLACE_LOCATION"
         NAVIGATE_TO_TABLE = "NAVIGATE_TO_TABLE"
         END = "END"
-        
 
     def __init__(self):
         """Initialize the node."""
@@ -46,7 +47,6 @@ class CleanTableTM(Node):
         self.pick_objects = ["drink", "drink", "cup", "bowl", "spoon", "fork"]
         self.object_index = 0
         self.detected_object = None
-
 
     def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
         """Navigate to the location"""
@@ -94,36 +94,36 @@ class CleanTableTM(Node):
             Logger.state(self, "Detecting objects on the table")
             s, detections = self.subtask_manager.vision.detect_objects()
             s, labels = self.subtask_manager.vision.get_labels(detections)
-            
+
             object_to_pick = self.pick_objects[self.object_index]
             status, target = self.subtask_manager.hri.find_closest(
-                labels, object_to_pick,
+                labels,
+                object_to_pick,
             )
             self.detected_object = target[0]
 
             self.subtask_manager.hri.say(
-                f"I have detected a {self.detected_object} on the table. I will now pick it up.", wait=False
+                f"I have detected a {self.detected_object} on the table. I will now pick it up.",
+                wait=False,
             )
             self.current_state = CleanTableTM.TaskStates.PICK_OBJECT
 
         if self.current_state == CleanTableTM.TaskStates.PICK_OBJECT:
             Logger.state(self, "Picking object from the table")
-            self.subtask_manager.manipulation.pick_object(
-                self.detected_object
-            )
+            self.subtask_manager.manipulation.pick_object(self.detected_object)
             self.current_state = CleanTableTM.TaskStates.NAVIGATE_TO_DROPOFF
 
         if self.current_state == CleanTableTM.TaskStates.NAVIGATE_TO_DROPOFF:
             Logger.state(self, "Navigating to the trashbin or dishwasher")
             if self.pick_objects[self.object_index] == "drink":
                 self.navigate_to("kitchen", "trashbin", say=False)
-            else:   
+            else:
                 self.navigate_to("kitchen", "dishwasher", say=False)
             self.current_state = CleanTableTM.TaskStates.PLACE_OBJECT
 
         if self.current_state == CleanTableTM.TaskStates.PLACE_OBJECT:
             Logger.state(self, "Placing object in the trashbin or dishwasher")
-            self.timeout() # Small timeout to finish moving
+            self.timeout()  # Small timeout to finish moving
             if self.pick_objects[self.object_index] == "drink":
                 self.subtask_manager.manipulation.move_joint_positions("trash")
                 self.subtask_manager.manipulation.open_gripper()
@@ -139,8 +139,8 @@ class CleanTableTM(Node):
         if self.current_state == CleanTableTM.TaskStates.END:
             Logger.state(self, "Ending Clean Table Task")
             self.running_task = False
-        
-         
+
+
 def main(args=None):
     """Main function to run the Clean Table Task Manager."""
     rclpy.init(args=args)
