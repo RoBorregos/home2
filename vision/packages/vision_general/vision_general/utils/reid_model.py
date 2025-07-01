@@ -117,6 +117,7 @@ def load_network(network):
 def fliplr(img):
     """flip horizontal"""
     inv_idx = torch.arange(img.size(3) - 1, -1, -1).long()  # N x C x H x W
+    inv_idx = inv_idx.cuda() if img.is_cuda else inv_idx
     img_flip = img.index_select(3, inv_idx)
     return img_flip
 
@@ -159,9 +160,7 @@ def extract_feature_from_img(image, model):
 
             # Normalize features
             features /= torch.norm(features, p=2, dim=1, keepdim=True)
-            print(
-                f"Feature extraction time: {time.time() - start_time:.4f} seconds"
-            )
+            print(f"Feature extraction time: {time.time() - start_time:.4f} seconds")
             # features = features.cpu()
         return features
     else:
@@ -209,7 +208,9 @@ def extract_feature_from_img_batch(images, model, batch_size=64):
             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
         ]
     )
-    images_tensor = torch.zeros(len(images), 3, h, w)
+    images_tensor = torch.zeros(
+        len(images), 3, h, w, device="cuda" if use_gpu else "cpu"
+    )
     # images: a batch of images in PIL format
     if isinstance(images, list):
         for i, image in enumerate(images):
@@ -227,18 +228,20 @@ def extract_feature_from_img_batch(images, model, batch_size=64):
         raise ValueError("Input images must be a list of PIL images or a tensor.")
     # Extract features from the images
     model.eval()
-    features_list = []
+    features_list = torch.zeros(
+        images_tensor.shape[0], linear_num, device="cuda" if use_gpu else "cpu"
+    )
     with torch.no_grad():
-        for i in range(0, images.shape[0], batch_size):
-            end = min(i + batch_size, images.shape[0])
-            batch_images = images[i:end]
+        for i in range(0, images_tensor.shape[0], batch_size):
+            end = min(i + batch_size, images_tensor.shape[0])
+            batch_images = images_tensor[i:end]
 
             features = (
                 torch.zeros(batch_images.shape[0], linear_num).cuda()
                 if use_gpu
                 else torch.zeros(batch_images.shape[0], linear_num)
             )
-            for j in range(2):
+            for j in range(1):
                 if j == 1:
                     # Apply horizontal flipping for augmentation
                     batch_images = fliplr(batch_images)
@@ -257,9 +260,8 @@ def extract_feature_from_img_batch(images, model, batch_size=64):
 
             # Normalize features
             features /= torch.norm(features, p=2, dim=1, keepdim=True)
-            features_list.append(features.cpu())
-        features = torch.cat(features_list, dim=0)
-    return features
+            features_list[i:end] = features
+    return features_list
 
 
 def compare_images(features1, features2, threshold=0.55):
@@ -288,10 +290,8 @@ def compare_images(features1, features2, threshold=0.55):
     if not use_gpu:
         similarity_score = 1 - cosine(features1, features2)
     else:
-        features1 = features1.cuda()
-        features2 = features2.cuda()
-        similarity_score = 1 - torch.nn.functional.cosine_similarity(
-            features1.unsqueeze(0), features2.unsqueeze(0)
+        similarity_score = torch.nn.functional.cosine_similarity(
+            features1, features2, dim=0
         ).item()
 
     # Compare similarity score with threshold
@@ -315,10 +315,6 @@ def compare_images_batch(
             print("error comparing images")
             return False
 
-    print(
-        f"features1 shape: {features1.shape}, features2_list shape: {features2_list.shape}"
-    )
-
     similarity_scores = torch.zeros(features2_list.shape[0], dtype=torch.float32)
 
     # match features1 with features_list2
@@ -332,10 +328,6 @@ def compare_images_batch(
         features2_list, p=2, dim=1, keepdim=True
     )
 
-    print(
-        f"features1_list_norm shape: {features1_list_norm.shape}, features2_list_norm shape: {features2_list_norm.shape}"
-    )
-
     for i in range(0, features2_list_norm.shape[0], batch_size):
         end = min(i + batch_size, features2_list_norm.shape[0])
         features2_batch = features2_list_norm[i:end]
@@ -344,7 +336,9 @@ def compare_images_batch(
             features1_list_norm[i:end], features2_batch.t()
         ).diagonal()
 
-    print(f"Similarity scores: {similarity_scores}")
+    # if at least one is above the threshold, return True
+    is_same_person = (similarity_scores >= threshold).any().item()
+    return is_same_person
 
 
 # Test

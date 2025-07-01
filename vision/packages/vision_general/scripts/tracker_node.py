@@ -29,6 +29,7 @@ from vision_general.utils.reid_model import (
     compare_images,
     compare_images_batch,
     extract_feature_from_img,
+    extract_feature_from_img_batch,
     get_structure,
 )
 
@@ -59,6 +60,7 @@ PACKAGE_NAME = "vision_general"
 CONFIG_FOLDER = os.path.join(get_package_share_directory(PACKAGE_NAME), "config")
 BOTSORT_REID_YAML = os.path.join(CONFIG_FOLDER, "botsort-reid.yaml")
 REID_EXTRACT_FREQ = 3
+MAX_EMBEDDINGS = 128
 
 
 class SingleTracker(Node):
@@ -113,7 +115,6 @@ class SingleTracker(Node):
         self.last_reid_extraction = time.time()
         self.create_timer(0.05, self.run)
         self.create_timer(0.01, self.publish_image)
-        
 
         self.is_tracking_result = False
 
@@ -124,6 +125,7 @@ class SingleTracker(Node):
         self.person_data = {
             "id": None,
             "embeddings": None,
+            "num_embeddings": 0,
             "forward": None,
             "backward": None,
             "left": None,
@@ -446,59 +448,67 @@ class SingleTracker(Node):
                         embedding = None
                         pil_image = PILImage.fromarray(cropped_image)
 
-                        if self.person_data["embeddings"] is not None and time.time() - self.last_reid_extraction < REID_EXTRACT_FREQ:
-                            self.get_logger().info(
-                                f"Skipping embedding extraction, last extraction was {time.time() - self.last_reid_extraction:.2f} seconds ago"
-                            )
-                            
-                        with torch.no_grad():
-                            start_time = time.time()
-                            embedding = extract_feature_from_img(
-                                pil_image, self.model_reid
-                            )
-                            self.get_logger().info(
-                                f"Extracted embedding in {time.time() - start_time:.2f} seconds"
-                            )
-                        if self.person_data["embeddings"] is None:
-                            self.person_data["embeddings"] = torch.Tensor([]).cuda() if torch.cuda.is_available() else torch.Tensor([])
-                            # append the first embedding
-                            self.person_data["embeddings"] = torch.cat(
-                                (
+                        if self.person_data[
+                            "embeddings"
+                        ] is None or time.time() - self.last_reid_extraction > (
+                            1 / REID_EXTRACT_FREQ
+                        ):
+                            with torch.no_grad():
+                                start_time = time.time()
+                                embedding = extract_feature_from_img(
+                                    pil_image, self.model_reid
+                                )
+                                self.get_logger().info(
+                                    f"Extracted embedding in {time.time() - start_time:.2f} seconds"
+                                )
+                            if self.person_data["embeddings"] is None:
+                                self.person_data["embeddings"] = torch.zeros(
+                                    (MAX_EMBEDDINGS, embedding.shape[1]),
+                                    device="cuda"
+                                    if torch.cuda.is_available()
+                                    else "cpu",
+                                )
+                                embeddings_shape = self.person_data["embeddings"].shape
+                                print(
+                                    f"person data embeddings shape: {embeddings_shape} "
+                                )
+                                self.person_data["embeddings"][
+                                    self.person_data["num_embeddings"]
+                                ] = embedding.squeeze()
+                                self.person_data["num_embeddings"] += 1
+                            else:
+                                """ Compare embeddings from the person with the current one
+                                if they are different, we can add a new embedding as we have "certainty this is the same person
+                                with a different view -- not necessarily from a different angle"""
+                                start_time = time.time()
+                                embedding_exists = False
+                                # for emb in self.person_data["embeddings"]:
+                                #     if compare_images(embedding, emb, threshold=0.7):
+                                #         embedding_exists = True
+                                #         break
+
+                                # self.get_logger().info(
+                                #     f"Compared embedding sequentially in {time.time() - start_time:.2f} seconds"
+                                # )
+
+                                start_time = time.time()
+                                embedding_exists = compare_images_batch(
+                                    embedding,
                                     self.person_data["embeddings"],
-                                    embedding.squeeze(0).unsqueeze(0),
+                                    threshold=0.8,
                                 )
-                            )
-                        else:
-                            """ Compare embeddings from the person with the current one
-                            if they are different, we can add a new embedding as we have "certainty this is the same person
-                            with a different view -- not necessarily from a different angle"""
-                            start_time = time.time()
-                            embedding_exists = False
-                            # for emb in self.person_data["embeddings"]:
-                            #     if compare_images(embedding, emb, threshold=0.7):
-                            #         embedding_exists = True
-                            #         break
-                                
-                            # self.get_logger().info(
-                            #     f"Compared embedding sequentially in {time.time() - start_time:.2f} seconds"
-                            # )
-                            
-                            start_time = time.time()
-                            embedding_exists = compare_images_batch(
-                                embedding, self.person_data["embeddings"], threshold=0.8
-                            )
-                            self.get_logger().info(
-                                f"Compared embedding in batch in {time.time() - start_time:.2f} seconds"
-                            )
-
-                            if not embedding_exists:
-                                self.person_data["embeddings"] = torch.cat(
-                                    (
-                                        self.person_data["embeddings"],
-                                        embedding.squeeze(0).unsqueeze(0),
-                                    )
+                                self.get_logger().info(
+                                    f"Compared embedding in batch in {time.time() - start_time:.2f} seconds"
                                 )
 
+                                if (
+                                    not embedding_exists
+                                    and self.person_data["num_embeddings"]
+                                    < MAX_EMBEDDINGS
+                                ):
+                                    self.person_data["embeddings"][
+                                        self.person_data["num_embeddings"]
+                                    ] = embedding.squeeze()
                         angle = self.pose_detection.personAngle(cropped_image)
                         if angle is not None and self.person_data[angle] is None:
                             if embedding is None:
@@ -526,41 +536,38 @@ class SingleTracker(Node):
                     )
 
             if not person_in_frame and len(people) > 0:
-                # img_list = []
-                # for person in people:
-                #     cropped_image = self.frame[
-                #         person["y1"] : person["y2"], person["x1"] : person["x2"]
-                #     ]
-                #     pil_image = PILImage.fromarray(cropped_image)
-                #     img_list.append(pil_image)
+                img_list = []
+                start = time.time()
+                for person in people:
+                    cropped_image = self.frame[
+                        person["y1"] : person["y2"], person["x1"] : person["x2"]
+                    ]
+                    pil_image = PILImage.fromarray(cropped_image)
+                    img_list.append(pil_image)
 
-                # with torch.no_grad():
-                #     embeddings_batch = extract_feature_from_img_batch(
-                #         img_list, self.model_reid
-                #     )
+                with torch.no_grad():
+                    embeddings_batch = extract_feature_from_img_batch(
+                        img_list, self.model_reid
+                    )
+                print(
+                    f"Extracted {len(embeddings_batch)} embeddings in {time.time() - start:.2f} seconds"
+                )
+                print(f"All embeddings batch shape: {embeddings_batch.shape}")
 
                 for i, person in enumerate(people):
                     cropped_image = self.frame[
                         person["y1"] : person["y2"], person["x1"] : person["x2"]
                     ]
                     pil_image = PILImage.fromarray(cropped_image)
-                    with torch.no_grad():
-                        start_time = time.time()
-                        embedding = extract_feature_from_img(pil_image, self.model_reid)
-                        self.get_logger().info(
-                            f"Extracted embedding for person {person['track_id']} in {time.time() - start_time:.2f} seconds"
-                        )
+                    # with torch.no_grad():
+                    #     start_time = time.time()
+                    #     embedding = extract_feature_from_img(pil_image, self.model_reid)
+                    #     self.get_logger().info(
+                    #         f"Extracted embedding for person {person['track_id']} in {time.time() - start_time:.2f} seconds"
+                    #     )
 
-                    # check if embedding and embeddings_batch[i] are similar
-                    # print("comparing againts batch embedding")
-                    # if compare_images(embedding, embeddings_batch[i], threshold=0.7):
-                    #     self.success(
-                    #         f"embedding is the same!"
-                    #     )
-                    # else:
-                    #     self.success(
-                    #         f"embedding is different!"
-                    #     )
+                    embedding = embeddings_batch[i]
+
                     person_angle = self.pose_detection.personAngle(cropped_image)
                     if person_angle is not None:
                         if self.person_data[person_angle] is not None:
@@ -588,7 +595,10 @@ class SingleTracker(Node):
                                 break
                     else:
                         person_found = False
-                        if self.person_data["embeddings"] is not None and len(self.person_data["embeddings"]) > 0:
+                        if (
+                            self.person_data["embeddings"] is not None
+                            and len(self.person_data["embeddings"]) > 0
+                        ):
                             start_time = time.time()
                             embedding_exists = compare_images_batch(
                                 embedding, self.person_data["embeddings"], threshold=0.7
