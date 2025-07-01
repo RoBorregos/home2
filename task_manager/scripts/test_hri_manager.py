@@ -54,9 +54,11 @@ def confirm_preference(interpreted_text, extracted_data):
 
 
 TEST_TASK = Task.RECEPTIONIST
-TEST_COMPOUND = True
+TEST_COMPOUND = False
 TEST_INDIVIDUAL_FUNCTIONS = False
 TEST_EMBEDDINGS = False
+TEST_ASYNC_LLM = False
+TEST_STREAMING = True
 
 
 class TestHriManager(Node):
@@ -83,6 +85,12 @@ class TestHriManager(Node):
 
         if TEST_EMBEDDINGS:
             self.test_embeddings()
+
+        if TEST_ASYNC_LLM:
+            self.async_llm_test()
+
+        if TEST_STREAMING:
+            self.test_streaming()
 
     def individual_functions(self):
         # Test say
@@ -119,6 +127,13 @@ class TestHriManager(Node):
         )
 
         self.get_logger().info(f"categorized_shelves: {str(categorized_shelves)}")
+
+    def test_streaming(self):
+        s, user_request = self.hri_manager.hear()
+        self.get_logger().info(f"Heard: {user_request}")
+
+        s, keyword = self.hri_manager.interpret_keyword(["yes", "no", "maybe"], timeout=5.0)
+        self.get_logger().info(f"Interpreted keyword: {keyword}")
 
     def compound_functions(self):
         s, name = self.hri_manager.ask_and_confirm(
@@ -261,6 +276,22 @@ class TestHriManager(Node):
         # documents = ["cheese", "milk", "yogurt"]
         # result_closest = hri.find_closest(documents, "milk")
         # self.get_logger().info(f"Closest result: {result_closest}")
+
+    def async_llm_test(self):
+        test = self.hri_manager.extract_data("LLM_name", "My name is John Doe", is_async=True)
+
+        self.get_logger().info(f"Extract data future: {test}")
+        self.get_logger().info(f"Extract data future status: {test.done(), test.result()}")
+
+        self.get_logger().info("Waiting for the future to complete...")
+
+        rclpy.spin_until_future_complete(self, test)
+
+        self.get_logger().info(f"Extracted data: {test.result()}")
+
+        # Test original functionality
+        test = self.hri_manager.extract_data("LLM_name", "My name is John Doe")
+        self.get_logger().info(f"Extract data result: {test}")
 
 
 def main(args=None):

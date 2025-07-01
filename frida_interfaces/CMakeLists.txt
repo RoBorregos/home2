@@ -55,7 +55,7 @@ list(APPEND msg_files ${vis_msg_files})
 
 # Explicitly collect files by type
 set(action_files
-  "hri/action/Conversate.action"
+  "hri/action/SpeechStream.action"
   "manipulation/action/ManipulationAction.action"
   "manipulation/action/MoveJoints.action"
   "manipulation/action/MoveToPose.action"
@@ -144,6 +144,7 @@ set(srv_files
   "vision/srv/SetPointingObjectClasses.srv"
   "vision/srv/ShelfDetectionHandler.srv"
   "vision/srv/TrackBy.srv"
+  "vision/srv/ReadQr.srv"
   "vision/srv/ShowDetection.srv"
 )
 
