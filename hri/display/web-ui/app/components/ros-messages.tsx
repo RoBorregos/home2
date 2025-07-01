@@ -255,24 +255,27 @@ function AudioStateIndicator({ state }: AudioStateIndicatorProps) {
     );
   }
 
-  // For listening state, show the mic with audio level bars
+  // For listening state, show the mic centered
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 pointer-events-none">
-      <div className="relative">
-        <div className="absolute insert-0 rounded-full bg-[oklch(0.5_0.25_260)] opacity-10 animate-[pulse_3s_infinite] "/>
-        <div className="absolute insert-0 rounded-full bg-[oklch(0.5_0.25_260)] opacity-15 animate-[pulse_3s_infinite_1s] "/>
-        <div className="absolute insert-0 rounded-full bg-[oklch(0.5_0.25_260)] opacity-20 animate-[pulse_3s_infinite_2s] "/>
-        <div className="relative z-10 h-24 w-24 rounded-full bg-[oklch(0.5_0.25_260)] to-[oklch(0.4_0.3_260)] shadow-lg flex items-center justify-center">
-        <Mic className="h-14 w-14 text-white/90 drop-shadow-md" />
-        </div>
-        <div className="absolute inset-0 rounded-full border-4 border-[oklch(0.5_0.25_260)] opacity-0 transition-all duration-300"
-          style={{
-            transform: `scale(${1 + vadLevel})`,
-            opacity: vadLevel * 0.8
-          }}
-        />
-      </div>
-    </div>   
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 pointer-events-none">
+    <div className="relative">
+      <div className="absolute inset-0 rounded-full bg-[oklch(0.5_0.25_260)] opacity-10 animate-[pulse_3s_infinite]" />
+      <div className="absolute inset-0 rounded-full bg-[oklch(0.5_0.25_260)] opacity-15 animate-[pulse_3s_infinite_1s]" />
+      <div className="absolute inset-0 rounded-full bg-[oklch(0.5_0.25_260)] opacity-20 animate-[pulse_3s_infinite_2s]" />
       
+      <div className="relative z-10 h-24 w-24 rounded-full bg-[oklch(0.5_0.25_260)] shadow-lg flex items-center justify-center">
+        <Mic className="h-14 w-14 text-white/90 drop-shadow-md" />
+      </div>
+
+      <div 
+        className="absolute inset-0 rounded-full border-4 border-[oklch(0.5_0.25_260)] opacity-0 transition-all duration-300"
+        style={{
+          transform: `scale(${1 + (vadLevel || 0)})`,
+          opacity: (vadLevel || 0) * 0.8
+        }}
+      />
+      
+    </div>
+  </div>   
   );
 }
