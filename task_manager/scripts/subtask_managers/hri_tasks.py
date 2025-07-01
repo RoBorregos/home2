@@ -128,6 +128,11 @@ def remove_punctuation(text: str) -> str:
     return re.sub(r"[^\w\s]", "", text).strip().lower()
 
 
+def format_transcription(text: str) -> str:
+    """Format the interpreted text to remove punctuation and convert to lowercase."""
+    return remove_punctuation(text).split(" ")
+
+
 class HRITasks(metaclass=SubtaskMeta):
     """Class to manage the vision tasks"""
 
@@ -184,8 +189,6 @@ class HRITasks(metaclass=SubtaskMeta):
             Task.HELP_ME_CARRY: all_services,
             Task.STORING_GROCERIES: all_services,
         }
-        # TODO: preload model and remove this
-        self.hear_streaming()
 
         package_share_directory = get_package_share_directory("frida_constants")
         file_path = os.path.join(package_share_directory, "data/positive.json")
@@ -369,9 +372,9 @@ class HRITasks(metaclass=SubtaskMeta):
 
     def hear_streaming(
         self,
-        timeout: float = 10.0,
+        timeout: float = 13.0,
         hotwords: str = "",
-        silence_time: float = 5.0,
+        silence_time: float = 2.0,
         start_silence_time: float = 4.0,
     ):
         """Method to hear streaming audio from the user.
@@ -382,13 +385,16 @@ class HRITasks(metaclass=SubtaskMeta):
             silence_time (float): The time to wait after the last interpreted word to stop the transcription. i.e. if no words are heard for this time, the transcription will stop.
             start_silence_time (float): The minimum duration of the transcription before hearing any words. Useful to handle initial silence in audio.
         """
+        # Cancel other actions if they are running
+        self.cancel_hear_action()
+
         self.current_transcription = ""
 
         goal_msg = SpeechStream.Goal()
-        goal_msg.timeout = timeout
+        goal_msg.timeout = float(timeout)
         goal_msg.hotwords = hotwords
-        goal_msg.silence_time = silence_time
-        goal_msg.start_silence_time = start_silence_time
+        goal_msg.silence_time = float(silence_time)
+        goal_msg.start_silence_time = float(start_silence_time)
 
         future = self._action_client.send_goal_async(
             goal_msg,
@@ -444,15 +450,38 @@ class HRITasks(metaclass=SubtaskMeta):
                 while (
                     (self.node.get_clock().now() - start_time).nanoseconds / 1e9
                 ) < wait_between_retries:
-                    s, interpret_text = self.hear()
-                    if s == Status.EXECUTION_SUCCESS:
-                        # check if positive word is in the interpreted text, if not, check if the text is positive with llm
-                        for word in self.positive:
-                            if word in interpret_text.lower():
-                                return Status.EXECUTION_SUCCESS, "yes"
+                    accepted_future = self.hear_streaming(timeout=wait_between_retries)
 
-                        if self.is_positive(interpret_text)[1]:
+                    rclpy.spin_until_future_complete(
+                        self.node, accepted_future, timeout_sec=wait_between_retries + 1
+                    )
+                    goal_future = accepted_future.result().get_result_async()
+
+                    while not goal_future.done():
+                        if contains_any(
+                            format_transcription(self.current_transcription), self.positive
+                        ):
+                            self.cancel_hear_action()
                             return Status.EXECUTION_SUCCESS, "yes"
+                        if "no" in format_transcription(self.current_transcription):
+                            self.cancel_hear_action()
+                            return Status.EXECUTION_SUCCESS, "no"
+                        rclpy.spin_once(self.node, timeout_sec=0.1)
+
+                    # Add an extra second to ensure the action server has enough time to process the request
+                    rclpy.spin_until_future_complete(
+                        self.node, goal_future, timeout_sec=wait_between_retries + 1
+                    )
+
+                    if s == Status.EXECUTION_SUCCESS:
+                        if (
+                            contains_any(
+                                format_transcription(self.current_transcription), self.positive
+                            )
+                            or self.is_positive(self.current_transcription)[1]
+                        ):
+                            return Status.EXECUTION_SUCCESS, "yes"
+
                         return Status.EXECUTION_SUCCESS, "no"
         Logger.info(
             self.node,
@@ -530,7 +559,7 @@ class HRITasks(metaclass=SubtaskMeta):
         return Status.TIMEOUT, ""
 
     def interpret_keyword(self, keywords: list[str], timeout: float) -> str:
-        self.cancel_action()
+        self.cancel_hear_action()
 
         self.hear_streaming(timeout=timeout, silence_time=timeout)
 
@@ -541,10 +570,6 @@ class HRITasks(metaclass=SubtaskMeta):
             self.node,
             f"Listening for keywords: {str(keywords)}",
         )
-
-        def format_transcription(text: str) -> str:
-            """Format the interpreted text to remove punctuation and convert to lowercase."""
-            return remove_punctuation(text).split(" ")
 
         while (
             self.keyword not in keywords
@@ -573,7 +598,7 @@ class HRITasks(metaclass=SubtaskMeta):
                 "interpret_keyword: no keyword recognized",
             )
 
-        self.cancel_action()
+        self.cancel_hear_action()
         return execution_status, keyword_listened
 
     @service_check("grammar_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
@@ -661,7 +686,7 @@ class HRITasks(metaclass=SubtaskMeta):
         Logger.info(self.node, f"is_negative result ({text}): {future.result().is_negative}")
         return Status.EXECUTION_SUCCESS, future.result().is_negative
 
-    def cancel_action(self):
+    def cancel_hear_action(self):
         # Cancel all goals sent by this action client
 
         cancel_future = []
