@@ -182,6 +182,7 @@ class HRITasks(metaclass=SubtaskMeta):
         )
 
         self.current_transcription = ""
+        self.last_hotwords = ""
         self._active_goals = []
         self.hear_multi_service = self.node.create_client(
             HearMultiThread, "/integration/multi_stop"
@@ -434,6 +435,7 @@ class HRITasks(metaclass=SubtaskMeta):
         goal_msg = SpeechStream.Goal()
         goal_msg.timeout = float(timeout)
         goal_msg.hotwords = hotwords
+        self.last_hotwords = hotwords
         goal_msg.silence_time = float(silence_time)
         goal_msg.start_silence_time = float(start_silence_time)
 
@@ -496,45 +498,44 @@ class HRITasks(metaclass=SubtaskMeta):
                 if s == Status.EXECUTION_SUCCESS:
                     return Status.EXECUTION_SUCCESS, keyword
             else:
-                start_time = self.node.get_clock().now()
-                while (
-                    (self.node.get_clock().now() - start_time).nanoseconds / 1e9
-                ) < wait_between_retries:
-                    accepted_future = self.hear_streaming(timeout=wait_between_retries)
+                accepted_future = self.hear_streaming(timeout=wait_between_retries)
 
-                    rclpy.spin_until_future_complete(
-                        self.node, accepted_future, timeout_sec=wait_between_retries + 1
-                    )
-                    goal_future = accepted_future.result().get_result_async()
+                rclpy.spin_until_future_complete(
+                    self.node, accepted_future, timeout_sec=wait_between_retries + 1
+                )
+                goal_future = accepted_future.result().get_result_async()
 
-                    while not goal_future.done():
-                        if contains_any(
-                            format_transcription(self.current_transcription), self.positive
-                        ):
-                            self.cancel_hear_action()
-                            return Status.EXECUTION_SUCCESS, "yes"
-                        if "no" in format_transcription(self.current_transcription):
-                            self.cancel_hear_action()
-                            return Status.EXECUTION_SUCCESS, "no"
-                        rclpy.spin_once(self.node, timeout_sec=0.1)
-
-                    # Add an extra second to ensure the action server has enough time to process the request
-                    rclpy.spin_until_future_complete(
-                        self.node, goal_future, timeout_sec=wait_between_retries + 1
-                    )
-                    self.cancel_hear_action()
-
-                    if len(goal_future.result().result.transcription) > 0:
-                        if (
-                            contains_any(
-                                format_transcription(self.current_transcription), self.positive
-                            )
-                            or self.is_positive(self.current_transcription)[1]
-                        ):
-                            return Status.EXECUTION_SUCCESS, "yes"
-
+                while not goal_future.done():
+                    if contains_any(
+                        format_transcription(self.current_transcription), self.positive
+                    ):
+                        self.cancel_hear_action()
+                        return Status.EXECUTION_SUCCESS, "yes"
+                    if "no" in format_transcription(self.current_transcription):
+                        self.cancel_hear_action()
                         return Status.EXECUTION_SUCCESS, "no"
-                    return Status.TARGET_NOT_FOUND, ""
+                    rclpy.spin_once(self.node, timeout_sec=0.1)
+
+                # Add an extra second to ensure the action server has enough time to process the request
+                rclpy.spin_until_future_complete(
+                    self.node, goal_future, timeout_sec=wait_between_retries + 1
+                )
+                self.cancel_hear_action()
+
+                # If the transcription is equal to the last hotwords, consider that no text was heard: when the audio is too short or only silence, the transcription can be equal to the hotwords.
+                if (
+                    len(goal_future.result().result.transcription) > 0
+                    and goal_future.result().result.transcription != self.last_hotwords
+                ):
+                    if (
+                        contains_any(
+                            format_transcription(self.current_transcription), self.positive
+                        )
+                        or self.is_positive(self.current_transcription)[1]
+                    ):
+                        return Status.EXECUTION_SUCCESS, "yes"
+
+                    return Status.EXECUTION_SUCCESS, "no"
 
         Logger.info(
             self.node,
@@ -576,14 +577,13 @@ class HRITasks(metaclass=SubtaskMeta):
             start_time = self.node.get_clock().now()
 
             self.say(question)
-            s, interpreted_text = self.hear()
+            hear_status, interpreted_text = self.hear()
 
-            if s == Status.EXECUTION_SUCCESS:
+            if hear_status == Status.EXECUTION_SUCCESS:
                 if not skip_extract_data:
                     s, target_info = self.extract_data(query, interpreted_text, context)
                 else:
-                    s = Status.EXECUTION_SUCCESS
-                    target_info = interpreted_text
+                    s = Status.TARGET_NOT_FOUND
 
                 if s == Status.TARGET_NOT_FOUND:
                     target_info = interpreted_text
@@ -594,7 +594,7 @@ class HRITasks(metaclass=SubtaskMeta):
                 else:
                     confirmation_text = confirm_question
 
-                s, confirmation = self.confirm(confirmation_text, use_hotwords, 1)
+                s, confirmation = self.confirm(confirmation_text, use_hotwords, 3)
 
                 if confirmation == "yes":
                     return Status.EXECUTION_SUCCESS, target_info
