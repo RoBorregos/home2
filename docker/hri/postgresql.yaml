@@ -5,7 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile.postgres
     container_name: postgres-db
-    restart: always
+    restart: "no"
     environment:
       POSTGRES_USER: rbrgs
       POSTGRES_PASSWORD: rbrgs
