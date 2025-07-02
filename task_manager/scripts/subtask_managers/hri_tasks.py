@@ -27,6 +27,7 @@ from frida_constants.hri_constants import (
     SPEAK_SERVICE,
     STT_ACTION_SERVER_NAME,
     WAKEWORD_TOPIC,
+    COMMAND_INTERPRETER_SERVICE,
 )
 from embeddings.postgres_adapter import PostgresAdapter
 from frida_interfaces.action import SpeechStream
@@ -42,6 +43,7 @@ from frida_interfaces.srv import (
     LLMWrapper,
     QueryEntry,
     Speak,
+    CommandInterpreter,
 )
 from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
 from rclpy.action import ActionClient
@@ -170,6 +172,10 @@ class HRITasks(metaclass=SubtaskMeta):
 
         self.answer_question_service = self.node.create_client(AnswerQuestionLLM, RAG_SERVICE)
 
+        self.command_interpreter_service = self.node.create_client(
+            CommandInterpreter, COMMAND_INTERPRETER_SERVICE
+        )
+
         self._action_client = ActionClient(self.node, SpeechStream, STT_ACTION_SERVER_NAME)
 
         all_services = {
@@ -187,9 +193,16 @@ class HRITasks(metaclass=SubtaskMeta):
             },
         }
 
+        gpsr_services = {
+            "command_interpreter_service": {
+                "client": self.command_interpreter_service,
+                "type": "service",
+            },
+        }
+
         self.services = {
             Task.RECEPTIONIST: all_services,
-            Task.GPSR: all_services,
+            Task.GPSR: all_services | gpsr_services,
             Task.HELP_ME_CARRY: all_services,
             Task.STORING_GROCERIES: all_services,
         }
@@ -614,12 +627,50 @@ class HRITasks(metaclass=SubtaskMeta):
         rclpy.spin_until_future_complete(self.node, future)
         return Status.EXECUTION_SUCCESS, future.result().corrected_text
 
-    # TODO: Make async
-    def command_interpreter(self, text: str) -> List[InterpreterAvailableCommands]:
+    def command_interpreter(
+        self, text: str, is_async=False
+    ) -> List[InterpreterAvailableCommands] | Future:
+        """
+        Interprets a command and returns a list of actions to be executed.
+
+        Args:
+            text (str): The command text to interpret.
+            is_async (bool): Whether to run the interpretation asynchronously.
+        Returns:
+            Status: The status of the execution.
+            List[InterpreterAvailableCommands]: The list of interpreted commands.
+
+        If is_async is True, returns a Future object that can be used to get the result later.
+        """
         Logger.info(
             self.node,
             "Received command for interpretation: " + text,
         )
+
+        if is_async:
+            future = Future()
+
+            request = CommandInterpreter.Request(text=text)
+            command_interpreter_future = self.command_interpreter_service.call_async(request)
+
+            def callback(f):
+                parsed = b.parse.GenerateCommandList(f.result().unparsed_response)
+
+                future.set_result(
+                    (
+                        Status.EXECUTION_SUCCESS
+                        if isinstance(parsed, CommandListLLM)
+                        else Status.EXECUTION_ERROR,
+                        parsed.commands if isinstance(parsed, CommandListLLM) else [],
+                    )
+                )
+
+            command_interpreter_future.add_done_callback(callback)
+            self.node.get_logger().info("Command interpreter service called asynchronously")
+
+            return future
+
+        # Legacy synchronous call
         command_list = b.GenerateCommandList(request=text)
 
         Logger.info(

@@ -6,6 +6,7 @@ import json
 import os
 from datetime import datetime
 from typing import Optional
+import requests
 
 import pytz
 import rclpy
@@ -28,7 +29,10 @@ from frida_interfaces.srv import (
     IsNegative,
     IsPositive,
     LLMWrapper,
+    CommandInterpreter,
 )
+
+from nlp.assets.baml_client.sync_client import b
 
 CURRENT_CONTEXT = """
 Today is {CURRENT_DATE}.
@@ -69,6 +73,9 @@ class LLMUtils(Node):
         self.declare_parameter("IS_POSITIVE_SERVICE", "/nlp/is_positive")
         self.declare_parameter("IS_NEGATIVE_SERVICE", "/nlp/is_negative")
         self.declare_parameter("CATEGORIZE_SERVICE", "/nlp/categorize_shelves")
+        self.declare_parameter(
+            "COMMAND_INTERPRETER_SERVICE", "/nlp/command_interpreter"
+        )
 
         self.declare_parameter("temperature", 0.5)
         base_url = self.get_parameter("base_url").get_parameter_value().string_value
@@ -108,6 +115,12 @@ class LLMUtils(Node):
             self.get_parameter("CATEGORIZE_SERVICE").get_parameter_value().string_value
         )
 
+        command_interpreter_service = (
+            self.get_parameter("COMMAND_INTERPRETER_SERVICE")
+            .get_parameter_value()
+            .string_value
+        )
+
         if not os.path.exists(os.path.join(ASSETS_DIR, IS_POSITIVE_MODEL_NAME)):
             self.logger.info(
                 f"Downloading {IS_POSITIVE_MODEL_NAME} to a local directory. This may take a while."
@@ -143,6 +156,10 @@ class LLMUtils(Node):
 
         self.create_service(
             CategorizeShelves, categorize_shelves_service, self.categorize_shelves
+        )
+
+        self.create_service(
+            CommandInterpreter, command_interpreter_service, self.command_interpreter
         )
 
         self.logger.info("Initialized llm_utils node")
@@ -328,6 +345,28 @@ class LLMUtils(Node):
         # Get the index of the maximum score
         max_index = scores.index(max(scores))
         return labels[max_index]
+
+    def command_interpreter(
+        self, request: CommandInterpreter.Request, response: CommandInterpreter.Response
+    ) -> CommandInterpreter.Response:
+        """Service to interpret a command."""
+        req = b.request.GenerateCommandList(request=request.text)
+        res = requests.post(req.url, headers=req.headers, json=req.body.json())
+
+        if res.status_code != 200:
+            self.get_logger().error(f"Error in command_interpreter: {res.text}")
+            raise rclpy.exceptions.ServiceException(res.text)
+        try:
+            res_text = res.json()["choices"][0]["message"]["content"]
+            response.unparsed_response = res_text
+
+            self.get_logger().info(
+                f"Unparsed Command list: {response.unparsed_response}"
+            )
+            return response
+        except json.JSONDecodeError as e:
+            self.get_logger().error(f"Error decoding JSON: {e}")
+            raise rclpy.exceptions.ServiceException(f"Error decoding JSON: {e}")
 
 
 def main(args=None):

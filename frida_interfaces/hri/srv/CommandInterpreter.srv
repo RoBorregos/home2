@@ -1,3 +1,3 @@
 string text
 ---
-frida_interfaces/Command[] commands
+string unparsed_response
