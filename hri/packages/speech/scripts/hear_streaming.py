@@ -54,7 +54,6 @@ class HearStreaming(Node):
         )
 
         self.hotwords = default_hotwords
-        self.active_transcription = False
         self.current_transcription = ""
         self.stop_flag = threading.Event()
         self.stop_flag.set()
@@ -143,7 +142,6 @@ class HearStreaming(Node):
     def execute_callback(self, goal_handle):
         self.get_logger().info("In execute callback")
 
-        self.active_transcription = True
         self.stop_flag.clear()
         self.audio_buffer.clear()
         self.current_transcription = ""
@@ -183,7 +181,7 @@ class HearStreaming(Node):
                     feedback_msg = SpeechStream.Feedback()
                     feedback_msg.current_transcription = self.prev_transcription
                     goal_handle.publish_feedback(feedback_msg)
-                    self.transcription_publisher.publish(feedback_msg)
+                    self.transcription_publisher.publish(self.prev_transcription)
 
                 # rclpy.spin_once(self, timeout_sec=0.1)
                 time.sleep(0.1)
@@ -209,6 +207,7 @@ class HearStreaming(Node):
         result = SpeechStream.Result()
         result.transcription = self.current_transcription.strip()
         self.get_logger().info(f"Final transcription: {result.transcription}")
+
         return result
 
 

@@ -7,15 +7,18 @@ HRI Subtask manager
 import json
 import os
 import re
+from enum import Enum
 
 # from datetime import datetime
 from typing import List, Union
 
+import numpy as np
 import rclpy
 from ament_index_python.packages import get_package_share_directory
-from frida_constants.hri_constants import (
-    # ADD_ENTRY_SERVICE,
+from embeddings.postgres_adapter import PostgresAdapter
+from frida_constants.hri_constants import (  # ADD_ENTRY_SERVICE,
     CATEGORIZE_SERVICE,
+    COMMAND_INTERPRETER_SERVICE,
     COMMON_INTEREST_SERVICE,
     EXTRACT_DATA_SERVICE,
     GRAMMAR_SERVICE,
@@ -24,16 +27,16 @@ from frida_constants.hri_constants import (
     LLM_WRAPPER_SERVICE,
     QUERY_ENTRY_SERVICE,
     RAG_SERVICE,
+    RESPEAKER_LIGHT_TOPIC,
     SPEAK_SERVICE,
     STT_ACTION_SERVER_NAME,
     WAKEWORD_TOPIC,
-    COMMAND_INTERPRETER_SERVICE,
 )
-from embeddings.postgres_adapter import PostgresAdapter
 from frida_interfaces.action import SpeechStream
-from frida_interfaces.srv import (
-    # AddEntry,
+from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
+from frida_interfaces.srv import (  # AddEntry,
     CategorizeShelves,
+    CommandInterpreter,
     CommonInterest,
     ExtractInfo,
     Grammar,
@@ -43,9 +46,7 @@ from frida_interfaces.srv import (
     LLMWrapper,
     QueryEntry,
     Speak,
-    CommandInterpreter,
 )
-from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from rclpy.task import Future
@@ -71,7 +72,6 @@ from utils.decorators import service_check
 from utils.logger import Logger
 from utils.status import Status
 from utils.task import Task
-import numpy as np
 
 from subtask_managers.subtask_meta import SubtaskMeta
 
@@ -138,6 +138,23 @@ def format_transcription(text: str) -> str:
     return remove_punctuation(text).split(" ")
 
 
+class AudioStates(Enum):
+    SAYING = "saying"
+    LISTEN = "listening"
+    IDLE = "idle"
+
+    @classmethod
+    def respeaker_light(cls, state):
+        if state == AudioStates.SAYING:
+            return "speak"
+        elif state == AudioStates.LISTEN:
+            return "listening"
+        elif state == AudioStates.IDLE:
+            return "off"
+        else:
+            raise ValueError(f"Unknown audio state: {state}")
+
+
 class HRITasks(metaclass=SubtaskMeta):
     """Class to manage the vision tasks"""
 
@@ -175,6 +192,8 @@ class HRITasks(metaclass=SubtaskMeta):
         self.command_interpreter_service = self.node.create_client(
             CommandInterpreter, COMMAND_INTERPRETER_SERVICE
         )
+        self.audio_state_publisher = self.create_publisher(String, "AudioState", 10)
+        self.respeaker_light_publisher = self.create_publisher(String, RESPEAKER_LIGHT_TOPIC, 10)
 
         self._action_client = ActionClient(self.node, SpeechStream, STT_ACTION_SERVER_NAME)
 
@@ -366,10 +385,12 @@ class HRITasks(metaclass=SubtaskMeta):
         rclpy.spin_until_future_complete(
             self.node, accepted_future, timeout_sec=max_audio_length + 1
         )
+
         goal_future = accepted_future.result().get_result_async()
 
         # Add an extra second to ensure the action server has enough time to process the request
         rclpy.spin_until_future_complete(self.node, goal_future, timeout_sec=max_audio_length + 1)
+        self.cancel_hear_action()
 
         execution_status = (
             Status.EXECUTION_SUCCESS
@@ -396,6 +417,8 @@ class HRITasks(metaclass=SubtaskMeta):
     ):
         """Method to hear streaming audio from the user.
 
+        Note: the caller must also call `self.cancel_hear_action()` or `self.set_light_state(AudioStates.IDLE)` to update respeaker light state.
+
         Args:
             timeout (float): The maximum time to stop the transcription.
             hotwords (str): Hotwords to improve the transcription accuracy.
@@ -404,6 +427,7 @@ class HRITasks(metaclass=SubtaskMeta):
         """
         # Cancel other actions if they are running
         self.cancel_hear_action()
+        self.set_light_state(AudioStates.LISTEN)
 
         self.current_transcription = ""
 
@@ -425,6 +449,15 @@ class HRITasks(metaclass=SubtaskMeta):
     def feedback_callback(self, feedback_msg):
         self.current_transcription = feedback_msg.feedback.current_transcription
         self.node.get_logger().info("Received feedback: {0}".format(self.current_transcription))
+
+    def set_light_state(self, state: AudioStates):
+        """
+        Method to set the light state of the respeaker.
+        Args:
+            state: The state of the light.
+        """
+        self.respeaker_light_publisher.publish(String(data=AudioStates.respeaker_light(state)))
+        self.audio_state_publisher.publish(String(data=state.value))
 
     def confirm(
         self,
@@ -489,6 +522,7 @@ class HRITasks(metaclass=SubtaskMeta):
                     rclpy.spin_until_future_complete(
                         self.node, goal_future, timeout_sec=wait_between_retries + 1
                     )
+                    self.cancel_hear_action()
 
                     if len(goal_future.result().result.transcription) > 0:
                         if (
@@ -753,6 +787,8 @@ class HRITasks(metaclass=SubtaskMeta):
 
         for f in cancel_future:
             rclpy.spin_until_future_complete(self.node, f, timeout_sec=1)
+
+        self.set_light_state(AudioStates.IDLE)
 
     @service_check("answer_question_service", (Status.SERVICE_CHECK, "", 0.5), TIMEOUT)
     def answer_question(
