@@ -2,6 +2,7 @@ include:
   - path: hri-ros.yaml
   - path: stt.yaml
   - path: ollama.yaml
-  - path: chromadb.yaml
+  # - path: chromadb.yaml
+  - path: postgresql.yaml
   - path: display.yaml
   - path: tts.yaml
