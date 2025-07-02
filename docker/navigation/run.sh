@@ -127,7 +127,7 @@ NEEDS_BUILD=false
 CONTAINER=$(docker ps -a --filter "name=${NAV_NAME}" --format "{{.ID}}")
 if [ -z "$CONTAINER" ]; then
     echo "No container found for '$NAV_NAME'."
-    NEEDS_BUILD=true
+    NEEDS_BUILD=false
     break 
 fi
 # NEEDS_BUILD=true

@@ -13,14 +13,14 @@ def launch_setup(context, *args, **kwargs):
     rviz_config_dir = os.path.join(get_package_share_directory('nav_main'), 'rviz_configs', 'receptionist.rviz')
     params_amcl = os.path.join(get_package_share_directory('nav_main'), 'config', 'amcl_config.yaml')
     map_route = LaunchConfiguration('map', default=os.path.join(get_package_share_directory('nav_main'), 'maps', 'tmr2025.yaml'))
-    default_value=os.path.join(nav_dir, 'config', 'nav2_params_original.yaml'),
+    default_value=os.path.join(nav_dir, 'config', 'nav_rtabmap_god.yaml'),
 
     use_sim = LaunchConfiguration('use_sim', default='false')
     localization = LaunchConfiguration('localization', default='true')
     rtabmap_viz = LaunchConfiguration('rtabmap_viz', default='false')
     params_file = LaunchConfiguration('params_file', default=default_value)
     use_amcl = LaunchConfiguration('use_amcl', default='false')
-    show_rviz = LaunchConfiguration('show_rviz', default='true')
+    show_rviz = LaunchConfiguration('show_rviz', default='false')
     
     
     nav_basics = IncludeLaunchDescription(
@@ -107,7 +107,7 @@ def launch_setup(context, *args, **kwargs):
     return [
         nav_basics,
         rtabmap,
-        # nav2_launch,
+        nav2_launch,
         # rviz_node,
         # map_server,
         # amcl_server,

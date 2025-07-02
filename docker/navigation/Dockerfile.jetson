@@ -4,6 +4,14 @@ FROM ${BASE_IMAGE}
 USER ros
 SHELL ["/bin/bash", "-c"]
 
+#Build OPENCV
+WORKDIR /home/ros/
+RUN curl -L https://raw.githubusercontent.com/AastaNV/JEP/refs/heads/master/script/install_opencv4.10.0_Jetpack6.1.sh -o install.sh
+RUN chmod 777 install.sh
+RUN yes yes | sudo ./install.sh
+RUN export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
+RUN export PYTHONPATH=/usr/local/lib/python3.10/site-packages/:$PYTHONPATH
+
 #Building rtabmap packages
 RUN mkdir /home/ros/ros_packages3
 WORKDIR /home/ros/ros_packages3

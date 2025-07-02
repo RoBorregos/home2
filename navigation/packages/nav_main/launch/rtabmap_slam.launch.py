@@ -11,7 +11,7 @@ def launch_setup(context, *args, **kwargs):
     use_sim_time = LaunchConfiguration('use_sim_time',default='false')
     localization = LaunchConfiguration('localization', default='false')
     rtabmap_viz = LaunchConfiguration('rtabmap_viz', default='false')
-    use_3d_grid = LaunchConfiguration('3d_grid', default='true')
+    use_3d_grid = LaunchConfiguration('3d_grid', default='false')
 
     icp_parameters={
           'odom_frame_id':'icp_odom',
@@ -64,28 +64,40 @@ def launch_setup(context, *args, **kwargs):
             'frame_id':'base_link',
             'use_sim_time':use_sim_time,
             'wait_for_transform_duration': 0.8,
-            'queue_size': 200,
-            'approx_sync ': False,
+            'queue_size': 5,
             'approx_sync ': True,
-            'approx_sync_max_interval': '0.1',
+            'approx_sync_max_interval': 0.01,    
             'Reg/Strategy':'1',
-            'Mem/BinDataKept': 'false',
-            'RGBD/CreateOccupancyGrid': 'false',
             'Reg/Force3DoF':'true',
-            'Mem/NotLinkedNodesKept':'false',
-            'Icp/PointToPlaneMinComplexity':'0.05',
+            'Vis/MinInliers': '15',
+            'Vis/EstimationType': '1',
+            'Vis/CorType': '2',
+            'Vis/CorNNType': '4',
+            'Vis/FeatureType': '6',
+            'Vis/MaxFeatures': '1000',
+            'Odom/Strategy': '0',
+            'Odom/GuessMotion': 'True',
+            'Odom/FeatureType': '6',
+            'Optimizer/GravitySigma':'0',
+            'Optimizer/Slam2D':'true',
             'Grid/MaxGroundHeight':'0.1', 
             'Grid/MaxObstacleHeight':'2',  
-            'RGBD/NeighborLinkRefining':'True',
             'Grid/CellSize': '0.04',
-            'Vis/MaxFeatures': '100',
-            'Rtabmap/DetectionRate': '30',
-            'Grid/RayTracing':'false',
+            'Grid/FromDepth':'false', 
             'Grid/3D':'false',
+            'Grid/FromScan':'true',
             'Grid/RangeMax':'3',
-            'Grid/NormalsSegmentation':'false', 
-            'Grid/Sensor':'2',
-            'Optimizer/GravitySigma':'0'
+            'Grid/NormalsSegmentation':'false',
+            'Grid/Sensor':'1',
+            'Mem/NotLinkedNodesKept':'false',
+            'Icp/PointToPlaneMinComplexity':'0.05',
+            'RGBD/NeighborLinkRefining':'True',
+            'Rtabmap/DetectionRate': '15',
+            'ORB/Gpu': 'true',
+            'Kp/NNStrategy': '4',
+            'SURF/GpuVersion': 'true',
+            'FAST/Gpu': 'true',
+
         }
 
 

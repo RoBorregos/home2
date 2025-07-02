@@ -31,10 +31,10 @@ public:
 
         // Subscriber to /scan_input
         subscription_ = this->create_subscription<sensor_msgs::msg::LaserScan>(
-            "/scan_input", 5, std::bind(&IgnoreLaser::scanCallback, this, std::placeholders::_1));
+            "/scan_input", 10, std::bind(&IgnoreLaser::scanCallback, this, std::placeholders::_1));
 
         // Publisher for modified scan
-        scan_fixed_ = this->create_publisher<sensor_msgs::msg::LaserScan>("scan", 5);
+        scan_fixed_ = this->create_publisher<sensor_msgs::msg::LaserScan>("scan", 10);
     }
 
 private:
