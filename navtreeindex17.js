@@ -1,11 +1,5 @@
 var NAVTREEINDEX17 =
 {
-"model_8py.html#a46572b3e19eb69f13b91ffafcdeadff0":[20,0,7,0,3,3,0,0,0,0,15],
-"model_8py.html#a5bca4354e053d953c18cc9430074d2ba":[20,0,7,0,3,3,0,0,0,0,18],
-"model_8py.html#a81d1071915076c21125b78e75cb547ee":[20,0,7,0,3,3,0,0,0,0,16],
-"model_8py.html#a84912719c72180a694ab967f594736fa":[20,0,7,0,3,3,0,0,0,0,13],
-"model_8py.html#ad4ec7ba67909d57c52c609d1fa094b1f":[20,0,7,0,3,3,0,0,0,0,12],
-"moondream__launch_8py.html":[20,0,7,0,0,0,0],
 "moondream__lib_8py.html":[20,0,7,0,0,2,1],
 "moondream__lib_8py.html#a3e80178be0f550fe0c9f3ba9acae5445":[20,0,7,0,0,2,1,14],
 "moondream__lib_8py.html#a4bd3748d658dedbd9710d61c47840b69":[20,0,7,0,0,2,1,13],
@@ -249,5 +243,11 @@ var NAVTREEINDEX17 =
 "namespacefrida__constants_1_1manipulation__constants.html#a520f33abe220f0f53b58bc4a6087abae":[18,0,38,2,17],
 "namespacefrida__constants_1_1manipulation__constants.html#a5ea55eae7fc712affd0e6fc30dcf8467":[18,0,38,2,33],
 "namespacefrida__constants_1_1manipulation__constants.html#a6038fba62b19224dfcafc0c052adbae6":[18,0,38,2,47],
-"namespacefrida__constants_1_1manipulation__constants.html#a60fec6dff1f21269d68429db6ce6c56d":[18,0,38,2,55]
+"namespacefrida__constants_1_1manipulation__constants.html#a60fec6dff1f21269d68429db6ce6c56d":[18,0,38,2,55],
+"namespacefrida__constants_1_1manipulation__constants.html#a65f44cfc928074d0f412e7f80a134307":[18,0,38,2,30],
+"namespacefrida__constants_1_1manipulation__constants.html#a6aaf2e16c447f7ca03df763bd4a0f754":[18,0,38,2,50],
+"namespacefrida__constants_1_1manipulation__constants.html#a72d781c5768abe2b3250a2030220b1a3":[18,0,38,2,23],
+"namespacefrida__constants_1_1manipulation__constants.html#a777012eeb4aed1198489527887a98d36":[18,0,38,2,52],
+"namespacefrida__constants_1_1manipulation__constants.html#a7980f88d789cc49a57a0fccd0bcec244":[18,0,38,2,24],
+"namespacefrida__constants_1_1manipulation__constants.html#a79c4beebdcccc18e2cce0cbabb1c855b":[18,0,38,2,40]
 };

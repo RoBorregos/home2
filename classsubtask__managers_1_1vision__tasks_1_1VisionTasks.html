@@ -174,6 +174,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ad793136462187cbd126c2e05b88052ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afa8788517b89a9884ecb5ff08311b3d1"><td class="memItemLeft" align="right" valign="top">list[str]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#afa8788517b89a9884ecb5ff08311b3d1">get_labels</a> (self, list[<a class="el" href="classfrida__constants_1_1vision__classes_1_1BBOX.html">BBOX</a>] detections)</td></tr>
 <tr class="separator:afa8788517b89a9884ecb5ff08311b3d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6bf089d51ced77ac823a402e0542f19e"><td class="memItemLeft" align="right" valign="top">tuple[int, str]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a6bf089d51ced77ac823a402e0542f19e">get_drink_position</a> (self, list[<a class="el" href="classfrida__constants_1_1vision__classes_1_1BBOX.html">BBOX</a>] detections, str drink)</td></tr>
+<tr class="separator:a6bf089d51ced77ac823a402e0542f19e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -845,6 +847,40 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <pre class="fragment">Callback for the face following subscriber</pre> 
+</div>
+</div>
+<a id="a6bf089d51ced77ac823a402e0542f19e" name="a6bf089d51ced77ac823a402e0542f19e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6bf089d51ced77ac823a402e0542f19e">&#9670;&#160;</a></span>get_drink_position()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> tuple[int, str] subtask_managers.vision_tasks.VisionTasks.get_drink_position </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">list[<a class="el" href="classfrida__constants_1_1vision__classes_1_1BBOX.html">BBOX</a>]&#160;</td>
+          <td class="paramname"><em>detections</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>drink</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Get the position of the drink in the detected objects</pre> 
 </div>
 </div>
 <a id="ad6d811936188500da53934baa4796a9c" name="ad6d811936188500da53934baa4796a9c"></a>

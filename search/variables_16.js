@@ -12,7 +12,7 @@ var searchData=
   ['view_5fpub_9',['view_pub',['../classface__recognition__node_1_1FaceRecognition.html#aa6e33c30678b712b750ae93698b22919',1,'face_recognition_node::FaceRecognition']]],
   ['view_5fshelf_5fand_5fsave_5fobjects_10',['VIEW_SHELF_AND_SAVE_OBJECTS',['../classstoring__groceries__manager_1_1ExecutionStates.html#a4576ca168b31617c988ae4df73b72f86',1,'storing_groceries_manager::ExecutionStates']]],
   ['vision_11',['vision',['../classutils_1_1subtask__manager_1_1SubtaskManager.html#aada154c25db19576008f74bba27c66fa',1,'utils::subtask_manager::SubtaskManager']]],
-  ['vision_5ftasks_12',['vision_tasks',['../namespacesubtask__managers_1_1hri__tasks.html#aafc0136a349382c891b80a38fcf63125',1,'subtask_managers.hri_tasks.vision_tasks()'],['../namespacesubtask__managers_1_1vision__tasks.html#a3a4bd0269cff5c8d45098a6a0baed265',1,'subtask_managers.vision_tasks.vision_tasks()']]],
+  ['vision_5ftasks_12',['vision_tasks',['../namespacesubtask__managers_1_1hri__tasks.html#aa2840c03a44dc90e8c91833569951353',1,'subtask_managers.hri_tasks.vision_tasks()'],['../namespacesubtask__managers_1_1vision__tasks.html#a3a4bd0269cff5c8d45098a6a0baed265',1,'subtask_managers.vision_tasks.vision_tasks()']]],
   ['visualize_13',['VISUALIZE',['../classpointing__detection_1_1DetectPointingObjectServer.html#a9a2d6aa34e568d3b8acfe56c1be9b836',1,'pointing_detection::DetectPointingObjectServer']]],
   ['visualizer_5fpub_14',['visualizer_pub',['../classpointing__detection_1_1DetectPointingObjectServer.html#ade5a75bb3d159e28d1fe4b2520337bcb',1,'pointing_detection::DetectPointingObjectServer']]],
   ['voltage_5fval_15',['voltage_val',['../classdashgo__driver2_1_1DashgoDriver.html#a39da7423b70a33da7f5babdef848fe3b',1,'dashgo_driver2::DashgoDriver']]]

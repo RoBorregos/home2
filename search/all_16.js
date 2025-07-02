@@ -26,7 +26,7 @@ var searchData=
   ['vision_5fconstants_5fcpp_2ehpp_23',['vision_constants_cpp.hpp',['../vision__constants__cpp_8hpp.html',1,'']]],
   ['vision_5fenums_2epy_24',['vision_enums.py',['../vision__enums_8py.html',1,'']]],
   ['vision_5fgeneral_25',['vision_general',['../namespacevision__general.html',1,'']]],
-  ['vision_5ftasks_26',['vision_tasks',['../namespacesubtask__managers_1_1vision__tasks.html#a3a4bd0269cff5c8d45098a6a0baed265',1,'subtask_managers.vision_tasks.vision_tasks()'],['../namespacesubtask__managers_1_1hri__tasks.html#aafc0136a349382c891b80a38fcf63125',1,'subtask_managers.hri_tasks.vision_tasks()']]],
+  ['vision_5ftasks_26',['vision_tasks',['../namespacesubtask__managers_1_1vision__tasks.html#a3a4bd0269cff5c8d45098a6a0baed265',1,'subtask_managers.vision_tasks.vision_tasks()'],['../namespacesubtask__managers_1_1hri__tasks.html#aa2840c03a44dc90e8c91833569951353',1,'subtask_managers.hri_tasks.vision_tasks()']]],
   ['vision_5ftasks_2epy_27',['vision_tasks.py',['../vision__tasks_8py.html',1,'']]],
   ['visiontasks_28',['VisionTasks',['../classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html',1,'subtask_managers::vision_tasks']]],
   ['visual_5finfo_29',['visual_info',['../classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#ae73150ff3b6527d8e44508697c050975',1,'subtask_managers::vision_tasks::VisionTasks']]],

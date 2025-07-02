@@ -1,9 +1,8 @@
 var classreceptionist__task__manager_1_1ReceptionistTM =
 [
+    [ "TaskStates", "classreceptionist__task__manager_1_1ReceptionistTM_1_1TaskStates.html", null ],
     [ "__init__", "classreceptionist__task__manager_1_1ReceptionistTM.html#a2b9ee1804316d833f38eb12d59344dbe", null ],
-    [ "confirm", "classreceptionist__task__manager_1_1ReceptionistTM.html#a0e92eba2a4c593ccf5d6380c46857d49", null ],
     [ "get_guest", "classreceptionist__task__manager_1_1ReceptionistTM.html#aec23bc7da8164ea1dcf7354333951b94", null ],
-    [ "hear_word", "classreceptionist__task__manager_1_1ReceptionistTM.html#a91efb9792bbc5ee75dabb8862d335f3c", null ],
     [ "navigate_to", "classreceptionist__task__manager_1_1ReceptionistTM.html#af6c0f025f4dbfbad09c229d0f07a81a7", null ],
     [ "run", "classreceptionist__task__manager_1_1ReceptionistTM.html#a95b3bdec96a9c00e7c0f8ae3d8578f27", null ],
     [ "set_description", "classreceptionist__task__manager_1_1ReceptionistTM.html#ab4693766fd3e02e31f62acb8e9eefad2", null ],

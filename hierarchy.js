@@ -82,6 +82,7 @@ var hierarchy =
       [ "utils.config.TypeEnum", "classutils_1_1config_1_1TypeEnum.html", null ]
     ] ],
     [ "utils.subtask_manager.SubtaskManager", "classutils_1_1subtask__manager_1_1SubtaskManager.html", null ],
+    [ "receptionist_task_manager.ReceptionistTM.TaskStates", "classreceptionist__task__manager_1_1ReceptionistTM_1_1TaskStates.html", null ],
     [ "type", null, [
       [ "subtask_managers.subtask_meta.SubtaskMeta", "classsubtask__managers_1_1subtask__meta_1_1SubtaskMeta.html", [
         [ "subtask_managers.hri_tasks.HRITasks", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html", null ]

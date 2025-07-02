@@ -21,6 +21,7 @@ var classsubtask__managers_1_1vision__tasks_1_1VisionTasks =
     [ "find_seat_moondream", "classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#ad3459d3ed10015e23db0a3285d25de5a", null ],
     [ "follow_by_name", "classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a426899aff21ab194b40c2b5102165e85", null ],
     [ "follow_callback", "classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a6e7377c46cd7740a2a2f7dab183a90f0", null ],
+    [ "get_drink_position", "classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a6bf089d51ced77ac823a402e0542f19e", null ],
     [ "get_follow_face", "classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#ad6d811936188500da53934baa4796a9c", null ],
     [ "get_labels", "classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#afa8788517b89a9884ecb5ff08311b3d1", null ],
     [ "get_person_name", "classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a98973f16b877326e06db27220baf7913", null ],

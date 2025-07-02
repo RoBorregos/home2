@@ -1,7 +1,6 @@
 var vision__tasks_8py =
 [
     [ "subtask_managers.vision_tasks.VisionTasks", "classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html", "classsubtask__managers_1_1vision__tasks_1_1VisionTasks" ],
-    [ "DETECTION_HANDLER_TOPIC_SRV", "vision__tasks_8py.html#a613490136e213d97ade508e328ab85e2", null ],
     [ "IS_TRACKING_TOPIC", "vision__tasks_8py.html#af7131cd2974024262937309e08bd5baf", null ],
     [ "node", "vision__tasks_8py.html#af8b434b2944d2e99338e040a7bb1d7c5", null ],
     [ "TIMEOUT", "vision__tasks_8py.html#ae7683efea5f76a87a8709bf0dc062fd4", null ],
