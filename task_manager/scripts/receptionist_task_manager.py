@@ -120,9 +120,7 @@ class ReceptionistTM(Node):
 
         if self.current_state == ReceptionistTM.TaskStates.WAIT_FOR_GUEST:
             Logger.state(self, "Waiting for guest")
-
             self.subtask_manager.manipulation.move_to_position("front_stare")
-
             self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_RECEPTIONIST)
             result = self.subtask_manager.vision.detect_person(timeout=10)
             if result == Status.EXECUTION_SUCCESS:

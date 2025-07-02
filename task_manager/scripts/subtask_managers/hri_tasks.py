@@ -473,7 +473,7 @@ class HRITasks(metaclass=SubtaskMeta):
                         self.node, goal_future, timeout_sec=wait_between_retries + 1
                     )
 
-                    if s == Status.EXECUTION_SUCCESS:
+                    if len(goal_future.result().result.transcription) > 0:
                         if (
                             contains_any(
                                 format_transcription(self.current_transcription), self.positive
@@ -483,6 +483,8 @@ class HRITasks(metaclass=SubtaskMeta):
                             return Status.EXECUTION_SUCCESS, "yes"
 
                         return Status.EXECUTION_SUCCESS, "no"
+                    return Status.TARGET_NOT_FOUND, ""
+
         Logger.info(
             self.node,
             "Confirmation timed out for: " + question,
