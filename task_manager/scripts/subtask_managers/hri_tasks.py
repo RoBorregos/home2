@@ -193,8 +193,10 @@ class HRITasks(metaclass=SubtaskMeta):
         self.command_interpreter_service = self.node.create_client(
             CommandInterpreter, COMMAND_INTERPRETER_SERVICE
         )
-        self.audio_state_publisher = self.create_publisher(String, "AudioState", 10)
-        self.respeaker_light_publisher = self.create_publisher(String, RESPEAKER_LIGHT_TOPIC, 10)
+        self.audio_state_publisher = self.node.create_publisher(String, "AudioState", 10)
+        self.respeaker_light_publisher = self.node.create_publisher(
+            String, RESPEAKER_LIGHT_TOPIC, 10
+        )
 
         self._action_client = ActionClient(self.node, SpeechStream, STT_ACTION_SERVER_NAME)
 
