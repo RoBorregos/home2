@@ -20,6 +20,9 @@ RUN pip install -r requirements/nlp.txt
 COPY ../../hri/requirements/speech.txt /workspace/requirements/speech.txt
 RUN pip install -r requirements/speech.txt
 
+COPY ../../hri/requirements/postgres.txt /workspace/requirements/postgres.txt
+RUN pip install -r requirements/postgres.txt
+
 USER ros
 RUN sudo usermod -aG audio ros
 

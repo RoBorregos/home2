@@ -1,0 +1,3 @@
+pydantic
+sentence_transformers
+psycopg2_binary

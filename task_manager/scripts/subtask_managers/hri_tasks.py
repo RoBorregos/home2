@@ -7,13 +7,14 @@ HRI Subtask manager
 import json
 import os
 import re
-from datetime import datetime
+
+# from datetime import datetime
 from typing import List, Union
 
 import rclpy
 from ament_index_python.packages import get_package_share_directory
 from frida_constants.hri_constants import (
-    ADD_ENTRY_SERVICE,
+    # ADD_ENTRY_SERVICE,
     CATEGORIZE_SERVICE,
     COMMON_INTEREST_SERVICE,
     EXTRACT_DATA_SERVICE,
@@ -27,9 +28,10 @@ from frida_constants.hri_constants import (
     STT_ACTION_SERVER_NAME,
     WAKEWORD_TOPIC,
 )
+from embeddings.postgres_adapter import PostgresAdapter
 from frida_interfaces.action import SpeechStream
 from frida_interfaces.srv import (
-    AddEntry,
+    # AddEntry,
     CategorizeShelves,
     CommonInterest,
     ExtractInfo,
@@ -67,6 +69,7 @@ from utils.decorators import service_check
 from utils.logger import Logger
 from utils.status import Status
 from utils.task import Task
+import numpy as np
 
 from subtask_managers.subtask_meta import SubtaskMeta
 
@@ -151,7 +154,8 @@ class HRITasks(metaclass=SubtaskMeta):
         self.display_publisher = self.node.create_publisher(String, "/hri/display/change_video", 10)
 
         self.query_item_client = self.node.create_client(QueryEntry, QUERY_ENTRY_SERVICE)
-        self.add_item_client = self.node.create_client(AddEntry, ADD_ENTRY_SERVICE)
+        # self.add_item_client = self.node.create_client(AddEntry, ADD_ENTRY_SERVICE)
+        self.pg = PostgresAdapter()
         self.llm_wrapper_service = self.node.create_client(LLMWrapper, LLM_WRAPPER_SERVICE)
         self.categorize_service = self.node.create_client(CategorizeShelves, CATEGORIZE_SERVICE)
         self.keyword_client = self.node.create_subscription(
@@ -743,44 +747,70 @@ class HRITasks(metaclass=SubtaskMeta):
 
     # /////////////////embeddings services/////
     def add_command_history(self, command: InterpreterAvailableCommands, result, status):
-        collection = "command_history"
+        # collection = "command_history"
 
-        document = [command.action]
-        metadata = [
-            {
-                "command": str(command),
-                "result": result,
-                "status": status,
-                "timestamp": datetime.now().isoformat(),
-            }
-        ]
+        # document = [command.action]
+        # metadata = [
+        #     {
+        #         "command": str(command),
+        #         "result": result,
+        #         "status": status,
+        #         "timestamp": datetime.now().isoformat(),
+        #     }
+        # ]
 
-        request = AddEntry.Request(
-            document=document, metadata=json.dumps(metadata), collection=collection
+        # request = AddEntry.Request(
+        #     document=document, metadata=json.dumps(metadata), collection=collection
+        # )
+        # future = self.add_item_client.call_async(request)
+
+        # def callback(fut):
+        #     try:
+        #         response = fut.result()
+        #         self.node.get_logger().info(
+        #             f"Command history saved: {response}")
+        #     except Exception as e:
+        #         self.node.get_logger().error(
+        #             f"Failed to save command history: {e}")
+
+        # future.add_done_callback(callback)
+        self.pg.add_command(
+            action=str(command.action),
+            command=str(command),
+            result=result,
+            status=status,
+            context=type(command).__name__,
         )
-        future = self.add_item_client.call_async(request)
-
-        def callback(fut):
-            try:
-                response = fut.result()
-                self.node.get_logger().info(f"Command history saved: {response}")
-            except Exception as e:
-                self.node.get_logger().error(f"Failed to save command history: {e}")
-
-        future.add_done_callback(callback)
         return Status.EXECUTION_SUCCESS
 
     def add_item(self, document: list, metadata: str) -> list[str]:
-        return self._add_to_collection(document, metadata, "items")
+        # self.pg.add_item2(
+
+        # )
+        for doc in document:
+            self.pg.add_item2(
+                document=doc,
+                context=metadata.get("context", ""),
+            )
+        return [doc for doc in document]
+        # return self._add_to_collection(document, metadata, "items")
 
     def add_location(self, document: list, metadata: str) -> list[str]:
-        return self._add_to_collection(document, metadata, "locations")
+        for doc in document:
+            self.pg.add_location2(
+                document=doc,
+                context=metadata.get("context", ""),
+            )
+        return [doc for doc in document]
+        # return self._add_to_collection(document, metadata, "locations")
 
     def query_item(self, query: str, top_k: int = 1) -> list[str]:
-        return self._query_(query, "items", top_k)
+        # return self._query_(query, "items", top_k)
+        return self.pg.query_items(query=query, top_k=top_k)
 
     def query_location(self, query: str, top_k: int = 1) -> list[str]:
-        return self._query_(query, "locations", top_k)
+        # return self._query_(query, "locations", top_k)
+        return self.pg.query_location(query=query, top_k=top_k)
 
     def find_closest(self, documents: list, query: str, top_k: int = 1) -> list[str]:
         """
@@ -792,26 +822,39 @@ class HRITasks(metaclass=SubtaskMeta):
             Status: the status of the execution
             list[str]: the results of the query
         """
-        self._add_to_collection(document=documents, metadata="", collection="closest_items")
-        Results = self._query_(query, "closest_items", top_k)
-        Results = self.get_name(Results)
-        Logger.info(self.node, f"find_closest result({query}): {str(Results)}")
+        # self._add_to_collection(
+        #     document=documents, metadata="", collection="closest_items")
+        # Results = self._query_(query, "closest_items", top_k)
+        # Results = self.get_name(Results)
+
+        docs = [(doc, self.pg.embedding_model.encode(doc)) for doc in documents]
+        emb = self.pg.embedding_model.encode(query)
+
+        def cos_sim(x, y):
+            return np.dot(x, y) / (np.linalg.norm(x) * np.linalg.norm(y))
+
+        Results = sorted(docs, key=lambda x: cos_sim(x[1], emb), reverse=True)[:top_k]
+        Results = [doc[0] for doc in Results]
         return Status.EXECUTION_SUCCESS, Results
 
-    def find_closest_raw(self, documents: str, query: str, top_k: int = 1) -> list[str]:
-        """
-        Method to find the closest item to the query.
-        Args:
-            documents: the documents to search among
-            query: the query to search for
-        Returns:
-            Status: the status of the execution
-            list[str]: the results of the query
-        """
-        self._add_to_collection(document=documents, metadata="", collection="closest_items")
-        Results = self._query_(query, "closest_items", top_k)
-        Logger.info(self.node, f"find_closest result({query}): {str(Results)}")
-        return Results
+        # Logger.info(self.node, f"find_closest result({query}): {str(Results)}")
+        # return Status.EXECUTION_SUCCESS, Results
+
+    # def find_closest_raw(self, documents: str, query: str, top_k: int = 1) -> list[str]:
+    #     """
+    #     Method to find the closest item to the query.
+    #     Args:
+    #         documents: the documents to search among
+    #         query: the query to search for
+    #     Returns:
+    #         Status: the status of the execution
+    #         list[str]: the results of the query
+    #     """
+    #     self._add_to_collection(
+    #         document=documents, metadata="", collection="closest_items")
+    #     Results = self._query_(query, "closest_items", top_k)
+    #     Logger.info(self.node, f"find_closest result({query}): {str(Results)}")
+    #     return Results
 
     # TODO: Make async
     @service_check("llm_wrapper_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
@@ -833,45 +876,51 @@ class HRITasks(metaclass=SubtaskMeta):
         return Status.EXECUTION_SUCCESS, future.result().answer
 
     def query_command_history(self, query: str, top_k: int = 1):
-        """
-        Method to query the command history collection.
-        Args:
-            query: the query to search for
-        Returns:
-            Status: the status of the execution
-            list[str]: the results of the query
-        """
-        return self._query_(query, "command_history", top_k)
+        results = self.pg.query_command_history(command=query, top_k=top_k)
+        return Status.EXECUTION_SUCCESS, results
+        # """
+        # Method to query the command history collection.
+        # Args:
+        #     query: the query to search for
+        # Returns:
+        #     Status: the status of the execution
+        #     list[str]: the results of the query
+        # """
+        # return self._query_(query, "command_history", top_k)
 
     # /////////////////helpers/////
-    def _query_(self, query: str, collection: str, top_k: int = 1) -> tuple[Status, list[str]]:
-        # Wrap the query in a list so that the field receives a sequence of strings.
-        request = QueryEntry.Request(query=[query], collection=collection, topk=top_k)
-        future = self.query_item_client.call_async(request)
-        rclpy.spin_until_future_complete(self.node, future)
-        if collection == "command_history":
-            self.node.get_logger().info(f"Querying command history: {future.result().results}")
-            results_loaded = json.loads(future.result().results[0])
-            sorted_results = sorted(
-                results_loaded["results"], key=lambda x: x["metadata"]["timestamp"], reverse=True
-            )
-            results_list = sorted_results[:top_k]
-        else:
-            results = future.result().results
+    # def _query_(self, query: str, collection: str, top_k: int = 1) -> tuple[Status, list[str]]:
+    #     # Wrap the query in a list so that the field receives a sequence of strings.
+    #     request = QueryEntry.Request(
+    #         query=[query], collection=collection, topk=top_k)
+    #     future = self.query_item_client.call_async(request)
+    #     rclpy.spin_until_future_complete(self.node, future)
+    #     if collection == "command_history":
+    #         self.node.get_logger().info(
+    #             f"Querying command history: {future.result().results}")
+    #         results_loaded = json.loads(future.result().results[0])
+    #         sorted_results = sorted(
+    #             results_loaded["results"], key=lambda x: x["metadata"]["timestamp"], reverse=True
+    #         )
+    #         results_list = sorted_results[:top_k]
+    #     else:
+    #         results = future.result().results
 
-            results_loaded = json.loads(results[0])
-            results_list = results_loaded["results"]
-        return Status.EXECUTION_SUCCESS, results_list
+    #         results_loaded = json.loads(results[0])
+    #         results_list = results_loaded["results"]
+    #     return Status.EXECUTION_SUCCESS, results_list
 
-    def _add_to_collection(self, document: list, metadata: str, collection: str) -> str:
-        request = AddEntry.Request(document=document, metadata=metadata, collection=collection)
-        future = self.add_item_client.call_async(request)
-        rclpy.spin_until_future_complete(self.node, future)
+    # def _add_to_collection(self, document: list, metadata: str, collection: str) -> str:
+    #     request = AddEntry.Request(
+    #         document=document, metadata=metadata, collection=collection)
+    #     future = self.add_item_client.call_async(request)
+    #     rclpy.spin_until_future_complete(self.node, future)
 
-        return (
-            Status.EXECUTION_SUCCESS,
-            "Success" if future.result().success else f"Failed: {future.result().message}",
-        )
+    #     return (
+    #         Status.EXECUTION_SUCCESS,
+    #         "Success" if future.result(
+    #         ).success else f"Failed: {future.result().message}",
+    #     )
 
     def get_context(self, query_result):
         return self.get_metadata_key(query_result, "context")
