@@ -1,27 +1,27 @@
 ARG BASE_IMAGE=dustynv/l4t-pytorch:r36.4.0
 FROM ${BASE_IMAGE}
 
-RUN mkdir -p /workspace/requirements
-COPY vision/requirements /workspace/requirements
-
 # Download and extract dlib
-RUN wget http://dlib.net/files/dlib-19.21.tar.bz2 && \
-    tar jxvf dlib-19.21.tar.bz2
+RUN wget http://dlib.net/files/dlib-19.24.tar.bz2 && \
+tar jxvf dlib-19.24.tar.bz2
 
-WORKDIR /workspace/dlib-19.21
+WORKDIR /workspace/dlib-19.24
 RUN mkdir build
-WORKDIR /workspace/dlib-19.21/build
+WORKDIR /workspace/dlib-19.24/build
 
 RUN cmake .. && \
     cmake --build .
 
-WORKDIR /workspace/dlib-19.21
-# RUN python3 setup.py install 
+WORKDIR /workspace/dlib-19.24
+RUN python3 setup.py install --set DLIB_USE_CUDA=1
 
 # Requirements
 WORKDIR /workspace/requirements
 
+RUN mkdir -p /workspace/requirements
+COPY vision/requirements /workspace/requirements
 RUN pip install -r opencv.txt
+RUN apt update && apt install cmake -y
 RUN pip install -r face_recognition.txt
 RUN pip install -r models.txt
 RUN pip install -r utils.txt
@@ -33,6 +33,6 @@ WORKDIR /workspace
 RUN git clone https://github.com/ultralytics/yolov5.git
 
 RUN pip install timm && \
-    python3 -c "import timm; timm.create_model('swin_b ase_patch4_window7_224', pretrained=True)" 
+    python3 -c "import timm; timm.create_model('swin_base_patch4_window7_224', pretrained=True)" 
 
 USER ros

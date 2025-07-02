@@ -57,8 +57,8 @@ TEST_TASK = Task.RECEPTIONIST
 TEST_COMPOUND = False
 TEST_INDIVIDUAL_FUNCTIONS = False
 TEST_EMBEDDINGS = False
-TEST_ASYNC_LLM = False
-TEST_STREAMING = True
+TEST_ASYNC_LLM = True
+TEST_STREAMING = False
 
 
 class TestHriManager(Node):
@@ -292,6 +292,19 @@ class TestHriManager(Node):
         # Test original functionality
         test = self.hri_manager.extract_data("LLM_name", "My name is John Doe")
         self.get_logger().info(f"Extract data result: {test}")
+
+        s, res = self.hri_manager.common_interest("John", "Football", "Gilbert", "Basketball")
+
+        self.get_logger().info(f"Common interest result: {res}")
+
+        # Test async LLM with a timeout
+        f = self.hri_manager.common_interest(
+            "John", "Football", "Gilbert", "Basketball", is_async=True
+        )
+        rclpy.spin_until_future_complete(self, f)
+
+        self.get_logger().info(f"Common interest future: {f}")
+        self.get_logger().info(f"Common interest future status: {f.done()}, {f.result()}")
 
 
 def main(args=None):

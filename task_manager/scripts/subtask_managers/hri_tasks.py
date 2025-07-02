@@ -128,6 +128,11 @@ def remove_punctuation(text: str) -> str:
     return re.sub(r"[^\w\s]", "", text).strip().lower()
 
 
+def format_transcription(text: str) -> str:
+    """Format the interpreted text to remove punctuation and convert to lowercase."""
+    return remove_punctuation(text).split(" ")
+
+
 class HRITasks(metaclass=SubtaskMeta):
     """Class to manage the vision tasks"""
 
@@ -326,14 +331,19 @@ class HRITasks(metaclass=SubtaskMeta):
             self.keyword = ""
 
     @service_check("_action_client", (Status.SERVICE_CHECK, ""), TIMEOUT)
-    def hear(self, hotwords="", silence_time=4.0, max_audio_length=13.0) -> str:
+    def hear(
+        self, hotwords="", silence_time=2.0, start_silence_time=4.0, max_audio_length=13.0
+    ) -> str:
         Logger.info(
             self.node,
             "Hearing from the user...",
         )
 
         accepted_future = self.hear_streaming(
-            hotwords=hotwords, silence_time=silence_time, timeout=max_audio_length
+            hotwords=hotwords,
+            silence_time=silence_time,
+            start_silence_time=start_silence_time,
+            timeout=max_audio_length,
         )
 
         rclpy.spin_until_future_complete(
@@ -360,21 +370,31 @@ class HRITasks(metaclass=SubtaskMeta):
 
         return execution_status, goal_future.result().result.transcription
 
-    def hear_streaming(self, timeout: float = 10.0, hotwords: str = "", silence_time: float = 5.0):
+    def hear_streaming(
+        self,
+        timeout: float = 13.0,
+        hotwords: str = "",
+        silence_time: float = 2.0,
+        start_silence_time: float = 4.0,
+    ):
         """Method to hear streaming audio from the user.
 
         Args:
             timeout (float): The maximum time to stop the transcription.
             hotwords (str): Hotwords to improve the transcription accuracy.
             silence_time (float): The time to wait after the last interpreted word to stop the transcription. i.e. if no words are heard for this time, the transcription will stop.
+            start_silence_time (float): The minimum duration of the transcription before hearing any words. Useful to handle initial silence in audio.
         """
-        Logger.info(self.node, "Hearing streaming from the user...")
+        # Cancel other actions if they are running
+        self.cancel_hear_action()
+
         self.current_transcription = ""
 
         goal_msg = SpeechStream.Goal()
-        goal_msg.timeout = timeout
+        goal_msg.timeout = float(timeout)
         goal_msg.hotwords = hotwords
-        goal_msg.silence_time = silence_time
+        goal_msg.silence_time = float(silence_time)
+        goal_msg.start_silence_time = float(start_silence_time)
 
         future = self._action_client.send_goal_async(
             goal_msg,
@@ -430,16 +450,41 @@ class HRITasks(metaclass=SubtaskMeta):
                 while (
                     (self.node.get_clock().now() - start_time).nanoseconds / 1e9
                 ) < wait_between_retries:
-                    s, interpret_text = self.hear()
-                    if s == Status.EXECUTION_SUCCESS:
-                        # check if positive word is in the interpreted text, if not, check if the text is positive with llm
-                        for word in self.positive:
-                            if word in interpret_text.lower():
-                                return Status.EXECUTION_SUCCESS, "yes"
+                    accepted_future = self.hear_streaming(timeout=wait_between_retries)
 
-                        if self.is_positive(interpret_text)[1]:
+                    rclpy.spin_until_future_complete(
+                        self.node, accepted_future, timeout_sec=wait_between_retries + 1
+                    )
+                    goal_future = accepted_future.result().get_result_async()
+
+                    while not goal_future.done():
+                        if contains_any(
+                            format_transcription(self.current_transcription), self.positive
+                        ):
+                            self.cancel_hear_action()
                             return Status.EXECUTION_SUCCESS, "yes"
+                        if "no" in format_transcription(self.current_transcription):
+                            self.cancel_hear_action()
+                            return Status.EXECUTION_SUCCESS, "no"
+                        rclpy.spin_once(self.node, timeout_sec=0.1)
+
+                    # Add an extra second to ensure the action server has enough time to process the request
+                    rclpy.spin_until_future_complete(
+                        self.node, goal_future, timeout_sec=wait_between_retries + 1
+                    )
+
+                    if len(goal_future.result().result.transcription) > 0:
+                        if (
+                            contains_any(
+                                format_transcription(self.current_transcription), self.positive
+                            )
+                            or self.is_positive(self.current_transcription)[1]
+                        ):
+                            return Status.EXECUTION_SUCCESS, "yes"
+
                         return Status.EXECUTION_SUCCESS, "no"
+                    return Status.TARGET_NOT_FOUND, ""
+
         Logger.info(
             self.node,
             "Confirmation timed out for: " + question,
@@ -516,7 +561,7 @@ class HRITasks(metaclass=SubtaskMeta):
         return Status.TIMEOUT, ""
 
     def interpret_keyword(self, keywords: list[str], timeout: float) -> str:
-        self.cancel_action()
+        self.cancel_hear_action()
 
         self.hear_streaming(timeout=timeout, silence_time=timeout)
 
@@ -527,10 +572,6 @@ class HRITasks(metaclass=SubtaskMeta):
             self.node,
             f"Listening for keywords: {str(keywords)}",
         )
-
-        def format_transcription(text: str) -> str:
-            """Format the interpreted text to remove punctuation and convert to lowercase."""
-            return remove_punctuation(text).split(" ")
 
         while (
             self.keyword not in keywords
@@ -559,7 +600,7 @@ class HRITasks(metaclass=SubtaskMeta):
                 "interpret_keyword: no keyword recognized",
             )
 
-        self.cancel_action()
+        self.cancel_hear_action()
         return execution_status, keyword_listened
 
     @service_check("grammar_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
@@ -584,10 +625,12 @@ class HRITasks(metaclass=SubtaskMeta):
 
         return Status.EXECUTION_SUCCESS, command_list.commands
 
-    # TODO: Make async
     @service_check("common_interest_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
-    def common_interest(self, person1, interest1, person2, interest2, remove_thinking=True):
+    def common_interest(
+        self, person1, interest1, person2, interest2, remove_thinking=True, is_async=False
+    ):
         try:
+            future = Future()
             Logger.info(
                 self.node,
                 f"Finding common interest between {person1}({interest1}) and {person2}({interest2})",
@@ -595,22 +638,31 @@ class HRITasks(metaclass=SubtaskMeta):
             request = CommonInterest.Request(
                 person1=person1, interests1=interest1, person2=person2, interests2=interest2
             )
-            future = self.common_interest_service.call_async(request)
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=15)
+            common_interest_future = self.common_interest_service.call_async(request)
 
-            result = future.result().common_interest
+            def callback(f):
+                result = f.result().common_interest
+                if remove_thinking:
+                    result = re.sub(r"<think>.*?</think>", "", result, flags=re.DOTALL)
 
-            if remove_thinking:
-                result = re.sub(r"<think>.*?</think>", "", result, flags=re.DOTALL)
+                Logger.info(
+                    self.node, f"Common interest computed between {person1} and {person2}: {result}"
+                )
+                future.set_result(
+                    (
+                        Status.EXECUTION_SUCCESS,
+                        result,
+                    )
+                )
 
-            Logger.info(
-                self.node, f"Common interest computed between {person1} and {person2}: {result}"
-            )
+            common_interest_future.add_done_callback(callback)
+            if not is_async:
+                rclpy.spin_until_future_complete(self.node, future, timeout_sec=15)
+                return future.result()
+            return future
         except Exception as e:
             Logger.error(self.node, f"Error in common interest service: {e}")
             return Status.EXECUTION_ERROR, ""
-
-        return Status.EXECUTION_SUCCESS, result
 
     # TODO: Make async
     @service_check("is_positive_service", (Status.SERVICE_CHECK, False), TIMEOUT)
@@ -636,7 +688,7 @@ class HRITasks(metaclass=SubtaskMeta):
         Logger.info(self.node, f"is_negative result ({text}): {future.result().is_negative}")
         return Status.EXECUTION_SUCCESS, future.result().is_negative
 
-    def cancel_action(self):
+    def cancel_hear_action(self):
         # Cancel all goals sent by this action client
 
         cancel_future = []
