@@ -52,7 +52,6 @@ class WaitForControllerInputNode(Node):
     def joy_callback(self, msg):
         with self.joy_lock:
             self.last_joy_msg = msg
-            self.get_logger().debug(f"Received Joy message: {msg}")
             for i, button in enumerate(msg.buttons):
                 if button and i in BUTTON_MAP.values():
                     button_name = list(BUTTON_MAP.keys())[list(BUTTON_MAP.values()).index(i)]
@@ -61,6 +60,8 @@ class WaitForControllerInputNode(Node):
     def wait_for_input_callback(self, request, response):
         button = request.button
         timeout = request.timeout
+        if timeout == 0:
+            timeout = 1e6  # Set a very large timeout if 0 is provided
 
         button = button.lower()
         if button not in BUTTON_MAP:
@@ -77,7 +78,7 @@ class WaitForControllerInputNode(Node):
         pressed = False
 
         while (self.get_clock().now() - start_time) < Duration(seconds=timeout):
-            time.sleep(0.1)
+            time.sleep(0.01)
             with self.joy_lock:
                 if self.last_joy_msg and len(self.last_joy_msg.buttons) > button_idx:
                     if self.last_joy_msg.buttons[button_idx]:
@@ -94,13 +95,17 @@ class WaitForControllerInputNode(Node):
 
 def main(args=None):
     rclpy.init(args=args)
+    executor = rclpy.executors.MultiThreadedExecutor()
     node = WaitForControllerInputNode()
+    executor.add_node(node)
     try:
-        rclpy.spin(node)
+        executor.spin()
     except KeyboardInterrupt:
         pass
-    node.destroy_node()
-    rclpy.shutdown()
+    finally:
+        executor.shutdown()
+        node.destroy_node()
+        rclpy.shutdown()
 
 
 if __name__ == "__main__":
