@@ -1,11 +1,5 @@
 var NAVTREEINDEX20 =
 {
-"namespacesubtask__managers_1_1hri__tasks.html#a60f5647a53c25ce586f2c1dcbb047bb1":[18,0,115,4,4],
-"namespacesubtask__managers_1_1hri__tasks.html#a7e3e376af45a0eb1103aaf5e923c32f5":[18,0,115,4,5],
-"namespacesubtask__managers_1_1hri__tasks.html#aafc0136a349382c891b80a38fcf63125":[18,0,115,4,9],
-"namespacesubtask__managers_1_1hri__tasks.html#accbca8db8a990c91973f6514cdc35d6f":[18,0,115,4,6],
-"namespacesubtask__managers_1_1manipulation__tasks.html":[18,0,115,5],
-"namespacesubtask__managers_1_1manipulation__tasks.html#a19b76436f0b458641aa91942bdcb5d5e":[18,0,115,5,7],
 "namespacesubtask__managers_1_1manipulation__tasks.html#a30dbfece62a421c750fb045a6f58ce53":[18,0,115,5,9],
 "namespacesubtask__managers_1_1manipulation__tasks.html#a57195ba5d28cdb77a773bbc5b7ebae59":[18,0,115,5,4],
 "namespacesubtask__managers_1_1manipulation__tasks.html#a69940aff1560ff0e7ef858bb25cdfcd6":[18,0,115,5,2],
@@ -230,12 +224,12 @@ var NAVTREEINDEX20 =
 "remove__person_8py.html#ad50da48b8b7f8f5f2ce3d5768cc46928":[20,0,4,0,1,2,4,1],
 "remove__plane_8cpp.html":[20,0,3,0,4,3,5],
 "remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59":[20,0,3,0,4,3,5,1],
-"remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a02129bb861061d1a052c592e2dc6b383":[20,0,3,0,4,3,5,1,3],
 "remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a02129bb861061d1a052c592e2dc6b383":[20,0,3,0,4,3,5,1,0],
+"remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a02129bb861061d1a052c592e2dc6b383":[20,0,3,0,4,3,5,1,3],
 "remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a21c2e59531c8710156d34a3c30ac81d5":[20,0,3,0,4,3,5,1,5],
 "remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a21c2e59531c8710156d34a3c30ac81d5":[20,0,3,0,4,3,5,1,2],
-"remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a57cec4137b614c87cb4e24a3d003a3e0":[20,0,3,0,4,3,5,1,4],
 "remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a57cec4137b614c87cb4e24a3d003a3e0":[20,0,3,0,4,3,5,1,1],
+"remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a57cec4137b614c87cb4e24a3d003a3e0":[20,0,3,0,4,3,5,1,4],
 "remove__plane_8cpp.html#adb27e16249dfa327ea178fe5a5462a66":[20,0,3,0,4,3,5,2],
 "restaurant__task__manager_8py.html":[20,0,6,1,11],
 "restaurant__task__manager_8py.html#a2c2e24f675fbc879adf8114ce8a00d05":[20,0,6,1,11,2],
@@ -249,5 +243,11 @@ var NAVTREEINDEX20 =
 "robot__sim_8launch_8py.html":[20,0,5,0,1,8],
 "robot__sim_8launch_8py.html#aa1de369c762aa456d4c9e31388d6f617":[20,0,5,0,1,8,0],
 "robot__sim_8launch_8py.html#aa842398b51f41c4ee2a7105e1e83009e":[20,0,5,0,1,8,1],
-"ros__utils_8py.html":[20,0,3,0,1,1,0,3]
+"ros__utils_8py.html":[20,0,3,0,1,1,0,3],
+"ros__utils_8py.html#a7d81ef0f364ca6c1dbf02a5f8c6dac4c":[20,0,3,0,1,1,0,3,0],
+"rplidar__fixed_8launch_8py.html":[20,0,4,0,1,0,8],
+"rplidar__fixed_8launch_8py.html#a34c12a29f8ab4229ce3f1118c9f1c3c2":[20,0,4,0,1,0,8,0],
+"rtabmap__slam_8launch_8py.html":[20,0,4,0,1,0,9],
+"rtabmap__slam_8launch_8py.html#a4a8c077875c519fbb01a16d4c929d240":[20,0,4,0,1,0,9,0],
+"rtabmap__slam_8launch_8py.html#a8b32f337ecaf2f50b6d516ff37fdcd63":[20,0,4,0,1,0,9,1]
 };
