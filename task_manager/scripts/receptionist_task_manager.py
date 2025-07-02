@@ -4,19 +4,14 @@
 Task Manager for Receptionist task of Robocup @Home 2025
 """
 
-import rclpy
-
-from rclpy.node import Node
-from utils.logger import Logger
-from utils.subtask_manager import SubtaskManager, Task
-from utils.status import Status
 import time
 
-
-from frida_constants.vision_constants import (
-    IMAGE_TOPIC_RECEPTIONIST,
-    FACE_RECOGNITION_IMAGE,
-)
+import rclpy
+from frida_constants.vision_constants import FACE_RECOGNITION_IMAGE, IMAGE_TOPIC_RECEPTIONIST
+from rclpy.node import Node
+from utils.logger import Logger
+from utils.status import Status
+from utils.subtask_manager import SubtaskManager, Task
 
 ATTEMPT_LIMIT = 3
 
@@ -194,21 +189,47 @@ class ReceptionistTM(Node):
 
         if self.current_state == ReceptionistTM.TaskStates.DESCRIBE:
             guest1 = self.guests[1]
-            intro = f"By the way, {guest1.name} is already in the living room. {guest1.description}"
+            host = self.guests[0]
 
-            status, common_message_guest1 = self.subtask_manager.hri.common_interest(
-                self.get_guest().name, self.get_guest().interest, guest1.name, guest1.interest
+            common_message_guest1_future = self.subtask_manager.hri.common_interest(
+                self.get_guest().name,
+                self.get_guest().interest,
+                guest1.name,
+                guest1.interest,
+                is_async=True,
             )
 
+            common_message_host_future = self.subtask_manager.hri.common_interest(
+                self.get_guest().name,
+                self.get_guest().interest,
+                host.name,
+                host.interest,
+                is_async=True,
+            )
+
+            self.subtask_manager.hri.say(
+                f"By the way, {guest1.name} is already in the living room. {guest1.description}",
+                wait=True,
+            )
+
+            rclpy.spin_until_future_complete(
+                self.node, common_message_guest1_future, timeout_sec=15
+            )
+            status, common_message_guest1 = common_message_guest1_future.result()
+
             if status == Status.EXECUTION_SUCCESS:
-                self.subtask_manager.hri.say(f"{intro}. {common_message_guest1}", wait=False)
+                self.subtask_manager.hri.say(f"{common_message_guest1}", wait=False)
             else:
-                host = self.guests[0]
-                status, common_message_host = self.subtask_manager.hri.common_interest(
-                    self.get_guest().name, self.get_guest().interest, host.name, host.interest
-                )
                 self.subtask_manager.hri.say(
-                    f"{intro}. {host.name} is also in the living room. {common_message_host}",
+                    f"{host.name} is also in the living room.",
+                    wait=True,
+                )
+                rclpy.spin_until_future_complete(
+                    self.node, common_message_host_future, timeout_sec=15
+                )
+                s, common_message_host = common_message_host_future.result()
+                self.subtask_manager.hri.say(
+                    f"{common_message_host}",
                     wait=False,
                 )
 
