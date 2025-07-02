@@ -1,5 +1,6 @@
 #include "rclcpp/rclcpp.hpp"
 #include <ament_index_cpp/get_package_share_directory.hpp>
+#include <pcl-1.12/pcl/sample_consensus/model_types.h>
 #include <pcl/common/transforms.h>
 #include <rclcpp/duration.hpp>
 #include <rclcpp/logging.hpp>
@@ -36,6 +37,7 @@
 
 #include <frida_interfaces/srv/cluster_object_from_point.hpp>
 #include <frida_interfaces/srv/remove_plane.hpp>
+#include <frida_interfaces/srv/remove_vertical_plane.hpp>
 #include <frida_interfaces/srv/test.hpp>
 
 enum class PassThroughFilterType { X, Y, Z };
@@ -48,6 +50,8 @@ private:
       remove_place_srv;
   rclcpp::Service<frida_interfaces::srv::ClusterObjectFromPoint>::SharedPtr
       cluster_object_from_point_srv;
+  rclcpp::Service<frida_interfaces::srv::RemoveVerticalPlane>::SharedPtr
+      remove_vertical_plane_srv;
 
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr cloud_sub_;
 
@@ -118,6 +122,12 @@ public:
             std::bind(&TableSegmentationNode::test_cluster, this,
                       std::placeholders::_1, std::placeholders::_2,
                       std::placeholders::_3));
+    this->remove_vertical_plane_srv =
+        this->create_service<frida_interfaces::srv::RemoveVerticalPlane>(
+            REMOVE_VERTICAL_PLANE_SERVICE,
+            std::bind(&TableSegmentationNode::remove_vertical_plane, this,
+                      std::placeholders::_1, std::placeholders::_2,
+                      std::placeholders::_3));
     RCLCPP_INFO(this->get_logger(), "Service created");
   }
 
@@ -185,27 +195,23 @@ public:
                            "Error filtering point cloud with code %d",
                            response->health_response);
 
-    
-
     response->health_response =
         this->extractPlane(cloud_out, cloud_out, request->extract_or_remove);
-
-   
 
     ASSERT_AND_RETURN_CODE(response->health_response, OK,
                            "Error extracting plane with code %d",
                            response->health_response);
-    
+
     response->health_response = this->largest_cluster(cloud_out, cloud_out);
 
-    //publish
-    // publish this in debug pcl pub
+    // publish
+    //  publish this in debug pcl pub
     sensor_msgs::msg::PointCloud2 cloud_out_msg;
     try {
       pcl::toROSMsg(*cloud_out, cloud_out_msg);
     } catch (const std::exception &e) {
       RCLCPP_ERROR(this->get_logger(), "Error converting point cloud: %s",
-                  e.what());
+                   e.what());
       response->health_response = COULD_NOT_CONVERT_POINT_CLOUD;
       return;
     }
@@ -460,7 +466,7 @@ public:
                          std::min(float(point.z + distance), max_height));
 
     pass.filter(*cloud_out);
-    
+
     pcl::PassThrough<pcl::PointXYZ> pass2;
     pass2.setInputCloud(cloud_out);
     pass2.setFilterFieldName("x");
@@ -490,6 +496,128 @@ public:
     cloud_out->width = cloud_out->points.size();
 
     return OK;
+  }
+
+  STATUS_RESPONSE vertical_plane(
+      _IN_ const std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud,
+      _OUT_ const std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud_out) {
+
+    pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
+    pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
+    pcl::SACSegmentation<pcl::PointXYZ> seg;
+    // set segmentation parameters
+    seg.setOptimizeCoefficients(true);
+    seg.setModelType(pcl::SACMODEL_PARALLEL_PLANE);
+    seg.setMethodType(pcl::SAC_RANSAC);
+    seg.setEpsAngle(5.0f * (M_PI / 180.0f));
+    seg.setAxis(Eigen::Vector3f::UnitZ());
+    seg.setMaxIterations(1000);
+    seg.setDistanceThreshold(0.03);
+    // segment the largest planar component from the input cloud
+    seg.setInputCloud(cloud);
+    seg.segment(*inliers, *coefficients);
+    if (inliers->indices.size() == 0) {
+      RCLCPP_ERROR(this->get_logger(), "Could not estimate a vertical plane");
+      return COULD_NOT_ESTIMATE_PLANAR_MODEL;
+    }
+    RCLCPP_INFO(this->get_logger(), "Vertical plane found with %zu inliers",
+                inliers->indices.size());
+    pcl::ExtractIndices<pcl::PointXYZ> extract;
+    extract.setInputCloud(cloud);
+    extract.setIndices(inliers);
+    extract.setNegative(true);
+    extract.filter(*cloud_out);
+
+    RCLCPP_INFO(this->get_logger(), "Extracted vertical plane with %zu points",
+                cloud_out->points.size());
+    if (cloud_out->points.size() == 0) {
+      RCLCPP_ERROR(this->get_logger(), "Could not extract vertical plane");
+      return COULD_NOT_ESTIMATE_PLANAR_MODEL;
+    }
+    // save the vertical plane to a file
+    // std::string filename = this->package_path + "/vertical_plane.pcd";
+    try {
+      pcl::io::savePCDFile(this->package_path + "/vertical_plane.pcd",
+                           *cloud_out);
+    } catch (const std::exception &e) {
+      RCLCPP_ERROR(this->get_logger(), "Error saving vertical plane: %s",
+                   e.what());
+      // return COULD_NOT_SAVE_POINT_CLOUD;
+    }
+    RCLCPP_INFO(this->get_logger(), "Saved vertical plane to %s",
+                (this->package_path + "/vertical_plane.pcd").c_str());
+    return OK;
+  }
+
+  void remove_vertical_plane(
+      const std::shared_ptr<rmw_request_id_t> request_header,
+      const std::shared_ptr<frida_interfaces::srv::RemoveVerticalPlane::Request>
+          request,
+      const std::shared_ptr<
+          frida_interfaces::srv::RemoveVerticalPlane::Response>
+          response) {
+    RCLCPP_INFO(this->get_logger(), "remove_vertical_plane");
+    response->health_response = OK;
+
+    if (this->last_ == nullptr) {
+      response->health_response = NO_POINTCLOUD;
+      return;
+    }
+
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out(
+        new pcl::PointCloud<pcl::PointXYZ>);
+
+    response->health_response = copyPointCloud(last_, cloud_out);
+
+    ASSERT_AND_RETURN_CODE(response->health_response, OK,
+                           "Error copying point cloud with code %d",
+                           response->health_response);
+
+    response->health_response = this->passThroughPlane(
+        cloud_out, cloud_out, 0.15, 3.1, PassThroughFilterType::Z);
+    ASSERT_AND_RETURN_CODE(response->health_response, OK,
+                           "Error filtering point cloud by height with code %d",
+                           response->health_response);
+    response->health_response = this->passThroughPlane(
+        cloud_out, cloud_out, -1.5, 1.5, PassThroughFilterType::Y);
+    ASSERT_AND_RETURN_CODE(response->health_response, OK,
+                           "Error filtering point cloud by height with code%d",
+                           response->health_response);
+    response->health_response = this->passThroughPlane(
+        cloud_out, cloud_out, -1.5, 1.5, PassThroughFilterType::X);
+    ASSERT_AND_RETURN_CODE(response->health_response, OK,
+                           "Error filtering point cloud by height with code%d",
+                           response->health_response);
+
+    pcl::PointCloud<pcl::PointXYZ>::Ptr vertical_plane_removed(
+        new pcl::PointCloud<pcl::PointXYZ>);
+    response->health_response =
+        vertical_plane(cloud_out, vertical_plane_removed);
+    ASSERT_AND_RETURN_CODE(response->health_response, OK,
+                           "Error extracting vertical plane with code %d",
+                           response->health_response);
+    response->cloud = sensor_msgs::msg::PointCloud2();
+    try {
+      pcl::toROSMsg(*vertical_plane_removed, response->cloud);
+    } catch (const std::exception &e) {
+      RCLCPP_ERROR(this->get_logger(), "Error converting point cloud: %s",
+                   e.what());
+      response->health_response = COULD_NOT_CONVERT_POINT_CLOUD;
+      return;
+    }
+    response->cloud.header.frame_id = "base_link";
+    response->cloud.header.stamp = this->now();
+    response->health_response = OK;
+    RCLCPP_INFO(this->get_logger(),
+                "Publishing point cloud without vertical "
+                "plane with %zu points",
+                vertical_plane_removed->points.size());
+    this->cloud_pub_->publish(response->cloud);
+    RCLCPP_INFO(this->get_logger(),
+                "Published point cloud without vertical "
+                "plane with %zu points",
+                vertical_plane_removed->points.size());
+    return;
   }
 
   uint32_t
@@ -556,12 +684,13 @@ public:
       //                               rclcpp::Duration(5.0));
 
       // tf_listener->lookupTransform("base_link", msg->header.frame_id,
-      //                              msg->header.stamp, rclcpp::Duration(5.0));
+      //                              msg->header.stamp,
+      //                              rclcpp::Duration(5.0));
       // bool can_transform = this->tf_buffer->canTransform(
       //     "base_link", msg->header.frame_id, tf2::TimePointZero);
       // if (!can_transform) {
-      //   RCLCPP_ERROR(this->get_logger(), "Could not transform point cloud");
-      //   return COULD_NOT_CONVERT_POINT_CLOUD;
+      //   RCLCPP_ERROR(this->get_logger(), "Could not transform point
+      //   cloud"); return COULD_NOT_CONVERT_POINT_CLOUD;
       // }
 
       pcl_ros::transformPointCloud("base_link", *msg, msg2, *this->tf_buffer);
@@ -571,15 +700,15 @@ public:
         return POINT_CLOUD_EMPTY;
       }
       pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(
-        new pcl::PointCloud<pcl::PointXYZ>);
+          new pcl::PointCloud<pcl::PointXYZ>);
       try {
 
-          pcl::fromROSMsg(msg2, *cloud);
-        } catch (const std::exception &e) {
-          RCLCPP_ERROR(this->get_logger(), "Error converting point cloud: %s",
-                       e.what());
-          return COULD_NOT_CONVERT_POINT_CLOUD;
-        }
+        pcl::fromROSMsg(msg2, *cloud);
+      } catch (const std::exception &e) {
+        RCLCPP_ERROR(this->get_logger(), "Error converting point cloud: %s",
+                     e.what());
+        return COULD_NOT_CONVERT_POINT_CLOUD;
+      }
       if (cloud->points.size() == 0) {
         RCLCPP_ERROR(this->get_logger(), "Point cloud is empty");
         return POINT_CLOUD_EMPTY;
@@ -633,7 +762,7 @@ public:
     }
     pcl::PassThrough<pcl::PointXYZ> pass;
     pass.setInputCloud(cloud);
-    pass.setFilterFieldName("z");
+    pass.setFilterFieldName(filter_field_name);
     pass.setFilterLimits(min_val, max_val);
     pass.filter(*cloud_out);
 
@@ -646,14 +775,15 @@ public:
     return OK;
   }
 
-
   /**
-   * \brief Extracts the plane from a point cloud. If extract_negative is true,
+   * \brief Extracts the plane from a point cloud. If extract_negative is
+   true,
    * the plane is removed from the point cloud
 
    * @param cloud: IN Point cloud to extract the plane from
    * @param cloud_out: OUT Point cloud to store the extracted plane
-   * @param extract_negative: If true, the plane is removed from the point cloud
+   * @param extract_negative: If true, the plane is removed from the point
+   cloud
    */
 
   uint32_t extractPlane(_IN_ const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
@@ -822,7 +952,7 @@ public:
     int max_points = 0;
     for (size_t i = 0; i < cluster_indices.size(); i++) {
       RCLCPP_INFO(this->get_logger(), "Cluster %lu, size %lu", i,
-                    cluster_indices[i].indices.size());
+                  cluster_indices[i].indices.size());
       if (cluster_indices[i].indices.size() > max_points) {
         max_points = cluster_indices[i].indices.size();
         targetClusterIdx = i;
