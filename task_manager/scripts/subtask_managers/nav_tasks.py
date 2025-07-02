@@ -26,7 +26,7 @@ from frida_constants.navigation_constants import (
     GOAL_TOPIC,
     FOLLOWING_SERVICE,
 )
-from frida_interfaces.srv import ReturnLocation, LaserGet
+from frida_interfaces.srv import ReturnLocation, LaserGet, WaitForControllerInput
 
 TIMEOUT = 4
 RETURN_LASER_DATA = "/integration/Laserscan"
@@ -52,6 +52,9 @@ class NavigationTasks:
         self.activate_follow = self.node.create_client(SetBool, FOLLOWING_SERVICE)
         self.laser_send = self.node.create_client(LaserGet, RETURN_LASER_DATA)
         self.ReturnLocation_client = self.node.create_client(ReturnLocation, RETURN_LOCATION)
+        self.wait_for_controller_input = self.node.create_client(
+            WaitForControllerInput, "wait_for_controller_input"
+        )
         self.services = {
             Task.RECEPTIONIST: {
                 "goal_client": {"client": self.goal_client, "type": "action"},
@@ -91,7 +94,29 @@ class NavigationTasks:
                 if not service["client"].wait_for_server(timeout_sec=TIMEOUT):
                     Logger.warn(self.node, f"{key} action server not initialized. ({self.task})")
 
-    @mockable(return_value=Status.EXECUTION_SUCCESS, delay=10)
+    def mock_to_location_controller(self, timeout=10):
+        """Mock the controller to move to a location"""
+        if not self.mock_data:
+            Logger.error(self.node, "Mock data is not enabled")
+            return
+
+        try:
+            request = WaitForControllerInput.Request()
+            request.button = "x"
+            request.timeout = timeout
+            future = self.wait_for_controller_input.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=timeout)
+            result = future.result()
+            if result is None or not result.success:
+                Logger.error(self.node, "Controller input not received")
+                return Status.EXECUTION_ERROR
+        except Exception as e:
+            Logger.error(self.node, f"Error waiting for controller input: {e}")
+            return Status.EXECUTION_ERROR
+
+        return Status.EXECUTION_SUCCESS
+
+    @mockable(_mock_callback=mock_to_location_controller)
     @service_check("goal_client", False, timeout=3)
     def move_to_location(self, location: str, sublocation: str) -> Future:
         """Attempts to move to the given location and returns a Future that completes when the action finishes.
