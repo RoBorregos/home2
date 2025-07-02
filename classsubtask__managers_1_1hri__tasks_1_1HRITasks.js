@@ -1,7 +1,9 @@
 var classsubtask__managers_1_1hri__tasks_1_1HRITasks =
 [
     [ "__init__", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a4f915f07715543395fc0cde111e35c99", null ],
+    [ "_add_to_collection", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a57af1210e3cd64c4c2e2dab723ff2d78", null ],
     [ "_get_keyword", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#afddc2bd2e1e32d6fab72ca94bca77796", null ],
+    [ "_query_", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a2bbb8fb7656ac77847e8f5542f1f4675", null ],
     [ "add_command_history", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a86d1a33e91451f142372129dd280f2b4", null ],
     [ "add_item", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a7d6c4612bc81f43d5254e3a78093af2a", null ],
     [ "add_location", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#af38150add6c037a0af32c905b4dc327e", null ],
@@ -19,6 +21,7 @@ var classsubtask__managers_1_1hri__tasks_1_1HRITasks =
     [ "extract_data", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#ab1d1586a91c8bdf01b8c6b034d678aa3", null ],
     [ "feedback_callback", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#ac22a2611cfa6eb9a8fa500713627354a", null ],
     [ "find_closest", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#acd646a9927b181428ee48b791460fc36", null ],
+    [ "find_closest_raw", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a8c7fe6afcdae35863bdd03824fbcdd5d", null ],
     [ "get_area", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a1f82f062abe39e0585a202965085f608", null ],
     [ "get_command", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a6ca3d7f013828189b22949c09545ac32", null ],
     [ "get_context", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a199da0104666e3e605b983ceabb85262", null ],
@@ -44,6 +47,7 @@ var classsubtask__managers_1_1hri__tasks_1_1HRITasks =
     [ "setup_services", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a7d2e844fa32fad9b41c58f766997fc4c", null ],
     [ "_action_client", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a6fe3bb45c53acde52102defe8ad0da85", null ],
     [ "_active_goals", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#aa107d9384f96ccf4e5451108dbe8b534", null ],
+    [ "add_item_client", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#ab2024f1a9123e8ea8c96db54fe21082a", null ],
     [ "answer_question_service", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#aa016b8a5c37b1522ec351109bf4c23a4", null ],
     [ "categorize_service", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a905ddaef876397113e975170a977f8d7", null ],
     [ "common_interest_service", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a4e6847b7798ca93ce14789f32a94597a", null ],
@@ -58,7 +62,6 @@ var classsubtask__managers_1_1hri__tasks_1_1HRITasks =
     [ "keyword_client", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#ada2fad0cc8a67fe7e770b7c0289ff222", null ],
     [ "llm_wrapper_service", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#aea25ba46c62a0f5799df8cce48b61114", null ],
     [ "node", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a5542f36bacfe5c5802df0dd8b2e0809f", null ],
-    [ "pg", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#ae5741cfa50a327b34517a797392b9122", null ],
     [ "positive", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#ad397d2ef51f34702b6746b72f4e8d561", null ],
     [ "query_item_client", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#ade077e8374113c67d03f2851062c22dd", null ],
     [ "services", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a45352598c15b4a22e99ea4de2c658090", null ],
