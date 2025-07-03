@@ -53,9 +53,9 @@ class NavigationTasks:
         self.activate_follow = self.node.create_client(SetBool, FOLLOWING_SERVICE)
         self.laser_send = self.node.create_client(LaserGet, RETURN_LASER_DATA)
         self.ReturnLocation_client = self.node.create_client(ReturnLocation, RETURN_LOCATION)
-        # self.wait_for_controller_input = self.node.create_client(
-        #     WaitForControllerInput, "wait_for_controller_input"
-        # )
+        self.wait_for_controller_input = self.node.create_client(
+            WaitForControllerInput, "wait_for_controller_input"
+        )
         self.services = {
             Task.RECEPTIONIST: {
                 "goal_client": {"client": self.goal_client, "type": "action"},
@@ -107,16 +107,10 @@ class NavigationTasks:
             request.button = "x"
             request.timeout = timeout
             future = self.wait_for_controller_input.call_async(request)
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=timeout)
-            result = future.result()
-            if result is None or not result.success:
-                Logger.error(self.node, "Controller input not received")
-                return Status.EXECUTION_ERROR
+            return future
         except Exception as e:
             Logger.error(self.node, f"Error waiting for controller input: {e}")
-            return Status.EXECUTION_ERROR
-
-        return Status.EXECUTION_SUCCESS
+            return Future().set_result(Status.EXECUTION_ERROR)
 
     @mockable(_mock_callback=mock_to_location_controller)
     @service_check("goal_client", False, timeout=3)
