@@ -8,8 +8,7 @@ from sentence_transformers import SentenceTransformer
 
 from embeddings.collections import Action, Item, Location, CommandHistory, Knowledge
 
-# MODEL_PATH = "/workspace/src/hri/packages/nlp/assets/all-MiniLM-L12-v2"
-MODEL_PATH = "./temp"
+MODEL_PATH = "/workspace/src/hri/packages/nlp/assets/all-MiniLM-L12-v2"
 
 
 class PostgresAdapter:
