@@ -770,7 +770,7 @@ public:
     extract.setInputCloud(cloud);
     extract.setIndices(inliers);
     // extract.setNegative(true);
-    extract.setNegative(!keep_or_remove);
+    extract.setNegative(keep_or_remove);
     extract.filter(*cloud_out);
 
     return OK;
