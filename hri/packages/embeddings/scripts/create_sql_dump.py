@@ -116,6 +116,7 @@ def json_to_hand_items_dumps(json: list[dict[str, str]]) -> str:
         hand_items.append(
             {
                 "name": item["name"],
+                "description": item["description"],
                 "embedding_name": embedding_name.tolist(),
                 "embedding_description": embedding_description.tolist(),
                 "x_loc": item["x_loc"],
@@ -125,7 +126,7 @@ def json_to_hand_items_dumps(json: list[dict[str, str]]) -> str:
                 "color": item["color"],
             }
         )
-    sql = "INSERT INTO hand_location (name, embedding_name, embedding_description, x_loc, y_loc, m_loc_x, m_loc_y, color) VALUES (%s, %s, %s, %s, %s, %s, %s, %s);"
+    sql = "INSERT INTO hand_location (name, description, embedding_name, embedding_description, x_loc, y_loc, m_loc_x, m_loc_y, color) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);"
     dumps = []
     for item in hand_items:
         dumps.append(
@@ -133,6 +134,7 @@ def json_to_hand_items_dumps(json: list[dict[str, str]]) -> str:
                 sql,
                 (
                     item["name"],
+                    item["description"],
                     item["embedding_name"],
                     item["embedding_description"],
                     item["x_loc"],

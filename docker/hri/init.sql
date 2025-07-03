@@ -41,6 +41,7 @@ CREATE TABLE knowledge (
 CREATE TABLE hand_location (
     id SERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
+    description text NOT NULL,
     embedding_name vector(384) NOT NULL,
     embedding_description vector(384) NOT NULL,
     x_loc FLOAT NOT NULL,
