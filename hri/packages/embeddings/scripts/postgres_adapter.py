@@ -3,10 +3,16 @@
 
 import json
 import os
-import psycopg2
-from sentence_transformers import SentenceTransformer
 
-from embeddings.collections import Action, Item, Location, CommandHistory, Knowledge
+import psycopg2
+from embeddings.postgres_collections import (
+    Action,
+    CommandHistory,
+    Item,
+    Knowledge,
+    Location,
+)
+from sentence_transformers import SentenceTransformer
 
 MODEL_PATH = "/workspace/src/hri/packages/nlp/assets/all-MiniLM-L12-v2"
 

@@ -223,7 +223,7 @@ The `postgres_adapter.py` file contains the code to interact with the PostgreSQL
 In order to interact directly with the database, you can use the `psql` command line tool in the container: 
 
 ```bash
-docker exec -it postgres-db psql -U rbrgs -d postgres
+docker exec -it home2-hri-postgres psql -U rbrgs -d postgres
 ```
 Useful commands in `psql`:
 
@@ -233,7 +233,7 @@ Useful commands in `psql`:
 ```
 
 ```sql
-ivan@ivan:~/home2/docker/hri$ docker exec -it postgres-db psql -U rbrgs -d postgres
+ivan@ivan:~/home2/docker/hri$ docker exec -it home2-hri-postgres psql -U rbrgs -d postgres
 psql (17.4 (Debian 17.4-1.pgdg120+2))
 Type "help" for help.
 
