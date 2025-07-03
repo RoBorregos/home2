@@ -19,11 +19,18 @@ interface AudioState {
 
 export default function RosMessagesDisplay() {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [currentMessage, setCurrentMessage] = useState<Message | null>(null);
   const [connected, setConnected] = useState(false);
   const [audioState, setAudioState] = useState<AudioState>({
     state: "idle",
     vadLevel: 0,
   });
+  const audioStateRef = useRef(audioState);
+  useEffect(() => {
+    audioStateRef.current = audioState;
+  }, [audioState]);
+
+  
   const [audioTopic, setAudioTopic] = useState<string>(
     "/zed/zed_node/rgb/image_rect_color"
   );
@@ -84,34 +91,49 @@ export default function RosMessagesDisplay() {
         console.error("Error parsing keyword content:", error);
       }
     }
+    const timestamp = new Date();
 
-    setMessages((prev) => [
-      {
-        type,
+  if (type === "heard") {
+    console.log("Heard message received ", audioStateRef.current.state);
+    if (audioStateRef.current.state === "listening") {
+      setCurrentMessage({ type, content: displayContent, timestamp });
+    } else {
+      setMessages((prev) => [
+        { type, content: displayContent, timestamp },
+      ...prev,
+    ]);
+  }
+} else {
+  setMessages((prev) => [
+    {
+      type,
         content: String(displayContent),
-        timestamp: new Date(),
+        timestamp,
       },
       ...prev,
     ]);
-  };
+  }
+};
 
-  const handleMic = (type: string, content: string | number) => {
-    if (type === "audioState") {
-      setAudioState((prev) => ({
-        ...prev,
-        state: content as "idle" | "listening" | "saying",
-      }));
-    } else if (type === "vad") {
-      // Assuming vad is a float between 0 and 1
-      setAudioState((prev) => ({
-        ...prev,
-        vadLevel:
-          typeof content === "number"
-            ? content
-            : Number.parseFloat(content as string),
-      }));
-    }
-  };
+ const handleMic = (type: string, content: string | number) => {
+  console.log("handleMic received:", type, content);
+  if (type === "audioState") {
+    const newState = content as "idle" | "listening" | "saying";
+    setAudioState(prev => ({ ...prev, state: newState }));
+  } else if (type === "vad") {
+    setAudioState(prev => ({
+      ...prev,
+      vadLevel: typeof content === "number" ? content : Number.parseFloat(content as string),
+    }));
+  }
+};
+useEffect(() => {
+  if (audioState.state === "idle" && currentMessage) {
+    setMessages(prevMsgs => [currentMessage, ...prevMsgs]);
+    setCurrentMessage(null);
+  }
+}, [audioState.state, currentMessage]);
+
 
   useEffect(() => {
     messagesStartRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -137,7 +159,17 @@ export default function RosMessagesDisplay() {
           </div>
         </div>
       </div>
-
+      {audioState.state === "listening" && currentMessage && (
+        <div
+          key={currentMessage.timestamp.getTime()}
+          className="fixed bottom-32 left-1/2 transform -translate-x-1/2 bg-[oklch(0.5_0.25_260)] text-white px-6 py-3 rounded-lg shadow-lg z-50 min-w-[300px] text-center animate-fadeIn"
+        >
+          <div className="flex items-center justify-center gap-3">
+            <Mic className="h-5 w-5 animate-pulse" />
+            <p className="text-lg font-medium">{currentMessage.content}</p>
+          </div>
+        </div>
+      )}
       <div className="grid grid-cols-2 h-full overflow-y-hidden">
         {/* Left column */}
         <div className="flex flex-col p-4 space-y-3 overflow-y-auto">
