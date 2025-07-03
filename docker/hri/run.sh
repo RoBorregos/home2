@@ -140,7 +140,9 @@ add_or_update_variable .env "COMPOSE_PROFILES" "$COMPOSE_PROFILES"
 
 GENERATE_BAML_CLIENT="baml-cli generate --from /workspace/src/task_manager/scripts/utils/baml_src/"
 
-COMMAND="$GENERATE_BAML_CLIENT && source /opt/ros/humble/setup.bash && colcon build --symlink-install --packages-select frida_interfaces frida_constants speech nlp embeddings && source ~/.bashrc && $RUN"
+# Rebuild
+# COMMAND="$GENERATE_BAML_CLIENT && source /opt/ros/humble/setup.bash && colcon build --symlink-install --packages-select frida_interfaces frida_constants speech nlp embeddings && source ~/.bashrc && $RUN"
+COMMAND="$GENERATE_BAML_CLIENT && source /opt/ros/humble/setup.bash && source ~/.bashrc && $RUN"
 
 # echo "COMMAND= $COMMAND " >> .env
 add_or_update_variable .env "COMMAND" "$COMMAND"

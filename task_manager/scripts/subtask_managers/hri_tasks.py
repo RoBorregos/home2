@@ -891,7 +891,33 @@ class HRITasks(metaclass=SubtaskMeta):
         # Logger.info(self.node, f"find_closest result({query}): {str(Results)}")
         # return Status.EXECUTION_SUCCESS, Results
 
-    # def find_closest_raw(self, documents: str, query: str, top_k: int = 1) -> list[str]:
+    def find_closest_raw(self, documents: list, query: str, top_k: int = 1) -> list[str]:
+        """
+        Method to find the closest item to the query.
+        Args:
+            documents: the documents to search among
+            query: the query to search for
+        Returns:
+            Status: the status of the execution
+            list[str]: the results of the query
+        """
+        docs = [(doc, self.pg.embedding_model.encode(doc)) for doc in documents]
+        Logger.info(self.node, f"FIND CLOSEST RAW DOCS: {docs}")
+        emb = self.pg.embedding_model.encode(query)
+        Logger.info(self.node, f"FIND CLOSEST RAW EMB: {emb}")
+
+        def cos_sim(x, y):
+            return np.dot(x, y) / (np.linalg.norm(x) * np.linalg.norm(y))
+
+        Results = cos_sim(
+            np.array([doc[1] for doc in docs]), emb
+        )  # Calculate cosine similarity for all documents
+        Results = sorted(zip(docs, Results), key=lambda x: x[1], reverse=True)[:top_k]
+        Results = [(doc[0][0], doc[1]) for doc in Results]  # Extract document and similarity score
+        Logger.info(self.node, f"FIND CLOSEST RAW RESULTS: {Results}")
+
+        return Results
+
     #     """
     #     Method to find the closest item to the query.
     #     Args:
@@ -1127,9 +1153,10 @@ class HRITasks(metaclass=SubtaskMeta):
                 category_list.append(category)
 
             results = self.find_closest_raw(category_list, obj)
-            results_distances = results[1][0]["distance"]
+            results_distances = [res[1] for res in results]
 
-            result_category = results[1][0]["document"]
+            result_category = results[0][0] if len(results) > 0 else "empty"
+            self.node.get_logger().info(f"RESULTS DISTANCES: {results_distances}")
             self.node.get_logger().info(f"CATEGORY PREDICTED BEFORE THRESHOLD: {result_category}")
             if "empty" in categories.values() and results_distances[0] > 1:
                 result_category = "empty"

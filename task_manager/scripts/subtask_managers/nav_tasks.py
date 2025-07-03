@@ -28,6 +28,7 @@ from frida_constants.navigation_constants import (
 )
 from frida_interfaces.srv import ReturnLocation, LaserGet, WaitForControllerInput
 
+TIMEOUT_WAIT_FOR_SERVICE = 1.0
 TIMEOUT = 4
 RETURN_LASER_DATA = "/integration/Laserscan"
 
@@ -52,9 +53,9 @@ class NavigationTasks:
         self.activate_follow = self.node.create_client(SetBool, FOLLOWING_SERVICE)
         self.laser_send = self.node.create_client(LaserGet, RETURN_LASER_DATA)
         self.ReturnLocation_client = self.node.create_client(ReturnLocation, RETURN_LOCATION)
-        self.wait_for_controller_input = self.node.create_client(
-            WaitForControllerInput, "wait_for_controller_input"
-        )
+        # self.wait_for_controller_input = self.node.create_client(
+        #     WaitForControllerInput, "wait_for_controller_input"
+        # )
         self.services = {
             Task.RECEPTIONIST: {
                 "goal_client": {"client": self.goal_client, "type": "action"},
@@ -88,10 +89,10 @@ class NavigationTasks:
 
         for key, service in self.services[self.task].items():
             if service["type"] == "service":
-                if not service["client"].wait_for_service(timeout_sec=TIMEOUT):
+                if not service["client"].wait_for_service(timeout_sec=TIMEOUT_WAIT_FOR_SERVICE):
                     Logger.warn(self.node, f"{key} service not initialized. ({self.task})")
             elif service["type"] == "action":
-                if not service["client"].wait_for_server(timeout_sec=TIMEOUT):
+                if not service["client"].wait_for_server(timeout_sec=TIMEOUT_WAIT_FOR_SERVICE):
                     Logger.warn(self.node, f"{key} action server not initialized. ({self.task})")
 
     def mock_to_location_controller(self, timeout=10):
@@ -101,6 +102,7 @@ class NavigationTasks:
             return
 
         try:
+            Logger.info(self.node, "Waiting for controller input...")
             request = WaitForControllerInput.Request()
             request.button = "x"
             request.timeout = timeout

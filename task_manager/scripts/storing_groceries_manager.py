@@ -202,7 +202,7 @@ class StoringGroceriesManager(Node):
         if self.state == ExecutionStates.START:
             Logger.info(self, "Starting Storing Groceries Manager...")
             self.state = ExecutionStates.INIT_NAV_TO_SHELF
-            # self.state = ExecutionStates.CATEGORIZE_OBJECTS
+            self.state = ExecutionStates.VIEW_AND_SAVE_OBJECTS_ON_TABLE
 
             # self.state = ExecutionStates.INIT_NAV_TO_SHELF
         #             self.state = ExecutionStates.CATEGORIZE_OBJECTS
@@ -389,8 +389,8 @@ class StoringGroceriesManager(Node):
                 # self.object_names_on_table = ["apple", "squash", "coke", "bowl"]
                 # shelfs = {0: [], 1: ["apple", "orange"], 2: ["orange_soda"]}
 
-                #                 self.object_names_on_table = ["apple", "squash", "coke", "bowl"]
-                #                 shelfs = {0: [], 1: ["apple", "orange"], 2: ["fanta"]}
+                self.object_names_on_table = ["apple", "squash", "coke", "bowl"]
+                shelfs = {0: [], 1: ["bottle", "coke_can"], 2: ["pear"]}
                 status, categorized_shelfs, objects_to_add = (
                     self.subtask_manager.hri.categorize_objects(self.object_names_on_table, shelfs)
                 )
