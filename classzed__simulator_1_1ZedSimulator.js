@@ -6,5 +6,6 @@ var classzed__simulator_1_1ZedSimulator =
     [ "cap", "classzed__simulator_1_1ZedSimulator.html#ae467c97ec4f3740f01bb0cf76dadbb9e", null ],
     [ "publisher_", "classzed__simulator_1_1ZedSimulator.html#a1579e3e2ef4a6dc03546b1c21608daa2", null ],
     [ "use_zed", "classzed__simulator_1_1ZedSimulator.html#a51ea3acb3de2294481c6d53d9cfd9f77", null ],
-    [ "video_id", "classzed__simulator_1_1ZedSimulator.html#a198e1834dcf295418677fd6cff8b4213", null ]
+    [ "video_id", "classzed__simulator_1_1ZedSimulator.html#a198e1834dcf295418677fd6cff8b4213", null ],
+    [ "visualize", "classzed__simulator_1_1ZedSimulator.html#a04ace0fe9e0fef80137a5f0cf4b5f963", null ]
 ];

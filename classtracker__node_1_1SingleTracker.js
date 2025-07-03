@@ -27,6 +27,7 @@ var classtracker__node_1_1SingleTracker =
     [ "image_subscriber", "classtracker__node_1_1SingleTracker.html#afc7a962552f9d57e07376962a29d46f2", null ],
     [ "imageInfo", "classtracker__node_1_1SingleTracker.html#a250e64ddd114a1c924003cd5ce2ee00b", null ],
     [ "is_tracking_result", "classtracker__node_1_1SingleTracker.html#af8feef1513c02af7c70d6376e17d4f41", null ],
+    [ "last_reid_extraction", "classtracker__node_1_1SingleTracker.html#a0c72e0bea30d639fb62efee3335f7e07", null ],
     [ "model", "classtracker__node_1_1SingleTracker.html#ac1ed64fbddc75f62bd843b1e7e1b180f", null ],
     [ "model_reid", "classtracker__node_1_1SingleTracker.html#a5eff674854cdf70b08ee66f76c0e52d0", null ],
     [ "moondream_client", "classtracker__node_1_1SingleTracker.html#a2ed1f0570faf92e6f685a7946f17a428", null ],
