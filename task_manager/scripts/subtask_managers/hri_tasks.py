@@ -148,7 +148,7 @@ class AudioStates(Enum):
         if state == AudioStates.SAYING:
             return "speak"
         elif state == AudioStates.LISTEN:
-            return "listening"
+            return "listen"
         elif state == AudioStates.IDLE:
             return "off"
         else:
