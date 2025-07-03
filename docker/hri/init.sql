@@ -36,5 +36,16 @@ CREATE TABLE knowledge (
     embedding vector(384) NOT NULL,
     context text,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-)
+);
 
+CREATE TABLE hand_location (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    embedding_name vector(384) NOT NULL,
+    embedding_description vector(384) NOT NULL,
+    x_loc FLOAT NOT NULL,
+    y_loc FLOAT NOT NULL,
+    m_loc_x FLOAT NOT NULL,
+    m_loc_y FLOAT NOT NULL,
+    color VARCHAR(50) NOT NULL
+);
