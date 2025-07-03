@@ -7,15 +7,18 @@ HRI Subtask manager
 import json
 import os
 import re
+from enum import Enum
 
 # from datetime import datetime
 from typing import List, Union
 
+import numpy as np
 import rclpy
 from ament_index_python.packages import get_package_share_directory
-from frida_constants.hri_constants import (
-    # ADD_ENTRY_SERVICE,
+from embeddings.postgres_adapter import PostgresAdapter
+from frida_constants.hri_constants import (  # ADD_ENTRY_SERVICE,
     CATEGORIZE_SERVICE,
+    COMMAND_INTERPRETER_SERVICE,
     COMMON_INTEREST_SERVICE,
     EXTRACT_DATA_SERVICE,
     GRAMMAR_SERVICE,
@@ -24,16 +27,16 @@ from frida_constants.hri_constants import (
     LLM_WRAPPER_SERVICE,
     QUERY_ENTRY_SERVICE,
     RAG_SERVICE,
+    RESPEAKER_LIGHT_TOPIC,
     SPEAK_SERVICE,
     STT_ACTION_SERVER_NAME,
     WAKEWORD_TOPIC,
-    COMMAND_INTERPRETER_SERVICE,
 )
-from embeddings.postgres_adapter import PostgresAdapter
 from frida_interfaces.action import SpeechStream
-from frida_interfaces.srv import (
-    # AddEntry,
+from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
+from frida_interfaces.srv import (  # AddEntry,
     CategorizeShelves,
+    CommandInterpreter,
     CommonInterest,
     ExtractInfo,
     Grammar,
@@ -43,9 +46,7 @@ from frida_interfaces.srv import (
     LLMWrapper,
     QueryEntry,
     Speak,
-    CommandInterpreter,
 )
-from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from rclpy.task import Future
@@ -71,7 +72,6 @@ from utils.decorators import service_check
 from utils.logger import Logger
 from utils.status import Status
 from utils.task import Task
-import numpy as np
 
 from subtask_managers.subtask_meta import SubtaskMeta
 
@@ -138,6 +138,23 @@ def format_transcription(text: str) -> str:
     return remove_punctuation(text).split(" ")
 
 
+class AudioStates(Enum):
+    SAYING = "saying"
+    LISTEN = "listening"
+    IDLE = "idle"
+
+    @classmethod
+    def respeaker_light(cls, state):
+        if state == AudioStates.SAYING:
+            return "speak"
+        elif state == AudioStates.LISTEN:
+            return "listen"
+        elif state == AudioStates.IDLE:
+            return "off"
+        else:
+            raise ValueError(f"Unknown audio state: {state}")
+
+
 class HRITasks(metaclass=SubtaskMeta):
     """Class to manage the vision tasks"""
 
@@ -165,6 +182,7 @@ class HRITasks(metaclass=SubtaskMeta):
         )
 
         self.current_transcription = ""
+        self.last_hotwords = ""
         self._active_goals = []
         self.hear_multi_service = self.node.create_client(
             HearMultiThread, "/integration/multi_stop"
@@ -174,6 +192,10 @@ class HRITasks(metaclass=SubtaskMeta):
 
         self.command_interpreter_service = self.node.create_client(
             CommandInterpreter, COMMAND_INTERPRETER_SERVICE
+        )
+        self.audio_state_publisher = self.node.create_publisher(String, "AudioState", 10)
+        self.respeaker_light_publisher = self.node.create_publisher(
+            String, RESPEAKER_LIGHT_TOPIC, 10
         )
 
         self._action_client = ActionClient(self.node, SpeechStream, STT_ACTION_SERVER_NAME)
@@ -366,10 +388,12 @@ class HRITasks(metaclass=SubtaskMeta):
         rclpy.spin_until_future_complete(
             self.node, accepted_future, timeout_sec=max_audio_length + 1
         )
+
         goal_future = accepted_future.result().get_result_async()
 
         # Add an extra second to ensure the action server has enough time to process the request
         rclpy.spin_until_future_complete(self.node, goal_future, timeout_sec=max_audio_length + 1)
+        self.cancel_hear_action()
 
         execution_status = (
             Status.EXECUTION_SUCCESS
@@ -396,6 +420,8 @@ class HRITasks(metaclass=SubtaskMeta):
     ):
         """Method to hear streaming audio from the user.
 
+        Note: the caller must also call `self.cancel_hear_action()` or `self.set_light_state(AudioStates.IDLE)` to update respeaker light state.
+
         Args:
             timeout (float): The maximum time to stop the transcription.
             hotwords (str): Hotwords to improve the transcription accuracy.
@@ -404,12 +430,14 @@ class HRITasks(metaclass=SubtaskMeta):
         """
         # Cancel other actions if they are running
         self.cancel_hear_action()
+        self.set_light_state(AudioStates.LISTEN)
 
         self.current_transcription = ""
 
         goal_msg = SpeechStream.Goal()
         goal_msg.timeout = float(timeout)
         goal_msg.hotwords = hotwords
+        self.last_hotwords = hotwords
         goal_msg.silence_time = float(silence_time)
         goal_msg.start_silence_time = float(start_silence_time)
 
@@ -425,6 +453,15 @@ class HRITasks(metaclass=SubtaskMeta):
     def feedback_callback(self, feedback_msg):
         self.current_transcription = feedback_msg.feedback.current_transcription
         self.node.get_logger().info("Received feedback: {0}".format(self.current_transcription))
+
+    def set_light_state(self, state: AudioStates):
+        """
+        Method to set the light state of the respeaker.
+        Args:
+            state: The state of the light.
+        """
+        self.respeaker_light_publisher.publish(String(data=AudioStates.respeaker_light(state)))
+        self.audio_state_publisher.publish(String(data=state.value))
 
     def confirm(
         self,
@@ -463,44 +500,44 @@ class HRITasks(metaclass=SubtaskMeta):
                 if s == Status.EXECUTION_SUCCESS:
                     return Status.EXECUTION_SUCCESS, keyword
             else:
-                start_time = self.node.get_clock().now()
-                while (
-                    (self.node.get_clock().now() - start_time).nanoseconds / 1e9
-                ) < wait_between_retries:
-                    accepted_future = self.hear_streaming(timeout=wait_between_retries)
+                accepted_future = self.hear_streaming(timeout=wait_between_retries)
 
-                    rclpy.spin_until_future_complete(
-                        self.node, accepted_future, timeout_sec=wait_between_retries + 1
-                    )
-                    goal_future = accepted_future.result().get_result_async()
+                rclpy.spin_until_future_complete(
+                    self.node, accepted_future, timeout_sec=wait_between_retries + 1
+                )
+                goal_future = accepted_future.result().get_result_async()
 
-                    while not goal_future.done():
-                        if contains_any(
-                            format_transcription(self.current_transcription), self.positive
-                        ):
-                            self.cancel_hear_action()
-                            return Status.EXECUTION_SUCCESS, "yes"
-                        if "no" in format_transcription(self.current_transcription):
-                            self.cancel_hear_action()
-                            return Status.EXECUTION_SUCCESS, "no"
-                        rclpy.spin_once(self.node, timeout_sec=0.1)
-
-                    # Add an extra second to ensure the action server has enough time to process the request
-                    rclpy.spin_until_future_complete(
-                        self.node, goal_future, timeout_sec=wait_between_retries + 1
-                    )
-
-                    if len(goal_future.result().result.transcription) > 0:
-                        if (
-                            contains_any(
-                                format_transcription(self.current_transcription), self.positive
-                            )
-                            or self.is_positive(self.current_transcription)[1]
-                        ):
-                            return Status.EXECUTION_SUCCESS, "yes"
-
+                while not goal_future.done():
+                    if contains_any(
+                        format_transcription(self.current_transcription), self.positive
+                    ):
+                        self.cancel_hear_action()
+                        return Status.EXECUTION_SUCCESS, "yes"
+                    if "no" in format_transcription(self.current_transcription):
+                        self.cancel_hear_action()
                         return Status.EXECUTION_SUCCESS, "no"
-                    return Status.TARGET_NOT_FOUND, ""
+                    rclpy.spin_once(self.node, timeout_sec=0.1)
+
+                # Add an extra second to ensure the action server has enough time to process the request
+                rclpy.spin_until_future_complete(
+                    self.node, goal_future, timeout_sec=wait_between_retries + 1
+                )
+                self.cancel_hear_action()
+
+                # If the transcription is equal to the last hotwords, consider that no text was heard: when the audio is too short or only silence, the transcription can be equal to the hotwords.
+                if (
+                    len(goal_future.result().result.transcription) > 0
+                    and goal_future.result().result.transcription != self.last_hotwords
+                ):
+                    if (
+                        contains_any(
+                            format_transcription(self.current_transcription), self.positive
+                        )
+                        or self.is_positive(self.current_transcription)[1]
+                    ):
+                        return Status.EXECUTION_SUCCESS, "yes"
+
+                    return Status.EXECUTION_SUCCESS, "no"
 
         Logger.info(
             self.node,
@@ -542,14 +579,13 @@ class HRITasks(metaclass=SubtaskMeta):
             start_time = self.node.get_clock().now()
 
             self.say(question)
-            s, interpreted_text = self.hear()
+            hear_status, interpreted_text = self.hear()
 
-            if s == Status.EXECUTION_SUCCESS:
+            if hear_status == Status.EXECUTION_SUCCESS:
                 if not skip_extract_data:
                     s, target_info = self.extract_data(query, interpreted_text, context)
                 else:
-                    s = Status.EXECUTION_SUCCESS
-                    target_info = interpreted_text
+                    s = Status.TARGET_NOT_FOUND
 
                 if s == Status.TARGET_NOT_FOUND:
                     target_info = interpreted_text
@@ -560,7 +596,7 @@ class HRITasks(metaclass=SubtaskMeta):
                 else:
                     confirmation_text = confirm_question
 
-                s, confirmation = self.confirm(confirmation_text, use_hotwords, 1)
+                s, confirmation = self.confirm(confirmation_text, use_hotwords, 3)
 
                 if confirmation == "yes":
                     return Status.EXECUTION_SUCCESS, target_info
@@ -753,6 +789,8 @@ class HRITasks(metaclass=SubtaskMeta):
 
         for f in cancel_future:
             rclpy.spin_until_future_complete(self.node, f, timeout_sec=1)
+
+        self.set_light_state(AudioStates.IDLE)
 
     @service_check("answer_question_service", (Status.SERVICE_CHECK, "", 0.5), TIMEOUT)
     def answer_question(

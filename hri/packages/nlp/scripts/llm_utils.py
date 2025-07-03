@@ -6,10 +6,11 @@ import json
 import os
 from datetime import datetime
 from typing import Optional
-import requests
 
 import pytz
 import rclpy
+import requests
+from nlp.assets.baml_client.sync_client import b
 from nlp.assets.dialogs import (
     format_response,
     get_categorize_shelves_args,
@@ -24,15 +25,13 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipe
 from frida_constants.hri_constants import MODEL
 from frida_interfaces.srv import (
     CategorizeShelves,
+    CommandInterpreter,
     CommonInterest,
     Grammar,
     IsNegative,
     IsPositive,
     LLMWrapper,
-    CommandInterpreter,
 )
-
-from nlp.assets.baml_client.sync_client import b
 
 CURRENT_CONTEXT = """
 Today is {CURRENT_DATE}.
@@ -121,7 +120,7 @@ class LLMUtils(Node):
             .string_value
         )
 
-        if not os.path.exists(os.path.join(ASSETS_DIR, IS_POSITIVE_MODEL_NAME)):
+        if not os.path.exists(ASSETS_DIR):
             self.logger.info(
                 f"Downloading {IS_POSITIVE_MODEL_NAME} to a local directory. This may take a while."
             )
