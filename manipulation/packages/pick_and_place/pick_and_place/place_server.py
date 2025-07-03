@@ -91,6 +91,9 @@ class PlaceMotionServer(Node):
         result = PlaceMotion.Result()
         try:
             result.success = self.place(goal_handle, feedback)
+            self.get_logger().info(
+                f"Place result: {result.success}, for object: {goal_handle.request.object_name}"
+            )
             goal_handle.succeed()
             return result
         except Exception as e:

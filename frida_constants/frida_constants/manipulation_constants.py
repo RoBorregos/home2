@@ -48,7 +48,7 @@ GRASP_DETECTION_SERVICE = "/manipulation/detect_grasps"
 GRIPPER_SET_STATE_SERVICE = "/manipulation/gripper/set_state"
 XARM_SET_DIGITAL_TGPIO_SERVICE = "/xarm/set_tgpio_digital"
 SAFETY_HEIGHT = 0.05
-PICK_MIN_HEIGHT = 0.08
+PICK_MIN_HEIGHT = 0.1
 GRASP_LINK_FRAME = "gripper_grasp_frame"
 
 # Place

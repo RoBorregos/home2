@@ -145,7 +145,7 @@ class MoveItPlanner(Planner):
             pose=pose,
             cartesian=cartesian,
             target_link=target_link,
-            tolerance_position=0.02,
+            tolerance_position=0.015,
             tolerance_orientation=0.02,
         )
         if not trajectory:
@@ -207,7 +207,7 @@ class MoveItPlanner(Planner):
         self,
         joint_positions: List[float],
         joint_names: List[str],
-        tolerance: float = 0.05,
+        tolerance: float = 0.01,
         weight: float = 1.0,
     ):
         return self.moveit2.plan(
