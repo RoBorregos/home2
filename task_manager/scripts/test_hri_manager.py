@@ -54,10 +54,11 @@ def confirm_preference(interpreted_text, extracted_data):
 
 
 TEST_TASK = Task.RECEPTIONIST
-TEST_COMPOUND = True
+TEST_COMPOUND = False
 TEST_INDIVIDUAL_FUNCTIONS = False
 TEST_EMBEDDINGS = False
 TEST_ASYNC_LLM = True
+TEST_STREAMING = False
 
 
 class TestHriManager(Node):
@@ -87,6 +88,9 @@ class TestHriManager(Node):
 
         if TEST_ASYNC_LLM:
             self.async_llm_test()
+
+        if TEST_STREAMING:
+            self.test_streaming()
 
     def individual_functions(self):
         # Test say
@@ -123,6 +127,13 @@ class TestHriManager(Node):
         )
 
         self.get_logger().info(f"categorized_shelves: {str(categorized_shelves)}")
+
+    def test_streaming(self):
+        s, user_request = self.hri_manager.hear()
+        self.get_logger().info(f"Heard: {user_request}")
+
+        s, keyword = self.hri_manager.interpret_keyword(["yes", "no", "maybe"], timeout=5.0)
+        self.get_logger().info(f"Interpreted keyword: {keyword}")
 
     def compound_functions(self):
         s, name = self.hri_manager.ask_and_confirm(
@@ -281,6 +292,19 @@ class TestHriManager(Node):
         # Test original functionality
         test = self.hri_manager.extract_data("LLM_name", "My name is John Doe")
         self.get_logger().info(f"Extract data result: {test}")
+
+        s, res = self.hri_manager.common_interest("John", "Football", "Gilbert", "Basketball")
+
+        self.get_logger().info(f"Common interest result: {res}")
+
+        # Test async LLM with a timeout
+        f = self.hri_manager.common_interest(
+            "John", "Football", "Gilbert", "Basketball", is_async=True
+        )
+        rclpy.spin_until_future_complete(self, f)
+
+        self.get_logger().info(f"Common interest future: {f}")
+        self.get_logger().info(f"Common interest future status: {f.done()}, {f.result()}")
 
 
 def main(args=None):
