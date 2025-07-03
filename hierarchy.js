@@ -116,6 +116,7 @@ var hierarchy =
       [ "server.Position", "classserver_1_1Position.html", null ],
       [ "storing_groceries_manager.ExecutionStates", "classstoring__groceries__manager_1_1ExecutionStates.html", null ],
       [ "storing_groceries_manager.Retries", "classstoring__groceries__manager_1_1Retries.html", null ],
+      [ "subtask_managers.hri_tasks.AudioStates", "classsubtask__managers_1_1hri__tasks_1_1AudioStates.html", null ],
       [ "utils.config.TypeEnum", "classutils_1_1config_1_1TypeEnum.html", null ],
       [ "utils.status.Status", "classutils_1_1status_1_1Status.html", null ],
       [ "utils.task.Task", "classutils_1_1task_1_1Task.html", null ]

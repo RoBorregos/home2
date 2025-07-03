@@ -1,5 +1,16 @@
 var NAVTREEINDEX17 =
 {
+"mocked_8py.html#a66f0451a003eb34116afb2f43c5d4f12":[20,0,6,1,0,0,1,2],
+"mocked_8py.html#a6a3d2afbd135dd06d43c490ed3684ae2":[20,0,6,1,0,0,1,0],
+"mocked_8py.html#a8518ed6ea6c53ce63671b70b1acd18a9":[20,0,6,1,0,0,1,3],
+"mocked_8py.html#aeff3bb8bbe5365c9e7f330e0fb5cf578":[20,0,6,1,0,0,1,1],
+"model_8py.html":[20,0,7,0,3,3,0,0,0,0],
+"model_8py.html#a38aba7a09e60492141ce52f1a0fcf168":[20,0,7,0,3,3,0,0,0,0,14],
+"model_8py.html#a3baae9af564a2bb723d1dbd93d773b81":[20,0,7,0,3,3,0,0,0,0,17],
+"model_8py.html#a46572b3e19eb69f13b91ffafcdeadff0":[20,0,7,0,3,3,0,0,0,0,15],
+"model_8py.html#a5bca4354e053d953c18cc9430074d2ba":[20,0,7,0,3,3,0,0,0,0,18],
+"model_8py.html#a81d1071915076c21125b78e75cb547ee":[20,0,7,0,3,3,0,0,0,0,16],
+"model_8py.html#a84912719c72180a694ab967f594736fa":[20,0,7,0,3,3,0,0,0,0,13],
 "model_8py.html#ad4ec7ba67909d57c52c609d1fa094b1f":[20,0,7,0,3,3,0,0,0,0,12],
 "moondream__launch_8py.html":[20,0,7,0,0,0,0],
 "moondream__lib_8py.html":[20,0,7,0,0,2,1],
@@ -238,16 +249,5 @@ var NAVTREEINDEX17 =
 "namespacefrida__constants_1_1manipulation__constants.html#a2504c3f7f4f62c97f91d95bc5191e7c0":[18,0,38,2,7],
 "namespacefrida__constants_1_1manipulation__constants.html#a2885d522797d86e74fc04768cf3b50a6":[18,0,38,2,4],
 "namespacefrida__constants_1_1manipulation__constants.html#a2b9fe2eb921dacceca8b4fd08e9eb64f":[18,0,38,2,21],
-"namespacefrida__constants_1_1manipulation__constants.html#a32210c7d93399e9823a0af37fffcf4c0":[18,0,38,2,26],
-"namespacefrida__constants_1_1manipulation__constants.html#a35ee56f396288b5c13e1a83118353872":[18,0,38,2,14],
-"namespacefrida__constants_1_1manipulation__constants.html#a38b21f89e935776f5580a76d35638040":[18,0,38,2,19],
-"namespacefrida__constants_1_1manipulation__constants.html#a3a0498c16978b309e61bdc1cd6f65576":[18,0,38,2,35],
-"namespacefrida__constants_1_1manipulation__constants.html#a520f33abe220f0f53b58bc4a6087abae":[18,0,38,2,17],
-"namespacefrida__constants_1_1manipulation__constants.html#a5ea55eae7fc712affd0e6fc30dcf8467":[18,0,38,2,33],
-"namespacefrida__constants_1_1manipulation__constants.html#a6038fba62b19224dfcafc0c052adbae6":[18,0,38,2,47],
-"namespacefrida__constants_1_1manipulation__constants.html#a60fec6dff1f21269d68429db6ce6c56d":[18,0,38,2,55],
-"namespacefrida__constants_1_1manipulation__constants.html#a65f44cfc928074d0f412e7f80a134307":[18,0,38,2,30],
-"namespacefrida__constants_1_1manipulation__constants.html#a6aaf2e16c447f7ca03df763bd4a0f754":[18,0,38,2,50],
-"namespacefrida__constants_1_1manipulation__constants.html#a72d781c5768abe2b3250a2030220b1a3":[18,0,38,2,23],
-"namespacefrida__constants_1_1manipulation__constants.html#a777012eeb4aed1198489527887a98d36":[18,0,38,2,52]
+"namespacefrida__constants_1_1manipulation__constants.html#a32210c7d93399e9823a0af37fffcf4c0":[18,0,38,2,26]
 };

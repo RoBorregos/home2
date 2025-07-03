@@ -111,7 +111,7 @@ Inheritance diagram for subtask_managers.hri_tasks.HRITasks:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a4f915f07715543395fc0cde111e35c99"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a4f915f07715543395fc0cde111e35c99">__init__</a> (self, Node task_manager, config=None, <a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a311b15428aebfe56a7a77f060ac75b3d">task</a>=<a class="el" href="classutils_1_1task_1_1Task.html#a30347bba243369b06fcea8e3286ff9da">Task.RECEPTIONIST</a>)</td></tr>
+<tr class="memitem:a4f915f07715543395fc0cde111e35c99"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a4f915f07715543395fc0cde111e35c99">__init__</a> (self, Node task_manager, config=None, <a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a311b15428aebfe56a7a77f060ac75b3d">task</a>=Task.RECEPTIONIST)</td></tr>
 <tr class="separator:a4f915f07715543395fc0cde111e35c99"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7d2e844fa32fad9b41c58f766997fc4c"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a7d2e844fa32fad9b41c58f766997fc4c">setup_services</a> (self)</td></tr>
 <tr class="separator:a7d2e844fa32fad9b41c58f766997fc4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -129,6 +129,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:af0d5230e471a80d6892495c440d35ef1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac22a2611cfa6eb9a8fa500713627354a"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#ac22a2611cfa6eb9a8fa500713627354a">feedback_callback</a> (self, feedback_msg)</td></tr>
 <tr class="separator:ac22a2611cfa6eb9a8fa500713627354a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a810510a94099b0741625971f3a74ad39"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a810510a94099b0741625971f3a74ad39">set_light_state</a> (self, <a class="el" href="classsubtask__managers_1_1hri__tasks_1_1AudioStates.html">AudioStates</a> state)</td></tr>
+<tr class="separator:a810510a94099b0741625971f3a74ad39"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af52e9abccaba88bca06910b256dd8862"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#af52e9abccaba88bca06910b256dd8862">confirm</a> (self, str question, bool use_hotwords=True, int retries=3, float wait_between_retries=5)</td></tr>
 <tr class="separator:af52e9abccaba88bca06910b256dd8862"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7b0e6b8c66cefe1ee7bbc92970903df9"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a7b0e6b8c66cefe1ee7bbc92970903df9">ask_and_confirm</a> (self, str question, str query, str context=&quot;&quot;, Union[str, callable] confirm_question=<a class="el" href="namespacesubtask__managers_1_1hri__tasks.html#a27fbae39dab67579af64d591a20b2534">confirm_query</a>, bool use_hotwords=True, int retries=3, float min_wait_between_retries=5, bool skip_extract_data=False)</td></tr>
@@ -137,7 +139,7 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ac056b807d0a3b6da138518db244d55b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad48852436cbe57577f5d4563cd9a5301"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#ad48852436cbe57577f5d4563cd9a5301">refactor_text</a> (self, str text)</td></tr>
 <tr class="separator:ad48852436cbe57577f5d4563cd9a5301"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a44a08c8557807d172922b7f281345b05"><td class="memItemLeft" align="right" valign="top">List[<a class="el" href="namespacesubtask__managers_1_1hri__tasks.html#a1be2d075bae2c39d2b948028ce848998">InterpreterAvailableCommands</a>]|Future&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a44a08c8557807d172922b7f281345b05">command_interpreter</a> (self, str text, is_async=False)</td></tr>
+<tr class="memitem:a44a08c8557807d172922b7f281345b05"><td class="memItemLeft" align="right" valign="top">List[InterpreterAvailableCommands]|Future&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a44a08c8557807d172922b7f281345b05">command_interpreter</a> (self, str text, is_async=False)</td></tr>
 <tr class="separator:a44a08c8557807d172922b7f281345b05"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4c0573e9a90905c210306d091ee5ff57"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a4c0573e9a90905c210306d091ee5ff57">common_interest</a> (self, person1, interest1, person2, interest2, remove_thinking=True, is_async=False)</td></tr>
 <tr class="separator:a4c0573e9a90905c210306d091ee5ff57"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -149,7 +151,7 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a77034d840c0d368c8d93d4c3d0cc79ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2ec622bed2f02a2d18a01cd44d18094a"><td class="memItemLeft" align="right" valign="top">tuple[<a class="el" href="classutils_1_1status_1_1Status.html">Status</a>, str]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a2ec622bed2f02a2d18a01cd44d18094a">answer_question</a> (self, str question, int top_k=3, float threshold=0.1, list collections=[&quot;frida_knowledge&quot;, &quot;roborregos_knowledge&quot;, &quot;tec_knowledge&quot;])</td></tr>
 <tr class="separator:a2ec622bed2f02a2d18a01cd44d18094a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a86d1a33e91451f142372129dd280f2b4"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a86d1a33e91451f142372129dd280f2b4">add_command_history</a> (self, <a class="el" href="namespacesubtask__managers_1_1hri__tasks.html#a1be2d075bae2c39d2b948028ce848998">InterpreterAvailableCommands</a> command, result, status)</td></tr>
+<tr class="memitem:a86d1a33e91451f142372129dd280f2b4"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a86d1a33e91451f142372129dd280f2b4">add_command_history</a> (self, InterpreterAvailableCommands command, result, status)</td></tr>
 <tr class="separator:a86d1a33e91451f142372129dd280f2b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7d6c4612bc81f43d5254e3a78093af2a"><td class="memItemLeft" align="right" valign="top">list[str]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a7d6c4612bc81f43d5254e3a78093af2a">add_item</a> (self, list document, str metadata)</td></tr>
 <tr class="separator:a7d6c4612bc81f43d5254e3a78093af2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -231,12 +233,18 @@ Public Attributes</h2></td></tr>
 <tr class="separator:ada2fad0cc8a67fe7e770b7c0289ff222"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8e235e08f650002ae2ab2dd942bbe9dc"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a8e235e08f650002ae2ab2dd942bbe9dc">current_transcription</a></td></tr>
 <tr class="separator:a8e235e08f650002ae2ab2dd942bbe9dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a19c62b5d28cdc083190af66c96b5c374"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a19c62b5d28cdc083190af66c96b5c374">last_hotwords</a></td></tr>
+<tr class="separator:a19c62b5d28cdc083190af66c96b5c374"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abdd5f213bddb816ffbde252c6445c7ee"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#abdd5f213bddb816ffbde252c6445c7ee">hear_multi_service</a></td></tr>
 <tr class="separator:abdd5f213bddb816ffbde252c6445c7ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa016b8a5c37b1522ec351109bf4c23a4"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#aa016b8a5c37b1522ec351109bf4c23a4">answer_question_service</a></td></tr>
 <tr class="separator:aa016b8a5c37b1522ec351109bf4c23a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa7506ae5fb2509ec69a71991d9604287"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#aa7506ae5fb2509ec69a71991d9604287">command_interpreter_service</a></td></tr>
 <tr class="separator:aa7506ae5fb2509ec69a71991d9604287"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa75da3de61f16de9f2d7a633523a9528"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#aa75da3de61f16de9f2d7a633523a9528">audio_state_publisher</a></td></tr>
+<tr class="separator:aa75da3de61f16de9f2d7a633523a9528"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2c3f810c4d6594624d3ae08d2b1f8fa7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a2c3f810c4d6594624d3ae08d2b1f8fa7">respeaker_light_publisher</a></td></tr>
+<tr class="separator:a2c3f810c4d6594624d3ae08d2b1f8fa7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a45352598c15b4a22e99ea4de2c658090"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a45352598c15b4a22e99ea4de2c658090">services</a></td></tr>
 <tr class="separator:a45352598c15b4a22e99ea4de2c658090"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad397d2ef51f34702b6746b72f4e8d561"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#ad397d2ef51f34702b6746b72f4e8d561">positive</a></td></tr>
@@ -284,7 +292,7 @@ Protected Attributes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>task</em> = <code><a class="el" href="classutils_1_1task_1_1Task.html#a30347bba243369b06fcea8e3286ff9da">Task.RECEPTIONIST</a></code>&#160;</td>
+          <td class="paramname"><em>task</em> = <code>Task.RECEPTIONIST</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -348,7 +356,7 @@ Protected Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="namespacesubtask__managers_1_1hri__tasks.html#a1be2d075bae2c39d2b948028ce848998">InterpreterAvailableCommands</a>&#160;</td>
+          <td class="paramtype">InterpreterAvailableCommands&#160;</td>
           <td class="paramname"><em>command</em>, </td>
         </tr>
         <tr>
@@ -760,7 +768,7 @@ Returns:
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"> List[<a class="el" href="namespacesubtask__managers_1_1hri__tasks.html#a1be2d075bae2c39d2b948028ce848998">InterpreterAvailableCommands</a>] | Future subtask_managers.hri_tasks.HRITasks.command_interpreter </td>
+          <td class="memname"> List[InterpreterAvailableCommands] | Future subtask_managers.hri_tasks.HRITasks.command_interpreter </td>
           <td>(</td>
           <td class="paramtype">&#160;</td>
           <td class="paramname"><em>self</em>, </td>
@@ -1501,6 +1509,8 @@ Returns:
 </div><div class="memdoc">
 <pre class="fragment">Method to hear streaming audio from the user.
 
+Note: the caller must also call `self.cancel_hear_action()` or `self.set_light_state(AudioStates.IDLE)` to update respeaker light state.
+
 Args:
     timeout (float): The maximum time to stop the transcription.
     hotwords (str): Hotwords to improve the transcription accuracy.
@@ -1803,6 +1813,37 @@ Args:
 <pre class="fragment">Method to publish directly text to the speech node</pre> 
 </div>
 </div>
+<a id="a810510a94099b0741625971f3a74ad39" name="a810510a94099b0741625971f3a74ad39"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a810510a94099b0741625971f3a74ad39">&#9670;&#160;</a></span>set_light_state()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def subtask_managers.hri_tasks.HRITasks.set_light_state </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1AudioStates.html">AudioStates</a>&#160;</td>
+          <td class="paramname"><em>state</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Method to set the light state of the respeaker.
+Args:
+    state: The state of the light.
+</pre> 
+</div>
+</div>
 <a id="a7d2e844fa32fad9b41c58f766997fc4c" name="a7d2e844fa32fad9b41c58f766997fc4c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a7d2e844fa32fad9b41c58f766997fc4c">&#9670;&#160;</a></span>setup_services()</h2>
 
@@ -1874,6 +1915,20 @@ Args:
       <table class="memname">
         <tr>
           <td class="memname">subtask_managers.hri_tasks.HRITasks.answer_question_service</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aa75da3de61f16de9f2d7a633523a9528" name="aa75da3de61f16de9f2d7a633523a9528"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa75da3de61f16de9f2d7a633523a9528">&#9670;&#160;</a></span>audio_state_publisher</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">subtask_managers.hri_tasks.HRITasks.audio_state_publisher</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -2048,6 +2103,20 @@ Args:
 
 </div>
 </div>
+<a id="a19c62b5d28cdc083190af66c96b5c374" name="a19c62b5d28cdc083190af66c96b5c374"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a19c62b5d28cdc083190af66c96b5c374">&#9670;&#160;</a></span>last_hotwords</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">subtask_managers.hri_tasks.HRITasks.last_hotwords</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="aea25ba46c62a0f5799df8cce48b61114" name="aea25ba46c62a0f5799df8cce48b61114"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aea25ba46c62a0f5799df8cce48b61114">&#9670;&#160;</a></span>llm_wrapper_service</h2>
 
@@ -2112,6 +2181,20 @@ Args:
       <table class="memname">
         <tr>
           <td class="memname">subtask_managers.hri_tasks.HRITasks.query_item_client</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a2c3f810c4d6594624d3ae08d2b1f8fa7" name="a2c3f810c4d6594624d3ae08d2b1f8fa7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2c3f810c4d6594624d3ae08d2b1f8fa7">&#9670;&#160;</a></span>respeaker_light_publisher</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">subtask_managers.hri_tasks.HRITasks.respeaker_light_publisher</td>
         </tr>
       </table>
 </div><div class="memdoc">
