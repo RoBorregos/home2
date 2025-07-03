@@ -181,7 +181,9 @@ class HearStreaming(Node):
                     feedback_msg = SpeechStream.Feedback()
                     feedback_msg.current_transcription = self.prev_transcription
                     goal_handle.publish_feedback(feedback_msg)
-                    self.transcription_publisher.publish(self.prev_transcription)
+                    self.transcription_publisher.publish(
+                        String(data=self.prev_transcription)
+                    )
 
                 # rclpy.spin_once(self, timeout_sec=0.1)
                 time.sleep(0.1)
