@@ -1,10 +1,11 @@
 services:
   postgres:
-    # image: postgres:15
+    image: roborregos/home2:hri-postgres
+
     build:
       context: .
       dockerfile: Dockerfile.postgres
-    container_name: postgres-db
+    container_name: home2-hri-postgres
     restart: "no"
     environment:
       POSTGRES_USER: rbrgs
