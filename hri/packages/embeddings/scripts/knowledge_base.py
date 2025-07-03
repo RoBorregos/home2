@@ -2,7 +2,6 @@
 
 import numpy as np
 import rclpy
-from chroma_adapter import ChromaAdapter
 from nlp.assets.dialogs import clean_question_rag, get_answer_question_dialog
 from openai import OpenAI
 from rclpy.node import Node
@@ -66,9 +65,6 @@ class RAGService(Node):
         self.default_threshold = self.get_parameter("default_threshold").value
         self.embedding_keys = self.get_parameter("embedding_keys").value
         self.similarity_threshold = self.get_parameter("similarity_threshold").value
-
-        # Setup Chroma Adapter
-        self.client = ChromaAdapter()
 
         # Initialize LLM client
         self.llm = OpenAI(api_key=self.api_key, base_url=self.base_url)
