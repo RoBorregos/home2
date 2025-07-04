@@ -81,6 +81,11 @@ class PickManager:
             grasp_poses, grasp_scores = get_grasps(
                 self.node.grasp_detection_client, object_cluster, CFG_PATH
             )
+            if len(grasp_poses) == 0:
+                self.node.get_logger().error(
+                    f"No grasp poses detected for {object_name} with cfg {CFG_PATH}"
+                )
+                continue
 
             # sort by score
             grasp_poses, grasp_scores = zip(
@@ -115,7 +120,7 @@ class PickManager:
                 break
             else:
                 # give time for new gpd
-                time.sleep(1)
+                time.sleep(2)
 
         if not pick_result_success:
             self.node.get_logger().error("Pick motion failed")

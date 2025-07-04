@@ -178,7 +178,7 @@ class MoveItPlanner(Planner):
         cartesian: bool = False,
         target_link: str = xarm6.end_effector_name(),
         tolerance_position: float = 0.015,
-        tolerance_orientation: float = 0.05,
+        tolerance_orientation: float = 0.1,
         weight_position: float = 1.0,
         weight_orientation: float = 1.0,
         cartesian_max_step: float = 0.05,
@@ -207,7 +207,7 @@ class MoveItPlanner(Planner):
         self,
         joint_positions: List[float],
         joint_names: List[str],
-        tolerance: float = 0.01,
+        tolerance: float = 0.001,
         weight: float = 1.0,
     ):
         return self.moveit2.plan(
@@ -299,14 +299,14 @@ class MoveItPlanner(Planner):
         return self.moveit2.compute_fk(joint_state=joint_positions)
 
     def set_joint_constraints(
-        self, joint_positions: List[float], tolerance: float = 0.05
+        self, joint_positions: List[float], tolerance: float = 0.1
     ) -> None:
         self.moveit2.set_joint_goal(
             joint_positions=joint_positions, tolerance=tolerance
         )
 
     def set_position_constraints(
-        self, position: List[float], tolerance: float = 0.05
+        self, position: List[float], tolerance: float = 0.1
     ) -> None:
         self.moveit2.set_position_goal(position=position, tolerance=tolerance)
 

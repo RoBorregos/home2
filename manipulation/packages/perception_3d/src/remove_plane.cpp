@@ -155,7 +155,7 @@ public:
       req_point.y = 0.0;
       req_point.z = 0.0;
       response->health_response = this->DistanceFilterFromPoint(
-          cloud_out, req_point, cloud_out, 1.0, request->min_height,
+          cloud_out, req_point, cloud_out, 5.0, request->min_height,
           request->max_height);
     } else {
       geometry_msgs::msg::PointStamped point;
@@ -448,7 +448,7 @@ public:
       _IN_ const pcl::PointXYZ point,
       _OUT_ std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud_out,
       const float distance = 0.5, const float min_height = 0.1,
-      const float max_height = 2.0) {
+      const float max_height = 2.5) {
 
     pcl::PassThrough<pcl::PointXYZ> pass;
     pass.setInputCloud(cloud);
