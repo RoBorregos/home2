@@ -704,7 +704,7 @@ class HRITasks(metaclass=SubtaskMeta):
             if confirmation == "yes":
                 selected_loc = closest_by_description[0].name
                 self.say(
-                    f"Thanks for confirming the location. Near {selected_loc}" + selected_loc,
+                    f"Thanks for confirming the location. Near {selected_loc}",
                     wait=False,
                 )
             else:
@@ -717,8 +717,8 @@ class HRITasks(metaclass=SubtaskMeta):
             current_retries_orientation += 1
 
             s, location = self.ask_and_confirm(
-                "Where do you want me to place it with respect to the provided location (left, right, front, back, top or only nearby)?",
-                "orientation",
+                "Where do you want me to place it with respect to the provided location (left, right, front, back, top or just nearby)?",
+                "LLM_orientation",
                 use_hotwords=False,
                 retries=3,
                 min_wait_between_retries=5,
@@ -758,7 +758,7 @@ class HRITasks(metaclass=SubtaskMeta):
             self.display_publisher.publish(String(data=json.dumps(matching_items)))
             s, location = self.ask_and_confirm(
                 "I found several locations with the specified name. Please select the location by saying the color of the point.",
-                "color",
+                "LLM_color",
                 use_hotwords=False,
                 retries=3,
                 min_wait_between_retries=5,
