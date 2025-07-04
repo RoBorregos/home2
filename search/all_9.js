@@ -50,16 +50,16 @@ var searchData=
   ['is_5ffollowing_5fface_5factive_47',['is_following_face_active',['../classfollow__face__node_1_1FollowFaceNode.html#a1e630d824d21429080d52fa5b280b490',1,'follow_face_node::FollowFaceNode']]],
   ['is_5ffollowing_5fperson_48',['is_following_person',['../classfollow__person__node_1_1FollowPersonNode.html#af7a4c18ea26c9932e25dc741278e1c6e',1,'follow_person_node::FollowPersonNode']]],
   ['is_5finside_49',['is_inside',['../classpoint__transformer_1_1PointTransformer.html#a0f2b7826a3ad32717613e04f62d9d4eb',1,'point_transformer.PointTransformer.is_inside()'],['../classgpsr__commands_1_1GPSRCommands.html#a9a752904ba82ff3a27caa9baa458c397',1,'gpsr_commands.GPSRCommands.is_inside()'],['../classperson__in__map_1_1PersonLocation.html#a6f8974ce821a5be7fe6b3981af64f220',1,'person_in_map.PersonLocation.is_inside()']]],
-  ['is_5fnegative_50',['IS_NEGATIVE',['../classfrida__constants_1_1hri__constants_1_1MODEL.html#a43c6d13d561ee18e42ca7d3ff8e754c5',1,'frida_constants::hri_constants::MODEL']]],
-  ['is_5fnegative_51',['is_negative',['../classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a32f52e24328a550d02980035ceef0bf0',1,'subtask_managers::hri_tasks::HRITasks']]],
+  ['is_5fnegative_50',['is_negative',['../classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a32f52e24328a550d02980035ceef0bf0',1,'subtask_managers::hri_tasks::HRITasks']]],
+  ['is_5fnegative_51',['IS_NEGATIVE',['../classfrida__constants_1_1hri__constants_1_1MODEL.html#a43c6d13d561ee18e42ca7d3ff8e754c5',1,'frida_constants::hri_constants::MODEL']]],
   ['is_5fnegative_5fservice_52',['is_negative_service',['../classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a0270605c8b1724c66cb959cdfc94b4d1',1,'subtask_managers::hri_tasks::HRITasks']]],
   ['is_5fnegative_5fservice_53',['IS_NEGATIVE_SERVICE',['../namespacefrida__constants_1_1hri__constants.html#a40d771feb1bf4ea070ce564f294ec534',1,'frida_constants::hri_constants']]],
   ['is_5fperson_5finside_54',['is_person_inside',['../namespaceis__person__inside.html',1,'']]],
   ['is_5fperson_5finside_2epy_55',['is_person_inside.py',['../is__person__inside_8py.html',1,'']]],
   ['is_5fpointing_5fleft_56',['is_pointing_left',['../classpose__detection_1_1PoseDetection.html#a01f92ecde91a23886e73e392a8e57b7b',1,'pose_detection.PoseDetection.is_pointing_left()'],['../classvision__general_1_1pose__detection_1_1PoseDetection.html#a745f33e20007dc845693bdf5d1a2ef8f',1,'vision_general.pose_detection.PoseDetection.is_pointing_left(self, mid_x, results)']]],
   ['is_5fpointing_5fright_57',['is_pointing_right',['../classvision__general_1_1pose__detection_1_1PoseDetection.html#a6ed85dc1ade0c8f50269dd0ffd2283aa',1,'vision_general.pose_detection.PoseDetection.is_pointing_right()'],['../classpose__detection_1_1PoseDetection.html#a160a6fdc64eed7f4e8fd17222360eede',1,'pose_detection.PoseDetection.is_pointing_right()']]],
-  ['is_5fpositive_58',['IS_POSITIVE',['../classfrida__constants_1_1hri__constants_1_1MODEL.html#a34d9e16614e9377a6cc4de4ea948e5e4',1,'frida_constants::hri_constants::MODEL']]],
-  ['is_5fpositive_59',['is_positive',['../classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a3487ddd91cfdecf190885751a19ffdc3',1,'subtask_managers::hri_tasks::HRITasks']]],
+  ['is_5fpositive_58',['is_positive',['../classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a3487ddd91cfdecf190885751a19ffdc3',1,'subtask_managers::hri_tasks::HRITasks']]],
+  ['is_5fpositive_59',['IS_POSITIVE',['../classfrida__constants_1_1hri__constants_1_1MODEL.html#a34d9e16614e9377a6cc4de4ea948e5e4',1,'frida_constants::hri_constants::MODEL']]],
   ['is_5fpositive_5fservice_60',['IS_POSITIVE_SERVICE',['../namespacefrida__constants_1_1hri__constants.html#afa75347167cbfc3cf035e80d0f56bacf',1,'frida_constants::hri_constants']]],
   ['is_5fpositive_5fservice_61',['is_positive_service',['../classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#ae80c690f473dcf2cd035894129e8153d',1,'subtask_managers::hri_tasks::HRITasks']]],
   ['is_5fraising_5fleft_5farm_62',['is_raising_left_arm',['../classvision__general_1_1pose__detection_1_1PoseDetection.html#a9efaeff259518c817106a304f06a6b16',1,'vision_general.pose_detection.PoseDetection.is_raising_left_arm()'],['../classpose__detection_1_1PoseDetection.html#ac8a1b942c284d17699042f8783c8d17e',1,'pose_detection.PoseDetection.is_raising_left_arm()']]],
@@ -75,6 +75,5 @@ var searchData=
   ['isnegative_2esrv_72',['IsNegative.srv',['../IsNegative_8srv.html',1,'']]],
   ['isperson_73',['isPerson',['../classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a1861c3998af0ee8feb541bc888babc2e',1,'subtask_managers::vision_tasks::VisionTasks']]],
   ['ispersoninside_74',['IsPersonInside',['../classis__person__inside_1_1IsPersonInside.html',1,'is_person_inside']]],
-  ['ispositive_2esrv_75',['IsPositive.srv',['../IsPositive_8srv.html',1,'']]],
-  ['item_5fcategorization_5fservice_76',['ITEM_CATEGORIZATION_SERVICE',['../namespacefrida__constants_1_1hri__constants.html#a0b2621e3df5d590923f50e02640d7294',1,'frida_constants::hri_constants']]]
+  ['ispositive_2esrv_75',['IsPositive.srv',['../IsPositive_8srv.html',1,'']]]
 ];
