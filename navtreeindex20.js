@@ -1,5 +1,7 @@
 var NAVTREEINDEX20 =
 {
+"namespacesubtask__managers_1_1gpsr__test__commands.html#abf7ee6d141b2e9ccaf7a46465b311a1b":[18,0,115,3,2],
+"namespacesubtask__managers_1_1gpsr__test__commands.html#ac3bee4bf5fb634df18b9e37ebcb9e186":[18,0,115,3,4],
 "namespacesubtask__managers_1_1gpsr__test__commands.html#ad073f80419b58cd912161e378963b11a":[18,0,115,3,5],
 "namespacesubtask__managers_1_1gpsr__test__commands.html#adab6ef159d03b2a2657820467d1337aa":[18,0,115,3,16],
 "namespacesubtask__managers_1_1gpsr__test__commands.html#ae9daadf5b9517850cde941a4cfceeef5":[18,0,115,3,21],
@@ -247,7 +249,5 @@ var NAVTREEINDEX20 =
 "remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a57cec4137b614c87cb4e24a3d003a3e0":[20,0,3,0,4,3,5,1,4],
 "remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a57cec4137b614c87cb4e24a3d003a3e0":[20,0,3,0,4,3,5,1,1],
 "remove__plane_8cpp.html#adb27e16249dfa327ea178fe5a5462a66":[20,0,3,0,4,3,5,2],
-"restaurant__task__manager_8py.html":[20,0,6,1,11],
-"restaurant__task__manager_8py.html#a2c2e24f675fbc879adf8114ce8a00d05":[20,0,6,1,11,2],
-"restaurant__task__manager_8py.html#a6049dfddd5f6af4e7fa3b417b216816d":[20,0,6,1,11,7]
+"restaurant__task__manager_8py.html":[20,0,6,1,11]
 };

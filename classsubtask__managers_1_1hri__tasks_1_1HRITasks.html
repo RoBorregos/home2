@@ -133,12 +133,14 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a810510a94099b0741625971f3a74ad39"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af52e9abccaba88bca06910b256dd8862"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#af52e9abccaba88bca06910b256dd8862">confirm</a> (self, str question, bool use_hotwords=True, int retries=3, float wait_between_retries=5)</td></tr>
 <tr class="separator:af52e9abccaba88bca06910b256dd8862"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7b0e6b8c66cefe1ee7bbc92970903df9"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a7b0e6b8c66cefe1ee7bbc92970903df9">ask_and_confirm</a> (self, str question, str query, str context=&quot;&quot;, Union[str, callable] confirm_question=<a class="el" href="namespacesubtask__managers_1_1hri__tasks.html#a27fbae39dab67579af64d591a20b2534">confirm_query</a>, bool use_hotwords=True, int retries=3, float min_wait_between_retries=5, bool skip_extract_data=False)</td></tr>
-<tr class="separator:a7b0e6b8c66cefe1ee7bbc92970903df9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a499c50a0da30d3fb99e11e0752b1bb18"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a499c50a0da30d3fb99e11e0752b1bb18">ask_and_confirm</a> (self, str question, str query, str context=&quot;&quot;, Union[str, callable] confirm_question=<a class="el" href="namespacesubtask__managers_1_1hri__tasks.html#a27fbae39dab67579af64d591a20b2534">confirm_query</a>, bool use_hotwords=True, int retries=3, float min_wait_between_retries=5, bool skip_extract_data=False, bool skip_confirmation=False)</td></tr>
+<tr class="separator:a499c50a0da30d3fb99e11e0752b1bb18"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac056b807d0a3b6da138518db244d55b5"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#ac056b807d0a3b6da138518db244d55b5">interpret_keyword</a> (self, list[str] keywords, float timeout)</td></tr>
 <tr class="separator:ac056b807d0a3b6da138518db244d55b5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad48852436cbe57577f5d4563cd9a5301"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#ad48852436cbe57577f5d4563cd9a5301">refactor_text</a> (self, str text)</td></tr>
 <tr class="separator:ad48852436cbe57577f5d4563cd9a5301"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aef1f72630f1c0d4e0bb12998a7b889d4"><td class="memItemLeft" align="right" valign="top">tuple[<a class="el" href="classutils_1_1status_1_1Status.html">Status</a>, tuple[str, str]]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#aef1f72630f1c0d4e0bb12998a7b889d4">get_location_orientation</a> (self)</td></tr>
+<tr class="separator:aef1f72630f1c0d4e0bb12998a7b889d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a44a08c8557807d172922b7f281345b05"><td class="memItemLeft" align="right" valign="top">List[InterpreterAvailableCommands]|Future&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a44a08c8557807d172922b7f281345b05">command_interpreter</a> (self, str text, is_async=False)</td></tr>
 <tr class="separator:a44a08c8557807d172922b7f281345b05"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4c0573e9a90905c210306d091ee5ff57"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a4c0573e9a90905c210306d091ee5ff57">common_interest</a> (self, person1, interest1, person2, interest2, remove_thinking=True, is_async=False)</td></tr>
@@ -548,8 +550,8 @@ Returns:
 </pre> 
 </div>
 </div>
-<a id="a7b0e6b8c66cefe1ee7bbc92970903df9" name="a7b0e6b8c66cefe1ee7bbc92970903df9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7b0e6b8c66cefe1ee7bbc92970903df9">&#9670;&#160;</a></span>ask_and_confirm()</h2>
+<a id="a499c50a0da30d3fb99e11e0752b1bb18" name="a499c50a0da30d3fb99e11e0752b1bb18"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a499c50a0da30d3fb99e11e0752b1bb18">&#9670;&#160;</a></span>ask_and_confirm()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -606,7 +608,13 @@ Returns:
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">bool &#160;</td>
-          <td class="paramname"><em>skip_extract_data</em> = <code>False</code>&#160;</td>
+          <td class="paramname"><em>skip_extract_data</em> = <code>False</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool &#160;</td>
+          <td class="paramname"><em>skip_confirmation</em> = <code>False</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -1171,6 +1179,28 @@ Returns:
       </table>
 </div><div class="memdoc">
 
+</div>
+</div>
+<a id="aef1f72630f1c0d4e0bb12998a7b889d4" name="aef1f72630f1c0d4e0bb12998a7b889d4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aef1f72630f1c0d4e0bb12998a7b889d4">&#9670;&#160;</a></span>get_location_orientation()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> tuple[<a class="el" href="classutils_1_1status_1_1Status.html">Status</a>, tuple[str, str]] subtask_managers.hri_tasks.HRITasks.get_location_orientation </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Method to get the location and orientation of where to place the object
+Returns:
+    tuple[Status, tuple[str, str]]: A tuple containing the status and a tuple with the location and orientation.
+    The location is a string representing the location (e.g., "coke") and the orientation is a string representing the direction (e.g., "left").
+</pre> 
 </div>
 </div>
 <a id="a0ca75eacf53c0e505f89613fbdca2a99" name="a0ca75eacf53c0e505f89613fbdca2a99"></a>

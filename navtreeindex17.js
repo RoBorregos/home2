@@ -1,5 +1,7 @@
 var NAVTREEINDEX17 =
 {
+"md_manipulation_README.html#autotoc_md3":[1,0,1],
+"md_manipulation_README.html#autotoc_md4":[1,1],
 "md_navigation_README.html":[2],
 "md_robot_description_frida_description_README.html":[4],
 "md_vision_README.html":[3],
@@ -247,7 +249,5 @@ var NAVTREEINDEX17 =
 "namespacefrida__constants_1_1integration__constants.html#a92bf4c688dac25bab266591c51f2956a":[18,0,38,1,2],
 "namespacefrida__constants_1_1manipulation__constants.html":[18,0,38,2],
 "namespacefrida__constants_1_1manipulation__constants.html#a05480f19a8f62082d5be5c02acc98f72":[18,0,38,2,0],
-"namespacefrida__constants_1_1manipulation__constants.html#a0b7108a7f04682d83eb47aacc396c94b":[18,0,38,2,5],
-"namespacefrida__constants_1_1manipulation__constants.html#a0f799b9d97b5f75930b04e935623961f":[18,0,38,2,43],
-"namespacefrida__constants_1_1manipulation__constants.html#a21af79d5b4fabb9ddd588da869e67c4b":[18,0,38,2,27]
+"namespacefrida__constants_1_1manipulation__constants.html#a0b7108a7f04682d83eb47aacc396c94b":[18,0,38,2,5]
 };

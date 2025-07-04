@@ -1,5 +1,7 @@
 var NAVTREEINDEX18 =
 {
+"namespacefrida__constants_1_1manipulation__constants.html#a0f799b9d97b5f75930b04e935623961f":[18,0,38,2,43],
+"namespacefrida__constants_1_1manipulation__constants.html#a21af79d5b4fabb9ddd588da869e67c4b":[18,0,38,2,27],
 "namespacefrida__constants_1_1manipulation__constants.html#a2504c3f7f4f62c97f91d95bc5191e7c0":[18,0,38,2,7],
 "namespacefrida__constants_1_1manipulation__constants.html#a2885d522797d86e74fc04768cf3b50a6":[18,0,38,2,4],
 "namespacefrida__constants_1_1manipulation__constants.html#a2b9fe2eb921dacceca8b4fd08e9eb64f":[18,0,38,2,21],
@@ -247,7 +249,5 @@ var NAVTREEINDEX18 =
 "namespacemembers_vars_r.html":[18,1,2,18],
 "namespacemembers_vars_s.html":[18,1,2,19],
 "namespacemembers_vars_t.html":[18,1,2,20],
-"namespacemembers_vars_u.html":[18,1,2,21],
-"namespacemembers_vars_v.html":[18,1,2,22],
-"namespacemembers_vars_w.html":[18,1,2,23]
+"namespacemembers_vars_u.html":[18,1,2,21]
 };

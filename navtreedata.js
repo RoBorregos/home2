@@ -185,16 +185,16 @@ var NAVTREEINDEX =
 "classpick__and__place_1_1place__server_1_1PlaceMotionServer.html#a81337e2ea2a5f2e6285e5ba4511def26",
 "classreceptionist__task__manager_1_1ReceptionistTM.html#a983e79d3cff0aa4d10cd4f3949a3a585",
 "classsubtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a4eeae8e50058b1b69358bf44e27b2355",
-"classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a438ab6ce314c52fdd6fa2402f66040f6",
-"classtracker__node_1_1SingleTracker.html#a347b00d6f2299d239eb6a8cd74d9dc90",
-"classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a4b0d9fecd88d5c0411594c19ac3c75e8",
-"frida__constants_2frida__constants_2utils_8py.html#a643f1e4be211eeb2ebb5aa8af684abad",
-"keyboard__input_8py.html",
-"md_navigation_README.html",
-"namespacefrida__constants_1_1manipulation__constants.html#a2504c3f7f4f62c97f91d95bc5191e7c0",
-"namespacemembers_vars_x.html",
-"namespacesubtask__managers_1_1gpsr__test__commands.html#ad073f80419b58cd912161e378963b11a",
-"restaurant__task__manager_8py.html#a6eb5593b9cc542da48e44e959f810091"
+"classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a37c0d871717b539f29af0a3242e579ea",
+"classtracker__node_1_1SingleTracker.html#a34293ecadfff8078e9520a300998c6ef",
+"classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a4321efc4380a3e0e9620ff180fa2946d",
+"frida__constants_2frida__constants_2utils_8py.html",
+"is__person__inside_8py.html",
+"md_manipulation_README.html#autotoc_md3",
+"namespacefrida__constants_1_1manipulation__constants.html#a0f799b9d97b5f75930b04e935623961f",
+"namespacemembers_vars_v.html",
+"namespacesubtask__managers_1_1gpsr__test__commands.html#abf7ee6d141b2e9ccaf7a46465b311a1b",
+"restaurant__task__manager_8py.html#a2c2e24f675fbc879adf8114ce8a00d05"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';
