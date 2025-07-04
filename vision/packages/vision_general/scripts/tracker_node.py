@@ -59,7 +59,7 @@ CONF_THRESHOLD = 0.6
 PACKAGE_NAME = "vision_general"
 CONFIG_FOLDER = os.path.join(get_package_share_directory(PACKAGE_NAME), "config")
 BOTSORT_REID_YAML = os.path.join(CONFIG_FOLDER, "botsort-reid.yaml")
-REID_EXTRACT_FREQ = 3
+REID_EXTRACT_FREQ = 0.5
 MAX_EMBEDDINGS = 128
 
 
@@ -378,7 +378,6 @@ class SingleTracker(Node):
         """Main loop to run the tracker"""
         if True:  # self.target_set:
             self.frame = self.image
-            print("cuda available: ", torch.cuda.is_available())
             if self.frame is None:
                 return
 
@@ -392,9 +391,9 @@ class SingleTracker(Node):
                 classes=0,
                 verbose=False,
             )
-            self.get_logger().info(
-                f"Det+Tracking took {time.time() - start_time:.2f} seconds"
-            )
+            # self.get_logger().info(
+            #     f"Det+Tracking took {time.time() - start_time:.2f} seconds"
+            # )
 
             if self.person_data["id"] is None:
                 return
@@ -453,6 +452,7 @@ class SingleTracker(Node):
                         ] is None or time.time() - self.last_reid_extraction > (
                             1 / REID_EXTRACT_FREQ
                         ):
+                            self.last_reid_extraction = time.time()
                             with torch.no_grad():
                                 start_time = time.time()
                                 embedding = extract_feature_from_img(
