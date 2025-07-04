@@ -63,17 +63,19 @@ def json_to_actions_dumps(json: list[dict[str, str]]) -> str:
 
 def json_to_locations_dumps(json: list[dict[str, str]]) -> str:
     locations = []
-    for location in json:
-        area = location["area"]
-        subarea = location["subarea"]
-        embedding = p.embedding_model.encode(area + " " + subarea)
-        locations.append(
-            {
-                "area": area,
-                "subarea": subarea,
-                "embedding": embedding.tolist(),
-            }
-        )
+    for area in json:
+        for subarea in json[area]:
+            if subarea == "polygon":
+                continue
+            subarea = subarea if subarea != "safe_place" else ""
+            embedding = p.embedding_model.encode((area + " " + subarea).strip())
+            locations.append(
+                {
+                    "area": area,
+                    "subarea": subarea,
+                    "embedding": embedding.tolist(),
+                }
+            )
     sql = "INSERT INTO locations (area, subarea, embedding) VALUES (%s, %s, %s);"
     dumps = []
     for location in locations:
@@ -191,9 +193,11 @@ def main():
         os.path.join(DOCKER_PATH, "04-hand-items.sql"),
         json_to_hand_items_dumps(frida_constants_jsons["hand_items.json"]),
     )
-
-    # write_to_file(os.path.join(BASE, '04-locations.sql'),
-    #                 json_to_locations_dumps(jsons['locations.json']))
+    print("Writing locations")
+    write_to_file(
+        os.path.join(DOCKER_PATH, "04-locations.sql"),
+        json_to_locations_dumps(frida_constants_jsons["areas.json"]),
+    )
 
 
 if __name__ == "__main__":

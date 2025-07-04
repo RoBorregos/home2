@@ -20,8 +20,8 @@ class Location(BaseModel):
     id: int
     area: str
     subarea: str
-    embedding: list[float]
-    context: str | None = None
+    context: str | None = ""
+    similarity: float
 
 
 class CommandHistory(BaseModel):
@@ -30,13 +30,15 @@ class CommandHistory(BaseModel):
     command: str
     result: str
     status: str
-    embedding: list[float] | None = None
+    embedding: list[float]
+    similarity: float | None = None
     context: str | None = None
 
 
 class Knowledge(BaseModel):
     id: int
     text: str
+    similarity: float | None = None
     embedding: list[float]
     context: str | None = None
 
