@@ -82,6 +82,7 @@ var hierarchy =
       [ "utils.config.TypeEnum", "classutils_1_1config_1_1TypeEnum.html", null ]
     ] ],
     [ "utils.subtask_manager.SubtaskManager", "classutils_1_1subtask__manager_1_1SubtaskManager.html", null ],
+    [ "clean_table_task_manager.CleanTableTM.TaskStates", "classclean__table__task__manager_1_1CleanTableTM_1_1TaskStates.html", null ],
     [ "receptionist_task_manager.ReceptionistTM.TaskStates", "classreceptionist__task__manager_1_1ReceptionistTM_1_1TaskStates.html", null ],
     [ "type", null, [
       [ "subtask_managers.subtask_meta.SubtaskMeta", "classsubtask__managers_1_1subtask__meta_1_1SubtaskMeta.html", [
@@ -127,6 +128,7 @@ var hierarchy =
       [ "call_joint_goal.MoveJointsClient", "classcall__joint__goal_1_1MoveJointsClient.html", null ],
       [ "call_pick_action.PickMotionClient", "classcall__pick__action_1_1PickMotionClient.html", null ],
       [ "call_pose_goal.MoveToPoseClient", "classcall__pose__goal_1_1MoveToPoseClient.html", null ],
+      [ "clean_table_task_manager.CleanTableTM", "classclean__table__task__manager_1_1CleanTableTM.html", null ],
       [ "closed_door_test.VirtualStop", "classclosed__door__test_1_1VirtualStop.html", null ],
       [ "dashgo_driver2.DashgoDriver", "classdashgo__driver2_1_1DashgoDriver.html", null ],
       [ "ds4_demo.ServoDS4", "classds4__demo_1_1ServoDS4.html", null ],

@@ -27,6 +27,9 @@ var annotated_dup =
     [ "camera_test", "namespacecamera__test.html", [
       [ "ZedSimulator", "classcamera__test_1_1ZedSimulator.html", "classcamera__test_1_1ZedSimulator" ]
     ] ],
+    [ "clean_table_task_manager", "namespaceclean__table__task__manager.html", [
+      [ "CleanTableTM", "classclean__table__task__manager_1_1CleanTableTM.html", "classclean__table__task__manager_1_1CleanTableTM" ]
+    ] ],
     [ "closed_door_test", "namespaceclosed__door__test.html", [
       [ "VirtualStop", "classclosed__door__test_1_1VirtualStop.html", "classclosed__door__test_1_1VirtualStop" ]
     ] ],

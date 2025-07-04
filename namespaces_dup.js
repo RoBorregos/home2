@@ -24,6 +24,7 @@ var namespaces_dup =
       [ "generate_launch_description", "namespacecarry__my__lougage.html#ab8f6aac2d5abfdc388398a5170e8577f", null ],
       [ "launch_setup", "namespacecarry__my__lougage.html#ab4d71836dd74a1528d9b2d8f750c9491", null ]
     ] ],
+    [ "clean_table_task_manager", "namespaceclean__table__task__manager.html", "namespaceclean__table__task__manager" ],
     [ "client", "namespaceclient.html", [
       [ "run", "namespaceclient.html#a10d4416aef9193a3735b7f83fe3adae8", null ]
     ] ],
