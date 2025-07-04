@@ -141,9 +141,10 @@ fi
 
 # Commands to run inside the container
 SOURCE_ROS="source /opt/ros/humble/setup.bash"
-COLCON="colcon build --packages-up-to "
+SOURCE_INTERFACES="source frida_interfaces_cache/install/local_setup.bash"
+COLCON="colcon build --packages-ignore frida_interfaces frida_constants --packages-up-to "
 SOURCE="source install/setup.bash"
-SETUP="$SOURCE_ROS && $COLCON task_manager && $SOURCE"
+SETUP="$SOURCE_ROS && $SOURCE_INTERFACES && $COLCON task_manager && $SOURCE"
 RUN=""
 MOONDREAM=false
 
