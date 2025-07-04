@@ -10,7 +10,6 @@ from frida_motion_planning.utils.service_utils import (
 )
 from typing import Tuple
 
-
 CFG_PATHS = [
     "/workspace/src/home2/manipulation/packages/arm_pkg/config/frida_eigen_params_custom_gripper_testing.cfg",
     "/workspace/src/home2/manipulation/packages/arm_pkg/config/frida_eigen_params_custom_gripper.cfg",
@@ -37,24 +36,30 @@ class PickManager:
                 named_position="table_stare",
                 velocity=0.75,
             )
-        if point is not None and (
-            point.point.x != 0 and point.point.y != 0 and point.point.z != 0
-        ):
-            self.node.get_logger().info(f"Going for point: {point}")
-        elif object_name is not None and object_name != "":
-            self.node.get_logger().info(f"Going for object name: {object_name}")
-            point = self.get_object_point(object_name)
-            if point is None:
-                self.node.get_logger().error(
-                    f"Object {object_name} not found, please provide a point"
-                )
-                return False, None
-        else:
-            self.node.get_logger().error("No object name or point provided")
-            return False, None
 
-        # Call Perception Service to get object cluster and generate collision objects
-        object_cluster = self.get_object_cluster(point)
+        for i in range(3):
+            if point is not None and (
+                point.point.x != 0 and point.point.y != 0 and point.point.z != 0
+            ):
+                self.node.get_logger().info(f"Going for point: {point}")
+            elif object_name is not None and object_name != "":
+                self.node.get_logger().info(f"Going for object name: {object_name}")
+                point = self.get_object_point(object_name)
+                if point is None:
+                    self.node.get_logger().error(
+                        f"Object {object_name} not found, please provide a point"
+                    )
+                    return False, None
+            else:
+                self.node.get_logger().error("No object name or point provided")
+                return False, None
+
+            # Call Perception Service to get object cluster and generate collision objects
+            object_cluster = self.get_object_cluster(point)
+            if object_cluster is not None:
+                self.node.get_logger().info("Object cluster detected")
+                break
+
         if object_cluster is None:
             self.node.get_logger().error("No object cluster detected")
             return False, None
@@ -75,6 +80,11 @@ class PickManager:
             grasp_poses, grasp_scores = get_grasps(
                 self.node.grasp_detection_client, object_cluster, CFG_PATH
             )
+            if len(grasp_poses) == 0:
+                self.node.get_logger().error(
+                    f"No grasp poses detected for {object_name} with cfg {CFG_PATH}"
+                )
+                continue
 
             # sort by score
             grasp_poses, grasp_scores = zip(
@@ -84,7 +94,7 @@ class PickManager:
                     reverse=True,
                 )
             )
-            grasp_poses, grasp_scores = grasp_poses[:7], grasp_scores[:7]
+            grasp_poses, grasp_scores = grasp_poses[:5], grasp_scores[:5]
 
             if len(grasp_poses) == 0:
                 self.node.get_logger().error("No grasp poses detected")
@@ -109,20 +119,23 @@ class PickManager:
                 break
             else:
                 # give time for new gpd
-                time.sleep(1)
+                time.sleep(2)
 
         if not pick_result_success:
             self.node.get_logger().error("Pick motion failed")
             return False, None
 
         # close gripper
-        # gripper_request = SetBool.Request()
-        # gripper_request.data = False
-        # self.node.get_logger().info("Closing gripper")
-        # future = self.node._gripper_set_state_client.call_async(gripper_request)
-        # future = wait_for_future(future)
-        # result = future.result()
-        # self.node.get_logger().info(f"1 Gripper Result: {str(gripper_request.data)}")
+        for i in range(2):
+            gripper_request = SetBool.Request()
+            gripper_request.data = False
+            self.node.get_logger().info("Closing gripper")
+            future = self.node._gripper_set_state_client.call_async(gripper_request)
+            future = wait_for_future(future)
+            result = future.result()
+            self.node.get_logger().info(
+                f"1 Gripper Result: {str(gripper_request.data)}"
+            )
 
         self.node.get_logger().info("Returning to position")
 
@@ -137,6 +150,8 @@ class PickManager:
                 break
         # self.node.get_logger().info("Waiting for 10 seconds")
         # time.sleep(10)
+        self.node.get_logger().info("Pick Task completed successfully")
+        result.success = True
         return result.success, pick_result.pick_result
 
     def get_object_point(self, object_name: str) -> PointStamped:

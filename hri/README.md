@@ -83,11 +83,23 @@ ros2 service call /hri/nlp/is_negative frida_interfaces/srv/IsNegative "{text: '
 # Hear something
 ros2 service call /hri/speech/STT frida_interfaces/srv/STT {}
 
+# Interact with robot's display
+## Simulate hear text
+ros2 topic pub /speech/raw_command std_msgs/msg/String '{data: "hello"}' -1
 
-# NLP
-ros2 launch nlp nlp_launch.py
+## Simulate the robot saying something
+ros2 topic pub /speech/text_spoken std_msgs/msg/String '{data: "My name is Frida"}' -1
 
-ros2 topic pub /speech/raw_command std_msgs/msg/String "data: Go to the kitchen and grab cookies" --once
+## Simulate keyword detection
+ros2 topic pub /hri/speech/oww std_msgs/msg/String '{data: "Frida"}' -1
+
+## Simulate voice activity
+ros2 topic pub /AudioState std_msgs/msg/String '{data: "listening"}' -1
+
+ros2 topic pub /hri/speech/vad std_msgs/msg/Float32 '{data: 0.8}' -1
+
+## Stop voice simulation
+ros2 topic pub /AudioState std_msgs/msg/String '{data: "idle"}' -1
 ```
 
 ## Other useful commands
@@ -200,4 +212,49 @@ amixer -D pulse sset Master 100%
 python3
 import openwakeword
 openwakeword.utils.download_models()
+```
+
+# Embeddings store
+
+## PostgreSQL with PGVector
+PostgreSQL is used to store the embeddings and the data extracted from the sentences. The `postgresql.yaml` file contains the configuration for the PostgreSQL container.
+The `postgres_adapter.py` file contains the code to interact with the PostgreSQL database and store the embeddings. It mainly uses an embeddings model to generate embeddings from the text and store them in the database in the vector columns. 
+
+In order to interact directly with the database, you can use the `psql` command line tool in the container: 
+
+```bash
+docker exec -it home2-hri-postgres psql -U rbrgs -d postgres
+```
+Useful commands in `psql`:
+
+```sql
+-- List all tables
+\dt
+```
+
+```sql
+ivan@ivan:~/home2/docker/hri$ docker exec -it home2-hri-postgres psql -U rbrgs -d postgres
+psql (17.4 (Debian 17.4-1.pgdg120+2))
+Type "help" for help.
+
+postgres=# \dt
+            List of relations
+ Schema |      Name       | Type  | Owner 
+--------+-----------------+-------+-------
+ public | actions         | table | rbrgs
+ public | command_history | table | rbrgs
+ public | items           | table | rbrgs
+ public | knowledge       | table | rbrgs
+ public | locations       | table | rbrgs
+(5 rows)
+
+postgres=# 
+```
+
+
+```sql-- List all columns in a table
+\d <table_name>
+```
+```sql
+SELECT * FROM <table_name>;
 ```

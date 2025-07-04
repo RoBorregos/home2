@@ -155,7 +155,7 @@ public:
       req_point.y = 0.0;
       req_point.z = 0.0;
       response->health_response = this->DistanceFilterFromPoint(
-          cloud_out, req_point, cloud_out, 1.0, request->min_height,
+          cloud_out, req_point, cloud_out, 5.0, request->min_height,
           request->max_height);
     } else {
       geometry_msgs::msg::PointStamped point;
@@ -185,27 +185,23 @@ public:
                            "Error filtering point cloud with code %d",
                            response->health_response);
 
-    
-
     response->health_response =
         this->extractPlane(cloud_out, cloud_out, request->extract_or_remove);
-
-   
 
     ASSERT_AND_RETURN_CODE(response->health_response, OK,
                            "Error extracting plane with code %d",
                            response->health_response);
-    
+
     response->health_response = this->largest_cluster(cloud_out, cloud_out);
 
-    //publish
-    // publish this in debug pcl pub
+    // publish
+    //  publish this in debug pcl pub
     sensor_msgs::msg::PointCloud2 cloud_out_msg;
     try {
       pcl::toROSMsg(*cloud_out, cloud_out_msg);
     } catch (const std::exception &e) {
       RCLCPP_ERROR(this->get_logger(), "Error converting point cloud: %s",
-                  e.what());
+                   e.what());
       response->health_response = COULD_NOT_CONVERT_POINT_CLOUD;
       return;
     }
@@ -415,8 +411,9 @@ public:
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out2(
         new pcl::PointCloud<pcl::PointXYZ>);
 
-    response->status =
-        this->clusterFromPoint(_IN_ cloud_out, _IN_ point, _OUT_ cloud_out2);
+    response->status = this->clusterFromPoint(
+        _IN_ cloud_out, _IN_ point, _OUT_ cloud_out2,
+        _IN_ request->is_get_all_other_surrounding_objects);
 
     ASSERT_AND_RETURN_CODE(response->status, OK,
                            "Error clustering point with code %d",
@@ -451,7 +448,7 @@ public:
       _IN_ const pcl::PointXYZ point,
       _OUT_ std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud_out,
       const float distance = 0.5, const float min_height = 0.1,
-      const float max_height = 2.0) {
+      const float max_height = 2.5) {
 
     pcl::PassThrough<pcl::PointXYZ> pass;
     pass.setInputCloud(cloud);
@@ -460,7 +457,7 @@ public:
                          std::min(float(point.z + distance), max_height));
 
     pass.filter(*cloud_out);
-    
+
     pcl::PassThrough<pcl::PointXYZ> pass2;
     pass2.setInputCloud(cloud_out);
     pass2.setFilterFieldName("x");
@@ -571,15 +568,15 @@ public:
         return POINT_CLOUD_EMPTY;
       }
       pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(
-        new pcl::PointCloud<pcl::PointXYZ>);
+          new pcl::PointCloud<pcl::PointXYZ>);
       try {
 
-          pcl::fromROSMsg(msg2, *cloud);
-        } catch (const std::exception &e) {
-          RCLCPP_ERROR(this->get_logger(), "Error converting point cloud: %s",
-                       e.what());
-          return COULD_NOT_CONVERT_POINT_CLOUD;
-        }
+        pcl::fromROSMsg(msg2, *cloud);
+      } catch (const std::exception &e) {
+        RCLCPP_ERROR(this->get_logger(), "Error converting point cloud: %s",
+                     e.what());
+        return COULD_NOT_CONVERT_POINT_CLOUD;
+      }
       if (cloud->points.size() == 0) {
         RCLCPP_ERROR(this->get_logger(), "Point cloud is empty");
         return POINT_CLOUD_EMPTY;
@@ -646,7 +643,6 @@ public:
     return OK;
   }
 
-
   /**
    * \brief Extracts the plane from a point cloud. If extract_negative is true,
    * the plane is removed from the point cloud
@@ -707,7 +703,8 @@ public:
   uint32_t
   clusterFromPoint(_IN_ const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
                    _IN_ const pcl::PointXYZ point,
-                   _OUT_ pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out) {
+                   _OUT_ pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out,
+                   _IN_ bool keep_or_remove = true) {
 
     // Using kdTree to get the closest point FROM the pointcloud to the point
     // given as input
@@ -765,19 +762,16 @@ public:
       return NO_OBJECT_TO_CLUSTER_AT_POINT;
     }
 
-    // Get cluster given
-    cloud_out->points.clear();
+    pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
     for (const auto &idx : cluster_indices[targetClusterIdx].indices) {
-      cloud_out->points.push_back(cloud->points[idx]);
+      inliers->indices.push_back(idx);
     }
-
-    cloud_out->width = cloud_out->points.size();
-    cloud_out->height = 1;
-    cloud_out->is_dense = true;
-
-    RCLCPP_INFO(this->get_logger(),
-                "Original cloud size: %lu, clustered %lu points",
-                cloud->points.size(), cloud_out->points.size());
+    pcl::ExtractIndices<pcl::PointXYZ> extract;
+    extract.setInputCloud(cloud);
+    extract.setIndices(inliers);
+    // extract.setNegative(true);
+    extract.setNegative(keep_or_remove);
+    extract.filter(*cloud_out);
 
     return OK;
   }
@@ -822,7 +816,7 @@ public:
     int max_points = 0;
     for (size_t i = 0; i < cluster_indices.size(); i++) {
       RCLCPP_INFO(this->get_logger(), "Cluster %lu, size %lu", i,
-                    cluster_indices[i].indices.size());
+                  cluster_indices[i].indices.size());
       if (cluster_indices[i].indices.size() > max_points) {
         max_points = cluster_indices[i].indices.size();
         targetClusterIdx = i;

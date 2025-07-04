@@ -155,6 +155,9 @@ class ManipulationCore(Node):
                 self.get_logger().error("Pick failed")
                 self.remove_all_collision_object(attached=True)
                 return (False, PickResult())
+
+            self.remove_all_collision_object(attached=False)
+            self.get_logger().info("[SUCCESS] Pick executed successfully")
             return (result, pick_result)
         except Exception:
             return (False, PickResult())

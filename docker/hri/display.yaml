@@ -7,13 +7,14 @@ services:
       dockerfile: docker/hri/Dockerfile.display
       args:
         BASE_IMAGE: roborregos/home2:cpu_base
-        # BASE_IMAGE: roborregos/home2:cuda_base
     volumes:
       - ../../hri/display/:/app
+      - /dev:/dev
+    environment:
+      ROS_LOCALHOST_ONLY: 1
     ports:
       - "3000:3000"
       - "8001:8001"
       - "8080:8080"
-    environment:
-      ROS_LOCALHOST_ONLY: 1
-    command: ["/bin/bash", "/display-entrypoint.sh"]
+    network_mode: host
+    command: ["/bin/bash", "-c", "source /opt/ros/humble/setup.bash && npm run dev"]

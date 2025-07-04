@@ -92,6 +92,9 @@ class PlaceMotionServer(Node):
         result = PlaceMotion.Result()
         try:
             result.success = self.place(goal_handle, feedback)
+            self.get_logger().info(
+                f"Place result: {result.success}, for object: {goal_handle.request.object_name}"
+            )
             goal_handle.succeed()
             return result
         except Exception as e:
@@ -137,7 +140,7 @@ class PlaceMotionServer(Node):
                 )
                 # send it a little bit back, then forward
                 offset_distance = SHELF_POSITION_PREPLACE_POSE  # Desired distance in meters along the local z-axis
-                offset_distance_half = SHELF_POSITION_PREPLACE_POSE / 2
+                offset_distance_half = SHELF_POSITION_PREPLACE_POSE / 3
                 # Compute the offset along the local z-axis
                 quat = [
                     ee_link_pre_pose.pose.orientation.w,

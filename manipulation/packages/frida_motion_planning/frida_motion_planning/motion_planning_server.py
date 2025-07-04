@@ -148,7 +148,7 @@ class MotionPlanningServer(Node):
 
         self.get_logger().info("Motion Planning Action Server has been started")
 
-    async def move_to_pose_execute_callback(self, goal_handle):
+    def move_to_pose_execute_callback(self, goal_handle):
         """Execute the pick action when a goal is received."""
         self.get_logger().info("Executing pose goal...")
 
@@ -167,12 +167,12 @@ class MotionPlanningServer(Node):
             return result
         except Exception as e:
             self.get_logger().error(f"Move to pose failed: {str(e)}")
-            goal_handle.abort()
+            goal_handle.succeed()
             self.reset_planning_settings(goal_handle)
             result.success = False
             return result
 
-    async def move_joints_execute_callback(self, goal_handle):
+    def move_joints_execute_callback(self, goal_handle):
         """Execute the pick action when a goal is received."""
         self.get_logger().info("Executing joint goal...")
 

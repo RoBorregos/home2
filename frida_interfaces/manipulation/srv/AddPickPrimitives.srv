@@ -1,5 +1,6 @@
 sensor_msgs/PointCloud2 cloud
 bool is_plane
 bool is_object
+bool is_other_objects
 ---
 uint32 status
