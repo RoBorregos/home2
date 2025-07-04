@@ -58,6 +58,7 @@ var annotated_dup =
     ] ],
     [ "frida_constants", "namespacefrida__constants.html", [
       [ "hri_constants", "namespacefrida__constants_1_1hri__constants.html", [
+        [ "KNOWLEDGE_TYPE", "classfrida__constants_1_1hri__constants_1_1KNOWLEDGE__TYPE.html", null ],
         [ "MODEL", "classfrida__constants_1_1hri__constants_1_1MODEL.html", null ]
       ] ],
       [ "vision_classes", "namespacefrida__constants_1_1vision__classes.html", [

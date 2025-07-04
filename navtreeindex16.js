@@ -1,5 +1,7 @@
 var NAVTREEINDEX16 =
 {
+"integration__constants_8py.html#a6afb4839f1987ec652b6d312adee8407":[20,0,1,0,2,1],
+"integration__constants_8py.html#a92bf4c688dac25bab266591c51f2956a":[20,0,1,0,2,2],
 "is__person__inside_8py.html":[20,0,7,0,3,1,4],
 "is__person__inside_8py.html#a79f30c58d09282b6365883311dae895c":[20,0,7,0,3,1,4,1],
 "keyboard__input_8py.html":[20,0,3,0,5,1,5],
@@ -247,7 +249,5 @@ var NAVTREEINDEX16 =
 "md_docs_task_manager_decorators.html#autotoc_md105":[17,1,0],
 "md_docs_task_manager_decorators.html#autotoc_md106":[17,1,1],
 "md_docs_task_manager_decorators.html#autotoc_md107":[17,2],
-"md_manipulation_README.html":[1],
-"md_manipulation_README.html#autotoc_md1":[1,0],
-"md_manipulation_README.html#autotoc_md2":[1,0,0]
+"md_manipulation_README.html":[1]
 };

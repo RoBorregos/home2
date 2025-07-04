@@ -107,6 +107,7 @@ var hierarchy =
     ] ],
     [ "Enum", null, [
       [ "frida_constants.ModuleNames", "classfrida__constants_1_1ModuleNames.html", null ],
+      [ "frida_constants.hri_constants.KNOWLEDGE_TYPE", "classfrida__constants_1_1hri__constants_1_1KNOWLEDGE__TYPE.html", null ],
       [ "frida_constants.hri_constants.MODEL", "classfrida__constants_1_1hri__constants_1_1MODEL.html", null ],
       [ "frida_constants.vision_enums.DetectBy", "classfrida__constants_1_1vision__enums_1_1DetectBy.html", null ],
       [ "frida_constants.vision_enums.Gestures", "classfrida__constants_1_1vision__enums_1_1Gestures.html", null ],

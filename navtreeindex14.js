@@ -1,5 +1,7 @@
 var NAVTREEINDEX14 =
 {
+"classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a374b95c92366d0d4bab514e1d65adfbd":[19,0,73,1,19],
+"classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a4321efc4380a3e0e9620ff180fa2946d":[19,0,73,1,13],
 "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a4321efc4380a3e0e9620ff180fa2946d":[18,0,135,1,13],
 "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a4b0d9fecd88d5c0411594c19ac3c75e8":[19,0,73,1,9],
 "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a4b0d9fecd88d5c0411594c19ac3c75e8":[18,0,135,1,9],
@@ -247,7 +249,5 @@ var NAVTREEINDEX14 =
 "follow__person__node_8py.html#ab451655c396f8f960bd7200a4c4b04cb":[20,0,6,1,5,4],
 "follow__person__node_8py.html#ab58be493cccf04e2d04d51c8d7e89053":[20,0,6,1,5,9],
 "follow__person__node_8py.html#ae66d60046d004ac46b9533d8a95636bc":[20,0,6,1,5,2],
-"follow__person__node_8py.html#af3059a3dad952d77f7c8cfc496f0fbad":[20,0,6,1,5,7],
-"follow__person__node_8py.html#af6451d851044b737000c8c1fb6ca5f82":[20,0,6,1,5,6],
-"frida__constants_2frida__constants_2____init_____8py.html":[20,0,1,0,0]
+"follow__person__node_8py.html#af3059a3dad952d77f7c8cfc496f0fbad":[20,0,6,1,5,7]
 };

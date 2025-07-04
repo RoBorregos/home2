@@ -1,5 +1,6 @@
 var namespacefrida__constants_1_1hri__constants =
 [
+    [ "KNOWLEDGE_TYPE", "classfrida__constants_1_1hri__constants_1_1KNOWLEDGE__TYPE.html", null ],
     [ "MODEL", "classfrida__constants_1_1hri__constants_1_1MODEL.html", null ],
     [ "ADD_ENTRY_SERVICE", "namespacefrida__constants_1_1hri__constants.html#a1445a0126f5ffb6f0817906046e5a278", null ],
     [ "BUILD_EMBEDDINGS_SERVICE", "namespacefrida__constants_1_1hri__constants.html#a280937af230738ee4ba40ccbb327caed", null ],

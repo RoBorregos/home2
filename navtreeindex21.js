@@ -1,5 +1,7 @@
 var NAVTREEINDEX21 =
 {
+"remove__plane_8cpp.html#adb27e16249dfa327ea178fe5a5462a66":[20,0,3,0,4,3,5,2],
+"restaurant__task__manager_8py.html":[20,0,6,1,11],
 "restaurant__task__manager_8py.html#a2c2e24f675fbc879adf8114ce8a00d05":[20,0,6,1,11,2],
 "restaurant__task__manager_8py.html#a6049dfddd5f6af4e7fa3b417b216816d":[20,0,6,1,11,7],
 "restaurant__task__manager_8py.html#a6eb5593b9cc542da48e44e959f810091":[20,0,6,1,11,5],

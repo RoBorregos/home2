@@ -1,6 +1,7 @@
 var hri__constants_8py =
 [
     [ "frida_constants.hri_constants.MODEL", "classfrida__constants_1_1hri__constants_1_1MODEL.html", null ],
+    [ "frida_constants.hri_constants.KNOWLEDGE_TYPE", "classfrida__constants_1_1hri__constants_1_1KNOWLEDGE__TYPE.html", null ],
     [ "ADD_ENTRY_SERVICE", "hri__constants_8py.html#a1445a0126f5ffb6f0817906046e5a278", null ],
     [ "BUILD_EMBEDDINGS_SERVICE", "hri__constants_8py.html#a280937af230738ee4ba40ccbb327caed", null ],
     [ "CATEGORIZE_SERVICE", "hri__constants_8py.html#ab2e7b071b2e0f95cd25b59442485423d", null ],
