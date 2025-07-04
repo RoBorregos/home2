@@ -4,6 +4,8 @@
 Task Manager for GPSR task of Robocup @Home 2025
 """
 
+import time
+
 import rclpy
 from rclpy.node import Node
 from subtask_managers.gpsr_single_tasks import GPSRSingleTask
@@ -14,7 +16,6 @@ from utils.baml_client.types import CommandListLLM
 from utils.logger import Logger
 from utils.status import Status
 from utils.subtask_manager import SubtaskManager, Task
-import time
 
 ATTEMPT_LIMIT = 3
 MAX_COMMANDS = 3
@@ -121,7 +122,7 @@ class GPSRTM(Node):
             )
             s, user_command = self.subtask_manager.hri.ask_and_confirm(
                 "What is your command?",
-                "command",
+                "LLM_command",
                 context="The user was asked to say a command. We want to infer his complete instruction from the response",
                 confirm_question=confirm_command,
                 use_hotwords=False,
