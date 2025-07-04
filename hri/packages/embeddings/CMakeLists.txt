@@ -10,6 +10,8 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(frida_interfaces REQUIRED)
+find_package(frida_constants REQUIRED)
+find_package(nlp REQUIRED)
 
 ament_python_install_package(${PROJECT_NAME})
 

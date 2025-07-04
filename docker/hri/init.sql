@@ -35,6 +35,7 @@ CREATE TABLE knowledge (
     text text NOT NULL,
     embedding vector(384) NOT NULL,
     context text,
+    knowledge_type text NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
