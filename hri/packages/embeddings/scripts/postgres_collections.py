@@ -40,6 +40,7 @@ class Knowledge(BaseModel):
     text: str
     similarity: float | None = None
     embedding: list[float]
+    knowledge_type: str | None = None
     context: str | None = None
 
 

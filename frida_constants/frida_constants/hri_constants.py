@@ -61,6 +61,12 @@ class MODEL(Enum):
     CommonInterest = "qwen3:0.6b"
 
 
+class KNOWLEDGE_TYPE(Enum):
+    TEC = "tec_knowledge"
+    FRIDA = "frida_knowledge"
+    ROBORREGOS = "roborregos_knowledge"
+
+
 USEFUL_AUDIO_NODE_NAME = "useful_audio_node"
 
 # OpenWakeWord

@@ -5,6 +5,8 @@ import os
 
 from embeddings.postgres_adapter import PostgresAdapter
 
+from frida_constants.hri_constants import KNOWLEDGE_TYPE
+
 p = PostgresAdapter()
 
 
@@ -87,7 +89,7 @@ def json_to_locations_dumps(json: list[dict[str, str]]) -> str:
     return "\n".join(dumps)
 
 
-def json_to_knowledge_dumps(json: list[dict[str, str]]) -> str:
+def json_to_knowledge_dumps(json: list[dict[str, str]], knowledge_type="") -> str:
     knowledge = []
     for item in json:
         text = item["document"]
@@ -97,14 +99,21 @@ def json_to_knowledge_dumps(json: list[dict[str, str]]) -> str:
                 "text": text,
                 "embedding": embedding.tolist(),
                 "context": item.get("context", ""),
+                "knowledge_type": knowledge_type,
             }
         )
-    sql = "INSERT INTO knowledge (text, context, embedding) VALUES (%s, %s, %s);"
+    sql = "INSERT INTO knowledge (text, context, embedding, knowledge_type) VALUES (%s, %s, %s, %s);"
     dumps = []
     for item in knowledge:
         dumps.append(
             p.cursor.mogrify(
-                sql, (item["text"], item["context"], item["embedding"])
+                sql,
+                (
+                    item["text"],
+                    item["context"],
+                    item["embedding"],
+                    item["knowledge_type"],
+                ),
             ).decode("utf-8")
         )
     return "\n".join(dumps)
@@ -181,12 +190,21 @@ def main():
     print("Writing knowledge")
     write_to_file(
         os.path.join(DOCKER_PATH, "04-tec-knowledge.sql"),
-        json_to_knowledge_dumps(jsons["tec_knowledge.json"]),
+        json_to_knowledge_dumps(jsons["tec_knowledge.json"], KNOWLEDGE_TYPE.TEC.value),
     )
     print("Writing roborregos knowledge")
     write_to_file(
         os.path.join(DOCKER_PATH, "04-roborregos-knowledge.sql"),
-        json_to_knowledge_dumps(jsons["roborregos_knowledge.json"]),
+        json_to_knowledge_dumps(
+            jsons["roborregos_knowledge.json"], KNOWLEDGE_TYPE.ROBORREGOS.value
+        ),
+    )
+    print("Writing frida knowledge")
+    write_to_file(
+        os.path.join(DOCKER_PATH, "04-frida-knowledge.sql"),
+        json_to_knowledge_dumps(
+            jsons["frida_knowledge.json"], KNOWLEDGE_TYPE.FRIDA.value
+        ),
     )
     print("Writing hand items")
     write_to_file(
