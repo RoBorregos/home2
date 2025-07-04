@@ -1,3 +1,5 @@
+import time
+
 import rclpy
 from frida_constants.hri_constants import GPSR_COMMANDS
 from utils.baml_client.types import (
@@ -11,7 +13,6 @@ from utils.baml_client.types import (
 from utils.status import Status
 
 from subtask_managers.generic_tasks import GenericTask
-import time
 
 RETRIES = 3
 
@@ -436,7 +437,7 @@ class GPSRSingleTask(GenericTask):
 
         status, question = self.subtask_manager.hri.ask_and_confirm(
             "Please ask your question",
-            "question",
+            "LLM_question",
             context="The user was asked to say a question. We want to infer his question from the response",
             confirm_question=confirm_question,
             use_hotwords=False,

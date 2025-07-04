@@ -55,9 +55,9 @@ def confirm_preference(interpreted_text, extracted_data):
 
 TEST_TASK = Task.RECEPTIONIST
 TEST_COMPOUND = False
-TEST_INDIVIDUAL_FUNCTIONS = False
+TEST_INDIVIDUAL_FUNCTIONS = True
 TEST_EMBEDDINGS = False
-TEST_ASYNC_LLM = True
+TEST_ASYNC_LLM = False
 TEST_STREAMING = False
 
 
@@ -71,11 +71,6 @@ class TestHriManager(Node):
 
     def run(self):
         # Testing compound commands
-
-        # s, res = self.hri_manager.common_interest("John", "Football", "Gilbert", "Basketball")
-        # status, common_message_guest1 = self.hri_manager.common_interest(
-        #    "Oscar", "football", "Rodrigo", "baseball"
-        # )
 
         if TEST_COMPOUND:
             self.compound_functions()
@@ -98,7 +93,7 @@ class TestHriManager(Node):
         self.get_logger().info("Hearing from the user...")
 
         # Test hear
-        s, user_request = self.hri_manager.hear(min_audio_length=10.0)
+        s, user_request = self.hri_manager.hear()
         self.get_logger().info(f"Heard: {user_request}")
 
         # Test extract_data
