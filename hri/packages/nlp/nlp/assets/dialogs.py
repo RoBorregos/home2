@@ -301,9 +301,7 @@ def clean_question_rag(question):
 def get_answer_question_dialog(contexts, question):
     if contexts:
         context_text = "\n".join(contexts)
-        user_content = f"{context_text}\n\n{question}"
-
-        print("CONTEXT:", user_content)
+        user_content = f"Here is some relevant context, please consider it in your response: {context_text}(end of context)\n\nMy question is: {question}"
     else:
         user_content = question
 

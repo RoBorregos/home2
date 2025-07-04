@@ -316,27 +316,34 @@ class PostgresAdapter:
         )
 
     def get_context_from_knowledge(
-        self, prompt: str, threashold: float = 0.8, top_k: int = 5
+        self,
+        prompt: str,
+        knowledge_type: list[str],
+        threshold: float = 0.3,
+        top_k: int = 5,
     ) -> list[Knowledge]:
         """Method to get context from knowledge base based on a prompt"""
         embedding = self.embedding_model.encode(prompt, convert_to_tensor=True)
         self.cursor.execute(
-            "SELECT id, text, embedding, context, 1 - (embedding <=> %s) as similarity FROM knowledge WHERE 1 - (embedding <=> %s) >= %s ORDER BY similarity DESC LIMIT %s",
+            "SELECT id, text, embedding, knowledge_type, context, 1 - (embedding <=> %s) as similarity FROM knowledge WHERE knowledge_type = ANY(%s) AND 1 - (embedding <=> %s) >= %s ORDER BY similarity DESC LIMIT %s",
             (
                 json.dumps(embedding.tolist()),
+                knowledge_type,
                 json.dumps(embedding.tolist()),
-                threashold,
+                threshold,
                 top_k,
             ),
         )
         rows = self.cursor.fetchall()
+
         return [
             Knowledge(
                 id=row[0],
                 text=row[1],
                 embedding=json.loads(row[2]),
-                context=row[3],
-                similarity=row[4],
+                knowledge_type=row[3],
+                context=row[4],
+                similarity=row[5],
             )
             for row in rows
         ]
