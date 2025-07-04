@@ -189,7 +189,7 @@ class MotionPlanningServer(Node):
             return result
         except Exception as e:
             self.get_logger().error(f"Move joints failed: {str(e)}")
-            goal_handle.abort()
+            goal_handle.succeed()
             result.success = False
             return result
 

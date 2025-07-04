@@ -121,8 +121,12 @@ case $TASK in
         PROFILES=("carry")
         RUN="ros2 launch speech hri_launch.py"
         ;;
+    "--storing")
+        PROFILES=("storing")
+        RUN="ros2 launch speech hri_launch.py"
+        ;;
     "--storing-groceries")
-        PROFILES=("storing-groceries")
+        PROFILES=("storing")
         RUN="ros2 launch speech hri_launch.py"
         ;;
     "--gpsr")

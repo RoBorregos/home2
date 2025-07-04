@@ -209,10 +209,11 @@ class StoringGroceriesManager(Node):
         if self.state == ExecutionStates.START:
             Logger.info(self, "Starting Storing Groceries Manager...")
             self.state = ExecutionStates.INIT_NAV_TO_SHELF
+            self.state = ExecutionStates.INIT_NAV_TO_TABLE
             # self.state = ExecutionStates.VIEW_AND_SAVE_OBJECTS_ON_TABLE
 
             # self.state = ExecutionStates.INIT_NAV_TO_SHELF
-        #             self.state = ExecutionStates.CATEGORIZE_OBJECTS
+            # self.state = ExecutionStates.CATEGORIZE_OBJECTS
 
         elif self.state == ExecutionStates.END:
             Logger.info(self, "Ending Storing Groceries Manager...")
@@ -394,10 +395,9 @@ class StoringGroceriesManager(Node):
                 shelfs[i] = self.shelves[i].objects
             try:
                 # self.object_names_on_table = ["apple", "squash", "coke", "bowl"]
-                # shelfs = {0: [], 1: ["apple", "orange"], 2: ["orange_soda"]}
-
-                self.object_names_on_table = ["apple", "squash", "coke", "bowl"]
-                shelfs = {0: [], 1: ["bottle", "coke_can"], 2: ["pear"]}
+                shelfs = {0: [], 1: ["water", "sprite_can"], 2: ["squash", "orange", "banana"]}
+                # self.object_names_on_table = ["apple", "fresca_can", "bowl", "yellow_bowl", "pringles"]
+                # shelfs = {0: [], 1: ["bottle", "coke_can"], 2: ["pear"]}
                 status, categorized_shelfs, objects_to_add = (
                     self.subtask_manager.hri.categorize_objects(self.object_names_on_table, shelfs)
                 )
@@ -461,6 +461,7 @@ class StoringGroceriesManager(Node):
                     Logger.error(self, f"Error categorizing object: {e}")
                     continue
             self.state = ExecutionStates.PLAN_NEXT
+
         elif self.state == ExecutionStates.PLAN_NEXT:
             if len(self.object_names_on_table) == 0 or self.picked_objects >= 5:
                 self.subtask_manager.hri.say(text="I have finished placing the objects", wait=True)
@@ -471,6 +472,7 @@ class StoringGroceriesManager(Node):
                 self.picked_objects += 1
                 self.prev_uid = self.pick_uid
             self.state = ExecutionStates.NAV_TO_TABLE
+
         elif self.state == ExecutionStates.NOT_ALL_OBJECTS_PICKED:
             if len([i for k, i in self.object_to_placing_shelf.values() if k == 0]) == 0:
                 status, res = self.subtask_manager.hri.confirm(
@@ -572,13 +574,15 @@ class StoringGroceriesManager(Node):
                     # self.state = ExecutionStates.FAILED_NAV_TO_SHELF
                     Logger.error(self, "Failed to pick object")
                     return
+                elif hres == Status.EXECUTION_SUCCESS:
+                    break
 
             Logger.info(
                 self,
                 f"Picked object: {min_distance_obj.classname} at distance {min_distance_obj.distance}",
             )
             self.state = ExecutionStates.NAV_TO_SHELF
-
+            time.sleep(2)
             status, new_objs = self.subtask_manager.vision.detect_objects(timeout=10)
             new_objs: list[BBOX]
             if status == Status.TIMEOUT:
@@ -639,10 +643,11 @@ class StoringGroceriesManager(Node):
                 if not status == Status.EXECUTION_SUCCESS:
                     Logger.error(self, "Failed to categorize objects")
                     return
-                resulting_clas: dict[int, str]
-                objects_to_add_2: dict[int, list[str]]
+                # resulting_clas: dict[int, str]
+                # objects_to_add_2: dict[int, list[str]]
                 shelf_to_be_placed = None
                 for i in objects_to_add_2.values():
+                    Logger.info(self, f"Object to add: {i}")
                     indx, objectooo = i
                     if objectooo == self.current_object:
                         shelf_to_be_placed = indx
@@ -746,13 +751,16 @@ class StoringGroceriesManager(Node):
                 f"Please place the {self.current_object} object in the shelf number {shelf}",
                 wait=True,
             )
-            self.subtask_manager.hri.say("Other objects in the shelf are:")
-            for i in self.shelves[shelf].objects:
-                self.subtask_manager.hri.say(f"{i}", wait=True)
+            self.subtask_manager.hri.say(
+                f"Other objects in the shelf are: {self.shelves[shelf].objects}", wait=True
+            )
+            Logger.info(self, f"Other objects in the shelf are: {self.shelves[shelf].objects}")
             tries = 0
             self.subtask_manager.manipulation.open_gripper()
             while (
-                self.subtask_manager.hri.confirm("Have you placed the object?", use_hotwords=False)
+                self.subtask_manager.hri.confirm("Have you placed the object?", use_hotwords=False)[
+                    1
+                ]
                 != "yes"
             ):
                 self.subtask_manager.hri.say("Please place the object when ready.")

@@ -21,7 +21,7 @@ def mockable(return_value=None, delay=0, mock=False, _mock_callback=None):
         def wrapper(self, *args, **kwargs):
             if getattr(self, "mock_data", False) or mock:
                 if _mock_callback is not None:
-                    return _mock_callback(self, *args, **kwargs)
+                    return _mock_callback(self, **kwargs)
                 if delay > 0:
                     time.sleep(delay)
                 Logger.mock(self.node, f"{func.__name__}. Value: {return_value}")

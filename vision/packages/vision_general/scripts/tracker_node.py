@@ -135,7 +135,18 @@ class SingleTracker(Node):
 
         pbar = tqdm.tqdm(total=4, desc="Loading models")
 
-        self.model = YOLO("yolov8n.pt")
+        # if .engine does not exist, export the model
+        if not os.path.exists("yolo11n.engine"):
+            pt_model = YOLO("yolo11n.pt")
+            self.get_logger().info("Loaded YOLO model, exporting...")
+            # # Export the model to TensorRT with DLA enabled (only works with FP16 or INT8)
+            pt_model.export(
+                format="engine", device="dla:0", half=True
+            )  # dla:0 or dla:1 corresponds to the DLA cores
+
+        # Load the exported TensorRT model
+        self.model = YOLO("yolo11n.engine")
+        self.get_logger().info("Loaded YOLO model")
         self.pose_detection = PoseDetection()
 
         # Load the ReID model
@@ -391,9 +402,9 @@ class SingleTracker(Node):
                 classes=0,
                 verbose=False,
             )
-            # self.get_logger().info(
-            #     f"Det+Tracking took {time.time() - start_time:.2f} seconds"
-            # )
+            self.get_logger().info(
+                f"Det+Tracking took {time.time() - start_time:.2f} seconds"
+            )
 
             if self.person_data["id"] is None:
                 return
