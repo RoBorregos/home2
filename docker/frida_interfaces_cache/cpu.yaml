@@ -6,7 +6,7 @@ services:
       dockerfile: ../Dockerfile.ROS
       args:
         BASE_IMAGE: ubuntu:22.04
-    image: roborregos/home2:l4t_base
+    image: roborregos/home2:cpu_base
 
     container_name: home2-frida-interfaces-cache
     volumes:
