@@ -166,6 +166,7 @@ var hierarchy =
       [ "remove_person.RemovePerson", "classremove__person_1_1RemovePerson.html", null ],
       [ "restaurant_task_manager.RestaurantTaskManager", "classrestaurant__task__manager_1_1RestaurantTaskManager.html", null ],
       [ "run_while_hearing.ServiceClientServerNode", "classrun__while__hearing_1_1ServiceClientServerNode.html", null ],
+      [ "show_object_detection.ShowDetectionNode", "classshow__object__detection_1_1ShowDetectionNode.html", null ],
       [ "storing_groceries_commands.StoringGroceriesCommands", "classstoring__groceries__commands_1_1StoringGroceriesCommands.html", null ],
       [ "storing_groceries_manager.StoringGroceriesManager", "classstoring__groceries__manager_1_1StoringGroceriesManager.html", null ],
       [ "test_env.TestNode", "classtest__env_1_1TestNode.html", null ],

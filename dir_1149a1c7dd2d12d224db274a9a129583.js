@@ -4,5 +4,6 @@ var dir_1149a1c7dd2d12d224db274a9a129583 =
     [ "include", "dir_f5bae02ac274157edb0be0eb1167101d.html", "dir_f5bae02ac274157edb0be0eb1167101d" ],
     [ "local_camera.py", "local__camera_8py.html", "local__camera_8py" ],
     [ "object_detector_node.py", "object__detector__node_8py.html", "object__detector__node_8py" ],
+    [ "show_object_detection.py", "show__object__detection_8py.html", "show__object__detection_8py" ],
     [ "zero_shot_object_detector_node.py", "zero__shot__object__detector__node_8py.html", "zero__shot__object__detector__node_8py" ]
 ];

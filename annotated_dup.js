@@ -238,6 +238,9 @@ var annotated_dup =
       [ "ShelfDetection", "classShelf__OCV_1_1ShelfDetection.html", null ],
       [ "ShelfDetector", "classShelf__OCV_1_1ShelfDetector.html", "classShelf__OCV_1_1ShelfDetector" ]
     ] ],
+    [ "show_object_detection", "namespaceshow__object__detection.html", [
+      [ "ShowDetectionNode", "classshow__object__detection_1_1ShowDetectionNode.html", "classshow__object__detection_1_1ShowDetectionNode" ]
+    ] ],
     [ "storing_groceries_commands", "namespacestoring__groceries__commands.html", [
       [ "StoringGroceriesCommands", "classstoring__groceries__commands_1_1StoringGroceriesCommands.html", "classstoring__groceries__commands_1_1StoringGroceriesCommands" ]
     ] ],

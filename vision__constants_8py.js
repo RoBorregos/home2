@@ -45,6 +45,7 @@ var vision__constants_8py =
     [ "SET_TARGET_BY_TOPIC", "vision__constants_8py.html#a3aa821dd699a5d43dbd7a32417a38d95", null ],
     [ "SET_TARGET_TOPIC", "vision__constants_8py.html#a1b8c2598e96be264210806cb30ddc703", null ],
     [ "SHELF_DETECTION_TOPIC", "vision__constants_8py.html#af3422ede0e186367f2078ca2c576e108", null ],
+    [ "SHOW_DETECTION_TOPIC", "vision__constants_8py.html#a88a70827ccfcbe95b1d791638bc4fc1c", null ],
     [ "TRACKER_IMAGE_TOPIC", "vision__constants_8py.html#a8f74338abc4820939f0ea2c55782f55c", null ],
     [ "ZERO_SHOT_DEFAULT_CLASSES", "vision__constants_8py.html#a4211ec5821d72ea37c79ae48043809ee", null ],
     [ "ZERO_SHOT_DETECTIONS_3D_TOPIC", "vision__constants_8py.html#a7316a8a42cc71661c5ca4eb92817b704", null ],

@@ -268,7 +268,7 @@ var namespaces_dup =
       [ "launch_setup", "namespacerobot__sim.html#aa842398b51f41c4ee2a7105e1e83009e", null ]
     ] ],
     [ "ros_utils", "namespaceros__utils.html", [
-      [ "wait_for_future", "namespaceros__utils.html#a7d81ef0f364ca6c1dbf02a5f8c6dac4c", null ]
+      [ "wait_for_future", "namespaceros__utils.html#ac16fc05d42316d0b2641306108a80c17", null ]
     ] ],
     [ "rplidar_fixed", "namespacerplidar__fixed.html", [
       [ "generate_launch_description", "namespacerplidar__fixed.html#a34c12a29f8ab4229ce3f1118c9f1c3c2", null ]
@@ -291,6 +291,7 @@ var namespaces_dup =
     ] ],
     [ "Servo", "namespaceServo.html", "namespaceServo" ],
     [ "Shelf_OCV", "namespaceShelf__OCV.html", "namespaceShelf__OCV" ],
+    [ "show_object_detection", "namespaceshow__object__detection.html", "namespaceshow__object__detection" ],
     [ "storing_groceries", "namespacestoring__groceries.html", [
       [ "generate_launch_description", "namespacestoring__groceries.html#a08baa2a58d490a8fba1a16934a04afc5", null ],
       [ "launch_setup", "namespacestoring__groceries.html#a0391f69ed911a8eccfdcc6ba61f29f29", null ]
