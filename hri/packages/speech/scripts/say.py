@@ -120,7 +120,7 @@ class Say(Node):
         self.publisher_ = self.create_publisher(Bool, speaking_topic, 10)
         self.text_publisher_ = self.create_publisher(String, text_spoken, 10)
         self.far_audio_publisher = self.create_publisher(AudioData, far_audio_topic, 20)
-        
+
         # Speech interrupt handling
         self.speech_interrupted = False
         self.create_subscription(String, interrupt_topic, self.interrupt_callback, 10)
@@ -257,12 +257,14 @@ class Say(Node):
         """Play audio file and publish audio data for AEC."""
         if self.speech_interrupted:
             return
-            
+
         # Load audio file for reference publishing
-        audio_thread = threading.Thread(target=self.publish_audio_reference, args=(file_path,))
+        audio_thread = threading.Thread(
+            target=self.publish_audio_reference, args=(file_path,)
+        )
         audio_thread.daemon = True
         audio_thread.start()
-        
+
         # Play audio using pygame
         mixer.pre_init(frequency=48000, buffer=2048)
         mixer.init()
@@ -270,61 +272,61 @@ class Say(Node):
             pass
         mixer.music.load(file_path)
         mixer.music.play()
-        
+
         # Wait for audio to finish playing or be interrupted
         try:
             while mixer.music.get_busy() and not self.speech_interrupted:
                 time.sleep(0.01)  # Small delay to allow interrupt detection
         except Exception as e:
             self.get_logger().error(f"Error while waiting for audio: {e}")
-    
+
     def publish_audio_reference(self, file_path):
         """Publish audio data as reference for AEC."""
         try:
             # Read audio file
-            with wave.open(file_path, 'rb') as wav_file:
+            with wave.open(file_path, "rb") as wav_file:
                 sample_rate = wav_file.getframerate()
                 channels = wav_file.getnchannels()
                 sample_width = wav_file.getsampwidth()
-                
+
                 # Read audio data
                 audio_data = wav_file.readframes(wav_file.getnframes())
-                
+
                 # Convert to numpy array
                 if sample_width == 2:
                     audio_array = np.frombuffer(audio_data, dtype=np.int16)
                 else:
                     self.get_logger().warn(f"Unsupported sample width: {sample_width}")
                     return
-                
+
                 # Convert to mono if stereo
                 if channels == 2:
                     audio_array = audio_array[::2]  # Take every other sample
-                
+
                 # Resample to 16kHz if needed (simple decimation for demo)
                 if sample_rate != 16000:
                     downsample_factor = sample_rate // 16000
                     if downsample_factor > 1:
                         audio_array = audio_array[::downsample_factor]
-                
+
                 # Publish in chunks
                 chunk_size = 512
                 for i in range(0, len(audio_array), chunk_size):
                     if self.speech_interrupted:
                         break
-                        
-                    chunk = audio_array[i:i+chunk_size]
+
+                    chunk = audio_array[i : i + chunk_size]
                     if len(chunk) < chunk_size:
                         # Pad with zeros if needed
                         chunk = np.pad(chunk, (0, chunk_size - len(chunk)))
-                    
+
                     # Publish chunk
                     audio_msg = AudioData(data=chunk.tobytes())
                     self.far_audio_publisher.publish(audio_msg)
-                    
+
                     # Small delay to match real-time playback
                     time.sleep(chunk_size / 16000.0)
-                    
+
         except Exception as e:
             self.get_logger().error(f"Error publishing audio reference: {e}")
 
