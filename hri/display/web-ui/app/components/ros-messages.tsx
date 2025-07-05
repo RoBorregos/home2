@@ -164,9 +164,9 @@ useEffect(() => {
           key={currentMessage.timestamp.getTime()}
           className="fixed bottom-32 left-1/2 transform -translate-x-1/2 bg-[oklch(0.5_0.25_260)] text-white px-6 py-3 rounded-lg shadow-lg z-50 min-w-[300px] text-center animate-fadeIn"
         >
-          <div className="flex items-center justify-center gap-3">
-            <Mic className="h-5 w-5 animate-pulse" />
-            <p className="text-lg font-medium">{currentMessage.content}</p>
+          <div className="flex items-center justify-center gap-4">
+            <Mic className="h-8 w-8 animate-pulse text-white" />
+            <p className="text-2x1 font-bold tracking-wide">{currentMessage.content}</p>
           </div>
         </div>
       )}
@@ -291,18 +291,18 @@ function AudioStateIndicator({ state }: AudioStateIndicatorProps) {
   return (
   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 pointer-events-none">
     <div className="relative">
-      <div className="absolute inset-0 rounded-full bg-[oklch(0.5_0.25_260)] opacity-10 animate-[pulse_3s_infinite]" />
-      <div className="absolute inset-0 rounded-full bg-[oklch(0.5_0.25_260)] opacity-15 animate-[pulse_3s_infinite_1s]" />
-      <div className="absolute inset-0 rounded-full bg-[oklch(0.5_0.25_260)] opacity-20 animate-[pulse_3s_infinite_2s]" />
+      <div className="absolute inset-0 rounded-full bg-[oklch(0.5_0.25_260)] opacity-10 animate-[pulse_3s_infinite] scale-110" />
+      <div className="absolute inset-0 rounded-full bg-[oklch(0.5_0.25_260)] opacity-15 animate-[pulse_3s_infinite_1s]scale-125" />
+      <div className="absolute inset-0 rounded-full bg-[oklch(0.5_0.25_260)] opacity-20 animate-[pulse_3s_infinite_2s] scale-150" />
       
       <div className="relative z-10 h-24 w-24 rounded-full bg-[oklch(0.5_0.25_260)] shadow-lg flex items-center justify-center">
-        <Mic className="h-14 w-14 text-white/90 drop-shadow-md" />
+        <Mic className="h-24 w-24 text-white/90 drop-shadow-md" />
       </div>
 
       <div 
         className="absolute inset-0 rounded-full border-4 border-[oklch(0.5_0.25_260)] opacity-0 transition-all duration-300"
         style={{
-          transform: `scale(${1 + (vadLevel || 0)})`,
+          transform: `scale(${1.2 + (vadLevel || 0)})`,
           opacity: (vadLevel || 0) * 0.8
         }}
       />
