@@ -74,3 +74,5 @@ $ source install/setup.bash
 | Danaé Sánchez | [@DanaeSG](https://github.com/DanaeSG) |Vision, Navigation, Integration|
 | Alejandro González | [@AleGonzcamilla](https://github.com/AleGonzcamilla) | Mechanics, Manipulation |
 | Emil Winkler | [@emilwinkp](https://github.com/emilwinkp) | Manipulation |
+| Fernando Hernandez | [@Fernando94654](https://github.com/Fernando94654) | Vision, Manipulation |
+
