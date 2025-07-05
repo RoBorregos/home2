@@ -121,8 +121,12 @@ case $TASK in
         PROFILES=("carry")
         RUN="ros2 launch speech hri_launch.py"
         ;;
+    "--storing")
+        PROFILES=("storing")
+        RUN="ros2 launch speech hri_launch.py"
+        ;;
     "--storing-groceries")
-        PROFILES=("storing-groceries")
+        PROFILES=("storing")
         RUN="ros2 launch speech hri_launch.py"
         ;;
     "--gpsr")
@@ -140,7 +144,6 @@ add_or_update_variable .env "COMPOSE_PROFILES" "$COMPOSE_PROFILES"
 
 GENERATE_BAML_CLIENT="baml-cli generate --from /workspace/src/task_manager/scripts/utils/baml_src/"
 SOURCE_INTERFACES="source frida_interfaces_cache/install/local_setup.bash"
-
 COMMAND="$GENERATE_BAML_CLIENT && source /opt/ros/humble/setup.bash && $SOURCE_INTERFACES && colcon build --symlink-install --packages-select speech nlp embeddings && source ~/.bashrc && $RUN"
 
 # echo "COMMAND= $COMMAND " >> .env

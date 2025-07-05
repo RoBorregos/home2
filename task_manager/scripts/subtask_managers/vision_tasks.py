@@ -60,6 +60,7 @@ from utils.task import Task
 
 
 TIMEOUT = 8.0
+TIMEOUT_WAIT_FOR_SERVICE = 1.0
 IS_TRACKING_TOPIC = "/vision/is_tracking"
 
 
@@ -195,10 +196,10 @@ class VisionTasks:
 
         for key, service in self.services[self.task].items():
             if service["type"] == "service":
-                if not service["client"].wait_for_service(timeout_sec=TIMEOUT):
+                if not service["client"].wait_for_service(timeout_sec=TIMEOUT_WAIT_FOR_SERVICE):
                     Logger.warn(self.node, f"{key} service not initialized. ({self.task})")
             elif service["type"] == "action":
-                if not service["client"].wait_for_server(timeout_sec=TIMEOUT):
+                if not service["client"].wait_for_server(timeout_sec=TIMEOUT_WAIT_FOR_SERVICE):
                     Logger.warn(self.node, f"{key} action server not initialized. ({self.task})")
 
     def follow_callback(self, msg: Point):
