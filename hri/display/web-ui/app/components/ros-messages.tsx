@@ -162,11 +162,11 @@ useEffect(() => {
       {audioState.state === "listening" && currentMessage && (
         <div
           key={currentMessage.timestamp.getTime()}
-          className="fixed bottom-32 left-1/2 transform -translate-x-1/2 bg-[oklch(0.5_0.25_260)] text-white px-6 py-3 rounded-lg shadow-lg z-50 min-w-[300px] text-center animate-fadeIn"
+          className="fixed bottom-32 left-1/2 transform -translate-x-1/2 bg-gray-500/10 text-white px-6 py-4 rounded-lg shadow-lg z-50 min-w-[300px] max-w-[80%] text-center animate-fadeIn"
         >
           <div className="flex items-center justify-center gap-4">
-            <Mic className="h-8 w-8 animate-pulse text-white" />
-            <p className="text-2x1 font-bold tracking-wide">{currentMessage.content}</p>
+            <Mic className="h-10 w-10 animate-pulse text-white" />
+            <p className="text-4xl font-medium tracking-wide">{currentMessage.content}</p>
           </div>
         </div>
       )}
@@ -262,8 +262,8 @@ function AudioStateIndicator({ state }: AudioStateIndicatorProps) {
   const { state: audioState, vadLevel } = state;
 
   // Calculate the number of bars to show based on VAD level (0-1)
-  const maxBars = 20;
-  const activeBars = Math.ceil(vadLevel * maxBars);
+  // const maxBars = 20;
+  // const activeBars = Math.ceil(vadLevel * maxBars);
 
   if (audioState === "idle") {
     return (
