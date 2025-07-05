@@ -68,5 +68,5 @@ $ source install/setup.bash
 | Oscar Arreola |  |  |
 | Gerardo Fregoso |  |  |
 | Emiliano Flores |  |  |
-| Iván Romero |  |  |
+| Iván Romero | [@IvanRomero03](https://github.com/IvanRomero03) | Integration, HRI, Manipulation, Vision |
 | Diego Hernández | [@Diego-HC](https://github.com/Diego-HC) | Integration, HRI, Navigation |
