@@ -12,15 +12,11 @@ EXTRACT_DATA_SERVICE = "/hri/nlp/data_extractor"
 IS_POSITIVE_SERVICE = "/hri/nlp/is_positive"
 IS_NEGATIVE_SERVICE = "/hri/nlp/is_negative"
 CATEGORIZE_SERVICE = "/hri/nlp/categorize"
-ITEM_CATEGORIZATION_SERVICE = "/hri/nlp/item_categorization"
 CONVESATION_SERVICE = "/hri/nlp/conversation"
 GRAMMAR_SERVICE = "/hri/nlp/grammar"
 COMMON_INTEREST_SERVICE = "/hri/nlp/common_interest"
 RAG_SERVICE = "/hri/rag/answer_question"
 
-ADD_ENTRY_SERVICE = "/hri/nlp/embeddings/add_entry_service"
-QUERY_ENTRY_SERVICE = "/hri/nlp/embeddings/query_entry_service"
-BUILD_EMBEDDINGS_SERVICE = "/hri/nlp/embeddings/build_embeddings_service"
 USE_RESPEAKER = True
 RESPEAKER_LIGHT_TOPIC = "/hri/speech/respeaker/light"
 RESPEAKER_DOA_TOPIC = "/hri/speech/respeaker/doa"
@@ -59,6 +55,12 @@ class MODEL(Enum):
     EXTRACT_INFO_REQUESTED = "qwen2.5"
     GET_COMMANDS = "qwen3:0.6b"
     CommonInterest = "qwen3:0.6b"
+
+
+class KNOWLEDGE_TYPE(Enum):
+    TEC = "tec_knowledge"
+    FRIDA = "frida_knowledge"
+    ROBORREGOS = "roborregos_knowledge"
 
 
 USEFUL_AUDIO_NODE_NAME = "useful_audio_node"

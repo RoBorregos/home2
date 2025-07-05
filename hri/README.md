@@ -80,6 +80,14 @@ ros2 service call /hri/nlp/is_positive frida_interfaces/srv/IsPositive "{text: '
 # Is negative
 ros2 service call /hri/nlp/is_negative frida_interfaces/srv/IsNegative "{text: 'Incorrect'}"
 
+# Rag question
+ros2 service call /hri/rag/answer_question frida_interfaces/srv/AnswerQuestion "
+question: 'What time is it'
+topk: 10
+threshold: 0.0
+knowledge_type: []
+"
+
 # Hear something
 ros2 service call /hri/speech/STT frida_interfaces/srv/STT {}
 
