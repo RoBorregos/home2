@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['xarmservices_0',['XArmServices',['../classXArmServices_1_1XArmServices.html',1,'XArmServices']]]
+  ['waitforcontrollerinputnode_0',['WaitForControllerInputNode',['../classwait__for__controller__input__node_1_1WaitForControllerInputNode.html',1,'wait_for_controller_input_node']]]
 ];

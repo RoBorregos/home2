@@ -67,7 +67,7 @@ var searchData=
   ['get_5fresult_5fcallback_64',['get_result_callback',['../classds4__demo_1_1ServoDS4.html#aad59414969ac8427ce32ddf185227692',1,'ds4_demo.ServoDS4.get_result_callback()'],['../classcall__pick__action_1_1PickMotionClient.html#a4f462eda91be670ecdb7e4cd251f7c25',1,'call_pick_action.PickMotionClient.get_result_callback()'],['../classtransform__target_1_1PointTransformer.html#a963a99ca183d7e5b65f8c2b781b2b315',1,'transform_target.PointTransformer.get_result_callback()']]],
   ['get_5fshelf_5fdetections_65',['get_shelf_detections',['../classShelf__OCV_1_1ShelfDetector.html#a2fa5dd6c58a03a929e40c5c4604c1336',1,'Shelf_OCV::ShelfDetector']]],
   ['get_5fshelves_66',['get_shelves',['../classShelf__OCV_1_1ShelfDetector.html#a5ebc9ff5f8358cc13c93bad5139ed29d',1,'Shelf_OCV::ShelfDetector']]],
-  ['get_5fshelves_5fcategories_67',['get_shelves_categories',['../classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a86cd77a7ff15a680a48dc4ff0155de07',1,'subtask_managers::hri_tasks::HRITasks']]],
+  ['get_5fshelves_5fcategories_67',['get_shelves_categories',['../classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a8c72dd26d9780b99f47a7c4908d380fd',1,'subtask_managers::hri_tasks::HRITasks']]],
   ['get_5fsonar_5frange_68',['get_sonar_range',['../classdashgo__driver_1_1dashgo__stm32_1_1Stm32.html#a8e81ee4bf7c9071e0bc9c6f7d8e130cf',1,'dashgo_driver::dashgo_stm32::Stm32']]],
   ['get_5fstructure_69',['get_structure',['../namespacereid__model.html#ae68f17bec5313be51d1ab808ef2755d0',1,'reid_model']]],
   ['get_5ftrack_5fperson_70',['get_track_person',['../classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#ac471d9727f6091af20749c08ceac1d32',1,'subtask_managers::vision_tasks::VisionTasks']]],

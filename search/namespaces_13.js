@@ -1,6 +1,4 @@
 var searchData=
 [
-  ['xarm6_0',['xarm6',['../namespacexarm6.html',1,'']]],
-  ['xarm_5flaunch_1',['xarm_launch',['../namespacexarm__launch.html',1,'']]],
-  ['xarmservices_2',['XArmServices',['../namespaceXArmServices.html',1,'']]]
+  ['wait_5ffor_5fcontroller_5finput_5fnode_0',['wait_for_controller_input_node',['../namespacewait__for__controller__input__node.html',1,'']]]
 ];

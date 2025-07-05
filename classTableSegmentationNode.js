@@ -2,9 +2,9 @@ var classTableSegmentationNode =
 [
     [ "TableSegmentationNode", "classTableSegmentationNode.html#a51e7d5de45cb82dc784fe9fc142c1143", null ],
     [ "~TableSegmentationNode", "classTableSegmentationNode.html#a6bd1d19daad7018004c59aff6c7a8fcb", null ],
-    [ "clusterFromPoint", "classTableSegmentationNode.html#ade890ca515a741de4c522653cd17bc8f", null ],
+    [ "clusterFromPoint", "classTableSegmentationNode.html#a14ee89fc7b04d147b3c8dc1c4565fb08", null ],
     [ "copyPointCloud", "classTableSegmentationNode.html#a2182ec905d48b6db8c0eb560ffe7ca75", null ],
-    [ "DistanceFilterFromPoint", "classTableSegmentationNode.html#a886f4fb4a17331b97e24e251aaeb8224", null ],
+    [ "DistanceFilterFromPoint", "classTableSegmentationNode.html#ad2da055f7b664be1145348e9cc728cd6", null ],
     [ "extractPlane", "classTableSegmentationNode.html#a04770a379a6a0d7c661c989c2184f279", null ],
     [ "get_cloud_without_plane", "classTableSegmentationNode.html#a76ebbdf9f87df71b5a0c44b7dd56ff61", null ],
     [ "largest_cluster", "classTableSegmentationNode.html#a40c53144a5c9a01149d9beeea049b246", null ],

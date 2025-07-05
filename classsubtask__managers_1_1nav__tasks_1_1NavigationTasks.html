@@ -106,6 +106,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a48ca97b4af80aecf1bd5829f32a9afe1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a37c0d871717b539f29af0a3242e579ea"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a37c0d871717b539f29af0a3242e579ea">setup_services</a> (self)</td></tr>
 <tr class="separator:a37c0d871717b539f29af0a3242e579ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a03b3f8cef1066af9e890171e2c7f1cf9"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a03b3f8cef1066af9e890171e2c7f1cf9">mock_to_location_controller</a> (self, timeout=10)</td></tr>
+<tr class="separator:a03b3f8cef1066af9e890171e2c7f1cf9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1944ce3c1b7cf21ebb01b0343d8f963e"><td class="memItemLeft" align="right" valign="top">Future&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a1944ce3c1b7cf21ebb01b0343d8f963e">move_to_location</a> (self, str location, str sublocation)</td></tr>
 <tr class="separator:a1944ce3c1b7cf21ebb01b0343d8f963e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a08774267c6b741159fb5068fca5da45a"><td class="memItemLeft" align="right" valign="top">Future&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a08774267c6b741159fb5068fca5da45a">move_to_zero</a> (self)</td></tr>
@@ -147,6 +149,8 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a165a3e50160ca5068fa26fe47440b374"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a25e0c6bc5977fafd3c98b40373cfe8c2"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a25e0c6bc5977fafd3c98b40373cfe8c2">ReturnLocation_client</a></td></tr>
 <tr class="separator:a25e0c6bc5977fafd3c98b40373cfe8c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9a784055f3b8f1eb040513dc6b70fcbe"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a9a784055f3b8f1eb040513dc6b70fcbe">wait_for_controller_input</a></td></tr>
+<tr class="separator:a9a784055f3b8f1eb040513dc6b70fcbe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a71330db0dc3cb313526a85a18e3f12be"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a71330db0dc3cb313526a85a18e3f12be">services</a></td></tr>
 <tr class="separator:a71330db0dc3cb313526a85a18e3f12be"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -283,6 +287,34 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
+</div>
+</div>
+<a id="a03b3f8cef1066af9e890171e2c7f1cf9" name="a03b3f8cef1066af9e890171e2c7f1cf9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a03b3f8cef1066af9e890171e2c7f1cf9">&#9670;&#160;</a></span>mock_to_location_controller()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def subtask_managers.nav_tasks.NavigationTasks.mock_to_location_controller </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>timeout</em> = <code>10</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Mock the controller to move to a location</pre> 
 </div>
 </div>
 <a id="a1944ce3c1b7cf21ebb01b0343d8f963e" name="a1944ce3c1b7cf21ebb01b0343d8f963e"></a>
@@ -656,6 +688,20 @@ result = future.result()</pre>
       <table class="memname">
         <tr>
           <td class="memname">subtask_managers.nav_tasks.NavigationTasks.task</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a9a784055f3b8f1eb040513dc6b70fcbe" name="a9a784055f3b8f1eb040513dc6b70fcbe"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9a784055f3b8f1eb040513dc6b70fcbe">&#9670;&#160;</a></span>wait_for_controller_input</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">subtask_managers.nav_tasks.NavigationTasks.wait_for_controller_input</td>
         </tr>
       </table>
 </div><div class="memdoc">

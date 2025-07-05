@@ -327,6 +327,9 @@ var annotated_dup =
         [ "PoseDetection", "classvision__general_1_1pose__detection_1_1PoseDetection.html", "classvision__general_1_1pose__detection_1_1PoseDetection" ]
       ] ]
     ] ],
+    [ "wait_for_controller_input_node", "namespacewait__for__controller__input__node.html", [
+      [ "WaitForControllerInputNode", "classwait__for__controller__input__node_1_1WaitForControllerInputNode.html", "classwait__for__controller__input__node_1_1WaitForControllerInputNode" ]
+    ] ],
     [ "XArmServices", "namespaceXArmServices.html", [
       [ "XArmServices", "classXArmServices_1_1XArmServices.html", "classXArmServices_1_1XArmServices" ]
     ] ],

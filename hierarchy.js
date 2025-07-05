@@ -177,6 +177,7 @@ var hierarchy =
       [ "tracker_node.SingleTracker", "classtracker__node_1_1SingleTracker.html", null ],
       [ "transform_target.PointTransformer", "classtransform__target_1_1PointTransformer.html", null ],
       [ "virtual_stop_button.VirtualStop", "classvirtual__stop__button_1_1VirtualStop.html", null ],
+      [ "wait_for_controller_input_node.WaitForControllerInputNode", "classwait__for__controller__input__node_1_1WaitForControllerInputNode.html", null ],
       [ "zed_simulator.ZedSimulator", "classzed__simulator_1_1ZedSimulator.html", null ]
     ] ],
     [ "ObjectDectector", null, [

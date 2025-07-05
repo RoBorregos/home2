@@ -2,7 +2,7 @@ var namespaceutils =
 [
     [ "config", "namespaceutils_1_1config.html", "namespaceutils_1_1config" ],
     [ "decorators", "namespaceutils_1_1decorators.html", [
-      [ "mockable", "namespaceutils_1_1decorators.html#acd10760db02668773bab43afbb117114", null ],
+      [ "mockable", "namespaceutils_1_1decorators.html#a941f5ed30d7544d8f102feee2e6a2a72", null ],
       [ "service_check", "namespaceutils_1_1decorators.html#adcfc2d40a4fb55163e4d810f7b980736", null ]
     ] ],
     [ "logger", "namespaceutils_1_1logger.html", "namespaceutils_1_1logger" ],

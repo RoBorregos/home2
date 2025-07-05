@@ -165,14 +165,16 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a5190c9f3dd19c404b893ec39d9294859"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acd646a9927b181428ee48b791460fc36"><td class="memItemLeft" align="right" valign="top">list[str]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#acd646a9927b181428ee48b791460fc36">find_closest</a> (self, list documents, str query, int top_k=1)</td></tr>
 <tr class="separator:acd646a9927b181428ee48b791460fc36"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aed25755e192c9c0599370020d38a39ad"><td class="memItemLeft" align="right" valign="top">list[str]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#aed25755e192c9c0599370020d38a39ad">find_closest_raw</a> (self, list documents, str query, int top_k=4)</td></tr>
+<tr class="separator:aed25755e192c9c0599370020d38a39ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af1839168018c952b32e71d2752636e42"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#af1839168018c952b32e71d2752636e42">answer_with_context</a> (self, str question, str context)</td></tr>
 <tr class="separator:af1839168018c952b32e71d2752636e42"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa7bbe5dc3611934737b88fd90bf35fee"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#aa7bbe5dc3611934737b88fd90bf35fee">query_command_history</a> (self, str query, int top_k=1)</td></tr>
 <tr class="separator:aa7bbe5dc3611934737b88fd90bf35fee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0d9e79c0d55771445c09dddf1db29ba8"><td class="memItemLeft" align="right" valign="top">tuple[<a class="el" href="classutils_1_1status_1_1Status.html">Status</a>, dict[int, list[str]], dict[int, list[str]]]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a0d9e79c0d55771445c09dddf1db29ba8">categorize_objects</a> (self, list[str] table_objects, dict[int, list[str]] shelves)</td></tr>
 <tr class="separator:a0d9e79c0d55771445c09dddf1db29ba8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a86cd77a7ff15a680a48dc4ff0155de07"><td class="memItemLeft" align="right" valign="top">tuple[<a class="el" href="classutils_1_1status_1_1Status.html">Status</a>, dict[int, str]]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a86cd77a7ff15a680a48dc4ff0155de07">get_shelves_categories</a> (self, dict[int, list[str]] shelves)</td></tr>
-<tr class="separator:a86cd77a7ff15a680a48dc4ff0155de07"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8c72dd26d9780b99f47a7c4908d380fd"><td class="memItemLeft" align="right" valign="top">tuple[<a class="el" href="classutils_1_1status_1_1Status.html">Status</a>, dict[int, str]]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a8c72dd26d9780b99f47a7c4908d380fd">get_shelves_categories</a> (self, dict[int, list[str]] shelves, list[str] table_objects=[])</td></tr>
+<tr class="separator:a8c72dd26d9780b99f47a7c4908d380fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afbb80684da1ea9c83e0ce467f5c8dbfe"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#afbb80684da1ea9c83e0ce467f5c8dbfe">publish_display_topic</a> (self, str topic)</td></tr>
 <tr class="separator:afbb80684da1ea9c83e0ce467f5c8dbfe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af4e1627f2a30285e5530d61ae9479bab"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#af4e1627f2a30285e5530d61ae9479bab">categorize_object</a> (self, dict categories, str obj)</td></tr>
@@ -1077,6 +1079,53 @@ Returns:
 </pre> 
 </div>
 </div>
+<a id="aed25755e192c9c0599370020d38a39ad" name="aed25755e192c9c0599370020d38a39ad"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aed25755e192c9c0599370020d38a39ad">&#9670;&#160;</a></span>find_closest_raw()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> list[str] subtask_managers.hri_tasks.HRITasks.find_closest_raw </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">list&#160;</td>
+          <td class="paramname"><em>documents</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>query</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int &#160;</td>
+          <td class="paramname"><em>top_k</em> = <code>4</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Method to find the closest item to the query.
+Args:
+    documents: the documents to search among
+    query: the query to search for
+Returns:
+    Status: the status of the execution
+    list[str]: the results of the query
+</pre> 
+</div>
+</div>
 <a id="aef1f72630f1c0d4e0bb12998a7b889d4" name="aef1f72630f1c0d4e0bb12998a7b889d4"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aef1f72630f1c0d4e0bb12998a7b889d4">&#9670;&#160;</a></span>get_location_orientation()</h2>
 
@@ -1099,8 +1148,8 @@ Returns:
 </pre> 
 </div>
 </div>
-<a id="a86cd77a7ff15a680a48dc4ff0155de07" name="a86cd77a7ff15a680a48dc4ff0155de07"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a86cd77a7ff15a680a48dc4ff0155de07">&#9670;&#160;</a></span>get_shelves_categories()</h2>
+<a id="a8c72dd26d9780b99f47a7c4908d380fd" name="a8c72dd26d9780b99f47a7c4908d380fd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8c72dd26d9780b99f47a7c4908d380fd">&#9670;&#160;</a></span>get_shelves_categories()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1114,9 +1163,14 @@ Returns:
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">dict[int, list[str]]
-    &#160;</td>
-          <td class="paramname"><em>shelves</em>&#160;</td>
+          <td class="paramtype">dict[int, list[str]]&#160;</td>
+          <td class="paramname"><em>shelves</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">list[str] &#160;</td>
+          <td class="paramname"><em>table_objects</em> = <code>[]</code>&#160;</td>
         </tr>
         <tr>
           <td></td>

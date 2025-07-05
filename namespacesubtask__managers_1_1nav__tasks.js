@@ -6,5 +6,6 @@ var namespacesubtask__managers_1_1nav__tasks =
     [ "RETURN_LASER_DATA", "namespacesubtask__managers_1_1nav__tasks.html#a5b4d09d800913ff80b44923281185579", null ],
     [ "RETURN_LOCATION", "namespacesubtask__managers_1_1nav__tasks.html#a6f0a3307d2c3d8bc3c5fcd2f15a84c08", null ],
     [ "TIMEOUT", "namespacesubtask__managers_1_1nav__tasks.html#ad3bd539f5cb55fdd51c9fc250cfbc35d", null ],
+    [ "TIMEOUT_WAIT_FOR_SERVICE", "namespacesubtask__managers_1_1nav__tasks.html#aafc34321ab5320cb34772ce8394217ac", null ],
     [ "try", "namespacesubtask__managers_1_1nav__tasks.html#a736666918ed4f70d5cf2d995c1e7351e", null ]
 ];

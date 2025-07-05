@@ -4,6 +4,7 @@ var classsubtask__managers_1_1nav__tasks_1_1NavigationTasks =
     [ "check_door", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#ac8392c9cae02b642c0c36fdc7f232f31", null ],
     [ "follow_person", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a641efdd1c22f2649d30330aedddf4034", null ],
     [ "goal_response_callback", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#aec6654b28ae66f05e695adecc454e52a", null ],
+    [ "mock_to_location_controller", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a03b3f8cef1066af9e890171e2c7f1cf9", null ],
     [ "move_to_location", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a1944ce3c1b7cf21ebb01b0343d8f963e", null ],
     [ "move_to_zero", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a08774267c6b741159fb5068fca5da45a", null ],
     [ "result_callback", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#ac493a59a100fa5a4620a53f6e621b084", null ],
@@ -23,5 +24,6 @@ var classsubtask__managers_1_1nav__tasks_1_1NavigationTasks =
     [ "range_min", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#ae6bb471c910683efe8b15c3ee314c2ef", null ],
     [ "ReturnLocation_client", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a25e0c6bc5977fafd3c98b40373cfe8c2", null ],
     [ "services", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a71330db0dc3cb313526a85a18e3f12be", null ],
-    [ "task", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#ac7ea2aaf545650388e6d3a6a43d9852f", null ]
+    [ "task", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#ac7ea2aaf545650388e6d3a6a43d9852f", null ],
+    [ "wait_for_controller_input", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a9a784055f3b8f1eb040513dc6b70fcbe", null ]
 ];

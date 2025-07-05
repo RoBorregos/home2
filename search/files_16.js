@@ -1,8 +1,5 @@
 var searchData=
 [
-  ['xarm6_2epy_0',['xarm6.py',['../xarm6_8py.html',1,'']]],
-  ['xarm_5fconfigurations_2epy_1',['xarm_configurations.py',['../xarm__configurations_8py.html',1,'']]],
-  ['xarm_5flaunch_2elaunch_2epy_2',['xarm_launch.launch.py',['../xarm__launch_8launch_8py.html',1,'']]],
-  ['xarmmove_2eaction_3',['Xarmmove.action',['../Xarmmove_8action.html',1,'']]],
-  ['xarmservices_2epy_4',['XArmServices.py',['../XArmServices_8py.html',1,'']]]
+  ['wait_5ffor_5fcontroller_5finput_5fnode_2epy_0',['wait_for_controller_input_node.py',['../wait__for__controller__input__node_8py.html',1,'']]],
+  ['waitforcontrollerinput_2esrv_1',['WaitForControllerInput.srv',['../WaitForControllerInput_8srv.html',1,'']]]
 ];

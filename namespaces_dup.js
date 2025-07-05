@@ -268,7 +268,7 @@ var namespaces_dup =
       [ "launch_setup", "namespacerobot__sim.html#aa842398b51f41c4ee2a7105e1e83009e", null ]
     ] ],
     [ "ros_utils", "namespaceros__utils.html", [
-      [ "wait_for_future", "namespaceros__utils.html#ac16fc05d42316d0b2641306108a80c17", null ]
+      [ "wait_for_future", "namespaceros__utils.html#a227defc8d5be1b7e83089ef7134f5ef2", null ]
     ] ],
     [ "rplidar_fixed", "namespacerplidar__fixed.html", [
       [ "generate_launch_description", "namespacerplidar__fixed.html#a34c12a29f8ab4229ce3f1118c9f1c3c2", null ]
@@ -323,6 +323,7 @@ var namespaces_dup =
       [ "FLT_EPSILON", "namespacevision__3D__utils.html#a98f504ec1d9a17769ad241f28580d805", null ]
     ] ],
     [ "vision_general", "namespacevision__general.html", "namespacevision__general" ],
+    [ "wait_for_controller_input_node", "namespacewait__for__controller__input__node.html", "namespacewait__for__controller__input__node" ],
     [ "xarm6", "namespacexarm6.html", [
       [ "base_link_name", "namespacexarm6.html#a26baf8750ec84dc6d4deea500c98907a", null ],
       [ "camera_frame_name", "namespacexarm6.html#a658ce8043db1fe58f180500b27de9ede", null ],

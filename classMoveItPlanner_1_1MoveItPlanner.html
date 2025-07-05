@@ -131,10 +131,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a918e2b65bb21248159b18d9de6eac1cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac108d174d746bb2f0e63d4184dc37f0e"><td class="memItemLeft" align="right" valign="top">PoseStamped&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classMoveItPlanner_1_1MoveItPlanner.html#ac108d174d746bb2f0e63d4184dc37f0e">compute_fk</a> (self, List[float] joint_positions)</td></tr>
 <tr class="separator:ac108d174d746bb2f0e63d4184dc37f0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a971dec51a584f8c9f8a939e38b0a29da"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classMoveItPlanner_1_1MoveItPlanner.html#a971dec51a584f8c9f8a939e38b0a29da">set_joint_constraints</a> (self, List[float] joint_positions, float tolerance=0.05)</td></tr>
-<tr class="separator:a971dec51a584f8c9f8a939e38b0a29da"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aede26d8332ade8113dfd4a163dd605fd"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classMoveItPlanner_1_1MoveItPlanner.html#aede26d8332ade8113dfd4a163dd605fd">set_position_constraints</a> (self, List[float] position, float tolerance=0.05)</td></tr>
-<tr class="separator:aede26d8332ade8113dfd4a163dd605fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a62a77462f6765c782da0f696f7d90991"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classMoveItPlanner_1_1MoveItPlanner.html#a62a77462f6765c782da0f696f7d90991">set_joint_constraints</a> (self, List[float] joint_positions, float tolerance=0.1)</td></tr>
+<tr class="separator:a62a77462f6765c782da0f696f7d90991"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3695eddd6df712db4717457509171634"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classMoveItPlanner_1_1MoveItPlanner.html#a3695eddd6df712db4717457509171634">set_position_constraints</a> (self, List[float] position, float tolerance=0.1)</td></tr>
+<tr class="separator:a3695eddd6df712db4717457509171634"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6de8ae08c303ea15feb266216fb17221"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classMoveItPlanner_1_1MoveItPlanner.html#a6de8ae08c303ea15feb266216fb17221">set_orientation_constraints</a> (self, goal_handle)</td></tr>
 <tr class="separator:a6de8ae08c303ea15feb266216fb17221"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4fa208c9fb2b6168a7229ae5f8f3955f"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classMoveItPlanner_1_1MoveItPlanner.html#a4fa208c9fb2b6168a7229ae5f8f3955f">delete_all_constraints</a> (self)</td></tr>
@@ -191,10 +191,10 @@ Public Attributes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
-<tr class="memitem:a04774916a3a9b73c965441095c75a367"><td class="memItemLeft" align="right" valign="top">Union[bool, Future]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classMoveItPlanner_1_1MoveItPlanner.html#a04774916a3a9b73c965441095c75a367">_plan</a> (self, PoseStamped pose, bool cartesian=False, str target_link=<a class="el" href="namespacexarm6.html#a98e484bb41a72ad13138043f3728bf2c">xarm6.end_effector_name</a>(), float tolerance_position=0.015, float tolerance_orientation=0.05, float weight_position=1.0, float weight_orientation=1.0, float cartesian_max_step=0.05, float cartesian_fraction_threshold=0.8)</td></tr>
-<tr class="separator:a04774916a3a9b73c965441095c75a367"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa7e3178cbf2e028ed219bc8e76187d94"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classMoveItPlanner_1_1MoveItPlanner.html#aa7e3178cbf2e028ed219bc8e76187d94">_plan_joint_goal</a> (self, List[float] joint_positions, List[str] joint_names, float tolerance=0.05, float weight=1.0)</td></tr>
-<tr class="separator:aa7e3178cbf2e028ed219bc8e76187d94"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a57c22e517550fd8b227104b3128a1f09"><td class="memItemLeft" align="right" valign="top">Union[bool, Future]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classMoveItPlanner_1_1MoveItPlanner.html#a57c22e517550fd8b227104b3128a1f09">_plan</a> (self, PoseStamped pose, bool cartesian=False, str target_link=<a class="el" href="namespacexarm6.html#a98e484bb41a72ad13138043f3728bf2c">xarm6.end_effector_name</a>(), float tolerance_position=0.015, float tolerance_orientation=0.1, float weight_position=1.0, float weight_orientation=1.0, float cartesian_max_step=0.05, float cartesian_fraction_threshold=0.8)</td></tr>
+<tr class="separator:a57c22e517550fd8b227104b3128a1f09"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6b27b965721b20281ead6e4d436c7c98"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classMoveItPlanner_1_1MoveItPlanner.html#a6b27b965721b20281ead6e4d436c7c98">_plan_joint_goal</a> (self, List[float] joint_positions, List[str] joint_names, float tolerance=0.001, float weight=1.0)</td></tr>
+<tr class="separator:a6b27b965721b20281ead6e4d436c7c98"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="aaba6ccaf5b32afd81ed37034977bdb55" name="aaba6ccaf5b32afd81ed37034977bdb55"></a>
@@ -250,8 +250,8 @@ Protected Member Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a04774916a3a9b73c965441095c75a367" name="a04774916a3a9b73c965441095c75a367"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a04774916a3a9b73c965441095c75a367">&#9670;&#160;</a></span>_plan()</h2>
+<a id="a57c22e517550fd8b227104b3128a1f09" name="a57c22e517550fd8b227104b3128a1f09"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a57c22e517550fd8b227104b3128a1f09">&#9670;&#160;</a></span>_plan()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -293,7 +293,7 @@ Protected Member Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">float &#160;</td>
-          <td class="paramname"><em>tolerance_orientation</em> = <code>0.05</code>, </td>
+          <td class="paramname"><em>tolerance_orientation</em> = <code>0.1</code>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -334,8 +334,8 @@ Protected Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="aa7e3178cbf2e028ed219bc8e76187d94" name="aa7e3178cbf2e028ed219bc8e76187d94"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa7e3178cbf2e028ed219bc8e76187d94">&#9670;&#160;</a></span>_plan_joint_goal()</h2>
+<a id="a6b27b965721b20281ead6e4d436c7c98" name="a6b27b965721b20281ead6e4d436c7c98"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6b27b965721b20281ead6e4d436c7c98">&#9670;&#160;</a></span>_plan_joint_goal()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -365,7 +365,7 @@ Protected Member Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">float &#160;</td>
-          <td class="paramname"><em>tolerance</em> = <code>0.05</code>, </td>
+          <td class="paramname"><em>tolerance</em> = <code>0.001</code>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -1057,8 +1057,8 @@ Protected Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a971dec51a584f8c9f8a939e38b0a29da" name="a971dec51a584f8c9f8a939e38b0a29da"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a971dec51a584f8c9f8a939e38b0a29da">&#9670;&#160;</a></span>set_joint_constraints()</h2>
+<a id="a62a77462f6765c782da0f696f7d90991" name="a62a77462f6765c782da0f696f7d90991"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a62a77462f6765c782da0f696f7d90991">&#9670;&#160;</a></span>set_joint_constraints()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1079,7 +1079,7 @@ Protected Member Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">float &#160;</td>
-          <td class="paramname"><em>tolerance</em> = <code>0.05</code>&#160;</td>
+          <td class="paramname"><em>tolerance</em> = <code>0.1</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -1175,8 +1175,8 @@ Protected Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="aede26d8332ade8113dfd4a163dd605fd" name="aede26d8332ade8113dfd4a163dd605fd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aede26d8332ade8113dfd4a163dd605fd">&#9670;&#160;</a></span>set_position_constraints()</h2>
+<a id="a3695eddd6df712db4717457509171634" name="a3695eddd6df712db4717457509171634"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3695eddd6df712db4717457509171634">&#9670;&#160;</a></span>set_position_constraints()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1197,7 +1197,7 @@ Protected Member Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">float &#160;</td>
-          <td class="paramname"><em>tolerance</em> = <code>0.05</code>&#160;</td>
+          <td class="paramname"><em>tolerance</em> = <code>0.1</code>&#160;</td>
         </tr>
         <tr>
           <td></td>

@@ -116,8 +116,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a54e5a82753da294e3d96a948d42de781"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a02ef1d51068b24c43d4cf797716d4972"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTableSegmentationNode.html#a02ef1d51068b24c43d4cf797716d4972">test_cluster</a> (const std::shared_ptr&lt; rmw_request_id_t &gt; request_header, const std::shared_ptr&lt; frida_interfaces::srv::ClusterObjectFromPoint::Request &gt; request, const std::shared_ptr&lt; frida_interfaces::srv::ClusterObjectFromPoint::Response &gt; response)</td></tr>
 <tr class="separator:a02ef1d51068b24c43d4cf797716d4972"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a886f4fb4a17331b97e24e251aaeb8224"><td class="memItemLeft" align="right" valign="top"><a class="el" href="macros_8hpp.html#a27de83e41cde776d5568e8c42ac061bc">STATUS_RESPONSE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTableSegmentationNode.html#a886f4fb4a17331b97e24e251aaeb8224">DistanceFilterFromPoint</a> (<a class="el" href="macros_8hpp.html#aa99f2147b3f775316d89971291dbf174">_IN_</a> const std::shared_ptr&lt; pcl::PointCloud&lt; pcl::PointXYZ &gt; &gt; cloud, <a class="el" href="macros_8hpp.html#aa99f2147b3f775316d89971291dbf174">_IN_</a> const pcl::PointXYZ point, <a class="el" href="macros_8hpp.html#a0e4576f5257306df258a5cc13f56ee7f">_OUT_</a> std::shared_ptr&lt; pcl::PointCloud&lt; pcl::PointXYZ &gt; &gt; cloud_out, const float distance=0.5, const float min_height=0.1, const float max_height=2.0)</td></tr>
-<tr class="separator:a886f4fb4a17331b97e24e251aaeb8224"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad2da055f7b664be1145348e9cc728cd6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="macros_8hpp.html#a27de83e41cde776d5568e8c42ac061bc">STATUS_RESPONSE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTableSegmentationNode.html#ad2da055f7b664be1145348e9cc728cd6">DistanceFilterFromPoint</a> (<a class="el" href="macros_8hpp.html#aa99f2147b3f775316d89971291dbf174">_IN_</a> const std::shared_ptr&lt; pcl::PointCloud&lt; pcl::PointXYZ &gt; &gt; cloud, <a class="el" href="macros_8hpp.html#aa99f2147b3f775316d89971291dbf174">_IN_</a> const pcl::PointXYZ point, <a class="el" href="macros_8hpp.html#a0e4576f5257306df258a5cc13f56ee7f">_OUT_</a> std::shared_ptr&lt; pcl::PointCloud&lt; pcl::PointXYZ &gt; &gt; cloud_out, const float distance=0.5, const float min_height=0.1, const float max_height=2.5)</td></tr>
+<tr class="separator:ad2da055f7b664be1145348e9cc728cd6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a76ebbdf9f87df71b5a0c44b7dd56ff61"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTableSegmentationNode.html#a76ebbdf9f87df71b5a0c44b7dd56ff61">get_cloud_without_plane</a> (<a class="el" href="macros_8hpp.html#aa99f2147b3f775316d89971291dbf174">_IN_</a> pcl::PointCloud&lt; pcl::PointXYZ &gt;::Ptr cloud_in, <a class="el" href="macros_8hpp.html#a0e4576f5257306df258a5cc13f56ee7f">_OUT_</a> pcl::PointCloud&lt; pcl::PointXYZ &gt;::Ptr cloud_out)</td></tr>
 <tr class="separator:a76ebbdf9f87df71b5a0c44b7dd56ff61"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7aa040aa0740e0ab8475c8a465947648"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTableSegmentationNode.html#a7aa040aa0740e0ab8475c8a465947648">pointCloudCallback</a> (const sensor_msgs::msg::PointCloud2::SharedPtr msg)</td></tr>
@@ -127,9 +127,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a04770a379a6a0d7c661c989c2184f279"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTableSegmentationNode.html#a04770a379a6a0d7c661c989c2184f279">extractPlane</a> (<a class="el" href="macros_8hpp.html#aa99f2147b3f775316d89971291dbf174">_IN_</a> const pcl::PointCloud&lt; pcl::PointXYZ &gt;::Ptr cloud, <a class="el" href="macros_8hpp.html#a0e4576f5257306df258a5cc13f56ee7f">_OUT_</a> pcl::PointCloud&lt; pcl::PointXYZ &gt;::Ptr cloud_out, bool extract_negative=false)</td></tr>
 <tr class="memdesc:a04770a379a6a0d7c661c989c2184f279"><td class="mdescLeft">&#160;</td><td class="mdescRight">Extracts the plane from a point cloud. If extract_negative is true, the plane is removed from the point cloud.  <br /></td></tr>
 <tr class="separator:a04770a379a6a0d7c661c989c2184f279"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ade890ca515a741de4c522653cd17bc8f"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTableSegmentationNode.html#ade890ca515a741de4c522653cd17bc8f">clusterFromPoint</a> (<a class="el" href="macros_8hpp.html#aa99f2147b3f775316d89971291dbf174">_IN_</a> const pcl::PointCloud&lt; pcl::PointXYZ &gt;::Ptr cloud, <a class="el" href="macros_8hpp.html#aa99f2147b3f775316d89971291dbf174">_IN_</a> const pcl::PointXYZ point, <a class="el" href="macros_8hpp.html#a0e4576f5257306df258a5cc13f56ee7f">_OUT_</a> pcl::PointCloud&lt; pcl::PointXYZ &gt;::Ptr cloud_out)</td></tr>
-<tr class="memdesc:ade890ca515a741de4c522653cd17bc8f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Extracts a pointcloud cluster given a point.  <br /></td></tr>
-<tr class="separator:ade890ca515a741de4c522653cd17bc8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a14ee89fc7b04d147b3c8dc1c4565fb08"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTableSegmentationNode.html#a14ee89fc7b04d147b3c8dc1c4565fb08">clusterFromPoint</a> (<a class="el" href="macros_8hpp.html#aa99f2147b3f775316d89971291dbf174">_IN_</a> const pcl::PointCloud&lt; pcl::PointXYZ &gt;::Ptr cloud, <a class="el" href="macros_8hpp.html#aa99f2147b3f775316d89971291dbf174">_IN_</a> const pcl::PointXYZ point, <a class="el" href="macros_8hpp.html#a0e4576f5257306df258a5cc13f56ee7f">_OUT_</a> pcl::PointCloud&lt; pcl::PointXYZ &gt;::Ptr cloud_out, <a class="el" href="macros_8hpp.html#aa99f2147b3f775316d89971291dbf174">_IN_</a> bool keep_or_remove=true)</td></tr>
+<tr class="memdesc:a14ee89fc7b04d147b3c8dc1c4565fb08"><td class="mdescLeft">&#160;</td><td class="mdescRight">Extracts a pointcloud cluster given a point.  <br /></td></tr>
+<tr class="separator:a14ee89fc7b04d147b3c8dc1c4565fb08"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a40c53144a5c9a01149d9beeea049b246"><td class="memItemLeft" align="right" valign="top"><a class="el" href="macros_8hpp.html#a27de83e41cde776d5568e8c42ac061bc">STATUS_RESPONSE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTableSegmentationNode.html#a40c53144a5c9a01149d9beeea049b246">largest_cluster</a> (<a class="el" href="macros_8hpp.html#aa99f2147b3f775316d89971291dbf174">_IN_</a> const pcl::PointCloud&lt; pcl::PointXYZ &gt;::Ptr cloud, <a class="el" href="macros_8hpp.html#a0e4576f5257306df258a5cc13f56ee7f">_OUT_</a> pcl::PointCloud&lt; pcl::PointXYZ &gt;::Ptr cloud_out)</td></tr>
 <tr class="separator:a40c53144a5c9a01149d9beeea049b246"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6bd1d19daad7018004c59aff6c7a8fcb"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTableSegmentationNode.html#a6bd1d19daad7018004c59aff6c7a8fcb">~TableSegmentationNode</a> ()</td></tr>
@@ -195,8 +195,8 @@ Static Public Member Functions</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="ade890ca515a741de4c522653cd17bc8f" name="ade890ca515a741de4c522653cd17bc8f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ade890ca515a741de4c522653cd17bc8f">&#9670;&#160;</a></span>clusterFromPoint()</h2>
+<a id="a14ee89fc7b04d147b3c8dc1c4565fb08" name="a14ee89fc7b04d147b3c8dc1c4565fb08"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a14ee89fc7b04d147b3c8dc1c4565fb08">&#9670;&#160;</a></span>clusterFromPoint()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -220,7 +220,13 @@ Static Public Member Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="el" href="macros_8hpp.html#a0e4576f5257306df258a5cc13f56ee7f">_OUT_</a> pcl::PointCloud&lt; pcl::PointXYZ &gt;::Ptr&#160;</td>
-          <td class="paramname"><em>cloud_out</em>&#160;</td>
+          <td class="paramname"><em>cloud_out</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="macros_8hpp.html#aa99f2147b3f775316d89971291dbf174">_IN_</a> bool&#160;</td>
+          <td class="paramname"><em>keep_or_remove</em> = <code>true</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -283,8 +289,8 @@ Static Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a886f4fb4a17331b97e24e251aaeb8224" name="a886f4fb4a17331b97e24e251aaeb8224"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a886f4fb4a17331b97e24e251aaeb8224">&#9670;&#160;</a></span>DistanceFilterFromPoint()</h2>
+<a id="ad2da055f7b664be1145348e9cc728cd6" name="ad2da055f7b664be1145348e9cc728cd6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad2da055f7b664be1145348e9cc728cd6">&#9670;&#160;</a></span>DistanceFilterFromPoint()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -326,7 +332,7 @@ Static Public Member Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">const float&#160;</td>
-          <td class="paramname"><em>max_height</em> = <code>2.0</code>&#160;</td>
+          <td class="paramname"><em>max_height</em> = <code>2.5</code>&#160;</td>
         </tr>
         <tr>
           <td></td>

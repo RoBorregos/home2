@@ -1,6 +1,8 @@
 var searchData=
 [
-  ['yoloeobjectdetector_2epy_0',['YoloEObjectDetector.py',['../YoloEObjectDetector_8py.html',1,'']]],
-  ['yolov5objectdetector_2epy_1',['YoloV5ObjectDetector.py',['../YoloV5ObjectDetector_8py.html',1,'']]],
-  ['yolov8objectdetector_2epy_2',['YoloV8ObjectDetector.py',['../YoloV8ObjectDetector_8py.html',1,'']]]
+  ['xarm6_2epy_0',['xarm6.py',['../xarm6_8py.html',1,'']]],
+  ['xarm_5fconfigurations_2epy_1',['xarm_configurations.py',['../xarm__configurations_8py.html',1,'']]],
+  ['xarm_5flaunch_2elaunch_2epy_2',['xarm_launch.launch.py',['../xarm__launch_8launch_8py.html',1,'']]],
+  ['xarmmove_2eaction_3',['Xarmmove.action',['../Xarmmove_8action.html',1,'']]],
+  ['xarmservices_2epy_4',['XArmServices.py',['../XArmServices_8py.html',1,'']]]
 ];

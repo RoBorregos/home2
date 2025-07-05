@@ -2,6 +2,7 @@ var dir_796ddb26d3f951020bd008472cdfdae1 =
 [
     [ "config", "dir_d3e10d03c23d4a1845a914f72492b6cd.html", "dir_d3e10d03c23d4a1845a914f72492b6cd" ],
     [ "subtask_managers", "dir_3555ff3c9b6dcc8a302152f3f46f3113.html", "dir_3555ff3c9b6dcc8a302152f3f46f3113" ],
+    [ "util_nodes", "dir_775b033b3123c535116c0b7da09f4291.html", "dir_775b033b3123c535116c0b7da09f4291" ],
     [ "utils", "dir_3cba7ceaa24a0d84fe4d7a0a609ccd6c.html", "dir_3cba7ceaa24a0d84fe4d7a0a609ccd6c" ],
     [ "_storing_groceries.py", "__storing__groceries_8py.html", "__storing__groceries_8py" ],
     [ "clean_table_task_manager.py", "clean__table__task__manager_8py.html", "clean__table__task__manager_8py" ],
