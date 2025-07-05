@@ -61,7 +61,7 @@ class ReceptionistTM(Node):
         self.check_angles = [0, -10, 20]
 
         self.guests = [Guest() for _ in range(3)]
-        self.guests[0] = Guest("ale", "Juice", "Football")
+        self.guests[0] = Guest("Julian", "Juice", "Football")
         self.current_guest = 1
 
         self.current_attempts = 0
@@ -336,11 +336,17 @@ class ReceptionistTM(Node):
                     self.current_attempts = 0
 
                     while self.current_attempts < ATTEMPT_LIMIT:
-                        self.subtask_manager.vision.follow_by_name(host.name)
-                        result = self.subtask_manager.vision.isPerson(host.name)
+                        # Comment if using an already saved host
+                        self.subtask_manager.vision.follow_by_name("Unknown")
+                        result = self.subtask_manager.vision.isPerson("Unknown")
+                        
+                        # Uncomment if using an already saved host
+                        # self.subtask_manager.vision.follow_by_name(host.name)
+                        # result = self.subtask_manager.vision.isPerson(host.name)
 
                         if result:
-                            # self.subtask_manager.vision.save_face_name(host.name)
+                            # Comment if using an already saved host
+                            self.subtask_manager.vision.save_face_name(host.name)
                             person_found = True
                             break
                         self.timeout(1)
