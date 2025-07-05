@@ -60,3 +60,22 @@ $ source install/setup.bash
 
 # Rule Book
 [Rule book](https://robocupathome.github.io/RuleBook/rulebook/master.pdf)
+
+# Team Members
+
+| Name                    | Github                                                       | Role      |
+| ----------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Oscar Arreola | [@Oscar-gg](https://github.com/Oscar-gg)  | HRI, Integration  |
+| Gerardo Fregoso |  |  |
+| Emiliano Flores | [@EmilianoHFlores](https://github.com/EmilianoHFlores) | Manipulation, Vision, Integration |
+| Iván Romero | [@IvanRomero03](https://github.com/IvanRomero03) | Integration, HRI, Manipulation, Vision |
+| Diego Hernández | [@Diego-HC](https://github.com/Diego-HC) | Integration, HRI, Navigation |
+| Alejandra Coeto | [@Ale-Coeto](https://github.com/Ale-Coeto) | Vision, Integration |
+| Danaé Sánchez | [@DanaeSG](https://github.com/DanaeSG) |Vision, Navigation, Integration|
+| Alejandro González | [@AleGonzcamilla](https://github.com/AleGonzcamilla) | Mechanics, Manipulation |
+| Emil Winkler | [@emilwinkp](https://github.com/emilwinkp) | Manipulation |
+| David Vázquez | [@deivideich](https://github.com/Deivideich) | Manipulation |
+| Fernando Hernandez | [@Fernando94654](https://github.com/Fernando94654) | Vision, Manipulation |
+|Camila Tite | [@CamilaTite26](https://github.com/CamilaTite26) | HRI |
+|Daniela Herrera | [@DanHeGa](https://github.com/DanHeGa) | Vision |
+
