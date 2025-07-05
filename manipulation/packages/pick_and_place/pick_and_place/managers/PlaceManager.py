@@ -51,10 +51,10 @@ class PlaceManager:
         )
         wait_for_future(future)
         place_motion_result = future.result().get_result().result
-        self.node.get_logger().info(f"Pick Motion Result: {place_motion_result}")
+        self.node.get_logger().info(f"Place Motion Result: {place_motion_result}")
 
         if not place_motion_result.success:
-            self.node.get_logger().error("Pick motion failed")
+            self.node.get_logger().error("Place motion failed")
             return False
 
         self.node.get_logger().info("Returning to position")

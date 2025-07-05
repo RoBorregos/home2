@@ -989,6 +989,32 @@ class HRITasks(metaclass=SubtaskMeta):
         results = [doc[0] for doc in results]
         return Status.EXECUTION_SUCCESS, results
 
+    def find_closest_raw(self, documents: list, query: str, top_k: int = 4) -> list[str]:
+        """
+        Method to find the closest item to the query.
+        Args:
+            documents: the documents to search among
+            query: the query to search for
+        Returns:
+            Status: the status of the execution
+            list[str]: the results of the query
+        """
+        docs = [(doc, self.pg.embedding_model.encode(doc)) for doc in documents]
+        emb = self.pg.embedding_model.encode(query)
+
+        def cos_sim(x, y):
+            return np.dot(x, y) / (np.linalg.norm(x) * np.linalg.norm(y))
+
+        Results = cos_sim(
+            np.array([doc[1] for doc in docs]), emb
+        )  # Calculate cosine similarity for all documents
+        Results = sorted(zip(docs, Results), key=lambda x: x[1], reverse=True)
+        Results = [(doc[0][0], doc[1]) for doc in Results]  # Extract document and similarity score
+        Logger.info(self.node, f"FIND CLOSEST RAW RESULTS: {Results}")
+
+        return Results
+
+    # TODO: Make async
     @service_check("llm_wrapper_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def answer_with_context(self, question: str, context: str) -> str:
         """
@@ -1027,7 +1053,7 @@ class HRITasks(metaclass=SubtaskMeta):
         Logger.info(self.node, "Sending request to categorize_objects")
 
         try:
-            categories = self.get_shelves_categories(shelves)[1]
+            categories = self.get_shelves_categories(shelves, table_objects=table_objects)[1]
             results = self.categorize_objects_with_embeddings(categories, table_objects)
 
             objects_to_add = {key: value["objects_to_add"] for key, value in results.items()}
@@ -1060,7 +1086,7 @@ class HRITasks(metaclass=SubtaskMeta):
         return Status.EXECUTION_SUCCESS, categorized_shelves, objects_to_add
 
     def get_shelves_categories(
-        self, shelves: dict[int, list[str]]
+        self, shelves: dict[int, list[str]], table_objects: list[str] = []
     ) -> tuple[Status, dict[int, str]]:
         """
         Categorize objects based on their shelf levels.
@@ -1075,9 +1101,13 @@ class HRITasks(metaclass=SubtaskMeta):
 
         try:
             request = CategorizeShelves.Request(shelves=String(data=str(shelves)), table_objects=[])
+            for obj in table_objects:
+                request.table_objects.append(String(data=obj))
 
             future = self.categorize_service.call_async(request)
-            Logger.info(self.node, "generated request")
+            Logger.info(
+                self.node, f"generated request, shelves: {shelves}, table_objects: {table_objects}"
+            )
             rclpy.spin_until_future_complete(self.node, future, timeout_sec=25)
             res = future.result()
             Logger.info(self.node, "request finished")
@@ -1116,11 +1146,14 @@ class HRITasks(metaclass=SubtaskMeta):
                 category_list.append(category)
 
             results = self.find_closest_raw(category_list, obj)
-            results_distances = results[1][0]["distance"]
+            results_distances = [res[1] for res in results]
 
-            result_category = results[1][0]["document"]
+            result_category = results[0][0] if len(results) > 0 else "empty"
+            self.node.get_logger().info(f"RESULTS for {obj}:")
+            self.node.get_logger().info(f"RESULTS DISTANCES: {results_distances}")
             self.node.get_logger().info(f"CATEGORY PREDICTED BEFORE THRESHOLD: {result_category}")
-            if "empty" in categories.values() and results_distances[0] > 1:
+            # input("HOLAAA HOLA HOLAA")
+            if "empty" in categories.values() and results_distances[0] < 0.15:
                 result_category = "empty"
 
             self.node.get_logger().info(f"CATEGORY PREDICTED: {result_category}")

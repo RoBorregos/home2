@@ -59,7 +59,7 @@ CONF_THRESHOLD = 0.6
 PACKAGE_NAME = "vision_general"
 CONFIG_FOLDER = os.path.join(get_package_share_directory(PACKAGE_NAME), "config")
 BOTSORT_REID_YAML = os.path.join(CONFIG_FOLDER, "botsort-reid.yaml")
-REID_EXTRACT_FREQ = 3
+REID_EXTRACT_FREQ = 0.5
 MAX_EMBEDDINGS = 128
 
 
@@ -135,7 +135,18 @@ class SingleTracker(Node):
 
         pbar = tqdm.tqdm(total=4, desc="Loading models")
 
-        self.model = YOLO("yolov8n.pt")
+        # if .engine does not exist, export the model
+        if not os.path.exists("yolo11n.engine"):
+            pt_model = YOLO("yolo11n.pt")
+            self.get_logger().info("Loaded YOLO model, exporting...")
+            # # Export the model to TensorRT with DLA enabled (only works with FP16 or INT8)
+            pt_model.export(
+                format="engine", device="dla:0", half=True
+            )  # dla:0 or dla:1 corresponds to the DLA cores
+
+        # Load the exported TensorRT model
+        self.model = YOLO("yolo11n.engine")
+        self.get_logger().info("Loaded YOLO model")
         self.pose_detection = PoseDetection()
 
         # Load the ReID model
@@ -378,7 +389,6 @@ class SingleTracker(Node):
         """Main loop to run the tracker"""
         if True:  # self.target_set:
             self.frame = self.image
-            print("cuda available: ", torch.cuda.is_available())
             if self.frame is None:
                 return
 
@@ -453,6 +463,7 @@ class SingleTracker(Node):
                         ] is None or time.time() - self.last_reid_extraction > (
                             1 / REID_EXTRACT_FREQ
                         ):
+                            self.last_reid_extraction = time.time()
                             with torch.no_grad():
                                 start_time = time.time()
                                 embedding = extract_feature_from_img(
