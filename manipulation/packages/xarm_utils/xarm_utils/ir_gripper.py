@@ -12,9 +12,9 @@ class IRGripper(Node):
     def __init__(self):
         super().__init__('ir_gripper_node')
 
-        self.cli = self.create_client(GetDigitalIO, 'get_tgpio_digital')
-        while not self.cli.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info('Waiting for get_tgpio_digital service...')
+        self.cli = self.create_client(GetDigitalIO, '/xarm/get_tgpio_digital')
+        #while not self.cli.wait_for_service(timeout_sec=1.0):
+        #    self.get_logger().info('Waiting for get_tgpio_digital service...')
 
         self.tool_gpio_1_pub = self.create_publisher(GripperDetection, 'ir_detection', 10)
         timer_period = 0.5  # seconds
