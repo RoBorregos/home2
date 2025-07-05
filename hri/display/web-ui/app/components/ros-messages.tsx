@@ -19,11 +19,18 @@ interface AudioState {
 
 export default function RosMessagesDisplay() {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [currentMessage, setCurrentMessage] = useState<Message | null>(null);
   const [connected, setConnected] = useState(false);
   const [audioState, setAudioState] = useState<AudioState>({
     state: "idle",
     vadLevel: 0,
   });
+  const audioStateRef = useRef(audioState);
+  useEffect(() => {
+    audioStateRef.current = audioState;
+  }, [audioState]);
+
+  
   const [audioTopic, setAudioTopic] = useState<string>(
     "/zed/zed_node/rgb/image_rect_color"
   );
@@ -84,34 +91,49 @@ export default function RosMessagesDisplay() {
         console.error("Error parsing keyword content:", error);
       }
     }
+    const timestamp = new Date();
 
-    setMessages((prev) => [
-      {
-        type,
+  if (type === "heard") {
+    console.log("Heard message received ", audioStateRef.current.state);
+    if (audioStateRef.current.state === "listening") {
+      setCurrentMessage({ type, content: displayContent, timestamp });
+    } else {
+      setMessages((prev) => [
+        { type, content: displayContent, timestamp },
+      ...prev,
+    ]);
+  }
+} else {
+  setMessages((prev) => [
+    {
+      type,
         content: String(displayContent),
-        timestamp: new Date(),
+        timestamp,
       },
       ...prev,
     ]);
-  };
+  }
+};
 
-  const handleMic = (type: string, content: string | number) => {
-    if (type === "audioState") {
-      setAudioState((prev) => ({
-        ...prev,
-        state: content as "idle" | "listening" | "saying",
-      }));
-    } else if (type === "vad") {
-      // Assuming vad is a float between 0 and 1
-      setAudioState((prev) => ({
-        ...prev,
-        vadLevel:
-          typeof content === "number"
-            ? content
-            : Number.parseFloat(content as string),
-      }));
-    }
-  };
+ const handleMic = (type: string, content: string | number) => {
+  console.log("handleMic received:", type, content);
+  if (type === "audioState") {
+    const newState = content as "idle" | "listening" | "saying";
+    setAudioState(prev => ({ ...prev, state: newState }));
+  } else if (type === "vad") {
+    setAudioState(prev => ({
+      ...prev,
+      vadLevel: typeof content === "number" ? content : Number.parseFloat(content as string),
+    }));
+  }
+};
+useEffect(() => {
+  if (audioState.state === "idle" && currentMessage) {
+    setMessages(prevMsgs => [currentMessage, ...prevMsgs]);
+    setCurrentMessage(null);
+  }
+}, [audioState.state, currentMessage]);
+
 
   useEffect(() => {
     messagesStartRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -137,7 +159,19 @@ export default function RosMessagesDisplay() {
           </div>
         </div>
       </div>
-
+      {audioState.state === "listening" && currentMessage && (
+    <>
+      <div
+        key={currentMessage.timestamp.getTime()}
+        className="fixed bottom-32 inset-x-0 mx-auto bg-gray-500/20 text-white py-6 rounded-lg shadow-lg z-50 animate-fadeIn w-fit max-w-[90vw]"
+      >
+        <div className="flex items-center justify-center gap-4">
+          <Mic className="h-20 w-20 animate-pulse text-white" />
+          <p className="text-7xl font-medium tracking-wide">{currentMessage.content}</p>
+        </div>
+      </div>
+    </>
+      )}
       <div className="grid grid-cols-2 h-full overflow-y-hidden">
         {/* Left column */}
         <div className="flex flex-col p-4 space-y-3 overflow-y-auto">
@@ -230,8 +264,8 @@ function AudioStateIndicator({ state }: AudioStateIndicatorProps) {
   const { state: audioState, vadLevel } = state;
 
   // Calculate the number of bars to show based on VAD level (0-1)
-  const maxBars = 20;
-  const activeBars = Math.ceil(vadLevel * maxBars);
+  // const maxBars = 20;
+  // const activeBars = Math.ceil(vadLevel * maxBars);
 
   if (audioState === "idle") {
     return (
@@ -257,14 +291,14 @@ function AudioStateIndicator({ state }: AudioStateIndicatorProps) {
 
   // For listening state, show the mic centered
   return (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 pointer-events-none">
+  <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/10 pointer-events-none pt-60 ">
     <div className="relative">
-      <div className="absolute inset-0 rounded-full bg-[oklch(0.5_0.25_260)] opacity-10 animate-[pulse_3s_infinite]" />
-      <div className="absolute inset-0 rounded-full bg-[oklch(0.5_0.25_260)] opacity-15 animate-[pulse_3s_infinite_1s]" />
-      <div className="absolute inset-0 rounded-full bg-[oklch(0.5_0.25_260)] opacity-20 animate-[pulse_3s_infinite_2s]" />
-      
-      <div className="relative z-10 h-24 w-24 rounded-full bg-[oklch(0.5_0.25_260)] shadow-lg flex items-center justify-center">
-        <Mic className="h-14 w-14 text-white/90 drop-shadow-md" />
+      <div className="absolute inset-0 rounded-full bg-[oklch(0.5_0.25_260)] opacity-10 animate-[pulse_3s_infinite] scale-110" />
+      <div className="absolute inset-0 rounded-full bg-[oklch(0.5_0.25_260)] opacity-15 animate-[pulse_3s_infinite_1s] scale-125" />
+      <div className="absolute inset-0 rounded-full bg-[oklch(0.5_0.25_260)] opacity-20 animate-[pulse_3s_infinite_2s] scale-150" />
+
+      <div className="relative z-10 h-70 w-70 rounded-full bg-[oklch(0.5_0.25_260)] shadow-lg flex items-center justify-center">
+        <Mic className="h-50 w-50 text-white/90 drop-shadow-md" />
       </div>
 
       <div 
