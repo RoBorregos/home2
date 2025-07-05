@@ -77,4 +77,5 @@ $ source install/setup.bash
 | David Vázquez | [@deivideich](https://github.com/Deivideich) | Manipulation |
 | Fernando Hernandez | [@Fernando94654](https://github.com/Fernando94654) | Vision, Manipulation |
 |Camila Tite | [@CamilaTite26](https://github.com/CamilaTite26) | HRI |
+|Daniela Herrera | [@DanHeGa](https://github.com/DanHeGa) | Vision |
 
