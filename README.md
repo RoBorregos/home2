@@ -65,7 +65,7 @@ $ source install/setup.bash
 
 | Name                    | Github                                                       | Role      |
 | ----------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------ |
-| Oscar Arreola |  |  |
+| Oscar Arreola | [@Oscar-gg](https://github.com/Oscar-gg)  | HRI, Integration  |
 | Gerardo Fregoso |  |  |
 | Emiliano Flores | [@EmilianoHFlores](https://github.com/EmilianoHFlores) | Manipulation, Vision, Integration |
 | Iván Romero | [@IvanRomero03](https://github.com/IvanRomero03) | Integration, HRI, Manipulation, Vision |
