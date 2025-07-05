@@ -71,3 +71,4 @@ $ source install/setup.bash
 | Iván Romero | [@IvanRomero03](https://github.com/IvanRomero03) | Integration, HRI, Manipulation, Vision |
 | Diego Hernández | [@Diego-HC](https://github.com/Diego-HC) | Integration, HRI, Navigation |
 | Alejandra Coeto | [@Ale-Coeto](https://github.com/Ale-Coeto) | Vision, Integration |
+| Danaé Sánchez | [@DanaeSG](https://github.com/DanaeSG) |Vision, Navigation, Integration|
