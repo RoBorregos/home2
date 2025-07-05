@@ -76,4 +76,5 @@ $ source install/setup.bash
 | Emil Winkler | [@emilwinkp](https://github.com/emilwinkp) | Manipulation |
 | David Vázquez | [@deivideich](https://github.com/Deivideich) | Manipulation |
 | Fernando Hernandez | [@Fernando94654](https://github.com/Fernando94654) | Vision, Manipulation |
+|Camila Tite | [@CamilaTite26](https://github.com/CamilaTite26) | HRI |
 
