@@ -1,0 +1,11 @@
+aec_node:
+  ros__parameters:
+    frame_size: 512
+    filter_length: 2048
+    sample_rate: 16000
+    raw_audio_topic: "/rawAudioChunk"
+    far_audio_topic: "/farAudioChunk"
+    clean_audio_topic: "/cleanAudioChunk"
+    speaker_state_topic: "/saying"
+    buffer_size: 10
+    interrupt_enabled: true
