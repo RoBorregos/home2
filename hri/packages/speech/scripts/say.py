@@ -3,8 +3,11 @@
 import json
 import os
 import sys
+import threading
+import time
 from collections import OrderedDict
 
+import numpy as np
 import rclpy
 from gtts import gTTS
 from pygame import mixer
@@ -12,8 +15,10 @@ from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from speech.speech_api_utils import SpeechApiUtils
 from std_msgs.msg import Bool, String
+import wave
 
 from frida_constants.hri_constants import SPEAK_SERVICE
+from frida_interfaces.msg import AudioData
 from frida_interfaces.srv import Speak
 
 import grpc
@@ -55,6 +60,8 @@ class Say(Node):
         self.connected = False
         self.declare_parameter("speaking_topic", "/saying")
         self.declare_parameter("text_spoken", "/speech/text_spoken")
+        self.declare_parameter("far_audio_topic", "/farAudioChunk")
+        self.declare_parameter("interrupt_topic", "/speech/interrupt")
 
         self.declare_parameter("SPEAK_SERVICE", SPEAK_SERVICE)
         self.declare_parameter("model", "en_US-amy-medium")
@@ -93,6 +100,12 @@ class Say(Node):
         text_spoken = (
             self.get_parameter("text_spoken").get_parameter_value().string_value
         )
+        far_audio_topic = (
+            self.get_parameter("far_audio_topic").get_parameter_value().string_value
+        )
+        interrupt_topic = (
+            self.get_parameter("interrupt_topic").get_parameter_value().string_value
+        )
 
         self.model = self.get_parameter("model").get_parameter_value().string_value
         self.offline = self.get_parameter("offline").get_parameter_value().bool_value
@@ -106,8 +119,22 @@ class Say(Node):
         self.create_service(Speak, speak_service, self.speak_service)
         self.publisher_ = self.create_publisher(Bool, speaking_topic, 10)
         self.text_publisher_ = self.create_publisher(String, text_spoken, 10)
+        self.far_audio_publisher = self.create_publisher(AudioData, far_audio_topic, 20)
+        
+        # Speech interrupt handling
+        self.speech_interrupted = False
+        self.create_subscription(String, interrupt_topic, self.interrupt_callback, 10)
 
         self.get_logger().info("Say node initialized.")
+
+    def interrupt_callback(self, msg):
+        """Handle speech interrupt signal."""
+        if msg.data == "interrupt":
+            self.get_logger().info("Speech interrupted by user!")
+            self.speech_interrupted = True
+            # Stop current audio playback
+            if mixer.get_init():
+                mixer.music.stop()
 
     def _load_cache(self):
         """Load the cache from disk if it exists."""
@@ -170,6 +197,7 @@ class Say(Node):
         return res
 
     def say(self, text):
+        self.speech_interrupted = False
         self.publisher_.publish(Bool(data=True))
         success = False
         try:
@@ -226,18 +254,79 @@ class Say(Node):
         self.play_audio(save_path)
 
     def play_audio(self, file_path):
+        """Play audio file and publish audio data for AEC."""
+        if self.speech_interrupted:
+            return
+            
+        # Load audio file for reference publishing
+        audio_thread = threading.Thread(target=self.publish_audio_reference, args=(file_path,))
+        audio_thread.daemon = True
+        audio_thread.start()
+        
+        # Play audio using pygame
         mixer.pre_init(frequency=48000, buffer=2048)
         mixer.init()
         while mixer.music.get_busy():
             pass
         mixer.music.load(file_path)
         mixer.music.play()
-        # Wait for audio to finish playing before returning
+        
+        # Wait for audio to finish playing or be interrupted
         try:
-            while mixer.music.get_busy():
-                pass
+            while mixer.music.get_busy() and not self.speech_interrupted:
+                time.sleep(0.01)  # Small delay to allow interrupt detection
         except Exception as e:
             self.get_logger().error(f"Error while waiting for audio: {e}")
+    
+    def publish_audio_reference(self, file_path):
+        """Publish audio data as reference for AEC."""
+        try:
+            # Read audio file
+            with wave.open(file_path, 'rb') as wav_file:
+                sample_rate = wav_file.getframerate()
+                channels = wav_file.getnchannels()
+                sample_width = wav_file.getsampwidth()
+                
+                # Read audio data
+                audio_data = wav_file.readframes(wav_file.getnframes())
+                
+                # Convert to numpy array
+                if sample_width == 2:
+                    audio_array = np.frombuffer(audio_data, dtype=np.int16)
+                else:
+                    self.get_logger().warn(f"Unsupported sample width: {sample_width}")
+                    return
+                
+                # Convert to mono if stereo
+                if channels == 2:
+                    audio_array = audio_array[::2]  # Take every other sample
+                
+                # Resample to 16kHz if needed (simple decimation for demo)
+                if sample_rate != 16000:
+                    downsample_factor = sample_rate // 16000
+                    if downsample_factor > 1:
+                        audio_array = audio_array[::downsample_factor]
+                
+                # Publish in chunks
+                chunk_size = 512
+                for i in range(0, len(audio_array), chunk_size):
+                    if self.speech_interrupted:
+                        break
+                        
+                    chunk = audio_array[i:i+chunk_size]
+                    if len(chunk) < chunk_size:
+                        # Pad with zeros if needed
+                        chunk = np.pad(chunk, (0, chunk_size - len(chunk)))
+                    
+                    # Publish chunk
+                    audio_msg = AudioData(data=chunk.tobytes())
+                    self.far_audio_publisher.publish(audio_msg)
+                    
+                    # Small delay to match real-time playback
+                    time.sleep(chunk_size / 16000.0)
+                    
+        except Exception as e:
+            self.get_logger().error(f"Error publishing audio reference: {e}")
 
     @staticmethod
     def split_text(text: str, max_len, split_sentences=False):
