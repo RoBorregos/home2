@@ -18,7 +18,7 @@ epoch = "last"
 linear_num = 512
 batch_size = 256
 folder_path = str(pathlib.Path(__file__).parent)
-_ = timm.create_model("swin_base_patch4_window7_224", pretrained=True)
+# _ = timm.create_model("swin_base_patch4_window7_224", pretrained=True)
 
 use_gpu = torch.cuda.is_available()
 gpu_ids = [0]

@@ -6,7 +6,8 @@ from torch.autograd import Variable
 import pretrainedmodels
 import timm
 from .utils import load_state_dict_mute
-
+import os
+from safetensors.torch import safe_open
 
 ######################################################################
 def weights_init_kaiming(m):
@@ -128,17 +129,42 @@ class ft_net(nn.Module):
         x = self.classifier(x)
         return x
 
-
+os.environ["HF_HUB_OFFLINE"] = "1"
 # Define the swin_base_patch4_window7_224 Model
 # pytorch > 1.6
 class ft_net_swin(nn.Module):
     def __init__(self, class_num, droprate=0.5, stride=2, circle=False, linear_num=512):
         super(ft_net_swin, self).__init__()
+        model_path = os.path.join(os.path.dirname(__file__), "net_last.pth")
+        print("bef")
         model_ft = timm.create_model(
-            "swin_base_patch4_window7_224", pretrained=True, drop_path_rate=0.2
+            "swin_base_patch4_window7_224", 
+            pretrained=False, 
+            drop_path_rate=0.2
         )
+        print("aft")
         # avg pooling to global pooling
         # model_ft.avgpool = nn.AdaptiveAvgPool2d((1,1))
+        if os.path.exists(model_path):
+            print("load model from {}".format(model_path))
+            state_dict = torch.load(model_path, map_location="cpu")
+            model_ft.load_state_dict(state_dict)
+        else:
+            print("not found model")
+            raise FileNotFoundError(
+                f"Swin Transformer weights not found at {model_path}\n"
+                f"Please download the weights file and place it in: {os.path.dirname(__file__)}"
+            )
+        # if os.path.exists(model_path):
+        #     if model_path.endswith('.safetensors'):
+        #         with safe_open(model_path, framework="pt") as f:
+        #             state_dict = {k: f.get_tensor(k) for k in f.keys()}
+        #     else:
+        #         state_dict = torch.load(model_path)
+        #     model_ft.load_state_dict(state_dict)
+        # else:
+        #     raise FileNotFoundError("Model file not found at {}".format(model_path))
+        
         model_ft.head = nn.Sequential()  # save memory
         self.model = model_ft
         self.circle = circle
