@@ -132,7 +132,7 @@ class SpeexAEC:
             self.speex.speex_echo_state_destroy(self.state)
 
 
-class AEC(Node):
+class AECNode(Node):
     """ROS2 Node that applies Acoustic Echo Cancellation to audio streams."""
     
     def __init__(self):
@@ -287,7 +287,7 @@ class AEC(Node):
 def main(args=None):
     rclpy.init(args=args)
     try:
-        node = AEC()
+        node = AECNode()
         rclpy.spin(node)
     except (ExternalShutdownException, KeyboardInterrupt):
         pass
