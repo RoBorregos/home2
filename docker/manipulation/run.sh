@@ -210,7 +210,7 @@ if [ -z "$EXISTING_CONTAINER" ]; then
     fi
     echo "Running prebuild script..."
     docker start $CONTAINER_NAME
-    docker exec -it $CONTAINER_NAME /bin/bash -c "./src/home2/prebuild.sh"
+    # docker exec -it $CONTAINER_NAME /bin/bash -c "./src/home2/prebuild.sh"
 fi
 
 # Check if the container is running

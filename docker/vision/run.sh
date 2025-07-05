@@ -117,7 +117,7 @@ mkdir -p moondream/install moondream/build moondream/log
 # Check which commands and services to run
 MOONDREAM=false
 VISION=true
-SETUP="colcon build --symlink-install "
+# SETUP="colcon build --symlink-install "
 PROFILES=()
 SERVICES=()
 
@@ -135,7 +135,7 @@ case $TASK in
         SERVICES=("vision" "moondream-node" "moondream-server")
         ;;
     "--storing-groceries")
-        PACKAGES="object_detector_2d"
+        PACKAGES="object_detector_2d object_detection_handler"
         RUN="ros2 launch object_detector_2d object_detector_combined.launch.py"
         PROFILES=("vision")
         SERVICES=("vision")
@@ -158,7 +158,7 @@ esac
 
 # Add command to env if TASK is not empty, otherwise it will run bash
 if [ -n "$TASK" ]; then
-    COMMAND="source /opt/ros/humble/setup.bash && colcon build --packages-up-to $PACKAGES && source install/setup.bash && $RUN"
+    COMMAND="source /opt/ros/humble/setup.bash && source install/setup.bash && $RUN"
     echo "COMMAND= $COMMAND " >> .env
 fi
 

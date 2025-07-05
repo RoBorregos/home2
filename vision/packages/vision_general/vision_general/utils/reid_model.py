@@ -10,7 +10,6 @@ from torch.autograd import Variable
 from scipy.spatial.distance import cosine
 import pathlib
 import timm
-import time
 
 version = torch.__version__
 use_swin = True
@@ -124,20 +123,17 @@ def fliplr(img):
 
 def extract_feature_from_img(image, model):
     if use_gpu:
-        start_time = time.time()
         image = data_transforms(image).unsqueeze(0)  # Add batch dimension
-        print(f"Data preprocessing time: {time.time() - start_time:.4f} seconds")
+        # print(f"Data preprocessing time: {time.time() - start_time:.4f} seconds")
         # Extract features from the image
         model.eval()
         with torch.no_grad():
-            start_time = time.time()
             features = (
                 torch.zeros(1, linear_num).cuda()
                 if torch.cuda.is_available()
                 else torch.zeros(1, linear_num)
             )
-            print(f"Create features time: {time.time() - start_time:.4f} seconds")
-            start_time = time.time()
+            # print(f"Create features time: {time.time() - start_time:.4f} seconds")
             for i in range(1):
                 if i == 1:
                     # Apply horizontal flipping for augmentation
@@ -151,16 +147,15 @@ def extract_feature_from_img(image, model):
                             mode="bicubic",
                             align_corners=False,
                         )
-                    start_time = time.time()
                     outputs = model(input_img)
-                    print(
-                        f"Model inference time for scale {scale}: {time.time() - start_time:.4f} seconds"
-                    )
+                    # print(
+                    #     f"Model inference time for scale {scale}: {time.time() - start_time:.4f} seconds"
+                    # )
                     features += outputs
 
             # Normalize features
             features /= torch.norm(features, p=2, dim=1, keepdim=True)
-            print(f"Feature extraction time: {time.time() - start_time:.4f} seconds")
+            # print(f"Feature extraction time: {time.time() - start_time:.4f} seconds")
             # features = features.cpu()
         return features
     else:
