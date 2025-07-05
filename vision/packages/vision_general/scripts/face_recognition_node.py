@@ -43,7 +43,7 @@ from frida_constants.vision_constants import (
 )
 
 DEFAULT_NAME = "ale"
-TRACK_THRESHOLD = 50
+TRACK_THRESHOLD = 10
 MATCH_THRESHOLD = 0.5
 MAX_DEGREE = 1
 

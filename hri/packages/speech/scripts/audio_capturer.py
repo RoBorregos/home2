@@ -64,7 +64,7 @@ class AudioCapturer(Node):
         iteration_step = 0
         CHUNK_SIZE = 512
         self.FORMAT = pyaudio.paInt16  # Signed 2 bytes.
-        self.debug = False
+        self.debug = True
         CHANNELS = 6 if self.use_respeaker else 1
         self.RATE = 16000
         EXTRACT_CHANNEL = 0  # Use channel 0. Tested with microphone.py. See channel meaning: https://wiki.seeedstudio.com/ReSpeaker-USB-Mic-Array/#update-firmware

@@ -1,0 +1,38 @@
+ARG BASE_IMAGE=dustynv/l4t-pytorch:r36.4.0
+FROM ${BASE_IMAGE}
+
+RUN mkdir -p /workspace/requirements
+COPY vision/requirements /workspace/requirements
+
+# Download and extract dlib
+RUN wget http://dlib.net/files/dlib-19.21.tar.bz2 && \
+    tar jxvf dlib-19.21.tar.bz2
+
+WORKDIR /workspace/dlib-19.21
+RUN mkdir build
+WORKDIR /workspace/dlib-19.21/build
+
+RUN cmake .. && \
+    cmake --build .
+
+WORKDIR /workspace/dlib-19.21
+# RUN python3 setup.py install 
+
+# Requirements
+WORKDIR /workspace/requirements
+
+RUN pip install -r opencv.txt
+RUN pip install -r face_recognition.txt
+RUN pip install -r models.txt
+RUN pip install -r utils.txt
+
+# CV-bridge
+RUN apt update && apt install -y ros-humble-cv-bridge
+
+WORKDIR /workspace
+RUN git clone https://github.com/ultralytics/yolov5.git
+
+RUN pip install timm && \
+    python3 -c "import timm; timm.create_model('swin_b ase_patch4_window7_224', pretrained=True)" 
+
+USER ros

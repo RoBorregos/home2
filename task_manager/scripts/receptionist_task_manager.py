@@ -212,9 +212,7 @@ class ReceptionistTM(Node):
                 wait=True,
             )
 
-            rclpy.spin_until_future_complete(
-                self.node, common_message_guest1_future, timeout_sec=15
-            )
+            rclpy.spin_until_future_complete(self, common_message_guest1_future, timeout_sec=15)
             status, common_message_guest1 = common_message_guest1_future.result()
 
             if status == Status.EXECUTION_SUCCESS:
@@ -224,9 +222,7 @@ class ReceptionistTM(Node):
                     f"{host.name} is also in the living room.",
                     wait=True,
                 )
-                rclpy.spin_until_future_complete(
-                    self.node, common_message_host_future, timeout_sec=15
-                )
+                rclpy.spin_until_future_complete(self, common_message_host_future, timeout_sec=15)
                 s, common_message_host = common_message_host_future.result()
                 self.subtask_manager.hri.say(
                     f"{common_message_host}",
