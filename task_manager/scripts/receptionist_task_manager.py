@@ -339,7 +339,7 @@ class ReceptionistTM(Node):
                         # Comment if using an already saved host
                         self.subtask_manager.vision.follow_by_name("Unknown")
                         result = self.subtask_manager.vision.isPerson("Unknown")
-                        
+
                         # Uncomment if using an already saved host
                         # self.subtask_manager.vision.follow_by_name(host.name)
                         # result = self.subtask_manager.vision.isPerson(host.name)
