@@ -60,3 +60,13 @@ $ source install/setup.bash
 
 # Rule Book
 [Rule book](https://robocupathome.github.io/RuleBook/rulebook/master.pdf)
+
+# Team Members
+
+| Name                    | Github                                                       | Role      |
+| ----------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------ |
+| Oscar Arreola |  |  |
+| Gerardo Fregoso |  |  |
+| Emiliano Flores |  |  |
+| Iván Romero |  |  |
+| Diego Hernández | [@Diego-HC](https://github.com/Diego-HC) | Integration, HRI, Navigation |
