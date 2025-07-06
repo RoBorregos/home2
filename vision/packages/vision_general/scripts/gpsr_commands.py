@@ -139,7 +139,6 @@ class GPSRCommands(Node):
             self.output_image = self.image.copy()
             self.get_detections(self.image, 0)  # default: 0  - person
 
-
         except Exception as e:
             print(f"Error: {e}")
 
