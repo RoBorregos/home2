@@ -16,16 +16,36 @@ def get_gpsr_comands(command_type: str, structured_cmd=True):
     return None
 
 
+custom_command = [
+    # {"action": "get_person_info", "info_type": "gesture"},
+    # {"action": "get_person_info", "info_type": "pose"},
+    # {
+    #             "action": "answer_question"
+    # },
+    # {"action": "count", "target_to_count": "people wearing blue t shirts"},
+    {
+        "action": "say_with_context",
+        "user_instruction": "tell me how many people are wearing blue t shirts",
+        "previous_command_info": "count",
+    },
+]
+
 command_space = [
+    # Tested
     {"action": "go_to", "location_to_go": "kitchen"},
-    {"action": "give_object"},
-    {"action": "follow_person_until", "destination": "living room"},
-    {"action": "follow_person_until", "destination": "canceled"},
     {"action": "guide_person_to", "destination_room": "office"},
-    {"action": "get_person_info", "info_type": "gesture"},
-    {"action": "get_person_info", "info_type": "pose"},
+    {"action": "give_object"},
     {"action": "get_person_info", "info_type": "name"},
-    {"action": "count", "target_to_count": "people wearing white t shirts"},
+    {"action": "answer_question"},
+    {"action": "count", "target_to_count": "people wearing blue t shirts"},
+    {
+        "action": "say_with_context",
+        "user_instruction": "tell me how many people are wearing blue t shirts",
+        "previous_command_info": "count",
+    },
+    # Test pending
+    {"action": "get_person_info", "info_type": "pose"},
+    {"action": "get_person_info", "info_type": "gesture"},
     {"action": "count", "target_to_count": "dishes"},
     {"action": "count", "target_to_count": "persons pointing to the left"},
     {"action": "count", "target_to_count": "lying persons"},
@@ -36,11 +56,6 @@ command_space = [
     {"action": "find_person_by_name", "name": "Adel"},
     {"action": "pick_object", "object_to_pick": "sugar"},
     {"action": "place_object"},
-    {
-        "action": "say_with_context",
-        "user_instruction": "tell me how many foods there are on the side tables",
-        "previous_command_info": "count",
-    },
     {
         "action": "say_with_context",
         "user_instruction": "say your teams affiliation to the person pointing to the left in the bathroom",
@@ -59,12 +74,11 @@ command_space = [
     {"action": "get_visual_info", "measure": "thinnest", "object_category": "object"},
     {"action": "get_visual_info", "measure": "biggest", "object_category": "food"},
     {"action": "get_visual_info", "measure": "lightest", "object_category": "object"},
+    # TODO implement
+    {"action": "follow_person_until", "destination": "living room"},
+    {"action": "follow_person_until", "destination": "canceled"},
 ]
 
-
-custom_command = [
-    {"action": "follow_person_until", "destination": "lamp"},
-]
 
 GPSR_COMMANDS = [
     {

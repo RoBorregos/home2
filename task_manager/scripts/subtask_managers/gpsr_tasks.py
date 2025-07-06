@@ -324,7 +324,6 @@ class GPSRTask(GenericTask):
             while current_attempt < 3:
                 current_attempt += 1
                 s, res = self.subtask_manager.vision.get_person_name()
-                print(f"Person name: {res}")
                 if s == Status.EXECUTION_SUCCESS and res != "Unknown":
                     self.subtask_manager.hri.say(f"Hi {res}, nice to meet you again!")
                     return Status.EXECUTION_SUCCESS, res
