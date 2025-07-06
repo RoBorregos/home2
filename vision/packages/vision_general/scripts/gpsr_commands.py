@@ -139,6 +139,7 @@ class GPSRCommands(Node):
             self.output_image = self.image.copy()
             self.get_detections(self.image, 0)  # default: 0  - person
 
+
         except Exception as e:
             print(f"Error: {e}")
 
@@ -173,6 +174,12 @@ class GPSRCommands(Node):
             return response
 
         self.get_detections(frame, 0)
+
+        if len(self.people) == 0:
+            self.get_logger().warn("No people detected in the image.")
+            response.success = True
+            response.count = 0
+            return response
 
         # replace underscore with space in the pose_requested
         pose_requested = pose_requested.replace("_", "  ")
@@ -245,6 +252,10 @@ class GPSRCommands(Node):
             Gestures.POINTING_RIGHT: 0,
         }
 
+        if len(self.people) == 0:
+            self.get_logger().warn("No people detected in the image.")
+            return gesture_count
+
         # Detect gestures for each detected person
         for person in self.people:
             x1, y1, x2, y2 = person["bbox"]
@@ -301,6 +312,12 @@ class GPSRCommands(Node):
 
         self.get_detections(frame, 0)
 
+        if len(self.people) == 0:
+            self.get_logger().warn("No people detected in the image.")
+            response.success = True
+            response.count = 0
+            return response
+
         count = 0
 
         for person in self.people:
@@ -340,6 +357,12 @@ class GPSRCommands(Node):
 
         # Detect people using YOLO
         self.get_detections(frame, 0)
+
+        if len(self.people) == 0:
+            self.get_logger().warn("No people detected in the image.")
+            response.success = False
+            response.result = ""
+            return response
 
         # Detect gesture for the person with the biggest bounding box
         biggest_person = max(self.people, key=lambda p: p["area"], default=None)
