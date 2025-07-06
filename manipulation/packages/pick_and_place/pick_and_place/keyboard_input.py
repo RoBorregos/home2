@@ -8,7 +8,7 @@ from frida_interfaces.msg import ManipulationTask
 import time
 from frida_interfaces.msg import ObjectDetectionArray
 from frida_constants.vision_constants import (
-    DETECTIONS_TOPIC,
+    DETECTIONS_TOPIC, ZERO_SHOT_DETECTIONS_TOPIC,
 )
 from frida_constants.manipulation_constants import (
     MANIPULATION_ACTION_SERVER,
@@ -26,7 +26,7 @@ class KeyboardInput(Node):
         # Add subscriber for objects
         self.objects_subscription = self.create_subscription(
             ObjectDetectionArray,
-            DETECTIONS_TOPIC,
+            ZERO_SHOT_DETECTIONS_TOPIC,
             self.objects_callback,
             10,
         )
