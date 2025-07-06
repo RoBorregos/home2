@@ -180,30 +180,6 @@ class PostgresAdapter:
         self.conn.commit()
         return locations
 
-    def add_command_history(self, command: CommandHistory):
-        """Method to add a command history entry to the database"""
-        # Generate embedding for the command if not already present
-        if not command.embedding:
-            embedding = self.embedding_model.encode(
-                command.command, convert_to_tensor=True
-            )
-            command.embedding = embedding.tolist()
-
-        self.cursor.execute(
-            "INSERT INTO command_history (id, action, command, result, status, context, embedding) VALUES (%s, %s, %s, %s, %s, %s, %s)",
-            (
-                command.id,
-                command.action,
-                command.command,
-                command.result,
-                command.status,
-                command.context,
-                json.dumps(command.embedding),
-            ),
-        )
-        self.conn.commit()
-        return command
-
     def add_command(
         self,
         action: str,
@@ -215,8 +191,8 @@ class PostgresAdapter:
         """Method to add a command to the database"""
         embedding = self.embedding_model.encode(f"{command}", convert_to_tensor=True)
         self.cursor.execute(
-            "INSERT INTO command_history (action, command, result, status, context, embedding) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
-            (action, command, result, status, context, json.dumps(embedding.tolist())),
+            "INSERT INTO command_history (action, command, result, status, embedding) VALUES (%s, %s, %s, %s, %s) RETURNING id",
+            (action, command, result, status, json.dumps(embedding.tolist())),
         )
         command_id = self.cursor.fetchone()[0]
         self.conn.commit()
@@ -226,7 +202,6 @@ class PostgresAdapter:
             command=command,
             result=result,
             status=status,
-            context=context,
             embedding=embedding.tolist(),
         )
 
@@ -236,13 +211,12 @@ class PostgresAdapter:
         command: str,
         result: str,
         status: str,
-        context: str | None = None,
     ) -> CommandHistory:
         embedding = self.embedding_model.encode(f"{command}", convert_to_tensor=True)
 
         self.cursor.execute(
-            "INSERT INTO command_history (action, command, result, status, context, embedding) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
-            (action, command, result, status, context, json.dumps(embedding.tolist())),
+            "INSERT INTO command_history (action, command, result, status, embedding) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
+            (action, command, result, status, json.dumps(embedding.tolist())),
         )
         command_id = self.cursor.fetchone()[0]
         self.conn.commit()
@@ -252,7 +226,6 @@ class PostgresAdapter:
             command=command,
             result=result,
             status=status,
-            context=context,
             embedding=embedding.tolist(),
         )
 
@@ -262,7 +235,7 @@ class PostgresAdapter:
         """Method to query command history by semantic similarity"""
         embedding = self.embedding_model.encode(command, convert_to_tensor=True)
         self.cursor.execute(
-            "SELECT id, action, command, result, status, context, embedding, 1 - (embedding <=> %s) as similarity FROM command_history WHERE 1 - (embedding <=> %s) >= %s ORDER BY similarity DESC LIMIT %s",
+            "SELECT id, action, command, result, status, embedding, 1 - (embedding <=> %s) as similarity FROM command_history WHERE 1 - (embedding <=> %s) >= %s ORDER BY similarity DESC LIMIT %s",
             (embedding, embedding, threshold, top_k),
         )
         rows = self.cursor.fetchall()
@@ -273,8 +246,7 @@ class PostgresAdapter:
                 command=row[2],
                 result=row[3],
                 status=row[4],
-                context=row[5],
-                embedding=json.loads(row[6]),
+                embedding=json.loads(row[5]),
                 similarity=row[6],
             )
             for row in rows
@@ -283,7 +255,7 @@ class PostgresAdapter:
     def get_latest_command_history(self, top_k: int = 1) -> list[CommandHistory]:
         """Method to get the latest command history entries for a specific action"""
         self.cursor.execute(
-            "SELECT id, action, command, result, status, context, embedding FROM command_history ORDER BY id DESC LIMIT %s",
+            "SELECT id, action, command, result, status, embedding FROM command_history ORDER BY id DESC LIMIT %s",
             (top_k,),
         )
         rows = self.cursor.fetchall()
@@ -296,8 +268,7 @@ class PostgresAdapter:
                 command=row[2],
                 result=row[3],
                 status=row[4],
-                context=row[5],
-                embedding=json.loads(row[6]),
+                embedding=json.loads(row[5]),
             )
             for row in rows
         ]

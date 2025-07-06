@@ -31,6 +31,7 @@ from frida_constants.hri_constants import (
     STT_ACTION_SERVER_NAME,
     WAKEWORD_TOPIC,
 )
+
 from frida_interfaces.action import SpeechStream
 from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
 from frida_interfaces.srv import (  # AddEntry,
@@ -942,7 +943,7 @@ class HRITasks(metaclass=SubtaskMeta):
             action=str(command.action),
             command=str(command),
             result=result,
-            status=status,
+            status=str(status),
             context=type(command).__name__,
         )
         return Status.EXECUTION_SUCCESS
@@ -963,11 +964,8 @@ class HRITasks(metaclass=SubtaskMeta):
             )
         return [doc for doc in document]
 
-    def query_item(self, query: str, top_k: int = 1) -> list[str]:
-        return self.pg.query_items(query=query, top_k=top_k)
-
-    def query_location(self, query: str, top_k: int = 1) -> list[str]:
-        return self.pg.query_location(query=query, top_k=top_k)
+    def query_location(self, query: str, top_k: int = 1):
+        return self.pg.query_location(query, top_k=top_k)
 
     def find_closest(self, documents: list, query: str, top_k: int = 1) -> list[str]:
         """
