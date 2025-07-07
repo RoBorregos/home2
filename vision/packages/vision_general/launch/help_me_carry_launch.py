@@ -15,14 +15,14 @@ def generate_launch_description():
     print(detector_launch_file)
     return LaunchDescription(
         [
-            # Node(
-            #     package="vision_general",
-            #     executable="tracker_node.py",
-            #     name="tracker_node",
-            #     output="screen",
-            #     emulate_tty=True,
-            #     # parameters=[config],
-            # ),
+            Node(
+                package="vision_general",
+                executable="tracker_node.py",
+                name="tracker_node",
+                output="screen",
+                emulate_tty=True,
+                # parameters=[config],
+            ),
             Node(
                 package="vision_general",
                 executable="receptionist_commands.py",

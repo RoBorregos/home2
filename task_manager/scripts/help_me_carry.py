@@ -15,7 +15,7 @@ import time as t
 
 ATTEMPT_LIMIT = 3
 
-FOLLOWING_TIMEOUT = 10
+FOLLOWING_TIMEOUT = 20
 
 
 class HelpMeCarryTM(Node):
@@ -45,7 +45,6 @@ class HelpMeCarryTM(Node):
         )
 
         self.is_tracking = False
-
         self.generic = GenericTask(self.subtask_manager)
         self.current_state = HelpMeCarryTM.TASK_STATES["START"]
         self.current_attempts = 0
@@ -53,17 +52,16 @@ class HelpMeCarryTM(Node):
 
         Logger.info(self, "HelpMeCarryTaskManager has started.")
         self.subtask_manager.vision.track_person(False)
-        # self.subtask_manager.manipulation.follow_person(False)
-        self.subtask_manager.hri.hear_multi(0)
+        self.subtask_manager.manipulation.follow_person(False)
         self.subtask_manager.nav.follow_person(False)
 
-    def navigate_to(self, location: str, sublocation: str = ""):
-        self.subtask_manager.hri.say(f"I will follow you now to {location}")
-        return
-        self.subtask_manager.manipulation.follow_face(False)
-        self.subtask_manager.manipulation.move_to_position("navigation")
-        future = self.subtask_manager.nav.move_to_location(location, sublocation)
-        rclpy.spin_until_future_complete(self, future)
+    # def navigate_to(self, location: str, sublocation: str = ""):
+    #     self.subtask_manager.hri.say(f"I will follow you now to {location}")
+    #     return
+    #     self.subtask_manager.manipulation.follow_face(False)
+    #     self.subtask_manager.manipulation.move_to_position("navigation")
+    #     future = self.subtask_manager.nav.move_to_location(location, sublocation)
+    #     rclpy.spin_until_future_complete(self, future)
 
     def run(self):
         """State machine"""
@@ -96,27 +94,21 @@ class HelpMeCarryTM(Node):
 
         if self.current_state == HelpMeCarryTM.TASK_STATES["FOLLOWING_TO_DESTINATION"]:
             self.subtask_manager.vision.track_person(True)
-            # self.subtask_manager.manipulation.follow_person(True)
-            self.subtask_manager.nav.follow_person(True)
-            self.subtask_manager.hri.hear_multi(1)
-            Logger.state(self, "Please stand 2 meters away from me ")
+            self.subtask_manager.manipulation.follow_person(True)
+            # self.subtask_manager.nav.follow_person(True)
+            # Logger.state(self, "Please stand 2 meters away from me ")
             self.subtask_manager.hri.say("I will follow you now")
             self.subtask_manager.hri.say("Please say stop when you want me to stop")
-            # Encender Tracker
-            # Encender brazo
-            # self.subtask_manager.nav.follow_person(True)
+            self.subtask_manager.nav.follow_person(True)
             tracking_time = self.get_clock().now()
+            self.subtask_manager.hri.hear_streaming(timeout=120, silence_time=120)
             prev_status = True
             while True:
-                result = self.subtask_manager.hri.hear_multi(3)
-                if result:
-                    self.subtask_manager.hri.hear_multi(0)
+                if "stop" in self.subtask_manager.hri.current_transcription.lower():
                     self.subtask_manager.nav.follow_person(False)
-                    # self.subtask_manager.manipulation.follow_person(False)
+                    self.subtask_manager.manipulation.follow_person(False)
                     self.subtask_manager.vision.track_person(False)
-                    Logger.info(self, "Simulating follow disable")
                     self.subtask_manager.hri.say("I heard STOP, stopping now")
-
                     self.current_state = HelpMeCarryTM.TASK_STATES["ASK_TO_POINT_THE_BAG"]
                     # self.current_state = HelpMeCarryTM.TASK_STATES["END"]
                     break
@@ -125,20 +117,20 @@ class HelpMeCarryTM(Node):
 
                 if not is_tracking == Status.EXECUTION_SUCCESS:
                     Logger.info(self, "Person not found stoping arm")
-                    # self.subtask_manager.manipulation.follow_person(False)
+                    self.subtask_manager.manipulation.follow_person(False)
                     prev_status = False
                 else:
                     if not prev_status:
                         Logger.info(self, "Starting arm")
-                        # self.subtask_manager.manipulation.follow_person(True)
+                        self.subtask_manager.manipulation.follow_person(True)
                     prev_status = True
                     tracking_time = self.get_clock().now()
 
                 if self.get_clock().now() - tracking_time > Duration(seconds=FOLLOWING_TIMEOUT):
                     Logger.info(self, "Activating deux ex machina")
-                    self.subtask_manager.hri.hear_multi(0)
                     self.subtask_manager.nav.follow_person(False)
-                    # self.subtask_manager.manipulation.follow_person(False)
+                    self.subtask_manager.manipulation.follow_person(False)
+                    # MAYBE ADD TO PUT IN FRONT OF THE CAMERA
                     self.subtask_manager.vision.track_person(False)
                     self.subtask_manager.hri.say(
                         "I lost you, please come back to the front of the camera"
