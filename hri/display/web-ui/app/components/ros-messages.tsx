@@ -291,7 +291,7 @@ function AudioStateIndicator({ state }: AudioStateIndicatorProps) {
 
   // For listening state, show the mic centered
   return (
-  <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/10 pointer-events-none pt-60 ">
+  <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/10 pointer-events-none pt-35 ">
     <div className="relative">
       <div className="absolute inset-0 rounded-full bg-[oklch(0.5_0.25_260)] opacity-10 animate-[pulse_3s_infinite] scale-110" />
       <div className="absolute inset-0 rounded-full bg-[oklch(0.5_0.25_260)] opacity-15 animate-[pulse_3s_infinite_1s] scale-125" />
