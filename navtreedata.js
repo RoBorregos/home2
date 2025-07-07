@@ -185,17 +185,17 @@ var NAVTREEINDEX =
 "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#acf8ac6c4f7fa2b2fa664de7f878c3f9a",
 "classreceptionist__commands_1_1ReceptionistCommands.html#af7d1ebe68ec92480be48087fa6af6bc4",
 "classstoring__groceries__manager_1_1StoringGroceriesManager.html#adb6bbe91c26552f14daeddaf32726875",
-"classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#ab173ba795eb8c4f95b004dcef689b819",
-"classtest__manipulation__manager_1_1TestTaskManager.html#a80129700353f0ee0987d57c9c9b61999",
-"classvision__general_1_1pose__detection_1_1PoseDetection.html#aef4b2fdfda46ac214537f0dd11841ecf",
-"down__sample__pc_8cpp.html",
-"hri__constants_8py.html",
-"md_docs_Run_Areas_nav.html#autotoc_md54",
-"namespaceface__recognition__node.html#a166e5b8323737530752db607917e635f",
-"namespacelocal__camera.html#a370b7792a1778760c0b396393c1dc169",
-"namespacertabmap__slam.html#a4a8c077875c519fbb01a16d4c929d240",
-"read__cluster_8cpp.html#a0ddf1224851353fc92bfbff6f499fa97",
-"vision__constants_8py.html#acda94204316d127125cb8c635a12a998"
+"classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#aadb2790685e6bc901a5859dec4a9dca5",
+"classtest__manager_1_1TestTaskManager.html#a6953502ae5a02e035d87a06899bbe009",
+"classvision__general_1_1pose__detection_1_1PoseDetection.html#a9efaeff259518c817106a304f06a6b16",
+"display__real_8launch_8py.html",
+"heatmapPlace__Server_8py.html#a722ba8c49613d837163c253b9d93d6a8",
+"md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md49",
+"namespaceexample__launch.html",
+"namespacegrasp__utils.html#a9597ffd3c2a1573ab6036bd81117a64e",
+"namespacerestaurant__task__manager.html#a855d58795131a10ad4ca75d69055a048",
+"place__server_8py.html",
+"vision__constants_8py.html#a84bae216de4143026b94ae627c8bb4a8"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

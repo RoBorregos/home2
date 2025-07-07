@@ -7,6 +7,8 @@ var hri__constants_8py =
     [ "COMMON_INTEREST_SERVICE", "hri__constants_8py.html#a46fbf5eabbd1779f553efd0d69f6dffb", null ],
     [ "CONVESATION_SERVICE", "hri__constants_8py.html#a0dea1a972213b590aaf0c24edf6bba9e", null ],
     [ "DEFAULT_HOTWORDS", "hri__constants_8py.html#ae34afe358408d95f63d076478b349b0b", null ],
+    [ "DISPLAY_IMAGE_TOPIC", "hri__constants_8py.html#aaa486a9f7f79cd7c69c81ff85d8ba336", null ],
+    [ "DISPLAY_MAP_TOPIC", "hri__constants_8py.html#a3fdac1c86ed416eee896a77aec9c4043", null ],
     [ "EXTRACT_DATA_SERVICE", "hri__constants_8py.html#ae336bc5e472cc38814ce9b4eb0928c31", null ],
     [ "GPSR_COMMANDS", "hri__constants_8py.html#aae7202a78fec255321e754d7a99ad996", null ],
     [ "GRAMMAR_SERVICE", "hri__constants_8py.html#a030ffe3f2fb1fc6cb72b2f14441d6e97", null ],

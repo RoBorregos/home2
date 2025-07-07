@@ -8,6 +8,7 @@ var test__hri__manager_8py =
     [ "TEST_COMPOUND", "test__hri__manager_8py.html#af084794917df55eb7c98942b498ec083", null ],
     [ "TEST_EMBEDDINGS", "test__hri__manager_8py.html#a0103d8be7196ba99bf9b56a12808fa85", null ],
     [ "TEST_INDIVIDUAL_FUNCTIONS", "test__hri__manager_8py.html#a914b4542d179c1bd4ffea5b5fd5917b4", null ],
+    [ "TEST_MAP", "test__hri__manager_8py.html#a6dab12c78ddfca13d1fd313af30f27bf", null ],
     [ "TEST_STREAMING", "test__hri__manager_8py.html#a6f21b71aab324a85f5de81194460a195", null ],
     [ "TEST_TASK", "test__hri__manager_8py.html#a50907fc62e1b5d0848b30afd0d8c656a", null ]
 ];
