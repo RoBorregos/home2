@@ -106,6 +106,8 @@ Functions</h2></td></tr>
 Variables</h2></td></tr>
 <tr class="memitem:ad073f80419b58cd912161e378963b11a"><td class="memItemLeft" align="right" valign="top">list&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacesubtask__managers_1_1gpsr__test__commands.html#ad073f80419b58cd912161e378963b11a">custom_command</a></td></tr>
 <tr class="separator:ad073f80419b58cd912161e378963b11a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a01cdf414d41e1b64b2192d5e894b0e69"><td class="memItemLeft" align="right" valign="top">list&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacesubtask__managers_1_1gpsr__test__commands.html#a01cdf414d41e1b64b2192d5e894b0e69">command_space</a></td></tr>
+<tr class="separator:a01cdf414d41e1b64b2192d5e894b0e69"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a05ab4bcafeee38c420da272ab10cf24a"><td class="memItemLeft" align="right" valign="top">list&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacesubtask__managers_1_1gpsr__test__commands.html#a05ab4bcafeee38c420da272ab10cf24a">GPSR_COMMANDS</a></td></tr>
 <tr class="separator:a05ab4bcafeee38c420da272ab10cf24a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7ec1ac68bc2c97b7f2ff77f3be166cf6"><td class="memItemLeft" align="right" valign="top">dict&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacesubtask__managers_1_1gpsr__test__commands.html#a7ec1ac68bc2c97b7f2ff77f3be166cf6">AVAILABLE_COMMANDS</a></td></tr>
@@ -198,16 +200,15 @@ Variables</h2></td></tr>
 <div class="line"><span class="lineno">    5</span>    <span class="stringliteral">&quot;pick&quot;</span>,</div>
 <div class="line"><span class="lineno">    6</span>    <span class="stringliteral">&quot;place&quot;</span>,</div>
 <div class="line"><span class="lineno">    7</span>    <span class="stringliteral">&quot;say&quot;</span>,</div>
-<div class="line"><span class="lineno">    8</span>    <span class="stringliteral">&quot;ask_answer_question&quot;</span>,</div>
+<div class="line"><span class="lineno">    8</span>    <span class="stringliteral">&quot;answer_question&quot;</span>,</div>
 <div class="line"><span class="lineno">    9</span>    <span class="stringliteral">&quot;visual_info&quot;</span>,</div>
 <div class="line"><span class="lineno">   10</span>    <span class="stringliteral">&quot;guide_to&quot;</span>,</div>
-<div class="line"><span class="lineno">   11</span>    <span class="stringliteral">&quot;find_object&quot;</span>,</div>
-<div class="line"><span class="lineno">   12</span>    <span class="stringliteral">&quot;find_person&quot;</span>,</div>
-<div class="line"><span class="lineno">   13</span>    <span class="stringliteral">&quot;find_person_by_name&quot;</span>,</div>
-<div class="line"><span class="lineno">   14</span>    <span class="comment"># &quot;follow_person_until&quot;,</span></div>
-<div class="line"><span class="lineno">   15</span>    <span class="stringliteral">&quot;count&quot;</span>,</div>
-<div class="line"><span class="lineno">   16</span>    <span class="comment"># &quot;contextual_say&quot;,</span></div>
-<div class="line"><span class="lineno">   17</span>}</div>
+<div class="line"><span class="lineno">   11</span>    <span class="stringliteral">&quot;find_person&quot;</span>,</div>
+<div class="line"><span class="lineno">   12</span>    <span class="stringliteral">&quot;find_person_by_name&quot;</span>,</div>
+<div class="line"><span class="lineno">   13</span>    <span class="comment"># &quot;follow_person_until&quot;,</span></div>
+<div class="line"><span class="lineno">   14</span>    <span class="stringliteral">&quot;count&quot;</span>,</div>
+<div class="line"><span class="lineno">   15</span>    <span class="comment"># &quot;contextual_say&quot;,</span></div>
+<div class="line"><span class="lineno">   16</span>}</div>
 </div><!-- fragment -->
 </div>
 </div>
@@ -239,6 +240,20 @@ Variables</h2></td></tr>
 
 </div>
 </div>
+<a id="a01cdf414d41e1b64b2192d5e894b0e69" name="a01cdf414d41e1b64b2192d5e894b0e69"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a01cdf414d41e1b64b2192d5e894b0e69">&#9670;&#160;</a></span>command_space</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">list subtask_managers.gpsr_test_commands.command_space</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="ac3bee4bf5fb634df18b9e37ebcb9e186" name="ac3bee4bf5fb634df18b9e37ebcb9e186"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ac3bee4bf5fb634df18b9e37ebcb9e186">&#9670;&#160;</a></span>command_statistics</h2>
 
@@ -264,7 +279,20 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-
+<b>Initial value:</b><div class="fragment"><div class="line"><span class="lineno">    1</span>=  [</div>
+<div class="line"><span class="lineno">    2</span>    <span class="comment"># {&quot;action&quot;: &quot;get_person_info&quot;, &quot;info_type&quot;: &quot;gesture&quot;},</span></div>
+<div class="line"><span class="lineno">    3</span>    <span class="comment"># {&quot;action&quot;: &quot;get_person_info&quot;, &quot;info_type&quot;: &quot;pose&quot;},</span></div>
+<div class="line"><span class="lineno">    4</span>    <span class="comment"># {</span></div>
+<div class="line"><span class="lineno">    5</span>    <span class="comment">#             &quot;action&quot;: &quot;answer_question&quot;</span></div>
+<div class="line"><span class="lineno">    6</span>    <span class="comment"># },</span></div>
+<div class="line"><span class="lineno">    7</span>    {<span class="stringliteral">&quot;action&quot;</span>: <span class="stringliteral">&quot;count&quot;</span>, <span class="stringliteral">&quot;target_to_count&quot;</span>: <span class="stringliteral">&quot;people wearing gray t shirts&quot;</span>},</div>
+<div class="line"><span class="lineno">    8</span>    {</div>
+<div class="line"><span class="lineno">    9</span>        <span class="stringliteral">&quot;action&quot;</span>: <span class="stringliteral">&quot;say_with_context&quot;</span>,</div>
+<div class="line"><span class="lineno">   10</span>        <span class="stringliteral">&quot;user_instruction&quot;</span>: <span class="stringliteral">&quot;tell me how many people are wearing gray t shirts&quot;</span>,</div>
+<div class="line"><span class="lineno">   11</span>        <span class="stringliteral">&quot;previous_command_info&quot;</span>: [<span class="stringliteral">&quot;count&quot;</span>],</div>
+<div class="line"><span class="lineno">   12</span>    },</div>
+<div class="line"><span class="lineno">   13</span>]</div>
+</div><!-- fragment -->
 </div>
 </div>
 <a id="a8b43f8799b5da00c514c5b0698931ef8" name="a8b43f8799b5da00c514c5b0698931ef8"></a>

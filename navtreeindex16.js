@@ -1,5 +1,12 @@
 var NAVTREEINDEX16 =
 {
+"grasp__detection__example_8py.html#a40a8024a9f168af4327222571de3ea94":[20,0,3,0,0,1,0,1],
+"grasp__markers_8py.html":[20,0,3,0,0,4,0],
+"grasp__markers_8py.html#a6e921905b580cbab9b3bbfd11f2231af":[20,0,3,0,0,4,0,1],
+"grasp__utils_8py.html":[20,0,3,0,5,1,2,0],
+"grasp__utils_8py.html#a66bfdc2901b1b5ef677a6921c55939d6":[20,0,3,0,5,1,2,0,0],
+"grasp__utils_8py.html#a9597ffd3c2a1573ab6036bd81117a64e":[20,0,3,0,5,1,2,0,1],
+"heatmapPlace__Server_8py.html":[20,0,3,0,6,1,0],
 "heatmapPlace__Server_8py.html#a722ba8c49613d837163c253b9d93d6a8":[20,0,3,0,6,1,0,1],
 "help__me__carry_8py.html":[20,0,6,1,9],
 "help__me__carry_8py.html#ab5e4a679e827451f1c0776fcf4137ac0":[20,0,6,1,9,2],
@@ -242,12 +249,5 @@ var NAVTREEINDEX16 =
 "masive__testin_8cpp.html#a403677990f5903485dfa1d2871dd6bc9":[20,0,3,0,4,3,2,3],
 "md_docs_Run_Areas_Manipulation_manipulation.html":[8],
 "md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md34":[8,0],
-"md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md35":[8,1],
-"md_docs_Run_Areas_Manipulation_pick_and_place.html":[9],
-"md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md43":[9,0],
-"md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md44":[9,0,0],
-"md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md45":[9,0,1],
-"md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md46":[9,0,1,0],
-"md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md47":[9,0,1,1],
-"md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md48":[9,1]
+"md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md35":[8,1]
 };

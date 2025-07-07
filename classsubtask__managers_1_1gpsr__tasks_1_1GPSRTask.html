@@ -125,9 +125,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:adc012c0caf9d1ff36bf2967bc1abe69f"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#adc012c0caf9d1ff36bf2967bc1abe69f">get_person_info</a> (self, GetPersonInfo command)</td></tr>
 <tr class="memdesc:adc012c0caf9d1ff36bf2967bc1abe69f"><td class="mdescLeft">&#160;</td><td class="mdescRight">HRI, Vision.  <br /></td></tr>
 <tr class="separator:adc012c0caf9d1ff36bf2967bc1abe69f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aff9c60e57b487811b1c3ea31ac792113"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#aff9c60e57b487811b1c3ea31ac792113">find_object</a> (self, str complement, str characteristic)</td></tr>
-<tr class="memdesc:aff9c60e57b487811b1c3ea31ac792113"><td class="mdescLeft">&#160;</td><td class="mdescRight">Nav, Vision TODO: We removed this in command dataset.  <br /></td></tr>
-<tr class="separator:aff9c60e57b487811b1c3ea31ac792113"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa342533152238bb044dffde7ad7e5f73"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#aa342533152238bb044dffde7ad7e5f73">timeout</a> (self, int timeout=2)</td></tr>
 <tr class="separator:aa342533152238bb044dffde7ad7e5f73"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad526b924dc4cc03d671f1e3830a2e917"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#ad526b924dc4cc03d671f1e3830a2e917">count_objects</a> (self, str object_name)</td></tr>
@@ -135,9 +132,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a4eeae8e50058b1b69358bf44e27b2355"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a4eeae8e50058b1b69358bf44e27b2355">count</a> (self, Count command)</td></tr>
 <tr class="memdesc:a4eeae8e50058b1b69358bf44e27b2355"><td class="mdescLeft">&#160;</td><td class="mdescRight">Manipulation, Vision.  <br /></td></tr>
 <tr class="separator:a4eeae8e50058b1b69358bf44e27b2355"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4c1bd069e6b7717652de7db5d60b5bae"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a4c1bd069e6b7717652de7db5d60b5bae">find_person_og</a> (self, FindPerson command)</td></tr>
-<tr class="memdesc:a4c1bd069e6b7717652de7db5d60b5bae"><td class="mdescLeft">&#160;</td><td class="mdescRight">Manipulation, Nav, Vision.  <br /></td></tr>
-<tr class="separator:a4c1bd069e6b7717652de7db5d60b5bae"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a75f266c2bb7a240daa306c4622b22f30"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a75f266c2bb7a240daa306c4622b22f30">find_person</a> (self, FindPersonByName command)</td></tr>
 <tr class="separator:a75f266c2bb7a240daa306c4622b22f30"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae3f1a30a32b8f67a29ab88e98a115836"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#ae3f1a30a32b8f67a29ab88e98a115836">find_person_by_name</a> (self, FindPersonByName command)</td></tr>
@@ -286,68 +280,6 @@ Pseudocode:
 
 </div>
 </div>
-<a id="aff9c60e57b487811b1c3ea31ac792113" name="aff9c60e57b487811b1c3ea31ac792113"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aff9c60e57b487811b1c3ea31ac792113">&#9670;&#160;</a></span>find_object()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">def subtask_managers.gpsr_tasks.GPSRTask.find_object </td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">str&#160;</td>
-          <td class="paramname"><em>complement</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">str&#160;</td>
-          <td class="paramname"><em>characteristic</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Nav, Vision TODO: We removed this in command dataset. </p>
-<pre class="fragment">Finds an object in a specified location and approaches it for picking.
-
-Args:
-    complement (str): Specifies additional context for the search.
-        If it is a room, the robot will search all placements in the room.
-    characteristic (str): Specifies the object to find.
-
-Purpose:
-    - Locate an object in a given place and approach it to a position suitable for picking.
-
-Preconditions:
-    - Assumes the robot is already at a location.
-
-Behavior:
-    - If the location is a placement location, the robot will search for the object only in that placement.
-    - If the complement specifies a room, the robot will navigate to all placements in the room and search for the object.
-    - Once the object is found, the robot will approach it to a position where it can pick the object.
-
-Postconditions:
-    - The robot will be positioned at a location where it can pick the object.
-
-Pseudocode:
-    For each location in specified_room:
-        Navigate to the location.
-        If the object is detected in the location:
-            Approach the object to a position suitable for picking.
-</pre> 
-</div>
-</div>
 <a id="a75f266c2bb7a240daa306c4622b22f30" name="a75f266c2bb7a240daa306c4622b22f30"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a75f266c2bb7a240daa306c4622b22f30">&#9670;&#160;</a></span>find_person()</h2>
 
@@ -423,67 +355,6 @@ Preconditions:
 Postconditions:
     - The robot approaches the person with the specified name.
     - The robot saves information about all the people it encounters.
-</pre> 
-</div>
-</div>
-<a id="a4c1bd069e6b7717652de7db5d60b5bae" name="a4c1bd069e6b7717652de7db5d60b5bae"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4c1bd069e6b7717652de7db5d60b5bae">&#9670;&#160;</a></span>find_person_og()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">def subtask_managers.gpsr_tasks.GPSRTask.find_person_og </td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">FindPerson&#160;</td>
-          <td class="paramname"><em>command</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Manipulation, Nav, Vision. </p>
-<pre class="fragment">Finds and approaches a person for further interaction.
-
-Args:
-    complement (str): Additional information to help identify the person, it can be a gesture, pose, a color + cloth, or empty.
-                      If not specified, the robot will attempt to find any person.
-    characteristic (str): A string giving details of the characteristic, can be "clothes", "gesture", "posture" or "".
-
-Purpose:
-    - Find a person and approach it for further interaction. Further interaction may be: following the person,
-      guiding the person, interacting with the person, describing the person, or give an object to a person.
-
-Preconditions:
-    - Assumes the robot is already at a specific location.
-
-Behavior:
-    - The robot scans its surroundings by gazing at different angles (e.g., -45, 0, 45 degrees).
-    - If a person matching the specified complement is found, the robot approaches them.
-    - If no such person is found, a fallback mechanism (`deus_machina`) is invoked.
-
-Postconditions:
-    The robot successfully approaches the identified person, ready for further interaction.
-
-Pseudocode:
-    found = False
-    for degree in [-45, 0, 45]:
-        gaze(degree)
-        if person(complement, characteristic):
-            approach_person(complement, characteristic)
-            found = True
-    if not found:
-        deus_machina()
 </pre> 
 </div>
 </div>

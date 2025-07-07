@@ -11,6 +11,7 @@ var classgpsr__task__manager_1_1GPSRTM =
     [ "executed_commands", "classgpsr__task__manager_1_1GPSRTM.html#acb531c8fe459394ab090c6282404ce03", null ],
     [ "gpsr_individual_tasks", "classgpsr__task__manager_1_1GPSRTM.html#ab341aae6715175be22703486a1e5596c", null ],
     [ "gpsr_tasks", "classgpsr__task__manager_1_1GPSRTM.html#af88171271d1838d11be866c1010d5bc4", null ],
+    [ "prev_state", "classgpsr__task__manager_1_1GPSRTM.html#a5308c024cea664acd0c2a5014f978d16", null ],
     [ "running_task", "classgpsr__task__manager_1_1GPSRTM.html#afc70d7546aa40e2479a67efc8d216df7", null ],
     [ "subtask_manager", "classgpsr__task__manager_1_1GPSRTM.html#a4bee05fd817eb3797742363cfb1aab63", null ]
 ];

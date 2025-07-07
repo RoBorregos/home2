@@ -12,8 +12,8 @@ var searchData=
   ['help_9',['help',['../namespaceserver.html#a692f59b384dd93287c366eb7e7c0608b',1,'server.help()'],['../namespacemoondream__lib.html#a96f271e464064797e7edcff4e9851282',1,'moondream_lib.help()']]],
   ['help_5fme_5fcarry_10',['HELP_ME_CARRY',['../classutils_1_1task_1_1Task.html#a5fc9810f491d09ab9c3164914f09405b',1,'utils::task::Task']]],
   ['hotword_5fservice_5fname_11',['HOTWORD_SERVICE_NAME',['../namespacefrida__constants_1_1hri__constants.html#a56cb7bea1e6304de74676a11d4effdf9',1,'frida_constants::hri_constants']]],
-  ['hri_12',['hri',['../classutils_1_1subtask__manager_1_1SubtaskManager.html#a0a2b5ff79896271b6bc24c0253b617f2',1,'utils::subtask_manager::SubtaskManager']]],
-  ['hri_13',['HRI',['../classfrida__constants_1_1ModuleNames.html#a26bf7d8ace6b622f93e4c9f9dfe97f41',1,'frida_constants::ModuleNames']]],
+  ['hri_12',['HRI',['../classfrida__constants_1_1ModuleNames.html#a26bf7d8ace6b622f93e4c9f9dfe97f41',1,'frida_constants::ModuleNames']]],
+  ['hri_13',['hri',['../classutils_1_1subtask__manager_1_1SubtaskManager.html#a0a2b5ff79896271b6bc24c0253b617f2',1,'utils::subtask_manager::SubtaskManager']]],
   ['hri_5fmanager_14',['hri_manager',['../classtest__hri__manager_1_1TestHriManager.html#a24fdd546d6ff1fd85f6802baac27733b',1,'test_hri_manager::TestHriManager']]],
   ['hz_15',['HZ',['../classlocal__camera_1_1NodeParams.html#ae2914b29f06d811ab1d84056097899a6',1,'local_camera::NodeParams']]]
 ];

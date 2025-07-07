@@ -122,6 +122,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a8ccc6554f10dad69aad77b208136254f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5e8d01cdbf3ed3146690906ca7acf49a"><td class="memItemLeft" align="right" valign="top">tuple[int, float]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a5e8d01cdbf3ed3146690906ca7acf49a">find_seat</a> (self)</td></tr>
 <tr class="separator:a5e8d01cdbf3ed3146690906ca7acf49a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:add84f731a3c81332dba46636f0718965"><td class="memItemLeft" align="right" valign="top">tuple[int, float]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#add84f731a3c81332dba46636f0718965">read_qr</a> (self)</td></tr>
+<tr class="separator:add84f731a3c81332dba46636f0718965"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acbf09db8df3f112ff114f82ee5fce9b9"><td class="memItemLeft" align="right" valign="top">tuple[<a class="el" href="classutils_1_1status_1_1Status.html">Status</a>, list[<a class="el" href="classfrida__constants_1_1vision__classes_1_1ShelfDetection.html">ShelfDetection</a>]]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#acbf09db8df3f112ff114f82ee5fce9b9">detect_shelf</a> (self, float timeout=<a class="el" href="namespacesubtask__managers_1_1vision__tasks.html#ae7683efea5f76a87a8709bf0dc062fd4">TIMEOUT</a>)</td></tr>
 <tr class="separator:acbf09db8df3f112ff114f82ee5fce9b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a78f5a421cb9d51c91f280ac1314bc0bd"><td class="memItemLeft" align="right" valign="top">tuple[<a class="el" href="classutils_1_1status_1_1Status.html">Status</a>, list[<a class="el" href="classfrida__constants_1_1vision__classes_1_1BBOX.html">BBOX</a>]]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a78f5a421cb9d51c91f280ac1314bc0bd">detect_objects</a> (self, float timeout=<a class="el" href="namespacesubtask__managers_1_1vision__tasks.html#ae7683efea5f76a87a8709bf0dc062fd4">TIMEOUT</a>)</td></tr>
@@ -231,6 +233,8 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a170dd7525d429098b151d2994de24502"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9a2fabb423615a0161555236d437c36b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a9a2fabb423615a0161555236d437c36b">find_person_info_client</a></td></tr>
 <tr class="separator:a9a2fabb423615a0161555236d437c36b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a51b64ef8837b01ace46e4451db981f3a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a51b64ef8837b01ace46e4451db981f3a">read_qr_client</a></td></tr>
+<tr class="separator:a51b64ef8837b01ace46e4451db981f3a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afdb99a87dc97924b36799ad4cd978949"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#afdb99a87dc97924b36799ad4cd978949">count_by_color_client</a></td></tr>
 <tr class="separator:afdb99a87dc97924b36799ad4cd978949"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a62f2e6ffa3b96bee09c2f1832e3288aa"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a62f2e6ffa3b96bee09c2f1832e3288aa">services</a></td></tr>
@@ -1191,6 +1195,24 @@ Protected Member Functions</h2></td></tr>
 <pre class="fragment">Callback for the face name subscriber</pre> 
 </div>
 </div>
+<a id="add84f731a3c81332dba46636f0718965" name="add84f731a3c81332dba46636f0718965"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#add84f731a3c81332dba46636f0718965">&#9670;&#160;</a></span>read_qr()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> tuple[int, float] subtask_managers.vision_tasks.VisionTasks.read_qr </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Find an available seat and get the angle for the camera to point at</pre> 
+</div>
+</div>
 <a id="a8ccc6554f10dad69aad77b208136254f" name="a8ccc6554f10dad69aad77b208136254f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a8ccc6554f10dad69aad77b208136254f">&#9670;&#160;</a></span>save_face_name()</h2>
 
@@ -1686,6 +1708,20 @@ Protected Member Functions</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">subtask_managers.vision_tasks.VisionTasks.pointing_object_client</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a51b64ef8837b01ace46e4451db981f3a" name="a51b64ef8837b01ace46e4451db981f3a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a51b64ef8837b01ace46e4451db981f3a">&#9670;&#160;</a></span>read_qr_client</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">subtask_managers.vision_tasks.VisionTasks.read_qr_client</td>
         </tr>
       </table>
 </div><div class="memdoc">

@@ -20,11 +20,13 @@ var classtracker__node_1_1SingleTracker =
     [ "depth_image", "classtracker__node_1_1SingleTracker.html#aa41ad9f7250f57418cb776556f760313", null ],
     [ "depth_subscriber", "classtracker__node_1_1SingleTracker.html#acdb37caf9a1fe0ff6ae4c0450cceecbe", null ],
     [ "frame", "classtracker__node_1_1SingleTracker.html#a34293ecadfff8078e9520a300998c6ef", null ],
+    [ "frame_id_original", "classtracker__node_1_1SingleTracker.html#ade3c04def628f3bfdd1f319c80bc8261", null ],
     [ "get_is_tracking_service", "classtracker__node_1_1SingleTracker.html#a1b9951fa3e08730f4bbbbee4117e0de9", null ],
     [ "image", "classtracker__node_1_1SingleTracker.html#a558bb074447c96798991e4f2ceaecc15", null ],
     [ "image_info_subscriber", "classtracker__node_1_1SingleTracker.html#a693a025173d3d5b9317ba922792f9031", null ],
     [ "image_publisher", "classtracker__node_1_1SingleTracker.html#a45268dc5d647456b6379155c6d826ddf", null ],
     [ "image_subscriber", "classtracker__node_1_1SingleTracker.html#afc7a962552f9d57e07376962a29d46f2", null ],
+    [ "image_time", "classtracker__node_1_1SingleTracker.html#a23ca6ef5b81acaa0d815e73fb86d712d", null ],
     [ "imageInfo", "classtracker__node_1_1SingleTracker.html#a250e64ddd114a1c924003cd5ce2ee00b", null ],
     [ "is_tracking_result", "classtracker__node_1_1SingleTracker.html#af8feef1513c02af7c70d6376e17d4f41", null ],
     [ "last_reid_extraction", "classtracker__node_1_1SingleTracker.html#a0c72e0bea30d639fb62efee3335f7e07", null ],
@@ -39,5 +41,6 @@ var classtracker__node_1_1SingleTracker =
     [ "set_target_by_service", "classtracker__node_1_1SingleTracker.html#ab7fe4c791b393c19c820f87453013ef1", null ],
     [ "set_target_service", "classtracker__node_1_1SingleTracker.html#ae6b038106853a53b60a35e36c6efe3bf", null ],
     [ "target_set", "classtracker__node_1_1SingleTracker.html#a08572286f135b1feafaddf1ba841792d", null ],
+    [ "time_frame", "classtracker__node_1_1SingleTracker.html#af8776fbe493f9b44c07cb69c3edae89e", null ],
     [ "verbose", "classtracker__node_1_1SingleTracker.html#ae4b5daaab2bb197b7b685ffbd699b438", null ]
 ];

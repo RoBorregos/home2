@@ -113,7 +113,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ac503819cf10468ed9baa2d42f23aaa35"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1gpsr__single__tasks_1_1GPSRSingleTask.html#ac503819cf10468ed9baa2d42f23aaa35">go_to</a> (self, GoTo command)</td></tr>
 <tr class="memdesc:ac503819cf10468ed9baa2d42f23aaa35"><td class="mdescLeft">&#160;</td><td class="mdescRight">Nav.  <br /></td></tr>
 <tr class="separator:ac503819cf10468ed9baa2d42f23aaa35"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1a5427a65fc99849c51519b9ab771194"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1gpsr__single__tasks_1_1GPSRSingleTask.html#a1a5427a65fc99849c51519b9ab771194">navigate_to</a> (self, str location, str sublocation=&quot;&quot;, bool <a class="el" href="classsubtask__managers_1_1gpsr__single__tasks_1_1GPSRSingleTask.html#a881536baf5da35e6eb5387b484aa0df4">say</a>=True)</td></tr>
+<tr class="memitem:a1a5427a65fc99849c51519b9ab771194"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1gpsr__single__tasks_1_1GPSRSingleTask.html#a1a5427a65fc99849c51519b9ab771194">navigate_to</a> (self, str location, str sublocation=&quot;&quot;, bool say=True)</td></tr>
 <tr class="separator:a1a5427a65fc99849c51519b9ab771194"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3ea4dec06c737f8a62273ee04d30369c"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1gpsr__single__tasks_1_1GPSRSingleTask.html#a3ea4dec06c737f8a62273ee04d30369c">pick_object</a> (self, PickObject command)</td></tr>
 <tr class="memdesc:a3ea4dec06c737f8a62273ee04d30369c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Manipulation.  <br /></td></tr>
@@ -128,9 +128,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ae9e482db10ccda1865363fdae16b9699"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1gpsr__single__tasks_1_1GPSRSingleTask.html#ae9e482db10ccda1865363fdae16b9699">say_with_context</a> (self, SayWithContext command)</td></tr>
 <tr class="memdesc:ae9e482db10ccda1865363fdae16b9699"><td class="mdescLeft">&#160;</td><td class="mdescRight">HRI.  <br /></td></tr>
 <tr class="separator:ae9e482db10ccda1865363fdae16b9699"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a881536baf5da35e6eb5387b484aa0df4"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1gpsr__single__tasks_1_1GPSRSingleTask.html#a881536baf5da35e6eb5387b484aa0df4">say</a> (self, str complement, characteristic=&quot;&quot;)</td></tr>
-<tr class="memdesc:a881536baf5da35e6eb5387b484aa0df4"><td class="mdescLeft">&#160;</td><td class="mdescRight">HRI Removed from the command dataset.  <br /></td></tr>
-<tr class="separator:a881536baf5da35e6eb5387b484aa0df4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a457bd1e94a9816a5665cbc0c36beeb9b"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1gpsr__single__tasks_1_1GPSRSingleTask.html#a457bd1e94a9816a5665cbc0c36beeb9b">answer_question</a> (self, AnswerQuestion command)</td></tr>
 <tr class="memdesc:a457bd1e94a9816a5665cbc0c36beeb9b"><td class="mdescLeft">&#160;</td><td class="mdescRight">HRI.  <br /></td></tr>
 <tr class="separator:a457bd1e94a9816a5665cbc0c36beeb9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -438,8 +435,7 @@ Postconditions:
 <pre class="fragment">Picks an object from a designated picking spot.
 
 Args:
-    complement (str): Description of the object to pick.
-    characteristic (str, optional): Always empty.
+    object_to_pick (str): Description of the object to pick.
 
 Purpose:
     To enable the robot to pick up an object.
@@ -489,8 +485,7 @@ Pseudocode:
 <pre class="fragment">Places an object in the available location.
 
 Args:
-    complement (str, optional): Always empty.
-    characteristic (str, optional): Always empty.
+    None
 
 Purpose:
     - To place an object
@@ -507,62 +502,6 @@ Postconditions:
 
 Pseudocode:
     place()
-</pre> 
-</div>
-</div>
-<a id="a881536baf5da35e6eb5387b484aa0df4" name="a881536baf5da35e6eb5387b484aa0df4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a881536baf5da35e6eb5387b484aa0df4">&#9670;&#160;</a></span>say()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">def subtask_managers.gpsr_single_tasks.GPSRSingleTask.say </td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">str&#160;</td>
-          <td class="paramname"><em>complement</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>characteristic</em> = <code>&quot;&quot;</code>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>HRI Removed from the command dataset. </p>
-<pre class="fragment">Makes the robot say the provided text to the user.
-
-Args:
-    complement (str): The text that the robot will say to the user.
-    characteristic (str, optional): Always empty.
-
-Purpose:
-    - Say the text to the user
-
-Preconditions:
-    - None
-
-Behavior:
-    - Says the text and blocks execution until the text is finished.
-
-Postconditions:
-    - None
-
-Pseudocode:
-    - say(text)
 </pre> 
 </div>
 </div>

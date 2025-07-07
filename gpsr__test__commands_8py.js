@@ -4,6 +4,7 @@ var gpsr__test__commands_8py =
     [ "AVAILABLE_COMMANDS", "gpsr__test__commands_8py.html#a7ec1ac68bc2c97b7f2ff77f3be166cf6", null ],
     [ "cmd_type", "gpsr__test__commands_8py.html#abf7ee6d141b2e9ccaf7a46465b311a1b", null ],
     [ "color", "gpsr__test__commands_8py.html#a2286a48161c0b2a1d5d81a5d8567558a", null ],
+    [ "command_space", "gpsr__test__commands_8py.html#a01cdf414d41e1b64b2192d5e894b0e69", null ],
     [ "command_statistics", "gpsr__test__commands_8py.html#ac3bee4bf5fb634df18b9e37ebcb9e186", null ],
     [ "custom_command", "gpsr__test__commands_8py.html#ad073f80419b58cd912161e378963b11a", null ],
     [ "else", "gpsr__test__commands_8py.html#a8b43f8799b5da00c514c5b0698931ef8", null ],

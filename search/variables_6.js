@@ -20,7 +20,7 @@ var searchData=
   ['finished_5fcommand_17',['FINISHED_COMMAND',['../classgpsr__task__manager_1_1GPSRTM_1_1States.html#ab6bd34ac4b2635e898372459b9c12bc0',1,'gpsr_task_manager::GPSRTM::States']]],
   ['flag_5factive_5fface_18',['flag_active_face',['../classfollow__face__node_1_1FollowFaceNode.html#aef5c2df12b99a9fa48026930e9349ca8',1,'follow_face_node.FollowFaceNode.flag_active_face()'],['../classfollow__person__node_1_1FollowPersonNode.html#a4c22dca24bfd3f8756ad7eb623ed46a5',1,'follow_person_node.FollowPersonNode.flag_active_face()'],['../classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#afdac2829cd1b3d48a6a189901c10e80d',1,'subtask_managers.vision_tasks.VisionTasks.flag_active_face()']]],
   ['flip_5fimage_19',['flip_image',['../classObjectDetector_1_1ObjectDectectorParams.html#a58827e4d0876a634ac13d12e9ba5e05f',1,'ObjectDetector::ObjectDectectorParams']]],
-  ['flt_5fepsilon_20',['FLT_EPSILON',['../namespacevision__3D__utils.html#a98f504ec1d9a17769ad241f28580d805',1,'vision_3D_utils.FLT_EPSILON()'],['../namespacecalculations.html#a7bc607213c6ce6ae2313c9733977f388',1,'calculations.FLT_EPSILON()']]],
+  ['flt_5fepsilon_20',['FLT_EPSILON',['../namespacecalculations.html#a7bc607213c6ce6ae2313c9733977f388',1,'calculations.FLT_EPSILON()'],['../namespacevision__3D__utils.html#a98f504ec1d9a17769ad241f28580d805',1,'vision_3D_utils.FLT_EPSILON()']]],
   ['folder_5fpath_21',['folder_path',['../namespacereid__model.html#a7c2efdb27dc4bbd61ae50edc9b76ddd4',1,'reid_model']]],
   ['follow_5fby_5fname_5fclient_22',['follow_by_name_client',['../classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a7b73a6f8e3801b74f5d86f354e36e81e',1,'subtask_managers::vision_tasks::VisionTasks']]],
   ['follow_5fby_5fservice_23',['follow_by_service',['../classface__recognition__node_1_1FaceRecognition.html#a49d668ca9fb5c353962b2b740fc72fe9',1,'face_recognition_node::FaceRecognition']]],
@@ -39,8 +39,9 @@ var searchData=
   ['format_36',['format',['../namespacemoondream__lib.html#ae7192007fe4505484cc637c6d11cd04d',1,'moondream_lib']]],
   ['frame_37',['frame',['../classtracker__node_1_1SingleTracker.html#a34293ecadfff8078e9520a300998c6ef',1,'tracker_node.SingleTracker.frame()'],['../classget__positon__3d_1_1SingleTracker.html#aa7d2a328398dfd374fb2798bc07d481e',1,'get_positon_3d.SingleTracker.frame()'],['../classface__recognition__node_1_1FaceRecognition.html#ad2add4bd1b3301595e0e5a2dc31e1b3d',1,'face_recognition_node.FaceRecognition.frame()']]],
   ['frame_5fid_38',['frame_id',['../structDetectionRecord.html#accd0d7ef874715cdf70597c91c3f7742',1,'DetectionRecord']]],
-  ['frida_39',['FRIDA',['../classfrida__constants_1_1hri__constants_1_1KNOWLEDGE__TYPE.html#a878a9f224332bb91f296424028137318',1,'frida_constants::hri_constants::KNOWLEDGE_TYPE']]],
-  ['front_5flow_5fstare_40',['FRONT_LOW_STARE',['../namespacefrida__constants_1_1xarm__configurations.html#a2f3850b75849b6bc32e08235fe99d81c',1,'frida_constants::xarm_configurations']]],
-  ['front_5fstare_41',['FRONT_STARE',['../namespacefrida__constants_1_1xarm__configurations.html#a3f9c52b155ebdeebba61a6e7b5c195fd',1,'frida_constants::xarm_configurations']]],
-  ['function_5fname_42',['function_name',['../classutils_1_1config_1_1MockConfig.html#abe0da480c611b55e3b4b903ab7d953f7',1,'utils::config::MockConfig']]]
+  ['frame_5fid_5foriginal_39',['frame_id_original',['../classtracker__node_1_1SingleTracker.html#ade3c04def628f3bfdd1f319c80bc8261',1,'tracker_node::SingleTracker']]],
+  ['frida_40',['FRIDA',['../classfrida__constants_1_1hri__constants_1_1KNOWLEDGE__TYPE.html#a878a9f224332bb91f296424028137318',1,'frida_constants::hri_constants::KNOWLEDGE_TYPE']]],
+  ['front_5flow_5fstare_41',['FRONT_LOW_STARE',['../namespacefrida__constants_1_1xarm__configurations.html#a2f3850b75849b6bc32e08235fe99d81c',1,'frida_constants::xarm_configurations']]],
+  ['front_5fstare_42',['FRONT_STARE',['../namespacefrida__constants_1_1xarm__configurations.html#a3f9c52b155ebdeebba61a6e7b5c195fd',1,'frida_constants::xarm_configurations']]],
+  ['function_5fname_43',['function_name',['../classutils_1_1config_1_1MockConfig.html#abe0da480c611b55e3b4b903ab7d953f7',1,'utils::config::MockConfig']]]
 ];
