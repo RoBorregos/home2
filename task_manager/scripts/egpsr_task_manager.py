@@ -238,7 +238,6 @@ class EGPSRTM(Node):
         self.trash_detected_flag = False
         self.trash_bin_location = {}
         self.current_misplaced_object_index = 0
-        self.cleanup_complete = False
 
         package_share_directory = get_package_share_directory("frida_constants")
         file_path = os.path.join(package_share_directory, "map_areas/areas.json")
