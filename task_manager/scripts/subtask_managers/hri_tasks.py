@@ -33,6 +33,7 @@ from frida_constants.hri_constants import (
     STT_ACTION_SERVER_NAME,
     WAKEWORD_TOPIC,
 )
+
 from frida_interfaces.action import SpeechStream
 from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
 from frida_interfaces.srv import (
@@ -949,7 +950,7 @@ class HRITasks(metaclass=SubtaskMeta):
             action=str(command.action),
             command=str(command),
             result=result,
-            status=status,
+            status=str(status),
             context=type(command).__name__,
         )
         return Status.EXECUTION_SUCCESS
@@ -970,11 +971,8 @@ class HRITasks(metaclass=SubtaskMeta):
             )
         return [doc for doc in document]
 
-    def query_item(self, query: str, top_k: int = 1) -> list[str]:
-        return self.pg.query_items(query=query, top_k=top_k)
-
-    def query_location(self, query: str, top_k: int = 1) -> list[str]:
-        return self.pg.query_location(query=query, top_k=top_k)
+    def query_location(self, query: str, top_k: int = 1):
+        return self.pg.query_location(query, top_k=top_k)
 
     def find_closest(self, documents: list, query: str, top_k: int = 1) -> list[str]:
         """
@@ -1040,8 +1038,8 @@ class HRITasks(metaclass=SubtaskMeta):
         rclpy.spin_until_future_complete(self.node, future)
         return Status.EXECUTION_SUCCESS, future.result().answer
 
-    def query_command_history(self, query: str, top_k: int = 1):
-        results = self.pg.query_command_history(command=query, top_k=top_k)
+    def query_command_history(self, query: str, action: str, top_k: int = 1):
+        results = self.pg.query_command_history(command=query, action=action, top_k=top_k)
         return Status.EXECUTION_SUCCESS, results
 
     def categorize_objects(

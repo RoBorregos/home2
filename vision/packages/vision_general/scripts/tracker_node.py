@@ -23,7 +23,7 @@ import rclpy
 from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import Point, PointStamped
 from vision_general.utils.reid_model import (
     load_network,
     compare_images,
@@ -122,6 +122,8 @@ class SingleTracker(Node):
         """Load models and initial variables"""
         self.target_set = False
         self.image = None
+        self.image_time = None
+        self.frame_id_original = "zed_left_camera_optical_frame"
         self.person_data = {
             "id": None,
             "embeddings": None,
@@ -141,7 +143,7 @@ class SingleTracker(Node):
             self.get_logger().info("Loaded YOLO model, exporting...")
             # # Export the model to TensorRT with DLA enabled (only works with FP16 or INT8)
             pt_model.export(
-                format="engine", device="dla:0", half=True
+                format="engine", half=True
             )  # dla:0 or dla:1 corresponds to the DLA cores
 
         # Load the exported TensorRT model
@@ -180,6 +182,7 @@ class SingleTracker(Node):
     def image_callback(self, data):
         """Callback to receive image from camera"""
         self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
+        self.image_time = data.header.stamp
 
     def depth_callback(self, data):
         """Callback to receive depth image from camera"""
@@ -389,6 +392,7 @@ class SingleTracker(Node):
         """Main loop to run the tracker"""
         if True:  # self.target_set:
             self.frame = self.image
+            self.time_frame = self.image_time
             if self.frame is None:
                 return
 
@@ -636,7 +640,7 @@ class SingleTracker(Node):
                         #     )
                         #     break
 
-                # check if
+            # check if
             if person_in_frame:
                 # if len(self.depth_image) > 0:
                 #     self.is_tracking_result = True
@@ -677,7 +681,8 @@ class SingleTracker(Node):
                 #     self.results_publisher.publish(coords)
                 if len(self.depth_image) > 0:
                     self.is_tracking_result = True
-                    coords = Point()
+                    coords = PointStamped()
+                    # print(self.frame.1)
                     point2D = get2DCentroid(self.person_data["coordinates"], self.frame)
                     point2D_x_coord = float(point2D[1])
                     point2D_x_coord_normalized = (
@@ -689,6 +694,7 @@ class SingleTracker(Node):
                     point2Dpoint.z = 0.0
                     # self.get_logger().info(f"frame_shape: {self.frame.shape[1]} Point2D: {point2D[1]} normalized_point2D: {point2D_x_coord_normalized}")
                     self.centroid_publisher.publish(point2Dpoint)
+
                     depth = get_depth(self.depth_image, point2D)
                     point3D = deproject_pixel_to_point(self.imageInfo, point2D, depth)
                     point3D = float(point3D[0]), float(point3D[1]), float(point3D[2])
