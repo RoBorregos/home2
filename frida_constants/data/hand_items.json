@@ -1,11 +1,11 @@
 {
-  "image_path": "test-map.jpg",
+  "image_path": "test-map.png",
   "markers": [
     {
       "name": "Mug",
       "description": "A white ceramic coffee mug.",
-      "x": 1.2,
-      "y": 3.4,
+      "x": 50,
+      "y": 90,
       "m_loc_x": 0.5,
       "m_loc_y": 0.3,
       "color_name": "white",
@@ -14,8 +14,8 @@
     {
       "name": "Book",
       "description": "A hardcover book titled 'AI Revolution'.",
-      "x": 2.0,
-      "y": 1.5,
+      "x": 90,
+      "y": 90,
       "m_loc_x": 0.6,
       "m_loc_y": 0.2,
       "color_name": "blue",
@@ -24,8 +24,8 @@
     {
       "name": "Bottle",
       "description": "A green reusable water bottle.",
-      "x": 0.7,
-      "y": 2.8,
+      "x": 10,
+      "y": 90,
       "m_loc_x": 0.2,
       "m_loc_y": 0.7,
       "color_name": "green",

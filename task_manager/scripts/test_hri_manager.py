@@ -54,7 +54,7 @@ def confirm_preference(interpreted_text, extracted_data):
     return "I heard you like " + extracted_data + ". Is that correct?"
 
 
-TEST_TASK = Task.RECEPTIONIST
+TEST_TASK = Task.DEBUG
 TEST_COMPOUND = False
 TEST_INDIVIDUAL_FUNCTIONS = False
 TEST_EMBEDDINGS = False
@@ -318,9 +318,11 @@ class TestHriManager(Node):
 
         # Clear the map
         self.hri_manager.show_map(clear_map=True)
+        time.sleep(2)
 
         # Show the map again to verify it is cleared
         self.hri_manager.show_map(name="Mug")
+        time.sleep(5)
 
 
 def main(args=None):

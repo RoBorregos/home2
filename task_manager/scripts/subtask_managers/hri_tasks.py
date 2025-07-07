@@ -35,8 +35,8 @@ from frida_constants.hri_constants import (
 )
 from frida_interfaces.action import SpeechStream
 from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
-from frida_interfaces.srv import CategorizeShelves  # AddEntry,
 from frida_interfaces.srv import (
+    CategorizeShelves,  # AddEntry,
     CommandInterpreter,
     CommonInterest,
     ExtractInfo,
@@ -51,7 +51,6 @@ from rclpy.action import ActionClient
 from rclpy.node import Node
 from rclpy.task import Future
 from std_msgs.msg import String
-from subtask_managers.subtask_meta import SubtaskMeta
 from utils.baml_client.sync_client import b
 from utils.baml_client.types import (
     AnswerQuestion,
@@ -73,6 +72,8 @@ from utils.decorators import service_check
 from utils.logger import Logger
 from utils.status import Status
 from utils.task import Task
+
+from subtask_managers.subtask_meta import SubtaskMeta
 
 InterpreterAvailableCommands = Union[
     CommandListLLM,
@@ -1198,21 +1199,22 @@ class HRITasks(metaclass=SubtaskMeta):
         """
         Method to show the map on the display.
         """
+        show_items = self.hand_items.copy()
+
         if clear_map:
+            show_items["image_path"] = ""
             Logger.info(self.node, "Map cleared on the screen.")
-            return
+        else:
+            filtered_items = []
 
-        items = self.hand_items
+            # Filter items to only include those matching the specified name
+            for item in show_items["markers"]:
+                if name == "" or item["name"].strip().lower() == name.strip().lower():
+                    filtered_items.append(item)
 
-        for item in items["markers"]:
-            if item["name"].strip().lower() != name.strip().lower():
-                del item["name"]
+            show_items["markers"] = filtered_items
 
-        print("filtered data:", items)
-
-        self.display_map_publisher.publish(String(data=json.dumps(items)))
-
-        Logger.info(self.node, "Map displayed on the screen.")
+        self.display_map_publisher.publish(String(data=json.dumps(show_items)))
 
 
 if __name__ == "__main__":
