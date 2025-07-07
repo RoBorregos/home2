@@ -4,6 +4,7 @@
 Task Manager for testing the subtask managers
 """
 
+import time
 from typing import Union
 
 import rclpy
@@ -55,10 +56,11 @@ def confirm_preference(interpreted_text, extracted_data):
 
 TEST_TASK = Task.RECEPTIONIST
 TEST_COMPOUND = False
-TEST_INDIVIDUAL_FUNCTIONS = True
+TEST_INDIVIDUAL_FUNCTIONS = False
 TEST_EMBEDDINGS = False
 TEST_ASYNC_LLM = False
 TEST_STREAMING = False
+TEST_MAP = True
 
 
 class TestHriManager(Node):
@@ -86,6 +88,9 @@ class TestHriManager(Node):
 
         if TEST_STREAMING:
             self.test_streaming()
+
+        if TEST_MAP:
+            self.test_map()
 
     def individual_functions(self):
         # Test say
@@ -300,6 +305,22 @@ class TestHriManager(Node):
 
         self.get_logger().info(f"Common interest future: {f}")
         self.get_logger().info(f"Common interest future status: {f.done()}, {f.result()}")
+
+    def test_map(self):
+        """
+        Test the map functionality of the HRITasks.
+        """
+        self.get_logger().info("Testing map functionality...")
+
+        # Show the map with a specific item
+        self.hri_manager.show_map(name="Phone")
+        time.sleep(5)
+
+        # Clear the map
+        self.hri_manager.show_map(clear_map=True)
+
+        # Show the map again to verify it is cleared
+        self.hri_manager.show_map(name="Mug")
 
 
 def main(args=None):

@@ -11,6 +11,7 @@ const markerSchema = z.object({
   x: z.number(),
   y: z.number(),
   color: z.string(),
+  color_name: z.string(),
 });
 
 const mapSchema = z.object({
@@ -427,17 +428,39 @@ function MapModal({ mapData, onClose }: MapModalProps) {
             />
 
             {/* Markers */}
-            {imageLoaded && mapData.markers.map((marker, index) => (
-              <div
-                key={index}
-                className="absolute w-10 h-10 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white shadow-lg z-10"
-                style={{
-                  left: `${marker.x}%`,
-                  top: `${marker.y}%`,
-                  backgroundColor: marker.color,
-                }}
-              />
-            ))}
+            {imageLoaded && mapData.markers.map((marker, index) => {
+              // Check if the marker is in the bottom half of the image
+              const isInBottomHalf = marker.y > 75; // If marker is below 75% of image height
+              
+              return (
+                <div
+                  key={index}
+                  className="absolute -translate-x-1/2 -translate-y-1/2 z-10"
+                  style={{
+                    left: `${marker.x}%`,
+                    top: `${marker.y}%`,
+                  }}
+                >
+                  {/* Marker circle */}
+                  <div
+                    className="w-20 h-20 rounded-full border-2 border-white shadow-lg"
+                    style={{
+                      backgroundColor: marker.color,
+                    }}
+                  />
+                  {/* Color name label */}
+                  <div 
+                    className={`absolute left-1/2 -translate-x-1/2 whitespace-nowrap ${
+                      isInBottomHalf ? 'bottom-24' : 'top-24'
+                    }`}
+                  >
+                    <span className="bg-black/70 text-white px-2 py-1 rounded text-4xl font-medium">
+                      {marker.color_name}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
 

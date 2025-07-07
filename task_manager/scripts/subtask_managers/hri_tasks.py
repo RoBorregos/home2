@@ -20,6 +20,8 @@ from frida_constants.hri_constants import (
     CATEGORIZE_SERVICE,
     COMMAND_INTERPRETER_SERVICE,
     COMMON_INTEREST_SERVICE,
+    DISPLAY_IMAGE_TOPIC,
+    DISPLAY_MAP_TOPIC,
     EXTRACT_DATA_SERVICE,
     GRAMMAR_SERVICE,
     IS_NEGATIVE_SERVICE,
@@ -33,8 +35,8 @@ from frida_constants.hri_constants import (
 )
 from frida_interfaces.action import SpeechStream
 from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
-from frida_interfaces.srv import (  # AddEntry,
-    CategorizeShelves,
+from frida_interfaces.srv import CategorizeShelves  # AddEntry,
+from frida_interfaces.srv import (
     CommandInterpreter,
     CommonInterest,
     ExtractInfo,
@@ -49,6 +51,7 @@ from rclpy.action import ActionClient
 from rclpy.node import Node
 from rclpy.task import Future
 from std_msgs.msg import String
+from subtask_managers.subtask_meta import SubtaskMeta
 from utils.baml_client.sync_client import b
 from utils.baml_client.types import (
     AnswerQuestion,
@@ -70,8 +73,6 @@ from utils.decorators import service_check
 from utils.logger import Logger
 from utils.status import Status
 from utils.task import Task
-
-from subtask_managers.subtask_meta import SubtaskMeta
 
 InterpreterAvailableCommands = Union[
     CommandListLLM,
@@ -168,7 +169,8 @@ class HRITasks(metaclass=SubtaskMeta):
         )
         self.is_positive_service = self.node.create_client(IsPositive, IS_POSITIVE_SERVICE)
         self.is_negative_service = self.node.create_client(IsNegative, IS_NEGATIVE_SERVICE)
-        self.display_publisher = self.node.create_publisher(String, "/hri/display/change_video", 10)
+        self.display_publisher = self.node.create_publisher(String, DISPLAY_IMAGE_TOPIC, 10)
+        self.display_map_publisher = self.node.create_publisher(String, DISPLAY_MAP_TOPIC, 10)
 
         self.pg = PostgresAdapter()
         self.llm_wrapper_service = self.node.create_client(LLMWrapper, LLM_WRAPPER_SERVICE)
@@ -229,6 +231,10 @@ class HRITasks(metaclass=SubtaskMeta):
         file_path = os.path.join(package_share_directory, "data/positive.json")
         with open(file_path, "r") as file:
             self.positive = json.load(file)["affirmations"]
+
+        file_path = os.path.join(package_share_directory, "data/hand_items.json")
+        with open(file_path, "r") as file:
+            self.hand_items = json.load(file)
 
         self.setup_services()
         Logger.success(self.node, f"hri_tasks initialized with task {self.task}")
@@ -1187,6 +1193,26 @@ class HRITasks(metaclass=SubtaskMeta):
 
         self.node.get_logger().info(f"THIS IS THE RESULTS OF THE CATEGORIZATION: {results}")
         return results
+
+    def show_map(self, name="", clear_map: bool = False):
+        """
+        Method to show the map on the display.
+        """
+        if clear_map:
+            Logger.info(self.node, "Map cleared on the screen.")
+            return
+
+        items = self.hand_items
+
+        for item in items["markers"]:
+            if item["name"].strip().lower() != name.strip().lower():
+                del item["name"]
+
+        print("filtered data:", items)
+
+        self.display_map_publisher.publish(String(data=json.dumps(items)))
+
+        Logger.info(self.node, "Map displayed on the screen.")
 
 
 if __name__ == "__main__":
