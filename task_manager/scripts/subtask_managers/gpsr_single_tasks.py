@@ -273,7 +273,7 @@ class GPSRSingleTask(GenericTask):
         if context in GPSR_COMMANDS:
             s, history = self.subtask_manager.hri.query_command_history(
                 query=command.user_instruction,
-                action= command.previous_command_info[0],
+                action=command.previous_command_info[0],
             )
             last_command = history[0]
             s, answer = self.subtask_manager.hri.answer_with_context(

@@ -43,7 +43,6 @@ command_space = [
         "user_instruction": "tell me how many people are wearing blue t shirts",
         "previous_command_info": "count",
     },
-    
     # Test pending
     {"action": "get_person_info", "info_type": "pose"},
     {"action": "get_person_info", "info_type": "gesture"},
