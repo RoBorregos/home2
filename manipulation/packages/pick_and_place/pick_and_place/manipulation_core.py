@@ -256,7 +256,7 @@ class ManipulationCore(Node):
             response.success = result
         else:
             self.get_logger().error("Unknown task type")
-            goal_handle.abort()
+            goal_handle.succeed()
             response = ManipulationAction.Result()
             response.success = False
 

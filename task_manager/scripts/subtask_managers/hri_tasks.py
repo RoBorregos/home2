@@ -16,26 +16,28 @@ import numpy as np
 import rclpy
 from ament_index_python.packages import get_package_share_directory
 from embeddings.postgres_adapter import PostgresAdapter
-from frida_constants.hri_constants import (  # ADD_ENTRY_SERVICE,
+from frida_constants.hri_constants import (
     CATEGORIZE_SERVICE,
     COMMAND_INTERPRETER_SERVICE,
     COMMON_INTEREST_SERVICE,
+    DISPLAY_IMAGE_TOPIC,
+    DISPLAY_MAP_TOPIC,
     EXTRACT_DATA_SERVICE,
     GRAMMAR_SERVICE,
     IS_NEGATIVE_SERVICE,
     IS_POSITIVE_SERVICE,
     LLM_WRAPPER_SERVICE,
-    QUERY_ENTRY_SERVICE,
     RAG_SERVICE,
     RESPEAKER_LIGHT_TOPIC,
     SPEAK_SERVICE,
     STT_ACTION_SERVER_NAME,
     WAKEWORD_TOPIC,
 )
+
 from frida_interfaces.action import SpeechStream
 from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
-from frida_interfaces.srv import (  # AddEntry,
-    CategorizeShelves,
+from frida_interfaces.srv import (
+    CategorizeShelves,  # AddEntry,
     CommandInterpreter,
     CommonInterest,
     ExtractInfo,
@@ -44,7 +46,6 @@ from frida_interfaces.srv import (  # AddEntry,
     IsNegative,
     IsPositive,
     LLMWrapper,
-    QueryEntry,
     Speak,
 )
 from rclpy.action import ActionClient
@@ -170,10 +171,9 @@ class HRITasks(metaclass=SubtaskMeta):
         )
         self.is_positive_service = self.node.create_client(IsPositive, IS_POSITIVE_SERVICE)
         self.is_negative_service = self.node.create_client(IsNegative, IS_NEGATIVE_SERVICE)
-        self.display_publisher = self.node.create_publisher(String, "/hri/display/change_video", 10)
+        self.display_publisher = self.node.create_publisher(String, DISPLAY_IMAGE_TOPIC, 10)
+        self.display_map_publisher = self.node.create_publisher(String, DISPLAY_MAP_TOPIC, 10)
 
-        self.query_item_client = self.node.create_client(QueryEntry, QUERY_ENTRY_SERVICE)
-        # self.add_item_client = self.node.create_client(AddEntry, ADD_ENTRY_SERVICE)
         self.pg = PostgresAdapter()
         self.llm_wrapper_service = self.node.create_client(LLMWrapper, LLM_WRAPPER_SERVICE)
         self.categorize_service = self.node.create_client(CategorizeShelves, CATEGORIZE_SERVICE)
@@ -233,6 +233,10 @@ class HRITasks(metaclass=SubtaskMeta):
         file_path = os.path.join(package_share_directory, "data/positive.json")
         with open(file_path, "r") as file:
             self.positive = json.load(file)["affirmations"]
+
+        file_path = os.path.join(package_share_directory, "data/hand_items.json")
+        with open(file_path, "r") as file:
+            self.hand_items = json.load(file)
 
         self.setup_services()
         Logger.success(self.node, f"hri_tasks initialized with task {self.task}")
@@ -555,6 +559,7 @@ class HRITasks(metaclass=SubtaskMeta):
         retries: int = 3,
         min_wait_between_retries: float = 5,
         skip_extract_data: bool = False,
+        skip_confirmation: bool = False,
     ):
         """
         Method to confirm a specific question.
@@ -589,6 +594,9 @@ class HRITasks(metaclass=SubtaskMeta):
 
                 if s == Status.TARGET_NOT_FOUND:
                     target_info = interpreted_text
+
+                if skip_confirmation:
+                    return Status.EXECUTION_SUCCESS, target_info
 
                 # Determine the confirmation question
                 if callable(confirm_question):
@@ -662,6 +670,110 @@ class HRITasks(metaclass=SubtaskMeta):
         future = self.grammar_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
         return Status.EXECUTION_SUCCESS, future.result().corrected_text
+
+    @service_check("", (Status.SERVICE_CHECK, ("coke", "left")), TIMEOUT)
+    def get_location_orientation(self) -> tuple[Status, tuple[str, str]]:
+        """
+        Method to get the location and orientation of where to place the object
+        Returns:
+            tuple[Status, tuple[str, str]]: A tuple containing the status and a tuple with the location and orientation.
+            The location is a string representing the location (e.g., "coke") and the orientation is a string representing the direction (e.g., "left").
+        """
+        current_retries_location = 0
+        selected_loc = None
+        closest_by_name = None
+        closest_by_description = None
+
+        while current_retries_location < 3:
+            current_retries_location += 1
+
+            s, location = self.ask_and_confirm(
+                "Where do you want me to place the object? Please describe the location.",
+                "location",
+                use_hotwords=False,
+                retries=3,
+                min_wait_between_retries=5,
+                skip_extract_data=True,
+                skip_confirmation=True,
+            )
+
+            closest_by_name, closest_by_description = self.pg.get_hand_items(location)
+
+            _, confirmation = self.confirm(
+                "Should I place it near " + closest_by_description[0].name + "?",
+                use_hotwords=True,
+                retries=3,
+            )
+
+            if confirmation == "yes":
+                selected_loc = closest_by_description[0].name
+                self.say(
+                    f"Thanks for confirming the location. Near {selected_loc}",
+                    wait=False,
+                )
+            else:
+                selected_loc = closest_by_name[0].name
+
+        current_retries_orientation = 0
+        selected_orientation = None
+
+        while current_retries_orientation < 3:
+            current_retries_orientation += 1
+
+            s, location = self.ask_and_confirm(
+                "Where do you want me to place it with respect to the provided location (left, right, front, back, top or just nearby)?",
+                "LLM_orientation",
+                use_hotwords=False,
+                retries=3,
+                min_wait_between_retries=5,
+                skip_extract_data=True,
+                skip_confirmation=True,
+            )
+
+            if s != Status.EXECUTION_SUCCESS:
+                self.say("I didn't understand the orientation. Let's try again.")
+                Logger.warn(self.node, "Failed to get orientation, trying again")
+                continue
+
+            s, closest = self.find_closest(
+                ["left", "right", "front", "back", "top", "nearby"], location
+            )
+
+            prefix = "on the " if closest != "nearby" else ""
+
+            _, confirmation = self.confirm(
+                "Should I place it " + prefix + closest + "?",
+                use_hotwords=True,
+                retries=3,
+            )
+
+            if confirmation == "yes":
+                selected_orientation = closest
+                self.say(
+                    "Thanks for confirming the orientation",
+                    wait=False,
+                )
+            else:
+                selected_loc = closest_by_name[0].name
+
+        matching_items = [item for item in closest_by_description if item.name == selected_loc]
+
+        if len(matching_items) > 1:
+            self.display_publisher.publish(String(data=json.dumps(matching_items)))
+            s, location = self.ask_and_confirm(
+                "I found several locations with the specified name. Please select the location by saying the color of the point.",
+                "LLM_color",
+                use_hotwords=False,
+                retries=3,
+                min_wait_between_retries=5,
+                skip_extract_data=False,
+            )
+            s, closest = self.find_closest([item.color for item in matching_items], location)
+            self.display_publisher.publish(String(data="cancel"))
+
+            matching_items = [item for item in matching_items if item.color == closest]
+
+        return (Status.EXECUTION_SUCCESS, matching_items[0], selected_orientation)
 
     def command_interpreter(
         self, text: str, is_async=False
@@ -755,7 +867,6 @@ class HRITasks(metaclass=SubtaskMeta):
             Logger.error(self.node, f"Error in common interest service: {e}")
             return Status.EXECUTION_ERROR, ""
 
-    # TODO: Make async
     @service_check("is_positive_service", (Status.SERVICE_CHECK, False), TIMEOUT)
     def is_positive(self, text, async_call=False):
         Logger.info(self.node, f"Checking if text is positive: {text}")
@@ -767,7 +878,6 @@ class HRITasks(metaclass=SubtaskMeta):
         Logger.info(self.node, f"is_positive result ({text}): {future.result().is_positive}")
         return Status.EXECUTION_SUCCESS, future.result().is_positive
 
-    # TODO: Make async
     @service_check("is_negative_service", (Status.SERVICE_CHECK, False), TIMEOUT)
     def is_negative(self, text, async_call=False):
         Logger.info(self.node, f"Checking if text is negative: {text}")
@@ -834,55 +944,24 @@ class HRITasks(metaclass=SubtaskMeta):
             Logger.warn(self.node, f"RAG service failed: {result.response}")
             return Status.EXECUTION_ERROR, result.response, result.score
 
-    # /////////////////embeddings services/////
+    # Embeddings services
     def add_command_history(self, command: InterpreterAvailableCommands, result, status):
-        # collection = "command_history"
-
-        # document = [command.action]
-        # metadata = [
-        #     {
-        #         "command": str(command),
-        #         "result": result,
-        #         "status": status,
-        #         "timestamp": datetime.now().isoformat(),
-        #     }
-        # ]
-
-        # request = AddEntry.Request(
-        #     document=document, metadata=json.dumps(metadata), collection=collection
-        # )
-        # future = self.add_item_client.call_async(request)
-
-        # def callback(fut):
-        #     try:
-        #         response = fut.result()
-        #         self.node.get_logger().info(
-        #             f"Command history saved: {response}")
-        #     except Exception as e:
-        #         self.node.get_logger().error(
-        #             f"Failed to save command history: {e}")
-
-        # future.add_done_callback(callback)
         self.pg.add_command(
             action=str(command.action),
             command=str(command),
             result=result,
-            status=status,
+            status=str(status),
             context=type(command).__name__,
         )
         return Status.EXECUTION_SUCCESS
 
     def add_item(self, document: list, metadata: str) -> list[str]:
-        # self.pg.add_item2(
-
-        # )
         for doc in document:
             self.pg.add_item2(
                 document=doc,
                 context=metadata.get("context", ""),
             )
         return [doc for doc in document]
-        # return self._add_to_collection(document, metadata, "items")
 
     def add_location(self, document: list, metadata: str) -> list[str]:
         for doc in document:
@@ -891,15 +970,9 @@ class HRITasks(metaclass=SubtaskMeta):
                 context=metadata.get("context", ""),
             )
         return [doc for doc in document]
-        # return self._add_to_collection(document, metadata, "locations")
 
-    def query_item(self, query: str, top_k: int = 1) -> list[str]:
-        # return self._query_(query, "items", top_k)
-        return self.pg.query_items(query=query, top_k=top_k)
-
-    def query_location(self, query: str, top_k: int = 1) -> list[str]:
-        # return self._query_(query, "locations", top_k)
-        return self.pg.query_location(query=query, top_k=top_k)
+    def query_location(self, query: str, top_k: int = 1):
+        return self.pg.query_location(query, top_k=top_k)
 
     def find_closest(self, documents: list, query: str, top_k: int = 1) -> list[str]:
         """
@@ -911,25 +984,17 @@ class HRITasks(metaclass=SubtaskMeta):
             Status: the status of the execution
             list[str]: the results of the query
         """
-        # self._add_to_collection(
-        #     document=documents, metadata="", collection="closest_items")
-        # Results = self._query_(query, "closest_items", top_k)
-        # Results = self.get_name(Results)
-
         docs = [(doc, self.pg.embedding_model.encode(doc)) for doc in documents]
         emb = self.pg.embedding_model.encode(query)
 
         def cos_sim(x, y):
             return np.dot(x, y) / (np.linalg.norm(x) * np.linalg.norm(y))
 
-        Results = sorted(docs, key=lambda x: cos_sim(x[1], emb), reverse=True)[:top_k]
-        Results = [doc[0] for doc in Results]
-        return Status.EXECUTION_SUCCESS, Results
+        results = sorted(docs, key=lambda x: cos_sim(x[1], emb), reverse=True)[:top_k]
+        results = [doc[0] for doc in results]
+        return Status.EXECUTION_SUCCESS, results
 
-        # Logger.info(self.node, f"find_closest result({query}): {str(Results)}")
-        # return Status.EXECUTION_SUCCESS, Results
-
-    def find_closest_raw(self, documents: list, query: str, top_k: int = 1) -> list[str]:
+    def find_closest_raw(self, documents: list, query: str, top_k: int = 4) -> list[str]:
         """
         Method to find the closest item to the query.
         Args:
@@ -940,9 +1005,7 @@ class HRITasks(metaclass=SubtaskMeta):
             list[str]: the results of the query
         """
         docs = [(doc, self.pg.embedding_model.encode(doc)) for doc in documents]
-        Logger.info(self.node, f"FIND CLOSEST RAW DOCS: {docs}")
         emb = self.pg.embedding_model.encode(query)
-        Logger.info(self.node, f"FIND CLOSEST RAW EMB: {emb}")
 
         def cos_sim(x, y):
             return np.dot(x, y) / (np.linalg.norm(x) * np.linalg.norm(y))
@@ -950,26 +1013,11 @@ class HRITasks(metaclass=SubtaskMeta):
         Results = cos_sim(
             np.array([doc[1] for doc in docs]), emb
         )  # Calculate cosine similarity for all documents
-        Results = sorted(zip(docs, Results), key=lambda x: x[1], reverse=True)[:top_k]
+        Results = sorted(zip(docs, Results), key=lambda x: x[1], reverse=True)
         Results = [(doc[0][0], doc[1]) for doc in Results]  # Extract document and similarity score
         Logger.info(self.node, f"FIND CLOSEST RAW RESULTS: {Results}")
 
         return Results
-
-    #     """
-    #     Method to find the closest item to the query.
-    #     Args:
-    #         documents: the documents to search among
-    #         query: the query to search for
-    #     Returns:
-    #         Status: the status of the execution
-    #         list[str]: the results of the query
-    #     """
-    #     self._add_to_collection(
-    #         document=documents, metadata="", collection="closest_items")
-    #     Results = self._query_(query, "closest_items", top_k)
-    #     Logger.info(self.node, f"find_closest result({query}): {str(Results)}")
-    #     return Results
 
     # TODO: Make async
     @service_check("llm_wrapper_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
@@ -990,69 +1038,10 @@ class HRITasks(metaclass=SubtaskMeta):
         rclpy.spin_until_future_complete(self.node, future)
         return Status.EXECUTION_SUCCESS, future.result().answer
 
-    def query_command_history(self, query: str, top_k: int = 1):
-        results = self.pg.query_command_history(command=query, top_k=top_k)
+    def query_command_history(self, query: str, action: str, top_k: int = 1):
+        results = self.pg.query_command_history(command=query, action=action, top_k=top_k)
         return Status.EXECUTION_SUCCESS, results
-        # """
-        # Method to query the command history collection.
-        # Args:
-        #     query: the query to search for
-        # Returns:
-        #     Status: the status of the execution
-        #     list[str]: the results of the query
-        # """
-        # return self._query_(query, "command_history", top_k)
 
-    # /////////////////helpers/////
-    # def _query_(self, query: str, collection: str, top_k: int = 1) -> tuple[Status, list[str]]:
-    #     # Wrap the query in a list so that the field receives a sequence of strings.
-    #     request = QueryEntry.Request(
-    #         query=[query], collection=collection, topk=top_k)
-    #     future = self.query_item_client.call_async(request)
-    #     rclpy.spin_until_future_complete(self.node, future)
-    #     if collection == "command_history":
-    #         self.node.get_logger().info(
-    #             f"Querying command history: {future.result().results}")
-    #         results_loaded = json.loads(future.result().results[0])
-    #         sorted_results = sorted(
-    #             results_loaded["results"], key=lambda x: x["metadata"]["timestamp"], reverse=True
-    #         )
-    #         results_list = sorted_results[:top_k]
-    #     else:
-    #         results = future.result().results
-
-    #         results_loaded = json.loads(results[0])
-    #         results_list = results_loaded["results"]
-    #     return Status.EXECUTION_SUCCESS, results_list
-
-    # def _add_to_collection(self, document: list, metadata: str, collection: str) -> str:
-    #     request = AddEntry.Request(
-    #         document=document, metadata=metadata, collection=collection)
-    #     future = self.add_item_client.call_async(request)
-    #     rclpy.spin_until_future_complete(self.node, future)
-
-    #     return (
-    #         Status.EXECUTION_SUCCESS,
-    #         "Success" if future.result(
-    #         ).success else f"Failed: {future.result().message}",
-    #     )
-
-    def get_context(self, query_result):
-        return self.get_metadata_key(query_result, "context")
-
-    def get_command(self, query_result):
-        return self.get_metadata_key(query_result, "command")
-
-    def get_result(self, query_result):
-        return self.get_metadata_key(query_result, "result")
-
-    def get_status(self, query_result):
-        return self.get_metadata_key(query_result, "status")
-
-    def get_name(self, query_result):
-        return self.get_metadata_key(query_result, "original_name")
-
-    # TODO: Make async
     def categorize_objects(
         self, table_objects: list[str], shelves: dict[int, list[str]]
     ) -> tuple[Status, dict[int, list[str]], dict[int, list[str]]]:
@@ -1069,7 +1058,7 @@ class HRITasks(metaclass=SubtaskMeta):
         Logger.info(self.node, "Sending request to categorize_objects")
 
         try:
-            categories = self.get_shelves_categories(shelves)[1]
+            categories = self.get_shelves_categories(shelves, table_objects=table_objects)[1]
             results = self.categorize_objects_with_embeddings(categories, table_objects)
 
             objects_to_add = {key: value["objects_to_add"] for key, value in results.items()}
@@ -1102,7 +1091,7 @@ class HRITasks(metaclass=SubtaskMeta):
         return Status.EXECUTION_SUCCESS, categorized_shelves, objects_to_add
 
     def get_shelves_categories(
-        self, shelves: dict[int, list[str]]
+        self, shelves: dict[int, list[str]], table_objects: list[str] = []
     ) -> tuple[Status, dict[int, str]]:
         """
         Categorize objects based on their shelf levels.
@@ -1117,9 +1106,13 @@ class HRITasks(metaclass=SubtaskMeta):
 
         try:
             request = CategorizeShelves.Request(shelves=String(data=str(shelves)), table_objects=[])
+            for obj in table_objects:
+                request.table_objects.append(String(data=obj))
 
             future = self.categorize_service.call_async(request)
-            Logger.info(self.node, "generated request")
+            Logger.info(
+                self.node, f"generated request, shelves: {shelves}, table_objects: {table_objects}"
+            )
             rclpy.spin_until_future_complete(self.node, future, timeout_sec=25)
             res = future.result()
             Logger.info(self.node, "request finished")
@@ -1138,42 +1131,9 @@ class HRITasks(metaclass=SubtaskMeta):
 
         return Status.EXECUTION_SUCCESS, categorized_shelves
 
-    def get_subarea(self, query_result):
-        return self.get_metadata_key(query_result, "subarea")
-
-    def get_area(self, query_result):
-        return self.get_metadata_key(query_result, "area")
-
-    def get_metadata_key(self, query_result, field: str):
-        """
-        Extracts the field from the metadata of a query result.
-
-        Args:
-            query_result (tuple): The query result tuple (status, list of JSON strings)
-
-        Returns:
-            list: The 'context' field from metadata, or empty string if not found
-        """
-        try:
-            key_list = []
-            query_result = query_result[1]
-            for result in query_result:
-                metadata = result["metadata"]
-                if isinstance(metadata, list) and metadata:
-                    metadata = metadata[0]
-                result_key = metadata.get(field, "")  # safely get 'field'
-                key_list.append(result_key)
-            return key_list
-        except (IndexError, KeyError, json.JSONDecodeError) as e:
-            self.node.get_logger().error(f"Failed to extract context: {str(e)}")
-            return ""
-
     def publish_display_topic(self, topic: str):
         self.display_publisher.publish(String(data=topic))
         Logger.info(self.node, f"Published display topic: {topic}")
-
-    def get_timestamps(self, query_result):
-        return self.get_metadata_key(query_result, "timestamp")
 
     def categorize_object(self, categories: dict, obj: str):
         """Method to categorize a list of objects in an array of objects depending on similarity"""
@@ -1194,9 +1154,11 @@ class HRITasks(metaclass=SubtaskMeta):
             results_distances = [res[1] for res in results]
 
             result_category = results[0][0] if len(results) > 0 else "empty"
+            self.node.get_logger().info(f"RESULTS for {obj}:")
             self.node.get_logger().info(f"RESULTS DISTANCES: {results_distances}")
             self.node.get_logger().info(f"CATEGORY PREDICTED BEFORE THRESHOLD: {result_category}")
-            if "empty" in categories.values() and results_distances[0] > 1:
+            # input("HOLAAA HOLA HOLAA")
+            if "empty" in categories.values() and results_distances[0] < 0.15:
                 result_category = "empty"
 
             self.node.get_logger().info(f"CATEGORY PREDICTED: {result_category}")
@@ -1230,6 +1192,27 @@ class HRITasks(metaclass=SubtaskMeta):
 
         self.node.get_logger().info(f"THIS IS THE RESULTS OF THE CATEGORIZATION: {results}")
         return results
+
+    def show_map(self, name="", clear_map: bool = False):
+        """
+        Method to show the map on the display.
+        """
+        show_items = self.hand_items.copy()
+
+        if clear_map:
+            show_items["image_path"] = ""
+            Logger.info(self.node, "Map cleared on the screen.")
+        else:
+            filtered_items = []
+
+            # Filter items to only include those matching the specified name
+            for item in show_items["markers"]:
+                if name == "" or item["name"].strip().lower() == name.strip().lower():
+                    filtered_items.append(item)
+
+            show_items["markers"] = filtered_items
+
+        self.display_map_publisher.publish(String(data=json.dumps(show_items)))
 
 
 if __name__ == "__main__":

@@ -28,7 +28,7 @@ ZERO_SHOT_DETECTIONS_ACTIVE_TOPIC = "/vision/zero_shot_detections_active"
 SET_DETECTOR_CLASSES_SERVICE = "/vision/set_detector_classes"
 
 ZERO_SHOT_DEFAULT_CLASSES = [
-    # "bowl",
+    "bowl",
     # "whiteBaseball",
     # "apple",
     # "cup",
@@ -43,8 +43,7 @@ ZERO_SHOT_DEFAULT_CLASSES = [
     # "soap",
     # "rubikCube",
     # "coke_bottle",
-    "yellow_bowl",
-    "white_can",
+    # "yellow_bowl",
     # "apple",
     # "fanta_can",
     # "orange",
@@ -109,3 +108,6 @@ SHELF_DETECTION_TOPIC = "/vision/storing_grocPeries/shelf_detection"
 
 # Person inside a room
 PERSON_POINT_TOPIC = "/vision/person_inside_point"
+
+# Show detection topic
+SHOW_DETECTION_TOPIC = "/vision/show_detection"

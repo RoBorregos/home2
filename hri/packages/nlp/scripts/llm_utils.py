@@ -256,12 +256,15 @@ class LLMUtils(Node):
 
         self.get_logger().info("Categorizing shelves")
         self.get_logger().info("request.shelves: " + str(request.shelves.data))
+        self.get_logger().info("request.table_objects: " + str(request.table_objects))
 
         shelves: dict[int, list[str]] = eval(request.shelves.data)
         shelves = {int(k): v for k, v in shelves.items()}
-        self.get_logger().info(f"Shelves: {shelves}")
+        table_objects = request.table_objects
+        table_objects = [str(obj.data) for obj in table_objects]
+        self.get_logger().info(f"Shelves: {shelves} and table objects: {table_objects}")
 
-        messages, response_format = get_categorize_shelves_args(shelves)
+        messages, response_format = get_categorize_shelves_args(shelves, table_objects)
 
         response_content = (
             self.client.beta.chat.completions.parse(

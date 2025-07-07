@@ -148,6 +148,7 @@ set(srv_files
   "vision/srv/ShelfDetectionHandler.srv"
   "vision/srv/TrackBy.srv"
   "vision/srv/ReadQr.srv"
+  "vision/srv/ShowDetection.srv"
 )
 
 # Generate interfaces only keep the necessary runtimes (python, c++)
