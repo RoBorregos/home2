@@ -369,7 +369,7 @@ def get_previous_command_answer(context, question):
                 "and your task is to answer it to the best of your ability using the provided context. "
                 f"Here is the context:\n\n{context}\n\n"
                 "Answer the question clearly and concisely."
-                "Summarize as much as possible."
+                "Summarize as much as possible. Only mention the execution status if the request failed."
             ),
         },
         {
