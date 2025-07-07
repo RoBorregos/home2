@@ -731,6 +731,19 @@ class VisionTasks:
         prompt = f"What is the {description} {object} in the image?"
         return self.moondream_query(prompt, query_person=False)
 
+    def detect_trash(self):
+        """Return if there is trash in the floor"""
+        Logger.info(self.node, "Detecting trash in the floor")
+        prompt = "Reply only with 1 if there is trash on the floor. Otherwise, reply only with 0."
+        status, response_q = self.moondream_query(prompt, query_person=False)
+        if status:
+            response_clean = response_q.strip()
+            if response_clean == "1":
+                response_clean = True
+            elif response_clean != "0":
+                response_clean = False
+        return status, response_clean
+
     def count_objects(self, object: str):
         """Count the number of objects in the image"""
         Logger.info(self.node, "Counting objects")
