@@ -230,14 +230,22 @@ class PostgresAdapter:
         )
 
     def query_command_history(
-        self, command: str, threshold: float = 0.0, top_k: int = 5
+        self, command: str, action: str | None = None, threshold: float = 0.0, top_k: int = 5
     ) -> list[CommandHistory]:
         """Method to query command history by semantic similarity"""
         embedding = self.embedding_model.encode(command, convert_to_tensor=True)
-        self.cursor.execute(
-            "SELECT id, action, command, result, status, embedding, 1 - (embedding <=> %s) as similarity FROM command_history WHERE 1 - (embedding <=> %s) >= %s ORDER BY similarity DESC LIMIT %s",
-            (embedding, embedding, threshold, top_k),
-        )
+        
+        if action is not None:
+            self.cursor.execute(
+                "SELECT id, action, command, result, status, embedding, 1 - (embedding <=> %s) as similarity FROM command_history WHERE action = %s AND 1 - (embedding <=> %s) >= %s ORDER BY id DESC, similarity DESC LIMIT %s",
+                (json.dumps(embedding.tolist()), action, json.dumps(embedding.tolist()), threshold, top_k),
+            )
+        else:
+            self.cursor.execute(
+                "SELECT id, action, command, result, status, embedding, 1 - (embedding <=> %s) as similarity FROM command_history WHERE 1 - (embedding <=> %s) >= %s ORDER BY id DESC, similarity DESC LIMIT %s",
+                (json.dumps(embedding.tolist()), json.dumps(embedding.tolist()), threshold, top_k),
+            )
+        
         rows = self.cursor.fetchall()
         return [
             CommandHistory(

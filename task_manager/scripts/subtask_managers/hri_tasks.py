@@ -1031,8 +1031,8 @@ class HRITasks(metaclass=SubtaskMeta):
         rclpy.spin_until_future_complete(self.node, future)
         return Status.EXECUTION_SUCCESS, future.result().answer
 
-    def query_command_history(self, query: str, top_k: int = 1):
-        results = self.pg.query_command_history(command=query, top_k=top_k)
+    def query_command_history(self, query: str, action: str, top_k: int = 1):
+        results = self.pg.query_command_history(command=query, action=action, top_k=top_k)
         return Status.EXECUTION_SUCCESS, results
 
     def categorize_objects(

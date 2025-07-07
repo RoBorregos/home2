@@ -271,15 +271,14 @@ class GPSRSingleTask(GenericTask):
             return Status.EXECUTION_SUCCESS, "success"
 
         if context in GPSR_COMMANDS:
-            history = self.subtask_manager.hri.query_command_history(
-                command.previous_command_info[0]
+            s, history = self.subtask_manager.hri.query_command_history(
+                query=command.user_instruction,
+                action= command.previous_command_info[0],
             )
-            # command_type = self.subtask_manager.hri.get_command(history)
-            result = self.subtask_manager.hri.get_result(history)
-            status = self.subtask_manager.hri.get_status(history)
+            last_command = history[0]
             s, answer = self.subtask_manager.hri.answer_with_context(
                 command.user_instruction,
-                f"Result of executing {context}: {result}. STATUS: {status}",
+                f"Result of executing {context}: {last_command.result}. STATUS: {last_command.status}",
             )
             self.subtask_manager.hri.say(answer, wait=True)
             return Status.EXECUTION_SUCCESS, "success"

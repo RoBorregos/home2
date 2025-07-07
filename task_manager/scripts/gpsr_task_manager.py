@@ -198,15 +198,6 @@ class GPSRTM(Node):
                         status, res = exec_commad(command)
                         self.get_logger().info(f"status-> {str(status)}")
                         self.get_logger().info(f"res-> {str(res)}")
-
-                        try:
-                            status = status.value
-                        except Exception:
-                            try:
-                                status = int(status)
-                            except Exception:
-                                pass
-
                         self.subtask_manager.hri.add_command_history(
                             command,
                             res,

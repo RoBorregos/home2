@@ -25,7 +25,7 @@ custom_command = [
     {"action": "count", "target_to_count": "people wearing gray t shirts"},
     {
         "action": "say_with_context",
-        "user_instruction": "tell me how many people are wearing blue t shirts",
+        "user_instruction": "tell me how many people are wearing gray t shirts",
         "previous_command_info": ["count"],
     },
 ]
