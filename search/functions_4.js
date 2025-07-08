@@ -15,7 +15,7 @@ var searchData=
   ['detect_5fand_5fcrop_5fperson_12',['detect_and_crop_person',['../classmoondream__node_1_1MoondreamNode.html#ae408cc05fad1d46fdeb8db88bbb95040',1,'moondream_node::MoondreamNode']]],
   ['detect_5fgesture_13',['detect_gesture',['../classgpsr__commands_1_1GPSRCommands.html#a5d7db3415e4863955cedbd8994206717',1,'gpsr_commands::GPSRCommands']]],
   ['detect_5fguest_14',['detect_guest',['../classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#aded31bff8fb3dc5532e121e000f994e4',1,'subtask_managers::vision_tasks::VisionTasks']]],
-  ['detect_5fobjects_15',['detect_objects',['../classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a78f5a421cb9d51c91f280ac1314bc0bd',1,'subtask_managers::vision_tasks::VisionTasks']]],
+  ['detect_5fobjects_15',['detect_objects',['../classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a6c0578b994c2142f43ddad3364d906a2',1,'subtask_managers::vision_tasks::VisionTasks']]],
   ['detect_5fperson_16',['detect_person',['../classreceptionist__commands_1_1ReceptionistCommands.html#a27175deaf0757bf1af7926b147d35bae',1,'receptionist_commands.ReceptionistCommands.detect_person()'],['../classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#af82755e510d002d96a1baa24e498c11d',1,'subtask_managers.vision_tasks.VisionTasks.detect_person()']]],
   ['detect_5fperson_5fcallback_17',['detect_person_callback',['../classreceptionist__commands_1_1ReceptionistCommands.html#aa75cda1381523a884f7c8bc24bc1fb19',1,'receptionist_commands::ReceptionistCommands']]],
   ['detect_5fpose_5fgesture_5fcallback_18',['detect_pose_gesture_callback',['../classgpsr__commands_1_1GPSRCommands.html#a256a9caf91423d065e0221ec477ead2f',1,'gpsr_commands::GPSRCommands']]],

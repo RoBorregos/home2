@@ -11,7 +11,7 @@ var classsubtask__managers_1_1vision__tasks_1_1VisionTasks =
     [ "describe_person", "classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#ae4395597021274c2ee25b48a9ca213f4", null ],
     [ "describe_shelf", "classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a8a0a3d6d58a25b2f73c4adea7db44c7d", null ],
     [ "detect_guest", "classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#aded31bff8fb3dc5532e121e000f994e4", null ],
-    [ "detect_objects", "classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a78f5a421cb9d51c91f280ac1314bc0bd", null ],
+    [ "detect_objects", "classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a6c0578b994c2142f43ddad3364d906a2", null ],
     [ "detect_person", "classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#af82755e510d002d96a1baa24e498c11d", null ],
     [ "detect_shelf", "classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#acbf09db8df3f112ff114f82ee5fce9b9", null ],
     [ "find_drink", "classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a0b535afc55a0826ba8b9eb3271730ad3", null ],

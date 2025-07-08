@@ -1,5 +1,7 @@
 var NAVTREEINDEX20 =
 {
+"namespacereid__model.html#aefe166fd1a454c496a38758c0471fc37":[18,0,98,20],
+"namespacereid__model.html#af2965c7a90f0a13893ebecee20348435":[18,0,98,13],
 "namespacereid__model.html#af38d74c51ee6e8a581c116ac98a03817":[18,0,98,19],
 "namespacereid__model.html#afaac96bf9ea7e027827946c8584dbac6":[18,0,98,16],
 "namespacereid__model.html#afd0c502aecc7fb1b4bdc4ebf9acda11f":[18,0,98,34],
@@ -247,7 +249,5 @@ var NAVTREEINDEX20 =
 "object__detector__combined_8launch_8py.html":[20,0,7,0,2,1,0],
 "object__detector__combined_8launch_8py.html#a89d204316b51e6caf017cd1f6253e538":[20,0,7,0,2,1,0,0],
 "object__detector__node_8launch_8py.html":[20,0,7,0,2,1,1],
-"object__detector__node_8launch_8py.html#a5efd95ed27a0b3bf8523fbd93eee334b":[20,0,7,0,2,1,1,0],
-"object__detector__node_8local_8launch_8py.html":[20,0,7,0,2,1,2],
-"object__detector__node_8local_8launch_8py.html#a5efd95ed27a0b3bf8523fbd93eee334b":[20,0,7,0,2,1,2,0]
+"object__detector__node_8launch_8py.html#a5efd95ed27a0b3bf8523fbd93eee334b":[20,0,7,0,2,1,1,0]
 };

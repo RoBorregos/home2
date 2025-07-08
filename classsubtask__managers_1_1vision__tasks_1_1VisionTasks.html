@@ -126,8 +126,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:add84f731a3c81332dba46636f0718965"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acbf09db8df3f112ff114f82ee5fce9b9"><td class="memItemLeft" align="right" valign="top">tuple[<a class="el" href="classutils_1_1status_1_1Status.html">Status</a>, list[<a class="el" href="classfrida__constants_1_1vision__classes_1_1ShelfDetection.html">ShelfDetection</a>]]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#acbf09db8df3f112ff114f82ee5fce9b9">detect_shelf</a> (self, float timeout=<a class="el" href="namespacesubtask__managers_1_1vision__tasks.html#ae7683efea5f76a87a8709bf0dc062fd4">TIMEOUT</a>)</td></tr>
 <tr class="separator:acbf09db8df3f112ff114f82ee5fce9b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a78f5a421cb9d51c91f280ac1314bc0bd"><td class="memItemLeft" align="right" valign="top">tuple[<a class="el" href="classutils_1_1status_1_1Status.html">Status</a>, list[<a class="el" href="classfrida__constants_1_1vision__classes_1_1BBOX.html">BBOX</a>]]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a78f5a421cb9d51c91f280ac1314bc0bd">detect_objects</a> (self, float timeout=<a class="el" href="namespacesubtask__managers_1_1vision__tasks.html#ae7683efea5f76a87a8709bf0dc062fd4">TIMEOUT</a>)</td></tr>
-<tr class="separator:a78f5a421cb9d51c91f280ac1314bc0bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6c0578b994c2142f43ddad3364d906a2"><td class="memItemLeft" align="right" valign="top">tuple[<a class="el" href="classutils_1_1status_1_1Status.html">Status</a>, list[<a class="el" href="classfrida__constants_1_1vision__classes_1_1BBOX.html">BBOX</a>]]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a6c0578b994c2142f43ddad3364d906a2">detect_objects</a> (self, float timeout=<a class="el" href="namespacesubtask__managers_1_1vision__tasks.html#ae7683efea5f76a87a8709bf0dc062fd4">TIMEOUT</a>, list[str] ignore_labels=[])</td></tr>
+<tr class="separator:a6c0578b994c2142f43ddad3364d906a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af82755e510d002d96a1baa24e498c11d"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#af82755e510d002d96a1baa24e498c11d">detect_person</a> (self, float timeout=<a class="el" href="namespacesubtask__managers_1_1vision__tasks.html#ae7683efea5f76a87a8709bf0dc062fd4">TIMEOUT</a>)</td></tr>
 <tr class="separator:af82755e510d002d96a1baa24e498c11d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aded31bff8fb3dc5532e121e000f994e4"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#aded31bff8fb3dc5532e121e000f994e4">detect_guest</a> (self, str name, float timeout=<a class="el" href="namespacesubtask__managers_1_1vision__tasks.html#ae7683efea5f76a87a8709bf0dc062fd4">TIMEOUT</a>)</td></tr>
@@ -587,8 +587,8 @@ Protected Member Functions</h2></td></tr>
 <pre class="fragment">Returns true when the guest is detected</pre> 
 </div>
 </div>
-<a id="a78f5a421cb9d51c91f280ac1314bc0bd" name="a78f5a421cb9d51c91f280ac1314bc0bd"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a78f5a421cb9d51c91f280ac1314bc0bd">&#9670;&#160;</a></span>detect_objects()</h2>
+<a id="a6c0578b994c2142f43ddad3364d906a2" name="a6c0578b994c2142f43ddad3364d906a2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6c0578b994c2142f43ddad3364d906a2">&#9670;&#160;</a></span>detect_objects()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -603,7 +603,13 @@ Protected Member Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">float &#160;</td>
-          <td class="paramname"><em>timeout</em> = <code><a class="el" href="namespacesubtask__managers_1_1vision__tasks.html#ae7683efea5f76a87a8709bf0dc062fd4">TIMEOUT</a></code>&#160;</td>
+          <td class="paramname"><em>timeout</em> = <code><a class="el" href="namespacesubtask__managers_1_1vision__tasks.html#ae7683efea5f76a87a8709bf0dc062fd4">TIMEOUT</a></code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">list[str] &#160;</td>
+          <td class="paramname"><em>ignore_labels</em> = <code>[]</code>&#160;</td>
         </tr>
         <tr>
           <td></td>

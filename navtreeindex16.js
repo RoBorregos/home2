@@ -1,5 +1,7 @@
 var NAVTREEINDEX16 =
 {
+"gpsr__test__commands_8py.html#adab6ef159d03b2a2657820467d1337aa":[20,0,6,1,1,4,17],
+"gpsr__test__commands_8py.html#ae9daadf5b9517850cde941a4cfceeef5":[20,0,6,1,1,4,22],
 "gpsr__test__commands_8py.html#afb80298f63f6ea8e4c26e1c82b35b435":[20,0,6,1,1,4,10],
 "grasp__detection__example_8py.html":[20,0,3,0,0,1,0],
 "grasp__detection__example_8py.html#a40a8024a9f168af4327222571de3ea94":[20,0,3,0,0,1,0,1],
@@ -247,7 +249,5 @@ var NAVTREEINDEX16 =
 "mapping__rtabmap_8launch_8py.html#a3712b87eea6645d1ebbe67f9a65b25ad":[20,0,4,0,1,0,3,0],
 "mapping__rtabmap_8launch_8py.html#aa40b9c20c19b89590534488a8deb2464":[20,0,4,0,1,0,3,1],
 "masive__testin_8cpp.html":[20,0,3,0,4,3,2],
-"masive__testin_8cpp.html#a0ddf1224851353fc92bfbff6f499fa97":[20,0,3,0,4,3,2,2],
-"masive__testin_8cpp.html#a403677990f5903485dfa1d2871dd6bc9":[20,0,3,0,4,3,2,3],
-"md_docs_Run_Areas_Manipulation_manipulation.html":[8]
+"masive__testin_8cpp.html#a0ddf1224851353fc92bfbff6f499fa97":[20,0,3,0,4,3,2,2]
 };

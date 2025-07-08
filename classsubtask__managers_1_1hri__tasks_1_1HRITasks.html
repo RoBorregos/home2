@@ -175,10 +175,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a8c72dd26d9780b99f47a7c4908d380fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afbb80684da1ea9c83e0ce467f5c8dbfe"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#afbb80684da1ea9c83e0ce467f5c8dbfe">publish_display_topic</a> (self, str topic)</td></tr>
 <tr class="separator:afbb80684da1ea9c83e0ce467f5c8dbfe"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af4e1627f2a30285e5530d61ae9479bab"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#af4e1627f2a30285e5530d61ae9479bab">categorize_object</a> (self, dict categories, str obj)</td></tr>
-<tr class="separator:af4e1627f2a30285e5530d61ae9479bab"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4d58da2accba317947401b2abaa29116"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a4d58da2accba317947401b2abaa29116">categorize_objects_with_embeddings</a> (self, dict categories, list obj_list)</td></tr>
-<tr class="separator:a4d58da2accba317947401b2abaa29116"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a053c32c6fc96a2299fa8a541c8ede1f8"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a053c32c6fc96a2299fa8a541c8ede1f8">categorize_object</a> (self, dict categories, str obj, dict shelves)</td></tr>
+<tr class="separator:a053c32c6fc96a2299fa8a541c8ede1f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8ce95c83c061a942835e51603a81344b"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a8ce95c83c061a942835e51603a81344b">categorize_objects_with_embeddings</a> (self, dict categories, list obj_list, dict shelves)</td></tr>
+<tr class="separator:a8ce95c83c061a942835e51603a81344b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa64566f13a1ec3c37c677bc88c18be16"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#aa64566f13a1ec3c37c677bc88c18be16">show_map</a> (self, name=&quot;&quot;, bool clear_map=False)</td></tr>
 <tr class="separator:aa64566f13a1ec3c37c677bc88c18be16"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classsubtask__managers_1_1subtask__meta_1_1SubtaskMeta"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classsubtask__managers_1_1subtask__meta_1_1SubtaskMeta')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classsubtask__managers_1_1subtask__meta_1_1SubtaskMeta.html">subtask_managers.subtask_meta.SubtaskMeta</a></td></tr>
@@ -644,8 +644,8 @@ Returns:
 
 </div>
 </div>
-<a id="af4e1627f2a30285e5530d61ae9479bab" name="af4e1627f2a30285e5530d61ae9479bab"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af4e1627f2a30285e5530d61ae9479bab">&#9670;&#160;</a></span>categorize_object()</h2>
+<a id="a053c32c6fc96a2299fa8a541c8ede1f8" name="a053c32c6fc96a2299fa8a541c8ede1f8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a053c32c6fc96a2299fa8a541c8ede1f8">&#9670;&#160;</a></span>categorize_object()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -666,7 +666,13 @@ Returns:
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">str&#160;</td>
-          <td class="paramname"><em>obj</em>&#160;</td>
+          <td class="paramname"><em>obj</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">dict&#160;</td>
+          <td class="paramname"><em>shelves</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -721,8 +727,8 @@ Returns:
 </pre> 
 </div>
 </div>
-<a id="a4d58da2accba317947401b2abaa29116" name="a4d58da2accba317947401b2abaa29116"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4d58da2accba317947401b2abaa29116">&#9670;&#160;</a></span>categorize_objects_with_embeddings()</h2>
+<a id="a8ce95c83c061a942835e51603a81344b" name="a8ce95c83c061a942835e51603a81344b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8ce95c83c061a942835e51603a81344b">&#9670;&#160;</a></span>categorize_objects_with_embeddings()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -743,7 +749,13 @@ Returns:
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">list&#160;</td>
-          <td class="paramname"><em>obj_list</em>&#160;</td>
+          <td class="paramname"><em>obj_list</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">dict&#160;</td>
+          <td class="paramname"><em>shelves</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
