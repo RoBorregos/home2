@@ -7,6 +7,7 @@ var classtest__hri__manager_1_1TestHriManager =
     [ "run", "classtest__hri__manager_1_1TestHriManager.html#aed2c5bfb3ae73cb7c694cb6d4d3508f5", null ],
     [ "test_embeddings", "classtest__hri__manager_1_1TestHriManager.html#ab01cb42b6ebab8c04d391925d1b5142c", null ],
     [ "test_map", "classtest__hri__manager_1_1TestHriManager.html#a54c69995753f4ce05bd076720a89c6b6", null ],
+    [ "test_object_location", "classtest__hri__manager_1_1TestHriManager.html#abc972947f62b9ac49382f61b0e245d6e", null ],
     [ "test_streaming", "classtest__hri__manager_1_1TestHriManager.html#ada6686724ccf7d0d09899ff380ccebf6", null ],
     [ "hri_manager", "classtest__hri__manager_1_1TestHriManager.html#a24fdd546d6ff1fd85f6802baac27733b", null ]
 ];

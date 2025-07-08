@@ -30,7 +30,7 @@ var classsubtask__managers_1_1hri__tasks_1_1HRITasks =
     [ "is_positive", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a3487ddd91cfdecf190885751a19ffdc3", null ],
     [ "publish_display_topic", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#afbb80684da1ea9c83e0ce467f5c8dbfe", null ],
     [ "query_command_history", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a9750fb862f443efeb9f19dcb7cd8a7cd", null ],
-    [ "query_location", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a011c3d7119e6bae7e5e47832908c5569", null ],
+    [ "query_location", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a7b849cdde8d552d65603a2e85ec4698f", null ],
     [ "refactor_text", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#ad48852436cbe57577f5d4563cd9a5301", null ],
     [ "say", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a4ec9fca0b2f6607ffd6b70cad59c0eb6", null ],
     [ "set_light_state", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a810510a94099b0741625971f3a74ad39", null ],

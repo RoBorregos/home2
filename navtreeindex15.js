@@ -1,5 +1,7 @@
 var NAVTREEINDEX15 =
 {
+"dir_fb8c2fc2bfc43ee58d9bac65ec604e04.html":[20,0,0,1],
+"dir_fbd4d58ded0337419a85b42a5c0ad5e3.html":[20,0,2,0,0],
 "display__gz_8launch_8py.html":[20,0,5,0,1,0],
 "display__gz_8launch_8py.html#a4f95fbbb9f34a1fd59c2387ed4123947":[20,0,5,0,1,0,0],
 "display__gz__tmr2025_8launch_8py.html":[20,0,5,0,1,1],
@@ -247,7 +249,5 @@ var NAVTREEINDEX15 =
 "gpsr__test__commands_8py.html#ac3bee4bf5fb634df18b9e37ebcb9e186":[20,0,6,1,1,4,5],
 "gpsr__test__commands_8py.html#ad073f80419b58cd912161e378963b11a":[20,0,6,1,1,4,6],
 "gpsr__test__commands_8py.html#adab6ef159d03b2a2657820467d1337aa":[20,0,6,1,1,4,17],
-"gpsr__test__commands_8py.html#ae9daadf5b9517850cde941a4cfceeef5":[20,0,6,1,1,4,22],
-"gpsr__test__commands_8py.html#afb80298f63f6ea8e4c26e1c82b35b435":[20,0,6,1,1,4,10],
-"grasp__detection__example_8py.html":[20,0,3,0,0,1,0]
+"gpsr__test__commands_8py.html#ae9daadf5b9517850cde941a4cfceeef5":[20,0,6,1,1,4,22]
 };

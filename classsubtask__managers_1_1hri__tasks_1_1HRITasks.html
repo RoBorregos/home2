@@ -159,8 +159,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a7d6c4612bc81f43d5254e3a78093af2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af38150add6c037a0af32c905b4dc327e"><td class="memItemLeft" align="right" valign="top">list[str]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#af38150add6c037a0af32c905b4dc327e">add_location</a> (self, list document, str metadata)</td></tr>
 <tr class="separator:af38150add6c037a0af32c905b4dc327e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a011c3d7119e6bae7e5e47832908c5569"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a011c3d7119e6bae7e5e47832908c5569">query_location</a> (self, str query, int top_k=1)</td></tr>
-<tr class="separator:a011c3d7119e6bae7e5e47832908c5569"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7b849cdde8d552d65603a2e85ec4698f"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a7b849cdde8d552d65603a2e85ec4698f">query_location</a> (self, str query, int top_k=1, bool use_context=False)</td></tr>
+<tr class="separator:a7b849cdde8d552d65603a2e85ec4698f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acd646a9927b181428ee48b791460fc36"><td class="memItemLeft" align="right" valign="top">list[str]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#acd646a9927b181428ee48b791460fc36">find_closest</a> (self, list documents, str query, int top_k=1)</td></tr>
 <tr class="separator:acd646a9927b181428ee48b791460fc36"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aed25755e192c9c0599370020d38a39ad"><td class="memItemLeft" align="right" valign="top">list[str]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#aed25755e192c9c0599370020d38a39ad">find_closest_raw</a> (self, list documents, str query, int top_k=4)</td></tr>
@@ -1492,8 +1492,8 @@ Args:
 
 </div>
 </div>
-<a id="a011c3d7119e6bae7e5e47832908c5569" name="a011c3d7119e6bae7e5e47832908c5569"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a011c3d7119e6bae7e5e47832908c5569">&#9670;&#160;</a></span>query_location()</h2>
+<a id="a7b849cdde8d552d65603a2e85ec4698f" name="a7b849cdde8d552d65603a2e85ec4698f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7b849cdde8d552d65603a2e85ec4698f">&#9670;&#160;</a></span>query_location()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1514,7 +1514,13 @@ Args:
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">int &#160;</td>
-          <td class="paramname"><em>top_k</em> = <code>1</code>&#160;</td>
+          <td class="paramname"><em>top_k</em> = <code>1</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool &#160;</td>
+          <td class="paramname"><em>use_context</em> = <code>False</code>&#160;</td>
         </tr>
         <tr>
           <td></td>

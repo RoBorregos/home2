@@ -1,5 +1,7 @@
 var NAVTREEINDEX17 =
 {
+"md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md34":[8,0],
+"md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md35":[8,1],
 "md_docs_Run_Areas_Manipulation_pick_and_place.html":[9],
 "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md43":[9,0],
 "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md44":[9,0,0],
@@ -247,7 +249,5 @@ var NAVTREEINDEX17 =
 "namespacedualshock__cmd__vel.html":[18,0,28],
 "namespacedualshock__cmd__vel.html#a432ab17ac92da4fc48450236583614a3":[18,0,28,0],
 "namespaceekf.html":[18,0,29],
-"namespaceekf.html#a32e94cb02311b88f95d5b52017cf6948":[18,0,29,0],
-"namespaceex__gripper.html":[18,0,30],
-"namespaceex__gripper.html#a6be88f1664d375f6790226f8c67eec80":[18,0,30,0]
+"namespaceekf.html#a32e94cb02311b88f95d5b52017cf6948":[18,0,29,0]
 };
