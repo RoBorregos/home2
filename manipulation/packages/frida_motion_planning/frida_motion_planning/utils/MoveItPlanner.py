@@ -97,10 +97,10 @@ class MoveItPlanner(Planner):
 
     def set_planning_time(self, planning_time: float) -> None:
         self.moveit2.allowed_planning_time = planning_time
-        
+
     def set_planning_attempts(self, planning_attempts: int) -> None:
         self.moveit2.num_planning_attempts = planning_attempts
-    
+
     def plan_joint_goal(
         self,
         joint_positions: List[float],

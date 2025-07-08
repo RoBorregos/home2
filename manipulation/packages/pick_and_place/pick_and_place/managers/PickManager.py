@@ -17,7 +17,6 @@ CFG_PATHS = [
 ]
 
 
-
 class PickManager:
     node = None
 

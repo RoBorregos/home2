@@ -4,7 +4,7 @@ from frida_motion_planning.utils.ros_utils import wait_for_future
 from frida_interfaces.srv import (
     DetectionHandler,
     GetCollisionObjects,
-    PickPerceptionService
+    PickPerceptionService,
 )
 from geometry_msgs.msg import PointStamped, PoseStamped
 from std_srvs.srv import SetBool
@@ -22,7 +22,10 @@ import copy
 
 # path, is reversible
 CFG_PATHS = [
-    ["/workspace/src/home2/manipulation/packages/arm_pkg/config/frida_eigen_params_custom_gripper_testing.cfg", True],
+    [
+        "/workspace/src/home2/manipulation/packages/arm_pkg/config/frida_eigen_params_custom_gripper_testing.cfg",
+        True,
+    ],
 ]
 
 
@@ -34,23 +37,17 @@ class PourManager:
 
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self.node)
-        
+
         self.debug_object_point_pub = self.node.create_publisher(
-            PointStamped,
-            "/manipulation/debug_object_point",
-            10
+            PointStamped, "/manipulation/debug_object_point", 10
         )
-        
+
         self.debug_bowl_point_pub = self.node.create_publisher(
-            PointStamped,
-            "/manipulation/debug_bowl_point",
-            10
+            PointStamped, "/manipulation/debug_bowl_point", 10
         )
-        
+
         self.debug_centroid_pub = self.node.create_publisher(
-            PointStamped,
-            "/manipulation/debug_bowl_centroid",
-            10
+            PointStamped, "/manipulation/debug_bowl_centroid", 10
         )
 
     def execute(self, object_name: str, container_object_name: str) -> bool:
@@ -68,7 +65,7 @@ class PourManager:
         if object_point is None:
             self.node.get_logger().error(f"Object {object_name} not found")
             return False, None
-        
+
         self.debug_object_point_pub.publish(object_point)
 
         # 3. Get Bowl Point
@@ -85,7 +82,7 @@ class PourManager:
             return False, None
         self.node.remove_all_collision_object(attached=True)
         self.node.remove_all_collision_object(attached=True)
-        
+
         object_cluster = self.get_object_cluster(object_point, add_primitives=True)
         if object_cluster is None:
             return False, None
@@ -104,12 +101,12 @@ class PourManager:
         if not points:
             self.node.get_logger().error("Empty bowl cluster")
             return False, None
-        
+
         points_np = np.array(points)
         centroid = np.mean(points_np, axis=0)
         max_z = np.max(points_np[:, 2])
         self.node.get_logger().info(f"Bowl Centroid: {centroid}, Max Z: {max_z}")
-        
+
         bowl_centroid_point = PointStamped()
         bowl_centroid_point.header.frame_id = bowl_cluster.header.frame_id
         bowl_centroid_point.header.stamp = self.node.get_clock().now().to_msg()
@@ -134,11 +131,12 @@ class PourManager:
         pour_pose.pose.position.z += 0.05  # Slightly above the bowl
 
         if pick_result is not None:
-           
             pick_pose = getattr(pick_result.pick_result, "pick_pose", None)
             if pick_pose:
                 pour_pose.pose.orientation = pick_pose.pose.orientation
-                self.node.get_logger().info(f"Pour Pose Orientation: {pour_pose.pose.orientation}")
+                self.node.get_logger().info(
+                    f"Pour Pose Orientation: {pour_pose.pose.orientation}"
+                )
         else:
             # self.node.get_logger().error("Invalid pick pose in result")
             # return False
@@ -168,7 +166,6 @@ class PourManager:
 
         self.node.get_logger().info("Pour Task Completed Successfully")
         return True, pick_result.pick_result
-
 
     def pick_motion(self, object_cluster: PointCloud2):
         # open gripper
@@ -204,7 +201,7 @@ class PourManager:
                 )
             )
             grasp_poses, grasp_scores = grasp_poses[:10], grasp_scores[:10]
-            
+
             # reverse grasps (turn 180 degrees in z)
             new_grasp_poses = []
             new_grasp_scores = []
@@ -223,7 +220,7 @@ class PourManager:
                         pose.pose.orientation.w,
                     ]
                     q_orig_rot = R.from_quat(q_orig)
-                    q_z_180_local = R.from_euler('z', 180, degrees=True)
+                    q_z_180_local = R.from_euler("z", 180, degrees=True)
                     q_result = (q_orig_rot * q_z_180_local).as_quat()  # [x, y, z, w]
                     reversed_pose.pose.orientation.x = q_result[0]
                     reversed_pose.pose.orientation.y = q_result[1]
@@ -270,8 +267,7 @@ class PourManager:
     def pour_motion(self, pose_msg: PoseStamped, pick_result) -> bool:
         self.node.get_logger().warning("FF 1.3")
         goal_msg = PourMotion.Goal(
-            pour_pose=pose_msg,
-            pick_result=pick_result.pick_result
+            pour_pose=pose_msg, pick_result=pick_result.pick_result
         )
 
         self.node.get_logger().warning("FF 1.4")
@@ -284,10 +280,9 @@ class PourManager:
 
         pour_result = future.result().get_result().result
         self.node.get_logger().warning(f"Pour Motion Result: {pour_result}")
-        
+
         self.node.get_logger().warning("Finished Pour Manager - FFN5.0")
         return True
-
 
     def wait_for_future(self, future):
         self.node.get_logger().warning("Waiting for future FF")

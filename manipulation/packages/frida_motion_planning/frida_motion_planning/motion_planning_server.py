@@ -198,8 +198,16 @@ class MotionPlanningServer(Node):
         """Perform the pick operation."""
         pose = goal_handle.request.pose
         target_link = goal_handle.request.target_link
-        tolerance_position = goal_handle.request.tolerance_position if goal_handle.request.tolerance_position else 0.01
-        tolerance_orientation = goal_handle.request.tolerance_orientation if goal_handle.request.tolerance_orientation else 0.05
+        tolerance_position = (
+            goal_handle.request.tolerance_position
+            if goal_handle.request.tolerance_position
+            else 0.01
+        )
+        tolerance_orientation = (
+            goal_handle.request.tolerance_orientation
+            if goal_handle.request.tolerance_orientation
+            else 0.05
+        )
         if target_link != "":
             result = self.planner.plan_pose_goal(
                 pose=pose,
@@ -294,7 +302,7 @@ class MotionPlanningServer(Node):
             self.get_logger().error(f"Error setting planning time: {str(e)}")
             planning_time = 0.5
             planning_attempts = 5
-        
+
         self.planner.set_velocity(velocity)
         self.planner.set_acceleration(acceleration)
         self.planner.set_planner(planner_id)

@@ -12,7 +12,8 @@ from std_srvs.srv import SetBool
 from sensor_msgs.msg import JointState
 from frida_pymoveit2.robots import xarm6
 from frida_motion_planning.utils.service_utils import (
-    move_joint_positions, get_joint_positions
+    move_joint_positions,
+    get_joint_positions,
 )
 from transforms3d.quaternions import quat2mat
 import copy
@@ -58,7 +59,7 @@ from frida_interfaces.srv import GetJoints
 # import time
 
 
-class PourMotionServer(Node):   
+class PourMotionServer(Node):
     def __init__(self):
         super().__init__("pour_server")
         self.callback_group = ReentrantCallbackGroup()
@@ -84,14 +85,16 @@ class PourMotionServer(Node):
             MoveToPose,
             MOVE_TO_POSE_ACTION_SERVER,
         )
-        
+
         self._move_joints_action_client = ActionClient(
             self,
             MoveJoints,
             MOVE_JOINTS_ACTION_SERVER,
         )
-        
-        self._get_joints_client = self.create_client(GetJoints, "/manipulation/get_joints")
+
+        self._get_joints_client = self.create_client(
+            GetJoints, "/manipulation/get_joints"
+        )
 
         self._attach_collision_object_client = self.create_client(
             AttachCollisionObject,
@@ -137,19 +140,18 @@ class PourMotionServer(Node):
             goal_handle.abort()
             result.success = 0
             return result
-    
 
     def pour(self, goal_handle, feedback):
         """Perform the pour operation."""
         self.get_logger().info("Trying to pour object")
-        
+
         # move higher than current pose
         curr_pose = goal_handle.request.pick_result.pick_pose
         self.get_logger().info(f"Current pose: {curr_pose.pose}")
-        
+
         new_pose = curr_pose
-        new_pose.pose.position.z += 0.15 
-        
+        new_pose.pose.position.z += 0.15
+
         tries = 5
         distance_between_tries = 0.025
         for i in range(tries):
@@ -158,17 +160,22 @@ class PourMotionServer(Node):
             self.get_logger().info(f"Pour pose: {new_pose.pose}")
             # call the move_to_pose function
             try:
-                goal_handle_result, action_result = self.move_to_pose(new_pose, useConstraint=True, planning_time=10.0, planning_attempts=100)
+                goal_handle_result, action_result = self.move_to_pose(
+                    new_pose,
+                    useConstraint=True,
+                    planning_time=10.0,
+                    planning_attempts=100,
+                )
             except Exception as e:
                 self.get_logger().error(f"Failed to move to pour pose: {e}")
                 return False, None
-            
+
             if action_result.result.success:
                 self.get_logger().info("Pour pose reached")
                 break
             else:
                 self.get_logger().error("Failed to reach pour pose")
-                
+
         isConstrained = (
             True  # THE MOTION PLANNER IS CONSTRAINED ------------------------
         )
@@ -176,45 +183,43 @@ class PourMotionServer(Node):
         pose = self.receive_pose(goal_handle.request.pour_pose)
         is_upside_down = self.is_upside_down(pose)
         self.get_logger().info(f"Is upside down: {is_upside_down}")
-        
+
         offset_distance = -0.075 if is_upside_down else 0.075
         pose = self.transform_pose_to_gripper_center(pose)
         pose = self.transform_pose_y(pose, offset_distance=offset_distance)
-        
-        
 
         tries = 5
-        distance_between_tries=0.025
+        distance_between_tries = 0.025
         for i in range(tries):
             # self.get_logger().warn(f"Trying to pour object: {self.node.pour.request.object_name}")
             self.get_logger().warn("Trying to pour object")
             pose.pose.position.z += distance_between_tries
             self.get_logger().info(f"Pour pose: {pose.pose}")
             # call the move_to_pose function
-            try: 
-                goal_handle_result, action_result = self.move_to_pose(pose, isConstrained, planning_time=10.0, planning_attempts=100)
+            try:
+                goal_handle_result, action_result = self.move_to_pose(
+                    pose, isConstrained, planning_time=10.0, planning_attempts=100
+                )
             except Exception as e:
                 self.get_logger().error(f"Failed to move to pour pose: {e}")
                 return False, None
-            
+
             # self.get_logger().info(
             #     f"Pour pose result: ({goal_handle_result}, {action_result})"
             # )
             if action_result.result.success:
                 self.get_logger().info("Pour pose reached")
-                break 
+                break
             else:
                 self.get_logger().error("Failed to reach pour pose")
                 if i == tries - 1:
                     self.get_logger().error("Max tries reached")
                     return False, None
                 else:
-                    self.get_logger().info(
-                        f"Retrying pour pose: {pose.pose}"
-                    )
+                    self.get_logger().info(f"Retrying pour pose: {pose.pose}")
         time.sleep(3.0)
         pour_angle = 3.0
-        
+
         current_joints = get_joint_positions(
             self._get_joints_client,
             degrees=False,  # set to true to return in degrees
@@ -228,24 +233,20 @@ class PourMotionServer(Node):
             velocity=POUR_VELOCITY,
             wait=True,
         )
-        
+
         if action_result is None:
             self.get_logger().error("Failed to get action result")
             return False, action_result
         if not action_result:
             self.get_logger().error("Failed to move to pour pose")
-            self.get_logger().warning(
-                f"Action result: {action_result}"
-            )
+            self.get_logger().warning(f"Action result: {action_result}")
             return False, action_result
         self.get_logger().info("Moved to pour pose successfully")
         # Move to the updated pose
         return True, action_result
-    
+
     def transform_pose_to_gripper_center(self, pose):
-        offset_distance = (
-            -0.15
-        )  # Desired distance in meters along the local z-axis
+        offset_distance = -0.15  # Desired distance in meters along the local z-axis
 
         offset_distance
 
@@ -275,9 +276,9 @@ class PourMotionServer(Node):
         pose.pose.position.x = new_position[0]
         pose.pose.position.y = new_position[1]
         pose.pose.position.z = new_position[2]
-        
+
         return pose
-    
+
     def transform_pose_y(self, pose, offset_distance=0.0):
         quat = [
             pose.pose.orientation.x,
@@ -306,7 +307,7 @@ class PourMotionServer(Node):
         pose.pose.position.z = new_position[2]
 
         return pose
-    
+
     def is_upside_down(self, pose):
         # project a point in x axis, if it is positive, the gripper is NOT upside down
         projected_pose = copy.deepcopy(pose)
@@ -332,16 +333,21 @@ class PourMotionServer(Node):
             )
             + x_axis * offset_distance
         )
-        
+
         if new_position[2] < pose.pose.position.z:
             # If the projected point is below the original pose, it is upside down
             return False
         else:
             # If the projected point is above the original pose, it is not upside down
             return True
-        
-    
-    def move_to_pose(self, pose, useConstraint: bool = False, planning_time: float = 0.5, planning_attempts: int = 5):
+
+    def move_to_pose(
+        self,
+        pose,
+        useConstraint: bool = False,
+        planning_time: float = 0.5,
+        planning_attempts: int = 5,
+    ):
         """Move the robot to the given pose."""
         self.get_logger().warn(f"Moving to pose: {pose}")
         request = MoveToPose.Goal()
@@ -352,7 +358,9 @@ class PourMotionServer(Node):
         request.apply_constraint = useConstraint
         request.target_link = GRASP_LINK_FRAME
         request.planning_time = planning_time  # Set the planning time for the action
-        request.planning_attempts = planning_attempts  # Set the number of planning attempts
+        request.planning_attempts = (
+            planning_attempts  # Set the number of planning attempts
+        )
         # higher than default
         request.tolerance_position = 0.02  # Set the position tolerance
         request.tolerance_orientation = 0.2  # Set the orientation tolerance

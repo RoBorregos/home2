@@ -108,7 +108,7 @@ class KeyboardInput(Node):
         while time.time() - start_time < 1.0:
             rclpy.spin_once(self, timeout_sec=0.1)
         self.get_logger().info("Objects list refreshed.")
-        
+
     def goal_response_callback(self, future, object_name):
         try:
             response = future.result()
