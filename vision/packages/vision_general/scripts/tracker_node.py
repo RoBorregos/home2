@@ -406,9 +406,9 @@ class SingleTracker(Node):
                 classes=0,
                 verbose=False,
             )
-            self.get_logger().info(
-                f"Det+Tracking took {time.time() - start_time:.2f} seconds"
-            )
+            # self.get_logger().info(
+            #     f"Det+Tracking took {time.time() - start_time:.2f} seconds"
+            # )
 
             if self.person_data["id"] is None:
                 return

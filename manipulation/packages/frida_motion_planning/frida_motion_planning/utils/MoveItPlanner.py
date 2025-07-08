@@ -95,6 +95,12 @@ class MoveItPlanner(Planner):
     def set_planner(self, planner_id: str) -> None:
         self.moveit2.planner_id = planner_id
 
+    def set_planning_time(self, planning_time: float) -> None:
+        self.moveit2.allowed_planning_time = planning_time
+
+    def set_planning_attempts(self, planning_attempts: int) -> None:
+        self.moveit2.num_planning_attempts = planning_attempts
+
     def plan_joint_goal(
         self,
         joint_positions: List[float],
@@ -135,6 +141,8 @@ class MoveItPlanner(Planner):
         pose: PoseStamped,
         target_link: str = xarm6.end_effector_name(),
         cartesian: bool = False,
+        tolerance_position: float = 0.015,
+        tolerance_orientation: float = 0.02,
         wait: bool = True,
         set_mode: bool = True,
     ) -> Union[bool, Future]:
@@ -145,8 +153,8 @@ class MoveItPlanner(Planner):
             pose=pose,
             cartesian=cartesian,
             target_link=target_link,
-            tolerance_position=0.015,
-            tolerance_orientation=0.02,
+            tolerance_position=tolerance_position,
+            tolerance_orientation=tolerance_orientation,
         )
         if not trajectory:
             return False
@@ -177,8 +185,8 @@ class MoveItPlanner(Planner):
         pose: PoseStamped,
         cartesian: bool = False,
         target_link: str = xarm6.end_effector_name(),
-        tolerance_position: float = 0.015,
-        tolerance_orientation: float = 0.1,
+        tolerance_position: float = 0.01,
+        tolerance_orientation: float = 0.05,
         weight_position: float = 1.0,
         weight_orientation: float = 1.0,
         cartesian_max_step: float = 0.05,
@@ -421,8 +429,10 @@ class MoveItPlanner(Planner):
         self.moveit2.update_planning_scene()
 
     def get_planning_scene(self) -> None:
-        self.update_planning_scene()
-        return self.moveit2.get_planning_scene()
+        self.update_planning_scene()  # check the pymoveit2 library
+        return (
+            self.moveit2.planning_scene
+        )  # Return the current planning scene after the update
 
     def remove_collision_object(self, id: str) -> None:
         self.moveit2.remove_collision_object(id)

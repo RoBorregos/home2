@@ -13,13 +13,13 @@ from frida_constants.manipulation_constants import (
     REMOVE_COLLISION_OBJECT_SERVICE,
     GET_COLLISION_OBJECTS_SERVICE,
     PICK_OBJECT_NAMESPACE,
-    GRASP_LINK_FRAME,
     EEF_LINK_NAME,
     EEF_CONTACT_LINKS,
     PLACE_MOTION_ACTION_SERVER,
     AIM_STRAIGHT_FRONT_QUAT,
     SHELF_POSITION_PREPLACE_POSE,
     GRIPPER_SET_STATE_SERVICE,
+    GRASP_LINK_FRAME,
 )
 from frida_interfaces.srv import (
     AttachCollisionObject,
