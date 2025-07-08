@@ -5,7 +5,7 @@ from launch import LaunchDescription
 from launch_ros.actions import Node
 
 from frida_constants import ModuleNames, parse_ros_config
-from frida_constants.hri_constants import USE_OWW, USE_RESPEAKER, USEFUL_AUDIO_NODE_NAME
+from frida_constants.hri_constants import USE_RESPEAKER
 
 
 def generate_launch_description():
@@ -16,10 +16,12 @@ def generate_launch_description():
         [ModuleNames.HRI.value],
     )["audio_capturer"]["ros__parameters"]
 
-    hear_config = parse_ros_config(
-        os.path.join(get_package_share_directory("speech"), "config", "hear.yaml"),
+    hear_streaming_config = parse_ros_config(
+        os.path.join(
+            get_package_share_directory("speech"), "config", "hear_streaming.yaml"
+        ),
         [ModuleNames.HRI.value],
-    )["hear"]["ros__parameters"]
+    )["hear_streaming"]["ros__parameters"]
 
     speaker_config = parse_ros_config(
         os.path.join(get_package_share_directory("speech"), "config", "speaker.yaml"),
@@ -31,22 +33,10 @@ def generate_launch_description():
         [ModuleNames.HRI.value],
     )["respeaker"]["ros__parameters"]
 
-    kws_config = parse_ros_config(
-        os.path.join(get_package_share_directory("speech"), "config", "kws.yaml"),
-        [ModuleNames.HRI.value],
-    )["keyword_spotting"]["ros__parameters"]
-
     oww_config = parse_ros_config(
         os.path.join(get_package_share_directory("speech"), "config", "kws_oww.yaml"),
         [ModuleNames.HRI.value],
     )["kws_oww"]["ros__parameters"]
-
-    useful_audio_config = parse_ros_config(
-        os.path.join(
-            get_package_share_directory("speech"), "config", "useful_audio.yaml"
-        ),
-        [ModuleNames.HRI.value],
-    )["useful_audio"]["ros__parameters"]
 
     nodes = [
         Node(
@@ -59,11 +49,11 @@ def generate_launch_description():
         ),
         Node(
             package="speech",
-            executable="hear.py",
+            executable="hear_streaming.py",
             name="hear",
             output="screen",
             emulate_tty=True,
-            parameters=[hear_config],
+            parameters=[hear_streaming_config],
         ),
         Node(
             package="speech",
@@ -75,11 +65,11 @@ def generate_launch_description():
         ),
         Node(
             package="speech",
-            executable="useful_audio.py",
-            name=USEFUL_AUDIO_NODE_NAME,
+            executable="kws_oww.py",
+            name="kws_oww",
             output="screen",
             emulate_tty=True,
-            parameters=[useful_audio_config],
+            parameters=[oww_config],
         ),
     ]
 
@@ -92,30 +82,6 @@ def generate_launch_description():
                 output="screen",
                 emulate_tty=True,
                 parameters=[respeaker_config],
-            )
-        )
-
-    if USE_OWW:
-        nodes.append(
-            Node(
-                package="speech",
-                executable="kws_oww.py",
-                name="kws_oww",
-                output="screen",
-                emulate_tty=True,
-                parameters=[oww_config],
-            )
-        )
-    else:
-        # Deprecated: use oww instead
-        nodes.append(
-            Node(
-                package="speech",
-                executable="kws.py",
-                name="keyword_spotting",
-                output="screen",
-                emulate_tty=True,
-                parameters=[kws_config],
             )
         )
 

@@ -29,25 +29,25 @@ SET_DETECTOR_CLASSES_SERVICE = "/vision/set_detector_classes"
 
 ZERO_SHOT_DEFAULT_CLASSES = [
     "bowl",
-    "whiteBaseball",
-    "apple",
-    "cup",
-    "plate",
-    "yellow_mustard_container",
-    "apple",
-    "blue_tuna_can",
-    "soup_can",
-    "neon_ball",
-    "squash",
-    "banana",
-    "soap",
-    "rubikCube",
-    "coke_bottle",
-    "yellow_bowl",
-    "apple",
-    "fanta_can",
-    "orange",
-    "cup",
+    # "whiteBaseball",
+    # "apple",
+    # "cup",
+    # "plate",
+    # "yellow_mustard_container",
+    # "apple",
+    # "blue_tuna_can",
+    # "soup_can",
+    # "neon_ball",
+    # "squash",
+    # "banana",
+    # "soap",
+    # "rubikCube",
+    # "coke_bottle",
+    # "yellow_bowl",
+    # "apple",
+    # "fanta_can",
+    # "orange",
+    # "cup",
 ]
 
 ZERO_SHOT_MODEL = "yoloe-11l-seg.pt"
@@ -101,9 +101,13 @@ COUNT_BY_POSE_TOPIC = "/vision/gpsr/count_by_pose"
 COUNT_BY_GESTURE_TOPIC = "/vision/gpsr/count_by_gesture"
 IMAGE_TOPIC = "/vision/gpsr/img_detection"
 POSE_GESTURE_TOPIC = "/vision/gpsr/pose_gesture_detection"
+READ_QR_TOPIC = "/vision/gpsr/read_qr"
 
 # Storing Groceries Commands node
 SHELF_DETECTION_TOPIC = "/vision/storing_grocPeries/shelf_detection"
 
 # Person inside a room
 PERSON_POINT_TOPIC = "/vision/person_inside_point"
+
+# Show detection topic
+SHOW_DETECTION_TOPIC = "/vision/show_detection"

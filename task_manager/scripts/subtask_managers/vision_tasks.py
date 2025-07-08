@@ -30,6 +30,7 @@ from frida_constants.vision_constants import (
     SET_TARGET_BY_TOPIC,
     SET_TARGET_TOPIC,
     SHELF_DETECTION_TOPIC,
+    READ_QR_TOPIC,
 )
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.msg import ObjectDetection, PersonList
@@ -46,6 +47,7 @@ from frida_interfaces.srv import (
     SaveName,
     ShelfDetectionHandler,
     TrackBy,
+    ReadQr,
 )
 from geometry_msgs.msg import Point, PointStamped
 from rclpy.action import ActionClient
@@ -60,7 +62,7 @@ from utils.task import Task
 
 
 TIMEOUT = 8.0
-DETECTION_HANDLER_TOPIC_SRV = DETECTION_HANDLER_TOPIC_SRV
+TIMEOUT_WAIT_FOR_SERVICE = 1.0
 IS_TRACKING_TOPIC = "/vision/is_tracking"
 
 
@@ -116,6 +118,8 @@ class VisionTasks:
             PersonPoseGesture, POSE_GESTURE_TOPIC
         )
 
+        self.read_qr_client = self.node.create_client(ReadQr, READ_QR_TOPIC)
+
         self.count_by_color_client = self.node.create_client(CountByColor, COUNT_BY_COLOR_TOPIC)
 
         self.services = {
@@ -157,6 +161,10 @@ class VisionTasks:
                     "client": self.find_person_info_client,
                     "type": "service",
                 },
+                "read_qr_client": {
+                    "client": self.read_qr_client,
+                    "type": "service",
+                },
                 "count_by_gesture": {
                     "client": self.count_by_gesture_client,
                     "type": "service",
@@ -196,10 +204,10 @@ class VisionTasks:
 
         for key, service in self.services[self.task].items():
             if service["type"] == "service":
-                if not service["client"].wait_for_service(timeout_sec=TIMEOUT):
+                if not service["client"].wait_for_service(timeout_sec=TIMEOUT_WAIT_FOR_SERVICE):
                     Logger.warn(self.node, f"{key} service not initialized. ({self.task})")
             elif service["type"] == "action":
-                if not service["client"].wait_for_server(timeout_sec=TIMEOUT):
+                if not service["client"].wait_for_server(timeout_sec=TIMEOUT_WAIT_FOR_SERVICE):
                     Logger.warn(self.node, f"{key} action server not initialized. ({self.task})")
 
     def follow_callback(self, msg: Point):
@@ -300,6 +308,35 @@ class VisionTasks:
         Logger.success(self.node, f"Seat found: {result.angle}")
         return Status.EXECUTION_SUCCESS, result.angle
 
+    @mockable(return_value=[Status.MOCKED, ""])
+    @service_check("read_qr_client", [Status.EXECUTION_ERROR, ""], TIMEOUT)
+    def read_qr(self) -> tuple[int, float]:
+        """Find an available seat and get the angle for the camera to point at"""
+
+        Logger.info(self.node, "Reading QR code")
+        request = ReadQr.Request()
+        request.request = True
+
+        try:
+            future = self.read_qr_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+            result = future.result()
+
+            if not result.success:
+                Logger.warn(self.node, "No qr code found")
+                return Status.TARGET_NOT_FOUND, ""
+
+        except Exception as e:
+            Logger.error(self.node, f"Error finding qr code: {e}")
+            return Status.EXECUTION_ERROR, ""
+
+        if len(result.result) == 0:
+            Logger.warn(self.node, "QR code is empty")
+            return Status.TARGET_NOT_FOUND, ""
+
+        Logger.success(self.node, f"Qr code found: {result.result}")
+        return Status.EXECUTION_SUCCESS, result.result
+
     @mockable(return_value=(Status.EXECUTION_SUCCESS, []), delay=2)
     @service_check("shelf_detections_client", Status.EXECUTION_ERROR, TIMEOUT)
     def detect_shelf(self, timeout: float = TIMEOUT) -> tuple[Status, list[ShelfDetection]]:
@@ -336,7 +373,7 @@ class VisionTasks:
         return Status.EXECUTION_SUCCESS, detections
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, []), delay=2)
-    @service_check("object_detector_client", Status.EXECUTION_ERROR, TIMEOUT)
+    @service_check("object_detector_client", (Status.EXECUTION_ERROR, []), TIMEOUT)
     def detect_objects(self, timeout: float = TIMEOUT) -> tuple[Status, list[BBOX]]:
         """Detect the object in the image"""
         Logger.info(self.node, "Waiting for object detection")
@@ -815,8 +852,31 @@ class VisionTasks:
         """Get the labels of the detected objects"""
         labels = []
         for detection in detections:
-            labels.append(detection.classname)
+            if hasattr(detection, "classname") and detection.classname:
+                labels.append(detection.classname)
         return labels
+
+    def get_drink_position(self, detections: list[BBOX], drink: str) -> tuple[int, str]:
+        """Get the position of the drink in the detected objects"""
+        location = ""
+
+        for detection in detections:
+            if detection.classname.lower() == drink.lower():
+                if detection.x < 0.35:
+                    location = "left"
+                elif detection.x > 0.65:
+                    location = "right"
+                else:
+                    location = "center"
+
+                if detection.y < 0.35:
+                    location += " top"
+                elif detection.y > 0.65:
+                    location += " bottom"
+
+                return Status.EXECUTION_SUCCESS, location
+
+        return Status.TARGET_NOT_FOUND, "Not found"
 
 
 if __name__ == "__main__":

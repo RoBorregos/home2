@@ -10,6 +10,8 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(frida_interfaces REQUIRED)
+find_package(frida_constants REQUIRED)
+find_package(nlp REQUIRED)
 
 ament_python_install_package(${PROJECT_NAME})
 
@@ -26,9 +28,9 @@ file(GLOB PYTHON_SCRIPTS scripts/*.py)
 
 install(
   PROGRAMS
-    scripts/categorization.py  # Path to your Python script
     scripts/knowledge_base.py
-    scripts/chroma_adapter.py
+    scripts/postgres_adapter.py
+    scripts/create_sql_dump.py
   DESTINATION lib/${PROJECT_NAME}  # Install to the package's lib directory
 )
 

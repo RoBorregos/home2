@@ -1,10 +1,25 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { MessageCircle, Mic, Speaker, Star, VolumeX } from "lucide-react";
+import { MessageCircle, Mic, Speaker, Star, VolumeX, X } from "lucide-react";
 import dynamic from "next/dynamic";
+import { z } from "zod";
 
 const MjpegStream = dynamic(() => import("./video"), { ssr: false });
+
+const markerSchema = z.object({
+  x: z.number(),
+  y: z.number(),
+  color: z.string(),
+  color_name: z.string(),
+});
+
+const mapSchema = z.object({
+  image_path: z.string(),
+  markers: z.array(markerSchema),
+});
+
+type MapData = z.infer<typeof mapSchema>;
 
 interface Message {
   type: "heard" | "spoken" | "keyword";
@@ -19,11 +34,20 @@ interface AudioState {
 
 export default function RosMessagesDisplay() {
   const [messages, setMessages] = useState<Message[]>([]);
+  const [currentMessage, setCurrentMessage] = useState<Message | null>(null);
   const [connected, setConnected] = useState(false);
   const [audioState, setAudioState] = useState<AudioState>({
     state: "idle",
     vadLevel: 0,
   });
+  const [mapData, setMapData] = useState<MapData | null>(null);
+  const [showMapModal, setShowMapModal] = useState(false);
+  const audioStateRef = useRef(audioState);
+  useEffect(() => {
+    audioStateRef.current = audioState;
+  }, [audioState]);
+
+  
   const [audioTopic, setAudioTopic] = useState<string>(
     "/zed/zed_node/rgb/image_rect_color"
   );
@@ -38,6 +62,8 @@ export default function RosMessagesDisplay() {
         handleMic(data.type, data.data);
       } else if (data.type === "changeVideo") {
         setAudioTopic(data.data);
+      } else if (data.type === "map") {
+        handleMapMessage(data.data);
       } else {
         addMessage(data.type, data.data);
       }
@@ -84,34 +110,66 @@ export default function RosMessagesDisplay() {
         console.error("Error parsing keyword content:", error);
       }
     }
+    const timestamp = new Date();
 
-    setMessages((prev) => [
-      {
-        type,
+  if (type === "heard") {
+    console.log("Heard message received ", audioStateRef.current.state);
+    if (audioStateRef.current.state === "listening") {
+      setCurrentMessage({ type, content: displayContent, timestamp });
+    } else {
+      setMessages((prev) => [
+        { type, content: displayContent, timestamp },
+      ...prev,
+    ]);
+  }
+} else {
+  setMessages((prev) => [
+    {
+      type,
         content: String(displayContent),
-        timestamp: new Date(),
+        timestamp,
       },
       ...prev,
     ]);
-  };
+  }
+};
 
-  const handleMic = (type: string, content: string | number) => {
-    if (type === "audioState") {
-      setAudioState((prev) => ({
-        ...prev,
-        state: content as "idle" | "listening" | "saying",
-      }));
-    } else if (type === "vad") {
-      // Assuming vad is a float between 0 and 1
-      setAudioState((prev) => ({
-        ...prev,
-        vadLevel:
-          typeof content === "number"
-            ? content
-            : Number.parseFloat(content as string),
-      }));
+ const handleMic = (type: string, content: string | number) => {
+  console.log("handleMic received:", type, content);
+  if (type === "audioState") {
+    const newState = content as "idle" | "listening" | "saying";
+    setAudioState(prev => ({ ...prev, state: newState }));
+  } else if (type === "vad") {
+    setAudioState(prev => ({
+      ...prev,
+      vadLevel: typeof content === "number" ? content : Number.parseFloat(content as string),
+    }));
+  }
+};
+
+const handleMapMessage = (data: unknown) => {
+  try {
+    const parsedData = mapSchema.parse(data);
+    // Only show the map if image_path is available
+    if (parsedData.image_path && parsedData.image_path.trim() !== "") {
+      setMapData(parsedData);
+      setShowMapModal(true);
+    } else {
+      setMapData(null);
+      setShowMapModal(false);
     }
-  };
+  } catch (error) {
+    console.error("Error parsing map message:", error);
+  }
+};
+
+useEffect(() => {
+  if (audioState.state === "idle" && currentMessage) {
+    setMessages(prevMsgs => [currentMessage, ...prevMsgs]);
+    setCurrentMessage(null);
+  }
+}, [audioState.state, currentMessage]);
+
 
   useEffect(() => {
     messagesStartRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -137,7 +195,19 @@ export default function RosMessagesDisplay() {
           </div>
         </div>
       </div>
-
+      {audioState.state === "listening" && currentMessage && (
+    <>
+      <div
+        key={currentMessage.timestamp.getTime()}
+        className="fixed bottom-32 inset-x-0 mx-auto bg-gray-500/20 text-white py-6 rounded-lg shadow-lg z-50 animate-fadeIn w-fit max-w-[90vw]"
+      >
+        <div className="flex items-center justify-center gap-4">
+          <Mic className="h-20 w-20 animate-pulse text-white" />
+          <p className="text-7xl font-medium tracking-wide">{currentMessage.content}</p>
+        </div>
+      </div>
+    </>
+      )}
       <div className="grid grid-cols-2 h-full overflow-y-hidden">
         {/* Left column */}
         <div className="flex flex-col p-4 space-y-3 overflow-y-auto">
@@ -218,6 +288,14 @@ export default function RosMessagesDisplay() {
             : "No messages received"}
         </p>
       </div>
+
+      {/* Map Modal */}
+      {showMapModal && mapData && (
+        <MapModal
+          mapData={mapData}
+          onClose={() => setShowMapModal(false)}
+        />
+      )}
     </div>
   );
 }
@@ -230,8 +308,8 @@ function AudioStateIndicator({ state }: AudioStateIndicatorProps) {
   const { state: audioState, vadLevel } = state;
 
   // Calculate the number of bars to show based on VAD level (0-1)
-  const maxBars = 20;
-  const activeBars = Math.ceil(vadLevel * maxBars);
+  // const maxBars = 20;
+  // const activeBars = Math.ceil(vadLevel * maxBars);
 
   if (audioState === "idle") {
     return (
@@ -255,25 +333,190 @@ function AudioStateIndicator({ state }: AudioStateIndicatorProps) {
     );
   }
 
-  // For listening state, show the mic with audio level bars
+  // For listening state, show the mic centered
   return (
-    <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-[oklch(0.488_0.243_264.376/20%)]">
-      <Mic className="h-4 w-4 text-[oklch(0.488_0.243_264.376)]" />
-      <div className="flex items-end h-4 gap-0.5">
-        {Array.from({ length: maxBars }).map((_, i) => (
-          <div
-            key={i}
-            className={`w-2 h-full rounded-sm transition-all duration-150 ${
-              i < activeBars
-                ? "bg-[oklch(0.488_0.243_264.376)]"
-                : "bg-[oklch(0.488_0.243_264.376/30%)]"
-            }`}
-          />
-        ))}
+  <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/10 pointer-events-none pt-60 ">
+    <div className="relative">
+      <div className="absolute inset-0 rounded-full bg-[oklch(0.5_0.25_260)] opacity-10 animate-[pulse_3s_infinite] scale-110" />
+      <div className="absolute inset-0 rounded-full bg-[oklch(0.5_0.25_260)] opacity-15 animate-[pulse_3s_infinite_1s] scale-125" />
+      <div className="absolute inset-0 rounded-full bg-[oklch(0.5_0.25_260)] opacity-20 animate-[pulse_3s_infinite_2s] scale-150" />
+
+      <div className="relative z-10 h-70 w-70 rounded-full bg-[oklch(0.5_0.25_260)] shadow-lg flex items-center justify-center">
+        <Mic className="h-50 w-50 text-white/90 drop-shadow-md" />
       </div>
-      <span className="text-xs font-medium text-[oklch(0.488_0.243_264.376)]">
-        Listening
-      </span>
+
+      <div 
+        className="absolute inset-0 rounded-full border-4 border-[oklch(0.5_0.25_260)] opacity-0 transition-all duration-300"
+        style={{
+          transform: `scale(${1 + (vadLevel || 0)})`,
+          opacity: (vadLevel || 0) * 0.8
+        }}
+      />
+      
+    </div>
+  </div>   
+  );
+}
+
+interface MapModalProps {
+  mapData: MapData;
+  onClose: () => void;
+}
+
+function MapModal({ mapData, onClose }: MapModalProps) {
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const [showAxes, setShowAxes] = useState(false);
+  const [axesColor, setAxesColor] = useState<'white' | 'black'>('white');
+
+  // Handle escape key to close modal, 'v' to toggle axes, and 'c' to toggle color
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+      if (event.key === 'v' || event.key === 'V') {
+        setShowAxes((prev) => !prev);
+      }
+      if (event.key === 'c' || event.key === 'C') {
+        setAxesColor((prev) => prev === 'white' ? 'black' : 'white');
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [onClose]);
+
+  // Determine if the image_path is a URL or a local filename
+  const getImageSrc = (imagePath: string) => {
+    // Check if it's already a full URL (starts with http:// or https://)
+    if (imagePath.startsWith('http://') || imagePath.startsWith('https://')) {
+      return imagePath;
+    }
+    // If it's a local filename, prepend with /
+    return `/${imagePath}`;
+  };
+
+  // Generate grid lines at every 10%
+  const gridLines = [];
+  const lineColor = axesColor === 'white' ? 'border-white/40' : 'border-black/40';
+  const textColor = axesColor === 'white' ? 'text-white/80' : 'text-black/80';
+  const bgColor = axesColor === 'white' ? 'bg-black/60' : 'bg-white/60';
+  
+  for (let i = 10; i < 100; i += 10) {
+    gridLines.push(
+      // Vertical lines (X axis)
+      <div
+        key={`v-${i}`}
+        className={`absolute top-0 left-0 h-full border-l-2 border-dashed ${lineColor} pointer-events-none`}
+        style={{ left: `${i}%`, width: 0 }}
+      >
+        <span className={`absolute top-0 left-1/2 -translate-x-1/2 text-xs ${textColor} ${bgColor} px-1 rounded`}>
+          X: {i}%
+        </span>
+      </div>,
+      // Horizontal lines (Y axis)
+      <div
+        key={`h-${i}`}
+        className={`absolute left-0 top-0 w-full border-t-2 border-dashed ${lineColor} pointer-events-none`}
+        style={{ top: `${i}%`, height: 0 }}
+      >
+        <span className={`absolute left-0 top-1/2 -translate-y-1/2 text-xs ${textColor} ${bgColor} px-1 rounded`}>
+          Y: {i}%
+        </span>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center">
+      <div className="relative w-full h-full flex items-center justify-center p-4">
+        {/* Close button */}
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 z-10 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+        >
+          <X className="h-6 w-6 text-white" />
+        </button>
+
+        {/* Map container */}
+        <div className="relative max-w-full max-h-full">
+          {!imageLoaded && !imageError && (
+            <div className="flex items-center justify-center p-8">
+              <div className="text-white text-lg">Loading map...</div>
+            </div>
+          )}
+
+          {imageError && (
+            <div className="flex items-center justify-center p-8">
+              <div className="text-red-400 text-lg">Failed to load map image</div>
+            </div>
+          )}
+
+          <div className="relative">
+            <img
+              src={getImageSrc(mapData.image_path)}
+              alt="Map"
+              className={`max-w-full max-h-full object-contain ${
+                imageLoaded ? 'block' : 'hidden'
+              }`}
+              onLoad={() => setImageLoaded(true)}
+              onError={() => setImageError(true)}
+            />
+
+            {/* Axes grid lines */}
+            {imageLoaded && showAxes && (
+              <div className="absolute inset-0 w-full h-full pointer-events-none z-20 border">
+                {gridLines}
+              </div>
+            )}
+
+            {/* Markers */}
+            {imageLoaded && mapData.markers.map((marker, index) => {
+              // Check if the marker is in the bottom half of the image
+              const isInBottomHalf = marker.y > 75; // If marker is below 75% of image height
+              
+              return (
+                <div
+                  key={index}
+                  className="absolute -translate-x-1/2 -translate-y-1/2 z-30"
+                  style={{
+                    left: `${marker.x}%`,
+                    top: `${marker.y}%`,
+                  }}
+                >
+                  {/* Marker circle */}
+                  <div
+                    className="w-20 h-20 rounded-full border-2 border-white shadow-lg"
+                    style={{
+                      backgroundColor: marker.color,
+                    }}
+                  />
+                  {/* Color name label */}
+                  <div 
+                    className={`absolute left-1/2 -translate-x-1/2 whitespace-nowrap ${
+                      isInBottomHalf ? 'bottom-24' : 'top-24'
+                    }`}
+                  >
+                    <span className="bg-black/70 text-white px-2 py-1 rounded text-4xl font-medium">
+                      {marker.color_name}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Instructions */}
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2">
+          <div className="bg-black/50 text-white px-4 py-2 rounded-lg text-sm">
+            Press <b>ESC</b> or click the X to close. Press <b>V</b> to toggle axes. Press <b>C</b> to change axes color.
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

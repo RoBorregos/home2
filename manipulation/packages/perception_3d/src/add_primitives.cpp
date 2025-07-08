@@ -650,6 +650,13 @@ public:
         req2->collision_objects.back().id =
             "frida_pick_object_ " + std::to_string(point.x) + " " +
             std::to_string(point.y) + " " + std::to_string(point.z);
+
+        if (request->is_other_objects) {
+          req2->collision_objects.back().id =
+              "other_" + std::to_string(point.x) + " " +
+              std::to_string(point.y) + " " + std::to_string(point.z);
+        }
+
         req2->collision_objects.back().type = "sphere";
 
         req2->collision_objects.back().pose.header.frame_id = "base_link";

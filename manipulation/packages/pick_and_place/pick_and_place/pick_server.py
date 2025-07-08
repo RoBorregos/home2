@@ -90,7 +90,7 @@ class PickMotionServer(Node):
             return result
         except Exception as e:
             self.get_logger().error(f"Pick failed: {str(e)}")
-            goal_handle.abort()
+            goal_handle.succeed()
             result.success = False
             return result
 
@@ -106,7 +106,7 @@ class PickMotionServer(Node):
         num_grasping_alternatives = (
             3  # for each grasping pose, try 4 alternatives from closest to farthest
         )
-        grasping_alternative_distance = -0.015  # 5mm distance
+        grasping_alternative_distance = -0.02  # 5mm distance
 
         self.save_collision_objects()
         self.find_plane()
