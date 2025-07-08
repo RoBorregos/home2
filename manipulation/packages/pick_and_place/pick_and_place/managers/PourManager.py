@@ -1,8 +1,4 @@
 import numpy as np
-import rclpy
-from frida_pymoveit2.robots import xarm6 as robot
-from rclpy.duration import Duration
-from tf2_geometry_msgs.tf2_geometry_msgs import do_transform_point
 from tf2_ros import Buffer, TransformListener
 from frida_motion_planning.utils.ros_utils import wait_for_future
 from frida_interfaces.srv import (
@@ -13,15 +9,9 @@ from frida_interfaces.srv import (
 from geometry_msgs.msg import PointStamped, PoseStamped
 from std_srvs.srv import SetBool
 from pick_and_place.utils.grasp_utils import get_grasps
-from frida_interfaces.action import PickMotion, PourMotion, MoveToPose
+from frida_interfaces.action import PickMotion, PourMotion
 from frida_motion_planning.utils.service_utils import (
     move_joint_positions as send_joint_goal,
-)
-from frida_constants.manipulation_constants import (
-    PICK_VELOCITY,
-    PICK_ACCELERATION,
-    PICK_PLANNER,
-    GRASP_LINK_FRAME,
 )
 from sensor_msgs_py import point_cloud2
 from sensor_msgs.msg import PointCloud2
@@ -29,7 +19,6 @@ import time
 
 CFG_PATHS = [
     "/workspace/src/home2/manipulation/packages/arm_pkg/config/frida_eigen_params_custom_gripper_testing.cfg",
-    "/workspace/src/home2/manipulation/packages/arm_pkg/config/frida_eigen_params_custom_gripper.cfg",
 ]
 
 
@@ -41,6 +30,24 @@ class PourManager:
 
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self.node)
+        
+        self.debug_object_point_pub = self.node.create_publisher(
+            PointStamped,
+            "/manipulation/debug_object_point",
+            10
+        )
+        
+        self.debug_bowl_point_pub = self.node.create_publisher(
+            PointStamped,
+            "/manipulation/debug_bowl_point",
+            10
+        )
+        
+        self.debug_centroid_pub = self.node.create_publisher(
+            PointStamped,
+            "/manipulation/debug_bowl_centroid",
+            10
+        )
 
     def execute(self, object_name: str, container_object_name: str) -> bool:
         self.node.get_logger().info("Executing Pour Task")
@@ -57,6 +64,8 @@ class PourManager:
         if object_point is None:
             self.node.get_logger().error(f"Object {object_name} not found")
             return False
+        
+        self.debug_object_point_pub.publish(object_point)
 
         # 3. Get Bowl Point
         bowl_point = self.get_object_point(container_object_name)
@@ -64,13 +73,15 @@ class PourManager:
             self.node.get_logger().error(f"Bowl {container_object_name} not found")
             return False
 
-        # 4. Get Clusters
-        object_cluster = self.get_object_cluster(object_point, add_primitives=True)
-        if object_cluster is None:
-            return False
+        self.debug_bowl_point_pub.publish(bowl_point)
 
+        # 4. Get Clusters
         bowl_cluster = self.get_object_cluster(bowl_point, add_primitives=False)
         if bowl_cluster is None:
+            return False
+        
+        object_cluster = self.get_object_cluster(object_point, add_primitives=True)
+        if object_cluster is None:
             return False
 
         # 5. Open Gripper
@@ -78,18 +89,6 @@ class PourManager:
         gripper_request.data = True
         future = self.node._gripper_set_state_client.call_async(gripper_request)
         wait_for_future(future)
-
-        # 6. Pick Motion
-        pick_success, pick_result = self.pick_motion(object_cluster)
-        if not pick_success:
-            return False
-
-        # 7. Return to Initial Pose
-        send_joint_goal(
-            move_joints_action_client=self.node._move_joints_client,
-            named_position="table_stare",
-            velocity=0.3,
-        )
 
         # 8. Compute Centroid/Height and Set Pour Pose
         cloud_gen = point_cloud2.read_points(
@@ -99,36 +98,45 @@ class PourManager:
         if not points:
             self.node.get_logger().error("Empty bowl cluster")
             return False
-
+        
         points_np = np.array(points)
         centroid = np.mean(points_np, axis=0)
         max_z = np.max(points_np[:, 2])
         self.node.get_logger().info(f"Bowl Centroid: {centroid}, Max Z: {max_z}")
+        
+        bowl_centroid_point = PointStamped()
+        bowl_centroid_point.header.frame_id = bowl_cluster.header.frame_id
+        bowl_centroid_point.header.stamp = self.node.get_clock().now().to_msg()
+        bowl_centroid_point.point.x = float(centroid[0])
+        bowl_centroid_point.point.y = float(centroid[1])
+        bowl_centroid_point.point.z = float(max_z + 0.05)  # Slightly above the bowl
+        self.debug_centroid_pub.publish(bowl_centroid_point)
 
-        try:
-            transform = self.tf_buffer.lookup_transform(
-                target_frame=robot.base_link_name(),
-                source_frame=bowl_point.header.frame_id,
-                time=rclpy.time.Time(),
-                timeout=Duration(seconds=1.0),
-            )
-            transformed_point = do_transform_point(bowl_point, transform)
-        except Exception as e:
-            self.node.get_logger().error(f"Transform error: {repr(e)}")
-            return False
+        pick_result = None
+        # 6. Pick Motion
+        # pick_success, pick_result = self.pick_motion(object_cluster)
 
         pour_pose = PoseStamped()
-        pour_pose.header.frame_id = robot.base_link_name()
+        pour_pose.header.frame_id = bowl_centroid_point.header.frame_id
         pour_pose.header.stamp = self.node.get_clock().now().to_msg()
-        pour_pose.pose.position = transformed_point.point
+        pour_pose.pose.position.x = float(centroid[0])
+        pour_pose.pose.position.y = float(centroid[1])
+        pour_pose.pose.position.z = float(max_z + 0.05)  # Slightly above the bowl
         pour_pose.pose.position.z += 0.05  # Slightly above the bowl
 
-        pick_pose = getattr(pick_result.pick_result, "pick_pose", None)
-        if pick_pose:
-            pour_pose.pose.orientation = pick_pose.pose.orientation
+        if pick_result is not None:
+            pick_pose = getattr(pick_result.pick_result, "pick_pose", None)
+            if pick_pose:
+                pour_pose.pose.orientation = pick_pose.pose.orientation
         else:
-            self.node.get_logger().error("Invalid pick pose in result")
-            return False
+            # self.node.get_logger().error("Invalid pick pose in result")
+            # return False
+            print("Debug ----------")
+            pour_orientation = [0.707, 0.000, 0.707, 0.002]
+            pour_pose.pose.orientation.x = pour_orientation[0]
+            pour_pose.pose.orientation.y = pour_orientation[1]
+            pour_pose.pose.orientation.z = pour_orientation[2]
+            pour_pose.pose.orientation.w = pour_orientation[3]
 
         # 9. Pour Motion
         if not self.pour_motion(pour_pose):
@@ -147,7 +155,6 @@ class PourManager:
 
     def pick_motion(self, object_cluster: PointCloud2):
         # open gripper
-        self.node.get_logger().warning("Pick Action - FFN6")
         gripper_request = SetBool.Request()
         gripper_request.data = True
         self.node.get_logger().info("Open gripper")
@@ -163,7 +170,20 @@ class PourManager:
             grasp_poses, grasp_scores = get_grasps(
                 self.node.grasp_detection_client, object_cluster, CFG_PATH
             )
+            if len(grasp_poses) == 0:
+                self.node.get_logger().error(
+                    f"No grasp poses detected with cfg {CFG_PATH}"
+                )
+                continue
 
+            # sort by score
+            grasp_poses, grasp_scores = zip(
+                *sorted(
+                    zip(grasp_poses, grasp_scores),
+                    key=lambda x: x[1],
+                    reverse=True,
+                )
+            )
             grasp_poses, grasp_scores = grasp_poses[:5], grasp_scores[:5]
 
             if len(grasp_poses) == 0:
@@ -171,6 +191,7 @@ class PourManager:
                 continue
 
             # Call Pick Motion Action
+
             # Create goal
             goal_msg = PickMotion.Goal()
             goal_msg.grasping_poses = grasp_poses
@@ -179,14 +200,18 @@ class PourManager:
             # Send goal
             self.node.get_logger().info("Sending pick motion goal...")
             future = self.node._pick_motion_action_client.send_goal_async(goal_msg)
-            future = wait_for_future(future)
+            future = wait_for_future(future, timeout=30)
+            if not future:
+                break
             # Check result
             pick_result = future.result().get_result().result
             self.node.get_logger().info(f"Pick Motion Result: {pick_result}")
-            if pick_result.success:
+            if pick_result.success != 0:
                 pick_result_success = True
                 break
-            time.sleep(1)
+            else:
+                # give time for new gpd
+                time.sleep(2)
 
         if not pick_result_success:
             self.node.get_logger().error("Pick motion failed")
@@ -211,9 +236,13 @@ class PourManager:
         self.node.get_logger().warning("Result of pour motion - FFN5")
 
         # result_pour = future.result().get_result()
-        result_pour = future.result()
-        if not result_pour.result.success:
-            self.node.get_logger().error("Pour motion failed")
+        try:
+            result_pour = future.result()
+            if not result_pour.result.success:
+                self.node.get_logger().error("Pour motion failed")
+                return False
+        except Exception as e:
+            self.node.get_logger().error(f"Exception during pour motion: {e}")
             return False
         
         self.node.get_logger().warning("Finished Pour Manager - FFN5.0")

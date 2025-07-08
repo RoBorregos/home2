@@ -51,6 +51,7 @@ class MotionPlanningServer(Node):
         self.planner = MoveItPlanner(self, self.callback_group)
         self.planner.set_velocity(0.15)
         self.planner.set_acceleration(0.15)
+        self.planner.set_planning_time(0.5)
         self.planner.set_planner(PICK_PLANNER)
 
         self.servo = MoveItServo(
@@ -272,9 +273,30 @@ class MotionPlanningServer(Node):
             if len(goal_handle.request.planner_id) != 0
             else PICK_PLANNER
         )
+        try:
+            planning_time = (
+                goal_handle.request.planning_time
+                if goal_handle.request.planning_time > 0.1
+                else 0.5
+            )
+            planning_attempts = (
+                goal_handle.request.planning_attempts
+                if goal_handle.request.planning_attempts > 0
+                else 5
+            )
+        except Exception as e:
+            self.get_logger().error(f"Error setting planning time: {str(e)}")
+            planning_time = 0.5
+            planning_attempts = 5
+        
         self.planner.set_velocity(velocity)
         self.planner.set_acceleration(acceleration)
         self.planner.set_planner(planner_id)
+        self.get_logger().info(
+            f"Planning settings: velocity={velocity}, acceleration={acceleration}, planner_id={planner_id}, planning_time={planning_time}"
+        )
+        self.planner.set_planning_time(planning_time)
+        self.planner.set_planning_attempts(planning_attempts)
 
         if goal_handle.request.apply_constraint:
             self.get_logger().info("Planning with Constraints...")
@@ -310,7 +332,7 @@ class MotionPlanningServer(Node):
                         ),
                         pose=collision_object.pose,
                     )
-                    self.get_logger().info(f"Added collision box: {object_id}")
+                    # self.get_logger().info(f"Added collision box: {object_id}")
 
                 elif collision_object.type == "sphere":
                     # For spheres, use the x component of dimensions as radius
@@ -319,7 +341,7 @@ class MotionPlanningServer(Node):
                         radius=collision_object.dimensions.x,
                         pose=collision_object.pose,
                     )
-                    self.get_logger().info(f"Added collision sphere: {object_id}")
+                    # self.get_logger().info(f"Added collision sphere: {object_id}")
 
                 elif collision_object.type == "cylinder":
                     # For cylinders, use x as radius, z as height
@@ -329,7 +351,7 @@ class MotionPlanningServer(Node):
                         radius=collision_object.dimensions.x,
                         pose=collision_object.pose,
                     )
-                    self.get_logger().info(f"Added collision cylinder: {object_id}")
+                    # self.get_logger().info(f"Added collision cylinder: {object_id}")
 
                 elif collision_object.type == "mesh":
                     # Add collision mesh from file path -> Priority to file path
@@ -344,9 +366,9 @@ class MotionPlanningServer(Node):
                                 else 1.0
                             ),
                         )
-                        self.get_logger().info(
-                            f"Added collision mesh from file: {object_id}"
-                        )
+                        # self.get_logger().info(
+                        #     f"Added collision mesh from file: {object_id}"
+                        # )
                     # Or from mesh data
                     else:
                         import trimesh
@@ -373,9 +395,9 @@ class MotionPlanningServer(Node):
                             mesh=mesh,
                             frame_id=collision_object.pose.header.frame_id,
                         )
-                        self.get_logger().info(
-                            f"Added collision mesh from data: {object_id}"
-                        )
+                        # self.get_logger().info(
+                        #     f"Added collision mesh from data: {object_id}"
+                        # )
                 else:
                     self.get_logger().error(
                         f"Unsupported collision object type: {collision_object.type}"

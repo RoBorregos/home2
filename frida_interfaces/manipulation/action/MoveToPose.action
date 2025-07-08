@@ -1,6 +1,8 @@
 geometry_msgs/PoseStamped pose
 float32 velocity
 float32 acceleration
+float32 planning_time
+int32 planning_attempts
 string planner_id
 string target_link
 bool apply_constraint

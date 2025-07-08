@@ -259,7 +259,7 @@ class ManipulationCore(Node):
             goal_handle.succeed()
             response = ManipulationAction.Result()
             response.success = False
-
+        self.get_logger().info(f"[DONE] Manipulation Task Result: {response}")
         return response
 
     def remove_all_collision_object(self, attached=False):

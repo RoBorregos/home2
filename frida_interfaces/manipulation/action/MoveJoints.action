@@ -2,6 +2,8 @@ float64[] joint_positions
 string[] joint_names
 float32 velocity
 float32 acceleration
+float32 planning_time
+int32 planning_attempts
 string planner_id
 bool apply_constraint
 frida_interfaces/Constraint constraint

@@ -8,7 +8,7 @@ from frida_interfaces.msg import ManipulationTask
 import time
 from frida_interfaces.msg import ObjectDetectionArray
 from frida_constants.vision_constants import (
-    DETECTIONS_TOPIC, ZERO_SHOT_DETECTIONS_TOPIC,
+    DETECTIONS_TOPIC,
 )
 from frida_constants.manipulation_constants import (
     MANIPULATION_ACTION_SERVER,
@@ -26,7 +26,7 @@ class KeyboardInput(Node):
         # Add subscriber for objects
         self.objects_subscription = self.create_subscription(
             ObjectDetectionArray,
-            ZERO_SHOT_DETECTIONS_TOPIC,
+            DETECTIONS_TOPIC,
             self.objects_callback,
             10,
         )
@@ -50,9 +50,10 @@ class KeyboardInput(Node):
         goal_msg.pick_params.object_name = object_name
 
         self.get_logger().info(f"Sending pick request for: {object_name}")
-        self._action_client.send_goal_async(
+        future = self._action_client.send_goal_async(
             goal_msg, feedback_callback=self.feedback_callback
         )
+        future.add_done_callback(lambda f: self.goal_response_callback(f, object_name))
         self.get_logger().info(f"Pick request for {object_name} sent")
 
     def send_place_request(
@@ -107,6 +108,16 @@ class KeyboardInput(Node):
         while time.time() - start_time < 1.0:
             rclpy.spin_once(self, timeout_sec=0.1)
         self.get_logger().info("Objects list refreshed.")
+        
+    def goal_response_callback(self, future, object_name):
+        try:
+            response = future.result()
+            if response.accepted:
+                self.get_logger().info(f"Goal accepted for {object_name}")
+            else:
+                self.get_logger().error(f"Goal rejected for {object_name}")
+        except Exception as e:
+            self.get_logger().error(f"Exception while sending goal: {e}")
 
 
 def main(args=None):

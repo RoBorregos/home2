@@ -13,12 +13,12 @@ services:
       - /dev/video0:/dev/video0
       - /tmp:/tmp
       - /tmp/.X11-unix:/tmp/.X11-unix
-      - ./build/:/workspace/build
-      - ./install/:/workspace/install
-      - ./log/:/workspace/log
+      - ./build:/workspace/build/
+      - ./install:/workspace/install/
+      - ./log:/workspace/log/
   
     network_mode: host
-    user: 1000:1000
+    user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
     privileged: true
     runtime: nvidia
     group_add: 
