@@ -974,6 +974,9 @@ class HRITasks(metaclass=SubtaskMeta):
     def query_location(self, query: str, top_k: int = 1):
         return self.pg.query_location(query, top_k=top_k)
 
+    def query_location_with_context(self, query: str, top_k: int = 1):
+        return self.pg.query_location_with_context(query, top_k=top_k)
+
     def find_closest(self, documents: list, query: str, top_k: int = 1) -> list[str]:
         """
         Method to find the closest item to the query.

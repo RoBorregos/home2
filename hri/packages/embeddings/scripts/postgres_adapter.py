@@ -127,6 +127,32 @@ class PostgresAdapter:
             for row in rows
         ]
 
+    def query_location_with_context(
+        self, name: str, threshold: float = 0.0, top_k: int = 100
+    ) -> list[Location]:
+        """Method to query locations with context based on semantic similarity"""
+        embedding = self.embedding_model.encode(name, convert_to_tensor=True)
+        self.cursor.execute(
+            "SELECT id, area, subarea, context, 1 - (context_embedding <=> %s) as similarity FROM locations WHERE 1 - (context_embedding <=> %s) >= %s ORDER BY similarity DESC LIMIT %s",
+            (
+                json.dumps(embedding.tolist()),
+                json.dumps(embedding.tolist()),
+                threshold,
+                top_k,
+            ),
+        )
+        rows = self.cursor.fetchall()
+        return [
+            Location(
+                id=row[0],
+                area=row[1],
+                subarea=row[2],
+                context=row[3],
+                similarity=row[4],
+            )
+            for row in rows
+        ]
+
     def add_location(self, location: Location):
         """Method to add a location to the database"""
         self.cursor.execute(
