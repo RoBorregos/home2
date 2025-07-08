@@ -26,16 +26,13 @@ install(DIRECTORY locations
   DESTINATION share/${PROJECT_NAME})
 
 add_executable(ignore_laser src/ignore_laser.cpp)
-add_executable(rtabmap_compose src/rtabmap_compose.cpp)
 
 ament_target_dependencies(ignore_laser rclcpp sensor_msgs)
 
-ament_target_dependencies(rtabmap_compose rclcpp rtabmap_slam rtabmap_sync yaml-cpp ament_index_cpp)
 
 
 install(TARGETS
   ignore_laser
-  rtabmap_compose
   DESTINATION lib/${PROJECT_NAME})
 
   
