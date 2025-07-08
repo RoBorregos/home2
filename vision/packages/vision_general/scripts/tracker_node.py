@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 """
 Node to track a single person and
 re-id them if necessary
@@ -54,13 +53,13 @@ from ament_index_python.packages import get_package_share_directory
 import os
 
 CONF_THRESHOLD = 0.6
-DEPTH_THRESHOLD = 100
-
+DEPTH_THRESHOLD = 5e8
 # Get config folder from package
 PACKAGE_NAME = "vision_general"
 CONFIG_FOLDER = os.path.join(get_package_share_directory(PACKAGE_NAME), "config")
 BOTSORT_REID_YAML = os.path.join(CONFIG_FOLDER, "botsort-reid.yaml")
-REID_EXTRACT_FREQ = 0.5
+BYTETRACK_REID_YAML = "bytetrack.yaml"
+REID_EXTRACT_FREQ = 0.2
 MAX_EMBEDDINGS = 128
 
 
@@ -115,8 +114,9 @@ class SingleTracker(Node):
 
         self.setup()
         self.last_reid_extraction = time.time()
-        self.create_timer(0.05, self.run)
-        self.create_timer(0.01, self.publish_image)
+        self.go = False
+        self.create_timer(0.1, self.run)
+        self.create_timer(0.05, self.publish_image)
 
         self.is_tracking_result = False
 
@@ -150,8 +150,8 @@ class SingleTracker(Node):
         #     )  # dla:0 or dla:1 corresponds to the DLA cores
 
         # Load the exported TensorRT model
-        # self.model = YOLO("yolo11n.engine")
-        self.model = YOLO("yolo11n.pt")
+        self.model = YOLO("yolo11n.engine")
+        # self.model = YOLO("yolov8n.pt")
         self.get_logger().info("Loaded YOLO model")
         self.pose_detection = PoseDetection()
 
@@ -248,8 +248,11 @@ class SingleTracker(Node):
             return False
 
         self.get_logger().info(f"Setting target by {track_by} with value {value}")
+        self.person_data["id"] = None
+        self.person_data["embeddings"] = None
 
-        self.frame = self.image
+        self.frame = copy.deepcopy(self.image)
+
         self.output_image = self.frame.copy()
         results = copy.deepcopy(self.results)
 
@@ -395,10 +398,20 @@ class SingleTracker(Node):
 
     def run(self):
         """Main loop to run the tracker"""
+
         if True:  # self.target_set:
             self.frame = self.image
+            image_time = copy.deepcopy(self.image_time)
+            depth_image_time = copy.deepcopy(self.depth_image_time)
             if self.frame is None:
+                self.get_logger().error("No image available")
                 return
+
+            # if self.go:
+            #     self.go = False
+            #     return
+            # else:
+            #     self.go = True
 
             self.output_image = self.frame.copy()
 
@@ -406,7 +419,7 @@ class SingleTracker(Node):
             self.results = self.model.track(
                 self.frame,
                 persist=True,
-                tracker=BOTSORT_REID_YAML,
+                tracker=BYTETRACK_REID_YAML,
                 classes=0,
                 verbose=False,
             )
@@ -415,6 +428,7 @@ class SingleTracker(Node):
             )
 
             if self.person_data["id"] is None:
+                self.frame = None
                 return
 
             person_in_frame = False
@@ -514,7 +528,7 @@ class SingleTracker(Node):
                                 embedding_exists = compare_images_batch(
                                     embedding,
                                     self.person_data["embeddings"],
-                                    threshold=0.8,
+                                    threshold=0.7,
                                 )
                                 self.get_logger().info(
                                     f"Compared embedding in batch in {time.time() - start_time:.2f} seconds"
@@ -592,7 +606,7 @@ class SingleTracker(Node):
                         if self.person_data[person_angle] is not None:
                             start_time = time.time()
                             if compare_images(
-                                embedding, self.person_data[person_angle], threshold=0.8
+                                embedding, self.person_data[person_angle], threshold=0.7
                             ):
                                 self.get_logger().info(
                                     f"Compared embedding with angle {person_angle} in {time.time() - start_time:.2f} seconds"
@@ -634,32 +648,17 @@ class SingleTracker(Node):
                                 person_found = True
                         if person_found:
                             break
-                        # Check if person is re-identified without angle
-                        # if compare_images(
-                        #     embedding, self.person_data["embeddings"], threshold=0.7
-                        # ):
-                        #     self.person_data["id"] = person["track_id"]
-                        #     self.success(
-                        #         f"Person re-identified: {person['track_id']} without angle"
-                        #     )
-                        #     break
-
-                # check if
             if person_in_frame:
                 self.is_tracking_result = True
                 if len(self.depth_image) > 0 and (
-                    (
-                        self.depth_image_time.nanosec - self.image_time.nanosec
-                        > -DEPTH_THRESHOLD
-                    )
+                    (depth_image_time.nanosec - image_time.nanosec > -DEPTH_THRESHOLD)
                     and (
-                        self.depth_image_time.nanosec - self.image_time.nanosec
-                        < DEPTH_THRESHOLD
+                        depth_image_time.nanosec - image_time.nanosec < DEPTH_THRESHOLD
                     )
                 ):
                     coords = PointStamped()
                     coords.header.frame_id = self.frame_id
-                    coords.header.stamp = self.depth_image_time
+                    coords.header.stamp = depth_image_time
                     point2D = get2DCentroid(
                         self.person_data["coordinates"], self.depth_image
                     )
@@ -678,7 +677,7 @@ class SingleTracker(Node):
                     point3D = deproject_pixel_to_point(
                         self.imageInfo, point_2d_temp, depth
                     )
-                    # print(point3D)
+                    print(point3D)
                     point3D = float(point3D[0]), float(point3D[1]), float(point3D[2])
                     coords.point.x = point3D[0]
                     coords.point.y = point3D[1]
@@ -689,8 +688,8 @@ class SingleTracker(Node):
                     self.get_logger().warn("Depth image not available")
             else:
                 self.is_tracking_result = False
-        else:
-            self.is_tracking_result = False
+
+        self.frame = None
 
 
 def main(args=None):
