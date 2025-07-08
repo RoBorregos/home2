@@ -100,6 +100,12 @@ ros2 topic pub /hri/speech/vad std_msgs/msg/Float32 '{data: 0.8}' -1
 
 ## Stop voice simulation
 ros2 topic pub /AudioState std_msgs/msg/String '{data: "idle"}' -1
+
+## Simulate sending a question to the display
+ros2 topic pub /hri/display/frida_questions std_msgs/msg/String '{data: "What is your favorite color?"}' -1
+
+## Verify that the answer is received
+ros2 topic echo /hri/display/answers
 ```
 
 ## Other useful commands

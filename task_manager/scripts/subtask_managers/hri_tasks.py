@@ -171,7 +171,8 @@ class HRITasks(metaclass=SubtaskMeta):
         self.is_positive_service = self.node.create_client(IsPositive, IS_POSITIVE_SERVICE)
         self.is_negative_service = self.node.create_client(IsNegative, IS_NEGATIVE_SERVICE)
         self.display_publisher = self.node.create_publisher(String, "/hri/display/change_video", 10)
-
+        self.answers_publisher = self.node.create_publisher(String, "/hri/display/answers", 10)
+        self.questions_publisher = self.node.create_publisher(String, "/hri/display/frida_questions", 10)
         self.query_item_client = self.node.create_client(QueryEntry, QUERY_ENTRY_SERVICE)
         # self.add_item_client = self.node.create_client(AddEntry, ADD_ENTRY_SERVICE)
         self.pg = PostgresAdapter()
@@ -1203,8 +1204,24 @@ class HRITasks(metaclass=SubtaskMeta):
 
         self.node.get_logger().info(f"THIS IS THE RESULTS OF THE CATEGORIZATION: {results}")
         return results
-
-
+    def send_display_answer(self, answer: str) -> bool:
+        """
+        Sends the user's answer to the ROS topic `/hri/display/answers`.
+        Args:
+        answer (str): Text entered by the user in the display.
+        Returns:
+        bool: True if successfully posted.
+        """
+        try:
+            msg = String()
+            msg.data = answer
+            self.answers_publisher.publish(msg)
+            self.node.get_logger().info(f"Answer sent to display: {answer}")
+            return True
+        except Exception as e:
+            self.node.get_logger().error(f"Error sending answer: {str(e)}")
+            return False
+    
 if __name__ == "__main__":
     rclpy.init()
     node = Node("hri_tasks")

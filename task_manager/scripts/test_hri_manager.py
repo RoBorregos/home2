@@ -59,6 +59,7 @@ TEST_INDIVIDUAL_FUNCTIONS = False
 TEST_EMBEDDINGS = False
 TEST_ASYNC_LLM = True
 TEST_STREAMING = False
+TEST_QUESTION_ANSWERING = True
 
 
 class TestHriManager(Node):
@@ -91,6 +92,8 @@ class TestHriManager(Node):
 
         if TEST_STREAMING:
             self.test_streaming()
+        if TEST_QUESTION_ANSWERING:
+            self.test_answer_question()
 
     def individual_functions(self):
         # Test say
@@ -305,6 +308,21 @@ class TestHriManager(Node):
 
         self.get_logger().info(f"Common interest future: {f}")
         self.get_logger().info(f"Common interest future status: {f.done()}, {f.result()}")
+        
+    def test_answer_question(self):
+        """
+        Test the answer_question method of HRITasks.
+        """
+        question = "What is the capital of France?"
+        answer = self.hri_manager.answer_question(question)
+        self.get_logger().info(f"Question: {question}")
+        self.get_logger().info(f"Answer: {answer}")
+
+        # Publish the question to the display topic
+        self.hri_manager.publish_question(question)
+
+        # Publish the answer to the display topic
+        self.hri_manager.publish_answer(answer)
 
 
 def main(args=None):
