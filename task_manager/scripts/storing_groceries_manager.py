@@ -121,6 +121,7 @@ class StoringGroceriesManager(Node):
         self.point_pub = self.create_publisher(PointStamped, "point_visualize", 10)
         self.retry_count = 0
         self.prev_state = None
+        self.pour_objects = ["blue_cereal", "cup"]
         # self.manual_heights = [  # 0.2
         #     0.45,  # 0.45 +- 0.2 -> 0.25 0.65
         #     0.8,  # 0.8 +- 0.2 -> 0.6 1.0
@@ -258,12 +259,16 @@ class StoringGroceriesManager(Node):
                 )
                 Logger.info(self, "Moved, now detecting objects")
                 time.sleep(3)
-                status, res = self.subtask_manager.vision.detect_objects()
+                status, res = self.subtask_manager.vision.detect_objects(
+                    ignore_labels=self.pour_objects
+                )
                 rettry = 0
                 while status != Status.EXECUTION_SUCCESS and rettry < 5:
                     Logger.error(self, f"Error detecting objects: {status}")
                     time.sleep(1)
-                    status, res = self.subtask_manager.vision.detect_objects()
+                    status, res = self.subtask_manager.vision.detect_objects(
+                        ignore_labels=self.pour_objects
+                    )
                     rettry += 1
                 if status != Status.EXECUTION_SUCCESS:
                     Logger.error(self, f"Error detecting objects: {status}")
@@ -325,7 +330,7 @@ class StoringGroceriesManager(Node):
             #     named_position="front_stare", velocity=0.5, degrees=True
             # )
 
-            # status, res = self.subtask_manager.vision.detect_objects()
+            # status, res = self.subtask_manager.vision.detect_objects(ignore_labels=self.pour_objects)
             # for count, det in enumerate(res):
             #     if det is not None:
             #         height = self.convert_to_height(det)
@@ -365,7 +370,9 @@ class StoringGroceriesManager(Node):
                 named_position="table_stare", velocity=0.5, degrees=True
             )
             time.sleep(1.5)
-            status, result = self.subtask_manager.vision.detect_objects(timeout=10)
+            status, result = self.subtask_manager.vision.detect_objects(
+                timeout=10, ignore_labels=self.pour_objects
+            )
             if status == Status.TIMEOUT:
                 # pass
                 return
@@ -527,7 +534,9 @@ class StoringGroceriesManager(Node):
                 named_position="table_stare", velocity=0.5, degrees=True
             )
             time.sleep(2.5)
-            status, objs = self.subtask_manager.vision.detect_objects(timeout=10)
+            status, objs = self.subtask_manager.vision.detect_objects(
+                timeout=10, ignore_labels=self.pour_objects
+            )
             if status == Status.TIMEOUT:
                 # pass
                 return
@@ -583,7 +592,9 @@ class StoringGroceriesManager(Node):
             )
             self.state = ExecutionStates.NAV_TO_SHELF
             time.sleep(2)
-            status, new_objs = self.subtask_manager.vision.detect_objects(timeout=10)
+            status, new_objs = self.subtask_manager.vision.detect_objects(
+                timeout=10, ignore_labels=self.pour_objects
+            )
             new_objs: list[BBOX]
             if status == Status.TIMEOUT:
                 # pass
