@@ -135,17 +135,18 @@ class SingleTracker(Node):
 
         pbar = tqdm.tqdm(total=4, desc="Loading models")
 
-        # if .engine does not exist, export the model
-        if not os.path.exists("yolo11n.engine"):
-            pt_model = YOLO("yolo11n.pt")
-            self.get_logger().info("Loaded YOLO model, exporting...")
-            # # Export the model to TensorRT with DLA enabled (only works with FP16 or INT8)
-            pt_model.export(
-                format="engine", device="dla:0", half=True
-            )  # dla:0 or dla:1 corresponds to the DLA cores
+        # # if .engine does not exist, export the model
+        # if not os.path.exists("yolo11n.engine"):
+        #     pt_model = YOLO("yolo11n.pt")
+        #     self.get_logger().info("Loaded YOLO model, exporting...")
+        #     # # Export the model to TensorRT with DLA enabled (only works with FP16 or INT8)
+        #     pt_model.export(
+        #         format="engine", device="dla:0", half=True
+        #     )  # dla:0 or dla:1 corresponds to the DLA cores
 
         # Load the exported TensorRT model
-        self.model = YOLO("yolo11n.engine")
+        # self.model = YOLO("yolo11n.engine")
+        self.model = YOLO("yolo11n.pt")
         self.get_logger().info("Loaded YOLO model")
         self.pose_detection = PoseDetection()
 
