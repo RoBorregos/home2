@@ -364,7 +364,7 @@ class PourMotionServer(Node):
             constraint_msg.frame_id = pose.header.frame_id
             constraint_msg.target_link = GRASP_LINK_FRAME
             # Modify in case need to modify the limits for the path
-            constraint_msg.tolerance_orientation = [3.14*2, 1.25, 1.25]
+            constraint_msg.tolerance_orientation = [3.14 * 2, 1.25, 1.25]
             constraint_msg.weight = 1.0
             constraint_msg.parameterization = 0
             request.constraint = constraint_msg
