@@ -63,7 +63,7 @@ class ReceptionistTM(Node):
         self.check_angles = [0, -10, 20]
 
         self.guests = [Guest() for _ in range(3)]
-        self.guests[0] = Guest("ale", "Juice", "Football")
+        self.guests[0] = Guest("Julian", "Juice", "Football")
         self.current_guest = 1
 
         self.current_attempts = 0
@@ -214,9 +214,7 @@ class ReceptionistTM(Node):
                 wait=True,
             )
 
-            rclpy.spin_until_future_complete(
-                self.node, common_message_guest1_future, timeout_sec=15
-            )
+            rclpy.spin_until_future_complete(self, common_message_guest1_future, timeout_sec=15)
             status, common_message_guest1 = common_message_guest1_future.result()
 
             if status == Status.EXECUTION_SUCCESS:
@@ -226,9 +224,7 @@ class ReceptionistTM(Node):
                     f"{host.name} is also in the living room.",
                     wait=True,
                 )
-                rclpy.spin_until_future_complete(
-                    self.node, common_message_host_future, timeout_sec=15
-                )
+                rclpy.spin_until_future_complete(self, common_message_host_future, timeout_sec=15)
                 s, common_message_host = common_message_host_future.result()
                 self.subtask_manager.hri.say(
                     f"{common_message_host}",
@@ -342,11 +338,17 @@ class ReceptionistTM(Node):
                     self.current_attempts = 0
 
                     while self.current_attempts < ATTEMPT_LIMIT:
-                        self.subtask_manager.vision.follow_by_name(host.name)
-                        result = self.subtask_manager.vision.isPerson(host.name)
+                        # Comment if using an already saved host
+                        self.subtask_manager.vision.follow_by_name("Unknown")
+                        result = self.subtask_manager.vision.isPerson("Unknown")
+
+                        # Uncomment if using an already saved host
+                        # self.subtask_manager.vision.follow_by_name(host.name)
+                        # result = self.subtask_manager.vision.isPerson(host.name)
 
                         if result:
-                            # self.subtask_manager.vision.save_face_name(host.name)
+                            # Comment if using an already saved host
+                            self.subtask_manager.vision.save_face_name(host.name)
                             person_found = True
                             break
                         self.timeout(1)
