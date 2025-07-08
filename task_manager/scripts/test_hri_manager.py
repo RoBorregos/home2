@@ -308,21 +308,6 @@ class TestHriManager(Node):
 
         self.get_logger().info(f"Common interest future: {f}")
         self.get_logger().info(f"Common interest future status: {f.done()}, {f.result()}")
-        
-    def test_answer_question(self):
-        """
-        Test the answer_question method of HRITasks.
-        """
-        question = "What is the capital of France?"
-        answer = self.hri_manager.answer_question(question)
-        self.get_logger().info(f"Question: {question}")
-        self.get_logger().info(f"Answer: {answer}")
-
-        # Publish the question to the display topic
-        self.hri_manager.publish_question(question)
-
-        # Publish the answer to the display topic
-        self.hri_manager.publish_answer(answer)
 
 
 def main(args=None):
