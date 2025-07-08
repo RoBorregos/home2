@@ -17,7 +17,8 @@ CREATE TABLE locations (
     area VARCHAR(255) NOT NULL,
     subarea VARCHAR(255) NOT NULL,
     embedding vector(384) NOT NULL,
-    context text
+    context text,
+    context_embedding vector(384) NOT NULL
 );
 
 CREATE TABLE command_history (
