@@ -100,7 +100,7 @@ public:
 
     // Load relative pose from YAML
     std::string config_path =
-        ament_index_cpp::get_package_share_directory("manipulation") +
+        ament_index_cpp::get_package_share_directory("perception_3d") +
         "/config/relative_docking_pose.yaml";
     YAML::Node config = YAML::LoadFile(config_path);
     this->rel_x_ = config["x"].as<double>();
