@@ -1059,7 +1059,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
         try:
             categories = self.get_shelves_categories(shelves, table_objects=table_objects)[1]
-            results = self.categorize_objects_with_embeddings(categories, table_objects)
+            results = self.categorize_objects_with_embeddings(categories, table_objects, shelves)
 
             objects_to_add = {key: value["objects_to_add"] for key, value in results.items()}
             Logger.error(self.node, f"categories {categories}")
@@ -1135,7 +1135,7 @@ class HRITasks(metaclass=SubtaskMeta):
         self.display_publisher.publish(String(data=topic))
         Logger.info(self.node, f"Published display topic: {topic}")
 
-    def categorize_object(self, categories: dict, obj: str):
+    def categorize_object(self, categories: dict, obj: str, shelves: dict):
         """Method to categorize a list of objects in an array of objects depending on similarity"""
 
         try:
@@ -1150,6 +1150,10 @@ class HRITasks(metaclass=SubtaskMeta):
             for category in categories_aux.values():
                 category_list.append(category)
 
+            for i, category in enumerate(category_list):
+                self.node.get_logger().info(f"Category {i}: {category}")
+                category_list[i] = category + " " + " ".join(shelves[i])
+
             results = self.find_closest_raw(category_list, obj)
             results_distances = [res[1] for res in results]
 
@@ -1162,7 +1166,8 @@ class HRITasks(metaclass=SubtaskMeta):
                 result_category = "empty"
 
             self.node.get_logger().info(f"CATEGORY PREDICTED: {result_category}")
-
+            result_category = result_category.split(" ")[0]
+            self.node.get_logger().info(f"CATEGORY PREDICTED: {result_category}")
             key_resulted = 2
             for key in list(categories.keys()):
                 if str(categories[key]) == str(result_category):
@@ -1177,7 +1182,7 @@ class HRITasks(metaclass=SubtaskMeta):
         except Exception as e:
             self.node.get_logger().error(f"FAILED TO CATEGORIZE: {obj} with error: {e}")
 
-    def categorize_objects_with_embeddings(self, categories: dict, obj_list: list):
+    def categorize_objects_with_embeddings(self, categories: dict, obj_list: list, shelves: dict):
         """
         Categorize objects based on their embeddings."""
         self.node.get_logger().info(f"THIS IS THE CATEGORIES dict RECEIVED: {categories}")
@@ -1187,7 +1192,7 @@ class HRITasks(metaclass=SubtaskMeta):
             for key in categories.keys()
         }
         for obj in obj_list:
-            index = self.categorize_object(categories, obj)
+            index = self.categorize_object(categories, obj, shelves)
             results[index]["objects_to_add"].append(obj)
 
         self.node.get_logger().info(f"THIS IS THE RESULTS OF THE CATEGORIZATION: {results}")

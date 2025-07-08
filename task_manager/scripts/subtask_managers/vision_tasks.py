@@ -374,7 +374,9 @@ class VisionTasks:
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, []), delay=2)
     @service_check("object_detector_client", (Status.EXECUTION_ERROR, []), TIMEOUT)
-    def detect_objects(self, timeout: float = TIMEOUT) -> tuple[Status, list[BBOX]]:
+    def detect_objects(
+        self, timeout: float = TIMEOUT, ignore_labels: list[str] = []
+    ) -> tuple[Status, list[BBOX]]:
         """Detect the object in the image"""
         Logger.info(self.node, "Waiting for object detection")
         request = DetectionHandler.Request()
@@ -409,6 +411,8 @@ class VisionTasks:
                 object_detection.x2 = detection.xmax
                 object_detection.y1 = detection.ymin
                 object_detection.y2 = detection.ymax
+                if detection.label_text in ignore_labels:
+                    continue
                 object_detection.classname = detection.label_text
                 object_detection.h = detection.ymax - detection.ymin
                 object_detection.w = detection.xmax - detection.xmin
