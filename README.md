@@ -66,7 +66,7 @@ $ source install/setup.bash
 | Name                    | Github                                                       | Role      |
 | ----------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------ |
 | Oscar Arreola | [@Oscar-gg](https://github.com/Oscar-gg)  | HRI, Integration  |
-| Gerardo Fregoso |  |  |
+| Gerardo Fregoso | [@GerardoFJ](https://github.com/GerardoFJ) | Navigation, Integration |
 | Emiliano Flores | [@EmilianoHFlores](https://github.com/EmilianoHFlores) | Manipulation, Vision, Integration |
 | Iván Romero | [@IvanRomero03](https://github.com/IvanRomero03) | Integration, HRI, Manipulation, Vision |
 | Diego Hernández | [@Diego-HC](https://github.com/Diego-HC) | Integration, HRI, Navigation |
@@ -78,4 +78,11 @@ $ source install/setup.bash
 | Fernando Hernandez | [@Fernando94654](https://github.com/Fernando94654) | Vision, Manipulation |
 |Camila Tite | [@CamilaTite26](https://github.com/CamilaTite26) | HRI |
 |Daniela Herrera | [@DanHeGa](https://github.com/DanHeGa) | Vision |
+|Adán Flores-Ramírez | [@afr2903](https://github.com/afr2903) | Research |
 
+## Documentation
+[Docs](https://athome.roborregos.com/)
+
+[API documentation](https://roborregos.github.io/home2/)
+
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/RoBorregos/home2)
