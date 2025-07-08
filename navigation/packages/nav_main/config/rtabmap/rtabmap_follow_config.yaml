@@ -1,0 +1,71 @@
+# RTAB-Map Configuration File
+rgbd_sync:
+  ros__parameters:
+    approx_sync: false
+    use_sim_time: false
+    qos: 1
+    qos_camera_info: 1
+
+rtabmap:
+  ros__parameters:
+  # Basic ROS parameters
+    subscribe_rgbd: true
+    subscribe_rgb: false
+    subscribe_depth: false
+    subscribe_scan: true
+    use_sim_time: false
+    odom_sensor_sync: true
+    frame_id: "base_link"
+    odom_frame_id: "odom"
+    map_frame_id: "map"
+    database_path: "/workspace/src/navigation/rtabmapdbs/rtabmap_follow.db"
+    approx_sync: true
+    #RTABMAP PARAMETERS
+    "Rtabmap/DetectionRate": "15"
+    "Mem/NotLinkedNodesKept": "false"
+    "Kp/NNStrategy": "4"
+    "Kp/MaxFeatures": "500"
+    "Kp/DetectorStrategy": "8"
+    "GFTT/Gpu": "true"
+    "ORB/Gpu": "true"
+    "RGBD/LinearUpdate": "0.1"
+    "RGBD/AngularUpdate": "0.1"
+    "RGBD/ForceOdom3DoF": "true"
+    "RGBD/StartAtOrigin": "false"
+    "RGBD/ProximityPathMaxNeighbors" : "0"
+    #G2O Optimization
+    "Optimizer/Strategy": "1"
+    "Optimizer/Iterations": "20"
+    "Optimizer/Epsilon": "0.0"
+    "Optimizer/Robust": "true"
+    "Optimizer/GravitySigma": "0.3"
+    "g2o/Solver": "3"
+    #Odom strategy
+    "Odom/Strategy": "1"
+    "Odom/ResetCountdown": "0"
+    "Odom/Holonomic": "false"
+    "Odom/FilteringStrategy": "1"
+    "Odom/ParticleSize": "400"
+    #Strategy visICP
+    "Reg/Strategy": "2"
+    "Reg/Force3DoF": "true"
+    "Vis/PnPRefineIterations": "0"
+    "Vis/MinInliers": "20"
+    "Vis/Iterations": "300"
+    "Vis/FeatureType": "8"
+    "Vis/MaxFeatures": "1000"
+    "Vis/BundleAdjustment": "1"
+    "GMS/WithRotation": "true"
+    "GMS/WithScale": "true"
+    "GMS/ThresholdFactor": "6.0"
+    "Icp/Strategy": "1"
+    "Icp/MaxCorrespondenceDistance": "0.1"
+    "Icp/PointToPlane": "true"
+    #grid
+    "Grid/Sensor": "0"
+    "Grid/RangeMax": "3.0"
+    "Grid/CellSize": "0.07"
+    "Grid/3D": "false"
+    "Grid/RayTracing": "false"
+    "Grid/MaxGroundHeight": "0.1"
+    "Grid/MaxObstacleHeight": "2.0"
