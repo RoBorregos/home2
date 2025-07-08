@@ -115,6 +115,9 @@ var annotated_dup =
     [ "look_at_example", "namespacelook__at__example.html", [
       [ "LookAt", "classlook__at__example_1_1LookAt.html", "classlook__at__example_1_1LookAt" ]
     ] ],
+    [ "map_cleaner", "namespacemap__cleaner.html", [
+      [ "MapCleaner", "classmap__cleaner_1_1MapCleaner.html", "classmap__cleaner_1_1MapCleaner" ]
+    ] ],
     [ "map_publisher", "namespacemap__publisher.html", [
       [ "SimpleMapServer", "classmap__publisher_1_1SimpleMapServer.html", "classmap__publisher_1_1SimpleMapServer" ]
     ] ],

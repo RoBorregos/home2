@@ -1,8 +1,8 @@
 var searchData=
 [
-  ['map_5fpublisher_0',['map_publisher',['../namespacemap__publisher.html',1,'']]],
-  ['mapping_1',['mapping',['../namespacemapping.html',1,'']]],
-  ['mapping_5frtabmap_2',['mapping_rtabmap',['../namespacemapping__rtabmap.html',1,'']]],
+  ['map_5fcleaner_0',['map_cleaner',['../namespacemap__cleaner.html',1,'']]],
+  ['map_5fpublisher_1',['map_publisher',['../namespacemap__publisher.html',1,'']]],
+  ['mapping_2',['mapping',['../namespacemapping.html',1,'']]],
   ['mocked_3',['mocked',['../namespacemocked.html',1,'']]],
   ['model_4',['model',['../namespacemodel.html',1,'']]],
   ['moondream_5flaunch_5',['moondream_launch',['../namespacemoondream__launch.html',1,'']]],

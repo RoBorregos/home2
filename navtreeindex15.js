@@ -1,5 +1,11 @@
 var NAVTREEINDEX15 =
 {
+"dir_ed883a7ed85edf2eec5565e7e0eb08dd.html":[20,0,7,0,1],
+"dir_ee0242f4ce86ca704aa1e9710772fddb.html":[20,0,3,0,5,0],
+"dir_efe77447dd923703fc6a131357db3f2a.html":[20,0,7,0,3,2],
+"dir_f1aa8fdcd36651f8f5cb7c2b1d04ad10.html":[20,0,7,0,0,1],
+"dir_f3d325c8d9d512220867282cc9d7de56.html":[20,0,7,0,2,0],
+"dir_f54d5ae4082bb13d1cf806224e0b3108.html":[20,0,3,0,5,1,1],
 "dir_f5bae02ac274157edb0be0eb1167101d.html":[20,0,7,0,2,3,1],
 "dir_f68acf65702fceca835527a63db3effa.html":[20,0,1,1],
 "dir_fb8c2fc2bfc43ee58d9bac65ec604e04.html":[20,0,0,1],
@@ -26,8 +32,8 @@ var NAVTREEINDEX15 =
 "ds4__demo_8py.html#a4c6991237427da870d97ade2a44fdfec":[20,0,3,0,1,0,3,3],
 "ds4__demo_8py.html#a9537b385d440de90c55689e7d09e9b5d":[20,0,3,0,1,0,3,2],
 "ds4__demo_8py.html#a9ee64277947c3be58860b6df419273bd":[20,0,3,0,1,0,3,1],
-"dualshock__cmd__vel_8launch_8py.html":[20,0,4,0,1,0,2],
-"dualshock__cmd__vel_8launch_8py.html#a432ab17ac92da4fc48450236583614a3":[20,0,4,0,1,0,2,0],
+"dualshock__cmd__vel_8launch_8py.html":[20,0,4,0,1,0,1],
+"dualshock__cmd__vel_8launch_8py.html#a432ab17ac92da4fc48450236583614a3":[20,0,4,0,1,0,1,0],
 "ekf_8launch_8py.html":[20,0,4,0,0,1,1],
 "ekf_8launch_8py.html#a32e94cb02311b88f95d5b52017cf6948":[20,0,4,0,0,1,1,0],
 "ex__gripper_8py.html":[20,0,3,0,2,0,0],
@@ -152,8 +158,8 @@ var NAVTREEINDEX15 =
 "functions_t.html":[19,3,0,20],
 "functions_u.html":[19,3,0,21],
 "functions_v.html":[19,3,0,22],
-"functions_vars.html":[19,3,2,0],
 "functions_vars.html":[19,3,2],
+"functions_vars.html":[19,3,2,0],
 "functions_vars_a.html":[19,3,2,1],
 "functions_vars_b.html":[19,3,2,2],
 "functions_vars_c.html":[19,3,2,3],
@@ -243,11 +249,5 @@ var NAVTREEINDEX15 =
 "gpsr__test__commands_8py.html#a4083b9303ad06e4e029f1628bcc46981":[20,0,6,1,1,4,11],
 "gpsr__test__commands_8py.html#a67fe8986c1f07187d3efe207b9fa2fd2":[20,0,6,1,1,4,13],
 "gpsr__test__commands_8py.html#a7803fd636add05ea3711d79b5b2a3066":[20,0,6,1,1,4,12],
-"gpsr__test__commands_8py.html#a7ec1ac68bc2c97b7f2ff77f3be166cf6":[20,0,6,1,1,4,1],
-"gpsr__test__commands_8py.html#a84816510afb515fad2e73d7b5e6bb9a0":[20,0,6,1,1,4,15],
-"gpsr__test__commands_8py.html#a8b43f8799b5da00c514c5b0698931ef8":[20,0,6,1,1,4,7],
-"gpsr__test__commands_8py.html#aa03e1e368b97d99d52d1c4ef88d7fa90":[20,0,6,1,1,4,21],
-"gpsr__test__commands_8py.html#abf7ee6d141b2e9ccaf7a46465b311a1b":[20,0,6,1,1,4,2],
-"gpsr__test__commands_8py.html#ac3bee4bf5fb634df18b9e37ebcb9e186":[20,0,6,1,1,4,5],
-"gpsr__test__commands_8py.html#ad073f80419b58cd912161e378963b11a":[20,0,6,1,1,4,6]
+"gpsr__test__commands_8py.html#a7ec1ac68bc2c97b7f2ff77f3be166cf6":[20,0,6,1,1,4,1]
 };

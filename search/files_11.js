@@ -4,7 +4,7 @@ var searchData=
   ['readme_2emd_1',['README.md',['../vision_2README_8md.html',1,'(Global Namespace)'],['../robot__description_2frida__description_2README_8md.html',1,'(Global Namespace)'],['../navigation_2README_8md.html',1,'(Global Namespace)'],['../manipulation_2README_8md.html',1,'(Global Namespace)']]],
   ['readpcdfile_2esrv_2',['ReadPcdFile.srv',['../ReadPcdFile_8srv.html',1,'']]],
   ['readqr_2esrv_3',['ReadQr.srv',['../ReadQr_8srv.html',1,'']]],
-  ['receptionist_2elaunch_2epy_4',['receptionist.launch.py',['../navigation_2packages_2nav__main_2launch_2task__launch_2receptionist_8launch_8py.html',1,'(Global Namespace)'],['../manipulation_2packages_2manipulation__general_2launch_2receptionist_8launch_8py.html',1,'(Global Namespace)']]],
+  ['receptionist_2elaunch_2epy_4',['receptionist.launch.py',['../receptionist_8launch_8py.html',1,'']]],
   ['receptionist_2emd_5',['receptionist.md',['../receptionist_8md.html',1,'']]],
   ['receptionist_5fcommands_2epy_6',['receptionist_commands.py',['../receptionist__commands_8py.html',1,'']]],
   ['receptionist_5flaunch_2epy_7',['receptionist_launch.py',['../receptionist__launch_8py.html',1,'']]],
@@ -21,7 +21,6 @@ var searchData=
   ['ros2_2emd_18',['ROS2.md',['../ROS2_8md.html',1,'']]],
   ['ros_5futils_2epy_19',['ros_utils.py',['../manipulation_2packages_2frida__motion__planning_2frida__motion__planning_2utils_2ros__utils_8py.html',1,'(Global Namespace)'],['../vision_2packages_2object__detector__2d_2object__detector__2d_2Utils_2ros__utils_8py.html',1,'(Global Namespace)']]],
   ['rplidar_5ffixed_2elaunch_2epy_20',['rplidar_fixed.launch.py',['../rplidar__fixed_8launch_8py.html',1,'']]],
-  ['rtabmap_5fslam_2elaunch_2epy_21',['rtabmap_slam.launch.py',['../rtabmap__slam_8launch_8py.html',1,'']]],
-  ['rtabmap_5fslam_5fcarry_2elaunch_2epy_22',['rtabmap_slam_carry.launch.py',['../rtabmap__slam__carry_8launch_8py.html',1,'']]],
-  ['run_5fwhile_5fhearing_2epy_23',['run_while_hearing.py',['../run__while__hearing_8py.html',1,'']]]
+  ['rtabnav2_2elaunch_2epy_21',['rtabnav2.launch.py',['../rtabnav2_8launch_8py.html',1,'']]],
+  ['run_5fwhile_5fhearing_2epy_22',['run_while_hearing.py',['../run__while__hearing_8py.html',1,'']]]
 ];

@@ -6,7 +6,7 @@ var classtransform__target_1_1PointTransformer =
     [ "get_result_callback", "classtransform__target_1_1PointTransformer.html#a963a99ca183d7e5b65f8c2b781b2b315", null ],
     [ "goal_response_callback", "classtransform__target_1_1PointTransformer.html#a14b2b8be550fdf90796db8a87605e259", null ],
     [ "median_filter", "classtransform__target_1_1PointTransformer.html#a51f9aad54e3cb7989c9af3bc34df87a2", null ],
-    [ "point_callback", "classtransform__target_1_1PointTransformer.html#a020a4e7ac17d5b84b63ffd75c3adcfc9", null ],
+    [ "point_callback", "classtransform__target_1_1PointTransformer.html#a79ad5d3c4ce2c99d630f9aae5eca7c98", null ],
     [ "send_navigation_goal", "classtransform__target_1_1PointTransformer.html#af07678420f1b78eb04c4d2d3c47c668f", null ],
     [ "set_target_callback", "classtransform__target_1_1PointTransformer.html#ae591a80eea224d240068e25ccac1c5c2", null ],
     [ "_get_result_future", "classtransform__target_1_1PointTransformer.html#a6f16ba11f89b23ae7a739e0993de6643", null ],

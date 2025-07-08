@@ -18,11 +18,10 @@ var searchData=
   ['speechstream_2eaction_15',['SpeechStream.action',['../SpeechStream_8action.html',1,'']]],
   ['status_2epy_16',['status.py',['../status_8py.html',1,'']]],
   ['storing_2dgroceries_2emd_17',['storing-groceries.md',['../storing-groceries_8md.html',1,'']]],
-  ['storing_5fgroceries_2elaunch_2epy_18',['storing_groceries.launch.py',['../storing__groceries_8launch_8py.html',1,'']]],
-  ['storing_5fgroceries_5fcommands_2epy_19',['storing_groceries_commands.py',['../storing__groceries__commands_8py.html',1,'']]],
-  ['storing_5fgroceries_5flaunch_2epy_20',['storing_groceries_launch.py',['../storing__groceries__launch_8py.html',1,'']]],
-  ['storing_5fgroceries_5fmanager_2epy_21',['storing_groceries_manager.py',['../storing__groceries__manager_8py.html',1,'']]],
-  ['stt_2esrv_22',['STT.srv',['../STT_8srv.html',1,'']]],
-  ['subtask_5fmanager_2epy_23',['subtask_manager.py',['../subtask__manager_8py.html',1,'']]],
-  ['subtask_5fmeta_2epy_24',['subtask_meta.py',['../subtask__meta_8py.html',1,'']]]
+  ['storing_5fgroceries_5fcommands_2epy_18',['storing_groceries_commands.py',['../storing__groceries__commands_8py.html',1,'']]],
+  ['storing_5fgroceries_5flaunch_2epy_19',['storing_groceries_launch.py',['../storing__groceries__launch_8py.html',1,'']]],
+  ['storing_5fgroceries_5fmanager_2epy_20',['storing_groceries_manager.py',['../storing__groceries__manager_8py.html',1,'']]],
+  ['stt_2esrv_21',['STT.srv',['../STT_8srv.html',1,'']]],
+  ['subtask_5fmanager_2epy_22',['subtask_manager.py',['../subtask__manager_8py.html',1,'']]],
+  ['subtask_5fmeta_2epy_23',['subtask_meta.py',['../subtask__meta_8py.html',1,'']]]
 ];

@@ -29,12 +29,6 @@ var namespaces_dup =
       [ "run", "namespaceclient.html#a10d4416aef9193a3735b7f83fe3adae8", null ]
     ] ],
     [ "closed_door_test", "namespaceclosed__door__test.html", "namespaceclosed__door__test" ],
-    [ "composablecarry", "namespacecomposablecarry.html", [
-      [ "generate_launch_description", "namespacecomposablecarry.html#a5270849a0134bf880fdabb463008f32c", null ]
-    ] ],
-    [ "composabletest", "namespacecomposabletest.html", [
-      [ "generate_launch_description", "namespacecomposabletest.html#ab3f11df4c70dac7cf69f4f65a0bbfdfb", null ]
-    ] ],
     [ "dashgo_driver", "namespacedashgo__driver.html", "namespacedashgo__driver" ],
     [ "dashgo_driver2", "namespacedashgo__driver2.html", "namespacedashgo__driver2" ],
     [ "debug", "namespacedebug.html", [
@@ -140,13 +134,10 @@ var namespaces_dup =
     [ "is_person_inside", "namespaceis__person__inside.html", "namespaceis__person__inside" ],
     [ "local_camera", "namespacelocal__camera.html", "namespacelocal__camera" ],
     [ "look_at_example", "namespacelook__at__example.html", "namespacelook__at__example" ],
+    [ "map_cleaner", "namespacemap__cleaner.html", "namespacemap__cleaner" ],
     [ "map_publisher", "namespacemap__publisher.html", "namespacemap__publisher" ],
     [ "mapping", "namespacemapping.html", [
       [ "generate_launch_description", "namespacemapping.html#ac951e3077b2a262f96039858d7fa2b20", null ]
-    ] ],
-    [ "mapping_rtabmap", "namespacemapping__rtabmap.html", [
-      [ "generate_launch_description", "namespacemapping__rtabmap.html#a3712b87eea6645d1ebbe67f9a65b25ad", null ],
-      [ "launch_setup", "namespacemapping__rtabmap.html#aa40b9c20c19b89590534488a8deb2464", null ]
     ] ],
     [ "mocked", "namespacemocked.html", [
       [ "mock_common_interest", "namespacemocked.html#a6a3d2afbd135dd06d43c490ed3684ae2", null ],
@@ -177,18 +168,15 @@ var namespaces_dup =
     ] ],
     [ "MoveItPlanner", "namespaceMoveItPlanner.html", "namespaceMoveItPlanner" ],
     [ "MoveItServo", "namespaceMoveItServo.html", "namespaceMoveItServo" ],
-    [ "nav2", "namespacenav2.html", [
-      [ "generate_launch_description", "namespacenav2.html#a57af8a00fb3b26bd0f6341cfe0500f4f", null ]
+    [ "natural_navigation", "namespacenatural__navigation.html", [
+      [ "generate_launch_description", "namespacenatural__navigation.html#a39873f9b71c365116b2667138e5a0242", null ]
     ] ],
-    [ "nav_amcl", "namespacenav__amcl.html", [
-      [ "generate_launch_description", "namespacenav__amcl.html#aef73a2a052d4e5a91988df5f10576289", null ]
+    [ "nav2_composition", "namespacenav2__composition.html", [
+      [ "generate_launch_description", "namespacenav2__composition.html#ad30570718c8232014b617c773478edfb", null ]
     ] ],
     [ "nav_basics", "namespacenav__basics.html", [
       [ "generate_launch_description", "namespacenav__basics.html#a0ad8a434cdfa5b959bd6a1d5df652146", null ],
       [ "launch_setup", "namespacenav__basics.html#ac5d23aeb26e79af148252a849c2905ca", null ]
-    ] ],
-    [ "nav_mapping", "namespacenav__mapping.html", [
-      [ "generate_launch_description", "namespacenav__mapping.html#a8682959a7b0484f217b1d836db7fb213", null ]
     ] ],
     [ "nav_test", "namespacenav__test.html", "namespacenav__test" ],
     [ "object_detector_combined", "namespaceobject__detector__combined.html", [
@@ -211,8 +199,7 @@ var namespaces_dup =
     [ "pointing_detection", "namespacepointing__detection.html", "namespacepointing__detection" ],
     [ "pose_detection", "namespacepose__detection.html", "namespacepose__detection" ],
     [ "receptionist", "namespacereceptionist.html", [
-      [ "generate_launch_description", "namespacereceptionist.html#aff8a76b94a8d8c1b2665d82bfafa608b", null ],
-      [ "launch_setup", "namespacereceptionist.html#aed553a924211c35e2562159b0f43469c", null ]
+      [ "generate_launch_description", "namespacereceptionist.html#aaead6d431decb57c53f9d7c189fbb0f8", null ]
     ] ],
     [ "receptionist_commands", "namespacereceptionist__commands.html", "namespacereceptionist__commands" ],
     [ "receptionist_launch", "namespacereceptionist__launch.html", [
@@ -273,13 +260,8 @@ var namespaces_dup =
     [ "rplidar_fixed", "namespacerplidar__fixed.html", [
       [ "generate_launch_description", "namespacerplidar__fixed.html#a34c12a29f8ab4229ce3f1118c9f1c3c2", null ]
     ] ],
-    [ "rtabmap_slam", "namespacertabmap__slam.html", [
-      [ "generate_launch_description", "namespacertabmap__slam.html#a4a8c077875c519fbb01a16d4c929d240", null ],
-      [ "launch_setup", "namespacertabmap__slam.html#a8b32f337ecaf2f50b6d516ff37fdcd63", null ]
-    ] ],
-    [ "rtabmap_slam_carry", "namespacertabmap__slam__carry.html", [
-      [ "generate_launch_description", "namespacertabmap__slam__carry.html#a56aa920867c38727fb38bcab4f65190e", null ],
-      [ "launch_setup", "namespacertabmap__slam__carry.html#a450f6574ab39dbad8001a48696c75951", null ]
+    [ "rtabnav2", "namespacertabnav2.html", [
+      [ "generate_launch_description", "namespacertabnav2.html#a0b5741c31c1cac08c5b3158c043374e7", null ]
     ] ],
     [ "run_while_hearing", "namespacerun__while__hearing.html", "namespacerun__while__hearing" ],
     [ "server", "namespaceserver.html", "namespaceserver" ],
@@ -292,10 +274,6 @@ var namespaces_dup =
     [ "Servo", "namespaceServo.html", "namespaceServo" ],
     [ "Shelf_OCV", "namespaceShelf__OCV.html", "namespaceShelf__OCV" ],
     [ "show_object_detection", "namespaceshow__object__detection.html", "namespaceshow__object__detection" ],
-    [ "storing_groceries", "namespacestoring__groceries.html", [
-      [ "generate_launch_description", "namespacestoring__groceries.html#a08baa2a58d490a8fba1a16934a04afc5", null ],
-      [ "launch_setup", "namespacestoring__groceries.html#a0391f69ed911a8eccfdcc6ba61f29f29", null ]
-    ] ],
     [ "storing_groceries_commands", "namespacestoring__groceries__commands.html", "namespacestoring__groceries__commands" ],
     [ "storing_groceries_launch", "namespacestoring__groceries__launch.html", [
       [ "generate_launch_description", "namespacestoring__groceries__launch.html#a84e56b2514a7f4c75214c14f7b9a38a4", null ]
