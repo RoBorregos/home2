@@ -48,7 +48,7 @@ GRASP_DETECTION_SERVICE = "/manipulation/detect_grasps"
 GRIPPER_SET_STATE_SERVICE = "/manipulation/gripper/set_state"
 XARM_SET_DIGITAL_TGPIO_SERVICE = "/xarm/set_tgpio_digital"
 SAFETY_HEIGHT = 0.05
-PICK_MIN_HEIGHT = 0.15
+PICK_MIN_HEIGHT = 0.1
 GRASP_LINK_FRAME = "gripper_grasp_frame"
 
 # Place
@@ -69,6 +69,11 @@ PLANE_NAMESPACE = "plane"
 PLANE_OBJECT_COLLISION_TOLERANCE = (
     0.025  # Tolerance to delete collision objects if they are too close to the plane
 )
+
+# Pour
+POUR_MOTION_ACTION_SERVER = "/manipulation/pour_motion_action_server"
+POUR_VELOCITY = 0.2
+POUR_ACCELERATION = 0.15
 
 SHELF_POSITION_PREPLACE_POSE = -0.25
 

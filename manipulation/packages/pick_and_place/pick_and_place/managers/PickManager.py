@@ -8,8 +8,8 @@ from frida_interfaces.msg import PickResult
 from frida_motion_planning.utils.service_utils import (
     move_joint_positions as send_joint_goal,
 )
-import time
 from typing import Tuple
+import time
 
 CFG_PATHS = [
     "/workspace/src/home2/manipulation/packages/arm_pkg/config/frida_eigen_params_custom_gripper_testing.cfg",
@@ -117,7 +117,7 @@ class PickManager:
             # Check result
             pick_result = future.result().get_result().result
             self.node.get_logger().info(f"Pick Motion Result: {pick_result}")
-            if pick_result.success:
+            if pick_result.success != 0:
                 pick_result_success = True
                 break
             else:
@@ -141,7 +141,6 @@ class PickManager:
             )
 
         self.node.get_logger().info("Returning to position")
-        time.sleep(5)
 
         for i in range(5):
             # return to configured position

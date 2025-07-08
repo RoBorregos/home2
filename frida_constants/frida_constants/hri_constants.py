@@ -17,6 +17,9 @@ GRAMMAR_SERVICE = "/hri/nlp/grammar"
 COMMON_INTEREST_SERVICE = "/hri/nlp/common_interest"
 RAG_SERVICE = "/hri/rag/answer_question"
 
+DISPLAY_IMAGE_TOPIC = "/hri/display/change_video"
+DISPLAY_MAP_TOPIC = "/hri/display/map"
+
 USE_RESPEAKER = True
 RESPEAKER_LIGHT_TOPIC = "/hri/speech/respeaker/light"
 RESPEAKER_DOA_TOPIC = "/hri/speech/respeaker/doa"
@@ -42,19 +45,19 @@ GPSR_COMMANDS = {
 
 
 class MODEL(Enum):
-    GRAMMAR = "qwen3:0.6b"
-    LLM_WRAPPER = "qwen3:0.6b"
-    COMMON_INTEREST = "qwen3:0.6b"
+    GRAMMAR = "qwen3"
+    LLM_WRAPPER = "qwen3"
+    COMMON_INTEREST = "qwen3"
     CATEGORIZE_SHELVES = "qwen3"
 
-    IS_POSITIVE = "qwen3:0.6b"
-    IS_NEGATIVE = "qwen3:0.6b"
-    GENERIC_STRUCTURED_OUTPUT = "qwen3:0.6b"
-    GENERATE_RESPONSE = "qwen3:0.6b"
-    STRUCTURED_RESPONSE = "qwen3:0.6b"
+    IS_POSITIVE = "qwen3"
+    IS_NEGATIVE = "qwen3"
+    GENERIC_STRUCTURED_OUTPUT = "qwen3"
+    GENERATE_RESPONSE = "qwen3"
+    STRUCTURED_RESPONSE = "qwen3"
     EXTRACT_INFO_REQUESTED = "qwen2.5"
-    GET_COMMANDS = "qwen3:0.6b"
-    CommonInterest = "qwen3:0.6b"
+    GET_COMMANDS = "qwen3"
+    CommonInterest = "qwen3"
 
 
 class KNOWLEDGE_TYPE(Enum):

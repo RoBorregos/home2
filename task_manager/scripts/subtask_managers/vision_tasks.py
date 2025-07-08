@@ -30,6 +30,7 @@ from frida_constants.vision_constants import (
     SET_TARGET_BY_TOPIC,
     SET_TARGET_TOPIC,
     SHELF_DETECTION_TOPIC,
+    READ_QR_TOPIC,
 )
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.msg import ObjectDetection, PersonList
@@ -46,6 +47,7 @@ from frida_interfaces.srv import (
     SaveName,
     ShelfDetectionHandler,
     TrackBy,
+    ReadQr,
 )
 from geometry_msgs.msg import Point, PointStamped
 from rclpy.action import ActionClient
@@ -116,6 +118,8 @@ class VisionTasks:
             PersonPoseGesture, POSE_GESTURE_TOPIC
         )
 
+        self.read_qr_client = self.node.create_client(ReadQr, READ_QR_TOPIC)
+
         self.count_by_color_client = self.node.create_client(CountByColor, COUNT_BY_COLOR_TOPIC)
 
         self.services = {
@@ -155,6 +159,10 @@ class VisionTasks:
                 },
                 "find_person_info": {
                     "client": self.find_person_info_client,
+                    "type": "service",
+                },
+                "read_qr_client": {
+                    "client": self.read_qr_client,
                     "type": "service",
                 },
                 "count_by_gesture": {
@@ -300,6 +308,35 @@ class VisionTasks:
         Logger.success(self.node, f"Seat found: {result.angle}")
         return Status.EXECUTION_SUCCESS, result.angle
 
+    @mockable(return_value=[Status.MOCKED, ""])
+    @service_check("read_qr_client", [Status.EXECUTION_ERROR, ""], TIMEOUT)
+    def read_qr(self) -> tuple[int, float]:
+        """Find an available seat and get the angle for the camera to point at"""
+
+        Logger.info(self.node, "Reading QR code")
+        request = ReadQr.Request()
+        request.request = True
+
+        try:
+            future = self.read_qr_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+            result = future.result()
+
+            if not result.success:
+                Logger.warn(self.node, "No qr code found")
+                return Status.TARGET_NOT_FOUND, ""
+
+        except Exception as e:
+            Logger.error(self.node, f"Error finding qr code: {e}")
+            return Status.EXECUTION_ERROR, ""
+
+        if len(result.result) == 0:
+            Logger.warn(self.node, "QR code is empty")
+            return Status.TARGET_NOT_FOUND, ""
+
+        Logger.success(self.node, f"Qr code found: {result.result}")
+        return Status.EXECUTION_SUCCESS, result.result
+
     @mockable(return_value=(Status.EXECUTION_SUCCESS, []), delay=2)
     @service_check("shelf_detections_client", Status.EXECUTION_ERROR, TIMEOUT)
     def detect_shelf(self, timeout: float = TIMEOUT) -> tuple[Status, list[ShelfDetection]]:
@@ -337,7 +374,9 @@ class VisionTasks:
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, []), delay=2)
     @service_check("object_detector_client", (Status.EXECUTION_ERROR, []), TIMEOUT)
-    def detect_objects(self, timeout: float = TIMEOUT) -> tuple[Status, list[BBOX]]:
+    def detect_objects(
+        self, timeout: float = TIMEOUT, ignore_labels: list[str] = []
+    ) -> tuple[Status, list[BBOX]]:
         """Detect the object in the image"""
         Logger.info(self.node, "Waiting for object detection")
         request = DetectionHandler.Request()
@@ -372,6 +411,8 @@ class VisionTasks:
                 object_detection.x2 = detection.xmax
                 object_detection.y1 = detection.ymin
                 object_detection.y2 = detection.ymax
+                if detection.label_text in ignore_labels:
+                    continue
                 object_detection.classname = detection.label_text
                 object_detection.h = detection.ymax - detection.ymin
                 object_detection.w = detection.xmax - detection.xmin

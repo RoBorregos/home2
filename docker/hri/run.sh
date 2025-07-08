@@ -143,10 +143,9 @@ COMPOSE_PROFILES=$(IFS=, ; echo "${PROFILES[*]}")
 add_or_update_variable .env "COMPOSE_PROFILES" "$COMPOSE_PROFILES"
 
 GENERATE_BAML_CLIENT="baml-cli generate --from /workspace/src/task_manager/scripts/utils/baml_src/"
-
-# Rebuild
-# COMMAND="$GENERATE_BAML_CLIENT && source /opt/ros/humble/setup.bash && colcon build --symlink-install --packages-select frida_interfaces frida_constants speech nlp embeddings && source ~/.bashrc && $RUN"
-COMMAND="$GENERATE_BAML_CLIENT && source /opt/ros/humble/setup.bash && source ~/.bashrc && $RUN"
+SOURCE_INTERFACES="source frida_interfaces_cache/install/local_setup.bash"
+IGNORE_PACKAGES="--packages-ignore frida_interfaces frida_constants xarm_msgs"
+COMMAND="$GENERATE_BAML_CLIENT && source /opt/ros/humble/setup.bash && $SOURCE_INTERFACES && colcon build $IGNORE_PACKAGES --symlink-install --packages-up-to speech nlp embeddings && source ~/.bashrc && $RUN"
 
 # echo "COMMAND= $COMMAND " >> .env
 add_or_update_variable .env "COMMAND" "$COMMAND"

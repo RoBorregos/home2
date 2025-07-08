@@ -39,8 +39,10 @@ class KeyboardInput(Node):
                 self.objects.append(detection.label_text)
 
     def send_pick_request(self, object_name):
+        self.get_logger().warning(f"Sending pick request for: {object_name}")
+
         if not self._action_client.wait_for_server(timeout_sec=5.0):
-            self.get_logger().error("Action server not available!")
+            self.get_logger().error("Action server in pick not available!")
             return
 
         goal_msg = ManipulationAction.Goal()
@@ -48,16 +50,19 @@ class KeyboardInput(Node):
         goal_msg.pick_params.object_name = object_name
 
         self.get_logger().info(f"Sending pick request for: {object_name}")
-        self._action_client.send_goal_async(
+        future = self._action_client.send_goal_async(
             goal_msg, feedback_callback=self.feedback_callback
         )
+        future.add_done_callback(lambda f: self.goal_response_callback(f, object_name))
         self.get_logger().info(f"Pick request for {object_name} sent")
 
     def send_place_request(
         self, is_shelf=False, table_height=None, table_height_tolerance=None
     ):
+        self.get_logger().warning("Sending place request")
+
         if not self._action_client.wait_for_server(timeout_sec=5.0):
-            self.get_logger().error("Action server not available!")
+            self.get_logger().error("Action server in place not available!")
             return
 
         goal_msg = ManipulationAction.Goal()
@@ -73,6 +78,26 @@ class KeyboardInput(Node):
         )
         self.get_logger().info("Place request sent")
 
+    def send_pour_request(self, object_name, bowl_name):
+        self.get_logger().warning(f"Sending pour request for: {object_name}")
+
+        if not self._action_client.wait_for_server(timeout_sec=5.0):
+            self.get_logger().error("Action server in pour request not available!")
+            return
+
+        goal_msg = ManipulationAction.Goal()
+        goal_msg.task_type = ManipulationTask.POUR
+        goal_msg.pour_params.object_name = object_name
+        goal_msg.pour_params.bowl_name = bowl_name
+
+        self.get_logger().info(f"Sending pour request for: {object_name}")
+        self.get_logger().info(f"Pouring into: {bowl_name}")
+        self._action_client.send_goal_async(
+            goal_msg, feedback_callback=self.feedback_callback
+        )
+
+        self.get_logger().info("Pour request sent")
+
     def feedback_callback(self, feedback_msg):
         self.get_logger().info(f"Feedback received: {feedback_msg.feedback}")
 
@@ -83,6 +108,16 @@ class KeyboardInput(Node):
         while time.time() - start_time < 1.0:
             rclpy.spin_once(self, timeout_sec=0.1)
         self.get_logger().info("Objects list refreshed.")
+
+    def goal_response_callback(self, future, object_name):
+        try:
+            response = future.result()
+            if response.accepted:
+                self.get_logger().info(f"Goal accepted for {object_name}")
+            else:
+                self.get_logger().error(f"Goal rejected for {object_name}")
+        except Exception as e:
+            self.get_logger().error(f"Exception while sending goal: {e}")
 
 
 def main(args=None):
@@ -99,6 +134,7 @@ def main(args=None):
             print("-3. Place")
             print("-4. Place on shelf")
             print("-5. Place on shelf (with plane height)")
+            print("-6. Pour")
             print("q. Quit")
 
             choice = input("\nEnter your choice: ")
@@ -132,6 +168,12 @@ def main(args=None):
                     print(
                         "Invalid input. Please enter valid numbers for height and tolerance."
                     )
+            elif choice == "-6":
+                # receive object name
+                object_name = input("Enter object name: ")
+                bowl_name = input("Enter bowl name: ")
+                node.send_pour_request(object_name, bowl_name)
+
             elif choice.isdigit():
                 try:
                     choice_num = int(choice)
