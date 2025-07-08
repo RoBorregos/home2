@@ -24,8 +24,9 @@ find_package(frida_interfaces REQUIRED)
 find_package(frida_constants REQUIRED)
 find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
-find_package(tf_transformations REQUIRED)
+# find_package(tf_transformations REQUIRED)
 find_package(rclpy REQUIRED)
+find_package(yaml_cpp_vendor REQUIRED)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -80,7 +81,7 @@ ament_target_dependencies(read_pcd
 ament_target_dependencies(publish_handle
   frida_interfaces
   frida_constants
-  rclcpp std_msgs geometry_msgs sensor_msgs tf2_ros tf2 pcl_ros pcl_conversions tf2_eigen PCL)
+  rclcpp std_msgs geometry_msgs sensor_msgs tf2_ros tf2 pcl_ros pcl_conversions tf2_eigen PCL yaml_cpp_vendor)
 
 install(TARGETS 
   plane_service
