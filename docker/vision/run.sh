@@ -117,7 +117,7 @@ mkdir -p moondream/install moondream/build moondream/log
 # Check which commands and services to run
 MOONDREAM=false
 VISION=true
-# SETUP="colcon build --symlink-install "
+SETUP="colcon build --symlink-install"
 PROFILES=()
 SERVICES=()
 
@@ -158,7 +158,8 @@ esac
 
 # Add command to env if TASK is not empty, otherwise it will run bash
 if [ -n "$TASK" ]; then
-    COMMAND="source /opt/ros/humble/setup.bash && source install/setup.bash && $RUN"
+    COMMAND="source /opt/ros/humble/setup.bash && source frida_interfaces_cache/install/local_setup.bash \
+    && $SETUP --packages-select $PACKAGES && source install/setup.bash && $RUN"
     echo "COMMAND= $COMMAND " >> .env
 fi
 
