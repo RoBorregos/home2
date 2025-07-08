@@ -329,11 +329,15 @@ class TestHriManager(Node):
         time.sleep(5)
 
     def test_object_location(self):
-        self.get_logger().info("Testing object location retrieval...")
         object_name = "cheese"
-        res = self.hri_manager.query_location_with_context(object_name, top_k=10)
-
+        self.get_logger().info("Testing object location retrieval without context...")
+        res = self.hri_manager.query_location(object_name, top_k=3)
         for i, location in enumerate(res):
+            self.get_logger().info(f"{i + 1}: {location}")
+
+        self.get_logger().info("Testing object location retrieval with context...")
+        res_with_context = self.hri_manager.query_location(object_name, top_k=3, use_context=True)
+        for i, location in enumerate(res_with_context):
             self.get_logger().info(f"{i + 1}: {location}")
 
 

@@ -103,37 +103,25 @@ class PostgresAdapter:
         ]
 
     def query_location(
-        self, name: str, threshold: float = 0.0, top_k: int = 100
+        self,
+        name: str,
+        threshold: float = 0.0,
+        top_k: int = 100,
+        use_context: bool = False,
     ) -> list[Location]:
         embedding = self.embedding_model.encode(name, convert_to_tensor=True)
-        self.cursor.execute(
-            "SELECT id, area, subarea, context, 1 - (embedding <=> %s) as similarity FROM locations WHERE 1 - (embedding <=> %s) >= %s ORDER BY similarity DESC LIMIT %s",
+        command = (
             (
-                json.dumps(embedding.tolist()),
-                json.dumps(embedding.tolist()),
-                threshold,
-                top_k,
-            ),
-        )
-        rows = self.cursor.fetchall()
-        return [
-            Location(
-                id=row[0],
-                area=row[1],
-                subarea=row[2],
-                context=row[3],
-                similarity=row[4],
+                "SELECT id, area, subarea, context, 1 - (embedding <=> %s) as similarity FROM locations WHERE 1 - (embedding <=> %s) >= %s ORDER BY similarity DESC LIMIT %s"
             )
-            for row in rows
-        ]
+            if not use_context
+            else (
+                "SELECT id, area, subarea, context, 1 - (context_embedding <=> %s) as similarity FROM locations WHERE 1 - (context_embedding <=> %s) >= %s ORDER BY similarity DESC LIMIT %s"
+            )
+        )
 
-    def query_location_with_context(
-        self, name: str, threshold: float = 0.0, top_k: int = 100
-    ) -> list[Location]:
-        """Method to query locations with context based on semantic similarity"""
-        embedding = self.embedding_model.encode(name, convert_to_tensor=True)
         self.cursor.execute(
-            "SELECT id, area, subarea, context, 1 - (context_embedding <=> %s) as similarity FROM locations WHERE 1 - (context_embedding <=> %s) >= %s ORDER BY similarity DESC LIMIT %s",
+            command,
             (
                 json.dumps(embedding.tolist()),
                 json.dumps(embedding.tolist()),
