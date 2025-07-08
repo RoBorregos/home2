@@ -15,7 +15,7 @@ from frida_motion_planning.utils.service_utils import (
     move_joint_positions, get_joint_positions
 )
 from transforms3d.quaternions import quat2mat
-
+import copy
 import numpy as np
 # from frida_interfaces.srv import GetJoints
 
@@ -119,7 +119,7 @@ class PourMotionServer(Node):
         self.get_logger().info("Pour Action Server has been started")
 
     # // Add Primitive false for the goal
-    async def execute_callback(self, goal_handle):
+    def execute_callback(self, goal_handle):
         """Execute the pour action when a goal is received."""
         self.get_logger().info("Executing pour goal...")
 
@@ -138,21 +138,54 @@ class PourMotionServer(Node):
             goal_handle.abort()
             result.success = 0
             return result
-
+    
 
     def pour(self, goal_handle, feedback):
         """Perform the pour operation."""
         self.get_logger().info("Trying to pour object")
+        
+        # move higher than current pose
+        curr_pose = goal_handle.request.pick_result.pick_pose
+        self.get_logger().info(f"Current pose: {curr_pose.pose}")
+        
+        new_pose = curr_pose
+        new_pose.pose.position.z += 0.2 
+        
+        tries = 5
+        distance_between_tries = 0.05
+        for i in range(tries):
+            self.get_logger().warn("Trying to move to pour pose")
+            new_pose.pose.position.z += distance_between_tries
+            self.get_logger().info(f"Pour pose: {new_pose.pose}")
+            # call the move_to_pose function
+            try:
+                goal_handle_result, action_result = self.move_to_pose(new_pose, useConstraint=True, planning_time=10.0, planning_attempts=100)
+            except Exception as e:
+                self.get_logger().error(f"Failed to move to pour pose: {e}")
+                return False, None
+            
+            if action_result.result.success:
+                self.get_logger().info("Pour pose reached")
+                break
+            else:
+                self.get_logger().error("Failed to reach pour pose")
+                
         isConstrained = (
             True  # THE MOTION PLANNER IS CONSTRAINED ------------------------
         )
 
         pose = self.receive_pose(goal_handle.request.pour_pose)
+        is_upside_down = self.is_upside_down(pose)
+        self.get_logger().info(f"Is upside down: {is_upside_down}")
         
+        offset_distance = -0.075 if is_upside_down else 0.075
         pose = self.transform_pose_to_gripper_center(pose)
+        pose = self.transform_pose_y(pose, offset_distance=offset_distance)
+        
+        
 
         tries = 5
-        distance_between_tries=0.025
+        distance_between_tries=0.05
         for i in range(tries):
             # self.get_logger().warn(f"Trying to pour object: {self.node.pour.request.object_name}")
             self.get_logger().warn("Trying to pour object")
@@ -160,7 +193,7 @@ class PourMotionServer(Node):
             self.get_logger().info(f"Pour pose: {pose.pose}")
             # call the move_to_pose function
             try: 
-                goal_handle_result, action_result = self.move_to_pose(pose, isConstrained, planning_time=5.0, planning_attempts=20)
+                goal_handle_result, action_result = self.move_to_pose(pose, isConstrained, planning_time=10.0, planning_attempts=100)
             except Exception as e:
                 self.get_logger().error(f"Failed to move to pour pose: {e}")
                 return False, None
@@ -181,14 +214,15 @@ class PourMotionServer(Node):
                         f"Retrying pour pose: {pose.pose}"
                     )
         time.sleep(2.0)
-        pour_angle = 2.5
+        pour_angle = 3.0
         
         current_joints = get_joint_positions(
             self._get_joints_client,
             degrees=False,  # set to true to return in degrees
         )
+        self.get_logger().info(f"Current joints: {current_joints}")
         current_joints["joints"]["joint6"] += pour_angle
-        
+        self.get_logger().info(f"Current joints after pour angle: {current_joints}")
         action_result = move_joint_positions(
             move_joints_action_client=self._move_joints_action_client,
             joint_positions=current_joints,
@@ -198,16 +232,16 @@ class PourMotionServer(Node):
         
         if action_result is None:
             self.get_logger().error("Failed to get action result")
-            return False, action_result.result.success
-        if not action_result.result.success:
+            return False, action_result
+        if not action_result:
             self.get_logger().error("Failed to move to pour pose")
             self.get_logger().warning(
-                f"Action result: {action_result.result.error_code}"
+                f"Action result: {action_result}"
             )
-            return False, action_result.result.success
+            return False, action_result
         self.get_logger().info("Moved to pour pose successfully")
         # Move to the updated pose
-        return True, action_result.result.success
+        return True, action_result
     
     def transform_pose_to_gripper_center(self, pose):
         offset_distance = (
@@ -245,6 +279,69 @@ class PourMotionServer(Node):
         
         return pose
     
+    def transform_pose_y(self, pose, offset_distance=0.0):
+        quat = [
+            pose.pose.orientation.x,
+            pose.pose.orientation.y,
+            pose.pose.orientation.z,
+            pose.pose.orientation.w,
+        ]
+        rotation_matrix = quat2mat(quat)
+        # Extract local Y-axis (second column of the rotation matrix)
+        y_axis = rotation_matrix[:, 1]
+
+        # Translate along the local Y-axis
+        new_position = (
+            np.array(
+                [
+                    pose.pose.position.x,
+                    pose.pose.position.y,
+                    pose.pose.position.z,
+                ]
+            )
+            + y_axis * offset_distance
+        )
+        # Update the pose with the new position
+        pose.pose.position.x = new_position[0]
+        pose.pose.position.y = new_position[1]
+        pose.pose.position.z = new_position[2]
+
+        return pose
+    
+    def is_upside_down(self, pose):
+        # project a point in x axis, if it is positive, the gripper is NOT upside down
+        projected_pose = copy.deepcopy(pose)
+        quat = [
+            projected_pose.pose.orientation.x,
+            projected_pose.pose.orientation.y,
+            projected_pose.pose.orientation.z,
+            projected_pose.pose.orientation.w,
+        ]
+        rotation_matrix = quat2mat(quat)
+        # Extract local Y-axis (second column of the rotation matrix)
+        x_axis = rotation_matrix[:, 0]
+        offset_distance = 0.15  # distance to project the point
+
+        # Translate along the local Y-axis
+        new_position = (
+            np.array(
+                [
+                    projected_pose.pose.position.x,
+                    projected_pose.pose.position.y,
+                    projected_pose.pose.position.z,
+                ]
+            )
+            + x_axis * offset_distance
+        )
+        
+        if new_position[2] < pose.pose.position.z:
+            # If the projected point is below the original pose, it is upside down
+            return False
+        else:
+            # If the projected point is above the original pose, it is not upside down
+            return True
+        
+    
     def move_to_pose(self, pose, useConstraint: bool = False, planning_time: float = 0.5, planning_attempts: int = 5):
         """Move the robot to the given pose."""
         self.get_logger().warn(f"Moving to pose: {pose}")
@@ -265,9 +362,9 @@ class PourMotionServer(Node):
             constraint_msg.frame_id = pose.header.frame_id
             constraint_msg.target_link = GRASP_LINK_FRAME
             # Modify in case need to modify the limits for the path
-            constraint_msg.tolerance_orientation = [1.0, 1.0, 1.0]
-            constraint_msg.weight = 0.5
-            constraint_msg.parameterization = 1
+            constraint_msg.tolerance_orientation = [3.14*2, 3.14*2, 3.14*2]
+            constraint_msg.weight = 0.25
+            constraint_msg.parameterization = 0
             request.constraint = constraint_msg
 
         future = self._move_to_pose_action_client.send_goal_async(request)

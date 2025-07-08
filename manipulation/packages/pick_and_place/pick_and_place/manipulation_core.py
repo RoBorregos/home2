@@ -173,7 +173,8 @@ class ManipulationCore(Node):
                 self.get_logger().error("Place failed")
                 return False
             return result
-        except Exception:
+        except Exception as e:
+            self.get_logger().error(f"Place exception: {e}")
             return False
 
     def pour_execute(self, object_name=None, bowl_name=None):
@@ -183,19 +184,21 @@ class ManipulationCore(Node):
         self.get_logger().info("Extracting object cloud")
 
         try:
+            self.remove_all_collision_object(attached=True)
             self.get_logger().info("Executing pour100")
-            result = self.pour_manager.execute(
+            result, pick_result = self.pour_manager.execute(
                 object_name=object_name,
                 # object_point=object_point,
                 container_object_name=bowl_name,
             )
             if not result:
                 self.get_logger().error("Pour failed")
-                return False
-            return result
+                return (False, PickResult())
+            self.remove_all_collision_object(attached=False)
+            return (result, pick_result)
         except Exception as e:
             self.get_logger().error(f"Pour exeption: {e}")
-            return False
+            return (False, PickResult())
 
     def manipulation_server_callback(self, goal_handle):
         task_type = goal_handle.request.task_type
@@ -245,7 +248,7 @@ class ManipulationCore(Node):
             response.success = result
         elif task_type == ManipulationTask.POUR:
             self.get_logger().info("Executing Pour Task")
-            result = self.pour_execute(
+            result, self.pick_result = self.pour_execute(
                 object_name=object_name,
                 bowl_name=bowl_name,
                 # , object_point=object_point

@@ -16,9 +16,13 @@ from frida_motion_planning.utils.service_utils import (
 from sensor_msgs_py import point_cloud2
 from sensor_msgs.msg import PointCloud2
 import time
+from scipy.spatial.transform import Rotation as R
 
+import copy
+
+# path, is reversible
 CFG_PATHS = [
-    "/workspace/src/home2/manipulation/packages/arm_pkg/config/frida_eigen_params_custom_gripper_testing.cfg",
+    ["/workspace/src/home2/manipulation/packages/arm_pkg/config/frida_eigen_params_custom_gripper_testing.cfg", True],
 ]
 
 
@@ -63,7 +67,7 @@ class PourManager:
         object_point = self.get_object_point(object_name)
         if object_point is None:
             self.node.get_logger().error(f"Object {object_name} not found")
-            return False
+            return False, None
         
         self.debug_object_point_pub.publish(object_point)
 
@@ -71,18 +75,19 @@ class PourManager:
         bowl_point = self.get_object_point(container_object_name)
         if bowl_point is None:
             self.node.get_logger().error(f"Bowl {container_object_name} not found")
-            return False
+            return False, None
 
         self.debug_bowl_point_pub.publish(bowl_point)
 
         # 4. Get Clusters
         bowl_cluster = self.get_object_cluster(bowl_point, add_primitives=False)
         if bowl_cluster is None:
-            return False
+            return False, None
+        self.node.remove_all_collision_object(attached=False)
         
         object_cluster = self.get_object_cluster(object_point, add_primitives=True)
         if object_cluster is None:
-            return False
+            return False, None
 
         # 5. Open Gripper
         gripper_request = SetBool.Request()
@@ -97,7 +102,7 @@ class PourManager:
         points = [list(p) for p in cloud_gen]
         if not points:
             self.node.get_logger().error("Empty bowl cluster")
-            return False
+            return False, None
         
         points_np = np.array(points)
         centroid = np.mean(points_np, axis=0)
@@ -114,7 +119,10 @@ class PourManager:
 
         pick_result = None
         # 6. Pick Motion
-        # pick_success, pick_result = self.pick_motion(object_cluster)
+        pick_success, pick_result = self.pick_motion(object_cluster)
+        if not pick_success:
+            self.node.get_logger().error("Pick motion failed")
+            return False, pick_result.pick_result
 
         pour_pose = PoseStamped()
         pour_pose.header.frame_id = bowl_centroid_point.header.frame_id
@@ -125,9 +133,11 @@ class PourManager:
         pour_pose.pose.position.z += 0.05  # Slightly above the bowl
 
         if pick_result is not None:
+           
             pick_pose = getattr(pick_result.pick_result, "pick_pose", None)
             if pick_pose:
                 pour_pose.pose.orientation = pick_pose.pose.orientation
+                self.node.get_logger().info(f"Pour Pose Orientation: {pour_pose.pose.orientation}")
         else:
             # self.node.get_logger().error("Invalid pick pose in result")
             # return False
@@ -139,18 +149,24 @@ class PourManager:
             pour_pose.pose.orientation.w = pour_orientation[3]
 
         # 9. Pour Motion
-        if not self.pour_motion(pour_pose):
-            return False
+        if not self.pour_motion(pour_pose, pick_result):
+            self.node.get_logger().error("Pour motion failed")
+            return False, pick_result.pick_result
 
         # 10. Return to Initial Pose Again
-        send_joint_goal(
-            move_joints_action_client=self.node._move_joints_client,
-            named_position="table_stare",
-            velocity=0.3,
-        )
+        time.sleep(5)
+        self.node.get_logger().info("Returning to initial pose after pour")
+        for i in range(5):
+            res = send_joint_goal(
+                move_joints_action_client=self.node._move_joints_client,
+                named_position="table_stare",
+                velocity=0.3,
+            )
+            if res:
+                break
 
         self.node.get_logger().info("Pour Task Completed Successfully")
-        return True
+        return True, pick_result.pick_result
 
 
     def pick_motion(self, object_cluster: PointCloud2):
@@ -165,14 +181,16 @@ class PourManager:
         pick_result_success = False
         print("Gripper Result:", result)
         for CFG_PATH in CFG_PATHS:
+            cfg_path = CFG_PATH[0]
+            is_reversible = CFG_PATH[1]
             self.node.get_logger().info(f"CFG_PATH: {CFG_PATH}")
             # Call Grasp Pose Detection
             grasp_poses, grasp_scores = get_grasps(
-                self.node.grasp_detection_client, object_cluster, CFG_PATH
+                self.node.grasp_detection_client, object_cluster, cfg_path
             )
             if len(grasp_poses) == 0:
                 self.node.get_logger().error(
-                    f"No grasp poses detected with cfg {CFG_PATH}"
+                    f"No grasp poses detected with cfg {cfg_path}"
                 )
                 continue
 
@@ -184,7 +202,37 @@ class PourManager:
                     reverse=True,
                 )
             )
-            grasp_poses, grasp_scores = grasp_poses[:5], grasp_scores[:5]
+            grasp_poses, grasp_scores = grasp_poses[:10], grasp_scores[:10]
+            
+            # reverse grasps (turn 180 degrees in z)
+            new_grasp_poses = []
+            new_grasp_scores = []
+            if is_reversible:
+                for pose, grasp_score in zip(grasp_poses, grasp_scores):
+                    new_grasp_poses.append(pose)
+                    new_grasp_scores.append(grasp_score)
+                    # Reverse the pose (turn 180 degrees in z)
+                    reversed_pose = copy.deepcopy(pose)
+                    # 180 degrees rotation around Z axis
+                    # Rotate 180 degrees around the local Z axis (end-effector frame)
+                    q_orig = [
+                        pose.pose.orientation.x,
+                        pose.pose.orientation.y,
+                        pose.pose.orientation.z,
+                        pose.pose.orientation.w,
+                    ]
+                    q_orig_rot = R.from_quat(q_orig)
+                    q_z_180_local = R.from_euler('z', 180, degrees=True)
+                    q_result = (q_orig_rot * q_z_180_local).as_quat()  # [x, y, z, w]
+                    reversed_pose.pose.orientation.x = q_result[0]
+                    reversed_pose.pose.orientation.y = q_result[1]
+                    reversed_pose.pose.orientation.z = q_result[2]
+                    reversed_pose.pose.orientation.w = q_result[3]
+                    new_grasp_poses.append(reversed_pose)
+                    new_grasp_scores.append(grasp_score)
+            else:
+                new_grasp_poses = grasp_poses
+                new_grasp_scores = grasp_scores
 
             if len(grasp_poses) == 0:
                 self.node.get_logger().error("No grasp poses detected")
@@ -194,8 +242,8 @@ class PourManager:
 
             # Create goal
             goal_msg = PickMotion.Goal()
-            goal_msg.grasping_poses = grasp_poses
-            goal_msg.grasping_scores = grasp_scores
+            goal_msg.grasping_poses = new_grasp_poses
+            goal_msg.grasping_scores = new_grasp_scores
 
             # Send goal
             self.node.get_logger().info("Sending pick motion goal...")
@@ -218,10 +266,11 @@ class PourManager:
             return False, pick_result
         return True, pick_result
 
-    def pour_motion(self, pose_msg: PoseStamped):
+    def pour_motion(self, pose_msg: PoseStamped, pick_result) -> bool:
         self.node.get_logger().warning("FF 1.3")
         goal_msg = PourMotion.Goal(
             pour_pose=pose_msg,
+            pick_result=pick_result.pick_result
         )
 
         self.node.get_logger().warning("FF 1.4")
@@ -230,20 +279,10 @@ class PourManager:
 
         future = self.node._pour_motion_action_client.send_goal_async(goal_msg)
         self.node.get_logger().warning("after futurepour motion goal - FFN5")
-        future = self.wait_for_future(future)
+        future = wait_for_future(future, timeout=120)
 
-        # Print the result of the pour motion?
-        self.node.get_logger().warning("Result of pour motion - FFN5")
-
-        # result_pour = future.result().get_result()
-        try:
-            result_pour = future.result()
-            if not result_pour.result.success:
-                self.node.get_logger().error("Pour motion failed")
-                return False
-        except Exception as e:
-            self.node.get_logger().error(f"Exception during pour motion: {e}")
-            return False
+        pour_result = future.result().get_result().result
+        self.node.get_logger().warning(f"Pour Motion Result: {pour_result}")
         
         self.node.get_logger().warning("Finished Pour Manager - FFN5.0")
         return True
