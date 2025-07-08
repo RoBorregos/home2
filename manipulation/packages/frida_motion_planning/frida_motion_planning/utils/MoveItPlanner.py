@@ -141,6 +141,8 @@ class MoveItPlanner(Planner):
         pose: PoseStamped,
         target_link: str = xarm6.end_effector_name(),
         cartesian: bool = False,
+        tolerance_position: float = 0.015,
+        tolerance_orientation: float = 0.02,
         wait: bool = True,
         set_mode: bool = True,
     ) -> Union[bool, Future]:
@@ -151,8 +153,8 @@ class MoveItPlanner(Planner):
             pose=pose,
             cartesian=cartesian,
             target_link=target_link,
-            tolerance_position=0.015,
-            tolerance_orientation=0.02,
+            tolerance_position=tolerance_position,
+            tolerance_orientation=tolerance_orientation,
         )
         if not trajectory:
             return False
@@ -183,8 +185,8 @@ class MoveItPlanner(Planner):
         pose: PoseStamped,
         cartesian: bool = False,
         target_link: str = xarm6.end_effector_name(),
-        tolerance_position: float = 0.015,
-        tolerance_orientation: float = 0.1,
+        tolerance_position: float = 0.01,
+        tolerance_orientation: float = 0.05,
         weight_position: float = 1.0,
         weight_orientation: float = 1.0,
         cartesian_max_step: float = 0.05,

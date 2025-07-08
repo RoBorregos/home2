@@ -33,7 +33,6 @@ from frida_constants.manipulation_constants import (
     GRASP_LINK_FRAME,
     GRIPPER_SET_STATE_SERVICE,
     MOVE_TO_POSE_ACTION_SERVER,
-    PICK_PLANNER,
     POUR_ACCELERATION,
     POUR_MOTION_ACTION_SERVER,
     POUR_VELOCITY,
@@ -149,10 +148,10 @@ class PourMotionServer(Node):
         self.get_logger().info(f"Current pose: {curr_pose.pose}")
         
         new_pose = curr_pose
-        new_pose.pose.position.z += 0.2 
+        new_pose.pose.position.z += 0.15 
         
         tries = 5
-        distance_between_tries = 0.05
+        distance_between_tries = 0.025
         for i in range(tries):
             self.get_logger().warn("Trying to move to pour pose")
             new_pose.pose.position.z += distance_between_tries
@@ -185,7 +184,7 @@ class PourMotionServer(Node):
         
 
         tries = 5
-        distance_between_tries=0.05
+        distance_between_tries=0.025
         for i in range(tries):
             # self.get_logger().warn(f"Trying to pour object: {self.node.pour.request.object_name}")
             self.get_logger().warn("Trying to pour object")
@@ -213,7 +212,7 @@ class PourMotionServer(Node):
                     self.get_logger().info(
                         f"Retrying pour pose: {pose.pose}"
                     )
-        time.sleep(2.0)
+        time.sleep(3.0)
         pour_angle = 3.0
         
         current_joints = get_joint_positions(
@@ -349,11 +348,14 @@ class PourMotionServer(Node):
         request.pose = pose
         request.velocity = POUR_VELOCITY
         request.acceleration = POUR_ACCELERATION
-        request.planner_id = PICK_PLANNER
+        request.planner_id = "RRT"
         request.apply_constraint = useConstraint
         request.target_link = GRASP_LINK_FRAME
         request.planning_time = planning_time  # Set the planning time for the action
         request.planning_attempts = planning_attempts  # Set the number of planning attempts
+        # higher than default
+        request.tolerance_position = 0.02  # Set the position tolerance
+        request.tolerance_orientation = 0.2  # Set the orientation tolerance
 
         # Set the constraint
         if useConstraint:
@@ -362,8 +364,8 @@ class PourMotionServer(Node):
             constraint_msg.frame_id = pose.header.frame_id
             constraint_msg.target_link = GRASP_LINK_FRAME
             # Modify in case need to modify the limits for the path
-            constraint_msg.tolerance_orientation = [3.14*2, 3.14*2, 3.14*2]
-            constraint_msg.weight = 0.25
+            constraint_msg.tolerance_orientation = [3.14*2, 1.25, 1.25]
+            constraint_msg.weight = 1.0
             constraint_msg.parameterization = 0
             request.constraint = constraint_msg
 

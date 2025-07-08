@@ -198,18 +198,24 @@ class MotionPlanningServer(Node):
         """Perform the pick operation."""
         pose = goal_handle.request.pose
         target_link = goal_handle.request.target_link
+        tolerance_position = goal_handle.request.tolerance_position if goal_handle.request.tolerance_position else 0.01
+        tolerance_orientation = goal_handle.request.tolerance_orientation if goal_handle.request.tolerance_orientation else 0.05
         if target_link != "":
             result = self.planner.plan_pose_goal(
                 pose=pose,
                 target_link=target_link,
                 wait=True,
                 set_mode=True,
+                tolerance_position=tolerance_position,
+                tolerance_orientation=tolerance_orientation,
             )
         else:
             result = self.planner.plan_pose_goal(
                 pose=pose,
                 wait=True,
                 set_mode=(self.current_mode != MOVEIT_MODE),
+                tolerance_position=tolerance_position,
+                tolerance_orientation=tolerance_orientation,
             )
         if not ALWAYS_SET_MODE:
             self.current_mode = MOVEIT_MODE

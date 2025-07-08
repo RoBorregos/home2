@@ -83,7 +83,8 @@ class PourManager:
         bowl_cluster = self.get_object_cluster(bowl_point, add_primitives=False)
         if bowl_cluster is None:
             return False, None
-        self.node.remove_all_collision_object(attached=False)
+        self.node.remove_all_collision_object(attached=True)
+        self.node.remove_all_collision_object(attached=True)
         
         object_cluster = self.get_object_cluster(object_point, add_primitives=True)
         if object_cluster is None:
