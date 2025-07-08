@@ -51,10 +51,16 @@ export default function RosMessagesDisplay() {
       } else if (data.type === "changeVideo") {
         setAudioTopic(data.data);
       } else if (data.type === "question") {
-        setModalOpen(true);
-        setQuestion(data.data);
-        addMessage("spoken", data.data);
-
+        if (!data.data?.trim()){
+          // If question is empty, close the modal and reset state
+          setModalOpen(false);
+          setQuestion(null);
+          setAnswer("");
+        }else{
+          setModalOpen(true);
+          setQuestion(data.data);
+          addMessage("spoken", data.data);
+        }
       } else {
         addMessage(data.type, data.data);
       }
