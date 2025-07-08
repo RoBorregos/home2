@@ -80,9 +80,15 @@ $ source install/setup.bash
 |Daniela Herrera | [@DanHeGa](https://github.com/DanHeGa) | Vision |
 |Adán Flores-Ramírez | [@afr2903](https://github.com/afr2903) | Research |
 
-## Documentation
+# Documentation
 [Docs](https://athome.roborregos.com/)
 
 [API documentation](https://roborregos.github.io/home2/)
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/RoBorregos/home2)
+
+## Video demonstrations
+
+[![Explanatory video demonstration of task planning test using the command interpreter with the robot](https://img.youtube.com/vi/do1S1zfmMsA/0.jpg)](https://www.youtube.com/watch?v=do1S1zfmMsA)
+
+[![Video demonstration of the GPSR task during the Mexican Robotics Tournament 2025](https://img.youtube.com/vi/0bMz6ESv6B8/0.jpg)](https://www.youtube.com/watch?v=0bMz6ESv6B8)
