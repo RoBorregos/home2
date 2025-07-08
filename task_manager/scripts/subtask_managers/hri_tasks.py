@@ -971,8 +971,8 @@ class HRITasks(metaclass=SubtaskMeta):
             )
         return [doc for doc in document]
 
-    def query_location(self, query: str, top_k: int = 1):
-        return self.pg.query_location(query, top_k=top_k)
+    def query_location(self, query: str, top_k: int = 1, use_context: bool = False):
+        return self.pg.query_location(query, top_k=top_k, use_context=use_context)
 
     def find_closest(self, documents: list, query: str, top_k: int = 1) -> list[str]:
         """
