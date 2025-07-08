@@ -552,7 +552,8 @@ class SingleTracker(Node):
                     # self.get_logger().info(f"frame_shape: {self.frame.shape[1]} Point2D: {point2D[1]} normalized_point2D: {point2D_x_coord_normalized}")
                     self.centroid_publisher.publish(point2Dpoint)
                     depth = get_depth(self.depth_image, point2D)
-                    point3D = deproject_pixel_to_point(self.imageInfo, point2D, depth)
+                    point_2d_temp = (point2D[1],point2D[0])
+                    point3D = deproject_pixel_to_point(self.imageInfo, point_2d_temp, depth)
                     point3D = float(point3D[0]), float(point3D[1]), float(point3D[2])
                     coords.x = point3D[0]
                     coords.y = point3D[1]

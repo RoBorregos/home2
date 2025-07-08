@@ -19,14 +19,29 @@ RUN git clone https://github.com/introlab/rtabmap.git src/rtabmap
 RUN git clone --branch ros2 https://github.com/introlab/rtabmap_ros.git src/rtabmap_ros
 RUN sudo apt update
 RUN sudo rosdep init && rosdep update && rosdep install --from-paths src --ignore-src -r -y
-RUN source /opt/ros/humble/setup.bash && colcon build --symlink-install 
+RUN sed -i '/PATTERN "\*.h"/a\    PATTERN "*.hpp"' src/rtabmap_ros/rtabmap_sync/CMakeLists.txt
+RUN source /opt/ros/humble/setup.bash && colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release
 RUN echo "source /home/ros/ros_packages3/install/setup.bash" >> /home/ros/.bashrc
 
+#Install 
+RUN sudo apt update && sudo apt install -y libboost-iostreams-dev libtbb-dev libblosc-dev
+WORKDIR /home/ros/
+RUN wget https://github.com/AcademySoftwareFoundation/openvdb/archive/refs/tags/v10.0.0.zip && unzip v10.0.0.zip
+RUN cd openvdb-10.0.0 && mkdir build
+RUN sudo mkdir /usr/local/lib/cmake/OpenVDB
+WORKDIR /home/ros/openvdb-10.0.0/build  
+RUN sudo cmake .. 
+RUN sudo make -j4
+RUN sudo make install 
+
 # Install and compile home2 repo
-RUN sudo apt update && pip install pyserial
+RUN pip install --upgrade pip
+RUN pip install pyserial --index-url https://pypi.org/simple --no-cache-dir
+RUN sudo apt update
 RUN mkdir -p /workspace
 WORKDIR /workspace 
 RUN git clone https://github.com/RoBorregos/home2 --recursive /workspace/src
+RUN sudo apt update && sudo apt install ros-humble-spatio-temporal-voxel-layer -y
 RUN cd /workspace/src && sudo apt update && rosdep update && rosdep install --from-paths . --ignore-src --skip-keys "gpd gazebo_ros gazebo_plugins gazebo_ros2_control" -y
 RUN sudo rm -rf /workspace/src/
 

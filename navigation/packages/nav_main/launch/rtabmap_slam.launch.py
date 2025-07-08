@@ -9,13 +9,14 @@ from launch_ros.actions import Node
 def launch_setup(context, *args, **kwargs):
 
     use_sim_time = LaunchConfiguration('use_sim_time',default='false')
-    localization = LaunchConfiguration('localization', default='false')
+    localization = LaunchConfiguration('localization', default='true')
     rtabmap_viz = LaunchConfiguration('rtabmap_viz', default='false')
     use_3d_grid = LaunchConfiguration('3d_grid', default='false')
 
     icp_parameters={
           'odom_frame_id':'icp_odom',
-          'guess_frame_id':'odom'
+          'guess_frame_id':'odom',
+          'wait_for_transform_duration': 0.5
     }
 
     rtabmap_parameters={
@@ -23,6 +24,7 @@ def launch_setup(context, *args, **kwargs):
           'subscribe_scan':True,
           'use_action_for_goal':True,
           'odom_sensor_sync': True,
+          
           # RTAB-Map's parameters should be strings:
     }
 
@@ -62,9 +64,9 @@ def launch_setup(context, *args, **kwargs):
     else:
          shared_parameters={
             'frame_id':'base_link',
-            'use_sim_time':use_sim_time,
+            'use_sim_time': False,
             'wait_for_transform_duration': 0.8,
-            'queue_size': 5,
+            'queue_size': 10,
             'approx_sync ': True,
             'approx_sync_max_interval': 0.01,    
             'Reg/Strategy':'1',
@@ -108,16 +110,16 @@ def launch_setup(context, *args, **kwargs):
 
     return_list = [
         # Nodes to launch
-        Node(
-            package='rtabmap_sync', executable='rgbd_sync', output='screen',
-            parameters=[{'approx_sync':True, 'use_sim_time':use_sim_time}, shared_parameters],
-            remappings=remappings),
+        # Node(
+        #     package='rtabmap_sync', executable='rgbd_sync', output='screen',
+        #     parameters=[{'approx_sync':True, 'use_sim_time':use_sim_time}, shared_parameters],
+        #     remappings=remappings),
 
-        Node(
-            package='rtabmap_odom', executable='icp_odometry', output='screen',
-            parameters=[icp_parameters, shared_parameters],
-            remappings=remappings,
-            arguments=["--ros-args", "--log-level", 'icp_odometry:=warn']),
+        # Node(
+        #     package='rtabmap_odom', executable='icp_odometry', output='screen',
+        #     parameters=[icp_parameters, shared_parameters],
+        #     remappings=remappings,
+        #     arguments=["--ros-args", "--log-level", 'icp_odometry:=warn']),
 
 
         # SLAM Mode:
@@ -126,28 +128,28 @@ def launch_setup(context, *args, **kwargs):
             package='rtabmap_slam', executable='rtabmap', output='screen',
             parameters=[rtabmap_parameters, shared_parameters],
             remappings=remappings,
-	    arguments=["-d"]
+	        arguments=["-d"]
             ),
             
         # Localization mode:
-        Node(
-            condition=IfCondition(localization),
-            package='rtabmap_slam', executable='rtabmap', output='screen',
-            parameters=[rtabmap_parameters, shared_parameters,
-              {'Mem/IncrementalMemory':'False',
-               'Mem/InitWMWithAllNodes':'True'}],
-            remappings=remappings),
+        # Node(
+        #     condition=IfCondition(localization),
+        #     package='rtabmap_slam', executable='rtabmap', output='screen',
+        #     parameters=[rtabmap_parameters, shared_parameters,
+        #       {'Mem/IncrementalMemory':'False',
+        #        'Mem/InitWMWithAllNodes':'True'}],
+        #     remappings=remappings),
         # Node(
         #     package='rtabmap_util', executable='obstacles_detection', output='screen',
         #     parameters=[rtabmap_parameters,shared_parameters],
         #     remappings=[('cloud', '/zed/zed_node/point_cloud/cloud_registered'),
         #                 ('obstacles', '/camera/obstacles'),
         #                 ('ground', '/camera/ground')]),
-        Node(
-            condition=IfCondition(rtabmap_viz),
-            package='rtabmap_viz', executable='rtabmap_viz', output='screen',
-            parameters=[rtabmap_parameters, shared_parameters],
-            remappings=remappings),
+        # Node(
+        #     condition=IfCondition(rtabmap_viz),
+        #     package='rtabmap_viz', executable='rtabmap_viz', output='screen',
+        #     parameters=[rtabmap_parameters, shared_parameters],
+        #     remappings=remappings),
     ]
     return return_list
 def generate_launch_description():

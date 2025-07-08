@@ -17,7 +17,7 @@ def launch_setup(context, *args, **kwargs):
         # Nodes to launch
         Node(
             package='rtabmap_sync', executable='rgbd_sync', output='screen',
-            parameters=[{'approx_sync':False, 'use_sim_time':False}],
+            parameters=[{'approx_sync':False, 'use_sim_time':False , 'qos': 1, 'qos_camera_info': 1}],
             remappings=remappings),
     ]
     return return_list

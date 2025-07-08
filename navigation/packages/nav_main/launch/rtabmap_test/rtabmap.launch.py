@@ -7,10 +7,11 @@ from launch_ros.actions import Node
 
 
 def launch_setup(context, *args, **kwargs):
-    localization = LaunchConfiguration('localization', default='true')
+    localization = LaunchConfiguration('localization', default='false')
 
     rtabmap_slam_parameters={
             'subscribe_rgbd':True,
+            'subscribe_rgb': False,
             'subscribe_depth': False,
             'subscribe_scan':True,
             'use_sim_time':False,
@@ -18,7 +19,7 @@ def launch_setup(context, *args, **kwargs):
             'frame_id':'base_link',
             'odom_frame_id': 'odom',
             'map_frame_id': 'map',
-            'database_path': '/workspace/rtabmap2.db',
+            'database_path': '/workspace/rtabmap3.db',
             'approx_sync ': True,
             'odom_sensor_sync': True,
             #RTABMAP PARAMETERS
@@ -33,6 +34,7 @@ def launch_setup(context, *args, **kwargs):
             'RGBD/AngularUpdate': '0.1',
             'RGBD/ForceOdom3DoF': 'true',
             'RGBD/StartAtOrigin': 'false',
+            'RGBD/ProximityPathMaxNeighbors' : '0',
             #G2O Optimization
             'Optimizer/Strategy': '1', #g2o
             'Optimizer/Iterations': '20',
@@ -62,13 +64,15 @@ def launch_setup(context, *args, **kwargs):
             'Icp/MaxCorrespondenceDistance': '0.1',
             'Icp/PointToPlane': 'true',
             #grid
-            'Grid/Sensor': '2', # 2 para grid 3d y 0 para 2d
-            'Grid/RangeMax': '5.0',
-            'Grid/CellSize': '0.05',
+            'Grid/Sensor': '0', # 2 para grid 3d y 0 para 2d
+            'Grid/RangeMax': '3.0',
+            'Grid/CellSize': '0.07',
             'Grid/3D': 'false',
             'Grid/RayTracing': 'false',
             'Grid/MaxGroundHeight':'0.1', 
-            'Grid/MaxObstacleHeight':'2',  
+            'Grid/MaxObstacleHeight':'2',
+            'GridGlobal/Eroded': 'true',
+            'GridGlobal/FootprintRadius': '0.2'  
 
         }
     return_list = [

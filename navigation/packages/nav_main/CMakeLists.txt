@@ -12,6 +12,11 @@ find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(sensor_msgs REQUIRED)
 find_package(frida_interfaces REQUIRED)
+find_package(rtabmap_slam REQUIRED)
+find_package(rtabmap_sync REQUIRED)
+find_package(yaml-cpp REQUIRED)
+find_package(ament_index_cpp REQUIRED)
+
 
 install(DIRECTORY launch config maps bt rviz_configs
   DESTINATION share/${PROJECT_NAME})
@@ -21,10 +26,16 @@ install(DIRECTORY locations
   DESTINATION share/${PROJECT_NAME})
 
 add_executable(ignore_laser src/ignore_laser.cpp)
+add_executable(rtabmap_compose src/rtabmap_compose.cpp)
+
 ament_target_dependencies(ignore_laser rclcpp sensor_msgs)
+
+ament_target_dependencies(rtabmap_compose rclcpp rtabmap_slam rtabmap_sync yaml-cpp ament_index_cpp)
+
 
 install(TARGETS
   ignore_laser
+  rtabmap_compose
   DESTINATION lib/${PROJECT_NAME})
 
   

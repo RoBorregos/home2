@@ -1,126 +1,106 @@
-#include <rclcpp/rclcpp.hpp>
-#include <rclcpp/executors/single_threaded_executor.hpp>
-#include <thread>
-#include <rclcpp/parameter.hpp>
-// RTAB-Map composable includes
 #include "rtabmap_slam/CoreWrapper.h"
+#include "rclcpp/rclcpp.hpp"
 #include "rtabmap_sync/rgbd_sync.hpp"
+#include <thread>
+#include <signal.h>
+#include <atomic>
+#include <chrono>
+std::atomic<bool> shutdown_requested{false};
 
-int main(int argc, char ** argv)
+void signalHandler(int signum) {
+  shutdown_requested = true;
+}
+
+int main(int argc, char** argv)
 {
   rclcpp::init(argc, argv);
 
-  // Options for the composable nodes (can include parameters, use_intra_process_comms, etc.)
+  // Install signal handler
+  signal(SIGINT, signalHandler);
+  signal(SIGTERM, signalHandler);
 
-  // You can load parameters here if needed
-  // options.parameter_overrides({ ... });
-  
-  std::vector<rclcpp::Parameter> rgbd_sync_params = {
-  {"approx_sync", false},
-  {"use_sim_time", false},
-  };
-
-  std::vector<rclcpp::Parameter> rtabmap_params = {
-  {"subscribe_rgb", false},
-  {"subscribe_depth", false},
-  {"use_sim_time", false},
-  {"subscribe_rgbd", true},
-  {"subscribe_scan", true},
-  {"odom_sensor_sync", true},
-  {"frame_id", "base_link"},
-  {"odom_frame_id", "odom"},
-  {"map_frame_id", "map"},
-  {"database_path", "/workspace/rtabmap2.db"},
-  {"approx_sync", true},
-
-  // RTAB-Map parameters
-  {"Rtabmap/DetectionRate", "15.0"},
-  {"Mem/NotLinkedNodesKept", "false"},
-  {"Kp/NNStrategy", "4"},
-  {"Kp/MaxFeatures", "500"},
-  {"Kp/DetectorStrategy", "8"},
-  {"GFTT/Gpu", "true"},
-  {"ORB/Gpu", "true"},
-  {"RGBD/LinearUpdate", "0.1"},
-  {"RGBD/AngularUpdate", "0.1"},
-  {"RGBD/ForceOdom3DoF", "true"},
-  {"RGBD/StartAtOrigin", "false"},
-//   {"RGBD/ProximityPathMaxNeighbors", "0"},
-  {"Optimizer/Strategy", "1"},
-  {"Optimizer/Iterations", "20"},
-  {"Optimizer/Epsilon", "0.0"},
-  {"Optimizer/Robust", "true"},
-  {"Optimizer/GravitySigma", "0.3"},
-  {"g2o/Solver", "3"},
-  {"Odom/Strategy", "1"},
-  {"Odom/ResetCountdown", "0"},
-  {"Odom/Holonomic", "false"},
-  {"Odom/FilteringStrategy", "1"},
-  {"Odom/ParticleSize", "400"},
-  {"Reg/Strategy", "2"},
-  {"Reg/Force3DoF", "true"},
-  {"Vis/PnPRefineIterations", "0"},
-  {"Vis/MinInliers", "20"},
-  {"Vis/Iterations", "300"},
-  {"Vis/FeatureType", "8"},
-  {"Vis/MaxFeatures", "1000"},
-  {"Vis/BundleAdjustment", "1"},
-  {"GMS/WithRotation", "true"},
-  {"GMS/WithScale", "true"},
-  {"GMS/ThresholdFactor", "6.0"},
-  {"Icp/Strategy", "1"},
-  {"Icp/MaxCorrespondenceDistance", "0.1"},
-  {"Icp/PointToPlane", "true"},
-  {"Grid/Sensor", "2"},
-  {"Grid/RangeMax", "5.0"},
-  {"Grid/CellSize", "0.05"},
-  {"Grid/3D", "false"},
-  {"Grid/RayTracing", "false"},
-  {"Grid/MaxGroundHeight", "0.1"},
-  {"Grid/MaxObstacleHeight", "2.0"}
-};
-
-  rclcpp::NodeOptions rtabmap_slam_options;
+  rclcpp::NodeOptions options;
   rclcpp::NodeOptions rgbd_sync_options;
 
+  options.arguments({
+    "--ros-args",
+    "--params-file", 
+    "/tmp/launch_params_cawiwumr"
+  });
+
+  std::vector<rclcpp::Parameter> rgbd_sync_params = {
+    {"approx_sync", false},
+    {"use_sim_time", false},
+  };
 
   rgbd_sync_options.parameter_overrides(rgbd_sync_params);
-  rgbd_sync_options
-  .arguments({
+  rgbd_sync_options.arguments({
     "--ros-args",
     "-r", "rgb/image:=/zed/zed_node/rgb/image_rect_color",
     "-r", "rgb/camera_info:=/zed/zed_node/rgb/camera_info", 
     "-r", "depth/image:=/zed/zed_node/depth/depth_registered"
   });
 
-
-  rtabmap_slam_options.parameter_overrides(rtabmap_params);
-
-  // Create RTAB-Map composable nodes
-  auto core_wrapper_node = std::make_shared<rtabmap_slam::CoreWrapper>(rtabmap_slam_options);
   auto rgbd_sync_node = std::make_shared<rtabmap_sync::RGBDSync>(rgbd_sync_options);
+  auto node = std::make_shared<rtabmap_slam::CoreWrapper>(options);
 
-  // Create single-threaded executors
-  auto exec1 = std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
-  auto exec2 = std::make_shared<rclcpp::executors::SingleThreadedExecutor>();
+  rclcpp::executors::SingleThreadedExecutor executor1;
+  rclcpp::executors::SingleThreadedExecutor executor2;
 
-  // Add nodes to their respective executors
-  exec1->add_node(core_wrapper_node);
-  exec2->add_node(rgbd_sync_node);
+  executor1.add_node(node);
+  executor2.add_node(rgbd_sync_node);
 
-  // Launch each executor in its own thread
+  // Start executors
   std::thread thread1([&]() {
-    exec1->spin();
+    try {
+      while (rclcpp::ok() && !shutdown_requested) {
+        executor1.spin_once(std::chrono::milliseconds(100));
+      }
+    } catch (const std::exception& e) {
+      // Handle any exceptions during shutdown
+    }
   });
 
   std::thread thread2([&]() {
-    exec2->spin();
+    try {
+      while (rclcpp::ok() && !shutdown_requested) {
+        executor2.spin_once(std::chrono::milliseconds(100));
+      }
+    } catch (const std::exception& e) {
+      // Handle any exceptions during shutdown
+    }
   });
 
-  // Wait for shutdown
+  // Wait for shutdown signal
+  while (rclcpp::ok() && !shutdown_requested) {
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+  }
 
-  thread1.join();
-  thread2.join();
+  // 1. First cancel the executors
+  executor1.cancel();
+  executor2.cancel();
+  std::cout << "entro" << std::endl;
+  // 2. Wait for threads to finish
+  if (thread1.joinable()) thread1.join();
+   std::cout << "entro1" << std::endl;
+  if (thread2.joinable()) thread2.join();
+   std::cout << "entro2" << std::endl;
+
+  // 3. Remove nodes from executors before destroying them
+  executor1.remove_node(node);
+   std::cout << "entro3" << std::endl;
+  executor2.remove_node(rgbd_sync_node);
+  std::cout << "entro4" << std::endl;
+
+  // 4. Reset shared_ptr to destroy nodes properly BEFORE rclcpp::shutdown()
+  rgbd_sync_node.reset();
+  std::cout << "entro5" << std::endl;
+  node.reset();
+  std::cout << "entro6" << std::endl;
+
+  // 5. Finally shutdown rclcpp
+  rclcpp::shutdown();
+  std::cout << "entro7" << std::endl;
 
   return 0;
 }

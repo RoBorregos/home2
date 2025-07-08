@@ -25,6 +25,10 @@
   <depend>tf2_geometry_msgs</depend>
   <depend>twist_mux</depend>
   <depend>dashgo_driver</depend>
+  <depend>rtabmap_slam</depend>
+  <depend>rtabmap_sync</depend>
+  <depend>spatio_temporal_voxel_layer</depend>
+
   <!-- Action server move -->
   <depend>action_msgs</depend>
 
