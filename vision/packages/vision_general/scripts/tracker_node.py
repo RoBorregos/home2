@@ -23,7 +23,7 @@ import rclpy
 from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo
-from geometry_msgs.msg import Point
+from geometry_msgs.msg import Point, PointStamped
 from vision_general.utils.reid_model import (
     load_network,
     compare_images,
@@ -54,6 +54,7 @@ from ament_index_python.packages import get_package_share_directory
 import os
 
 CONF_THRESHOLD = 0.6
+DEPTH_THRESHOLD = 100
 
 # Get config folder from package
 PACKAGE_NAME = "vision_general"
@@ -98,8 +99,9 @@ class SingleTracker(Node):
         self.get_is_tracking_service = self.create_service(
             Trigger, "/vision/is_tracking", self.get_is_tracking_callback
         )
+        self.is_tracking_result = False
 
-        self.results_publisher = self.create_publisher(Point, RESULTS_TOPIC, 10)
+        self.results_publisher = self.create_publisher(PointStamped, RESULTS_TOPIC, 10)
 
         self.image_publisher = self.create_publisher(Image, TRACKER_IMAGE_TOPIC, 10)
 
@@ -122,6 +124,9 @@ class SingleTracker(Node):
         """Load models and initial variables"""
         self.target_set = False
         self.image = None
+        self.depth_image_time = None
+        self.image_time = None
+        self.frame_id = "zed_left_camera_optical_frame"
         self.person_data = {
             "id": None,
             "embeddings": None,
@@ -181,12 +186,14 @@ class SingleTracker(Node):
     def image_callback(self, data):
         """Callback to receive image from camera"""
         self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
+        self.image_time = data.header.stamp
 
     def depth_callback(self, data):
         """Callback to receive depth image from camera"""
         try:
             depth_image = self.bridge.imgmsg_to_cv2(data, "32FC1")
             self.depth_image = depth_image
+            self.depth_image_time = data.header.stamp
         except Exception as e:
             print(f"Error: {e}")
 
@@ -639,47 +646,23 @@ class SingleTracker(Node):
 
                 # check if
             if person_in_frame:
-                # if len(self.depth_image) > 0:
-                #     self.is_tracking_result = True
-                #     coords = Point()
-                #     cropped_image = self.frame[
-                #         self.person_data["coordinates"][1] : self.person_data[
-                #             "coordinates"
-                #         ][3],
-                #         self.person_data["coordinates"][0] : self.person_data[
-                #             "coordinates"
-                #         ][2],
-                #     ]
-                #     point2D = self.pose_detection.getCenterPerson(cropped_image)
-                #     if point2D[0] is None:
-                #         self.get_logger().warn("No person detected")
-                #         return
-                #     print(point2D[0], point2D[1])
-                #     # point2D = get2DCentroid(self.person_data["coordinates"], self.frame)
-                #     point2D_x_coord = float(point2D[1])
-                #     point2D_x_coord_normalized = (
-                #         point2D_x_coord / (self.frame.shape[1] / 2)
-                #     ) - 1
-                #     point2Dpoint = Point()
-                #     point2Dpoint.x = float(point2D_x_coord_normalized)
-                #     point2Dpoint.y = 0.0
-                #     point2Dpoint.z = 0.0
-                #     # self.get_logger().info(f"frame_shape: {self.frame.shape[1]} Point2D: {point2D[1]} normalized_point2D: {point2D_x_coord_normalized}")
-                #     self.centroid_publisher.publish(point2Dpoint)
-
-                #     depth = get_depth(
-                #         self.depth_image, [int(point2D[0]), int(point2D[1])]
-                #     )
-                #     point3D = deproject_pixel_to_point(self.imageInfo, point2D, depth)
-                #     point3D = float(point3D[0]), float(point3D[1]), float(point3D[2])
-                #     coords.x = point3D[0]
-                #     coords.y = point3D[1]
-                #     coords.z = point3D[2]
-                #     self.results_publisher.publish(coords)
-                if len(self.depth_image) > 0:
-                    self.is_tracking_result = True
-                    coords = Point()
-                    point2D = get2DCentroid(self.person_data["coordinates"], self.frame)
+                self.is_tracking_result = True
+                if len(self.depth_image) > 0 and (
+                    (
+                        self.depth_image_time.nanosec - self.image_time.nanosec
+                        > -DEPTH_THRESHOLD
+                    )
+                    and (
+                        self.depth_image_time.nanosec - self.image_time.nanosec
+                        < DEPTH_THRESHOLD
+                    )
+                ):
+                    coords = PointStamped()
+                    coords.header.frame_id = self.frame_id
+                    coords.header.stamp = self.depth_image_time
+                    point2D = get2DCentroid(
+                        self.person_data["coordinates"], self.depth_image
+                    )
                     point2D_x_coord = float(point2D[1])
                     point2D_x_coord_normalized = (
                         point2D_x_coord / (self.frame.shape[1] / 2)
@@ -691,15 +674,19 @@ class SingleTracker(Node):
                     # self.get_logger().info(f"frame_shape: {self.frame.shape[1]} Point2D: {point2D[1]} normalized_point2D: {point2D_x_coord_normalized}")
                     self.centroid_publisher.publish(point2Dpoint)
                     depth = get_depth(self.depth_image, point2D)
-                    point3D = deproject_pixel_to_point(self.imageInfo, point2D, depth)
+                    point_2d_temp = (point2D[1], point2D[0])
+                    point3D = deproject_pixel_to_point(
+                        self.imageInfo, point_2d_temp, depth
+                    )
+                    # print(point3D)
                     point3D = float(point3D[0]), float(point3D[1]), float(point3D[2])
-                    coords.x = point3D[0]
-                    coords.y = point3D[1]
-                    coords.z = point3D[2]
+                    coords.point.x = point3D[0]
+                    coords.point.y = point3D[1]
+                    coords.point.z = point3D[2]
+                    # self.point_pub.publish(coords)
                     self.results_publisher.publish(coords)
                 else:
-                    # self.get_logger().warn("Depth image not available")
-                    self.is_tracking_result = False
+                    self.get_logger().warn("Depth image not available")
             else:
                 self.is_tracking_result = False
         else:
