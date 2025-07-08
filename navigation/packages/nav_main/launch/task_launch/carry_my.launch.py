@@ -13,10 +13,11 @@ def generate_launch_description():
     rtab_params_file = os.path.join(pkg_file_route,'config', 'rtabmap', 'rtabmap_follow_config.yaml')
     nav2_params_file = os.path.join(pkg_file_route,'config', 'nav2_following.yaml')
 
+    rtabmap_map_name = LaunchConfiguration('map_name', default='rtabmap_follow.db')
     rtab_params = LaunchConfiguration('rtab_config_file', default=rtab_params_file)
     nav2_params = LaunchConfiguration('nav2_config_file', default=nav2_params_file)
     localization = LaunchConfiguration('localization', default='false')
-    nav2_activate = LaunchConfiguration('nav2', default='false')
+    nav2_activate = LaunchConfiguration('nav2', default='true')
     use_sim = LaunchConfiguration('use_sim', default='false')
 
     nav_basics = IncludeLaunchDescription(
@@ -40,7 +41,7 @@ def generate_launch_description():
                     "rtabnav2.launch.py",
                 ]
             )),
-        launch_arguments={'localization': localization, 'rtab_params': rtab_params, 'nav2_params': nav2_params, 'nav2_activate': nav2_activate}.items(),
+        launch_arguments={'localization': localization, 'rtab_config_file': rtab_params, 'nav2_config_file': nav2_params, 'nav2': nav2_activate, 'map_name': rtabmap_map_name}.items(),
         )
     transformer = Node(
                 package='nav_main',

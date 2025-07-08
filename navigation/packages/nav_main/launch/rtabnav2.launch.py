@@ -14,11 +14,20 @@ def generate_launch_description():
 
     rtab_params_ = LaunchConfiguration('rtab_config_file', default=rtab_params_file)
     nav2_params_ = LaunchConfiguration('nav2_config_file', default=nav2_params_file)
-    localization = LaunchConfiguration('localization', default='false')
+    localization = LaunchConfiguration('localization', default='true')
     nav2_activate = LaunchConfiguration('nav2', default='true')
+    rtabmap_map_name = LaunchConfiguration('map_name', default='rtabmap_mapping.db')
+    
 
-    rtab_params = ParameterFile(rtab_params_, allow_substs=True)
     nav2_params = ParameterFile(nav2_params_, allow_substs=True)
+    map_substitution  = {'database_path': ['/workspace/src/navigation/rtabmapdbs/', rtabmap_map_name]}
+    rtab_params = ParameterFile(
+        RewrittenYaml(
+            source_file=rtab_params_,
+            root_key='',
+            param_rewrites=map_substitution,
+            convert_types=True),
+        allow_substs=True)
 
     sync_remapping=[
           ('rgb/image', '/zed/zed_node/rgb/image_rect_color'),
