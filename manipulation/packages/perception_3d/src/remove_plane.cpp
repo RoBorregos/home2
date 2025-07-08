@@ -536,16 +536,61 @@ public:
     }
     // save the vertical plane to a file
     // std::string filename = this->package_path + "/vertical_plane.pcd";
-    try {
-      pcl::io::savePCDFile(this->package_path + "/vertical_plane.pcd",
-                           *cloud_out);
-    } catch (const std::exception &e) {
-      RCLCPP_ERROR(this->get_logger(), "Error saving vertical plane: %s",
-                   e.what());
-      // return COULD_NOT_SAVE_POINT_CLOUD;
+    // try {
+    //   pcl::io::savePCDFile(this->package_path + "/vertical_plane.pcd",
+    //                        *cloud_out);
+    // } catch (const std::exception &e) {
+    //   RCLCPP_ERROR(this->get_logger(), "Error saving vertical plane: %s",
+    //                e.what());
+    //   // return COULD_NOT_SAVE_POINT_CLOUD;
+    // }
+    // RCLCPP_INFO(this->get_logger(), "Saved vertical plane to %s",
+    //             (this->package_path + "/vertical_plane.pcd").c_str());
+    // euclidean clustering get closest cluster
+    pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(
+        new pcl::search::KdTree<pcl::PointXYZ>);
+    tree->setInputCloud(cloud_out);
+    std::vector<pcl::PointIndices> cluster_indices;
+    pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
+    ec.setClusterTolerance(0.04); // 5cm
+    ec.setMinClusterSize(100);
+    ec.setMaxClusterSize(25000);
+    ec.setSearchMethod(tree);
+    ec.setInputCloud(cloud_out);
+    ec.extract(cluster_indices);
+    if (cluster_indices.empty()) {
+      RCLCPP_ERROR(this->get_logger(), "No clusters found in vertical plane");
+      return POINT_CLOUD_EMPTY;
     }
-    RCLCPP_INFO(this->get_logger(), "Saved vertical plane to %s",
-                (this->package_path + "/vertical_plane.pcd").c_str());
+
+    RCLCPP_INFO(this->get_logger(), "Found %zu clusters in vertical plane",
+                cluster_indices.size());
+    // get the largest cluster
+    int largest_cluster_index = 0;
+    size_t largest_cluster_size = 0;
+    for (size_t i = 0; i < cluster_indices.size(); ++i) {
+      if (cluster_indices[i].indices.size() > largest_cluster_size) {
+        largest_cluster_size = cluster_indices[i].indices.size();
+        largest_cluster_index = i;
+      }
+    }
+    RCLCPP_INFO(this->get_logger(), "Largest cluster has %zu points",
+                largest_cluster_size);
+    // extract the largest cluster
+    pcl::PointIndices::Ptr largest_cluster_indices(
+        new pcl::PointIndices(cluster_indices[largest_cluster_index]));
+    pcl::ExtractIndices<pcl::PointXYZ> extract_largest;
+    extract_largest.setInputCloud(cloud_out);
+    extract_largest.setIndices(largest_cluster_indices);
+    extract_largest.setNegative(false);
+    extract_largest.filter(*cloud_out);
+    RCLCPP_INFO(this->get_logger(), "Extracted largest cluster with %zu points",
+                cloud_out->points.size());
+    if (cloud_out->points.size() == 0) {
+      RCLCPP_ERROR(this->get_logger(), "Could not extract largest cluster");
+      return POINT_CLOUD_EMPTY;
+    }
+
     return OK;
   }
 
