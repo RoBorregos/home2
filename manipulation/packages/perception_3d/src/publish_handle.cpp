@@ -38,6 +38,8 @@
 #include <frida_constants/manipulation_constants_cpp.hpp>
 #include <perception_3d/macros.hpp>
 
+#include <yaml-cpp/yaml.h>
+
 // #include <frida_interfaces/srv/cluster_object_from_point.hpp>
 // #include <frida_interfaces/srv/remove_plane.hpp>
 #include <frida_interfaces/srv/remove_vertical_plane.hpp>
@@ -89,10 +91,22 @@ private:
 
   rclcpp::TimerBase::SharedPtr timer;
 
+  double rel_x_, rel_y_, rel_yaw_;
+
 public:
   PublishHandleA(std::shared_ptr<CallServicesNode> call_services_node)
       : Node("publish_handle_node"), call_services_node(call_services_node) {
     RCLCPP_INFO(this->get_logger(), "Starting PublishHandleA Node");
+
+    // Load relative pose from YAML
+    std::string config_path =
+        ament_index_cpp::get_package_share_directory("manipulation") +
+        "/config/relative_docking_pose.yaml";
+    YAML::Node config = YAML::LoadFile(config_path);
+    this->rel_x_ = config["x"].as<double>();
+    this->rel_y_ = config["y"].as<double>();
+    this->rel_yaw_ = config["yaw"].as<double>();
+
     this->pose_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>(
         "/door_handle_pose", 10);
     this->tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
@@ -161,14 +175,31 @@ public:
                 min_pt.y, min_pt.z, max_pt.x, max_pt.y, max_pt.z);
     // Create a pose from the min and max points
     this->pose_.header.frame_id = "map";
-    this->pose_.header.stamp = this->now();
+    // this->pose_.header.stamp = this->now();
+    this->pose_.header.stamp = result->cloud.header.stamp;
     this->pose_.pose.position.x = (min_pt.x + max_pt.x) / 2.0;
     this->pose_.pose.position.y = (min_pt.y + max_pt.y) / 2.0;
-    this->pose_.pose.position.z = (min_pt.z + max_pt.z) / 2.0;
-    this->pose_.pose.orientation.x = 0.0;
-    this->pose_.pose.orientation.y = 0.0;
-    this->pose_.pose.orientation.z = 0.0;
-    this->pose_.pose.orientation.w = 1.0;
+    // this->pose_.pose.position.z = (min_pt.z + max_pt.z) / 2.0;
+    // this->pose_.pose.position.z = 0.0; // Assuming a 2D plane, set z to 0
+    // this->pose_.pose.orientation.x = 0.0;
+    // this->pose_.pose.orientation.y = 0.0;
+    // this->pose_.pose.orientation.z = 0.0;
+    // this->pose_.pose.orientation.w = 1.0;
+
+    tf2::Quaternion q;
+    q.setRPY(0, 0, rel_yaw_);
+    tf2::Vector3 offset(rel_x_, rel_y_, 0.0);
+
+    // Rotate offset by handle orientation (identity for now)
+    tf2::Vector3 rotated_offset = tf2::quatRotate(q, offset);
+    this->pose_.pose.position.x =
+        this->pose_.pose.position.x + rotated_offset.x();
+    this->pose_.pose.position.y =
+        this->pose_.pose.position.y + rotated_offset.y();
+
+    tf2::Quaternion base_orientation;
+    base_orientation.setRPY(0, 0, rel_yaw_);
+    this->pose_.pose.orientation = tf2::toMsg(base_orientation);
 
     this->pose_pub_->publish(this->pose_);
   }
