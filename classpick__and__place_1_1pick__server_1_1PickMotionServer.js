@@ -2,6 +2,7 @@ var classpick__and__place_1_1pick__server_1_1PickMotionServer =
 [
     [ "__init__", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#ad85c094307880912181b1cf5ebdd5174", null ],
     [ "attach_pick_object", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a142083fd5eb70a3722c97774500d6763", null ],
+    [ "calculate_object_height", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#ab2037dcf718ab15649bb40f17cbf2098", null ],
     [ "calculate_object_pick_height", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#aae8e37df51f19f4e7a029e630ce9a400", null ],
     [ "check_feasibility", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a6b7cd37b58c9988a912d17a7bcfa1e45", null ],
     [ "execute_callback", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a921c792225a597827ba4fb2f7f394e55", null ],
@@ -16,6 +17,7 @@ var classpick__and__place_1_1pick__server_1_1PickMotionServer =
     [ "_action_server", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a282f47521b1b994c9e9cff2fdb19c2ca", null ],
     [ "_attach_collision_object_client", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#ae57b2ad5c0b02a9680a000085356a35a", null ],
     [ "_get_collision_objects_client", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#ac941cc8330441d5bfefa23078dcacd4c", null ],
+    [ "_gripper_set_state_client", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#aa2489955b8586035c570b4e498eacdcf", null ],
     [ "_move_to_pose_action_client", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a33b42ac19f6fb7c921c8755372ac3a91", null ],
     [ "_remove_collision_object_client", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a3465cd2bb38ca283600cead2612f6626", null ],
     [ "callback_group", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a2879eb64419c48c3bbe2ea3deb634d51", null ],

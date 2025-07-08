@@ -1,7 +1,7 @@
 var classMoveItPlanner_1_1MoveItPlanner =
 [
     [ "__init__", "classMoveItPlanner_1_1MoveItPlanner.html#aaba6ccaf5b32afd81ed37034977bdb55", null ],
-    [ "_plan", "classMoveItPlanner_1_1MoveItPlanner.html#a57c22e517550fd8b227104b3128a1f09", null ],
+    [ "_plan", "classMoveItPlanner_1_1MoveItPlanner.html#a24117cb034032c5d49d89be1f3ca9f90", null ],
     [ "_plan_joint_goal", "classMoveItPlanner_1_1MoveItPlanner.html#a6b27b965721b20281ead6e4d436c7c98", null ],
     [ "add_collision_box", "classMoveItPlanner_1_1MoveItPlanner.html#aa8ce6c49c99679edf934089bc681332e", null ],
     [ "add_collision_cylinder", "classMoveItPlanner_1_1MoveItPlanner.html#ad4e25a47909d8b2c9da8ae0034aade32", null ],
@@ -20,7 +20,7 @@ var classMoveItPlanner_1_1MoveItPlanner =
     [ "joint_states_callback", "classMoveItPlanner_1_1MoveItPlanner.html#a465db3af1d130f9377d2e4a5c02baee9", null ],
     [ "open_gripper", "classMoveItPlanner_1_1MoveItPlanner.html#a66406e2dc757afec0b46e17770a10698", null ],
     [ "plan_joint_goal", "classMoveItPlanner_1_1MoveItPlanner.html#a212fd1bd7543264335f726ab91985df3", null ],
-    [ "plan_pose_goal", "classMoveItPlanner_1_1MoveItPlanner.html#acc7316415e66d94a609e05f0e53cd153", null ],
+    [ "plan_pose_goal", "classMoveItPlanner_1_1MoveItPlanner.html#a0792789d12ca1a7eaea5a9331082f71a", null ],
     [ "remove_all_collision_objects", "classMoveItPlanner_1_1MoveItPlanner.html#a233452bcc3aa3b306dd723be78a4324a", null ],
     [ "remove_collision_object", "classMoveItPlanner_1_1MoveItPlanner.html#acf0f24b8672180670ae56b15e758d644", null ],
     [ "set_acceleration", "classMoveItPlanner_1_1MoveItPlanner.html#ad3afc41a64cd148af8247671cc295d15", null ],
@@ -28,6 +28,8 @@ var classMoveItPlanner_1_1MoveItPlanner =
     [ "set_mode", "classMoveItPlanner_1_1MoveItPlanner.html#ac0b375ebd06fabb94d5a2bebfdef7f3c", null ],
     [ "set_orientation_constraints", "classMoveItPlanner_1_1MoveItPlanner.html#a6de8ae08c303ea15feb266216fb17221", null ],
     [ "set_planner", "classMoveItPlanner_1_1MoveItPlanner.html#aeda4f1cef67c52e871f202ce34d239ba", null ],
+    [ "set_planning_attempts", "classMoveItPlanner_1_1MoveItPlanner.html#a862ec15d3c59156146eedd06b92a0c96", null ],
+    [ "set_planning_time", "classMoveItPlanner_1_1MoveItPlanner.html#ad5e95f1ed12969a857b880d0b3a67f7b", null ],
     [ "set_position_constraints", "classMoveItPlanner_1_1MoveItPlanner.html#a3695eddd6df712db4717457509171634", null ],
     [ "set_velocity", "classMoveItPlanner_1_1MoveItPlanner.html#ae1a58dc80f14a46c48946da363ff1a08", null ],
     [ "shutdown", "classMoveItPlanner_1_1MoveItPlanner.html#a36bdf5eb4a54e72c3b9293e1f4517b33", null ],

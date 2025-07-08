@@ -131,6 +131,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aed937667c14d6f478bc408bf87845d6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aae8e37df51f19f4e7a029e630ce9a400"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pick__server_1_1PickMotionServer.html#aae8e37df51f19f4e7a029e630ce9a400">calculate_object_pick_height</a> (self, obj, pose)</td></tr>
 <tr class="separator:aae8e37df51f19f4e7a029e630ce9a400"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab2037dcf718ab15649bb40f17cbf2098"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pick__server_1_1PickMotionServer.html#ab2037dcf718ab15649bb40f17cbf2098">calculate_object_height</a> (self, obj_lowest, obj_highest)</td></tr>
+<tr class="separator:ab2037dcf718ab15649bb40f17cbf2098"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6b7cd37b58c9988a912d17a7bcfa1e45"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a6b7cd37b58c9988a912d17a7bcfa1e45">check_feasibility</a> (self, pose)</td></tr>
 <tr class="separator:a6b7cd37b58c9988a912d17a7bcfa1e45"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -157,6 +159,8 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:ac941cc8330441d5bfefa23078dcacd4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3465cd2bb38ca283600cead2612f6626"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a3465cd2bb38ca283600cead2612f6626">_remove_collision_object_client</a></td></tr>
 <tr class="separator:a3465cd2bb38ca283600cead2612f6626"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa2489955b8586035c570b4e498eacdcf"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pick__server_1_1PickMotionServer.html#aa2489955b8586035c570b4e498eacdcf">_gripper_set_state_client</a></td></tr>
+<tr class="separator:aa2489955b8586035c570b4e498eacdcf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="ad85c094307880912181b1cf5ebdd5174" name="ad85c094307880912181b1cf5ebdd5174"></a>
@@ -194,6 +198,40 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <pre class="fragment">Attach the pick object to the robot.</pre> 
+</div>
+</div>
+<a id="ab2037dcf718ab15649bb40f17cbf2098" name="ab2037dcf718ab15649bb40f17cbf2098"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab2037dcf718ab15649bb40f17cbf2098">&#9670;&#160;</a></span>calculate_object_height()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def pick_and_place.pick_server.PickMotionServer.calculate_object_height </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>obj_lowest</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>obj_highest</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Calculate the height of the object, measured from the lowest point to the highest point</pre> 
 </div>
 </div>
 <a id="aae8e37df51f19f4e7a029e630ce9a400" name="aae8e37df51f19f4e7a029e630ce9a400"></a>
@@ -550,6 +588,28 @@ e.g. if a 30cm tall object is picked at 10cm, the height is 10cm
       <table class="memname">
         <tr>
           <td class="memname">pick_and_place.pick_server.PickMotionServer._get_collision_objects_client</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aa2489955b8586035c570b4e498eacdcf" name="aa2489955b8586035c570b4e498eacdcf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa2489955b8586035c570b4e498eacdcf">&#9670;&#160;</a></span>_gripper_set_state_client</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">pick_and_place.pick_server.PickMotionServer._gripper_set_state_client</td>
         </tr>
       </table>
   </td>

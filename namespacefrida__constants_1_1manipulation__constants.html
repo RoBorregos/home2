@@ -168,7 +168,7 @@ Variables</h2></td></tr>
 <tr class="separator:a777012eeb4aed1198489527887a98d36"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeccf27e09cede04f23ddfd39528fbea4"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacefrida__constants_1_1manipulation__constants.html#aeccf27e09cede04f23ddfd39528fbea4">SAFETY_HEIGHT</a> = 0.05</td></tr>
 <tr class="separator:aeccf27e09cede04f23ddfd39528fbea4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab65c663bc0e5f75a060598e9e0c4a01a"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacefrida__constants_1_1manipulation__constants.html#ab65c663bc0e5f75a060598e9e0c4a01a">PICK_MIN_HEIGHT</a> = 0.15</td></tr>
+<tr class="memitem:ab65c663bc0e5f75a060598e9e0c4a01a"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacefrida__constants_1_1manipulation__constants.html#ab65c663bc0e5f75a060598e9e0c4a01a">PICK_MIN_HEIGHT</a> = 0.1</td></tr>
 <tr class="separator:ab65c663bc0e5f75a060598e9e0c4a01a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaccddbdec7541f9e856c14beed78d764"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacefrida__constants_1_1manipulation__constants.html#aaccddbdec7541f9e856c14beed78d764">GRASP_LINK_FRAME</a> = &quot;gripper_grasp_frame&quot;</td></tr>
 <tr class="separator:aaccddbdec7541f9e856c14beed78d764"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -198,6 +198,12 @@ Variables</h2></td></tr>
 <tr class="separator:a79c4beebdcccc18e2cce0cbabb1c855b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae83c2600137783c55e5ac4720c44f7e3"><td class="memItemLeft" align="right" valign="top">tuple&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacefrida__constants_1_1manipulation__constants.html#ae83c2600137783c55e5ac4720c44f7e3">PLANE_OBJECT_COLLISION_TOLERANCE</a></td></tr>
 <tr class="separator:ae83c2600137783c55e5ac4720c44f7e3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1bd51b80a924a289d9d7836620eca1f6"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacefrida__constants_1_1manipulation__constants.html#a1bd51b80a924a289d9d7836620eca1f6">POUR_MOTION_ACTION_SERVER</a> = &quot;/manipulation/pour_motion_action_server&quot;</td></tr>
+<tr class="separator:a1bd51b80a924a289d9d7836620eca1f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0dc8f7fb16d410b4a27d8c1aac4cc769"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacefrida__constants_1_1manipulation__constants.html#a0dc8f7fb16d410b4a27d8c1aac4cc769">POUR_VELOCITY</a> = 0.2</td></tr>
+<tr class="separator:a0dc8f7fb16d410b4a27d8c1aac4cc769"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5165adc9e6beb3861d698108db605489"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacefrida__constants_1_1manipulation__constants.html#a5165adc9e6beb3861d698108db605489">POUR_ACCELERATION</a> = 0.15</td></tr>
+<tr class="separator:a5165adc9e6beb3861d698108db605489"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab094c82e8bc2169c93352c9c310afd02"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacefrida__constants_1_1manipulation__constants.html#ab094c82e8bc2169c93352c9c310afd02">SHELF_POSITION_PREPLACE_POSE</a> = -0.25</td></tr>
 <tr class="separator:ab094c82e8bc2169c93352c9c310afd02"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2504c3f7f4f62c97f91d95bc5191e7c0"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacefrida__constants_1_1manipulation__constants.html#a2504c3f7f4f62c97f91d95bc5191e7c0">DEBUG_POSE_GOAL_TOPIC</a> = &quot;/manipulation/debug_pose_goal&quot;</td></tr>
@@ -625,7 +631,7 @@ Variables</h2></td></tr>
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">float frida_constants.manipulation_constants.PICK_MIN_HEIGHT = 0.15</td>
+          <td class="memname">float frida_constants.manipulation_constants.PICK_MIN_HEIGHT = 0.1</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -801,6 +807,48 @@ Variables</h2></td></tr>
 <div class="line"><span class="lineno">    2</span>    0.025  <span class="comment"># Tolerance to delete collision objects if they are too close to the plane</span></div>
 <div class="line"><span class="lineno">    3</span>)</div>
 </div><!-- fragment -->
+</div>
+</div>
+<a id="a5165adc9e6beb3861d698108db605489" name="a5165adc9e6beb3861d698108db605489"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5165adc9e6beb3861d698108db605489">&#9670;&#160;</a></span>POUR_ACCELERATION</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">float frida_constants.manipulation_constants.POUR_ACCELERATION = 0.15</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a1bd51b80a924a289d9d7836620eca1f6" name="a1bd51b80a924a289d9d7836620eca1f6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1bd51b80a924a289d9d7836620eca1f6">&#9670;&#160;</a></span>POUR_MOTION_ACTION_SERVER</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">str frida_constants.manipulation_constants.POUR_MOTION_ACTION_SERVER = &quot;/manipulation/pour_motion_action_server&quot;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a0dc8f7fb16d410b4a27d8c1aac4cc769" name="a0dc8f7fb16d410b4a27d8c1aac4cc769"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0dc8f7fb16d410b4a27d8c1aac4cc769">&#9670;&#160;</a></span>POUR_VELOCITY</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">float frida_constants.manipulation_constants.POUR_VELOCITY = 0.2</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
 </div>
 </div>
 <a id="a8e8ad78553ea06d3992a72b3e678bbc0" name="a8e8ad78553ea06d3992a72b3e678bbc0"></a>

@@ -5,15 +5,18 @@ var classpick__and__place_1_1manipulation__core_1_1ManipulationCore =
     [ "manipulation_server_callback", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#adcd5d52f5b2a4743c98ec5c63bcb5403", null ],
     [ "pick_execute", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#a78cba9a09f1a1650f1672de40ae894e1", null ],
     [ "place_execute", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#a03d597744004f1e7cb25cb11026faa75", null ],
+    [ "pour_execute", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#a5fa0f82c976b684071535c95d60c339f", null ],
     [ "remove_all_collision_object", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#ac2452bc48f6fa9aa009ee7de0e7eb44f", null ],
     [ "scan_environment", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#ad3d8443292aa7c88404b7d19dc334ae3", null ],
     [ "_clear_octomap_client", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#ac3979c3e0b2a665f7b7afcbd04e500d3", null ],
+    [ "_get_collision_objects_client", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#a65136601fe7fe980fcc978e41a495f82", null ],
     [ "_get_joints_client", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#a4d58193e2b69a17b4d54b1c63aa034ff", null ],
     [ "_gripper_set_state_client", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#af24f12619bf5ba6265eb0a56e193149b", null ],
     [ "_manipulation_server", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#a14e8f1666d59e87c1c01b513bd53c9e7", null ],
     [ "_move_joints_client", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#a444a0470c1e22d27eace0292650b04c1", null ],
     [ "_pick_motion_action_client", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#a19f8596b974c2ca0de2d56f7b8ceaa2a", null ],
     [ "_place_motion_action_client", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#ab112ff3e2a8957f30b23f5dd9f52c1b5", null ],
+    [ "_pour_motion_action_client", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#a6b678545cb866277a45a66e1c858079d", null ],
     [ "_remove_collision_object_client", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#a59c80226aa21d2f6239cfc900f521a0f", null ],
     [ "callback_group", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#a781dd21f44b859d1bce1e94a80c8bd9d", null ],
     [ "detection_handler_client", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#ac127c89aa6061c1e449f5529dbe0fc2e", null ],
@@ -23,5 +26,6 @@ var classpick__and__place_1_1manipulation__core_1_1ManipulationCore =
     [ "pick_result", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#af978e304e7491a45cc1df7cac49f043e", null ],
     [ "place_manager", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#a0a053186886b3738bf179a2767ba28bf", null ],
     [ "place_perception_3d_client", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#a266d5d436c21afd15b7533cbcc0a0f1f", null ],
-    [ "place_pose_client", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#a533d029eb5d664ce37f81ef53dcfd37b", null ]
+    [ "place_pose_client", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#a533d029eb5d664ce37f81ef53dcfd37b", null ],
+    [ "pour_manager", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#aa90a4895b44097e9869222d0ed95ade8", null ]
 ];

@@ -192,6 +192,9 @@ var annotated_dup =
       ] ],
       [ "place_server", "namespacepick__and__place_1_1place__server.html", [
         [ "PlaceMotionServer", "classpick__and__place_1_1place__server_1_1PlaceMotionServer.html", "classpick__and__place_1_1place__server_1_1PlaceMotionServer" ]
+      ] ],
+      [ "pour_server", "namespacepick__and__place_1_1pour__server.html", [
+        [ "PourMotionServer", "classpick__and__place_1_1pour__server_1_1PourMotionServer.html", "classpick__and__place_1_1pour__server_1_1PourMotionServer" ]
       ] ]
     ] ],
     [ "PickManager", "namespacePickManager.html", [
@@ -211,6 +214,9 @@ var annotated_dup =
     ] ],
     [ "pose_detection", "namespacepose__detection.html", [
       [ "PoseDetection", "classpose__detection_1_1PoseDetection.html", "classpose__detection_1_1PoseDetection" ]
+    ] ],
+    [ "PourManager", "namespacePourManager.html", [
+      [ "PourManager", "classPourManager_1_1PourManager.html", "classPourManager_1_1PourManager" ]
     ] ],
     [ "receptionist_commands", "namespacereceptionist__commands.html", [
       [ "ReceptionistCommands", "classreceptionist__commands_1_1ReceptionistCommands.html", "classreceptionist__commands_1_1ReceptionistCommands" ]

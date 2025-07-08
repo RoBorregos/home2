@@ -9,5 +9,6 @@ var dir_d89c5ea1f1635b650fa16423f2851ead =
     [ "manipulation_client.py", "manipulation__client_8py.html", "manipulation__client_8py" ],
     [ "manipulation_core.py", "manipulation__core_8py.html", "manipulation__core_8py" ],
     [ "pick_server.py", "pick__server_8py.html", "pick__server_8py" ],
-    [ "place_server.py", "place__server_8py.html", "place__server_8py" ]
+    [ "place_server.py", "place__server_8py.html", "place__server_8py" ],
+    [ "pour_server.py", "pour__server_8py.html", "pour__server_8py" ]
 ];

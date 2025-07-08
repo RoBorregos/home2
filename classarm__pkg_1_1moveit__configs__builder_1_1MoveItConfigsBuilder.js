@@ -12,5 +12,6 @@ var classarm__pkg_1_1moveit__configs__builder_1_1MoveItConfigsBuilder =
     [ "sensors_3d", "classarm__pkg_1_1moveit__configs__builder_1_1MoveItConfigsBuilder.html#abd4adb9d806fde768fb3470e6c071a1f", null ],
     [ "to_dict", "classarm__pkg_1_1moveit__configs__builder_1_1MoveItConfigsBuilder.html#af9355bf35bb55a13bace001065ca5aa7", null ],
     [ "to_moveit_configs", "classarm__pkg_1_1moveit__configs__builder_1_1MoveItConfigsBuilder.html#aed049745e8fc90c82d12f614d79a9d5d", null ],
-    [ "trajectory_execution", "classarm__pkg_1_1moveit__configs__builder_1_1MoveItConfigsBuilder.html#ab52123949638822aefc13f1fad098e3c", null ]
+    [ "trajectory_execution", "classarm__pkg_1_1moveit__configs__builder_1_1MoveItConfigsBuilder.html#ab52123949638822aefc13f1fad098e3c", null ],
+    [ "_joint_limits_file", "classarm__pkg_1_1moveit__configs__builder_1_1MoveItConfigsBuilder.html#acb8d08791329f9c4a7fc1208f4e6d1ef", null ]
 ];

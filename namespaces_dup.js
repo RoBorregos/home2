@@ -179,6 +179,9 @@ var namespaces_dup =
       [ "launch_setup", "namespacenav__basics.html#ac5d23aeb26e79af148252a849c2905ca", null ]
     ] ],
     [ "nav_test", "namespacenav__test.html", "namespacenav__test" ],
+    [ "navigation_composable", "namespacenavigation__composable.html", [
+      [ "generate_launch_description", "namespacenavigation__composable.html#a3b4a73e1f78bcd214e5259046b8a0a7f", null ]
+    ] ],
     [ "object_detector_combined", "namespaceobject__detector__combined.html", [
       [ "generate_launch_description", "namespaceobject__detector__combined.html#a89d204316b51e6caf017cd1f6253e538", null ]
     ] ],
@@ -198,6 +201,7 @@ var namespaces_dup =
     [ "point_transformer", "namespacepoint__transformer.html", "namespacepoint__transformer" ],
     [ "pointing_detection", "namespacepointing__detection.html", "namespacepointing__detection" ],
     [ "pose_detection", "namespacepose__detection.html", "namespacepose__detection" ],
+    [ "PourManager", "namespacePourManager.html", "namespacePourManager" ],
     [ "receptionist", "namespacereceptionist.html", [
       [ "generate_launch_description", "namespacereceptionist.html#aaead6d431decb57c53f9d7c189fbb0f8", null ]
     ] ],
