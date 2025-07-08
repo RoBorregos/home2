@@ -23,7 +23,6 @@
   <depend>sllidar_ros2</depend>
   <depend>tf2_ros</depend>
   <depend>tf2_geometry_msgs</depend>
-  <depend>twist_mux</depend>
   <depend>dashgo_driver</depend>
   <depend>rtabmap_slam</depend>
   <depend>rtabmap_sync</depend>
