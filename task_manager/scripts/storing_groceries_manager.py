@@ -634,6 +634,7 @@ class StoringGroceriesManager(Node):
                 # self.object_to_placing_shelf[self.current_object].append(
                 #     self.shelves_count % len(self.manual_heights)
                 # )
+                # status, categorized_shelfs, objects_to_add
                 status, resulting_clas, objects_to_add_2 = (
                     self.subtask_manager.hri.categorize_objects(
                         table_objects=[self.current_object],
@@ -646,17 +647,27 @@ class StoringGroceriesManager(Node):
                 # resulting_clas: dict[int, str]
                 # objects_to_add_2: dict[int, list[str]]
                 shelf_to_be_placed = None
-                for i in objects_to_add_2.values():
-                    Logger.info(self, f"Object to add: {i}")
-                    indx, objectooo = i
-                    if objectooo == self.current_object:
-                        shelf_to_be_placed = indx
-                        self.object_to_placing_shelf[self.current_object].append(shelf_to_be_placed)
-                        self.subtask_manager.hri.say(
-                            f"I have classified the object: {self.current_object} as {resulting_clas[indx]}, im going to place it in shelf number {shelf_to_be_placed}",
-                            wait=True,
+                for shelf_idx, objects in objects_to_add_2.items():
+                    Logger.info(self, f"Object to add: {objects}")
+                    for obj in objects:
+                        if obj == self.current_object:
+                            shelf_to_be_placed = shelf_idx
+                            self.object_to_placing_shelf[self.current_object].append(
+                                shelf_to_be_placed
+                            )
+                            self.subtask_manager.hri.say(
+                                f"I have classified the object: {self.current_object} as {resulting_clas[shelf_idx]}, im going to place it in shelf number {shelf_to_be_placed}",
+                                wait=True,
+                            )
+                            break
+                    if shelf_to_be_placed is not None:
+                        Logger.success(
+                            self,
+                            f"Object {self.current_object} will be placed in shelf {shelf_to_be_placed}",
                         )
                         break
+                if shelf_to_be_placed is None:
+                    Logger.error(self, "Failed to categorize object")
 
             elif self.object_to_placing_shelf[self.current_object][0] > len(self.shelves):
                 self.object_to_placing_shelf[self.current_object][0] = self.object_to_placing_shelf[
