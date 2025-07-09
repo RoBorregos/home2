@@ -1,5 +1,17 @@
 var NAVTREEINDEX18 =
 {
+"local__camera_8py.html":[20,0,7,0,2,3,2],
+"local__camera_8py.html#a370b7792a1778760c0b396393c1dc169":[20,0,7,0,2,3,2,3],
+"local__camera_8py.html#afff3f00fd586a1308f7b1090b40ec44e":[20,0,7,0,2,3,2,2],
+"logger_8py.html":[20,0,6,1,3,3],
+"look__at__example_8py.html":[20,0,3,0,1,0,5],
+"look__at__example_8py.html#adc1b4dbd73f98a092d682f946ed57ef3":[20,0,3,0,1,0,5,1],
+"macros_8hpp.html":[20,0,3,0,4,0,0,0],
+"macros_8hpp.html#a0e4576f5257306df258a5cc13f56ee7f":[20,0,3,0,4,0,0,0,1],
+"macros_8hpp.html#a27de83e41cde776d5568e8c42ac061bc":[20,0,3,0,4,0,0,0,6],
+"macros_8hpp.html#a7dd5c9e6cc1e53a3aadb26cecf9349ca":[20,0,3,0,4,0,0,0,7],
+"macros_8hpp.html#a7dd5c9e6cc1e53a3aadb26cecf9349caa02ae1ab5623aef0c19da0198436ae6e6":[20,0,3,0,4,0,0,0,7,1],
+"macros_8hpp.html#a7dd5c9e6cc1e53a3aadb26cecf9349caa04fb40e3b6d7a352b9c651cccc97d9d0":[20,0,3,0,4,0,0,0,7,2],
 "macros_8hpp.html#a7dd5c9e6cc1e53a3aadb26cecf9349caa2bc49ec37d6a5715dd23e85f1ff5bb59":[20,0,3,0,4,0,0,0,7,0],
 "macros_8hpp.html#a7dd5c9e6cc1e53a3aadb26cecf9349caa31c525af831bd6a20e9850336fd6c741":[20,0,3,0,4,0,0,0,7,4],
 "macros_8hpp.html#a7dd5c9e6cc1e53a3aadb26cecf9349caa5862b0dc44370f8a1c9307d585f594e6":[20,0,3,0,4,0,0,0,7,9],
@@ -237,17 +249,5 @@ var NAVTREEINDEX18 =
 "md_manipulation_README.html":[1],
 "md_manipulation_README.html#autotoc_md1":[1,0],
 "md_manipulation_README.html#autotoc_md2":[1,0,0],
-"md_manipulation_README.html#autotoc_md3":[1,0,1],
-"md_manipulation_README.html#autotoc_md4":[1,1],
-"md_navigation_README.html":[2],
-"md_robot_description_frida_description_README.html":[4],
-"md_vision_README.html":[3],
-"mocked_8py.html":[20,0,6,1,0,0,1],
-"mocked_8py.html#a66f0451a003eb34116afb2f43c5d4f12":[20,0,6,1,0,0,1,2],
-"mocked_8py.html#a6a3d2afbd135dd06d43c490ed3684ae2":[20,0,6,1,0,0,1,0],
-"mocked_8py.html#a8518ed6ea6c53ce63671b70b1acd18a9":[20,0,6,1,0,0,1,3],
-"mocked_8py.html#aeff3bb8bbe5365c9e7f330e0fb5cf578":[20,0,6,1,0,0,1,1],
-"model_8py.html":[20,0,7,0,3,3,0,0,0,0],
-"model_8py.html#a38aba7a09e60492141ce52f1a0fcf168":[20,0,7,0,3,3,0,0,0,0,14],
-"model_8py.html#a3baae9af564a2bb723d1dbd93d773b81":[20,0,7,0,3,3,0,0,0,0,17]
+"md_manipulation_README.html#autotoc_md3":[1,0,1]
 };

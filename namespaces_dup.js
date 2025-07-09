@@ -299,7 +299,8 @@ var namespaces_dup =
     [ "test_vision_manager", "namespacetest__vision__manager.html", "namespacetest__vision__manager" ],
     [ "tf_utils", "namespacetf__utils.html", [
       [ "look_at", "namespacetf__utils.html#ae80e6757a54ce580a867947e596e576f", null ],
-      [ "quat_to_rpy", "namespacetf__utils.html#a4f980b749ce3eb0c265b8573071bb85b", null ]
+      [ "quat_to_rpy", "namespacetf__utils.html#a4f980b749ce3eb0c265b8573071bb85b", null ],
+      [ "transform_pose", "namespacetf__utils.html#acd9c843b0fe781b1c8f769decd9897e9", null ]
     ] ],
     [ "tracker_node", "namespacetracker__node.html", "namespacetracker__node" ],
     [ "transform_target", "namespacetransform__target.html", "namespacetransform__target" ],

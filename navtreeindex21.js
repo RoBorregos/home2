@@ -1,5 +1,17 @@
 var NAVTREEINDEX21 =
 {
+"namespacemembers_vars_m.html":[18,1,2,13],
+"namespacemembers_vars_n.html":[18,1,2,14],
+"namespacemembers_vars_o.html":[18,1,2,15],
+"namespacemembers_vars_p.html":[18,1,2,16],
+"namespacemembers_vars_q.html":[18,1,2,17],
+"namespacemembers_vars_r.html":[18,1,2,18],
+"namespacemembers_vars_s.html":[18,1,2,19],
+"namespacemembers_vars_t.html":[18,1,2,20],
+"namespacemembers_vars_u.html":[18,1,2,21],
+"namespacemembers_vars_v.html":[18,1,2,22],
+"namespacemembers_vars_w.html":[18,1,2,23],
+"namespacemembers_vars_x.html":[18,1,2,24],
 "namespacemembers_vars_y.html":[18,1,2,25],
 "namespacemembers_vars_z.html":[18,1,2,26],
 "namespacemembers_w.html":[18,1,0,23],
@@ -237,17 +249,5 @@ var NAVTREEINDEX21 =
 "namespacestoring__groceries__manager.html#a5c5fb5ca9955697c9096cbed47fe0bd4":[18,0,119,4],
 "namespacestoring__groceries__manager.html#a6c6879c42f9db08122407e746f9f1743":[18,0,119,8],
 "namespacestoring__groceries__manager.html#ad877050e492d039476b41e8c97e3f49e":[18,0,119,6],
-"namespacesubtask__managers.html":[18,0,120],
-"namespacesubtask__managers_1_1generic__tasks.html":[18,0,120,0],
-"namespacesubtask__managers_1_1gpsr__single__tasks.html":[18,0,120,1],
-"namespacesubtask__managers_1_1gpsr__single__tasks.html#a1b987e491b2223fe612a9fcaaecd0450":[18,0,120,1,1],
-"namespacesubtask__managers_1_1gpsr__single__tasks.html#a2bcfc7fa30ee4d8f06ec6081c8cf15bc":[18,0,120,1,2],
-"namespacesubtask__managers_1_1gpsr__tasks.html":[18,0,120,2],
-"namespacesubtask__managers_1_1gpsr__test__commands.html":[18,0,120,3],
-"namespacesubtask__managers_1_1gpsr__test__commands.html#a01cdf414d41e1b64b2192d5e894b0e69":[18,0,120,3,4],
-"namespacesubtask__managers_1_1gpsr__test__commands.html#a05ab4bcafeee38c420da272ab10cf24a":[18,0,120,3,8],
-"namespacesubtask__managers_1_1gpsr__test__commands.html#a10ca0398e0b0a7241df2ae42ea22976c":[18,0,120,3,0],
-"namespacesubtask__managers_1_1gpsr__test__commands.html#a112cb6ca82a8e9ac34bf013ef38aa25b":[18,0,120,3,16],
-"namespacesubtask__managers_1_1gpsr__test__commands.html#a13108a4d1d64ace5d0874f7350fe68a7":[18,0,120,3,14],
-"namespacesubtask__managers_1_1gpsr__test__commands.html#a1a38321f657ff18d9f60e1fdf5780380":[18,0,120,3,9]
+"namespacesubtask__managers.html":[18,0,120]
 };

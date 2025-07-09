@@ -27,5 +27,7 @@ var classpick__and__place_1_1manipulation__core_1_1ManipulationCore =
     [ "place_manager", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#a0a053186886b3738bf179a2767ba28bf", null ],
     [ "place_perception_3d_client", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#a266d5d436c21afd15b7533cbcc0a0f1f", null ],
     [ "place_pose_client", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#a533d029eb5d664ce37f81ef53dcfd37b", null ],
-    [ "pour_manager", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#aa90a4895b44097e9869222d0ed95ade8", null ]
+    [ "pour_manager", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#aa90a4895b44097e9869222d0ed95ade8", null ],
+    [ "tf_buffer", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#a024d12177c4510ed3b155976bfafd2c2", null ],
+    [ "tf_listener", "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#aa084c1cb80aeaf7e0109fd74a79859ef", null ]
 ];

@@ -39,12 +39,13 @@ var searchData=
   ['helpmecarrytm_36',['HelpMeCarryTM',['../classhelp__me__carry_1_1HelpMeCarryTM.html',1,'help_me_carry']]],
   ['home_20navigation_37',['Home Navigation',['../md_navigation_README.html',1,'']]],
   ['hotword_5fservice_5fname_38',['HOTWORD_SERVICE_NAME',['../namespacefrida__constants_1_1hri__constants.html#a56cb7bea1e6304de74676a11d4effdf9',1,'frida_constants::hri_constants']]],
-  ['hri_39',['hri',['../classutils_1_1subtask__manager_1_1SubtaskManager.html#a0a2b5ff79896271b6bc24c0253b617f2',1,'utils::subtask_manager::SubtaskManager']]],
-  ['hri_40',['HRI',['../classfrida__constants_1_1ModuleNames.html#a26bf7d8ace6b622f93e4c9f9dfe97f41',1,'frida_constants.ModuleNames.HRI()'],['../md_docs_Run_Areas_hri.html',1,'(Global Namespace)']]],
-  ['hri_2emd_41',['hri.md',['../hri_8md.html',1,'']]],
-  ['hri_5fconstants_2epy_42',['hri_constants.py',['../hri__constants_8py.html',1,'']]],
-  ['hri_5fmanager_43',['hri_manager',['../classtest__hri__manager_1_1TestHriManager.html#a24fdd546d6ff1fd85f6802baac27733b',1,'test_hri_manager::TestHriManager']]],
-  ['hri_5ftasks_2epy_44',['hri_tasks.py',['../hri__tasks_8py.html',1,'']]],
-  ['hritasks_45',['HRITasks',['../classsubtask__managers_1_1hri__tasks_1_1HRITasks.html',1,'subtask_managers::hri_tasks']]],
-  ['hz_46',['HZ',['../classlocal__camera_1_1NodeParams.html#ae2914b29f06d811ab1d84056097899a6',1,'local_camera::NodeParams']]]
+  ['hri_39',['HRI',['../classfrida__constants_1_1ModuleNames.html#a26bf7d8ace6b622f93e4c9f9dfe97f41',1,'frida_constants::ModuleNames']]],
+  ['hri_40',['hri',['../classutils_1_1subtask__manager_1_1SubtaskManager.html#a0a2b5ff79896271b6bc24c0253b617f2',1,'utils::subtask_manager::SubtaskManager']]],
+  ['hri_41',['HRI',['../md_docs_Run_Areas_hri.html',1,'']]],
+  ['hri_2emd_42',['hri.md',['../hri_8md.html',1,'']]],
+  ['hri_5fconstants_2epy_43',['hri_constants.py',['../hri__constants_8py.html',1,'']]],
+  ['hri_5fmanager_44',['hri_manager',['../classtest__hri__manager_1_1TestHriManager.html#a24fdd546d6ff1fd85f6802baac27733b',1,'test_hri_manager::TestHriManager']]],
+  ['hri_5ftasks_2epy_45',['hri_tasks.py',['../hri__tasks_8py.html',1,'']]],
+  ['hritasks_46',['HRITasks',['../classsubtask__managers_1_1hri__tasks_1_1HRITasks.html',1,'subtask_managers::hri_tasks']]],
+  ['hz_47',['HZ',['../classlocal__camera_1_1NodeParams.html#ae2914b29f06d811ab1d84056097899a6',1,'local_camera::NodeParams']]]
 ];

@@ -102,6 +102,8 @@ Functions</h2></td></tr>
 <tr class="separator:a4f980b749ce3eb0c265b8573071bb85b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae80e6757a54ce580a867947e596e576f"><td class="memItemLeft" align="right" valign="top">PoseStamped&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetf__utils.html#ae80e6757a54ce580a867947e596e576f">look_at</a> (Union[PointStamped, PoseStamped] source_pose, Union[PointStamped, PoseStamped] target_pose, NDArray world_up=np.array([0, 0, 1]))</td></tr>
 <tr class="separator:ae80e6757a54ce580a867947e596e576f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acd9c843b0fe781b1c8f769decd9897e9"><td class="memItemLeft" align="right" valign="top">Tuple[bool, PoseStamped]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacetf__utils.html#acd9c843b0fe781b1c8f769decd9897e9">transform_pose</a> (PoseStamped pose, str target_frame, Buffer tf_buffer)</td></tr>
+<tr class="separator:acd9c843b0fe781b1c8f769decd9897e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
 <a id="ae80e6757a54ce580a867947e596e576f" name="ae80e6757a54ce580a867947e596e576f"></a>
@@ -167,6 +169,48 @@ Args:
 
 Returns:
     tuple: (roll, pitch, yaw) in radians.
+</pre> 
+</div>
+</div>
+<a id="acd9c843b0fe781b1c8f769decd9897e9" name="acd9c843b0fe781b1c8f769decd9897e9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acd9c843b0fe781b1c8f769decd9897e9">&#9670;&#160;</a></span>transform_pose()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> Tuple[bool, PoseStamped] tf_utils.transform_pose </td>
+          <td>(</td>
+          <td class="paramtype">PoseStamped&#160;</td>
+          <td class="paramname"><em>pose</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>target_frame</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Buffer
+&#160;</td>
+          <td class="paramname"><em>tf_buffer</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Transforms a pose to a target frame using ROS2 tf2.
+Args:
+    pose (PoseStamped): The pose to transform.
+    target_frame (str): The target frame to transform the pose to.
+    tf_buffer (Buffer): The tf2 buffer to use for looking up transforms.
+Returns:
+    PoseStamped: The transformed pose.
 </pre> 
 </div>
 </div>
