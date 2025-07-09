@@ -19,6 +19,7 @@ install(DIRECTORY
 ament_python_install_package(${PROJECT_NAME})
 
 file (GLOB TASK_MANAGERS scripts/*.py)
+file (GLOB UTIL_NODES scripts/util_nodes/*.py)
 file (GLOB SUBTASK_MANAGERS scripts/subtask_managers/*.py)
 file (GLOB UTILS scripts/utils/*.py)
 
@@ -27,6 +28,11 @@ file (GLOB UTILS scripts/utils/*.py)
 install(PROGRAMS
 ${TASK_MANAGERS}
 DESTINATION lib/${PROJECT_NAME}
+)
+
+install(PROGRAMS
+${UTIL_NODES}
+DESTINATION lib/${PROJECT_NAME}/util_nodes
 )
 
 install(PROGRAMS

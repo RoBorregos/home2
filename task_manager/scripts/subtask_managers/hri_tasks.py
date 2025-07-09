@@ -20,6 +20,8 @@ from frida_constants.hri_constants import (
     CATEGORIZE_SERVICE,
     COMMAND_INTERPRETER_SERVICE,
     COMMON_INTEREST_SERVICE,
+    DISPLAY_IMAGE_TOPIC,
+    DISPLAY_MAP_TOPIC,
     EXTRACT_DATA_SERVICE,
     GRAMMAR_SERVICE,
     IS_NEGATIVE_SERVICE,
@@ -31,10 +33,11 @@ from frida_constants.hri_constants import (
     STT_ACTION_SERVER_NAME,
     WAKEWORD_TOPIC,
 )
+
 from frida_interfaces.action import SpeechStream
 from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
-from frida_interfaces.srv import (  # AddEntry,
-    CategorizeShelves,
+from frida_interfaces.srv import (
+    CategorizeShelves,  # AddEntry,
     CommandInterpreter,
     CommonInterest,
     ExtractInfo,
@@ -168,7 +171,8 @@ class HRITasks(metaclass=SubtaskMeta):
         )
         self.is_positive_service = self.node.create_client(IsPositive, IS_POSITIVE_SERVICE)
         self.is_negative_service = self.node.create_client(IsNegative, IS_NEGATIVE_SERVICE)
-        self.display_publisher = self.node.create_publisher(String, "/hri/display/change_video", 10)
+        self.display_publisher = self.node.create_publisher(String, DISPLAY_IMAGE_TOPIC, 10)
+        self.display_map_publisher = self.node.create_publisher(String, DISPLAY_MAP_TOPIC, 10)
 
         self.pg = PostgresAdapter()
         self.llm_wrapper_service = self.node.create_client(LLMWrapper, LLM_WRAPPER_SERVICE)
@@ -229,6 +233,10 @@ class HRITasks(metaclass=SubtaskMeta):
         file_path = os.path.join(package_share_directory, "data/positive.json")
         with open(file_path, "r") as file:
             self.positive = json.load(file)["affirmations"]
+
+        file_path = os.path.join(package_share_directory, "data/hand_items.json")
+        with open(file_path, "r") as file:
+            self.hand_items = json.load(file)
 
         self.setup_services()
         Logger.success(self.node, f"hri_tasks initialized with task {self.task}")
@@ -942,7 +950,7 @@ class HRITasks(metaclass=SubtaskMeta):
             action=str(command.action),
             command=str(command),
             result=result,
-            status=status,
+            status=str(status),
             context=type(command).__name__,
         )
         return Status.EXECUTION_SUCCESS
@@ -963,11 +971,8 @@ class HRITasks(metaclass=SubtaskMeta):
             )
         return [doc for doc in document]
 
-    def query_item(self, query: str, top_k: int = 1) -> list[str]:
-        return self.pg.query_items(query=query, top_k=top_k)
-
-    def query_location(self, query: str, top_k: int = 1) -> list[str]:
-        return self.pg.query_location(query=query, top_k=top_k)
+    def query_location(self, query: str, top_k: int = 1, use_context: bool = False):
+        return self.pg.query_location(query, top_k=top_k, use_context=use_context)
 
     def find_closest(self, documents: list, query: str, top_k: int = 1) -> list[str]:
         """
@@ -989,6 +994,32 @@ class HRITasks(metaclass=SubtaskMeta):
         results = [doc[0] for doc in results]
         return Status.EXECUTION_SUCCESS, results
 
+    def find_closest_raw(self, documents: list, query: str, top_k: int = 4) -> list[str]:
+        """
+        Method to find the closest item to the query.
+        Args:
+            documents: the documents to search among
+            query: the query to search for
+        Returns:
+            Status: the status of the execution
+            list[str]: the results of the query
+        """
+        docs = [(doc, self.pg.embedding_model.encode(doc)) for doc in documents]
+        emb = self.pg.embedding_model.encode(query)
+
+        def cos_sim(x, y):
+            return np.dot(x, y) / (np.linalg.norm(x) * np.linalg.norm(y))
+
+        Results = cos_sim(
+            np.array([doc[1] for doc in docs]), emb
+        )  # Calculate cosine similarity for all documents
+        Results = sorted(zip(docs, Results), key=lambda x: x[1], reverse=True)
+        Results = [(doc[0][0], doc[1]) for doc in Results]  # Extract document and similarity score
+        Logger.info(self.node, f"FIND CLOSEST RAW RESULTS: {Results}")
+
+        return Results
+
+    # TODO: Make async
     @service_check("llm_wrapper_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def answer_with_context(self, question: str, context: str) -> str:
         """
@@ -1007,8 +1038,8 @@ class HRITasks(metaclass=SubtaskMeta):
         rclpy.spin_until_future_complete(self.node, future)
         return Status.EXECUTION_SUCCESS, future.result().answer
 
-    def query_command_history(self, query: str, top_k: int = 1):
-        results = self.pg.query_command_history(command=query, top_k=top_k)
+    def query_command_history(self, query: str, action: str, top_k: int = 1):
+        results = self.pg.query_command_history(command=query, action=action, top_k=top_k)
         return Status.EXECUTION_SUCCESS, results
 
     def categorize_objects(
@@ -1027,8 +1058,8 @@ class HRITasks(metaclass=SubtaskMeta):
         Logger.info(self.node, "Sending request to categorize_objects")
 
         try:
-            categories = self.get_shelves_categories(shelves)[1]
-            results = self.categorize_objects_with_embeddings(categories, table_objects)
+            categories = self.get_shelves_categories(shelves, table_objects=table_objects)[1]
+            results = self.categorize_objects_with_embeddings(categories, table_objects, shelves)
 
             objects_to_add = {key: value["objects_to_add"] for key, value in results.items()}
             Logger.error(self.node, f"categories {categories}")
@@ -1060,7 +1091,7 @@ class HRITasks(metaclass=SubtaskMeta):
         return Status.EXECUTION_SUCCESS, categorized_shelves, objects_to_add
 
     def get_shelves_categories(
-        self, shelves: dict[int, list[str]]
+        self, shelves: dict[int, list[str]], table_objects: list[str] = []
     ) -> tuple[Status, dict[int, str]]:
         """
         Categorize objects based on their shelf levels.
@@ -1075,9 +1106,13 @@ class HRITasks(metaclass=SubtaskMeta):
 
         try:
             request = CategorizeShelves.Request(shelves=String(data=str(shelves)), table_objects=[])
+            for obj in table_objects:
+                request.table_objects.append(String(data=obj))
 
             future = self.categorize_service.call_async(request)
-            Logger.info(self.node, "generated request")
+            Logger.info(
+                self.node, f"generated request, shelves: {shelves}, table_objects: {table_objects}"
+            )
             rclpy.spin_until_future_complete(self.node, future, timeout_sec=25)
             res = future.result()
             Logger.info(self.node, "request finished")
@@ -1100,7 +1135,7 @@ class HRITasks(metaclass=SubtaskMeta):
         self.display_publisher.publish(String(data=topic))
         Logger.info(self.node, f"Published display topic: {topic}")
 
-    def categorize_object(self, categories: dict, obj: str):
+    def categorize_object(self, categories: dict, obj: str, shelves: dict):
         """Method to categorize a list of objects in an array of objects depending on similarity"""
 
         try:
@@ -1115,16 +1150,24 @@ class HRITasks(metaclass=SubtaskMeta):
             for category in categories_aux.values():
                 category_list.append(category)
 
-            results = self.find_closest_raw(category_list, obj)
-            results_distances = results[1][0]["distance"]
+            for i, category in enumerate(category_list):
+                self.node.get_logger().info(f"Category {i}: {category}")
+                category_list[i] = category + " " + " ".join(shelves[i])
 
-            result_category = results[1][0]["document"]
+            results = self.find_closest_raw(category_list, obj)
+            results_distances = [res[1] for res in results]
+
+            result_category = results[0][0] if len(results) > 0 else "empty"
+            self.node.get_logger().info(f"RESULTS for {obj}:")
+            self.node.get_logger().info(f"RESULTS DISTANCES: {results_distances}")
             self.node.get_logger().info(f"CATEGORY PREDICTED BEFORE THRESHOLD: {result_category}")
-            if "empty" in categories.values() and results_distances[0] > 1:
+            # input("HOLAAA HOLA HOLAA")
+            if "empty" in categories.values() and results_distances[0] < 0.15:
                 result_category = "empty"
 
             self.node.get_logger().info(f"CATEGORY PREDICTED: {result_category}")
-
+            result_category = result_category.split(" ")[0]
+            self.node.get_logger().info(f"CATEGORY PREDICTED: {result_category}")
             key_resulted = 2
             for key in list(categories.keys()):
                 if str(categories[key]) == str(result_category):
@@ -1139,7 +1182,7 @@ class HRITasks(metaclass=SubtaskMeta):
         except Exception as e:
             self.node.get_logger().error(f"FAILED TO CATEGORIZE: {obj} with error: {e}")
 
-    def categorize_objects_with_embeddings(self, categories: dict, obj_list: list):
+    def categorize_objects_with_embeddings(self, categories: dict, obj_list: list, shelves: dict):
         """
         Categorize objects based on their embeddings."""
         self.node.get_logger().info(f"THIS IS THE CATEGORIES dict RECEIVED: {categories}")
@@ -1149,11 +1192,32 @@ class HRITasks(metaclass=SubtaskMeta):
             for key in categories.keys()
         }
         for obj in obj_list:
-            index = self.categorize_object(categories, obj)
+            index = self.categorize_object(categories, obj, shelves)
             results[index]["objects_to_add"].append(obj)
 
         self.node.get_logger().info(f"THIS IS THE RESULTS OF THE CATEGORIZATION: {results}")
         return results
+
+    def show_map(self, name="", clear_map: bool = False):
+        """
+        Method to show the map on the display.
+        """
+        show_items = self.hand_items.copy()
+
+        if clear_map:
+            show_items["image_path"] = ""
+            Logger.info(self.node, "Map cleared on the screen.")
+        else:
+            filtered_items = []
+
+            # Filter items to only include those matching the specified name
+            for item in show_items["markers"]:
+                if name == "" or item["name"].strip().lower() == name.strip().lower():
+                    filtered_items.append(item)
+
+            show_items["markers"] = filtered_items
+
+        self.display_map_publisher.publish(String(data=json.dumps(show_items)))
 
 
 if __name__ == "__main__":

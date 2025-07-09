@@ -57,7 +57,7 @@ private:
     if (exit_) {
       RCLCPP_INFO(this->get_logger(), "Killing node");
       // wait for the service to finish
-      rclcpp::sleep_for(std::chrono::milliseconds(100));
+      rclcpp::sleep_for(std::chrono::milliseconds(500));
       rclcpp::shutdown();
     }
   }
