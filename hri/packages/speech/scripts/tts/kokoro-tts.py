@@ -59,7 +59,7 @@ class TTSService(tts_pb2_grpc.TTSServiceServicer):
             print(f"Using kokoro with voice: {voice}")
 
             # Generate audio chunks using kokoro
-            generator = self.pipeline(request.text, voice=voice)
+            generator = self.pipeline(request.text, voice=voice, speed=1.3)
 
             # Create a list to collect all audio samples
             all_audio = []
