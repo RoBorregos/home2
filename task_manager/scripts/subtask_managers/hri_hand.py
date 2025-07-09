@@ -2,13 +2,14 @@
 
 from utils.status import Status
 
-from subtask_managers.hri_tasks import HRITasks
+# from subtask_managers.hri_tasks import HRITasks
 
 
 class HRIHand:
     """Class to implement hri routines needed for give a hand"""
 
-    def __init__(self, hri_manager: HRITasks):
+    # def __init__(self, hri_manager: HRITasks):
+    def __init__(self, hri_manager):
         """Initialize the class"""
 
         self.hri_manager = hri_manager
@@ -212,12 +213,8 @@ class HRIHand:
                 - location: The determined location (furniture or object name)
                 - orientation: The spatial orientation (left, right, front, back, top, nearby)
         """
-        if room:
-            self.hri_manager.say(
-                f"I need to understand where you want me to place the object in the {room}."
-            )
-        else:
-            self.hri_manager.say("I need to understand where you want me to place the object.")
+
+        self.hri_manager.say("I need to understand where you want me to place the object.")
 
         # Step 1: Determine if it's furniture or object
         furn_obj_status, target_type = self.furniture_or_object()

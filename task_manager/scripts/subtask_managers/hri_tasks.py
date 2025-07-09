@@ -229,7 +229,7 @@ class HRITasks(metaclass=SubtaskMeta):
             Task.STORING_GROCERIES: all_services,
         }
 
-        self.hand = HRIHand(self, self)
+        self.hand = HRIHand(self)
 
         package_share_directory = get_package_share_directory("frida_constants")
         file_path = os.path.join(package_share_directory, "data/positive.json")
