@@ -157,7 +157,6 @@ class ReceptionistTM(Node):
             if result == Status.EXECUTION_SUCCESS:
                 self.subtask_manager.vision.follow_by_name("area")
                 self.subtask_manager.manipulation.follow_face(True)
-                # self.subtask_manager.hri.say("Hello, I am Frida, your receptionist today.")
                 self.current_state = ReceptionistTM.TaskStates.GREETING
             else:
                 self.subtask_manager.hri.say("I am waiting for a guest.")
