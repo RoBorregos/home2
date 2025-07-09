@@ -327,6 +327,7 @@ var namespaces_dup =
       [ "generate_launch_description", "namespacexarm__launch.html#a6120858d912a0dc3d2783725c36b7d04", null ],
       [ "launch_setup", "namespacexarm__launch.html#a12ed068b87932217931e30a0ae5d9bb6", null ]
     ] ],
+    [ "xarm_utils", "namespacexarm__utils.html", "namespacexarm__utils" ],
     [ "XArmServices", "namespaceXArmServices.html", "namespaceXArmServices" ],
     [ "YoloEObjectDetector", "namespaceYoloEObjectDetector.html", "namespaceYoloEObjectDetector" ],
     [ "YoloV5ObjectDetector", "namespaceYoloV5ObjectDetector.html", "namespaceYoloV5ObjectDetector" ],

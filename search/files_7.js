@@ -21,5 +21,6 @@ var searchData=
   ['grasp_5fmarkers_2epy_18',['grasp_markers.py',['../grasp__markers_8py.html',1,'']]],
   ['grasp_5futils_2epy_19',['grasp_utils.py',['../grasp__utils_8py.html',1,'']]],
   ['graspdetection_2esrv_20',['GraspDetection.srv',['../GraspDetection_8srv.html',1,'']]],
-  ['guestinfo_2esrv_21',['GuestInfo.srv',['../GuestInfo_8srv.html',1,'']]]
+  ['gripperdetection_2emsg_21',['GripperDetection.msg',['../GripperDetection_8msg.html',1,'']]],
+  ['guestinfo_2esrv_22',['GuestInfo.srv',['../GuestInfo_8srv.html',1,'']]]
 ];
