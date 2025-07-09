@@ -135,7 +135,9 @@ class ft_net_swin(nn.Module):
     def __init__(self, class_num, droprate=0.5, stride=2, circle=False, linear_num=512):
         super(ft_net_swin, self).__init__()
         model_ft = timm.create_model(
-            "swin_base_patch4_window7_224", pretrained=True, drop_path_rate=0.2
+            "swin_base_patch4_window7_224", 
+            pretrained=False, 
+            drop_path_rate=0.2
         )
         # avg pooling to global pooling
         # model_ft.avgpool = nn.AdaptiveAvgPool2d((1,1))
