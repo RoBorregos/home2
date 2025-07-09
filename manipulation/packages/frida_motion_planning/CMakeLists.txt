@@ -15,14 +15,16 @@ ament_python_install_package(frida_motion_planning)
 # Install examples
 set(EXAMPLES_DIR examples)
 set(SCRIPTS_DIR frida_motion_planning)
+set(UTIL_NODES_DIR frida_motion_planning/util_nodes)
   
-
+file(GLOB UTIL_NODES ${UTIL_NODES_DIR}/*.py)
 file(GLOB_RECURSE example_files RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}" "${EXAMPLES_DIR}/*.py")
 
 install(PROGRAMS
     ${example_files}
     ${EXAMPLES_DIR}/ds4_demo.py
     ${SCRIPTS_DIR}/motion_planning_server.py
+    ${UTIL_NODES}
     DESTINATION lib/${PROJECT_NAME}
 )
 

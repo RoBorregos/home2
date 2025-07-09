@@ -48,6 +48,7 @@ class ExecutionStates(Enum):
     PLACE_OBJECT = 75
     DEUX_PLACE_OBJECT = 76
 
+    CEREAL_POUR = 101
     CEREAL_ANALYSIS = 100
     CEREAL_PICK = 110
     CEREAL_PLACE = 120
@@ -794,6 +795,37 @@ class StoringGroceriesManager(Node):
             self.shelves[shelf].objects.append(self.current_object)
             self.object_to_placing_shelf[self.current_object].pop(0)
             self.state = ExecutionStates.PLAN_NEXT
+
+        elif self.state == ExecutionStates.CEREAL_POUR:
+            # status = self.subtask_manager.manipulation.get_optimal_position_for_plane(
+            #     0.75, tolerance=0.2, table_or_shelf=True
+            # )
+            self.subtask_manager.manipulation.move_joint_positions(
+                named_position="table_stare", velocity=0.5, degrees=True
+            )
+            time.sleep(2.5)
+            for i in range(3):
+                # Logger.info(self,
+                #     f"Detected object: {min_distance_obj.classname}")
+                self.subtask_manager.hri.say(
+                    text=f"I'm going to pour the object: {self.pour_objects[0]} in {self.pour_objects[1]}",
+                    wait=True,
+                )
+                hres: Status = self.subtask_manager.manipulation.pour_object(
+                    self.pour_objects[0], self.pour_objects[1]
+                )
+                if not hres == Status.EXECUTION_SUCCESS:
+                    # self.state = ExecutionStates.FAILED_NAV_TO_SHELF
+                    Logger.error(self, "Failed to pour object")
+                    return
+                elif hres == Status.EXECUTION_SUCCESS:
+                    break
+
+            Logger.info(
+                self,
+                f"Done pouring object: {self.pour_objects[0]} in {self.pour_objects[1]}",
+            )
+
         else:
             Logger.error(self, f"Unknown state: {self.state}")
             return

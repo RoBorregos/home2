@@ -28,7 +28,7 @@ class YoloV8ObjectDetector(ObjectDectector):
                 continue
             for box in out.boxes:
                 confidence = box.conf[0].item()
-                if confidence < self.object_detector_params_.min_score_thresh:
+                if confidence < 0.6:
                     continue
                 label = int(box.cls[0].item())
                 label_id = self.model.names[label]

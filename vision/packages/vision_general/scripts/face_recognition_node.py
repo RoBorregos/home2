@@ -46,6 +46,7 @@ DEFAULT_NAME = "ale"
 TRACK_THRESHOLD = 50
 MATCH_THRESHOLD = 0.5
 MAX_DEGREE = 1
+RESIZE_FACTOR = 1
 
 PATH = str(pathlib.Path(__file__).parent)
 PATH = get_package_share_directory("vision_general")
@@ -276,6 +277,7 @@ class FaceRecognition(Node):
 
     def run(self) -> None:
         """Run face recognition algorithm"""
+        self.get_logger().info("Papu update 4")
 
         if self.image is None:
             self.get_logger().info("No image")
@@ -292,7 +294,9 @@ class FaceRecognition(Node):
         self.annotated_frame = self.frame.copy()
         self.center = [self.frame.shape[1] / 2, self.frame.shape[0] / 2]
 
-        resized_frame = cv2.resize(self.frame, (0, 0), fx=0.5, fy=0.5)
+        resized_frame = cv2.resize(
+            self.frame, (0, 0), fx=RESIZE_FACTOR, fy=RESIZE_FACTOR
+        )
 
         # Find all the faces and face encodings in the current frame of video
         face_locations = face_recognition.face_locations(resized_frame)
@@ -312,10 +316,11 @@ class FaceRecognition(Node):
         # Process each face
         for i, location in enumerate(face_locations):
             # Center of current face
-            centerx = (location[3] + (location[1] - location[3]) / 2) * 2
-            centery = (location[0] + (location[2] - location[0]) / 2) * 2
+            scale_factor = 1 / RESIZE_FACTOR
+            centerx = (location[3] + (location[1] - location[3]) / 2) * scale_factor
+            centery = (location[0] + (location[2] - location[0]) / 2) * scale_factor
 
-            top, right, bottom, left = [i * 2 for i in location]
+            top, right, bottom, left = [int(i * scale_factor) for i in location]
             name = "Unknown"
 
             # Extend bbox

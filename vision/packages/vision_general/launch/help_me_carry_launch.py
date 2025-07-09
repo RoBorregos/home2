@@ -2,8 +2,8 @@ import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch_ros.actions import Node
-from launch.actions import IncludeLaunchDescription
-from launch.launch_description_sources import PythonLaunchDescriptionSource
+# from launch.actions import IncludeLaunchDescription
+# from launch.launch_description_sources import PythonLaunchDescriptionSource
 
 
 def generate_launch_description():
@@ -15,14 +15,14 @@ def generate_launch_description():
     print(detector_launch_file)
     return LaunchDescription(
         [
-            # Node(
-            #     package="vision_general",
-            #     executable="tracker_node.py",
-            #     name="tracker_node",
-            #     output="screen",
-            #     emulate_tty=True,
-            #     # parameters=[config],
-            # ),
+            Node(
+                package="vision_general",
+                executable="tracker_node.py",
+                name="tracker_node",
+                output="screen",
+                emulate_tty=True,
+                # parameters=[config],
+            ),
             Node(
                 package="vision_general",
                 executable="receptionist_commands.py",
@@ -37,8 +37,8 @@ def generate_launch_description():
                 output="screen",
                 emulate_tty=True,
             ),
-            IncludeLaunchDescription(
-                PythonLaunchDescriptionSource(detector_launch_file)
-            ),
+            # IncludeLaunchDescription(
+            #     PythonLaunchDescriptionSource(detector_launch_file)
+            # ),
         ]
     )
