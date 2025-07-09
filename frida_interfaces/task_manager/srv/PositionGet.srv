@@ -2,6 +2,5 @@
 
 ---
 # Response
-float64 posex
-float64 posey
+geometry_msgs/PoseStamped pose
 uint32 status

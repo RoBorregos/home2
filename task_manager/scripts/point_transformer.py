@@ -5,12 +5,12 @@ from tf2_ros import Buffer, TransformListener
 from tf2_geometry_msgs import do_transform_point
 
 # from rclpy.callback_groups import ReentrantCallbackGroup
-from frida_interfaces.srv import PointTransformation, ReturnLocation, LaserGet
+from frida_interfaces.srv import PointTransformation, ReturnLocation, LaserGet, PositionGet
 import json
 import os
 from sensor_msgs.msg import LaserScan
 from ament_index_python.packages import get_package_share_directory
-from geometry_msgs.msg import TransformStamped
+from geometry_msgs.msg import TransformStamped, Pose, PoseStamped
 from utils.status import Status
 from math import sqrt
 
@@ -18,6 +18,7 @@ from frida_constants.integration_constants import (
     POINT_TRANSFORMER_TOPIC,
     RETURN_LOCATION,
     RETURN_LASER_DATA,
+    GET_POSITION_DATA,
 )
 
 
@@ -37,6 +38,10 @@ class PointTransformer(Node):
 
         self.return_areas = self.create_service(
             ReturnLocation, RETURN_LOCATION, self.get_current_location
+        )
+
+        self.get_actual_pose_service = self.create_service(
+            PositionGet, GET_POSITION_DATA, self.get_actual_pose
         )
 
         self.return_laser = self.create_service(LaserGet, RETURN_LASER_DATA, self.send_laser_data)
@@ -78,7 +83,7 @@ class PointTransformer(Node):
             response.message = "Error converting to height: {e}"
             return response
 
-    def get_actual_pose(self, request, response):
+    def get_actual_pose(self, _, response):
         try:
             # Wait for the transform to become available (with a timeout)
             self.tf_buffer.can_transform(
@@ -94,8 +99,19 @@ class PointTransformer(Node):
             posex = transform.transform.translation.x
             posey = transform.transform.translation.y
 
-            response.posex = posex
-            response.posey = posey
+            pose = Pose(
+                position=transform.transform.translation,
+                orientation=transform.transform.rotation,
+            )
+            pose_stamped = PoseStamped(
+                header=transform.header,
+                pose=pose,
+            )
+            # Log the robot's position and transform
+            self.get_logger().info(f"Robot's position in the map frame: x={posex}, y={posey}")
+            self.get_logger().info(f"Robot's pose in the map frame: {pose_stamped}")
+
+            response.pose = pose_stamped
             response.status = Status.EXECUTION_SUCCESS
         except Exception as e:
             self.get_logger().info(f"Error getting position: {e}")
