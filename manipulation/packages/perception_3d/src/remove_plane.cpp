@@ -165,7 +165,7 @@ public:
       req_point.y = 0.0;
       req_point.z = 0.0;
       response->health_response = this->DistanceFilterFromPoint(
-          cloud_out, req_point, cloud_out, 1.0, request->min_height,
+          cloud_out, req_point, cloud_out, 5.0, request->min_height,
           request->max_height);
     } else {
       geometry_msgs::msg::PointStamped point;
@@ -421,8 +421,9 @@ public:
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out2(
         new pcl::PointCloud<pcl::PointXYZ>);
 
-    response->status =
-        this->clusterFromPoint(_IN_ cloud_out, _IN_ point, _OUT_ cloud_out2);
+    response->status = this->clusterFromPoint(
+        _IN_ cloud_out, _IN_ point, _OUT_ cloud_out2,
+        _IN_ request->is_get_all_other_surrounding_objects);
 
     ASSERT_AND_RETURN_CODE(response->status, OK,
                            "Error clustering point with code %d",
@@ -457,7 +458,7 @@ public:
       _IN_ const pcl::PointXYZ point,
       _OUT_ std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud_out,
       const float distance = 0.5, const float min_height = 0.1,
-      const float max_height = 2.0) {
+      const float max_height = 2.5) {
 
     pcl::PassThrough<pcl::PointXYZ> pass;
     pass.setInputCloud(cloud);
@@ -908,7 +909,8 @@ public:
   uint32_t
   clusterFromPoint(_IN_ const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
                    _IN_ const pcl::PointXYZ point,
-                   _OUT_ pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out) {
+                   _OUT_ pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out,
+                   _IN_ bool keep_or_remove = true) {
 
     // Using kdTree to get the closest point FROM the pointcloud to the point
     // given as input
@@ -934,7 +936,7 @@ public:
 
     std::vector<pcl::PointIndices> cluster_indices;
     pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
-    ec.setClusterTolerance(0.015);
+    ec.setClusterTolerance(0.025);
     ec.setMinClusterSize(10);   // Minimum number of points in a cluster
     ec.setMaxClusterSize(6000); // Maximum number of points in a cluster
     ec.setSearchMethod(tree);
@@ -966,19 +968,16 @@ public:
       return NO_OBJECT_TO_CLUSTER_AT_POINT;
     }
 
-    // Get cluster given
-    cloud_out->points.clear();
+    pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
     for (const auto &idx : cluster_indices[targetClusterIdx].indices) {
-      cloud_out->points.push_back(cloud->points[idx]);
+      inliers->indices.push_back(idx);
     }
-
-    cloud_out->width = cloud_out->points.size();
-    cloud_out->height = 1;
-    cloud_out->is_dense = true;
-
-    RCLCPP_INFO(this->get_logger(),
-                "Original cloud size: %lu, clustered %lu points",
-                cloud->points.size(), cloud_out->points.size());
+    pcl::ExtractIndices<pcl::PointXYZ> extract;
+    extract.setInputCloud(cloud);
+    extract.setIndices(inliers);
+    // extract.setNegative(true);
+    extract.setNegative(keep_or_remove);
+    extract.filter(*cloud_out);
 
     return OK;
   }

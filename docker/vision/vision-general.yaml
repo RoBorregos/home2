@@ -17,6 +17,7 @@ services:
       - ./build:/workspace/build
       - ./install:/workspace/install
       - ./log:/workspace/log
+      - ../frida_interfaces_cache:/workspace/frida_interfaces_cache
   
     network_mode: host
     user: 1000:1000

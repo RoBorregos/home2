@@ -98,6 +98,24 @@ rclnodejs.init().then(() => {
     }
   );
 
+  node.createSubscription(
+    "std_msgs/msg/String",
+    "/hri/display/map",
+    (msg: { data: string }) => {
+      wss.clients.forEach((client: any) => {
+        if (client.readyState === 1) {
+          try {
+            // Parse the string data as JSON before sending
+            const mapData = JSON.parse(msg.data);
+            client.send(JSON.stringify({ type: "map", data: mapData }));
+          } catch (error) {
+            console.error("Failed to parse map data:", error);
+          }
+        }
+      });
+    }
+  );
+
   // Gracefully handle SIGINT (Ctrl+C)
   process.on("SIGINT", () => {
     console.log("SIGINT received: Closing node and WebSocket server...");

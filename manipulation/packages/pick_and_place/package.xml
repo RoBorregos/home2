@@ -10,6 +10,24 @@
   <buildtool_depend>ament_cmake</buildtool_depend>
   <buildtool_depend>ament_cmake_python</buildtool_depend>
 
+  <depend>rclcpp</depend>
+  <depend>control_toolbox</depend>
+  <depend>controller_manager</depend>
+  <depend>xarm_description</depend>
+  <depend>xarm_controller</depend>
+  <depend>uf_ros_lib</depend>
+  <depend>xarm_moveit_config</depend>
+  <depend>frida_interfaces</depend>
+  <depend>frida_constants</depend>
+  <depend>object_detection_handler</depend>
+  <depend>object_detector_2d</depend>
+  <depend>perception_3d</depend>
+  <depend>arm_pkg</depend>
+  <depend>frida_motion_planning</depend>
+  <depend>pymoveit2</depend>
+  <depend>frida_description</depend>
+  <depend>place</depend>
+  
   <exec_depend>action_msgs</exec_depend>
   <exec_depend>control_msgs</exec_depend>
   <exec_depend>geometry_msgs</exec_depend>
@@ -19,7 +37,6 @@
   <exec_depend>shape_msgs</exec_depend>
   <exec_depend>std_srvs</exec_depend>
   <exec_depend>trajectory_msgs</exec_depend>
-  <exec_depend>pymoveit2</exec_depend>
   <exec_depend>frida_pymoveit2</exec_depend>
 
   <export>

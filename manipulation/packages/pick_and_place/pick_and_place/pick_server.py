@@ -4,6 +4,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionServer, ActionClient
 from rclpy.callback_groups import ReentrantCallbackGroup
+from std_srvs.srv import SetBool
 from frida_constants.manipulation_constants import (
     MOVE_TO_POSE_ACTION_SERVER,
     PICK_VELOCITY,
@@ -21,6 +22,7 @@ from frida_constants.manipulation_constants import (
     SAFETY_HEIGHT,
     PICK_MIN_HEIGHT,
     GRASP_LINK_FRAME,
+    GRIPPER_SET_STATE_SERVICE,
 )
 from frida_interfaces.srv import (
     AttachCollisionObject,
@@ -32,6 +34,10 @@ from frida_interfaces.msg import PickResult
 import copy
 import numpy as np
 from transforms3d.quaternions import quat2mat
+from frida_motion_planning.utils.service_utils import (
+    close_gripper,
+)
+import time
 
 
 class PickMotionServer(Node):
@@ -73,6 +79,11 @@ class PickMotionServer(Node):
             REMOVE_COLLISION_OBJECT_SERVICE,
         )
 
+        self._gripper_set_state_client = self.create_client(
+            SetBool,
+            GRIPPER_SET_STATE_SERVICE,
+        )
+
         self._move_to_pose_action_client.wait_for_server()
 
         self.get_logger().info("Pick Action Server has been started")
@@ -90,7 +101,7 @@ class PickMotionServer(Node):
             return result
         except Exception as e:
             self.get_logger().error(f"Pick failed: {str(e)}")
-            goal_handle.abort()
+            goal_handle.succeed()
             result.success = False
             return result
 
@@ -106,7 +117,7 @@ class PickMotionServer(Node):
         num_grasping_alternatives = (
             3  # for each grasping pose, try 4 alternatives from closest to farthest
         )
-        grasping_alternative_distance = -0.015  # 5mm distance
+        grasping_alternative_distance = -0.02  # 5mm distance
 
         self.save_collision_objects()
         self.find_plane()
@@ -163,7 +174,14 @@ class PickMotionServer(Node):
                 print(f"Grasp Pose {i} result: {grasp_pose_result}")
                 if grasp_pose_result.result.success:
                     self.get_logger().info("Grasp pose reached")
-                    result, lowest_obj = self.attach_pick_object()
+                    result, lowest_obj, highest_obj = self.attach_pick_object()
+
+                    # close gripper
+                    self.get_logger().info("Closing gripper")
+                    close_gripper(self._gripper_set_state_client)
+                    time.sleep(1.5)
+                    self.get_logger().info("Gripper closed")
+
                     if result:
                         self.get_logger().info("Object attached")
                         # Save object details
@@ -172,6 +190,10 @@ class PickMotionServer(Node):
                         pick_result.object_pick_height = (
                             self.calculate_object_pick_height(lowest_obj, ee_link_pose)
                         )
+                        pick_result.object_height = self.calculate_object_height(
+                            lowest_obj, highest_obj
+                        )
+
                     else:
                         self.get_logger().error("Failed to attach object")
                     return True, pick_result
@@ -215,6 +237,7 @@ class PickMotionServer(Node):
     def attach_pick_object(self):
         """Attach the pick object to the robot."""
         obj_lowest = None
+        obj_highest = None
         for obj in self.collision_objects:
             if PICK_OBJECT_NAMESPACE in obj.id:
                 request = AttachCollisionObject.Request()
@@ -224,6 +247,11 @@ class PickMotionServer(Node):
                 else:
                     if obj.pose.pose.position.z < obj_lowest.pose.pose.position.z:
                         obj_lowest = obj
+                if obj_highest is None:
+                    obj_highest = obj
+                else:
+                    if obj.pose.pose.position.z > obj_highest.pose.pose.position.z:
+                        obj_highest = obj
                 if self.plane is not None and self.object_in_plane(obj, self.plane):
                     self.remove_collision_object(obj.id)
                     continue
@@ -233,7 +261,7 @@ class PickMotionServer(Node):
                 self._attach_collision_object_client.wait_for_service()
                 future = self._attach_collision_object_client.call_async(request)
                 self.wait_for_future(future)
-        return True, obj_lowest
+        return True, obj_lowest, obj_highest
 
     def get_collision_objects(self):
         """Get the collision objects in the scene."""
@@ -274,6 +302,20 @@ class PickMotionServer(Node):
         # assume lowest part of the object is lowest bound of lowest sphere
         height = grasp_height - (obj_z - obj_radius) + SAFETY_HEIGHT
         self.get_logger().info(f"Object pick height: {height}")
+        return height
+
+    def calculate_object_height(self, obj_lowest, obj_highest):
+        """Calculate the height of the object, measured from the lowest point to the highest point"""
+        if obj_lowest.pose.header.frame_id != obj_highest.pose.header.frame_id:
+            self.get_logger().error(
+                "Object and pose frames do not match, cannot calculate height"
+            )
+            return 0.0
+        obj_lowest_z = obj_lowest.pose.pose.position.z
+        obj_highest_z = obj_highest.pose.pose.position.z
+        obj_radius = obj_lowest.dimensions.x
+        height = (obj_highest_z + obj_radius) - (obj_lowest_z - obj_radius)
+        self.get_logger().info(f"Object height: {height}")
         return height
 
     def check_feasibility(self, pose):

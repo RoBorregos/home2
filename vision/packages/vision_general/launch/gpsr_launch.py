@@ -32,14 +32,14 @@ def generate_launch_description():
                 emulate_tty=True,
                 # parameters=[config],
             ),
-            Node(
-                package="vision_general",
-                executable="tracker_node.py",
-                name="tracker_node",
-                output="screen",
-                emulate_tty=True,
-                # parameters=[config],
-            ),
+            # Node(
+            #     package="vision_general",
+            #     executable="tracker_node.py",
+            #     name="tracker_node",
+            #     output="screen",
+            #     emulate_tty=True,
+            #     # parameters=[config],
+            # ),
             Node(
                 package="vision_general",
                 executable="face_recognition_node.py",

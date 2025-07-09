@@ -72,10 +72,15 @@
     model1300="$(arg model1300)" attach_to="$(arg attach_to)" attach_xyz="$(arg attach_xyz)" attach_rpy="$(arg attach_rpy)"
     robot_sn="$(arg robot_sn)" use_gazebo_camera="$(arg use_gazebo_camera)" mesh_suffix="$(arg mesh_suffix)" kinematics_suffix="$(arg kinematics_suffix)" />
 
-
+    <joint name="gripper_grasp_joint" type="fixed">
+      <parent link="link_eef"/>
+      <child link="gripper_grasp_frame"/>
+      <origin xyz="0 0 0" rpy="0 0 -0.7854"/>
+    </joint>
+    <link name="gripper_grasp_frame"> </link>
     <xacro:if value="$(arg load_zed)">
       <xacro:include filename="$(find frida_description)/urdf/Gripper/Custom/gripper.xacro" />
-      <xacro:load_gripper attach_to="link_eef" xyz="0 0 0.046" rpy="0 0 3.14" fixed_joints="true"/>
+      <xacro:load_gripper attach_to="link_eef" xyz="0 0 0.046" rpy="0 0 3.926" fixed_joints="true"/>
       <!-- ZED MACRO -->
       <xacro:include filename="$(find frida_description)/urdf/zed/zed_macro.urdf.xacro" />
       <xacro:zed_camera name="zed" model="zed2" custom_baseline="0" enable_gnss="false" simulation="true" attach_to="zed" xyz="0 0 0" rpy="0 0 0">

@@ -1,8 +1,8 @@
 [
-  {"document": "beverages", "metadata": {"context": "household object categories"}},
-  {"document": "food", "metadata": {"context": "household object categories"}},
-  {"document": "kitchen tools", "metadata": {"context": "household object categories"}},
-  {"document": "tools", "metadata": {"context": "household object categories"}},
-  {"document": "balls", "metadata": {"context": "household object categories"}},
-  {"document": "balls", "metadata": {"context": "household object categories"}}
+  { "document": "beverages", "context": "household object categories" },
+  { "document": "food", "context": "household object categories" },
+  { "document": "kitchen tools", "context": "household object categories" },
+  { "document": "tools", "context": "household object categories" },
+  { "document": "balls", "context": "household object categories" },
+  { "document": "balls", "context": "household object categories" }
 ]

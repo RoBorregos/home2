@@ -9,7 +9,15 @@ services:
     image: ${IMAGE_NAME:-roborregos/home2:manipulation-cpu}
     volumes:
       - ../../:/workspace/src/home2
+      - /dev:/dev
       - /tmp:/tmp
+      - /tmp/.X11-unix:/tmp/.X11-unix
+      - ./build:/workspace/build
+      - ./install:/workspace/install
+      - ./log:/workspace/log
+      - ../frida_interfaces_cache:/workspace/frida_interfaces_cache
+      - ./.bash_aliases:/home/ros/.bash_aliases
+      
     deploy:
       resources:
         reservations:
@@ -35,4 +43,5 @@ services:
     tty: true
     stdin_open: true    
     working_dir: /workspace
-    command: ["/bin/bash", "-i", "-l"]
+    command: >    
+      bash -c "${COMMAND:-/bin/bash}"

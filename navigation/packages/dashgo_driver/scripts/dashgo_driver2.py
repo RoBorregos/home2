@@ -119,7 +119,7 @@ class DashgoDriver(Node):
         self.timer = self.create_timer(timer_period, self.base_controller)
 
     def base_controller(self):
-        print(f"voltage = {self.controller.get_voltage()}")
+        #print(f"voltage = {self.controller.get_voltage()}")
 
         self.now = self.get_clock().now()
         try:
