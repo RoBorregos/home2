@@ -2,6 +2,7 @@
 float32 timeout
 string hotwords
 float32 silence_time
+float32 start_silence_time
 ---
 #result definition
 string transcription

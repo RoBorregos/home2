@@ -30,6 +30,7 @@ class ServeClientFasterWhisper(ServeClientBase):
         clip_audio=False,
         same_output_threshold=10,
         cache_path="~/.cache/whisper-live/",
+        transcriber=None,
     ):
         """
         Initialize a ServeClient instance.
@@ -96,20 +97,24 @@ class ServeClientFasterWhisper(ServeClientBase):
 
         if self.model_size_or_path is None:
             return
-        logging.info(f"Using Device={device} with precision {self.compute_type}")
 
-        try:
-            if single_model:
-                if ServeClientFasterWhisper.SINGLE_MODEL is None:
-                    self.create_model(device)
-                    ServeClientFasterWhisper.SINGLE_MODEL = self.transcriber
+        if transcriber is not None:
+            logging.info("Loading pre-initialized transcriber:")
+            self.transcriber = transcriber
+        else:
+            logging.info(f"Using Device={device} with precision {self.compute_type}")
+            try:
+                if single_model:
+                    if ServeClientFasterWhisper.SINGLE_MODEL is None:
+                        self.create_model(device)
+                        ServeClientFasterWhisper.SINGLE_MODEL = self.transcriber
+                    else:
+                        self.transcriber = ServeClientFasterWhisper.SINGLE_MODEL
                 else:
-                    self.transcriber = ServeClientFasterWhisper.SINGLE_MODEL
-            else:
-                self.create_model(device)
-        except Exception as e:
-            logging.error(f"Failed to load model: {e}")
-            return
+                    self.create_model(device)
+            except Exception as e:
+                logging.error(f"Failed to load model: {e}")
+                return
 
         self.use_vad = use_vad
 

@@ -1,7 +1,7 @@
 string question
 int32 topk
 float32 threshold
-string[] collections
+string[] knowledge_type
 
 ---
 bool success

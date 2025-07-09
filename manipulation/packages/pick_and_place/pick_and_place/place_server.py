@@ -13,13 +13,13 @@ from frida_constants.manipulation_constants import (
     REMOVE_COLLISION_OBJECT_SERVICE,
     GET_COLLISION_OBJECTS_SERVICE,
     PICK_OBJECT_NAMESPACE,
-    GRASP_LINK_FRAME,
     EEF_LINK_NAME,
     EEF_CONTACT_LINKS,
     PLACE_MOTION_ACTION_SERVER,
     AIM_STRAIGHT_FRONT_QUAT,
     SHELF_POSITION_PREPLACE_POSE,
     GRIPPER_SET_STATE_SERVICE,
+    GRASP_LINK_FRAME,
 )
 from frida_interfaces.srv import (
     AttachCollisionObject,
@@ -91,11 +91,14 @@ class PlaceMotionServer(Node):
         result = PlaceMotion.Result()
         try:
             result.success = self.place(goal_handle, feedback)
+            self.get_logger().info(
+                f"Place result: {result.success}, for object: {goal_handle.request.object_name}"
+            )
             goal_handle.succeed()
             return result
         except Exception as e:
             self.get_logger().error(f"Place failed: {str(e)}")
-            goal_handle.abort()
+            goal_handle.succeed()
             result.success = False
             return result
 
@@ -136,7 +139,7 @@ class PlaceMotionServer(Node):
                 )
                 # send it a little bit back, then forward
                 offset_distance = SHELF_POSITION_PREPLACE_POSE  # Desired distance in meters along the local z-axis
-                offset_distance_half = SHELF_POSITION_PREPLACE_POSE / 2
+                offset_distance_half = SHELF_POSITION_PREPLACE_POSE * (2 / 3)
                 # Compute the offset along the local z-axis
                 quat = [
                     ee_link_pre_pose.pose.orientation.w,

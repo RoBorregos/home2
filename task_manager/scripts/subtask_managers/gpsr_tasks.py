@@ -7,7 +7,6 @@ from ament_index_python.packages import get_package_share_directory
 from frida_constants.vision_enums import DetectBy, Gestures, Poses, is_value_in_enum
 from utils.baml_client.types import (
     Count,
-    FindPerson,
     FindPersonByName,
     FollowPersonUntil,
     GetPersonInfo,
@@ -325,7 +324,6 @@ class GPSRTask(GenericTask):
             while current_attempt < 3:
                 current_attempt += 1
                 s, res = self.subtask_manager.vision.get_person_name()
-                print(f"Person name: {res}")
                 if s == Status.EXECUTION_SUCCESS and res != "Unknown":
                     self.subtask_manager.hri.say(f"Hi {res}, nice to meet you again!")
                     return Status.EXECUTION_SUCCESS, res
@@ -366,48 +364,6 @@ class GPSRTask(GenericTask):
                         "I couldn't undestand your name",
                     )
                     return Status.EXECUTION_ERROR, "name not found"
-
-    ## Nav, Vision
-    # TODO: We removed this in command dataset
-    def find_object(self, complement: str, characteristic: str):
-        """
-        Finds an object in a specified location and approaches it for picking.
-
-        Args:
-            complement (str): Specifies additional context for the search.
-                If it is a room, the robot will search all placements in the room.
-            characteristic (str): Specifies the object to find.
-
-        Purpose:
-            - Locate an object in a given place and approach it to a position suitable for picking.
-
-        Preconditions:
-            - Assumes the robot is already at a location.
-
-        Behavior:
-            - If the location is a placement location, the robot will search for the object only in that placement.
-            - If the complement specifies a room, the robot will navigate to all placements in the room and search for the object.
-            - Once the object is found, the robot will approach it to a position where it can pick the object.
-
-        Postconditions:
-            - The robot will be positioned at a location where it can pick the object.
-
-        Pseudocode:
-            For each location in specified_room:
-                Navigate to the location.
-                If the object is detected in the location:
-                    Approach the object to a position suitable for picking.
-        """
-
-        # for location in self.locations[complement]:
-        #     self.navigate_to(complement, location, False)
-
-        result_status = self.subtask_manager.vision.find_object(characteristic)
-        if result_status == Status.EXECUTION_SUCCESS:
-            self.subtask_manager.hri.say(f"I found the {characteristic}.")
-            return Status.EXECUTION_SUCCESS, "object found"
-
-        return Status.TARGET_NOT_FOUND, "object not found"
 
     def timeout(self, timeout: int = 2):
         start_time = time.time()
@@ -533,71 +489,6 @@ class GPSRTask(GenericTask):
             f"I have counted {counter} {command.target_to_count} in the room.",
         )
         return Status.EXECUTION_SUCCESS, "counted " + str(counter) + " " + command.target_to_count
-
-    ## Manipulation, Nav, Vision
-    def find_person_og(self, command: FindPerson):
-        """
-        Finds and approaches a person for further interaction.
-
-        Args:
-            complement (str): Additional information to help identify the person, it can be a gesture, pose, a color + cloth, or empty.
-                              If not specified, the robot will attempt to find any person.
-            characteristic (str): A string giving details of the characteristic, can be "clothes", "gesture", "posture" or "".
-
-        Purpose:
-            - Find a person and approach it for further interaction. Further interaction may be: following the person,
-              guiding the person, interacting with the person, describing the person, or give an object to a person.
-
-        Preconditions:
-            - Assumes the robot is already at a specific location.
-
-        Behavior:
-            - The robot scans its surroundings by gazing at different angles (e.g., -45, 0, 45 degrees).
-            - If a person matching the specified complement is found, the robot approaches them.
-            - If no such person is found, a fallback mechanism (`deus_machina`) is invoked.
-
-        Postconditions:
-            The robot successfully approaches the identified person, ready for further interaction.
-
-        Pseudocode:
-            found = False
-            for degree in [-45, 0, 45]:
-                gaze(degree)
-                if person(complement, characteristic):
-                    approach_person(complement, characteristic)
-                    found = True
-            if not found:
-                deus_machina()
-        """
-
-        if isinstance(command, dict):
-            command = FindPerson(**command)
-
-        self.subtask_manager.hri.say(
-            f"I will search for a person with {command.attribute_value}.",
-        )
-
-        self.subtask_manager.manipulation.move_to_position("front_stare")
-        for degree in self.pan_angles:
-            self.subtask_manager.manipulation.pan_to(degree)
-            if command.attribute_value == "":
-                result = self.subtask_manager.vision.track_person(track=True)
-            else:
-                result = self.subtask_manager.vision.track_person_by(
-                    by=command.attribute_value, value="", track=True
-                )
-                # TODO: We removed the second param from the command
-            # TODO (@nav): approach the person
-            if result == Status.EXECUTION_SUCCESS:
-                self.subtask_manager.hri.say(
-                    f"I found a person with {command.attribute_value}. Please get closer to me.",
-                )
-                return Status.EXECUTION_SUCCESS, "person found"
-
-        self.subtask_manager.hri.say(
-            f"I didn't find a person with {command.attribute_value}.",
-        )
-        return Status.TARGET_NOT_FOUND, "person not found"
 
     def find_person(self, command: FindPersonByName):
         if isinstance(command, dict):

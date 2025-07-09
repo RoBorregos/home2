@@ -26,8 +26,9 @@ from frida_constants.navigation_constants import (
     GOAL_TOPIC,
     FOLLOWING_SERVICE,
 )
-from frida_interfaces.srv import ReturnLocation, LaserGet
+from frida_interfaces.srv import ReturnLocation, LaserGet, WaitForControllerInput
 
+TIMEOUT_WAIT_FOR_SERVICE = 1.0
 TIMEOUT = 4
 RETURN_LASER_DATA = "/integration/Laserscan"
 
@@ -52,6 +53,9 @@ class NavigationTasks:
         self.activate_follow = self.node.create_client(SetBool, FOLLOWING_SERVICE)
         self.laser_send = self.node.create_client(LaserGet, RETURN_LASER_DATA)
         self.ReturnLocation_client = self.node.create_client(ReturnLocation, RETURN_LOCATION)
+        self.wait_for_controller_input = self.node.create_client(
+            WaitForControllerInput, "wait_for_controller_input"
+        )
         self.services = {
             Task.RECEPTIONIST: {
                 "goal_client": {"client": self.goal_client, "type": "action"},
@@ -85,13 +89,30 @@ class NavigationTasks:
 
         for key, service in self.services[self.task].items():
             if service["type"] == "service":
-                if not service["client"].wait_for_service(timeout_sec=TIMEOUT):
+                if not service["client"].wait_for_service(timeout_sec=TIMEOUT_WAIT_FOR_SERVICE):
                     Logger.warn(self.node, f"{key} service not initialized. ({self.task})")
             elif service["type"] == "action":
-                if not service["client"].wait_for_server(timeout_sec=TIMEOUT):
+                if not service["client"].wait_for_server(timeout_sec=TIMEOUT_WAIT_FOR_SERVICE):
                     Logger.warn(self.node, f"{key} action server not initialized. ({self.task})")
 
-    @mockable(return_value=Status.EXECUTION_SUCCESS, delay=10)
+    def mock_to_location_controller(self, timeout=10):
+        """Mock the controller to move to a location"""
+        if not self.mock_data:
+            Logger.error(self.node, "Mock data is not enabled")
+            return
+
+        try:
+            Logger.info(self.node, "Waiting for controller input...")
+            request = WaitForControllerInput.Request()
+            request.button = "x"
+            request.timeout = timeout
+            future = self.wait_for_controller_input.call_async(request)
+            return future
+        except Exception as e:
+            Logger.error(self.node, f"Error waiting for controller input: {e}")
+            return Future().set_result(Status.EXECUTION_ERROR)
+
+    @mockable(_mock_callback=mock_to_location_controller)
     @service_check("goal_client", False, timeout=3)
     def move_to_location(self, location: str, sublocation: str) -> Future:
         """Attempts to move to the given location and returns a Future that completes when the action finishes.

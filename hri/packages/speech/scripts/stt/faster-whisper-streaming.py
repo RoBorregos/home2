@@ -1,4 +1,5 @@
 import argparse
+import os
 from concurrent import futures
 
 import grpc
@@ -6,12 +7,14 @@ import numpy as np
 import speech_pb2
 import speech_pb2_grpc
 from faster_whisper_backend import ServeClientFasterWhisper
+from transcriber_faster_whisper import WhisperModel
 
 
 class WhisperServicer(speech_pb2_grpc.SpeechStreamServicer):
-    def __init__(self, model, log_transcriptions=False):
+    def __init__(self, model, transcriber=None, log_transcriptions=False):
         self.log_transcriptions = log_transcriptions
         self.model = model
+        self.transcriber = transcriber
 
     def Transcribe(self, request_iterator, context):
         client = None
@@ -27,6 +30,7 @@ class WhisperServicer(speech_pb2_grpc.SpeechStreamServicer):
                 language="en",
                 # task=options["task"],
                 same_output_threshold=10,
+                transcriber=self.transcriber,
             )
             print("Hotwords set for transcription:", first_chunk.hotwords)
 
@@ -86,9 +90,41 @@ class WhisperServicer(speech_pb2_grpc.SpeechStreamServicer):
 
 def serve(port, model, log_transcriptions):
     # Create the gRPC server
+
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    try:
+        import torch
+
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        major, _ = torch.cuda.get_device_capability(device)
+        compute_type = "float16" if major >= 7 else "float32"
+    except ImportError:
+        device = "cpu"
+        compute_type = "int8"
+
+    transcriber = WhisperModel(
+        model,
+        device=device,
+        compute_type=compute_type,
+        local_files_only=False,
+    )
+
+    warmup_file = "./warmup.wav"
+    if os.path.exists(warmup_file):
+        try:
+            print(f"Warming up model with {warmup_file}...")
+            result = transcriber.transcribe(warmup_file)
+            # Consume generator to complete the warmup
+            for _ in result[0]:
+                pass
+            print("Model warmup complete")
+        except Exception as e:
+            print(f"Model warmup failed: {e}")
+    else:
+        print(f"Warmup file {warmup_file} not found, skipping warmup")
+
     speech_pb2_grpc.add_SpeechStreamServicer_to_server(
-        WhisperServicer(model, log_transcriptions), server
+        WhisperServicer(model, transcriber, log_transcriptions), server
     )
 
     # Bind to a port
