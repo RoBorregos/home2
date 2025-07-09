@@ -161,7 +161,7 @@ class FaceRecognition(Node):
             self.get_logger().info("No face detected")
             res.success = False
         else:
-            self.get_logger().info(f"New name: {self.new_name}")
+            self.get_logger().info(f"New name: {self.follow_name}")
             res.success = True
         return res
 
