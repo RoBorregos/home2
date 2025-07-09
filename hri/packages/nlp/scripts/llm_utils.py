@@ -337,7 +337,6 @@ class LLMUtils(Node):
         self.get_logger().info("Determining if text is negative")
 
         try:
-            result = self.get_most_likely_label(request.text)
             if len(request.text.strip()) < 1:
                 result = ""
             else:
