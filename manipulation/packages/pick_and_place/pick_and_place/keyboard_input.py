@@ -6,6 +6,7 @@ from rclpy.action import ActionClient
 from frida_interfaces.action import ManipulationAction
 from frida_interfaces.msg import ManipulationTask
 import time
+from geometry_msgs.msg import PointStamped, PoseStamped
 from frida_interfaces.msg import ObjectDetectionArray
 from frida_constants.vision_constants import (
     DETECTIONS_TOPIC,
@@ -18,17 +19,43 @@ from frida_constants.manipulation_constants import (
 class KeyboardInput(Node):
     def __init__(self):
         super().__init__("keyboard_input")
+
+        callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
+
         self._action_client = ActionClient(
-            self, ManipulationAction, MANIPULATION_ACTION_SERVER
+            self,
+            ManipulationAction,
+            MANIPULATION_ACTION_SERVER,
+            callback_group=callback_group,
         )
         self.objects = []  # Example list of objects
+
+        qos = rclpy.qos.QoSProfile(
+            depth=10, reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT
+        )
 
         # Add subscriber for objects
         self.objects_subscription = self.create_subscription(
             ObjectDetectionArray,
             DETECTIONS_TOPIC,
             self.objects_callback,
-            10,
+            qos,
+            callback_group=callback_group,
+        )
+
+        self.clicked_point = None
+        self.clicked_point_subscription = self.create_subscription(
+            PointStamped,
+            "/clicked_point",
+            self.clicked_point_callback,
+            qos,
+            callback_group=callback_group,
+        )
+
+    def clicked_point_callback(self, msg):
+        self.clicked_point = msg
+        self.get_logger().info(
+            f"Clicked point received: x={msg.point.x}, y={msg.point.y}, z={msg.point.z}"
         )
 
     def objects_callback(self, msg):
@@ -98,6 +125,29 @@ class KeyboardInput(Node):
 
         self.get_logger().info("Pour request sent")
 
+    def send_place_on_clicked_point_request(self):
+        self.get_logger().warning("Sending place on point request")
+
+        if not self._action_client.wait_for_server(timeout_sec=5.0):
+            self.get_logger().error("Action server in place not available!")
+            return
+
+        goal_msg = ManipulationAction.Goal()
+        goal_msg.task_type = ManipulationTask.PLACE
+        goal_msg.place_params.forced_pose = PoseStamped()
+
+        goal_msg.place_params.forced_pose.header.frame_id = (
+            self.clicked_point.header.frame_id
+        )
+        goal_msg.place_params.forced_pose.pose.position.x = self.clicked_point.point.x
+        goal_msg.place_params.forced_pose.pose.position.y = self.clicked_point.point.y
+        goal_msg.place_params.forced_pose.pose.position.z = self.clicked_point.point.z
+
+        self._action_client.send_goal_async(
+            goal_msg, feedback_callback=self.feedback_callback
+        )
+        self.get_logger().info("Place request sent")
+
     def feedback_callback(self, feedback_msg):
         self.get_logger().info(f"Feedback received: {feedback_msg.feedback}")
 
@@ -135,6 +185,7 @@ def main(args=None):
             print("-4. Place on shelf")
             print("-5. Place on shelf (with plane height)")
             print("-6. Pour")
+            print("-7. Place on clicked point")
             print("q. Quit")
 
             choice = input("\nEnter your choice: ")
@@ -173,6 +224,17 @@ def main(args=None):
                 object_name = input("Enter object name: ")
                 bowl_name = input("Enter bowl name: ")
                 node.send_pour_request(object_name, bowl_name)
+
+            elif choice == "-7":
+                print("Use rviz to click a point on the robot's base.")
+                start_time = time.time()
+                node.clicked_point = None
+                while node.clicked_point is None and time.time() - start_time < 10:
+                    rclpy.spin_once(node, timeout_sec=0.1)
+                if node.clicked_point is not None:
+                    node.send_place_on_clicked_point_request()
+                else:
+                    print("No point clicked within the time limit. Please try again.")
 
             elif choice.isdigit():
                 try:

@@ -116,8 +116,8 @@ class PlaceMotionServer(Node):
             )
 
         # generate several place_poses, so try every time higher from plane
-        n_poses = 5
-        poses_dist = 0.03
+        n_poses = 8
+        poses_dist = 0.05
         place_poses = []
         for i in range(n_poses):
             ee_link_pose = copy.deepcopy(place_pose)

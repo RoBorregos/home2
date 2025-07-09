@@ -4,6 +4,11 @@ from geometry_msgs.msg import PointStamped, PoseStamped
 import numpy as np
 from scipy.spatial.transform import Rotation as R
 from numpy.typing import NDArray
+import tf2_ros
+import rclpy
+from tf2_ros import TransformException, Buffer
+from typing import Tuple
+from tf2_geometry_msgs import do_transform_pose
 
 
 def quat_to_rpy(quat):
@@ -129,3 +134,41 @@ def look_at(
     result_pose.pose.orientation.w = quat[3]
 
     return result_pose
+
+
+def transform_pose(
+    pose: PoseStamped, target_frame: str, tf_buffer: Buffer
+) -> Tuple[bool, PoseStamped]:
+    """
+    Transforms a pose to a target frame using ROS2 tf2.
+    Args:
+        pose (PoseStamped): The pose to transform.
+        target_frame (str): The target frame to transform the pose to.
+        tf_buffer (Buffer): The tf2 buffer to use for looking up transforms.
+    Returns:
+        PoseStamped: The transformed pose.
+    """
+    success = False
+    transformed_pose = PoseStamped()
+    for i in range(5):
+        try:
+            # Wait for the transform to be available
+            t = tf_buffer.lookup_transform(
+                target_frame,
+                pose.header.frame_id,
+                tf2_ros.Time(),
+                timeout=rclpy.duration.Duration(seconds=3.0),
+            )
+            # Transform the pose
+            print("doing transform pose")
+            transformed_pose.pose = do_transform_pose(pose.pose, t)
+            transformed_pose.header.frame_id = target_frame
+
+            print("successfully transformed pose")
+            success = True
+        except TransformException as e:
+            print(
+                f"Transform from {pose.header.frame_id} to {target_frame} not available: {e}"
+            )
+
+    return success, transformed_pose

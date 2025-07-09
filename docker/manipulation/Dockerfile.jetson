@@ -22,4 +22,6 @@ RUN rosdep init && rosdep update && rosdep install --from-paths /installs/home2_
 RUN rosdep fix-permissions
 RUN cd manipulation/packages/gpd && mkdir -p build && cd build && cmake .. && make && make install
 
+RUN echo "export GPD_INSTALL_DIR=/workspace/install/gpd" >> ~/.bashrc
+
 ENTRYPOINT [ "/bin/bash", "-l", "-c" ]
