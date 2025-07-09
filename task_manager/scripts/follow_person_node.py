@@ -90,6 +90,7 @@ class FollowPersonNode(Node):
         self.follow_face = {"x": 0, "y": 0}
 
         self.flag_active_face = False
+        self.deactivate = False
 
         self.create_timer(0.1, self.run)
 
@@ -225,32 +226,31 @@ class FollowPersonNode(Node):
 
     def run(self):
         if not self.is_following_person:
+            print("sending papu")
             return
-        """Running main loop"""
-        # Follow face task
+
         self.get_joint_angle()
-        # Logger.state(self, "Follow face task")
-        x, y = self.get_follow_face()
-        print(x, y)
-        if x is None:
-            return
-        elif x is not None:
-            if self.angle_status is not None:
-                vel = self.error_to_velocity(x, y)
-                print(f"vel = {vel} and angle = {self.angle_status[0]}")
-                if self.angle_status[0] > -2.26893 and self.angle_status[0] < -0.872665:
-                    self.send_joint_velocity(vel)
-                else:
-                    if self.angle_status[0] <= -2.26893 and vel < 0:
-                        self.send_joint_velocity(vel)
-                    elif self.angle_status[0] >= -0.872665 and vel > 0:
-                        self.send_joint_velocity(vel)
-                    else:
-                        self.send_joint_velocity(0.0)
+        if self.angle_status is not None:
+            x, y = self.get_follow_face()
+            if (self.angle_status[0] < -2.26893 or self.angle_status[0] > -0.872665) and x is None:
+                self.send_joint_velocity(0.0)
+            else:
+                if x is not None:
+                    if self.angle_status is not None:
+                        vel = self.error_to_velocity(x, y)
+                        if self.angle_status[0] > -2.26893 and self.angle_status[0] < -0.872665:
+                            self.send_joint_velocity(vel)
+                        else:
+                            if self.angle_status[0] <= -2.26893 and vel < 0:
+                                self.send_joint_velocity(vel)
+                            elif self.angle_status[0] >= -0.872665 and vel > 0:
+                                self.send_joint_velocity(vel)
+                            else:
+                                self.send_joint_velocity(0.0)
 
     def error_to_velocity(self, x: float, y: float):
         """Convert error to velocity"""
-        KP = 1.2
+        KP = 0.7
         x_vel = KP * x
         x_vel = max(min(x_vel, MAX_ROTATIONAL_VEL), -MAX_ROTATIONAL_VEL)
 

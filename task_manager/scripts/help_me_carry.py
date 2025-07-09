@@ -105,6 +105,7 @@ class HelpMeCarryTM(Node):
             prev_status = True
             while True:
                 if "stop" in self.subtask_manager.hri.current_transcription.lower():
+                    self.subtask_manager.hri.cancel_hear_action()
                     self.subtask_manager.nav.follow_person(False)
                     self.subtask_manager.manipulation.follow_person(False)
                     self.subtask_manager.vision.track_person(False)
@@ -128,6 +129,8 @@ class HelpMeCarryTM(Node):
 
                 if self.get_clock().now() - tracking_time > Duration(seconds=FOLLOWING_TIMEOUT):
                     Logger.info(self, "Activating deux ex machina")
+                    self.subtask_manager.hri.cancel_hear_action()
+
                     self.subtask_manager.nav.follow_person(False)
                     self.subtask_manager.manipulation.follow_person(False)
                     # MAYBE ADD TO PUT IN FRONT OF THE CAMERA
@@ -139,6 +142,7 @@ class HelpMeCarryTM(Node):
                     break
 
         if self.current_state == HelpMeCarryTM.TASK_STATES["ASK_TO_POINT_THE_BAG"]:
+            self.subtask_manager.hri.cancel_hear_action()
             Logger.state(self, "Asking to point the bag")
             self.subtask_manager.hri.say("Please point to the bag you want me to carry")
             self.current_state = HelpMeCarryTM.TASK_STATES["DETECT_THE_BAG"]
