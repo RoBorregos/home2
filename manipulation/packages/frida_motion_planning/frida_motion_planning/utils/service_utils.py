@@ -84,7 +84,6 @@ def move_joint_positions(
         return future
 
 
-# @service_check("get_joints_positions", -1, TIMEOUT)
 def get_joint_positions(
     get_joints_client,
     degrees=False,  # set to true to return in degrees

@@ -64,11 +64,16 @@ class PointTransformer(Node):
         )
 
         # Subscribe to the vision/tracking_results topic
+        qos = rclpy.qos.QoSProfile(
+            history=rclpy.qos.HistoryPolicy.KEEP_LAST,
+            depth=1,
+            reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
+        )
         self.point_sub = self.create_subscription(
-            Point,
+            PointStamped,
             '/vision/tracking_results',
             self.point_callback,
-            10,
+            qos,
             callback_group=self.callback_group
         )
         
@@ -166,75 +171,64 @@ class PointTransformer(Node):
             self.actual_goal_handle.cancel_goal_async()
             self.navigation_in_progress = False
 
-    def point_callback(self, msg: Point):
+    def point_callback(self, msg: PointStamped):
+        print("qpd papu pro?")
         # Skip processing if not following
         if not self.is_following:
             return
-        
-
-        # Process the point as before
-        point_to_be_filtered = Point()
-        point_to_be_filtered = Point()
     
-        original_point_x = msg.x
-        original_point_y = msg.y
-        original_point_x = msg.x
-        original_point_y = msg.y
+        # Process the point as before
+        point_to_be_filtered = PointStamped()
+        point_to_be_filtered.header = msg.header
+    
+        # original_point_x = msg.point.x
+        # original_point_y = msg.point.y
 
-        original_orientation = m.atan2(original_point_y, original_point_x)
-        original_distance = m.sqrt(original_point_x ** 2 + original_point_y ** 2)
-        original_orientation = m.atan2(original_point_y, original_point_x)
-        original_distance = m.sqrt(original_point_x ** 2 + original_point_y ** 2)
+        # original_orientation = m.atan2(original_point_y, original_point_x)
+        # original_distance = m.sqrt(original_point_x ** 2 + original_point_y ** 2)
 
-        # Transform the point
-        transformed_orientation = original_orientation + m.pi*(1.25)
-        # Transform the point
-        transformed_orientation = original_orientation + m.pi*(1.25)
+        # # Transform the point
+        # transformed_orientation = original_orientation + m.pi*(1.25)
 
-        transformed_x = original_distance * m.cos(transformed_orientation)
-        transformed_y = original_distance * m.sin(transformed_orientation)
-        transformed_x = original_distance * m.cos(transformed_orientation)
-        transformed_y = original_distance * m.sin(transformed_orientation)
+        # transformed_x = original_distance * m.cos(transformed_orientation)
+        # transformed_y = original_distance * m.sin(transformed_orientation)
         
-        point_to_be_filtered.x = transformed_x
-        point_to_be_filtered.y = transformed_y
-        point_to_be_filtered.z = 0.0
-        point_to_be_filtered.x = transformed_x
-        point_to_be_filtered.y = transformed_y
-        point_to_be_filtered.z = 0.0
+        # point_to_be_filtered.point.x = transformed_x
+        # point_to_be_filtered.point.y = transformed_y
+        # point_to_be_filtered.point.z = 0.0
+
+
+        point_to_be_filtered.point.x = msg.point.x
+        point_to_be_filtered.point.y = msg.point.y
+        point_to_be_filtered.point.z = msg.point.z
 
         # Append the new point to the list
-        self.accumulated_points.append(point_to_be_filtered)
-        self.acc_sum[0] += point_to_be_filtered.x
-        self.acc_sum[1] += point_to_be_filtered.y
-        # Limit the number of points to the last 5
-        if len(self.accumulated_points) > 5:
-            self.acc_sum[0] -= self.accumulated_points[0].x
-            self.acc_sum[1] -= self.accumulated_points[0].y
-            self.accumulated_points.pop(0)
-        # Calculate the median of the accumulated points
-        # median_x = self.median_filter([p.x for p in self.accumulated_points])
-        # median_y = self.median_filter([p.y for p in self.accumulated_points])
-        median_x = self.acc_sum[0] / len(self.accumulated_points)
-        median_y = self.acc_sum[1] / len(self.accumulated_points)
+        # self.accumulated_points.append(point_to_be_filtered)
+        # self.acc_sum[0] += point_to_be_filtered.x
+        # self.acc_sum[1] += point_to_be_filtered.y
+        # # Limit the number of points to the last 5
+        # if len(self.accumulated_points) > 5:
+        #     self.acc_sum[0] -= self.accumulated_points[0].x
+        #     self.acc_sum[1] -= self.accumulated_points[0].y
+        #     self.accumulated_points.pop(0)
+        # # Calculate the median of the accumulated points
+        # # median_x = self.median_filter([p.x for p in self.accumulated_points])
+        # # median_y = self.median_filter([p.y for p in self.accumulated_points])
+        # median_x = self.acc_sum[0] / len(self.accumulated_points)
+        # median_y = self.acc_sum[1] / len(self.accumulated_points)
 
 
-        stamped_point = PointStamped()
-        stamped_point.header.frame_id = 'zed_camera_link'  # Adjust to match your actual camera frame
-        stamped_point.header.stamp = self.get_clock().now().to_msg()
-        stamped_point.point.x = median_x
-        stamped_point.point.y = median_y
-        stamped_point.point.z = 0.0
         
         try:
             # Transform the point to base_link
             transform = self.tf_buffer.lookup_transform(
                 'map',
-                stamped_point.header.frame_id,
-                rclpy.time.Time()
+                point_to_be_filtered.header.frame_id,
+                point_to_be_filtered.header.stamp,
             )
-            transformed_point = do_transform_point(stamped_point, transform)
+            transformed_point = do_transform_point(point_to_be_filtered, transform)
             # Publish for visualization
+            transformed_point.point.z = 0.0
             self.point_pub.publish(transformed_point)
             
             # Create goal pose message

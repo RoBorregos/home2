@@ -20,6 +20,8 @@ from frida_constants.hri_constants import (
     CATEGORIZE_SERVICE,
     COMMAND_INTERPRETER_SERVICE,
     COMMON_INTEREST_SERVICE,
+    DISPLAY_IMAGE_TOPIC,
+    DISPLAY_MAP_TOPIC,
     EXTRACT_DATA_SERVICE,
     GRAMMAR_SERVICE,
     IS_NEGATIVE_SERVICE,
@@ -34,8 +36,8 @@ from frida_constants.hri_constants import (
 
 from frida_interfaces.action import SpeechStream
 from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
-from frida_interfaces.srv import (  # AddEntry,
-    CategorizeShelves,
+from frida_interfaces.srv import (
+    CategorizeShelves,  # AddEntry,
     CommandInterpreter,
     CommonInterest,
     ExtractInfo,
@@ -169,7 +171,8 @@ class HRITasks(metaclass=SubtaskMeta):
         )
         self.is_positive_service = self.node.create_client(IsPositive, IS_POSITIVE_SERVICE)
         self.is_negative_service = self.node.create_client(IsNegative, IS_NEGATIVE_SERVICE)
-        self.display_publisher = self.node.create_publisher(String, "/hri/display/change_video", 10)
+        self.display_publisher = self.node.create_publisher(String, DISPLAY_IMAGE_TOPIC, 10)
+        self.display_map_publisher = self.node.create_publisher(String, DISPLAY_MAP_TOPIC, 10)
 
         self.pg = PostgresAdapter()
         self.llm_wrapper_service = self.node.create_client(LLMWrapper, LLM_WRAPPER_SERVICE)
@@ -230,6 +233,10 @@ class HRITasks(metaclass=SubtaskMeta):
         file_path = os.path.join(package_share_directory, "data/positive.json")
         with open(file_path, "r") as file:
             self.positive = json.load(file)["affirmations"]
+
+        file_path = os.path.join(package_share_directory, "data/hand_items.json")
+        with open(file_path, "r") as file:
+            self.hand_items = json.load(file)
 
         self.setup_services()
         Logger.success(self.node, f"hri_tasks initialized with task {self.task}")
@@ -964,8 +971,8 @@ class HRITasks(metaclass=SubtaskMeta):
             )
         return [doc for doc in document]
 
-    def query_location(self, query: str, top_k: int = 1):
-        return self.pg.query_location(query, top_k=top_k)
+    def query_location(self, query: str, top_k: int = 1, use_context: bool = False):
+        return self.pg.query_location(query, top_k=top_k, use_context=use_context)
 
     def find_closest(self, documents: list, query: str, top_k: int = 1) -> list[str]:
         """
@@ -1052,7 +1059,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
         try:
             categories = self.get_shelves_categories(shelves, table_objects=table_objects)[1]
-            results = self.categorize_objects_with_embeddings(categories, table_objects)
+            results = self.categorize_objects_with_embeddings(categories, table_objects, shelves)
 
             objects_to_add = {key: value["objects_to_add"] for key, value in results.items()}
             Logger.error(self.node, f"categories {categories}")
@@ -1128,7 +1135,7 @@ class HRITasks(metaclass=SubtaskMeta):
         self.display_publisher.publish(String(data=topic))
         Logger.info(self.node, f"Published display topic: {topic}")
 
-    def categorize_object(self, categories: dict, obj: str):
+    def categorize_object(self, categories: dict, obj: str, shelves: dict):
         """Method to categorize a list of objects in an array of objects depending on similarity"""
 
         try:
@@ -1143,6 +1150,10 @@ class HRITasks(metaclass=SubtaskMeta):
             for category in categories_aux.values():
                 category_list.append(category)
 
+            for i, category in enumerate(category_list):
+                self.node.get_logger().info(f"Category {i}: {category}")
+                category_list[i] = category + " " + " ".join(shelves[i])
+
             results = self.find_closest_raw(category_list, obj)
             results_distances = [res[1] for res in results]
 
@@ -1155,7 +1166,8 @@ class HRITasks(metaclass=SubtaskMeta):
                 result_category = "empty"
 
             self.node.get_logger().info(f"CATEGORY PREDICTED: {result_category}")
-
+            result_category = result_category.split(" ")[0]
+            self.node.get_logger().info(f"CATEGORY PREDICTED: {result_category}")
             key_resulted = 2
             for key in list(categories.keys()):
                 if str(categories[key]) == str(result_category):
@@ -1170,7 +1182,7 @@ class HRITasks(metaclass=SubtaskMeta):
         except Exception as e:
             self.node.get_logger().error(f"FAILED TO CATEGORIZE: {obj} with error: {e}")
 
-    def categorize_objects_with_embeddings(self, categories: dict, obj_list: list):
+    def categorize_objects_with_embeddings(self, categories: dict, obj_list: list, shelves: dict):
         """
         Categorize objects based on their embeddings."""
         self.node.get_logger().info(f"THIS IS THE CATEGORIES dict RECEIVED: {categories}")
@@ -1180,11 +1192,32 @@ class HRITasks(metaclass=SubtaskMeta):
             for key in categories.keys()
         }
         for obj in obj_list:
-            index = self.categorize_object(categories, obj)
+            index = self.categorize_object(categories, obj, shelves)
             results[index]["objects_to_add"].append(obj)
 
         self.node.get_logger().info(f"THIS IS THE RESULTS OF THE CATEGORIZATION: {results}")
         return results
+
+    def show_map(self, name="", clear_map: bool = False):
+        """
+        Method to show the map on the display.
+        """
+        show_items = self.hand_items.copy()
+
+        if clear_map:
+            show_items["image_path"] = ""
+            Logger.info(self.node, "Map cleared on the screen.")
+        else:
+            filtered_items = []
+
+            # Filter items to only include those matching the specified name
+            for item in show_items["markers"]:
+                if name == "" or item["name"].strip().lower() == name.strip().lower():
+                    filtered_items.append(item)
+
+            show_items["markers"] = filtered_items
+
+        self.display_map_publisher.publish(String(data=json.dumps(show_items)))
 
 
 if __name__ == "__main__":

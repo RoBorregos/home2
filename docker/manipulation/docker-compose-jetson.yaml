@@ -16,9 +16,11 @@ services:
       - ./build/:/workspace/build
       - ./install/:/workspace/install
       - ./log/:/workspace/log
+      - ../frida_interfaces_cache:/workspace/frida_interfaces_cache
+      - ./.bash_aliases:/home/ros/.bash_aliases
   
     network_mode: host
-    user: 1000:1000
+    user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
     privileged: true
     runtime: nvidia
     group_add: 
