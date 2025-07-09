@@ -106,8 +106,8 @@ case $TASK in
     "--receptionist")
         RUN="ros2 launch vision_general receptionist_launch.py"
         ;;
-    "--help-me-carry")
-        RUN="ros2 launch vision_general help_me_carry_launch.py"
+    "--carry")
+        RUN="ros2 launch manipulation_general carry.launch.py"
         ;;
     "--storing-groceries")
         RUN="ros2 launch vision_general storing_groceries_launch.py"

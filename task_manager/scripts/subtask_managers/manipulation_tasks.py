@@ -385,6 +385,29 @@ class ManipulationTasks:
             return Status.EXECUTION_ERROR
         return Status.EXECUTION_SUCCESS
 
+    def pour(self, pour_object_name: str, pour_container_name: str):
+        goal_msg = ManipulationAction.Goal()
+        goal_msg.task_type = ManipulationTask.POUR
+        goal_msg.pour_params.object_name = pour_object_name
+        goal_msg.pour_params.bowl_name = pour_container_name
+        future = self._manipulation_action_client.send_goal_async(goal_msg)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+        if future.result() is None:
+            Logger.error(self.node, "Failed to send pour request")
+            return Status.EXECUTION_ERROR
+        Logger.info(self.node, "Pour request sent")
+        # wait for result
+        result_future = future.result().get_result_async()
+        rclpy.spin_until_future_complete(self.node, result_future)
+        result = result_future.result().result
+        Logger.info(self.node, f"Pour result: {result}")
+        if result.success:
+            Logger.success(self.node, "Pour request successful")
+        else:
+            Logger.error(self.node, "Pour request failed")
+            return Status.EXECUTION_ERROR
+        return Status.EXECUTION_SUCCESS
+
     def pan_to(self, degrees: float):
         joint_positions = self.get_joint_positions(degrees=True)
         joint_positions["joint1"] = joint_positions["joint1"] - degrees

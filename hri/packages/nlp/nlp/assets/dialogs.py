@@ -25,7 +25,7 @@ Do not add any other information or context to the answer, just the common inter
             },
             {
                 "role": "user",
-                "content": f"{person1Name} likes {person1Interests} and {person2Name} likes {person2Interests}",
+                "content": f"{person1Name} likes {person1Interests} and {person2Name} likes {person2Interests}. /no_think",
             },
         ]
     }

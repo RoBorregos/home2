@@ -69,7 +69,7 @@ ros2 launch speech hri_launch.py
 ros2 launch speech devices_launch.py
 
 # Say something
-ros2 service call /hri/speech/speak frida_interfaces/srv/Speak "{text: \"Go to the kitchen and grab cookies\"}"
+ros2 service call /hri/speech/speak frida_interfaces/srv/Speak "{text: \"Go to the kitchen and grab cookies\", speed : 1.0}"
 
 # Extract data from a sentence
 ros2 service call /hri/nlp/data_extractor frida_interfaces/srv/ExtractInfo "{full_text: 'Hello, my name is Oscar', data: 'name'}"

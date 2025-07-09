@@ -1,3 +1,4 @@
 string text
+float64 speed
 ---
 bool success
