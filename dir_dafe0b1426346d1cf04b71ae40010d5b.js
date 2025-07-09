@@ -5,6 +5,8 @@ var dir_dafe0b1426346d1cf04b71ae40010d5b =
     [ "get_positon_3d.py", "get__positon__3d_8py.html", "get__positon__3d_8py" ],
     [ "gpsr_commands.py", "gpsr__commands_8py.html", "gpsr__commands_8py" ],
     [ "is_person_inside.py", "is__person__inside_8py.html", "is__person__inside_8py" ],
+    [ "new_tracker.py", "new__tracker_8py.html", "new__tracker_8py" ],
+    [ "old_tracker.py", "old__tracker_8py.html", "old__tracker_8py" ],
     [ "person_in_map.py", "person__in__map_8py.html", "person__in__map_8py" ],
     [ "pointing_detection.py", "pointing__detection_8py.html", "pointing__detection_8py" ],
     [ "pose_detection.py", "scripts_2pose__detection_8py.html", "scripts_2pose__detection_8py" ],

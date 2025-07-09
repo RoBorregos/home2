@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['waitforcontrollerinputnode_0',['WaitForControllerInputNode',['../classwait__for__controller__input__node_1_1WaitForControllerInputNode.html',1,'wait_for_controller_input_node']]]
+  ['virtualstop_0',['VirtualStop',['../classclosed__door__test_1_1VirtualStop.html',1,'closed_door_test.VirtualStop'],['../classvirtual__stop__button_1_1VirtualStop.html',1,'virtual_stop_button.VirtualStop']]],
+  ['visiontasks_1',['VisionTasks',['../classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html',1,'subtask_managers::vision_tasks']]]
 ];

@@ -32,7 +32,7 @@ var classsubtask__managers_1_1hri__tasks_1_1HRITasks =
     [ "query_command_history", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a9750fb862f443efeb9f19dcb7cd8a7cd", null ],
     [ "query_location", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a7b849cdde8d552d65603a2e85ec4698f", null ],
     [ "refactor_text", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#ad48852436cbe57577f5d4563cd9a5301", null ],
-    [ "say", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a4ec9fca0b2f6607ffd6b70cad59c0eb6", null ],
+    [ "say", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a10e05b0fe22fbcbcad1b6177918de213", null ],
     [ "set_light_state", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a810510a94099b0741625971f3a74ad39", null ],
     [ "setup_services", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a7d2e844fa32fad9b41c58f766997fc4c", null ],
     [ "show_map", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#aa64566f13a1ec3c37c677bc88c18be16", null ],

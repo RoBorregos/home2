@@ -1,8 +1,20 @@
 var searchData=
 [
-  ['receptionistcommands_0',['ReceptionistCommands',['../classreceptionist__commands_1_1ReceptionistCommands.html',1,'receptionist_commands']]],
-  ['receptionisttm_1',['ReceptionistTM',['../classreceptionist__task__manager_1_1ReceptionistTM.html',1,'receptionist_task_manager']]],
-  ['removeperson_2',['RemovePerson',['../classremove__person_1_1RemovePerson.html',1,'remove_person']]],
-  ['restauranttaskmanager_3',['RestaurantTaskManager',['../classrestaurant__task__manager_1_1RestaurantTaskManager.html',1,'restaurant_task_manager']]],
-  ['retries_4',['Retries',['../classstoring__groceries__manager_1_1Retries.html',1,'storing_groceries_manager']]]
+  ['pcb_0',['PCB',['../classmodel_1_1PCB.html',1,'model']]],
+  ['pcb_5ftest_1',['PCB_test',['../classmodel_1_1PCB__test.html',1,'model']]],
+  ['personlocation_2',['PersonLocation',['../classperson__in__map_1_1PersonLocation.html',1,'person_in_map']]],
+  ['pickmanager_3',['PickManager',['../classPickManager_1_1PickManager.html',1,'PickManager']]],
+  ['pickmotionclient_4',['PickMotionClient',['../classcall__pick__action_1_1PickMotionClient.html',1,'call_pick_action']]],
+  ['pickmotionserver_5',['PickMotionServer',['../classpick__and__place_1_1pick__server_1_1PickMotionServer.html',1,'pick_and_place::pick_server']]],
+  ['placemanager_6',['PlaceManager',['../classPlaceManager_1_1PlaceManager.html',1,'PlaceManager']]],
+  ['placemotionserver_7',['PlaceMotionServer',['../classpick__and__place_1_1place__server_1_1PlaceMotionServer.html',1,'pick_and_place::place_server']]],
+  ['planner_8',['Planner',['../classPlanner_1_1Planner.html',1,'Planner']]],
+  ['pointtransformer_9',['PointTransformer',['../classpoint__transformer_1_1PointTransformer.html',1,'point_transformer.PointTransformer'],['../classtransform__target_1_1PointTransformer.html',1,'transform_target.PointTransformer']]],
+  ['posedetection_10',['PoseDetection',['../classpose__detection_1_1PoseDetection.html',1,'pose_detection.PoseDetection'],['../classvision__general_1_1pose__detection_1_1PoseDetection.html',1,'vision_general.pose_detection.PoseDetection']]],
+  ['poses_11',['Poses',['../classfrida__constants_1_1vision__enums_1_1Poses.html',1,'frida_constants::vision_enums']]],
+  ['position_12',['Position',['../classmoondream__lib_1_1Position.html',1,'moondream_lib.Position'],['../classmoondream__node_1_1Position.html',1,'moondream_node.Position'],['../classserver_1_1Position.html',1,'server.Position']]],
+  ['pourmanager_13',['PourManager',['../classPourManager_1_1PourManager.html',1,'PourManager']]],
+  ['pourmotionserver_14',['PourMotionServer',['../classpick__and__place_1_1pour__server_1_1PourMotionServer.html',1,'pick_and_place::pour_server']]],
+  ['publishhandlea_15',['PublishHandleA',['../classPublishHandleA.html',1,'']]],
+  ['publishnode_16',['PublishNode',['../classPublishNode.html',1,'']]]
 ];

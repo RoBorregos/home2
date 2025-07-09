@@ -163,6 +163,9 @@ var annotated_dup =
     [ "nav_test", "namespacenav__test.html", [
       [ "TestTaskManager", "classnav__test_1_1TestTaskManager.html", "classnav__test_1_1TestTaskManager" ]
     ] ],
+    [ "new_tracker", "namespacenew__tracker.html", [
+      [ "SingleTracker", "classnew__tracker_1_1SingleTracker.html", "classnew__tracker_1_1SingleTracker" ]
+    ] ],
     [ "object_detector_node", "namespaceobject__detector__node.html", [
       [ "NodeParams", "classobject__detector__node_1_1NodeParams.html", null ],
       [ "object_detector_node", "classobject__detector__node_1_1object__detector__node.html", "classobject__detector__node_1_1object__detector__node" ]
@@ -172,6 +175,9 @@ var annotated_dup =
       [ "Detection", "classObjectDetector_1_1Detection.html", "classObjectDetector_1_1Detection" ],
       [ "ObjectDectector", "classObjectDetector_1_1ObjectDectector.html", "classObjectDetector_1_1ObjectDectector" ],
       [ "ObjectDectectorParams", "classObjectDetector_1_1ObjectDectectorParams.html", "classObjectDetector_1_1ObjectDectectorParams" ]
+    ] ],
+    [ "old_tracker", "namespaceold__tracker.html", [
+      [ "SingleTracker", "classold__tracker_1_1SingleTracker.html", "classold__tracker_1_1SingleTracker" ]
     ] ],
     [ "person_in_map", "namespaceperson__in__map.html", [
       [ "PersonLocation", "classperson__in__map_1_1PersonLocation.html", "classperson__in__map_1_1PersonLocation" ]
@@ -227,6 +233,9 @@ var annotated_dup =
     [ "receptionist_task_manager", "namespacereceptionist__task__manager.html", [
       [ "Guest", "classreceptionist__task__manager_1_1Guest.html", "classreceptionist__task__manager_1_1Guest" ],
       [ "ReceptionistTM", "classreceptionist__task__manager_1_1ReceptionistTM.html", "classreceptionist__task__manager_1_1ReceptionistTM" ]
+    ] ],
+    [ "record_joints_node", "namespacerecord__joints__node.html", [
+      [ "JointRecorder", "classrecord__joints__node_1_1JointRecorder.html", "classrecord__joints__node_1_1JointRecorder" ]
     ] ],
     [ "record_relative_pose", "namespacerecord__relative__pose.html", [
       [ "DockingPoseRecorder", "classrecord__relative__pose_1_1DockingPoseRecorder.html", "classrecord__relative__pose_1_1DockingPoseRecorder" ]

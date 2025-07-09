@@ -1,13 +1,22 @@
 var searchData=
 [
-  ['tablesegmentationnode_0',['TableSegmentationNode',['../classTableSegmentationNode.html',1,'']]],
-  ['task_1',['Task',['../classutils_1_1task_1_1Task.html',1,'utils::task']]],
-  ['taskstates_2',['TaskStates',['../classclean__table__task__manager_1_1CleanTableTM_1_1TaskStates.html',1,'clean_table_task_manager.CleanTableTM.TaskStates'],['../classreceptionist__task__manager_1_1ReceptionistTM_1_1TaskStates.html',1,'receptionist_task_manager.ReceptionistTM.TaskStates']]],
-  ['testhrimanager_3',['TestHriManager',['../classtest__hri__manager_1_1TestHriManager.html',1,'test_hri_manager']]],
-  ['testnode_4',['TestNode',['../classtest__env_1_1TestNode.html',1,'test_env']]],
-  ['testsnode_5',['TestsNode',['../classTestsNode.html',1,'']]],
-  ['testtaskmanager_6',['TestTaskManager',['../classnav__test_1_1TestTaskManager.html',1,'nav_test.TestTaskManager'],['../classtest__manager_1_1TestTaskManager.html',1,'test_manager.TestTaskManager'],['../classtest__manipulation__manager_1_1TestTaskManager.html',1,'test_manipulation_manager.TestTaskManager']]],
-  ['testvision_7',['TestVision',['../classtest__vision__manager_1_1TestVision.html',1,'test_vision_manager']]],
-  ['topicconfig_8',['TopicConfig',['../classutils_1_1config_1_1TopicConfig.html',1,'utils::config']]],
-  ['typeenum_9',['TypeEnum',['../classutils_1_1config_1_1TypeEnum.html',1,'utils::config']]]
+  ['serviceclientservernode_0',['ServiceClientServerNode',['../classrun__while__hearing_1_1ServiceClientServerNode.html',1,'run_while_hearing']]],
+  ['servo_1',['Servo',['../classServo_1_1Servo.html',1,'Servo']]],
+  ['servods4_2',['ServoDS4',['../classds4__demo_1_1ServoDS4.html',1,'ds4_demo']]],
+  ['shelf_3',['Shelf',['../classstoring__groceries__manager_1_1Shelf.html',1,'storing_groceries_manager']]],
+  ['shelfdetection_4',['ShelfDetection',['../classfrida__constants_1_1vision__classes_1_1ShelfDetection.html',1,'frida_constants.vision_classes.ShelfDetection'],['../classShelf__OCV_1_1ShelfDetection.html',1,'Shelf_OCV.ShelfDetection']]],
+  ['shelfdetector_5',['ShelfDetector',['../classShelf__OCV_1_1ShelfDetector.html',1,'Shelf_OCV']]],
+  ['showdetectionnode_6',['ShowDetectionNode',['../classshow__object__detection_1_1ShowDetectionNode.html',1,'show_object_detection']]],
+  ['simplemapserver_7',['SimpleMapServer',['../classmap__publisher_1_1SimpleMapServer.html',1,'map_publisher']]],
+  ['singletracker_8',['SingleTracker',['../classget__positon__3d_1_1SingleTracker.html',1,'get_positon_3d.SingleTracker'],['../classnew__tracker_1_1SingleTracker.html',1,'new_tracker.SingleTracker'],['../classold__tracker_1_1SingleTracker.html',1,'old_tracker.SingleTracker'],['../classtracker__node_1_1SingleTracker.html',1,'tracker_node.SingleTracker']]],
+  ['states_9',['States',['../classgpsr__task__manager_1_1GPSRTM_1_1States.html',1,'gpsr_task_manager::GPSRTM']]],
+  ['status_10',['Status',['../classutils_1_1status_1_1Status.html',1,'utils::status']]],
+  ['stm32_11',['Stm32',['../classdashgo__driver_1_1dashgo__stm32_1_1Stm32.html',1,'dashgo_driver::dashgo_stm32']]],
+  ['storinggroceriescommands_12',['StoringGroceriesCommands',['../classstoring__groceries__commands_1_1StoringGroceriesCommands.html',1,'storing_groceries_commands']]],
+  ['storinggroceriesmanager_13',['StoringGroceriesManager',['../classstoring__groceries__manager_1_1StoringGroceriesManager.html',1,'storing_groceries_manager']]],
+  ['storinggroceriestm_14',['StoringGroceriesTM',['../class__storing__groceries_1_1StoringGroceriesTM.html',1,'_storing_groceries']]],
+  ['subtaskconfig_15',['SubtaskConfig',['../classutils_1_1config_1_1SubtaskConfig.html',1,'utils::config']]],
+  ['subtaskmanager_16',['SubtaskManager',['../classutils_1_1subtask__manager_1_1SubtaskManager.html',1,'utils::subtask_manager']]],
+  ['subtaskmeta_17',['SubtaskMeta',['../classsubtask__managers_1_1subtask__meta_1_1SubtaskMeta.html',1,'subtask_managers::subtask_meta']]],
+  ['suppressstream_18',['SuppressStream',['../classYoloEObjectDetector_1_1SuppressStream.html',1,'YoloEObjectDetector']]]
 ];

@@ -1,7 +1,6 @@
 var classhelp__me__carry_1_1HelpMeCarryTM =
 [
     [ "__init__", "classhelp__me__carry_1_1HelpMeCarryTM.html#af1edd4e9927def01043e4c8831ecc47e", null ],
-    [ "navigate_to", "classhelp__me__carry_1_1HelpMeCarryTM.html#a9448e2543f285af43aa591430b674ea1", null ],
     [ "run", "classhelp__me__carry_1_1HelpMeCarryTM.html#aa01d302cff113bc099f246aa23cd85f9", null ],
     [ "current_attempts", "classhelp__me__carry_1_1HelpMeCarryTM.html#a40fc8b62c5160dfd8b986b5c825889ea", null ],
     [ "current_state", "classhelp__me__carry_1_1HelpMeCarryTM.html#a0e1597a8ab41e3000700b358538ba88b", null ],

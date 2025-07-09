@@ -7,6 +7,7 @@ var namespacefollow__person__node =
     [ "MAX_ERROR", "namespacefollow__person__node.html#ab451655c396f8f960bd7200a4c4b04cb", null ],
     [ "MAX_ROTATIONAL_VEL", "namespacefollow__person__node.html#a63f3789e3e174b5f2f3760788e0de37d", null ],
     [ "TIMEOUT", "namespacefollow__person__node.html#af6451d851044b737000c8c1fb6ca5f82", null ],
+    [ "XARM_JOINT_ANGLE_SERVICE", "namespacefollow__person__node.html#a90b67154da683ca1afd7e81d0ecd53ea", null ],
     [ "XARM_MOVEVELOCITY_SERVICE", "namespacefollow__person__node.html#af3059a3dad952d77f7c8cfc496f0fbad", null ],
     [ "XARM_SETMODE_SERVICE", "namespacefollow__person__node.html#a3094696c3de17bc4d279ba3bf1c2684f", null ],
     [ "XARM_SETSTATE_SERVICE", "namespacefollow__person__node.html#ab58be493cccf04e2d04d51c8d7e89053", null ]

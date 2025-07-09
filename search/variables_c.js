@@ -11,7 +11,7 @@ var searchData=
   ['last_5fperson_5fpos_8',['last_person_pos',['../classremove__person_1_1RemovePerson.html#af088d289f58e5c3478b0ebcc5a3f37ab',1,'remove_person::RemovePerson']]],
   ['last_5fpoint_9',['last_point',['../classpick__and__place_1_1manipulation__client_1_1ManipulationClient.html#a8d0c6670f79261ff2df342b156afb5dd',1,'pick_and_place::manipulation_client::ManipulationClient']]],
   ['last_5fprocess_5fpoint_10',['last_process_point',['../classpick__and__place_1_1manipulation__client_1_1ManipulationClient.html#a17c5ced9ff30f7997590572902602724',1,'pick_and_place::manipulation_client::ManipulationClient']]],
-  ['last_5freid_5fextraction_11',['last_reid_extraction',['../classtracker__node_1_1SingleTracker.html#a0c72e0bea30d639fb62efee3335f7e07',1,'tracker_node::SingleTracker']]],
+  ['last_5freid_5fextraction_11',['last_reid_extraction',['../classnew__tracker_1_1SingleTracker.html#a3ca2f9f396003e11a8c08526683657d0',1,'new_tracker.SingleTracker.last_reid_extraction()'],['../classtracker__node_1_1SingleTracker.html#a0c72e0bea30d639fb62efee3335f7e07',1,'tracker_node.SingleTracker.last_reid_extraction()']]],
   ['latest_5fperson_5fpoint_12',['latest_person_point',['../classperson__in__map_1_1PersonLocation.html#a3d95d28a680964e016292b66e5c2d07b',1,'person_in_map::PersonLocation']]],
   ['latest_5fpose_13',['latest_pose',['../classdock__to__handle_1_1DockToHandleNode.html#acd24507ba4bc1f40440f3aad02924f32',1,'dock_to_handle::DockToHandleNode']]],
   ['left_14',['LEFT',['../classmoondream__lib_1_1Position.html#afa63bcaef57a9b61f25841cabd2d7f8e',1,'moondream_lib.Position.LEFT()'],['../classserver_1_1Position.html#a7a1fe86336c2fc7eb469bc07c29069d5',1,'server.Position.LEFT()'],['../classmoondream__node_1_1Position.html#a48592042d7675fc4112e600c62334d60',1,'moondream_node.Position.LEFT()']]],
@@ -28,7 +28,8 @@ var searchData=
   ['llm_5fwrapper_5fservice_25',['LLM_WRAPPER_SERVICE',['../namespacefrida__constants_1_1hri__constants.html#ab7f90239db45986ae7bbd3da087ec35f',1,'frida_constants::hri_constants']]],
   ['local_5fcamera_5ftopic_26',['LOCAL_CAMERA_TOPIC',['../vision__constants__cpp_8hpp.html#aa6c0a553bc732505f4366846b12ce40f',1,'LOCAL_CAMERA_TOPIC():&#160;vision_constants_cpp.hpp'],['../namespacefrida__constants_1_1vision__constants.html#a36dd44d3155495112c9e8ccff83938c9',1,'frida_constants.vision_constants.LOCAL_CAMERA_TOPIC()']]],
   ['locations_27',['locations',['../classsubtask__managers_1_1gpsr__tasks_1_1GPSRTask.html#a8b51a39f981ad5f2bb8d52623f47a609',1,'subtask_managers.gpsr_tasks.GPSRTask.locations()'],['../classmove__to__location_1_1MoveActionServer.html#a612c52eca90a592652b028a7c63d2250',1,'move_to_location.MoveActionServer.locations()']]],
-  ['logger_28',['logger',['../classstoring__groceries__manager_1_1StoringGroceriesManager.html#acdb2a7bbe51bf5dc7448f17d57997359',1,'storing_groceries_manager::StoringGroceriesManager']]],
-  ['logsoftmax_29',['logsoftmax',['../classutils_1_1CrossEntropyLabelSmooth.html#ab5db0b598734ef8bc6a2b57faacd4109',1,'utils::CrossEntropyLabelSmooth']]],
-  ['lying_5fdown_30',['LYING_DOWN',['../classfrida__constants_1_1vision__enums_1_1Poses.html#aad2f660f824db98fc46db9ca84455362',1,'frida_constants::vision_enums::Poses']]]
+  ['lock_28',['lock',['../classrecord__joints__node_1_1JointRecorder.html#a89fd16be1b5bc48c3949c233594ee3eb',1,'record_joints_node::JointRecorder']]],
+  ['logger_29',['logger',['../classstoring__groceries__manager_1_1StoringGroceriesManager.html#acdb2a7bbe51bf5dc7448f17d57997359',1,'storing_groceries_manager::StoringGroceriesManager']]],
+  ['logsoftmax_30',['logsoftmax',['../classutils_1_1CrossEntropyLabelSmooth.html#ab5db0b598734ef8bc6a2b57faacd4109',1,'utils::CrossEntropyLabelSmooth']]],
+  ['lying_5fdown_31',['LYING_DOWN',['../classfrida__constants_1_1vision__enums_1_1Poses.html#aad2f660f824db98fc46db9ca84455362',1,'frida_constants::vision_enums::Poses']]]
 ];

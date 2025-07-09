@@ -17,6 +17,9 @@ var namespaces_dup =
     [ "call_pick_action", "namespacecall__pick__action.html", "namespacecall__pick__action" ],
     [ "call_pose_goal", "namespacecall__pose__goal.html", "namespacecall__pose__goal" ],
     [ "camera_test", "namespacecamera__test.html", "namespacecamera__test" ],
+    [ "carry", "namespacecarry.html", [
+      [ "generate_launch_description", "namespacecarry.html#a13d8f63b1ec69c76e488d9b0960dc65c", null ]
+    ] ],
     [ "carry_my", "namespacecarry__my.html", [
       [ "generate_launch_description", "namespacecarry__my.html#a44586ac38fc8f4089bcb5c467200a1c5", null ]
     ] ],
@@ -183,6 +186,7 @@ var namespaces_dup =
     [ "navigation_composable", "namespacenavigation__composable.html", [
       [ "generate_launch_description", "namespacenavigation__composable.html#a3b4a73e1f78bcd214e5259046b8a0a7f", null ]
     ] ],
+    [ "new_tracker", "namespacenew__tracker.html", "namespacenew__tracker" ],
     [ "object_detector_combined", "namespaceobject__detector__combined.html", [
       [ "generate_launch_description", "namespaceobject__detector__combined.html#a89d204316b51e6caf017cd1f6253e538", null ]
     ] ],
@@ -191,6 +195,7 @@ var namespaces_dup =
       [ "generate_launch_description", "namespaceobjectDetectionHandler.html#a57f57849cc3ad33855b1ebfb1fa9f347", null ]
     ] ],
     [ "ObjectDetector", "namespaceObjectDetector.html", "namespaceObjectDetector" ],
+    [ "old_tracker", "namespaceold__tracker.html", "namespaceold__tracker" ],
     [ "perception_3d", "namespaceperception__3d.html", [
       [ "generate_launch_description", "namespaceperception__3d.html#a0e9c55f0d673d8e39208565acad51d8d", null ]
     ] ],
@@ -211,6 +216,7 @@ var namespaces_dup =
       [ "generate_launch_description", "namespacereceptionist__launch.html#a1d8b268d07aad010deb06846832876f6", null ]
     ] ],
     [ "receptionist_task_manager", "namespacereceptionist__task__manager.html", "namespacereceptionist__task__manager" ],
+    [ "record_joints_node", "namespacerecord__joints__node.html", "namespacerecord__joints__node" ],
     [ "record_relative_pose", "namespacerecord__relative__pose.html", "namespacerecord__relative__pose" ],
     [ "reid_model", "namespacereid__model.html", [
       [ "compare_images", "namespacereid__model.html#a09e0afec43f563971591076d0a91a556", null ],

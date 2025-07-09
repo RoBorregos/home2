@@ -1,7 +1,5 @@
 var searchData=
 [
-  ['object_5fdetector_5fnode_0',['object_detector_node',['../classobject__detector__node_1_1object__detector__node.html',1,'object_detector_node']]],
-  ['objectdectector_1',['ObjectDectector',['../classObjectDetector_1_1ObjectDectector.html',1,'ObjectDetector']]],
-  ['objectdectectorparams_2',['ObjectDectectorParams',['../classObjectDetector_1_1ObjectDectectorParams.html',1,'ObjectDetector']]],
-  ['opencvshelfdetector_3',['OpenCVShelfDetector',['../classShelf__OCV_1_1OpenCVShelfDetector.html',1,'Shelf_OCV']]]
+  ['navigationtasks_0',['NavigationTasks',['../classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html',1,'subtask_managers::nav_tasks']]],
+  ['nodeparams_1',['NodeParams',['../classlocal__camera_1_1NodeParams.html',1,'local_camera.NodeParams'],['../classobject__detector__node_1_1NodeParams.html',1,'object_detector_node.NodeParams'],['../classzero__shot__object__detector__node_1_1NodeParams.html',1,'zero_shot_object_detector_node.NodeParams']]]
 ];

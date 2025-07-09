@@ -7,5 +7,6 @@ var namespaceface__recognition__node =
     [ "MATCH_THRESHOLD", "namespaceface__recognition__node.html#a7d4636518fc66a1e7d866bd84deb7929", null ],
     [ "MAX_DEGREE", "namespaceface__recognition__node.html#a56617f4391f49f52c38a3bdabc308aad", null ],
     [ "PATH", "namespaceface__recognition__node.html#a2cdad657ac233e7e409732e4566479fb", null ],
+    [ "RESIZE_FACTOR", "namespaceface__recognition__node.html#a33dbc1cbcf289e06efcd75671ebea200", null ],
     [ "TRACK_THRESHOLD", "namespaceface__recognition__node.html#a036fbe5f51cfd2209b19a270357d2b35", null ]
 ];

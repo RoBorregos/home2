@@ -94,6 +94,7 @@ $(document).ready(function(){initNavTree('classreceptionist__task__manager_1_1Re
 <a href="#nested-classes">Classes</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
+<a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="classreceptionist__task__manager_1_1ReceptionistTM-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">receptionist_task_manager.ReceptionistTM Class Reference</div></div>
 </div><!--header-->
@@ -143,8 +144,21 @@ Public Attributes</h2></td></tr>
 <tr class="separator:afb7904b459f0fa9c401091ab558ada09"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a983e79d3cff0aa4d10cd4f3949a3a585"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreceptionist__task__manager_1_1ReceptionistTM.html#a983e79d3cff0aa4d10cd4f3949a3a585">message</a></td></tr>
 <tr class="separator:a983e79d3cff0aa4d10cd4f3949a3a585"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a47c71fd84cdfc309871a5285b757a924"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreceptionist__task__manager_1_1ReceptionistTM.html#a47c71fd84cdfc309871a5285b757a924">state_start_time</a></td></tr>
+<tr class="separator:a47c71fd84cdfc309871a5285b757a924"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a26d52d1dcfa8f9fc0e1abf24235ac834"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreceptionist__task__manager_1_1ReceptionistTM.html#a26d52d1dcfa8f9fc0e1abf24235ac834">state_times</a></td></tr>
+<tr class="separator:a26d52d1dcfa8f9fc0e1abf24235ac834"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2a842283af9e1c99663df3c8c9a69a67"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreceptionist__task__manager_1_1ReceptionistTM.html#a2a842283af9e1c99663df3c8c9a69a67">total_start_time</a></td></tr>
+<tr class="separator:a2a842283af9e1c99663df3c8c9a69a67"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:accd77c37ba4827d46fb60da17c4997ce"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreceptionist__task__manager_1_1ReceptionistTM.html#accd77c37ba4827d46fb60da17c4997ce">previous_state</a></td></tr>
+<tr class="separator:accd77c37ba4827d46fb60da17c4997ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa165246e0f665c6fa1ba8ced81bdb010"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreceptionist__task__manager_1_1ReceptionistTM.html#aa165246e0f665c6fa1ba8ced81bdb010">current_state</a></td></tr>
 <tr class="separator:aa165246e0f665c6fa1ba8ced81bdb010"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
+Protected Member Functions</h2></td></tr>
+<tr class="memitem:a5ed6b2c83091705a0f7a168a1d6922f2"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreceptionist__task__manager_1_1ReceptionistTM.html#a5ed6b2c83091705a0f7a168a1d6922f2">_track_state_change</a> (self, str new_state)</td></tr>
+<tr class="separator:a5ed6b2c83091705a0f7a168a1d6922f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><pre class="fragment">Class to manage the receptionist task</pre> </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
@@ -167,6 +181,42 @@ Public Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a5ed6b2c83091705a0f7a168a1d6922f2" name="a5ed6b2c83091705a0f7a168a1d6922f2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5ed6b2c83091705a0f7a168a1d6922f2">&#9670;&#160;</a></span>_track_state_change()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def receptionist_task_manager.ReceptionistTM._track_state_change </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>new_state</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Track state changes and time spent in each state</pre> 
+</div>
+</div>
 <a id="aec23bc7da8164ea1dcf7354333951b94" name="aec23bc7da8164ea1dcf7354333951b94"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aec23bc7da8164ea1dcf7354333951b94">&#9670;&#160;</a></span>get_guest()</h2>
 
@@ -390,6 +440,20 @@ Public Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="accd77c37ba4827d46fb60da17c4997ce" name="accd77c37ba4827d46fb60da17c4997ce"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#accd77c37ba4827d46fb60da17c4997ce">&#9670;&#160;</a></span>previous_state</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">receptionist_task_manager.ReceptionistTM.previous_state</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="afb7904b459f0fa9c401091ab558ada09" name="afb7904b459f0fa9c401091ab558ada09"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#afb7904b459f0fa9c401091ab558ada09">&#9670;&#160;</a></span>running_task</h2>
 
@@ -418,6 +482,34 @@ Public Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="a47c71fd84cdfc309871a5285b757a924" name="a47c71fd84cdfc309871a5285b757a924"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a47c71fd84cdfc309871a5285b757a924">&#9670;&#160;</a></span>state_start_time</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">receptionist_task_manager.ReceptionistTM.state_start_time</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a26d52d1dcfa8f9fc0e1abf24235ac834" name="a26d52d1dcfa8f9fc0e1abf24235ac834"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a26d52d1dcfa8f9fc0e1abf24235ac834">&#9670;&#160;</a></span>state_times</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">receptionist_task_manager.ReceptionistTM.state_times</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a899a5b750273b26607c5af5f9d0f8062" name="a899a5b750273b26607c5af5f9d0f8062"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a899a5b750273b26607c5af5f9d0f8062">&#9670;&#160;</a></span>subtask_manager</h2>
 
@@ -426,6 +518,20 @@ Public Attributes</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">receptionist_task_manager.ReceptionistTM.subtask_manager</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a2a842283af9e1c99663df3c8c9a69a67" name="a2a842283af9e1c99663df3c8c9a69a67"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2a842283af9e1c99663df3c8c9a69a67">&#9670;&#160;</a></span>total_start_time</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">receptionist_task_manager.ReceptionistTM.total_start_time</td>
         </tr>
       </table>
 </div><div class="memdoc">

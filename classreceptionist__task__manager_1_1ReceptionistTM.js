@@ -2,6 +2,7 @@ var classreceptionist__task__manager_1_1ReceptionistTM =
 [
     [ "TaskStates", "classreceptionist__task__manager_1_1ReceptionistTM_1_1TaskStates.html", null ],
     [ "__init__", "classreceptionist__task__manager_1_1ReceptionistTM.html#a2b9ee1804316d833f38eb12d59344dbe", null ],
+    [ "_track_state_change", "classreceptionist__task__manager_1_1ReceptionistTM.html#a5ed6b2c83091705a0f7a168a1d6922f2", null ],
     [ "get_guest", "classreceptionist__task__manager_1_1ReceptionistTM.html#aec23bc7da8164ea1dcf7354333951b94", null ],
     [ "navigate_to", "classreceptionist__task__manager_1_1ReceptionistTM.html#af6c0f025f4dbfbad09c229d0f07a81a7", null ],
     [ "run", "classreceptionist__task__manager_1_1ReceptionistTM.html#a95b3bdec96a9c00e7c0f8ae3d8578f27", null ],
@@ -13,7 +14,11 @@ var classreceptionist__task__manager_1_1ReceptionistTM =
     [ "current_state", "classreceptionist__task__manager_1_1ReceptionistTM.html#aa165246e0f665c6fa1ba8ced81bdb010", null ],
     [ "guests", "classreceptionist__task__manager_1_1ReceptionistTM.html#aaaf73634eb4b4fa62a356612afac93fe", null ],
     [ "message", "classreceptionist__task__manager_1_1ReceptionistTM.html#a983e79d3cff0aa4d10cd4f3949a3a585", null ],
+    [ "previous_state", "classreceptionist__task__manager_1_1ReceptionistTM.html#accd77c37ba4827d46fb60da17c4997ce", null ],
     [ "running_task", "classreceptionist__task__manager_1_1ReceptionistTM.html#afb7904b459f0fa9c401091ab558ada09", null ],
     [ "seat_angles", "classreceptionist__task__manager_1_1ReceptionistTM.html#a8ec49a6e598081f8b54434c842631a3a", null ],
-    [ "subtask_manager", "classreceptionist__task__manager_1_1ReceptionistTM.html#a899a5b750273b26607c5af5f9d0f8062", null ]
+    [ "state_start_time", "classreceptionist__task__manager_1_1ReceptionistTM.html#a47c71fd84cdfc309871a5285b757a924", null ],
+    [ "state_times", "classreceptionist__task__manager_1_1ReceptionistTM.html#a26d52d1dcfa8f9fc0e1abf24235ac834", null ],
+    [ "subtask_manager", "classreceptionist__task__manager_1_1ReceptionistTM.html#a899a5b750273b26607c5af5f9d0f8062", null ],
+    [ "total_start_time", "classreceptionist__task__manager_1_1ReceptionistTM.html#a2a842283af9e1c99663df3c8c9a69a67", null ]
 ];
