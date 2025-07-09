@@ -88,6 +88,7 @@ private:
   std::shared_ptr<CallServicesNode> call_services_node;
   geometry_msgs::msg::PoseStamped pose_;
   tf2_ros::Buffer::SharedPtr tf_buffer_;
+  std::shared_ptr<tf2_ros::TransformListener> tf_listener;
 
   rclcpp::TimerBase::SharedPtr timer;
 
@@ -114,6 +115,8 @@ public:
     this->pose_pub_ = this->create_publisher<geometry_msgs::msg::PoseStamped>(
         "/door_handle_pose", 10);
     this->tf_buffer_ = std::make_shared<tf2_ros::Buffer>(this->get_clock());
+    this->tf_listener =
+        std::make_shared<tf2_ros::TransformListener>(*this->tf_buffer_);
 
     this->timer = this->create_wall_timer(
         std::chrono::milliseconds(2500),
@@ -152,8 +155,11 @@ public:
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(
         new pcl::PointCloud<pcl::PointXYZ>());
     // transform to map frame
+    RCLCPP_INFO(this->get_logger(),
+                "Transforming point cloud to map frame from frame: %s",
+                result->cloud.header.frame_id.c_str());
     if (!this->tf_buffer_->canTransform("map", result->cloud.header.frame_id,
-                                        tf2::TimePointZero)) {
+             tf2::TimePointZero)) {
       RCLCPP_ERROR(this->get_logger(),
                    "Cannot transform point cloud to map frame");
       return;
