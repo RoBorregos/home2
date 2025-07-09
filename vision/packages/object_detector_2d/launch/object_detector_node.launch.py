@@ -8,9 +8,7 @@ from launch.substitutions import LaunchConfiguration
 
 
 def generate_launch_description():
-    yolo_model_path = LaunchConfiguration(
-        "yolo_model_path", default="tmr_30classes_v2.pt"
-    )
+    yolo_model_path = LaunchConfiguration("yolo_model_path", default="best-detect.pt")
     config = os.path.join(
         get_package_share_directory("object_detector_2d"), "config", "parameters.yaml"
     )

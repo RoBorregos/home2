@@ -279,6 +279,7 @@ class FaceRecognition(Node):
 
     def run(self) -> None:
         """Run face recognition algorithm"""
+        self.get_logger().info("Papu update 4")
 
         if self.image is None:
             self.get_logger().info("No image")
