@@ -118,6 +118,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a02ef1d51068b24c43d4cf797716d4972"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad2da055f7b664be1145348e9cc728cd6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="macros_8hpp.html#a27de83e41cde776d5568e8c42ac061bc">STATUS_RESPONSE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTableSegmentationNode.html#ad2da055f7b664be1145348e9cc728cd6">DistanceFilterFromPoint</a> (<a class="el" href="macros_8hpp.html#aa99f2147b3f775316d89971291dbf174">_IN_</a> const std::shared_ptr&lt; pcl::PointCloud&lt; pcl::PointXYZ &gt; &gt; cloud, <a class="el" href="macros_8hpp.html#aa99f2147b3f775316d89971291dbf174">_IN_</a> const pcl::PointXYZ point, <a class="el" href="macros_8hpp.html#a0e4576f5257306df258a5cc13f56ee7f">_OUT_</a> std::shared_ptr&lt; pcl::PointCloud&lt; pcl::PointXYZ &gt; &gt; cloud_out, const float distance=0.5, const float min_height=0.1, const float max_height=2.5)</td></tr>
 <tr class="separator:ad2da055f7b664be1145348e9cc728cd6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a27e261d285af15e5333aa646d5cb4c83"><td class="memItemLeft" align="right" valign="top"><a class="el" href="macros_8hpp.html#a27de83e41cde776d5568e8c42ac061bc">STATUS_RESPONSE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTableSegmentationNode.html#a27e261d285af15e5333aa646d5cb4c83">vertical_plane</a> (<a class="el" href="macros_8hpp.html#aa99f2147b3f775316d89971291dbf174">_IN_</a> const std::shared_ptr&lt; pcl::PointCloud&lt; pcl::PointXYZ &gt; &gt; cloud, <a class="el" href="macros_8hpp.html#a0e4576f5257306df258a5cc13f56ee7f">_OUT_</a> const std::shared_ptr&lt; pcl::PointCloud&lt; pcl::PointXYZ &gt; &gt; cloud_out)</td></tr>
+<tr class="separator:a27e261d285af15e5333aa646d5cb4c83"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4450d77354d9cf622702fce188bbabf4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTableSegmentationNode.html#a4450d77354d9cf622702fce188bbabf4">remove_vertical_plane</a> (const std::shared_ptr&lt; rmw_request_id_t &gt; request_header, const std::shared_ptr&lt; frida_interfaces::srv::RemoveVerticalPlane::Request &gt; request, const std::shared_ptr&lt; frida_interfaces::srv::RemoveVerticalPlane::Response &gt; response)</td></tr>
+<tr class="separator:a4450d77354d9cf622702fce188bbabf4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a76ebbdf9f87df71b5a0c44b7dd56ff61"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTableSegmentationNode.html#a76ebbdf9f87df71b5a0c44b7dd56ff61">get_cloud_without_plane</a> (<a class="el" href="macros_8hpp.html#aa99f2147b3f775316d89971291dbf174">_IN_</a> pcl::PointCloud&lt; pcl::PointXYZ &gt;::Ptr cloud_in, <a class="el" href="macros_8hpp.html#a0e4576f5257306df258a5cc13f56ee7f">_OUT_</a> pcl::PointCloud&lt; pcl::PointXYZ &gt;::Ptr cloud_out)</td></tr>
 <tr class="separator:a76ebbdf9f87df71b5a0c44b7dd56ff61"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7aa040aa0740e0ab8475c8a465947648"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classTableSegmentationNode.html#a7aa040aa0740e0ab8475c8a465947648">pointCloudCallback</a> (const sensor_msgs::msg::PointCloud2::SharedPtr msg)</td></tr>
@@ -667,6 +671,48 @@ Static Public Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="a4450d77354d9cf622702fce188bbabf4" name="a4450d77354d9cf622702fce188bbabf4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4450d77354d9cf622702fce188bbabf4">&#9670;&#160;</a></span>remove_vertical_plane()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void TableSegmentationNode::remove_vertical_plane </td>
+          <td>(</td>
+          <td class="paramtype">const std::shared_ptr&lt; rmw_request_id_t &gt;&#160;</td>
+          <td class="paramname"><em>request_header</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::shared_ptr&lt; frida_interfaces::srv::RemoveVerticalPlane::Request &gt;&#160;</td>
+          <td class="paramname"><em>request</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const std::shared_ptr&lt; frida_interfaces::srv::RemoveVerticalPlane::Response &gt;&#160;</td>
+          <td class="paramname"><em>response</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="aa7ca0270eeb7a2f8a37be9153d623047" name="aa7ca0270eeb7a2f8a37be9153d623047"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aa7ca0270eeb7a2f8a37be9153d623047">&#9670;&#160;</a></span>savePointCloud()</h2>
 
@@ -777,6 +823,42 @@ Static Public Member Functions</h2></td></tr>
           <td></td>
           <td class="paramtype">const std::shared_ptr&lt; frida_interfaces::srv::Test::Response &gt;&#160;</td>
           <td class="paramname"><em>response</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a27e261d285af15e5333aa646d5cb4c83" name="a27e261d285af15e5333aa646d5cb4c83"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a27e261d285af15e5333aa646d5cb4c83">&#9670;&#160;</a></span>vertical_plane()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="macros_8hpp.html#a27de83e41cde776d5568e8c42ac061bc">STATUS_RESPONSE</a> TableSegmentationNode::vertical_plane </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="macros_8hpp.html#aa99f2147b3f775316d89971291dbf174">_IN_</a> const std::shared_ptr&lt; pcl::PointCloud&lt; pcl::PointXYZ &gt; &gt;&#160;</td>
+          <td class="paramname"><em>cloud</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="macros_8hpp.html#a0e4576f5257306df258a5cc13f56ee7f">_OUT_</a> const std::shared_ptr&lt; pcl::PointCloud&lt; pcl::PointXYZ &gt; &gt;&#160;</td>
+          <td class="paramname"><em>cloud_out</em>&#160;</td>
         </tr>
         <tr>
           <td></td>

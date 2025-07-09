@@ -59,6 +59,7 @@ var namespaces_dup =
     [ "display_sim_tmr2025", "namespacedisplay__sim__tmr2025.html", [
       [ "generate_launch_description", "namespacedisplay__sim__tmr2025.html#aa678e8e2cd36d56ee50a024b3782ee92", null ]
     ] ],
+    [ "dock_to_handle", "namespacedock__to__handle.html", "namespacedock__to__handle" ],
     [ "downsample_pc", "namespacedownsample__pc.html", [
       [ "generate_launch_description", "namespacedownsample__pc.html#ac2b4cab7e9652eb5d6142f99b1981c55", null ]
     ] ],
@@ -210,6 +211,7 @@ var namespaces_dup =
       [ "generate_launch_description", "namespacereceptionist__launch.html#a1d8b268d07aad010deb06846832876f6", null ]
     ] ],
     [ "receptionist_task_manager", "namespacereceptionist__task__manager.html", "namespacereceptionist__task__manager" ],
+    [ "record_relative_pose", "namespacerecord__relative__pose.html", "namespacerecord__relative__pose" ],
     [ "reid_model", "namespacereid__model.html", [
       [ "compare_images", "namespacereid__model.html#a09e0afec43f563971591076d0a91a556", null ],
       [ "compare_images_batch", "namespacereid__model.html#aa51284f7e83456e804bdfabfb93c06fd", null ],

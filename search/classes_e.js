@@ -15,5 +15,6 @@ var searchData=
   ['position_12',['Position',['../classmoondream__lib_1_1Position.html',1,'moondream_lib.Position'],['../classmoondream__node_1_1Position.html',1,'moondream_node.Position'],['../classserver_1_1Position.html',1,'server.Position']]],
   ['pourmanager_13',['PourManager',['../classPourManager_1_1PourManager.html',1,'PourManager']]],
   ['pourmotionserver_14',['PourMotionServer',['../classpick__and__place_1_1pour__server_1_1PourMotionServer.html',1,'pick_and_place::pour_server']]],
-  ['publishnode_15',['PublishNode',['../classPublishNode.html',1,'']]]
+  ['publishhandlea_15',['PublishHandleA',['../classPublishHandleA.html',1,'']]],
+  ['publishnode_16',['PublishNode',['../classPublishNode.html',1,'']]]
 ];

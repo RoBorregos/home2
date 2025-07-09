@@ -35,6 +35,7 @@ var manipulation__constants__cpp_8hpp =
     [ "REMOVE_COLLISION_OBJECT_SERVICE", "manipulation__constants__cpp_8hpp.html#a3278663f49e52caa7b63fddd86208864", null ],
     [ "REMOVE_PC_TEST", "manipulation__constants__cpp_8hpp.html#aa38dc20c2ce574b5061d4a0b9f632640", null ],
     [ "REMOVE_PLANE_SERVICE", "manipulation__constants__cpp_8hpp.html#a7333d1769dc72f42e6b2eaf8b9f8ec72", null ],
+    [ "REMOVE_VERTICAL_PLANE_SERVICE", "manipulation__constants__cpp_8hpp.html#aa149ebde0ecfaeff79ab682a8dc0b3fc", null ],
     [ "SET_JOINT_VELOCITY_SERVICE", "manipulation__constants__cpp_8hpp.html#a182079f451a91bb8e104a4288e1d3b17", null ],
     [ "TOGGLE_SERVO_SERVICE", "manipulation__constants__cpp_8hpp.html#adcf969b505b3e8538db5c95bfec95c04", null ],
     [ "XARM_MOVEVELOCITY_SERVICE", "manipulation__constants__cpp_8hpp.html#a74f09d46b8d1cce7645ab1ead0245522", null ],

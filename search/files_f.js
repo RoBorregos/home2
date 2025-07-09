@@ -32,5 +32,6 @@ var searchData=
   ['pourmanager_2epy_29',['PourManager.py',['../PourManager_8py.html',1,'']]],
   ['pourmotion_2eaction_30',['PourMotion.action',['../PourMotion_8action.html',1,'']]],
   ['pourparams_2emsg_31',['PourParams.msg',['../PourParams_8msg.html',1,'']]],
-  ['publish_5fpcl_2ecpp_32',['publish_pcl.cpp',['../publish__pcl_8cpp.html',1,'']]]
+  ['publish_5fhandle_2ecpp_32',['publish_handle.cpp',['../publish__handle_8cpp.html',1,'']]],
+  ['publish_5fpcl_2ecpp_33',['publish_pcl.cpp',['../publish__pcl_8cpp.html',1,'']]]
 ];

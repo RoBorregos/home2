@@ -17,8 +17,10 @@ var searchData=
   ['display_5freal_5ftmr2025_2elaunch_2epy_14',['display_real_tmr2025.launch.py',['../display__real__tmr2025_8launch_8py.html',1,'']]],
   ['display_5fsim_2elaunch_2epy_15',['display_sim.launch.py',['../display__sim_8launch_8py.html',1,'']]],
   ['display_5fsim_5ftmr2025_2elaunch_2epy_16',['display_sim_tmr2025.launch.py',['../display__sim__tmr2025_8launch_8py.html',1,'']]],
-  ['down_5fsample_5fpc_2ecpp_17',['down_sample_pc.cpp',['../down__sample__pc_8cpp.html',1,'']]],
-  ['downsample_5fpc_2elaunch_2epy_18',['downsample_pc.launch.py',['../downsample__pc_8launch_8py.html',1,'']]],
-  ['ds4_5fdemo_2epy_19',['ds4_demo.py',['../ds4__demo_8py.html',1,'']]],
-  ['dualshock_5fcmd_5fvel_2elaunch_2epy_20',['dualshock_cmd_vel.launch.py',['../dualshock__cmd__vel_8launch_8py.html',1,'']]]
+  ['dock_5fto_5fhandle_2epy_17',['dock_to_handle.py',['../dock__to__handle_8py.html',1,'']]],
+  ['docktohandle_2esrv_18',['DockToHandle.srv',['../DockToHandle_8srv.html',1,'']]],
+  ['down_5fsample_5fpc_2ecpp_19',['down_sample_pc.cpp',['../down__sample__pc_8cpp.html',1,'']]],
+  ['downsample_5fpc_2elaunch_2epy_20',['downsample_pc.launch.py',['../downsample__pc_8launch_8py.html',1,'']]],
+  ['ds4_5fdemo_2epy_21',['ds4_demo.py',['../ds4__demo_8py.html',1,'']]],
+  ['dualshock_5fcmd_5fvel_2elaunch_2epy_22',['dualshock_cmd_vel.launch.py',['../dualshock__cmd__vel_8launch_8py.html',1,'']]]
 ];

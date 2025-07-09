@@ -41,6 +41,9 @@ var annotated_dup =
     [ "dashgo_driver2", "namespacedashgo__driver2.html", [
       [ "DashgoDriver", "classdashgo__driver2_1_1DashgoDriver.html", "classdashgo__driver2_1_1DashgoDriver" ]
     ] ],
+    [ "dock_to_handle", "namespacedock__to__handle.html", [
+      [ "DockToHandleNode", "classdock__to__handle_1_1DockToHandleNode.html", "classdock__to__handle_1_1DockToHandleNode" ]
+    ] ],
     [ "ds4_demo", "namespaceds4__demo.html", [
       [ "ServoDS4", "classds4__demo_1_1ServoDS4.html", "classds4__demo_1_1ServoDS4" ]
     ] ],
@@ -225,6 +228,9 @@ var annotated_dup =
       [ "Guest", "classreceptionist__task__manager_1_1Guest.html", "classreceptionist__task__manager_1_1Guest" ],
       [ "ReceptionistTM", "classreceptionist__task__manager_1_1ReceptionistTM.html", "classreceptionist__task__manager_1_1ReceptionistTM" ]
     ] ],
+    [ "record_relative_pose", "namespacerecord__relative__pose.html", [
+      [ "DockingPoseRecorder", "classrecord__relative__pose_1_1DockingPoseRecorder.html", "classrecord__relative__pose_1_1DockingPoseRecorder" ]
+    ] ],
     [ "remove_person", "namespaceremove__person.html", [
       [ "RemovePerson", "classremove__person_1_1RemovePerson.html", "classremove__person_1_1RemovePerson" ]
     ] ],
@@ -371,6 +377,7 @@ var annotated_dup =
     [ "DownSamplePointCloud", "classDownSamplePointCloud.html", "classDownSamplePointCloud" ],
     [ "HandlerParams", "structHandlerParams.html", "structHandlerParams" ],
     [ "IgnoreLaser", "classIgnoreLaser.html", "classIgnoreLaser" ],
+    [ "PublishHandleA", "classPublishHandleA.html", "classPublishHandleA" ],
     [ "PublishNode", "classPublishNode.html", "classPublishNode" ],
     [ "TableSegmentationNode", "classTableSegmentationNode.html", "classTableSegmentationNode" ],
     [ "TestsNode", "classTestsNode.html", "classTestsNode" ]

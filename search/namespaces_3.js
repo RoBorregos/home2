@@ -12,7 +12,8 @@ var searchData=
   ['display_5freal_5ftmr2025_9',['display_real_tmr2025',['../namespacedisplay__real__tmr2025.html',1,'']]],
   ['display_5fsim_10',['display_sim',['../namespacedisplay__sim.html',1,'']]],
   ['display_5fsim_5ftmr2025_11',['display_sim_tmr2025',['../namespacedisplay__sim__tmr2025.html',1,'']]],
-  ['downsample_5fpc_12',['downsample_pc',['../namespacedownsample__pc.html',1,'']]],
-  ['ds4_5fdemo_13',['ds4_demo',['../namespaceds4__demo.html',1,'']]],
-  ['dualshock_5fcmd_5fvel_14',['dualshock_cmd_vel',['../namespacedualshock__cmd__vel.html',1,'']]]
+  ['dock_5fto_5fhandle_12',['dock_to_handle',['../namespacedock__to__handle.html',1,'']]],
+  ['downsample_5fpc_13',['downsample_pc',['../namespacedownsample__pc.html',1,'']]],
+  ['ds4_5fdemo_14',['ds4_demo',['../namespaceds4__demo.html',1,'']]],
+  ['dualshock_5fcmd_5fvel_15',['dualshock_cmd_vel',['../namespacedualshock__cmd__vel.html',1,'']]]
 ];

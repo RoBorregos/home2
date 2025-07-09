@@ -11,6 +11,8 @@ var classTableSegmentationNode =
     [ "pointCloudCallback", "classTableSegmentationNode.html#a7aa040aa0740e0ab8475c8a465947648", null ],
     [ "radialFilter", "classTableSegmentationNode.html#a54e5a82753da294e3d96a948d42de781", null ],
     [ "remove_plane", "classTableSegmentationNode.html#a1b95444ecef6229dc0b613c0a33eb685", null ],
+    [ "remove_vertical_plane", "classTableSegmentationNode.html#a4450d77354d9cf622702fce188bbabf4", null ],
     [ "test_cluster", "classTableSegmentationNode.html#a02ef1d51068b24c43d4cf797716d4972", null ],
-    [ "test_service", "classTableSegmentationNode.html#a026b42222e8ada5efdb3004e9565c6f6", null ]
+    [ "test_service", "classTableSegmentationNode.html#a026b42222e8ada5efdb3004e9565c6f6", null ],
+    [ "vertical_plane", "classTableSegmentationNode.html#a27e261d285af15e5333aa646d5cb4c83", null ]
 ];
