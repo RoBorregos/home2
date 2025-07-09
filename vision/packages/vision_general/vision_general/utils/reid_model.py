@@ -9,7 +9,6 @@ from PIL import Image
 from torch.autograd import Variable
 from scipy.spatial.distance import cosine
 import pathlib
-import timm
 
 version = torch.__version__
 use_swin = True
