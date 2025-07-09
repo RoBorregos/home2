@@ -509,7 +509,8 @@ public:
     seg.setOptimizeCoefficients(true);
     seg.setModelType(pcl::SACMODEL_PARALLEL_PLANE);
     seg.setMethodType(pcl::SAC_RANSAC);
-    seg.setEpsAngle(5.0f * (M_PI / 180.0f));
+    // eps to 90 degrees
+    seg.setEpsAngle(90.0 * M_PI / 180.0);
     seg.setAxis(Eigen::Vector3f::UnitZ());
     seg.setMaxIterations(1000);
     seg.setDistanceThreshold(0.03);
@@ -566,16 +567,41 @@ public:
     RCLCPP_INFO(this->get_logger(), "Found %zu clusters in vertical plane",
                 cluster_indices.size());
     // get the largest cluster
-    int largest_cluster_index = 0;
-    size_t largest_cluster_size = 0;
+    // int largest_cluster_index = 0;
+    // size_t largest_cluster_size = 0;
+    // for (size_t i = 0; i < cluster_indices.size(); ++i) {
+    //   if (cluster_indices[i].indices.size() > largest_cluster_size) {
+    //     largest_cluster_size = cluster_indices[i].indices.size();
+    //     largest_cluster_index = i;
+    //   }
+    // }
+    // get closest cluster to the robot 
+    int largest_cluster_index = -1;
+    size_t closest_cluster_distance = 0;
+    pcl::PointXYZ robot_position(0.0, 0.0, 0.0);
     for (size_t i = 0; i < cluster_indices.size(); ++i) {
-      if (cluster_indices[i].indices.size() > largest_cluster_size) {
-        largest_cluster_size = cluster_indices[i].indices.size();
+      pcl::PointXYZ cluster_center(0.0, 0.0, 0.0);
+      for (const auto &index : cluster_indices[i].indices) {
+        cluster_center.x += cloud_out->points[index].x;
+        cluster_center.y += cloud_out->points[index].y;
+        cluster_center.z += cloud_out->points[index].z;
+      }
+      // cluster_center.x /= cluster_indices[i].indices.size();
+      // cluster_center.y /= cluster_indices[i].indices.size();
+      // cluster_center.z /= cluster_indices[i].indices.size();
+      float dx = cluster_center.x - robot_position.x;
+      float dy = cluster_center.y - robot_position.y;
+      float dz = cluster_center.z - robot_position.z;
+      float distance = std::sqrt(dx*dx + dy*dy + dz*dz);
+      if (distance < closest_cluster_distance ||
+          largest_cluster_index == -1) {
+        closest_cluster_distance = distance;
         largest_cluster_index = i;
       }
     }
-    RCLCPP_INFO(this->get_logger(), "Largest cluster has %zu points",
-                largest_cluster_size);
+
+    RCLCPP_INFO(this->get_logger(), "Largest cluster has %zu points", 
+                cluster_indices[largest_cluster_index].indices.size());
     // extract the largest cluster
     pcl::PointIndices::Ptr largest_cluster_indices(
         new pcl::PointIndices(cluster_indices[largest_cluster_index]));
@@ -619,17 +645,17 @@ public:
                            response->health_response);
 
     response->health_response = this->passThroughPlane(
-        cloud_out, cloud_out, 0.15, 3.1, PassThroughFilterType::Z);
+        cloud_out, cloud_out, 0.15, 2.1, PassThroughFilterType::Z);
     ASSERT_AND_RETURN_CODE(response->health_response, OK,
                            "Error filtering point cloud by height with code %d",
                            response->health_response);
     response->health_response = this->passThroughPlane(
-        cloud_out, cloud_out, -1.5, 1.5, PassThroughFilterType::Y);
+        cloud_out, cloud_out, -1.0, 1.0, PassThroughFilterType::Y);
     ASSERT_AND_RETURN_CODE(response->health_response, OK,
                            "Error filtering point cloud by height with code%d",
                            response->health_response);
     response->health_response = this->passThroughPlane(
-        cloud_out, cloud_out, -1.5, 1.5, PassThroughFilterType::X);
+        cloud_out, cloud_out, -1.0, 1.0, PassThroughFilterType::X);
     ASSERT_AND_RETURN_CODE(response->health_response, OK,
                            "Error filtering point cloud by height with code%d",
                            response->health_response);

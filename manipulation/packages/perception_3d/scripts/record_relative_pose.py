@@ -3,7 +3,7 @@ import rclpy
 from rclpy.node import Node
 import tf2_ros
 import yaml
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, Pose
 from tf2_geometry_msgs import do_transform_pose
 
 # import tf2_py
@@ -27,7 +27,7 @@ class DockingPoseRecorder(Node):
             "DockingPoseRecorder ready. Waiting for /door_handle_pose..."
         )
 
-    def handle_pose_callback(self, handle_pose):
+    def handle_pose_callback(self, handle_pose: PoseStamped):
         if self.relative_pose_saved:
             return
 
@@ -44,13 +44,17 @@ class DockingPoseRecorder(Node):
             robot_pose.pose.position.x = 0.0
             robot_pose.pose.position.y = 0.0
             robot_pose.pose.position.z = 0.0
+            rob_pose = Pose()
+            rob_pose.pose = robot_pose.pose
+            rob_pose = do_transform_pose(
+                rob_pose, transform
+            )  # Transform robot pose to map frame
 
-            robot_pose_map = do_transform_pose(robot_pose, transform)
-
+            robot_pose.pose = rob_pose
             # Compute relative position (handle - robot)
-            dx = handle_pose.pose.position.x - robot_pose_map.pose.position.x
-            dy = handle_pose.pose.position.y - robot_pose_map.pose.position.y
-            dz = handle_pose.pose.position.z - robot_pose_map.pose.position.z
+            dx = handle_pose.pose.position.x - robot_pose.pose.position.x
+            dy = handle_pose.pose.position.y - robot_pose.pose.position.y
+            dz = handle_pose.pose.position.z - robot_pose.pose.position.z
 
             # Compute yaw difference
             q_handle = [
@@ -60,10 +64,10 @@ class DockingPoseRecorder(Node):
                 handle_pose.pose.orientation.w,
             ]
             q_robot = [
-                robot_pose_map.pose.orientation.x,
-                robot_pose_map.pose.orientation.y,
-                robot_pose_map.pose.orientation.z,
-                robot_pose_map.pose.orientation.w,
+                robot_pose.pose.orientation.x,
+                robot_pose.pose.orientation.y,
+                robot_pose.pose.orientation.z,
+                robot_pose.pose.orientation.w,
             ]
 
             # ...
