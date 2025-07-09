@@ -33,7 +33,6 @@ from frida_constants.hri_constants import (
     STT_ACTION_SERVER_NAME,
     WAKEWORD_TOPIC,
 )
-
 from frida_interfaces.action import SpeechStream
 from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
 from frida_interfaces.srv import (
@@ -257,13 +256,12 @@ class HRITasks(metaclass=SubtaskMeta):
                     Logger.warn(self.node, f"{key} action server not initialized. ({self.task})")
 
     @service_check("speak_service", Status.SERVICE_CHECK, TIMEOUT)
-    def say(self, text: str, wait: bool = True) -> None:
+    def say(self, text: str, wait: bool = True, speed: float = 1.3) -> None:
         """Method to publish directly text to the speech node"""
         Logger.info(self.node, f"Sending to saying service: {text}")
 
         # return Status.EXECUTION_SUCCESS
-
-        request = Speak.Request(text=text)
+        request = Speak.Request(text=text, speed=float(speed))
 
         future = self.speak_service.call_async(request)
 
