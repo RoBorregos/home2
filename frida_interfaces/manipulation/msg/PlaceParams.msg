@@ -1,3 +1,6 @@
 float32 table_height
 float32 table_height_tolerance
+
 bool is_shelf
+
+geometry_msgs/PoseStamped forced_pose
