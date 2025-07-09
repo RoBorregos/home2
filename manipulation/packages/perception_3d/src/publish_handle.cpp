@@ -104,7 +104,8 @@ public:
         "/config/relative_docking_pose.yaml";
     */
 
-    std::string config_path = "/workspace/src/home2/manipulation/packages/perception_3d/config/relative_docking_pose.yaml";
+    std::string config_path = "/workspace/src/home2/manipulation/packages/"
+                              "perception_3d/config/relative_docking_pose.yaml";
     YAML::Node config = YAML::LoadFile(config_path);
     this->rel_x_ = config["x"].as<double>();
     this->rel_y_ = config["y"].as<double>();
@@ -149,15 +150,17 @@ public:
 
     pcl::PointXYZ min_pt, max_pt;
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(
-        new pcl::PointCloud<pcl::PointXYZ>());  
+        new pcl::PointCloud<pcl::PointXYZ>());
     // transform to map frame
-    if (!this->tf_buffer_->canTransform("map", result->cloud.header.frame_id, tf2::TimePointZero)) {
+    if (!this->tf_buffer_->canTransform("map", result->cloud.header.frame_id,
+                                        tf2::TimePointZero)) {
       RCLCPP_ERROR(this->get_logger(),
                    "Cannot transform point cloud to map frame");
       return;
     }
     geometry_msgs::msg::TransformStamped transform_stamped =
-        this->tf_buffer_->lookupTransform("map", result->cloud.header.frame_id, tf2::TimePointZero);
+        this->tf_buffer_->lookupTransform("map", result->cloud.header.frame_id,
+                                          tf2::TimePointZero);
 
     // Convert ROS message to PCL point cloud
     pcl::fromROSMsg(result->cloud, *cloud);
@@ -165,7 +168,7 @@ public:
     // Transform the point cloud
     pcl::PointCloud<pcl::PointXYZ> transformed_cloud;
     Eigen::Affine3d eigen_transform =
-        tf2::transformToEigen(transform_stamped.  transform);
+        tf2::transformToEigen(transform_stamped.transform);
     pcl::transformPointCloud(*cloud, transformed_cloud, eigen_transform);
     RCLCPP_INFO(this->get_logger(), "Point cloud transformed to map frame");
 
@@ -196,8 +199,8 @@ public:
     this->pose_.pose.position.x =
         this->pose_.pose.position.x + rotated_offset.x();
     this->pose_.pose.position.y =
-      this->pose_.pose.position.
-        // this->pose_.pose.position.y + rotated_offset.y();
+        this->pose_.pose.position.y + rotated_offset.y();
+    // this->pose_.pose.position.y + rotated_offset.y();
 
     tf2::Quaternion base_orientation;
     base_orientation.setRPY(0, 0, rel_yaw_);
