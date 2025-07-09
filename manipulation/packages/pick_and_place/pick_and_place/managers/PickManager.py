@@ -1,8 +1,8 @@
 from frida_motion_planning.utils.ros_utils import wait_for_future
-from frida_interfaces.srv import PickPerceptionService, DetectionHandler
 from geometry_msgs.msg import PointStamped
 from std_srvs.srv import SetBool
 from pick_and_place.utils.grasp_utils import get_grasps
+from pick_and_place.utils.perception_utils import get_object_point, get_object_cluster
 from frida_interfaces.action import PickMotion
 from frida_interfaces.msg import PickResult
 from frida_motion_planning.utils.service_utils import (
@@ -45,7 +45,9 @@ class PickManager:
                 self.node.get_logger().info(f"Going for point: {point}")
             elif object_name is not None and object_name != "":
                 self.node.get_logger().info(f"Going for object name: {object_name}")
-                point = self.get_object_point(object_name)
+                point = get_object_point(
+                    object_name, self.node.detection_handler_client
+                )
                 if point is None:
                     self.node.get_logger().error(
                         f"Object {object_name} not found, please provide a point"
@@ -55,8 +57,12 @@ class PickManager:
                 self.node.get_logger().error("No object name or point provided")
                 return False, None
 
+            self.node.get_logger().info(f"Object in point: {point}")
+
             # Call Perception Service to get object cluster and generate collision objects
-            object_cluster = self.get_object_cluster(point)
+            object_cluster = get_object_cluster(
+                point, self.node.pick_perception_3d_client
+            )
             if object_cluster is not None:
                 self.node.get_logger().info("Object cluster detected")
                 break
@@ -156,58 +162,3 @@ class PickManager:
         self.node.get_logger().info("Pick Task completed successfully")
         result.success = True
         return result.success, pick_result.pick_result
-
-    def get_object_point(self, object_name: str) -> PointStamped:
-        request = DetectionHandler.Request()
-        request.label = object_name
-        request.closest_object = False
-        print("Request:", request)
-        print("waiting for service")
-        self.node.detection_handler_client.wait_for_service()
-        future = self.node.detection_handler_client.call_async(request)
-        print("waiting for future on detection_handler")
-        future = wait_for_future(future)
-
-        point = PointStamped()
-
-        if len(future.result().detection_array.detections) == 1:
-            self.node.get_logger().info(f"Object {object_name} found")
-            point = future.result().detection_array.detections[0].point3d
-        elif len(future.result().detection_array.detections) > 1:
-            self.node.get_logger().info(
-                "Multiple objects found, selecting the closest one"
-            )
-            closest_object = future.result().detection_array.detections[0]
-            closest_distance = float("inf")
-            for detection in future.result().detection_array.detections:
-                distance = (
-                    detection.point3d.point.x**2
-                    + detection.point3d.point.y**2
-                    + detection.point3d.point.z**2
-                ) ** 0.5
-                if distance < closest_distance:
-                    closest_distance = distance
-                    closest_object = detection
-            point = closest_object.point3d
-        else:
-            self.node.get_logger().error(f"Object {object_name} not found")
-
-        self.node.get_logger().info(f"Object {object_name} found at: {point}")
-        return point
-
-    def get_object_cluster(self, point: PointStamped):
-        request = PickPerceptionService.Request()
-        request.point = point
-        request.add_collision_objects = True
-        self.node.pick_perception_3d_client.wait_for_service()
-        future = self.node.pick_perception_3d_client.call_async(request)
-        future = wait_for_future(future)
-
-        pcl_result = future.result().cluster_result
-        if len(pcl_result.data) == 0:
-            self.node.get_logger().error("No object cluster detected")
-            return None
-        self.node.get_logger().info(
-            f"Object cluster detected: {len(pcl_result.data)} points"
-        )
-        return pcl_result
