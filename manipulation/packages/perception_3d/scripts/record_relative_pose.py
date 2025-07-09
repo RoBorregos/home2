@@ -7,7 +7,7 @@ from geometry_msgs.msg import PoseStamped, Pose
 from tf2_geometry_msgs import do_transform_pose
 
 # import tf2_py
-from tf_transformations import euler_from_quaternion
+from tf_transformations import euler_from_quaternion, quaternion_from_euler
 # from builtin_interfaces.msg import Time
 
 
@@ -32,53 +32,44 @@ class DockingPoseRecorder(Node):
             return
 
         try:
-            # Lookup transform from base_link to map
+            # Transform the handle pose from its frame to the base_link frame
             transform = self.tf_buffer.lookup_transform(
-                "map", "base_link", rclpy.time.Time()
+                "map",                      # target frame
+                handle_pose.header.frame_id,      # source frame
+                handle_pose.header.stamp,         # time of the pose
+                timeout=rclpy.duration.Duration(seconds=1.0)
             )
 
-            # Transform base_link pose into map frame (get robot pose)
-            robot_pose = PoseStamped()
-            robot_pose.header.frame_id = "base_link"
-            robot_pose.pose.orientation.w = 1.0
-            robot_pose.pose.position.x = 0.0
-            robot_pose.pose.position.y = 0.0
-            robot_pose.pose.position.z = 0.0
-            rob_pose = Pose()
-            rob_pose.pose = robot_pose.pose
-            rob_pose = do_transform_pose(
-                rob_pose, transform
-            )  # Transform robot pose to map frame
+            # Apply the transform to get the handle pose in base_link frame
+            handle_in_base_link = do_transform_pose(handle_pose.pose, transform)
 
-            robot_pose.pose = rob_pose
-            # Compute relative position (handle - robot)
-            dx = handle_pose.pose.position.x - robot_pose.pose.position.x
-            dy = handle_pose.pose.position.y - robot_pose.pose.position.y
-            dz = handle_pose.pose.position.z - robot_pose.pose.position.z
+            # The handle_in_base_link now contains the position and orientation 
+            # of the handle relative to base_link
+            dx = handle_in_base_link.position.x
+            dy = handle_in_base_link.position.y
+            dz = handle_in_base_link.position.z
 
-            # Compute yaw difference
+            # Extract orientation as Euler angles
             q_handle = [
-                handle_pose.pose.orientation.x,
-                handle_pose.pose.orientation.y,
-                handle_pose.pose.orientation.z,
-                handle_pose.pose.orientation.w,
-            ]
-            q_robot = [
-                robot_pose.pose.orientation.x,
-                robot_pose.pose.orientation.y,
-                robot_pose.pose.orientation.z,
-                robot_pose.pose.orientation.w,
+                handle_in_base_link.orientation.x,
+                handle_in_base_link.orientation.y,
+                handle_in_base_link.orientation.z,
+                handle_in_base_link.orientation.w,
             ]
 
-            # ...
+            self.get_logger().info(f"Handle orientation (quaternion): {q_handle}")
+            self.get_logger().info(f"Handle position in base_link: x={dx}, y={dy}, z={dz}")
+
             _, _, yaw_handle = euler_from_quaternion(q_handle)
-            _, _, yaw_robot = euler_from_quaternion(q_robot)
+            self.get_logger().info(f"Handle yaw in base_link: {yaw_handle}")
+            # Since we're already in base_link frame, the robot's orientation is (0,0,0)
+            yaw_robot = 0.0
 
             dyaw = yaw_handle - yaw_robot
 
             # Save to file or print
-            rel_pose = {"x": dx, "y": dy, "z": dz, "yaw": dyaw}
-
+            rel_pose = {"x": -1* float(dx), "y": -1* float(dy), "z": -1* float(dz), "yaw": float(dyaw)}
+            self.get_logger().warn(f"Relative pose: {rel_pose} not handling yaw correction yet lol")
             with open("relative_docking_pose.yaml", "w") as f:
                 yaml.dump(rel_pose, f)
 
