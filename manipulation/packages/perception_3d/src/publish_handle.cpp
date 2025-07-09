@@ -148,14 +148,16 @@ public:
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud(
         new pcl::PointCloud<pcl::PointXYZ>());
     // transform to map frame
-    if (!this->tf_buffer_->canTransform("map", result->cloud.header.frame_id,
+    if (!this->tf_buffer_->canTransform("base_link",
+                                        result->cloud.header.frame_id,
                                         result->cloud.header.stamp)) {
       RCLCPP_ERROR(this->get_logger(),
                    "Cannot transform point cloud to map frame");
       return;
     }
     geometry_msgs::msg::TransformStamped transform_stamped =
-        this->tf_buffer_->lookupTransform("map", result->cloud.header.frame_id,
+        this->tf_buffer_->lookupTransform("base_link",
+                                          result->cloud.header.frame_id,
                                           result->cloud.header.stamp);
 
     // Convert ROS message to PCL point cloud
@@ -174,7 +176,7 @@ public:
                 "Min point: (%f, %f, %f), Max point: (%f, %f, %f)", min_pt.x,
                 min_pt.y, min_pt.z, max_pt.x, max_pt.y, max_pt.z);
     // Create a pose from the min and max points
-    this->pose_.header.frame_id = "map";
+    this->pose_.header.frame_id = "base_link";
     // this->pose_.header.stamp = this->now();
     this->pose_.header.stamp = result->cloud.header.stamp;
     this->pose_.pose.position.x = (min_pt.x + max_pt.x) / 2.0;
