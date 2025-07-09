@@ -265,7 +265,6 @@ class VisionTasks:
 
         Logger.info(self.node, f"Saving name: {name}")
         request = SaveName.Request()
-        name = name.lower()
         request.name = name
 
         try:
@@ -595,7 +594,6 @@ class VisionTasks:
         """Follow a person by name or area"""
         Logger.info(self.node, f"Following face by: {name}")
         request = SaveName.Request()
-        name = name.lower()
         request.name = name
 
         try:

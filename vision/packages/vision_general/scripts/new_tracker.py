@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+#!/usr/bin/env python3
+
 """
 Node to track a single person and
 re-id them if necessary
@@ -53,13 +55,13 @@ from ament_index_python.packages import get_package_share_directory
 import os
 
 CONF_THRESHOLD = 0.6
-DEPTH_THRESHOLD = 5e8
+DEPTH_THRESHOLD = 100
 # Get config folder from package
 PACKAGE_NAME = "vision_general"
 CONFIG_FOLDER = os.path.join(get_package_share_directory(PACKAGE_NAME), "config")
 BOTSORT_REID_YAML = os.path.join(CONFIG_FOLDER, "botsort-reid.yaml")
 BYTETRACK_REID_YAML = "bytetrack.yaml"
-REID_EXTRACT_FREQ = 0.2
+REID_EXTRACT_FREQ = 0.3
 MAX_EMBEDDINGS = 128
 
 
@@ -116,7 +118,7 @@ class SingleTracker(Node):
         self.last_reid_extraction = time.time()
         self.go = False
         self.create_timer(0.1, self.run)
-        self.create_timer(0.05, self.publish_image)
+        self.create_timer(0.1, self.publish_image)
 
         self.is_tracking_result = False
 
@@ -150,8 +152,8 @@ class SingleTracker(Node):
         #     )  # dla:0 or dla:1 corresponds to the DLA cores
 
         # Load the exported TensorRT model
-        self.model = YOLO("yolo11n.engine")
-        # self.model = YOLO("yolov8n.pt")
+        # self.model = YOLO("yolo11n.engine")
+        self.model = YOLO("yolov8n.pt")
         self.get_logger().info("Loaded YOLO model")
         self.pose_detection = PoseDetection()
 
@@ -399,10 +401,11 @@ class SingleTracker(Node):
     def run(self):
         """Main loop to run the tracker"""
 
-        if True:  # self.target_set:
-            self.frame = self.image
-            image_time = copy.deepcopy(self.image_time)
-            depth_image_time = copy.deepcopy(self.depth_image_time)
+        if self.target_set:  # self.target_set:
+            self.frame = copy.deepcopy(self.image)
+            # image_time = copy.deepcopy(self.image_time)
+            # depth_image = copy.deepcopy(self.depth_image)
+            # depth_image_time = copy.deepcopy(self.depth_image_time)
             if self.frame is None:
                 self.get_logger().error("No image available")
                 return
@@ -651,14 +654,18 @@ class SingleTracker(Node):
             if person_in_frame:
                 self.is_tracking_result = True
                 if len(self.depth_image) > 0 and (
-                    (depth_image_time.nanosec - image_time.nanosec > -DEPTH_THRESHOLD)
+                    (
+                        self.depth_image_time.nanosec - self.image_time.nanosec
+                        > -DEPTH_THRESHOLD
+                    )
                     and (
-                        depth_image_time.nanosec - image_time.nanosec < DEPTH_THRESHOLD
+                        self.depth_image_time.nanosec - self.image_time.nanosec
+                        < DEPTH_THRESHOLD
                     )
                 ):
                     coords = PointStamped()
                     coords.header.frame_id = self.frame_id
-                    coords.header.stamp = depth_image_time
+                    coords.header.stamp = self.depth_image_time
                     point2D = get2DCentroid(
                         self.person_data["coordinates"], self.depth_image
                     )
@@ -688,6 +695,8 @@ class SingleTracker(Node):
                     self.get_logger().warn("Depth image not available")
             else:
                 self.is_tracking_result = False
+        else:
+            self.is_tracking_result = False
 
         self.frame = None
 
