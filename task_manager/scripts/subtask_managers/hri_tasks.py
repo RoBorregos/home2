@@ -530,7 +530,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
                 # If the transcription is equal to the last hotwords, consider that no text was heard: when the audio is too short or only silence, the transcription can be equal to the hotwords.
                 if (
-                    len(goal_future.result().result.transcription) > 0
+                    len(goal_future.result().result.transcription.strip()) > 0
                     and goal_future.result().result.transcription != self.last_hotwords
                 ):
                     if (

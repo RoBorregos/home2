@@ -314,9 +314,16 @@ class LLMUtils(Node):
     def is_positive(
         self, request: IsPositive.Request, response: IsPositive.Response
     ) -> IsPositive.Response:
-        """Service to extract information from text."""
+        """Service to see if text is positive."""
         self.get_logger().info("Determining if text is positive")
-        result = self.get_most_likely_label(request.text)
+        try:
+            if len(request.text.strip()) < 1:
+                result = ""
+            else:
+                result = self.get_most_likely_label(request.text)
+        except Exception as e:
+            result = ""
+            self.get_logger().warn(f"Error: {str(e)}")
 
         response.is_positive = result == "yes"
         self.get_logger().info(f"The text is positive: {response.is_positive}")
@@ -326,10 +333,18 @@ class LLMUtils(Node):
     def is_negative(
         self, request: IsNegative.Request, response: IsNegative.Response
     ) -> IsNegative.Response:
-        """Service to extract information from text."""
-        """Service to extract information from text."""
+        """Service to see if text is negative."""
         self.get_logger().info("Determining if text is negative")
-        result = self.get_most_likely_label(request.text)
+
+        try:
+            result = self.get_most_likely_label(request.text)
+            if len(request.text.strip()) < 1:
+                result = ""
+            else:
+                result = self.get_most_likely_label(request.text)
+        except Exception as e:
+            result = ""
+            self.get_logger().warn(f"Error: {str(e)}")
 
         response.is_negative = result == "no"
         self.get_logger().info(f"The text is negative: {response.is_negative}")
