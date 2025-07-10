@@ -849,6 +849,7 @@ class HRITasks(metaclass=SubtaskMeta):
                 Logger.info(
                     self.node, f"Common interest computed between {person1} and {person2}: {result}"
                 )
+
                 future.set_result(
                     (
                         Status.EXECUTION_SUCCESS,
