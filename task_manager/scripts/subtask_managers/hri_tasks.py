@@ -851,7 +851,7 @@ class HRITasks(metaclass=SubtaskMeta):
                 )
                 future.set_result(
                     (
-                        Status.EXECUTION_SUCCESS,
+                        Status.TARGET_NOT_FOUND if "don't" in result else Status.EXECUTION_SUCCESS,
                         result,
                     )
                 )
