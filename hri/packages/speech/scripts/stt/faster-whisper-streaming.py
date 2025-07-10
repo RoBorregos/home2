@@ -28,7 +28,7 @@ class WhisperServicer(speech_pb2_grpc.SpeechStreamServicer):
                 clip_audio=False,
                 model=self.model,
                 language="en",
-                # task=options["task"],
+                task="translate",
                 same_output_threshold=10,
                 transcriber=self.transcriber,
             )
