@@ -3,11 +3,13 @@ rgbd_sync:
   ros__parameters:
     approx_sync: false
     use_sim_time: false
-    qos: 1
-    qos_camera_info: 1
+    qos: 0
+    qos_camera_info: 0
 
 rtabmap:
   ros__parameters:
+    qos: 0
+    qos_camera_info: 0
   # Basic ROS parameters
     subscribe_rgbd: true
     subscribe_rgb: false
