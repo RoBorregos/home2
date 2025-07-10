@@ -19,6 +19,7 @@ from utils.decorators import mockable, service_check
 from utils.status import Status
 from frida_interfaces.action import ManipulationAction
 from frida_interfaces.msg import ManipulationTask
+from geometry_msgs.msg import PointStamped  # , PoseStamped
 
 # from utils.decorators import service_check
 from xarm_msgs.srv import SetDigitalIO
@@ -466,6 +467,29 @@ class ManipulationTasks:
             return
         Logger.error(self.node, "Invalid position for plane")
         return Status.EXECUTION_ERROR
+
+    @mockable(return_value=Status.MOCKED)
+    @service_check(
+        client="_manipulation_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT
+    )
+    def place_in_point(self, point: PointStamped):
+        self.get_logger().warning("Sending place on point request")
+        # TODO: fix @EmilianoHFlores
+        # goal_msg = ManipulationAction.Goal()
+        # goal_msg.task_type = ManipulationTask.PLACE
+        # goal_msg.place_params.forced_pose = PoseStamped()
+
+        # goal_msg.place_params.forced_pose.header.frame_id = (
+        #     self.clicked_point.header.frame_id
+        # )
+        # goal_msg.place_params.forced_pose.pose.position.x = self.clicked_point.point.x
+        # goal_msg.place_params.forced_pose.pose.position.y = self.clicked_point.point.y
+        # goal_msg.place_params.forced_pose.pose.position.z = self.clicked_point.point.z
+
+        # self._action_client.send_goal_async(
+        #     goal_msg, feedback_callback=self.feedback_callback
+        # )
+        # self.get_logger().info("Place request sent")
 
 
 if __name__ == "__main__":

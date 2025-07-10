@@ -49,6 +49,7 @@ class PickMotionServer(Node):
         self.declare_parameter("ee_link_offset", -0.125)
         self.ee_link_offset = self.get_parameter("ee_link_offset").value
         self.get_logger().info(f"End-effector link offset: {self.ee_link_offset} m")
+        self.get_logger().info(f"Pick Velocity: {PICK_VELOCITY} m/s")
 
         self._action_server = ActionServer(
             self,
@@ -115,9 +116,9 @@ class PickMotionServer(Node):
 
         # Apparently GPD always sends me somewhat at the same distance to the object, so lets try different distances
         num_grasping_alternatives = (
-            3  # for each grasping pose, try 4 alternatives from closest to farthest
+            2  # for each grasping pose, try 4 alternatives from closest to farthest
         )
-        grasping_alternative_distance = -0.02  # 5mm distance
+        grasping_alternative_distance = -0.025  # 5mm distance
 
         self.save_collision_objects()
         self.find_plane()
@@ -209,6 +210,8 @@ class PickMotionServer(Node):
         request.acceleration = PICK_ACCELERATION
         request.planner_id = PICK_PLANNER
         request.target_link = GRASP_LINK_FRAME
+        request.tolerance_position = 0.005  # Set the position tolerance
+        request.tolerance_orientation = 0.02  # Set the orientation tolerance
         future = self._move_to_pose_action_client.send_goal_async(request)
         self.wait_for_future(future)
         action_result = future.result().get_result()
