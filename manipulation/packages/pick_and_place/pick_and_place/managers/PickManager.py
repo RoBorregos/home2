@@ -56,7 +56,7 @@ class PickManager:
             elif object_name is not None and object_name != "":
                 self.node.get_logger().info(f"Going for object name: {object_name}")
                 point = self.get_object_point(object_name)
-                if point is None:
+                if point.header.frame_id == "":
                     self.node.get_logger().error(
                         f"Object {object_name} not found, please provide a point"
                     )
@@ -121,15 +121,31 @@ class PickManager:
                 )
                 continue
 
-            # sort by score
-            grasp_poses, grasp_scores = zip(
-                *sorted(
-                    zip(grasp_poses, grasp_scores),
-                    key=lambda x: x[1],
-                    reverse=False,
-                )
+            self.node.get_logger().info(f"Detected grasps with scores: {grasp_scores}")
+
+            # Sort grasp poses by score in descending order (highest scores first)
+            # grasp_poses, grasp_scores = zip(
+            #     *sorted(
+            #         zip(grasp_poses, grasp_scores),
+            #         key=lambda x: x[1],
+            #         reverse=True,
+            #     )
+            # )
+            # grasp_poses, grasp_scores = grasp_poses[:5], grasp_scores[:5]
+
+            # randomly pick 5 grasps
+            if len(grasp_poses) > 5:
+                indices = np.random.choice(len(grasp_poses), size=5, replace=False)
+                grasp_poses = [grasp_poses[i] for i in indices]
+                grasp_scores = [grasp_scores[i] for i in indices]
+            else:
+                # if less than 5 grasps, just take them all
+                grasp_poses = grasp_poses[:5]
+                grasp_scores = grasp_scores[:5]
+
+            self.node.get_logger().info(
+                f"Top 5 grasp poses detected with scores: {grasp_scores}"
             )
-            grasp_poses, grasp_scores = grasp_poses[:5], grasp_scores[:5]
 
             # reverse grasps (turn 180 degrees in z)
             new_grasp_poses = []
