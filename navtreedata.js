@@ -186,18 +186,18 @@ var NAVTREEINDEX =
 "classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html#ac3979c3e0b2a665f7b7afcbd04e500d3",
 "classpose__detection_1_1PoseDetection.html#a12578d18c579ca2a03b0732d7880dc56",
 "classrestaurant__task__manager_1_1RestaurantTaskManager.html#a7d56b207be0fb127e2312e332bebce58",
-"classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a33483fe9e849793f0deaa68860712dad",
-"classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a35d915cf637c459d1481200f4cd064f1",
-"classtracker__node_1_1SingleTracker.html#ae4b5daaab2bb197b7b685ffbd699b438",
-"classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a92638453d10eef1561c912b2c1e3a559",
-"frida__driver_8launch_8py.html#aef5c72bf0e9a5f9cd51e0088acd02488",
-"local__camera_8py.html",
-"md_manipulation_README.html#autotoc_md4",
-"namespacefrida__constants_1_1integration__constants.html#a92bf4c688dac25bab266591c51f2956a",
-"namespacemembers_vars_m.html",
-"namespacesubtask__managers_1_1generic__tasks.html",
-"receptionist__task__manager_8py.html",
-"vision__constants__cpp_8hpp.html#a63e24b7b0629e3e1ecf9354882537a15"
+"classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a32f52e24328a550d02980035ceef0bf0",
+"classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a32e238366eb2b4d82104240f7b66e95d",
+"classtracker__node_1_1SingleTracker.html#ad1644dc9dc319c87398d2f5f0d54dc85",
+"classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a86e25915887fac5aa51e5657bd6fa067",
+"frida__constants_2frida__constants_2utils_8py.html#a9b631b425573e8ac85d89568a5eda8b8",
+"is__person__inside_8py.html#a79f30c58d09282b6365883311dae895c",
+"md_manipulation_README.html",
+"namespacefrida__constants_1_1hri__constants.html#afa75347167cbfc3cf035e80d0f56bacf",
+"namespacemembers_vars_i.html",
+"namespacestoring__groceries__manager.html#a5c5fb5ca9955697c9096cbed47fe0bd4",
+"receptionist__commands_8py.html#a46439c4b5773a7470cf9753eb1e5d089",
+"vision__constants_8py.html#acda94204316d127125cb8c635a12a998"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

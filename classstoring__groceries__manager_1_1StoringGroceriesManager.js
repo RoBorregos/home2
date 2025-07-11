@@ -17,6 +17,7 @@ var classstoring__groceries__manager_1_1StoringGroceriesManager =
     [ "picked_objects", "classstoring__groceries__manager_1_1StoringGroceriesManager.html#a3bdc6d15f5dc73b56dbcc4d637049d6f", null ],
     [ "point_pub", "classstoring__groceries__manager_1_1StoringGroceriesManager.html#afbe4962391d34764866430a6b653b259", null ],
     [ "pour_objects", "classstoring__groceries__manager_1_1StoringGroceriesManager.html#a92a4d2946a42f7d3d43e2fbeb02262ca", null ],
+    [ "poured_object", "classstoring__groceries__manager_1_1StoringGroceriesManager.html#af5cc83beaeff4b9a40d332d017a68377", null ],
     [ "prev_state", "classstoring__groceries__manager_1_1StoringGroceriesManager.html#ace60c8e757106b784320baba9fc8ba7d", null ],
     [ "prev_uid", "classstoring__groceries__manager_1_1StoringGroceriesManager.html#a82ee3cb756ebeb2620e5209489948d5c", null ],
     [ "retry_count", "classstoring__groceries__manager_1_1StoringGroceriesManager.html#aa5deefeecc389f5e7bc10f06d2d92a02", null ],

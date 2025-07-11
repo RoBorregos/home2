@@ -4,7 +4,7 @@ var searchData=
   ['generate_5fmanual_5flevels_1',['generate_manual_levels',['../classstoring__groceries__manager_1_1StoringGroceriesManager.html#a76254b69eff060f50c7853a579c9a7a6',1,'storing_groceries_manager::StoringGroceriesManager']]],
   ['get2dcentroid_2',['get2DCentroid',['../namespacevision__3D__utils.html#aacc42d41856be0a1a34cfe33498aa9b8',1,'vision_3D_utils.get2DCentroid()'],['../namespacecalculations.html#a9b5eb19cdc3b480d8b741b2a394bd49a',1,'calculations.get2DCentroid(box, frame)']]],
   ['get2dcentroidnormalized_3',['get2DCentroidNormalized',['../namespacecalculations.html#aed62b46cb698edbf80e14a22e1839aca',1,'calculations']]],
-  ['get_5factual_5fpose_4',['get_actual_pose',['../classpoint__transformer_1_1PointTransformer.html#a5820cb9ba3bc1494787a79aa77f57d45',1,'point_transformer::PointTransformer']]],
+  ['get_5factual_5fpose_4',['get_actual_pose',['../classpoint__transformer_1_1PointTransformer.html#a00a6e65fd33d1b035cfb5fe4fe2c1e2a',1,'point_transformer::PointTransformer']]],
   ['get_5fangle_5',['get_angle',['../classpose__detection_1_1PoseDetection.html#aaed9c448e0eeebb5d242a190345536bf',1,'pose_detection.PoseDetection.get_angle()'],['../classvision__general_1_1pose__detection_1_1PoseDetection.html#a47829a88a370530c35c9a154cc7d5e1e',1,'vision_general.pose_detection.PoseDetection.get_angle()']]],
   ['get_5farea_6',['get_area',['../classremove__person_1_1RemovePerson.html#ac968b86249f20b8f3a3c01ca287cc9fb',1,'remove_person::RemovePerson']]],
   ['get_5fautomatic_5frecharge_5fstatus_7',['get_automatic_recharge_status',['../classdashgo__driver_1_1dashgo__stm32_1_1Stm32.html#a06f447f3b8cc22e443294166398d03cd',1,'dashgo_driver::dashgo_stm32::Stm32']]],

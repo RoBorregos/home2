@@ -1,5 +1,9 @@
 var NAVTREEINDEX18 =
 {
+"is__person__inside_8py.html#a79f30c58d09282b6365883311dae895c":[20,0,7,0,3,1,4,1],
+"keyboard__input_8py.html":[20,0,3,0,5,1,5],
+"keyboard__input_8py.html#a75c5218d453855e7723dea12b1c7fc4c":[20,0,3,0,5,1,5,1],
+"laser__filter_8py.html":[20,0,4,0,1,2,1],
 "local__camera_8py.html":[20,0,7,0,2,3,2],
 "local__camera_8py.html#a370b7792a1778760c0b396393c1dc169":[20,0,7,0,2,3,2,3],
 "local__camera_8py.html#afff3f00fd586a1308f7b1090b40ec44e":[20,0,7,0,2,3,2,2],
@@ -245,9 +249,5 @@ var NAVTREEINDEX18 =
 "md_docs_task_manager_decorators.html#autotoc_md104":[17,1],
 "md_docs_task_manager_decorators.html#autotoc_md105":[17,1,0],
 "md_docs_task_manager_decorators.html#autotoc_md106":[17,1,1],
-"md_docs_task_manager_decorators.html#autotoc_md107":[17,2],
-"md_manipulation_README.html":[1],
-"md_manipulation_README.html#autotoc_md1":[1,0],
-"md_manipulation_README.html#autotoc_md2":[1,0,0],
-"md_manipulation_README.html#autotoc_md3":[1,0,1]
+"md_docs_task_manager_decorators.html#autotoc_md107":[17,2]
 };

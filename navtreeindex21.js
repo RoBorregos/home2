@@ -1,5 +1,9 @@
 var NAVTREEINDEX21 =
 {
+"namespacemembers_vars_i.html":[18,1,2,9],
+"namespacemembers_vars_j.html":[18,1,2,10],
+"namespacemembers_vars_k.html":[18,1,2,11],
+"namespacemembers_vars_l.html":[18,1,2,12],
 "namespacemembers_vars_m.html":[18,1,2,13],
 "namespacemembers_vars_n.html":[18,1,2,14],
 "namespacemembers_vars_o.html":[18,1,2,15],
@@ -245,9 +249,5 @@ var NAVTREEINDEX21 =
 "namespacestoring__groceries__launch.html#a84e56b2514a7f4c75214c14f7b9a38a4":[18,0,118,0],
 "namespacestoring__groceries__manager.html":[18,0,119],
 "namespacestoring__groceries__manager.html#a00842e1cc4d3a42fdbc70fcf881111d3":[18,0,119,5],
-"namespacestoring__groceries__manager.html#a2fd3c5a7b46f6bb755f0abf70ca3120e":[18,0,119,7],
-"namespacestoring__groceries__manager.html#a5c5fb5ca9955697c9096cbed47fe0bd4":[18,0,119,4],
-"namespacestoring__groceries__manager.html#a6c6879c42f9db08122407e746f9f1743":[18,0,119,8],
-"namespacestoring__groceries__manager.html#ad877050e492d039476b41e8c97e3f49e":[18,0,119,6],
-"namespacesubtask__managers.html":[18,0,120]
+"namespacestoring__groceries__manager.html#a2fd3c5a7b46f6bb755f0abf70ca3120e":[18,0,119,8]
 };

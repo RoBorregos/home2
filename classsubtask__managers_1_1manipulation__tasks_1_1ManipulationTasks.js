@@ -18,6 +18,7 @@ var classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks =
     [ "pan_to", "classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a13413ebb48a8146c400e2fb8db1060b9", null ],
     [ "pick_object", "classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a4d6b27131f4a72f43db683516f053da3", null ],
     [ "place", "classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a6a8111be940136ac1ba3113efa9920f0", null ],
+    [ "place_in_point", "classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a581bff7d31c90b7f690408a78fbc863f", null ],
     [ "place_on_shelf", "classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#af415806e61b8b2a478642fea89e891cc", null ],
     [ "point", "classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#ac416677f6a25ac021c5ea945519e35a5", null ],
     [ "pour", "classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a94e78bd44658faddf6dac983a854eedd", null ],

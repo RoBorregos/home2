@@ -31,7 +31,7 @@ var searchData=
   ['deus_5fpick_28',['deus_pick',['../classsubtask__managers_1_1gpsr__single__tasks_1_1GPSRSingleTask.html#a529e2f049a319b6ed6a7d4c746be0227',1,'subtask_managers::gpsr_single_tasks::GPSRSingleTask']]],
   ['disable_5fservo_29',['disable_servo',['../classMoveItServo_1_1MoveItServo.html#aa565a04b08de4f38f32cba61bcd209c0',1,'MoveItServo.MoveItServo.disable_servo()'],['../classServo_1_1Servo.html#adcd1d2dd3dbda96a8259b543d43b5d7f',1,'Servo.Servo.disable_servo()']]],
   ['distancefilterfrompoint_30',['DistanceFilterFromPoint',['../classTableSegmentationNode.html#ad2da055f7b664be1145348e9cc728cd6',1,'TableSegmentationNode']]],
-  ['downsampleobject_31',['DownSampleObject',['../classAddPrimitivesNode.html#ad3c1651d14e9b603853b06018d1cad70',1,'AddPrimitivesNode']]],
+  ['downsampleobject_31',['DownSampleObject',['../classAddPrimitivesNode.html#ab4b274748308508e4238c6e55d882c3a',1,'AddPrimitivesNode']]],
   ['downsamplepointcloud_32',['DownSamplePointCloud',['../classDownSamplePointCloud.html#a44ba1ef4dbb7e5a1e7417bb73b909c3c',1,'DownSamplePointCloud']]],
   ['draw_5fbbox_5flabel_33',['draw_bbox_label',['../classshow__object__detection_1_1ShowDetectionNode.html#a32689703db2c02efac238f8ab799bceb',1,'show_object_detection::ShowDetectionNode']]],
   ['draw_5fconnections_34',['draw_connections',['../classpose__detection_1_1PoseDetection.html#ac98c542ce10626909a2998949a9afa70',1,'pose_detection.PoseDetection.draw_connections()'],['../classvision__general_1_1pose__detection_1_1PoseDetection.html#afb140da349d9e0520fa15072d0bab002',1,'vision_general.pose_detection.PoseDetection.draw_connections()']]],

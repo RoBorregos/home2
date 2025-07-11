@@ -113,8 +113,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ab83ac0a9333de7951a429ad20f8abc2a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:add9469cbac5f1c823b1b99aad81a0006"><td class="memItemLeft" align="right" valign="top"><a class="el" href="macros_8hpp.html#a27de83e41cde776d5568e8c42ac061bc">STATUS_RESPONSE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classAddPrimitivesNode.html#add9469cbac5f1c823b1b99aad81a0006">RansacNormals</a> (<a class="el" href="macros_8hpp.html#aa99f2147b3f775316d89971291dbf174">_IN_</a> std::shared_ptr&lt; pcl::PointCloud&lt; pcl::PointXYZ &gt; &gt; cloud, <a class="el" href="macros_8hpp.html#a0e4576f5257306df258a5cc13f56ee7f">_OUT_</a> <a class="el" href="structBoxPrimitiveParams.html">BoxPrimitiveParams</a> &amp;box_params)</td></tr>
 <tr class="separator:add9469cbac5f1c823b1b99aad81a0006"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad3c1651d14e9b603853b06018d1cad70"><td class="memItemLeft" align="right" valign="top"><a class="el" href="macros_8hpp.html#a27de83e41cde776d5568e8c42ac061bc">STATUS_RESPONSE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classAddPrimitivesNode.html#ad3c1651d14e9b603853b06018d1cad70">DownSampleObject</a> (<a class="el" href="macros_8hpp.html#aa99f2147b3f775316d89971291dbf174">_IN_</a> const std::shared_ptr&lt; pcl::PointCloud&lt; pcl::PointXYZ &gt; &gt; cloud, <a class="el" href="macros_8hpp.html#a0e4576f5257306df258a5cc13f56ee7f">_OUT_</a> std::shared_ptr&lt; pcl::PointCloud&lt; pcl::PointXYZ &gt; &gt; cloud_out)</td></tr>
-<tr class="separator:ad3c1651d14e9b603853b06018d1cad70"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab4b274748308508e4238c6e55d882c3a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="macros_8hpp.html#a27de83e41cde776d5568e8c42ac061bc">STATUS_RESPONSE</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classAddPrimitivesNode.html#ab4b274748308508e4238c6e55d882c3a">DownSampleObject</a> (<a class="el" href="macros_8hpp.html#aa99f2147b3f775316d89971291dbf174">_IN_</a> const std::shared_ptr&lt; pcl::PointCloud&lt; pcl::PointXYZ &gt; &gt; cloud, <a class="el" href="macros_8hpp.html#a0e4576f5257306df258a5cc13f56ee7f">_OUT_</a> std::shared_ptr&lt; pcl::PointCloud&lt; pcl::PointXYZ &gt; &gt; cloud_out, <a class="el" href="macros_8hpp.html#aa99f2147b3f775316d89971291dbf174">_IN_</a> const double leaf_size=0.03)</td></tr>
+<tr class="separator:ab4b274748308508e4238c6e55d882c3a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a83ccc464b0a025744c4b3845f0b1490c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classAddPrimitivesNode.html#a83ccc464b0a025744c4b3845f0b1490c">add_pick_primitives</a> (const std::shared_ptr&lt; rmw_request_id_t &gt; request_header, const std::shared_ptr&lt; frida_interfaces::srv::AddPickPrimitives::Request &gt; request, const std::shared_ptr&lt; frida_interfaces::srv::AddPickPrimitives::Response &gt; response)</td></tr>
 <tr class="separator:a83ccc464b0a025744c4b3845f0b1490c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a85552e5e0dfbd84195f1a5201cf01cb3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classAddPrimitivesNode.html#a85552e5e0dfbd84195f1a5201cf01cb3">get_plane_bbox</a> (const std::shared_ptr&lt; rmw_request_id_t &gt; req_header, const std::shared_ptr&lt; frida_interfaces::srv::GetPlaneBbox::Request &gt; request, const std::shared_ptr&lt; frida_interfaces::srv::GetPlaneBbox::Response &gt; response)</td></tr>
@@ -244,8 +244,8 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="ad3c1651d14e9b603853b06018d1cad70" name="ad3c1651d14e9b603853b06018d1cad70"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad3c1651d14e9b603853b06018d1cad70">&#9670;&#160;</a></span>DownSampleObject()</h2>
+<a id="ab4b274748308508e4238c6e55d882c3a" name="ab4b274748308508e4238c6e55d882c3a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab4b274748308508e4238c6e55d882c3a">&#9670;&#160;</a></span>DownSampleObject()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -263,7 +263,13 @@ Public Member Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="el" href="macros_8hpp.html#a0e4576f5257306df258a5cc13f56ee7f">_OUT_</a> std::shared_ptr&lt; pcl::PointCloud&lt; pcl::PointXYZ &gt; &gt;&#160;</td>
-          <td class="paramname"><em>cloud_out</em>&#160;</td>
+          <td class="paramname"><em>cloud_out</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="macros_8hpp.html#aa99f2147b3f775316d89971291dbf174">_IN_</a> const double&#160;</td>
+          <td class="paramname"><em>leaf_size</em> = <code>0.03</code>&#160;</td>
         </tr>
         <tr>
           <td></td>

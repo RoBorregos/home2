@@ -1,7 +1,7 @@
 var classpoint__transformer_1_1PointTransformer =
 [
     [ "__init__", "classpoint__transformer_1_1PointTransformer.html#a3166f28cfc6ddf3631f608e4fcb00994", null ],
-    [ "get_actual_pose", "classpoint__transformer_1_1PointTransformer.html#a5820cb9ba3bc1494787a79aa77f57d45", null ],
+    [ "get_actual_pose", "classpoint__transformer_1_1PointTransformer.html#a00a6e65fd33d1b035cfb5fe4fe2c1e2a", null ],
     [ "get_current_location", "classpoint__transformer_1_1PointTransformer.html#a351223e0eeb1b9879f2e733ed027f7cb", null ],
     [ "get_location_from_pose", "classpoint__transformer_1_1PointTransformer.html#adfe43f15743a1d2f53625d4c6af9c9b9", null ],
     [ "is_inside", "classpoint__transformer_1_1PointTransformer.html#a0f2b7826a3ad32717613e04f62d9d4eb", null ],
