@@ -81,7 +81,7 @@ def generate_launch_description():
         name='nav2_container',
         namespace='',
         package='rclcpp_components',
-        executable='component_container_isolated',
+        executable='component_container_mt',
         composable_node_descriptions=nav2_nodes,
         parameters=[nav2_params],
         output='screen',

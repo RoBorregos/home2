@@ -9,13 +9,13 @@ import os
 
 def generate_launch_description():
     pkg_file_route = get_package_share_directory('nav_main')
-    rtab_params_file = os.path.join(pkg_file_route,'config', 'rtabmap', 'rtabmap_default_config.yaml')
+    rtab_params_file = os.path.join(pkg_file_route,'config', 'rtabmap', 'rtabmap_follow_config.yaml')
     nav2_params_file = os.path.join(pkg_file_route,'config', 'nav2_following.yaml')
 
     rtab_params_ = LaunchConfiguration('rtab_config_file', default=rtab_params_file)
     nav2_params_ = LaunchConfiguration('nav2_config_file', default=nav2_params_file)
-    localization = LaunchConfiguration('localization', default='true')
-    nav2_activate = LaunchConfiguration('nav2', default='false')
+    localization = LaunchConfiguration('localization', default='false')
+    nav2_activate = LaunchConfiguration('nav2', default='true')
     rtabmap_map_name = LaunchConfiguration('map_name', default='rtabmap_map.db')
     
 

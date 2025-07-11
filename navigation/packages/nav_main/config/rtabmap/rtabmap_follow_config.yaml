@@ -3,8 +3,8 @@ rgbd_sync:
   ros__parameters:
     approx_sync: false
     use_sim_time: false
-    qos: 0
-    qos_camera_info: 0
+    qos: 1
+    qos_camera_info: 1
 
 rtabmap:
   ros__parameters:
@@ -65,9 +65,12 @@ rtabmap:
     "Icp/PointToPlane": "true"
     #grid
     "Grid/Sensor": "0"
-    "Grid/RangeMax": "3.0"
+    "Grid/FootprintLength": "0.4"
+    "Grid/FootprintWidth": "0.4"
+    "Grid/RangeMax": "2.0"
     "Grid/CellSize": "0.07"
     "Grid/3D": "false"
     "Grid/RayTracing": "false"
     "Grid/MaxGroundHeight": "0.1"
     "Grid/MaxObstacleHeight": "2.0"
+
