@@ -60,12 +60,9 @@ TEST_INDIVIDUAL_FUNCTIONS = False
 TEST_EMBEDDINGS = False
 TEST_ASYNC_LLM = False
 TEST_STREAMING = False
-<<<<<<< HEAD
-TEST_QUESTION_ANSWERING = True
-=======
+TEST_QUESTION_ANSWERING = False
 TEST_MAP = False
 TEST_OBJECT_LOCATION = True
->>>>>>> origin/main
 
 
 class TestHriManager(Node):
