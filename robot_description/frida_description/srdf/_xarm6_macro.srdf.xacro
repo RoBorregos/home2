@@ -93,7 +93,7 @@
       <joint name="${prefix}joint3" value="-0.8203" />
       <joint name="${prefix}joint4" value="0.0" />
       <joint name="${prefix}joint5" value="-0.2094" />
-      <joint name="${prefix}joint6" value="-0.7854" />
+      <joint name="${prefix}joint6" value="0.7854" />
     </group_state>
 
     <disable_collisions link1="zed_camera_link" link2="link_eef" reason="Never"/>
