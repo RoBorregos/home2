@@ -638,7 +638,7 @@ public:
       if (request->is_other_objects) {
         RCLCPP_INFO(this->get_logger(), "Downsampling other objects");
         // Downsample other objects with a larger leaf size
-        status = DownSampleObject(cloud, cloud_downsampled, 0.06);
+        status = DownSampleObject(cloud, cloud_downsampled, 0.045);
       } else {
         status = DownSampleObject(cloud, cloud_downsampled);
       }
