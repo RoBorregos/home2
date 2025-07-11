@@ -7,7 +7,9 @@ from frida_interfaces.action import PlaceMotion
 from frida_motion_planning.utils.service_utils import (
     move_joint_positions as send_joint_goal,
 )
+from pick_and_place.utils.perception_utils import get_object_point
 from frida_interfaces.msg import PickResult
+import json
 
 
 class PlaceManager:
@@ -104,37 +106,77 @@ class PlaceManager:
             )
         else:
             # Call Perception Service to get object cluster and generate collision objects
-            self.node.get_logger().info("Extracting table cloud")
-            request = PlacePerceptionService.Request()
-            request.place_params = place_params
-            self.node.place_perception_3d_client.wait_for_service()
-            future = self.node.place_perception_3d_client.call_async(request)
-            wait_for_future(future)
-            pcl_result = future.result().cluster_result
-            if len(pcl_result.data) == 0:
-                self.node.get_logger().error("No plane cluster detected")
-                return None
+            if place_params.special_request != "":
+                request_dict = json.loads(place_params.special_request)
+                request = request_dict.get("request", "")
+                location = request_dict.get("location", "")
+                close_by_point = None
+                if request == "close_by":
+                    self.node.get_logger().info("Using close by place pose")
+                    close_by_object_name = request_dict["object"]
+                    for i in range(5):
+                        try:
+                            close_by_point = get_object_point(
+                                self.node,
+                                close_by_object_name,
+                                self.node.detection_handler_client,
+                            )
+                            if close_by_point is not None:
+                                break
+                        except Exception as e:
+                            self.node.get_logger().error(
+                                f"Failed to get object name: {e}"
+                            )
+                    self.node.get_logger().info(f"Close by point: {close_by_point}")
 
-            self.node.get_logger().info(
-                f"Plane cluster detected: {len(pcl_result.data)} points"
-            )
+                    if location == "top":
+                        # we want to place on top of the object
+                        result_pose.header.frame_id = close_by_point.header.frame_id
+                        result_pose.pose.position.x = close_by_point.x
+                        result_pose.pose.position.y = close_by_point.y
+                        result_pose.pose.position.z = close_by_point.z
 
-            heatmap_request = HeatmapPlace.Request()
-            heatmap_request.pointcloud = pcl_result
+            # if the task is not a forced pose or place on top of an object,
+            # we use the perception service to get optimal place pose
+            if result_pose.header.frame_id == "":
+                self.node.get_logger().info("Extracting table cloud")
 
-            if place_params.is_shelf:
-                heatmap_request.prefer_closest = True
-            self.node.place_pose_client.wait_for_service()
-            future = self.node.place_pose_client.call_async(heatmap_request)
-            wait_for_future(future)
-            point_result = future.result().place_point
+                request = PlacePerceptionService.Request()
+                request.place_params = place_params
+                self.node.place_perception_3d_client.wait_for_service()
+                future = self.node.place_perception_3d_client.call_async(request)
+                wait_for_future(future, timeout=10)
+                try:
+                    pcl_result = future.result().cluster_result
+                    if len(pcl_result.data) == 0:
+                        self.node.get_logger().error("No plane cluster detected")
+                        return None
+                except Exception as e:
+                    self.node.get_logger().error(
+                        f"Failed to call place perception service: {e}"
+                    )
+                    return None
 
-            self.node.get_logger().info(
-                f"Place point detected: {point_result.point.x}, {point_result.point.y}, {point_result.point.z}"
-            )
+                self.node.get_logger().info(
+                    f"Plane cluster detected: {len(pcl_result.data)} points"
+                )
 
-            result_pose.header = point_result.header
-            result_pose.pose.position = point_result.point
+                heatmap_request = HeatmapPlace.Request()
+                heatmap_request.pointcloud = pcl_result
+
+                if place_params.is_shelf:
+                    heatmap_request.prefer_closest = True
+                self.node.place_pose_client.wait_for_service()
+                future = self.node.place_pose_client.call_async(heatmap_request)
+                wait_for_future(future)
+                point_result = future.result().place_point
+
+                self.node.get_logger().info(
+                    f"Place point detected: {point_result.point.x}, {point_result.point.y}, {point_result.point.z}"
+                )
+
+                result_pose.header = point_result.header
+                result_pose.pose.position = point_result.point
 
         if (
             pick_result.object_pick_height == 0
