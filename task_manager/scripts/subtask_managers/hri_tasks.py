@@ -443,12 +443,27 @@ class HRITasks(metaclass=SubtaskMeta):
         goal_msg.silence_time = float(silence_time)
         goal_msg.start_silence_time = float(start_silence_time)
 
+        Logger.info(self.node, f"Sending goal with timeout={timeout}, silence_time={silence_time}")
+
         future = self._action_client.send_goal_async(
             goal_msg,
             feedback_callback=self.feedback_callback,
         )
 
-        future.add_done_callback(lambda f: self._active_goals.append(f.result()))
+        def goal_response_callback(goal_future):
+            goal_handle = goal_future.result()
+            Logger.info(self.node, f"Goal response received. Accepted: {goal_handle.accepted}")
+            if goal_handle.accepted:
+                self._active_goals.append(goal_handle)
+                # Add a callback to remove the goal when it's done
+                result_future = goal_handle.get_result_async()
+                result_future.add_done_callback(
+                    lambda _: self._active_goals.remove(goal_handle)
+                    if goal_handle in self._active_goals
+                    else None
+                )
+
+        future.add_done_callback(goal_response_callback)
 
         return future
 
@@ -895,6 +910,12 @@ class HRITasks(metaclass=SubtaskMeta):
         for goal_handle in self._active_goals:
             future = goal_handle.cancel_goal_async()
             cancel_future.append(future)
+
+        if len(cancel_future) == 0:
+            Logger.warn(self.node, "No active goals to cancel")
+            return
+        else:
+            Logger.info(self.node, f"Cancelling {len(cancel_future)} active goals")
 
         for f in cancel_future:
             rclpy.spin_until_future_complete(self.node, f, timeout_sec=1)
