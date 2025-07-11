@@ -37,7 +37,7 @@ YOLO_LOCATION = str(pathlib.Path(__file__).parent) + "/Utils/yolov8n.pt"
 
 PERCENTAGE = 0.3
 MAX_DEGREE = 50
-AREA_PERCENTAGE_THRESHOLD = 0.01
+AREA_PERCENTAGE_THRESHOLD = 0.03 # Changing this value perhaps work
 CONF_THRESHOLD = 0.4
 CHECK_TIMEOUT = 5
 
@@ -214,11 +214,10 @@ class ReceptionistCommands(Node):
                 area = (x2 - x1) * (y2 - y1)
                 area_percentage = area / (frame.shape[0] * frame.shape[1])
                 color = (255, 0, 0)
-
                 if (
                     confidence < CONF_THRESHOLD
                     or area_percentage < AREA_PERCENTAGE_THRESHOLD
-                ):
+                 ):
                     continue
 
                 if class_id == 0:
@@ -284,7 +283,8 @@ class ReceptionistCommands(Node):
                     break
 
             if not occupied:
-                area = xmax - xmin
+                area = (xmax - xmin) * (chair["bbox"][3] - chair["bbox"][1]) # Added this to save the area and sorted it by area 
+                #area = xmax - xmin
                 output = (chair["bbox"][0] + chair["bbox"][2]) / 2
                 chair_queue.put(
                     (
