@@ -11,11 +11,22 @@ class MapCleaner(Node):
     def __init__(self):
         super().__init__("map_cleaner")
 
-        self.subscription = self.create_subscription(
-            OccupancyGrid, "/map", self.map_callback, 10
+        qos = rclpy.qos.QoSProfile(
+            history=rclpy.qos.HistoryPolicy.KEEP_LAST,
+            depth=5,
+            reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
+        )
+        qos2 = rclpy.qos.QoSProfile(
+            reliability=rclpy.qos.ReliabilityPolicy.RELIABLE,
+            depth=10,
+            durability=rclpy.qos.DurabilityPolicy.TRANSIENT_LOCAL
         )
 
-        self.publisher = self.create_publisher(OccupancyGrid, "/map_cleaned", 10)
+        self.subscription = self.create_subscription(
+            OccupancyGrid, "/map_input", self.map_callback,  qos
+        )
+
+        self.publisher = self.create_publisher(OccupancyGrid, "/map", qos2)
 
     def map_callback(self, msg):
         width = msg.info.width
@@ -29,9 +40,9 @@ class MapCleaner(Node):
             binary, cv2.MORPH_CLOSE, np.ones((2, 2), np.uint8), iterations=2
         )
 
-        cleaned_binary = cv2.morphologyEx(
-            cleaned_binary, cv2.MORPH_OPEN, np.ones((2, 2), np.uint8), iterations=1
-        )
+        # cleaned_binary = cv2.morphologyEx(
+        #     cleaned_binary, cv2.MORPH_OPEN, np.ones((2, 2), np.uint8), iterations=1
+        # )
 
         # # Dilation to connect nearby obstacles
         # kernel_dilate = np.ones((2, 2), np.uint8)

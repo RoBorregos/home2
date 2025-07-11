@@ -7,6 +7,7 @@ from launch.conditions import UnlessCondition, IfCondition
 from ament_index_python.packages import get_package_share_directory
 import os
 
+
 def generate_launch_description():
     pkg_file_route = get_package_share_directory('nav_main')
     rtab_params_file = os.path.join(pkg_file_route,'config', 'rtabmap', 'rtabmap_follow_config.yaml')
@@ -35,6 +36,7 @@ def generate_launch_description():
           ('depth/image', '/zed/zed_node/depth/depth_registered')]
 
 
+
     container = ComposableNodeContainer(
         name='rtabmap_container',
         namespace='',
@@ -52,7 +54,8 @@ def generate_launch_description():
                 name='rtabmap',
                 parameters=[rtab_params, 
                 {'Mem/IncrementalMemory':'False',
-               'Mem/InitWMWithAllNodes':'True'}]
+               'Mem/InitWMWithAllNodes':'True'}],
+                
             ),
             ComposableNode(
                 condition=UnlessCondition(localization),
@@ -60,7 +63,8 @@ def generate_launch_description():
                 plugin='rtabmap_slam::CoreWrapper',
                 name='rtabmap',
                 parameters=[rtab_params, 
-                {'delete_db_on_start': True}]
+                {'delete_db_on_start': True}],
+                remappings=[('/map', 'map_input'),]
             ),
             ComposableNode(
                 package='rtabmap_sync',
@@ -76,13 +80,15 @@ def generate_launch_description():
                 package='nav2_controller',
                 plugin='nav2_controller::ControllerServer',
                 name='controller_server',
-                parameters=[nav2_params],),
+                parameters=[nav2_params],
+               ),
             ComposableNode(
                 condition=IfCondition(nav2_activate),
                 package='nav2_smoother',
                 plugin='nav2_smoother::SmootherServer',
                 name='smoother_server',
                 parameters=[nav2_params],
+              
                 ),
             ComposableNode(
                 condition=IfCondition(nav2_activate),
@@ -90,6 +96,7 @@ def generate_launch_description():
                 plugin='nav2_planner::PlannerServer',
                 name='planner_server',
                 parameters=[nav2_params],
+              
                 ),
             ComposableNode(
                 condition=IfCondition(nav2_activate),
@@ -97,6 +104,7 @@ def generate_launch_description():
                 plugin='behavior_server::BehaviorServer',
                 name='behavior_server',
                 parameters=[nav2_params],
+              
                 ),
             ComposableNode(
                 condition=IfCondition(nav2_activate),
@@ -104,6 +112,7 @@ def generate_launch_description():
                 plugin='nav2_bt_navigator::BtNavigator',
                 name='bt_navigator',
                 parameters=[nav2_params],
+           
                 ),
             ComposableNode(
                 condition=IfCondition(nav2_activate),
@@ -111,6 +120,7 @@ def generate_launch_description():
                 plugin='nav2_velocity_smoother::VelocitySmoother',
                 name='velocity_smoother',
                 parameters=[nav2_params],
+            
                 ),
             ComposableNode(
             condition=IfCondition(nav2_activate),
