@@ -15,6 +15,9 @@ from frida_motion_planning.utils.service_utils import (
     move_joint_positions,
     get_joint_positions,
 )
+from frida_motion_planning.utils.service_utils import (
+    open_gripper,
+)
 from transforms3d.quaternions import quat2mat
 import copy
 import numpy as np
@@ -150,9 +153,9 @@ class PourMotionServer(Node):
         self.get_logger().info(f"Current pose: {curr_pose.pose}")
 
         new_pose = curr_pose
-        new_pose.pose.position.z += 0.15
+        new_pose.pose.position.z += 0.2
 
-        tries = 5
+        tries = 2
         distance_between_tries = 0.025
         for i in range(tries):
             self.get_logger().warn("Trying to move to pour pose")
@@ -168,6 +171,7 @@ class PourMotionServer(Node):
                 )
             except Exception as e:
                 self.get_logger().error(f"Failed to move to pour pose: {e}")
+                open_gripper(self._gripper_set_state_client)
                 return False, None
 
             if action_result.result.success:
@@ -202,6 +206,7 @@ class PourMotionServer(Node):
                 )
             except Exception as e:
                 self.get_logger().error(f"Failed to move to pour pose: {e}")
+                open_gripper(self._gripper_set_state_client)
                 return False, None
 
             # self.get_logger().info(
@@ -354,7 +359,7 @@ class PourMotionServer(Node):
         request.pose = pose
         request.velocity = POUR_VELOCITY
         request.acceleration = POUR_ACCELERATION
-        request.planner_id = "RRT"
+        request.planner_id = "RRTConnect"
         request.apply_constraint = useConstraint
         request.target_link = GRASP_LINK_FRAME
         request.planning_time = planning_time  # Set the planning time for the action
@@ -362,8 +367,8 @@ class PourMotionServer(Node):
             planning_attempts  # Set the number of planning attempts
         )
         # higher than default
-        request.tolerance_position = 0.02  # Set the position tolerance
-        request.tolerance_orientation = 0.2  # Set the orientation tolerance
+        request.tolerance_position = 0.04  # Set the position tolerance
+        request.tolerance_orientation = 0.4  # Set the orientation tolerance
 
         # Set the constraint
         if useConstraint:
@@ -372,7 +377,7 @@ class PourMotionServer(Node):
             constraint_msg.frame_id = pose.header.frame_id
             constraint_msg.target_link = GRASP_LINK_FRAME
             # Modify in case need to modify the limits for the path
-            constraint_msg.tolerance_orientation = [3.14 * 2, 1.25, 1.25]
+            constraint_msg.tolerance_orientation = [3.14 * 2, 2.0, 2.0]
             constraint_msg.weight = 1.0
             constraint_msg.parameterization = 0
             request.constraint = constraint_msg

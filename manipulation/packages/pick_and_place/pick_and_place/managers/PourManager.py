@@ -62,7 +62,7 @@ class PourManager:
 
         # 2. Get Object Point
         object_point = self.get_object_point(object_name)
-        if object_point is None:
+        if object_point.header.frame_id == "":
             self.node.get_logger().error(f"Object {object_name} not found")
             return False, None
 
@@ -70,7 +70,7 @@ class PourManager:
 
         # 3. Get Bowl Point
         bowl_point = self.get_object_point(container_object_name)
-        if bowl_point is None:
+        if bowl_point.header.frame_id == "":
             self.node.get_logger().error(f"Bowl {container_object_name} not found")
             return False, None
 
@@ -127,8 +127,7 @@ class PourManager:
         pour_pose.header.stamp = self.node.get_clock().now().to_msg()
         pour_pose.pose.position.x = float(centroid[0])
         pour_pose.pose.position.y = float(centroid[1])
-        pour_pose.pose.position.z = float(max_z + 0.05)  # Slightly above the bowl
-        pour_pose.pose.position.z += 0.05  # Slightly above the bowl
+        pour_pose.pose.position.z = float(max_z + 0.15)  # Slightly above the bowl
 
         if pick_result is not None:
             pick_pose = getattr(pick_result.pick_result, "pick_pose", None)

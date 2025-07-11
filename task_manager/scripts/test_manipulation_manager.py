@@ -9,17 +9,22 @@ import rclpy
 # from config.hri.debug import config as test_hri_config
 from rclpy.node import Node
 from utils.logger import Logger
-
+import time
 # from subtask_managers.hri_tasks import HRITasks
 
 from subtask_managers.manipulation_tasks import ManipulationTasks
 
 PICK_OBJECT = "zucaritas"
+POUR_OBJECT = "blue_cereal"
+CONTAINER = "cup"
+
 
 TEST = "PICK"
 # TEST = "PLACE"
-TEST = "PAN_TO"
-# TEST = "FOLLOW_FACE"
+TEST = "NAV_POSE"
+# TEST = "PAN_TO"
+# # TEST = "FOLLOW_FACE"
+# TEST = "POUR"
 
 
 class TestTaskManager(Node):
@@ -60,6 +65,12 @@ class TestTaskManager(Node):
             self.subtask_manager["manipulation"].move_joint_positions(
                 joint_positions=joint_positions, velocity=0.5, degrees=True
             )
+
+        elif TEST == "NAV_POSE":
+            self.get_logger().info("Moving to navigation pose")
+            self.subtask_manager["manipulation"].move_joint_positions(
+                named_position="nav_pose", velocity=0.3, degrees=True
+            )
         elif TEST == "FOLLOW_FACE":
             self.get_logger().info("Moving to front stare")
             self.subtask_manager["manipulation"].move_joint_positions(
@@ -89,6 +100,14 @@ class TestTaskManager(Node):
             self.subtask_manager["manipulation"].move_joint_positions(
                 joint_positions=joint_positions, velocity=0.5, degrees=True
             )
+
+        elif TEST == "POUR":
+            self.subtask_manager["manipulation"].move_joint_positions(
+                named_position="table_stare", velocity=0.5, degrees=True
+            )
+            time.sleep(2.5)
+            for i in range(3):
+                self.subtask_manager["manipulation"].pour(POUR_OBJECT, CONTAINER)
 
 
 def main(args=None):
