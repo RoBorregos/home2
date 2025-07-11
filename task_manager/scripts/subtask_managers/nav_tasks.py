@@ -48,6 +48,18 @@ class NavigationTasks:
         self.range_min = 750
         self.closed_distance = 0.7
         self.laser_sub = None
+
+        # Get map context data
+        self.map_data = None
+        try:
+            package_share_directory = get_package_share_directory("frida_constants")
+            file_path = os.path.join(package_share_directory, "map_areas/areas.json")
+            with open(file_path, "r") as file:
+                self.map_data = json.load(file)
+            Logger.success(self.node, f"Map data loaded successfully from {file_path}")
+        except Exception as e:
+            Logger.error(self.node, f"Error loading map data: {e}")
+
         # Action clients and services
         self.goal_client = ActionClient(self.node, NavigateToPose, GOAL_TOPIC)
         self.activate_follow = self.node.create_client(SetBool, FOLLOWING_SERVICE)
@@ -126,14 +138,10 @@ class NavigationTasks:
         """
         future = Future()
         try:
-            package_share_directory = get_package_share_directory("frida_constants")
-            file_path = os.path.join(package_share_directory, "map_areas/areas.json")
-            with open(file_path, "r") as file:
-                data = json.load(file)
             if sublocation != "":
-                coordinates = data[location][sublocation]
+                coordinates = self.map_data[location][sublocation]
             else:
-                coordinates = data[location]["safe_place"]
+                coordinates = self.map_data[location]["safe_place"]
                 sublocation = "safe_place"
             Logger.info(self.node, f"{coordinates}")
         except Exception as e:
@@ -166,6 +174,32 @@ class NavigationTasks:
             Logger.error(self.node, f"Error moving to location: {e}")
             future.set_result(Status.EXECUTION_ERROR)
             return future
+
+    @mockable(return_value=PoseStamped(), delay=3)
+    def get_location_pose(self, location: str, sublocation: str) -> PoseStamped:
+        """Returns the pose of the given location and sublocation"""
+        try:
+            if sublocation != "":
+                coordinates = self.map_data[location][sublocation]
+            else:
+                coordinates = self.map_data[location]["safe_place"]
+                sublocation = "safe_place"
+            Logger.info(self.node, f"{coordinates}")
+        except Exception as e:
+            Logger.error(self.node, f"Error fetching coordinates: {e}")
+            return PoseStamped()
+
+        goal = PoseStamped()
+        goal.header.frame_id = "map"
+        goal.pose.position.x = coordinates[0]
+        goal.pose.position.y = coordinates[1]
+        goal.pose.position.z = coordinates[2]
+        goal.pose.orientation.x = coordinates[3]
+        goal.pose.orientation.y = coordinates[4]
+        goal.pose.orientation.z = coordinates[5]
+        goal.pose.orientation.w = coordinates[6]
+
+        return goal
 
     @mockable(return_value=True, delay=10)
     @service_check("pose_client", False, TIMEOUT)

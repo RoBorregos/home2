@@ -13,11 +13,19 @@ import time
 # from subtask_managers.hri_tasks import HRITasks
 
 from subtask_managers.manipulation_tasks import ManipulationTasks
+from subtask_managers.nav_tasks import NavigationTasks
+from geometry_msgs.msg import PointStamped
+from utils.task import Task
+
+from frida_constants.vision_constants import (
+    CAMERA_FRAME,
+)
 
 PICK_OBJECT = "zucaritas"
 POUR_OBJECT = "blue_cereal"
 CONTAINER = "cup"
 
+PLACE_IN_LOCATION = "trashcan"
 
 TEST = "PICK"
 # TEST = "PLACE"
@@ -25,6 +33,8 @@ TEST = "NAV_POSE"
 # TEST = "PAN_TO"
 # # TEST = "FOLLOW_FACE"
 # TEST = "POUR"
+TEST = "PLACE_IN_CAM_POSE"
+TEST = "PLACE_IN_MAP_POSE"
 
 
 class TestTaskManager(Node):
@@ -108,6 +118,29 @@ class TestTaskManager(Node):
             time.sleep(2.5)
             for i in range(3):
                 self.subtask_manager["manipulation"].pour(POUR_OBJECT, CONTAINER)
+
+        elif TEST == "PLACE_IN_CAM_POSE":
+            place_point = PointStamped()
+            place_point.header.frame_id = CAMERA_FRAME
+            place_point.point.x = 0.0
+            place_point.point.y = 0.0
+            place_point.point.z = 0.5
+            self.subtask_manager["manipulation"].place_in_point(place_point)
+
+        elif TEST == "PLACE_IN_MAP_POSE":
+            # place_in_point may receive a PoseStamped or PointStamped
+
+            # get data from nav
+            self.subtask_manager["navigation"] = NavigationTasks(
+                self, task=Task.GPSR, mock_data=False
+            )
+            place_pose = self.subtask_manager["navigation"].get_location_pose(PLACE_IN_LOCATION, "")
+            if place_pose.header.frame_id == "":
+                self.get_logger().error(f"Location {PLACE_IN_LOCATION} not found.")
+                return
+
+            self.get_logger().info(f"Placing in location {PLACE_IN_LOCATION} at pose: {place_pose}")
+            self.subtask_manager["manipulation"].place_in_point(place_pose)
 
 
 def main(args=None):

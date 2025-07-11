@@ -311,7 +311,7 @@ class ManipulationCore(Node):
         move_joint_positions(
             move_joints_action_client=self._move_joints_client,
             joint_positions=curr_joint_positions,
-            velocity=0.2,
+            velocity=0.75,
         )
         curr_joint_positions["joints"]["joint1"] -= SCAN_ANGLE_HORIZONTAL * 2
         move_joint_positions(
@@ -324,7 +324,7 @@ class ManipulationCore(Node):
         move_joint_positions(
             move_joints_action_client=self._move_joints_client,
             joint_positions=curr_joint_positions,
-            velocity=0.2,
+            velocity=0.75,
         )
 
 
