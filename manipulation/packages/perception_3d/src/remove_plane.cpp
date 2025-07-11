@@ -579,7 +579,7 @@ public:
     // get closest cluster to the robot 
     int largest_cluster_index = -1;
     size_t closest_cluster_distance = 0;
-    pcl::PointXYZ robot_position(0.0, 0.0, 0.0);
+    pcl::PointXYZ robot_position(0.0, 0.0, 0.5); // 0.5 meters above the ground
     for (size_t i = 0; i < cluster_indices.size(); ++i) {
       pcl::PointXYZ cluster_center(0.0, 0.0, 0.0);
       for (const auto &index : cluster_indices[i].indices) {

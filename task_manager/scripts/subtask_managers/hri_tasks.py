@@ -33,7 +33,6 @@ from frida_constants.hri_constants import (
     STT_ACTION_SERVER_NAME,
     WAKEWORD_TOPIC,
 )
-
 from frida_interfaces.action import SpeechStream
 from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
 from frida_interfaces.srv import (
@@ -257,13 +256,12 @@ class HRITasks(metaclass=SubtaskMeta):
                     Logger.warn(self.node, f"{key} action server not initialized. ({self.task})")
 
     @service_check("speak_service", Status.SERVICE_CHECK, TIMEOUT)
-    def say(self, text: str, wait: bool = True) -> None:
+    def say(self, text: str, wait: bool = True, speed: float = 1.3) -> None:
         """Method to publish directly text to the speech node"""
         Logger.info(self.node, f"Sending to saying service: {text}")
 
         # return Status.EXECUTION_SUCCESS
-
-        request = Speak.Request(text=text)
+        request = Speak.Request(text=text, speed=float(speed))
 
         future = self.speak_service.call_async(request)
 
@@ -530,7 +528,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
                 # If the transcription is equal to the last hotwords, consider that no text was heard: when the audio is too short or only silence, the transcription can be equal to the hotwords.
                 if (
-                    len(goal_future.result().result.transcription) > 0
+                    len(goal_future.result().result.transcription.strip()) > 0
                     and goal_future.result().result.transcription != self.last_hotwords
                 ):
                     if (
@@ -851,9 +849,10 @@ class HRITasks(metaclass=SubtaskMeta):
                 Logger.info(
                     self.node, f"Common interest computed between {person1} and {person2}: {result}"
                 )
+
                 future.set_result(
                     (
-                        Status.EXECUTION_SUCCESS,
+                        Status.TARGET_NOT_FOUND if "don't" in result else Status.EXECUTION_SUCCESS,
                         result,
                     )
                 )

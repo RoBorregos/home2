@@ -102,6 +102,13 @@ class DataExtractor(Node):
 
         self.get_logger().info(f"Extracting {request.data} from text")
 
+        if len(request.full_text.strip().split(" ")) < 2:
+            self.get_logger().error(
+                "Received text with less than 2 words. Returning input text as result."
+            )
+            response.result = request.full_text
+            return response
+
         # Optimized implementations for specific data extraction requests
         if request.data == "name":
             response.result = self.extract_name(request.full_text)

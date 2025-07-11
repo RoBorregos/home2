@@ -19,6 +19,7 @@ from utils.decorators import mockable, service_check
 from utils.status import Status
 from frida_interfaces.action import ManipulationAction
 from frida_interfaces.msg import ManipulationTask
+from geometry_msgs.msg import PointStamped  # , PoseStamped
 
 # from utils.decorators import service_check
 from xarm_msgs.srv import SetDigitalIO
@@ -385,6 +386,29 @@ class ManipulationTasks:
             return Status.EXECUTION_ERROR
         return Status.EXECUTION_SUCCESS
 
+    def pour(self, pour_object_name: str, pour_container_name: str):
+        goal_msg = ManipulationAction.Goal()
+        goal_msg.task_type = ManipulationTask.POUR
+        goal_msg.pour_params.object_name = pour_object_name
+        goal_msg.pour_params.bowl_name = pour_container_name
+        future = self._manipulation_action_client.send_goal_async(goal_msg)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+        if future.result() is None:
+            Logger.error(self.node, "Failed to send pour request")
+            return Status.EXECUTION_ERROR
+        Logger.info(self.node, "Pour request sent")
+        # wait for result
+        result_future = future.result().get_result_async()
+        rclpy.spin_until_future_complete(self.node, result_future)
+        result = result_future.result().result
+        Logger.info(self.node, f"Pour result: {result}")
+        if result.success:
+            Logger.success(self.node, "Pour request successful")
+        else:
+            Logger.error(self.node, "Pour request failed")
+            return Status.EXECUTION_ERROR
+        return Status.EXECUTION_SUCCESS
+
     def pan_to(self, degrees: float):
         joint_positions = self.get_joint_positions(degrees=True)
         joint_positions["joint1"] = joint_positions["joint1"] - degrees
@@ -443,6 +467,29 @@ class ManipulationTasks:
             return
         Logger.error(self.node, "Invalid position for plane")
         return Status.EXECUTION_ERROR
+
+    @mockable(return_value=Status.MOCKED)
+    @service_check(
+        client="_manipulation_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT
+    )
+    def place_in_point(self, point: PointStamped):
+        self.get_logger().warning("Sending place on point request")
+        # TODO: fix @EmilianoHFlores
+        # goal_msg = ManipulationAction.Goal()
+        # goal_msg.task_type = ManipulationTask.PLACE
+        # goal_msg.place_params.forced_pose = PoseStamped()
+
+        # goal_msg.place_params.forced_pose.header.frame_id = (
+        #     self.clicked_point.header.frame_id
+        # )
+        # goal_msg.place_params.forced_pose.pose.position.x = self.clicked_point.point.x
+        # goal_msg.place_params.forced_pose.pose.position.y = self.clicked_point.point.y
+        # goal_msg.place_params.forced_pose.pose.position.z = self.clicked_point.point.z
+
+        # self._action_client.send_goal_async(
+        #     goal_msg, feedback_callback=self.feedback_callback
+        # )
+        # self.get_logger().info("Place request sent")
 
 
 if __name__ == "__main__":

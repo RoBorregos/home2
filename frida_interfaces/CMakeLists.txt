@@ -80,6 +80,7 @@ set(msg_files
   "manipulation/msg/PickParams.msg"
   "manipulation/msg/PickResult.msg"
   "manipulation/msg/PlaceParams.msg"
+  "manipulation/msg/GripperDetection.msg"
   "manipulation/msg/PourParams.msg"
   "vision/msg/ObjectDetectionArray.msg"
   "vision/msg/ObjectDetection.msg"

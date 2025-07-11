@@ -44,6 +44,8 @@ class PointTransformer(Node):
         self.scan_topic = self.create_subscription(LaserScan, "/scan", self.update_laser, 10)
         self.get_logger().info("PointTransformer node has been started.")
 
+        # self.get_actual_pose()
+
     def update_laser(self, msg: LaserScan):
         self.laser_sub = msg
 
@@ -78,7 +80,7 @@ class PointTransformer(Node):
             response.message = "Error converting to height: {e}"
             return response
 
-    def get_actual_pose(self, request, response):
+    def get_actual_pose(self):
         try:
             # Wait for the transform to become available (with a timeout)
             self.tf_buffer.can_transform(
@@ -94,6 +96,9 @@ class PointTransformer(Node):
             posex = transform.transform.translation.x
             posey = transform.transform.translation.y
 
+            self.get_logger().info(f"Robot's position in the map frame: x={posex}, y={posey}")
+            self.get_logger().info(f"Robot's transform: {transform.transform}")
+            response = ReturnLocation.Response()
             response.posex = posex
             response.posey = posey
             response.status = Status.EXECUTION_SUCCESS

@@ -2,7 +2,7 @@ from frida_motion_planning.utils.ros_utils import wait_for_future
 from geometry_msgs.msg import PointStamped
 from std_srvs.srv import SetBool
 from pick_and_place.utils.grasp_utils import get_grasps
-from pick_and_place.utils.perception_utils import get_object_point, get_object_cluster
+from pick_and_place.utils.perception_utils import get_object_cluster
 from frida_interfaces.action import PickMotion
 from frida_interfaces.msg import PickResult
 from frida_motion_planning.utils.service_utils import (
@@ -10,10 +10,20 @@ from frida_motion_planning.utils.service_utils import (
 )
 from typing import Tuple
 import time
+import copy
+from scipy.spatial.transform import Rotation as R
+from sensor_msgs_py import point_cloud2
+import numpy as np
 
 CFG_PATHS = [
-    "/workspace/src/home2/manipulation/packages/arm_pkg/config/frida_eigen_params_custom_gripper_testing.cfg",
-    "/workspace/src/home2/manipulation/packages/arm_pkg/config/frida_eigen_params_custom_gripper.cfg",
+    [
+        "/workspace/src/home2/manipulation/packages/arm_pkg/config/frida_eigen_params_custom_gripper_testing.cfg",
+        True,
+    ],
+    [
+        "/workspace/src/home2/manipulation/packages/arm_pkg/config/frida_eigen_params_custom_gripper.cfg",
+        False,
+    ],
 ]
 
 
@@ -45,13 +55,14 @@ class PickManager:
                 self.node.get_logger().info(f"Going for point: {point}")
             elif object_name is not None and object_name != "":
                 self.node.get_logger().info(f"Going for object name: {object_name}")
-                point = get_object_point(
-                    object_name, self.node.detection_handler_client
-                )
-                if point is None:
+                point = self.get_object_point(object_name)
+                if point.header.frame_id == "":
                     self.node.get_logger().error(
                         f"Object {object_name} not found, please provide a point"
                     )
+                    return False, None
+                if point.point.z > 1.0:
+                    self.node.get_logger().error(f"Object {object_name} is too far")
                     return False, None
             else:
                 self.node.get_logger().error("No object name or point provided")
@@ -71,6 +82,20 @@ class PickManager:
             self.node.get_logger().error("No object cluster detected")
             return False, None
 
+        # 8. Compute Centroid/Height and Set Pour Pose
+        cloud_gen = point_cloud2.read_points(
+            object_cluster, field_names=("x", "y", "z"), skip_nans=True
+        )
+        points = [list(p) for p in cloud_gen]
+        if not points:
+            self.node.get_logger().error("Empty bowl cluster")
+            return False, None
+
+        points_np = np.array(points)
+        max_z = np.max(points_np[:, 2])
+        min_z = np.min(points_np[:, 2])
+        height = max_z - min_z
+        self.node.get_logger().info(f"Object cluster height: {height:.2f} m")
         # open gripper
         gripper_request = SetBool.Request()
         gripper_request.data = True
@@ -82,28 +107,83 @@ class PickManager:
         pick_result_success = False
         print("Gripper Result:", result)
         for CFG_PATH in CFG_PATHS:
+            cfg_path = CFG_PATH[0]
+            is_reversible = CFG_PATH[1]
+            if is_reversible and height < 0.06:
+                self.node.get_logger().warn(
+                    "Object is too small for reversible grasping, skipping reversible grasps"
+                )
+                continue
             self.node.get_logger().info(f"CFG_PATH: {CFG_PATH}")
             # Call Grasp Pose Detection
             grasp_poses, grasp_scores = get_grasps(
-                self.node.grasp_detection_client, object_cluster, CFG_PATH
+                self.node.grasp_detection_client, object_cluster, cfg_path
             )
             if len(grasp_poses) == 0:
                 self.node.get_logger().error(
-                    f"No grasp poses detected for {object_name} with cfg {CFG_PATH}"
+                    f"No grasp poses detected with cfg {cfg_path}"
                 )
                 continue
 
-            # sort by score
-            grasp_poses, grasp_scores = zip(
-                *sorted(
-                    zip(grasp_poses, grasp_scores),
-                    key=lambda x: x[1],
-                    reverse=True,
-                )
-            )
-            grasp_poses, grasp_scores = grasp_poses[:5], grasp_scores[:5]
+            self.node.get_logger().info(f"Detected grasps with scores: {grasp_scores}")
 
-            if len(grasp_poses) == 0:
+            # Sort grasp poses by score in descending order (highest scores first)
+            # grasp_poses, grasp_scores = zip(
+            #     *sorted(
+            #         zip(grasp_poses, grasp_scores),
+            #         key=lambda x: x[1],
+            #         reverse=True,
+            #     )
+            # )
+            # grasp_poses, grasp_scores = grasp_poses[:5], grasp_scores[:5]
+
+            # randomly pick 5 grasps
+            if len(grasp_poses) > 5:
+                indices = np.random.choice(len(grasp_poses), size=5, replace=False)
+                grasp_poses = [grasp_poses[i] for i in indices]
+                grasp_scores = [grasp_scores[i] for i in indices]
+            else:
+                # if less than 5 grasps, just take them all
+                grasp_poses = grasp_poses[:5]
+                grasp_scores = grasp_scores[:5]
+
+            self.node.get_logger().info(
+                f"Top 5 grasp poses detected with scores: {grasp_scores}"
+            )
+
+            # reverse grasps (turn 180 degrees in z)
+            new_grasp_poses = []
+            new_grasp_scores = []
+            if is_reversible:
+                for pose, grasp_score in zip(grasp_poses, grasp_scores):
+                    new_grasp_poses.append(pose)
+                    new_grasp_scores.append(grasp_score)
+                    # Reverse the pose (turn 180 degrees in z)
+                    reversed_pose = copy.deepcopy(pose)
+                    # 180 degrees rotation around Z axis
+                    # Rotate 180 degrees around the local Z axis (end-effector frame)
+                    q_orig = [
+                        pose.pose.orientation.x,
+                        pose.pose.orientation.y,
+                        pose.pose.orientation.z,
+                        pose.pose.orientation.w,
+                    ]
+                    q_orig_rot = R.from_quat(q_orig)
+                    q_z_180_local = R.from_euler("z", 180, degrees=True)
+                    q_result = (q_orig_rot * q_z_180_local).as_quat()  # [x, y, z, w]
+                    reversed_pose.pose.orientation.x = q_result[0]
+                    reversed_pose.pose.orientation.y = q_result[1]
+                    reversed_pose.pose.orientation.z = q_result[2]
+                    reversed_pose.pose.orientation.w = q_result[3]
+                    new_grasp_poses.append(reversed_pose)
+                    new_grasp_scores.append(grasp_score)
+                new_grasp_scores = new_grasp_scores[:5]
+                new_grasp_poses = new_grasp_poses[:5]
+            else:
+                new_grasp_poses = grasp_poses
+                new_grasp_scores = grasp_scores
+
+            if len(new_grasp_poses) == 0:
                 self.node.get_logger().error("No grasp poses detected")
                 continue
 
@@ -111,8 +191,8 @@ class PickManager:
 
             # Create goal
             goal_msg = PickMotion.Goal()
-            goal_msg.grasping_poses = grasp_poses
-            goal_msg.grasping_scores = grasp_scores
+            goal_msg.grasping_poses = new_grasp_poses
+            goal_msg.grasping_scores = new_grasp_scores
 
             # Send goal
             self.node.get_logger().info("Sending pick motion goal...")
@@ -128,7 +208,7 @@ class PickManager:
                 break
             else:
                 # give time for new gpd
-                time.sleep(2)
+                time.sleep(1.0)
 
         if not pick_result_success:
             self.node.get_logger().error("Pick motion failed")
@@ -153,7 +233,7 @@ class PickManager:
             return_result = send_joint_goal(
                 move_joints_action_client=self.node._move_joints_client,
                 named_position="table_stare",
-                velocity=0.3,
+                velocity=0.5,
             )
             if return_result:
                 break

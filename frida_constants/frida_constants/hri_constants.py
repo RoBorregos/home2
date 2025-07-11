@@ -55,7 +55,7 @@ class MODEL(Enum):
     GENERIC_STRUCTURED_OUTPUT = "qwen3"
     GENERATE_RESPONSE = "qwen3"
     STRUCTURED_RESPONSE = "qwen3"
-    EXTRACT_INFO_REQUESTED = "qwen2.5"
+    EXTRACT_INFO_REQUESTED = "qwen3"
     GET_COMMANDS = "qwen3"
     CommonInterest = "qwen3"
 

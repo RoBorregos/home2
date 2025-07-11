@@ -5,6 +5,7 @@ import os
 import sys
 from collections import OrderedDict
 
+import grpc
 import rclpy
 from gtts import gTTS
 from pygame import mixer
@@ -15,8 +16,6 @@ from std_msgs.msg import Bool, String
 
 from frida_constants.hri_constants import SPEAK_SERVICE
 from frida_interfaces.srv import Speak
-
-import grpc
 
 # Add the directory containing the protos to the Python path
 sys.path.append(os.path.join(os.path.dirname(__file__), "tts"))
@@ -47,7 +46,7 @@ class Say(Node):
         self._cache_size = (
             self.get_parameter("cache_size").get_parameter_value().integer_value
         )
-        self._audio_cache = OrderedDict()  # text -> filepath mapping
+        self._audio_cache = OrderedDict()  # (text, speed) -> filepath mapping
 
         # Load cached mappings from disk if they exist
         self._load_cache()
@@ -115,9 +114,23 @@ class Say(Node):
             if os.path.exists(CACHE_FILE):
                 with open(CACHE_FILE, "r") as f:
                     cache_data = json.load(f)
-                    for text, filepath in cache_data.items():
+                    for key, filepath in cache_data.items():
+                        # Handle both old format (text only) and new format (text,speed)
+                        if isinstance(key, str) and "," in key:
+                            # New format: "text,speed"
+                            text, speed_str = key.rsplit(",", 1)
+                            try:
+                                speed = float(speed_str)
+                                cache_key = (text, speed)
+                            except ValueError:
+                                # Skip invalid entries
+                                continue
+                        else:
+                            # Old format: text only, assume speed=1
+                            cache_key = (key, 1.0)
+
                         if os.path.exists(filepath):
-                            self._audio_cache[text] = filepath
+                            self._audio_cache[cache_key] = filepath
                         else:
                             self.get_logger().warn(f"Cached file not found: {filepath}")
                 self.get_logger().info(
@@ -130,22 +143,30 @@ class Say(Node):
     def _save_cache(self):
         """Save the current cache to disk."""
         try:
+            # Convert cache keys (text, speed) to strings for JSON serialization
+            serializable_cache = {}
+            for (text, speed), filepath in self._audio_cache.items():
+                key = f"{text},{speed}"
+                serializable_cache[key] = filepath
+
             with open(CACHE_FILE, "w") as f:
-                json.dump(dict(self._audio_cache), f)
+                json.dump(serializable_cache, f)
             self.get_logger().info(f"Saved {len(self._audio_cache)} entries to cache")
         except Exception as e:
             self.get_logger().error(f"Failed to save cache: {e}")
 
-    def _get_cached_audio(self, text):
-        """Check if text exists in cache and return its filepath."""
-        if text in self._audio_cache:
+    def _get_cached_audio(self, text, speed=1.0):
+        """Check if text and speed combination exists in cache and return its filepath."""
+        cache_key = (text, speed)
+        if cache_key in self._audio_cache:
             # Move to end to mark as recently used
-            filepath = self._audio_cache.pop(text)
-            self._audio_cache[text] = filepath
+            filepath = self._audio_cache.pop(cache_key)
+            self._audio_cache[cache_key] = filepath
             return filepath
+
         return None
 
-    def _add_to_cache(self, text, filepath):
+    def _add_to_cache(self, text, filepath, speed=1.0):
         """Add a new text-filepath pair to the cache."""
         if len(self._audio_cache) >= self._cache_size:
             # Remove oldest entry (first item in OrderedDict)
@@ -153,28 +174,34 @@ class Say(Node):
             if os.path.exists(old_filepath):
                 os.remove(old_filepath)
 
-        self._audio_cache[text] = filepath
+        cache_key = (text, speed)
+        self._audio_cache[cache_key] = filepath
         self._save_cache()
 
     def speak_service(self, req, res):
-        self.get_logger().info("[Service] I will say: " + req.text)
-        if req.text:
-            msg = String()
-            msg.data = req.text
-            self.text_publisher_.publish(msg)
-            self.say(req.text)
-            res.success = True
-        else:
-            res.success = False
-            self.get_logger().info("[Service] Nothing to say.")
-        return res
+        try:
+            self.get_logger().info("[Service] I will say: " + req.text)
+            if req.text:
+                msg = String()
+                msg.data = req.text
+                self.text_publisher_.publish(msg)
+                self.say(req.text, req.speed)
+                res.success = True
+            else:
+                res.success = False
+                self.get_logger().info("[Service] Nothing to say.")
+        except Exception as e:
+            self.get_logger().error(f"[Service] Error in speak_service: {e}")
+        finally:
+            return res
 
-    def say(self, text):
+    def say(self, text, speed):
         self.publisher_.publish(Bool(data=True))
         success = False
+
         try:
             if self.offline or not self.connected:
-                self.offline_voice(text)
+                self.offline_voice(text, speed)
             else:
                 self.connectedVoice(text)
             success = True
@@ -182,46 +209,52 @@ class Say(Node):
             self.get_logger().error(e)
             if not self.offline:
                 self.get_logger().warn("Retrying with offline mode")
-                self.offline_voice(text)
+                self.offline_voice(text, speed)
 
         self.publisher_.publish(Bool(data=False))
         return success
 
-    def offline_voice(self, text):
+    def offline_voice(self, text, speed=1):
         text_chunks = self.split_text(text, 4000)
         audio_files = []
 
         # Check cache or generate new files for each chunk
         for i, chunk in enumerate(text_chunks, 1):
-            cached_path = self._get_cached_audio(chunk)
+            cached_path = self._get_cached_audio(chunk, speed)
             if cached_path and os.path.exists(cached_path):
                 self.get_logger().debug(f"Using cached audio for chunk {i}")
                 audio_files.append(cached_path)
+
                 self.get_logger().debug(f"Playing {len(audio_files)} audio files")
 
                 # Play all audio files
                 for filepath in audio_files:
                     self.play_audio(filepath)
             else:
-                output_path = os.path.join(VOICE_DIRECTORY, f"{hash(chunk)}.wav")
-                self.synthesize_voice_offline(f"{hash(chunk)}.wav", chunk)
-                self._add_to_cache(chunk, output_path)
+                output_path = os.path.join(
+                    VOICE_DIRECTORY, f"{hash((chunk, speed))}.wav"
+                )
+                self.synthesize_voice_offline(
+                    f"{hash((chunk, speed))}.wav", chunk, speed
+                )
+                self._add_to_cache(chunk, output_path, speed)
                 mixer.pre_init(frequency=48000, buffer=2048)
                 mixer.init()
                 while mixer.music.get_busy():
                     pass
 
     def connectedVoice(self, text):
-        cached_path = self._get_cached_audio(text)
+        # For connected voice, speed is not applicable, so we use default speed=1.0
+        cached_path = self._get_cached_audio(text, 1.0)
         if cached_path and os.path.exists(cached_path):
             self.get_logger().info("Using cached audio")
             self.play_audio(cached_path)
             return
 
-        save_path = os.path.join(VOICE_DIRECTORY, f"{hash(text)}.mp3")
+        save_path = os.path.join(VOICE_DIRECTORY, f"{hash((text, 1.0))}.mp3")
         tts = gTTS(text=text, lang="es")
         tts.save(save_path)
-        self._add_to_cache(text, save_path)
+        self._add_to_cache(text, save_path, 1.0)
         self.get_logger().info("Saying...")
         self.play_audio(save_path)
 
@@ -251,13 +284,16 @@ class Say(Node):
 
         return limited_chunks
 
-    def synthesize_voice_offline(self, output_path, text):
+    def synthesize_voice_offline(self, output_path, text, speed):
         try:
             with grpc.insecure_channel(self.server_ip) as channel:
                 stub = tts_pb2_grpc.TTSServiceStub(channel)
                 response = stub.Synthesize(
                     tts_pb2.SynthesizeRequest(
-                        text=text, model=self.model, output_path=output_path
+                        text=text,
+                        model=self.model,
+                        output_path=output_path,
+                        speed=speed,
                     )
                 )
 
