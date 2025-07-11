@@ -9,9 +9,10 @@ def get_object_point(object_name: str, detection_handler_client) -> PointStamped
     request.closest_object = False
     detection_handler_client.wait_for_service()
     future = detection_handler_client.call_async(request)
-    future = wait_for_future(future)
-
+    future = wait_for_future(future, timeout=2.0)
     point = PointStamped()
+    if not future:
+        return point
 
     if len(future.result().detection_array.detections) == 1:
         point = future.result().detection_array.detections[0].point3d
@@ -28,8 +29,6 @@ def get_object_point(object_name: str, detection_handler_client) -> PointStamped
                 closest_distance = distance
                 closest_object = detection
         point = closest_object.point3d
-    else:
-        return None
 
     return point
 

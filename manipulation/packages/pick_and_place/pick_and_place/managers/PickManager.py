@@ -14,6 +14,8 @@ import copy
 from scipy.spatial.transform import Rotation as R
 from sensor_msgs_py import point_cloud2
 import numpy as np
+from pick_and_place.utils.perception_utils import get_object_point
+
 
 CFG_PATHS = [
     [
@@ -55,7 +57,9 @@ class PickManager:
                 self.node.get_logger().info(f"Going for point: {point}")
             elif object_name is not None and object_name != "":
                 self.node.get_logger().info(f"Going for object name: {object_name}")
-                point = self.get_object_point(object_name)
+                point = get_object_point(
+                    object_name, self.node.detection_handler_client
+                )
                 if point.header.frame_id == "":
                     self.node.get_logger().error(
                         f"Object {object_name} not found, please provide a point"

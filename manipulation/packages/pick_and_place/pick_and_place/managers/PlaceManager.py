@@ -1,5 +1,5 @@
 from frida_motion_planning.utils.ros_utils import wait_for_future
-from frida_motion_planning.utils.tf_utils import transform_pose
+from frida_motion_planning.utils.tf_utils import transform_pose, transform_point
 from frida_interfaces.srv import PlacePerceptionService, HeatmapPlace
 from geometry_msgs.msg import PoseStamped
 from frida_interfaces.msg import PlaceParams
@@ -109,6 +109,8 @@ class PlaceManager:
             )
         else:
             # Call Perception Service to get object cluster and generate collision objects
+            heatmap_request = HeatmapPlace.Request()
+
             if place_params.special_request != "":
                 request_dict = json.loads(place_params.special_request)
                 request = request_dict.get("request", "")
@@ -120,24 +122,48 @@ class PlaceManager:
                     for i in range(5):
                         try:
                             close_by_point = get_object_point(
-                                self.node,
                                 close_by_object_name,
                                 self.node.detection_handler_client,
                             )
                             if close_by_point is not None:
                                 break
+                            else:
+                                self.node.get_logger().warn(
+                                    f"Failed to get close by point for {close_by_object_name}, retrying..."
+                                )
                         except Exception as e:
                             self.node.get_logger().error(
                                 f"Failed to get object name: {e}"
                             )
+
+                    transform_frame = "base_link"
+                    self.node.get_logger().info(
+                        f"Transforming close by point to {transform_frame} frame"
+                    )
+                    success, close_by_point = transform_point(
+                        close_by_point, transform_frame, self.node.tf_buffer
+                    )
+
                     self.node.get_logger().info(f"Close by point: {close_by_point}")
+
+                    if not success:
+                        self.node.get_logger().error(
+                            "Failed to transform close by point"
+                        )
+                        return None
 
                     if location == "top":
                         # we want to place on top of the object
                         result_pose.header.frame_id = close_by_point.header.frame_id
-                        result_pose.pose.position.x = close_by_point.x
-                        result_pose.pose.position.y = close_by_point.y
-                        result_pose.pose.position.z = close_by_point.z
+                        result_pose.pose.position.x = close_by_point.point.x
+                        result_pose.pose.position.y = close_by_point.point.y
+                        result_pose.pose.position.z = close_by_point.point.z
+                    elif (
+                        close_by_point is not None
+                        and close_by_point.header.frame_id != ""
+                    ):
+                        heatmap_request.close_point = close_by_point
+                        heatmap_request.special_request = place_params.special_request
 
             # if the task is not a forced pose or place on top of an object,
             # we use the perception service to get optimal place pose
@@ -164,7 +190,6 @@ class PlaceManager:
                     f"Plane cluster detected: {len(pcl_result.data)} points"
                 )
 
-                heatmap_request = HeatmapPlace.Request()
                 heatmap_request.pointcloud = pcl_result
 
                 if place_params.is_shelf:

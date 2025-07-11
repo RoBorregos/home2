@@ -14,6 +14,7 @@ from frida_constants.vision_constants import (
 from frida_constants.manipulation_constants import (
     MANIPULATION_ACTION_SERVER,
 )
+import json
 
 
 class KeyboardInput(Node):
@@ -84,7 +85,12 @@ class KeyboardInput(Node):
         self.get_logger().info(f"Pick request for {object_name} sent")
 
     def send_place_request(
-        self, is_shelf=False, table_height=None, table_height_tolerance=None
+        self,
+        is_shelf=False,
+        table_height=None,
+        table_height_tolerance=None,
+        special_request_position=None,
+        special_request_object=None,
     ):
         self.get_logger().warning("Sending place request")
 
@@ -99,6 +105,14 @@ class KeyboardInput(Node):
         if table_height is not None and table_height_tolerance is not None:
             goal_msg.place_params.table_height = table_height
             goal_msg.place_params.table_height_tolerance = table_height_tolerance
+        if special_request_position is not None and special_request_object is not None:
+            special_request_msg = {
+                "request": "close_by",
+                "object": special_request_object,
+                "position": special_request_position,
+            }
+            special_request_msg = json.dumps(special_request_msg)
+            goal_msg.place_params.special_request = special_request_msg
         self.get_logger().info("Sending place request")
         self._action_client.send_goal_async(
             goal_msg, feedback_callback=self.feedback_callback
@@ -186,6 +200,7 @@ def main(args=None):
             print("-5. Place on shelf (with plane height)")
             print("-6. Pour")
             print("-7. Place on clicked point")
+            print("-8. Special Request Place")
             print("q. Quit")
 
             choice = input("\nEnter your choice: ")
@@ -235,6 +250,31 @@ def main(args=None):
                     node.send_place_on_clicked_point_request()
                 else:
                     print("No point clicked within the time limit. Please try again.")
+
+            elif choice == "-8":
+                print("Special Request Place")
+                print("Options: close, front, back, left, right")
+                special_request_position = (
+                    input("Enter your special request: ").strip().lower()
+                )
+                if special_request_position not in [
+                    "close",
+                    "front",
+                    "back",
+                    "left",
+                    "right",
+                ]:
+                    print("Invalid special request. Please try again.")
+                    return
+
+                special_request_object = (
+                    input("Enter the object for the special request: ").strip().lower()
+                )
+
+                node.send_place_request(
+                    special_request_position=special_request_position,
+                    special_request_object=special_request_object,
+                )
 
             elif choice.isdigit():
                 try:

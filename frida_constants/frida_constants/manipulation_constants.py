@@ -58,6 +58,9 @@ PLACE_POINT_DEBUG_TOPIC = "/manipulation/table_place_point_debug"
 PLACE_MAX_DISTANCE = 0.8
 PLACE_MOTION_ACTION_SERVER = "/manipulation/place_motion_action_server"
 
+# Special request for place
+CLOSE_BY_MAX_DISTANCE = 0.3  # Maximum distance for close-by heatmap generation
+
 MANIPULATION_ACTION_SERVER = "/manipulation/manipulation_action_server"
 
 ATTACH_COLLISION_OBJECT_SERVICE = "/manipulation/attach_collision_object"
