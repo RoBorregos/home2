@@ -26,10 +26,6 @@ class ZedSimulator(Node):
         self.video_id = self.declare_parameter("video_id", 0)
         self.use_zed = self.declare_parameter("use_zed", False)
         self.use_zed = self.get_parameter("use_zed").get_parameter_value().bool_value
-        self.visualize = self.declare_parameter("visualize", True)
-        self.visualize = (
-            self.get_parameter("visualize").get_parameter_value().bool_value
-        )
         self.cap = cv2.VideoCapture(self.video_id.value)
         self.run()
 
@@ -46,10 +42,9 @@ class ZedSimulator(Node):
 
             image = self.bridge.cv2_to_imgmsg(frame, encoding="bgr8")
             self.publisher_.publish(image)
-            if self.visualize:
-                cv2.imshow("frame", frame)
-                if cv2.waitKey(1) & 0xFF == ord("q"):
-                    break
+            cv2.imshow("frame", frame)
+            if cv2.waitKey(1) & 0xFF == ord("q"):
+                break
 
         self.cap.release()
         cv2.destroyAllWindows()

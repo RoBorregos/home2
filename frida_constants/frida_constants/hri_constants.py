@@ -17,6 +17,9 @@ GRAMMAR_SERVICE = "/hri/nlp/grammar"
 COMMON_INTEREST_SERVICE = "/hri/nlp/common_interest"
 RAG_SERVICE = "/hri/rag/answer_question"
 
+
+DISPLAY_PUBLISHER = "/hri/display/frida_questions"
+ANSWER_PUBLISHER = "/hri/display/answers"
 DISPLAY_IMAGE_TOPIC = "/hri/display/change_video"
 DISPLAY_MAP_TOPIC = "/hri/display/map"
 
@@ -24,6 +27,7 @@ USE_RESPEAKER = True
 RESPEAKER_LIGHT_TOPIC = "/hri/speech/respeaker/light"
 RESPEAKER_DOA_TOPIC = "/hri/speech/respeaker/doa"
 STT_ACTION_SERVER_NAME = "/hri/speech/STT_action_server"
+
 
 GPSR_COMMANDS = {
     "go_to",

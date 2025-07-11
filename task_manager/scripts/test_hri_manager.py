@@ -60,6 +60,7 @@ TEST_INDIVIDUAL_FUNCTIONS = False
 TEST_EMBEDDINGS = False
 TEST_ASYNC_LLM = False
 TEST_STREAMING = False
+TEST_QUESTION_ANSWERING = False
 TEST_MAP = False
 TEST_OBJECT_LOCATION = True
 
@@ -89,6 +90,8 @@ class TestHriManager(Node):
 
         if TEST_STREAMING:
             self.test_streaming()
+        if TEST_QUESTION_ANSWERING:
+            self.test_answer_question()
 
         if TEST_MAP:
             self.test_map()

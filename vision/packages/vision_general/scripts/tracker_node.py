@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+
 """
 Node to track a single person and
 re-id them if necessary
@@ -16,19 +17,18 @@ from vision_general.utils.calculations import (
     get_depth,
     deproject_pixel_to_point,
 )
-
 import copy
 import rclpy
 from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo
-from geometry_msgs.msg import Point, PointStamped
+from geometry_msgs.msg import Point
+
 from vision_general.utils.reid_model import (
     load_network,
     compare_images,
     compare_images_batch,
     extract_feature_from_img,
-    extract_feature_from_img_batch,
     get_structure,
 )
 
@@ -53,14 +53,11 @@ from ament_index_python.packages import get_package_share_directory
 import os
 
 CONF_THRESHOLD = 0.6
-DEPTH_THRESHOLD = 5e8
+
 # Get config folder from package
 PACKAGE_NAME = "vision_general"
 CONFIG_FOLDER = os.path.join(get_package_share_directory(PACKAGE_NAME), "config")
 BOTSORT_REID_YAML = os.path.join(CONFIG_FOLDER, "botsort-reid.yaml")
-BYTETRACK_REID_YAML = "bytetrack.yaml"
-REID_EXTRACT_FREQ = 0.2
-MAX_EMBEDDINGS = 128
 
 
 class SingleTracker(Node):
@@ -70,21 +67,16 @@ class SingleTracker(Node):
         self.bridge = CvBridge()
         self.callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
 
-        qos = rclpy.qos.QoSProfile(
-            history=rclpy.qos.HistoryPolicy.KEEP_LAST,
-            depth=1,
-            reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
-        )
         self.image_subscriber = self.create_subscription(
-            Image, CAMERA_TOPIC, self.image_callback, qos
+            Image, CAMERA_TOPIC, self.image_callback, 10
         )
 
         self.depth_subscriber = self.create_subscription(
-            Image, DEPTH_IMAGE_TOPIC, self.depth_callback, qos
+            Image, DEPTH_IMAGE_TOPIC, self.depth_callback, 10
         )
 
         self.image_info_subscriber = self.create_subscription(
-            CameraInfo, CAMERA_INFO_TOPIC, self.image_info_callback, qos
+            CameraInfo, CAMERA_INFO_TOPIC, self.image_info_callback, 10
         )
 
         self.set_target_service = self.create_service(
@@ -98,9 +90,8 @@ class SingleTracker(Node):
         self.get_is_tracking_service = self.create_service(
             Trigger, "/vision/is_tracking", self.get_is_tracking_callback
         )
-        self.is_tracking_result = False
 
-        self.results_publisher = self.create_publisher(PointStamped, RESULTS_TOPIC, 10)
+        self.results_publisher = self.create_publisher(Point, RESULTS_TOPIC, 10)
 
         self.image_publisher = self.create_publisher(Image, TRACKER_IMAGE_TOPIC, 10)
 
@@ -113,10 +104,8 @@ class SingleTracker(Node):
         self.verbose = self.declare_parameter("verbose", True)
 
         self.setup()
-        self.last_reid_extraction = time.time()
-        self.go = False
         self.create_timer(0.1, self.run)
-        self.create_timer(0.05, self.publish_image)
+        self.create_timer(0.01, self.publish_image)
 
         self.is_tracking_result = False
 
@@ -124,13 +113,9 @@ class SingleTracker(Node):
         """Load models and initial variables"""
         self.target_set = False
         self.image = None
-        self.depth_image_time = None
-        self.image_time = None
-        self.frame_id = "zed_left_camera_optical_frame"
         self.person_data = {
             "id": None,
             "embeddings": None,
-            "num_embeddings": 0,
             "forward": None,
             "backward": None,
             "left": None,
@@ -138,21 +123,9 @@ class SingleTracker(Node):
             "coordinates": [],
         }
 
-        pbar = tqdm.tqdm(total=4, desc="Loading models")
+        pbar = tqdm.tqdm(total=1, desc="Loading models")
 
-        # # if .engine does not exist, export the model
-        # if not os.path.exists("yolo11n.engine"):
-        #     pt_model = YOLO("yolo11n.pt")
-        #     self.get_logger().info("Loaded YOLO model, exporting...")
-        #     # # Export the model to TensorRT with DLA enabled (only works with FP16 or INT8)
-        #     pt_model.export(
-        #         format="engine", device="dla:0", half=True
-        #     )  # dla:0 or dla:1 corresponds to the DLA cores
-
-        # Load the exported TensorRT model
-        self.model = YOLO("yolo11n.engine")
-        # self.model = YOLO("yolov8n.pt")
-        self.get_logger().info("Loaded YOLO model")
+        self.model = YOLO("yolov8n.pt")
         self.pose_detection = PoseDetection()
 
         # Load the ReID model
@@ -186,14 +159,12 @@ class SingleTracker(Node):
     def image_callback(self, data):
         """Callback to receive image from camera"""
         self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
-        self.image_time = data.header.stamp
 
     def depth_callback(self, data):
         """Callback to receive depth image from camera"""
         try:
             depth_image = self.bridge.imgmsg_to_cv2(data, "32FC1")
             self.depth_image = depth_image
-            self.depth_image_time = data.header.stamp
         except Exception as e:
             print(f"Error: {e}")
 
@@ -248,11 +219,8 @@ class SingleTracker(Node):
             return False
 
         self.get_logger().info(f"Setting target by {track_by} with value {value}")
-        self.person_data["id"] = None
-        self.person_data["embeddings"] = None
 
-        self.frame = copy.deepcopy(self.image)
-
+        self.frame = self.image
         self.output_image = self.frame.copy()
         results = copy.deepcopy(self.results)
 
@@ -398,37 +366,23 @@ class SingleTracker(Node):
 
     def run(self):
         """Main loop to run the tracker"""
-
         if True:  # self.target_set:
             self.frame = self.image
-            image_time = copy.deepcopy(self.image_time)
-            depth_image_time = copy.deepcopy(self.depth_image_time)
-            if self.frame is None:
-                self.get_logger().error("No image available")
-                return
 
-            # if self.go:
-            #     self.go = False
-            #     return
-            # else:
-            #     self.go = True
+            if self.frame is None:
+                return
 
             self.output_image = self.frame.copy()
 
-            start_time = time.time()
             self.results = self.model.track(
                 self.frame,
                 persist=True,
-                tracker=BYTETRACK_REID_YAML,
+                tracker=BOTSORT_REID_YAML,
                 classes=0,
                 verbose=False,
             )
-            self.get_logger().info(
-                f"Det+Tracking took {time.time() - start_time:.2f} seconds"
-            )
 
             if self.person_data["id"] is None:
-                self.frame = None
                 return
 
             person_in_frame = False
@@ -480,68 +434,41 @@ class SingleTracker(Node):
                         embedding = None
                         pil_image = PILImage.fromarray(cropped_image)
 
-                        if self.person_data[
-                            "embeddings"
-                        ] is None or time.time() - self.last_reid_extraction > (
-                            1 / REID_EXTRACT_FREQ
-                        ):
-                            self.last_reid_extraction = time.time()
-                            with torch.no_grad():
-                                start_time = time.time()
-                                embedding = extract_feature_from_img(
-                                    pil_image, self.model_reid
-                                )
-                                self.get_logger().info(
-                                    f"Extracted embedding in {time.time() - start_time:.2f} seconds"
-                                )
-                            if self.person_data["embeddings"] is None:
-                                self.person_data["embeddings"] = torch.zeros(
-                                    (MAX_EMBEDDINGS, embedding.shape[1]),
-                                    device="cuda"
-                                    if torch.cuda.is_available()
-                                    else "cpu",
-                                )
-                                embeddings_shape = self.person_data["embeddings"].shape
-                                print(
-                                    f"person data embeddings shape: {embeddings_shape} "
-                                )
-                                self.person_data["embeddings"][
-                                    self.person_data["num_embeddings"]
-                                ] = embedding.squeeze()
-                                self.person_data["num_embeddings"] += 1
-                            else:
-                                """ Compare embeddings from the person with the current one
-                                if they are different, we can add a new embedding as we have "certainty this is the same person
-                                with a different view -- not necessarily from a different angle"""
-                                start_time = time.time()
-                                embedding_exists = False
-                                # for emb in self.person_data["embeddings"]:
-                                #     if compare_images(embedding, emb, threshold=0.7):
-                                #         embedding_exists = True
-                                #         break
-
-                                # self.get_logger().info(
-                                #     f"Compared embedding sequentially in {time.time() - start_time:.2f} seconds"
-                                # )
-
-                                start_time = time.time()
-                                embedding_exists = compare_images_batch(
-                                    embedding,
+                        with torch.no_grad():
+                            embedding = extract_feature_from_img(
+                                pil_image, self.model_reid
+                            )
+                        if self.person_data["embeddings"] is None:
+                            self.person_data["embeddings"] = torch.Tensor([])
+                            # append the first embedding
+                            self.person_data["embeddings"] = torch.cat(
+                                (
                                     self.person_data["embeddings"],
-                                    threshold=0.7,
+                                    embedding.squeeze(0).unsqueeze(0),
                                 )
-                                self.get_logger().info(
-                                    f"Compared embedding in batch in {time.time() - start_time:.2f} seconds"
+                            )
+                        else:
+                            """ Compare embeddings from the person with the current one
+                            if they are different, we can add a new embedding as we have "certainty this is the same person
+                            with a different view -- not necessarily from a different angle"""
+                            embedding_exists = False
+                            for emb in self.person_data["embeddings"]:
+                                if compare_images(embedding, emb, threshold=0.7):
+                                    embedding_exists = True
+                                    break
+
+                            compare_images_batch(
+                                embedding, self.person_data["embeddings"], threshold=0.7
+                            )
+
+                            if not embedding_exists:
+                                self.person_data["embeddings"] = torch.cat(
+                                    (
+                                        self.person_data["embeddings"],
+                                        embedding.squeeze(0).unsqueeze(0),
+                                    )
                                 )
 
-                                if (
-                                    not embedding_exists
-                                    and self.person_data["num_embeddings"]
-                                    < MAX_EMBEDDINGS
-                                ):
-                                    self.person_data["embeddings"][
-                                        self.person_data["num_embeddings"]
-                                    ] = embedding.squeeze()
                         angle = self.pose_detection.personAngle(cropped_image)
                         if angle is not None and self.person_data[angle] is None:
                             if embedding is None:
@@ -569,48 +496,43 @@ class SingleTracker(Node):
                     )
 
             if not person_in_frame and len(people) > 0:
-                img_list = []
-                start = time.time()
-                for person in people:
-                    cropped_image = self.frame[
-                        person["y1"] : person["y2"], person["x1"] : person["x2"]
-                    ]
-                    pil_image = PILImage.fromarray(cropped_image)
-                    img_list.append(pil_image)
+                # img_list = []
+                # for person in people:
+                #     cropped_image = self.frame[
+                #         person["y1"] : person["y2"], person["x1"] : person["x2"]
+                #     ]
+                #     pil_image = PILImage.fromarray(cropped_image)
+                #     img_list.append(pil_image)
 
-                with torch.no_grad():
-                    embeddings_batch = extract_feature_from_img_batch(
-                        img_list, self.model_reid
-                    )
-                print(
-                    f"Extracted {len(embeddings_batch)} embeddings in {time.time() - start:.2f} seconds"
-                )
-                print(f"All embeddings batch shape: {embeddings_batch.shape}")
+                # with torch.no_grad():
+                #     embeddings_batch = extract_feature_from_img_batch(
+                #         img_list, self.model_reid
+                #     )
 
                 for i, person in enumerate(people):
                     cropped_image = self.frame[
                         person["y1"] : person["y2"], person["x1"] : person["x2"]
                     ]
                     pil_image = PILImage.fromarray(cropped_image)
-                    # with torch.no_grad():
-                    #     start_time = time.time()
-                    #     embedding = extract_feature_from_img(pil_image, self.model_reid)
-                    #     self.get_logger().info(
-                    #         f"Extracted embedding for person {person['track_id']} in {time.time() - start_time:.2f} seconds"
+                    with torch.no_grad():
+                        embedding = extract_feature_from_img(pil_image, self.model_reid)
+
+                    # check if embedding and embeddings_batch[i] are similar
+                    # print("comparing againts batch embedding")
+                    # if compare_images(embedding, embeddings_batch[i], threshold=0.7):
+                    #     self.success(
+                    #         f"embedding is the same!"
                     #     )
-
-                    embedding = embeddings_batch[i]
-
+                    # else:
+                    #     self.success(
+                    #         f"embedding is different!"
+                    #     )
                     person_angle = self.pose_detection.personAngle(cropped_image)
                     if person_angle is not None:
                         if self.person_data[person_angle] is not None:
-                            start_time = time.time()
                             if compare_images(
                                 embedding, self.person_data[person_angle], threshold=0.7
                             ):
-                                self.get_logger().info(
-                                    f"Compared embedding with angle {person_angle} in {time.time() - start_time:.2f} seconds"
-                                )
                                 self.success(
                                     f"Person re-identified: {person['track_id']} with angle {person_angle}"
                                 )
@@ -628,40 +550,72 @@ class SingleTracker(Node):
                                 break
                     else:
                         person_found = False
-                        if (
-                            self.person_data["embeddings"] is not None
-                            and len(self.person_data["embeddings"]) > 0
-                        ):
-                            start_time = time.time()
-                            embedding_exists = compare_images_batch(
-                                embedding, self.person_data["embeddings"], threshold=0.7
-                            )
-                            self.get_logger().info(
-                                f"Compared embedding without angle in batch in {time.time() - start_time:.2f} seconds"
-                            )
-                            if embedding_exists:
+                        for stored_embedding in self.person_data["embeddings"]:
+                            if compare_images(
+                                embedding, stored_embedding, threshold=0.7
+                            ):
                                 self.success(
                                     f"Person re-identified: {person['track_id']} without angle"
                                 )
                                 self.person_data["id"] = person["track_id"]
                                 person_in_frame = True
                                 person_found = True
+                                break
                         if person_found:
                             break
+                        # Check if person is re-identified without angle
+                        # if compare_images(
+                        #     embedding, self.person_data["embeddings"], threshold=0.7
+                        # ):
+                        #     self.person_data["id"] = person["track_id"]
+                        #     self.success(
+                        #         f"Person re-identified: {person['track_id']} without angle"
+                        #     )
+                        #     break
+
+                # check if
             if person_in_frame:
-                self.is_tracking_result = True
-                if len(self.depth_image) > 0 and (
-                    (depth_image_time.nanosec - image_time.nanosec > -DEPTH_THRESHOLD)
-                    and (
-                        depth_image_time.nanosec - image_time.nanosec < DEPTH_THRESHOLD
-                    )
-                ):
-                    coords = PointStamped()
-                    coords.header.frame_id = self.frame_id
-                    coords.header.stamp = depth_image_time
-                    point2D = get2DCentroid(
-                        self.person_data["coordinates"], self.depth_image
-                    )
+                # if len(self.depth_image) > 0:
+                #     self.is_tracking_result = True
+                #     coords = Point()
+                #     cropped_image = self.frame[
+                #         self.person_data["coordinates"][1] : self.person_data[
+                #             "coordinates"
+                #         ][3],
+                #         self.person_data["coordinates"][0] : self.person_data[
+                #             "coordinates"
+                #         ][2],
+                #     ]
+                #     point2D = self.pose_detection.getCenterPerson(cropped_image)
+                #     if point2D[0] is None:
+                #         self.get_logger().warn("No person detected")
+                #         return
+                #     print(point2D[0], point2D[1])
+                #     # point2D = get2DCentroid(self.person_data["coordinates"], self.frame)
+                #     point2D_x_coord = float(point2D[1])
+                #     point2D_x_coord_normalized = (
+                #         point2D_x_coord / (self.frame.shape[1] / 2)
+                #     ) - 1
+                #     point2Dpoint = Point()
+                #     point2Dpoint.x = float(point2D_x_coord_normalized)
+                #     point2Dpoint.y = 0.0
+                #     point2Dpoint.z = 0.0
+                #     # self.get_logger().info(f"frame_shape: {self.frame.shape[1]} Point2D: {point2D[1]} normalized_point2D: {point2D_x_coord_normalized}")
+                #     self.centroid_publisher.publish(point2Dpoint)
+
+                #     depth = get_depth(
+                #         self.depth_image, [int(point2D[0]), int(point2D[1])]
+                #     )
+                #     point3D = deproject_pixel_to_point(self.imageInfo, point2D, depth)
+                #     point3D = float(point3D[0]), float(point3D[1]), float(point3D[2])
+                #     coords.x = point3D[0]
+                #     coords.y = point3D[1]
+                #     coords.z = point3D[2]
+                #     self.results_publisher.publish(coords)
+                if len(self.depth_image) > 0:
+                    self.is_tracking_result = True
+                    coords = Point()
+                    point2D = get2DCentroid(self.person_data["coordinates"], self.frame)
                     point2D_x_coord = float(point2D[1])
                     point2D_x_coord_normalized = (
                         point2D_x_coord / (self.frame.shape[1] / 2)
@@ -673,23 +627,19 @@ class SingleTracker(Node):
                     # self.get_logger().info(f"frame_shape: {self.frame.shape[1]} Point2D: {point2D[1]} normalized_point2D: {point2D_x_coord_normalized}")
                     self.centroid_publisher.publish(point2Dpoint)
                     depth = get_depth(self.depth_image, point2D)
-                    point_2d_temp = (point2D[1], point2D[0])
-                    point3D = deproject_pixel_to_point(
-                        self.imageInfo, point_2d_temp, depth
-                    )
-                    print(point3D)
+                    point3D = deproject_pixel_to_point(self.imageInfo, point2D, depth)
                     point3D = float(point3D[0]), float(point3D[1]), float(point3D[2])
-                    coords.point.x = point3D[0]
-                    coords.point.y = point3D[1]
-                    coords.point.z = point3D[2]
-                    # self.point_pub.publish(coords)
+                    coords.x = point3D[0]
+                    coords.y = point3D[1]
+                    coords.z = point3D[2]
                     self.results_publisher.publish(coords)
                 else:
-                    self.get_logger().warn("Depth image not available")
+                    # self.get_logger().warn("Depth image not available")
+                    self.is_tracking_result = False
             else:
                 self.is_tracking_result = False
-
-        self.frame = None
+        else:
+            self.is_tracking_result = False
 
 
 def main(args=None):

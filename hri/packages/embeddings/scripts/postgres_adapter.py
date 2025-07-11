@@ -11,7 +11,6 @@ from embeddings.postgres_collections import (
     Item,
     Knowledge,
     Location,
-    row_to_hand_item,
 )
 from sentence_transformers import SentenceTransformer
 
@@ -103,31 +102,12 @@ class PostgresAdapter:
         ]
 
     def query_location(
-        self,
-        name: str,
-        threshold: float = 0.0,
-        top_k: int = 100,
-        use_context: bool = False,
+        self, name: str, threshold: float = 0.0, top_k: int = 100
     ) -> list[Location]:
         embedding = self.embedding_model.encode(name, convert_to_tensor=True)
-        command = (
-            (
-                "SELECT id, area, subarea, context, 1 - (embedding <=> %s) as similarity FROM locations WHERE 1 - (embedding <=> %s) >= %s ORDER BY similarity DESC LIMIT %s"
-            )
-            if not use_context
-            else (
-                "SELECT id, area, subarea, context, 1 - (context_embedding <=> %s) as similarity FROM locations WHERE 1 - (context_embedding <=> %s) >= %s ORDER BY similarity DESC LIMIT %s"
-            )
-        )
-
         self.cursor.execute(
-            command,
-            (
-                json.dumps(embedding.tolist()),
-                json.dumps(embedding.tolist()),
-                threshold,
-                top_k,
-            ),
+            "SELECT id, area, subarea, embedding, context, embedding <-> %s as similarity FROM locations WHERE embedding <-> %s < %s ORDER BY similarity LIMIT %s",
+            (embedding, embedding, threshold, top_k),
         )
         rows = self.cursor.fetchall()
         return [
@@ -135,8 +115,8 @@ class PostgresAdapter:
                 id=row[0],
                 area=row[1],
                 subarea=row[2],
-                context=row[3],
-                similarity=row[4],
+                embedding=json.loads(row[3]),
+                context=row[4],
             )
             for row in rows
         ]
@@ -194,6 +174,30 @@ class PostgresAdapter:
         self.conn.commit()
         return locations
 
+    def add_command_history(self, command: CommandHistory):
+        """Method to add a command history entry to the database"""
+        # Generate embedding for the command if not already present
+        if not command.embedding:
+            embedding = self.embedding_model.encode(
+                command.command, convert_to_tensor=True
+            )
+            command.embedding = embedding.tolist()
+
+        self.cursor.execute(
+            "INSERT INTO command_history (id, action, command, result, status, context, embedding) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+            (
+                command.id,
+                command.action,
+                command.command,
+                command.result,
+                command.status,
+                command.context,
+                json.dumps(command.embedding),
+            ),
+        )
+        self.conn.commit()
+        return command
+
     def add_command(
         self,
         action: str,
@@ -205,8 +209,8 @@ class PostgresAdapter:
         """Method to add a command to the database"""
         embedding = self.embedding_model.encode(f"{command}", convert_to_tensor=True)
         self.cursor.execute(
-            "INSERT INTO command_history (action, command, result, status, embedding) VALUES (%s, %s, %s, %s, %s) RETURNING id",
-            (action, command, result, status, json.dumps(embedding.tolist())),
+            "INSERT INTO command_history (action, command, result, status, context, embedding) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
+            (action, command, result, status, context, json.dumps(embedding.tolist())),
         )
         command_id = self.cursor.fetchone()[0]
         self.conn.commit()
@@ -216,6 +220,7 @@ class PostgresAdapter:
             command=command,
             result=result,
             status=status,
+            context=context,
             embedding=embedding.tolist(),
         )
 
@@ -225,12 +230,13 @@ class PostgresAdapter:
         command: str,
         result: str,
         status: str,
+        context: str | None = None,
     ) -> CommandHistory:
         embedding = self.embedding_model.encode(f"{command}", convert_to_tensor=True)
 
         self.cursor.execute(
-            "INSERT INTO command_history (action, command, result, status, embedding) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
-            (action, command, result, status, json.dumps(embedding.tolist())),
+            "INSERT INTO command_history (action, command, result, status, context, embedding) VALUES (%s, %s, %s, %s, %s, %s) RETURNING id",
+            (action, command, result, status, context, json.dumps(embedding.tolist())),
         )
         command_id = self.cursor.fetchone()[0]
         self.conn.commit()
@@ -240,41 +246,19 @@ class PostgresAdapter:
             command=command,
             result=result,
             status=status,
+            context=context,
             embedding=embedding.tolist(),
         )
 
     def query_command_history(
-        self,
-        command: str,
-        action: str | None = None,
-        threshold: float = 0.0,
-        top_k: int = 5,
+        self, command: str, threshold: float = 0.0, top_k: int = 5
     ) -> list[CommandHistory]:
         """Method to query command history by semantic similarity"""
         embedding = self.embedding_model.encode(command, convert_to_tensor=True)
-
-        if action is not None:
-            self.cursor.execute(
-                "SELECT id, action, command, result, status, embedding, 1 - (embedding <=> %s) as similarity FROM command_history WHERE action = %s AND 1 - (embedding <=> %s) >= %s ORDER BY id DESC, similarity DESC LIMIT %s",
-                (
-                    json.dumps(embedding.tolist()),
-                    action,
-                    json.dumps(embedding.tolist()),
-                    threshold,
-                    top_k,
-                ),
-            )
-        else:
-            self.cursor.execute(
-                "SELECT id, action, command, result, status, embedding, 1 - (embedding <=> %s) as similarity FROM command_history WHERE 1 - (embedding <=> %s) >= %s ORDER BY id DESC, similarity DESC LIMIT %s",
-                (
-                    json.dumps(embedding.tolist()),
-                    json.dumps(embedding.tolist()),
-                    threshold,
-                    top_k,
-                ),
-            )
-
+        self.cursor.execute(
+            "SELECT id, action, command, result, status, context, embedding, embedding <-> %s as similarity FROM command_history WHERE embedding <-> %s < %s ORDER BY similarity LIMIT %s",
+            (embedding, embedding, threshold, top_k),
+        )
         rows = self.cursor.fetchall()
         return [
             CommandHistory(
@@ -283,8 +267,8 @@ class PostgresAdapter:
                 command=row[2],
                 result=row[3],
                 status=row[4],
-                embedding=json.loads(row[5]),
-                similarity=row[6],
+                context=row[5],
+                embedding=json.loads(row[6]),
             )
             for row in rows
         ]
@@ -292,7 +276,7 @@ class PostgresAdapter:
     def get_latest_command_history(self, top_k: int = 1) -> list[CommandHistory]:
         """Method to get the latest command history entries for a specific action"""
         self.cursor.execute(
-            "SELECT id, action, command, result, status, embedding FROM command_history ORDER BY id DESC LIMIT %s",
+            "SELECT id, action, command, result, status, context, embedding FROM command_history ORDER BY id DESC LIMIT %s",
             (top_k,),
         )
         rows = self.cursor.fetchall()
@@ -305,7 +289,8 @@ class PostgresAdapter:
                 command=row[2],
                 result=row[3],
                 status=row[4],
-                embedding=json.loads(row[5]),
+                context=row[5],
+                embedding=json.loads(row[6]),
             )
             for row in rows
         ]
@@ -324,56 +309,21 @@ class PostgresAdapter:
         )
 
     def get_context_from_knowledge(
-        self,
-        prompt: str,
-        knowledge_type: list[str],
-        threshold: float = 0.3,
-        top_k: int = 5,
+        self, prompt: str, threashold: float = 0.8, top_k: int = 5
     ) -> list[Knowledge]:
         """Method to get context from knowledge base based on a prompt"""
         embedding = self.embedding_model.encode(prompt, convert_to_tensor=True)
         self.cursor.execute(
-            "SELECT id, text, embedding, knowledge_type, context, 1 - (embedding <=> %s) as similarity FROM knowledge WHERE knowledge_type = ANY(%s) AND 1 - (embedding <=> %s) >= %s ORDER BY similarity DESC LIMIT %s",
-            (
-                json.dumps(embedding.tolist()),
-                knowledge_type,
-                json.dumps(embedding.tolist()),
-                threshold,
-                top_k,
-            ),
+            "SELECT id, text, embedding, context FROM knowledge WHERE embedding <-> %s < %s ORDER BY embedding <-> %s LIMIT %s",
+            (embedding, threashold, embedding, top_k),
         )
         rows = self.cursor.fetchall()
-
         return [
             Knowledge(
-                id=row[0],
-                text=row[1],
-                embedding=json.loads(row[2]),
-                knowledge_type=row[3],
-                context=row[4],
-                similarity=row[5],
+                id=row[0], text=row[1], embedding=json.loads(row[2]), context=row[3]
             )
             for row in rows
         ]
-
-    def get_hand_items(
-        self, text: str, threshold: float = 0.0, top_k: int = 10000
-    ) -> list[Knowledge]:
-        """Method to get context from knowledge base based on a prompt"""
-        embedding = self.embedding_model.encode(text, convert_to_tensor=True)
-        self.cursor.execute(
-            "SELECT id, name, description, embedding_name, embedding_description, x_loc, y_loc, m_loc_x, m_loc_y, color, 1 - (embedding_name <=> %s) as similarity FROM hand_location WHERE 1 - (embedding_name <=> %s) >= %s ORDER BY similarity DESC LIMIT %s",
-            (embedding, embedding, threshold, top_k),
-        )
-        rows = self.cursor.fetchall()
-        rows_by_name = [row_to_hand_item(row) for row in rows]
-        self.cursor.execute(
-            "SELECT id, name, description, embedding_name, embedding_description, x_loc, y_loc, m_loc_x, m_loc_y, color, 1 - (embedding_description <=> %s) as similarity FROM hand_location WHERE 1 - (embedding_description <=> %s) >= %s ORDER BY similarity DESC LIMIT %s",
-            (embedding, embedding, threshold, top_k),
-        )
-        rows = self.cursor.fetchall()
-        rows_by_description = [row_to_hand_item(row) for row in rows]
-        return rows_by_name, rows_by_description
 
     def close(self):
         """Method to close the database connection"""
@@ -402,11 +352,6 @@ if __name__ == "__main__":
     print("Items after adding new item:")
     for item in items:
         print(f"ID: {item.id}, Text: {item.text}, Context: {item.context}")
-
-    print("Location tests:")
-    print("couch:", adapter.query_location("couch", threshold=0.6))
-    print("kitchen:", adapter.query_location("kitchen", threshold=0.6))
-    print("living room", adapter.query_location("living room", threshold=0.5))
 
     # Close the connection
     adapter.close()

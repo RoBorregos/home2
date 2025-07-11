@@ -1,4 +1,0 @@
-string button
-int16 timeout
----
-bool success

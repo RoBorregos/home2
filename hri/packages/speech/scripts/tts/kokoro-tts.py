@@ -1,17 +1,16 @@
 import argparse
-import io
-import os
-import time
-import wave
-from concurrent import futures
-
 import grpc
-import numpy as np
+from concurrent import futures
+import os
 import tts_pb2
 import tts_pb2_grpc
+import time
+import numpy as np
+from scipy import signal
+import wave
 from kokoro import KPipeline
 from pygame import mixer
-from scipy import signal
+import io
 
 
 class TTSService(tts_pb2_grpc.TTSServiceServicer):
@@ -57,10 +56,10 @@ class TTSService(tts_pb2_grpc.TTSServiceServicer):
             # Process voice selection - default to af_heart if not specified
             voice = request.model if request.model else "af_heart"
 
-            print(f"Using kokoro with voice: {voice}, speed: {request.speed}")
+            print(f"Using kokoro with voice: {voice}")
 
             # Generate audio chunks using kokoro
-            generator = self.pipeline(request.text, voice=voice, speed=request.speed)
+            generator = self.pipeline(request.text, voice=voice)
 
             # Create a list to collect all audio samples
             all_audio = []

@@ -35,7 +35,7 @@ class MoveActionServer(Node):
 
         if not self.is_valid_location(target_location):
             self.get_logger().info(f"Invalid location: {target_location}")
-            goal_handle.succeed()
+            goal_handle.abort()
             result = Move.Result()
             result.success = False
             return result

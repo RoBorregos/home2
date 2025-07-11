@@ -5,7 +5,7 @@ from launch import LaunchDescription
 from launch_ros.actions import Node
 
 from frida_constants import ModuleNames, parse_ros_config
-from frida_constants.hri_constants import USE_RESPEAKER
+from frida_constants.hri_constants import USE_OWW, USE_RESPEAKER
 
 
 def generate_launch_description():
@@ -32,6 +32,11 @@ def generate_launch_description():
         os.path.join(get_package_share_directory("speech"), "config", "respeaker.yaml"),
         [ModuleNames.HRI.value],
     )["respeaker"]["ros__parameters"]
+
+    kws_config = parse_ros_config(
+        os.path.join(get_package_share_directory("speech"), "config", "kws.yaml"),
+        [ModuleNames.HRI.value],
+    )["keyword_spotting"]["ros__parameters"]
 
     oww_config = parse_ros_config(
         os.path.join(get_package_share_directory("speech"), "config", "kws_oww.yaml"),
@@ -63,14 +68,6 @@ def generate_launch_description():
             emulate_tty=True,
             parameters=[speaker_config],
         ),
-        Node(
-            package="speech",
-            executable="kws_oww.py",
-            name="kws_oww",
-            output="screen",
-            emulate_tty=True,
-            parameters=[oww_config],
-        ),
     ]
 
     if USE_RESPEAKER:
@@ -82,6 +79,30 @@ def generate_launch_description():
                 output="screen",
                 emulate_tty=True,
                 parameters=[respeaker_config],
+            )
+        )
+
+    if USE_OWW:
+        nodes.append(
+            Node(
+                package="speech",
+                executable="kws_oww.py",
+                name="kws_oww",
+                output="screen",
+                emulate_tty=True,
+                parameters=[oww_config],
+            )
+        )
+    else:
+        # Deprecated: use oww instead
+        nodes.append(
+            Node(
+                package="speech",
+                executable="kws.py",
+                name="keyword_spotting",
+                output="screen",
+                emulate_tty=True,
+                parameters=[kws_config],
             )
         )
 

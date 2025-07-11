@@ -256,15 +256,12 @@ class LLMUtils(Node):
 
         self.get_logger().info("Categorizing shelves")
         self.get_logger().info("request.shelves: " + str(request.shelves.data))
-        self.get_logger().info("request.table_objects: " + str(request.table_objects))
 
         shelves: dict[int, list[str]] = eval(request.shelves.data)
         shelves = {int(k): v for k, v in shelves.items()}
-        table_objects = request.table_objects
-        table_objects = [str(obj.data) for obj in table_objects]
-        self.get_logger().info(f"Shelves: {shelves} and table objects: {table_objects}")
+        self.get_logger().info(f"Shelves: {shelves}")
 
-        messages, response_format = get_categorize_shelves_args(shelves, table_objects)
+        messages, response_format = get_categorize_shelves_args(shelves)
 
         response_content = (
             self.client.beta.chat.completions.parse(
@@ -314,16 +311,9 @@ class LLMUtils(Node):
     def is_positive(
         self, request: IsPositive.Request, response: IsPositive.Response
     ) -> IsPositive.Response:
-        """Service to see if text is positive."""
+        """Service to extract information from text."""
         self.get_logger().info("Determining if text is positive")
-        try:
-            if len(request.text.strip()) < 1:
-                result = ""
-            else:
-                result = self.get_most_likely_label(request.text)
-        except Exception as e:
-            result = ""
-            self.get_logger().warn(f"Error: {str(e)}")
+        result = self.get_most_likely_label(request.text)
 
         response.is_positive = result == "yes"
         self.get_logger().info(f"The text is positive: {response.is_positive}")
@@ -333,17 +323,10 @@ class LLMUtils(Node):
     def is_negative(
         self, request: IsNegative.Request, response: IsNegative.Response
     ) -> IsNegative.Response:
-        """Service to see if text is negative."""
+        """Service to extract information from text."""
+        """Service to extract information from text."""
         self.get_logger().info("Determining if text is negative")
-
-        try:
-            if len(request.text.strip()) < 1:
-                result = ""
-            else:
-                result = self.get_most_likely_label(request.text)
-        except Exception as e:
-            result = ""
-            self.get_logger().warn(f"Error: {str(e)}")
+        result = self.get_most_likely_label(request.text)
 
         response.is_negative = result == "no"
         self.get_logger().info(f"The text is negative: {response.is_negative}")

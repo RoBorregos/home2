@@ -25,7 +25,7 @@ Do not add any other information or context to the answer, just the common inter
             },
             {
                 "role": "user",
-                "content": f"{person1Name} likes {person1Interests} and {person2Name} likes {person2Interests}. /no_think",
+                "content": f"{person1Name} likes {person1Interests} and {person2Name} likes {person2Interests}",
             },
         ]
     }
@@ -154,7 +154,7 @@ def get_is_answer_positive_args(interpreted_text):
 **Input:** 'Wrong'
 **Output:**
 {IsAnswerPositive(is_positive=False).model_dump_json()}
-
+                
 **Input:** 'I don’t know'
 **Output:**
 {IsAnswerPositive(is_positive=False).model_dump_json()}
@@ -240,49 +240,29 @@ But does **not** include:
     )
 
 
-def get_categorize_shelves_args(shelves, table_objects=[]):
-    print("AQUI AUQI")
-    print("Shelves:", shelves)
-    print("Table Objects:", table_objects)
+def get_categorize_shelves_args(shelves):
     return (
         [
             {
                 "role": "system",
                 "content": """
-You are a categorization assistant. Your task is to assign a unique category to each shelf based on the objects it contains, including any table_objects that might be in an empty or underfilled shelves. Each shelf must have a distinct category, and the category label must accurately cover all items assigned to that shelf and the ones on the table that should be placed in it.
+You are tasked with assigning a category to some shelves based on the objects they contain. Each shelf has a different set of objects, and you need to determine the most appropriate category for each shelf. There cannot be two or more shelves with the same category.
+Return a list where each element is the category to the corresponding shelf. Do not return any extra information or explanation, just the list of categories.
 
-Return only a JSON object with a single key "categories", whose value is an array of category names in the same order as the input shelves. Do not include any extra text, explanation, or formatting.
+For example, if you have the following shelves:
+[
+  ["milk", "buttermilk"],
+  [],
+  ["apple", "banana"]
+]
 
-Examples:
-
-Input:
-Shelves: [["orange", "banana"], ["water", "cup"], []], table_objects: ["chips", "soda"]
-Output:
-{"categories": ["fruit","beverages","snacks"]}
-
-Input:
-Shelves: [["hammer","screwdriver"], ["jeans","shirt"]], table_objects: ["nails","socks"]
-Output:
-{"categories": ["tools","clothing"]}
-
-Input:
-Shelves: [["hammer", "can"], ["bowl", "water_bottle"], ["chips"]], table_objects: []
-Output:
-{"categories": ["metalic","plastic","snacks"]}
-
-Input:
-Shelves: [["apple", "fresca_can"], ["bowl", "yellow_bowl"], ["pringles"]], table_objects: ["chips", "orange"]
-Output:
-{"categories": ["sweets","containers","chips"]}
-
-PLEASE dont only use these categories you can use as many as you need in order to categorize the shelves. other useful categories could be: "kitchen", "containers", "electronics", "toys", "sports", "utencils", "cleaning supplies", "tools", "fruit", "vegetables", "snacks", "beverages", "dairy", "salty snaks", "sweets", "canned food". And others.
-Please dont leave empty categories if possible. only if there is absolutely no relation at all between the objects in the shelf and the table objects, you can leave it empty.
-ONLY Output the number of categories that match the number of shelves, there are no exceptions to this rule. 
+You should return:
+{"categories": ["dairy","empty","fruit"]}
 """,
             },
             {
                 "role": "user",
-                "content": f"Shelves: {shelves}, table_objects: {table_objects}",
+                "content": f"Shelves: {shelves}",
             },
         ],
         CategorizeShelvesResult,
@@ -321,7 +301,9 @@ def clean_question_rag(question):
 def get_answer_question_dialog(contexts, question):
     if contexts:
         context_text = "\n".join(contexts)
-        user_content = f"Here is some relevant context, please consider it in your response: {context_text}(end of context)\n\nMy question is: {question}"
+        user_content = f"{context_text}\n\n{question}"
+
+        print("CONTEXT:", user_content)
     else:
         user_content = question
 
@@ -369,7 +351,7 @@ def get_previous_command_answer(context, question):
                 "and your task is to answer it to the best of your ability using the provided context. "
                 f"Here is the context:\n\n{context}\n\n"
                 "Answer the question clearly and concisely."
-                "Summarize as much as possible. Only mention the execution status if the request failed."
+                "Summarize as much as possible."
             ),
         },
         {

@@ -106,8 +106,8 @@ case $TASK in
     "--receptionist")
         RUN="ros2 launch vision_general receptionist_launch.py"
         ;;
-    "--carry")
-        RUN="ros2 launch manipulation_general carry.launch.py"
+    "--help-me-carry")
+        RUN="ros2 launch vision_general help_me_carry_launch.py"
         ;;
     "--storing-groceries")
         RUN="ros2 launch vision_general storing_groceries_launch.py"
@@ -210,7 +210,7 @@ if [ -z "$EXISTING_CONTAINER" ]; then
     fi
     echo "Running prebuild script..."
     docker start $CONTAINER_NAME
-    # docker exec -it $CONTAINER_NAME /bin/bash -c "./src/home2/prebuild.sh"
+    docker exec -it $CONTAINER_NAME /bin/bash -c "./src/home2/prebuild.sh"
 fi
 
 # Check if the container is running

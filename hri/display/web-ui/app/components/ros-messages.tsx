@@ -22,7 +22,7 @@ const mapSchema = z.object({
 type MapData = z.infer<typeof mapSchema>;
 
 interface Message {
-  type: "heard" | "spoken" | "keyword";
+  type: "heard" | "spoken" | "keyword" | "answer" | "user_message" | "text_spoken";
   content: string;
   timestamp: Date;
 }
@@ -36,6 +36,9 @@ export default function RosMessagesDisplay() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentMessage, setCurrentMessage] = useState<Message | null>(null);
   const [connected, setConnected] = useState(false);
+  const [question, setQuestion] = useState<string | null>(null);
+  const [answer, setAnswer] = useState<string>("");
+  const [modalOpen, setModalOpen] = useState(false);
   const [audioState, setAudioState] = useState<AudioState>({
     state: "idle",
     vadLevel: 0,
@@ -45,23 +48,34 @@ export default function RosMessagesDisplay() {
   const audioStateRef = useRef(audioState);
   useEffect(() => {
     audioStateRef.current = audioState;
-  }, [audioState]);
-
-  
+  }, [audioState]);  
   const [audioTopic, setAudioTopic] = useState<string>(
     "/zed/zed_node/rgb/image_rect_color"
   );
   const messagesStartRef = useRef<HTMLDivElement>(null);
-
+  
+  const socketRef = useRef<WebSocket | null>(null);
   useEffect(() => {
     const socket = new WebSocket("ws://localhost:8001/");
-
+    socketRef.current = socket;
     socket.onmessage = (event) => {
       const data = JSON.parse(event.data);
+      if(data.type === "answer")return;
       if (data.type === "audioState" || data.type === "vad") {
         handleMic(data.type, data.data);
       } else if (data.type === "changeVideo") {
         setAudioTopic(data.data);
+      } else if (data.type === "question") {
+        if (!data.data?.trim()){
+          // If question is empty, close the modal and reset state
+          setModalOpen(false);
+          setQuestion(null);
+          setAnswer("");
+        }else{
+          setModalOpen(true);
+          setQuestion(data.data);
+          addMessage("spoken", data.data);
+        }
       } else if (data.type === "map") {
         handleMapMessage(data.data);
       } else {
@@ -90,7 +104,7 @@ export default function RosMessagesDisplay() {
   }, []);
 
   const addMessage = (
-    type: "heard" | "spoken" | "keyword",
+    type: "heard" | "spoken" | "keyword" | "answer" | "user_message",
     content: string
   ) => {
     let displayContent = content;
@@ -111,27 +125,18 @@ export default function RosMessagesDisplay() {
       }
     }
     const timestamp = new Date();
+    const newMessage: Message = { type, content: displayContent, timestamp };
 
   if (type === "heard") {
     console.log("Heard message received ", audioStateRef.current.state);
     if (audioStateRef.current.state === "listening") {
-      setCurrentMessage({ type, content: displayContent, timestamp });
+      setCurrentMessage(newMessage);
     } else {
-      setMessages((prev) => [
-        { type, content: displayContent, timestamp },
-      ...prev,
-    ]);
+      setMessages((prev) => [newMessage, ...prev]);
   }
 } else {
-  setMessages((prev) => [
-    {
-      type,
-        content: String(displayContent),
-        timestamp,
-      },
-      ...prev,
-    ]);
-  }
+  setMessages(prev => [newMessage, ...prev]);
+}
 };
 
  const handleMic = (type: string, content: string | number) => {
@@ -146,6 +151,12 @@ export default function RosMessagesDisplay() {
     }));
   }
 };
+useEffect(() => {
+  if (audioState.state === "idle" && currentMessage) {
+    setMessages(prevMsgs => [currentMessage, ...prevMsgs]);
+    setCurrentMessage(null);
+  }
+}, [audioState.state, currentMessage]);
 
 const handleMapMessage = (data: unknown) => {
   try {
@@ -163,17 +174,29 @@ const handleMapMessage = (data: unknown) => {
   }
 };
 
-useEffect(() => {
-  if (audioState.state === "idle" && currentMessage) {
-    setMessages(prevMsgs => [currentMessage, ...prevMsgs]);
-    setCurrentMessage(null);
-  }
-}, [audioState.state, currentMessage]);
-
-
   useEffect(() => {
     messagesStartRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+const sendAnswer = () => {
+  if (!answer.trim()) return;
+  addMessage("answer", answer);
+
+  // 2. Send to WebSocket server
+  if (socketRef.current?.readyState === WebSocket.OPEN) {
+    socketRef.current.send(
+      JSON.stringify({ 
+        type: "answer", 
+        answer: answer,
+        isLocal: true 
+      })
+    );
+  }
+
+  // 3. Clear the state
+  setModalOpen(false);
+  setAnswer("");
+};
 
   return (
     <div className="flex flex-col h-screen bg-[oklch(0.145_0_0)] text-[oklch(0.985_0_0)] overflow-y-hidden">
@@ -219,39 +242,41 @@ useEffect(() => {
           ) : (
             messages.map((msg, index) => (
               <div
-                key={index}
-                className={`
-                p-3 rounded-lg animate-fadeIn transition-all duration-300
-                ${
-                  msg.type === "heard"
-                    ? "bg-[oklch(0.488_0.243_264.376/20%)] border-l-4 border-l-[oklch(0.488_0.243_264.376)]"
-                    : msg.type === "spoken"
-                    ? "bg-[oklch(0.627_0.265_303.9/20%)] border-l-4 border-l-[oklch(0.627_0.265_303.9)]"
-                    : "bg-[oklch(0.9_0.3_60/20%)] border-l-4 border-l-[oklch(0.9_0.3_60)]"
-                }
-                ${
-                  index === 0
-                    ? "ring-2 ring-offset-2 ring-offset-[oklch(0.145_0_0)] ring-[oklch(0.985_0_0/10%)]"
-                    : ""
-                }
-              `}
-              >
-                <div className="flex items-start gap-2">
-                  {msg.type === "heard" ? (
-                    <Mic className="h-5 w-5 text-[oklch(0.488_0.243_264.376)] mt-0.5 flex-shrink-0" />
-                  ) : msg.type === "spoken" ? (
-                    <Speaker className="h-5 w-5 text-[oklch(0.627_0.265_303.9)] mt-0.5 flex-shrink-0" />
-                  ) : (
-                    <Star className="h-5 w-5 text-[oklch(0.9_0.3_60)] mt-0.5 flex-shrink-0" />
-                  )}
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm text-[oklch(0.708_0_0)]">
-                      {msg.type === "heard"
-                        ? "Heard"
-                        : msg.type === "spoken"
-                        ? "Spoken"
-                        : "Keyword"}
-                    </p>
+  key={index}
+  className={`
+    p-3 rounded-lg animate-fadeIn transition-all duration-300
+    ${
+      msg.type === "spoken" || msg.type === "text_spoken"
+        ? "bg-[oklch(0.627_0.265_303.9/20%)] border-l-4 border-l-[oklch(0.627_0.265_303.9)]"
+        : msg.type === "answer"
+        ? "bg-[oklch(0.4_0.3_120/20%)] border-l-4 border-l-[oklch(0.4_0.3_120)]"
+        : msg.type === "heard"
+        ? "bg-[oklch(0.488_0.243_264.376/20%)] border-l-4 border-l-[oklch(0.488_0.243_264.376)]"
+        : "bg-[oklch(0.9_0.3_60/20%)] border-l-4 border-l-[oklch(0.9_0.3_60)]"
+    }
+    ${index === 0 ? "ring-2 ring-offset-2 ring-offset-[oklch(0.145_0_0)] ring-[oklch(0.985_0_0/10%)]" : ""}
+  `}
+>
+  <div className="flex items-start gap-2">
+    {msg.type === "spoken" || msg.type === "text_spoken" ? (
+      <Speaker className="h-5 w-5 text-[oklch(0.627_0.265_303.9)] mt-0.5 flex-shrink-0" />
+    ) : msg.type === "answer" ? (
+      <MessageCircle className="h-5 w-5 text-[oklch(0.4_0.3_120)] mt-0.5 flex-shrink-0" />
+    ) : msg.type === "heard" ? (
+      <Mic className="h-5 w-5 text-[oklch(0.488_0.243_264.376)] mt-0.5 flex-shrink-0" />
+    ) : (
+      <Star className="h-5 w-5 text-[oklch(0.9_0.3_60)] mt-0.5 flex-shrink-0" />
+    )}
+    <div className="flex-1 min-w-0">
+      <p className="font-medium text-sm text-[oklch(0.708_0_0)]">
+        {msg.type === "spoken" || msg.type === "text_spoken"
+          ? "Spoken"
+          : msg.type === "answer"
+          ? "Answer"
+          : msg.type === "heard"
+          ? "Heard"
+          : "Keyword"}
+      </p>
                     <p className="text-lg font-bold break-words">
                       {msg.content}
                     </p>
@@ -296,6 +321,56 @@ useEffect(() => {
           onClose={() => setShowMapModal(false)}
         />
       )}
+      {modalOpen && question && (
+        <div className="fixed inset-0 z-70 flex items-center justify-center bg-black/50">
+          <div className="bg-white rounded-lg p-6 w-11/12 max-w-md"
+            onClick={(e) => e.stopPropagation()} // Prevent click from closing modal
+          >
+            <h2 className="text-xl font-bold mb-4 text-black">Question</h2>
+            <p className="mb-4 text-black">{question}</p>
+            <textarea
+              value={answer}
+              onChange={(e) => setAnswer(e.target.value)}
+              onKeyDown={(e) => {
+              
+                if (e.key === "Enter" && e.shiftKey) {
+                  // Allow new lines with  // 1. Create and add the message locally
+  const newMessage: Message = {
+    type: "answer",
+    content: answer,
+    timestamp: new Date()
+  };
+  setMessages(prev => [newMessage, ...prev]);
+                  return;
+                }
+                if (e.key === "Enter") {
+                  e.preventDefault(); // Prevent default Enter behavior
+                  sendAnswer(); // Send answer on Enter
+                }
+              }}
+              className="w-full h-24 p-2 border border-gray-300 rounded mb-4 text-gray-500"
+              placeholder="Type your answer here... "
+            />
+            <button
+              onClick={sendAnswer}
+              className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition-colors"
+            >
+              Send Answer
+            </button>
+            <button
+              onClick={() => {
+                setModalOpen(false);
+                setQuestion(null);
+                setAnswer("");
+              }}
+              className="mt-3 w-full bg-gray-300 text-gray-800 py-2 rounded hover:bg-gray-400 transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 }
@@ -335,7 +410,7 @@ function AudioStateIndicator({ state }: AudioStateIndicatorProps) {
 
   // For listening state, show the mic centered
   return (
-  <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/10 pointer-events-none pt-60 ">
+  <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/10 pointer-events-none pt-35 ">
     <div className="relative">
       <div className="absolute inset-0 rounded-full bg-[oklch(0.5_0.25_260)] opacity-10 animate-[pulse_3s_infinite] scale-110" />
       <div className="absolute inset-0 rounded-full bg-[oklch(0.5_0.25_260)] opacity-15 animate-[pulse_3s_infinite_1s] scale-125" />

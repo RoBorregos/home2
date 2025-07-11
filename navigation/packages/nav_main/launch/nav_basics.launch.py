@@ -88,6 +88,7 @@ def launch_setup(context, *args, **kwargs):
         )
 
     if(publish_urdf.perform(context) == 'true' and use_sim.perform(context) == 'false'):
+        print("entre papu")
         return_launch = [
         dashgo_driver,
         ekf_launch,
@@ -98,6 +99,7 @@ def launch_setup(context, *args, **kwargs):
         
     ]
     else:
+        print("no entre papu")
         return_launch = [
         dashgo_driver,
         ekf_launch,
