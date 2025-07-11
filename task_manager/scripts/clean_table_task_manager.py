@@ -17,6 +17,9 @@ from utils.logger import Logger
 from utils.subtask_manager import SubtaskManager, Task
 from utils.status import Status
 import time
+from geometry_msgs.msg import PointStamped, Point
+from std_msgs.msg import Header
+from builtin_interfaces.msg import Time
 
 ATTEMPT_LIMIT = 3
 
@@ -46,6 +49,12 @@ class CleanTableTM(Node):
 
         self.pick_objects = ["drink", "drink", "cup", "bowl", "spoon", "fork"]
         self.object_index = 0
+
+        self.trash_place = PointStamped(
+            header=Header(stamp=Time(sec=1752174502, nanosec=834552352), frame_id="map"),
+            point=Point(x=2.2094616889953613, y=-2.8220369815826416, z=0.0023679733276367188),
+        )
+
         self.detected_object = None
 
     def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
@@ -82,7 +91,15 @@ class CleanTableTM(Node):
         if self.current_state == CleanTableTM.TaskStates.WAIT_FOR_DOOR:
             Logger.state(self, "Waiting for door to open")
             self.subtask_manager.hri.say("Please open the door to proceed", wait=False)
-            # TODO: wait for door to open
+            res = "closed"
+            while res == "closed":
+                time.sleep(1)
+                status, res = self.subtask_manager.nav.check_door()
+                if status == Status.EXECUTION_SUCCESS:
+                    Logger.info(self, f"Door status: {res}")
+                else:
+                    Logger.error(self, "Failed to check door status")
+
             self.current_state = CleanTableTM.TaskStates.NAVIGATE_TO_TABLE
 
         if self.current_state == CleanTableTM.TaskStates.NAVIGATE_TO_TABLE:
@@ -125,7 +142,8 @@ class CleanTableTM(Node):
             Logger.state(self, "Placing object in the trashbin or dishwasher")
             self.timeout()  # Small timeout to finish moving
             if self.pick_objects[self.object_index] == "drink":
-                self.subtask_manager.manipulation.move_joint_positions("trash")
+                self.subtask_manager.manipulation.place_in_point(self.trash_place)
+                # self.subtask_manager.manipulation.move_joint_positions("trash")
                 self.subtask_manager.manipulation.open_gripper()
             else:
                 self.subtask_manager.manipulation.place()

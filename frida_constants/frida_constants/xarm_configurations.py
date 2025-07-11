@@ -73,6 +73,18 @@ NAV_POSE = {
     "degrees": True,
 }
 
+CARRY_POSE = {
+    "joints": {
+        "joint1": -90.0,
+        "joint2": -70.0,
+        "joint3": -47.0,
+        "joint4": 0,
+        "joint5": -12.0,
+        "joint6": 45.0,
+    },
+    "degrees": True,
+}
+
 
 XARM_CONFIGURATIONS = {
     "front_stare": FRONT_STARE,
@@ -81,4 +93,5 @@ XARM_CONFIGURATIONS = {
     "receive_object": RECEIVE_OBJECT,
     "pick_stare_at_table": PICK_STARE_AT_TABLE,
     "nav_pose": NAV_POSE,
+    "carry_pose": CARRY_POSE,
 }
