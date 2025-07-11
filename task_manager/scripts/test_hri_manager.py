@@ -4,6 +4,7 @@
 Task Manager for testing the subtask managers
 """
 
+import time
 from typing import Union
 
 import rclpy
@@ -53,13 +54,18 @@ def confirm_preference(interpreted_text, extracted_data):
     return "I heard you like " + extracted_data + ". Is that correct?"
 
 
-TEST_TASK = Task.RECEPTIONIST
+TEST_TASK = Task.DEBUG
 TEST_COMPOUND = False
 TEST_INDIVIDUAL_FUNCTIONS = False
 TEST_EMBEDDINGS = False
-TEST_ASYNC_LLM = True
+TEST_ASYNC_LLM = False
 TEST_STREAMING = False
+<<<<<<< HEAD
 TEST_QUESTION_ANSWERING = True
+=======
+TEST_MAP = False
+TEST_OBJECT_LOCATION = True
+>>>>>>> origin/main
 
 
 class TestHriManager(Node):
@@ -72,11 +78,6 @@ class TestHriManager(Node):
 
     def run(self):
         # Testing compound commands
-
-        # s, res = self.hri_manager.common_interest("John", "Football", "Gilbert", "Basketball")
-        # status, common_message_guest1 = self.hri_manager.common_interest(
-        #    "Oscar", "football", "Rodrigo", "baseball"
-        # )
 
         if TEST_COMPOUND:
             self.compound_functions()
@@ -95,13 +96,19 @@ class TestHriManager(Node):
         if TEST_QUESTION_ANSWERING:
             self.test_answer_question()
 
+        if TEST_MAP:
+            self.test_map()
+
+        if TEST_OBJECT_LOCATION:
+            self.test_object_location()
+
     def individual_functions(self):
         # Test say
         self.hri_manager.say("Hi, my name is frida. What is your favorite drink?", wait=True)
         self.get_logger().info("Hearing from the user...")
 
         # Test hear
-        s, user_request = self.hri_manager.hear(min_audio_length=10.0)
+        s, user_request = self.hri_manager.hear()
         self.get_logger().info(f"Heard: {user_request}")
 
         # Test extract_data
@@ -308,6 +315,36 @@ class TestHriManager(Node):
 
         self.get_logger().info(f"Common interest future: {f}")
         self.get_logger().info(f"Common interest future status: {f.done()}, {f.result()}")
+
+    def test_map(self):
+        """
+        Test the map functionality of the HRITasks.
+        """
+        self.get_logger().info("Testing map functionality...")
+
+        # Show the map with a specific item
+        self.hri_manager.show_map(name="Phone")
+        time.sleep(5)
+
+        # Clear the map
+        self.hri_manager.show_map(clear_map=True)
+        time.sleep(2)
+
+        # Show the map again to verify it is cleared
+        self.hri_manager.show_map(name="Mug")
+        time.sleep(5)
+
+    def test_object_location(self):
+        object_name = "cheese"
+        self.get_logger().info("Testing object location retrieval without context...")
+        res = self.hri_manager.query_location(object_name, top_k=3)
+        for i, location in enumerate(res):
+            self.get_logger().info(f"{i + 1}: {location}")
+
+        self.get_logger().info("Testing object location retrieval with context...")
+        res_with_context = self.hri_manager.query_location(object_name, top_k=3, use_context=True)
+        for i, location in enumerate(res_with_context):
+            self.get_logger().info(f"{i + 1}: {location}")
 
 
 def main(args=None):

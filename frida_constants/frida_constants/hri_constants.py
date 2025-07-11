@@ -12,7 +12,6 @@ EXTRACT_DATA_SERVICE = "/hri/nlp/data_extractor"
 IS_POSITIVE_SERVICE = "/hri/nlp/is_positive"
 IS_NEGATIVE_SERVICE = "/hri/nlp/is_negative"
 CATEGORIZE_SERVICE = "/hri/nlp/categorize"
-ITEM_CATEGORIZATION_SERVICE = "/hri/nlp/item_categorization"
 CONVESATION_SERVICE = "/hri/nlp/conversation"
 GRAMMAR_SERVICE = "/hri/nlp/grammar"
 COMMON_INTEREST_SERVICE = "/hri/nlp/common_interest"
@@ -21,9 +20,9 @@ RAG_SERVICE = "/hri/rag/answer_question"
 
 DISPLAY_PUBLISHER = "/hri/display/frida_questions"
 ANSWER_PUBLISHER = "/hri/display/answers"
-ADD_ENTRY_SERVICE = "/hri/nlp/embeddings/add_entry_service"
-QUERY_ENTRY_SERVICE = "/hri/nlp/embeddings/query_entry_service"
-BUILD_EMBEDDINGS_SERVICE = "/hri/nlp/embeddings/build_embeddings_service"
+DISPLAY_IMAGE_TOPIC = "/hri/display/change_video"
+DISPLAY_MAP_TOPIC = "/hri/display/map"
+
 USE_RESPEAKER = True
 RESPEAKER_LIGHT_TOPIC = "/hri/speech/respeaker/light"
 RESPEAKER_DOA_TOPIC = "/hri/speech/respeaker/doa"
@@ -50,19 +49,25 @@ GPSR_COMMANDS = {
 
 
 class MODEL(Enum):
-    GRAMMAR = "qwen3:0.6b"
-    LLM_WRAPPER = "qwen3:0.6b"
-    COMMON_INTEREST = "qwen3:0.6b"
+    GRAMMAR = "qwen3"
+    LLM_WRAPPER = "qwen3"
+    COMMON_INTEREST = "qwen3"
     CATEGORIZE_SHELVES = "qwen3"
 
-    IS_POSITIVE = "qwen3:0.6b"
-    IS_NEGATIVE = "qwen3:0.6b"
-    GENERIC_STRUCTURED_OUTPUT = "qwen3:0.6b"
-    GENERATE_RESPONSE = "qwen3:0.6b"
-    STRUCTURED_RESPONSE = "qwen3:0.6b"
-    EXTRACT_INFO_REQUESTED = "qwen2.5"
-    GET_COMMANDS = "qwen3:0.6b"
-    CommonInterest = "qwen3:0.6b"
+    IS_POSITIVE = "qwen3"
+    IS_NEGATIVE = "qwen3"
+    GENERIC_STRUCTURED_OUTPUT = "qwen3"
+    GENERATE_RESPONSE = "qwen3"
+    STRUCTURED_RESPONSE = "qwen3"
+    EXTRACT_INFO_REQUESTED = "qwen3"
+    GET_COMMANDS = "qwen3"
+    CommonInterest = "qwen3"
+
+
+class KNOWLEDGE_TYPE(Enum):
+    TEC = "tec_knowledge"
+    FRIDA = "frida_knowledge"
+    ROBORREGOS = "roborregos_knowledge"
 
 
 USEFUL_AUDIO_NODE_NAME = "useful_audio_node"

@@ -69,7 +69,7 @@ ros2 launch speech hri_launch.py
 ros2 launch speech devices_launch.py
 
 # Say something
-ros2 service call /hri/speech/speak frida_interfaces/srv/Speak "{text: \"Go to the kitchen and grab cookies\"}"
+ros2 service call /hri/speech/speak frida_interfaces/srv/Speak "{text: \"Go to the kitchen and grab cookies\", speed : 1.0}"
 
 # Extract data from a sentence
 ros2 service call /hri/nlp/data_extractor frida_interfaces/srv/ExtractInfo "{full_text: 'Hello, my name is Oscar', data: 'name'}"
@@ -79,6 +79,14 @@ ros2 service call /hri/nlp/is_positive frida_interfaces/srv/IsPositive "{text: '
 
 # Is negative
 ros2 service call /hri/nlp/is_negative frida_interfaces/srv/IsNegative "{text: 'Incorrect'}"
+
+# Rag question
+ros2 service call /hri/rag/answer_question frida_interfaces/srv/AnswerQuestion "
+question: 'What time is it'
+topk: 10
+threshold: 0.0
+knowledge_type: []
+"
 
 # Hear something
 ros2 service call /hri/speech/STT frida_interfaces/srv/STT {}
@@ -100,6 +108,9 @@ ros2 topic pub /hri/speech/vad std_msgs/msg/Float32 '{data: 0.8}' -1
 
 ## Stop voice simulation
 ros2 topic pub /AudioState std_msgs/msg/String '{data: "idle"}' -1
+
+# Display map
+ros2 topic pub --once /hri/display/map std_msgs/msg/String "data: '{\"image_path\": \"test-map.png\", \"markers\": [{\"x\": 0, \"y\": 0.0, \"color\": \"#ff0000\", \"color_name\": \"red\"}, {\"x\": 100.0, \"y\": 100.0, \"color\": \"#00ff00\", \"color_name\": \"green\"}, {\"x\": 50.0, \"y\": 50.0, \"color\": \"#0000ff\", \"color_name\": \"blue asdads\", \"test\": \"a\"}]}'"
 
 ## Simulate sending a question to the display
 ros2 topic pub /hri/display/frida_questions std_msgs/msg/String '{data: "What is your favorite color?"}' -1
