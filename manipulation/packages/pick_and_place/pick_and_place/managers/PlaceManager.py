@@ -45,29 +45,32 @@ class PlaceManager:
         place_motion_request.object_name = pick_result.object_name
         place_motion_request.place_params = place_params
 
+        return_result = True
         self.node.get_logger().info("Sending place motion request")
         self.node._place_motion_action_client.wait_for_server()
         future = self.node._place_motion_action_client.send_goal_async(
             place_motion_request
         )
         wait_for_future(future)
-        place_motion_result = future.result().get_result().result
-        self.node.get_logger().info(f"Place Motion Result: {place_motion_result}")
+        try:
+            return_result = future.result().get_result().result.success
+        except Exception as e:
+            return_result = False
+            self.node.get_logger().error(f"Place motion failed: {e}")
 
-        if not place_motion_result.success:
-            self.node.get_logger().error("Place motion failed")
-            return False
+        self.node.get_logger().info(f"Place Motion Result: {return_result}")
 
         self.node.get_logger().info("Returning to position")
 
         # return to configured position
         for i in range(5):
-            return_result = send_joint_goal(
+            back_res = send_joint_goal(
                 move_joints_action_client=self.node._move_joints_client,
                 named_position="table_stare",
-                velocity=0.3,
+                velocity=0.5,
             )
-            if return_result:
+            if back_res:
+                self.node.get_logger().info("Returned to position successfully")
                 break
             self.node.get_logger().info("Retry sending return joint goal")
 
@@ -109,7 +112,15 @@ class PlaceManager:
             request.place_params = place_params
             self.node.place_perception_3d_client.wait_for_service()
             future = self.node.place_perception_3d_client.call_async(request)
-            wait_for_future(future)
+            wait_for_future(future, timeout=10)
+            try:
+                pcl_result = future.result().cluster_result
+                if len(pcl_result.data) == 0:
+                    self.node.get_logger().error("No plane cluster detected")
+                    return None
+            except Exception as e:
+                self.node.get_logger().error(f"Failed to call perception service: {e}")
+                return None
             pcl_result = future.result().cluster_result
             if len(pcl_result.data) == 0:
                 self.node.get_logger().error("No plane cluster detected")

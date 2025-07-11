@@ -139,7 +139,7 @@ class PlaceMotionServer(Node):
                 )
                 # send it a little bit back, then forward
                 offset_distance = SHELF_POSITION_PREPLACE_POSE  # Desired distance in meters along the local z-axis
-                offset_distance_half = SHELF_POSITION_PREPLACE_POSE * (2 / 3)
+                offset_distance_half = SHELF_POSITION_PREPLACE_POSE * (1 / 2)
                 # Compute the offset along the local z-axis
                 quat = [
                     ee_link_pre_pose.pose.orientation.w,
