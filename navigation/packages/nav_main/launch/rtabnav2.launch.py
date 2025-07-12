@@ -17,6 +17,7 @@ def generate_launch_description():
     nav2_params_ = LaunchConfiguration('nav2_config_file', default=nav2_params_file)
     localization = LaunchConfiguration('localization', default='false')
     nav2_activate = LaunchConfiguration('nav2', default='true')
+    docking = LaunchConfiguration('use_docking', default='false')
     rtabmap_map_name = LaunchConfiguration('map_name', default='rtabmap_map.db')
     
 
@@ -123,6 +124,14 @@ def generate_launch_description():
             
                 ),
             ComposableNode(
+                package='opennav_docking',
+                plugin='opennav_docking::DockingServer',
+                name='docking_server',
+                parameters=[nav2_params],
+                condition=IfCondition(docking),
+                ),
+
+            ComposableNode(
             condition=IfCondition(nav2_activate),
             package='nav2_lifecycle_manager',
             plugin='nav2_lifecycle_manager::LifecycleManager',
@@ -137,6 +146,7 @@ def generate_launch_description():
                     'behavior_server',
                     'bt_navigator',
                     'velocity_smoother',
+                    'docking_server',
                 ]
             }],
             ),
