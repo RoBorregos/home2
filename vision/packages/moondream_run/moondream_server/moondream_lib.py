@@ -7,9 +7,15 @@ import argparse
 
 
 class Position(Enum):
-    LEFT = "left"
+    L_UL = "left of the upper left quadrant "
+    R_UL = "right of the upper left quadrant "
+    L_UR = "left of the upper right quadrant "
+    R_UR = "right of the upper right quadrant "
+    L_LL = "left of the lower left quadrant "
+    R_LL = "right of the lower left quadrant "
+    L_LR = "left of the lower right quadrant "
+    R_LR = "right of the lower right quadrant "
     CENTER = "center"
-    RIGHT = "right"
     NOT_FOUND = "not found"
 
 
@@ -49,13 +55,37 @@ class MoonDreamModel:
         else:
             for obj in detect_result["objects"]:
                 x_center = (obj["x_min"] + obj["x_max"]) / 2
+                y_center = (obj["y_min"] + obj["y_max"]) / 2
                 print(x_center)
-                if x_center <= 0.4:
-                    return Position.LEFT.value
-                elif x_center >= 0.6:
-                    return Position.RIGHT.value
-                else:
+                # Determinate Position
+                if 0.4 <= x_center <= 0.6 and 0.4 <= y_center <= 0.6:
                     return Position.CENTER.value
+                elif y_center < 0.5:
+                    if x_center < 0.5:
+                        return (
+                            Position.L_UL.value
+                            if x_center < 0.25
+                            else Position.R_UL.value
+                        )
+                    else:
+                        return (
+                            Position.L_UR.value
+                            if x_center < 0.75
+                            else Position.R_UR.value
+                        )
+                else:
+                    if x_center < 0.5:
+                        return (
+                            Position.L_LL.value
+                            if x_center < 0.25
+                            else Position.R_LL.value
+                        )
+                    else:
+                        return (
+                            Position.L_LR.value
+                            if x_center < 0.75
+                            else Position.R_LR.value
+                        )
             return Position.NOT_FOUND.value
 
     def query(self, encoded_image_data, query):
