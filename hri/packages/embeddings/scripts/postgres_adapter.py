@@ -5,7 +5,10 @@ import json
 import os
 
 import psycopg2
-from embeddings.postgres_collections import (
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from postgres_collections import (
     Action,
     CommandHistory,
     Item,
@@ -36,6 +39,9 @@ class PostgresAdapter:
         else:
             print(f"Loading model from {MODEL_PATH}")
         self.embedding_model = SentenceTransformer(MODEL_PATH)
+        print("Printing all tables in the database: ")
+        self.cursor.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'")
+        print(self.cursor.fetchall())
 
     def get_all_items(self) -> list[Item]:
         """Method to get all items from the database"""
