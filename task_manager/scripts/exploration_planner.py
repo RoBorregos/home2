@@ -9,6 +9,7 @@ import math
 import heapq
 from typing import List, Tuple
 
+
 class ExplorationPlanner:
     def __init__(self, areas_json_path: str):
         """Initialize the exploration planner with areas data"""
@@ -162,7 +163,9 @@ class ExplorationPlanner:
 
         return total_dist
 
-    def get_distance_between_area_subarea(self, area1: str, subarea1: str, area2: str, subarea2: str) -> float:
+    def get_distance_between_area_subarea(
+        self, area1: str, subarea1: str, area2: str, subarea2: str
+    ) -> float:
         """
         Get the Euclidean distance between [area1][subarea1] and [area2][subarea2].
         Returns float('inf') if any area or subarea is missing.
@@ -174,8 +177,8 @@ class ExplorationPlanner:
             x2, y2 = pos2[0], pos2[1]
             return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
         except Exception:
-            return float('inf')
-        
+            return float("inf")
+
     def get_nearest_trashbin(self) -> dict:
         """
         Get the nearest trash bin location for all locations.
@@ -189,12 +192,12 @@ class ExplorationPlanner:
                 nearest_trashbin[current_location] = current_location
                 continue
 
-            min_distance = float('inf')
+            min_distance = float("inf")
             nearest_area = None
             for area, subarea in self.areas.items():
                 if "trashbin" in subarea:
                     distance = self.get_distance_between_area_subarea(
-                    current_location, "safe_place", area, "trashbin"
+                        current_location, "safe_place", area, "trashbin"
                     )
                     if distance < min_distance:
                         min_distance = distance
