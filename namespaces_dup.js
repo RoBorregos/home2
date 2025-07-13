@@ -70,6 +70,7 @@ var namespaces_dup =
     [ "dualshock_cmd_vel", "namespacedualshock__cmd__vel.html", [
       [ "generate_launch_description", "namespacedualshock__cmd__vel.html#a432ab17ac92da4fc48450236583614a3", null ]
     ] ],
+    [ "egpsr_task_manager", "namespaceegpsr__task__manager.html", "namespaceegpsr__task__manager" ],
     [ "ekf", "namespaceekf.html", [
       [ "generate_launch_description", "namespaceekf.html#a32e94cb02311b88f95d5b52017cf6948", null ]
     ] ],
@@ -87,6 +88,7 @@ var namespaces_dup =
       [ "generate_launch_description", "namespaceexample__launch.html#af49d150abaa0c5580b32932333d2f2c8", null ]
     ] ],
     [ "example_node", "namespaceexample__node.html", "namespaceexample__node" ],
+    [ "exploration_planner", "namespaceexploration__planner.html", "namespaceexploration__planner" ],
     [ "face_recognition_node", "namespaceface__recognition__node.html", "namespaceface__recognition__node" ],
     [ "follow_face_node", "namespacefollow__face__node.html", "namespacefollow__face__node" ],
     [ "follow_person_node", "namespacefollow__person__node.html", "namespacefollow__person__node" ],

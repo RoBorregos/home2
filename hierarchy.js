@@ -9,6 +9,7 @@ var hierarchy =
     [ "utils.config.TopicConfig.Config", "classutils_1_1config_1_1TopicConfig_1_1Config.html", null ],
     [ "ObjectDetector.Detection", "classObjectDetector_1_1Detection.html", null ],
     [ "DetectionRecord", "structDetectionRecord.html", null ],
+    [ "exploration_planner.ExplorationPlanner", "classexploration__planner_1_1ExplorationPlanner.html", null ],
     [ "subtask_managers.generic_tasks.GenericTask", "classsubtask__managers_1_1generic__tasks_1_1GenericTask.html", [
       [ "subtask_managers.gpsr_single_tasks.GPSRSingleTask", "classsubtask__managers_1_1gpsr__single__tasks_1_1GPSRSingleTask.html", null ],
       [ "subtask_managers.gpsr_tasks.GPSRTask", "classsubtask__managers_1_1gpsr__tasks_1_1GPSRTask.html", null ]
@@ -78,6 +79,7 @@ var hierarchy =
     [ "PourManager.PourManager", "classPourManager_1_1PourManager.html", null ],
     [ "frida_constants.vision_classes.ShelfDetection", "classfrida__constants_1_1vision__classes_1_1ShelfDetection.html", null ],
     [ "Shelf_OCV.ShelfDetection", "classShelf__OCV_1_1ShelfDetection.html", null ],
+    [ "egpsr_task_manager.EGPSRTM.States", "classegpsr__task__manager_1_1EGPSRTM_1_1States.html", null ],
     [ "gpsr_task_manager.GPSRTM.States", "classgpsr__task__manager_1_1GPSRTM_1_1States.html", null ],
     [ "dashgo_driver.dashgo_stm32.Stm32", "classdashgo__driver_1_1dashgo__stm32_1_1Stm32.html", null ],
     [ "str", null, [
@@ -135,6 +137,7 @@ var hierarchy =
       [ "dashgo_driver2.DashgoDriver", "classdashgo__driver2_1_1DashgoDriver.html", null ],
       [ "dock_to_handle.DockToHandleNode", "classdock__to__handle_1_1DockToHandleNode.html", null ],
       [ "ds4_demo.ServoDS4", "classds4__demo_1_1ServoDS4.html", null ],
+      [ "egpsr_task_manager.EGPSRTM", "classegpsr__task__manager_1_1EGPSRTM.html", null ],
       [ "ex_orientation_path_constraint.MoveToPoseContraintedClient", "classex__orientation__path__constraint_1_1MoveToPoseContraintedClient.html", null ],
       [ "example_node.ExampleNode", "classexample__node_1_1ExampleNode.html", null ],
       [ "face_recognition_node.FaceRecognition", "classface__recognition__node_1_1FaceRecognition.html", null ],

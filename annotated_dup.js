@@ -47,11 +47,17 @@ var annotated_dup =
     [ "ds4_demo", "namespaceds4__demo.html", [
       [ "ServoDS4", "classds4__demo_1_1ServoDS4.html", "classds4__demo_1_1ServoDS4" ]
     ] ],
+    [ "egpsr_task_manager", "namespaceegpsr__task__manager.html", [
+      [ "EGPSRTM", "classegpsr__task__manager_1_1EGPSRTM.html", "classegpsr__task__manager_1_1EGPSRTM" ]
+    ] ],
     [ "ex_orientation_path_constraint", "namespaceex__orientation__path__constraint.html", [
       [ "MoveToPoseContraintedClient", "classex__orientation__path__constraint_1_1MoveToPoseContraintedClient.html", "classex__orientation__path__constraint_1_1MoveToPoseContraintedClient" ]
     ] ],
     [ "example_node", "namespaceexample__node.html", [
       [ "ExampleNode", "classexample__node_1_1ExampleNode.html", "classexample__node_1_1ExampleNode" ]
+    ] ],
+    [ "exploration_planner", "namespaceexploration__planner.html", [
+      [ "ExplorationPlanner", "classexploration__planner_1_1ExplorationPlanner.html", "classexploration__planner_1_1ExplorationPlanner" ]
     ] ],
     [ "face_recognition_node", "namespaceface__recognition__node.html", [
       [ "FaceRecognition", "classface__recognition__node_1_1FaceRecognition.html", "classface__recognition__node_1_1FaceRecognition" ]
