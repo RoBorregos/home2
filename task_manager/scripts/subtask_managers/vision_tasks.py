@@ -782,7 +782,7 @@ class VisionTasks:
             response_clean = response_q.strip()
             if response_clean == "1":
                 response_clean = True
-            elif response_clean != "0":
+            else:
                 response_clean = False
         return status, response_clean
 

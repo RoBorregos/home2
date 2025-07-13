@@ -4,7 +4,7 @@
 Task Manager for E-GPSR task of Robocup @Home 2025
 
 Required nav locations:
-- trashbin per room (e.g. kitchen_trashbin, living_room_trashbin)
+- trashbins (area: kitchen, subarea: trashbin)
 """
 
 import time
@@ -20,172 +20,18 @@ from utils.logger import Logger
 from utils.status import Status
 from utils.subtask_manager import SubtaskManager, Task
 
+from exploration_planner import ExplorationPlanner
+
 import json
-import math
-from typing import List, Tuple
-import heapq
+from collections import deque
 
 import os
 from ament_index_python.packages import get_package_share_directory
 
 ATTEMPT_LIMIT = 3
 MAX_COMMANDS = 3
-
-
-# NOTE: Maybe navigation could find a better approach to visit all areas
-class ExplorationPlanner:
-    def __init__(self, areas_json_path: str):
-        """Initialize the exploration planner with areas data"""
-        with open(areas_json_path, "r") as file:
-            self.areas = json.load(file)
-
-        # Extract valid exploration areas (exclude start_area and entrance)
-        self.exploration_areas = {
-            name: data
-            for name, data in self.areas.items()
-            if name not in ["start_area", "entrance"]
-            and "safe_place" in data
-            and data["safe_place"]
-        }
-
-        self.distances = {}
-        self._calculate_distances()
-
-    def _calculate_distances(self):
-        """Calculate Euclidean distances between all areas"""
-        area_names = list(self.exploration_areas.keys())
-
-        for i, area1 in enumerate(area_names):
-            for j, area2 in enumerate(area_names):
-                if i != j:
-                    dist = self._euclidean_distance(area1, area2)
-                    self.distances[(area1, area2)] = dist
-                else:
-                    self.distances[(area1, area2)] = 0
-
-    def _euclidean_distance(self, area1: str, area2: str) -> float:
-        """Calculate Euclidean distance between two areas"""
-        pos1 = self.exploration_areas[area1]["safe_place"]
-        pos2 = self.exploration_areas[area2]["safe_place"]
-
-        # Extract x, y coordinates
-        x1, y1 = pos1[0], pos1[1]
-        x2, y2 = pos2[0], pos2[1]
-
-        return math.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
-
-    def dijkstra_shortest_path(self, start: str, end: str) -> Tuple[List[str], float]:
-        """Find shortest path between two areas using Dijkstra's algorithm"""
-        if start not in self.exploration_areas or end not in self.exploration_areas:
-            return [], float("inf")
-
-        # Priority queue: (distance, node)
-        pq = [(0, start)]
-        distances = {area: float("inf") for area in self.exploration_areas}
-        distances[start] = 0
-        previous = {}
-        visited = set()
-
-        while pq:
-            current_dist, current = heapq.heappop(pq)
-
-            if current in visited:
-                continue
-
-            visited.add(current)
-
-            if current == end:
-                break
-
-            for neighbor in self.exploration_areas:
-                if neighbor not in visited:
-                    distance = current_dist + self.distances[(current, neighbor)]
-
-                    if distance < distances[neighbor]:
-                        distances[neighbor] = distance
-                        previous[neighbor] = current
-                        heapq.heappush(pq, (distance, neighbor))
-
-        # Reconstruct path
-        path = []
-        current = end
-        while current is not None:
-            path.append(current)
-            current = previous.get(current)
-
-        path.reverse()
-
-        return path, distances[end]
-
-    def plan_exploration_order(self, start_area: str = "start_area") -> List[str]:
-        """Plan optimal exploration order using nearest neighbor heuristic"""
-        if start_area not in self.areas:
-            start_area = "start_area"
-
-        # Get starting position
-        start_pos = self.areas[start_area]["safe_place"]
-
-        # Find nearest exploration area to start
-        unvisited = set(self.exploration_areas.keys())
-        current_pos = start_pos
-        exploration_order = []
-
-        # Find closest area to start position
-        min_dist = float("inf")
-        next_area = None
-
-        for area in unvisited:
-            area_pos = self.exploration_areas[area]["safe_place"]
-            dist = math.sqrt(
-                (area_pos[0] - current_pos[0]) ** 2 + (area_pos[1] - current_pos[1]) ** 2
-            )
-            if dist < min_dist:
-                min_dist = dist
-                next_area = area
-
-        if next_area:
-            exploration_order.append(next_area)
-            unvisited.remove(next_area)
-            current_area = next_area
-
-        # Continue with nearest neighbor
-        while unvisited:
-            min_dist = float("inf")
-            next_area = None
-
-            for area in unvisited:
-                dist = self.distances[(current_area, area)]
-                if dist < min_dist:
-                    min_dist = dist
-                    next_area = area
-
-            if next_area:
-                exploration_order.append(next_area)
-                unvisited.remove(next_area)
-                current_area = next_area
-
-        return exploration_order
-
-    def get_total_exploration_distance(self, order: List[str]) -> float:
-        """Calculate total distance for exploration order"""
-        if not order:
-            return 0
-
-        total_dist = 0
-
-        # Distance from start to first area
-        start_pos = self.areas["start_area"]["safe_place"]
-        first_pos = self.exploration_areas[order[0]]["safe_place"]
-        total_dist += math.sqrt(
-            (first_pos[0] - start_pos[0]) ** 2 + (first_pos[1] - start_pos[1]) ** 2
-        )
-
-        # Distance between consecutive areas
-        for i in range(len(order) - 1):
-            total_dist += self.distances[(order[i], order[i + 1])]
-
-        return total_dist
-
+MAX_TRASH_SOLVED = 1
+MAX_OBJECTS_PLACED = 1
 
 def confirm_command(interpreted_text, target_info):
     return f"Did you say {target_info}?"
@@ -205,17 +51,12 @@ class EGPSRTM(Node):
 
     class States:
         START = 0
-        WAITING_FOR_COMMAND = 1
-        EXECUTING_COMMAND = 2
-        FINISHED_COMMAND = 3
-        EXPLORATION = 4
-        HANDLING_TRASH = 5
-        NAVIGATE_TO_TRASH_BIN = 6
-        DROP_TRASH = 7
-        PICK_MISPLACED_OBJECT = 8
-        NAVIGATE_TO_CORRECT_LOCATION = 9
-        PLACE_MISPLACED_OBJECT = 10
-        DONE = 11
+        EXPLORATION = 1
+        HANDLE_TRASH = 2
+        HANDLE_MISPLACED_OBJECT = 3
+        WAIT_FOR_COMMAND = 4
+        EXECUTE_COMMAND = 5
+        DONE = 6
 
     def __init__(self):
         """Initialize the node"""
@@ -227,22 +68,33 @@ class EGPSRTM(Node):
         self.current_state = EGPSRTM.States.START
         self.running_task = True
         self.current_attempt = 0
-        self.executed_commands = 0
-        self.commands = []
+        self.commands = deque()
         self.exploration_locations = []
         self.current_exploration_index = 0
-        self.found_misplaced_objects = []
-        self.found_trash = []
-        self.people_to_ask_command = []
+        self.found_misplaced_objects = deque()
+        self.found_trash = deque()
+        self.people_to_ask_command = deque()
         self.exploration_complete = False
-        self.trash_detected_flag = False
-        self.trash_bin_location = {}
+        self.problems_solved = {"trash": 0, "misplaced_objects": 0, "commands": 0}
+        self.trash_bin_locations = {}
+        self.areas = {}
         self.current_misplaced_object_index = 0
+        self.trash_location = ""
+        self.solve_immediately = False  # If True: solve problems as encountered, if False: explore first then solve
+        self.interrupted_exploration_location = None  # Track where we were when interrupted
+        self.interrupted_exploration_subarea = None   # Track subarea we were exploring
+
+    # Track current robot location
+        self.curr_location = "start_area"
+        self.curr_sublocation = "safe_place"
 
         package_share_directory = get_package_share_directory("frida_constants")
         file_path = os.path.join(package_share_directory, "map_areas/areas.json")
 
         self.exploration_planner = ExplorationPlanner(file_path)
+
+        # Get nearest trash bin locations
+        self.trash_bin_locations = self.exploration_planner.get_nearest_trashbin()
 
         # Get optimal exploration order
         self.exploration_locations = self.exploration_planner.plan_exploration_order()
@@ -256,12 +108,13 @@ class EGPSRTM(Node):
 
         # Load areas from the JSON file
         with open(file_path, "r") as file:
-            areas = json.load(file)
+            self.areas = json.load(file)
 
         # Check which area the robot is in
-        for area in areas:
-            self.trash_bin_location = areas.get(area, {}).get("trashbin", [])
-
+        for area, subarea in self.areas.items():
+            if "trashbin" in subarea:
+                self.trash_bin_locations[area] = subarea["trashbin"]
+                
         if isinstance(self.commands, dict):
             self.commands = CommandListLLM(**self.commands).commands
 
@@ -318,112 +171,174 @@ class EGPSRTM(Node):
     def analyze_location_for_anomalies(self, location: str):
         """Analyze current location for trash and misplaced objects"""
         try:
-            if self.trash_bin_location[location] == []:
-                if self.current_exploration_index + 1 < len(self.exploration_locations):
-                    trash_loc = self.exploration_locations[self.current_exploration_index + 1]
-                else:
-                    trash_loc = self.exploration_locations[self.current_exploration_index - 1]
+            # Detect trash and people at the main location
+            self.detect_trash()
+            self.detect_people_with_raised_arms()
+            
+            # Only check subareas of the CURRENT location
+            if location in self.areas:
+                current_area_subareas = self.areas[location]
+                
+                for subarea_name, subarea_coords in current_area_subareas.items():
+                    # Skip non-explorable subareas
+                    if subarea_name not in ["safe_place", "trashbin"] and subarea_coords is not None:
+                        self.get_logger().info(f"Exploring subarea: {location}/{subarea_name}")
+                        self.navigate_to(location, subarea_name, False)
+                        self.detect_misplaced_objects()
+                        
+                # Return to safe_place after exploring subareas
+                self.navigate_to(location, "safe_place", False)
             else:
-                trash_loc = location
-
-            # Get objects in the current view
-            s, detected_objects = self.subtask_manager.vision.detect_objects()
-            # NOTE: uncomment labels once hri is implemented.
-            # labels = self.subtask_manager.vision.get_labels(detected_objects)
-
-            # Check if object is trash
-            if not self.trash_detected_flag:
-                status, trash_detected = self.subtask_manager.vision.detect_trash()
-                if status == Status.EXECUTION_SUCCESS and trash_detected:
-                    self.trash_detected_flag = True
-                    self.get_logger().info(f"Trash detected in {location}")
-                    # Transition to handling trash state when trash is detected
-                    self.current_state = EGPSRTM.States.HANDLING_TRASH
-
-            if self.current_state == EGPSRTM.States.HANDLING_TRASH:
-                self.subtask_manager.hri.say("I have detected trash. I will now receive the trash.")
-                # Move to a pose suitable for receiving trash
-                # NOTE: consider a possible self.subtask_manager.manipulation.move_joint_positions(named_position="trash_receiving_pose", velocity=0.5, degrees=True)
-
-                while True:
-                    self.subtask_manager.hri.say("Please hand me the trash.")
-                    self.subtask_manager.manipulation.open_gripper()
-                    s, confirmation = self.subtask_manager.hri.confirm(
-                        "Have you given me the trash? Say yes when you are done.",
-                        False,
-                        retries=5,
-                        wait_between_retries=2,
-                    )
-
-                    if confirmation == "yes":
-                        self.subtask_manager.hri.say("Thank you.")
-                        break
-
-                self.subtask_manager.manipulation.close_gripper()
-                self.subtask_manager.hri.say(
-                    "I have received the trash. I will now pick it up and take it to the trash bin."
-                )
-                self.current_state = EGPSRTM.States.NAVIGATE_TO_TRASH_BIN
-
-            if self.current_state == EGPSRTM.States.NAVIGATE_TO_TRASH_BIN:
-                if trash_loc:
-                    self.subtask_manager.hri.say("I will now navigate to the trashbin.")
-                    self.navigate_to(trash_loc, "trashbin", False)
-                    self.current_state = EGPSRTM.States.DROP_TRASH
-
-            if self.current_state == EGPSRTM.States.DROP_TRASH:
-                self.subtask_manager.hri.say("I will now drop the trash in the trashbin.")
-                self.subtask_manager.manipulation.open_gripper()
-                self.subtask_manager.hri.say(
-                    "I have dropped the trash in the trashbin. I will now return to my previous position."
-                )
-                self.navigate_to(location, "", False)
-                self.current_state = EGPSRTM.States.EXPLORATION
-
-            if s == Status.EXECUTION_SUCCESS:
-                misplaced_object, expected_location, expected_sublocation = None, None, None
-                pass
-                # Check if object is misplaced
-                # TODO: HRI verification of misplaced objects
-                # misplaced_object, expected_loc, expected_subloc = self.subtask_manager.hri.find_misplaced_object(labels)
-                if misplaced_object:
-                    self.get_logger().info(
-                        f"Found misplaced object: {misplaced_object} in {location}. Expected location: {expected_location}, sublocation: {expected_sublocation}"
-                    )
-                    self.subtask_manager.hri.say(
-                        f"I have detected a misplaced object: {misplaced_object}. I will now pick it up and take it to the correct location."
-                    )
-                    self.current_state = EGPSRTM.States.PICK_MISPLACED_OBJECT
-                    self.subtask_manager.manipulation.pick_object(misplaced_object)
-                    self.subtask_manager.hri.say(
-                        "I have picked up the misplaced_object. I will now navigate to the correct location."
-                    )
-                    self.navigate_to(expected_location, expected_sublocation, False)
-                    self.current_state = EGPSRTM.States.PLACE_MISPLACED_OBJECT
-                    self.subtask_manager.hri.say(f"I will now place the {misplaced_object}.")
-                    self.subtask_manager.manipulation.place()
-                    self.subtask_manager.hri.say("I will now return to my original location.")
-                    self.navigate_to(location, "", False)
-                    self.current_state = EGPSRTM.States.EXPLORATION
-
-            # Check for people with raised arms
-            status, cur_pose = self.subtask_manager.vision.find_person_info_client(
-                "pose"
-            )  # check if lower or upper case i.e. POSE
-
-            if status == Status.EXECUTION_SUCCESS:
-                if (
-                    cur_pose is not None
-                    and cur_pose == "raising_right_arm"
-                    or cur_pose == "raising_left_arm"
-                ):
-                    self.people_to_ask_command.append(
-                        {"location": location, "timestamp": time.time()}
-                    )
-                    self.get_logger().info(f"Found person with raised arm in {location}")
-
+                self.get_logger().warning(f"Location {location} not found in areas dictionary")
+                
         except Exception as e:
             self.get_logger().error(f"Error during location analysis: {str(e)}")
+
+    # function to sort expected locations by distance of all misplaced objects
+    def sort_misplaced_objects_by_distance(self):
+        """Sort misplaced objects by distance from the current location"""
+        if not self.found_misplaced_objects:
+            return []
+
+        self.found_misplaced_objects.sort(
+            key=lambda obj: (
+                self.exploration_planner.get_distance_between_area_subarea(
+                    self.curr_location, self.curr_sublocation, obj["current_location"], obj["current_sublocation"]
+                )
+                +
+                self.exploration_planner.get_distance_between_area_subarea(
+                    obj["current_location"], obj["current_sublocation"], obj["expected_location"], obj["expected_sublocation"]
+                )
+            )
+        )
+    
+    def sort_trash_by_distance(self):
+        """Sort trash items by distance from the current location"""
+        if not self.found_trash:
+            return []
+
+        self.found_trash.sort(
+            key=lambda item: (
+            self.exploration_planner.get_distance_between_area_subarea(
+                self.curr_location, self.curr_sublocation, item["location"], "safe_place"
+            )
+            +
+            self.exploration_planner.get_distance_between_area_subarea(
+                item["location"], "safe_place", self.trash_bin_locations[item["location"]], "trashbin"
+            )
+            )
+        )
+    
+    def sort_people_by_distance(self):
+        """Sort people by distance from the current location"""
+        if not self.people_to_ask_command:
+            return []
+
+        self.people_to_ask_command.sort(
+            key=lambda person: (
+            self.exploration_planner.get_distance_between_area_subarea(
+                self.curr_location, self.curr_sublocation, person["location"], "safe_place"
+            )
+            )
+        )
+    
+    def detect_trash(self):
+        """Detect trash in the current location"""
+        if self.problems_solved.get("trash", 0) < MAX_TRASH_SOLVED:
+            s, trash_detected = self.subtask_manager.vision.detect_trash()
+            if s == Status.EXECUTION_SUCCESS and trash_detected:
+                self.found_trash.append({
+                    "object": "trash",
+                    "location": self.curr_location,
+                    "timestamp": time.time()
+                })
+                self.get_logger().info(f"Trash detected in {self.curr_location}")
+                if self.solve_immediately:
+                    # Save current exploration state
+                    self.interrupted_exploration_location = self.curr_location
+                    self.get_logger().info(f"Interrupting exploration at {self.interrupted_exploration_location} to handle trash")
+                    
+                    # Change state to handle trash immediately
+                    self.current_state = EGPSRTM.States.HANDLE_TRASH
+
+    def detect_misplaced_objects(self):
+        """Detect misplaced objects in the current location"""
+        s, detected_objects = self.subtask_manager.vision.detect_objects()
+        
+        if s == Status.EXECUTION_SUCCESS:
+            labels = self.subtask_manager.vision.get_labels(detected_objects)
+            
+            for obj_name in labels:
+                # Use HRI to get expected location with context
+                expected_locations = self.subtask_manager.hri.query_location(
+                    obj_name, top_k=3, use_context=True
+                )
+                
+                if expected_locations and len(expected_locations) > 0:
+                    best_match = expected_locations[0]
+                    
+                    expected_area = best_match.area
+                    expected_subarea = best_match.subarea
+                    
+                    # Check if object is misplaced
+                    if self.curr_location != expected_area or self.curr_sublocation != expected_subarea:
+                        self.found_misplaced_objects.append({
+                            "object": obj_name,
+                            "current_location": self.curr_location,
+                            "current_sublocation": self.curr_sublocation,
+                            "expected_location": expected_area,
+                            "expected_sublocation": expected_subarea,
+                            "timestamp": time.time()
+                        })
+
+                        self.get_logger().info(f"Misplaced object detected: {obj_name} in {self.curr_location}/{self.curr_sublocation}, should be in {expected_area}/{expected_subarea}")
+                        
+                        if self.solve_immediately:
+                            # Save current exploration state
+                            self.interrupted_exploration_location = self.curr_location
+                            self.interrupted_exploration_subarea = self.curr_sublocation
+                            self.get_logger().info(f"Interrupting exploration at {self.curr_location}/{self.curr_sublocation} to handle misplaced object")
+                            
+                            # Change state to handle misplaced object immediately
+                            self.current_state = EGPSRTM.States.HANDLE_MISPLACED_OBJECT
+                            return  # Exit to handle the object immediately
+
+    def detect_people_with_raised_arms(self):
+        """Detect people with raised arms in the current location"""
+        s, cur_pose = self.subtask_manager.vision.find_person_info("pose")
+        
+        if s == Status.EXECUTION_SUCCESS:
+            if cur_pose is not None and cur_pose in ["raising_right_arm", "raising_left_arm"]:
+                self.people_to_ask_command.append({
+                    "location": self.curr_location, 
+                    "timestamp": time.time()
+                })
+                self.get_logger().info(f"Found person with raised arm in {self.curr_location}")
+
+    def pick_trash(self):
+        """Handle the trash detection and pickup process"""
+
+        self.subtask_manager.hri.say("I have detected trash in this location. I will now receive the trash.")
+        
+        # Request trash from person
+        while True:
+            self.subtask_manager.hri.say("Please hand me the trash.")
+            self.subtask_manager.manipulation.open_gripper()
+            s, confirmation = self.subtask_manager.hri.confirm(
+                "Have you given me the trash? Say yes when you are done.",
+                False,
+                retries=5,
+                wait_between_retries=2,
+            )
+            
+            if confirmation == "yes":
+                self.subtask_manager.hri.say("Thank you.")
+                break
+        
+        self.subtask_manager.manipulation.close_gripper()
+        self.subtask_manager.hri.say(
+            "I have received the trash. I will now take it to the trash bin."
+        )
 
     def timeout(self, timeout: int = 2):
         start_time = time.time()
@@ -431,7 +346,7 @@ class EGPSRTM(Node):
             pass
 
     def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
-        """Navigate to the location"""
+        """Navigate to the location and update current position"""
         if say:
             self.subtask_manager.hri.say(
                 f"I will now guide you to the {location}. Please follow me."
@@ -441,123 +356,270 @@ class EGPSRTM(Node):
         self.subtask_manager.manipulation.move_joint_positions(
             named_position="nav_pose", velocity=0.5, degrees=True
         )
+        
+        # Log navigation
+        self.get_logger().info(f"Navigating from {self.curr_location}/{self.curr_sublocation} to {location}/{sublocation or 'safe_place'}")
+        
         future = self.subtask_manager.nav.move_to_location(location, sublocation)
         if "navigation" not in self.subtask_manager.get_mocked_areas():
             rclpy.spin_until_future_complete(self.subtask_manager.nav.node, future)
+        
+        # Update location using NavigationTasks after navigation
+        # self.update_current_location() using NavigationTasks
+        self.curr_location = location
+        self.curr_sublocation = sublocation if sublocation else "safe_place"
 
-    def run(self):
-        """State machine"""
-        if self.current_state == EGPSRTM.States.START:
-            self.navigate_to("start_area", "", False)
-            self.subtask_manager.hri.say(
-                "Hi, my name is Frida. I am a general purpose robot. I can help you with some tasks."
-            )
-            self.current_state = EGPSRTM.States.EXPLORATION
+    def _handle_start(self):
+        """Handle start state"""
+        self.navigate_to("start_area", "", False)
+        self.subtask_manager.hri.say(
+            "Hi, my name is Frida. I am a general purpose robot. I can help you with some tasks."
+        )
 
-        elif self.current_state == EGPSRTM.States.EXPLORATION:
-            if not self.exploration_complete:
-                self.explore_environment()
+    def _handle_exploration(self):
+        """Handle exploration state"""
+        if not self.exploration_complete:
+            self.explore_environment()
+            
+            # Transition based on priority: trash > misplaced objects > commands
+            if self.found_trash:
+                self.current_state = self.States.HANDLE_TRASH
+            elif self.found_misplaced_objects:
+                self.current_state = self.States.HANDLE_MISPLACED_OBJECT
             else:
-                self.current_state = EGPSRTM.States.WAITING_FOR_COMMAND
+                self.current_state = self.States.WAIT_FOR_COMMAND
 
-        elif self.current_state == EGPSRTM.States.WAITING_FOR_COMMAND:
-            if self.executed_commands >= MAX_COMMANDS:
-                self.current_state = EGPSRTM.States.DONE
-                return
-
-            self.subtask_manager.manipulation.move_joint_positions(
-                named_position="front_stare", velocity=0.5, degrees=True
-            )
-            s, user_command = self.subtask_manager.hri.ask_and_confirm(
-                "What is your command?",
-                "LLM_command",
-                context="The user was asked to say a command. We want to infer his complete instruction from the response",
-                confirm_question=confirm_command,
-                use_hotwords=False,
-                retries=ATTEMPT_LIMIT,
-                min_wait_between_retries=5.0,
-                skip_extract_data=True,
-            )
-
-            if s != Status.EXECUTION_SUCCESS:
-                self.subtask_manager.hri.say("I am sorry, I could not understand you.")
-                self.current_attempt += 1
+    def _handle_trash(self):
+        """Handle trash detection and disposal"""
+        if not self.found_trash or self.problems_solved["trash"] >= MAX_TRASH_SOLVED:
+            # No more trash or limit reached
+            if self.solve_immediately and self.interrupted_exploration_location:
+                # Return to interrupted exploration
+                self.get_logger().info(f"Returning to interrupted exploration at {self.interrupted_exploration_location}")
+                self.current_state = self.States.EXPLORATION
+                # Don't increment exploration index since we're returning
+            elif self.found_misplaced_objects:
+                self.current_state = self.States.HANDLE_MISPLACED_OBJECT
             else:
-                self.subtask_manager.hri.say(
-                    "I am planning how to perform your command, please wait a moment", wait=False
-                )
-                s, self.commands = self.subtask_manager.hri.command_interpreter(user_command)
+                self.current_state = self.States.WAIT_FOR_COMMAND
+            return
+        
+        self.sort_trash_by_distance()
 
-                self.get_logger().info(
-                    f"Interpreted command: {user_command} -> {str(self.commands)}"
-                )
-                self.subtask_manager.hri.say("I will now execute your command")
-                self.current_state = EGPSRTM.States.EXECUTING_COMMAND
-        elif self.current_state == EGPSRTM.States.EXECUTING_COMMAND:
-            if len(self.commands) == 0:
-                self.current_state = EGPSRTM.States.FINISHED_COMMAND
-            else:
-                command = self.commands.pop(0)
+        # Get first trash item
+        trash_item = self.found_trash.popleft()
+        trash_location = trash_item["location"]
+        
+        # Navigate to trash location
+        self.navigate_to(trash_location, "safe_place", False)
+        self.subtask_manager.hri.say(
+            f"I have detected trash at {trash_location}. I will go ahead and pick it up."
+        )
+        
+        # Handle trash pickup
+        self.pick_trash()
+        
+        # Navigate to nearest trash bin
+        nearest_trash_bin = self.trash_bin_locations.get(trash_location, list(self.trash_bin_locations.keys())[0])
+        self.subtask_manager.hri.say("I will now navigate to the trashbin.")
+        self.navigate_to(nearest_trash_bin, "trashbin", False)
+        
+        # Drop trash
+        self.subtask_manager.hri.say("I will now drop the trash in the trashbin.")
+        self.subtask_manager.manipulation.open_gripper()
+        self.subtask_manager.hri.say("I have disposed of the trash successfully.")
+        
+        self.problems_solved["trash"] += 1
+        
+        # Continue with next priority or return to exploration
+        if self.solve_immediately and self.interrupted_exploration_location:
+            # Return to interrupted exploration
+            self.get_logger().info(f"Trash handled. Returning to exploration at {self.interrupted_exploration_location}")
+            self.navigate_to(self.interrupted_exploration_location, "safe_place", False)
+            self.interrupted_exploration_location = None  # Clear interruption state
+            self.current_state = self.States.EXPLORATION
+        elif self.found_trash and self.problems_solved["trash"] < MAX_TRASH_SOLVED:
+            # Stay in trash handling state for next trash
+            pass
+        elif self.found_misplaced_objects:
+            self.current_state = self.States.HANDLE_MISPLACED_OBJECT
+        else:
+            self.current_state = self.States.WAIT_FOR_COMMAND
 
-                self.get_logger().info(f"Executing command: {str(command)}")
+    def _handle_wait_for_command(self):
+        """Handle waiting for and receiving commands"""
+        if self.problems_solved["commands"] >= MAX_COMMANDS:
+            self.current_state = self.States.DONE
+            return
+        
+        # Navigate to person if available
+        if self.people_to_ask_command:
+            self.sort_people_by_distance()
+            person_location = self.people_to_ask_command.popleft()["location"]
+            self.subtask_manager.hri.say(f"I will now navigate to {person_location} to ask for commands.")
+            self.navigate_to(person_location, "", False)
+        
+        # Ask for command
+        self.subtask_manager.manipulation.move_joint_positions(
+            named_position="front_stare", velocity=0.5, degrees=True
+        )
+        
+        s, user_command = self.subtask_manager.hri.ask_and_confirm(
+            "What is your command?",
+            "LLM_command",
+            context="The user was asked to say a command. We want to infer his complete instruction from the response",
+            confirm_question=confirm_command,
+            use_hotwords=False,
+            retries=ATTEMPT_LIMIT,
+            min_wait_between_retries=5.0,
+            skip_extract_data=True,
+        )
+        
+        if s != Status.EXECUTION_SUCCESS:
+            self.subtask_manager.hri.say("I am sorry, I could not understand you.")
+            self.current_attempt += 1
+            # Stay in wait state to try again
+        else:
+            self.subtask_manager.hri.say("I am planning how to perform your command, please wait a moment", wait=False)
+            s, self.commands = self.subtask_manager.hri.command_interpreter(user_command)
+            
+            self.get_logger().info(f"Interpreted command: {user_command} -> {str(self.commands)}")
+            self.subtask_manager.hri.say("I will now execute your command")
+            self.current_state = self.States.EXECUTE_COMMAND
 
-                try:
-                    exec_commad = search_command(
-                        command.action,
-                        [self.gpsr_tasks, self.gpsr_individual_tasks],
-                    )
-                    if exec_commad is None:
-                        self.get_logger().error(
-                            f"Command {command} is not implemented in GPSRTask or in the subtask managers."
-                        )
-                    else:
-                        status, res = exec_commad(command)
-                        self.get_logger().info(f"status-> {str(status)}")
-                        self.get_logger().info(f"res-> {str(res)}")
-
-                        try:
-                            status = status.value
-                        except Exception:
-                            try:
-                                status = int(status)
-                            except Exception:
-                                pass
-
-                        self.subtask_manager.hri.add_command_history(
-                            command,
-                            res,
-                            status,
-                        )
-                except Exception as e:
-                    self.get_logger().warning(
-                        f"Error occured while executing command ({str(command)}): " + str(e)
-                    )
-            self.timeout(3)
-
-        elif self.current_state == EGPSRTM.States.FINISHED_COMMAND:
+    def _handle_execute_command(self):
+        """Handle command execution"""
+        if len(self.commands) == 0:
+            # Commands finished
             self.subtask_manager.hri.say(
                 "I have finished executing your command. I will return to the start position to await for new commands.",
                 wait=False,
             )
-            self.executed_commands += 1
-            self.current_state = EGPSRTM.States.WAITING_FOR_COMMAND
-            if self.people_to_ask_command:
-                self.subtask_manager.manipulation.move_joint_positions(
-                    named_position="front_stare", velocity=0.5, degrees=True
-                )
-                # If there are people to ask for commands, navigate to the first person
-                location = self.people_to_ask_command.pop(0)["location"]
-                self.subtask_manager.hri.say(
-                    f"I will now navigate to {location} to ask for commands."
-                )
-                self.navigate_to(location, "", False)
-        elif self.current_state == EGPSRTM.States.DONE:
-            self.subtask_manager.hri.say(
-                "I am done with the task. I will now return to my home position.",
-                wait=False,
-            )
-            self.running_task = False
+            self.problems_solved["commands"] += 1
+            self.current_state = self.States.WAIT_FOR_COMMAND
+            return
+        
+        # Execute next command
+        command = self.commands.popleft()
+        self.get_logger().info(f"Executing command: {str(command)}")
+        
+        try:
+            exec_command = search_command(command.action, [self.gpsr_tasks, self.gpsr_individual_tasks])
+            
+            if exec_command is None:
+                self.get_logger().error(f"Command {command} is not implemented in GPSRTask or in the subtask managers.")
+            else:
+                status, res = exec_command(command)
+                self.get_logger().info(f"status-> {str(status)}")
+                self.get_logger().info(f"res-> {str(res)}")
+                
+                # Normalize status
+                try:
+                    status = status.value
+                except Exception:
+                    try:
+                        status = int(status)
+                    except Exception:
+                        pass
+                
+                self.subtask_manager.hri.add_command_history(command, res, status)
+                
+        except Exception as e:
+            self.get_logger().warning(f"Error occurred while executing command ({str(command)}): {str(e)}")
+        
+        self.timeout(3)
 
+    def _handle_done(self):
+        """Handle completion state"""
+        self.subtask_manager.hri.say(
+            "I am done with the task. I will now return to my home position.",
+            wait=False,
+        )
+        self.running_task = False
+
+    def _handle_misplaced_object(self):
+            """Handle misplaced object detection and placement"""
+            if not self.found_misplaced_objects or self.problems_solved["misplaced_objects"] >= MAX_OBJECTS_PLACED:
+                # No more objects or limit reached
+                if self.solve_immediately and self.interrupted_exploration_location:
+                    # Return to interrupted exploration
+                    self.get_logger().info(f"Returning to interrupted exploration at {self.interrupted_exploration_location}")
+                    if self.interrupted_exploration_subarea:
+                        self.navigate_to(self.interrupted_exploration_location, self.interrupted_exploration_subarea, False)
+                        self.interrupted_exploration_subarea = None
+                    else:
+                        self.navigate_to(self.interrupted_exploration_location, "safe_place", False)
+                    self.interrupted_exploration_location = None  # Clear interruption state
+                    self.current_state = self.States.EXPLORATION
+                else:
+                    self.current_state = self.States.WAIT_FOR_COMMAND
+                return
+            
+            self.sort_misplaced_objects_by_distance()
+
+            # Get first misplaced object
+            obj_info = self.found_misplaced_objects.popleft()
+            
+            self.subtask_manager.hri.say(
+                f"I have detected a misplaced object: {obj_info['object']}. I will now pick it up and take it to the correct location."
+            )
+            
+            # Navigate to object location
+            self.navigate_to(obj_info["current_location"], obj_info["current_sublocation"], False)
+            
+            # Pick up the object
+            self.subtask_manager.manipulation.pick_object(obj_info["object"])
+            self.subtask_manager.hri.say("I have picked up the misplaced object.")
+            
+            # Navigate to correct location
+            self.navigate_to(obj_info["expected_location"], obj_info["expected_sublocation"], False)
+            
+            # Place the object
+            self.subtask_manager.hri.say(f"I will now place the {obj_info['object']}.")
+            self.subtask_manager.manipulation.place()
+            
+            self.problems_solved["misplaced_objects"] += 1
+            
+            # Continue with next object or return to exploration
+            if self.solve_immediately and self.interrupted_exploration_location:
+                # Return to interrupted exploration
+                self.get_logger().info(f"Object placed. Returning to exploration at {self.interrupted_exploration_location}")
+                if self.interrupted_exploration_subarea:
+                    self.navigate_to(self.interrupted_exploration_location, self.interrupted_exploration_subarea, False)
+                    self.interrupted_exploration_subarea = None
+                else:
+                    self.navigate_to(self.interrupted_exploration_location, "safe_place", False)
+                self.interrupted_exploration_location = None  # Clear interruption state
+                self.current_state = self.States.EXPLORATION
+            elif self.found_misplaced_objects and self.problems_solved["misplaced_objects"] < MAX_OBJECTS_PLACED:
+                # Stay in misplaced object handling state
+                pass
+            else:
+                self.current_state = self.States.WAIT_FOR_COMMAND
+
+    def run(self):
+        """State machine"""
+        if self.current_state == EGPSRTM.States.START:
+            self._handle_start()
+            self.current_state = EGPSRTM.States.EXPLORATION
+
+        elif self.current_state == EGPSRTM.States.EXPLORATION:
+            self._handle_exploration()
+
+        elif self.current_state == self.States.HANDLE_TRASH:
+            self._handle_trash()
+            
+        elif self.current_state == self.States.HANDLE_MISPLACED_OBJECT:
+            self._handle_misplaced_object()
+            
+        elif self.current_state == self.States.WAIT_FOR_COMMAND:
+            self._handle_wait_for_command()
+            
+        elif self.current_state == self.States.EXECUTE_COMMAND:
+            self._handle_execute_command()
+            
+        elif self.current_state == self.States.DONE:
+            self._handle_done()
 
 def main(args=None):
     """Main function"""
@@ -577,3 +639,44 @@ def main(args=None):
 
 if __name__ == "__main__":
     main()
+
+
+# ALTERNATIVE TO GET CURRENT LOCATION WITH NAVIGATION TASKS
+# def get_current_location_from_nav(self):
+    #     """Get current robot location using NavigationTasks ReturnLocation service"""
+    #     try:
+    #         status, results = self.subtask_manager.nav.ReturnLocation_callback()
+            
+    #         if status == Status.EXECUTION_SUCCESS and results is not None:
+    #             detected_location = results.location
+    #             nearest_sublocations = results.nearest_locations
+                
+    #             # Get the closest sublocation
+    #             closest_sublocation = nearest_sublocations[0] if nearest_sublocations else "safe_place"
+                
+    #             self.get_logger().info(
+    #                 f"Real position detected: {detected_location}/{closest_sublocation}"
+    #             )
+                
+    #             return detected_location, closest_sublocation
+    #         else:
+    #             self.get_logger().warning("Failed to get location from NavigationTasks")
+                
+    #     except Exception as e:
+    #         self.get_logger().error(f"Error getting location from NavigationTasks: {str(e)}")
+        
+    #     # Fallback to stored location
+    #     return self.curr_location, self.curr_sublocation
+
+    # def update_current_location(self):
+    #     """Update current location using NavigationTasks"""
+    #     real_location, real_sublocation = self.get_current_location_from_nav()
+        
+    #     # Update stored location
+    #     previous_location = f"{self.curr_location}/{self.curr_sublocation}"
+    #     self.curr_location = real_location
+    #     self.curr_sublocation = real_sublocation
+    #     current_location = f"{self.curr_location}/{self.curr_sublocation}"
+        
+    #     if previous_location != current_location:
+    #         self.get_logger().info(f"Location updated: {previous_location} - {current_location}")
