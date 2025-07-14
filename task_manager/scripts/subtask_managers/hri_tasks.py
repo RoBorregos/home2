@@ -173,7 +173,10 @@ class HRITasks(metaclass=SubtaskMeta):
         self.is_negative_service = self.node.create_client(IsNegative, IS_NEGATIVE_SERVICE)
         self.display_publisher = self.node.create_publisher(String, DISPLAY_IMAGE_TOPIC, 10)
         self.display_map_publisher = self.node.create_publisher(String, DISPLAY_MAP_TOPIC, 10)
-
+        self.answers_publisher = self.node.create_publisher(String, "/hri/display/answers", 10)
+        self.questions_publisher = self.node.create_publisher(
+            String, "/hri/display/frida_questions", 10
+        )
         self.pg = PostgresAdapter()
         self.llm_wrapper_service = self.node.create_client(LLMWrapper, LLM_WRAPPER_SERVICE)
         self.categorize_service = self.node.create_client(CategorizeShelves, CATEGORIZE_SERVICE)
@@ -259,13 +262,12 @@ class HRITasks(metaclass=SubtaskMeta):
                     Logger.warn(self.node, f"{key} action server not initialized. ({self.task})")
 
     @service_check("speak_service", Status.SERVICE_CHECK, TIMEOUT)
-    def say(self, text: str, wait: bool = True) -> None:
+    def say(self, text: str, wait: bool = True, speed: float = 1.3) -> None:
         """Method to publish directly text to the speech node"""
         Logger.info(self.node, f"Sending to saying service: {text}")
 
         # return Status.EXECUTION_SUCCESS
-
-        request = Speak.Request(text=text)
+        request = Speak.Request(text=text, speed=float(speed))
 
         future = self.speak_service.call_async(request)
 
@@ -447,12 +449,27 @@ class HRITasks(metaclass=SubtaskMeta):
         goal_msg.silence_time = float(silence_time)
         goal_msg.start_silence_time = float(start_silence_time)
 
+        Logger.info(self.node, f"Sending goal with timeout={timeout}, silence_time={silence_time}")
+
         future = self._action_client.send_goal_async(
             goal_msg,
             feedback_callback=self.feedback_callback,
         )
 
-        future.add_done_callback(lambda f: self._active_goals.append(f.result()))
+        def goal_response_callback(goal_future):
+            goal_handle = goal_future.result()
+            Logger.info(self.node, f"Goal response received. Accepted: {goal_handle.accepted}")
+            if goal_handle.accepted:
+                self._active_goals.append(goal_handle)
+                # Add a callback to remove the goal when it's done
+                result_future = goal_handle.get_result_async()
+                result_future.add_done_callback(
+                    lambda _: self._active_goals.remove(goal_handle)
+                    if goal_handle in self._active_goals
+                    else None
+                )
+
+        future.add_done_callback(goal_response_callback)
 
         return future
 
@@ -532,7 +549,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
                 # If the transcription is equal to the last hotwords, consider that no text was heard: when the audio is too short or only silence, the transcription can be equal to the hotwords.
                 if (
-                    len(goal_future.result().result.transcription) > 0
+                    len(goal_future.result().result.transcription.strip()) > 0
                     and goal_future.result().result.transcription != self.last_hotwords
                 ):
                     if (
@@ -762,9 +779,10 @@ class HRITasks(metaclass=SubtaskMeta):
                 Logger.info(
                     self.node, f"Common interest computed between {person1} and {person2}: {result}"
                 )
+
                 future.set_result(
                     (
-                        Status.EXECUTION_SUCCESS,
+                        Status.TARGET_NOT_FOUND if "don't" in result else Status.EXECUTION_SUCCESS,
                         result,
                     )
                 )
@@ -808,6 +826,12 @@ class HRITasks(metaclass=SubtaskMeta):
             future = goal_handle.cancel_goal_async()
             cancel_future.append(future)
 
+        if len(cancel_future) == 0:
+            Logger.warn(self.node, "No active goals to cancel")
+            return
+        else:
+            Logger.info(self.node, f"Cancelling {len(cancel_future)} active goals")
+
         for f in cancel_future:
             rclpy.spin_until_future_complete(self.node, f, timeout_sec=1)
 
@@ -841,7 +865,7 @@ class HRITasks(metaclass=SubtaskMeta):
             question=question,
             topk=top_k if top_k is not None else 0,
             threshold=threshold if threshold is not None else 0.0,
-            collections=collections if collections is not None else [],
+            knowledge_type=collections if collections is not None else [],
         )
 
         future = self.answer_question_service.call_async(request)
@@ -882,8 +906,8 @@ class HRITasks(metaclass=SubtaskMeta):
             )
         return [doc for doc in document]
 
-    def query_location(self, query: str, top_k: int = 1):
-        return self.pg.query_location(query, top_k=top_k)
+    def query_location(self, query: str, top_k: int = 1, use_context: bool = False):
+        return self.pg.query_location(query, top_k=top_k, use_context=use_context)
 
     def find_closest(self, documents: list, query: str, top_k: int = 1) -> list[str]:
         """
@@ -970,7 +994,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
         try:
             categories = self.get_shelves_categories(shelves, table_objects=table_objects)[1]
-            results = self.categorize_objects_with_embeddings(categories, table_objects)
+            results = self.categorize_objects_with_embeddings(categories, table_objects, shelves)
 
             objects_to_add = {key: value["objects_to_add"] for key, value in results.items()}
             Logger.error(self.node, f"categories {categories}")
@@ -1046,7 +1070,7 @@ class HRITasks(metaclass=SubtaskMeta):
         self.display_publisher.publish(String(data=topic))
         Logger.info(self.node, f"Published display topic: {topic}")
 
-    def categorize_object(self, categories: dict, obj: str):
+    def categorize_object(self, categories: dict, obj: str, shelves: dict):
         """Method to categorize a list of objects in an array of objects depending on similarity"""
 
         try:
@@ -1061,6 +1085,10 @@ class HRITasks(metaclass=SubtaskMeta):
             for category in categories_aux.values():
                 category_list.append(category)
 
+            for i, category in enumerate(category_list):
+                self.node.get_logger().info(f"Category {i}: {category}")
+                category_list[i] = category + " " + " ".join(shelves[i])
+
             results = self.find_closest_raw(category_list, obj)
             results_distances = [res[1] for res in results]
 
@@ -1073,7 +1101,8 @@ class HRITasks(metaclass=SubtaskMeta):
                 result_category = "empty"
 
             self.node.get_logger().info(f"CATEGORY PREDICTED: {result_category}")
-
+            result_category = result_category.split(" ")[0]
+            self.node.get_logger().info(f"CATEGORY PREDICTED: {result_category}")
             key_resulted = 2
             for key in list(categories.keys()):
                 if str(categories[key]) == str(result_category):
@@ -1088,7 +1117,7 @@ class HRITasks(metaclass=SubtaskMeta):
         except Exception as e:
             self.node.get_logger().error(f"FAILED TO CATEGORIZE: {obj} with error: {e}")
 
-    def categorize_objects_with_embeddings(self, categories: dict, obj_list: list):
+    def categorize_objects_with_embeddings(self, categories: dict, obj_list: list, shelves: dict):
         """
         Categorize objects based on their embeddings."""
         self.node.get_logger().info(f"THIS IS THE CATEGORIES dict RECEIVED: {categories}")
@@ -1098,7 +1127,7 @@ class HRITasks(metaclass=SubtaskMeta):
             for key in categories.keys()
         }
         for obj in obj_list:
-            index = self.categorize_object(categories, obj)
+            index = self.categorize_object(categories, obj, shelves)
             results[index]["objects_to_add"].append(obj)
 
         self.node.get_logger().info(f"THIS IS THE RESULTS OF THE CATEGORIZATION: {results}")
@@ -1124,6 +1153,17 @@ class HRITasks(metaclass=SubtaskMeta):
             show_items["markers"] = filtered_items
 
         self.display_map_publisher.publish(String(data=json.dumps(show_items)))
+
+    def send_display_answer(self, answer: str) -> bool:
+        try:
+            msg = String()
+            msg.data = answer
+            self.answers_publisher.publish(msg)
+            self.node.get_logger().info(f"Answer sent to display: {answer}")
+            return True
+        except Exception as e:
+            self.node.get_logger().error(f"Error sending answer: {str(e)}")
+            return False
 
 
 if __name__ == "__main__":

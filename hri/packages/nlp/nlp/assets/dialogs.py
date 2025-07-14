@@ -25,7 +25,7 @@ Do not add any other information or context to the answer, just the common inter
             },
             {
                 "role": "user",
-                "content": f"{person1Name} likes {person1Interests} and {person2Name} likes {person2Interests}",
+                "content": f"{person1Name} likes {person1Interests} and {person2Name} likes {person2Interests}. /no_think",
             },
         ]
     }
@@ -351,6 +351,7 @@ def get_answer_question_dialog(contexts, question):
                 "Don't ask additional questions or ask for clarifications, just answer the question."
                 "BE VERY CONCISE with your responses and only provide the information that is EXPLICITLY REQUESTED by the user."
                 "Don't ask the user for additional follow ups or questions, only answer its questions."
+                "When answering question, mention the question in the answer."
             ),
         },
         {

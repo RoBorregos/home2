@@ -536,11 +536,12 @@ public:
   */
   STATUS_RESPONSE DownSampleObject(
       _IN_ const std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud,
-      _OUT_ std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud_out) {
+      _OUT_ std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud_out,
+          _IN_ const double leaf_size = 0.03) {
 
     pcl::VoxelGrid<pcl::PointXYZ> sor;
     sor.setInputCloud(cloud);
-    sor.setLeafSize(0.03, 0.03, 0.03);
+    sor.setLeafSize(leaf_size, leaf_size, leaf_size);
     sor.filter(*cloud_out);
     return OK;
   }
@@ -633,7 +634,14 @@ public:
 
       std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud_downsampled(
           new pcl::PointCloud<pcl::PointXYZ>);
-      STATUS_RESPONSE status = DownSampleObject(cloud, cloud_downsampled);
+      STATUS_RESPONSE status;
+      if (request->is_other_objects) {
+        RCLCPP_INFO(this->get_logger(), "Downsampling other objects");
+        // Downsample other objects with a larger leaf size
+        status = DownSampleObject(cloud, cloud_downsampled, 0.045);
+      } else {
+        status = DownSampleObject(cloud, cloud_downsampled);
+      }
 
       ASSERT_AND_RETURN_CODE(status, OK,
                              "Error downsampling object with code %d", status);
@@ -665,8 +673,12 @@ public:
         req2->collision_objects.back().pose.pose.position.x = point.x;
         req2->collision_objects.back().pose.pose.position.y = point.y;
         req2->collision_objects.back().pose.pose.position.z = point.z;
-
-        req2->collision_objects.back().dimensions.x = 0.015;
+        if (request->is_other_objects) {
+          // req2->collision_objects.back().pose.pose.position.z += 0.01;
+          req2->collision_objects.back().dimensions.x = 0.03  ;
+        } else {
+          req2->collision_objects.back().dimensions.x = 0.015;
+        }
 
         req2->collision_objects.back().pose.pose.orientation.x = 0;
         req2->collision_objects.back().pose.pose.orientation.y = 0;

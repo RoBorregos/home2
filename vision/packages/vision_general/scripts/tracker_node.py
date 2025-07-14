@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 """
 Node to track a single person and
 re-id them if necessary
@@ -54,12 +53,13 @@ from ament_index_python.packages import get_package_share_directory
 import os
 
 CONF_THRESHOLD = 0.6
-
+DEPTH_THRESHOLD = 5e8
 # Get config folder from package
 PACKAGE_NAME = "vision_general"
 CONFIG_FOLDER = os.path.join(get_package_share_directory(PACKAGE_NAME), "config")
 BOTSORT_REID_YAML = os.path.join(CONFIG_FOLDER, "botsort-reid.yaml")
-REID_EXTRACT_FREQ = 0.5
+BYTETRACK_REID_YAML = "bytetrack.yaml"
+REID_EXTRACT_FREQ = 0.2
 MAX_EMBEDDINGS = 128
 
 
@@ -98,8 +98,9 @@ class SingleTracker(Node):
         self.get_is_tracking_service = self.create_service(
             Trigger, "/vision/is_tracking", self.get_is_tracking_callback
         )
+        self.is_tracking_result = False
 
-        self.results_publisher = self.create_publisher(Point, RESULTS_TOPIC, 10)
+        self.results_publisher = self.create_publisher(PointStamped, RESULTS_TOPIC, 10)
 
         self.image_publisher = self.create_publisher(Image, TRACKER_IMAGE_TOPIC, 10)
 
@@ -113,8 +114,9 @@ class SingleTracker(Node):
 
         self.setup()
         self.last_reid_extraction = time.time()
-        self.create_timer(0.05, self.run)
-        self.create_timer(0.01, self.publish_image)
+        self.go = False
+        self.create_timer(0.1, self.run)
+        self.create_timer(0.05, self.publish_image)
 
         self.is_tracking_result = False
 
@@ -122,8 +124,9 @@ class SingleTracker(Node):
         """Load models and initial variables"""
         self.target_set = False
         self.image = None
+        self.depth_image_time = None
         self.image_time = None
-        self.frame_id_original = "zed_left_camera_optical_frame"
+        self.frame_id = "zed_left_camera_optical_frame"
         self.person_data = {
             "id": None,
             "embeddings": None,
@@ -137,17 +140,18 @@ class SingleTracker(Node):
 
         pbar = tqdm.tqdm(total=4, desc="Loading models")
 
-        # if .engine does not exist, export the model
-        if not os.path.exists("yolo11n.engine"):
-            pt_model = YOLO("yolo11n.pt")
-            self.get_logger().info("Loaded YOLO model, exporting...")
-            # # Export the model to TensorRT with DLA enabled (only works with FP16 or INT8)
-            pt_model.export(
-                format="engine", half=True
-            )  # dla:0 or dla:1 corresponds to the DLA cores
+        # # if .engine does not exist, export the model
+        # if not os.path.exists("yolo11n.engine"):
+        #     pt_model = YOLO("yolo11n.pt")
+        #     self.get_logger().info("Loaded YOLO model, exporting...")
+        #     # # Export the model to TensorRT with DLA enabled (only works with FP16 or INT8)
+        #     pt_model.export(
+        #         format="engine", device="dla:0", half=True
+        #     )  # dla:0 or dla:1 corresponds to the DLA cores
 
         # Load the exported TensorRT model
         self.model = YOLO("yolo11n.engine")
+        # self.model = YOLO("yolov8n.pt")
         self.get_logger().info("Loaded YOLO model")
         self.pose_detection = PoseDetection()
 
@@ -189,6 +193,7 @@ class SingleTracker(Node):
         try:
             depth_image = self.bridge.imgmsg_to_cv2(data, "32FC1")
             self.depth_image = depth_image
+            self.depth_image_time = data.header.stamp
         except Exception as e:
             print(f"Error: {e}")
 
@@ -243,8 +248,11 @@ class SingleTracker(Node):
             return False
 
         self.get_logger().info(f"Setting target by {track_by} with value {value}")
+        self.person_data["id"] = None
+        self.person_data["embeddings"] = None
 
-        self.frame = self.image
+        self.frame = copy.deepcopy(self.image)
+
         self.output_image = self.frame.copy()
         results = copy.deepcopy(self.results)
 
@@ -390,11 +398,20 @@ class SingleTracker(Node):
 
     def run(self):
         """Main loop to run the tracker"""
+
         if True:  # self.target_set:
             self.frame = self.image
-            self.time_frame = self.image_time
+            image_time = copy.deepcopy(self.image_time)
+            depth_image_time = copy.deepcopy(self.depth_image_time)
             if self.frame is None:
+                self.get_logger().error("No image available")
                 return
+
+            # if self.go:
+            #     self.go = False
+            #     return
+            # else:
+            #     self.go = True
 
             self.output_image = self.frame.copy()
 
@@ -402,7 +419,7 @@ class SingleTracker(Node):
             self.results = self.model.track(
                 self.frame,
                 persist=True,
-                tracker=BOTSORT_REID_YAML,
+                tracker=BYTETRACK_REID_YAML,
                 classes=0,
                 verbose=False,
             )
@@ -411,6 +428,7 @@ class SingleTracker(Node):
             )
 
             if self.person_data["id"] is None:
+                self.frame = None
                 return
 
             person_in_frame = False
@@ -510,7 +528,7 @@ class SingleTracker(Node):
                                 embedding_exists = compare_images_batch(
                                     embedding,
                                     self.person_data["embeddings"],
-                                    threshold=0.8,
+                                    threshold=0.7,
                                 )
                                 self.get_logger().info(
                                     f"Compared embedding in batch in {time.time() - start_time:.2f} seconds"
@@ -588,7 +606,7 @@ class SingleTracker(Node):
                         if self.person_data[person_angle] is not None:
                             start_time = time.time()
                             if compare_images(
-                                embedding, self.person_data[person_angle], threshold=0.8
+                                embedding, self.person_data[person_angle], threshold=0.7
                             ):
                                 self.get_logger().info(
                                     f"Compared embedding with angle {person_angle} in {time.time() - start_time:.2f} seconds"
@@ -630,60 +648,20 @@ class SingleTracker(Node):
                                 person_found = True
                         if person_found:
                             break
-                        # Check if person is re-identified without angle
-                        # if compare_images(
-                        #     embedding, self.person_data["embeddings"], threshold=0.7
-                        # ):
-                        #     self.person_data["id"] = person["track_id"]
-                        #     self.success(
-                        #         f"Person re-identified: {person['track_id']} without angle"
-                        #     )
-                        #     break
-
-            # check if
             if person_in_frame:
-                # if len(self.depth_image) > 0:
-                #     self.is_tracking_result = True
-                #     coords = Point()
-                #     cropped_image = self.frame[
-                #         self.person_data["coordinates"][1] : self.person_data[
-                #             "coordinates"
-                #         ][3],
-                #         self.person_data["coordinates"][0] : self.person_data[
-                #             "coordinates"
-                #         ][2],
-                #     ]
-                #     point2D = self.pose_detection.getCenterPerson(cropped_image)
-                #     if point2D[0] is None:
-                #         self.get_logger().warn("No person detected")
-                #         return
-                #     print(point2D[0], point2D[1])
-                #     # point2D = get2DCentroid(self.person_data["coordinates"], self.frame)
-                #     point2D_x_coord = float(point2D[1])
-                #     point2D_x_coord_normalized = (
-                #         point2D_x_coord / (self.frame.shape[1] / 2)
-                #     ) - 1
-                #     point2Dpoint = Point()
-                #     point2Dpoint.x = float(point2D_x_coord_normalized)
-                #     point2Dpoint.y = 0.0
-                #     point2Dpoint.z = 0.0
-                #     # self.get_logger().info(f"frame_shape: {self.frame.shape[1]} Point2D: {point2D[1]} normalized_point2D: {point2D_x_coord_normalized}")
-                #     self.centroid_publisher.publish(point2Dpoint)
-
-                #     depth = get_depth(
-                #         self.depth_image, [int(point2D[0]), int(point2D[1])]
-                #     )
-                #     point3D = deproject_pixel_to_point(self.imageInfo, point2D, depth)
-                #     point3D = float(point3D[0]), float(point3D[1]), float(point3D[2])
-                #     coords.x = point3D[0]
-                #     coords.y = point3D[1]
-                #     coords.z = point3D[2]
-                #     self.results_publisher.publish(coords)
-                if len(self.depth_image) > 0:
-                    self.is_tracking_result = True
+                self.is_tracking_result = True
+                if len(self.depth_image) > 0 and (
+                    (depth_image_time.nanosec - image_time.nanosec > -DEPTH_THRESHOLD)
+                    and (
+                        depth_image_time.nanosec - image_time.nanosec < DEPTH_THRESHOLD
+                    )
+                ):
                     coords = PointStamped()
-                    # print(self.frame.1)
-                    point2D = get2DCentroid(self.person_data["coordinates"], self.frame)
+                    coords.header.frame_id = self.frame_id
+                    coords.header.stamp = depth_image_time
+                    point2D = get2DCentroid(
+                        self.person_data["coordinates"], self.depth_image
+                    )
                     point2D_x_coord = float(point2D[1])
                     point2D_x_coord_normalized = (
                         point2D_x_coord / (self.frame.shape[1] / 2)
@@ -694,21 +672,24 @@ class SingleTracker(Node):
                     point2Dpoint.z = 0.0
                     # self.get_logger().info(f"frame_shape: {self.frame.shape[1]} Point2D: {point2D[1]} normalized_point2D: {point2D_x_coord_normalized}")
                     self.centroid_publisher.publish(point2Dpoint)
-
                     depth = get_depth(self.depth_image, point2D)
-                    point3D = deproject_pixel_to_point(self.imageInfo, point2D, depth)
+                    point_2d_temp = (point2D[1], point2D[0])
+                    point3D = deproject_pixel_to_point(
+                        self.imageInfo, point_2d_temp, depth
+                    )
+                    print(point3D)
                     point3D = float(point3D[0]), float(point3D[1]), float(point3D[2])
-                    coords.x = point3D[0]
-                    coords.y = point3D[1]
-                    coords.z = point3D[2]
+                    coords.point.x = point3D[0]
+                    coords.point.y = point3D[1]
+                    coords.point.z = point3D[2]
+                    # self.point_pub.publish(coords)
                     self.results_publisher.publish(coords)
                 else:
-                    # self.get_logger().warn("Depth image not available")
-                    self.is_tracking_result = False
+                    self.get_logger().warn("Depth image not available")
             else:
                 self.is_tracking_result = False
-        else:
-            self.is_tracking_result = False
+
+        self.frame = None
 
 
 def main(args=None):

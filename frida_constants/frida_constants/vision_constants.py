@@ -28,7 +28,7 @@ ZERO_SHOT_DETECTIONS_ACTIVE_TOPIC = "/vision/zero_shot_detections_active"
 SET_DETECTOR_CLASSES_SERVICE = "/vision/set_detector_classes"
 
 ZERO_SHOT_DEFAULT_CLASSES = [
-    "bowl",
+    "door_handle",
     # "whiteBaseball",
     # "apple",
     # "cup",

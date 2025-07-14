@@ -19,7 +19,7 @@ FOLLOW_FACE_TOLERANCE = 0.15
 XARM_MOVEVELOCITY_SERVICE = "/xarm/vc_set_joint_velocity"
 SET_JOINT_VELOCITY_SERVICE = "/manipulation/set_joint_velocity"
 
-ALWAYS_SET_MODE = True
+ALWAYS_SET_MODE = False
 JOINTN_VELOCITY_MODE = 4
 
 MOVE_JOINTS_ACTION_SERVER = "/manipulation/move_joints_action_server"
@@ -28,7 +28,7 @@ GET_JOINT_SERVICE = "/manipulation/get_joints"
 TOGGLE_SERVO_SERVICE = "/manipulation/toggle_servo"
 
 MIN_CONFIGURATION_DISTANCE_TRESHOLD = 0.01
-PICK_VELOCITY = 0.25
+PICK_VELOCITY = 0.5
 PICK_ACCELERATION = 0.15
 PICK_PLANNER = "RRTConnect"
 
@@ -48,7 +48,7 @@ GRASP_DETECTION_SERVICE = "/manipulation/detect_grasps"
 GRIPPER_SET_STATE_SERVICE = "/manipulation/gripper/set_state"
 XARM_SET_DIGITAL_TGPIO_SERVICE = "/xarm/set_tgpio_digital"
 SAFETY_HEIGHT = 0.05
-PICK_MIN_HEIGHT = 0.15
+PICK_MIN_HEIGHT = 0.1
 GRASP_LINK_FRAME = "gripper_grasp_frame"
 
 # Place
@@ -69,6 +69,11 @@ PLANE_NAMESPACE = "plane"
 PLANE_OBJECT_COLLISION_TOLERANCE = (
     0.025  # Tolerance to delete collision objects if they are too close to the plane
 )
+
+# Pour
+POUR_MOTION_ACTION_SERVER = "/manipulation/pour_motion_action_server"
+POUR_VELOCITY = 0.5
+POUR_ACCELERATION = 0.15
 
 SHELF_POSITION_PREPLACE_POSE = -0.25
 

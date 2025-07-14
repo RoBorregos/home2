@@ -11,12 +11,18 @@ from frida_interfaces.srv import FollowFace
 from geometry_msgs.msg import Point, PoseStamped
 from rclpy.node import Node
 from utils.logger import Logger
-from xarm_msgs.srv import MoveVelocity, SetInt16
-import numpy as np
+from xarm_msgs.srv import MoveVelocity, SetInt16, GetFloat32List
+
+# import numpy as np
+import time
+# from frida_constants.manipulation_constants import (
+#     MOVEIT_MODE,
+# )
 
 XARM_MOVEVELOCITY_SERVICE = "/xarm/vc_set_joint_velocity"
 XARM_SETMODE_SERVICE = "/xarm/set_mode"
 XARM_SETSTATE_SERVICE = "/xarm/set_state"
+XARM_JOINT_ANGLE_SERVICE = "/xarm/get_servo_angle"
 DASHGO_CMD_VEL = "/cmd_vel"
 
 # class subtask_manager:
@@ -25,7 +31,7 @@ DASHGO_CMD_VEL = "/cmd_vel"
 
 TIMEOUT = 5.0
 MAX_ERROR = 0.2
-MAX_ROTATIONAL_VEL = 1.0
+MAX_ROTATIONAL_VEL = 0.8
 CENTROID_TOIC = "/vision/tracker_centroid"
 
 
@@ -62,6 +68,7 @@ class FollowPersonNode(Node):
         self.prevy = 0.0
         self.counter_move = t()
         self.dashg_cmd_vel = 0.0
+        self.angle_status = None
 
         self.x_delta_multiplier = self.Multiplier
         self.y_delta_multiplier = self.Multiplier / 2
@@ -69,6 +76,8 @@ class FollowPersonNode(Node):
         self.get_logger().info("Follow person node has started.")
 
         self.mode_client = self.create_client(SetInt16, XARM_SETMODE_SERVICE)
+
+        self.joint_angle_client = self.create_client(GetFloat32List, XARM_JOINT_ANGLE_SERVICE)
 
         self.state_client = self.create_client(SetInt16, XARM_SETSTATE_SERVICE)
 
@@ -86,6 +95,7 @@ class FollowPersonNode(Node):
         self.follow_face = {"x": 0, "y": 0}
 
         self.flag_active_face = False
+        self.deactivate = False
 
         self.create_timer(0.1, self.run)
 
@@ -127,10 +137,31 @@ class FollowPersonNode(Node):
         else:
             return None, None
 
+    def set_state_moveit(self):
+        Logger.info(self, "Activating arm for moveit")
+
+        # Set state
+        state_request = SetInt16.Request()
+        state_request.data = 0
+        # Set mode
+        mode_request = SetInt16.Request()
+        mode_request.data = 1
+
+        try:
+            self.mode_client.call_async(mode_request)
+            self.state_client.call_async(state_request)
+        except Exception as e:
+            Logger.error(self, f"Error Activating arm: {e}")
+        Logger.info(self, "ACTIVATED MOVEIT")
+
     def follow_person_callback(self, request: FollowFace.Request, response: FollowFace.Response):
         self.is_following_person = request.follow_face
         if not self.is_following_person:
             self.move_to(0.0, 0.0)
+            time.sleep(1)
+            print("deactivating arm")
+            self.set_state_moveit()
+            time.sleep(1)
         else:
             self.set_state()
         response.success = True
@@ -199,30 +230,58 @@ class FollowPersonNode(Node):
         except Exception as e:
             Logger.error(self, f"move service call failed: {str(e)}")
 
+    def update_angle(self, future):
+        try:
+            result = future.result()
+            if result:
+                self.angle_status = result.datas
+                # print(self.angle_status)
+            else:
+                Logger.error(self, "Failed to get joint data")
+        except Exception as e:
+            Logger.error(self, f"Failed to get joint data: {str(e)}")
+
+    def get_joint_angle(self):
+        try:
+            angle_msg = GetFloat32List.Request()
+            future_move = self.joint_angle_client.call_async(angle_msg)
+            future_move.add_done_callback(self.update_angle)  # Fire-and-forget
+        except Exception as e:
+            Logger.error(self, f"Error getting joints arm: {e}")
+            return self.STATE["EXECUTION_ERROR"]
+
     def run(self):
         if not self.is_following_person:
+            # print("sending papu")
             return
-        """Running main loop"""
-        # Follow face task
-        Logger.state(self, "Follow face task")
-        x, y = self.get_follow_face()
-        print(x, y)
-        if x is None:
-            return
-        elif x is not None:
-            self.send_joint_velocity(self.error_to_velocity(x, y))
+
+        self.get_joint_angle()
+        if self.angle_status is not None:
+            x, y = self.get_follow_face()
+            if x is not None:
+                if self.angle_status is not None:
+                    vel = self.error_to_velocity(x, y)
+                    if self.angle_status[0] > -2.26893 and self.angle_status[0] < -0.872665:
+                        self.send_joint_velocity(vel)
+                    else:
+                        if self.angle_status[0] <= -2.26893 and vel < 0:
+                            self.send_joint_velocity(vel)
+                        elif self.angle_status[0] >= -0.872665 and vel > 0:
+                            self.send_joint_velocity(vel)
+                        else:
+                            self.send_joint_velocity(0.0)
 
     def error_to_velocity(self, x: float, y: float):
         """Convert error to velocity"""
-        KP = 0.7
+        KP = 0.4
         x_vel = KP * x
         x_vel = max(min(x_vel, MAX_ROTATIONAL_VEL), -MAX_ROTATIONAL_VEL)
 
-        x_vel_sign = np.sign(x_vel)
-        dashgo_vel_sign = np.sign(self.dashgo_cmd_vel)
+        # x_vel_sign = np.sign(x_vel)
+        # dashgo_vel_sign = np.sign(self.dashgo_cmd_vel)
 
-        if x_vel_sign == dashgo_vel_sign and abs(x) <= MAX_ERROR:
-            return 0.0
+        # if x_vel_sign == dashgo_vel_sign and abs(x) <= MAX_ERROR:
+        #     return 0.0
 
         return x_vel
 

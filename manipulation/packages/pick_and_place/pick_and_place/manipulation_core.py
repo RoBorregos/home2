@@ -12,7 +12,12 @@ from frida_motion_planning.utils.service_utils import (
 from std_srvs.srv import SetBool, Empty
 from frida_interfaces.action import MoveJoints
 from frida_interfaces.msg import ManipulationTask
-from frida_interfaces.action import PickMotion, PlaceMotion, ManipulationAction
+from frida_interfaces.action import (
+    PickMotion,
+    PlaceMotion,
+    ManipulationAction,
+    PourMotion,
+)
 from frida_interfaces.srv import (
     PickPerceptionService,
     GraspDetection,
@@ -21,10 +26,12 @@ from frida_interfaces.srv import (
     PlacePerceptionService,
     HeatmapPlace,
     GetJoints,
+    GetCollisionObjects,
 )
 from frida_constants.manipulation_constants import (
     PICK_MOTION_ACTION_SERVER,
     PLACE_MOTION_ACTION_SERVER,
+    POUR_MOTION_ACTION_SERVER,
     MANIPULATION_ACTION_SERVER,
     PICK_PERCEPTION_SERVICE,
     GRASP_DETECTION_SERVICE,
@@ -36,14 +43,22 @@ from frida_constants.manipulation_constants import (
     GET_JOINT_SERVICE,
     SCAN_ANGLE_VERTICAL,
     SCAN_ANGLE_HORIZONTAL,
+    GET_COLLISION_OBJECTS_SERVICE,
 )
 from frida_constants.vision_constants import (
     DETECTION_HANDLER_TOPIC_SRV,
 )
 from pick_and_place.managers.PickManager import PickManager
 from pick_and_place.managers.PlaceManager import PlaceManager
+from pick_and_place.managers.PourManager import PourManager
 from frida_interfaces.msg import PickResult
 import time
+
+# tf buffer
+from tf2_ros import Buffer, TransformListener
+# from geometry_msgs.msg import PoseStamped
+# from frida_pymoveit2.robots import xarm6
+# from sensor_msgs.msg import JointState
 
 
 class ManipulationCore(Node):
@@ -69,6 +84,12 @@ class ManipulationCore(Node):
             self,
             PlaceMotion,
             PLACE_MOTION_ACTION_SERVER,
+        )
+
+        self._pour_motion_action_client = ActionClient(
+            self,
+            PourMotion,  # Make sure to import PourMotion
+            POUR_MOTION_ACTION_SERVER,
         )
 
         self._move_joints_client = ActionClient(
@@ -107,10 +128,28 @@ class ManipulationCore(Node):
             GRIPPER_SET_STATE_SERVICE,
         )
 
+        self._get_collision_objects_client = self.create_client(
+            GetCollisionObjects,
+            GET_COLLISION_OBJECTS_SERVICE,
+        )
+
+        qos = rclpy.qos.QoSProfile(
+            reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
+            history=rclpy.qos.HistoryPolicy.KEEP_LAST,
+            depth=10,
+        )
+
+        self.tf_buffer = Buffer(cache_time=rclpy.duration.Duration(seconds=5.0))
+
+        self.tf_listener = TransformListener(
+            self.tf_buffer, self, qos=qos, spin_thread=True
+        )
+
         self._clear_octomap_client = self.create_client(Empty, "/clear_octomap")
 
         self.pick_manager = PickManager(self)
         self.pick_result = PickResult()
+        self.pour_manager = PourManager(self)
 
         self.place_manager = PlaceManager(self)
 
@@ -135,7 +174,8 @@ class ManipulationCore(Node):
             self.remove_all_collision_object(attached=False)
             self.get_logger().info("[SUCCESS] Pick executed successfully")
             return (result, pick_result)
-        except Exception:
+        except Exception as e:
+            self.get_logger().error(f"Pick exception: {e}")
             return (False, PickResult())
 
     def place_execute(self, place_params=None):
@@ -149,16 +189,49 @@ class ManipulationCore(Node):
                 self.get_logger().error("Place failed")
                 return False
             return result
-        except Exception:
+        except Exception as e:
+            self.get_logger().error(f"Place exception: {e}")
             return False
+
+    def pour_execute(self, object_name=None, bowl_name=None):
+        # self.get_logger().info(f"Goal: {object_point}")
+        self.get_logger().info(f"ObjectName: {object_name}")
+        self.get_logger().info(f"BowlName: {bowl_name}")
+        self.get_logger().info("Extracting object cloud")
+
+        try:
+            self.remove_all_collision_object(attached=True)
+            self.get_logger().info("Executing pour100")
+            result, pick_result = self.pour_manager.execute(
+                object_name=object_name,
+                # object_point=object_point,
+                container_object_name=bowl_name,
+            )
+            if not result:
+                self.get_logger().error("Pour failed")
+                return (False, PickResult())
+            self.remove_all_collision_object(attached=False)
+            return (result, pick_result)
+        except Exception as e:
+            self.get_logger().error(f"Pour exeption: {e}")
+            return (False, PickResult())
 
     def manipulation_server_callback(self, goal_handle):
         task_type = goal_handle.request.task_type
-        object_name = goal_handle.request.pick_params.object_name
-        object_point = goal_handle.request.pick_params.object_point
-        # scan_environment = goal_handle.request.scan_environment
+        if task_type == ManipulationTask.POUR:
+            object_name = goal_handle.request.pour_params.object_name
+            bowl_name = goal_handle.request.pour_params.bowl_name
+            # object_point = goal_handle.request.pick_params.object_point
+        else:
+            object_name = goal_handle.request.pick_params.object_name
+            object_point = goal_handle.request.pick_params.object_point
+
+        # object_name = goal_handle.request.pick_params.object_name
+        # object_point = goal_handle.request.pick_params.object_point
+        # bowl_name = goal_handle.request.pour_params.bowl_name
         self.get_logger().info(f"Task Type: {task_type}")
         self.get_logger().info(f"Object Name: {object_name}")
+
         response = ManipulationAction.Result()
 
         self.clear_octomap()
@@ -189,12 +262,23 @@ class ManipulationCore(Node):
             if result:
                 self.remove_all_collision_object(attached=True)
             response.success = result
+        elif task_type == ManipulationTask.POUR:
+            self.get_logger().info("Executing Pour Task")
+            result, self.pick_result = self.pour_execute(
+                object_name=object_name,
+                bowl_name=bowl_name,
+                # , object_point=object_point
+            )
+            goal_handle.succeed()
+            if result:
+                self.remove_all_collision_object(attached=True)
+            response.success = result
         else:
             self.get_logger().error("Unknown task type")
             goal_handle.succeed()
             response = ManipulationAction.Result()
             response.success = False
-
+        self.get_logger().info(f"[DONE] Manipulation Task Result: {response}")
         return response
 
     def remove_all_collision_object(self, attached=False):

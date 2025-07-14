@@ -265,7 +265,6 @@ class VisionTasks:
 
         Logger.info(self.node, f"Saving name: {name}")
         request = SaveName.Request()
-        name = name.lower()
         request.name = name
 
         try:
@@ -374,7 +373,9 @@ class VisionTasks:
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, []), delay=2)
     @service_check("object_detector_client", (Status.EXECUTION_ERROR, []), TIMEOUT)
-    def detect_objects(self, timeout: float = TIMEOUT) -> tuple[Status, list[BBOX]]:
+    def detect_objects(
+        self, timeout: float = TIMEOUT, ignore_labels: list[str] = []
+    ) -> tuple[Status, list[BBOX]]:
         """Detect the object in the image"""
         Logger.info(self.node, "Waiting for object detection")
         request = DetectionHandler.Request()
@@ -409,6 +410,8 @@ class VisionTasks:
                 object_detection.x2 = detection.xmax
                 object_detection.y1 = detection.ymin
                 object_detection.y2 = detection.ymax
+                if detection.label_text in ignore_labels:
+                    continue
                 object_detection.classname = detection.label_text
                 object_detection.h = detection.ymax - detection.ymin
                 object_detection.w = detection.xmax - detection.xmin
@@ -591,7 +594,6 @@ class VisionTasks:
         """Follow a person by name or area"""
         Logger.info(self.node, f"Following face by: {name}")
         request = SaveName.Request()
-        name = name.lower()
         request.name = name
 
         try:
@@ -769,6 +771,19 @@ class VisionTasks:
         prompt = f"What is the {description} {object} in the image?"
         return self.moondream_query(prompt, query_person=False)
 
+    def detect_trash(self):
+        """Return if there is trash in the floor"""
+        Logger.info(self.node, "Detecting trash in the floor")
+        prompt = "Reply only with 1 if there is trash on the floor. Otherwise, reply only with 0."
+        status, response_q = self.moondream_query(prompt, query_person=False)
+        if status:
+            response_clean = response_q.strip()
+            if response_clean == "1":
+                response_clean = True
+            else:
+                response_clean = False
+        return status, response_clean
+
     def count_objects(self, object: str):
         """Count the number of objects in the image"""
         Logger.info(self.node, "Counting objects")
@@ -816,7 +831,7 @@ class VisionTasks:
     def describe_bag_moondream(self):
         """Describe the bag using only moondream"""
         Logger.info(self.node, "Describing bag")
-        prompt = "Describe the bag that the person is pointing at using the folling format: the bag on your left is small and green"
+        prompt = "Describe the bag that the person is pointing at"
         return self.moondream_query(prompt, query_person=False)
 
     def find_seat_moondream(self):

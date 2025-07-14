@@ -61,6 +61,7 @@ TEST_EMBEDDINGS = False
 TEST_ASYNC_LLM = False
 TEST_STREAMING = False
 TEST_MAP = False
+TEST_OBJECT_LOCATION = True
 
 
 class TestHriManager(Node):
@@ -91,6 +92,9 @@ class TestHriManager(Node):
 
         if TEST_MAP:
             self.test_map()
+
+        if TEST_OBJECT_LOCATION:
+            self.test_object_location()
 
     def individual_functions(self):
         # Test say
@@ -327,6 +331,18 @@ class TestHriManager(Node):
         # Show the map again to verify it is cleared
         self.hri_manager.show_map(name="Mug")
         time.sleep(5)
+
+    def test_object_location(self):
+        object_name = "cheese"
+        self.get_logger().info("Testing object location retrieval without context...")
+        res = self.hri_manager.query_location(object_name, top_k=3)
+        for i, location in enumerate(res):
+            self.get_logger().info(f"{i + 1}: {location}")
+
+        self.get_logger().info("Testing object location retrieval with context...")
+        res_with_context = self.hri_manager.query_location(object_name, top_k=3, use_context=True)
+        for i, location in enumerate(res_with_context):
+            self.get_logger().info(f"{i + 1}: {location}")
 
 
 def main(args=None):

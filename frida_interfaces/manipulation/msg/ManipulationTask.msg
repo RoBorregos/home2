@@ -1,3 +1,4 @@
 int8 PICK=0
 int8 PICK_CLOSEST=1
 int8 PLACE=2
+int8 POUR=3

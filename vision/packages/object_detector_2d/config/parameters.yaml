@@ -13,7 +13,7 @@ object_detector_node:
     CAMERA_FRAME :  zed_left_camera_optical_frame
     TARGET_FRAME :  base_link
     # YOLO_MODEL_PATH :  yolov5s.pt # FILE MOST BE IN MODEL FOLDER OF THE PACKAGE
-    YOLO_MODEL_PATH: tmr_30classes_v2.pt
+    YOLO_MODEL_PATH: best-detect.pt
     USE_ACTIVE_FLAG :  False
     DEPTH_ACTIVE :  False
     VERBOSE :  False

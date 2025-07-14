@@ -17,7 +17,9 @@ from frida_interfaces.srv import (
     ToggleServo,
     AttachCollisionObject,
     GetCollisionObjects,
+    PlayTrayectory,
 )
+from frida_motion_planning.utils.ros_utils import wait_for_future
 from frida_constants.manipulation_constants import (
     ALWAYS_SET_MODE,
     MOVEIT_MODE,
@@ -35,7 +37,7 @@ from frida_constants.manipulation_constants import (
     GRIPPER_SET_STATE_SERVICE,
     MIN_CONFIGURATION_DISTANCE_TRESHOLD,
 )
-from xarm_msgs.srv import MoveVelocity
+from xarm_msgs.srv import MoveVelocity, TrajPlay
 from frida_interfaces.msg import CollisionObject
 from frida_motion_planning.utils.MoveItPlanner import MoveItPlanner
 from frida_motion_planning.utils.MoveItServo import MoveItServo
@@ -51,6 +53,7 @@ class MotionPlanningServer(Node):
         self.planner = MoveItPlanner(self, self.callback_group)
         self.planner.set_velocity(0.15)
         self.planner.set_acceleration(0.15)
+        self.planner.set_planning_time(0.5)
         self.planner.set_planner(PICK_PLANNER)
 
         self.servo = MoveItServo(
@@ -81,35 +84,45 @@ class MotionPlanningServer(Node):
         )
 
         self.get_joints_service = self.create_service(
-            GetJoints, GET_JOINT_SERVICE, self.get_joints_callback
+            GetJoints,
+            GET_JOINT_SERVICE,
+            self.get_joints_callback,
+            callback_group=self.callback_group,
         )
 
         self.add_collision_object_service = self.create_service(
             AddCollisionObjects,
             ADD_COLLISION_OBJECT_SERVICE,
             self.add_collision_objects_callback,
+            callback_group=self.callback_group,
         )
 
         self.remove_collision_object_service = self.create_service(
             RemoveCollisionObject,
             REMOVE_COLLISION_OBJECT_SERVICE,
             self.remove_collision_object_callback,
+            callback_group=self.callback_group,
         )
 
         self.attach_collision_object_service = self.create_service(
             AttachCollisionObject,
             ATTACH_COLLISION_OBJECT_SERVICE,
             self.attach_collision_object_callback,
+            callback_group=self.callback_group,
         )
 
         self.gripper_set_state_service = self.create_service(
             SetBool,
             GRIPPER_SET_STATE_SERVICE,
             self.set_gripper_state_callback,
+            callback_group=self.callback_group,
         )
 
         self.toggle_servo_service = self.create_service(
-            ToggleServo, TOGGLE_SERVO_SERVICE, self.toggle_servo_callback
+            ToggleServo,
+            TOGGLE_SERVO_SERVICE,
+            self.toggle_servo_callback,
+            callback_group=self.callback_group,
         )
 
         self.servo_speed_subscriber = self.create_subscription(
@@ -117,6 +130,19 @@ class MotionPlanningServer(Node):
             "/manipulation/servo_speed",
             self.servo_speed_callback,
             10,
+            callback_group=self.callback_group,
+        )
+
+        self.play_trayectory_service = self.create_service(
+            PlayTrayectory,
+            "/manipulation/play_trayectory",
+            self.play_trayectory_callback,
+            callback_group=self.callback_group,
+        )
+
+        self.play_traj_client = self.create_client(
+            TrajPlay,
+            "/xarm/playback_trajectory",
             callback_group=self.callback_group,
         )
 
@@ -172,6 +198,51 @@ class MotionPlanningServer(Node):
             result.success = False
             return result
 
+    def play_trayectory_callback(self, request, response):
+        """Handle requests to play a trayectory from a file."""
+        self.get_logger().info(
+            f"Playing trayectory from file: {request.trayectory_filename}"
+        )
+        try:
+            self.xarm_services.set_mode(0)  # Set mode to 2 for trayectory playback
+            # self.xarm_services.set_state(0)
+            req = TrajPlay.Request()
+            req.filename = request.trayectory_filename
+            req.times = 1
+            req.double_speed = 1
+            req.wait = True
+            self.get_logger().info(f"Requesting to play trayectory: {req.filename}")
+            self.get_logger().info(
+                f"Playing trayectory with times: {req.times}, double_speed: {req.double_speed}, wait: {req.wait}"
+            )
+            future = self.play_traj_client.call_async(req)
+            # now = time.time()
+            # timeout = 10
+            wait_for_future(future)
+            # rclpy.spin_until_future_complete(self, future)
+            # result = future.result()
+
+            # if result.ret == 0:
+            #     response.success = True
+            #     self.get_logger().info("Trayectory played successfully")
+            # else:
+            #     response.success = False
+            #     self.get_logger().error(
+            #         f"Failed to play trayectory: {result.ret} with message: {result.message}"
+            #     )
+            response.success = True
+            # return response
+        except Exception as e:
+            self.get_logger().error(f"Error playing trayectory: {str(e)}")
+            response.success = False
+            return response
+        # response.success = True
+        self.get_logger().info("Trayectory playback completed")
+        response.success = True
+        self.xarm_services.set_mode(MOVEIT_MODE)  # Reset mode to MoveIt
+        # self.xarm_services.set_state(0)  # Reset state to 0
+        return response
+
     def move_joints_execute_callback(self, goal_handle):
         """Execute the pick action when a goal is received."""
         self.get_logger().info("Executing joint goal...")
@@ -197,18 +268,32 @@ class MotionPlanningServer(Node):
         """Perform the pick operation."""
         pose = goal_handle.request.pose
         target_link = goal_handle.request.target_link
+        tolerance_position = (
+            goal_handle.request.tolerance_position
+            if goal_handle.request.tolerance_position
+            else 0.01
+        )
+        tolerance_orientation = (
+            goal_handle.request.tolerance_orientation
+            if goal_handle.request.tolerance_orientation
+            else 0.05
+        )
         if target_link != "":
             result = self.planner.plan_pose_goal(
                 pose=pose,
                 target_link=target_link,
                 wait=True,
                 set_mode=True,
+                tolerance_position=tolerance_position,
+                tolerance_orientation=tolerance_orientation,
             )
         else:
             result = self.planner.plan_pose_goal(
                 pose=pose,
                 wait=True,
                 set_mode=(self.current_mode != MOVEIT_MODE),
+                tolerance_position=tolerance_position,
+                tolerance_orientation=tolerance_orientation,
             )
         if not ALWAYS_SET_MODE:
             self.current_mode = MOVEIT_MODE
@@ -272,9 +357,30 @@ class MotionPlanningServer(Node):
             if len(goal_handle.request.planner_id) != 0
             else PICK_PLANNER
         )
+        try:
+            planning_time = (
+                goal_handle.request.planning_time
+                if goal_handle.request.planning_time > 0.1
+                else 0.5
+            )
+            planning_attempts = (
+                goal_handle.request.planning_attempts
+                if goal_handle.request.planning_attempts > 0
+                else 5
+            )
+        except Exception as e:
+            self.get_logger().error(f"Error setting planning time: {str(e)}")
+            planning_time = 0.5
+            planning_attempts = 5
+
         self.planner.set_velocity(velocity)
         self.planner.set_acceleration(acceleration)
         self.planner.set_planner(planner_id)
+        self.get_logger().info(
+            f"Planning settings: velocity={velocity}, acceleration={acceleration}, planner_id={planner_id}, planning_time={planning_time}"
+        )
+        self.planner.set_planning_time(planning_time)
+        self.planner.set_planning_attempts(planning_attempts)
 
         if goal_handle.request.apply_constraint:
             self.get_logger().info("Planning with Constraints...")
@@ -310,7 +416,7 @@ class MotionPlanningServer(Node):
                         ),
                         pose=collision_object.pose,
                     )
-                    self.get_logger().info(f"Added collision box: {object_id}")
+                    # self.get_logger().info(f"Added collision box: {object_id}")
 
                 elif collision_object.type == "sphere":
                     # For spheres, use the x component of dimensions as radius
@@ -319,7 +425,7 @@ class MotionPlanningServer(Node):
                         radius=collision_object.dimensions.x,
                         pose=collision_object.pose,
                     )
-                    self.get_logger().info(f"Added collision sphere: {object_id}")
+                    # self.get_logger().info(f"Added collision sphere: {object_id}")
 
                 elif collision_object.type == "cylinder":
                     # For cylinders, use x as radius, z as height
@@ -329,7 +435,7 @@ class MotionPlanningServer(Node):
                         radius=collision_object.dimensions.x,
                         pose=collision_object.pose,
                     )
-                    self.get_logger().info(f"Added collision cylinder: {object_id}")
+                    # self.get_logger().info(f"Added collision cylinder: {object_id}")
 
                 elif collision_object.type == "mesh":
                     # Add collision mesh from file path -> Priority to file path
@@ -344,9 +450,9 @@ class MotionPlanningServer(Node):
                                 else 1.0
                             ),
                         )
-                        self.get_logger().info(
-                            f"Added collision mesh from file: {object_id}"
-                        )
+                        # self.get_logger().info(
+                        #     f"Added collision mesh from file: {object_id}"
+                        # )
                     # Or from mesh data
                     else:
                         import trimesh
@@ -373,9 +479,9 @@ class MotionPlanningServer(Node):
                             mesh=mesh,
                             frame_id=collision_object.pose.header.frame_id,
                         )
-                        self.get_logger().info(
-                            f"Added collision mesh from data: {object_id}"
-                        )
+                        # self.get_logger().info(
+                        #     f"Added collision mesh from data: {object_id}"
+                        # )
                 else:
                     self.get_logger().error(
                         f"Unsupported collision object type: {collision_object.type}"

@@ -47,7 +47,7 @@ def generate_launch_description():
                 parameters=[
                     {
                         # based on distance between end-effector link and contact point with objects e.g. where you grip
-                        "ee_link_offset": -0.065,
+                        "ee_link_offset": -0.08,
                     }
                 ],
             ),
@@ -55,6 +55,13 @@ def generate_launch_description():
                 package="pick_and_place",
                 executable="place_server.py",
                 name="place_server",
+                output="screen",
+                emulate_tty=True,
+            ),
+            Node(
+                package="pick_and_place",
+                executable="pour_server.py",
+                name="pour_server",
                 output="screen",
                 emulate_tty=True,
             ),
