@@ -187,17 +187,17 @@ var NAVTREEINDEX =
 "classpick__and__place_1_1pour__server_1_1PourMotionServer.html#ab5ec7fb33b7a503a93468a5453597b1a",
 "classreceptionist__task__manager_1_1ReceptionistTM.html#aa165246e0f665c6fa1ba8ced81bdb010",
 "classstoring__groceries__manager_1_1StoringGroceriesManager.html#a92a4d2946a42f7d3d43e2fbeb02262ca",
-"classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a7a8e37f9296e42ccbbaa89e5df7a21f8",
-"classtest__hri__manager_1_1TestHriManager.html#a54c69995753f4ce05bd076720a89c6b6",
-"classvision__general_1_1pose__detection_1_1PoseDetection.html",
-"dir_bbe200f1d1bb0ad2638321d92e750294.html",
-"gpsr__commands_8py.html",
-"manipulation__constants__cpp_8hpp.html#a56af7b9da0fb3dfb9f8c337970b4dbd2",
-"namespacecarry__my.html",
-"namespacefrida__constants_1_1vision__constants.html#aa53ce4ada056e62207854a581ea44737",
-"namespacenew__tracker.html#afc7e7bf51cd9f174dd03a8b8a05e2491",
-"namespacetf__utils.html#acd9c843b0fe781b1c8f769decd9897e9",
-"service__utils_8py.html#a4518b7fb3dfa02b7b1dfff5bf0e306b8"
+"classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a70827d0ad4bc4fbf8461c6cafdbc16a4",
+"classtest__hri__manager_1_1TestHriManager.html#a137393a55969e93cd6606ab83ac87fe4",
+"classvirtual__stop__button_1_1VirtualStop.html#ad3d2e9dca588908721c2a357038a1776",
+"dir_a9cef06c524dcfa53280770fc2c6fdee.html",
+"gpd__service_8cpp.html",
+"manipulation__constants__cpp_8hpp.html#a3278663f49e52caa7b63fddd86208864",
+"namespacecall__pose__goal.html#a1a0ae8dac34aa7d93973551538edf185",
+"namespacefrida__constants_1_1vision__constants.html#a72bf909055f1c93f101ff3cbb8bfab66",
+"namespacenavigation__composable.html",
+"namespacetest__manipulation__manager.html#a2e4916feda2a7aa1e0a86ea656b3da76",
+"server_8py.html#a3c8df1657c541fd80fbb8ffef44e8451"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

@@ -11,5 +11,6 @@ var searchData=
   ['query_5flocation_8',['query_location',['../classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a7b849cdde8d552d65603a2e85ec4698f',1,'subtask_managers::hri_tasks::HRITasks']]],
   ['query_5fservice_9',['query_service',['../classmoondream__node_1_1MoondreamNode.html#a42c7acf94e367e93f2b6041d48cfabc0',1,'moondream_node::MoondreamNode']]],
   ['query_5ftopic_10',['QUERY_TOPIC',['../namespacefrida__constants_1_1vision__constants.html#ab6f09741cb770fc257e257b6fd02fea0',1,'frida_constants::vision_constants']]],
-  ['queryentry_2esrv_11',['QueryEntry.srv',['../QueryEntry_8srv.html',1,'']]]
+  ['queryentry_2esrv_11',['QueryEntry.srv',['../QueryEntry_8srv.html',1,'']]],
+  ['questions_5fpublisher_12',['questions_publisher',['../classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#ac3e7da0b96f8b3717ea56ba3156b706b',1,'subtask_managers::hri_tasks::HRITasks']]]
 ];

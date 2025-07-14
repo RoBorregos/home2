@@ -4,5 +4,6 @@ var searchData=
   ['qr_5fdetector_1',['qr_detector',['../classgpsr__commands_1_1GPSRCommands.html#accc36be2604f905aa0ef065064401fa0',1,'gpsr_commands::GPSRCommands']]],
   ['query_2',['Query',['../classmoondream__proto__pb2__grpc_1_1MoonDreamServiceStub.html#a29d869563ec9ade68e283407fde63863',1,'moondream_proto_pb2_grpc::MoonDreamServiceStub']]],
   ['query_5fservice_3',['query_service',['../classmoondream__node_1_1MoondreamNode.html#a42c7acf94e367e93f2b6041d48cfabc0',1,'moondream_node::MoondreamNode']]],
-  ['query_5ftopic_4',['QUERY_TOPIC',['../namespacefrida__constants_1_1vision__constants.html#ab6f09741cb770fc257e257b6fd02fea0',1,'frida_constants::vision_constants']]]
+  ['query_5ftopic_4',['QUERY_TOPIC',['../namespacefrida__constants_1_1vision__constants.html#ab6f09741cb770fc257e257b6fd02fea0',1,'frida_constants::vision_constants']]],
+  ['questions_5fpublisher_5',['questions_publisher',['../classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#ac3e7da0b96f8b3717ea56ba3156b706b',1,'subtask_managers::hri_tasks::HRITasks']]]
 ];

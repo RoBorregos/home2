@@ -181,6 +181,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a8ce95c83c061a942835e51603a81344b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa64566f13a1ec3c37c677bc88c18be16"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#aa64566f13a1ec3c37c677bc88c18be16">show_map</a> (self, name=&quot;&quot;, bool clear_map=False)</td></tr>
 <tr class="separator:aa64566f13a1ec3c37c677bc88c18be16"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a52cb3012480abfb3334cc9bf5992067c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a52cb3012480abfb3334cc9bf5992067c">send_display_answer</a> (self, str answer)</td></tr>
+<tr class="separator:a52cb3012480abfb3334cc9bf5992067c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classsubtask__managers_1_1subtask__meta_1_1SubtaskMeta"><td colspan="2" onclick="javascript:toggleInherit('pub_methods_classsubtask__managers_1_1subtask__meta_1_1SubtaskMeta')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classsubtask__managers_1_1subtask__meta_1_1SubtaskMeta.html">subtask_managers.subtask_meta.SubtaskMeta</a></td></tr>
 <tr class="memitem:ad8c6116c85980f70b38250e92a30cc71 inherit pub_methods_classsubtask__managers_1_1subtask__meta_1_1SubtaskMeta"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1subtask__meta_1_1SubtaskMeta.html#ad8c6116c85980f70b38250e92a30cc71">__call__</a> (cls, *args, **kwargs)</td></tr>
 <tr class="separator:ad8c6116c85980f70b38250e92a30cc71 inherit pub_methods_classsubtask__managers_1_1subtask__meta_1_1SubtaskMeta"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -209,6 +211,10 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a07cf42b5a2f5223d73209bf7bfdec965"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aae276d16a44121fe3127e98fa887a0d5"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#aae276d16a44121fe3127e98fa887a0d5">display_map_publisher</a></td></tr>
 <tr class="separator:aae276d16a44121fe3127e98fa887a0d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8cdae022d9194ed9ecd1cc1d5b0e9f5d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a8cdae022d9194ed9ecd1cc1d5b0e9f5d">answers_publisher</a></td></tr>
+<tr class="separator:a8cdae022d9194ed9ecd1cc1d5b0e9f5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac3e7da0b96f8b3717ea56ba3156b706b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#ac3e7da0b96f8b3717ea56ba3156b706b">questions_publisher</a></td></tr>
+<tr class="separator:ac3e7da0b96f8b3717ea56ba3156b706b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae5741cfa50a327b34517a797392b9122"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#ae5741cfa50a327b34517a797392b9122">pg</a></td></tr>
 <tr class="separator:ae5741cfa50a327b34517a797392b9122"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aea25ba46c62a0f5799df8cce48b61114"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#aea25ba46c62a0f5799df8cce48b61114">llm_wrapper_service</a></td></tr>
@@ -1612,6 +1618,34 @@ Args:
 <pre class="fragment">Method to publish directly text to the speech node</pre> 
 </div>
 </div>
+<a id="a52cb3012480abfb3334cc9bf5992067c" name="a52cb3012480abfb3334cc9bf5992067c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a52cb3012480abfb3334cc9bf5992067c">&#9670;&#160;</a></span>send_display_answer()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> bool subtask_managers.hri_tasks.HRITasks.send_display_answer </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>answer</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a810510a94099b0741625971f3a74ad39" name="a810510a94099b0741625971f3a74ad39"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a810510a94099b0741625971f3a74ad39">&#9670;&#160;</a></span>set_light_state()</h2>
 
@@ -1749,6 +1783,20 @@ Args:
       <table class="memname">
         <tr>
           <td class="memname">subtask_managers.hri_tasks.HRITasks.answer_question_service</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a8cdae022d9194ed9ecd1cc1d5b0e9f5d" name="a8cdae022d9194ed9ecd1cc1d5b0e9f5d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8cdae022d9194ed9ecd1cc1d5b0e9f5d">&#9670;&#160;</a></span>answers_publisher</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">subtask_managers.hri_tasks.HRITasks.answers_publisher</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -2029,6 +2077,20 @@ Args:
       <table class="memname">
         <tr>
           <td class="memname">subtask_managers.hri_tasks.HRITasks.positive</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ac3e7da0b96f8b3717ea56ba3156b706b" name="ac3e7da0b96f8b3717ea56ba3156b706b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac3e7da0b96f8b3717ea56ba3156b706b">&#9670;&#160;</a></span>questions_publisher</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">subtask_managers.hri_tasks.HRITasks.questions_publisher</td>
         </tr>
       </table>
 </div><div class="memdoc">

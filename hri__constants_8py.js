@@ -2,6 +2,7 @@ var hri__constants_8py =
 [
     [ "frida_constants.hri_constants.MODEL", "classfrida__constants_1_1hri__constants_1_1MODEL.html", null ],
     [ "frida_constants.hri_constants.KNOWLEDGE_TYPE", "classfrida__constants_1_1hri__constants_1_1KNOWLEDGE__TYPE.html", null ],
+    [ "ANSWER_PUBLISHER", "hri__constants_8py.html#a04fcaea874b8335fbca4fb97bbbf0bb0", null ],
     [ "CATEGORIZE_SERVICE", "hri__constants_8py.html#ab2e7b071b2e0f95cd25b59442485423d", null ],
     [ "COMMAND_INTERPRETER_SERVICE", "hri__constants_8py.html#a1b90a05ff939b4a199c904ade172ace2", null ],
     [ "COMMON_INTEREST_SERVICE", "hri__constants_8py.html#a46fbf5eabbd1779f553efd0d69f6dffb", null ],
@@ -9,6 +10,7 @@ var hri__constants_8py =
     [ "DEFAULT_HOTWORDS", "hri__constants_8py.html#ae34afe358408d95f63d076478b349b0b", null ],
     [ "DISPLAY_IMAGE_TOPIC", "hri__constants_8py.html#aaa486a9f7f79cd7c69c81ff85d8ba336", null ],
     [ "DISPLAY_MAP_TOPIC", "hri__constants_8py.html#a3fdac1c86ed416eee896a77aec9c4043", null ],
+    [ "DISPLAY_PUBLISHER", "hri__constants_8py.html#a6b6228c6ea413ec24c0b26890dac3fb5", null ],
     [ "EXTRACT_DATA_SERVICE", "hri__constants_8py.html#ae336bc5e472cc38814ce9b4eb0928c31", null ],
     [ "GPSR_COMMANDS", "hri__constants_8py.html#aae7202a78fec255321e754d7a99ad996", null ],
     [ "GRAMMAR_SERVICE", "hri__constants_8py.html#a030ffe3f2fb1fc6cb72b2f14441d6e97", null ],
