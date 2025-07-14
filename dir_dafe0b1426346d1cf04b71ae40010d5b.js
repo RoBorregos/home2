@@ -14,5 +14,6 @@ var dir_dafe0b1426346d1cf04b71ae40010d5b =
     [ "Shelf_OCV.py", "Shelf__OCV_8py.html", "Shelf__OCV_8py" ],
     [ "storing_groceries_commands.py", "storing__groceries__commands_8py.html", "storing__groceries__commands_8py" ],
     [ "tracker_node.py", "tracker__node_8py.html", "tracker__node_8py" ],
+    [ "tracker_node_fregoso.py", "tracker__node__fregoso_8py.html", "tracker__node__fregoso_8py" ],
     [ "zed_simulator.py", "zed__simulator_8py.html", "zed__simulator_8py" ]
 ];

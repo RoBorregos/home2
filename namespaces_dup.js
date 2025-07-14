@@ -92,6 +92,7 @@ var namespaces_dup =
     [ "face_recognition_node", "namespaceface__recognition__node.html", "namespaceface__recognition__node" ],
     [ "follow_face_node", "namespacefollow__face__node.html", "namespacefollow__face__node" ],
     [ "follow_person_node", "namespacefollow__person__node.html", "namespacefollow__person__node" ],
+    [ "follow_person_v2", "namespacefollow__person__v2.html", "namespacefollow__person__v2" ],
     [ "frida_constants", "namespacefrida__constants.html", "namespacefrida__constants" ],
     [ "frida_driver", "namespacefrida__driver.html", [
       [ "generate_launch_description", "namespacefrida__driver.html#aef5c72bf0e9a5f9cd51e0088acd02488", null ],
@@ -278,6 +279,7 @@ var namespaces_dup =
       [ "generate_launch_description", "namespacertabnav2.html#a0b5741c31c1cac08c5b3158c043374e7", null ]
     ] ],
     [ "run_while_hearing", "namespacerun__while__hearing.html", "namespacerun__while__hearing" ],
+    [ "safety_task_manager", "namespacesafety__task__manager.html", "namespacesafety__task__manager" ],
     [ "server", "namespaceserver.html", "namespaceserver" ],
     [ "service_utils", "namespaceservice__utils.html", [
       [ "close_gripper", "namespaceservice__utils.html#a479ef9705921d2c4e6c2549e4731ef57", null ],
@@ -294,6 +296,7 @@ var namespaces_dup =
     ] ],
     [ "storing_groceries_manager", "namespacestoring__groceries__manager.html", "namespacestoring__groceries__manager" ],
     [ "subtask_managers", "namespacesubtask__managers.html", "namespacesubtask__managers" ],
+    [ "temp_follow", "namespacetemp__follow.html", "namespacetemp__follow" ],
     [ "test_env", "namespacetest__env.html", "namespacetest__env" ],
     [ "test_hri_manager", "namespacetest__hri__manager.html", "namespacetest__hri__manager" ],
     [ "test_manager", "namespacetest__manager.html", "namespacetest__manager" ],
@@ -305,6 +308,7 @@ var namespaces_dup =
       [ "transform_pose", "namespacetf__utils.html#acd9c843b0fe781b1c8f769decd9897e9", null ]
     ] ],
     [ "tracker_node", "namespacetracker__node.html", "namespacetracker__node" ],
+    [ "tracker_node_fregoso", "namespacetracker__node__fregoso.html", "namespacetracker__node__fregoso" ],
     [ "transform_target", "namespacetransform__target.html", "namespacetransform__target" ],
     [ "utils", "namespaceutils.html", "namespaceutils" ],
     [ "virtual_stop_button", "namespacevirtual__stop__button.html", "namespacevirtual__stop__button" ],

@@ -1,6 +1,7 @@
 var classsubtask__managers_1_1nav__tasks_1_1NavigationTasks =
 [
     [ "__init__", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a48ca97b4af80aecf1bd5829f32a9afe1", null ],
+    [ "change_bt", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a98d3c3995cf96bf9182336350a52ea52", null ],
     [ "check_door", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#ac8392c9cae02b642c0c36fdc7f232f31", null ],
     [ "follow_person", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a641efdd1c22f2649d30330aedddf4034", null ],
     [ "goal_response_callback", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#aec6654b28ae66f05e695adecc454e52a", null ],
@@ -13,6 +14,8 @@ var classsubtask__managers_1_1nav__tasks_1_1NavigationTasks =
     [ "_get_result_future", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a351d1aee550aba2fe1f80c462b954df2", null ],
     [ "_send_goal_future", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#aa28101355d5064ecefa63875098dba8a", null ],
     [ "activate_follow", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a7074c5fb978d4b98c3b01933b8c43044", null ],
+    [ "bt_lifecycle", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#aea97b781d538901274bd6ca1375bf616", null ],
+    [ "bt_params", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a56cc925bf38082003a4fc0efba86a8ef", null ],
     [ "closed_distance", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a4c5866ee0fe98bf2baf2c4dc9c5d4cc5", null ],
     [ "goal_client", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a0fd0a1a0c9ea0f3779427eff44814b20", null ],
     [ "goal_state", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#ac3bd7bc3b059ef1c38dce183aa577ff0", null ],
@@ -25,5 +28,6 @@ var classsubtask__managers_1_1nav__tasks_1_1NavigationTasks =
     [ "ReturnLocation_client", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a25e0c6bc5977fafd3c98b40373cfe8c2", null ],
     [ "services", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a71330db0dc3cb313526a85a18e3f12be", null ],
     [ "task", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#ac7ea2aaf545650388e6d3a6a43d9852f", null ],
-    [ "wait_for_controller_input", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a9a784055f3b8f1eb040513dc6b70fcbe", null ]
+    [ "wait_for_controller_input", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a9a784055f3b8f1eb040513dc6b70fcbe", null ],
+    [ "zero_publisher", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a2ab8c3b69cf0fa9071a7fcfc72c3f93f", null ]
 ];

@@ -14,7 +14,7 @@ var searchData=
   ['navigate_5fto_5fentrance_11',['NAVIGATE_TO_ENTRANCE',['../classreceptionist__task__manager_1_1ReceptionistTM_1_1TaskStates.html#a65ebdca0585101eceed94302671c2f7d',1,'receptionist_task_manager::ReceptionistTM::TaskStates']]],
   ['navigate_5fto_5fleaving_5froom_12',['NAVIGATE_TO_LEAVING_ROOM',['../classreceptionist__task__manager_1_1ReceptionistTM_1_1TaskStates.html#a6357e752ac6ed2cea2ba74a1a79a50b5',1,'receptionist_task_manager::ReceptionistTM::TaskStates']]],
   ['navigate_5fto_5ftable_13',['NAVIGATE_TO_TABLE',['../classclean__table__task__manager_1_1CleanTableTM_1_1TaskStates.html#ab66b28894a69175b5bc2cd2310439143',1,'clean_table_task_manager::CleanTableTM::TaskStates']]],
-  ['navigation_14',['NAVIGATION',['../classstoring__groceries__manager_1_1Retries.html#a559aa04e759c2789301d5fc4a7b57110',1,'storing_groceries_manager::Retries']]],
+  ['navigation_14',['NAVIGATION',['../classstoring__groceries__manager_1_1Retries.html#a559aa04e759c2789301d5fc4a7b57110',1,'storing_groceries_manager.Retries.NAVIGATION()'],['../classsafety__task__manager_1_1Retries.html#adfc9b7274aa31ca1104749b60d2008e1',1,'safety_task_manager.Retries.NAVIGATION()']]],
   ['navigation_5fin_5fprogress_15',['navigation_in_progress',['../classtransform__target_1_1PointTransformer.html#aed71023fecf00309107cbfdb6d14d602',1,'transform_target::PointTransformer']]],
   ['navigation_5ftasks_16',['navigation_tasks',['../namespacesubtask__managers_1_1nav__tasks.html#a35bf842183e21b6c6070cc6d2219644e',1,'subtask_managers::nav_tasks']]],
   ['nclasses_17',['nclasses',['../namespacereid__model.html#a89d8ea6aeef570700d95e69bd62b3614',1,'reid_model']]],

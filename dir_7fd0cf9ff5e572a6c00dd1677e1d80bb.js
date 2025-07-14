@@ -13,6 +13,7 @@ var dir_7fd0cf9ff5e572a6c00dd1677e1d80bb =
     [ "HeatmapPlace.srv", "HeatmapPlace_8srv.html", null ],
     [ "PickPerceptionService.srv", "PickPerceptionService_8srv.html", null ],
     [ "PlacePerceptionService.srv", "PlacePerceptionService_8srv.html", null ],
+    [ "PlayTrayectory.srv", "PlayTrayectory_8srv.html", null ],
     [ "ReadPcdFile.srv", "ReadPcdFile_8srv.html", null ],
     [ "RemoveCollisionObject.srv", "RemoveCollisionObject_8srv.html", null ],
     [ "RemovePlane.srv", "RemovePlane_8srv.html", null ],

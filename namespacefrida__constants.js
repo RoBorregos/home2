@@ -137,6 +137,7 @@ var namespacefrida__constants =
     ] ],
     [ "vision_enums", "namespacefrida__constants_1_1vision__enums.html", "namespacefrida__constants_1_1vision__enums" ],
     [ "xarm_configurations", "namespacefrida__constants_1_1xarm__configurations.html", [
+      [ "CARRY_POSE", "namespacefrida__constants_1_1xarm__configurations.html#a40724ca8949bf6768bc309e32f3b284f", null ],
       [ "FRONT_LOW_STARE", "namespacefrida__constants_1_1xarm__configurations.html#a2f3850b75849b6bc32e08235fe99d81c", null ],
       [ "FRONT_STARE", "namespacefrida__constants_1_1xarm__configurations.html#a3f9c52b155ebdeebba61a6e7b5c195fd", null ],
       [ "NAV_POSE", "namespacefrida__constants_1_1xarm__configurations.html#acd030439b63a120bde3ac743e5bab1f8", null ],

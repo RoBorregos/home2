@@ -11,5 +11,6 @@ var classclean__table__task__manager_1_1CleanTableTM =
     [ "object_index", "classclean__table__task__manager_1_1CleanTableTM.html#afa8b85fe113a1ffdd067e4107f408ad2", null ],
     [ "pick_objects", "classclean__table__task__manager_1_1CleanTableTM.html#aead3243e4a8ff6443fb799c2d0685a09", null ],
     [ "running_task", "classclean__table__task__manager_1_1CleanTableTM.html#a77aeb9c6484aeac1c78384be8eea45d4", null ],
-    [ "subtask_manager", "classclean__table__task__manager_1_1CleanTableTM.html#a65d2a463b5f20055e295605d5232c418", null ]
+    [ "subtask_manager", "classclean__table__task__manager_1_1CleanTableTM.html#a65d2a463b5f20055e295605d5232c418", null ],
+    [ "trash_place", "classclean__table__task__manager_1_1CleanTableTM.html#a70a4ad245ae1969088e40f45851915bb", null ]
 ];

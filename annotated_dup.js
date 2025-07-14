@@ -68,6 +68,9 @@ var annotated_dup =
     [ "follow_person_node", "namespacefollow__person__node.html", [
       [ "FollowPersonNode", "classfollow__person__node_1_1FollowPersonNode.html", "classfollow__person__node_1_1FollowPersonNode" ]
     ] ],
+    [ "follow_person_v2", "namespacefollow__person__v2.html", [
+      [ "FollowFaceNode", "classfollow__person__v2_1_1FollowFaceNode.html", "classfollow__person__v2_1_1FollowFaceNode" ]
+    ] ],
     [ "frida_constants", "namespacefrida__constants.html", [
       [ "hri_constants", "namespacefrida__constants_1_1hri__constants.html", [
         [ "KNOWLEDGE_TYPE", "classfrida__constants_1_1hri__constants_1_1KNOWLEDGE__TYPE.html", null ],
@@ -255,6 +258,11 @@ var annotated_dup =
     [ "run_while_hearing", "namespacerun__while__hearing.html", [
       [ "ServiceClientServerNode", "classrun__while__hearing_1_1ServiceClientServerNode.html", "classrun__while__hearing_1_1ServiceClientServerNode" ]
     ] ],
+    [ "safety_task_manager", "namespacesafety__task__manager.html", [
+      [ "ExecutionStates", "classsafety__task__manager_1_1ExecutionStates.html", null ],
+      [ "Retries", "classsafety__task__manager_1_1Retries.html", null ],
+      [ "SafetyTaskManager", "classsafety__task__manager_1_1SafetyTaskManager.html", "classsafety__task__manager_1_1SafetyTaskManager" ]
+    ] ],
     [ "server", "namespaceserver.html", [
       [ "MoonDreamServicer", "classserver_1_1MoonDreamServicer.html", "classserver_1_1MoonDreamServicer" ],
       [ "Position", "classserver_1_1Position.html", null ]
@@ -307,6 +315,9 @@ var annotated_dup =
         [ "VisionTasks", "classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html", "classsubtask__managers_1_1vision__tasks_1_1VisionTasks" ]
       ] ]
     ] ],
+    [ "temp_follow", "namespacetemp__follow.html", [
+      [ "FollowPersonNode", "classtemp__follow_1_1FollowPersonNode.html", "classtemp__follow_1_1FollowPersonNode" ]
+    ] ],
     [ "test_env", "namespacetest__env.html", [
       [ "TestNode", "classtest__env_1_1TestNode.html", "classtest__env_1_1TestNode" ]
     ] ],
@@ -324,6 +335,9 @@ var annotated_dup =
     ] ],
     [ "tracker_node", "namespacetracker__node.html", [
       [ "SingleTracker", "classtracker__node_1_1SingleTracker.html", "classtracker__node_1_1SingleTracker" ]
+    ] ],
+    [ "tracker_node_fregoso", "namespacetracker__node__fregoso.html", [
+      [ "SingleTracker", "classtracker__node__fregoso_1_1SingleTracker.html", "classtracker__node__fregoso_1_1SingleTracker" ]
     ] ],
     [ "transform_target", "namespacetransform__target.html", [
       [ "PointTransformer", "classtransform__target_1_1PointTransformer.html", "classtransform__target_1_1PointTransformer" ]

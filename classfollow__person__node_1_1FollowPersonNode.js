@@ -11,6 +11,7 @@ var classfollow__person__node_1_1FollowPersonNode =
     [ "run", "classfollow__person__node_1_1FollowPersonNode.html#a095323d26ff4647ff32cf9e4a5e3cc27", null ],
     [ "send_joint_velocity", "classfollow__person__node_1_1FollowPersonNode.html#a4ef7fc9ba0eb08d0f7f881259e0d78fd", null ],
     [ "set_state", "classfollow__person__node_1_1FollowPersonNode.html#abf37c1c84404ad91edd7f2c76ffdca28", null ],
+    [ "set_state_moveit", "classfollow__person__node_1_1FollowPersonNode.html#a2582b31808eb305644a9b270b1e6a6c4", null ],
     [ "state_response_callback", "classfollow__person__node_1_1FollowPersonNode.html#adbd752f4522e3d7bac47a87faf52b67a", null ],
     [ "update_angle", "classfollow__person__node_1_1FollowPersonNode.html#ac11e388e8ba128a17254ce78924f35a3", null ],
     [ "angle_status", "classfollow__person__node_1_1FollowPersonNode.html#af5a97733fa5788abcbc3f4de755fd7f3", null ],
