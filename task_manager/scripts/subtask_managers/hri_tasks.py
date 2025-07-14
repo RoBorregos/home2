@@ -172,7 +172,10 @@ class HRITasks(metaclass=SubtaskMeta):
         self.is_negative_service = self.node.create_client(IsNegative, IS_NEGATIVE_SERVICE)
         self.display_publisher = self.node.create_publisher(String, DISPLAY_IMAGE_TOPIC, 10)
         self.display_map_publisher = self.node.create_publisher(String, DISPLAY_MAP_TOPIC, 10)
-
+        self.answers_publisher = self.node.create_publisher(String, "/hri/display/answers", 10)
+        self.questions_publisher = self.node.create_publisher(
+            String, "/hri/display/frida_questions", 10
+        )
         self.pg = PostgresAdapter()
         self.llm_wrapper_service = self.node.create_client(LLMWrapper, LLM_WRAPPER_SERVICE)
         self.categorize_service = self.node.create_client(CategorizeShelves, CATEGORIZE_SERVICE)
@@ -1238,6 +1241,17 @@ class HRITasks(metaclass=SubtaskMeta):
             show_items["markers"] = filtered_items
 
         self.display_map_publisher.publish(String(data=json.dumps(show_items)))
+
+    def send_display_answer(self, answer: str) -> bool:
+        try:
+            msg = String()
+            msg.data = answer
+            self.answers_publisher.publish(msg)
+            self.node.get_logger().info(f"Answer sent to display: {answer}")
+            return True
+        except Exception as e:
+            self.node.get_logger().error(f"Error sending answer: {str(e)}")
+            return False
 
 
 if __name__ == "__main__":

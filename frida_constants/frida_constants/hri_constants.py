@@ -19,7 +19,8 @@ RAG_SERVICE = "/hri/rag/answer_question"
 
 DISPLAY_IMAGE_TOPIC = "/hri/display/change_video"
 DISPLAY_MAP_TOPIC = "/hri/display/map"
-
+DISPLAY_PUBLISHER = "/hri/display/frida_questions"
+ANSWER_PUBLISHER = "/hri/display/answers"
 USE_RESPEAKER = True
 RESPEAKER_LIGHT_TOPIC = "/hri/speech/respeaker/light"
 RESPEAKER_DOA_TOPIC = "/hri/speech/respeaker/doa"
