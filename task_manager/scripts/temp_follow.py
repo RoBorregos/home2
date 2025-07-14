@@ -12,12 +12,7 @@ from geometry_msgs.msg import Point, PoseStamped
 from rclpy.node import Node
 from utils.logger import Logger
 from xarm_msgs.srv import MoveVelocity, SetInt16, GetFloat32List
-
-# import numpy as np
 import time
-# from frida_constants.manipulation_constants import (
-#     MOVEIT_MODE,
-# )
 
 XARM_MOVEVELOCITY_SERVICE = "/xarm/vc_set_joint_velocity"
 XARM_SETMODE_SERVICE = "/xarm/set_mode"
@@ -31,7 +26,7 @@ DASHGO_CMD_VEL = "/cmd_vel"
 
 TIMEOUT = 5.0
 MAX_ERROR = 0.2
-MAX_ROTATIONAL_VEL = 0.8
+MAX_ROTATIONAL_VEL = 2.0
 CENTROID_TOIC = "/vision/tracker_centroid"
 
 
@@ -273,7 +268,7 @@ class FollowPersonNode(Node):
 
     def error_to_velocity(self, x: float, y: float):
         """Convert error to velocity"""
-        KP = 0.4
+        KP = 0.8
         x_vel = KP * x
         x_vel = max(min(x_vel, MAX_ROTATIONAL_VEL), -MAX_ROTATIONAL_VEL)
 

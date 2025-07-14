@@ -831,7 +831,7 @@ class VisionTasks:
     def describe_bag_moondream(self):
         """Describe the bag using only moondream"""
         Logger.info(self.node, "Describing bag")
-        prompt = "Describe the bag that the person is pointing at using the folling format: the bag on your left is small and green"
+        prompt = "Describe the bag that the person is pointing at"
         return self.moondream_query(prompt, query_person=False)
 
     def find_seat_moondream(self):

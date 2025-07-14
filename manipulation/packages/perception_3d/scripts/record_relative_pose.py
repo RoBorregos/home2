@@ -37,7 +37,7 @@ class DockingPoseRecorder(Node):
         try:
             # Transform the handle pose from its frame to the base_link frame
             transform = self.tf_buffer.lookup_transform(
-                "map",  # target frame
+                "base_link",  # target frame
                 handle_pose.header.frame_id,  # source frame
                 handle_pose.header.stamp,  # time of the pose
                 timeout=rclpy.duration.Duration(seconds=1.0),

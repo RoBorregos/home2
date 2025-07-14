@@ -6,7 +6,6 @@ from frida_pymoveit2.robots import xarm6
 from frida_constants.manipulation_constants import (
     XARM_SETMODE_SERVICE,
     XARM_SETSTATE_SERVICE,
-    MOVEIT_MODE,
 )
 from typing import List, Union
 from concurrent.futures import Future
@@ -108,8 +107,8 @@ class MoveItPlanner(Planner):
         wait: bool = True,
         set_mode: bool = True,
     ) -> Union[bool, Future]:
-        if set_mode:
-            self.set_mode(MOVEIT_MODE)
+        # if set_mode:
+        #     self.set_mode(MOVEIT_MODE)
         if joint_names is None or len(joint_names) == 0:
             joint_names = xarm6.joint_names()
         trajectory = self._plan_joint_goal(joint_positions, joint_names)
@@ -146,8 +145,8 @@ class MoveItPlanner(Planner):
         wait: bool = True,
         set_mode: bool = True,
     ) -> Union[bool, Future]:
-        if set_mode:
-            self.set_mode(MOVEIT_MODE)
+        # if set_mode:
+        #     self.set_mode(MOVEIT_MODE)
         self.node.get_logger().info("Planning pose goal")
         trajectory = self._plan(
             pose=pose,
@@ -226,51 +225,50 @@ class MoveItPlanner(Planner):
         )
 
     def set_mode(self, mode: int = 0) -> bool:
-        return
-        # if not self.mode_enabled:
-        #     return True
-        # # self.mode_client.wait_for_service()
-        # # request = SetInt16.Request()
-        # # request.data = mode
-        # # future = self.mode_client.call_async(request)
-        # # while rclpy.ok() and not future.done():
-        # #     pass
-        # # if future.result() is not None:
-        # #     self.node.get_logger().info(
-        # #         f"Set mode service response: {future.result().message}"
-        # #     )
-        # # else:
-        # #     self.node.get_logger().error("Failed to call set mode service")
-        # #     return False
-        # # self.state_client.wait_for_service()
-        # # request = SetInt16.Request()
-        # # request.data = 0
-        # # future = self.state_client.call_async(request)
-        # # while rclpy.ok() and not future.done():
-        # #     pass
-        # # if future.result() is not None:
-        # #     self.node.get_logger().info(
-        # #         f"Set state service response: {future.result().message}"
-        # #     )
-        # # else:
-        # #     self.node.get_logger().error("Failed to call set state service")
-        # #     return False
-        # time.sleep(0.1)
-        # # Activate controller
-        # if self.switch_controller_client is not None:
-        #     request = SwitchController.Request()
-        #     request.start_controllers = ["xarm6_traj_controller"]
-        #     future = self.switch_controller_client.call_async(request)
-        #     while rclpy.ok() and not future.done():
-        #         pass
-        #     if future.result() is not None:
-        #         self.node.get_logger().info(
-        #             f"Switch controller service response: {future.result().ok}"
-        #         )
-        #     else:
-        #         self.node.get_logger().error("Failed to call switch controller service")
-        #         return False
-        # return True
+        if not self.mode_enabled:
+            return True
+        # self.mode_client.wait_for_service()
+        # request = SetInt16.Request()
+        # request.data = mode
+        # future = self.mode_client.call_async(request)
+        # while rclpy.ok() and not future.done():
+        #     pass
+        # if future.result() is not None:
+        #     self.node.get_logger().info(
+        #         f"Set mode service response: {future.result().message}"
+        #     )
+        # else:
+        #     self.node.get_logger().error("Failed to call set mode service")
+        #     return False
+        # self.state_client.wait_for_service()
+        # request = SetInt16.Request()
+        # request.data = 0
+        # future = self.state_client.call_async(request)
+        # while rclpy.ok() and not future.done():
+        #     pass
+        # if future.result() is not None:
+        #     self.node.get_logger().info(
+        #         f"Set state service response: {future.result().message}"
+        #     )
+        # else:
+        #     self.node.get_logger().error("Failed to call set state service")
+        #     return False
+        time.sleep(0.1)
+        # Activate controller
+        if self.switch_controller_client is not None:
+            request = SwitchController.Request()
+            request.start_controllers = ["xarm6_traj_controller"]
+            future = self.switch_controller_client.call_async(request)
+            while rclpy.ok() and not future.done():
+                pass
+            if future.result() is not None:
+                self.node.get_logger().info(
+                    f"Switch controller service response: {future.result().ok}"
+                )
+            else:
+                self.node.get_logger().error("Failed to call switch controller service")
+                return False
+        return True
 
     def get_current_operation_state(self) -> MoveIt2State:
         return self.moveit2.query_state()

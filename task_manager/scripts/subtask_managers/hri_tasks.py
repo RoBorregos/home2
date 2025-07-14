@@ -953,7 +953,7 @@ class HRITasks(metaclass=SubtaskMeta):
             question=question,
             topk=top_k if top_k is not None else 0,
             threshold=threshold if threshold is not None else 0.0,
-            collections=collections if collections is not None else [],
+            knowledge_type=collections if collections is not None else [],
         )
 
         future = self.answer_question_service.call_async(request)
