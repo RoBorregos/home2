@@ -237,6 +237,10 @@ class HRITasks(metaclass=SubtaskMeta):
         with open(file_path, "r") as file:
             self.hand_items = json.load(file)
 
+        file_path = os.path.join(package_share_directory, "data/items_context.json")
+        with open(file_path, "r") as file:
+            self.item_context = json.load(file)
+
         self.setup_services()
         Logger.success(self.node, f"hri_tasks initialized with task {self.task}")
 
@@ -1030,14 +1034,14 @@ class HRITasks(metaclass=SubtaskMeta):
         def cos_sim(x, y):
             return np.dot(x, y) / (np.linalg.norm(x) * np.linalg.norm(y))
 
-        Results = cos_sim(
+        results = cos_sim(
             np.array([doc[1] for doc in docs]), emb
         )  # Calculate cosine similarity for all documents
-        Results = sorted(zip(docs, Results), key=lambda x: x[1], reverse=True)
-        Results = [(doc[0][0], doc[1]) for doc in Results]  # Extract document and similarity score
-        Logger.info(self.node, f"FIND CLOSEST RAW RESULTS: {Results}")
+        results = sorted(zip(docs, results), key=lambda x: x[1], reverse=True)
+        results = [(doc[0][0], doc[1]) for doc in results]  # Extract document and similarity score
+        # Logger.info(self.node, f"FIND CLOSEST RAW results: {Results}")
 
-        return Results
+        return results
 
     # TODO: Make async
     @service_check("llm_wrapper_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
@@ -1082,7 +1086,6 @@ class HRITasks(metaclass=SubtaskMeta):
             results = self.categorize_objects_with_embeddings(categories, table_objects, shelves)
 
             objects_to_add = {key: value["objects_to_add"] for key, value in results.items()}
-            Logger.error(self.node, f"categories {categories}")
 
             if "empty" in categories.values():
                 # add objects to add in shelves
@@ -1091,16 +1094,12 @@ class HRITasks(metaclass=SubtaskMeta):
                         shelves[k].append(i)
                 categories = self.get_shelves_categories(shelves)[1]
 
-            Logger.error(self.node, f"THIS IS THE CATEGORIZED SHELVES: {categories}")
             categorized_shelves = {
                 key: value["classification_tag"] for key, value in results.items()
             }
             for k, v in categorized_shelves.items():
                 if v == "empty":
                     categorized_shelves[k] = categories[k]
-        #             categorized_shelves = {
-        #                 key: value["classification_tag"] for key, value in results.items()
-        #             }
 
         except Exception as e:
             self.node.get_logger().error(f"Error: {e}")
@@ -1122,7 +1121,10 @@ class HRITasks(metaclass=SubtaskMeta):
         Returns:
             dict[int, str]: Dictionary mapping shelf levels to its category.
         """
-        Logger.info(self.node, "Sending request to categorize_objects")
+        Logger.info(
+            self.node,
+            f"Sending request to get_shelves_categories: shelves({shelves}), table_objects({table_objects})",
+        )
 
         try:
             request = CategorizeShelves.Request(shelves=String(data=str(shelves)), table_objects=[])
@@ -1130,13 +1132,9 @@ class HRITasks(metaclass=SubtaskMeta):
                 request.table_objects.append(String(data=obj))
 
             future = self.categorize_service.call_async(request)
-            Logger.info(
-                self.node, f"generated request, shelves: {shelves}, table_objects: {table_objects}"
-            )
             rclpy.spin_until_future_complete(self.node, future, timeout_sec=25)
             res = future.result()
-            Logger.info(self.node, "request finished")
-            Logger.info(self.node, "categorize_objects result: " + str(res))
+            Logger.info(self.node, "get_shelves_categories result: " + str(res))
             # if res.status != Status.EXECUTION_SUCCESS:
             #     Logger.error(self.node, f"Error in categorize_objects: {res.status}")
             #     return Status.EXECUTION_ERROR, {}, {}
@@ -1161,41 +1159,41 @@ class HRITasks(metaclass=SubtaskMeta):
         try:
             category_list = []
             categories_aux = categories.copy()
-            self.node.get_logger().info(f"OBJECT TO CATEGORIZE: {obj}")
             for key in list(categories_aux.keys()):
                 if categories_aux[key] == "empty":
-                    self.node.get_logger().info("THERE IS AN EMPTY SHELVE")
                     del categories_aux[key]
 
             for category in categories_aux.values():
                 category_list.append(category)
 
             for i, category in enumerate(category_list):
-                self.node.get_logger().info(f"Category {i}: {category}")
-                category_list[i] = category + " " + " ".join(shelves[i])
+                # category_list[i] = category + " " + " ".join(shelves[i])
+                category_list[i] = category
+
+            # Use object context if available for embedding categorization
+            if obj in self.item_context:
+                obj = self.item_context[obj]["description"]
 
             results = self.find_closest_raw(category_list, obj)
             results_distances = [res[1] for res in results]
 
             result_category = results[0][0] if len(results) > 0 else "empty"
-            self.node.get_logger().info(f"RESULTS for {obj}:")
-            self.node.get_logger().info(f"RESULTS DISTANCES: {results_distances}")
-            self.node.get_logger().info(f"CATEGORY PREDICTED BEFORE THRESHOLD: {result_category}")
-            # input("HOLAAA HOLA HOLAA")
             if "empty" in categories.values() and results_distances[0] < 0.15:
                 result_category = "empty"
 
-            self.node.get_logger().info(f"CATEGORY PREDICTED: {result_category}")
             result_category = result_category.split(" ")[0]
-            self.node.get_logger().info(f"CATEGORY PREDICTED: {result_category}")
-            key_resulted = 2
+            key_resulted = 0
+
+            found_key = False
             for key in list(categories.keys()):
                 if str(categories[key]) == str(result_category):
                     key_resulted = key
-                else:
-                    self.node.get_logger().info(
-                        "THE CATEGORY PREDICTED IS NOT CONTAINED IN THE REQUEST, RETURNING SHELVE 2"
-                    )
+                    found_key = True
+
+            if not found_key:
+                self.node.get_logger().info(
+                    f"THE CATEGORY PREDICTED IS NOT CONTAINED IN THE REQUEST, RETURNING SHELVE 0 for object {obj}"
+                )
 
             return key_resulted
 
@@ -1205,8 +1203,6 @@ class HRITasks(metaclass=SubtaskMeta):
     def categorize_objects_with_embeddings(self, categories: dict, obj_list: list, shelves: dict):
         """
         Categorize objects based on their embeddings."""
-        self.node.get_logger().info(f"THIS IS THE CATEGORIES dict RECEIVED: {categories}")
-        self.node.get_logger().info(f"THIS IS THE obj_list LIST RECEIVED: {obj_list}")
         results = {
             key: {"classification_tag": categories[key], "objects_to_add": []}
             for key in categories.keys()
@@ -1215,7 +1211,6 @@ class HRITasks(metaclass=SubtaskMeta):
             index = self.categorize_object(categories, obj, shelves)
             results[index]["objects_to_add"].append(obj)
 
-        self.node.get_logger().info(f"THIS IS THE RESULTS OF THE CATEGORIZATION: {results}")
         return results
 
     def show_map(self, name="", clear_map: bool = False):

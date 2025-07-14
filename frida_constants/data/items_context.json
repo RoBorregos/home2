@@ -1,0 +1,41 @@
+{
+    "apple": {
+        "description": "The apple is a crisp, sweet fruit commonly eaten raw or used in desserts."
+    },
+    "orange": {
+        "description": "The orange is a juicy citrus fruit rich in vitamin C, often eaten fresh or juiced."
+    },
+    "fanta_soda": {
+        "description": "Fanta soda is a drink."
+    },
+    "coke_soda": {
+        "description": "Coke soda is a popular carbonated drink known for its classic cola flavor."
+    },
+    "tea_lipton": {
+        "description": "Tea Lipton is a packaged tea product commonly brewed as a warm, soothing beverage."
+    },
+    "cookies": {
+        "description": "Cookies are sweet baked treats often enjoyed as snacks or desserts."
+    },
+    "chips": {
+        "description": "Chips are thin, crispy slices of potato or similar snack food, typically salted and crunchy."
+    },
+    "banana": {
+        "description": "The banana is a soft, sweet fruit with a yellow peel, commonly eaten raw."
+    },
+    "cereal": {
+        "description": "Cereal is a dry, processed food usually eaten with milk for a quick breakfast or snack."
+    },
+    "fork": {
+        "description": "A fork is a utensil with prongs used to spear and lift food while eating."
+    },
+    "spoon": {
+        "description": "A spoon is a rounded utensil used to scoop and eat soft or liquid foods."
+    },
+    "bowl": {
+        "description": "A bowl is a deep, round dish used to hold and serve food such as soup or cereal."
+    },
+    "tenis_ball": {
+        "description": "The tenis ball is a soft, bouncy ball used for playing tennis or other sports."
+    }
+}

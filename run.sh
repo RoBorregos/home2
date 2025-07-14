@@ -38,6 +38,10 @@ case $AREA in
     echo "Running integration"
     area="integration"
     ;;
+  interfaces)
+    echo "Building interfaces"
+    area="interfaces"
+    ;;
   hri)
     echo "Running hri"
     area="hri"
@@ -72,6 +76,26 @@ if [ "$area" == "zed" ]; then
   echo "Running zed2"
   cd docker/integration
   docker compose -f zed.yml up $detached
+  exit 0
+fi
+
+ENV_TYPE="cpu"
+
+# Check device type
+if [[ -f /etc/nv_tegra_release ]]; then
+    ENV_TYPE="jetson"
+fi
+
+if [ "$area" == "interfaces" ]; then
+  cd docker/frida_interfaces_cache
+
+  if [ "$ENV_TYPE" == "jetson" ]; then
+    echo "Running on Jetson, building jetson cache"
+    docker compose up
+  else
+    echo "Running on laptop, building laptop cache"
+    docker compose -f cpu.yaml up
+  fi
   exit 0
 fi
 

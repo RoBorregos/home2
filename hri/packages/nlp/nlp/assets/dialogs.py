@@ -241,9 +241,6 @@ But does **not** include:
 
 
 def get_categorize_shelves_args(shelves, table_objects=[]):
-    print("AQUI AUQI")
-    print("Shelves:", shelves)
-    print("Table Objects:", table_objects)
     return (
         [
             {
