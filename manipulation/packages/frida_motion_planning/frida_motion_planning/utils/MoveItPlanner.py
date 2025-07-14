@@ -6,7 +6,6 @@ from frida_pymoveit2.robots import xarm6
 from frida_constants.manipulation_constants import (
     XARM_SETMODE_SERVICE,
     XARM_SETSTATE_SERVICE,
-    MOVEIT_MODE,
 )
 from typing import List, Union
 from concurrent.futures import Future
@@ -108,8 +107,8 @@ class MoveItPlanner(Planner):
         wait: bool = True,
         set_mode: bool = True,
     ) -> Union[bool, Future]:
-        if set_mode:
-            self.set_mode(MOVEIT_MODE)
+        # if set_mode:
+        #     self.set_mode(MOVEIT_MODE)
         if joint_names is None or len(joint_names) == 0:
             joint_names = xarm6.joint_names()
         trajectory = self._plan_joint_goal(joint_positions, joint_names)
@@ -146,8 +145,8 @@ class MoveItPlanner(Planner):
         wait: bool = True,
         set_mode: bool = True,
     ) -> Union[bool, Future]:
-        if set_mode:
-            self.set_mode(MOVEIT_MODE)
+        # if set_mode:
+        #     self.set_mode(MOVEIT_MODE)
         self.node.get_logger().info("Planning pose goal")
         trajectory = self._plan(
             pose=pose,
