@@ -9,8 +9,8 @@ rgbd_sync:
 
 rtabmap:
   ros__parameters:
-    qos: 0
-    qos_camera_info: 0
+    qos: 1
+    qos_camera_info: 1
   # Basic ROS parameters
     subscribe_rgbd: true
     subscribe_rgb: false
@@ -66,7 +66,7 @@ rtabmap:
     "Icp/PointToPlane": "true"
     #grid
     "Grid/Sensor": "2"
-    "Grid/RangeMax": "5.0"
+    "Grid/RangeMax": "2.0"
     "Grid/CellSize": "0.05"
     "Grid/3D": "false"
     "Grid/RayTracing": "false"

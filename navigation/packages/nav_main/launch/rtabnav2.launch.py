@@ -64,8 +64,8 @@ def generate_launch_description():
                 plugin='rtabmap_slam::CoreWrapper',
                 name='rtabmap',
                 parameters=[rtab_params, 
-                {'delete_db_on_start': True}],
-                remappings=[('/map', 'map_input'),]
+                {'delete_db_on_start': True}]
+                # remappings=[('/map', 'map_input'),]
             ),
             ComposableNode(
                 package='rtabmap_sync',
@@ -146,7 +146,7 @@ def generate_launch_description():
                     'behavior_server',
                     'bt_navigator',
                     'velocity_smoother',
-                    'docking_server',
+                    # 'docking_server',
                 ]
             }],
             ),
