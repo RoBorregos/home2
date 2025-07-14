@@ -873,7 +873,7 @@ class VisionTasks:
             if detections[i].classname.lower() == drink.lower():
                 drink_pos = i
 
-        if drink_pos == None:
+        if drink_pos is None:
             return Status.TARGET_NOT_FOUND, "Not found"
 
         x_pos.sort()
