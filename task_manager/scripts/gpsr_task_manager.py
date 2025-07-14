@@ -11,7 +11,7 @@ from rclpy.node import Node
 from subtask_managers.gpsr_single_tasks import GPSRSingleTask
 from subtask_managers.gpsr_tasks import GPSRTask
 
-from subtask_managers.gpsr_test_commands import get_gpsr_comands
+# from subtask_managers.gpsr_test_commands import get_gpsr_comands
 from utils.baml_client.types import CommandListLLM
 from utils.logger import Logger
 from utils.status import Status
@@ -49,20 +49,20 @@ class GPSRTM(Node):
     def __init__(self):
         """Initialize the node"""
         super().__init__("gpsr_task_manager")
-        self.subtask_manager = SubtaskManager(self, task=Task.GPSR, mock_areas=["navigation"])
+        self.subtask_manager = SubtaskManager(self, task=Task.GPSR, mock_areas=[])
         self.gpsr_tasks = GPSRTask(self.subtask_manager)
         self.gpsr_individual_tasks = GPSRSingleTask(self.subtask_manager)
 
         self.current_state = (
-            # GPSRTM.States.START
-            GPSRTM.States.EXECUTING_COMMAND
+            GPSRTM.States.START
+            # GPSRTM.States.EXECUTING_COMMAND
         )
         self.running_task = True
         self.current_attempt = 0
         self.executed_commands = 0
         # self.commands = get_gpsr_comands("takeObjFromPlcmt")
-        self.commands = get_gpsr_comands("custom")
-        # self.commands = []
+        # self.commands = get_gpsr_comands("custom")
+        self.commands = []
 
         if isinstance(self.commands, dict):
             self.commands = CommandListLLM(**self.commands).commands

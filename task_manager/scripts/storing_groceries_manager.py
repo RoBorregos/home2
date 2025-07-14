@@ -141,7 +141,7 @@ class StoringGroceriesManager(Node):
         #     0.463,
         #     0.84
         # ]
-        self.manual_heights = [0.45, 0.80, 1.15]
+        self.manual_heights = [0.55, 0.9]
         self.shelf_level_threshold = 0.20
 
         #         self.manual_heights = [0.04, 0.43, 0.67]

@@ -19,7 +19,7 @@ FOLLOW_FACE_TOLERANCE = 0.15
 XARM_MOVEVELOCITY_SERVICE = "/xarm/vc_set_joint_velocity"
 SET_JOINT_VELOCITY_SERVICE = "/manipulation/set_joint_velocity"
 
-ALWAYS_SET_MODE = True
+ALWAYS_SET_MODE = False
 JOINTN_VELOCITY_MODE = 4
 
 MOVE_JOINTS_ACTION_SERVER = "/manipulation/move_joints_action_server"

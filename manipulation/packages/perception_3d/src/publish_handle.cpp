@@ -1,3 +1,4 @@
+
 #include "rclcpp/rclcpp.hpp"
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include <frida_interfaces/srv/detail/remove_vertical_plane__struct.hpp>
@@ -43,6 +44,10 @@
 // #include <frida_interfaces/srv/cluster_object_from_point.hpp>
 // #include <frida_interfaces/srv/remove_plane.hpp>
 #include <frida_interfaces/srv/remove_vertical_plane.hpp>
+#include "frida_interfaces/msg/object_detection.hpp"
+#include "frida_interfaces/msg/object_detection_array.hpp"
+#include "frida_interfaces/srv/detection_handler.hpp"
+#include <frida_constants/vision_constants_cpp.hpp>
 // #include <frida_interfaces/srv/test.hpp>
 
 using namespace std::chrono_literals;
@@ -70,11 +75,16 @@ class CallServicesNode : public rclcpp::Node {
 public:
   rclcpp::Client<frida_interfaces::srv::RemoveVerticalPlane>::SharedPtr
       remove_vertical_plane_client;
+  rclcpp::Client<frida_interfaces::srv::DetectionHandler>::SharedPtr
+      detection_handler_client_;
   CallServicesNode() : Node("callservicesnode") {
     RCLCPP_INFO(this->get_logger(), "Starting CallServicesNode");
     this->remove_vertical_plane_client =
         this->create_client<frida_interfaces::srv::RemoveVerticalPlane>(
             REMOVE_VERTICAL_PLANE_SERVICE);
+    this->detection_handler_client_ =
+        this->create_client<frida_interfaces::srv::DetectionHandler>(
+            "/vision/detection_handler");
     RCLCPP_INFO(this->get_logger(),
                 "Remove Vertical Plane Client created, waiting for services");
     this->remove_vertical_plane_client->wait_for_service(
@@ -82,6 +92,7 @@ public:
     RCLCPP_INFO(this->get_logger(), "Remove Vertical Plane Service ready");
   }
 };
+
 class PublishHandleA : public rclcpp::Node {
 private:
   rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr pose_pub_;
@@ -125,11 +136,49 @@ public:
 
   void timer_callback() {
     RCLCPP_INFO(this->get_logger(), "Publishing pose");
+
+    auto detection_handler_request =
+        std::make_shared<frida_interfaces::srv::DetectionHandler::Request>();
+    detection_handler_request->label = "door_handle";
+
+    auto fut1 = this->call_services_node->detection_handler_client_->async_send_request(
+        detection_handler_request);
+    auto res1 = wait_for_future_with_timeout<frida_interfaces::srv::DetectionHandler>(
+        fut1, this->call_services_node->get_node_base_interface(), 1500ms);
+    if (res1 == std::future_status::ready) {
+      RCLCPP_INFO(this->get_logger(),
+                  "Detection Handler Service call succeeded");
+    } else {
+      RCLCPP_WARN(this->get_logger(),
+                  "Detection Handler Service call timed out");
+      return;
+    }
+    auto result_detections =
+        fut1.get(); // Get the result of the service call
+
+    RCLCPP_INFO(this->get_logger(),
+                "Received %zu detections from Detection Handler Service",
+                result_detections->detection_array.detections.size());
+
+
+    auto remove_vertical_plane_request =
+        std::make_shared<frida_interfaces::srv::RemoveVerticalPlane::Request>();
+    if (result_detections->success) {
+      RCLCPP_INFO(this->get_logger(),
+                  "Detection Handler Service call succeeded with %zu detections",
+                  result_detections->detection_array.detections.size());
+      remove_vertical_plane_request->close_point = result_detections->detection_array.detections[0].point3d;
+    }
+    else{
+      RCLCPP_ERROR(this->get_logger(),
+                   "Detection Handler Service call failed");
+      return;
+    }
+
     auto fut =
         this->call_services_node->remove_vertical_plane_client
-            ->async_send_request(
-                std::make_shared<
-                    frida_interfaces::srv::RemoveVerticalPlane::Request>());
+            ->async_send_request(remove_vertical_plane_request);
+          
     auto res = wait_for_future_with_timeout<
         frida_interfaces::srv::RemoveVerticalPlane>(
         fut, this->call_services_node->get_node_base_interface(), 500ms);
@@ -158,14 +207,14 @@ public:
     RCLCPP_INFO(this->get_logger(),
                 "Transforming point cloud to map frame from frame: %s",
                 result->cloud.header.frame_id.c_str());
-    if (!this->tf_buffer_->canTransform("map", result->cloud.header.frame_id,
+    if (!this->tf_buffer_->canTransform("base_link", result->cloud.header.frame_id,
              tf2::TimePointZero)) {
       RCLCPP_ERROR(this->get_logger(),
                    "Cannot transform point cloud to map frame");
       return;
     }
     geometry_msgs::msg::TransformStamped transform_stamped =
-        this->tf_buffer_->lookupTransform("map", result->cloud.header.frame_id,
+        this->tf_buffer_->lookupTransform("base_link", result->cloud.header.frame_id,
                                           tf2::TimePointZero);
 
     // Convert ROS message to PCL point cloud
@@ -184,7 +233,7 @@ public:
                 "Min point: (%f, %f, %f), Max point: (%f, %f, %f)", min_pt.x,
                 min_pt.y, min_pt.z, max_pt.x, max_pt.y, max_pt.z);
     // Create a pose from the min and max points
-    this->pose_.header.frame_id = "map";
+    this->pose_.header.frame_id = "base_link";
     // this->pose_.header.stamp = this->now();
     this->pose_.header.stamp = result->cloud.header.stamp;
     this->pose_.pose.position.x = (min_pt.x + max_pt.x) / 2.0;
