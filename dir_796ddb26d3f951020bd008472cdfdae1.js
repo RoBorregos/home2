@@ -12,6 +12,7 @@ var dir_796ddb26d3f951020bd008472cdfdae1 =
     [ "follow_person_node.py", "follow__person__node_8py.html", "follow__person__node_8py" ],
     [ "follow_person_v2.py", "follow__person__v2_8py.html", "follow__person__v2_8py" ],
     [ "gpsr_task_manager.py", "gpsr__task__manager_8py.html", "gpsr__task__manager_8py" ],
+    [ "hand_task_manager.py", "hand__task__manager_8py.html", "hand__task__manager_8py" ],
     [ "help_me_carry.py", "help__me__carry_8py.html", "help__me__carry_8py" ],
     [ "nav_test.py", "nav__test_8py.html", "nav__test_8py" ],
     [ "point_transformer.py", "point__transformer_8py.html", "point__transformer_8py" ],

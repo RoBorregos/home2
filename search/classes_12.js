@@ -2,7 +2,7 @@ var searchData=
 [
   ['tablesegmentationnode_0',['TableSegmentationNode',['../classTableSegmentationNode.html',1,'']]],
   ['task_1',['Task',['../classutils_1_1task_1_1Task.html',1,'utils::task']]],
-  ['taskstates_2',['TaskStates',['../classclean__table__task__manager_1_1CleanTableTM_1_1TaskStates.html',1,'clean_table_task_manager.CleanTableTM.TaskStates'],['../classreceptionist__task__manager_1_1ReceptionistTM_1_1TaskStates.html',1,'receptionist_task_manager.ReceptionistTM.TaskStates']]],
+  ['taskstates_2',['TaskStates',['../classclean__table__task__manager_1_1CleanTableTM_1_1TaskStates.html',1,'clean_table_task_manager.CleanTableTM.TaskStates'],['../classhand__task__manager_1_1HandTM_1_1TaskStates.html',1,'hand_task_manager.HandTM.TaskStates'],['../classreceptionist__task__manager_1_1ReceptionistTM_1_1TaskStates.html',1,'receptionist_task_manager.ReceptionistTM.TaskStates']]],
   ['testhrimanager_3',['TestHriManager',['../classtest__hri__manager_1_1TestHriManager.html',1,'test_hri_manager']]],
   ['testnode_4',['TestNode',['../classtest__env_1_1TestNode.html',1,'test_env']]],
   ['testsnode_5',['TestsNode',['../classTestsNode.html',1,'']]],

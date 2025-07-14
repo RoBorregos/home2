@@ -6,6 +6,7 @@ var hri__tasks_8py =
     [ "contains_any", "hri__tasks_8py.html#a48a550006ecca4595a4a27701b3b738e", null ],
     [ "format_transcription", "hri__tasks_8py.html#a57f4887e6ed298a6727c47bca1fc97e9", null ],
     [ "remove_punctuation", "hri__tasks_8py.html#a60f5647a53c25ce586f2c1dcbb047bb1", null ],
+    [ "InterpreterAvailableCommands", "hri__tasks_8py.html#a1be2d075bae2c39d2b948028ce848998", null ],
     [ "node", "hri__tasks_8py.html#acfd005e4c5d7c9e7b6c73e12537399d0", null ],
     [ "TIMEOUT", "hri__tasks_8py.html#ac4bd1336eeaededb29b451124ff52305", null ],
     [ "vision_tasks", "hri__tasks_8py.html#aa2840c03a44dc90e8c91833569951353", null ]

@@ -28,6 +28,7 @@ var namespacesubtask__managers =
       [ "total_implemented", "namespacesubtask__managers_1_1gpsr__test__commands.html#aa03e1e368b97d99d52d1c4ef88d7fa90", null ],
       [ "total_percentage", "namespacesubtask__managers_1_1gpsr__test__commands.html#ae9daadf5b9517850cde941a4cfceeef5", null ]
     ] ],
+    [ "hri_hand", "namespacesubtask__managers_1_1hri__hand.html", "namespacesubtask__managers_1_1hri__hand" ],
     [ "hri_tasks", "namespacesubtask__managers_1_1hri__tasks.html", "namespacesubtask__managers_1_1hri__tasks" ],
     [ "manipulation_tasks", "namespacesubtask__managers_1_1manipulation__tasks.html", "namespacesubtask__managers_1_1manipulation__tasks" ],
     [ "nav_tasks", "namespacesubtask__managers_1_1nav__tasks.html", "namespacesubtask__managers_1_1nav__tasks" ],

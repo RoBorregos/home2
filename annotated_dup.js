@@ -111,6 +111,9 @@ var annotated_dup =
     [ "grasp_markers", "namespacegrasp__markers.html", [
       [ "GraspVisualizer", "classgrasp__markers_1_1GraspVisualizer.html", "classgrasp__markers_1_1GraspVisualizer" ]
     ] ],
+    [ "hand_task_manager", "namespacehand__task__manager.html", [
+      [ "HandTM", "classhand__task__manager_1_1HandTM.html", "classhand__task__manager_1_1HandTM" ]
+    ] ],
     [ "heatmapPlace_Server", "namespaceheatmapPlace__Server.html", [
       [ "HeatmapServer", "classheatmapPlace__Server_1_1HeatmapServer.html", "classheatmapPlace__Server_1_1HeatmapServer" ]
     ] ],
@@ -297,6 +300,9 @@ var annotated_dup =
       ] ],
       [ "gpsr_tasks", "namespacesubtask__managers_1_1gpsr__tasks.html", [
         [ "GPSRTask", "classsubtask__managers_1_1gpsr__tasks_1_1GPSRTask.html", "classsubtask__managers_1_1gpsr__tasks_1_1GPSRTask" ]
+      ] ],
+      [ "hri_hand", "namespacesubtask__managers_1_1hri__hand.html", [
+        [ "HRIHand", "classsubtask__managers_1_1hri__hand_1_1HRIHand.html", "classsubtask__managers_1_1hri__hand_1_1HRIHand" ]
       ] ],
       [ "hri_tasks", "namespacesubtask__managers_1_1hri__tasks.html", [
         [ "AudioStates", "classsubtask__managers_1_1hri__tasks_1_1AudioStates.html", "classsubtask__managers_1_1hri__tasks_1_1AudioStates" ],

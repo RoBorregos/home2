@@ -133,6 +133,7 @@ var namespaces_dup =
       [ "fake_grasps", "namespacegrasp__utils.html#a66bfdc2901b1b5ef677a6921c55939d6", null ],
       [ "get_grasps", "namespacegrasp__utils.html#a9597ffd3c2a1573ab6036bd81117a64e", null ]
     ] ],
+    [ "hand_task_manager", "namespacehand__task__manager.html", "namespacehand__task__manager" ],
     [ "heatmapPlace_Server", "namespaceheatmapPlace__Server.html", "namespaceheatmapPlace__Server" ],
     [ "help_me_carry", "namespacehelp__me__carry.html", "namespacehelp__me__carry" ],
     [ "help_me_carry_launch", "namespacehelp__me__carry__launch.html", [

@@ -31,5 +31,6 @@ var searchData=
   ['lock_28',['lock',['../classrecord__joints__node_1_1JointRecorder.html#a89fd16be1b5bc48c3949c233594ee3eb',1,'record_joints_node::JointRecorder']]],
   ['logger_29',['logger',['../classstoring__groceries__manager_1_1StoringGroceriesManager.html#acdb2a7bbe51bf5dc7448f17d57997359',1,'storing_groceries_manager::StoringGroceriesManager']]],
   ['logsoftmax_30',['logsoftmax',['../classutils_1_1CrossEntropyLabelSmooth.html#ab5db0b598734ef8bc6a2b57faacd4109',1,'utils::CrossEntropyLabelSmooth']]],
-  ['lying_5fdown_31',['LYING_DOWN',['../classfrida__constants_1_1vision__enums_1_1Poses.html#aad2f660f824db98fc46db9ca84455362',1,'frida_constants::vision_enums::Poses']]]
+  ['look_5fdegrees_31',['look_degrees',['../classhand__task__manager_1_1HandTM.html#adcb4d6f3bcdc57921dfa44a40df6089c',1,'hand_task_manager::HandTM']]],
+  ['lying_5fdown_32',['LYING_DOWN',['../classfrida__constants_1_1vision__enums_1_1Poses.html#aad2f660f824db98fc46db9ca84455362',1,'frida_constants::vision_enums::Poses']]]
 ];
