@@ -2,7 +2,6 @@ import grpc
 from concurrent import futures
 import moondream_proto_pb2
 import moondream_proto_pb2_grpc
-from enum import Enum
 import argparse
 from moondream_lib import MoonDreamModel
 

@@ -65,16 +65,8 @@ TIMEOUT = 8.0
 TIMEOUT_WAIT_FOR_SERVICE = 1.0
 IS_TRACKING_TOPIC = "/vision/is_tracking"
 
-order_labels = [
-    "first",
-    "second",
-    "third",
-    "fourth",
-    "fifth",
-    "sixth",
-    "seventh",
-    "eighth"
-]
+order_labels = ["first", "second", "third", "fourth", "fifth", "sixth", "seventh", "eighth"]
+
 
 class VisionTasks:
     """Class to manage the vision tasks"""
@@ -883,7 +875,7 @@ class VisionTasks:
 
         if drink_pos == None:
             return Status.TARGET_NOT_FOUND, "Not found"
-        
+
         x_pos.sort()
 
         for clx, (x, i) in enumerate(x_pos):
@@ -893,17 +885,20 @@ class VisionTasks:
                 elif len(x_pos) > clx + 1:
                     right_pos = x_pos[clx + 1][1]
                 if clx < len(order_labels):
-                    location = f"the{order_labels[clx]} from left to right" 
+                    location = f"the{order_labels[clx]} from left to right"
                 break
 
         if left_pos is not None:
-            if location != "": location += ", "
+            if location != "":
+                location += ", "
             location += f"to the right of the {detections[left_pos].classname.lower()}"
         elif right_pos is not None:
-            if location != "": location += ", "
+            if location != "":
+                location += ", "
             location += f"to the left of the {detections[right_pos].classname.lower()}"
-        
+
         return Status.EXECUTION_SUCCESS, location
+
 
 if __name__ == "__main__":
     rclpy.init()

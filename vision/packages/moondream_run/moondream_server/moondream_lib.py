@@ -2,8 +2,9 @@ from transformers import AutoModelForCausalLM
 from PIL import Image
 import io
 import pickle
-from enum import Enum
 import argparse
+
+NOT_FOUND = "not found"
 
 order_labels = [
     "first",
@@ -54,7 +55,7 @@ class MoonDreamModel:
         right_pos = None
 
         if not detections["objects"]:
-            return "not found"
+            return NOT_FOUND
 
         for i, obj in enumerate(detections["objects"]):
             x_center = (obj["x_min"] + obj["x_max"]) / 2
@@ -63,8 +64,8 @@ class MoonDreamModel:
             if obj["name"].lower() == subject.lower():
                 drink_pos = i
 
-        if drink_pos == None:
-            return "not found"
+        if drink_pos is None:
+            return NOT_FOUND
 
         x_pos.sort()
 
@@ -92,7 +93,7 @@ class MoonDreamModel:
             )
 
         if location == "":
-            return "not found"
+            return NOT_FOUND
 
         return location
 
