@@ -115,6 +115,53 @@ rclnodejs.init().then(() => {
       });
     }
   );
+  node.createSubscription(
+    "std_msgs/msg/String",
+    "/hri/display/frida_questions",
+    (msg: { data: string }) => {
+      wss.clients.forEach((client: any) => {
+        if (client.readyState === 1) {
+          client.send(JSON.stringify({ type: "question", data: msg.data }));
+        }
+      });
+    }
+  );
+  node.createSubscription(
+    "std_msgs/msg/String",
+    "/hri/display/answers",
+    (msg: { data: string }) => {
+      wss.clients.forEach((client: any) => {
+        if (client.readyState === 1) {
+          client.send(JSON.stringify({ type: "answer", data: msg.data }));
+        }
+      });
+    }
+  );
+  const answerPublisher = node.createPublisher(
+    "std_msgs/msg/String",
+    "/hri/display/answers",
+    {
+      qos: rclnodejs.QoS.profileSystemDefault
+    }
+  );
+  interface AnswerMessage {
+    type: "answer";
+    answer: string;
+  }
+
+  wss.on('connection', (ws) => {
+    ws.on('message', (message: string ) => {
+      try {
+        const data: AnswerMessage = JSON.parse(message.toString());
+        if (data.type === "answer") {
+          // Publish the answer to the ROS topic
+          answerPublisher.publish({ data: data.answer });
+        }
+      } catch (error: unknown) {
+        console.error("Error processing message:", error);
+      }
+    });
+  });
 
   // Gracefully handle SIGINT (Ctrl+C)
   process.on("SIGINT", () => {
