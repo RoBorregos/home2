@@ -9,4 +9,5 @@ class Task(Enum):
     STORING_GROCERIES = 4
     CLEAN_TABLE = 5
     EGPSR = 6
+    HAND = 7
     DEBUG = 100

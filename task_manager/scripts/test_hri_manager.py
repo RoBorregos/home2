@@ -55,7 +55,7 @@ def confirm_preference(interpreted_text, extracted_data):
 
 
 TEST_TASK = Task.DEBUG
-TEST_COMPOUND = False
+TEST_COMPOUND = True
 TEST_INDIVIDUAL_FUNCTIONS = False
 TEST_EMBEDDINGS = False
 TEST_ASYNC_LLM = False
@@ -140,17 +140,21 @@ class TestHriManager(Node):
         self.get_logger().info(f"Interpreted keyword: {keyword}")
 
     def compound_functions(self):
-        s, name = self.hri_manager.ask_and_confirm(
-            "What is your name?",
-            "LLM_name",
-            # "The question 'What is your favorite main interest?' was asked, full_text corresponds to the response.",
-            # confirm_preference,
-            use_hotwords=False,
-            # 3,
-            # 5,
-        )
+        s, loc, orientation = self.hri_manager.get_location_orientation("kitchen")
 
-        self.hri_manager.say(f"Hi {name}, nice to meet you!", wait=True)
+        self.get_logger().info(f"Final result: {loc}, {orientation}")
+
+        # s, name = self.hri_manager.ask_and_confirm(
+        #     "What is your name?",
+        #     "LLM_name",
+        #     # "The question 'What is your favorite main interest?' was asked, full_text corresponds to the response.",
+        #     # confirm_preference,
+        #     use_hotwords=False,
+        #     # 3,
+        #     # 5,
+        # )
+
+        # self.hri_manager.say(f"Hi {name}, nice to meet you!", wait=True)
 
         # s, interest1 = self.hri_manager.ask_and_confirm(
         #     "What is your favorite main interest?",

@@ -73,6 +73,7 @@ from utils.logger import Logger
 from utils.status import Status
 from utils.task import Task
 
+from subtask_managers.hri_hand import HRIHand
 from subtask_managers.subtask_meta import SubtaskMeta
 
 InterpreterAvailableCommands = Union[
@@ -230,6 +231,8 @@ class HRITasks(metaclass=SubtaskMeta):
             Task.HELP_ME_CARRY: all_services,
             Task.STORING_GROCERIES: all_services,
         }
+
+        self.hand = HRIHand(self)
 
         package_share_directory = get_package_share_directory("frida_constants")
         file_path = os.path.join(package_share_directory, "data/positive.json")
@@ -688,108 +691,17 @@ class HRITasks(metaclass=SubtaskMeta):
         return Status.EXECUTION_SUCCESS, future.result().corrected_text
 
     @service_check("", (Status.SERVICE_CHECK, ("coke", "left")), TIMEOUT)
-    def get_location_orientation(self) -> tuple[Status, tuple[str, str]]:
+    def get_location_orientation(self, room) -> tuple[Status, tuple[str, str]]:
         """
         Method to get the location and orientation of where to place the object
         Returns:
             tuple[Status, tuple[str, str]]: A tuple containing the status and a tuple with the location and orientation.
             The location is a string representing the location (e.g., "coke") and the orientation is a string representing the direction (e.g., "left").
         """
-        current_retries_location = 0
-        selected_loc = None
-        closest_by_name = None
-        closest_by_description = None
 
-        while current_retries_location < 3:
-            current_retries_location += 1
-
-            s, location = self.ask_and_confirm(
-                "Where do you want me to place the object? Please describe the location.",
-                "location",
-                use_hotwords=False,
-                retries=3,
-                min_wait_between_retries=5,
-                skip_extract_data=True,
-                skip_confirmation=True,
-            )
-
-            closest_by_name, closest_by_description = self.pg.get_hand_items(location)
-
-            _, confirmation = self.confirm(
-                "Should I place it near " + closest_by_description[0].name + "?",
-                use_hotwords=True,
-                retries=3,
-            )
-
-            if confirmation == "yes":
-                selected_loc = closest_by_description[0].name
-                self.say(
-                    f"Thanks for confirming the location. Near {selected_loc}",
-                    wait=False,
-                )
-            else:
-                selected_loc = closest_by_name[0].name
-
-        current_retries_orientation = 0
-        selected_orientation = None
-
-        while current_retries_orientation < 3:
-            current_retries_orientation += 1
-
-            s, location = self.ask_and_confirm(
-                "Where do you want me to place it with respect to the provided location (left, right, front, back, top or just nearby)?",
-                "LLM_orientation",
-                use_hotwords=False,
-                retries=3,
-                min_wait_between_retries=5,
-                skip_extract_data=True,
-                skip_confirmation=True,
-            )
-
-            if s != Status.EXECUTION_SUCCESS:
-                self.say("I didn't understand the orientation. Let's try again.")
-                Logger.warn(self.node, "Failed to get orientation, trying again")
-                continue
-
-            s, closest = self.find_closest(
-                ["left", "right", "front", "back", "top", "nearby"], location
-            )
-
-            prefix = "on the " if closest != "nearby" else ""
-
-            _, confirmation = self.confirm(
-                "Should I place it " + prefix + closest + "?",
-                use_hotwords=True,
-                retries=3,
-            )
-
-            if confirmation == "yes":
-                selected_orientation = closest
-                self.say(
-                    "Thanks for confirming the orientation",
-                    wait=False,
-                )
-            else:
-                selected_loc = closest_by_name[0].name
-
-        matching_items = [item for item in closest_by_description if item.name == selected_loc]
-
-        if len(matching_items) > 1:
-            self.display_publisher.publish(String(data=json.dumps(matching_items)))
-            s, location = self.ask_and_confirm(
-                "I found several locations with the specified name. Please select the location by saying the color of the point.",
-                "LLM_color",
-                use_hotwords=False,
-                retries=3,
-                min_wait_between_retries=5,
-                skip_extract_data=False,
-            )
-            s, closest = self.find_closest([item.color for item in matching_items], location)
-            self.display_publisher.publish(String(data="cancel"))
-
-            matching_items = [item for item in matching_items if item.color == closest]
-
-        return (Status.EXECUTION_SUCCESS, matching_items[0], selected_orientation)
+        return self.hand.get_complete_placement_info(
+            room=room,
+        )
 
     def command_interpreter(
         self, text: str, is_async=False
