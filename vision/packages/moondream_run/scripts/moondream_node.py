@@ -41,19 +41,6 @@ import moondream_proto_pb2_grpc  # noqa
 YOLO_LOCATION = str(pathlib.Path(__file__).parent) + "/yolov8n.pt"
 
 
-class Position(Enum):
-    L_UL = "left of the upper left quadrant "
-    R_UL = "right of the upper left quadrant "
-    L_UR = "left of the upper right quadrant "
-    R_UR = "right of the upper right quadrant "
-    L_LL = "left of the lower left quadrant "
-    R_LL = "right of the lower left quadrant "
-    L_LR = "left of the lower right quadrant "
-    R_LR = "right of the lower right quadrant "
-    CENTER = "center"
-    NOT_FOUND = "not found"
-
-
 # MOONDREAM_LOCATION = MOONDREAM_LOCATION = str(pathlib.Path(__file__).parent) + "/moondream-2b-int8.mf.gz"
 
 CONF_THRESHOLD = 0.5

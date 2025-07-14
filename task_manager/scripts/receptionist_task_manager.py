@@ -316,7 +316,7 @@ class ReceptionistTM(Node):
                     detections, detected_drink
                 )
                 self.subtask_manager.hri.say(
-                    f"There is {self.get_guest().drink} at the table in the {position}."
+                    f"There is {self.get_guest().drink} at the table is {position}."
                 )
             else:
                 # Moondream backup
@@ -325,7 +325,7 @@ class ReceptionistTM(Node):
                 )
                 if status == Status.EXECUTION_SUCCESS:
                     self.subtask_manager.hri.say(
-                        f"There is {self.get_guest().drink} at the table in the {position}."
+                        f"There is {self.get_guest().drink} at the table is {position}."
                     )
                 else:
                     self.subtask_manager.hri.say(f"Sorry, we do not have {self.get_guest().drink}.")

@@ -7,19 +7,6 @@ import argparse
 from moondream_lib import MoonDreamModel
 
 
-class Position(Enum):
-    L_UL = "left of the upper left quadrant "
-    R_UL = "right of the upper left quadrant "
-    L_UR = "left of the upper right quadrant "
-    R_UR = "right of the upper right quadrant "
-    L_LL = "left of the lower left quadrant "
-    R_LL = "right of the lower left quadrant "
-    L_LR = "left of the lower right quadrant "
-    R_LR = "right of the lower right quadrant "
-    CENTER = "center"
-    NOT_FOUND = "not found"
-
-
 class MoonDreamServicer(moondream_proto_pb2_grpc.MoonDreamServiceServicer):
     def __init__(self, model):
         self.model = model

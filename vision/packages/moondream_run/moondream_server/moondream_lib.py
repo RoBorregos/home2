@@ -5,18 +5,16 @@ import pickle
 from enum import Enum
 import argparse
 
-
-class Position(Enum):
-    L_UL = "left of the upper left quadrant "
-    R_UL = "right of the upper left quadrant "
-    L_UR = "left of the upper right quadrant "
-    R_UR = "right of the upper right quadrant "
-    L_LL = "left of the lower left quadrant "
-    R_LL = "right of the lower left quadrant "
-    L_LR = "left of the lower right quadrant "
-    R_LR = "right of the lower right quadrant "
-    CENTER = "center"
-    NOT_FOUND = "not found"
+order_labels = [
+    "first",
+    "second",
+    "third",
+    "fourth",
+    "fifth",
+    "sixth",
+    "seventh",
+    "eighth",
+]
 
 
 class MoonDreamModel:
@@ -48,45 +46,55 @@ class MoonDreamModel:
 
     def find_beverage(self, encoded_image_data, subject):
         encoded_image = pickle.loads(encoded_image_data)
-        detect_result = self.model.detect(encoded_image, subject)
+        detections = self.model.detect(encoded_image, "all")
+        location = ""
+        x_pos = []
+        drink_pos = None
+        left_pos = None
+        right_pos = None
 
-        if not detect_result["objects"]:
-            return Position.NOT_FOUND.value
-        else:
-            for obj in detect_result["objects"]:
-                x_center = (obj["x_min"] + obj["x_max"]) / 2
-                y_center = (obj["y_min"] + obj["y_max"]) / 2
-                print(x_center)
-                # Determinate Position
-                if 0.4 <= x_center <= 0.6 and 0.4 <= y_center <= 0.6:
-                    return Position.CENTER.value
-                elif y_center < 0.5:
-                    if x_center < 0.5:
-                        return (
-                            Position.L_UL.value
-                            if x_center < 0.25
-                            else Position.R_UL.value
-                        )
-                    else:
-                        return (
-                            Position.L_UR.value
-                            if x_center < 0.75
-                            else Position.R_UR.value
-                        )
-                else:
-                    if x_center < 0.5:
-                        return (
-                            Position.L_LL.value
-                            if x_center < 0.25
-                            else Position.R_LL.value
-                        )
-                    else:
-                        return (
-                            Position.L_LR.value
-                            if x_center < 0.75
-                            else Position.R_LR.value
-                        )
-            return Position.NOT_FOUND.value
+        if not detections["objects"]:
+            return "not found"
+
+        for i, obj in enumerate(detections["objects"]):
+            x_center = (obj["x_min"] + obj["x_max"]) / 2
+            x_pos.append((x_center, i))
+
+            if obj["name"].lower() == subject.lower():
+                drink_pos = i
+
+        if drink_pos == None:
+            return "not found"
+
+        x_pos.sort()
+
+        for clx, (x, i) in enumerate(x_pos):
+            if i == drink_pos:
+                if clx > 0:
+                    left_pos = x_pos[clx - 1][1]
+                elif len(x_pos) > clx + 1:
+                    right_pos = x_pos[clx + 1][1]
+                if clx < len(order_labels):
+                    location = f"{order_labels[clx]} from left to right"
+                break
+
+        if left_pos is not None:
+            if location != "":
+                location += ", "
+            location += (
+                f"to the right of the {detections['objects'][left_pos]['name'].lower()}"
+            )
+        elif right_pos is not None:
+            if location != "":
+                location += ", "
+            location += (
+                f"to the left of the {detections['objects'][right_pos]['name'].lower()}"
+            )
+
+        if location == "":
+            return "not found"
+
+        return location
 
     def query(self, encoded_image_data, query):
         encoded_image = pickle.loads(encoded_image_data)
