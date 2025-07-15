@@ -51,7 +51,7 @@ class PlaceManager:
         future = self.node._place_motion_action_client.send_goal_async(
             place_motion_request
         )
-        wait_for_future(future)
+        wait_for_future(future, timeout=20)
         try:
             return_result = future.result().get_result().result.success
         except Exception as e:

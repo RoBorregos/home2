@@ -339,7 +339,11 @@ class PourManager:
         request.add_collision_objects = add_primitives
         self.node.pick_perception_3d_client.wait_for_service()
         future = self.node.pick_perception_3d_client.call_async(request)
-        future = wait_for_future(future)
+        future = wait_for_future(future, timeout=10)
+
+        if future is None:
+            self.node.get_logger().error("Pick Perception Service call failed")
+            return None
 
         pcl_result = future.result().cluster_result
         if len(pcl_result.data) == 0:

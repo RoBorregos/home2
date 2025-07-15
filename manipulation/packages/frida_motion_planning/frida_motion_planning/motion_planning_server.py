@@ -5,7 +5,7 @@ from rclpy.node import Node
 from rclpy.action import ActionServer
 from rclpy.callback_groups import ReentrantCallbackGroup
 from geometry_msgs.msg import TwistStamped, PoseStamped
-from std_srvs.srv import SetBool
+from std_srvs.srv import SetBool, Empty
 from frida_interfaces.action import MoveToPose, MoveJoints
 from frida_constants.manipulation_constants import (
     GET_COLLISION_OBJECTS_SERVICE,
@@ -36,6 +36,7 @@ from frida_constants.manipulation_constants import (
     TOGGLE_SERVO_SERVICE,
     GRIPPER_SET_STATE_SERVICE,
     MIN_CONFIGURATION_DISTANCE_TRESHOLD,
+    XARM_SETMODE_MOVEIT_SERVICE,
 )
 from xarm_msgs.srv import MoveVelocity, TrajPlay
 from frida_interfaces.msg import CollisionObject
@@ -161,6 +162,12 @@ class MotionPlanningServer(Node):
             MoveVelocity,
             SET_JOINT_VELOCITY_SERVICE,
             self.set_joint_velocity_callback,
+        )
+
+        self.xarm_set_moveit_mode_service = self.create_service(
+            Empty,
+            XARM_SETMODE_MOVEIT_SERVICE,
+            self.set_moveit_mode_service,
         )
 
         self.current_mode = -1
@@ -562,6 +569,9 @@ class MotionPlanningServer(Node):
             angular=(msg.twist.angular.x, msg.twist.angular.y, msg.twist.angular.z),
             frame_id=msg.header.frame_id,
         )
+
+    def set_moveit_mode_service(self, request, response):
+        self.xarm_services.set_mode(MOVEIT_MODE)
 
     def set_joint_velocity_callback(self, request, response):
         velocities = request.speeds

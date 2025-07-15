@@ -56,6 +56,30 @@ export default function RosMessagesDisplay() {
   );
   const messagesStartRef = useRef<HTMLDivElement>(null);
   const socketRef = useRef<WebSocket | null>(null);
+  const currentMessageTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Add timeout effect for currentMessage
+  useEffect(() => {
+    // Clear any existing timeout
+    if (currentMessageTimeoutRef.current) {
+      clearTimeout(currentMessageTimeoutRef.current);
+    }
+
+    // If there's a current message and we're listening, set a 5-second timeout
+    if (currentMessage && audioState.state === "listening") {
+      currentMessageTimeoutRef.current = setTimeout(() => {
+        setAudioState(prev => ({ ...prev, state: "idle" }));
+      }, 5000);
+    }
+
+    // Cleanup function
+    return () => {
+      if (currentMessageTimeoutRef.current) {
+        clearTimeout(currentMessageTimeoutRef.current);
+      }
+    };
+  }, [currentMessage, audioState.state]);
+
   useEffect(() => {
     const socket = new WebSocket("ws://localhost:8001/");
     socketRef.current = socket;
@@ -299,6 +323,11 @@ const sendAnswer = () => {
         {/* Right column */}
         <div className="sticky top-0 self-start h-[inherit] border-l border-[oklch(1_0_0/10%)] bg-[oklch(0.145_0_0)]">
           <div className="h-full flex flex-col items-center justify-center p-4">
+            <button className="
+              mb-4 px-4 py-2 bg-[oklch(0.488_0.243_264.376)] text-white rounded-lg hover:bg-[oklch(0.488_0.243_264.376/80%)] transition-colors w-3/4 h-16 text-lg font-semibold "
+             onClick={() => void fetch("http://localhost:8001/send_button_press")}>
+              Start 🔥
+            </button>
             <p className="text-xl mb-4">Video feed at {audioTopic}</p>
             <MjpegStream
               streamUrl={`http://localhost:8080/stream?topic=${audioTopic}`}

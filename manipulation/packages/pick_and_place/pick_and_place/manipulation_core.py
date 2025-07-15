@@ -139,7 +139,7 @@ class ManipulationCore(Node):
             depth=10,
         )
 
-        self.tf_buffer = Buffer(cache_time=rclpy.duration.Duration(seconds=5.0))
+        self.tf_buffer = Buffer(cache_time=rclpy.duration.Duration(seconds=2.0))
 
         self.tf_listener = TransformListener(
             self.tf_buffer, self, qos=qos, spin_thread=True
