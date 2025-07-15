@@ -21,8 +21,8 @@ CONTAINER = "cup"
 
 TEST = "PICK"
 # TEST = "PLACE"
-TEST = "NAV_POSE"
-# TEST = "PAN_TO"
+# TEST = "NAV_POSE"
+TEST = "PAN_TO"
 # # TEST = "FOLLOW_FACE"
 # TEST = "POUR"
 
