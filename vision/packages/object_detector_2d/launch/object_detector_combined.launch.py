@@ -26,15 +26,15 @@ def generate_launch_description():
                 emulate_tty=True,
                 parameters=[config],
             ),
-            Node(
-                package="object_detector_2d",
-                executable="zero_shot_object_detector_node.py",
-                name="ObjectDetect2D",
-                respawn=True,
-                output="screen",
-                emulate_tty=True,
-                parameters=[config],
-            ),
+            # Node(
+            #     package="object_detector_2d",
+            #     executable="zero_shot_object_detector_node.py",
+            #     name="ObjectDetect2D",
+            #     respawn=True,
+            #     output="screen",
+            #     emulate_tty=True,
+            #     parameters=[config],
+            # ),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(handler_launch_file)
             ),

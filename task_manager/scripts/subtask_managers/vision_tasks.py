@@ -793,8 +793,7 @@ class VisionTasks:
     def describe_person(self, callback):
         """Describe the person in the image"""
         Logger.info(self.node, "Describing person")
-        prompt = "Briefly describe the person in the image and only say the description: They are .... Mention 4 attributes. For example: shirt color, clothes details, hair color, if the person has glasses"
-        prompt = "Briefly describe the person in the image and only say the description: They are .... Mention 4 attributes. For example: shirt color, clothes details, hair color, if the person has glasses"
+        prompt = "Briefly describe 4 attributes of the the person in the image and only say the description: They are .... (Make sure to mention 4 attributes). For example: shirt color, clothes details, hair color, hair style, if the person has glasses and if they look nice."
         self.moondream_query_async(prompt, query_person=True, callback=callback)
 
     def get_pointing_bag(self, timeout: float = TIMEOUT) -> tuple[int, ObjectDetection]:

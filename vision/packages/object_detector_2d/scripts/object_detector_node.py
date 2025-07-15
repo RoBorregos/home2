@@ -220,7 +220,6 @@ class object_detector_node(rclpy.node.Node):
         qos = rclpy.qos.QoSProfile(
             depth=5,
             reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
-            durability=rclpy.qos.DurabilityPolicy.VOLATILE,
         )
         if self.node_params.VERBOSE:
             self.get_logger().info(

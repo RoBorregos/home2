@@ -15,6 +15,22 @@ app.get("/", (req: Request, res: Response) => {
   res.send("Hello World From the Typescript Server!");
 });
 
+let publisher: rclnodejs.Publisher<"std_msgs/msg/Empty"> | null = null;
+app.get("/send_button_press", (req: Request, res: Response) => {
+  if (!publisher) {
+    res.status(500).send("Publisher not initialized");
+    return;
+  }
+  try {
+    publisher.publish({});
+    res.status(200).send("Button press message sent");
+  } catch (error) {
+    console.error("Error sending button press message:", error);
+    res.status(500).send("Failed to send button press message");
+  }
+});
+
+
 const port = 8001;
 
 const server = app.listen(port, () => {
@@ -135,6 +151,13 @@ rclnodejs.init().then(() => {
           client.send(JSON.stringify({ type: "answer", data: msg.data }));
         }
       });
+    }
+  );
+  publisher = node.createPublisher(
+    "std_msgs/msg/Empty",
+    "/hri/display/button_press",
+    {
+      qos: rclnodejs.QoS.profileSystemDefault
     }
   );
   const answerPublisher = node.createPublisher(

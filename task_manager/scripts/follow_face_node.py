@@ -186,9 +186,9 @@ class FollowFaceNode(Node):
         self.is_following_face_active = request.follow_face
         if not self.is_following_face_active:
             self.move_to(0.0, 0.0)
-            time.sleep(1)
+            time.sleep(0.5)
             self.set_state_moveit()
-            time.sleep(1)
+            time.sleep(2)
         else:
             self.set_state_speed()
             time.sleep(1)

@@ -573,8 +573,12 @@ class GPSRTask(GenericTask):
             command = FindPersonByName(**command)
 
         self.subtask_manager.manipulation.move_to_position("front_stare")
-        for degree in self.pan_angles:
+        for retry in range(3):
+            self.subtask_manager.hri.node.get_logger().info(f"Retry {retry}.")
             # self.subtask_manager.manipulation.pan_to(degree)
+            self.subtask_manager.hri.say(
+                f"I'm looking for {command.name}.",
+            )
             while True:
                 self.subtask_manager.hri.say(
                     "Please stand in front of me.",
@@ -604,7 +608,7 @@ class GPSRTask(GenericTask):
                 return Status.EXECUTION_SUCCESS, f"found {name}"
             else:
                 self.subtask_manager.hri.say(
-                    "Hi, " + name + ", but I am looking for " + command.name + "."
+                    "Hi, " + name + ", nice to meet you but I am looking for " + command.name + "."
                 )
                 self.subtask_manager.vision.save_face_name(name)
         return Status.TARGET_NOT_FOUND, "person not found"

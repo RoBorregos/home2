@@ -9,6 +9,7 @@ RAD2DEG = 180.0 / PI
 # xArm Constants
 XARM_SETMODE_SERVICE = "/xarm/set_mode"
 XARM_SETSTATE_SERVICE = "/xarm/set_state"
+XARM_SETMODE_MOVEIT_SERVICE = "/manipulation/xarm/set_moveit_mode"
 MOVEIT_MODE = 1
 JOINT_VELOCITY_MODE = 4
 

@@ -23,10 +23,11 @@ custom_command = [
     #             "action": "answer_question"
     # },
     # {"action": "count", "target_to_count": "people wearing gray t shirts"},
-    {"action": "count", "target_to_count": "beverages"},
-    {"action": "count", "target_to_count": "people wearing blue t shirts"},
-    {"action": "count", "target_to_count": "persons pointing to the left"},
-    {"action": "count", "target_to_count": "lying persons"},
+    # {"action": "count", "target_to_count": "beverages"},
+    # {"action": "count", "target_to_count": "people wearing blue t shirts"},
+    # {"action": "count", "target_to_count": "persons pointing to the left"},
+    # {"action": "count", "target_to_count": "lying persons"},
+    {"action": "find_person_by_name", "name": "Adel"},
     # {
     #     "action": "say_with_context",
     #     "user_instruction": "say your teams affiliation to the person pointing to the left in the bathroom",
@@ -65,13 +66,13 @@ command_space = [
         "user_instruction": "say your teams affiliation to the person pointing to the left in the bathroom",
         "previous_command_info": ["your teams affiliation"],
     },
+    {"action": "find_person_by_name", "name": "Adel"},
     # about to test
     {"action": "find_person", "attribute_value": ""},
     # Test pending
     {"action": "find_person", "attribute_value": "person raising their right arm"},
     {"action": "find_person", "attribute_value": "standing person"},
     {"action": "find_person", "attribute_value": "orange shirt"},
-    {"action": "find_person_by_name", "name": "Adel"},
     {"action": "count", "target_to_count": "persons pointing to the left"},
     {"action": "count", "target_to_count": "lying persons"},
     {"action": "pick_object", "object_to_pick": "sugar"},
