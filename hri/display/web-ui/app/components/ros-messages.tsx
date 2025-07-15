@@ -326,7 +326,7 @@ const sendAnswer = () => {
             <button className="
               mb-4 px-4 py-2 bg-[oklch(0.488_0.243_264.376)] text-white rounded-lg hover:bg-[oklch(0.488_0.243_264.376/80%)] transition-colors w-3/4 h-16 text-lg font-semibold "
              onClick={() => void fetch("http://localhost:8001/send_button_press")}>
-              Start 
+              Start 🔥
             </button>
             <p className="text-xl mb-4">Video feed at {audioTopic}</p>
             <MjpegStream
