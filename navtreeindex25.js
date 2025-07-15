@@ -1,5 +1,13 @@
 var NAVTREEINDEX25 =
 {
+"object__detector__combined_8launch_8py.html":[20,0,7,0,2,1,0],
+"object__detector__combined_8launch_8py.html#a89d204316b51e6caf017cd1f6253e538":[20,0,7,0,2,1,0,0],
+"object__detector__node_8launch_8py.html":[20,0,7,0,2,1,1],
+"object__detector__node_8launch_8py.html#a5efd95ed27a0b3bf8523fbd93eee334b":[20,0,7,0,2,1,1,0],
+"object__detector__node_8local_8launch_8py.html":[20,0,7,0,2,1,2],
+"object__detector__node_8local_8launch_8py.html#a5efd95ed27a0b3bf8523fbd93eee334b":[20,0,7,0,2,1,2,0],
+"object__detector__node_8py.html":[20,0,7,0,2,3,3],
+"object__detector__node_8py.html#a238ae2c6597fb679e13172742bb7ae8d":[20,0,7,0,2,3,3,2],
 "object__detector__node_8py.html#a3a61c8ce2b06bb86951e99ae16485931":[20,0,7,0,2,3,3,4],
 "object__detector__node_8py.html#a9d97eec6d4cf3aad557dce3034d5e774":[20,0,7,0,2,3,3,3],
 "old__tracker_8py.html":[20,0,7,0,3,1,6],
@@ -241,13 +249,5 @@ var NAVTREEINDEX25 =
 "transform__target_8py.html":[20,0,4,0,1,2,6],
 "transform__target_8py.html#a989a7ec5742944802744233669fab7cc":[20,0,4,0,1,2,6,1],
 "virtual__stop__button_8py.html":[20,0,4,0,1,2,7],
-"virtual__stop__button_8py.html#a23d84553b20f3b1512818b5048b902f3":[20,0,4,0,1,2,7,1],
-"vision_2packages_2moondream__run_2moondream__run_2____init_____8py.html":[20,0,7,0,0,1,0],
-"vision_2packages_2object__detector__2d_2include_2____init_____8py.html":[20,0,7,0,2,0,0],
-"vision_2packages_2object__detector__2d_2object__detector__2d_2Utils_2ros__utils_8py.html":[20,0,7,0,2,2,0,0],
-"vision_2packages_2object__detector__2d_2object__detector__2d_2Utils_2ros__utils_8py.html#a227defc8d5be1b7e83089ef7134f5ef2":[20,0,7,0,2,2,0,0,0],
-"vision_2packages_2object__detector__2d_2object__detector__2d_2____init_____8py.html":[20,0,7,0,2,2,1],
-"vision_2packages_2vision__general_2vision__general_2____init_____8py.html":[20,0,7,0,3,3,1],
-"vision_2packages_2vision__general_2vision__general_2utils_2models_2swin_2utils_8py.html":[20,0,7,0,3,3,0,0,0,1],
-"vision_2packages_2vision__general_2vision__general_2utils_2models_2swin_2utils_8py.html#a4244883723c690b3712f5500eae7dfdc":[20,0,7,0,3,3,0,0,0,1,1]
+"virtual__stop__button_8py.html#a23d84553b20f3b1512818b5048b902f3":[20,0,4,0,1,2,7,1]
 };

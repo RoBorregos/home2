@@ -63,6 +63,7 @@ var namespacefrida__constants =
       [ "TOGGLE_SERVO_TOPIC", "namespacefrida__constants_1_1manipulation__constants.html#a6aaf2e16c447f7ca03df763bd4a0f754", null ],
       [ "XARM_MOVEVELOCITY_SERVICE", "namespacefrida__constants_1_1manipulation__constants.html#aa6dedb5c9f72415daca739d19d817619", null ],
       [ "XARM_SET_DIGITAL_TGPIO_SERVICE", "namespacefrida__constants_1_1manipulation__constants.html#a777012eeb4aed1198489527887a98d36", null ],
+      [ "XARM_SETMODE_MOVEIT_SERVICE", "namespacefrida__constants_1_1manipulation__constants.html#a8b1e6650d71442e24dd3ef473c0fb577", null ],
       [ "XARM_SETMODE_SERVICE", "namespacefrida__constants_1_1manipulation__constants.html#a9d76d5cfead1632343520928ce472249", null ],
       [ "XARM_SETSTATE_SERVICE", "namespacefrida__constants_1_1manipulation__constants.html#a7f2a3d92631f855a33430b419fb8db30", null ],
       [ "ZED_POINT_CLOUD_TOPIC", "namespacefrida__constants_1_1manipulation__constants.html#a60fec6dff1f21269d68429db6ce6c56d", null ]

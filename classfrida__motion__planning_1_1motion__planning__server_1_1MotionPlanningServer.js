@@ -15,6 +15,7 @@ var classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningSe
     [ "servo_speed_callback", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#a12dd1033adcd1f78ab7b914a7eb75f4c", null ],
     [ "set_gripper_state_callback", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#ab4275f01acfc190b5adf75889422f8f9", null ],
     [ "set_joint_velocity_callback", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#ab309a1aed6f3c29ca64781a19051d737", null ],
+    [ "set_moveit_mode_service", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#a2fa5d7cdd518d0a0a1af1807edd8a524", null ],
     [ "set_planning_settings", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#ae289f407eb1e995556632bb2f0b9a7f2", null ],
     [ "toggle_servo_callback", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#ae9e7e44ee4643c054795b9d05a2fa4e1", null ],
     [ "_debug_pose_publisher", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#a63360f21d53a97a9b8601075fdbbb138", null ],
@@ -36,5 +37,6 @@ var classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningSe
     [ "servo_speed_subscriber", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#ab07319e63038701cc839ae43e6c75a44", null ],
     [ "toggle_servo_service", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#a293c827cbd10d59343161cdceac3b804", null ],
     [ "xarm_joint_velocity_service", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#aca4a757226536aa3a5aaaeb6ed9b3ab7", null ],
-    [ "xarm_services", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#a72528b58d5d5c670e50b5db49356cc8c", null ]
+    [ "xarm_services", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#a72528b58d5d5c670e50b5db49356cc8c", null ],
+    [ "xarm_set_moveit_mode_service", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#ae9b672143661eac8bc9b37ee0fc0c15b", null ]
 ];

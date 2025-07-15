@@ -1,5 +1,11 @@
 var NAVTREEINDEX18 =
 {
+"demo__face_8launch_8py.html#ae3adde7c73c08762a4607a57106cd131":[20,0,6,0,1,0],
+"dir_037e89c30d46ebf4ddec5f692ca12e42.html":[20,0,7,0,3,3,0,0,0],
+"dir_03ebd3e1ad7486c28e469001073a5928.html":[20,0,3,0,0],
+"dir_076d647673382d6756d33bda67229ed7.html":[20,0,3,0,2,0],
+"dir_086cc6812def585bed1234f9257c1a0f.html":[20,0,2,2,0],
+"dir_094696d64bf9042e34c4ff3938c71239.html":[20,0,7],
 "dir_0f31f5212231d2a7371bcf069693955d.html":[20,0,4],
 "dir_1149a1c7dd2d12d224db274a9a129583.html":[20,0,7,0,2,3],
 "dir_14735a85225242a1a2e3169c2dcda286.html":[20,0,3,0,4,4],
@@ -243,11 +249,5 @@ var NAVTREEINDEX18 =
 "functions_e.html":[19,3,0,5],
 "functions_f.html":[19,3,0,6],
 "functions_func.html":[19,3,1,0],
-"functions_func.html":[19,3,1],
-"functions_func_a.html":[19,3,1,1],
-"functions_func_b.html":[19,3,1,2],
-"functions_func_c.html":[19,3,1,3],
-"functions_func_d.html":[19,3,1,4],
-"functions_func_e.html":[19,3,1,5],
-"functions_func_f.html":[19,3,1,6]
+"functions_func.html":[19,3,1]
 };

@@ -56,6 +56,7 @@ var manipulation__constants_8py =
     [ "TOGGLE_SERVO_TOPIC", "manipulation__constants_8py.html#a6aaf2e16c447f7ca03df763bd4a0f754", null ],
     [ "XARM_MOVEVELOCITY_SERVICE", "manipulation__constants_8py.html#aa6dedb5c9f72415daca739d19d817619", null ],
     [ "XARM_SET_DIGITAL_TGPIO_SERVICE", "manipulation__constants_8py.html#a777012eeb4aed1198489527887a98d36", null ],
+    [ "XARM_SETMODE_MOVEIT_SERVICE", "manipulation__constants_8py.html#a8b1e6650d71442e24dd3ef473c0fb577", null ],
     [ "XARM_SETMODE_SERVICE", "manipulation__constants_8py.html#a9d76d5cfead1632343520928ce472249", null ],
     [ "XARM_SETSTATE_SERVICE", "manipulation__constants_8py.html#a7f2a3d92631f855a33430b419fb8db30", null ],
     [ "ZED_POINT_CLOUD_TOPIC", "manipulation__constants_8py.html#a60fec6dff1f21269d68429db6ce6c56d", null ]

@@ -8,6 +8,7 @@ var classpoint__transformer_1_1PointTransformer =
     [ "send_laser_data", "classpoint__transformer_1_1PointTransformer.html#abfd8ce0e921dcfb479f1b84001a09a19", null ],
     [ "set_target_callback", "classpoint__transformer_1_1PointTransformer.html#ad94c0cdcac4507b49bd67726b946635e", null ],
     [ "update_laser", "classpoint__transformer_1_1PointTransformer.html#a8004bd3f74182640c3bb273ffcdf4f52", null ],
+    [ "_default_callback_group", "classpoint__transformer_1_1PointTransformer.html#ac749b2e4491dc4cda51363e84b9a0343", null ],
     [ "laser_sub", "classpoint__transformer_1_1PointTransformer.html#a8dbd440a79c34380c9fb2fccf51cdd2a", null ],
     [ "return_areas", "classpoint__transformer_1_1PointTransformer.html#a4308756226635bb50e09409315fb0f2d", null ],
     [ "return_laser", "classpoint__transformer_1_1PointTransformer.html#aaa856f1ade5c37779f0d87c211b604e2", null ],
