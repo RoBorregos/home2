@@ -279,7 +279,7 @@ class ReceptionistTM(Node):
         if self.current_state == ReceptionistTM.TaskStates.ASK_FOR_DRINK:
             Logger.state(self, "Asking for drink")
             self._track_state_change(ReceptionistTM.TaskStates.ASK_FOR_DRINK)
-            self.subtask_manager.manipulation.follow_face(True)
+            self.subtask_manager.manipulation.follow_face(False)
 
             status, drink = self.subtask_manager.hri.ask_and_confirm(
                 question="What is your favorite drink?", query="LLM_drink", use_hotwords=False
@@ -305,7 +305,7 @@ class ReceptionistTM(Node):
 
             Logger.info(self, "Detected drinks with detector: " + str(detections))
 
-            if s == Status.EXECUTION_SUCCESS:
+            if s == Status.EXECUTION_SUCCESS and len(detections) > 0:
                 labels = self.subtask_manager.vision.get_labels(detections)
                 status, detected_drink = self.subtask_manager.hri.find_closest(
                     labels, self.get_guest().drink

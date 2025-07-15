@@ -278,7 +278,7 @@ class GPSRSingleTask(GenericTask):
             last_command = history[0]
             s, answer = self.subtask_manager.hri.answer_with_context(
                 command.user_instruction,
-                f"Result of executing {context}: {last_command.result}. STATUS: {last_command.status}",
+                f"Result of executing {context} function on the context provided: {last_command.result}. Status: {last_command.status}",
             )
             self.subtask_manager.hri.say(answer, wait=True)
             return Status.EXECUTION_SUCCESS, "success"

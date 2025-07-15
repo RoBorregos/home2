@@ -33,6 +33,8 @@ class HelpMeCarryTM(Node):
         "RETURN_TO_STARTING_LOCATION": 8,
         "PLACE_THE_BAG": 9,
         "END": 10,
+        "TEST_STAGE": 11,
+        "TEST_END": 12,
     }
 
     def __init__(self):
@@ -65,9 +67,31 @@ class HelpMeCarryTM(Node):
 
     def run(self):
         """State machine"""
+        if self.current_state == HelpMeCarryTM.TASK_STATES["TEST_STAGE"]:
+            Logger.state(self, "Starting TEST")
+            # self.subtask_manager.nav.change_bt("standard")
+            # t.sleep(5)
+            future = self.subtask_manager.nav.move_to_zero()
+            rclpy.spin_until_future_complete(self, future)
+            result = future.result()
+            # self.subtask_manager.manipulation.move_to_position("carry_pose")
+            # self.subtask_manager.manipulation.follow_person(True)
+            # t.sleep(4)
+            # self.subtask_manager.manipulation.follow_person(False)
+            # self.subtask_manager.manipulation.move_to_position("nav_pose")
+            # self.subtask_manager.nav.change_bt("standard")
+            # future = self.subtask_manager.nav.move_to_zero()
+            # rclpy.spin_until_future_complete(self, future)
+
+            self.current_state = HelpMeCarryTM.TASK_STATES["TEST_END"]
+
+        if self.current_state == HelpMeCarryTM.TASK_STATES["TEST_END"]:
+            Logger.state(self, "END")
 
         if self.current_state == HelpMeCarryTM.TASK_STATES["START"]:
             Logger.state(self, "Starting task")
+            Logger.state(self, "papucagadas")
+            self.subtask_manager.manipulation.move_to_position("carry_pose")
             self.subtask_manager.hri.say("I am ready to start my task.")
             self.current_state = HelpMeCarryTM.TASK_STATES["FIND_GUEST"]
             # self.current_state = HelpMeCarryTM.TASK_STATES["FOLLOWING_TO_DESTINATION"]
@@ -101,7 +125,11 @@ class HelpMeCarryTM(Node):
             self.subtask_manager.hri.say("Please say stop when you want me to stop")
             self.subtask_manager.nav.follow_person(True)
             tracking_time = self.get_clock().now()
-            self.subtask_manager.hri.hear_streaming(timeout=120, silence_time=120)
+            print("Canceling hear action")
+            self.subtask_manager.hri.cancel_hear_action()
+            print("Hearing again")
+            future = self.subtask_manager.hri.hear_streaming(timeout=120, silence_time=120)
+            rclpy.spin_until_future_complete(self, future, timeout_sec=3)
             prev_status = True
             while True:
                 if "stop" in self.subtask_manager.hri.current_transcription.lower():
@@ -135,6 +163,7 @@ class HelpMeCarryTM(Node):
                     self.subtask_manager.manipulation.follow_person(False)
                     # MAYBE ADD TO PUT IN FRONT OF THE CAMERA
                     self.subtask_manager.vision.track_person(False)
+                    self.subtask_manager.manipulation.move_to_position("carry_pose")
                     self.subtask_manager.hri.say(
                         "I lost you, please come back to the front of the camera"
                     )
@@ -150,6 +179,7 @@ class HelpMeCarryTM(Node):
         if self.current_state == HelpMeCarryTM.TASK_STATES["DETECT_THE_BAG"]:
             Logger.state(self, "Detecting the bag")
             self.subtask_manager.hri.say("I will now detect the bag")
+            self.subtask_manager.manipulation.move_to_position("nav_pose")
             # TODO: Vision detects bag, returns bounding box for moondream, and returns the estimated bag pose in 2D plane
             # bounding_box, bag_pose = self.subtask_manager.vision.detect("bag")
             status, bbox, bag_point = self.subtask_manager.vision.get_pointing_bag(5)
@@ -189,7 +219,7 @@ class HelpMeCarryTM(Node):
                     "Have you hang the bag? say yes when the speaker turns blue",
                     False,
                     retries=8,
-                    wait_between_retries=2,
+                    wait_between_retries=5,
                 )
 
                 if confirmation == "yes":
@@ -207,17 +237,32 @@ class HelpMeCarryTM(Node):
             self.subtask_manager.manipulation.open_gripper()
             t.sleep(3)
             self.subtask_manager.manipulation.close_gripper()
-            self.substask_manager.hri.say("I have grasped the bag")
+            self.subtask_manager.hri.say("I have grasped the bag")
 
             # MOCK: Self.subtask_manager.manipulation.pick(pose)
 
         if self.current_state == HelpMeCarryTM.TASK_STATES["RETURN_TO_STARTING_LOCATION"]:
             Logger.state(self, "Returning to starting location")
             self.subtask_manager.hri.say("I will now return to the starting location")
-            future = self.subtask_manager.nav.move_to_zero()
-            rclpy.spin_until_future_complete(self, future)
+            self.subtask_manager.manipulation.move_to_position("nav_pose")
 
-            self.current_state = HelpMeCarryTM.TASK_STATES["END"]
+            # Wait for behavior tree change to complete
+            bt_future = self.subtask_manager.nav.change_bt("standard")
+            rclpy.spin_until_future_complete(self, bt_future)
+            bt_result = bt_future.result()
+
+            if bt_result != Status.EXECUTION_SUCCESS:
+                Logger.error(self, "Failed to change behavior tree")
+                # Handle error - maybe retry or go to error state
+                return
+
+            Logger.info(self, "Behavior tree successfully changed, proceeding with navigation")
+            while result == Status.EXECUTION_ERROR:
+                future = self.subtask_manager.nav.move_to_zero()
+                rclpy.spin_until_future_complete(self, future)
+                result = future.result()
+
+            self.current_state = HelpMeCarryTM.TASK_STATES["TEST_END"]
 
         if self.current_state == HelpMeCarryTM.TASK_STATES["PLACE_THE_BAG"]:
             Logger.state(self, "Placing the bag")
@@ -226,7 +271,7 @@ class HelpMeCarryTM(Node):
 
         if self.current_state == HelpMeCarryTM.TASK_STATES["END"]:
             Logger.state(self, "Ending task")
-            self.subtask_manager.hri.say("I have finished my task, I will rest now.")
+            # self.subtask_manager.hri.say("I have finished my task, I will rest now.")
             self.running_task = False
 
 

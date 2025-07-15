@@ -5,7 +5,7 @@ from rclpy.node import Node
 from rclpy.action import ActionServer
 from rclpy.callback_groups import ReentrantCallbackGroup
 from geometry_msgs.msg import TwistStamped, PoseStamped
-from std_srvs.srv import SetBool
+from std_srvs.srv import SetBool, Empty
 from frida_interfaces.action import MoveToPose, MoveJoints
 from frida_constants.manipulation_constants import (
     GET_COLLISION_OBJECTS_SERVICE,
@@ -17,7 +17,9 @@ from frida_interfaces.srv import (
     ToggleServo,
     AttachCollisionObject,
     GetCollisionObjects,
+    PlayTrayectory,
 )
+from frida_motion_planning.utils.ros_utils import wait_for_future
 from frida_constants.manipulation_constants import (
     ALWAYS_SET_MODE,
     MOVEIT_MODE,
@@ -34,8 +36,9 @@ from frida_constants.manipulation_constants import (
     TOGGLE_SERVO_SERVICE,
     GRIPPER_SET_STATE_SERVICE,
     MIN_CONFIGURATION_DISTANCE_TRESHOLD,
+    XARM_SETMODE_MOVEIT_SERVICE,
 )
-from xarm_msgs.srv import MoveVelocity
+from xarm_msgs.srv import MoveVelocity, TrajPlay
 from frida_interfaces.msg import CollisionObject
 from frida_motion_planning.utils.MoveItPlanner import MoveItPlanner
 from frida_motion_planning.utils.MoveItServo import MoveItServo
@@ -82,35 +85,45 @@ class MotionPlanningServer(Node):
         )
 
         self.get_joints_service = self.create_service(
-            GetJoints, GET_JOINT_SERVICE, self.get_joints_callback
+            GetJoints,
+            GET_JOINT_SERVICE,
+            self.get_joints_callback,
+            callback_group=self.callback_group,
         )
 
         self.add_collision_object_service = self.create_service(
             AddCollisionObjects,
             ADD_COLLISION_OBJECT_SERVICE,
             self.add_collision_objects_callback,
+            callback_group=self.callback_group,
         )
 
         self.remove_collision_object_service = self.create_service(
             RemoveCollisionObject,
             REMOVE_COLLISION_OBJECT_SERVICE,
             self.remove_collision_object_callback,
+            callback_group=self.callback_group,
         )
 
         self.attach_collision_object_service = self.create_service(
             AttachCollisionObject,
             ATTACH_COLLISION_OBJECT_SERVICE,
             self.attach_collision_object_callback,
+            callback_group=self.callback_group,
         )
 
         self.gripper_set_state_service = self.create_service(
             SetBool,
             GRIPPER_SET_STATE_SERVICE,
             self.set_gripper_state_callback,
+            callback_group=self.callback_group,
         )
 
         self.toggle_servo_service = self.create_service(
-            ToggleServo, TOGGLE_SERVO_SERVICE, self.toggle_servo_callback
+            ToggleServo,
+            TOGGLE_SERVO_SERVICE,
+            self.toggle_servo_callback,
+            callback_group=self.callback_group,
         )
 
         self.servo_speed_subscriber = self.create_subscription(
@@ -118,6 +131,19 @@ class MotionPlanningServer(Node):
             "/manipulation/servo_speed",
             self.servo_speed_callback,
             10,
+            callback_group=self.callback_group,
+        )
+
+        self.play_trayectory_service = self.create_service(
+            PlayTrayectory,
+            "/manipulation/play_trayectory",
+            self.play_trayectory_callback,
+            callback_group=self.callback_group,
+        )
+
+        self.play_traj_client = self.create_client(
+            TrajPlay,
+            "/xarm/playback_trajectory",
             callback_group=self.callback_group,
         )
 
@@ -136,6 +162,12 @@ class MotionPlanningServer(Node):
             MoveVelocity,
             SET_JOINT_VELOCITY_SERVICE,
             self.set_joint_velocity_callback,
+        )
+
+        self.xarm_set_moveit_mode_service = self.create_service(
+            Empty,
+            XARM_SETMODE_MOVEIT_SERVICE,
+            self.set_moveit_mode_service,
         )
 
         self.current_mode = -1
@@ -172,6 +204,51 @@ class MotionPlanningServer(Node):
             self.reset_planning_settings(goal_handle)
             result.success = False
             return result
+
+    def play_trayectory_callback(self, request, response):
+        """Handle requests to play a trayectory from a file."""
+        self.get_logger().info(
+            f"Playing trayectory from file: {request.trayectory_filename}"
+        )
+        try:
+            self.xarm_services.set_mode(0)  # Set mode to 2 for trayectory playback
+            # self.xarm_services.set_state(0)
+            req = TrajPlay.Request()
+            req.filename = request.trayectory_filename
+            req.times = 1
+            req.double_speed = 1
+            req.wait = True
+            self.get_logger().info(f"Requesting to play trayectory: {req.filename}")
+            self.get_logger().info(
+                f"Playing trayectory with times: {req.times}, double_speed: {req.double_speed}, wait: {req.wait}"
+            )
+            future = self.play_traj_client.call_async(req)
+            # now = time.time()
+            # timeout = 10
+            wait_for_future(future)
+            # rclpy.spin_until_future_complete(self, future)
+            # result = future.result()
+
+            # if result.ret == 0:
+            #     response.success = True
+            #     self.get_logger().info("Trayectory played successfully")
+            # else:
+            #     response.success = False
+            #     self.get_logger().error(
+            #         f"Failed to play trayectory: {result.ret} with message: {result.message}"
+            #     )
+            response.success = True
+            # return response
+        except Exception as e:
+            self.get_logger().error(f"Error playing trayectory: {str(e)}")
+            response.success = False
+            return response
+        # response.success = True
+        self.get_logger().info("Trayectory playback completed")
+        response.success = True
+        self.xarm_services.set_mode(MOVEIT_MODE)  # Reset mode to MoveIt
+        # self.xarm_services.set_state(0)  # Reset state to 0
+        return response
 
     def move_joints_execute_callback(self, goal_handle):
         """Execute the pick action when a goal is received."""
@@ -492,6 +569,9 @@ class MotionPlanningServer(Node):
             angular=(msg.twist.angular.x, msg.twist.angular.y, msg.twist.angular.z),
             frame_id=msg.header.frame_id,
         )
+
+    def set_moveit_mode_service(self, request, response):
+        self.xarm_services.set_mode(MOVEIT_MODE)
 
     def set_joint_velocity_callback(self, request, response):
         velocities = request.speeds

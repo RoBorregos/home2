@@ -384,7 +384,7 @@ class GPSRTask(GenericTask):
             self.subtask_manager.hri.say(
                 f"I didn't find any {object_name}.",
             )
-        return status, result
+        return status, str(result) + f" ({object_name} counted)"
 
     ## Manipulation, Vision
     def count(self, command: Count):
@@ -441,12 +441,21 @@ class GPSRTask(GenericTask):
 
         counter = 0
 
+        if not is_value_in_enum(value, Gestures) and not is_value_in_enum(value, Poses):
+            s, color = self.subtask_manager.hri.find_closest(
+                self.color_list, command.target_to_count
+            )
+            cache_color = color[0]
+            s, cloth = self.subtask_manager.hri.find_closest(
+                self.clothe_list, command.target_to_count
+            )
+            cache_cloth = cloth[0]
+            value = f"{cache_color} {cache_cloth}s"
+            command.target_to_count = value
+
         self.subtask_manager.hri.say(
             f"I am going to count the {value}.",
         )
-
-        cache_color = None
-        cache_cloth = None
 
         for degree in self.pan_angles:
             self.subtask_manager.manipulation.pan_to(degree)
@@ -456,25 +465,7 @@ class GPSRTask(GenericTask):
             elif is_value_in_enum(value, Poses):
                 status, count = self.subtask_manager.vision.count_by_pose(value)
             else:
-                if cache_color is None or cache_cloth is None:
-                    s, color = self.subtask_manager.hri.find_closest(
-                        self.color_list, command.target_to_count
-                    )
-                    cache_color = color[0]
-                    s, cloth = self.subtask_manager.hri.find_closest(
-                        self.clothe_list, command.target_to_count
-                    )
-                    cache_cloth = cloth[0]
-
-                color = cache_color
-                cloth = cache_cloth
-                # Say actual color that its counting
-                characteristic = f"{color} {cloth}s"
-                self.subtask_manager.hri.say(
-                    f"I am going to count the {characteristic}.",
-                    wait=False,
-                )
-                status, count = self.subtask_manager.vision.count_by_color(color, cloth)
+                status, count = self.subtask_manager.vision.count_by_color(cache_color, cache_cloth)
 
             if status == Status.EXECUTION_SUCCESS:
                 counter += count
@@ -507,8 +498,17 @@ class GPSRTask(GenericTask):
             f"Searching for {value}.",
         )
 
-        cache_color = None
-        cache_cloth = None
+        if not is_value_in_enum(value, Gestures) and not is_value_in_enum(value, Poses):
+            s, color = self.subtask_manager.hri.find_closest(
+                self.color_list, command.attribute_value
+            )
+            cache_color = color[0]
+            s, cloth = self.subtask_manager.hri.find_closest(
+                self.clothe_list, command.attribute_value
+            )
+            cache_cloth = cloth[0]
+            value = f"{cache_color} {cache_cloth}s"
+            command.attribute_value = value
 
         for degree in self.pan_angles:
             self.subtask_manager.manipulation.pan_to(degree)
@@ -530,15 +530,7 @@ class GPSRTask(GenericTask):
                     )
                     cache_cloth = cloth[0]
 
-                color = cache_color
-                cloth = cache_cloth
-                # Say actual color that its counting
-                characteristic = f"{color} {cloth}s"
-                self.subtask_manager.hri.say(
-                    f"I am going to count the {characteristic}.",
-                    wait=False,
-                )
-                status, count = self.subtask_manager.vision.count_by_color(color, cloth)
+                status, count = self.subtask_manager.vision.count_by_color(cache_color, cache_cloth)
 
             if status == Status.EXECUTION_SUCCESS and count > 0:
                 self.subtask_manager.hri.say(
@@ -581,8 +573,12 @@ class GPSRTask(GenericTask):
             command = FindPersonByName(**command)
 
         self.subtask_manager.manipulation.move_to_position("front_stare")
-        for degree in self.pan_angles:
+        for retry in range(3):
+            self.subtask_manager.hri.node.get_logger().info(f"Retry {retry}.")
             # self.subtask_manager.manipulation.pan_to(degree)
+            self.subtask_manager.hri.say(
+                f"I'm looking for {command.name}.",
+            )
             while True:
                 self.subtask_manager.hri.say(
                     "Please stand in front of me.",
@@ -612,7 +608,7 @@ class GPSRTask(GenericTask):
                 return Status.EXECUTION_SUCCESS, f"found {name}"
             else:
                 self.subtask_manager.hri.say(
-                    "Hi, " + name + ", but I am looking for " + command.name + "."
+                    "Hi, " + name + ", nice to meet you but I am looking for " + command.name + "."
                 )
                 self.subtask_manager.vision.save_face_name(name)
         return Status.TARGET_NOT_FOUND, "person not found"
