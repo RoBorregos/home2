@@ -44,7 +44,7 @@ controller_server:
       az_max: 2.5
       iteration_count: 1
       prune_distance: 1.7
-      transform_tolerance: 0.1
+      transform_tolerance: 0.2
       temperature: 0.3
       gamma: 0.015
       motion_model: "DiffDrive"
@@ -246,7 +246,7 @@ behavior_server:
       plugin: "nav2_behaviors/AssistedTeleop"
     global_frame: map
     robot_base_frame: base_link
-    transform_tolerance: 0.1
+    transform_tolerance: 0.2
     use_sim_time: false
     simulate_ahead_time: 2.0
     max_rotational_vel: 1.0
