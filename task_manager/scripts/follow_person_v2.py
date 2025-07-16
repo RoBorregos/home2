@@ -30,6 +30,7 @@ XARM_SETSTATE_SERVICE = "/xarm/set_state"
 #     manipulation: ManipulationTasks
 
 TIMEOUT = 5.0
+CENTROID_TOIC = "/vision/tracker_centroid"
 
 
 def wait_for_future(future, timeout_sec=TIMEOUT):
@@ -61,7 +62,7 @@ class FollowFaceNode(Node):
         # self.subtask_manager.manipulation = ManipulationTasks(
         #     self, task="DEMO", mock_data=False)
         self.follow_face_sub = self.create_subscription(
-            Point, "/vision/follow_face", self.follow_callback, 2
+            Point, CENTROID_TOIC, self.follow_callback, 10
         )
         # self.subtask_manager.hri = HRITasks(self, config=test_hri_config)
 
@@ -103,7 +104,7 @@ class FollowFaceNode(Node):
 
         self.service = self.create_service(
             FollowFace,
-            "/follow_face",
+            "/follow_person",
             self.follow_face_callback,
             callback_group=self.callback_group,
         )
@@ -186,9 +187,9 @@ class FollowFaceNode(Node):
         self.is_following_face_active = request.follow_face
         if not self.is_following_face_active:
             self.move_to(0.0, 0.0)
-            time.sleep(0.5)
+            time.sleep(1)
             self.set_state_moveit()
-            time.sleep(2)
+            time.sleep(1)
         else:
             self.set_state_speed()
             time.sleep(1)
@@ -204,20 +205,13 @@ class FollowFaceNode(Node):
             x_vel = -0.1
         else:
             x_vel = x
-        if y > 0.1:
-            y_vel = 0.1
-        elif y < -0.1:
-            y_vel = -0.1
-        else:
-            y_vel = y
 
         speed_multiplier = FOLLOW_FACE_SPEED
         x_vel *= speed_multiplier
-        y_vel *= speed_multiplier
 
         motion_msg = MoveVelocity.Request()
         motion_msg.is_sync = True
-        motion_msg.speeds = [x_vel, 0.0, 0.0, 0.0, y_vel, 0.0, 0.0]
+        motion_msg.speeds = [x_vel, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
 
         try:
             future_move = self.move_client.call_async(motion_msg)

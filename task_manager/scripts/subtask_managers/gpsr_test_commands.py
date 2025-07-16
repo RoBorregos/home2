@@ -17,17 +17,22 @@ def get_gpsr_comands(command_type: str, structured_cmd=True):
 
 
 custom_command = [
-    # {"action": "get_person_info", "info_type": "gesture"},
+    # {"action": "find_person", "attribute_value": ""},
     # {"action": "get_person_info", "info_type": "pose"},
     # {
     #             "action": "answer_question"
     # },
-    {"action": "count", "target_to_count": "people wearing gray t shirts"},
-    {
-        "action": "say_with_context",
-        "user_instruction": "tell me how many people are wearing gray t shirts",
-        "previous_command_info": ["count"],
-    },
+    # {"action": "count", "target_to_count": "people wearing gray t shirts"},
+    # {"action": "count", "target_to_count": "beverages"},
+    # {"action": "count", "target_to_count": "people wearing blue t shirts"},
+    # {"action": "count", "target_to_count": "persons pointing to the left"},
+    # {"action": "count", "target_to_count": "lying persons"},
+    {"action": "find_person_by_name", "name": "Adel"},
+    # {
+    #     "action": "say_with_context",
+    #     "user_instruction": "say your teams affiliation to the person pointing to the left in the bathroom",
+    #     "previous_command_info": ["your teams affiliation"],
+    # },
 ]
 
 command_space = [
@@ -40,37 +45,38 @@ command_space = [
     {"action": "count", "target_to_count": "people wearing blue t shirts"},
     {
         "action": "say_with_context",
-        "user_instruction": "tell me how many people are wearing blue t shirts",
-        "previous_command_info": "count",
+        "user_instruction": "tell me how many people in the living room are wearing gray t shirts",
+        "previous_command_info": ["count"],
     },
-    # Test pending
+    {"action": "count", "target_to_count": "beverages"},
     {"action": "get_person_info", "info_type": "pose"},
     {"action": "get_person_info", "info_type": "gesture"},
-    {"action": "count", "target_to_count": "dishes"},
-    {"action": "count", "target_to_count": "persons pointing to the left"},
-    {"action": "count", "target_to_count": "lying persons"},
-    {"action": "find_person", "attribute_value": ""},
-    {"action": "find_person", "attribute_value": "person raising their right arm"},
-    {"action": "find_person", "attribute_value": "standing person"},
-    {"action": "find_person", "attribute_value": "orange shirt"},
-    {"action": "find_person_by_name", "name": "Adel"},
-    {"action": "pick_object", "object_to_pick": "sugar"},
-    {"action": "place_object"},
-    {
-        "action": "say_with_context",
-        "user_instruction": "say your teams affiliation to the person pointing to the left in the bathroom",
-        "previous_command_info": "your teams affiliation",
-    },
     {
         "action": "say_with_context",
         "user_instruction": "greet the person wearing a yellow blouse in the kitchen and escort them to the entrance",
-        "previous_command_info": "introduction",
+        "previous_command_info": ["introduction"],
     },
     {
         "action": "say_with_context",
         "user_instruction": "tell the day of the week to the waving person in the office",
-        "previous_command_info": "the day of the week",
+        "previous_command_info": ["the day of the week"],
     },
+    {
+        "action": "say_with_context",
+        "user_instruction": "say your teams affiliation to the person pointing to the left in the bathroom",
+        "previous_command_info": ["your teams affiliation"],
+    },
+    {"action": "find_person_by_name", "name": "Adel"},
+    # about to test
+    {"action": "find_person", "attribute_value": ""},
+    # Test pending
+    {"action": "find_person", "attribute_value": "person raising their right arm"},
+    {"action": "find_person", "attribute_value": "standing person"},
+    {"action": "find_person", "attribute_value": "orange shirt"},
+    {"action": "count", "target_to_count": "persons pointing to the left"},
+    {"action": "count", "target_to_count": "lying persons"},
+    {"action": "pick_object", "object_to_pick": "sugar"},
+    {"action": "place_object"},
     {"action": "get_visual_info", "measure": "thinnest", "object_category": "object"},
     {"action": "get_visual_info", "measure": "biggest", "object_category": "food"},
     {"action": "get_visual_info", "measure": "lightest", "object_category": "object"},

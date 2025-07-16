@@ -81,10 +81,10 @@
     </group_state>
     <group_state name="nav_pose" group="${prefix}xarm6">
       <joint name="${prefix}joint1" value="-1.5708" />
-      <joint name="${prefix}joint2" value="-1.0472" />
-      <joint name="${prefix}joint3" value="-0.9599" />
+      <joint name="${prefix}joint2" value="-1.22173048" />
+      <joint name="${prefix}joint3" value="-0.78539816" />
       <joint name="${prefix}joint4" value="0.0" />
-      <joint name="${prefix}joint5" value="0.4363" />
+      <joint name="${prefix}joint5" value="0.17453293" />
       <joint name="${prefix}joint6" value="0.7854" />
     </group_state>
     <group_state name="carry_pose" group="${prefix}xarm6">
