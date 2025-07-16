@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
+import rclpy.qos
 from tf2_ros import Buffer, TransformListener
 from tf2_geometry_msgs import do_transform_point
 
@@ -25,11 +26,15 @@ class PointTransformer(Node):
     def __init__(self):
         super().__init__("point_transformer")
         # Create a callback group for concurrent callbacks
-
+        self._default_callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
         # TF2 setup
         self.laser_sub = None
+        qos = rclpy.qos.QoSProfile(
+            depth=10,
+            reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
+        )
         self.tf_buffer = Buffer()
-        self.tf_listener = TransformListener(self.tf_buffer, self)
+        self.tf_listener = TransformListener(self.tf_buffer, self, qos=qos)
 
         self.set_target_service = self.create_service(
             PointTransformation, POINT_TRANSFORMER_TOPIC, self.set_target_callback
@@ -41,7 +46,9 @@ class PointTransformer(Node):
 
         self.return_laser = self.create_service(LaserGet, RETURN_LASER_DATA, self.send_laser_data)
 
-        self.scan_topic = self.create_subscription(LaserScan, "/scan", self.update_laser, 10)
+        self.scan_topic = self.create_subscription(
+            LaserScan, "/scan", self.update_laser, qos_profile=qos
+        )
         self.get_logger().info("PointTransformer node has been started.")
 
         # self.get_actual_pose()

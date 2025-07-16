@@ -51,7 +51,7 @@ class PlaceManager:
         future = self.node._place_motion_action_client.send_goal_async(
             place_motion_request
         )
-        wait_for_future(future)
+        wait_for_future(future, timeout=20)
         try:
             return_result = future.result().get_result().result.success
         except Exception as e:
@@ -166,7 +166,7 @@ class PlaceManager:
 
         # forget height if placing on shelf
         result_pose.pose.position.z += (
-            pick_result.object_pick_height if not place_params.is_shelf else 0.15
+            pick_result.object_pick_height if not place_params.is_shelf else 0.1
         )
         result_pose.pose.orientation = pick_result.pick_pose.pose.orientation
 

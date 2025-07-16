@@ -645,21 +645,34 @@ public:
                            "Error copying point cloud with code %d",
                            response->health_response);
 
-    response->health_response = this->passThroughPlane(
-        cloud_out, cloud_out, 0.15, 2.1, PassThroughFilterType::Z);
-    ASSERT_AND_RETURN_CODE(response->health_response, OK,
-                           "Error filtering point cloud by height with code %d",
-                           response->health_response);
-    response->health_response = this->passThroughPlane(
-        cloud_out, cloud_out, -1.0, 1.0, PassThroughFilterType::Y);
-    ASSERT_AND_RETURN_CODE(response->health_response, OK,
-                           "Error filtering point cloud by height with code%d",
-                           response->health_response);
-    response->health_response = this->passThroughPlane(
-        cloud_out, cloud_out, -1.0, 1.0, PassThroughFilterType::X);
-    ASSERT_AND_RETURN_CODE(response->health_response, OK,
-                           "Error filtering point cloud by height with code%d",
-                           response->health_response);
+    if (request->close_point.header.frame_id == "") {
+      // only filter too far from the robot
+      pcl::PointXYZ req_point;
+      req_point.x = 0.0;
+      req_point.y = 0.0;
+      req_point.z = 0.0;
+      response->health_response = this->DistanceFilterFromPoint(
+          cloud_out, req_point, cloud_out, 0.3, request->close_point.point.z - 0.3,
+          request->close_point.point.z + 0.3);
+    } else {
+
+      response->health_response = this->passThroughPlane(
+          cloud_out, cloud_out, 0.15, 2.1, PassThroughFilterType::Z);
+      ASSERT_AND_RETURN_CODE(response->health_response, OK,
+                            "Error filtering point cloud by height with code %d",
+                            response->health_response);
+      response->health_response = this->passThroughPlane(
+          cloud_out, cloud_out, -1.0, 1.0, PassThroughFilterType::Y);
+      ASSERT_AND_RETURN_CODE(response->health_response, OK,
+                            "Error filtering point cloud by height with code%d",
+                            response->health_response);
+      response->health_response = this->passThroughPlane(
+          cloud_out, cloud_out, -1.0, 1.0, PassThroughFilterType::X);
+      ASSERT_AND_RETURN_CODE(response->health_response, OK,
+                            "Error filtering point cloud by height with code%d",
+                            response->health_response);
+    }
+
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr vertical_plane_removed(
         new pcl::PointCloud<pcl::PointXYZ>);

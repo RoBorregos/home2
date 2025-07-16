@@ -111,8 +111,13 @@ ros2 topic pub /AudioState std_msgs/msg/String '{data: "idle"}' -1
 
 # Display map
 ros2 topic pub --once /hri/display/map std_msgs/msg/String "data: '{\"image_path\": \"test-map.png\", \"markers\": [{\"x\": 0, \"y\": 0.0, \"color\": \"#ff0000\", \"color_name\": \"red\"}, {\"x\": 100.0, \"y\": 100.0, \"color\": \"#00ff00\", \"color_name\": \"green\"}, {\"x\": 50.0, \"y\": 50.0, \"color\": \"#0000ff\", \"color_name\": \"blue asdads\", \"test\": \"a\"}]}'"
-```
 
+# Simulate sending a question to the display
+ros2 topic pub /hri/display/frida_questions std_msgs/msg/String '{data: "What is your favorite color?"}' -1
+
+# Verify that the answer is received
+ros2 topic echo /hri/display/answers
+```
 ## Other useful commands
 
 Source the environment (this is automatically done in the .bashrc)

@@ -9,6 +9,7 @@ RAD2DEG = 180.0 / PI
 # xArm Constants
 XARM_SETMODE_SERVICE = "/xarm/set_mode"
 XARM_SETSTATE_SERVICE = "/xarm/set_state"
+XARM_SETMODE_MOVEIT_SERVICE = "/manipulation/xarm/set_moveit_mode"
 MOVEIT_MODE = 1
 JOINT_VELOCITY_MODE = 4
 
@@ -19,7 +20,7 @@ FOLLOW_FACE_TOLERANCE = 0.15
 XARM_MOVEVELOCITY_SERVICE = "/xarm/vc_set_joint_velocity"
 SET_JOINT_VELOCITY_SERVICE = "/manipulation/set_joint_velocity"
 
-ALWAYS_SET_MODE = True
+ALWAYS_SET_MODE = False
 JOINTN_VELOCITY_MODE = 4
 
 MOVE_JOINTS_ACTION_SERVER = "/manipulation/move_joints_action_server"

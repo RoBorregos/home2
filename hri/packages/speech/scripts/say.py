@@ -179,6 +179,9 @@ class Say(Node):
         self._save_cache()
 
     def speak_service(self, req, res):
+        self.get_logger().info("[Service] text received: " + req.text)
+        req.text = req.text.replace("*", "").replace("_", " ")
+
         try:
             self.get_logger().info("[Service] I will say: " + req.text)
             if req.text:

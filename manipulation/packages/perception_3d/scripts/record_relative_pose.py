@@ -6,7 +6,6 @@ import yaml
 from geometry_msgs.msg import PoseStamped
 
 # , Pose
-from tf2_geometry_msgs import do_transform_pose
 
 # import tf2_py
 from tf_transformations import euler_from_quaternion
@@ -35,53 +34,45 @@ class DockingPoseRecorder(Node):
             return
 
         try:
-            # Transform the handle pose from its frame to the base_link frame
-            transform = self.tf_buffer.lookup_transform(
-                "map",  # target frame
-                handle_pose.header.frame_id,  # source frame
-                handle_pose.header.stamp,  # time of the pose
+            # Lookup the transform from the robot to the door handle
+            if not self.tf_buffer.can_transform(
+                "base_link",
+                handle_pose.header.frame_id,
+                handle_pose.header.stamp,
                 timeout=rclpy.duration.Duration(seconds=1.0),
+            ):
+                self.get_logger().warn(
+                    "Transform from base_link to door handle not available."
+                )
+                return
+            transform = self.tf_buffer.lookup_transform(
+                "base_link", handle_pose.header.frame_id, handle_pose.header.stamp
             )
-
-            # Apply the transform to get the handle pose in base_link frame
-            handle_in_base_link = do_transform_pose(handle_pose.pose, transform)
-
-            # The handle_in_base_link now contains the position and orientation
-            # of the handle relative to base_link
-            dx = handle_in_base_link.position.x
-            dy = handle_in_base_link.position.y
-            dz = handle_in_base_link.position.z
-
-            # Extract orientation as Euler angles
-            q_handle = [
-                handle_in_base_link.orientation.x,
-                handle_in_base_link.orientation.y,
-                handle_in_base_link.orientation.z,
-                handle_in_base_link.orientation.w,
-            ]
-
-            self.get_logger().info(f"Handle orientation (quaternion): {q_handle}")
             self.get_logger().info(
-                f"Handle position in base_link: x={dx}, y={dy}, z={dz}"
+                f"Transform from {handle_pose.header.frame_id} to base_link found."
+            )
+            # since we are using base_link as the reference frame, we can directly use the handle_pose and use the robots as 000
+
+            dx, dy, dz = (
+                transform.transform.translation.x,
+                transform.transform.translation.y,
+                transform.transform.translation.z,
             )
 
-            _, _, yaw_handle = euler_from_quaternion(q_handle)
-            self.get_logger().info(f"Handle yaw in base_link: {yaw_handle}")
-            # Since we're already in base_link frame, the robot's orientation is (0,0,0)
-            yaw_robot = 0.0
+            # get the base_links orientation in reference to map
+            t2 = self.tf_buffer.lookup_transform(
+                "map", "base_link", handle_pose.header.stamp
+            )
+            q = t2.transform.rotation
+            roll, pitch, yaw = euler_from_quaternion([q.x, q.y, q.z, q.w])
 
-            dyaw = yaw_handle - yaw_robot
-
-            # Save to file or print
             rel_pose = {
-                "x": -1 * float(dx),
-                "y": -1 * float(dy),
-                "z": -1 * float(dz),
-                "yaw": float(dyaw),
+                "x": dx,
+                "y": dy,
+                "z": dz,
+                "yaw": yaw,
             }
-            self.get_logger().warn(
-                f"Relative pose: {rel_pose} not handling yaw correction yet lol"
-            )
+
             with open("relative_docking_pose.yaml", "w") as f:
                 yaml.dump(rel_pose, f)
 

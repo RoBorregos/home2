@@ -21,6 +21,10 @@ from utils.decorators import mockable, service_check
 from utils.status import Status
 from utils.task import Task
 from utils.logger import Logger
+from rcl_interfaces.srv import SetParameters
+from rcl_interfaces.msg import Parameter, ParameterValue, ParameterType
+from lifecycle_msgs.srv import ChangeState
+from lifecycle_msgs.msg import Transition
 
 from frida_constants.navigation_constants import (
     GOAL_TOPIC,
@@ -31,8 +35,17 @@ from frida_interfaces.srv import ReturnLocation, LaserGet, WaitForControllerInpu
 TIMEOUT_WAIT_FOR_SERVICE = 1.0
 TIMEOUT = 4
 RETURN_LASER_DATA = "/integration/Laserscan"
-
+BT_LIFE_CYCLE_SERVICE = "/bt_navigator/change_state"
+BT_PARAM_SERVICE = "/bt_navigator/set_parameters"
 RETURN_LOCATION = "/integration/ReturnLocation"
+DEFAULT_BT_PATH = (
+    "/workspace/src/navigation/packages/nav_main/bt/navigate_to_pose_w_replanning_and_recovery.xml"
+)
+FOLLOW_BT_PATH = (
+    "/workspace/src/navigation/packages/nav_main/bt/navigate_to_pose_w_replanning_and_recovery.xml"
+)
+
+GOAL_POSE_TOPIC = "/goal_pose"
 
 
 class NavigationTasks:
@@ -51,8 +64,11 @@ class NavigationTasks:
         # Action clients and services
         self.goal_client = ActionClient(self.node, NavigateToPose, GOAL_TOPIC)
         self.activate_follow = self.node.create_client(SetBool, FOLLOWING_SERVICE)
+        self.bt_params = self.node.create_client(SetParameters, BT_PARAM_SERVICE)
+        self.bt_lifecycle = self.node.create_client(ChangeState, BT_LIFE_CYCLE_SERVICE)
         self.laser_send = self.node.create_client(LaserGet, RETURN_LASER_DATA)
         self.ReturnLocation_client = self.node.create_client(ReturnLocation, RETURN_LOCATION)
+        self.zero_publisher = self.node.create_publisher(PoseStamped, GOAL_POSE_TOPIC, 10)
         self.wait_for_controller_input = self.node.create_client(
             WaitForControllerInput, "wait_for_controller_input"
         )
@@ -62,6 +78,8 @@ class NavigationTasks:
             },
             Task.HELP_ME_CARRY: {
                 "activate_follow": {"client": self.activate_follow, "type": "service"},
+                "bt_params": {"client": self.bt_params, "type": "service"},
+                "bt_lifecycle": {"client": self.bt_lifecycle, "type": "service"},
             },
             Task.GPSR: {
                 "goal_client": {"client": self.goal_client, "type": "action"},
@@ -111,6 +129,9 @@ class NavigationTasks:
         except Exception as e:
             Logger.error(self.node, f"Error waiting for controller input: {e}")
             return Future().set_result(Status.EXECUTION_ERROR)
+
+    # def get_distance_to_zero(self):
+    #     self.getdist
 
     @mockable(_mock_callback=mock_to_location_controller)
     @service_check("goal_client", False, timeout=3)
@@ -168,7 +189,7 @@ class NavigationTasks:
             return future
 
     @mockable(return_value=True, delay=10)
-    @service_check("pose_client", False, TIMEOUT)
+    @service_check("goal_client", False, TIMEOUT)
     def move_to_zero(self) -> Future:
         """Attempts to move to the original location and returns a Future that completes when the action finishes.
         Call the function on this way
@@ -179,6 +200,24 @@ class NavigationTasks:
         result = future.result()
 
         """
+        # try:
+        #     goal = PoseStamped()
+        #     goal.header.frame_id = "map"
+        #     goal.pose.position.x = 0.0
+        #     goal.pose.position.y = 0.0
+        #     goal.pose.position.z = 0.0
+        #     goal.pose.orientation.x = 0.0
+        #     goal.pose.orientation.y = 0.0
+        #     goal.pose.orientation.z = 0.0
+        #     goal.pose.orientation.w = 0.0
+        #     self.zero_publisher.publish(goal)
+        #     return Status.EXECUTION_SUCCESS
+
+        # except Exception as e:
+        # #     Logger.error(self.node, f"Error moving to location: {e}")
+        # #     future.set_result(Status.EXECUTION_ERROR)
+        #     return Status.EXECUTION_SUCCESS
+
         future = Future()
         try:
             client_goal = NavigateToPose.Goal()
@@ -249,6 +288,64 @@ class NavigationTasks:
         else:
             Logger.info(self.node, "Follow person deactivated")
         return Status.EXECUTION_SUCCESS
+
+    @mockable(return_value=Status.EXECUTION_SUCCESS, delay=3)
+    @service_check("bt_params", False, TIMEOUT)
+    def change_bt(self, bt_str: str):
+        """Change the behavior tree and return a Future"""
+        future = Future()
+
+        try:
+            param_name = "default_nav_to_pose_bt_xml"
+            if bt_str == "follow":
+                param_value = "/workspace/src/navigation/packages/nav_main/bt/follow_dynamic.xml"
+            else:
+                param_value = "/workspace/src/navigation/packages/nav_main/bt/navigate_to_pose_w_replanning_and_recovery.xml"
+
+            param = Parameter()
+            param.name = param_name
+            param.value = ParameterValue(
+                type=ParameterType.PARAMETER_STRING, string_value=param_value
+            )
+
+            param_request = SetParameters.Request()
+            param_request.parameters = [param]
+
+            # Set the parameter
+            param_future = self.bt_params.call_async(param_request)
+            rclpy.spin_until_future_complete(self.node, param_future)
+
+            if param_future.result() is None:
+                raise Exception("Parameter service call failed")
+
+            # Deactivate the bt_navigator
+            deactivate_request = ChangeState.Request()
+            deactivate_request.transition.id = Transition.TRANSITION_DEACTIVATE  # 4
+
+            deactivate_future = self.bt_lifecycle.call_async(deactivate_request)
+            rclpy.spin_until_future_complete(self.node, deactivate_future)
+
+            if deactivate_future.result() is None:
+                raise Exception("Failed to deactivate bt_navigator")
+
+            # Reactivate the bt_navigator
+            activate_request = ChangeState.Request()
+            activate_request.transition.id = Transition.TRANSITION_ACTIVATE  # 3
+
+            activate_future = self.bt_lifecycle.call_async(activate_request)
+            rclpy.spin_until_future_complete(self.node, activate_future)
+
+            if activate_future.result() is None:
+                raise Exception("Failed to reactivate bt_navigator")
+
+            Logger.info(self.node, f"Successfully changed BT to: {bt_str}")
+            future.set_result(Status.EXECUTION_SUCCESS)
+
+        except Exception as e:
+            Logger.error(self.node, f"Error changing behavior tree: {e}")
+            future.set_result(Status.EXECUTION_ERROR)
+
+        return future
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, "open"), delay=3)
     @service_check("laser_send", False, TIMEOUT)
