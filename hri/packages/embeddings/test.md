@@ -111,3 +111,5 @@ This tests:
     Absolute paths are dynamically resolved with os.path.abspath.
 
     SQL triggers live in init.sql, executed automatically in Docker.
+
+    Be careful with having local PostgreSQL services running, they can block the port of the docker container.
