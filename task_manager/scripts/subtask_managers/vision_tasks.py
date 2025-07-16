@@ -875,41 +875,58 @@ class VisionTasks:
     def get_drink_position(self, detections: list[BBOX], drink: str) -> tuple[int, str]:
         """Get the position of the drink in the detected objects"""
         location = ""
-        x_pos = []
-        drink_pos = None
-        left_pos = None
-        right_pos = None
+        for detection in detections:
+            if detection.classname.lower() == drink.lower():
+                if detection.x < 0.35:
+                    location = "left"
+                elif detection.x > 0.65:
+                    location = "right"
+                else:
+                    location = "center"
 
-        for i in range(len(detections)):
-            x_pos.append((detections[i].x, i))
-            if detections[i].classname.lower() == drink.lower():
-                drink_pos = i
+                if detection.y < 0.35:
+                    location += " top"
+                elif detection.y > 0.65:
+                    location += " bottom"
 
-        if drink_pos is None:
-            return Status.TARGET_NOT_FOUND, "Not found"
+                return Status.EXECUTION_SUCCESS, location
 
-        x_pos.sort()
+        return Status.TARGET_NOT_FOUND, "Not found"
+        # x_pos = []
+        # drink_pos = None
+        # left_pos = None
+        # right_pos = None
 
-        for clx, (x, i) in enumerate(x_pos):
-            if i == drink_pos:
-                if clx > 0:
-                    left_pos = x_pos[clx - 1][1]
-                elif len(x_pos) > clx + 1:
-                    right_pos = x_pos[clx + 1][1]
-                if clx < len(order_labels):
-                    location = f"the{order_labels[clx]} from left to right"
-                break
+        # for i in range(len(detections)):
+        #     x_pos.append((detections[i].x, i))
+        #     if detections[i].classname.lower() == drink.lower():
+        #         drink_pos = i
 
-        if left_pos is not None:
-            if location != "":
-                location += ", "
-            location += f"to the right of the {detections[left_pos].classname.lower()}"
-        elif right_pos is not None:
-            if location != "":
-                location += ", "
-            location += f"to the left of the {detections[right_pos].classname.lower()}"
+        # if drink_pos is None:
+        #     return Status.TARGET_NOT_FOUND, "Not found"
 
-        return Status.EXECUTION_SUCCESS, location
+        # x_pos.sort()
+
+        # for clx, (x, i) in enumerate(x_pos):
+        #     if i == drink_pos:
+        #         if clx > 0:
+        #             left_pos = x_pos[clx - 1][1]
+        #         elif len(x_pos) > clx + 1:
+        #             right_pos = x_pos[clx + 1][1]
+        #         if clx < len(order_labels):
+        #             location = f"the{order_labels[clx]} from left to right"
+        #         break
+
+        # if left_pos is not None:
+        #     if location != "":
+        #         location += ", "
+        #     location += f"to the right of the {detections[left_pos].classname.lower()}"
+        # elif right_pos is not None:
+        #     if location != "":
+        #         location += ", "
+        #     location += f"to the left of the {detections[right_pos].classname.lower()}"
+
+        # return Status.EXECUTION_SUCCESS, location
 
 
 if __name__ == "__main__":

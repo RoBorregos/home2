@@ -3,6 +3,7 @@ from PIL import Image
 import io
 import pickle
 import argparse
+from enum import Enum
 
 NOT_FOUND = "not found"
 
@@ -17,6 +18,11 @@ order_labels = [
     "eighth",
 ]
 
+class Position(Enum):
+    LEFT = "left"
+    CENTER = "center"
+    RIGHT = "right"
+    NOT_FOUND = "not found"
 
 class MoonDreamModel:
     def __init__(
@@ -47,55 +53,71 @@ class MoonDreamModel:
 
     def find_beverage(self, encoded_image_data, subject):
         encoded_image = pickle.loads(encoded_image_data)
-        detections = self.model.detect(encoded_image, "all")
-        location = ""
-        x_pos = []
-        drink_pos = None
-        left_pos = None
-        right_pos = None
+        detect_result = self.model.detect(encoded_image, subject)
 
-        if not detections["objects"]:
-            return NOT_FOUND
+        if not detect_result["objects"]:
+            return Position.NOT_FOUND.value
+        else:
+            for obj in detect_result["objects"]:
+                x_center = (obj["x_min"] + obj["x_max"]) / 2
+                print(x_center)
+                if x_center <= 0.4:
+                    return Position.LEFT.value
+                elif x_center >= 0.6:
+                    return Position.RIGHT.value
+                else:
+                    return Position.CENTER.value
+            return Position.NOT_FOUND.value
+        
+        # detections = self.model.detect(encoded_image, "all")
+        # location = ""
+        # x_pos = []
+        # drink_pos = None
+        # left_pos = None
+        # right_pos = None
 
-        for i, obj in enumerate(detections["objects"]):
-            x_center = (obj["x_min"] + obj["x_max"]) / 2
-            x_pos.append((x_center, i))
+        # if not detections["objects"]:
+        #     return NOT_FOUND
 
-            if obj["name"].lower() == subject.lower():
-                drink_pos = i
+        # for i, obj in enumerate(detections["objects"]):
+        #     x_center = (obj["x_min"] + obj["x_max"]) / 2
+        #     x_pos.append((x_center, i))
 
-        if drink_pos is None:
-            return NOT_FOUND
+        #     if obj["name"].lower() == subject.lower():
+        #         drink_pos = i
 
-        x_pos.sort()
+        # if drink_pos is None:
+        #     return NOT_FOUND
 
-        for clx, (x, i) in enumerate(x_pos):
-            if i == drink_pos:
-                if clx > 0:
-                    left_pos = x_pos[clx - 1][1]
-                elif len(x_pos) > clx + 1:
-                    right_pos = x_pos[clx + 1][1]
-                if clx < len(order_labels):
-                    location = f"{order_labels[clx]} from left to right"
-                break
+        # x_pos.sort()
 
-        if left_pos is not None:
-            if location != "":
-                location += ", "
-            location += (
-                f"to the right of the {detections['objects'][left_pos]['name'].lower()}"
-            )
-        elif right_pos is not None:
-            if location != "":
-                location += ", "
-            location += (
-                f"to the left of the {detections['objects'][right_pos]['name'].lower()}"
-            )
+        # for clx, (x, i) in enumerate(x_pos):
+        #     if i == drink_pos:
+        #         if clx > 0:
+        #             left_pos = x_pos[clx - 1][1]
+        #         elif len(x_pos) > clx + 1:
+        #             right_pos = x_pos[clx + 1][1]
+        #         if clx < len(order_labels):
+        #             location = f"{order_labels[clx]} from left to right"
+        #         break
 
-        if location == "":
-            return NOT_FOUND
+        # if left_pos is not None:
+        #     if location != "":
+        #         location += ", "
+        #     location += (
+        #         f"to the right of the {detections['objects'][left_pos]['name'].lower()}"
+        #     )
+        # elif right_pos is not None:
+        #     if location != "":
+        #         location += ", "
+        #     location += (
+        #         f"to the left of the {detections['objects'][right_pos]['name'].lower()}"
+        #     )
 
-        return location
+        # if location == "":
+        #     return NOT_FOUND
+
+        # return location
 
     def query(self, encoded_image_data, query):
         encoded_image = pickle.loads(encoded_image_data)

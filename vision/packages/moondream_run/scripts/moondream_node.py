@@ -36,7 +36,7 @@ sys.path.append(os.path.join(PATH, "moondream_server"))
 # Import the generated gRPC modules
 import moondream_proto_pb2  # noqa
 import moondream_proto_pb2_grpc  # noqa
-
+from enum import Enum
 YOLO_LOCATION = str(pathlib.Path(__file__).parent) + "/yolov8n.pt"
 NOT_FOUND = "not found"
 
@@ -44,7 +44,11 @@ NOT_FOUND = "not found"
 
 CONF_THRESHOLD = 0.5
 
-
+class Position(Enum):
+    LEFT = "left"
+    CENTER = "center"
+    RIGHT = "right"
+    NOT_FOUND = "not found"
 class MoondreamNode(Node):
     def __init__(self):
         super().__init__("moondream_node")
@@ -211,7 +215,7 @@ class MoondreamNode(Node):
             )
 
             response.location = beverage_position.position
-            if beverage_position.position == NOT_FOUND:
+            if beverage_position.position == Position.NOT_FOUND:
                 self.get_logger().warn("Beverage not found")
                 response.success = False
             else:

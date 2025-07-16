@@ -327,7 +327,8 @@ class ReceptionistTM(Node):
                     detections, detected_drink
                 )
                 self.subtask_manager.hri.say(
-                    f"There is {self.get_guest().drink} at the table is {position}."
+                    # f"There is {self.get_guest().drink} at the table is {position}."
+                    f"There is {self.get_guest().drink} at the table in the {position}."
                 )
             else:
                 # Moondream backup
