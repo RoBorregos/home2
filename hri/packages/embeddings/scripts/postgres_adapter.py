@@ -3,9 +3,10 @@
 
 import json
 import os
-
 import psycopg2
-from embeddings.postgres_collections import (
+
+
+from postgres_collections import (
     Action,
     CommandHistory,
     Item,
@@ -15,7 +16,7 @@ from embeddings.postgres_collections import (
 )
 from sentence_transformers import SentenceTransformer
 
-MODEL_PATH = "/workspace/src/hri/packages/nlp/assets/all-MiniLM-L12-v2"
+MODEL_PATH = os.path.expanduser("~/models/all-MiniLM-L12-v2")
 
 
 class PostgresAdapter:
@@ -36,6 +37,11 @@ class PostgresAdapter:
         else:
             print(f"Loading model from {MODEL_PATH}")
         self.embedding_model = SentenceTransformer(MODEL_PATH)
+        print("Printing all tables in the database: ")
+        self.cursor.execute(
+            "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"
+        )
+        print(self.cursor.fetchall())
 
     def get_all_items(self) -> list[Item]:
         """Method to get all items from the database"""
@@ -381,6 +387,112 @@ class PostgresAdapter:
         self.conn.close()
         print("Database connection closed.")
 
+    def full_text_search(
+        self,
+        table: str,
+        query: str,
+        text_vector_col: str = "text_vector",
+        return_columns: list[str] = None,
+        limit: int = 5,
+    ) -> list[dict]:
+        if return_columns is None:
+            return_columns = ["*"]
+
+        sql = f"""
+            SELECT {', '.join(return_columns)}
+            FROM {table}
+            WHERE {text_vector_col} @@ plainto_tsquery(%s)
+            ORDER BY ts_rank({text_vector_col}, plainto_tsquery(%s)) DESC
+            LIMIT %s
+        """
+        self.cursor.execute(sql, (query, query, limit))
+        rows = self.cursor.fetchall()
+        colnames = [desc[0] for desc in self.cursor.description]
+        return [dict(zip(colnames, row)) for row in rows]
+
+    def fts_search_items(self, query: str, limit: int = 5):
+        return self.full_text_search(
+            table="items",
+            query=query,
+            return_columns=["id", "text", "context"],
+            limit=limit,
+        )
+
+    def fts_search_actions(self, query: str, limit: int = 5):
+        return self.full_text_search(
+            table="actions",
+            query=query,
+            return_columns=["id", "action"],
+            limit=limit,
+        )
+
+    def fts_search_locations(self, query: str, limit: int = 5):
+        return self.full_text_search(
+            table="locations",
+            query=query,
+            return_columns=["id", "area", "subarea", "context"],
+            limit=limit,
+        )
+
+    def fts_search_knowledge(self, query: str, limit: int = 5):
+        return self.full_text_search(
+            table="knowledge",
+            query=query,
+            return_columns=["id", "text", "context", "knowledge_type"],
+            limit=limit,
+        )
+
+
+def test_fts(adapter: PostgresAdapter):
+    print("=== Full-Text Search Test ===")
+    search_text = "evaluates"
+    print(f"Searching for '{search_text}' in frida_knowledge:")
+    results = adapter.fts_search_knowledge(search_text)
+    if results:
+        print(f"Found {len(results)} knowledge:")
+        for knowledge in results:
+            print(
+                f"ID: {knowledge['id']}, Text: {knowledge['text']}, Context: {knowledge['context']}"
+            )
+    else:
+        print("No knowledge found.")
+
+    print("=== Add, Search, Remove, and Search Again Test ===")
+
+    new_text = "Unique test item for full-text search vector"
+    new_context = "Test context for full-text search"
+
+    # 1. Add new item
+    new_item = adapter.add_item2(new_text, context=new_context)
+    print(f"Added item with id={new_item.id} and text='{new_item.text}'")
+
+    # 2. Search for the new item via full-text search
+    print(f"Searching for '{new_text}' after adding item:")
+    search_results = adapter.fts_search_items(new_text)
+    found = any(r["id"] == new_item.id for r in search_results)
+    if found:
+        print("SUCCESS: New item found in full-text search results after insertion.")
+    else:
+        print(
+            "FAILURE: New item NOT found in full-text search results after insertion."
+        )
+
+    # 3. Delete the new item
+    adapter.cursor.execute("DELETE FROM items WHERE id = %s", (new_item.id,))
+    adapter.conn.commit()
+    print(f"Deleted item with id={new_item.id}")
+
+    # 4. Search again after deletion
+    print(f"Searching for '{new_text}' after deleting item:")
+    search_results_after_delete = adapter.fts_search_items(new_text)
+    found_after_delete = any(
+        r["id"] == new_item.id for r in search_results_after_delete
+    )
+    if not found_after_delete:
+        print("SUCCESS: Item not found in full-text search results after deletion.")
+    else:
+        print("FAILURE: Item still found in full-text search results after deletion.")
+
 
 if __name__ == "__main__":
     adapter = PostgresAdapter()
@@ -407,6 +519,8 @@ if __name__ == "__main__":
     print("couch:", adapter.query_location("couch", threshold=0.6))
     print("kitchen:", adapter.query_location("kitchen", threshold=0.6))
     print("living room", adapter.query_location("living room", threshold=0.5))
+
+    test_fts(adapter)
 
     # Close the connection
     adapter.close()

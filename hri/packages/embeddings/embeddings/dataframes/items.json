@@ -27,7 +27,6 @@
   { "document": "peach", "context": "item for household use" },
   { "document": "pear", "context": "item for household use" },
   { "document": "cocacola", "context": "item for household use" },
-  { "document": "galletas", "context": "item for household use" },
-  { "document": "leche", "context": "item for household use" },
+  { "document": "cookies", "context": "item for household use" },
   { "document": "pringles", "context": "item for household use" }
 ]
