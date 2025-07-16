@@ -314,9 +314,9 @@ class ReceptionistTM(Node):
 
             s, detections = self.subtask_manager.vision.detect_objects()
 
-            Logger.info(self, "Detected drinks with detector: " + str(detections))
 
             if s == Status.EXECUTION_SUCCESS and len(detections) > 0:
+                Logger.info(self, "Detected drinks with detector: " + str(detections))
                 labels = self.subtask_manager.vision.get_labels(detections)
                 status, detected_drink = self.subtask_manager.hri.find_closest(
                     labels, self.get_guest().drink
@@ -331,6 +331,7 @@ class ReceptionistTM(Node):
                     f"There is {self.get_guest().drink} at the table in the {position}."
                 )
             else:
+                Logger.info(self, "Detecting drinks with moondream")
                 # Moondream backup
                 status, position = self.subtask_manager.vision.find_drink(
                     self.get_guest().drink, timeout=40
