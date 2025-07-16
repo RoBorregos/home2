@@ -2,10 +2,8 @@
 
 import json
 import os
-
-
 import sys
-import os
+
 from postgres_adapter import PostgresAdapter
 
 sys.path.append(

@@ -3,9 +3,7 @@
 
 import json
 import os
-
 import psycopg2
-import os
 
 
 from postgres_collections import (
