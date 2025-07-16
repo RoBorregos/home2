@@ -20,6 +20,7 @@ from sentence_transformers import SentenceTransformer
 
 MODEL_PATH = os.path.expanduser("~/models/all-MiniLM-L12-v2")
 
+
 class PostgresAdapter:
     def __init__(self):
         self.conn = psycopg2.connect(
@@ -39,7 +40,9 @@ class PostgresAdapter:
             print(f"Loading model from {MODEL_PATH}")
         self.embedding_model = SentenceTransformer(MODEL_PATH)
         print("Printing all tables in the database: ")
-        self.cursor.execute("SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'")
+        self.cursor.execute(
+            "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"
+        )
         print(self.cursor.fetchall())
 
     def get_all_items(self) -> list[Item]:
@@ -386,15 +389,14 @@ class PostgresAdapter:
         self.conn.close()
         print("Database connection closed.")
 
-
     def full_text_search(
-    self,
-    table: str,
-    query: str,
-    text_vector_col: str = "text_vector",
-    return_columns: list[str] = None,
-    limit: int = 5,
-) -> list[dict]:
+        self,
+        table: str,
+        query: str,
+        text_vector_col: str = "text_vector",
+        return_columns: list[str] = None,
+        limit: int = 5,
+    ) -> list[dict]:
         if return_columns is None:
             return_columns = ["*"]
 
@@ -409,8 +411,6 @@ class PostgresAdapter:
         rows = self.cursor.fetchall()
         colnames = [desc[0] for desc in self.cursor.description]
         return [dict(zip(colnames, row)) for row in rows]
-    
-
 
     def fts_search_items(self, query: str, limit: int = 5):
         return self.full_text_search(
@@ -444,6 +444,7 @@ class PostgresAdapter:
             limit=limit,
         )
 
+
 def test_fts(adapter: PostgresAdapter):
     print("=== Full-Text Search Test ===")
     search_text = "evaluates"
@@ -452,7 +453,9 @@ def test_fts(adapter: PostgresAdapter):
     if results:
         print(f"Found {len(results)} knowledge:")
         for knowledge in results:
-            print(f"ID: {knowledge['id']}, Text: {knowledge['text']}, Context: {knowledge['context']}")
+            print(
+                f"ID: {knowledge['id']}, Text: {knowledge['text']}, Context: {knowledge['context']}"
+            )
     else:
         print("No knowledge found.")
 
@@ -472,7 +475,9 @@ def test_fts(adapter: PostgresAdapter):
     if found:
         print("SUCCESS: New item found in full-text search results after insertion.")
     else:
-        print("FAILURE: New item NOT found in full-text search results after insertion.")
+        print(
+            "FAILURE: New item NOT found in full-text search results after insertion."
+        )
 
     # 3. Delete the new item
     adapter.cursor.execute("DELETE FROM items WHERE id = %s", (new_item.id,))
@@ -482,7 +487,9 @@ def test_fts(adapter: PostgresAdapter):
     # 4. Search again after deletion
     print(f"Searching for '{new_text}' after deleting item:")
     search_results_after_delete = adapter.fts_search_items(new_text)
-    found_after_delete = any(r["id"]== new_item.id for r in search_results_after_delete)
+    found_after_delete = any(
+        r["id"] == new_item.id for r in search_results_after_delete
+    )
     if not found_after_delete:
         print("SUCCESS: Item not found in full-text search results after deletion.")
     else:
@@ -516,7 +523,6 @@ if __name__ == "__main__":
     print("living room", adapter.query_location("living room", threshold=0.5))
 
     test_fts(adapter)
-
 
     # Close the connection
     adapter.close()

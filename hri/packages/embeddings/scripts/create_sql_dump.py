@@ -4,12 +4,19 @@ import json
 import os
 
 
-
 import sys
 import os
 from postgres_adapter import PostgresAdapter
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),'..', '..','..','..','frida_constants')))
+
+sys.path.append(
+    os.path.abspath(
+        os.path.join(
+            os.path.dirname(__file__), "..", "..", "..", "..", "frida_constants"
+        )
+    )
+)
 from frida_constants.hri_constants import KNOWLEDGE_TYPE
+
 p = PostgresAdapter()
 
 
@@ -198,13 +205,17 @@ def write_to_file(filename: str, content: str):
 
 
 def main():
-
     SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-    DATAFRAME_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "embeddings", "dataframes"))
-    FRIDA_CONSTANTS_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "..", "..", "..", "frida_constants"))
-    DOCKER_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "..", "..", "..", "docker", "hri", "sql_dumps"))
-
+    DATAFRAME_PATH = os.path.abspath(
+        os.path.join(SCRIPT_DIR, "..", "embeddings", "dataframes")
+    )
+    FRIDA_CONSTANTS_PATH = os.path.abspath(
+        os.path.join(SCRIPT_DIR, "..", "..", "..", "..", "frida_constants")
+    )
+    DOCKER_PATH = os.path.abspath(
+        os.path.join(SCRIPT_DIR, "..", "..", "..", "..", "docker", "hri", "sql_dumps")
+    )
 
     print(f"Dataframe path: {DATAFRAME_PATH}")
     print("Loading JSON files...")
@@ -214,7 +225,7 @@ def main():
     print(f"Found {len(jsons)} JSON files in {DATAFRAME_PATH}.")
     print(f"Jsons in {DATAFRAME_PATH}: {list(jsons.keys())}")
     print(f"Frida constants JSONs: {list(frida_constants_jsons.keys())}")
-    
+
     print(f"Writing SQL dumps to {DOCKER_PATH}...")
     print("Writing items")
     write_to_file(
@@ -248,23 +259,29 @@ def main():
     print("Writing hand items")
     write_to_file(
         os.path.join(DOCKER_PATH, "04-hand-items.sql"),
-        json_to_hand_items_dumps(frida_constants_jsons["hand_items.json"]["markers"])
-,
+        json_to_hand_items_dumps(frida_constants_jsons["hand_items.json"]["markers"]),
     )
     print("Writing locations")
     write_to_file(
         os.path.join(DOCKER_PATH, "04-locations.sql"),
-        json_to_locations_dumps(frida_constants_jsons["areas.json"],frida_constants_jsons["context_areas.json"],),
+        json_to_locations_dumps(
+            frida_constants_jsons["areas.json"],
+            frida_constants_jsons["context_areas.json"],
+        ),
     )
 
 
 def write_locations():
-# Get the absolute path to the current script
+    # Get the absolute path to the current script
     SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Construct absolute paths relative to the script location
-    FRIDA_CONSTANTS_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "..", "..", "..", "frida_constants"))
-    DOCKER_PATH = os.path.abspath(os.path.join(SCRIPT_DIR, "..", "..", "..", "..", "docker", "hri", "sql_dumps"))
+    # Construct absolute paths relative to the script location
+    FRIDA_CONSTANTS_PATH = os.path.abspath(
+        os.path.join(SCRIPT_DIR, "..", "..", "..", "..", "frida_constants")
+    )
+    DOCKER_PATH = os.path.abspath(
+        os.path.join(SCRIPT_DIR, "..", "..", "..", "..", "docker", "hri", "sql_dumps")
+    )
     print("Loading JSON files...")
     frida_constants_jsons = get_jsons(FRIDA_CONSTANTS_PATH)
     print(f"Found {len(frida_constants_jsons)} JSON files.")
@@ -280,5 +297,5 @@ def write_locations():
 
 if __name__ == "__main__":
     main()
-    #write_locations()
+    # write_locations()
     print("Locations SQL dump created successfully.")
