@@ -6,11 +6,13 @@ import argparse
 from moondream_lib import MoonDreamModel
 from enum import Enum
 
+
 class Position(Enum):
     LEFT = "left"
     CENTER = "center"
     RIGHT = "right"
     NOT_FOUND = "not found"
+
 
 class MoonDreamServicer(moondream_proto_pb2_grpc.MoonDreamServiceServicer):
     def __init__(self, model):

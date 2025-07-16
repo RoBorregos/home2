@@ -18,11 +18,13 @@ order_labels = [
     "eighth",
 ]
 
+
 class Position(Enum):
     LEFT = "left"
     CENTER = "center"
     RIGHT = "right"
     NOT_FOUND = "not found"
+
 
 class MoonDreamModel:
     def __init__(
@@ -68,7 +70,7 @@ class MoonDreamModel:
                 else:
                     return Position.CENTER.value
             return Position.NOT_FOUND.value
-        
+
         # detections = self.model.detect(encoded_image, "all")
         # location = ""
         # x_pos = []

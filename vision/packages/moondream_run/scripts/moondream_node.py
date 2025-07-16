@@ -27,6 +27,7 @@ from frida_constants.vision_constants import (
     QUERY_TOPIC,
     CROP_QUERY_TOPIC,
 )
+from enum import Enum
 
 from ament_index_python.packages import get_package_share_directory
 
@@ -36,7 +37,7 @@ sys.path.append(os.path.join(PATH, "moondream_server"))
 # Import the generated gRPC modules
 import moondream_proto_pb2  # noqa
 import moondream_proto_pb2_grpc  # noqa
-from enum import Enum
+
 YOLO_LOCATION = str(pathlib.Path(__file__).parent) + "/yolov8n.pt"
 NOT_FOUND = "not found"
 
@@ -44,11 +45,14 @@ NOT_FOUND = "not found"
 
 CONF_THRESHOLD = 0.5
 
+
 class Position(Enum):
     LEFT = "left"
     CENTER = "center"
     RIGHT = "right"
     NOT_FOUND = "not found"
+
+
 class MoondreamNode(Node):
     def __init__(self):
         super().__init__("moondream_node")
