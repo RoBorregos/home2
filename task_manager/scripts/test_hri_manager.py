@@ -9,7 +9,6 @@ from typing import Union
 
 import rclpy
 from config.hri.debug import config as test_hri_config
-from rclpy.duration import Duration
 from rclpy.node import Node
 from subtask_managers.hri_tasks import HRITasks
 
@@ -30,6 +29,7 @@ from utils.baml_client.types import (
     PlaceObject,
     SayWithContext,
 )
+from utils.status import Status
 from utils.task import Task
 
 InterpreterAvailableCommands = Union[
@@ -57,11 +57,11 @@ def confirm_preference(interpreted_text, extracted_data):
 TEST_TASK = Task.DEBUG
 TEST_COMPOUND = True
 TEST_INDIVIDUAL_FUNCTIONS = False
-TEST_EMBEDDINGS = False
+TEST_EMBEDDINGS = True
 TEST_ASYNC_LLM = False
 TEST_STREAMING = False
 TEST_MAP = False
-TEST_OBJECT_LOCATION = True
+TEST_OBJECT_LOCATION = False
 
 
 class TestHriManager(Node):
@@ -183,107 +183,110 @@ class TestHriManager(Node):
         # self.hri_manager.say(common_interest)
 
     def test_embeddings(self):
-        """Testing the embeddings service via HRITasks"""
+        """Testing the embeddings service via HRITasks using only specified objects from the given list"""
 
-        hri = self.hri_manager
+        test_cases = [
+            {
+                "name": "Drinks, fruits, and snacks",
+                "table_objects": ["apple", "fanta", "lemon", "crisps", "chocolate_bar"],
+                "shelves": {0: ["coffee", "coke"], 1: ["tangerine"], 2: ["cornflakes"]},
+                "answer": {
+                    0: {"category": "drink", "objects_to_add": ["fanta"]},
+                    1: {"category": "fruit", "objects_to_add": ["apple", "lemon"]},
+                    2: {
+                        "category": "snack",
+                        "objects_to_add": ["crisps", "chocolate_bar"],
+                    },
+                },
+            },
+            {
+                "name": "Snacks, dishes, and cleaning",
+                "table_objects": ["gum_balls", "fork", "spoon", "sponge"],
+                "shelves": {0: ["chocolate_bar"], 1: ["bowl"], 2: ["cloth"]},
+                "answer": {
+                    0: {"category": "snack", "objects_to_add": ["gum_balls"]},
+                    1: {"category": "dish", "objects_to_add": ["fork", "spoon"]},
+                    2: {"category": "cleaning_supply", "objects_to_add": ["sponge"]},
+                },
+            },
+            {
+                "name": "Drinks and dishes",
+                "table_objects": ["milk", "fanta", "fork"],
+                "shelves": {0: ["orange_juice", "coffee"], 1: ["plate"]},
+                "answer": {
+                    0: {"category": "drink", "objects_to_add": ["milk", "fanta"]},
+                    1: {"category": "dish", "objects_to_add": ["fork"]},
+                },
+            },
+            {
+                "name": "Miscellaneous objects with empty shelves",
+                "table_objects": ["milk", "fanta", "fork", "ketchup", "tangerine"],
+                "shelves": {0: ["orange_juice", "coffee"], 1: ["plate"], 2: []},
+                "answer": {
+                    0: {"category": "drink", "objects_to_add": ["milk", "fanta"]},
+                    1: {"category": "dish", "objects_to_add": ["fork"]},
+                    2: {
+                        "category": "miscellaneous",
+                        "objects_to_add": ["tangerine", "ketchup"],
+                    },
+                },
+            },
+        ]
 
-        # # Adding single item
-        # self.get_logger().info("Adding single item: rotten_potatoes")
-        # result = hri.add_item(["rotten_potatoes"], json.dumps([{}]))
-        # self.get_logger().info(f"Result: {result}")
+        for i, test_case in enumerate(test_cases, 1):
+            self.get_logger().info(f"\n=== Test Case {i}: {test_case['name']} ===")
+            self.get_logger().info(f"Table objects: {test_case['table_objects']}")
+            self.get_logger().info(f"Shelves: {test_case['shelves']}")
 
-        # # Adding multiple items with metadata
-        # self.get_logger().info("Adding multiple items with metadata")
-        # documents = ["apple pie with cinnamon", "banana_pie", "mango_pie_with milk"]
-        # metadata = [{"category": "500"}, {"characteristic": "400"}, {"complement": "450"}]
-        # result = hri.add_item(documents, json.dumps(metadata))
-        # self.get_logger().info(f"Result: {result}")
+            try:
+                s, categorized_shelves, objects_to_add = self.hri_manager.categorize_objects(
+                    test_case["table_objects"], test_case["shelves"]
+                )
 
-        # # Querying items
-        # self.get_logger().info("Querying 'potatoes' from item collection")
+                if s == Status.EXECUTION_SUCCESS:
+                    expected_added_objects = test_case["answer"]
 
-        # results = hri.query_item("potatoes", top_k=1)
-        # self.get_logger().info(f"Query results: {hri.get_name(results)}")
-        # New implementation of additems for item categorization in shelves
+                    test_passed = True
 
-        # objects_to_categorize = ["yogurt", "peach", "can"]
-        # objects_shelve_1 = ["milk", "cheese", "cream"]
-        # objects_shelve_2 = ["beans", "tommato_soup", "corn_soup"]
-        # objects_shelve_3 = ["mango", "banana", "apple"]
-        # objects = [objects_shelve_1, objects_shelve_2, objects_shelve_3]
-        # shelf_1 = "1"
-        # shelf_2 = "2"
-        # shelf_3 = "3"
-        # shelves = [shelf_1, shelf_2, shelf_3]
-        # shelves_with_objects = dict(zip(shelves, objects))
-        # categories = {1: "dairy", 2: "fruit", 3: "empty", 4: "meat"}
-        # obj = ["watermelon", "sausage", "milk", "pencil case"]
-        # objects_categorized = hri.categorize_objects(obj, categories)
+                    for shelve in expected_added_objects:
+                        if len(objects_to_add[shelve]) != len(
+                            expected_added_objects[shelve]["objects_to_add"]
+                        ):
+                            test_passed = False
+                            break
 
-        # self.get_logger().info(f"classification : {objects_categorized}")
+                        if test_case["answer"][shelve]["category"] != categorized_shelves[shelve]:
+                            test_passed = False
+                            break
 
-        # self.get_logger().info("Querying 'cinnamon' from item collection")
-        # results = hri.query_item("cinnamon", top_k=3)
-        # self.get_logger().info(f"Query results: {hri.get_name(results)}")
-        # # Adding and querying location
-        # self.get_logger().info("Querying 'kitchen' from location collection")
+                        for placed_object in objects_to_add[shelve]:
+                            if (
+                                placed_object
+                                not in expected_added_objects[shelve]["objects_to_add"]
+                            ):
+                                test_passed = False
+                                break
 
-        # results_location = hri.query_location("kitchen table", top_k=1)
-        # subarea = hri.get_subarea(results_location)
-        # area = hri.get_area(results_location)
-        # self.get_logger().info(f"Subarea: {subarea}")
-        # self.get_logger().info(f"Area: {area}")
-        # self.get_logger().info(f"Query results: {hri.get_name(results_location)}")
+                    if test_passed:
+                        self.get_logger().info("Test passed!")
+                    else:
+                        self.get_logger().error("Test failed.")
+                        self.get_logger().error("Expected answer: " + str(expected_added_objects))
+                        self.get_logger().error(
+                            "Function response: "
+                            + "objects_to_add: "
+                            + str(objects_to_add)
+                            + ", categories: "
+                            + str(categorized_shelves)
+                        )
 
-        # ---- save_command_history ----
-        self.get_logger().info("Saving command history for go_to command")
-        command = GoTo(action="go_to", location_to_go="kitchen")
-        command_2 = GoTo(action="go_to", location_to_go="living_room")
-        command_3 = GoTo(action="go_to", location_to_go="entrance")
-        command_4 = GoTo(action="go_to", location_to_go="bathroom")
+                else:
+                    self.get_logger().error(f"✗ FAILED - Status: {s}")
 
-        hri.add_command_history(
-            command=command,
-            result="Success",
-            status=1,
-        )
-        self.get_clock().sleep_for(Duration(seconds=2))
-        hri.add_command_history(
-            command=command_2,
-            result="Success",
-            status=1,
-        )
-        self.get_clock().sleep_for(Duration(seconds=2))
-        hri.add_command_history(
-            command=command_3,
-            result="Failure",
-            status=1,
-        )
-        self.get_clock().sleep_for(Duration(seconds=2))
-        hri.add_command_history(
-            command=command_4,
-            result="Success",
-            status=1,
-        )
-        self.get_clock().sleep_for(Duration(seconds=2))
-        self.get_logger().info("Querying command_history collection for the saved command")
-        history = hri.query_command_history("go_to", 3)
-        # context = hri.get_context(history)
-        result = hri.get_result(history)
-        status = hri.get_status(history)
+            except Exception as e:
+                self.get_logger().error(f"✗ EXCEPTION in test case {i}: {str(e)}")
 
-        self.get_logger().info(f"history query results: {history}")
-        self.get_logger().info(f"result history query results: {result}")
-        self.get_logger().info(f"status history query results: {status}")
-
-        # # ---- end save_command_history ----
-
-        # self.get_logger().info("TESTING THE FIND CLOSEST FUNCTION")
-        # # Test find_closest
-
-        # documents = ["cheese", "milk", "yogurt"]
-        # result_closest = hri.find_closest(documents, "milk")
-        # self.get_logger().info(f"Closest result: {result_closest}")
+            self.get_logger().info("-" * 50)
 
     def async_llm_test(self):
         test = self.hri_manager.extract_data("LLM_name", "My name is John Doe", is_async=True)
