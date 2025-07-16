@@ -80,6 +80,7 @@ class MoveItPlanner(Planner):
                         if using fake controller, ignore this message"
             )
             self.mode_enabled = False
+
         self.joint_states = None
         # Set initial parameters
         self.moveit2.max_velocity = max_velocity
@@ -226,7 +227,7 @@ class MoveItPlanner(Planner):
         )
 
     def set_mode(self, mode: int = 0) -> bool:
-        if not self.mode_enabled:
+        if True:  # not self.mode_enabled:
             return True
         # self.mode_client.wait_for_service()
         # request = SetInt16.Request()
@@ -254,6 +255,24 @@ class MoveItPlanner(Planner):
         # else:
         #     self.node.get_logger().error("Failed to call set state service")
         #     return False
+        time.sleep(0.1)
+        # Activate controller
+        if self.switch_controller_client is not None:
+            request = SwitchController.Request()
+            request.start_controllers = ["xarm6_traj_controller"]
+            future = self.switch_controller_client.call_async(request)
+            while rclpy.ok() and not future.done():
+                pass
+            if future.result() is not None:
+                self.node.get_logger().info(
+                    f"Switch controller service response: {future.result().ok}"
+                )
+            else:
+                self.node.get_logger().error("Failed to call switch controller service")
+                return False
+        return True
+
+    def reset_controller(self):
         time.sleep(0.1)
         # Activate controller
         if self.switch_controller_client is not None:

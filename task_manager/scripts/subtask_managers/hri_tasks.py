@@ -14,6 +14,7 @@ from typing import List, Union
 
 import numpy as np
 import rclpy
+from std_msgs.msg import Empty
 from ament_index_python.packages import get_package_share_directory
 from embeddings.postgres_adapter import PostgresAdapter
 from frida_constants.hri_constants import (
@@ -32,6 +33,7 @@ from frida_constants.hri_constants import (
     SPEAK_SERVICE,
     STT_ACTION_SERVER_NAME,
     WAKEWORD_TOPIC,
+    START_BUTTON_CLIENT,
 )
 from frida_interfaces.action import SpeechStream
 from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
@@ -161,6 +163,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
     def __init__(self, task_manager: Node, config=None, task=Task.RECEPTIONIST) -> None:
         self.node = task_manager
+        self.start_button_clicked = False
         self.keyword = ""
         self.speak_service = self.node.create_client(Speak, SPEAK_SERVICE)
         self.extract_data_service = self.node.create_client(ExtractInfo, EXTRACT_DATA_SERVICE)
@@ -202,6 +205,14 @@ class HRITasks(metaclass=SubtaskMeta):
         )
 
         self._action_client = ActionClient(self.node, SpeechStream, STT_ACTION_SERVER_NAME)
+
+        self._start_button_sub = self.node.create_subscription(
+            Empty,
+            START_BUTTON_CLIENT,
+            self.start_button_callback,
+            10,
+            callback_group=rclpy.callback_groups.ReentrantCallbackGroup(),
+        )
 
         all_services = {
             "say": {
@@ -1164,6 +1175,13 @@ class HRITasks(metaclass=SubtaskMeta):
         except Exception as e:
             self.node.get_logger().error(f"Error sending answer: {str(e)}")
             return False
+
+    def start_button_callback(self, msg: Empty):
+        """
+        Callback for the start button press.
+        This method is called when the start button is pressed.
+        """
+        self.start_button_clicked = True
 
 
 if __name__ == "__main__":

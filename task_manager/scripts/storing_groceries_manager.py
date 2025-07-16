@@ -18,7 +18,7 @@ import time
 POINT_TRANSFORMER_TOPIC = "/integration/point_transformer"
 ATTEMPT_LIMIT = 5
 # after this amount of objects have been stored, do pour task
-PICKED_OBJECTS_TO_POUR = 1
+PICKED_OBJECTS_TO_POUR = 2
 
 
 class Retries(Enum):
@@ -141,12 +141,12 @@ class StoringGroceriesManager(Node):
         #     0.463,
         #     0.84
         # ]
-        self.manual_heights = [0.55, 0.9]
+        # self.manual_heights = [0.55, 0.9]
+        self.manual_heights = [0.36, 0.87, 1.38]
         self.shelf_level_threshold = 0.20
 
         #         self.manual_heights = [0.04, 0.43, 0.67]
         #         self.shelf_level_threshold = 0.30
-
         self.shelf_level_down_threshold = 0.05
         self.picked_objects = 0
         self.prev_uid = None
@@ -217,6 +217,9 @@ class StoringGroceriesManager(Node):
         Logger.info(self, f"Executing state: {self.state.name}")
         if self.state == ExecutionStates.START:
             Logger.info(self, "Starting Storing Groceries Manager...")
+            while not self.subtask_manager.hri.start_button_clicked:
+                rclpy.spin_once(self, timeout_sec=0.1)
+            Logger.success(self, "Start button pressed, receptionist task will begin now")
             self.state = ExecutionStates.INIT_NAV_TO_SHELF
             # self.state = ExecutionStates.INIT_NAV_TO_TABLE
             # self.state = ExecutionStates.VIEW_AND_SAVE_OBJECTS_ON_TABLE

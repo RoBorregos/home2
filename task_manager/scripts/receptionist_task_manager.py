@@ -38,6 +38,7 @@ class ReceptionistTM(Node):
     class TaskStates:
         """Class to manage the task states"""
 
+        WAIT_FOR_BUTTON = "WAIT_FOR_BUTTON"
         START = "START"
         WAIT_FOR_GUEST = "WAIT_FOR_GUEST"
         GREETING = "GREETING"
@@ -58,11 +59,12 @@ class ReceptionistTM(Node):
         """Initialize the node"""
         super().__init__("receptionist_task_manager")
         self.subtask_manager = SubtaskManager(self, task=Task.RECEPTIONIST, mock_areas=[])
-        self.seat_angles = [0, -90, 180]
-        self.check_angles = [0, -10, 20]
+        # self.seat_angles = [0, -90, 180]
+        self.seat_angles = [0, -90]
+        self.check_angles = [0, -10, 10]
 
         self.guests = [Guest() for _ in range(3)]
-        self.guests[0] = Guest("Julian", "Juice", "Football")
+        self.guests[0] = Guest("Ale", "Juice", "Football")
         self.current_guest = 1
 
         self.current_attempts = 0
@@ -75,7 +77,7 @@ class ReceptionistTM(Node):
         self.total_start_time = datetime.now()
         self.previous_state = None
 
-        self.current_state = ReceptionistTM.TaskStates.START
+        self.current_state = ReceptionistTM.TaskStates.WAIT_FOR_BUTTON
         self.subtask_manager.manipulation.move_to_position("nav_pose")
         Logger.info(self, "ReceptionistTaskManager has started.")
 
@@ -109,10 +111,10 @@ class ReceptionistTM(Node):
 
     def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
         """Navigate to the location"""
+        self.subtask_manager.manipulation.follow_face(False)
+        self.subtask_manager.manipulation.move_to_position("nav_pose")
         if say:
             Logger.info(self, f"Moving to {location}")
-            self.subtask_manager.manipulation.follow_face(False)
-            self.subtask_manager.manipulation.move_to_position("nav_pose")
             self.subtask_manager.hri.say(
                 f"I'll guide you to the {location}. Please follow me.", wait=False
             )
@@ -137,10 +139,18 @@ class ReceptionistTM(Node):
     def run(self):
         """State machine"""
 
+        if self.current_state == ReceptionistTM.TaskStates.WAIT_FOR_BUTTON:
+            Logger.state(self, "Waiting for start button...")
+            # Wait for the start button to be pressed
+            while not self.subtask_manager.hri.start_button_clicked:
+                rclpy.spin_once(self, timeout_sec=0.1)
+            Logger.success(self, "Start button pressed, receptionist task will begin now")
+            self.current_state = ReceptionistTM.TaskStates.START
+
         if self.current_state == ReceptionistTM.TaskStates.START:
             Logger.state(self, "Starting task")
             self._track_state_change(ReceptionistTM.TaskStates.START)
-            self.subtask_manager.manipulation.follow_face(False)
+            # self.subtask_manager.manipulation.follow_face(False)
             # self.subtask_manager.manipulation.move_to_position("nav_pose")
             # import sys
             # sys.exit()
@@ -151,6 +161,7 @@ class ReceptionistTM(Node):
         if self.current_state == ReceptionistTM.TaskStates.WAIT_FOR_GUEST:
             Logger.state(self, "Waiting for guest")
             self._track_state_change(ReceptionistTM.TaskStates.WAIT_FOR_GUEST)
+            self.subtask_manager.manipulation.follow_face(False)
             self.subtask_manager.manipulation.move_to_position("front_stare")
             self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_RECEPTIONIST)
             result = self.subtask_manager.vision.detect_person(timeout=10)

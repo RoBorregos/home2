@@ -18,9 +18,33 @@ sudo -k
 bash zed.sh
 
 cd ./storing
-for script in ./*.sh; do
-    if [ -f "$script" ]; then
-        echo "Executing $script"
-        bash "$script"
-    fi
-done
+# for script in ./*.sh; do
+#     if [ -f "$script" ]; then
+#         echo "Executing $script"
+#         bash "$script"
+#     fi
+# done
+script="manipulation-moveit.sh"
+bash $script
+
+# wait for the script to finish (4 secs)
+script="hri.sh"
+bash $script
+script="object-detector.sh"
+bash $script
+script="manipulation-pick-place.sh"
+bash $script
+
+sleep 4
+
+script="navigation.sh"
+bash $script
+
+
+script="integration-point-transformer.sh"
+bash $script
+
+sleep 3
+
+script="integration"
+bash $script
