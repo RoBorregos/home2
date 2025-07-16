@@ -1,6 +1,5 @@
 HRI Embeddings Service — PostgreSQL + pgvector
 
-This module implements a structured embedding and full-text storage system to support natural language understanding in Human-Robot Interaction (HRI) scenarios. It uses:
 # 🧠 HRI Embeddings Service — PostgreSQL + pgvector
 
 This module implements a structured embedding and full-text storage system to support natural language understanding in human-robot interaction (HRI) scenarios. It uses `pgvector` for semantic similarity and PostgreSQL full-text search for keyword-based queries.
