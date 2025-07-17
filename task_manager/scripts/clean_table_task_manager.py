@@ -48,6 +48,8 @@ class CleanTableTM(Node):
         self.current_attempt = 0
 
         self.pick_objects = ["drink", "drink", "cup", "bowl", "spoon", "fork"]
+        self.drinks = ["coke", "kuat_soda", "milk", "orange_juice", "fanta","coffee"]
+        self.deus_picks = ["spoon", "fork"]
         self.object_index = 0
 
         self.trash_place = PointStamped(
@@ -74,6 +76,26 @@ class CleanTableTM(Node):
                 rclpy.spin_until_future_complete(self, future)
                 result = future.result()
             retry += 1
+
+    def deus_pick(self, object):
+        deus_machina_retries = 0
+        self.subtask_manager.hri.say(
+            f"I couldn't make a pick on my own. I will require some help picking the {object}!"
+        )
+        while True:
+            if deus_machina_retries >= 3:
+                self.subtask_manager.hri.say(
+                    "I couldn't hear your confirmation, I will abort picking the object."
+                )
+                return Status.TARGET_NOT_FOUND, ""
+            s, res = self.subtask_manager.hri.confirm(
+                f"Have you placed the {object} on my gripper?", use_hotwords=False
+            )
+            if res == "yes":
+                self.subtask_manager.hri.say("Thank you. I will close my gripper")
+                return self.subtask_manager.manipulation.close_gripper(), ""
+            else:
+                deus_machina_retries += 1
 
     def timeout(self, timeout: int = 2):
         start_time = time.time()
@@ -112,22 +134,29 @@ class CleanTableTM(Node):
             s, detections = self.subtask_manager.vision.detect_objects()
             s, labels = self.subtask_manager.vision.get_labels(detections)
 
-            object_to_pick = self.pick_objects[self.object_index]
-            status, target = self.subtask_manager.hri.find_closest(
-                labels,
-                object_to_pick,
-            )
-            self.detected_object = target[0]
+            self.detected_object = self.pick_objects[self.object_index]
+            if self.detected_object == "drink":
+                for label in labels:
+                    if label in self.drinks:
+                        self.detected_object = label
+            # status, target = self.subtask_manager.hri.find_closest(
+            #     labels,
+            #     object_to_pick,
+            # )
+            # self.detected_object = target[0]
 
             self.subtask_manager.hri.say(
-                f"I have detected a {self.detected_object} on the table. I will now pick it up.",
+                f"I have detected a {self.detected_object} on the table. I will now try to pick it up.",
                 wait=False,
             )
             self.current_state = CleanTableTM.TaskStates.PICK_OBJECT
 
         if self.current_state == CleanTableTM.TaskStates.PICK_OBJECT:
             Logger.state(self, "Picking object from the table")
-            self.subtask_manager.manipulation.pick_object(self.detected_object)
+            if self.detected_object in self.deus_picks:
+                self.deus_pick(self.detected_object)
+            else:
+                self.subtask_manager.manipulation.pick_object(self.detected_object)
             self.current_state = CleanTableTM.TaskStates.NAVIGATE_TO_DROPOFF
 
         if self.current_state == CleanTableTM.TaskStates.NAVIGATE_TO_DROPOFF:
