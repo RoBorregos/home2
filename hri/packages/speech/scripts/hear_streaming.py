@@ -47,13 +47,13 @@ class HearStreaming(Node):
             .string_value
         )
 
-        default_hotwords = (
+        self.default_hotwords = (
             self.declare_parameter("DEFAULT_HOTWORDS", "Frida RoBorregos")
             .get_parameter_value()
             .string_value
         )
 
-        self.hotwords = default_hotwords
+        self.hotwords = self.default_hotwords
         self.current_transcription = ""
         self.stop_flag = threading.Event()
         self.stop_flag.set()
@@ -162,6 +162,8 @@ class HearStreaming(Node):
         if goal_handle.request.hotwords:
             self.hotwords = goal_handle.request.hotwords
             self.get_logger().info(f"Updated hotwords: {self.hotwords}")
+        else:
+            self.hotwords = self.default_hotwords
 
         self.record_subscribed(self.hotwords)
 

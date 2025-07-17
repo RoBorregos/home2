@@ -602,6 +602,7 @@ class HRITasks(metaclass=SubtaskMeta):
         context: str = "",
         confirm_question: Union[str, callable] = confirm_query,
         use_hotwords: bool = True,
+        hotwords="",
         retries: int = 3,
         min_wait_between_retries: float = 5,
         skip_extract_data: bool = False,
@@ -630,7 +631,7 @@ class HRITasks(metaclass=SubtaskMeta):
             start_time = self.node.get_clock().now()
 
             self.say(question)
-            hear_status, interpreted_text = self.hear()
+            hear_status, interpreted_text = self.hear(hotwords=hotwords)
 
             if hear_status == Status.EXECUTION_SUCCESS:
                 if not skip_extract_data:
@@ -950,7 +951,9 @@ class HRITasks(metaclass=SubtaskMeta):
     def query_location(self, query: str, top_k: int = 1, use_context: bool = False):
         return self.pg.query_location(query, top_k=top_k, use_context=use_context)
 
-    def find_closest(self, documents: list, query: str, top_k: int = 1) -> list[str]:
+    def find_closest(
+        self, documents: list, query: str, top_k: int = 1, threshold: float = 0.0
+    ) -> list[str]:
         """
         Method to find the closest item to the query.
         Args:
@@ -960,15 +963,19 @@ class HRITasks(metaclass=SubtaskMeta):
             Status: the status of the execution
             list[str]: the results of the query
         """
-        docs = [(doc, self.pg.embedding_model.encode(doc)) for doc in documents]
         emb = self.pg.embedding_model.encode(query)
 
         def cos_sim(x, y):
             return np.dot(x, y) / (np.linalg.norm(x) * np.linalg.norm(y))
 
-        results = sorted(docs, key=lambda x: cos_sim(x[1], emb), reverse=True)[:top_k]
+        docs = [(doc, cos_sim(self.pg.embedding_model.encode(doc), emb)) for doc in documents]
+        docs = [doc for doc in docs if doc[1] >= threshold]
+        results = sorted(docs, key=lambda x: x[1], reverse=True)[:top_k]
+
         results = [doc[0] for doc in results]
-        return Status.EXECUTION_SUCCESS, results
+        s = Status.EXECUTION_SUCCESS if len(results) > 1 else Status.TARGET_NOT_FOUND
+
+        return s, results
 
     def find_closest_raw(self, documents: list, query: str, top_k: int = 4) -> list[str]:
         """
