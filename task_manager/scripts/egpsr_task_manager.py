@@ -51,6 +51,7 @@ class EGPSRTM(Node):
     """Class to manage the GPSR task"""
 
     class States:
+        WAITING_FOR_BUTTON = -1
         START = 0
         EXPLORATION = 1
         HANDLE_TRASH = 2
@@ -401,19 +402,6 @@ class EGPSRTM(Node):
             "Hi, my name is Frida. I am a general purpose robot. I can help you with some tasks."
         )
 
-    def _handle_exploration(self):
-        """Handle exploration state"""
-        if not self.exploration_complete:
-            self.explore_environment()
-
-            # Transition based on priority: trash > misplaced objects > commands
-            if self.found_trash:
-                self.current_state = self.States.HANDLE_TRASH
-            elif self.found_misplaced_objects:
-                self.current_state = self.States.HANDLE_MISPLACED_OBJECT
-            else:
-                self.current_state = self.States.WAIT_FOR_COMMAND
-
     def _handle_trash(self):
         """Handle trash detection and disposal"""
         if not self.found_trash or self.problems_solved["trash"] >= MAX_TRASH_SOLVED:
@@ -570,14 +558,6 @@ class EGPSRTM(Node):
 
         self.timeout(3)
 
-    def _handle_done(self):
-        """Handle completion state"""
-        self.subtask_manager.hri.say(
-            "I am done with the task. I will now return to my home position.",
-            wait=False,
-        )
-        self.running_task = False
-
     def _handle_misplaced_object(self):
         """Handle misplaced object detection and placement"""
         if (
@@ -657,13 +637,42 @@ class EGPSRTM(Node):
             self.current_state = self.States.WAIT_FOR_COMMAND
 
     def run(self):
-        """State machine"""
-        if self.current_state == EGPSRTM.States.START:
-            self._handle_start()
+        if self.current_state == EGPSRTM.States.WAITING_FOR_BUTTON:
+            Logger.state(self, "Waiting for start button...")
+            self.subtask_manager.hri.start_button_clicked = False
+            self.subtask_manager.hri.say("Waiting for start button to be pressed to start the task")
+            # Wait for the start button to be pressed
+
+            while not self.subtask_manager.hri.start_button_clicked:
+                rclpy.spin_once(self, timeout_sec=0.1)
+            Logger.success(self, "Start button pressed, egpsr task will begin now")
+            self.current_state = EGPSRTM.States.START
+        elif self.current_state == EGPSRTM.States.START:
+            res = "closed"
+            while res == "closed":
+                self.subtask_manager.hri.say("Waiting for door to be opened")
+                status, res = self.subtask_manager.nav.check_door()
+                if status == Status.EXECUTION_SUCCESS:
+                    Logger.info(self, f"Door status: {res}")
+                else:
+                    Logger.error(self, "Failed to check door status")
+                time.sleep(4)
+            self.navigate_to("start_area", "", False)
+
+            self.subtask_manager.hri.say(
+                "Hi, my name is Frida. I am a general purpose robot. I will search for some tasks."
+            )
             self.current_state = EGPSRTM.States.EXPLORATION
 
         elif self.current_state == EGPSRTM.States.EXPLORATION:
-            self._handle_exploration()
+            if not self.exploration_complete:
+                self.explore_environment()
+            if self.found_trash:
+                self.current_state = self.States.HANDLE_TRASH
+            elif self.found_misplaced_objects:
+                self.current_state = self.States.HANDLE_MISPLACED_OBJECT
+            else:
+                self.current_state = self.States.WAIT_FOR_COMMAND
 
         elif self.current_state == self.States.HANDLE_TRASH:
             self._handle_trash()
@@ -678,7 +687,12 @@ class EGPSRTM(Node):
             self._handle_execute_command()
 
         elif self.current_state == self.States.DONE:
-            self._handle_done()
+            """Handle completion state"""
+            self.subtask_manager.hri.say(
+                "I am done with the task. I will now return to my home position.",
+                wait=False,
+            )
+            self.running_task = False
 
 
 def main(args=None):

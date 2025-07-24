@@ -160,7 +160,7 @@ public:
 
     if (request->close_point.header.frame_id == "") {
       // only filter too far from the robot
-      RCLCPP_INFO("Using close point");
+      RCLCPP_INFO(this->get_logger(), "Using close point");
       pcl::PointXYZ req_point;
       req_point.x = 0.0;
       req_point.y = 0.0;
@@ -169,7 +169,7 @@ public:
           cloud_out, req_point, cloud_out, 5.0, request->min_height,
           request->max_height);
     } else {
-      RCLCPP_INFO("Using close point");
+      RCLCPP_INFO(this->get_logger(), "Using close point");
       geometry_msgs::msg::PointStamped point;
       if (request->close_point.header.frame_id != "base_link") {
         try {

@@ -110,6 +110,7 @@ class FollowFaceNode(Node):
         )
 
         self.is_following_face_active = False
+        self.arm_moving = False
 
         self.follow_face = {"x": 0, "y": 0}
         self.last_face_detection_time = 0
@@ -147,10 +148,10 @@ class FollowFaceNode(Node):
                     Logger.error(self, "Failed to set state")
                 else:
                     Logger.success(self, "State set")
-                    time.sleep(1)
                     break
             except Exception as e:
                 Logger.error(self, f"Error Activating arm: {e}")
+        time.sleep(2)
 
     def set_state_moveit(self):
         Logger.info(self, "Activating arm for moveit")
@@ -165,13 +166,13 @@ class FollowFaceNode(Node):
         tries = 2
         for i in range(tries):
             try:
-                Logger.info(self, "Resetting controller")
-                future_controller = self.reset_controller_client.call_async(Empty.Request())
-                future_controller = wait_for_future(future_controller)
-                if not future_controller:
-                    Logger.error("Failed to reset controller")
-                else:
-                    Logger.success(self, "Success in resetting controller")
+                # Logger.info(self, "Resetting controller")
+                # future_controller = self.reset_controller_client.call_async(Empty.Request())
+                # future_controller = wait_for_future(future_controller)
+                # if not future_controller:
+                #     Logger.error("Failed to reset controller")
+                # else:
+                #     Logger.success(self, "Success in resetting controller")
                 Logger.info(self, "Setting mode")
                 future_mode = self.mode_client.call_async(mode_request)
                 future_mode = wait_for_future(future_mode)
@@ -188,10 +189,9 @@ class FollowFaceNode(Node):
                 else:
                     Logger.success(self, "State set")
                     break
-
-                time.sleep(1)
             except Exception as e:
                 Logger.error(self, f"Error Activating arm: {e}")
+        time.sleep(2)
 
     def follow_callback(self, msg: Point):
         """Callback for the face following subscriber"""
@@ -215,17 +215,23 @@ class FollowFaceNode(Node):
         self.is_following_face_active = request.follow_face
         time.sleep(1)
         if not self.is_following_face_active:
+            while self.arm_moving:
+                Logger.info(self, "Waiting for arm to stop moving")
+                time.sleep(0.1)
             self.move_to(0.0, 0.0)
-            time.sleep(1)
+            time.sleep(2)
+
             self.set_state_moveit()
-            time.sleep(1)
+            time.sleep(2)
         else:
             self.set_state_speed()
-            time.sleep(1)
+            time.sleep(2)
         response.success = True
         return response
 
     def move_to(self, x: float, y: float):
+        if self.arm_moving:
+            return
         # Set motion
         x = x * -1
         if x > 0.1:
@@ -250,6 +256,7 @@ class FollowFaceNode(Node):
         motion_msg.speeds = [x_vel, 0.0, 0.0, 0.0, y_vel, 0.0, 0.0]
 
         try:
+            self.arm_moving = True
             future_move = self.move_client.call_async(motion_msg)
             future_move.add_done_callback(self.state_response_callback)  # Fire-and-forget
 
@@ -268,6 +275,8 @@ class FollowFaceNode(Node):
                 Logger.error(self, "Failed to move arm")
         except Exception as e:
             Logger.error(self, f"move service call failed: {str(e)}")
+        finally:
+            self.arm_moving = False
 
     def run(self):
         if not self.is_following_face_active:

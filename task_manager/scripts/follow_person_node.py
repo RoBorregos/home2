@@ -12,12 +12,17 @@ from geometry_msgs.msg import Point, PoseStamped
 from rclpy.node import Node
 from utils.logger import Logger
 from xarm_msgs.srv import MoveVelocity, SetInt16, GetFloat32List
-
-# import numpy as np
+import numpy as np
+from rclpy.callback_groups import ReentrantCallbackGroup
 import time
-# from frida_constants.manipulation_constants import (
-#     MOVEIT_MODE,
-# )
+from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
+from rclpy.qos import QoSProfile
+from sensor_msgs.msg import JointState
+from frida_pymoveit2.robots import xarm6
+from frida_constants.manipulation_constants import (
+    FOLLOW_FACE_SPEED,
+)
+
 
 XARM_MOVEVELOCITY_SERVICE = "/xarm/vc_set_joint_velocity"
 XARM_SETMODE_SERVICE = "/xarm/set_mode"
@@ -31,8 +36,10 @@ DASHGO_CMD_VEL = "/cmd_vel"
 
 TIMEOUT = 5.0
 MAX_ERROR = 0.2
-MAX_ROTATIONAL_VEL = 0.8
+MAX_ROTATIONAL_VEL = 1.0
 CENTROID_TOIC = "/vision/tracker_centroid"
+
+SPEED = 1.0
 
 
 class FollowPersonNode(Node):
@@ -45,13 +52,31 @@ class FollowPersonNode(Node):
     def __init__(self):
         """Initialize the node"""
         super().__init__("follow_person_node_started")
+        callback_group = ReentrantCallbackGroup()
+
+        qos_profile = QoSProfile(depth=1, reliability=rclpy.qos.QoSReliabilityPolicy.BEST_EFFORT)
+        self.traj_pub = self.create_publisher(
+            JointTrajectory, "/xarm6_traj_controller/joint_trajectory", qos_profile
+        )
+        self.joint_states_topic = "/joint_states"
+        # create listener
+        self.joint_states_sub = self.create_subscription(
+            JointState,
+            self.joint_states_topic,
+            self.joint_states_callback,
+            qos_profile,
+            callback_group=callback_group,
+        )
 
         self.follow_face_sub = self.create_subscription(
             Point, CENTROID_TOIC, self.follow_callback, 10
         )
-
         self.dashgo_cmd_vel_sub = self.create_subscription(
-            PoseStamped, DASHGO_CMD_VEL, self.get_dashgo_cmd_vel_callback, 10
+            PoseStamped,
+            DASHGO_CMD_VEL,
+            self.get_dashgo_cmd_vel_callback,
+            qos_profile,
+            callback_group=callback_group,
         )
         self.dashgo_cmd_vel = 0.0
         self.current_x = 0
@@ -92,84 +117,58 @@ class FollowPersonNode(Node):
 
         self.is_following_person = False
 
+        self.is_following_person = False
+
         self.follow_face = {"x": 0, "y": 0}
 
         self.flag_active_face = False
         self.deactivate = False
 
-        self.create_timer(0.1, self.run)
+        self.deactivate = False
 
-    def set_state(self):
-        Logger.info(self, "Activating arm")
+        self.last_follow_msg = 0
 
-        # Set state
-        state_request = SetInt16.Request()
-        state_request.data = 0
-        # Set mode
-        # 4: velocity control mode
-        mode_request = SetInt16.Request()
-        mode_request.data = 4
+        self.create_timer(
+            0.1,
+            self.run,
+            callback_group=callback_group,
+        )
 
-        try:
-            future_mode = self.mode_client.call_async(mode_request)
-            rclpy.spin_until_future_complete(self, future_mode, timeout_sec=TIMEOUT)
+    def follow_callback(self, msg: Point):
+        """Callback for the face following subscriber"""
+        self.last_follow_msg = time.time()
+        self.follow_face["x"] = msg.x
+        self.follow_face["y"] = msg.y
+        self.flag_active_face = True
 
-            future_state = self.state_client.call_async(state_request)
-            rclpy.spin_until_future_complete(self, future_state, timeout_sec=TIMEOUT)
-        except Exception as e:
-            Logger.error(self, f"Error Activating arm: {e}")
+    def joint_states_callback(self, msg: JointState):
+        relevant_indices = []
+        for i, joint_name in enumerate(msg.name):
+            if joint_name in xarm6.joint_names():
+                relevant_indices.append(i)
+        # Filtra solo los joints del brazo
+        if len(relevant_indices) == 0:
+            return
+        self.joint_states = JointState()
+        self.joint_states.name = [msg.name[i] for i in relevant_indices]
+        self.joint_states.position = [msg.position[i] for i in relevant_indices]
 
     def get_dashgo_cmd_vel_callback(self, msg: PoseStamped):
         """Callback to get the dashgo rotational velocity"""
         self.dashgo_cmd_vel = msg.pose.orientation.z
 
-    def follow_callback(self, msg: Point):
-        """Callback for the face following subscriber"""
-        self.follow_face["x"] = msg.x
-        self.follow_face["y"] = msg.y
-        self.flag_active_face = True
-
-    def get_follow_face(self):
-        """Get the face to follow"""
-        if self.flag_active_face:
-            self.flag_active_face = False
-            return self.follow_face["x"], self.follow_face["y"]
-        else:
-            return None, None
-
-    def set_state_moveit(self):
-        Logger.info(self, "Activating arm for moveit")
-
-        # Set state
-        state_request = SetInt16.Request()
-        state_request.data = 0
-        # Set mode
-        mode_request = SetInt16.Request()
-        mode_request.data = 1
-
-        try:
-            self.mode_client.call_async(mode_request)
-            self.state_client.call_async(state_request)
-        except Exception as e:
-            Logger.error(self, f"Error Activating arm: {e}")
-        Logger.info(self, "ACTIVATED MOVEIT")
-
     def follow_person_callback(self, request: FollowFace.Request, response: FollowFace.Response):
         self.is_following_person = request.follow_face
         if not self.is_following_person:
             self.move_to(0.0, 0.0)
-            time.sleep(1)
-            print("deactivating arm")
-            self.set_state_moveit()
-            time.sleep(1)
-        else:
-            self.set_state()
         response.success = True
         return response
 
     def move_to(self, x: float, y: float):
-        Logger.info(self, "Moving arm with velocity")
-
+        Logger.info(self, f"x: {x} , y: {y}")
+        # Prepare velocity command for joint trajectory controller
+        traj_msg = JointTrajectory()
+        point = JointTrajectoryPoint()
         # Set motion
         x = x * -1
         if x > 0.1:
@@ -184,40 +183,63 @@ class FollowPersonNode(Node):
             y_vel = -0.1
         else:
             y_vel = y
+        speed_multiplier = FOLLOW_FACE_SPEED * SPEED
+        x_vel *= speed_multiplier
+        y_vel *= speed_multiplier
 
-        motion_msg = MoveVelocity.Request()
-        motion_msg.is_sync = True
-        motion_msg.speeds = [x_vel, 0.0, 0.0, 0.0, y_vel, 0.0, 0.0]
+        for name, position in zip(self.joint_states.name, self.joint_states.position):
+            if name == "joint1":
+                if position < -2.5 or position > -0.5:
+                    point.positions.append(position)
+                    continue
+                point.positions.append(position + x_vel)
+                traj_msg.joint_names.append(name)
+            elif name == "joint5":
+                traj_msg.joint_names.append(name)
+                point.positions.append(position + y_vel)
+            else:
+                traj_msg.joint_names.append(name)
+                point.positions.append(position)
 
+        point.time_from_start.sec = 0
+        point.time_from_start.nanosec = int(1e8)  # 0.2s
+        traj_msg.points.append(point)
         try:
-            print(f"mock moving to {x} {y}")
-            future_move = self.move_client.call_async(motion_msg)
-            future_move.add_done_callback(self.state_response_callback)  # Fire-and-forget
-
+            # Publish to joint trajectory controller
+            self.traj_pub.publish(traj_msg)
         except Exception as e:
-            Logger.error(self, f"Error desactivating arm: {e}")
-            # return self.STATE["EXECUTION_ERROR"]
+            Logger.error(self, f"Error sending joint trajectory velocity: {e}")
             return 123
-
-        Logger.success(self, "Arm moved")
         return 123
 
-    def send_joint_velocity(self, velo_rotation: float):
-        """Send joint velocity to the arm"""
-        Logger.info(self, "Sending joint velocity")
-        print(f"velocity : {velo_rotation}")
-        # Set motion
-        motion_msg = MoveVelocity.Request()
-        motion_msg.is_sync = True
-        motion_msg.speeds = [-velo_rotation, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    def go_zero(self):
+        # Prepare velocity command for joint trajectory controller
+        self.get_logger().info("GOZEROOO")
+        traj_msg = JointTrajectory()
+        point = JointTrajectoryPoint()
 
+        for name, position in zip(self.joint_states.name, self.joint_states.position):
+            if name == "joint1":
+                point.positions.append(-1.57)
+                traj_msg.joint_names.append(name)
+            elif name == "joint5":
+                traj_msg.joint_names.append(name)
+            else:
+                traj_msg.joint_names.append(name)
+                point.positions.append(position)
+
+        point.time_from_start.sec = 0
+        point.time_from_start.nanosec = int(5e8)  # 0.2s
+        traj_msg.points.append(point)
+
+        self.get_logger().info(f"traj: {traj_msg}")
         try:
-            future_move = self.move_client.call_async(motion_msg)
-            future_move.add_done_callback(self.state_response_callback)  # Fire-and-forget
-
+            # Publish to joint trajectory controller
+            self.traj_pub.publish(traj_msg)
         except Exception as e:
-            Logger.error(self, f"Error desactivating arm: {e}")
-            return self.STATE["EXECUTION_ERROR"]
+            Logger.error(self, f"Error sending joint trajectory velocity: {e}")
+            return 123
+        return 123
 
     def state_response_callback(self, future):
         """Callback for state service response"""
@@ -250,38 +272,49 @@ class FollowPersonNode(Node):
             Logger.error(self, f"Error getting joints arm: {e}")
             return self.STATE["EXECUTION_ERROR"]
 
+    def get_follow_face(self):
+        """Get the face to follow"""
+        if self.flag_active_face:
+            self.flag_active_face = False
+            return self.follow_face["x"], self.follow_face["y"]
+        else:
+            return None, None
+
     def run(self):
         if not self.is_following_person:
-            # print("sending papu")
             return
 
         self.get_joint_angle()
-        if self.angle_status is not None:
-            x, y = self.get_follow_face()
-            if x is not None:
-                if self.angle_status is not None:
-                    vel = self.error_to_velocity(x, y)
-                    if self.angle_status[0] > -2.26893 and self.angle_status[0] < -0.872665:
-                        self.send_joint_velocity(vel)
+
+        x, y = self.get_follow_face()
+
+        if (time.time() - self.last_follow_msg) > 1.0:
+            self.go_zero()
+            return
+        if x is not None:
+            if self.angle_status is not None:
+                vel = self.error_to_velocity(x, y)
+                if self.angle_status[0] > -2.26893 and self.angle_status[0] < -0.872665:
+                    self.move_to(vel, 0.0)
+                else:
+                    if self.angle_status[0] <= -2.26893 and vel < 0:
+                        self.move_to(vel, 0.0)
+                    elif self.angle_status[0] >= -0.872665 and vel > 0:
+                        self.move_to(vel, 0.0)
                     else:
-                        if self.angle_status[0] <= -2.26893 and vel < 0:
-                            self.send_joint_velocity(vel)
-                        elif self.angle_status[0] >= -0.872665 and vel > 0:
-                            self.send_joint_velocity(vel)
-                        else:
-                            self.send_joint_velocity(0.0)
+                        self.move_to(0.0, 0.0)
 
     def error_to_velocity(self, x: float, y: float):
         """Convert error to velocity"""
-        KP = 0.4
+        KP = 0.7
         x_vel = KP * x
         x_vel = max(min(x_vel, MAX_ROTATIONAL_VEL), -MAX_ROTATIONAL_VEL)
 
-        # x_vel_sign = np.sign(x_vel)
-        # dashgo_vel_sign = np.sign(self.dashgo_cmd_vel)
+        x_vel_sign = np.sign(x_vel)
+        dashgo_vel_sign = np.sign(self.dashgo_cmd_vel)
 
-        # if x_vel_sign == dashgo_vel_sign and abs(x) <= MAX_ERROR:
-        #     return 0.0
+        if x_vel_sign == dashgo_vel_sign and abs(x) <= MAX_ERROR:
+            return 0.0
 
         return x_vel
 

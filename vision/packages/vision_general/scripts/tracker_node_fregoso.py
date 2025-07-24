@@ -57,7 +57,6 @@ class SingleTracker(Node):
         super().__init__("tracker_node")
         self.bridge = CvBridge()
         self.callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
-
         self.image_subscriber = self.create_subscription(
             Image, CAMERA_TOPIC, self.image_callback, 10
         )
@@ -480,7 +479,7 @@ class SingleTracker(Node):
                     if person_angle is not None:
                         if self.person_data[person_angle] is not None:
                             if compare_images(
-                                embedding, self.person_data[person_angle], threshold=0.7
+                                embedding, self.person_data[person_angle], threshold=0.8
                             ):
                                 self.person_data["id"] = person["track_id"]
                                 self.person_data["coordinates"] = (
@@ -496,7 +495,7 @@ class SingleTracker(Node):
                                 break
                         else:
                             if compare_images(
-                                embedding, self.person_data["embeddings"], threshold=0.7
+                                embedding, self.person_data["embeddings"], threshold=0.8
                             ):
                                 self.person_data["id"] = person["track_id"]
                                 self.success(

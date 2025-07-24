@@ -280,7 +280,7 @@ class HRITasks(metaclass=SubtaskMeta):
                     Logger.warn(self.node, f"{key} action server not initialized. ({self.task})")
 
     @service_check("speak_service", Status.SERVICE_CHECK, TIMEOUT)
-    def say(self, text: str, wait: bool = True, speed: float = 1.3) -> None:
+    def say(self, text: str, wait: bool = True, speed: float = 1.15) -> None:
         """Method to publish directly text to the speech node"""
         Logger.info(self.node, f"Sending to saying service: {text}")
 
@@ -543,7 +543,7 @@ class HRITasks(metaclass=SubtaskMeta):
             self.say(question)
 
             if use_hotwords:
-                self.say("Please confirm by saying yes or no")
+                # self.say("Please confirm by saying yes or no")
 
                 s, keyword = self.interpret_keyword(["yes", "no"], timeout=wait_between_retries)
                 if s == Status.EXECUTION_SUCCESS:
@@ -607,6 +607,8 @@ class HRITasks(metaclass=SubtaskMeta):
         min_wait_between_retries: float = 5,
         skip_extract_data: bool = False,
         skip_confirmation: bool = False,
+        options: list[str] = None,
+        remap: dict = None,
     ):
         """
         Method to confirm a specific question.
@@ -634,13 +636,28 @@ class HRITasks(metaclass=SubtaskMeta):
             hear_status, interpreted_text = self.hear(hotwords=hotwords)
 
             if hear_status == Status.EXECUTION_SUCCESS:
-                if not skip_extract_data:
+                target_info = interpreted_text
+                if not skip_extract_data and not options:
                     s, target_info = self.extract_data(query, interpreted_text, context)
-                else:
-                    s = Status.TARGET_NOT_FOUND
 
-                if s == Status.TARGET_NOT_FOUND:
-                    target_info = interpreted_text
+                try:
+                    if options is not None:
+                        foundExact = False
+                        for option in options:
+                            if option.lower() in target_info.lower():
+                                target_info = option
+                                foundExact = True
+                                break
+                        if not foundExact:
+                            target_info = self.find_closest(options, target_info)[0]
+                except Exception as e:
+                    print("Failed options:", e)
+
+                try:
+                    if remap is not None and target_info in remap:
+                        target_info = remap[target_info]
+                except Exception as e:
+                    print("Failed remap:", e)
 
                 if skip_confirmation:
                     return Status.EXECUTION_SUCCESS, target_info
@@ -1041,41 +1058,34 @@ class HRITasks(metaclass=SubtaskMeta):
         Logger.info(self.node, "Categorizing objects...")
 
         try:
-            # Categorize shelves
-            shelve_categories = {}
             categorized_shelves = {}
+
+            category_shelve = {}
 
             # Use this as miscellaneous category for empty shelves
             empty_shelve_index = 0
             miscellaneous_category = False
 
             for level in shelves:
-                if level not in shelve_categories:
-                    shelve_categories[level] = []
+                if level not in categorized_shelves:
+                    categorized_shelves[level] = []
 
                 for object_name in shelves[level]:
-                    shelve_categories[level].append(self.deterministic_categorization(object_name))
+                    category = self.deterministic_categorization(object_name)
+                    categorized_shelves[level].append(category)
+                    category_shelve[category] = level
 
-                if len(shelve_categories[level]) < 1:
-                    categorized_shelves[level] = "empty"
+                if len(categorized_shelves[level]) < 1:
+                    categorized_shelves[level] = ["empty"]
                     empty_shelve_index = level
-                else:
-                    counts = {}
-                    for obj in shelve_categories[level]:
-                        if obj not in counts:
-                            counts[obj] = 0
-                        counts[obj] += 1
-                    categorized_shelves[level] = max(counts, key=counts.get)
 
             objects_to_add = {level: [] for level in shelves.keys()}
 
             for table_object in table_objects:
                 category = self.deterministic_categorization(table_object)
 
-                if category in categorized_shelves.values():
-                    for key, value in categorized_shelves.items():
-                        if value == category:
-                            objects_to_add[key].append(table_object)
+                if category in category_shelve.keys():
+                    objects_to_add[category_shelve[category]].append(table_object)
                 else:
                     placed_object = False
                     for key in categorized_shelves.keys():
@@ -1086,20 +1096,33 @@ class HRITasks(metaclass=SubtaskMeta):
                             break
 
                     if not placed_object:
-                        categorized_shelves[empty_shelve_index] = "miscellaneous"
+                        categorized_shelves[empty_shelve_index] = ["miscellaneous"]
                         miscellaneous_category = True
                         objects_to_add[empty_shelve_index].append(table_object)
 
             if miscellaneous_category:
-                categorized_shelves[empty_shelve_index] = "miscellaneous"
+                categorized_shelves[empty_shelve_index] = ["miscellaneous"]
 
         except Exception as e:
             self.node.get_logger().error(f"Error: {e}")
             return Status.EXECUTION_ERROR, {}, {}
 
+        # Remove duplicated categories
+        for level in categorized_shelves:
+            unique = set()
+
+            for cat in categorized_shelves[level]:
+                unique.add(cat)
+
+            categorized_shelves[level] = list(unique)
+
         Logger.info(self.node, "Finished executing categorize_objects")
 
-        return Status.EXECUTION_SUCCESS, categorized_shelves, objects_to_add
+        old_api = {}
+        for key in categorized_shelves:
+            old_api[key] = " ".join(categorized_shelves[key])
+
+        return Status.EXECUTION_SUCCESS, old_api, objects_to_add, categorized_shelves
 
     def publish_display_topic(self, topic: str):
         self.display_publisher.publish(String(data=topic))

@@ -35,7 +35,7 @@ bash $script
 script="manipulation-pick-place.sh"
 bash $script
 
-sleep 4
+sleep 30
 
 script="navigation.sh"
 bash $script
@@ -46,5 +46,5 @@ bash $script
 
 sleep 3
 
-script="integration"
+script="integration.sh"
 bash $script

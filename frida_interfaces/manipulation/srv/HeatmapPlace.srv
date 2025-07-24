@@ -1,5 +1,6 @@
 sensor_msgs/PointCloud2 pointcloud
 bool prefer_closest
+geometry_msgs/PointStamped close_point
 ---
 geometry_msgs/PointStamped place_point
 bool success

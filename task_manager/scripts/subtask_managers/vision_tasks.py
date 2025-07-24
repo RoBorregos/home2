@@ -31,6 +31,7 @@ from frida_constants.vision_constants import (
     SET_TARGET_TOPIC,
     SHELF_DETECTION_TOPIC,
     READ_QR_TOPIC,
+    GET_CUSTOMER_TOPIC,
 )
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.msg import ObjectDetection, PersonList
@@ -48,6 +49,7 @@ from frida_interfaces.srv import (
     ShelfDetectionHandler,
     TrackBy,
     ReadQr,
+    Customer,
 )
 from geometry_msgs.msg import Point, PointStamped
 from rclpy.action import ActionClient
@@ -109,6 +111,8 @@ class VisionTasks:
         self.object_detector_client = self.node.create_client(
             DetectionHandler, DETECTION_HANDLER_TOPIC_SRV
         )
+
+        self.customer_client = self.node.create_client(Customer, GET_CUSTOMER_TOPIC)
 
         self.detect_person_action_client = ActionClient(self.node, DetectPerson, CHECK_PERSON_TOPIC)
 
@@ -285,7 +289,7 @@ class VisionTasks:
         return Status.EXECUTION_SUCCESS
 
     @mockable(return_value=100)
-    @service_check("find_seat_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
+    @service_check("find_seat_client", [Status.EXECUTION_ERROR, 0], TIMEOUT)
     def find_seat(self) -> tuple[int, float]:
         """Find an available seat and get the angle for the camera to point at"""
 
@@ -300,11 +304,11 @@ class VisionTasks:
 
             if not result.success:
                 Logger.warn(self.node, "No seat found")
-                return Status.TARGET_NOT_FOUND, 300
+                return Status.TARGET_NOT_FOUND, 0
 
         except Exception as e:
             Logger.error(self.node, f"Error finding seat: {e}")
-            return Status.EXECUTION_ERROR, 300
+            return Status.EXECUTION_ERROR, 0
 
         Logger.success(self.node, f"Seat found: {result.angle}")
         return Status.EXECUTION_SUCCESS, result.angle
@@ -339,7 +343,7 @@ class VisionTasks:
         return Status.EXECUTION_SUCCESS, result.result
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, []), delay=2)
-    @service_check("shelf_detections_client", Status.EXECUTION_ERROR, TIMEOUT)
+    # @service_check("shelf_detections_client", Status.EXECUTION_ERROR, TIMEOUT)
     def detect_shelf(self, timeout: float = TIMEOUT) -> tuple[Status, list[ShelfDetection]]:
         """Detect the shelf in the image"""
         Logger.info(self.node, "Waiting for shelf detection")
@@ -429,6 +433,7 @@ class VisionTasks:
                 object_detection.px = detection.point3d.point.x
                 object_detection.py = detection.point3d.point.y
                 object_detection.pz = detection.point3d.point.z
+                object_detection.point3d = detection.point3d
                 detections.append(object_detection)
         except Exception as e:
             Logger.error(self.node, f"Error detecting objects: {e}")
@@ -663,6 +668,30 @@ class VisionTasks:
         Logger.success(self.node, "Person tracking success")
         return Status.EXECUTION_SUCCESS
 
+    @mockable(return_value=True, delay=2)
+    @service_check("customer_client", False, TIMEOUT)
+    def get_customer(self) -> int:
+        """Track the person in the image"""
+        Logger.info(self.node, "Searching customer")
+        # request = TrackBy.Request()
+        request = Customer.Request()
+
+        try:
+            future = self.customer_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+            result = future.result()
+
+            if not result.found:
+                Logger.warn(self.node, "No person found")
+                return Status.TARGET_NOT_FOUND, result.point
+
+        except Exception as e:
+            Logger.error(self.node, f"Error tracking person: {e}")
+            return Status.EXECUTION_ERROR, result.point
+
+        Logger.success(self.node, "Person tracking success")
+        return Status.EXECUTION_SUCCESS, result.point
+
     @mockable(return_value=[Status.EXECUTION_SUCCESS, 100])
     @service_check("count_by_pose_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
     def count_by_pose(self, pose: str) -> tuple[int, int]:
@@ -832,7 +861,7 @@ class VisionTasks:
     def describe_bag_moondream(self):
         """Describe the bag using only moondream"""
         Logger.info(self.node, "Describing bag")
-        prompt = "Describe the bag that the person is pointing at"
+        prompt = "Describe the bag that the person is pointing at. Say what color it is."
         return self.moondream_query(prompt, query_person=False)
 
     def find_seat_moondream(self):
@@ -874,59 +903,59 @@ class VisionTasks:
 
     def get_drink_position(self, detections: list[BBOX], drink: str) -> tuple[int, str]:
         """Get the position of the drink in the detected objects"""
-        location = ""
-        for detection in detections:
-            if detection.classname.lower() == drink.lower():
-                if detection.x < 0.35:
-                    location = "left"
-                elif detection.x > 0.65:
-                    location = "right"
-                else:
-                    location = "center"
+        # location = ""
+        # for detection in detections:
+        #     if detection.classname.lower() == drink.lower():
+        #         if detection.x < 0.35:
+        #             location = "left"
+        #         elif detection.x > 0.65:
+        #             location = "right"
+        #         else:
+        #             location = "center"
 
-                if detection.y < 0.35:
-                    location += " top"
-                elif detection.y > 0.65:
-                    location += " bottom"
+        #         if detection.y < 0.35:
+        #             location += " top"
+        #         elif detection.y > 0.65:
+        #             location += " bottom"
 
-                return Status.EXECUTION_SUCCESS, location
+        #         return Status.EXECUTION_SUCCESS, location
 
-        return Status.TARGET_NOT_FOUND, "Not found"
-        # x_pos = []
-        # drink_pos = None
-        # left_pos = None
-        # right_pos = None
+        # return Status.TARGET_NOT_FOUND, "Not found"
+        x_pos = []
+        drink_pos = None
+        left_pos = None
+        right_pos = None
 
-        # for i in range(len(detections)):
-        #     x_pos.append((detections[i].x, i))
-        #     if detections[i].classname.lower() == drink.lower():
-        #         drink_pos = i
+        for i in range(len(detections)):
+            x_pos.append((detections[i].x, i))
+            if detections[i].classname.lower() == drink.lower():
+                drink_pos = i
 
-        # if drink_pos is None:
-        #     return Status.TARGET_NOT_FOUND, "Not found"
+        if drink_pos is None:
+            return Status.TARGET_NOT_FOUND, "Not found"
 
-        # x_pos.sort()
+        x_pos.sort()
 
-        # for clx, (x, i) in enumerate(x_pos):
-        #     if i == drink_pos:
-        #         if clx > 0:
-        #             left_pos = x_pos[clx - 1][1]
-        #         elif len(x_pos) > clx + 1:
-        #             right_pos = x_pos[clx + 1][1]
-        #         if clx < len(order_labels):
-        #             location = f"the{order_labels[clx]} from left to right"
-        #         break
+        for clx, (x, i) in enumerate(x_pos):
+            if i == drink_pos:
+                if clx > 0:
+                    left_pos = x_pos[clx - 1][1]
+                elif len(x_pos) > clx + 1:
+                    right_pos = x_pos[clx + 1][1]
+                if clx < len(order_labels):
+                    location = f"the {order_labels[clx]} from left to right"
+                break
 
-        # if left_pos is not None:
-        #     if location != "":
-        #         location += ", "
-        #     location += f"to the right of the {detections[left_pos].classname.lower()}"
-        # elif right_pos is not None:
-        #     if location != "":
-        #         location += ", "
-        #     location += f"to the left of the {detections[right_pos].classname.lower()}"
+        if left_pos is not None:
+            if location != "":
+                location += ", "
+            location += f"to the right of the {detections[left_pos].classname.lower()}"
+        elif right_pos is not None:
+            if location != "":
+                location += ", "
+            location += f"to the left of the {detections[right_pos].classname.lower()}"
 
-        # return Status.EXECUTION_SUCCESS, location
+        return Status.EXECUTION_SUCCESS, location
 
 
 if __name__ == "__main__":

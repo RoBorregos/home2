@@ -23,7 +23,7 @@
         <mesh filename="${mesh_path}base_link.STL" />
       </geometry>
     </collision>
-        <collision>
+    <collision>
       <origin xyz=".09 -0.12 .49" rpy="0 0 0"/>
       <geometry>
         <sphere radius="0.063"/>

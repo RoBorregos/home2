@@ -19,7 +19,6 @@ from utils.status import Status
 import time
 from geometry_msgs.msg import PointStamped, Point
 from std_msgs.msg import Header
-from builtin_interfaces.msg import Time
 
 ATTEMPT_LIMIT = 3
 
@@ -37,25 +36,40 @@ class CleanTableTM(Node):
         PLACE_OBJECT = "PLACE_OBJECT"
         NAVIGATE_TO_DROPOFF = "NAVIGATE_TO_PLACE_LOCATION"
         NAVIGATE_TO_TABLE = "NAVIGATE_TO_TABLE"
+        WAIT_FOR_BUTTON = "WAIT_FOR_BUTTON"
         END = "END"
 
     def __init__(self):
         """Initialize the node."""
         super().__init__("clean_table_task_manager")
-        self.subtask_manager = SubtaskManager(self, task=Task.CLEAN_TABLE)
-        self.current_state = CleanTableTM.TaskStates.START
+        self.subtask_manager = SubtaskManager(self, task=Task.STORING_GROCERIES, mock_areas=[])
+        self.current_state = CleanTableTM.TaskStates.WAIT_FOR_DOOR
         self.running_task = True
         self.current_attempt = 0
 
-        self.pick_objects = ["drink", "drink", "cup", "bowl", "spoon", "fork"]
-        self.drinks = ["coke", "kuat_soda", "milk", "orange_juice", "fanta","coffee"]
-        self.deus_picks = ["spoon", "fork"]
+        self.pick_objects = ["drink", "drink", "bowl", "cup", "plate", "spoon", "fork"]
+        self.drinks = ["coke", "kuat_soda", "milk", "orange_juice", "fanta", "coffee"]
+        self.deus_picks = ["spoon", "fork", "plate", "red_plate"]
         self.object_index = 0
-
+        # BUENA
         self.trash_place = PointStamped(
-            header=Header(stamp=Time(sec=1752174502, nanosec=834552352), frame_id="map"),
-            point=Point(x=2.2094616889953613, y=-2.8220369815826416, z=0.0023679733276367188),
+            header=Header(stamp=self.get_clock().now().to_msg(), frame_id="map"),
+            point=Point(x=-5.8760528564453125, y=-1.982506513595581, z=0.4),
         )
+        self.dish_washer = PointStamped(
+            header=Header(stamp=self.get_clock().now().to_msg(), frame_id="map"),
+            point=Point(x=-5.19636869430542, y=2.062105894088745, z=0.4),
+        )
+        # Testing
+
+        # self.trash_place = PointStamped(
+        #     header=Header(stamp=self.get_clock().now().to_msg(), frame_id="map"),
+        #     point=Point(x=-4.802899360656738, y=1.0740711688995361, z=0.4),
+        # )
+        # self.dish_washer = PointStamped(
+        #     header=Header(stamp=self.get_clock().now().to_msg(), frame_id="map"),
+        #     point=Point(x=-4.27923583984375, y=2.618645191192627, z=0.85),
+        # )
 
         self.detected_object = None
 
@@ -63,11 +77,12 @@ class CleanTableTM(Node):
         """Navigate to the location"""
         if say:
             Logger.info(self, f"Moving to {location}")
-            self.subtask_manager.manipulation.follow_face(False)
+            # self.subtask_manager.manipulation.follow_face(False)
             self.subtask_manager.manipulation.move_to_position("nav_pose")
-            self.subtask_manager.hri.say(
-                f"I'll guide you to the {location}. Please follow me.", wait=False
-            )
+            self.subtask_manager.nav.resume_nav()
+            # self.subtask_manager.hri.say(
+            #     f"I'll guide you to the {location}. Please follow me.", wait=False
+            # )
         result = Status.EXECUTION_ERROR
         retry = 0
         while result == Status.EXECUTION_ERROR and retry < ATTEMPT_LIMIT:
@@ -76,6 +91,7 @@ class CleanTableTM(Node):
                 rclpy.spin_until_future_complete(self, future)
                 result = future.result()
             retry += 1
+        self.subtask_manager.nav.pause_nav()
 
     def deus_pick(self, object):
         deus_machina_retries = 0
@@ -91,6 +107,7 @@ class CleanTableTM(Node):
             s, res = self.subtask_manager.hri.confirm(
                 f"Have you placed the {object} on my gripper?", use_hotwords=False
             )
+            s, detections = self.subtask_manager.vision.detect_objects(timeout=10)
             if res == "yes":
                 self.subtask_manager.hri.say("Thank you. I will close my gripper")
                 return self.subtask_manager.manipulation.close_gripper(), ""
@@ -104,6 +121,13 @@ class CleanTableTM(Node):
 
     def run(self):
         """State machine"""
+        if self.current_state == CleanTableTM.TaskStates.WAIT_FOR_BUTTON:
+            Logger.state(self, "Waiting for start button...")
+            self.subtask_manager.hri.say("Press the button to start")
+            # while not self.subtask_manager.hri.start_button_clicked:
+            #     rclpy.spin_once(self, timeout_sec=0.1)
+            Logger.success(self, "Start button pressed, receptionist task will begin now")
+            self.current_state = CleanTableTM.TaskStates.START
 
         if self.current_state == CleanTableTM.TaskStates.START:
             Logger.state(self, "Starting Clean Table Task")
@@ -119,26 +143,71 @@ class CleanTableTM(Node):
                 status, res = self.subtask_manager.nav.check_door()
                 if status == Status.EXECUTION_SUCCESS:
                     Logger.info(self, f"Door status: {res}")
-                else:
-                    Logger.error(self, "Failed to check door status")
+                # else:
+                # Logger.error(self, .say(
+            #     f"I'll guide you to the {location}. Please follow me.", wait=False
+            # )"Failed to check door status")
 
             self.current_state = CleanTableTM.TaskStates.NAVIGATE_TO_TABLE
 
         if self.current_state == CleanTableTM.TaskStates.NAVIGATE_TO_TABLE:
             Logger.state(self, "Navigating to the table")
+            self.navigate_to("kitchen")
+            self.subtask_manager.hri.say(
+                "Please move the chairs away from the table, so I can pick objects."
+            )
+            self.subtask_manager.hri.confirm("Say yes when the table is ready")
             self.navigate_to("kitchen", "table")
+
             self.current_state = CleanTableTM.TaskStates.DETECT_OBJECTS
 
         if self.current_state == CleanTableTM.TaskStates.DETECT_OBJECTS:
             Logger.state(self, "Detecting objects on the table")
-            s, detections = self.subtask_manager.vision.detect_objects()
-            s, labels = self.subtask_manager.vision.get_labels(detections)
+            labels = []
+            detections = []
+            self.subtask_manager.manipulation.move_joint_positions(
+                named_position="table_stare", velocity=0.5, degrees=True
+            )
+            while len(detections) == 0:
+                # s, detections = self.subtask_manager.vision.detect_objects()
+                time.sleep(2.5)
+                try:
+                    status, detections = self.subtask_manager.vision.detect_objects(timeout=10)
+                    print(detections)
+                except Exception as e:
+                    print(e)
+                    pass
 
+                if len(detections) > 0:
+                    break
+                self.timeout(1)
+            # for i in range (5):
+            #     try:
+            #         s, detections = self.subtask_manager.vision.detect_objects()
+            #         if len(detections) == 0:
+
+            #         break
+            #     except Exception as e:
+            #         pass
+            labels = self.subtask_manager.vision.get_labels(detections)
             self.detected_object = self.pick_objects[self.object_index]
             if self.detected_object == "drink":
                 for label in labels:
                     if label in self.drinks:
                         self.detected_object = label
+                        break
+
+            if self.detected_object == "bowl":
+                for label in labels:
+                    if label == "bowl" or label == "red_bowl":
+                        self.detected_object = label
+                        break
+
+            if self.detected_object == "plate":
+                for label in labels:
+                    if label == "red_plate" or label == "plate":
+                        self.detected_object = label
+                        break
             # status, target = self.subtask_manager.hri.find_closest(
             #     labels,
             #     object_to_pick,
@@ -156,13 +225,19 @@ class CleanTableTM(Node):
             if self.detected_object in self.deus_picks:
                 self.deus_pick(self.detected_object)
             else:
-                self.subtask_manager.manipulation.pick_object(self.detected_object)
+                s = Status.EXECUTION_ERROR
+                for i in range(3):
+                    s = self.subtask_manager.manipulation.pick_object(self.detected_object)
+                    if s == Status.EXECUTION_SUCCESS:
+                        break
+                if s == Status.EXECUTION_ERROR:
+                    self.deus_pick(self.detected_object)
             self.current_state = CleanTableTM.TaskStates.NAVIGATE_TO_DROPOFF
 
         if self.current_state == CleanTableTM.TaskStates.NAVIGATE_TO_DROPOFF:
             Logger.state(self, "Navigating to the trashbin or dishwasher")
             if self.pick_objects[self.object_index] == "drink":
-                self.navigate_to("kitchen", "trashbin", say=False)
+                self.navigate_to("kitchen", "waste_basket", say=False)
             else:
                 self.navigate_to("kitchen", "dishwasher", say=False)
             self.current_state = CleanTableTM.TaskStates.PLACE_OBJECT
@@ -175,7 +250,9 @@ class CleanTableTM(Node):
                 # self.subtask_manager.manipulation.move_joint_positions("trash")
                 self.subtask_manager.manipulation.open_gripper()
             else:
-                self.subtask_manager.manipulation.place()
+                # self.subtask_manager.manipulation.place()
+                self.subtask_manager.manipulation.place_in_point(self.dish_washer)
+                self.subtask_manager.manipulation.open_gripper()
 
             self.object_index += 1
             if self.object_index < len(self.pick_objects):
@@ -202,3 +279,7 @@ def main(args=None):
     finally:
         node.destroy_node()
         rclpy.shutdown()
+
+
+if __name__ == "__main__":
+    main()

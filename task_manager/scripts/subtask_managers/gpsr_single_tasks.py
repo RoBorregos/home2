@@ -62,6 +62,7 @@ class GPSRSingleTask(GenericTask):
         self.subtask_manager.manipulation.move_joint_positions(
             named_position="nav_pose", velocity=0.5, degrees=True
         )
+        self.subtask_manager.nav.resume_nav()
         location = self.subtask_manager.hri.query_location(command.location_to_go)[0]
 
         self.subtask_manager.hri.node.get_logger().info(
@@ -70,7 +71,7 @@ class GPSRSingleTask(GenericTask):
 
         future = self.subtask_manager.nav.move_to_location(location.area, location.subarea)
         rclpy.spin_until_future_complete(self.subtask_manager.nav.node, future)
-
+        self.subtask_manager.nav.pause_nav()
         return Status.EXECUTION_SUCCESS, "arrived to:" + command.location_to_go
 
     def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
@@ -83,8 +84,10 @@ class GPSRSingleTask(GenericTask):
         self.subtask_manager.manipulation.move_joint_positions(
             named_position="nav_pose", velocity=0.5, degrees=True
         )
+        self.subtask_manager.nav.resume_nav()
         future = self.subtask_manager.nav.move_to_location(location, sublocation)
         rclpy.spin_until_future_complete(self.subtask_manager.nav.node, future)
+        self.subtask_manager.nav.pause_nav()
 
     ## Manipulation
     def pick_object(self, command: PickObject):
@@ -140,12 +143,14 @@ class GPSRSingleTask(GenericTask):
         while True:
             if current_try >= RETRIES:
                 return self.deus_pick(command)
-            s = self.subtask_manager.manipulation.pick_object(object_to_pick), ""
+            s = self.subtask_manager.manipulation.pick_object(object_to_pick)
             if s == Status.EXECUTION_SUCCESS:
                 self.subtask_manager.hri.say(
                     f"I have picked the {command.object_to_pick}.", wait=True
                 )
                 return s, f"picked {command.object_to_pick}"
+            else:
+                self.subtask_manager.hri.say("My picking plan failed. I will try again", wait=True)
             current_try += 1
 
     def timeout(self, timeout: int = 2):
@@ -170,6 +175,9 @@ class GPSRSingleTask(GenericTask):
             if res == "yes":
                 self.subtask_manager.hri.say("Thank you. I will close my gripper")
                 return self.subtask_manager.manipulation.close_gripper(), ""
+            elif res == "no":
+                return Status.TARGET_NOT_FOUND, ""
+
             else:
                 deus_machina_retries += 1
 

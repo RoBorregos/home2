@@ -288,6 +288,7 @@ class MoveItPlanner(Planner):
             else:
                 self.node.get_logger().error("Failed to call switch controller service")
                 return False
+        time.sleep(1)
         return True
 
     def get_current_operation_state(self) -> MoveIt2State:
