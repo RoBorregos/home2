@@ -4,14 +4,15 @@
 Task Manager for Carry my luggage task of Robocup @Home 2025
 """
 
+import time as t
+
 import rclpy
-from rclpy.node import Node
 from rclpy.duration import Duration
+from rclpy.node import Node
 from subtask_managers.generic_tasks import GenericTask
 from utils.logger import Logger
 from utils.status import Status
 from utils.subtask_manager import SubtaskManager, Task
-import time as t
 
 ATTEMPT_LIMIT = 3
 
@@ -306,4 +307,5 @@ def main(args=None):
 
 
 if __name__ == "__main__":
+    main()
     main()

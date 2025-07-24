@@ -6,6 +6,7 @@ available seats. Tasks for receptionist
 commands.
 """
 
+import math
 import time
 
 import rclpy
@@ -21,17 +22,17 @@ from frida_constants.vision_constants import (
     FIND_SEAT_TOPIC,
     FOLLOW_BY_TOPIC,
     FOLLOW_TOPIC,
+    GET_CUSTOMER_TOPIC,
     PERSON_LIST_TOPIC,
     PERSON_NAME_TOPIC,
     POINTING_OBJECT_SERVICE,
     POSE_GESTURE_TOPIC,
     QUERY_TOPIC,
+    READ_QR_TOPIC,
     SAVE_NAME_TOPIC,
     SET_TARGET_BY_TOPIC,
     SET_TARGET_TOPIC,
     SHELF_DETECTION_TOPIC,
-    READ_QR_TOPIC,
-    GET_CUSTOMER_TOPIC,
 )
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.msg import ObjectDetection, PersonList
@@ -40,16 +41,16 @@ from frida_interfaces.srv import (
     CountByColor,
     CountByPose,
     CropQuery,
+    Customer,
     DetectionHandler,
     DetectPointingObject,
     FindSeat,
     PersonPoseGesture,
     Query,
+    ReadQr,
     SaveName,
     ShelfDetectionHandler,
     TrackBy,
-    ReadQr,
-    Customer,
 )
 from geometry_msgs.msg import Point, PointStamped
 from rclpy.action import ActionClient
@@ -59,9 +60,7 @@ from std_srvs.srv import SetBool, Trigger
 from utils.decorators import mockable, service_check
 from utils.logger import Logger
 from utils.status import Status
-import math
 from utils.task import Task
-
 
 TIMEOUT = 8.0
 TIMEOUT_WAIT_FOR_SERVICE = 1.0

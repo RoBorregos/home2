@@ -11,14 +11,15 @@ Required nav locations:
 
 """
 
-import rclpy
-from rclpy.node import Node
-from utils.logger import Logger
-from utils.subtask_manager import SubtaskManager, Task
-from utils.status import Status
 import time
-from geometry_msgs.msg import PointStamped, Point
+
+import rclpy
+from geometry_msgs.msg import Point, PointStamped
+from rclpy.node import Node
 from std_msgs.msg import Header
+from utils.logger import Logger
+from utils.status import Status
+from utils.subtask_manager import SubtaskManager, Task
 
 ATTEMPT_LIMIT = 3
 
@@ -282,4 +283,5 @@ def main(args=None):
 
 
 if __name__ == "__main__":
+    main()
     main()
