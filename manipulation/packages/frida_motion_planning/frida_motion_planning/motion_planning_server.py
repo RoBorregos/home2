@@ -179,6 +179,12 @@ class MotionPlanningServer(Node):
             callback_group=self.callback_group,
         )
 
+        self.xarm_set_moveit_mode_service = self.create_service(
+            Empty,
+            XARM_SETMODE_MOVEIT_SERVICE,
+            self.set_moveit_mode_service,
+        )
+
         self.current_mode = -1
 
         self.get_logger().info("Motion Planning Server has been started")

@@ -4,25 +4,24 @@
 Task Manager for Demo follow face
 """
 
+import time
 from time import time as t
 
 import rclpy
-from frida_interfaces.srv import FollowFace
-from geometry_msgs.msg import Point
-from rclpy.node import Node
-from utils.logger import Logger
-from xarm_msgs.srv import MoveVelocity, SetInt16
 from frida_constants.manipulation_constants import (
     FACE_RECOGNITION_LIFETIME,
     FOLLOW_FACE_SPEED,
-    MOVEIT_MODE,
     FOLLOW_FACE_TOLERANCE,
+    MOVEIT_MODE,
 )
-from rclpy.callback_groups import ReentrantCallbackGroup
-import time
+from frida_interfaces.srv import FollowFace
 from frida_motion_planning.utils.ros_utils import wait_for_future
+from geometry_msgs.msg import Point
+from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.node import Node
 from std_srvs.srv import Empty
-
+from utils.logger import Logger
+from xarm_msgs.srv import MoveVelocity, SetInt16
 
 XARM_MOVEVELOCITY_SERVICE = "/xarm/vc_set_joint_velocity"
 XARM_SETMODE_SERVICE = "/xarm/set_mode"

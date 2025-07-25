@@ -39,6 +39,7 @@ ZERO_SHOT_DEFAULT_CLASSES = [
     # "bag",
     # "backpack",
     # "tote_bag",
+    "handle",
     # "whiteBaseball",
     # "apple",
     # "cup",
