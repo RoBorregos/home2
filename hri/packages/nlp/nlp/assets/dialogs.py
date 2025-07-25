@@ -325,7 +325,7 @@ def get_answer_question_dialog(contexts, question):
     else:
         user_content = question
 
-    now = datetime.now(pytz.timezone("Brazil/East"))
+    now = datetime.now(pytz.timezone("America/Mexico_City"))
     tomorrow = now + timedelta(days=1)
     current_time = now.strftime("%Y-%m-%d %H:%M:%S")
     tomorrow_time = tomorrow.strftime("%Y-%m-%d")

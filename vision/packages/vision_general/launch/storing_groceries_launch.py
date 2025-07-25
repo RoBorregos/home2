@@ -16,7 +16,7 @@ def generate_launch_description():
         [
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(detector_launch_file),
-                launch_arguments={"yolo_model_path": "robocup25-yolol.pt"}.items(),
+                launch_arguments={"yolo_model_path": "tmr_30classes_v2.pt"}.items(),
             ),
         ]
     )
