@@ -1,0 +1,6 @@
+float32 plane_est_min_height
+float32 plane_est_max_height
+float32 projected_distance
+---
+geometry_msgs/PoseStamped optimal_pose
+bool success

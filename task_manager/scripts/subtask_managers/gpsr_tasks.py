@@ -25,7 +25,7 @@ class GPSRTask(GenericTask):
         """Initialize the class"""
         super().__init__(subtask_manager)
         # Angles are relative to current position
-        self.pan_angles = [90, -90]
+        self.pan_angles = [-35, 70]
         package_share_directory = get_package_share_directory("frida_constants")
         file_path = os.path.join(package_share_directory, "map_areas/areas.json")
         with open(file_path, "r") as file:
@@ -44,9 +44,11 @@ class GPSRTask(GenericTask):
         self.subtask_manager.manipulation.move_joint_positions(
             named_position="nav_pose", velocity=0.5, degrees=True
         )
+        self.subtask_manager.nav.resume_nav()
         future = self.subtask_manager.nav.move_to_location(location, sublocation)
         if "navigation" not in self.subtask_manager.get_mocked_areas():
             rclpy.spin_until_future_complete(self.subtask_manager.nav.node, future)
+        self.subtask_manager.nav.pause_nav()
 
     ## HRI, Manipulation
     def give_object(self, command: GiveObject):
@@ -485,6 +487,8 @@ class GPSRTask(GenericTask):
         if isinstance(command, dict):
             command = Count(**command)
 
+        self.subtask_manager.manipulation.move_to_position("front_stare")
+
         possibilities = [v.value for v in Gestures] + [v.value for v in Poses] + ["clothes"]
 
         status, value = self.subtask_manager.hri.find_closest(
@@ -541,6 +545,9 @@ class GPSRTask(GenericTask):
             elif status == Status.TARGET_NOT_FOUND:
                 self.subtask_manager.hri.say(
                     f"I didn't find any person with {command.attribute_value}.",
+                )
+                self.subtask_manager.hri.say(
+                    "Please approach me.",
                 )
 
         return Status.EXECUTION_SUCCESS, "found" + command.attribute_value

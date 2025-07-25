@@ -20,6 +20,8 @@ import matplotlib
 
 matplotlib.use("Agg")  # Use a non-interactive backend
 
+CLOSE_BY_MAX_DISTANCE = 0.3
+
 
 class HeatmapServer(Node):
     def __init__(self):
@@ -140,6 +142,22 @@ class HeatmapServer(Node):
             # Normalize final map
             final_map = final_map / np.max(final_map)
             final_map = np.clip(final_map, 0, None)
+
+        object_point = request.close_point
+
+        if object_point.header.frame_id != "":
+            self.get_logger().info(
+                f"Close point, frame_id: {object_point.header.frame_id}"
+            )
+            self.get_logger().info("Generating close to heatmap")
+            close_to_map = self.generate_close_to_heatmap(
+                binary_map,
+                [object_point.point.x, object_point.point.y],
+                min_x_mm,
+                min_y_mm,
+                grid_size_mm,
+            )
+            final_map = final_map * close_to_map
 
         # Find best position
         max_idx = np.unravel_index(np.argmax(final_map), final_map.shape)
@@ -282,6 +300,30 @@ class HeatmapServer(Node):
                 self.get_logger().error(f"Could not save image: {e}")
 
         return response
+
+    def generate_close_to_heatmap(
+        self,
+        binary_map,
+        close_point,
+        min_x_mm=0,
+        min_y_mm=0,
+        grid_size_mm=10,
+        max_distance=CLOSE_BY_MAX_DISTANCE,
+    ):
+        """
+        Generate a heatmap based on proximity to a close point.
+        """
+        heatmap = np.zeros_like(binary_map, dtype=float)
+        rows, cols = binary_map.shape
+        for i in range(rows):
+            for j in range(cols):
+                if binary_map[i, j] == 1:
+                    x = (min_x_mm + (i + 0.5) * grid_size_mm) / 1000.0
+                    y = (min_y_mm + (j + 0.5) * grid_size_mm) / 1000.0
+                    distance = np.linalg.norm(np.array([x, y]) - np.array(close_point))
+                    if distance <= max_distance:
+                        heatmap[i, j] = max(0, 1 - (distance / max_distance))
+        return heatmap
 
 
 def main(args=None):

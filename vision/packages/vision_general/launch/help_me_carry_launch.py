@@ -37,6 +37,13 @@ def generate_launch_description():
                 output="screen",
                 emulate_tty=True,
             ),
+            Node(
+                package="vision_general",
+                executable="customer_node.py",
+                name="customer_node",
+                output="screen",
+                emulate_tty=True,
+            ),
             # IncludeLaunchDescription(
             #     PythonLaunchDescriptionSource(detector_launch_file)
             # ),

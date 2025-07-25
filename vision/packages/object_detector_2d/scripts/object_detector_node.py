@@ -47,7 +47,7 @@ ARGS = {
     "DEBUG_IMAGE_TOPIC": DEBUG_IMAGE_TOPIC,
     "CAMERA_FRAME": CAMERA_FRAME,
     "TARGET_FRAME": "base_link",
-    "YOLO_MODEL_PATH": "best-detect.pt",
+    "YOLO_MODEL_PATH": "tmr_30classes_v2.pt",
     "USE_ACTIVE_FLAG": False,
     "DEPTH_ACTIVE": True,
     "VERBOSE": False,
@@ -329,16 +329,16 @@ class object_detector_node(rclpy.node.Node):
                 int(top * image.shape[0]),
                 int(bottom * image.shape[0]),
             )
-            cv.rectangle(image, (left, top), (right, bottom), color, 1)
+            cv.rectangle(image, (left, top), (right, bottom), color, 7)
             # draw label, name and score
             cv.putText(
                 image,
                 f"{detection.class_id_}: {detection.label_}: {detection.confidence_}",
                 (left, top - 10),
                 cv.FONT_HERSHEY_SIMPLEX,
-                0.5,
+                2,
                 color,
-                1,
+                2,
             )
             # draw centroid
             cv.circle(

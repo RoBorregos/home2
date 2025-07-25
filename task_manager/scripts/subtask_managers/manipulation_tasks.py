@@ -10,8 +10,14 @@ import rclpy
 from rclpy.node import Node
 from utils.logger import Logger
 
+# from geometry_msgs.msg import PoseStamped
 from frida_interfaces.action import MoveJoints
-from frida_interfaces.srv import GetJoints, FollowFace, GetOptimalPositionForPlane
+from frida_interfaces.srv import (
+    GetJoints,
+    FollowFace,
+    GetOptimalPositionForPlane,
+    GetOptimalPoseForPlane,
+)
 from frida_constants.xarm_configurations import XARM_CONFIGURATIONS
 from rclpy.action import ActionClient
 from typing import List, Union
@@ -19,7 +25,7 @@ from utils.decorators import mockable, service_check
 from utils.status import Status
 from frida_interfaces.action import ManipulationAction
 from frida_interfaces.msg import ManipulationTask
-from geometry_msgs.msg import PointStamped  # , PoseStamped
+from geometry_msgs.msg import PointStamped, PoseStamped
 
 # from utils.decorators import service_check
 from xarm_msgs.srv import SetDigitalIO
@@ -86,6 +92,10 @@ class ManipulationTasks:
         self._fix_position_to_plane_client = self.node.create_client(
             GetOptimalPositionForPlane,
             "/manipulation/get_optimal_position_for_plane",
+        )
+        self._get_optimal_pose_for_plane_client = self.node.create_client(
+            GetOptimalPoseForPlane,
+            "/manipulation/get_optimal_pose_for_plane",
         )
 
     def open_gripper(self):
@@ -468,28 +478,50 @@ class ManipulationTasks:
         Logger.error(self.node, "Invalid position for plane")
         return Status.EXECUTION_ERROR
 
+    def get_optimal_pose_for_plane(
+        self,
+        est_heigth: float,
+        tolerance: float = 0.2,
+        projected_distance: float = 0.5,
+    ) -> PoseStamped:
+        """send to aproach table"""
+
+        req = GetOptimalPoseForPlane.Request()
+        req.plane_est_min_height = est_heigth - tolerance
+        req.plane_est_max_height = est_heigth + tolerance
+        req.projected_distance = projected_distance
+
+        future = self._get_optimal_pose_for_plane_client.call_async(req)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=20.0)
+        result = future.result()
+        if result is None:
+            Logger.error(self.node, "Failed to get optimal pose for plane")
+            return None
+        result: GetOptimalPoseForPlane.Response
+        if not result.success:
+            Logger.error(self.node, "Invalid pose for plane")
+            return None
+
+        return result.optimal_pose
+
     @mockable(return_value=Status.MOCKED)
     @service_check(
         client="_manipulation_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT
     )
     def place_in_point(self, point: PointStamped):
-        self.get_logger().warning("Sending place on point request")
+        # self.get_logger().warning("Sending place on point request")
         # TODO: fix @EmilianoHFlores
-        # goal_msg = ManipulationAction.Goal()
-        # goal_msg.task_type = ManipulationTask.PLACE
-        # goal_msg.place_params.forced_pose = PoseStamped()
+        goal_msg = ManipulationAction.Goal()
+        goal_msg.task_type = ManipulationTask.PLACE
+        goal_msg.place_params.forced_pose = PoseStamped()
 
-        # goal_msg.place_params.forced_pose.header.frame_id = (
-        #     self.clicked_point.header.frame_id
-        # )
-        # goal_msg.place_params.forced_pose.pose.position.x = self.clicked_point.point.x
-        # goal_msg.place_params.forced_pose.pose.position.y = self.clicked_point.point.y
-        # goal_msg.place_params.forced_pose.pose.position.z = self.clicked_point.point.z
+        goal_msg.place_params.forced_pose.header.frame_id = self.clicked_point.header.frame_id
+        goal_msg.place_params.forced_pose.pose.position.x = self.clicked_point.point.x
+        goal_msg.place_params.forced_pose.pose.position.y = self.clicked_point.point.y
+        goal_msg.place_params.forced_pose.pose.position.z = self.clicked_point.point.z
 
-        # self._action_client.send_goal_async(
-        #     goal_msg, feedback_callback=self.feedback_callback
-        # )
-        # self.get_logger().info("Place request sent")
+        self._action_client.send_goal_async(goal_msg, feedback_callback=self.feedback_callback)
+        self.get_logger().info("Place request sent")
 
 
 if __name__ == "__main__":

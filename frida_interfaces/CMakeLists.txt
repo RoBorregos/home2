@@ -116,6 +116,7 @@ set(srv_files
   "manipulation/srv/GetCollisionObjects.srv"
   "manipulation/srv/GetJoints.srv"
   "manipulation/srv/GetOptimalPositionForPlane.srv"
+  "manipulation/srv/GetOptimalPoseForPlane.srv"
   "manipulation/srv/GetPlaneBbox.srv"
   "manipulation/srv/GraspDetection.srv"
   "manipulation/srv/HeatmapPlace.srv"
@@ -152,6 +153,7 @@ set(srv_files
   "vision/srv/TrackBy.srv"
   "vision/srv/ReadQr.srv"
   "vision/srv/ShowDetection.srv"
+  "vision/srv/Customer.srv"
 )
 
 # Generate interfaces only keep the necessary runtimes (python, c++)

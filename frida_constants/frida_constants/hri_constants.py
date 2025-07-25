@@ -75,3 +75,5 @@ SENSITIVITY_THRESHOLD = 0.2
 threshold = 0.6
 
 DEFAULT_HOTWORDS = "Frida RoBorregos"
+
+START_BUTTON_CLIENT = "/hri/display/button_press"

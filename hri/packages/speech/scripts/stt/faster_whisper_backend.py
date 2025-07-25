@@ -209,7 +209,8 @@ class ServeClientFasterWhisper(ServeClientBase):
             ServeClientFasterWhisper.SINGLE_MODEL_LOCK.acquire()
         result, info = self.transcriber.transcribe(
             input_sample,
-            initial_prompt=self.initial_prompt,
+            # initial_prompt=self.initial_prompt,
+            hotwords="Maria Ana Francisca Antônia Adriana Juliana Marcia Fernanda Patrícia Aline Jose Joao Antonio Francisco Carlos gum_balls sponge chocolate_bar coke lemon cornflakes orange_juice peanuts bowl brush milk fork pear tangerine cheese_snack cup broth lime coffee pringles apple knife fanta mayo cloth oats crisps plate tuna spoon ketchup corn_flour kuat polish",
             language=self.language,
             task=self.task,
             vad_filter=self.use_vad,

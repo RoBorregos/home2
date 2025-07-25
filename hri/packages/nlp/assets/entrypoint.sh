@@ -29,7 +29,7 @@ elif [ "$ROLE" = "gpsr" ]; then
   curl http://localhost:11434/api/generate -d '{"model": "qwen3", "keep_alive": -1}'
   curl http://localhost:11434/api/generate -d '{"model": "rbrgs", "keep_alive": -1}'
 elif [ "$ROLE" = "storing" ]; then
-  curl http://localhost:11434/api/generate -d '{"model": "qwen3", "keep_alive": -1}'
+  echo "Storing role detected, not loading any models..."
 else
   echo "Unknown ROLE: $ROLE"
 fi

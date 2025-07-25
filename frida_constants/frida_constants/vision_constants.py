@@ -16,8 +16,6 @@ DETECTIONS_TOPIC = "/vision/detections"
 DETECTIONS_IMAGE_TOPIC = "/vision/detections_image"
 DETECTIONS_POSES_TOPIC = "/vision/detection_poses"
 DETECTIONS_3D_TOPIC = "/vision/detections_3d"
-DETECTIONS_ACTIVE_TOPIC = "/detections_active"
-DEBUG_IMAGE_TOPIC = "/vision/debug_image"
 
 # ZERO SHOT OBJECT DETECTOR TOPICS
 ZERO_SHOT_DETECTIONS_TOPIC = "/vision/zero_shot_detections"
@@ -26,8 +24,21 @@ ZERO_SHOT_DETECTIONS_POSES_TOPIC = "/vision/zero_shot_detections_poses"
 ZERO_SHOT_DETECTIONS_3D_TOPIC = "/vision/zero_shot_detections_3d"
 ZERO_SHOT_DETECTIONS_ACTIVE_TOPIC = "/vision/zero_shot_detections_active"
 SET_DETECTOR_CLASSES_SERVICE = "/vision/set_detector_classes"
-
+DETECTIONS_ACTIVE_TOPIC = "asd"
+DEBUG_IMAGE_TOPIC = "asd"
 ZERO_SHOT_DEFAULT_CLASSES = [
+    # "transparent_box",
+    # "red_cloth",
+    "black_trashcan",
+    # "yellow_cloth",
+    "red_plate",
+    "red_bowl",
+    "plate",
+    "bowl",
+    # "handbag",
+    # "bag",
+    # "backpack",
+    # "tote_bag",
     "handle",
     # "whiteBaseball",
     # "apple",
@@ -49,6 +60,9 @@ ZERO_SHOT_DEFAULT_CLASSES = [
     # "orange",
     # "cup",
 ]
+
+CUSTOMER = "/vision/customer"
+GET_CUSTOMER_TOPIC = "/vision/get_customer"
 
 ZERO_SHOT_MODEL = "yoloe-11l-seg.pt"
 

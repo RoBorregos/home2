@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Any
 
 
 @dataclass
@@ -16,6 +17,7 @@ class BBOX:
     px: float = 0
     py: float = 0
     classname: str = ""
+    point3d: Any = None
 
 
 @dataclass

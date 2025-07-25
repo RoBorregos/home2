@@ -99,7 +99,7 @@ class SayWithContext {
   user_instruction string @description(#"Instruction that will help to system
   to return the desired information to the user, it can be a question or a
   statement like 'tell me how many foods there are on the bookshelf'"#)
-  previous_command_info string[] @description(#"Previous commands needed to return
+  previous_command_info string @description(#"Previous commands needed to return
   the desired information to the user, it has to be a list of previous command or
   commands that have been executed (['count', 'get_visual_info'], etc.), or
   internal information that the system has stored in its memory 
@@ -116,8 +116,8 @@ class CommandListLLM {
   commands AvailableCommands[] @description("List of commands for the robot to execute")
 }
 
-/// System prompt template for the robot service
-template_string RobotServiceSystem() #"
+/// System prompt for non-finetuned model
+template_string RobotServiceSystemNoFinetune() #"
 
 You are a service robot for domestic applications.
  Now you are located in a house environment and we will give you general purpose tasks in the form of natural language.
@@ -180,8 +180,25 @@ You are a service robot for domestic applications.
 You can ask for clarification if the task is not clear enough.
 
 "#
+/// System prompt template for the robot service
+template_string RobotServiceSystem() #"
+
+You are a command interpreter for a robot. Your task is to interpret the user's command and convert it into a structured format that the robot can understand.
+"#
+
 function GenerateCommandList(request: string) -> CommandListLLM {
-  client PRO_2_5
+  client LOCAL_FINETUNED_NEW
+  prompt #"
+    {{ _.role("system") }}
+    You are a command interpreter for a robot. Your task is to interpret the user's command and convert it into a structured format that the robot can understand.
+
+    {{ _.role("user") }}
+    {{ request }}
+  "#
+}
+
+function GenerateNonTunedCommandList(request: string) -> CommandListLLM {
+  client LOCAL_FINETUNED_NEW
   prompt #"
     {{ _.role("system") }}
     {{ RobotServiceSystem() }}

@@ -124,7 +124,7 @@ def structured_response(response, response_format):
     return formatted_response.choices[0].message.content
 
 
-with open("data/command_interpreter_v2.json") as f:
+with open("data/testing-dataset.json") as f:
     command_dataset = json.load(f)
 
 test_cases = [(command["string_cmd"], json.dumps(command["structured_cmd"])) for command in command_dataset[STARTING_CASE + 1 :]]

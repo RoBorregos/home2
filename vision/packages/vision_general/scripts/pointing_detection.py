@@ -27,8 +27,10 @@ USE_RIGHT_HAND = True
 USE_LEFT_HAND = False
 INFERENCE_TIMEOUT = 2.0  # seconds
 DEFAULT_CLASSES = [
-    "bag",
     "handbag",
+    "bag",
+    "backpack",
+    "tote_bag",
 ]
 
 

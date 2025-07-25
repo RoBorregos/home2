@@ -20,7 +20,7 @@ set_log_level("ERROR")
 STARTING_CASE = 0  # Adjust if needed
 SIMILARITY_THRESHOLD = 0.8  # Threshold for complement similarity
 OVERALL_THRESHOLD = 0.75  # Threshold for the overall test case score
-TEST_DATA_FILE = "data/command_interpreter_v3.json"
+TEST_DATA_FILE = "data/testing-dataset.json"
 EMBEDDING_MODEL = "all-MiniLM-L6-v2"  # Example model
 
 

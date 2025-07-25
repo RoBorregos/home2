@@ -52,19 +52,19 @@ class TestTaskManager(Node):
         elif TEST == "PAN_TO":
             self.get_logger().info("Moving to front stare")
             self.subtask_manager["manipulation"].move_joint_positions(
-                named_position="front_stare", velocity=0.3, degrees=True
+                named_position="table_stare", velocity=0.3, degrees=True
             )
             joint_positions = self.subtask_manager["manipulation"].get_joint_positions(degrees=True)
             Logger.info(self, f"Joint positions: {joint_positions}")
-            joint_positions["joint1"] = joint_positions["joint1"] - 45.0
-            self.subtask_manager["manipulation"].move_joint_positions(
-                joint_positions=joint_positions, velocity=0.5, degrees=True
-            )
-            Logger.info(self, "Moving back to original position")
-            joint_positions["joint1"] = joint_positions["joint1"] + 45.0
-            self.subtask_manager["manipulation"].move_joint_positions(
-                joint_positions=joint_positions, velocity=0.5, degrees=True
-            )
+            # joint_positions["joint1"] = joint_positions["joint1"] - 45.0
+            # self.subtask_manager["manipulation"].move_joint_positions(
+            #     joint_positions=joint_positions, velocity=0.5, degrees=True
+            # )
+            # Logger.info(self, "Moving back to original position")
+            # joint_positions["joint1"] = joint_positions["joint1"] + 45.0
+            # self.subtask_manager["manipulation"].move_joint_positions(
+            #     joint_positions=joint_positions, velocity=0.5, degrees=True
+            # )
 
         elif TEST == "NAV_POSE":
             self.get_logger().info("Moving to navigation pose")

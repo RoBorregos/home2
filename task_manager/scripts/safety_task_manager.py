@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
+import time
 from enum import Enum
-from rclpy.node import Node
 
 import rclpy
-from utils.subtask_manager import SubtaskManager, Task
+from rclpy.node import Node
 from utils.logger import Logger
 from utils.status import Status
-import time
+from utils.subtask_manager import SubtaskManager, Task
 
 
 class ExecutionStates(Enum):
@@ -15,6 +15,7 @@ class ExecutionStates(Enum):
     GO_TO_SAFE_PLACE = 10
     SAY_ARRIVED = 20
     GO_BACK = 30
+    WAIT_FOR_BUTTON = 40
 
 
 class Retries(Enum):
@@ -61,6 +62,13 @@ class SafetyTaskManager(Node):
 
     def run(self):
         Logger.info(self, "starting safety")
+        Logger.state(self, "Waiting for start button...")
+        # Wait for the start button to be pressed
+        self.state = ExecutionStates.WAIT_FOR_BUTTON
+        while not self.subtask_manager.hri.start_button_clicked:
+            rclpy.spin_once(self, timeout_sec=0.1)
+        Logger.success(self, "Start button pressed, safety task will begin now")
+
         Logger.info(self, "Ready for open_door")
         self.state = ExecutionStates.WAIT_DOOR_OPEN
         res = "closed"
@@ -73,7 +81,7 @@ class SafetyTaskManager(Node):
                 Logger.error(self, "Failed to check door status")
 
         Logger.info(self, "Door OPENED GOING TO NEXT STAT")
-        hres: Status = self.nav_to("living_room")
+        hres: Status = self.nav_to("inspection_point")
 
         Logger.info(self, f"hres: {hres}")
 
@@ -81,14 +89,24 @@ class SafetyTaskManager(Node):
 
         Logger.info(self, "Saying")
         self.subtask_manager.hri.say(
-            "Hello, My name is Frida, I'm a Friendly Robotic Interactive Domestic Asisstant. I'm here yo help you!"
+            "Hello, My name is Frida, I'm a Friendly Robotic Interactive Domestic Asisstant. I'm here to help you!"
         )
+
+        # self.subtask_manager.hri.send_display_answer("I couldn't understand you. Can you write your response here? (deus ex machina example)")
+
+        self.subtask_manager.hri.start_button_clicked = False
+
+        Logger.info(self, "Waiting for robot press")
+        while not self.subtask_manager.hri.start_button_clicked:
+            rclpy.spin_once(self, timeout_sec=0.1)
+        Logger.success(self, "Start button pressed, safety task continue begin now")
+        self.subtask_manager.hri.start_button_clicked = False
 
         self.state = ExecutionStates.GO_TO_SAFE_PLACE
 
         Logger.info(self, "Going back")
 
-        self.nav_to("kitchen")
+        self.nav_to("exit")
 
         Logger.info(self, "Arrived")
 
