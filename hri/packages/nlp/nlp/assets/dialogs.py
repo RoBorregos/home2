@@ -366,7 +366,7 @@ def get_answer_question_dialog(contexts, question):
         },
         {
             "role": "user",
-            "content": user_content,
+            "content": user_content + "/no_think",
         },
     ]
 

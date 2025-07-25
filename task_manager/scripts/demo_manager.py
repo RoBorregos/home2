@@ -85,7 +85,15 @@ class DemoTM(Node):
                 named_position="front_stare", velocity=0.5, degrees=True
             )
 
-            self.subtask_manager.hri.say("Waiting for someone to say Frida to execute a command.")
+            if self.executed_commands > 0:
+                self.subtask_manager.hri.say(
+                    "I'll wait for someone to say Frida to execute another command."
+                )
+            else:
+                self.subtask_manager.hri.say(
+                    "I'll wait for someone to say Frida to execute a command."
+                )
+
             self.subtask_manager.hri.keyword = ""
 
             while self.subtask_manager.hri.keyword != "frida":
@@ -108,8 +116,11 @@ class DemoTM(Node):
 
             if "pick" in user_command.lower():
                 self.subtask_manager.hri.say("I will pick the object in front of me.")
+                s, target_info = self.subtask_manager.hri.extract_data(
+                    "LLM_object", user_command, "the object that the user want to pick"
+                )
                 self.gpsr_individual_tasks.pick_object(
-                    {"action": "pick_object", "object_to_pick": user_command},
+                    {"action": "pick_object", "object_to_pick": target_info},
                 )
             elif "place" in user_command.lower():
                 self.subtask_manager.hri.say("I will place the object in front of me.")
@@ -117,6 +128,11 @@ class DemoTM(Node):
                     {"action": "place_object"},
                 )
             else:
+                self.subtask_manager.hri.say(
+                    "I'm thinking how I can answer your question, please wait a moment while I process it.",
+                    wait=False,
+                )
+
                 self.gpsr_individual_tasks.say_with_context(
                     {
                         "action": "say_with_context",
@@ -124,6 +140,10 @@ class DemoTM(Node):
                         "previous_command_info": [user_command],
                     }
                 )
+
+            self.executed_commands += 1
+
+            self.subtask_manager.hri.say("I've finished executing the command.")
 
 
 def main(args=None):
