@@ -94,23 +94,23 @@ $(document).ready(function(){initNavTree('md_docs_Run_Areas_Manipulation_pick_an
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p>This example shows how to run a pick and place on our robot. Updated as of April 11, 2025.</p>
-<h1><a class="anchor" id="autotoc_md43"></a>
+<h1><a class="anchor" id="autotoc_md50"></a>
 Launching the Robot</h1>
-<h2><a class="anchor" id="autotoc_md44"></a>
+<h2><a class="anchor" id="autotoc_md51"></a>
 Simulation</h2>
 <p>Launch the robot with our simulation environment on gazebo and loading gripper and 3D camera: </p><div class="fragment"><div class="line">ros2 launch frida_description moveit.launch.py load_zed:=true</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md45"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md52"></a>
 Real RObot</h2>
-<h3><a class="anchor" id="autotoc_md46"></a>
+<h3><a class="anchor" id="autotoc_md53"></a>
 Robot interface</h3>
 <p>On the real robot, run the following command to launch the robot with MoveIt planning, while on the same network as the robot: </p><div class="fragment"><div class="line">ros2 launch arm_pkg frida_moveit_config.launch.py</div>
-</div><!-- fragment --> <h3><a class="anchor" id="autotoc_md47"></a>
+</div><!-- fragment --> <h3><a class="anchor" id="autotoc_md54"></a>
 3D Camera</h3>
 <p>To run the 3D camera, while on the device connected to it, run the following command: </p><div class="fragment"><div class="line">ros2 launch zed_wrapper zed_camera.launch.py camera_model:=zed2 publish_tf:=false</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md48"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md55"></a>
 Launching utilities</h1>
 <p>These represent core functionalities that are used within the pipeline. </p>
-<h2><a class="anchor" id="autotoc_md49"></a>
+<h2><a class="anchor" id="autotoc_md56"></a>
 Object detector</h2>
 <p>To run the object detector, run the following command: </p><div class="fragment"><div class="line">ros2 launch object_detector_2d object_detector_node.launch.py</div>
 <div class="line"> </div>
@@ -118,12 +118,12 @@ Object detector</h2>
 <div class="line">ros2 launch object_detector_2d object_detector_node.launch.py yolo_model_path:=src/home2/vision/packages/object_detector_2d/models/yolo11classes.pt</div>
 </div><!-- fragment --><p> For this, be sure that the topics on <a href="../../../../frida_constants/frida_constants/vision_constants.py">vision constants</a> are set to your published image and depth topics. These may change if you are using simulation or the real robot.</p>
 <p>You can also run the zero shot object detector, which classes you can change on the <a href="../../../../frida_constants/frida_constants/vision_constants.py">vision constants</a> file: </p><div class="fragment"><div class="line">ros2 launch object_detector_2d zero_shot_object_detector.launch.py</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md50"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md57"></a>
 Launch Pick and Place main code</h1>
-<h2><a class="anchor" id="autotoc_md51"></a>
+<h2><a class="anchor" id="autotoc_md58"></a>
 Pick and Place pipeline</h2>
 <p>To run the pick and place pipeline: </p><div class="fragment"><div class="line">ros2 launch pick_and_place pick_and_place.launch.py</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md52"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md59"></a>
 Usage</h1>
 <p>Up until now, this has enabled all functionalities required for the pick and place to work. Calls to it can be done following the action ManipulationTask located in frida_interfaces. To trigger manually, you have two options:</p>
 <ol type="1">

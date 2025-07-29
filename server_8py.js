@@ -1,6 +1,5 @@
 var server_8py =
 [
-    [ "server.Position", "classserver_1_1Position.html", null ],
     [ "server.MoonDreamServicer", "classserver_1_1MoonDreamServicer.html", "classserver_1_1MoonDreamServicer" ],
     [ "serve", "server_8py.html#a469f094fa099c5fafa3f1dc6960381fc", null ],
     [ "args", "server_8py.html#ae3f6e1599e27626aa2ed68baa4311afd", null ],

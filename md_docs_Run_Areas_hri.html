@@ -94,9 +94,9 @@ $(document).ready(function(){initNavTree('md_docs_Run_Areas_hri.html',''); initR
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p>To run or test the modules it is necessary to have Ubuntu 22.04. Alternatively, you can use the docker setup provided in this repository.</p>
-<h1><a class="anchor" id="autotoc_md29"></a>
+<h1><a class="anchor" id="autotoc_md36"></a>
 Docker setup</h1>
-<h2><a class="anchor" id="autotoc_md30"></a>
+<h2><a class="anchor" id="autotoc_md37"></a>
 Quick start using run.sh</h2>
 <p>In root directory (home2), run: </p><div class="fragment"><div class="line">./run.sh hri</div>
 </div><!-- fragment --><p>This will:</p><ul>
@@ -105,10 +105,10 @@ Quick start using run.sh</h2>
 <li>Download the needed LLM models.</li>
 </ul>
 <p>To run a specific task, specify it with the flag <code>--task</code>: </p><div class="fragment"><div class="line">./run.sh hri --receptionist</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md31"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md38"></a>
 Respeaker</h2>
 <p>When running using a microphone other than the ReSpeaker, you need to modify the variable <code>USE_RESPEAKER</code> in the <code><a class="el" href="hri__constants_8py.html">frida_constants/frida_constants/hri_constants.py</a></code> file to <code>False</code>.</p>
-<h1><a class="anchor" id="autotoc_md32"></a>
+<h1><a class="anchor" id="autotoc_md39"></a>
 Additional Information</h1>
 <p>You may want to only launch some of the services. For example, running the module without the LLM, etc. To do so, please check the docker-compose files in the <code>hri</code> folder, and disable the services you do not want to run.</p>
 <p>For more detailed information, see HRI's README.md. </p>

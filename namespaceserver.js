@@ -1,7 +1,6 @@
 var namespaceserver =
 [
     [ "MoonDreamServicer", "classserver_1_1MoonDreamServicer.html", "classserver_1_1MoonDreamServicer" ],
-    [ "Position", "classserver_1_1Position.html", null ],
     [ "serve", "namespaceserver.html#a469f094fa099c5fafa3f1dc6960381fc", null ],
     [ "args", "namespaceserver.html#ae3f6e1599e27626aa2ed68baa4311afd", null ],
     [ "default", "namespaceserver.html#a70ecbc33459e4c393ccddd6f1d1bcc04", null ],

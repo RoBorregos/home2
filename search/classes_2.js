@@ -6,5 +6,6 @@ var searchData=
   ['cleantabletm_3',['CleanTableTM',['../classclean__table__task__manager_1_1CleanTableTM.html',1,'clean_table_task_manager']]],
   ['clientnode_4',['ClientNode',['../classClientNode.html',1,'']]],
   ['config_5',['Config',['../classutils_1_1config_1_1MockConfig_1_1Config.html',1,'utils.config.MockConfig.Config'],['../classutils_1_1config_1_1SubtaskConfig_1_1Config.html',1,'utils.config.SubtaskConfig.Config'],['../classutils_1_1config_1_1TopicConfig_1_1Config.html',1,'utils.config.TopicConfig.Config']]],
-  ['crossentropylabelsmooth_6',['CrossEntropyLabelSmooth',['../classutils_1_1CrossEntropyLabelSmooth.html',1,'utils']]]
+  ['crossentropylabelsmooth_6',['CrossEntropyLabelSmooth',['../classutils_1_1CrossEntropyLabelSmooth.html',1,'utils']]],
+  ['customernode_7',['CustomerNode',['../classcustomer__node_1_1CustomerNode.html',1,'customer_node']]]
 ];

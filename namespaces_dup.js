@@ -32,6 +32,7 @@ var namespaces_dup =
       [ "run", "namespaceclient.html#a10d4416aef9193a3735b7f83fe3adae8", null ]
     ] ],
     [ "closed_door_test", "namespaceclosed__door__test.html", "namespaceclosed__door__test" ],
+    [ "customer_node", "namespacecustomer__node.html", "namespacecustomer__node" ],
     [ "dashgo_driver", "namespacedashgo__driver.html", "namespacedashgo__driver" ],
     [ "dashgo_driver2", "namespacedashgo__driver2.html", "namespacedashgo__driver2" ],
     [ "debug", "namespacedebug.html", [
@@ -44,6 +45,7 @@ var namespaces_dup =
     [ "demo_face", "namespacedemo__face.html", [
       [ "generate_launch_description", "namespacedemo__face.html#ae3adde7c73c08762a4607a57106cd131", null ]
     ] ],
+    [ "demo_manager", "namespacedemo__manager.html", "namespacedemo__manager" ],
     [ "display_gz", "namespacedisplay__gz.html", [
       [ "generate_launch_description", "namespacedisplay__gz.html#a4f95fbbb9f34a1fd59c2387ed4123947", null ]
     ] ],
@@ -71,6 +73,7 @@ var namespaces_dup =
       [ "generate_launch_description", "namespacedualshock__cmd__vel.html#a432ab17ac92da4fc48450236583614a3", null ]
     ] ],
     [ "egpsr_task_manager", "namespaceegpsr__task__manager.html", "namespaceegpsr__task__manager" ],
+    [ "egsr_cut", "namespaceegsr__cut.html", "namespaceegsr__cut" ],
     [ "ekf", "namespaceekf.html", [
       [ "generate_launch_description", "namespaceekf.html#a32e94cb02311b88f95d5b52017cf6948", null ]
     ] ],
@@ -91,8 +94,15 @@ var namespaces_dup =
     [ "exploration_planner", "namespaceexploration__planner.html", "namespaceexploration__planner" ],
     [ "face_recognition_node", "namespaceface__recognition__node.html", "namespaceface__recognition__node" ],
     [ "follow_face_node", "namespacefollow__face__node.html", "namespacefollow__face__node" ],
+    [ "follow_face_node_copt", "namespacefollow__face__node__copt.html", "namespacefollow__face__node__copt" ],
     [ "follow_person_node", "namespacefollow__person__node.html", "namespacefollow__person__node" ],
+    [ "follow_person_node copy", "namespacefollow__person__node_01copy.html", "namespacefollow__person__node_01copy" ],
     [ "follow_person_v2", "namespacefollow__person__v2.html", "namespacefollow__person__v2" ],
+    [ "format", "namespaceformat.html", [
+      [ "parse_names", "namespaceformat.html#a2a29f347a155ccc16cb32c49b561e449", null ],
+      [ "parse_objects", "namespaceformat.html#af0893b47c7fbeda9b19ea7006e54f925", null ],
+      [ "save_json", "namespaceformat.html#ad68caf3b2ac11c6981af7cda72d732bf", null ]
+    ] ],
     [ "frida_constants", "namespacefrida__constants.html", "namespacefrida__constants" ],
     [ "frida_driver", "namespacefrida__driver.html", [
       [ "generate_launch_description", "namespacefrida__driver.html#aef5c72bf0e9a5f9cd51e0088acd02488", null ],
@@ -230,7 +240,6 @@ var namespaces_dup =
       [ "fliplr", "namespacereid__model.html#a03dbf938a17f020c33a65cb86f86ce24", null ],
       [ "get_structure", "namespacereid__model.html#ae68f17bec5313be51d1ab808ef2755d0", null ],
       [ "load_network", "namespacereid__model.html#a4a574d476e5b12bd347146b9ae5c1cb0", null ],
-      [ "_", "namespacereid__model.html#a10f35699cee1c6c95d913f13e94e2d36", null ],
       [ "batch_size", "namespacereid__model.html#aa3618009d6e7524b0bc74f1995eec942", null ],
       [ "classifier", "namespacereid__model.html#adecba37571323573286275a0ae3cf2da", null ],
       [ "config", "namespacereid__model.html#abc26ab485ddf76983b7f06561ebdb8ca", null ],
@@ -291,6 +300,7 @@ var namespaces_dup =
     [ "Servo", "namespaceServo.html", "namespaceServo" ],
     [ "Shelf_OCV", "namespaceShelf__OCV.html", "namespaceShelf__OCV" ],
     [ "show_object_detection", "namespaceshow__object__detection.html", "namespaceshow__object__detection" ],
+    [ "start_button_text", "namespacestart__button__text.html", "namespacestart__button__text" ],
     [ "storing_groceries_commands", "namespacestoring__groceries__commands.html", "namespacestoring__groceries__commands" ],
     [ "storing_groceries_launch", "namespacestoring__groceries__launch.html", [
       [ "generate_launch_description", "namespacestoring__groceries__launch.html#a84e56b2514a7f4c75214c14f7b9a38a4", null ]

@@ -91,7 +91,8 @@ $(document).ready(function(){initNavTree('namespacePlaceManager.html',''); initR
 
 <div class="header">
   <div class="summary">
-<a href="#nested-classes">Classes</a>  </div>
+<a href="#nested-classes">Classes</a> &#124;
+<a href="#func-members">Functions</a>  </div>
   <div class="headertitle"><div class="title">PlaceManager Namespace Reference</div></div>
 </div><!--header-->
 <div class="contents">
@@ -100,7 +101,141 @@ $(document).ready(function(){initNavTree('namespacePlaceManager.html',''); initR
 Classes</h2></td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classPlaceManager_1_1PlaceManager.html">PlaceManager</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
+Functions</h2></td></tr>
+<tr class="memitem:ac2c607b16621e0bf24f9acb14c3aace2"><td class="memItemLeft" align="right" valign="top">Tuple[bool, PointStamped]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacePlaceManager.html#ac2c607b16621e0bf24f9acb14c3aace2">transform_point</a> (PointStamped point, str target_frame, Buffer tf_buffer)</td></tr>
+<tr class="separator:ac2c607b16621e0bf24f9acb14c3aace2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ade8ec96a2a1eb014587d864ab15cf1e0"><td class="memItemLeft" align="right" valign="top">PointStamped&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacePlaceManager.html#ade8ec96a2a1eb014587d864ab15cf1e0">get_object_point</a> (str object_name, detection_handler_client)</td></tr>
+<tr class="separator:ade8ec96a2a1eb014587d864ab15cf1e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4f87c89392969d6c6f180c2dd2779464"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacePlaceManager.html#a4f87c89392969d6c6f180c2dd2779464">get_object_cluster</a> (PointStamped point, perception_3d_client, add_collision_objects=True)</td></tr>
+<tr class="separator:a4f87c89392969d6c6f180c2dd2779464"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0affa04e052ee79ba7a68cfd77e8e8d7"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacePlaceManager.html#a0affa04e052ee79ba7a68cfd77e8e8d7">get_object_centroid</a> (object_cluster)</td></tr>
+<tr class="separator:a0affa04e052ee79ba7a68cfd77e8e8d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Function Documentation</h2>
+<a id="a0affa04e052ee79ba7a68cfd77e8e8d7" name="a0affa04e052ee79ba7a68cfd77e8e8d7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0affa04e052ee79ba7a68cfd77e8e8d7">&#9670;&#160;</a></span>get_object_centroid()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def PlaceManager.get_object_centroid </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>object_cluster</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a4f87c89392969d6c6f180c2dd2779464" name="a4f87c89392969d6c6f180c2dd2779464"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4f87c89392969d6c6f180c2dd2779464">&#9670;&#160;</a></span>get_object_cluster()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def PlaceManager.get_object_cluster </td>
+          <td>(</td>
+          <td class="paramtype">PointStamped&#160;</td>
+          <td class="paramname"><em>point</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>perception_3d_client</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>add_collision_objects</em> = <code>True</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ade8ec96a2a1eb014587d864ab15cf1e0" name="ade8ec96a2a1eb014587d864ab15cf1e0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ade8ec96a2a1eb014587d864ab15cf1e0">&#9670;&#160;</a></span>get_object_point()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> PointStamped PlaceManager.get_object_point </td>
+          <td>(</td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>object_name</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>detection_handler_client</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ac2c607b16621e0bf24f9acb14c3aace2" name="ac2c607b16621e0bf24f9acb14c3aace2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac2c607b16621e0bf24f9acb14c3aace2">&#9670;&#160;</a></span>transform_point()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> Tuple[bool, PointStamped] PlaceManager.transform_point </td>
+          <td>(</td>
+          <td class="paramtype">PointStamped&#160;</td>
+          <td class="paramname"><em>point</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>target_frame</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">Buffer
+&#160;</td>
+          <td class="paramname"><em>tf_buffer</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Transforms a point to a target frame using ROS2 tf2.
+Args:
+    point (PointStamped): The point to transform.
+    target_frame (str): The target frame to transform the point to.
+    tf_buffer (Buffer): The tf2 buffer to use for looking up transforms.
+Returns:
+    PointStamped: The transformed point.
+</pre> 
+</div>
+</div>
 </div><!-- contents -->
 </div><!-- doc-content -->
 <!-- start footer part -->

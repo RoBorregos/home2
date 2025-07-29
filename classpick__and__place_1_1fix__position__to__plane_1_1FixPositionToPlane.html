@@ -116,6 +116,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a691584434a667ced175f24a7563b83af"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aee40446a6e2c9e4f11fadd9b451fb57b"><td class="memItemLeft" align="right" valign="top">GetOptimalPositionForPlane.Response&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1fix__position__to__plane_1_1FixPositionToPlane.html#aee40446a6e2c9e4f11fadd9b451fb57b">get_optimal_position_for_plane_callback</a> (self, GetOptimalPositionForPlane.Request request, GetOptimalPositionForPlane.Response response)</td></tr>
 <tr class="separator:aee40446a6e2c9e4f11fadd9b451fb57b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af061580b37e163eeef680404201ded93"><td class="memItemLeft" align="right" valign="top">GetOptimalPoseForPlane.Response&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1fix__position__to__plane_1_1FixPositionToPlane.html#af061580b37e163eeef680404201ded93">get_optimal_pose_for_plane_callback</a> (self, GetOptimalPoseForPlane.Request request, GetOptimalPoseForPlane.Response response)</td></tr>
+<tr class="separator:af061580b37e163eeef680404201ded93"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
@@ -132,6 +134,10 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a9219c0b4bb548df6e4f2cbabb78950c9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3226edc99e536957e2a83a1e70c4c7ff"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1fix__position__to__plane_1_1FixPositionToPlane.html#a3226edc99e536957e2a83a1e70c4c7ff">opt_plane_pose_srv</a></td></tr>
 <tr class="separator:a3226edc99e536957e2a83a1e70c4c7ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a04be88ef609df23369679aad3e62debb"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1fix__position__to__plane_1_1FixPositionToPlane.html#a04be88ef609df23369679aad3e62debb">optimal_pose_pub</a></td></tr>
+<tr class="separator:a04be88ef609df23369679aad3e62debb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a979d5e3b19769316525163c95a3efabc"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1fix__position__to__plane_1_1FixPositionToPlane.html#a979d5e3b19769316525163c95a3efabc">get_optimal_pose_for_plane_srv</a></td></tr>
+<tr class="separator:a979d5e3b19769316525163c95a3efabc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab123b7e1d777e47f6819e4aa3c5428f4"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1fix__position__to__plane_1_1FixPositionToPlane.html#ab123b7e1d777e47f6819e4aa3c5428f4">tf_buffer</a></td></tr>
 <tr class="separator:ab123b7e1d777e47f6819e4aa3c5428f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a621c6a470845b2fa62892900e798dba0"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1fix__position__to__plane_1_1FixPositionToPlane.html#a621c6a470845b2fa62892900e798dba0">tf_listener</a></td></tr>
@@ -316,6 +322,40 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="af061580b37e163eeef680404201ded93" name="af061580b37e163eeef680404201ded93"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af061580b37e163eeef680404201ded93">&#9670;&#160;</a></span>get_optimal_pose_for_plane_callback()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> GetOptimalPoseForPlane.Response pick_and_place.fix_position_to_plane.FixPositionToPlane.get_optimal_pose_for_plane_callback </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">GetOptimalPoseForPlane.Request&#160;</td>
+          <td class="paramname"><em>request</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">GetOptimalPoseForPlane.Response&#160;</td>
+          <td class="paramname"><em>response</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Callback for the get_optimal_pose_for_plane service</pre><pre class="fragment"> Ivan y Emiliano smn quedará escrito en la literatura</pre> 
+</div>
+</div>
 <a id="aee40446a6e2c9e4f11fadd9b451fb57b" name="aee40446a6e2c9e4f11fadd9b451fb57b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aee40446a6e2c9e4f11fadd9b451fb57b">&#9670;&#160;</a></span>get_optimal_position_for_plane_callback()</h2>
 
@@ -387,6 +427,20 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="a979d5e3b19769316525163c95a3efabc" name="a979d5e3b19769316525163c95a3efabc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a979d5e3b19769316525163c95a3efabc">&#9670;&#160;</a></span>get_optimal_pose_for_plane_srv</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">pick_and_place.fix_position_to_plane.FixPositionToPlane.get_optimal_pose_for_plane_srv</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a9219c0b4bb548df6e4f2cbabb78950c9" name="a9219c0b4bb548df6e4f2cbabb78950c9"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9219c0b4bb548df6e4f2cbabb78950c9">&#9670;&#160;</a></span>get_plane_bbox_client</h2>
 
@@ -409,6 +463,20 @@ Protected Attributes</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">pick_and_place.fix_position_to_plane.FixPositionToPlane.opt_plane_pose_srv</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a04be88ef609df23369679aad3e62debb" name="a04be88ef609df23369679aad3e62debb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a04be88ef609df23369679aad3e62debb">&#9670;&#160;</a></span>optimal_pose_pub</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">pick_and_place.fix_position_to_plane.FixPositionToPlane.optimal_pose_pub</td>
         </tr>
       </table>
 </div><div class="memdoc">

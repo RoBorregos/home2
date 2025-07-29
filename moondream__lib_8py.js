@@ -1,6 +1,5 @@
 var moondream__lib_8py =
 [
-    [ "moondream_lib.Position", "classmoondream__lib_1_1Position.html", null ],
     [ "moondream_lib.MoonDreamModel", "classmoondream__lib_1_1MoonDreamModel.html", "classmoondream__lib_1_1MoonDreamModel" ],
     [ "args", "moondream__lib_8py.html#a9424832bdb6a9f4a1bbe60ce2004f8e7", null ],
     [ "buffer", "moondream__lib_8py.html#adb038b52a38e3ae02b1571585802ebb8", null ],
@@ -12,6 +11,8 @@ var moondream__lib_8py =
     [ "image", "moondream__lib_8py.html#abe40f656e14ad3a830e4548b2a3f436d", null ],
     [ "image_bytes", "moondream__lib_8py.html#afe5bff27ba8743d77b82c97de0489055", null ],
     [ "model", "moondream__lib_8py.html#ac84395d9ed2025a9e954251124789ae7", null ],
+    [ "NOT_FOUND", "moondream__lib_8py.html#a92853496cf2484aa703bdf5a8402bc73", null ],
+    [ "order_labels", "moondream__lib_8py.html#ae20e70a8e9b4400517bdbee89022d0bd", null ],
     [ "parser", "moondream__lib_8py.html#a982a539331047f39736ef58952c3e722", null ],
     [ "result", "moondream__lib_8py.html#a4bd3748d658dedbd9710d61c47840b69", null ],
     [ "test_query", "moondream__lib_8py.html#a3e80178be0f550fe0c9f3ba9acae5445", null ],

@@ -18,6 +18,7 @@ var classface__recognition__node_1_1FaceRecognition =
     [ "success", "classface__recognition__node_1_1FaceRecognition.html#aa60ec7e695061fd845e4ebbfece41da9", null ],
     [ "annotated_frame", "classface__recognition__node_1_1FaceRecognition.html#ad391979f6e6f78830fa34542e510ece8", null ],
     [ "bridge", "classface__recognition__node_1_1FaceRecognition.html#a5f6c046f428d47b528e30d776fd03a3b", null ],
+    [ "callback_gorup", "classface__recognition__node_1_1FaceRecognition.html#ae0efc5d249251148ee14ddaf3683a94e", null ],
     [ "center", "classface__recognition__node_1_1FaceRecognition.html#adc4256a3a5052c9398337d3ea7dffe7e", null ],
     [ "curr_faces", "classface__recognition__node_1_1FaceRecognition.html#aa9f9e0648535695b5543ba80957541b2", null ],
     [ "default_name", "classface__recognition__node_1_1FaceRecognition.html#a7dd439cbed45923fe83c3eb4dad7344a", null ],

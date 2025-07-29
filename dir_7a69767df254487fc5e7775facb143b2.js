@@ -5,6 +5,7 @@ var dir_7a69767df254487fc5e7775facb143b2 =
     [ "CountByColor.srv", "CountByColor_8srv.html", null ],
     [ "CountByPose.srv", "CountByPose_8srv.html", null ],
     [ "CropQuery.srv", "CropQuery_8srv.html", null ],
+    [ "Customer.srv", "Customer_8srv.html", null ],
     [ "DetectionHandler.srv", "DetectionHandler_8srv.html", null ],
     [ "DetectPointingObject.srv", "DetectPointingObject_8srv.html", null ],
     [ "FindSeat.srv", "FindSeat_8srv.html", null ],

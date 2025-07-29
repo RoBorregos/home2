@@ -2,9 +2,7 @@ var classegpsr__task__manager_1_1EGPSRTM =
 [
     [ "States", "classegpsr__task__manager_1_1EGPSRTM_1_1States.html", null ],
     [ "__init__", "classegpsr__task__manager_1_1EGPSRTM.html#adb38ee2f3ce43fde77f909695d0470da", null ],
-    [ "_handle_done", "classegpsr__task__manager_1_1EGPSRTM.html#ac391ddf46a458017ebfb402fede55b2f", null ],
     [ "_handle_execute_command", "classegpsr__task__manager_1_1EGPSRTM.html#a7fcd0fc65eebceee807232c33d983935", null ],
-    [ "_handle_exploration", "classegpsr__task__manager_1_1EGPSRTM.html#aefc484d6d009147d7014debc1df3d591", null ],
     [ "_handle_misplaced_object", "classegpsr__task__manager_1_1EGPSRTM.html#aebc189875f8a771fe8ac7e9c8fcd63ca", null ],
     [ "_handle_start", "classegpsr__task__manager_1_1EGPSRTM.html#a2101521d598aa1e9c3e4dae4b3569f3a", null ],
     [ "_handle_trash", "classegpsr__task__manager_1_1EGPSRTM.html#a8243973a952438be71fdfbcdeeb90faa", null ],

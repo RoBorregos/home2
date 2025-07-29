@@ -33,6 +33,9 @@ var annotated_dup =
     [ "closed_door_test", "namespaceclosed__door__test.html", [
       [ "VirtualStop", "classclosed__door__test_1_1VirtualStop.html", "classclosed__door__test_1_1VirtualStop" ]
     ] ],
+    [ "customer_node", "namespacecustomer__node.html", [
+      [ "CustomerNode", "classcustomer__node_1_1CustomerNode.html", "classcustomer__node_1_1CustomerNode" ]
+    ] ],
     [ "dashgo_driver", "namespacedashgo__driver.html", [
       [ "dashgo_stm32", "namespacedashgo__driver_1_1dashgo__stm32.html", [
         [ "Stm32", "classdashgo__driver_1_1dashgo__stm32_1_1Stm32.html", "classdashgo__driver_1_1dashgo__stm32_1_1Stm32" ]
@@ -40,6 +43,9 @@ var annotated_dup =
     ] ],
     [ "dashgo_driver2", "namespacedashgo__driver2.html", [
       [ "DashgoDriver", "classdashgo__driver2_1_1DashgoDriver.html", "classdashgo__driver2_1_1DashgoDriver" ]
+    ] ],
+    [ "demo_manager", "namespacedemo__manager.html", [
+      [ "DemoTM", "classdemo__manager_1_1DemoTM.html", "classdemo__manager_1_1DemoTM" ]
     ] ],
     [ "dock_to_handle", "namespacedock__to__handle.html", [
       [ "DockToHandleNode", "classdock__to__handle_1_1DockToHandleNode.html", "classdock__to__handle_1_1DockToHandleNode" ]
@@ -49,6 +55,9 @@ var annotated_dup =
     ] ],
     [ "egpsr_task_manager", "namespaceegpsr__task__manager.html", [
       [ "EGPSRTM", "classegpsr__task__manager_1_1EGPSRTM.html", "classegpsr__task__manager_1_1EGPSRTM" ]
+    ] ],
+    [ "egsr_cut", "namespaceegsr__cut.html", [
+      [ "EGPSRTM", "classegsr__cut_1_1EGPSRTM.html", "classegsr__cut_1_1EGPSRTM" ]
     ] ],
     [ "ex_orientation_path_constraint", "namespaceex__orientation__path__constraint.html", [
       [ "MoveToPoseContraintedClient", "classex__orientation__path__constraint_1_1MoveToPoseContraintedClient.html", "classex__orientation__path__constraint_1_1MoveToPoseContraintedClient" ]
@@ -65,8 +74,14 @@ var annotated_dup =
     [ "follow_face_node", "namespacefollow__face__node.html", [
       [ "FollowFaceNode", "classfollow__face__node_1_1FollowFaceNode.html", "classfollow__face__node_1_1FollowFaceNode" ]
     ] ],
+    [ "follow_face_node_copt", "namespacefollow__face__node__copt.html", [
+      [ "FollowFaceNode", "classfollow__face__node__copt_1_1FollowFaceNode.html", "classfollow__face__node__copt_1_1FollowFaceNode" ]
+    ] ],
     [ "follow_person_node", "namespacefollow__person__node.html", [
       [ "FollowPersonNode", "classfollow__person__node_1_1FollowPersonNode.html", "classfollow__person__node_1_1FollowPersonNode" ]
+    ] ],
+    [ "follow_person_node copy", "namespacefollow__person__node_01copy.html", [
+      [ "FollowPersonNode", "classfollow__person__node_01copy_1_1FollowPersonNode.html", "classfollow__person__node_01copy_1_1FollowPersonNode" ]
     ] ],
     [ "follow_person_v2", "namespacefollow__person__v2.html", [
       [ "FollowFaceNode", "classfollow__person__v2_1_1FollowFaceNode.html", "classfollow__person__v2_1_1FollowFaceNode" ]
@@ -151,8 +166,7 @@ var annotated_dup =
       [ "PCB_test", "classmodel_1_1PCB__test.html", "classmodel_1_1PCB__test" ]
     ] ],
     [ "moondream_lib", "namespacemoondream__lib.html", [
-      [ "MoonDreamModel", "classmoondream__lib_1_1MoonDreamModel.html", "classmoondream__lib_1_1MoonDreamModel" ],
-      [ "Position", "classmoondream__lib_1_1Position.html", null ]
+      [ "MoonDreamModel", "classmoondream__lib_1_1MoonDreamModel.html", "classmoondream__lib_1_1MoonDreamModel" ]
     ] ],
     [ "moondream_node", "namespacemoondream__node.html", [
       [ "MoondreamNode", "classmoondream__node_1_1MoondreamNode.html", "classmoondream__node_1_1MoondreamNode" ],
@@ -267,8 +281,7 @@ var annotated_dup =
       [ "SafetyTaskManager", "classsafety__task__manager_1_1SafetyTaskManager.html", "classsafety__task__manager_1_1SafetyTaskManager" ]
     ] ],
     [ "server", "namespaceserver.html", [
-      [ "MoonDreamServicer", "classserver_1_1MoonDreamServicer.html", "classserver_1_1MoonDreamServicer" ],
-      [ "Position", "classserver_1_1Position.html", null ]
+      [ "MoonDreamServicer", "classserver_1_1MoonDreamServicer.html", "classserver_1_1MoonDreamServicer" ]
     ] ],
     [ "Servo", "namespaceServo.html", [
       [ "Servo", "classServo_1_1Servo.html", "classServo_1_1Servo" ]
@@ -281,6 +294,9 @@ var annotated_dup =
     ] ],
     [ "show_object_detection", "namespaceshow__object__detection.html", [
       [ "ShowDetectionNode", "classshow__object__detection_1_1ShowDetectionNode.html", "classshow__object__detection_1_1ShowDetectionNode" ]
+    ] ],
+    [ "start_button_text", "namespacestart__button__text.html", [
+      [ "TestHriManager", "classstart__button__text_1_1TestHriManager.html", "classstart__button__text_1_1TestHriManager" ]
     ] ],
     [ "storing_groceries_commands", "namespacestoring__groceries__commands.html", [
       [ "StoringGroceriesCommands", "classstoring__groceries__commands_1_1StoringGroceriesCommands.html", "classstoring__groceries__commands_1_1StoringGroceriesCommands" ]

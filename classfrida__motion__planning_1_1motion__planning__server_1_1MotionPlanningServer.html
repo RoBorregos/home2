@@ -143,6 +143,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aea88b13a3934fd34d23f63f1664449d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab4275f01acfc190b5adf75889422f8f9"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#ab4275f01acfc190b5adf75889422f8f9">set_gripper_state_callback</a> (self, request, response)</td></tr>
 <tr class="separator:ab4275f01acfc190b5adf75889422f8f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5f2f0deb788836e499630b1680c8e491"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#a5f2f0deb788836e499630b1680c8e491">reset_xarm_controller</a> (self, request, response)</td></tr>
+<tr class="separator:a5f2f0deb788836e499630b1680c8e491"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -178,6 +180,8 @@ Public Attributes</h2></td></tr>
 <tr class="separator:aca4a757226536aa3a5aaaeb6ed9b3ab7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae9b672143661eac8bc9b37ee0fc0c15b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#ae9b672143661eac8bc9b37ee0fc0c15b">xarm_set_moveit_mode_service</a></td></tr>
 <tr class="separator:ae9b672143661eac8bc9b37ee0fc0c15b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:affc6b0285a02cd7886ad966a7dac46f8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#affc6b0285a02cd7886ad966a7dac46f8">reset_controller_client</a></td></tr>
+<tr class="separator:affc6b0285a02cd7886ad966a7dac46f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0fbce25a8ae2cec2115b4e02cc2b8c81"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#a0fbce25a8ae2cec2115b4e02cc2b8c81">current_mode</a></td></tr>
 <tr class="separator:a0fbce25a8ae2cec2115b4e02cc2b8c81"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaa2b407e5123032137e540dd2749c175"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#aaa2b407e5123032137e540dd2749c175">get_collision_objects_service</a></td></tr>
@@ -557,6 +561,40 @@ Protected Attributes</h2></td></tr>
           <td></td>
           <td class="paramtype">&#160;</td>
           <td class="paramname"><em>goal_handle</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a5f2f0deb788836e499630b1680c8e491" name="a5f2f0deb788836e499630b1680c8e491"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5f2f0deb788836e499630b1680c8e491">&#9670;&#160;</a></span>reset_xarm_controller()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def frida_motion_planning.motion_planning_server.MotionPlanningServer.reset_xarm_controller </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>request</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>response</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -989,6 +1027,20 @@ Protected Attributes</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">frida_motion_planning.motion_planning_server.MotionPlanningServer.remove_collision_object_service</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="affc6b0285a02cd7886ad966a7dac46f8" name="affc6b0285a02cd7886ad966a7dac46f8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#affc6b0285a02cd7886ad966a7dac46f8">&#9670;&#160;</a></span>reset_controller_client</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">frida_motion_planning.motion_planning_server.MotionPlanningServer.reset_controller_client</td>
         </tr>
       </table>
 </div><div class="memdoc">

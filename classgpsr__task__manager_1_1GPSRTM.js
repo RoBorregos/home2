@@ -6,7 +6,7 @@ var classgpsr__task__manager_1_1GPSRTM =
     [ "run", "classgpsr__task__manager_1_1GPSRTM.html#a4b53e2251f2eb169b1460844ebd1c0ee", null ],
     [ "timeout", "classgpsr__task__manager_1_1GPSRTM.html#abbbff00204c124650a9cbe5abe4060e6", null ],
     [ "commands", "classgpsr__task__manager_1_1GPSRTM.html#a83babc261c626a2c785fd2d42fd07efb", null ],
-    [ "current_attempt", "classgpsr__task__manager_1_1GPSRTM.html#ad0fe1540f219f10f9d2c9ef32dd8f87b", null ],
+    [ "current_hear_attempt", "classgpsr__task__manager_1_1GPSRTM.html#a4a1c173cdc273ca2723971420ba028b0", null ],
     [ "current_state", "classgpsr__task__manager_1_1GPSRTM.html#a0424791f63c86368d5bb69a24d86a981", null ],
     [ "executed_commands", "classgpsr__task__manager_1_1GPSRTM.html#acb531c8fe459394ab090c6282404ce03", null ],
     [ "gpsr_individual_tasks", "classgpsr__task__manager_1_1GPSRTM.html#ab341aae6715175be22703486a1e5596c", null ],

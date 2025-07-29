@@ -148,6 +148,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a60fef7dea83fd785454d9113a2bb8961"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afc3538fc5f02c577c23e9587a955d4aa"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#afc3538fc5f02c577c23e9587a955d4aa">track_person_by</a> (self, str by, str value, bool track=True)</td></tr>
 <tr class="separator:afc3538fc5f02c577c23e9587a955d4aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab7a11f26316b21d4e7bedefa2e6aad6c"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#ab7a11f26316b21d4e7bedefa2e6aad6c">get_customer</a> (self)</td></tr>
+<tr class="separator:ab7a11f26316b21d4e7bedefa2e6aad6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1380c8df22e3ba215ece11a26b85246f"><td class="memItemLeft" align="right" valign="top">tuple[int, int]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a1380c8df22e3ba215ece11a26b85246f">count_by_pose</a> (self, str pose)</td></tr>
 <tr class="separator:a1380c8df22e3ba215ece11a26b85246f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a04fb617a4dda87aaa7399743fd9c0d52"><td class="memItemLeft" align="right" valign="top">tuple[int, int]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a04fb617a4dda87aaa7399743fd9c0d52">count_by_gesture</a> (self, str gesture)</td></tr>
@@ -227,6 +229,8 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a040c274fad01e7373f18b11345a74556"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae67ce036a7c1ec2887327a652cd2bbee"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#ae67ce036a7c1ec2887327a652cd2bbee">object_detector_client</a></td></tr>
 <tr class="separator:ae67ce036a7c1ec2887327a652cd2bbee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a15a4390ced8eabcb78933d69d77d6e55"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a15a4390ced8eabcb78933d69d77d6e55">customer_client</a></td></tr>
+<tr class="separator:a15a4390ced8eabcb78933d69d77d6e55"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ace30ecfa3989dd7ad41c292b13ebb9cb"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#ace30ecfa3989dd7ad41c292b13ebb9cb">detect_person_action_client</a></td></tr>
 <tr class="separator:ace30ecfa3989dd7ad41c292b13ebb9cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad86e9a18180e3d7bc2874253ec8fbda2"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#ad86e9a18180e3d7bc2874253ec8fbda2">count_by_pose_client</a></td></tr>
@@ -879,6 +883,24 @@ Protected Member Functions</h2></td></tr>
 <pre class="fragment">Callback for the face following subscriber</pre> 
 </div>
 </div>
+<a id="ab7a11f26316b21d4e7bedefa2e6aad6c" name="ab7a11f26316b21d4e7bedefa2e6aad6c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab7a11f26316b21d4e7bedefa2e6aad6c">&#9670;&#160;</a></span>get_customer()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> int subtask_managers.vision_tasks.VisionTasks.get_customer </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Track the person in the image</pre> 
+</div>
+</div>
 <a id="a6bf089d51ced77ac823a402e0542f19e" name="a6bf089d51ced77ac823a402e0542f19e"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a6bf089d51ced77ac823a402e0542f19e">&#9670;&#160;</a></span>get_drink_position()</h2>
 
@@ -1438,6 +1460,20 @@ Protected Member Functions</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">subtask_managers.vision_tasks.VisionTasks.count_by_pose_client</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a15a4390ced8eabcb78933d69d77d6e55" name="a15a4390ced8eabcb78933d69d77d6e55"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a15a4390ced8eabcb78933d69d77d6e55">&#9670;&#160;</a></span>customer_client</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">subtask_managers.vision_tasks.VisionTasks.customer_client</td>
         </tr>
       </table>
 </div><div class="memdoc">

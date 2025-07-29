@@ -24,6 +24,7 @@ var namespacefrida__constants_1_1hri__constants =
     [ "RESPEAKER_LIGHT_TOPIC", "namespacefrida__constants_1_1hri__constants.html#a3eafbf8ea957a6995529edc2d3fcc7e8", null ],
     [ "SENSITIVITY_THRESHOLD", "namespacefrida__constants_1_1hri__constants.html#a451ff86158f7fdd9ed1e85902b264df4", null ],
     [ "SPEAK_SERVICE", "namespacefrida__constants_1_1hri__constants.html#a1405902be9440099af248e891e6a796d", null ],
+    [ "START_BUTTON_CLIENT", "namespacefrida__constants_1_1hri__constants.html#ab1a983b5885fb90a459dc54c41cf94d0", null ],
     [ "STT_ACTION_SERVER_NAME", "namespacefrida__constants_1_1hri__constants.html#a5a3605a4415d25cb9c77f3f904c2da29", null ],
     [ "STT_SERVICE_NAME", "namespacefrida__constants_1_1hri__constants.html#a05d8fa1eccd50686fbaff0e84170dcb9", null ],
     [ "threshold", "namespacefrida__constants_1_1hri__constants.html#a57a8000db92c380cf72a62b5afca2ba8", null ],

@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['navigation_20docs_0',['Navigation Docs',['../md_docs_Run_Areas_nav.html',1,'']]]
+  ['manipulation_0',['Manipulation',['../md_docs_Run_Areas_Manipulation_manipulation.html',1,'(Global Namespace)'],['../md_manipulation_README.html',1,'(Global Namespace)']]]
 ];

@@ -6,6 +6,7 @@ var namespacefollow__person__node =
     [ "DASHGO_CMD_VEL", "namespacefollow__person__node.html#a448d579804da144965357e505dff5c0f", null ],
     [ "MAX_ERROR", "namespacefollow__person__node.html#ab451655c396f8f960bd7200a4c4b04cb", null ],
     [ "MAX_ROTATIONAL_VEL", "namespacefollow__person__node.html#a63f3789e3e174b5f2f3760788e0de37d", null ],
+    [ "SPEED", "namespacefollow__person__node.html#a44bd9b7dd07ac60865c69767af3940a2", null ],
     [ "TIMEOUT", "namespacefollow__person__node.html#af6451d851044b737000c8c1fb6ca5f82", null ],
     [ "XARM_JOINT_ANGLE_SERVICE", "namespacefollow__person__node.html#a90b67154da683ca1afd7e81d0ecd53ea", null ],
     [ "XARM_MOVEVELOCITY_SERVICE", "namespacefollow__person__node.html#af3059a3dad952d77f7c8cfc496f0fbad", null ],

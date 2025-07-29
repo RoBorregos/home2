@@ -14,10 +14,11 @@ var searchData=
   ['servo_11',['Servo',['../namespaceServo.html',1,'']]],
   ['shelf_5focv_12',['Shelf_OCV',['../namespaceShelf__OCV.html',1,'']]],
   ['show_5fobject_5fdetection_13',['show_object_detection',['../namespaceshow__object__detection.html',1,'']]],
-  ['storing_5fgroceries_5fcommands_14',['storing_groceries_commands',['../namespacestoring__groceries__commands.html',1,'']]],
-  ['storing_5fgroceries_5flaunch_15',['storing_groceries_launch',['../namespacestoring__groceries__launch.html',1,'']]],
-  ['storing_5fgroceries_5fmanager_16',['storing_groceries_manager',['../namespacestoring__groceries__manager.html',1,'']]],
-  ['subtask_5fmanagers_17',['subtask_managers',['../namespacesubtask__managers.html',1,'']]],
-  ['subtask_5fmeta_18',['subtask_meta',['../namespacesubtask__managers_1_1subtask__meta.html',1,'subtask_managers']]],
-  ['vision_5ftasks_19',['vision_tasks',['../namespacesubtask__managers_1_1vision__tasks.html',1,'subtask_managers']]]
+  ['start_5fbutton_5ftext_14',['start_button_text',['../namespacestart__button__text.html',1,'']]],
+  ['storing_5fgroceries_5fcommands_15',['storing_groceries_commands',['../namespacestoring__groceries__commands.html',1,'']]],
+  ['storing_5fgroceries_5flaunch_16',['storing_groceries_launch',['../namespacestoring__groceries__launch.html',1,'']]],
+  ['storing_5fgroceries_5fmanager_17',['storing_groceries_manager',['../namespacestoring__groceries__manager.html',1,'']]],
+  ['subtask_5fmanagers_18',['subtask_managers',['../namespacesubtask__managers.html',1,'']]],
+  ['subtask_5fmeta_19',['subtask_meta',['../namespacesubtask__managers_1_1subtask__meta.html',1,'subtask_managers']]],
+  ['vision_5ftasks_20',['vision_tasks',['../namespacesubtask__managers_1_1vision__tasks.html',1,'subtask_managers']]]
 ];

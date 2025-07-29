@@ -17,6 +17,7 @@ var classpose__detection_1_1PoseDetection =
     [ "is_raising_right_arm", "classpose__detection_1_1PoseDetection.html#a8c3df34d7a972ccc6f1a816abc158f8f", null ],
     [ "is_visible", "classpose__detection_1_1PoseDetection.html#acb7b09423326e99fb18546766cfaadea", null ],
     [ "is_waving", "classpose__detection_1_1PoseDetection.html#aa4484c3a8be2a1a85a5c0de83bc37a96", null ],
+    [ "is_waving_customer", "classpose__detection_1_1PoseDetection.html#ab75bf40ebad014d58bdb33d54f042647", null ],
     [ "personAngle", "classpose__detection_1_1PoseDetection.html#a77e94394775915cc37d80cf58608aaa6", null ],
     [ "mp_drawing", "classpose__detection_1_1PoseDetection.html#a22f341f58c7f7588c25d65b2204ab276", null ],
     [ "mp_pose", "classpose__detection_1_1PoseDetection.html#ae72890d863cab068162f5f934e779413", null ],

@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['manipulation_0',['Manipulation',['../md_docs_Run_Areas_Manipulation_manipulation.html',1,'(Global Namespace)'],['../md_manipulation_README.html',1,'(Global Namespace)']]]
+  ['improving_20your_20ros2_20workflow_20with_20vscode_0',['Improving your ROS2 workflow with vscode',['../md_docs_setup_vscode.html',1,'']]]
 ];

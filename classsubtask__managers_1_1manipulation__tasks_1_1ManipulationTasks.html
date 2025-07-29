@@ -139,6 +139,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ac043a4cceb0db73b472f799227ac4ce5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab0e4428fb07604c725b7b10e21621ad2"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#ab0e4428fb07604c725b7b10e21621ad2">get_optimal_position_for_plane</a> (self, float est_heigth, float tolerance=0.2, bool table_or_shelf=True, approach_plane=True)</td></tr>
 <tr class="separator:ab0e4428fb07604c725b7b10e21621ad2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abcc7b4ed9a4727a3aecedb7817a13cca"><td class="memItemLeft" align="right" valign="top">PoseStamped&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#abcc7b4ed9a4727a3aecedb7817a13cca">get_optimal_pose_for_plane</a> (self, float est_heigth, float tolerance=0.2, float projected_distance=0.5)</td></tr>
+<tr class="separator:abcc7b4ed9a4727a3aecedb7817a13cca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a581bff7d31c90b7f690408a78fbc863f"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a581bff7d31c90b7f690408a78fbc863f">place_in_point</a> (self, PointStamped <a class="el" href="classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#ac416677f6a25ac021c5ea945519e35a5">point</a>)</td></tr>
 <tr class="separator:a581bff7d31c90b7f690408a78fbc863f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -181,6 +183,8 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:ab173ba795eb8c4f95b004dcef689b819"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3a75637ff840423cd4b8715967313c5a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a3a75637ff840423cd4b8715967313c5a">_fix_position_to_plane_client</a></td></tr>
 <tr class="separator:a3a75637ff840423cd4b8715967313c5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af6be048a84dd65befd61704171933313"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#af6be048a84dd65befd61704171933313">_get_optimal_pose_for_plane_client</a></td></tr>
+<tr class="separator:af6be048a84dd65befd61704171933313"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><pre class="fragment">Class to manage the vision tasks</pre> </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
@@ -543,6 +547,46 @@ State: 'open' o 'close'
       </table>
 </div><div class="memdoc">
 <pre class="fragment">Get named target</pre> 
+</div>
+</div>
+<a id="abcc7b4ed9a4727a3aecedb7817a13cca" name="abcc7b4ed9a4727a3aecedb7817a13cca"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abcc7b4ed9a4727a3aecedb7817a13cca">&#9670;&#160;</a></span>get_optimal_pose_for_plane()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> PoseStamped subtask_managers.manipulation_tasks.ManipulationTasks.get_optimal_pose_for_plane </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float&#160;</td>
+          <td class="paramname"><em>est_heigth</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float &#160;</td>
+          <td class="paramname"><em>tolerance</em> = <code>0.2</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float &#160;</td>
+          <td class="paramname"><em>projected_distance</em> = <code>0.5</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">send to aproach table</pre> 
 </div>
 </div>
 <a id="ab0e4428fb07604c725b7b10e21621ad2" name="ab0e4428fb07604c725b7b10e21621ad2"></a>
@@ -929,6 +973,28 @@ in_configuration: True if the object is in the configuration</pre>
       <table class="memname">
         <tr>
           <td class="memname">subtask_managers.manipulation_tasks.ManipulationTasks._get_joints_client</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="af6be048a84dd65befd61704171933313" name="af6be048a84dd65befd61704171933313"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af6be048a84dd65befd61704171933313">&#9670;&#160;</a></span>_get_optimal_pose_for_plane_client</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">subtask_managers.manipulation_tasks.ManipulationTasks._get_optimal_pose_for_plane_client</td>
         </tr>
       </table>
   </td>

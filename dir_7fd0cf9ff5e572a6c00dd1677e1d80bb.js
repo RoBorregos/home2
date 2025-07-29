@@ -7,6 +7,7 @@ var dir_7fd0cf9ff5e572a6c00dd1677e1d80bb =
     [ "DockToHandle.srv", "DockToHandle_8srv.html", null ],
     [ "GetCollisionObjects.srv", "GetCollisionObjects_8srv.html", null ],
     [ "GetJoints.srv", "GetJoints_8srv.html", null ],
+    [ "GetOptimalPoseForPlane.srv", "GetOptimalPoseForPlane_8srv.html", null ],
     [ "GetOptimalPositionForPlane.srv", "GetOptimalPositionForPlane_8srv.html", null ],
     [ "GetPlaneBbox.srv", "GetPlaneBbox_8srv.html", null ],
     [ "GraspDetection.srv", "GraspDetection_8srv.html", null ],

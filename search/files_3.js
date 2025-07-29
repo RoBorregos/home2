@@ -24,5 +24,7 @@ var searchData=
   ['countbycolor_2esrv_21',['CountByColor.srv',['../CountByColor_8srv.html',1,'']]],
   ['countbypose_2esrv_22',['CountByPose.srv',['../CountByPose_8srv.html',1,'']]],
   ['cpp_5fheader_2ecpp_23',['cpp_header.cpp',['../cpp__header_8cpp.html',1,'']]],
-  ['cropquery_2esrv_24',['CropQuery.srv',['../CropQuery_8srv.html',1,'']]]
+  ['cropquery_2esrv_24',['CropQuery.srv',['../CropQuery_8srv.html',1,'']]],
+  ['customer_2esrv_25',['Customer.srv',['../Customer_8srv.html',1,'']]],
+  ['customer_5fnode_2epy_26',['customer_node.py',['../customer__node_8py.html',1,'']]]
 ];
