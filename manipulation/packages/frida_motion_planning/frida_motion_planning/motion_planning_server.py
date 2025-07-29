@@ -162,6 +162,21 @@ class MotionPlanningServer(Node):
             MoveVelocity,
             SET_JOINT_VELOCITY_SERVICE,
             self.set_joint_velocity_callback,
+            callback_group=self.callback_group,
+        )
+
+        self.xarm_set_moveit_mode_service = self.create_service(
+            Empty,
+            XARM_SETMODE_MOVEIT_SERVICE,
+            self.set_moveit_mode_service,
+            callback_group=self.callback_group,
+        )
+
+        self.reset_controller_client = self.create_service(
+            Empty,
+            "/manipulation/reset_xarm_controller",
+            self.reset_xarm_controller,
+            callback_group=self.callback_group,
         )
 
         self.xarm_set_moveit_mode_service = self.create_service(
@@ -610,6 +625,12 @@ class MotionPlanningServer(Node):
             self.xarm_services.close_gripper()
         response.success = True
 
+        return response
+
+    def reset_xarm_controller(self, request, response):
+        self.get_logger().info("Resetting controller")
+        self.planner.reset_controller()
+        self.get_logger().info("Reset controller")
         return response
 
 

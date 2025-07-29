@@ -179,7 +179,7 @@ public:
         frida_interfaces::srv::ClusterObjectFromPoint::Request>();
     request->point = point;
 
-    RCLCPP_INFO(this->get_logger(), "Sending request");
+    RCLCPP_INFO(this->get_logger(), " 123123123123 Sending request");
 
     auto response = this->call_services_node->cluster_object_from_point_client
                         ->async_send_request(request);

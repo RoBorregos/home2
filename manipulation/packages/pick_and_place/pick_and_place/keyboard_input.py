@@ -84,7 +84,11 @@ class KeyboardInput(Node):
         self.get_logger().info(f"Pick request for {object_name} sent")
 
     def send_place_request(
-        self, is_shelf=False, table_height=None, table_height_tolerance=None
+        self,
+        is_shelf=False,
+        table_height=None,
+        table_height_tolerance=None,
+        close_to="",
     ):
         self.get_logger().warning("Sending place request")
 
@@ -95,6 +99,7 @@ class KeyboardInput(Node):
         goal_msg = ManipulationAction.Goal()
         goal_msg.task_type = ManipulationTask.PLACE
         goal_msg.place_params.is_shelf = is_shelf
+        goal_msg.place_params.close_to = close_to
         goal_msg.scan_environment = is_shelf
         if table_height is not None and table_height_tolerance is not None:
             goal_msg.place_params.table_height = table_height
@@ -186,6 +191,7 @@ def main(args=None):
             print("-5. Place on shelf (with plane height)")
             print("-6. Pour")
             print("-7. Place on clicked point")
+            print("-8. Place closeto")
             print("q. Quit")
 
             choice = input("\nEnter your choice: ")
@@ -235,6 +241,19 @@ def main(args=None):
                     node.send_place_on_clicked_point_request()
                 else:
                     print("No point clicked within the time limit. Please try again.")
+
+            elif choice == "-8":
+                close_to = input("Close to object: ")
+                try:
+                    node.get_logger().info(f"Sending place request close to {close_to}")
+                    node.send_place_request(
+                        is_shelf=True,
+                        table_height=0.8,
+                        table_height_tolerance=0.2,
+                        close_to=close_to,
+                    )
+                except ValueError:
+                    print("Invalid input.")
 
             elif choice.isdigit():
                 try:

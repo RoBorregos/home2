@@ -30,6 +30,7 @@ from frida_constants.hri_constants import (
     RAG_SERVICE,
     RESPEAKER_LIGHT_TOPIC,
     SPEAK_SERVICE,
+    START_BUTTON_CLIENT,
     STT_ACTION_SERVER_NAME,
     WAKEWORD_TOPIC,
 )
@@ -50,7 +51,7 @@ from frida_interfaces.srv import (
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from rclpy.task import Future
-from std_msgs.msg import String
+from std_msgs.msg import Empty, String
 from utils.baml_client.sync_client import b
 from utils.baml_client.types import (
     AnswerQuestion,
@@ -161,6 +162,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
     def __init__(self, task_manager: Node, config=None, task=Task.RECEPTIONIST) -> None:
         self.node = task_manager
+        self.start_button_clicked = False
         self.keyword = ""
         self.speak_service = self.node.create_client(Speak, SPEAK_SERVICE)
         self.extract_data_service = self.node.create_client(ExtractInfo, EXTRACT_DATA_SERVICE)
@@ -203,6 +205,14 @@ class HRITasks(metaclass=SubtaskMeta):
 
         self._action_client = ActionClient(self.node, SpeechStream, STT_ACTION_SERVER_NAME)
 
+        self._start_button_sub = self.node.create_subscription(
+            Empty,
+            START_BUTTON_CLIENT,
+            self.start_button_callback,
+            10,
+            callback_group=rclpy.callback_groups.ReentrantCallbackGroup(),
+        )
+
         all_services = {
             "say": {
                 "client": self.speak_service,
@@ -230,6 +240,7 @@ class HRITasks(metaclass=SubtaskMeta):
             Task.GPSR: all_services | gpsr_services,
             Task.HELP_ME_CARRY: all_services,
             Task.STORING_GROCERIES: all_services,
+            Task.DEMO: all_services,
         }
 
         self.hand = HRIHand(self)
@@ -242,6 +253,14 @@ class HRITasks(metaclass=SubtaskMeta):
         file_path = os.path.join(package_share_directory, "data/hand_items.json")
         with open(file_path, "r") as file:
             self.hand_items = json.load(file)
+
+        file_path = os.path.join(package_share_directory, "data/objects.json")
+        with open(file_path, "r") as file:
+            self.objects_data = json.load(file)
+
+        file_path = os.path.join(package_share_directory, "data/names.json")
+        with open(file_path, "r") as file:
+            self.names = json.load(file)["names"]
 
         self.setup_services()
         Logger.success(self.node, f"hri_tasks initialized with task {self.task}")
@@ -262,7 +281,7 @@ class HRITasks(metaclass=SubtaskMeta):
                     Logger.warn(self.node, f"{key} action server not initialized. ({self.task})")
 
     @service_check("speak_service", Status.SERVICE_CHECK, TIMEOUT)
-    def say(self, text: str, wait: bool = True, speed: float = 1.3) -> None:
+    def say(self, text: str, wait: bool = True, speed: float = 1.15) -> None:
         """Method to publish directly text to the speech node"""
         Logger.info(self.node, f"Sending to saying service: {text}")
 
@@ -292,7 +311,8 @@ class HRITasks(metaclass=SubtaskMeta):
             str: The extracted data as a string. If no data is found, an empty string is returned.
         """
         Logger.info(
-            self.node, f"Sending to extract data service: query={query}, text={complete_text}"
+            self.node,
+            f"Sending to extract data service: query={query}, text={complete_text}",
         )
 
         if is_async:
@@ -379,7 +399,11 @@ class HRITasks(metaclass=SubtaskMeta):
 
     @service_check("_action_client", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def hear(
-        self, hotwords="", silence_time=2.0, start_silence_time=4.0, max_audio_length=13.0
+        self,
+        hotwords="",
+        silence_time=2.0,
+        start_silence_time=4.0,
+        max_audio_length=13.0,
     ) -> str:
         Logger.info(
             self.node,
@@ -449,7 +473,10 @@ class HRITasks(metaclass=SubtaskMeta):
         goal_msg.silence_time = float(silence_time)
         goal_msg.start_silence_time = float(start_silence_time)
 
-        Logger.info(self.node, f"Sending goal with timeout={timeout}, silence_time={silence_time}")
+        Logger.info(
+            self.node,
+            f"Sending goal with timeout={timeout}, silence_time={silence_time}",
+        )
 
         future = self._action_client.send_goal_async(
             goal_msg,
@@ -517,7 +544,7 @@ class HRITasks(metaclass=SubtaskMeta):
             self.say(question)
 
             if use_hotwords:
-                self.say("Please confirm by saying yes or no")
+                # self.say("Please confirm by saying yes or no")
 
                 s, keyword = self.interpret_keyword(["yes", "no"], timeout=wait_between_retries)
                 if s == Status.EXECUTION_SUCCESS:
@@ -554,7 +581,8 @@ class HRITasks(metaclass=SubtaskMeta):
                 ):
                     if (
                         contains_any(
-                            format_transcription(self.current_transcription), self.positive
+                            format_transcription(self.current_transcription),
+                            self.positive,
                         )
                         or self.is_positive(self.current_transcription)[1]
                     ):
@@ -575,10 +603,13 @@ class HRITasks(metaclass=SubtaskMeta):
         context: str = "",
         confirm_question: Union[str, callable] = confirm_query,
         use_hotwords: bool = True,
+        hotwords="",
         retries: int = 3,
         min_wait_between_retries: float = 5,
         skip_extract_data: bool = False,
         skip_confirmation: bool = False,
+        options: list[str] = None,
+        remap: dict = None,
     ):
         """
         Method to confirm a specific question.
@@ -603,16 +634,31 @@ class HRITasks(metaclass=SubtaskMeta):
             start_time = self.node.get_clock().now()
 
             self.say(question)
-            hear_status, interpreted_text = self.hear()
+            hear_status, interpreted_text = self.hear(hotwords=hotwords)
 
             if hear_status == Status.EXECUTION_SUCCESS:
-                if not skip_extract_data:
+                target_info = interpreted_text
+                if not skip_extract_data and not options:
                     s, target_info = self.extract_data(query, interpreted_text, context)
-                else:
-                    s = Status.TARGET_NOT_FOUND
 
-                if s == Status.TARGET_NOT_FOUND:
-                    target_info = interpreted_text
+                try:
+                    if options is not None:
+                        foundExact = False
+                        for option in options:
+                            if option.lower() in target_info.lower():
+                                target_info = option
+                                foundExact = True
+                                break
+                        if not foundExact:
+                            target_info = self.find_closest(options, target_info)[0]
+                except Exception as e:
+                    print("Failed options:", e)
+
+                try:
+                    if remap is not None and target_info in remap:
+                        target_info = remap[target_info]
+                except Exception as e:
+                    print("Failed remap:", e)
 
                 if skip_confirmation:
                     return Status.EXECUTION_SUCCESS, target_info
@@ -758,7 +804,13 @@ class HRITasks(metaclass=SubtaskMeta):
 
     @service_check("common_interest_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def common_interest(
-        self, person1, interest1, person2, interest2, remove_thinking=True, is_async=False
+        self,
+        person1,
+        interest1,
+        person2,
+        interest2,
+        remove_thinking=True,
+        is_async=False,
     ):
         try:
             future = Future()
@@ -767,7 +819,10 @@ class HRITasks(metaclass=SubtaskMeta):
                 f"Finding common interest between {person1}({interest1}) and {person2}({interest2})",
             )
             request = CommonInterest.Request(
-                person1=person1, interests1=interest1, person2=person2, interests2=interest2
+                person1=person1,
+                interests1=interest1,
+                person2=person2,
+                interests2=interest2,
             )
             common_interest_future = self.common_interest_service.call_async(request)
 
@@ -777,7 +832,8 @@ class HRITasks(metaclass=SubtaskMeta):
                     result = re.sub(r"<think>.*?</think>", "", result, flags=re.DOTALL)
 
                 Logger.info(
-                    self.node, f"Common interest computed between {person1} and {person2}: {result}"
+                    self.node,
+                    f"Common interest computed between {person1} and {person2}: {result}",
                 )
 
                 future.set_result(
@@ -843,7 +899,11 @@ class HRITasks(metaclass=SubtaskMeta):
         question: str,
         top_k: int = 3,
         threshold: float = 0.1,
-        collections: list = ["frida_knowledge", "roborregos_knowledge", "tec_knowledge"],
+        collections: list = [
+            "frida_knowledge",
+            "roborregos_knowledge",
+            "tec_knowledge",
+        ],
     ) -> tuple[Status, str]:
         """
         Method to answer a question using the RAG service.
@@ -909,7 +969,9 @@ class HRITasks(metaclass=SubtaskMeta):
     def query_location(self, query: str, top_k: int = 1, use_context: bool = False):
         return self.pg.query_location(query, top_k=top_k, use_context=use_context)
 
-    def find_closest(self, documents: list, query: str, top_k: int = 1) -> list[str]:
+    def find_closest(
+        self, documents: list, query: str, top_k: int = 1, threshold: float = 0.0
+    ) -> list[str]:
         """
         Method to find the closest item to the query.
         Args:
@@ -919,15 +981,19 @@ class HRITasks(metaclass=SubtaskMeta):
             Status: the status of the execution
             list[str]: the results of the query
         """
-        docs = [(doc, self.pg.embedding_model.encode(doc)) for doc in documents]
         emb = self.pg.embedding_model.encode(query)
 
         def cos_sim(x, y):
             return np.dot(x, y) / (np.linalg.norm(x) * np.linalg.norm(y))
 
-        results = sorted(docs, key=lambda x: cos_sim(x[1], emb), reverse=True)[:top_k]
+        docs = [(doc, cos_sim(self.pg.embedding_model.encode(doc), emb)) for doc in documents]
+        docs = [doc for doc in docs if doc[1] >= threshold]
+        results = sorted(docs, key=lambda x: x[1], reverse=True)[:top_k]
+
         results = [doc[0] for doc in results]
-        return Status.EXECUTION_SUCCESS, results
+        s = Status.EXECUTION_SUCCESS if len(results) > 1 else Status.TARGET_NOT_FOUND
+
+        return s, results
 
     def find_closest_raw(self, documents: list, query: str, top_k: int = 4) -> list[str]:
         """
@@ -990,148 +1056,94 @@ class HRITasks(metaclass=SubtaskMeta):
         Returns:
             dict[int, list[str]]: Dictionary mapping shelf levels to categorized objects.
         """
-        Logger.info(self.node, "Sending request to categorize_objects")
+        Logger.info(self.node, "Categorizing objects...")
 
         try:
-            categories = self.get_shelves_categories(shelves, table_objects=table_objects)[1]
-            results = self.categorize_objects_with_embeddings(categories, table_objects, shelves)
+            categorized_shelves = {}
 
-            objects_to_add = {key: value["objects_to_add"] for key, value in results.items()}
-            Logger.error(self.node, f"categories {categories}")
+            category_shelve = {}
 
-            if "empty" in categories.values():
-                # add objects to add in shelves
-                for k, v in objects_to_add.items():
-                    for i in v:
-                        shelves[k].append(i)
-                categories = self.get_shelves_categories(shelves)[1]
+            # Use this as miscellaneous category for empty shelves
+            empty_shelve_index = 0
+            miscellaneous_category = False
 
-            Logger.error(self.node, f"THIS IS THE CATEGORIZED SHELVES: {categories}")
-            categorized_shelves = {
-                key: value["classification_tag"] for key, value in results.items()
-            }
-            for k, v in categorized_shelves.items():
-                if v == "empty":
-                    categorized_shelves[k] = categories[k]
-        #             categorized_shelves = {
-        #                 key: value["classification_tag"] for key, value in results.items()
-        #             }
+            for level in shelves:
+                if level not in categorized_shelves:
+                    categorized_shelves[level] = []
+
+                for object_name in shelves[level]:
+                    category = self.deterministic_categorization(object_name)
+                    categorized_shelves[level].append(category)
+                    category_shelve[category] = level
+
+                if len(categorized_shelves[level]) < 1:
+                    categorized_shelves[level] = ["empty"]
+                    empty_shelve_index = level
+
+            objects_to_add = {level: [] for level in shelves.keys()}
+
+            for table_object in table_objects:
+                category = self.deterministic_categorization(table_object)
+
+                if category in category_shelve.keys():
+                    objects_to_add[category_shelve[category]].append(table_object)
+                else:
+                    placed_object = False
+                    for key in categorized_shelves.keys():
+                        if categorized_shelves[key] == "empty":
+                            categorized_shelves[key] = category
+                            objects_to_add[key].append(table_object)
+                            placed_object = True
+                            break
+
+                    if not placed_object:
+                        categorized_shelves[empty_shelve_index] = ["miscellaneous"]
+                        miscellaneous_category = True
+                        objects_to_add[empty_shelve_index].append(table_object)
+
+            if miscellaneous_category:
+                categorized_shelves[empty_shelve_index] = ["miscellaneous"]
 
         except Exception as e:
             self.node.get_logger().error(f"Error: {e}")
             return Status.EXECUTION_ERROR, {}, {}
 
+        # Remove duplicated categories
+        for level in categorized_shelves:
+            unique = set()
+
+            for cat in categorized_shelves[level]:
+                unique.add(cat)
+
+            categorized_shelves[level] = list(unique)
+
         Logger.info(self.node, "Finished executing categorize_objects")
 
-        return Status.EXECUTION_SUCCESS, categorized_shelves, objects_to_add
+        old_api = {}
+        for key in categorized_shelves:
+            old_api[key] = " ".join(categorized_shelves[key])
 
-    def get_shelves_categories(
-        self, shelves: dict[int, list[str]], table_objects: list[str] = []
-    ) -> tuple[Status, dict[int, str]]:
-        """
-        Categorize objects based on their shelf levels.
-
-        Args:
-            shelves (dict[int, list[str]]): Dictionary mapping shelf levels to object names.
-
-        Returns:
-            dict[int, str]: Dictionary mapping shelf levels to its category.
-        """
-        Logger.info(self.node, "Sending request to categorize_objects")
-
-        try:
-            request = CategorizeShelves.Request(shelves=String(data=str(shelves)), table_objects=[])
-            for obj in table_objects:
-                request.table_objects.append(String(data=obj))
-
-            future = self.categorize_service.call_async(request)
-            Logger.info(
-                self.node, f"generated request, shelves: {shelves}, table_objects: {table_objects}"
-            )
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=25)
-            res = future.result()
-            Logger.info(self.node, "request finished")
-            Logger.info(self.node, "categorize_objects result: " + str(res))
-            # if res.status != Status.EXECUTION_SUCCESS:
-            #     Logger.error(self.node, f"Error in categorize_objects: {res.status}")
-            #     return Status.EXECUTION_ERROR, {}, {}
-
-            categorized_shelves = res.categorized_shelves
-            categorized_shelves = {k: v for k, v in enumerate(categorized_shelves)}
-        except Exception as e:
-            self.node.get_logger().error(f"Error: {e}")
-            return Status.EXECUTION_ERROR, {}
-
-        Logger.info(self.node, "get_shelves_categories:" + str(categorized_shelves))
-
-        return Status.EXECUTION_SUCCESS, categorized_shelves
+        return Status.EXECUTION_SUCCESS, old_api, objects_to_add, categorized_shelves
 
     def publish_display_topic(self, topic: str):
         self.display_publisher.publish(String(data=topic))
         Logger.info(self.node, f"Published display topic: {topic}")
 
-    def categorize_object(self, categories: dict, obj: str, shelves: dict):
-        """Method to categorize a list of objects in an array of objects depending on similarity"""
-
-        try:
-            category_list = []
-            categories_aux = categories.copy()
-            self.node.get_logger().info(f"OBJECT TO CATEGORIZE: {obj}")
-            for key in list(categories_aux.keys()):
-                if categories_aux[key] == "empty":
-                    self.node.get_logger().info("THERE IS AN EMPTY SHELVE")
-                    del categories_aux[key]
-
-            for category in categories_aux.values():
-                category_list.append(category)
-
-            for i, category in enumerate(category_list):
-                self.node.get_logger().info(f"Category {i}: {category}")
-                category_list[i] = category + " " + " ".join(shelves[i])
-
-            results = self.find_closest_raw(category_list, obj)
-            results_distances = [res[1] for res in results]
-
-            result_category = results[0][0] if len(results) > 0 else "empty"
-            self.node.get_logger().info(f"RESULTS for {obj}:")
-            self.node.get_logger().info(f"RESULTS DISTANCES: {results_distances}")
-            self.node.get_logger().info(f"CATEGORY PREDICTED BEFORE THRESHOLD: {result_category}")
-            # input("HOLAAA HOLA HOLAA")
-            if "empty" in categories.values() and results_distances[0] < 0.15:
-                result_category = "empty"
-
-            self.node.get_logger().info(f"CATEGORY PREDICTED: {result_category}")
-            result_category = result_category.split(" ")[0]
-            self.node.get_logger().info(f"CATEGORY PREDICTED: {result_category}")
-            key_resulted = 2
-            for key in list(categories.keys()):
-                if str(categories[key]) == str(result_category):
-                    key_resulted = key
-                else:
-                    self.node.get_logger().info(
-                        "THE CATEGORY PREDICTED IS NOT CONTAINED IN THE REQUEST, RETURNING SHELVE 2"
-                    )
-
-            return key_resulted
-
-        except Exception as e:
-            self.node.get_logger().error(f"FAILED TO CATEGORIZE: {obj} with error: {e}")
-
-    def categorize_objects_with_embeddings(self, categories: dict, obj_list: list, shelves: dict):
+    def deterministic_categorization(self, object_name: str):
         """
-        Categorize objects based on their embeddings."""
-        self.node.get_logger().info(f"THIS IS THE CATEGORIES dict RECEIVED: {categories}")
-        self.node.get_logger().info(f"THIS IS THE obj_list LIST RECEIVED: {obj_list}")
-        results = {
-            key: {"classification_tag": categories[key], "objects_to_add": []}
-            for key in categories.keys()
-        }
-        for obj in obj_list:
-            index = self.categorize_object(categories, obj, shelves)
-            results[index]["objects_to_add"].append(obj)
+        Note: it seems each object is mapped to a specific category, so no clustering is needed to group the objects.
+        See "frida_constants/data/objects.md"
+        """
+        try:
+            # Get closest embedding word
+            s, closest = self.find_closest(self.objects_data["all_objects"], object_name, top_k=1)
+            closest = closest[0]
 
-        self.node.get_logger().info(f"THIS IS THE RESULTS OF THE CATEGORIZATION: {results}")
-        return results
+            # Return the associated category
+            return self.objects_data["object_to_category"][closest]
+        except Exception as e:
+            self.node.get_logger().error(f"Error finding closest object: {e}")
+            return Status.EXECUTION_ERROR, "unknown"
 
     def show_map(self, name="", clear_map: bool = False):
         """
@@ -1164,6 +1176,13 @@ class HRITasks(metaclass=SubtaskMeta):
         except Exception as e:
             self.node.get_logger().error(f"Error sending answer: {str(e)}")
             return False
+
+    def start_button_callback(self, msg: Empty):
+        """
+        Callback for the start button press.
+        This method is called when the start button is pressed.
+        """
+        self.start_button_clicked = True
 
 
 if __name__ == "__main__":

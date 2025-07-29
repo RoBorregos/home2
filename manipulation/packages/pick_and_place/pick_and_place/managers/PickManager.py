@@ -224,6 +224,7 @@ class PickManager:
 
         self.node.get_logger().info("Returning to position")
 
+        self.node.clear_octomap()
         for i in range(5):
             # return to configured position
             return_result = send_joint_goal(

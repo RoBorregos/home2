@@ -1,22 +1,23 @@
+import time
+from concurrent.futures import Future
+from typing import List, Union
+
+import rclpy
+from controller_manager_msgs.srv import SwitchController
+from frida_motion_planning.utils.Planner import Planner
+from frida_pymoveit2.robots import xarm6
+from geometry_msgs.msg import PoseStamped
+from pymoveit2 import GripperInterface, MoveIt2, MoveIt2State
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.node import Node
+from sensor_msgs.msg import JointState
+from xarm_msgs.srv import SetInt16
 
-from pymoveit2 import MoveIt2, MoveIt2State, GripperInterface
-from frida_pymoveit2.robots import xarm6
 from frida_constants.manipulation_constants import (
+    MOVEIT_MODE,
     XARM_SETMODE_SERVICE,
     XARM_SETSTATE_SERVICE,
-    MOVEIT_MODE,
 )
-from typing import List, Union
-from concurrent.futures import Future
-from xarm_msgs.srv import SetInt16
-from frida_motion_planning.utils.Planner import Planner
-from geometry_msgs.msg import PoseStamped
-from sensor_msgs.msg import JointState
-from controller_manager_msgs.srv import SwitchController
-import time
-import rclpy
 
 PYMOVEIT_FUTURE_TIMEOUT = 3
 
@@ -80,6 +81,7 @@ class MoveItPlanner(Planner):
                         if using fake controller, ignore this message"
             )
             self.mode_enabled = False
+
         self.joint_states = None
         # Set initial parameters
         self.moveit2.max_velocity = max_velocity
@@ -226,7 +228,7 @@ class MoveItPlanner(Planner):
         )
 
     def set_mode(self, mode: int = 0) -> bool:
-        if not self.mode_enabled:
+        if True:  # not self.mode_enabled:
             return True
         # self.mode_client.wait_for_service()
         # request = SetInt16.Request()
@@ -269,6 +271,25 @@ class MoveItPlanner(Planner):
             else:
                 self.node.get_logger().error("Failed to call switch controller service")
                 return False
+        return True
+
+    def reset_controller(self):
+        time.sleep(0.1)
+        # Activate controller
+        if self.switch_controller_client is not None:
+            request = SwitchController.Request()
+            request.start_controllers = ["xarm6_traj_controller"]
+            future = self.switch_controller_client.call_async(request)
+            while rclpy.ok() and not future.done():
+                pass
+            if future.result() is not None:
+                self.node.get_logger().info(
+                    f"Switch controller service response: {future.result().ok}"
+                )
+            else:
+                self.node.get_logger().error("Failed to call switch controller service")
+                return False
+        time.sleep(1)
         return True
 
     def get_current_operation_state(self) -> MoveIt2State:

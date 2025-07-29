@@ -27,7 +27,10 @@ custom_command = [
     # {"action": "count", "target_to_count": "people wearing blue t shirts"},
     # {"action": "count", "target_to_count": "persons pointing to the left"},
     # {"action": "count", "target_to_count": "lying persons"},
-    {"action": "find_person_by_name", "name": "Adel"},
+    # {"action": "find_person_by_name", "name": "Adel"},
+    {"action": "find_person", "attribute_value": "person raising their right arm"},
+    {"action": "find_person", "attribute_value": "standing person"},
+    {"action": "find_person", "attribute_value": "black shirt"},
     # {
     #     "action": "say_with_context",
     #     "user_instruction": "say your teams affiliation to the person pointing to the left in the bathroom",

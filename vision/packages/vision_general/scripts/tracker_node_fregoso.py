@@ -5,48 +5,47 @@ Node to track a single person and
 re-id them if necessary
 """
 
-import cv2
 import time
-from ultralytics import YOLO
-from PIL import Image as PILImage
-import tqdm
-import torch.nn as nn
+
+import cv2
+import rclpy
 import torch
+import torch.nn as nn
+import tqdm
+from cv_bridge import CvBridge
+from geometry_msgs.msg import Point, PointStamped
+from PIL import Image as PILImage
+from pose_detection import PoseDetection
+from rclpy.node import Node
+from sensor_msgs.msg import CameraInfo, Image
+from std_srvs.srv import SetBool, Trigger
+from ultralytics import YOLO
 from vision_general.utils.calculations import (
+    deproject_pixel_to_point,
     get2DCentroid,
     get_depth,
-    deproject_pixel_to_point,
 )
-
-import rclpy
-from rclpy.node import Node
-from cv_bridge import CvBridge
-from sensor_msgs.msg import Image, CameraInfo
-from geometry_msgs.msg import Point, PointStamped
-
 from vision_general.utils.reid_model import (
-    load_network,
     compare_images,
     extract_feature_from_img,
     get_structure,
+    load_network,
 )
 
-from std_srvs.srv import SetBool, Trigger
-from frida_interfaces.srv import TrackBy, CropQuery
-from pose_detection import PoseDetection
 from frida_constants.vision_constants import (
-    CAMERA_TOPIC,
-    SET_TARGET_TOPIC,
-    SET_TARGET_BY_TOPIC,
-    TRACKER_IMAGE_TOPIC,
-    DEPTH_IMAGE_TOPIC,
-    RESULTS_TOPIC,
     CAMERA_INFO_TOPIC,
+    CAMERA_TOPIC,
     CENTROID_TOIC,
     CROP_QUERY_TOPIC,
+    DEPTH_IMAGE_TOPIC,
     IS_TRACKING_TOPIC,
+    RESULTS_TOPIC,
+    SET_TARGET_BY_TOPIC,
+    SET_TARGET_TOPIC,
+    TRACKER_IMAGE_TOPIC,
 )
 from frida_constants.vision_enums import DetectBy
+from frida_interfaces.srv import CropQuery, TrackBy
 
 CONF_THRESHOLD = 0.6
 DEPTH_THRESHOLD = 100
@@ -57,7 +56,6 @@ class SingleTracker(Node):
         super().__init__("tracker_node")
         self.bridge = CvBridge()
         self.callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
-
         self.image_subscriber = self.create_subscription(
             Image, CAMERA_TOPIC, self.image_callback, 10
         )
@@ -480,7 +478,7 @@ class SingleTracker(Node):
                     if person_angle is not None:
                         if self.person_data[person_angle] is not None:
                             if compare_images(
-                                embedding, self.person_data[person_angle], threshold=0.7
+                                embedding, self.person_data[person_angle], threshold=0.8
                             ):
                                 self.person_data["id"] = person["track_id"]
                                 self.person_data["coordinates"] = (
@@ -496,7 +494,7 @@ class SingleTracker(Node):
                                 break
                         else:
                             if compare_images(
-                                embedding, self.person_data["embeddings"], threshold=0.7
+                                embedding, self.person_data["embeddings"], threshold=0.8
                             ):
                                 self.person_data["id"] = person["track_id"]
                                 self.success(
