@@ -90,7 +90,9 @@ esac
 #_________________________SETUP_________________________
 
 bash setup.bash
-bash ../../hri/packages/nlp/assets/download-model.sh
+
+# TODO: Uncomment this if you need to download the model
+# bash ../../hri/packages/nlp/assets/download-model.sh
 
 # Create dirs with current user to avoid permission problems
 mkdir -p install build log ../../hri/packages/speech/assets/downloads/offline_voice/model/

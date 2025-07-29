@@ -32,13 +32,13 @@ def generate_launch_description():
                 package="frida_motion_planning",
                 executable="motion_planning_server.py",
             ),
-            Node(
-                package="task_manager",
-                executable="follow_person_node.py",
-                name="follow_person_node",
-                output="screen",
-                emulate_tty=True,
-            ),
+            # Node(
+            #     package="task_manager",
+            #     executable="follow_person_node.py",
+            #     name="follow_person_node",
+            #     output="screen",
+            #     emulate_tty=True,
+            # ),
             Node(
                 package="perception_3d",
                 executable="down_sample_pc",

@@ -4,7 +4,11 @@ import rclpy
 
 from rclpy.node import Node
 from rclpy.callback_groups import ReentrantCallbackGroup
-from frida_interfaces.srv import GetPlaneBbox, GetOptimalPositionForPlane
+from frida_interfaces.srv import (
+    GetPlaneBbox,
+    GetOptimalPositionForPlane,
+    GetOptimalPoseForPlane,
+)
 from frida_interfaces.action import MoveToPose
 from rclpy.action import ActionClient
 from rclpy.executors import MultiThreadedExecutor
@@ -13,6 +17,8 @@ from geometry_msgs.msg import TransformStamped, PointStamped, PoseStamped
 from frida_motion_planning.utils.tf_utils import look_at
 from frida_pymoveit2.robots import xarm6
 import time
+from tf_transformations import quaternion_from_euler
+import math
 
 from frida_constants.manipulation_constants import (
     ARM_HIGHEST_0_0_HEIGHT,
@@ -73,6 +79,16 @@ class FixPositionToPlane(Node):
             self.get_optimal_position_for_plane_callback,
             callback_group=self.call_bck_group,
         )
+        self.optimal_pose_pub = self.create_publisher(
+            PoseStamped, "/manipulation/optimal_pose_to_plane", 10
+        )
+        self.get_optimal_pose_for_plane_srv = self.create_service(
+            GetOptimalPoseForPlane,
+            "/manipulation/get_optimal_pose_for_plane",
+            self.get_optimal_pose_for_plane_callback,
+            callback_group=self.call_bck_group,
+        )
+
         self._action_client = ActionClient(
             self,
             MoveToPose,
@@ -397,6 +413,130 @@ class FixPositionToPlane(Node):
         except Exception as e:
             self.get_logger().error(f"Error while processing the request: {e}")
             response.is_valid = False
+            return response
+        self.get_logger().info("Response:a aaa")
+        return response
+
+    def get_optimal_pose_for_plane_callback(
+        self,
+        request: GetOptimalPoseForPlane.Request,
+        response: GetOptimalPoseForPlane.Response,
+    ) -> GetOptimalPoseForPlane.Response:
+        """Callback for the get_optimal_pose_for_plane service"""
+        """ Ivan y Emiliano smn quedará escrito en la literatura"""
+        self.get_logger().info("Received request for optimal pose")
+        max_h, min_h = request.plane_est_max_height, request.plane_est_min_height
+        self.get_logger().info(f"Max height: {max_h}, Min height: {min_h}")
+
+        self.get_logger().info("Calling get_plane_bbox service")
+        plane_bbox_request = GetPlaneBbox.Request()
+        plane_bbox_request.max_height = max_h
+        plane_bbox_request.min_height = min_h
+        # ivan = TABLE_Z_OFFSET
+
+        time.sleep(3)  # wait for pointcloud to update
+        future = self.get_plane_bbox_client.call_async(plane_bbox_request)
+        # rclpy.spin_until_future_complete(self, future, timeout_sec=5)
+        wait_for_future(future)
+        res = future.result()
+        if res is None or res.health_response != 0:
+            # self.get_logger().info("Received response from get_plane_bbox service")
+            self.get_logger().error(
+                "Error while calling get_plane_bbox service, return error"
+            )
+            response.success = False
+            return response
+
+        self.get_logger().info("Received response from get_plane_bbox service")
+        self.get_logger().info(
+            f"Plane bbox2: {res.center}, HRES: {res.health_response}"
+        )
+        try:
+            center = MyPoint().from_point(res.center.point)
+            p1 = MyPoint().from_point(res.pt1.point)
+            p2 = MyPoint().from_point(res.pt2.point)
+            p3 = MyPoint().from_point(res.pt3.point)
+            p4 = MyPoint().from_point(res.pt4.point)
+
+            self.get_logger().info(f"p1: {p1}, p2: {p2}, p3: {p3}, p4: {p4}")
+
+            p12 = MyPoint((p1.x + p2.x) / 2, (p1.y + p2.y) / 2, (p1.z + p2.z) / 2)
+            p34 = MyPoint((p3.x + p4.x) / 2, (p3.y + p4.y) / 2, (p3.z + p4.z) / 2)
+            p23 = MyPoint((p2.x + p3.x) / 2, (p2.y + p3.y) / 2, (p2.z + p3.z) / 2)
+            p41 = MyPoint((p4.x + p1.x) / 2, (p4.y + p1.y) / 2, (p4.z + p1.z) / 2)
+
+            self.get_logger().info(f"p12: {p12}, p34: {p34}, p23: {p23}, p41: {p41}")
+
+            p_12 = MyPoint().from_point(
+                self.get_line_from_points(center, p12, request.projected_distance)
+            )
+            p_34 = MyPoint().from_point(
+                self.get_line_from_points(center, p34, request.projected_distance)
+            )
+            p_23 = MyPoint().from_point(
+                self.get_line_from_points(center, p23, request.projected_distance)
+            )
+            p_41 = MyPoint().from_point(
+                self.get_line_from_points(center, p41, request.projected_distance)
+            )
+
+            self.get_logger().info(
+                f"p_12: {p_12}, p_34: {p_34}, p_23: {p_23}, p_41: {p_41}"
+            )
+
+            # get the closest point to (0, 0, 0)
+            points = [p_12, p_34, p_23, p_41]
+            closest_point = min(points, key=lambda p: (p.x**2 + p.y**2 + p.z**2) ** 0.5)
+            # self.get_logger().info(f"Closest point: {closest_point}")
+
+            center_point = PointStamped()
+            center_point.header.frame_id = "base_link"
+            center_point.header.stamp = self.get_clock().now().to_msg()
+            center_point.point.x = center.x
+            center_point.point.y = center.y
+            center_point.point.z = float(0.0)
+
+            # get yaw from closest point to center
+            yaw = math.atan2(
+                -1 * (closest_point.y - center.y), -1 * (closest_point.x - center.x)
+            )
+            roll = 0
+            pitch = 0
+
+            # to pose
+            response.optimal_pose.header.frame_id = "base_link"
+            response.optimal_pose.header.stamp = self.get_clock().now().to_msg()
+            response.optimal_pose.pose.position.x = closest_point.x
+            response.optimal_pose.pose.position.y = closest_point.y
+            response.optimal_pose.pose.position.z = float(0.0)
+
+            # quat from roll, pitch, yaw
+            q = quaternion_from_euler(roll, pitch, yaw)
+            response.optimal_pose.pose.orientation.x = q[0]
+            response.optimal_pose.pose.orientation.y = q[1]
+            response.optimal_pose.pose.orientation.z = q[2]
+            response.optimal_pose.pose.orientation.w = q[3]
+
+            self.optimal_pose_pub.publish(response.optimal_pose)
+
+            if self.tf_buffer.can_transform("map", "base_link", rclpy.time.Time()):
+                response.optimal_pose = self.tf_buffer.transform(
+                    response.optimal_pose, "map", timeout=rclpy.time.Duration(seconds=1)
+                )
+                self.get_logger().info(f"Optimal position: {response.optimal_pose}")
+            else:
+                self.get_logger().warn(
+                    "Cannot transform from base_link to optimal_position"
+                )
+                response.success = False
+                return response
+
+            response.success = True
+
+            return response
+        except Exception as e:
+            self.get_logger().error(f"Error while processing the request: {e}")
+            response.success = False
             return response
         self.get_logger().info("Response:a aaa")
         return response

@@ -1,24 +1,25 @@
 #!/usr/bin/env python3
 
+import random
+import time
 from collections import defaultdict
 from enum import Enum
 
 import rclpy
 from frida_constants.vision_classes import BBOX
+from frida_interfaces.srv import PointTransformation
+from geometry_msgs.msg import PointStamped, Twist
 from pydantic import BaseModel
 from rclpy.node import Node
 from utils.logger import Logger
 from utils.status import Status
 from utils.subtask_manager import SubtaskManager, Task
-from geometry_msgs.msg import PointStamped
-from frida_interfaces.srv import PointTransformation
-import random
-import time
 
 POINT_TRANSFORMER_TOPIC = "/integration/point_transformer"
 ATTEMPT_LIMIT = 5
 # after this amount of objects have been stored, do pour task
-PICKED_OBJECTS_TO_POUR = 1
+PICKED_OBJECTS_TO_POUR = 5
+MAX_SHELF_HEIGHT = 1.2
 
 
 class Retries(Enum):
@@ -123,11 +124,13 @@ class StoringGroceriesManager(Node):
         self.retry_count = 0
         self.prev_state = None
         self.pour_objects = [
-            "blue_cereal",
-            "cup",
-            "spam_tuna",
-            "tuna_can",
-            "tuna",  # ignore this bc of false detects
+            "cornflakes",
+            "transparent_box",
+            # "blue_cereal",
+            # "cup",
+            # "spam_tuna",
+            # "tuna_can",
+            # "tuna",  # ignore this bc of false detects
         ]
         self.poured_object = False
         # self.manual_heights = [  # 0.2
@@ -141,17 +144,22 @@ class StoringGroceriesManager(Node):
         #     0.463,
         #     0.84
         # ]
-        self.manual_heights = [0.55, 0.9]
+        # self.manual_heights = [0.55, 0.9]
+        # self.manual_heights = [0.36, 0.87, 1.38]
+        self.manual_heights = [0.4, 0.70, 1.05]
         self.shelf_level_threshold = 0.20
 
         #         self.manual_heights = [0.04, 0.43, 0.67]
         #         self.shelf_level_threshold = 0.30
 
+        self.poseeeeensahsajsajasjhasjha = None
+        self.es_primer_vez = True
         self.shelf_level_down_threshold = 0.05
         self.picked_objects = 0
         self.prev_uid = None
         self.pick_uid = None
         self.transform_tf = self.create_client(PointTransformation, POINT_TRANSFORMER_TOPIC)
+        self.cmd_vel_pub = self.create_publisher(Twist, "/cmd_vel", 10)
 
     def generate_manual_levels(self):
         """Generate manual levels"""
@@ -167,6 +175,7 @@ class StoringGroceriesManager(Node):
             if say:
                 self.subtask_manager.hri.say(text=f"Going to {location} {sub_location}", wait=False)
             self.subtask_manager.manipulation.move_to_position("nav_pose")
+            self.subtask_manager.nav.resume_nav()
             result = Status.EXECUTION_ERROR
             retry = 0
             while result == Status.EXECUTION_ERROR and retry < Retries.NAVIGATION.value:
@@ -180,9 +189,11 @@ class StoringGroceriesManager(Node):
                     if result.success:
                         result = Status.EXECUTION_SUCCESS
                 retry += 1
+            self.subtask_manager.nav.pause_nav()
             return result
         except Exception as e:
             Logger.error(self, f"Error navigating to {location}: {e}")
+            self.subtask_manager.nav.pause_nav()
             return Status.EXECUTION_ERROR
 
     def convert_to_height(self, detection: BBOX) -> float:
@@ -217,6 +228,11 @@ class StoringGroceriesManager(Node):
         Logger.info(self, f"Executing state: {self.state.name}")
         if self.state == ExecutionStates.START:
             Logger.info(self, "Starting Storing Groceries Manager...")
+            self.subtask_manager.hri.say("Press the button to start")
+            while not self.subtask_manager.hri.start_button_clicked:
+                rclpy.spin_once(self, timeout_sec=0.1)
+            Logger.success(self, "Start button pressed, receptionist task will begin now")
+            self.subtask_manager.hri.say(text="Waiting for door to open")
             self.state = ExecutionStates.INIT_NAV_TO_SHELF
             # self.state = ExecutionStates.INIT_NAV_TO_TABLE
             # self.state = ExecutionStates.VIEW_AND_SAVE_OBJECTS_ON_TABLE
@@ -239,6 +255,14 @@ class StoringGroceriesManager(Node):
                     Logger.error(self, "Failed to check door status")
 
             Logger.info(self, "Door OPENED GOING TO NEXT STAT")
+            # hres: Status = self.nav_to("kitchen", "shelve")
+            self.subtask_manager.hri.say(
+                text="Hello, Can you please help me opening the shelve cabinet for me?"
+            )
+            self.subtask_manager.hri.confirm(
+                "Can you please open the shelve cabinet for me? Please say yes when done!",
+                use_hotwords=True,
+            )
             hres: Status = self.nav_to("kitchen", "shelve")
             # hres: Status = self.nav_to("kitchen", "shelve", say=False)
             if hres == Status.EXECUTION_SUCCESS:
@@ -254,6 +278,11 @@ class StoringGroceriesManager(Node):
             self.shelves_count = 0
             self.shelves = defaultdict(Shelf)
             self.generate_manual_levels()
+            for i in range(5):
+                s, detections = self.subtask_manager.vision.detect_objects()
+                if len(detections) > 0:
+                    break
+                self.timeout(1)
             for i in range(len(self.manual_heights)):
                 self.subtask_manager.hri.say(text=f"Detecting shelf number {i}", wait=False)
                 if i not in self.shelves:
@@ -366,6 +395,47 @@ class StoringGroceriesManager(Node):
 
         elif self.state == ExecutionStates.INIT_NAV_TO_TABLE:
             hres: Status = self.nav_to("kitchen", "table")
+            hres = Status.EXECUTION_SUCCESS
+            time.sleep(2)
+            self.subtask_manager.hri.say(text="Finding Table", wait=False)
+            pose = self.subtask_manager.manipulation.get_optimal_pose_for_plane(
+                0.4, tolerance=0.3, projected_distance=0.35
+            )
+            if pose is None:
+                Logger.warn(self, "Pose not found couldn't navigate to table")
+                if self.poseeeeensahsajsajasjhasjha is not None:
+                    future = self.subtask_manager.nav.move_to_pose(pose)
+                    rclpy.spin_until_future_complete(self, future)
+                    Logger.info(self, f"Pose navigation result: {future.result()}")
+                else:
+                    for i in range(10):
+                        pose = self.subtask_manager.manipulation.get_optimal_pose_for_plane(
+                            0.4, tolerance=0.3, projected_distance=0.35
+                        )
+                        if pose is not None:
+                            break
+                        else:
+                            twist_msg = Twist()
+                            start_time = time.time()
+                            while time.time() - start_time < 2.0:
+                                twist_msg.linear.x = 0.075
+                                self.cmd_vel_pub.publish(twist_msg)
+                                time.sleep(0.001)
+                            self.cmd_vel_pub.publish(Twist())
+                            time.sleep(2)
+
+                    if pose is None:
+                        Logger.error(self, "Pose not found, cannot navigate to table")
+                        return
+                    future = self.subtask_manager.nav.move_to_pose(pose)
+                    rclpy.spin_until_future_complete(self, future)
+                    Logger.info(self, f"Pose navigation result: {future.result()}")
+            else:
+                self.poseeeeensahsajsajasjhasjha = pose
+                future = self.subtask_manager.nav.move_to_pose(pose)
+                rclpy.spin_until_future_complete(self, future)
+                Logger.info(self, f"Pose navigation result: {future.result()}")
+            # hres = Status.EXECUTION_SUCCESS
             # hres: Status = self.nav_to("kitchen", "table", say=False)
             if hres == Status.EXECUTION_SUCCESS:
                 self.state = ExecutionStates.VIEW_AND_SAVE_OBJECTS_ON_TABLE
@@ -416,7 +486,7 @@ class StoringGroceriesManager(Node):
                 # shelfs = {0: [], 1: ["water", "sprite_can"], 2: ["squash", "orange", "banana"]}
                 # self.object_names_on_table = ["apple", "fresca_can", "bowl", "yellow_bowl", "pringles"]
                 # shelfs = {0: [], 1: ["bottle", "coke_can"], 2: ["pear"]}
-                status, categorized_shelfs, objects_to_add = (
+                status, categorized_shelfs, objects_to_add, resulting_array = (
                     self.subtask_manager.hri.categorize_objects(self.object_names_on_table, shelfs)
                 )
             except Exception as e:
@@ -467,12 +537,13 @@ class StoringGroceriesManager(Node):
             ]:
                 try:
                     # Logger.info(self, f"Categorized object: {i} as {self.shelves[i].tag}")
+                    asdasdajfjfjfjfjfj = self.subtask_manager.hri.deterministic_categorization(i)
                     Logger.info(
                         self,
-                        f"Categorized object: {i} as {self.shelves[self.object_to_placing_shelf[i][0]].tag}",
+                        f"Categorized object: {i} as {asdasdajfjfjfjfjfj} going in shelf of {self.shelves[self.object_to_placing_shelf[i][0]].tag}",
                     )
                     self.subtask_manager.hri.say(
-                        text=f"Categorized object: {i} as {self.shelves[self.object_to_placing_shelf[i][0]].tag}",
+                        text=f"Categorized object: {i} as {asdasdajfjfjfjfjfj} going in shelf of {self.shelves[self.object_to_placing_shelf[i][0]].tag}",
                         wait=False,
                     )
                 except Exception as e:
@@ -483,7 +554,7 @@ class StoringGroceriesManager(Node):
         elif self.state == ExecutionStates.PLAN_NEXT:
             if len(self.object_names_on_table) == 0 or self.picked_objects >= 5:
                 self.subtask_manager.hri.say(text="I have finished placing the objects", wait=True)
-                self.state = ExecutionStates.END
+                self.state = ExecutionStates.NAV_TO_TABLE
                 return
             self.pick_uid = random.random()
             if self.prev_uid != self.pick_uid:
@@ -523,14 +594,71 @@ class StoringGroceriesManager(Node):
         elif self.state == ExecutionStates.NAV_TO_TABLE:
             print("qpd papu")
             print(f"self.papustate: {self.state}")
+            if self.es_primer_vez:
+                self.state = ExecutionStates.PICK_OBJECT
+                self.es_primer_vez = False
+                return
             # return
             try:
+                # hres: Status = self.nav_to("kitchen", "table")
+                # self.subtask_manager.hri.say(
+                #     text="Can you please help me opening the shelve cabinet for me?"
+                # )
+                # self.subtask_manager.hri.confirm("Can you please open the shelve cabinet for me? Please say yes when done!", use_hotwords=True)
                 hres: Status = self.nav_to("kitchen", "table")
+                hres = Status.EXECUTION_SUCCESS
+                time.sleep(2)
+                self.subtask_manager.hri.say(text="Finding Table", wait=False)
+
+                pose = self.subtask_manager.manipulation.get_optimal_pose_for_plane(
+                    0.4, tolerance=0.3, projected_distance=0.35
+                )
+                if pose is None:
+                    Logger.warn(self, "Pose not found couldn't navigate to table")
+                    if self.poseeeeensahsajsajasjhasjha is not None:
+                        future = self.subtask_manager.nav.move_to_pose(pose)
+                        rclpy.spin_until_future_complete(self, future)
+                        Logger.info(self, f"Pose navigation result: {future.result()}")
+                    else:
+                        for i in range(10):
+                            pose = self.subtask_manager.manipulation.get_optimal_pose_for_plane(
+                                0.4, tolerance=0.3, projected_distance=0.35
+                            )
+                            if pose is not None:
+                                break
+                            else:
+                                twist_msg = Twist()
+                                start_time = time.time()
+                                while time.time() - start_time < 2.0:
+                                    twist_msg.linear.x = 0.075
+                                    self.cmd_vel_pub.publish(twist_msg)
+                                    time.sleep(0.001)
+                                self.cmd_vel_pub.publish(Twist())
+                                time.sleep(2)
+                            # else:
+                            #     twist_msg = Twist()
+                            #     twist_msg.linear.x = 0.2
+                            #     self.cmd_vel_pub.publish(twist_msg)
+                            #     time.sleep(2)
+                            #     self.cmd_vel_pub.publish(Twist())
+                            #     time.sleep(2)
+
+                        if pose is None:
+                            Logger.error(self, "Pose not found, cannot navigate to table")
+                            return
+                        future = self.subtask_manager.nav.move_to_pose(pose)
+                        rclpy.spin_until_future_complete(self, future)
+                        Logger.info(self, f"Pose navigation result: {future.result()}")
+                else:
+                    future = self.subtask_manager.nav.move_to_pose(pose)
+                    rclpy.spin_until_future_complete(self, future)
+                    Logger.info(self, f"Pose navigation result: {future.result()}")
+
                 # hres: Status = self.nav_to("kitchen", "table", say=False)
             except Exception as e:
                 Logger.error(self, f"Error navigating to table: {e}")
 
-            if self.picked_objects > PICKED_OBJECTS_TO_POUR and not self.poured_object:
+            if False and self.picked_objects > PICKED_OBJECTS_TO_POUR and not self.poured_object:
                 self.state = ExecutionStates.POUR_OBJECT
             else:
                 self.state = ExecutionStates.PICK_OBJECT
@@ -646,6 +774,7 @@ class StoringGroceriesManager(Node):
                         # )
 
         elif self.state == ExecutionStates.NAV_TO_SHELF:
+            # hres: Status = self.nav_to("kitchen", "shelve")
             hres: Status = self.nav_to("kitchen", "shelve")
             # hres: Status = self.nav_to("kitchen", "shelve", say=False)
             # if not hres == Status.EXECUTION_SUCCESS:
@@ -664,7 +793,7 @@ class StoringGroceriesManager(Node):
                 #     self.shelves_count % len(self.manual_heights)
                 # )
                 # status, categorized_shelfs, objects_to_add
-                status, resulting_clas, objects_to_add_2 = (
+                status, resulting_clas, objects_to_add_2, resulting_array = (
                     self.subtask_manager.hri.categorize_objects(
                         table_objects=[self.current_object],
                         shelves={i: self.shelves[i].objects for i in range(self.shelves_count)},
@@ -684,8 +813,13 @@ class StoringGroceriesManager(Node):
                             self.object_to_placing_shelf[self.current_object].append(
                                 shelf_to_be_placed
                             )
+
+                            obj_cat = self.subtask_manager.hri.deterministic_categorization(
+                                self.current_object
+                            )
+
                             self.subtask_manager.hri.say(
-                                f"I have classified the object: {self.current_object} as {resulting_clas[shelf_idx]}, im going to place it in shelf number {shelf_to_be_placed}",
+                                f"I have classified the object: {self.current_object} as {obj_cat}, im going to place it in shelf number {shelf_to_be_placed} corresponging to {resulting_clas}",
                                 wait=True,
                             )
                             break
@@ -704,9 +838,25 @@ class StoringGroceriesManager(Node):
                 ][0] % len(self.manual_heights)
 
             shelf = self.object_to_placing_shelf[self.current_object][0] % len(self.manual_heights)
+
+            # status, detections = self.subtask_manager.vision.detect_objects(ignore_labels=self.pour_objects)
+            # objsasdq_place = True
+            # rettry = 0
+            # while status != Status.EXECUTION_SUCCESS and rettry < 5:
+            #     Logger.error(self, f"Error detecting objects: {status}")
+            #     time.sleep(1)
+            #     status, res = self.subtask_manager.vision.detect_objects(
+            #         ignore_labels=self.pour_objects
+            #     )
+            #     rettry += 1
+            # if status != Status.EXECUTION_SUCCESS or len(res) == 0:
+            #     objsasdq_place = False
+
+            obj_cat = self.subtask_manager.hri.deterministic_categorization(self.current_object)
+
             self.subtask_manager.hri.say(
                 text=f"I'm going to place the object: {self.current_object} in shelf number {shelf}"
-                + f". corresponding to {self.shelves[shelf].tag}"
+                + f". corresponding to {obj_cat}. Shelf contains categories: {self.shelves[shelf].tag if self.shelves[shelf].tag is not None else ''}"
                 if self.shelves[shelf].tag != "" or self.shelves[shelf].tag != "random"
                 else "",
                 wait=False,
@@ -714,9 +864,16 @@ class StoringGroceriesManager(Node):
 
             shelf_height = self.manual_heights[shelf]
 
+            if shelf_height > MAX_SHELF_HEIGHT:
+                self.state = ExecutionStates.DEUX_PLACE_OBJECT
+                return
+
             self.subtask_manager.manipulation.get_optimal_position_for_plane(
                 shelf_height, tolerance=0.1, table_or_shelf=False, approach_plane=False
             )
+
+            # objs = self.subtask_manager.vision.detect_objects()
+            # for i in
 
             status = self.subtask_manager.manipulation.place_on_shelf(
                 plane_height=shelf_height, tolerance=0.1
@@ -771,7 +928,7 @@ class StoringGroceriesManager(Node):
                 )
                 while (
                     self.subtask_manager.hri.confirm(
-                        "Have you placed the object?", use_hotwords=False
+                        "Have you grabbed the object?", use_hotwords=False
                     )[1]
                     != "yes"
                 ):

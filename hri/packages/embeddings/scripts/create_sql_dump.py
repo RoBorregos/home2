@@ -236,15 +236,18 @@ def main():
             jsons["frida_knowledge.json"], KNOWLEDGE_TYPE.FRIDA.value
         ),
     )
-    print("Writing hand items")
-    write_to_file(
-        os.path.join(DOCKER_PATH, "04-hand-items.sql"),
-        json_to_hand_items_dumps(frida_constants_jsons["hand_items.json"]),
-    )
+    # print("Writing hand items")
+    # write_to_file(
+    #     os.path.join(DOCKER_PATH, "04-hand-items.sql"),
+    #     json_to_hand_items_dumps(frida_constants_jsons["hand_items.json"]),
+    # )
     print("Writing locations")
     write_to_file(
         os.path.join(DOCKER_PATH, "04-locations.sql"),
-        json_to_locations_dumps(frida_constants_jsons["areas.json"]),
+        json_to_locations_dumps(
+            frida_constants_jsons["areas.json"],
+            frida_constants_jsons["context_areas.json"],
+        ),
     )
 
 
@@ -265,5 +268,5 @@ def write_locations():
 
 
 if __name__ == "__main__":
-    # main()
-    write_locations()
+    main()
+    # write_locations()

@@ -98,6 +98,7 @@ class PickMotionServer(Node):
         result = PickMotion.Result()
         try:
             result.success, result.pick_result = self.pick(goal_handle, feedback)
+
             goal_handle.succeed()
             return result
         except Exception as e:
@@ -197,6 +198,7 @@ class PickMotionServer(Node):
 
                     else:
                         self.get_logger().error("Failed to attach object")
+
                     return True, pick_result
 
         self.get_logger().error("Failed to reach any grasp pose")

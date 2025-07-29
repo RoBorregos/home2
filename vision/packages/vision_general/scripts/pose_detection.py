@@ -143,6 +143,7 @@ class PoseDetection:
         gestures = Gestures.UNKNOWN
 
         if results_p.pose_landmarks:
+            print("FOUND LANDMARKS")
             mid_x = self.get_midpoint_x(results_p)
 
             if not self.is_chest_visible(image) or self.are_arms_down(
@@ -170,6 +171,28 @@ class PoseDetection:
 
         print(f"Detected gesture: {gestures}")
         return gestures
+
+    def is_waving_customer(self, image):
+        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        results = self.pose.process(image_rgb)
+        try:
+            landmarks = results.pose_landmarks.landmark
+
+            left_shoulder = landmarks[11]  # mp_pose.PoseLandmark.LEFT_SHOULDER
+            # left_elbow = landmarks[13]  # mp_pose.PoseLandmark.LEFT_ELBOW
+            left_wrist = landmarks[15]  # mp_pose.PoseLandmark.LEFT_WRIST
+
+            right_shoulder = landmarks[12]  # mp_pose.PoseLandmark.RIGHT_SHOULDER
+            # right_elbow = landmarks[14]  # mp_pose.PoseLandmark.RIGHT_ELBOW
+            right_wrist = landmarks[16]  # mp_pose.PoseLandmark.RIGHT_WRIST
+
+            if right_wrist.y < right_shoulder.y and left_wrist.y > left_shoulder.y:
+                return True
+            if left_wrist.y < left_shoulder.y and right_wrist.y > right_shoulder.y:
+                return True
+            return False
+        except Exception:
+            return False
 
     def is_closer_to_left_shoulder(self, wrist, left_shoulder, right_shoulder):
         return abs(wrist.x - left_shoulder.x) < abs(wrist.x - right_shoulder.x)

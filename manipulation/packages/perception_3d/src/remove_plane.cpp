@@ -160,6 +160,7 @@ public:
 
     if (request->close_point.header.frame_id == "") {
       // only filter too far from the robot
+      RCLCPP_INFO(this->get_logger(), "Using close point");
       pcl::PointXYZ req_point;
       req_point.x = 0.0;
       req_point.y = 0.0;
@@ -168,6 +169,7 @@ public:
           cloud_out, req_point, cloud_out, 5.0, request->min_height,
           request->max_height);
     } else {
+      RCLCPP_INFO(this->get_logger(), "Using close point");
       geometry_msgs::msg::PointStamped point;
       if (request->close_point.header.frame_id != "base_link") {
         try {
@@ -185,9 +187,12 @@ public:
       req_point.x = point.point.x;
       req_point.y = point.point.y;
       req_point.z = point.point.z;
+      request->min_height = point.point.z - 0.25;
+      request->max_height = point.point.z + 0.25;
+      
 
       response->health_response = this->DistanceFilterFromPoint(
-          cloud_out, req_point, cloud_out, 1.0, request->min_height,
+          cloud_out, req_point, cloud_out, 0.4, request->min_height,
           request->max_height);
     }
 
@@ -459,6 +464,8 @@ public:
       _OUT_ std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud_out,
       const float distance = 0.5, const float min_height = 0.1,
       const float max_height = 2.5) {
+
+        RCLCPP_INFO(this->get_logger(), "as distance: %f , min_h: %f , max_height: %f , point: x: %f y: %f z: %f", distance, min_height, max_height, point.x, point.y, point.z);
 
     pcl::PassThrough<pcl::PointXYZ> pass;
     pass.setInputCloud(cloud);

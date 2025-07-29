@@ -60,7 +60,7 @@ class FaceRecognition(Node):
         super().__init__("face_recognition")
         self.bridge = CvBridge()
         self.pbar = tqdm.tqdm(total=2)
-        # self.callback_gorup = rclpy.callback_groups.ReentrantCallbackGroup()
+        self.callback_gorup = rclpy.callback_groups.ReentrantCallbackGroup()
         qos = rclpy.qos.QoSProfile(
             depth=1,
             reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
