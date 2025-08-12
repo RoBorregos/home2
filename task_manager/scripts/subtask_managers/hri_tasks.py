@@ -16,26 +16,28 @@ import numpy as np
 import rclpy
 from ament_index_python.packages import get_package_share_directory
 from embeddings.postgres_adapter import PostgresAdapter
-from frida_constants.hri_constants import (  # ADD_ENTRY_SERVICE,
+from frida_constants.hri_constants import (
     CATEGORIZE_SERVICE,
     COMMAND_INTERPRETER_SERVICE,
     COMMON_INTEREST_SERVICE,
+    DISPLAY_IMAGE_TOPIC,
+    DISPLAY_MAP_TOPIC,
     EXTRACT_DATA_SERVICE,
     GRAMMAR_SERVICE,
     IS_NEGATIVE_SERVICE,
     IS_POSITIVE_SERVICE,
     LLM_WRAPPER_SERVICE,
-    QUERY_ENTRY_SERVICE,
     RAG_SERVICE,
     RESPEAKER_LIGHT_TOPIC,
     SPEAK_SERVICE,
+    START_BUTTON_CLIENT,
     STT_ACTION_SERVER_NAME,
     WAKEWORD_TOPIC,
 )
 from frida_interfaces.action import SpeechStream
 from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
-from frida_interfaces.srv import (  # AddEntry,
-    CategorizeShelves,
+from frida_interfaces.srv import (
+    CategorizeShelves,  # AddEntry,
     CommandInterpreter,
     CommonInterest,
     ExtractInfo,
@@ -44,13 +46,12 @@ from frida_interfaces.srv import (  # AddEntry,
     IsNegative,
     IsPositive,
     LLMWrapper,
-    QueryEntry,
     Speak,
 )
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from rclpy.task import Future
-from std_msgs.msg import String
+from std_msgs.msg import Empty, String
 from utils.baml_client.sync_client import b
 from utils.baml_client.types import (
     AnswerQuestion,
@@ -73,6 +74,7 @@ from utils.logger import Logger
 from utils.status import Status
 from utils.task import Task
 
+from subtask_managers.hri_hand import HRIHand
 from subtask_managers.subtask_meta import SubtaskMeta
 
 InterpreterAvailableCommands = Union[
@@ -160,6 +162,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
     def __init__(self, task_manager: Node, config=None, task=Task.RECEPTIONIST) -> None:
         self.node = task_manager
+        self.start_button_clicked = False
         self.keyword = ""
         self.speak_service = self.node.create_client(Speak, SPEAK_SERVICE)
         self.extract_data_service = self.node.create_client(ExtractInfo, EXTRACT_DATA_SERVICE)
@@ -170,10 +173,12 @@ class HRITasks(metaclass=SubtaskMeta):
         )
         self.is_positive_service = self.node.create_client(IsPositive, IS_POSITIVE_SERVICE)
         self.is_negative_service = self.node.create_client(IsNegative, IS_NEGATIVE_SERVICE)
-        self.display_publisher = self.node.create_publisher(String, "/hri/display/change_video", 10)
-
-        self.query_item_client = self.node.create_client(QueryEntry, QUERY_ENTRY_SERVICE)
-        # self.add_item_client = self.node.create_client(AddEntry, ADD_ENTRY_SERVICE)
+        self.display_publisher = self.node.create_publisher(String, DISPLAY_IMAGE_TOPIC, 10)
+        self.display_map_publisher = self.node.create_publisher(String, DISPLAY_MAP_TOPIC, 10)
+        self.answers_publisher = self.node.create_publisher(String, "/hri/display/answers", 10)
+        self.questions_publisher = self.node.create_publisher(
+            String, "/hri/display/frida_questions", 10
+        )
         self.pg = PostgresAdapter()
         self.llm_wrapper_service = self.node.create_client(LLMWrapper, LLM_WRAPPER_SERVICE)
         self.categorize_service = self.node.create_client(CategorizeShelves, CATEGORIZE_SERVICE)
@@ -199,6 +204,14 @@ class HRITasks(metaclass=SubtaskMeta):
         )
 
         self._action_client = ActionClient(self.node, SpeechStream, STT_ACTION_SERVER_NAME)
+
+        self._start_button_sub = self.node.create_subscription(
+            Empty,
+            START_BUTTON_CLIENT,
+            self.start_button_callback,
+            10,
+            callback_group=rclpy.callback_groups.ReentrantCallbackGroup(),
+        )
 
         all_services = {
             "say": {
@@ -227,12 +240,27 @@ class HRITasks(metaclass=SubtaskMeta):
             Task.GPSR: all_services | gpsr_services,
             Task.HELP_ME_CARRY: all_services,
             Task.STORING_GROCERIES: all_services,
+            Task.DEMO: all_services,
         }
+
+        self.hand = HRIHand(self)
 
         package_share_directory = get_package_share_directory("frida_constants")
         file_path = os.path.join(package_share_directory, "data/positive.json")
         with open(file_path, "r") as file:
             self.positive = json.load(file)["affirmations"]
+
+        file_path = os.path.join(package_share_directory, "data/hand_items.json")
+        with open(file_path, "r") as file:
+            self.hand_items = json.load(file)
+
+        file_path = os.path.join(package_share_directory, "data/objects.json")
+        with open(file_path, "r") as file:
+            self.objects_data = json.load(file)
+
+        file_path = os.path.join(package_share_directory, "data/names.json")
+        with open(file_path, "r") as file:
+            self.names = json.load(file)["names"]
 
         self.setup_services()
         Logger.success(self.node, f"hri_tasks initialized with task {self.task}")
@@ -253,13 +281,12 @@ class HRITasks(metaclass=SubtaskMeta):
                     Logger.warn(self.node, f"{key} action server not initialized. ({self.task})")
 
     @service_check("speak_service", Status.SERVICE_CHECK, TIMEOUT)
-    def say(self, text: str, wait: bool = True) -> None:
+    def say(self, text: str, wait: bool = True, speed: float = 1.15) -> None:
         """Method to publish directly text to the speech node"""
         Logger.info(self.node, f"Sending to saying service: {text}")
 
         # return Status.EXECUTION_SUCCESS
-
-        request = Speak.Request(text=text)
+        request = Speak.Request(text=text, speed=float(speed))
 
         future = self.speak_service.call_async(request)
 
@@ -284,7 +311,8 @@ class HRITasks(metaclass=SubtaskMeta):
             str: The extracted data as a string. If no data is found, an empty string is returned.
         """
         Logger.info(
-            self.node, f"Sending to extract data service: query={query}, text={complete_text}"
+            self.node,
+            f"Sending to extract data service: query={query}, text={complete_text}",
         )
 
         if is_async:
@@ -371,7 +399,11 @@ class HRITasks(metaclass=SubtaskMeta):
 
     @service_check("_action_client", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def hear(
-        self, hotwords="", silence_time=2.0, start_silence_time=4.0, max_audio_length=13.0
+        self,
+        hotwords="",
+        silence_time=2.0,
+        start_silence_time=4.0,
+        max_audio_length=13.0,
     ) -> str:
         Logger.info(
             self.node,
@@ -441,12 +473,30 @@ class HRITasks(metaclass=SubtaskMeta):
         goal_msg.silence_time = float(silence_time)
         goal_msg.start_silence_time = float(start_silence_time)
 
+        Logger.info(
+            self.node,
+            f"Sending goal with timeout={timeout}, silence_time={silence_time}",
+        )
+
         future = self._action_client.send_goal_async(
             goal_msg,
             feedback_callback=self.feedback_callback,
         )
 
-        future.add_done_callback(lambda f: self._active_goals.append(f.result()))
+        def goal_response_callback(goal_future):
+            goal_handle = goal_future.result()
+            Logger.info(self.node, f"Goal response received. Accepted: {goal_handle.accepted}")
+            if goal_handle.accepted:
+                self._active_goals.append(goal_handle)
+                # Add a callback to remove the goal when it's done
+                result_future = goal_handle.get_result_async()
+                result_future.add_done_callback(
+                    lambda _: self._active_goals.remove(goal_handle)
+                    if goal_handle in self._active_goals
+                    else None
+                )
+
+        future.add_done_callback(goal_response_callback)
 
         return future
 
@@ -494,7 +544,7 @@ class HRITasks(metaclass=SubtaskMeta):
             self.say(question)
 
             if use_hotwords:
-                self.say("Please confirm by saying yes or no")
+                # self.say("Please confirm by saying yes or no")
 
                 s, keyword = self.interpret_keyword(["yes", "no"], timeout=wait_between_retries)
                 if s == Status.EXECUTION_SUCCESS:
@@ -526,12 +576,13 @@ class HRITasks(metaclass=SubtaskMeta):
 
                 # If the transcription is equal to the last hotwords, consider that no text was heard: when the audio is too short or only silence, the transcription can be equal to the hotwords.
                 if (
-                    len(goal_future.result().result.transcription) > 0
+                    len(goal_future.result().result.transcription.strip()) > 0
                     and goal_future.result().result.transcription != self.last_hotwords
                 ):
                     if (
                         contains_any(
-                            format_transcription(self.current_transcription), self.positive
+                            format_transcription(self.current_transcription),
+                            self.positive,
                         )
                         or self.is_positive(self.current_transcription)[1]
                     ):
@@ -552,9 +603,13 @@ class HRITasks(metaclass=SubtaskMeta):
         context: str = "",
         confirm_question: Union[str, callable] = confirm_query,
         use_hotwords: bool = True,
+        hotwords="",
         retries: int = 3,
         min_wait_between_retries: float = 5,
         skip_extract_data: bool = False,
+        skip_confirmation: bool = False,
+        options: list[str] = None,
+        remap: dict = None,
     ):
         """
         Method to confirm a specific question.
@@ -579,16 +634,34 @@ class HRITasks(metaclass=SubtaskMeta):
             start_time = self.node.get_clock().now()
 
             self.say(question)
-            hear_status, interpreted_text = self.hear()
+            hear_status, interpreted_text = self.hear(hotwords=hotwords)
 
             if hear_status == Status.EXECUTION_SUCCESS:
-                if not skip_extract_data:
+                target_info = interpreted_text
+                if not skip_extract_data and not options:
                     s, target_info = self.extract_data(query, interpreted_text, context)
-                else:
-                    s = Status.TARGET_NOT_FOUND
 
-                if s == Status.TARGET_NOT_FOUND:
-                    target_info = interpreted_text
+                try:
+                    if options is not None:
+                        foundExact = False
+                        for option in options:
+                            if option.lower() in target_info.lower():
+                                target_info = option
+                                foundExact = True
+                                break
+                        if not foundExact:
+                            target_info = self.find_closest(options, target_info)[0]
+                except Exception as e:
+                    print("Failed options:", e)
+
+                try:
+                    if remap is not None and target_info in remap:
+                        target_info = remap[target_info]
+                except Exception as e:
+                    print("Failed remap:", e)
+
+                if skip_confirmation:
+                    return Status.EXECUTION_SUCCESS, target_info
 
                 # Determine the confirmation question
                 if callable(confirm_question):
@@ -663,6 +736,19 @@ class HRITasks(metaclass=SubtaskMeta):
         rclpy.spin_until_future_complete(self.node, future)
         return Status.EXECUTION_SUCCESS, future.result().corrected_text
 
+    @service_check("", (Status.SERVICE_CHECK, ("coke", "left")), TIMEOUT)
+    def get_location_orientation(self, room) -> tuple[Status, tuple[str, str]]:
+        """
+        Method to get the location and orientation of where to place the object
+        Returns:
+            tuple[Status, tuple[str, str]]: A tuple containing the status and a tuple with the location and orientation.
+            The location is a string representing the location (e.g., "coke") and the orientation is a string representing the direction (e.g., "left").
+        """
+
+        return self.hand.get_complete_placement_info(
+            room=room,
+        )
+
     def command_interpreter(
         self, text: str, is_async=False
     ) -> List[InterpreterAvailableCommands] | Future:
@@ -718,7 +804,13 @@ class HRITasks(metaclass=SubtaskMeta):
 
     @service_check("common_interest_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def common_interest(
-        self, person1, interest1, person2, interest2, remove_thinking=True, is_async=False
+        self,
+        person1,
+        interest1,
+        person2,
+        interest2,
+        remove_thinking=True,
+        is_async=False,
     ):
         try:
             future = Future()
@@ -727,7 +819,10 @@ class HRITasks(metaclass=SubtaskMeta):
                 f"Finding common interest between {person1}({interest1}) and {person2}({interest2})",
             )
             request = CommonInterest.Request(
-                person1=person1, interests1=interest1, person2=person2, interests2=interest2
+                person1=person1,
+                interests1=interest1,
+                person2=person2,
+                interests2=interest2,
             )
             common_interest_future = self.common_interest_service.call_async(request)
 
@@ -737,11 +832,13 @@ class HRITasks(metaclass=SubtaskMeta):
                     result = re.sub(r"<think>.*?</think>", "", result, flags=re.DOTALL)
 
                 Logger.info(
-                    self.node, f"Common interest computed between {person1} and {person2}: {result}"
+                    self.node,
+                    f"Common interest computed between {person1} and {person2}: {result}",
                 )
+
                 future.set_result(
                     (
-                        Status.EXECUTION_SUCCESS,
+                        Status.TARGET_NOT_FOUND if "don't" in result else Status.EXECUTION_SUCCESS,
                         result,
                     )
                 )
@@ -755,7 +852,6 @@ class HRITasks(metaclass=SubtaskMeta):
             Logger.error(self.node, f"Error in common interest service: {e}")
             return Status.EXECUTION_ERROR, ""
 
-    # TODO: Make async
     @service_check("is_positive_service", (Status.SERVICE_CHECK, False), TIMEOUT)
     def is_positive(self, text, async_call=False):
         Logger.info(self.node, f"Checking if text is positive: {text}")
@@ -767,7 +863,6 @@ class HRITasks(metaclass=SubtaskMeta):
         Logger.info(self.node, f"is_positive result ({text}): {future.result().is_positive}")
         return Status.EXECUTION_SUCCESS, future.result().is_positive
 
-    # TODO: Make async
     @service_check("is_negative_service", (Status.SERVICE_CHECK, False), TIMEOUT)
     def is_negative(self, text, async_call=False):
         Logger.info(self.node, f"Checking if text is negative: {text}")
@@ -787,6 +882,12 @@ class HRITasks(metaclass=SubtaskMeta):
             future = goal_handle.cancel_goal_async()
             cancel_future.append(future)
 
+        if len(cancel_future) == 0:
+            Logger.warn(self.node, "No active goals to cancel")
+            return
+        else:
+            Logger.info(self.node, f"Cancelling {len(cancel_future)} active goals")
+
         for f in cancel_future:
             rclpy.spin_until_future_complete(self.node, f, timeout_sec=1)
 
@@ -798,7 +899,11 @@ class HRITasks(metaclass=SubtaskMeta):
         question: str,
         top_k: int = 3,
         threshold: float = 0.1,
-        collections: list = ["frida_knowledge", "roborregos_knowledge", "tec_knowledge"],
+        collections: list = [
+            "frida_knowledge",
+            "roborregos_knowledge",
+            "tec_knowledge",
+        ],
     ) -> tuple[Status, str]:
         """
         Method to answer a question using the RAG service.
@@ -820,7 +925,7 @@ class HRITasks(metaclass=SubtaskMeta):
             question=question,
             topk=top_k if top_k is not None else 0,
             threshold=threshold if threshold is not None else 0.0,
-            collections=collections if collections is not None else [],
+            knowledge_type=collections if collections is not None else [],
         )
 
         future = self.answer_question_service.call_async(request)
@@ -834,55 +939,24 @@ class HRITasks(metaclass=SubtaskMeta):
             Logger.warn(self.node, f"RAG service failed: {result.response}")
             return Status.EXECUTION_ERROR, result.response, result.score
 
-    # /////////////////embeddings services/////
+    # Embeddings services
     def add_command_history(self, command: InterpreterAvailableCommands, result, status):
-        # collection = "command_history"
-
-        # document = [command.action]
-        # metadata = [
-        #     {
-        #         "command": str(command),
-        #         "result": result,
-        #         "status": status,
-        #         "timestamp": datetime.now().isoformat(),
-        #     }
-        # ]
-
-        # request = AddEntry.Request(
-        #     document=document, metadata=json.dumps(metadata), collection=collection
-        # )
-        # future = self.add_item_client.call_async(request)
-
-        # def callback(fut):
-        #     try:
-        #         response = fut.result()
-        #         self.node.get_logger().info(
-        #             f"Command history saved: {response}")
-        #     except Exception as e:
-        #         self.node.get_logger().error(
-        #             f"Failed to save command history: {e}")
-
-        # future.add_done_callback(callback)
         self.pg.add_command(
             action=str(command.action),
             command=str(command),
             result=result,
-            status=status,
+            status=str(status),
             context=type(command).__name__,
         )
         return Status.EXECUTION_SUCCESS
 
     def add_item(self, document: list, metadata: str) -> list[str]:
-        # self.pg.add_item2(
-
-        # )
         for doc in document:
             self.pg.add_item2(
                 document=doc,
                 context=metadata.get("context", ""),
             )
         return [doc for doc in document]
-        # return self._add_to_collection(document, metadata, "items")
 
     def add_location(self, document: list, metadata: str) -> list[str]:
         for doc in document:
@@ -891,17 +965,13 @@ class HRITasks(metaclass=SubtaskMeta):
                 context=metadata.get("context", ""),
             )
         return [doc for doc in document]
-        # return self._add_to_collection(document, metadata, "locations")
 
-    def query_item(self, query: str, top_k: int = 1) -> list[str]:
-        # return self._query_(query, "items", top_k)
-        return self.pg.query_items(query=query, top_k=top_k)
+    def query_location(self, query: str, top_k: int = 1, use_context: bool = False):
+        return self.pg.query_location(query, top_k=top_k, use_context=use_context)
 
-    def query_location(self, query: str, top_k: int = 1) -> list[str]:
-        # return self._query_(query, "locations", top_k)
-        return self.pg.query_location(query=query, top_k=top_k)
-
-    def find_closest(self, documents: list, query: str, top_k: int = 1) -> list[str]:
+    def find_closest(
+        self, documents: list, query: str, top_k: int = 1, threshold: float = 0.0
+    ) -> list[str]:
         """
         Method to find the closest item to the query.
         Args:
@@ -911,39 +981,44 @@ class HRITasks(metaclass=SubtaskMeta):
             Status: the status of the execution
             list[str]: the results of the query
         """
-        # self._add_to_collection(
-        #     document=documents, metadata="", collection="closest_items")
-        # Results = self._query_(query, "closest_items", top_k)
-        # Results = self.get_name(Results)
+        emb = self.pg.embedding_model.encode(query)
 
+        def cos_sim(x, y):
+            return np.dot(x, y) / (np.linalg.norm(x) * np.linalg.norm(y))
+
+        docs = [(doc, cos_sim(self.pg.embedding_model.encode(doc), emb)) for doc in documents]
+        docs = [doc for doc in docs if doc[1] >= threshold]
+        results = sorted(docs, key=lambda x: x[1], reverse=True)[:top_k]
+
+        results = [doc[0] for doc in results]
+        s = Status.EXECUTION_SUCCESS if len(results) > 1 else Status.TARGET_NOT_FOUND
+
+        return s, results
+
+    def find_closest_raw(self, documents: list, query: str, top_k: int = 4) -> list[str]:
+        """
+        Method to find the closest item to the query.
+        Args:
+            documents: the documents to search among
+            query: the query to search for
+        Returns:
+            Status: the status of the execution
+            list[str]: the results of the query
+        """
         docs = [(doc, self.pg.embedding_model.encode(doc)) for doc in documents]
         emb = self.pg.embedding_model.encode(query)
 
         def cos_sim(x, y):
             return np.dot(x, y) / (np.linalg.norm(x) * np.linalg.norm(y))
 
-        Results = sorted(docs, key=lambda x: cos_sim(x[1], emb), reverse=True)[:top_k]
-        Results = [doc[0] for doc in Results]
-        return Status.EXECUTION_SUCCESS, Results
+        Results = cos_sim(
+            np.array([doc[1] for doc in docs]), emb
+        )  # Calculate cosine similarity for all documents
+        Results = sorted(zip(docs, Results), key=lambda x: x[1], reverse=True)
+        Results = [(doc[0][0], doc[1]) for doc in Results]  # Extract document and similarity score
+        Logger.info(self.node, f"FIND CLOSEST RAW RESULTS: {Results}")
 
-        # Logger.info(self.node, f"find_closest result({query}): {str(Results)}")
-        # return Status.EXECUTION_SUCCESS, Results
-
-    # def find_closest_raw(self, documents: str, query: str, top_k: int = 1) -> list[str]:
-    #     """
-    #     Method to find the closest item to the query.
-    #     Args:
-    #         documents: the documents to search among
-    #         query: the query to search for
-    #     Returns:
-    #         Status: the status of the execution
-    #         list[str]: the results of the query
-    #     """
-    #     self._add_to_collection(
-    #         document=documents, metadata="", collection="closest_items")
-    #     Results = self._query_(query, "closest_items", top_k)
-    #     Logger.info(self.node, f"find_closest result({query}): {str(Results)}")
-    #     return Results
+        return Results
 
     # TODO: Make async
     @service_check("llm_wrapper_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
@@ -964,69 +1039,10 @@ class HRITasks(metaclass=SubtaskMeta):
         rclpy.spin_until_future_complete(self.node, future)
         return Status.EXECUTION_SUCCESS, future.result().answer
 
-    def query_command_history(self, query: str, top_k: int = 1):
-        results = self.pg.query_command_history(command=query, top_k=top_k)
+    def query_command_history(self, query: str, action: str, top_k: int = 1):
+        results = self.pg.query_command_history(command=query, action=action, top_k=top_k)
         return Status.EXECUTION_SUCCESS, results
-        # """
-        # Method to query the command history collection.
-        # Args:
-        #     query: the query to search for
-        # Returns:
-        #     Status: the status of the execution
-        #     list[str]: the results of the query
-        # """
-        # return self._query_(query, "command_history", top_k)
 
-    # /////////////////helpers/////
-    # def _query_(self, query: str, collection: str, top_k: int = 1) -> tuple[Status, list[str]]:
-    #     # Wrap the query in a list so that the field receives a sequence of strings.
-    #     request = QueryEntry.Request(
-    #         query=[query], collection=collection, topk=top_k)
-    #     future = self.query_item_client.call_async(request)
-    #     rclpy.spin_until_future_complete(self.node, future)
-    #     if collection == "command_history":
-    #         self.node.get_logger().info(
-    #             f"Querying command history: {future.result().results}")
-    #         results_loaded = json.loads(future.result().results[0])
-    #         sorted_results = sorted(
-    #             results_loaded["results"], key=lambda x: x["metadata"]["timestamp"], reverse=True
-    #         )
-    #         results_list = sorted_results[:top_k]
-    #     else:
-    #         results = future.result().results
-
-    #         results_loaded = json.loads(results[0])
-    #         results_list = results_loaded["results"]
-    #     return Status.EXECUTION_SUCCESS, results_list
-
-    # def _add_to_collection(self, document: list, metadata: str, collection: str) -> str:
-    #     request = AddEntry.Request(
-    #         document=document, metadata=metadata, collection=collection)
-    #     future = self.add_item_client.call_async(request)
-    #     rclpy.spin_until_future_complete(self.node, future)
-
-    #     return (
-    #         Status.EXECUTION_SUCCESS,
-    #         "Success" if future.result(
-    #         ).success else f"Failed: {future.result().message}",
-    #     )
-
-    def get_context(self, query_result):
-        return self.get_metadata_key(query_result, "context")
-
-    def get_command(self, query_result):
-        return self.get_metadata_key(query_result, "command")
-
-    def get_result(self, query_result):
-        return self.get_metadata_key(query_result, "result")
-
-    def get_status(self, query_result):
-        return self.get_metadata_key(query_result, "status")
-
-    def get_name(self, query_result):
-        return self.get_metadata_key(query_result, "original_name")
-
-    # TODO: Make async
     def categorize_objects(
         self, table_objects: list[str], shelves: dict[int, list[str]]
     ) -> tuple[Status, dict[int, list[str]], dict[int, list[str]]]:
@@ -1040,169 +1056,133 @@ class HRITasks(metaclass=SubtaskMeta):
         Returns:
             dict[int, list[str]]: Dictionary mapping shelf levels to categorized objects.
         """
-        Logger.info(self.node, "Sending request to categorize_objects")
+        Logger.info(self.node, "Categorizing objects...")
 
         try:
-            categories = self.get_shelves_categories(shelves)[1]
-            results = self.categorize_objects_with_embeddings(categories, table_objects)
+            categorized_shelves = {}
 
-            objects_to_add = {key: value["objects_to_add"] for key, value in results.items()}
-            Logger.error(self.node, f"categories {categories}")
+            category_shelve = {}
 
-            if "empty" in categories.values():
-                # add objects to add in shelves
-                for k, v in objects_to_add.items():
-                    for i in v:
-                        shelves[k].append(i)
-                categories = self.get_shelves_categories(shelves)[1]
+            # Use this as miscellaneous category for empty shelves
+            empty_shelve_index = 0
+            miscellaneous_category = False
 
-            Logger.error(self.node, f"THIS IS THE CATEGORIZED SHELVES: {categories}")
-            categorized_shelves = {
-                key: value["classification_tag"] for key, value in results.items()
-            }
-            for k, v in categorized_shelves.items():
-                if v == "empty":
-                    categorized_shelves[k] = categories[k]
-        #             categorized_shelves = {
-        #                 key: value["classification_tag"] for key, value in results.items()
-        #             }
+            for level in shelves:
+                if level not in categorized_shelves:
+                    categorized_shelves[level] = []
+
+                for object_name in shelves[level]:
+                    category = self.deterministic_categorization(object_name)
+                    categorized_shelves[level].append(category)
+                    category_shelve[category] = level
+
+                if len(categorized_shelves[level]) < 1:
+                    categorized_shelves[level] = ["empty"]
+                    empty_shelve_index = level
+
+            objects_to_add = {level: [] for level in shelves.keys()}
+
+            for table_object in table_objects:
+                category = self.deterministic_categorization(table_object)
+
+                if category in category_shelve.keys():
+                    objects_to_add[category_shelve[category]].append(table_object)
+                else:
+                    placed_object = False
+                    for key in categorized_shelves.keys():
+                        if categorized_shelves[key] == "empty":
+                            categorized_shelves[key] = category
+                            objects_to_add[key].append(table_object)
+                            placed_object = True
+                            break
+
+                    if not placed_object:
+                        categorized_shelves[empty_shelve_index] = ["miscellaneous"]
+                        miscellaneous_category = True
+                        objects_to_add[empty_shelve_index].append(table_object)
+
+            if miscellaneous_category:
+                categorized_shelves[empty_shelve_index] = ["miscellaneous"]
 
         except Exception as e:
             self.node.get_logger().error(f"Error: {e}")
             return Status.EXECUTION_ERROR, {}, {}
 
+        # Remove duplicated categories
+        for level in categorized_shelves:
+            unique = set()
+
+            for cat in categorized_shelves[level]:
+                unique.add(cat)
+
+            categorized_shelves[level] = list(unique)
+
         Logger.info(self.node, "Finished executing categorize_objects")
 
-        return Status.EXECUTION_SUCCESS, categorized_shelves, objects_to_add
+        old_api = {}
+        for key in categorized_shelves:
+            old_api[key] = " ".join(categorized_shelves[key])
 
-    def get_shelves_categories(
-        self, shelves: dict[int, list[str]]
-    ) -> tuple[Status, dict[int, str]]:
-        """
-        Categorize objects based on their shelf levels.
-
-        Args:
-            shelves (dict[int, list[str]]): Dictionary mapping shelf levels to object names.
-
-        Returns:
-            dict[int, str]: Dictionary mapping shelf levels to its category.
-        """
-        Logger.info(self.node, "Sending request to categorize_objects")
-
-        try:
-            request = CategorizeShelves.Request(shelves=String(data=str(shelves)), table_objects=[])
-
-            future = self.categorize_service.call_async(request)
-            Logger.info(self.node, "generated request")
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=25)
-            res = future.result()
-            Logger.info(self.node, "request finished")
-            Logger.info(self.node, "categorize_objects result: " + str(res))
-            # if res.status != Status.EXECUTION_SUCCESS:
-            #     Logger.error(self.node, f"Error in categorize_objects: {res.status}")
-            #     return Status.EXECUTION_ERROR, {}, {}
-
-            categorized_shelves = res.categorized_shelves
-            categorized_shelves = {k: v for k, v in enumerate(categorized_shelves)}
-        except Exception as e:
-            self.node.get_logger().error(f"Error: {e}")
-            return Status.EXECUTION_ERROR, {}
-
-        Logger.info(self.node, "get_shelves_categories:" + str(categorized_shelves))
-
-        return Status.EXECUTION_SUCCESS, categorized_shelves
-
-    def get_subarea(self, query_result):
-        return self.get_metadata_key(query_result, "subarea")
-
-    def get_area(self, query_result):
-        return self.get_metadata_key(query_result, "area")
-
-    def get_metadata_key(self, query_result, field: str):
-        """
-        Extracts the field from the metadata of a query result.
-
-        Args:
-            query_result (tuple): The query result tuple (status, list of JSON strings)
-
-        Returns:
-            list: The 'context' field from metadata, or empty string if not found
-        """
-        try:
-            key_list = []
-            query_result = query_result[1]
-            for result in query_result:
-                metadata = result["metadata"]
-                if isinstance(metadata, list) and metadata:
-                    metadata = metadata[0]
-                result_key = metadata.get(field, "")  # safely get 'field'
-                key_list.append(result_key)
-            return key_list
-        except (IndexError, KeyError, json.JSONDecodeError) as e:
-            self.node.get_logger().error(f"Failed to extract context: {str(e)}")
-            return ""
+        return Status.EXECUTION_SUCCESS, old_api, objects_to_add, categorized_shelves
 
     def publish_display_topic(self, topic: str):
         self.display_publisher.publish(String(data=topic))
         Logger.info(self.node, f"Published display topic: {topic}")
 
-    def get_timestamps(self, query_result):
-        return self.get_metadata_key(query_result, "timestamp")
-
-    def categorize_object(self, categories: dict, obj: str):
-        """Method to categorize a list of objects in an array of objects depending on similarity"""
-
-        try:
-            category_list = []
-            categories_aux = categories.copy()
-            self.node.get_logger().info(f"OBJECT TO CATEGORIZE: {obj}")
-            for key in list(categories_aux.keys()):
-                if categories_aux[key] == "empty":
-                    self.node.get_logger().info("THERE IS AN EMPTY SHELVE")
-                    del categories_aux[key]
-
-            for category in categories_aux.values():
-                category_list.append(category)
-
-            results = self.find_closest_raw(category_list, obj)
-            results_distances = results[1][0]["distance"]
-
-            result_category = results[1][0]["document"]
-            self.node.get_logger().info(f"CATEGORY PREDICTED BEFORE THRESHOLD: {result_category}")
-            if "empty" in categories.values() and results_distances[0] > 1:
-                result_category = "empty"
-
-            self.node.get_logger().info(f"CATEGORY PREDICTED: {result_category}")
-
-            key_resulted = 2
-            for key in list(categories.keys()):
-                if str(categories[key]) == str(result_category):
-                    key_resulted = key
-                else:
-                    self.node.get_logger().info(
-                        "THE CATEGORY PREDICTED IS NOT CONTAINED IN THE REQUEST, RETURNING SHELVE 2"
-                    )
-
-            return key_resulted
-
-        except Exception as e:
-            self.node.get_logger().error(f"FAILED TO CATEGORIZE: {obj} with error: {e}")
-
-    def categorize_objects_with_embeddings(self, categories: dict, obj_list: list):
+    def deterministic_categorization(self, object_name: str):
         """
-        Categorize objects based on their embeddings."""
-        self.node.get_logger().info(f"THIS IS THE CATEGORIES dict RECEIVED: {categories}")
-        self.node.get_logger().info(f"THIS IS THE obj_list LIST RECEIVED: {obj_list}")
-        results = {
-            key: {"classification_tag": categories[key], "objects_to_add": []}
-            for key in categories.keys()
-        }
-        for obj in obj_list:
-            index = self.categorize_object(categories, obj)
-            results[index]["objects_to_add"].append(obj)
+        Note: it seems each object is mapped to a specific category, so no clustering is needed to group the objects.
+        See "frida_constants/data/objects.md"
+        """
+        try:
+            # Get closest embedding word
+            s, closest = self.find_closest(self.objects_data["all_objects"], object_name, top_k=1)
+            closest = closest[0]
 
-        self.node.get_logger().info(f"THIS IS THE RESULTS OF THE CATEGORIZATION: {results}")
-        return results
+            # Return the associated category
+            return self.objects_data["object_to_category"][closest]
+        except Exception as e:
+            self.node.get_logger().error(f"Error finding closest object: {e}")
+            return Status.EXECUTION_ERROR, "unknown"
+
+    def show_map(self, name="", clear_map: bool = False):
+        """
+        Method to show the map on the display.
+        """
+        show_items = self.hand_items.copy()
+
+        if clear_map:
+            show_items["image_path"] = ""
+            Logger.info(self.node, "Map cleared on the screen.")
+        else:
+            filtered_items = []
+
+            # Filter items to only include those matching the specified name
+            for item in show_items["markers"]:
+                if name == "" or item["name"].strip().lower() == name.strip().lower():
+                    filtered_items.append(item)
+
+            show_items["markers"] = filtered_items
+
+        self.display_map_publisher.publish(String(data=json.dumps(show_items)))
+
+    def send_display_answer(self, answer: str) -> bool:
+        try:
+            msg = String()
+            msg.data = answer
+            self.answers_publisher.publish(msg)
+            self.node.get_logger().info(f"Answer sent to display: {answer}")
+            return True
+        except Exception as e:
+            self.node.get_logger().error(f"Error sending answer: {str(e)}")
+            return False
+
+    def start_button_callback(self, msg: Empty):
+        """
+        Callback for the start button press.
+        This method is called when the start button is pressed.
+        """
+        self.start_button_clicked = True
 
 
 if __name__ == "__main__":

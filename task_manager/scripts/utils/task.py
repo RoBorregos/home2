@@ -7,4 +7,8 @@ class Task(Enum):
     HELP_ME_CARRY = 2
     GPSR = 3
     STORING_GROCERIES = 4
-    DEBUG = 5
+    CLEAN_TABLE = 5
+    EGPSR = 6
+    HAND = 7
+    RESTAURANT = 8
+    DEBUG = 100

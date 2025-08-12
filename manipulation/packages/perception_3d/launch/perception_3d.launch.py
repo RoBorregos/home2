@@ -14,6 +14,7 @@ def generate_launch_description():
                 name="pick_primitives",
                 output="screen",
                 emulate_tty=True,
+                respawn=True,
                 parameters=[],
             ),
             Node(
@@ -22,6 +23,7 @@ def generate_launch_description():
                 name="plane_service",
                 output="screen",
                 emulate_tty=True,
+                respawn=True,
                 parameters=[],
             ),
             Node(
@@ -29,8 +31,9 @@ def generate_launch_description():
                 executable="test_only_orchestrator",
                 name="test_only_orchestrator",
                 output="screen",
+                respawn=True,
                 emulate_tty=True,
-                parameters=[{"testing": True}],
+                parameters=[{"testing": False}],
             ),
         ]
     )

@@ -37,7 +37,7 @@ private:
   std::string input_topic = ZED_POINT_CLOUD_TOPIC;
   std::string output_topic = POINT_CLOUD_TOPIC;
   float small_size = 0.01f;
-  float medium_size = 0.05f;
+  float medium_size = 0.01f;
   float large_size = 0.10f;
   float small_radius = 1.5f; // 1.5m
   float medium_radius = 2.5f; // 2.5m

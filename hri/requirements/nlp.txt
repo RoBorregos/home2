@@ -15,7 +15,7 @@ pydantic==1.10.11
 # Data processing
 pandas==2.2.3
 
-# Embedding and ChromaDB client
+# Embeddings
 sentence-transformers==2.6.1
 
 # Extract Data

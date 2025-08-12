@@ -340,6 +340,8 @@ class MoveItConfigsBuilder(ParameterBuilder):
             self.__srdf_file_path = Path("srdf/xarm.srdf.sim.xacro")
 
         self.__robot_description = 'robot_description'
+        
+        self._joint_limits_file = Path(get_package_share_directory("arm_pkg")) / 'config' / 'joint_limits.yaml'
 
     def robot_description(
         self,
@@ -453,6 +455,17 @@ class MoveItConfigsBuilder(ParameterBuilder):
         key = self.__robot_description + '_planning'
 
         params = [self.__prefix, self.__robot_type, self.__robot_dof, self.__add_gripper, self.__add_bio_gripper]
+        
+        try:
+            joint_limits_yaml = load_yaml(self._joint_limits_file)
+            self.__moveit_configs.joint_limits = {
+                key: joint_limits_yaml
+            }
+            return self
+        except Exception as e:
+            logging.warning('\x1b[33;21m{}\x1b[0m'.format(e))
+            logging.warning('\x1b[33;21mThe joint limits will be loaded from /joint_limits topic \x1b[0m')
+            
         if all(isinstance(value, str) for value in params):
             robot_name = '{}{}'.format(self.__robot_type, self.__robot_dof if self.__robot_type == 'xarm' else '6' if self.__robot_type == 'lite' else '')
             

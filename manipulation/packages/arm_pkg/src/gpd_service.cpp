@@ -57,7 +57,7 @@ private:
     if (exit_) {
       RCLCPP_INFO(this->get_logger(), "Killing node");
       // wait for the service to finish
-      rclcpp::sleep_for(std::chrono::milliseconds(100));
+      rclcpp::sleep_for(std::chrono::milliseconds(500));
       rclcpp::shutdown();
     }
   }
@@ -343,6 +343,14 @@ private:
       cloud_msg.header.frame_id = target_frame;
       pcd_pub_->publish(cloud_msg);
 
+      RCLCPP_INFO(this->get_logger(), "Cloud transformed and published");
+      
+      // get cloud centroid
+      Eigen::Vector4f centroid;
+      pcl::compute3DCentroid(*cloud, centroid);
+      RCLCPP_INFO(this->get_logger(), "Cloud centroid: [%f, %f, %f]", 
+                  centroid[0], centroid[1], centroid[2]);
+
       cloud_rgba = convert_to_rgba(cloud);
       Eigen::MatrixXi camera_source = Eigen::MatrixXi::Zero(1, cloud_rgba->size());
 
@@ -365,8 +373,10 @@ private:
       auto grasps = get_grasps(cloud_rgba, camera_source, view_points, req->cfg_path);
 
       res->grasp_scores.reserve(grasps.size());
+      Eigen::VectorXd distance_to_centroid(grasps.size());
 
-      for (const auto &grasp : grasps) {
+      for (int i = 0; i < grasps.size(); ++i) {
+        auto& grasp = grasps[i];
         geometry_msgs::msg::PoseStamped pose;
         pose.header.stamp = stamp;
         pose.header.frame_id = target_frame;
@@ -402,17 +412,44 @@ private:
         // I'd advise not to lose more time on this and just move on to a new grasp detection method
         
         Eigen::Quaterniond q = quat * Eigen::AngleAxisd(M_PI / 2, Eigen::Vector3d::UnitY());
-
         
         pose.pose.orientation.x = q.x();
         pose.pose.orientation.y = q.y();
         pose.pose.orientation.z = q.z();
         pose.pose.orientation.w = q.w();
 
-
+        // Calculate distance to centroid
+        Eigen::Vector3d grasp_pos = grasp->getPosition();
+        Eigen::Vector3d centroid_pos(centroid[0], centroid[1], centroid[2]);
+        distance_to_centroid(i) = (grasp_pos - centroid_pos).norm();
 
         res->grasp_poses.push_back(pose);
-        res->grasp_scores.push_back(grasp->getScore());
+      }
+
+      // Output scores based on distance to centroid
+      if (distance_to_centroid.size() > 0) {
+        double max_distance = distance_to_centroid.maxCoeff();
+        RCLCPP_INFO(this->get_logger(), "Max distance to centroid: %f", max_distance);
+        res->grasp_scores.reserve(distance_to_centroid.size());
+        for (int i = 0; i < distance_to_centroid.size(); ++i) {
+          // Higher score for smaller distance
+          double score = 1.0 - (distance_to_centroid(i) / max_distance);
+          res->grasp_scores.push_back(score);
+          if (distance_to_centroid(i) > max_distance) {
+            RCLCPP_ERROR(this->get_logger(), "Distance to centroid for grasp %d is greater than max distance", i);
+          }
+        }
+      } else {
+        res->grasp_scores.clear();
+      }
+
+      // normalize scores
+      double max_score = *std::max_element(res->grasp_scores.begin(), res->grasp_scores.end());
+      if (max_score > 0) {
+        for (int i = 0; i < res->grasp_scores.size(); ++i) {
+          res->grasp_scores[i] /= max_score;
+          RCLCPP_INFO(this->get_logger(), "Grasp %d distance: %f score: %f", i, distance_to_centroid(i), res->grasp_scores[i]);
+        }
       }
 
       auto marker_array = create_gripper_markers(res->grasp_poses, res->grasp_scores);      

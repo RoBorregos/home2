@@ -25,7 +25,7 @@ Do not add any other information or context to the answer, just the common inter
             },
             {
                 "role": "user",
-                "content": f"{person1Name} likes {person1Interests} and {person2Name} likes {person2Interests}",
+                "content": f"{person1Name} likes {person1Interests} and {person2Name} likes {person2Interests}. /no_think",
             },
         ]
     }
@@ -154,7 +154,7 @@ def get_is_answer_positive_args(interpreted_text):
 **Input:** 'Wrong'
 **Output:**
 {IsAnswerPositive(is_positive=False).model_dump_json()}
-                
+
 **Input:** 'I don’t know'
 **Output:**
 {IsAnswerPositive(is_positive=False).model_dump_json()}
@@ -240,29 +240,49 @@ But does **not** include:
     )
 
 
-def get_categorize_shelves_args(shelves):
+def get_categorize_shelves_args(shelves, table_objects=[]):
+    print("AQUI AUQI")
+    print("Shelves:", shelves)
+    print("Table Objects:", table_objects)
     return (
         [
             {
                 "role": "system",
                 "content": """
-You are tasked with assigning a category to some shelves based on the objects they contain. Each shelf has a different set of objects, and you need to determine the most appropriate category for each shelf. There cannot be two or more shelves with the same category.
-Return a list where each element is the category to the corresponding shelf. Do not return any extra information or explanation, just the list of categories.
+You are a categorization assistant. Your task is to assign a unique category to each shelf based on the objects it contains, including any table_objects that might be in an empty or underfilled shelves. Each shelf must have a distinct category, and the category label must accurately cover all items assigned to that shelf and the ones on the table that should be placed in it.
 
-For example, if you have the following shelves:
-[
-  ["milk", "buttermilk"],
-  [],
-  ["apple", "banana"]
-]
+Return only a JSON object with a single key "categories", whose value is an array of category names in the same order as the input shelves. Do not include any extra text, explanation, or formatting.
 
-You should return:
-{"categories": ["dairy","empty","fruit"]}
+Examples:
+
+Input:
+Shelves: [["orange", "banana"], ["water", "cup"], []], table_objects: ["chips", "soda"]
+Output:
+{"categories": ["fruit","beverages","snacks"]}
+
+Input:
+Shelves: [["hammer","screwdriver"], ["jeans","shirt"]], table_objects: ["nails","socks"]
+Output:
+{"categories": ["tools","clothing"]}
+
+Input:
+Shelves: [["hammer", "can"], ["bowl", "water_bottle"], ["chips"]], table_objects: []
+Output:
+{"categories": ["metalic","plastic","snacks"]}
+
+Input:
+Shelves: [["apple", "fresca_can"], ["bowl", "yellow_bowl"], ["pringles"]], table_objects: ["chips", "orange"]
+Output:
+{"categories": ["sweets","containers","chips"]}
+
+PLEASE dont only use these categories you can use as many as you need in order to categorize the shelves. other useful categories could be: "kitchen", "containers", "electronics", "toys", "sports", "utencils", "cleaning supplies", "tools", "fruit", "vegetables", "snacks", "beverages", "dairy", "salty snaks", "sweets", "canned food". And others.
+Please dont leave empty categories if possible. only if there is absolutely no relation at all between the objects in the shelf and the table objects, you can leave it empty.
+ONLY Output the number of categories that match the number of shelves, there are no exceptions to this rule. 
 """,
             },
             {
                 "role": "user",
-                "content": f"Shelves: {shelves}",
+                "content": f"Shelves: {shelves}, table_objects: {table_objects}",
             },
         ],
         CategorizeShelvesResult,
@@ -301,9 +321,7 @@ def clean_question_rag(question):
 def get_answer_question_dialog(contexts, question):
     if contexts:
         context_text = "\n".join(contexts)
-        user_content = f"{context_text}\n\n{question}"
-
-        print("CONTEXT:", user_content)
+        user_content = f"Here is some relevant context, please consider it in your response: {context_text}(end of context)\n\nMy question is: {question}"
     else:
         user_content = question
 
@@ -326,6 +344,16 @@ def get_answer_question_dialog(contexts, question):
                 "If asked something about yourself, you may share a short fun fact (e.g., “I'm FRIDA, your home assistant — always here to help!”). "
                 "If no answer can be given based on the context, you may politely respond that you don't know at the moment. "
                 "Here is some relevant information to help you answer the question, consider this information in addition to your knowledge base:\n"
+                "What is the most populous city in Brazil? Answer: São Paulo is the most populous city in Brazil with 12.03 million residents."
+                "On what day, month and year was Brazil’s independence declared? Answer: On September 7, 1822, Brazil’s independence was declared."
+                "In what year did the first Brazilian astronaut go to space? Answer: In March 2006, Pontes became the first Brazilian to go to space."
+                "Pampulha Lake is a tourist spot in which Brazilian city? Answer: Belo Horizonte"
+                "What is the smallest Brazilian state in territorial extension? Answer: Sergipe"
+                "Where is the Itamaraty Palace located? Answer: Brasília"
+                "What is the Newest State in Brazil? Answer: Tocantins"
+                "What is the capital of Bahia? Answer: Salvador"
+                "Acarajé is a typical food from which state? Answer: Bahia"
+                "What are the colors of Bahia's flag? Answer: White, red and blue"
                 f"Tomorrow: {tomorrow_time}\n\n"
                 f"Day of the week: {day_of_week}\n\n"
                 f"Day of the month: {day_of_month}\n\n"
@@ -333,11 +361,12 @@ def get_answer_question_dialog(contexts, question):
                 "Don't ask additional questions or ask for clarifications, just answer the question."
                 "BE VERY CONCISE with your responses and only provide the information that is EXPLICITLY REQUESTED by the user."
                 "Don't ask the user for additional follow ups or questions, only answer its questions."
+                "When answering question, mention the question in the answer."
             ),
         },
         {
             "role": "user",
-            "content": user_content,
+            "content": user_content + "/no_think",
         },
     ]
 
@@ -351,7 +380,7 @@ def get_previous_command_answer(context, question):
                 "and your task is to answer it to the best of your ability using the provided context. "
                 f"Here is the context:\n\n{context}\n\n"
                 "Answer the question clearly and concisely."
-                "Summarize as much as possible."
+                "Summarize as much as possible. Only mention the execution status if the request failed."
             ),
         },
         {

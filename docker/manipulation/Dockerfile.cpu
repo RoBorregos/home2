@@ -20,14 +20,21 @@ RUN apt update && apt install -y ros-humble-desktop ros-humble-cv-bridge ros-hum
 COPY manipulation/requirements.txt /workspace/requirements/requirements.txt
 RUN pip3 install -r /workspace/requirements/requirements.txt
 
-RUN mkdir -p /workspace/src/home2
+RUN mkdir -p /workspace/src/
+RUN mkdir -p /installs
 RUN chown -R ros:ros /workspace
+RUN chown -R ros:ros /installs
 
+RUN apt update && apt install -y ros-humble-zed-msgs ros-humble-moveit* \
+    ros-humble-gazebo-ros ros-humble-gazebo-ros2-control ros-humble-gazebo-plugins
 # prebuild and more
-RUN git clone https://github.com/RoBorregos/home2 --recursive /workspace/src/home2
-RUN rosdep init && rosdep update && rosdep install --from-paths /workspace/src/home2 --ignore-src -r -y
+WORKDIR /installs
+RUN git clone https://github.com/RoBorregos/home2 --recursive home2_install
+WORKDIR /installs/home2_install
+RUN rosdep init && rosdep update && rosdep install --from-paths /installs/home2_install --ignore-src -r --skip-keys "gpd opencv message_package eigen3 pcl-ros gazebo_ros gazebo_plugins libpcl-dev gazebo_ros2_control" -y
 RUN rosdep fix-permissions
+RUN cd manipulation/packages/gpd && mkdir -p build && cd build && cmake .. && make && make install
 
-RUN apt update && apt install -y ros-humble-zed-msgs ros-humble-moveit*
+RUN echo "export GPD_INSTALL_DIR=/workspace/install/gpd" >> ~/.bashrc
 
 ENTRYPOINT [ "/bin/bash", "-l", "-c" ]

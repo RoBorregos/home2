@@ -15,6 +15,7 @@
 hri/packages/nlp/assets/**
 .cache
 !hri/packages/nlp/assets/download-model.sh
+!hri/packages/nlp/assets/Modelfile
 !hri/packages/nlp/assets/entrypoint.sh
 **.bag
 **/rtabmapdbs
@@ -22,3 +23,10 @@ yolov5/
 **/baml_client
 mobileclip_blt.ts
 !vision/packages/object_detector_2d/models/tmr2025.pt
+*.engine
+*.onnx
+*.pth
+*.cache
+*.traj
+datasets/
+onnxruntime_gpu-1.17.0-cp38-cp38-linux_aarch64.whl

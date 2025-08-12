@@ -127,7 +127,7 @@ SERVICE_NAME="integration"  # Change this to your service name in docker-compose
 EXISTING_CONTAINER=$(docker ps -a -q -f name=$SERVICE_NAME)
 if [ -z "$EXISTING_CONTAINER" ]; then
     echo "No container with the name $SERVICE_NAME exists. Building and starting the container now..."
-    docker compose up --build -d
+    docker compose up -d
 fi
 
 # Check if the container is running
@@ -136,14 +136,15 @@ RUNNING_CONTAINER=$(docker ps -q -f name=$SERVICE_NAME)
 # If the container is not running, start it
 if [ -z "$RUNNING_CONTAINER" ]; then
     echo "Container $SERVICE_NAME is not running. Starting it now..."
-    docker compose up --build -d
+    docker compose up -d
 fi
 
 # Commands to run inside the container
 SOURCE_ROS="source /opt/ros/humble/setup.bash"
-COLCON="colcon build --packages-up-to "
+SOURCE_INTERFACES="source frida_interfaces_cache/install/local_setup.bash"
+COLCON="colcon build --packages-ignore frida_interfaces frida_constants --packages-up-to "
 SOURCE="source install/setup.bash"
-SETUP="$SOURCE_ROS && $COLCON task_manager && $SOURCE"
+SETUP="$SOURCE_ROS && $SOURCE_INTERFACES && $COLCON task_manager && $SOURCE"
 RUN=""
 MOONDREAM=false
 

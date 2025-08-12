@@ -51,6 +51,8 @@ services:
       - ./moondream/build:/workspace/build
       - ./moondream/install:/workspace/install
       - ./moondream/log:/workspace/log
+      - ../frida_interfaces_cache:/workspace/frida_interfaces_cache
+
 
     network_mode: host
     user: 1000:1000
@@ -70,5 +72,7 @@ services:
     stdin_open: true
     working_dir: /workspace
     # command: ["/bin/bash", "-i", "-l"]
-    command: bash -c "source /opt/ros/humble/setup.bash && colcon build --packages-up-to moondream_run && source install/setup.bash && ros2 run moondream_run moondream_node.py"
+    # command: bash -c "source /opt/ros/humble/setup.bash && colcon build --packages-up-to moondream_run && source install/setup.bash && ros2 run moondream_run moondream_node.py"
     # command: bash -c "source /opt/ros/humble/setup.bash && source install/setup.bash && ros2 run moondream_run moondream_node.py"
+    command: >
+      bash -c "${COMMAND2:-source /opt/ros/humble/setup.bash && colcon build --packages-up-to moondream_run && source install/setup.bash && ros2 run moondream_run moondream_node.py}"

@@ -2,16 +2,15 @@ import grpc
 from concurrent import futures
 import moondream_proto_pb2
 import moondream_proto_pb2_grpc
-from enum import Enum
 import argparse
 from moondream_lib import MoonDreamModel
 
 
-class Position(Enum):
-    LEFT = "left"
-    CENTER = "center"
-    RIGHT = "right"
-    NOT_FOUND = "not found"
+# class Position(Enum):
+#     LEFT = "left"
+#     CENTER = "center"
+#     RIGHT = "right"
+#     NOT_FOUND = "not found"
 
 
 class MoonDreamServicer(moondream_proto_pb2_grpc.MoonDreamServiceServicer):

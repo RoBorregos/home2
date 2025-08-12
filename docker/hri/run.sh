@@ -90,7 +90,9 @@ esac
 #_________________________SETUP_________________________
 
 bash setup.bash
-bash ../../hri/packages/nlp/assets/download-model.sh
+
+# TODO: Uncomment this if you need to download the model
+# bash ../../hri/packages/nlp/assets/download-model.sh
 
 # Create dirs with current user to avoid permission problems
 mkdir -p install build log ../../hri/packages/speech/assets/downloads/offline_voice/model/
@@ -121,8 +123,12 @@ case $TASK in
         PROFILES=("carry")
         RUN="ros2 launch speech hri_launch.py"
         ;;
+    "--storing")
+        PROFILES=("storing")
+        RUN="ros2 launch speech hri_launch.py"
+        ;;
     "--storing-groceries")
-        PROFILES=("storing-groceries")
+        PROFILES=("storing")
         RUN="ros2 launch speech hri_launch.py"
         ;;
     "--gpsr")
@@ -139,8 +145,9 @@ COMPOSE_PROFILES=$(IFS=, ; echo "${PROFILES[*]}")
 add_or_update_variable .env "COMPOSE_PROFILES" "$COMPOSE_PROFILES"
 
 GENERATE_BAML_CLIENT="baml-cli generate --from /workspace/src/task_manager/scripts/utils/baml_src/"
-
-COMMAND="$GENERATE_BAML_CLIENT && source /opt/ros/humble/setup.bash && colcon build --symlink-install --packages-select frida_interfaces frida_constants speech nlp embeddings && source ~/.bashrc && $RUN"
+SOURCE_INTERFACES="source frida_interfaces_cache/install/local_setup.bash"
+IGNORE_PACKAGES="--packages-ignore frida_interfaces frida_constants xarm_msgs"
+COMMAND="$GENERATE_BAML_CLIENT && source /opt/ros/humble/setup.bash && $SOURCE_INTERFACES && colcon build $IGNORE_PACKAGES --symlink-install --packages-up-to speech nlp embeddings && source ~/.bashrc && $RUN"
 
 # echo "COMMAND= $COMMAND " >> .env
 add_or_update_variable .env "COMMAND" "$COMMAND"

@@ -2,6 +2,8 @@
 ARGS=("$@")  # Save all arguments in an array
 TASK=${ARGS[0]}
 
+echo "Task: $TASK"
+
 #_________________________BUILD_________________________
 
 # Image names
@@ -104,10 +106,10 @@ esac
 
 case $TASK in
     "--receptionist")
-        RUN="ros2 launch vision_general receptionist_launch.py"
+        RUN="ros2 launch manipulation_general receptionist.launch.py"
         ;;
-    "--help-me-carry")
-        RUN="ros2 launch vision_general help_me_carry_launch.py"
+    "--carry")
+        RUN="ros2 launch manipulation_general carry.launch.py"
         ;;
     "--storing-groceries")
         RUN="ros2 launch vision_general storing_groceries_launch.py"
@@ -120,7 +122,9 @@ case $TASK in
         ;;
 esac
 
-COMMAND="source /opt/ros/humble/setup.bash && $RUN"
+COMMAND="source /opt/ros/humble/setup.bash && \
+         source /workspace/frida_interfaces_cache/install/local_setup.bash && \
+         source /workspace/install/setup.bash && $RUN"
 echo "COMMAND= $COMMAND" >> .env
 
 #_________________________SETUP_________________________
@@ -210,7 +214,7 @@ if [ -z "$EXISTING_CONTAINER" ]; then
     fi
     echo "Running prebuild script..."
     docker start $CONTAINER_NAME
-    docker exec -it $CONTAINER_NAME /bin/bash -c "./src/home2/prebuild.sh"
+    # docker exec -it $CONTAINER_NAME /bin/bash -c "./src/home2/prebuild.sh"
 fi
 
 # Check if the container is running
@@ -219,10 +223,18 @@ RUNNING_CONTAINER=$(docker ps -q -f "name=$CONTAINER_NAME")
 if [ -n "$RUNNING_CONTAINER" ]; then
     echo "Container $CONTAINER_NAME is already running. Executing bash..."
     docker start $CONTAINER_NAME
-    docker exec -it $CONTAINER_NAME /bin/bash
+    if [ -z "$TASK" ]; then
+        docker exec -it $CONTAINER_NAME /bin/bash
+    else
+        docker exec -it $CONTAINER_NAME /bin/bash -c "$COMMAND"
+    fi
 else
     echo "Container $CONTAINER_NAME is stopped. Starting it now..."
     docker compose up --build -d
     docker start $CONTAINER_NAME
-    docker exec -it $CONTAINER_NAME /bin/bash
+    if [ -z "$TASK" ]; then
+        docker exec -it $CONTAINER_NAME /bin/bash
+    else
+        docker exec -it $CONTAINER_NAME /bin/bash -c "$COMMAND"
+    fi
 fi

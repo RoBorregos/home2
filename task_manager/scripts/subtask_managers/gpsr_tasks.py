@@ -7,7 +7,6 @@ from ament_index_python.packages import get_package_share_directory
 from frida_constants.vision_enums import DetectBy, Gestures, Poses, is_value_in_enum
 from utils.baml_client.types import (
     Count,
-    FindPerson,
     FindPersonByName,
     FollowPersonUntil,
     GetPersonInfo,
@@ -26,7 +25,7 @@ class GPSRTask(GenericTask):
         """Initialize the class"""
         super().__init__(subtask_manager)
         # Angles are relative to current position
-        self.pan_angles = [90, -90]
+        self.pan_angles = [-35, 70]
         package_share_directory = get_package_share_directory("frida_constants")
         file_path = os.path.join(package_share_directory, "map_areas/areas.json")
         with open(file_path, "r") as file:
@@ -45,9 +44,11 @@ class GPSRTask(GenericTask):
         self.subtask_manager.manipulation.move_joint_positions(
             named_position="nav_pose", velocity=0.5, degrees=True
         )
+        self.subtask_manager.nav.resume_nav()
         future = self.subtask_manager.nav.move_to_location(location, sublocation)
         if "navigation" not in self.subtask_manager.get_mocked_areas():
             rclpy.spin_until_future_complete(self.subtask_manager.nav.node, future)
+        self.subtask_manager.nav.pause_nav()
 
     ## HRI, Manipulation
     def give_object(self, command: GiveObject):
@@ -325,7 +326,6 @@ class GPSRTask(GenericTask):
             while current_attempt < 3:
                 current_attempt += 1
                 s, res = self.subtask_manager.vision.get_person_name()
-                print(f"Person name: {res}")
                 if s == Status.EXECUTION_SUCCESS and res != "Unknown":
                     self.subtask_manager.hri.say(f"Hi {res}, nice to meet you again!")
                     return Status.EXECUTION_SUCCESS, res
@@ -367,48 +367,6 @@ class GPSRTask(GenericTask):
                     )
                     return Status.EXECUTION_ERROR, "name not found"
 
-    ## Nav, Vision
-    # TODO: We removed this in command dataset
-    def find_object(self, complement: str, characteristic: str):
-        """
-        Finds an object in a specified location and approaches it for picking.
-
-        Args:
-            complement (str): Specifies additional context for the search.
-                If it is a room, the robot will search all placements in the room.
-            characteristic (str): Specifies the object to find.
-
-        Purpose:
-            - Locate an object in a given place and approach it to a position suitable for picking.
-
-        Preconditions:
-            - Assumes the robot is already at a location.
-
-        Behavior:
-            - If the location is a placement location, the robot will search for the object only in that placement.
-            - If the complement specifies a room, the robot will navigate to all placements in the room and search for the object.
-            - Once the object is found, the robot will approach it to a position where it can pick the object.
-
-        Postconditions:
-            - The robot will be positioned at a location where it can pick the object.
-
-        Pseudocode:
-            For each location in specified_room:
-                Navigate to the location.
-                If the object is detected in the location:
-                    Approach the object to a position suitable for picking.
-        """
-
-        # for location in self.locations[complement]:
-        #     self.navigate_to(complement, location, False)
-
-        result_status = self.subtask_manager.vision.find_object(characteristic)
-        if result_status == Status.EXECUTION_SUCCESS:
-            self.subtask_manager.hri.say(f"I found the {characteristic}.")
-            return Status.EXECUTION_SUCCESS, "object found"
-
-        return Status.TARGET_NOT_FOUND, "object not found"
-
     def timeout(self, timeout: int = 2):
         start_time = time.time()
         while (time.time() - start_time) < timeout:
@@ -428,7 +386,7 @@ class GPSRTask(GenericTask):
             self.subtask_manager.hri.say(
                 f"I didn't find any {object_name}.",
             )
-        return status, result
+        return status, str(result) + f" ({object_name} counted)"
 
     ## Manipulation, Vision
     def count(self, command: Count):
@@ -485,12 +443,21 @@ class GPSRTask(GenericTask):
 
         counter = 0
 
+        if not is_value_in_enum(value, Gestures) and not is_value_in_enum(value, Poses):
+            s, color = self.subtask_manager.hri.find_closest(
+                self.color_list, command.target_to_count
+            )
+            cache_color = color[0]
+            s, cloth = self.subtask_manager.hri.find_closest(
+                self.clothe_list, command.target_to_count
+            )
+            cache_cloth = cloth[0]
+            value = f"{cache_color} {cache_cloth}s"
+            command.target_to_count = value
+
         self.subtask_manager.hri.say(
             f"I am going to count the {value}.",
         )
-
-        cache_color = None
-        cache_cloth = None
 
         for degree in self.pan_angles:
             self.subtask_manager.manipulation.pan_to(degree)
@@ -500,25 +467,7 @@ class GPSRTask(GenericTask):
             elif is_value_in_enum(value, Poses):
                 status, count = self.subtask_manager.vision.count_by_pose(value)
             else:
-                if cache_color is None or cache_cloth is None:
-                    s, color = self.subtask_manager.hri.find_closest(
-                        self.color_list, command.target_to_count
-                    )
-                    cache_color = color[0]
-                    s, cloth = self.subtask_manager.hri.find_closest(
-                        self.clothe_list, command.target_to_count
-                    )
-                    cache_cloth = cloth[0]
-
-                color = cache_color
-                cloth = cache_cloth
-                # Say actual color that its counting
-                characteristic = f"{color} {cloth}s"
-                self.subtask_manager.hri.say(
-                    f"I am going to count the {characteristic}.",
-                    wait=False,
-                )
-                status, count = self.subtask_manager.vision.count_by_color(color, cloth)
+                status, count = self.subtask_manager.vision.count_by_color(cache_color, cache_cloth)
 
             if status == Status.EXECUTION_SUCCESS:
                 counter += count
@@ -534,74 +483,11 @@ class GPSRTask(GenericTask):
         )
         return Status.EXECUTION_SUCCESS, "counted " + str(counter) + " " + command.target_to_count
 
-    ## Manipulation, Nav, Vision
-    def find_person_og(self, command: FindPerson):
-        """
-        Finds and approaches a person for further interaction.
-
-        Args:
-            complement (str): Additional information to help identify the person, it can be a gesture, pose, a color + cloth, or empty.
-                              If not specified, the robot will attempt to find any person.
-            characteristic (str): A string giving details of the characteristic, can be "clothes", "gesture", "posture" or "".
-
-        Purpose:
-            - Find a person and approach it for further interaction. Further interaction may be: following the person,
-              guiding the person, interacting with the person, describing the person, or give an object to a person.
-
-        Preconditions:
-            - Assumes the robot is already at a specific location.
-
-        Behavior:
-            - The robot scans its surroundings by gazing at different angles (e.g., -45, 0, 45 degrees).
-            - If a person matching the specified complement is found, the robot approaches them.
-            - If no such person is found, a fallback mechanism (`deus_machina`) is invoked.
-
-        Postconditions:
-            The robot successfully approaches the identified person, ready for further interaction.
-
-        Pseudocode:
-            found = False
-            for degree in [-45, 0, 45]:
-                gaze(degree)
-                if person(complement, characteristic):
-                    approach_person(complement, characteristic)
-                    found = True
-            if not found:
-                deus_machina()
-        """
-
-        if isinstance(command, dict):
-            command = FindPerson(**command)
-
-        self.subtask_manager.hri.say(
-            f"I will search for a person with {command.attribute_value}.",
-        )
-
-        self.subtask_manager.manipulation.move_to_position("front_stare")
-        for degree in self.pan_angles:
-            self.subtask_manager.manipulation.pan_to(degree)
-            if command.attribute_value == "":
-                result = self.subtask_manager.vision.track_person(track=True)
-            else:
-                result = self.subtask_manager.vision.track_person_by(
-                    by=command.attribute_value, value="", track=True
-                )
-                # TODO: We removed the second param from the command
-            # TODO (@nav): approach the person
-            if result == Status.EXECUTION_SUCCESS:
-                self.subtask_manager.hri.say(
-                    f"I found a person with {command.attribute_value}. Please get closer to me.",
-                )
-                return Status.EXECUTION_SUCCESS, "person found"
-
-        self.subtask_manager.hri.say(
-            f"I didn't find a person with {command.attribute_value}.",
-        )
-        return Status.TARGET_NOT_FOUND, "person not found"
-
     def find_person(self, command: FindPersonByName):
         if isinstance(command, dict):
             command = Count(**command)
+
+        self.subtask_manager.manipulation.move_to_position("front_stare")
 
         possibilities = [v.value for v in Gestures] + [v.value for v in Poses] + ["clothes"]
 
@@ -616,8 +502,17 @@ class GPSRTask(GenericTask):
             f"Searching for {value}.",
         )
 
-        cache_color = None
-        cache_cloth = None
+        if not is_value_in_enum(value, Gestures) and not is_value_in_enum(value, Poses):
+            s, color = self.subtask_manager.hri.find_closest(
+                self.color_list, command.attribute_value
+            )
+            cache_color = color[0]
+            s, cloth = self.subtask_manager.hri.find_closest(
+                self.clothe_list, command.attribute_value
+            )
+            cache_cloth = cloth[0]
+            value = f"{cache_color} {cache_cloth}s"
+            command.attribute_value = value
 
         for degree in self.pan_angles:
             self.subtask_manager.manipulation.pan_to(degree)
@@ -639,15 +534,7 @@ class GPSRTask(GenericTask):
                     )
                     cache_cloth = cloth[0]
 
-                color = cache_color
-                cloth = cache_cloth
-                # Say actual color that its counting
-                characteristic = f"{color} {cloth}s"
-                self.subtask_manager.hri.say(
-                    f"I am going to count the {characteristic}.",
-                    wait=False,
-                )
-                status, count = self.subtask_manager.vision.count_by_color(color, cloth)
+                status, count = self.subtask_manager.vision.count_by_color(cache_color, cache_cloth)
 
             if status == Status.EXECUTION_SUCCESS and count > 0:
                 self.subtask_manager.hri.say(
@@ -658,6 +545,9 @@ class GPSRTask(GenericTask):
             elif status == Status.TARGET_NOT_FOUND:
                 self.subtask_manager.hri.say(
                     f"I didn't find any person with {command.attribute_value}.",
+                )
+                self.subtask_manager.hri.say(
+                    "Please approach me.",
                 )
 
         return Status.EXECUTION_SUCCESS, "found" + command.attribute_value
@@ -690,8 +580,12 @@ class GPSRTask(GenericTask):
             command = FindPersonByName(**command)
 
         self.subtask_manager.manipulation.move_to_position("front_stare")
-        for degree in self.pan_angles:
+        for retry in range(3):
+            self.subtask_manager.hri.node.get_logger().info(f"Retry {retry}.")
             # self.subtask_manager.manipulation.pan_to(degree)
+            self.subtask_manager.hri.say(
+                f"I'm looking for {command.name}.",
+            )
             while True:
                 self.subtask_manager.hri.say(
                     "Please stand in front of me.",
@@ -721,7 +615,7 @@ class GPSRTask(GenericTask):
                 return Status.EXECUTION_SUCCESS, f"found {name}"
             else:
                 self.subtask_manager.hri.say(
-                    "Hi, " + name + ", but I am looking for " + command.name + "."
+                    "Hi, " + name + ", nice to meet you but I am looking for " + command.name + "."
                 )
                 self.subtask_manager.vision.save_face_name(name)
         return Status.TARGET_NOT_FOUND, "person not found"

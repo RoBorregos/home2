@@ -15,9 +15,6 @@ from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
 from launch.conditions import IfCondition
 from launch_ros.substitutions import FindPackageShare
-from launch.actions import RegisterEventHandler, EmitEvent
-from launch.event_handlers import OnProcessExit
-from launch.events import Shutdown
 from ament_index_python.packages import get_package_share_directory
 import math
 import os
@@ -70,7 +67,7 @@ def launch_setup(context, *args, **kwargs):
 
     octomap_config = {
         "octomap_frame": "base_link",
-        "octomap_resolution": 0.05,
+        "octomap_resolution": 0.025,
         "max_range": 2.0,
     }
 
@@ -157,11 +154,6 @@ def launch_setup(context, *args, **kwargs):
     )
 
     return [
-        RegisterEventHandler(
-            event_handler=OnProcessExit(
-                target_action=rviz2_node, on_exit=[EmitEvent(event=Shutdown())]
-            )
-        ),
         rviz2_node,
         static_tf,
         move_group_node,

@@ -1,6 +1,0 @@
-keyword_spotting:
-  ros__parameters:
-    KEYWORD_DIR: "/workspace/src/hri/packages/speech/assets"
-    audio_topic: "/rawAudioChunk"
-    WAKEWORD_TOPIC: REPLACE
-    sensitivity: 0.6

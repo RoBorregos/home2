@@ -16,8 +16,6 @@ DETECTIONS_TOPIC = "/vision/detections"
 DETECTIONS_IMAGE_TOPIC = "/vision/detections_image"
 DETECTIONS_POSES_TOPIC = "/vision/detection_poses"
 DETECTIONS_3D_TOPIC = "/vision/detections_3d"
-DETECTIONS_ACTIVE_TOPIC = "/detections_active"
-DEBUG_IMAGE_TOPIC = "/vision/debug_image"
 
 # ZERO SHOT OBJECT DETECTOR TOPICS
 ZERO_SHOT_DETECTIONS_TOPIC = "/vision/zero_shot_detections"
@@ -26,29 +24,45 @@ ZERO_SHOT_DETECTIONS_POSES_TOPIC = "/vision/zero_shot_detections_poses"
 ZERO_SHOT_DETECTIONS_3D_TOPIC = "/vision/zero_shot_detections_3d"
 ZERO_SHOT_DETECTIONS_ACTIVE_TOPIC = "/vision/zero_shot_detections_active"
 SET_DETECTOR_CLASSES_SERVICE = "/vision/set_detector_classes"
-
+DETECTIONS_ACTIVE_TOPIC = "asd"
+DEBUG_IMAGE_TOPIC = "asd"
 ZERO_SHOT_DEFAULT_CLASSES = [
-    "bowl",
-    "whiteBaseball",
-    "apple",
-    "cup",
+    # "transparent_box",
+    # "red_cloth",
+    "black_trashcan",
+    # "yellow_cloth",
+    "red_plate",
+    "red_bowl",
     "plate",
-    "yellow_mustard_container",
-    "apple",
-    "blue_tuna_can",
-    "soup_can",
-    "neon_ball",
-    "squash",
-    "banana",
-    "soap",
-    "rubikCube",
-    "coke_bottle",
-    "yellow_bowl",
-    "apple",
-    "fanta_can",
-    "orange",
-    "cup",
+    "bowl",
+    # "handbag",
+    # "bag",
+    # "backpack",
+    # "tote_bag",
+    "handle",
+    # "whiteBaseball",
+    # "apple",
+    # "cup",
+    # "plate",
+    # "yellow_mustard_container",
+    # "apple",
+    # "blue_tuna_can",
+    # "soup_can",
+    # "neon_ball",
+    # "squash",
+    # "banana",
+    # "soap",
+    # "rubikCube",
+    # "coke_bottle",
+    # "yellow_bowl",
+    # "apple",
+    # "fanta_can",
+    # "orange",
+    # "cup",
 ]
+
+CUSTOMER = "/vision/customer"
+GET_CUSTOMER_TOPIC = "/vision/get_customer"
 
 ZERO_SHOT_MODEL = "yoloe-11l-seg.pt"
 
@@ -108,3 +122,6 @@ SHELF_DETECTION_TOPIC = "/vision/storing_grocPeries/shelf_detection"
 
 # Person inside a room
 PERSON_POINT_TOPIC = "/vision/person_inside_point"
+
+# Show detection topic
+SHOW_DETECTION_TOPIC = "/vision/show_detection"

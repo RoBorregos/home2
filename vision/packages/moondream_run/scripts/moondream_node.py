@@ -16,7 +16,6 @@ import os
 from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
-from enum import Enum
 
 from frida_interfaces.srv import BeverageLocation
 from frida_interfaces.srv import PersonPosture, Query, CropQuery
@@ -28,6 +27,7 @@ from frida_constants.vision_constants import (
     QUERY_TOPIC,
     CROP_QUERY_TOPIC,
 )
+from enum import Enum
 
 from ament_index_python.packages import get_package_share_directory
 
@@ -39,6 +39,11 @@ import moondream_proto_pb2  # noqa
 import moondream_proto_pb2_grpc  # noqa
 
 YOLO_LOCATION = str(pathlib.Path(__file__).parent) + "/yolov8n.pt"
+NOT_FOUND = "not found"
+
+# MOONDREAM_LOCATION = MOONDREAM_LOCATION = str(pathlib.Path(__file__).parent) + "/moondream-2b-int8.mf.gz"
+
+CONF_THRESHOLD = 0.5
 
 
 class Position(Enum):
@@ -46,11 +51,6 @@ class Position(Enum):
     CENTER = "center"
     RIGHT = "right"
     NOT_FOUND = "not found"
-
-
-# MOONDREAM_LOCATION = MOONDREAM_LOCATION = str(pathlib.Path(__file__).parent) + "/moondream-2b-int8.mf.gz"
-
-CONF_THRESHOLD = 0.5
 
 
 class MoondreamNode(Node):
@@ -219,7 +219,8 @@ class MoondreamNode(Node):
             )
 
             response.location = beverage_position.position
-            if beverage_position.position == Position.NOT_FOUND.value:
+            print(beverage_position.position)
+            if beverage_position.position == Position.NOT_FOUND:
                 self.get_logger().warn("Beverage not found")
                 response.success = False
             else:

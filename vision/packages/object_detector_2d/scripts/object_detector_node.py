@@ -220,7 +220,6 @@ class object_detector_node(rclpy.node.Node):
         qos = rclpy.qos.QoSProfile(
             depth=5,
             reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
-            durability=rclpy.qos.DurabilityPolicy.VOLATILE,
         )
         if self.node_params.VERBOSE:
             self.get_logger().info(
@@ -330,16 +329,16 @@ class object_detector_node(rclpy.node.Node):
                 int(top * image.shape[0]),
                 int(bottom * image.shape[0]),
             )
-            cv.rectangle(image, (left, top), (right, bottom), color, 1)
+            cv.rectangle(image, (left, top), (right, bottom), color, 7)
             # draw label, name and score
             cv.putText(
                 image,
                 f"{detection.class_id_}: {detection.label_}: {detection.confidence_}",
                 (left, top - 10),
                 cv.FONT_HERSHEY_SIMPLEX,
-                0.5,
+                2,
                 color,
-                1,
+                2,
             )
             # draw centroid
             cv.circle(
