@@ -1,0 +1,4 @@
+bool stop_service
+bool start_service
+---
+bool stopped

@@ -1,0 +1,47 @@
+# Base image with ROS 2 preinstalled
+ARG BASE_IMAGE=ros:foxy-ros-base
+FROM ${BASE_IMAGE}
+
+###########################################
+# HRI Dependencies for Testing
+###########################################
+
+# Install additional dependencies
+RUN apt-get update && apt-get install -y \
+    python3-pip \
+    python3-pyaudio \
+    python3-numpy \
+    python3-scipy \
+    python3-soundfile \
+    ffmpeg \
+    libsndfile1 \
+    build-essential \
+    cmake \
+    libspeexdsp-dev \
+    ros-foxy-rclpy && \
+    apt-get clean
+
+# Set up ROS 2 environment
+ENV ROS_DISTRO=foxy
+ENV DEBIAN_FRONTEND=noninteractive
+SHELL ["/bin/bash", "-c"]
+RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> ~/.bashrc
+
+# Copy the frida_interfaces package into the container
+COPY ./frida_interfaces /workspace/src/frida_interfaces
+
+# Set working directory
+WORKDIR /workspace
+
+# Build the ROS 2 workspace
+RUN source /opt/ros/${ROS_DISTRO}/setup.bash && \
+    colcon build --symlink-install --packages-select frida_interfaces
+
+# Copy the HRI scripts and test files
+COPY ./docker_context/scripts/aec.py /workspace/aec.py
+COPY ./docker_context/scripts/test_aec/test_aec.py /workspace/test_aec.py
+COPY ./docker_context/scripts/test_aec/voice.wav /workspace/voice.wav
+COPY ./docker_context/scripts/test_aec/music.wav /workspace/music.wav
+
+# Command to source the workspace and run the test
+CMD ["bash", "-c", "source /opt/ros/${ROS_DISTRO}/setup.bash && source install/setup.bash && python3 /workspace/test_aec.py"]

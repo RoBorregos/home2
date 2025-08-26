@@ -1,0 +1,10 @@
+# Request
+string cfg_path
+string pcd_path
+sensor_msgs/PointCloud2 input_cloud
+---
+# Response
+bool success
+string message
+geometry_msgs/PoseStamped[] grasp_poses
+float64[] grasp_scores

@@ -1,0 +1,5 @@
+string query
+bool person
+---
+string result
+bool success

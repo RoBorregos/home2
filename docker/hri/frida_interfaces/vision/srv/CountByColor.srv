@@ -1,0 +1,6 @@
+bool request 
+string clothing
+string color
+---
+bool success
+int32 count

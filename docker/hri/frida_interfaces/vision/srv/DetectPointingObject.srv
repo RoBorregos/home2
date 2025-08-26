@@ -1,0 +1,4 @@
+float32 waiting_time
+---
+bool success
+frida_interfaces/ObjectDetection detection

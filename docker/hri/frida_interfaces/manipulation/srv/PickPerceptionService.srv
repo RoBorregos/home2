@@ -1,0 +1,4 @@
+geometry_msgs/PointStamped point
+bool add_collision_objects
+---
+sensor_msgs/PointCloud2 cluster_result

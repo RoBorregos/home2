@@ -1,0 +1,5 @@
+string label
+bool closest_object
+---
+sensor_msgs/Image result
+bool success
