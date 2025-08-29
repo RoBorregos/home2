@@ -162,6 +162,7 @@ cleanup() {
 trap cleanup SIGINT
 
 compose_file="docker-compose-cpu.yml"
+[ "$ENV_TYPE" == "gpu" ] && compose_file="docker-compose-gpu.yml"
 [ "$ENV_TYPE" == "jetson" ] && compose_file="docker-compose.yml"
 
 if [ -n "$detached" ]; then
