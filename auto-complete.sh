@@ -20,8 +20,11 @@ _run_sh_autocomplete() {
         1)
             options="$areas"
             ;;
-        *)
+        2)
             options="$tasks"
+            ;;
+        *)  
+            options=""
             ;;
     esac
     

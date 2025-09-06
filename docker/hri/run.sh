@@ -3,11 +3,12 @@
 ARGS=("$@")  # Save all arguments in an array
 TASK=${ARGS[0]}
 
+# IMPORTANT: Also edit auto-complete.sh to add new arguments
 detached=""
 build_display=""
 open_display=""
 download_model=""
-# check if one of the arguments is --detached, --build-display, or --open-display
+# Check if one of the arguments is --detached, --build-display, or --open-display
 for arg in "${ARGS[@]}"; do
   if [ "$arg" == "-d" ]; then
     detached="-d"
