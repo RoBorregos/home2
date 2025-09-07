@@ -13,9 +13,8 @@ services:
     environment:
       ROS_LOCALHOST_ONLY: 1
     ports:
-      - "3000:3000"
-      - "8001:8001"
-      - "8080:8080"
+      - '3000:3000'
+      - '8001:8001'
+      - '8080:8080'
     network_mode: host
-    command:
-      ["/bin/bash", "-c", "source /opt/ros/humble/setup.bash && npm run start"]
+    command: ['/bin/bash', '/display-entrypoint.sh']
