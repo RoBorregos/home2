@@ -17,6 +17,9 @@
   <depend>frida_constants</depend>
   <depend>std_srvs</depend>
   <depend>xarm_msgs</depend>
+  <!-- TODO: remove HRI dependencies -->
+  <depend>nlp</depend>
+  <depend>embeddings</depend>
 
 
   <test_depend>ament_lint_auto</test_depend>

@@ -14,9 +14,12 @@ services:
       - ../../hri/packages/speech/speech/:/app/speech
     environment:
       ROS_LOCALHOST_ONLY: 1
+    network_mode: host
     command:
       [
         "bash",
         "-c",
-        "python3 -u faster-whisper-streaming.py --port 50051 --model large-v3-turbo --log_transcriptions",
+        # If transcription is too slow try tiny.en or if it's too imprecise try small.en
+        # Larger models than these aren't recommended for CPU inference
+        "python3 -u faster-whisper-streaming.py --port 50051 --model base.en --log_transcriptions",
       ]

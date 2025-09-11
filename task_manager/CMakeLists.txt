@@ -22,6 +22,7 @@ file (GLOB TASK_MANAGERS scripts/*.py)
 file (GLOB UTIL_NODES scripts/util_nodes/*.py)
 file (GLOB SUBTASK_MANAGERS scripts/subtask_managers/*.py)
 file (GLOB UTILS scripts/utils/*.py)
+file (GLOB BAML_CLIENT scripts/utils/baml_client/*.py)
 
 
 # Install python scripts
@@ -43,6 +44,11 @@ DESTINATION lib/${PROJECT_NAME}/subtask_managers
 install(PROGRAMS
 ${UTILS}
 DESTINATION lib/${PROJECT_NAME}/utils
+)
+
+install(PROGRAMS
+${BAML_CLIENT}
+DESTINATION lib/${PROJECT_NAME}/utils/baml_client
 )
 
 # install(PROGRAMS

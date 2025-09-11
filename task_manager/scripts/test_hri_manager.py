@@ -55,9 +55,9 @@ def confirm_preference(interpreted_text, extracted_data):
 
 
 TEST_TASK = Task.DEBUG
-TEST_COMPOUND = True
+TEST_COMPOUND = False
 TEST_INDIVIDUAL_FUNCTIONS = False
-TEST_EMBEDDINGS = True
+TEST_EMBEDDINGS = False
 TEST_ASYNC_LLM = False
 TEST_STREAMING = False
 TEST_MAP = False
@@ -73,48 +73,26 @@ class TestHriManager(Node):
         self.run()
 
     def run(self):
-        # Testing compound commands
+        if TEST_COMPOUND:
+            self.compound_functions()
 
-        s, drink = self.hri_manager.ask_and_confirm(
-            "What is your favorite drink?",
-            "LLM_drink",
-            # "The question 'What is your favorite main interest?' was asked, full_text corresponds to the response.",
-            # confirm_preference,
-            use_hotwords=False,
-            # 3,
-            # 5,;
-            options=[
-                "coke",
-                "kuat",
-                4,
-                "quattre",
-                "Quatt.",
-            ],
-            remap={"4": "kuat", "quattre": "kuat", "Quatt.": "kuat", "What?": "kuat"},
-        )
+        if TEST_INDIVIDUAL_FUNCTIONS:
+            self.individual_functions()
 
-        print("drink:", drink)
+        if TEST_EMBEDDINGS:
+            self.test_embeddings()
 
-        # if TEST_COMPOUND:
-        #     self.compound_functions()
+        if TEST_ASYNC_LLM:
+            self.async_llm_test()
 
-        # if TEST_INDIVIDUAL_FUNCTIONS:
-        #     self.individual_functions()
+        if TEST_STREAMING:
+            self.test_streaming()
 
-        # if TEST_EMBEDDINGS:
-        #     self.test_embeddings()
+        if TEST_MAP:
+            self.test_map()
 
-        # if TEST_ASYNC_LLM:
-        #     self.async_llm_test()
-
-        # if TEST_STREAMING:
-        #     self.test_streaming()
-
-        # if TEST_MAP:
-        #     self.test_map()
-
-        # if TEST_OBJECT_LOCATION:
-        #     self.test_object_location()
+        if TEST_OBJECT_LOCATION:
+            self.test_object_location()
 
     def individual_functions(self):
         # Test say
