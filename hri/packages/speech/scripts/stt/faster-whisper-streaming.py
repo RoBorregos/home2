@@ -107,6 +107,7 @@ def serve(port, model, log_transcriptions):
         device=device,
         compute_type=compute_type,
         local_files_only=False,
+        download_root="./models",
     )
 
     warmup_file = "./warmup.wav"
