@@ -101,15 +101,15 @@ public:
     {
       #pragma omp section
       {
-          insert_cloud(small_cloud, small_size);
+          filter_cloud(small_cloud, small_size);
       }
       #pragma omp section
       {
-          insert_cloud(medium_cloud, medium_size);
+          filter_cloud(medium_cloud, medium_size);
       }
       #pragma omp section
       {
-          insert_cloud(large_cloud, large_size);
+          filter_cloud(large_cloud, large_size);
       }
     }
 
