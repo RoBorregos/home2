@@ -77,3 +77,16 @@ threshold = 0.6
 DEFAULT_HOTWORDS = "Frida RoBorregos"
 
 START_BUTTON_CLIENT = "/hri/display/button_press"
+
+def respeaker_available():
+    # Check if ReSpeaker 4-Mic Array is currently connected.
+    try:
+        import usb.core
+        dev = usb.core.find(idVendor=0x2886, idProduct=0x0018)
+        return dev is not None
+    except ImportError:
+        return False
+    except Exception:
+        return False
+
+USE_RESPEAKER = respeaker_available() # TODO: use respeaker function instead of constant
