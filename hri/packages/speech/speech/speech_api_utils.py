@@ -71,4 +71,16 @@ class SpeechApiUtils(object):
             num_dev = num_dev + 1
 
         return None
-        return None
+
+    @staticmethod
+    def respeaker_available():
+        # Check if ReSpeaker 4-Mic Array is currently connected.
+        try:
+            import usb.core
+
+            dev = usb.core.find(idVendor=0x2886, idProduct=0x0018)
+            return dev is not None
+        except ImportError:
+            return False
+        except Exception:
+            return False
