@@ -2,11 +2,11 @@
 export { default as RosMessagesDisplay } from "./ros-messages";
 
 // Component exports
-export { AudioStateIndicator } from "./AudioStateIndicator";
-export { MapModal } from "./MapModal";
-export { QuestionModal } from "./QuestionModal";
-export { MessageItem } from "./MessageItem";
-export { CurrentMessageOverlay } from "./CurrentMessageOverlay";
+export { AudioStateIndicator } from "./audioStateIndicator";
+export { MapModal } from "./mapModal";
+export { QuestionModal } from "./questionModal";
+export { MessageItem } from "./messageItem";
+export { CurrentMessageOverlay } from "./currentMessageOverlay";
 
 // Hook exports
 export { useWebSocket } from "./useWebSocket";

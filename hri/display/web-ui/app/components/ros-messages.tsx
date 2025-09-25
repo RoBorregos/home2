@@ -5,11 +5,11 @@ import { MessageCircle } from "lucide-react";
 import dynamic from "next/dynamic";
 
 import { Message, AudioState, MapData, mapSchema } from "./types";
-import { AudioStateIndicator } from "./AudioStateIndicator";
-import { MapModal } from "./MapModal";
-import { QuestionModal } from "./QuestionModal";
-import { MessageItem } from "./MessageItem";
-import { CurrentMessageOverlay } from "./CurrentMessageOverlay";
+import { AudioStateIndicator } from "./audioStateIndicator";
+import { MapModal } from "./mapModal";
+import { QuestionModal } from "./questionModal";
+import { MessageItem } from "./messageItem";
+import { CurrentMessageOverlay } from "./currentMessageOverlay";
 import { useWebSocket } from "./useWebSocket";
 
 const MjpegStream = dynamic(() => import("./video"), { ssr: false });
