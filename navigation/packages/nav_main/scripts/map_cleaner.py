@@ -37,7 +37,7 @@ class MapCleaner(Node):
         binary = np.where(grid > 50, 255, 0).astype(np.uint8)
 
         cleaned_binary = cv2.morphologyEx(
-            binary, cv2.MORPH_CLOSE, np.ones((2, 2), np.uint8), iterations=2
+            binary, cv2.MORPH_CLOSE, np.ones((2, 2), np.uint8), iterations=3
         )
 
         # cleaned_binary = cv2.morphologyEx(
