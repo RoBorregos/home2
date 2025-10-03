@@ -8,7 +8,6 @@ from speech.speech_api_utils import SpeechApiUtils
 from frida_constants import ModuleNames, parse_ros_config
 
 
-
 def generate_launch_description():
     mic_config = parse_ros_config(
         os.path.join(
