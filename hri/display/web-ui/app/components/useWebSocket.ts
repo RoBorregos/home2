@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Message } from "./types";
+import { Message } from "../types";
 
 interface UseWebSocketProps {
   onAddMessage: (type: Message["type"], content: string) => void;
@@ -20,48 +20,73 @@ export function useWebSocket({
 }: UseWebSocketProps) {
   const [connected, setConnected] = useState(false);
   const socketRef = useRef<WebSocket | null>(null);
+  
+  // Use refs to store the latest callbacks
+  const handlersRef = useRef({
+    onAddMessage,
+    onAudioStateChange,
+    onVideoTopicChange,
+    onQuestionReceived,
+    onMapReceived,
+  });
+
+  // Update refs when callbacks change
+  useEffect(() => {
+    handlersRef.current = {
+      onAddMessage,
+      onAudioStateChange,
+      onVideoTopicChange,
+      onQuestionReceived,
+      onMapReceived,
+    };
+  });
 
   useEffect(() => {
     const socket = new WebSocket("ws://localhost:8001/");
     socketRef.current = socket;
 
-    socket.onmessage = (event) => {
+    const handleMessage = (event: MessageEvent) => {
       const data = JSON.parse(event.data);
       
       if (data.type === "answer") return;
       
       if (data.type === "audioState" || data.type === "vad") {
-        onAudioStateChange(data.type, data.data);
+        handlersRef.current.onAudioStateChange(data.type, data.data);
       } else if (data.type === "changeVideo") {
-        onVideoTopicChange(data.data);
+        handlersRef.current.onVideoTopicChange(data.data);
       } else if (data.type === "question") {
-        onQuestionReceived(data.data);
+        handlersRef.current.onQuestionReceived(data.data);
       } else if (data.type === "map") {
-        onMapReceived(data.data);
+        handlersRef.current.onMapReceived(data.data);
       } else {
-        onAddMessage(data.type, data.data);
+        handlersRef.current.onAddMessage(data.type, data.data);
       }
     };
 
-    socket.onopen = () => {
+    const handleOpen = () => {
       console.log("WebSocket connected");
       setConnected(true);
     };
 
-    socket.onclose = () => {
+    const handleClose = () => {
       console.log("WebSocket disconnected");
       setConnected(false);
     };
 
-    socket.onerror = (error) => {
+    const handleError = (error: Event) => {
       console.error("WebSocket error:", error);
       setConnected(false);
     };
 
+    socket.onmessage = handleMessage;
+    socket.onopen = handleOpen;
+    socket.onclose = handleClose;
+    socket.onerror = handleError;
+
     return () => {
       socket.close();
     };
-  }, [onAddMessage, onAudioStateChange, onVideoTopicChange, onQuestionReceived, onMapReceived]);
+  }, []); // Dependencias vacías - se conecta una vez al montar
 
   const sendMessage = (message: object) => {
     if (socketRef.current?.readyState === WebSocket.OPEN) {

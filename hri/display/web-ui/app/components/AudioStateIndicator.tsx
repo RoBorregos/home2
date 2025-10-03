@@ -1,7 +1,7 @@
 "use client";
 
 import { Mic, Speaker, VolumeX } from "lucide-react";
-import { AudioStateIndicatorProps } from "./types";
+import { AudioStateIndicatorProps } from "../types";
 
 export function AudioStateIndicator({ state }: AudioStateIndicatorProps) {
   const { state: audioState, vadLevel } = state;

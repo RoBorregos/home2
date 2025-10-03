@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import Image from "next/image";
-import { MapModalProps } from "./types";
+import { MapModalProps } from "../types";
 
 export function MapModal({ mapData, onClose }: MapModalProps) {
   const [imageLoaded, setImageLoaded] = useState(false);

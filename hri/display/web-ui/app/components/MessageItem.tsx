@@ -1,7 +1,7 @@
 "use client";
 
 import { MessageCircle, Mic, Speaker, Star } from "lucide-react";
-import { Message } from "./types";
+import { Message } from "../types";
 
 interface MessageItemProps {
   message: Message;

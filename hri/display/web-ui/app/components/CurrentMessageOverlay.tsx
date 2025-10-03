@@ -1,7 +1,7 @@
 "use client";
 
 import { Mic } from "lucide-react";
-import { Message } from "./types";
+import { Message } from "../types";
 
 interface CurrentMessageOverlayProps {
   message: Message;
