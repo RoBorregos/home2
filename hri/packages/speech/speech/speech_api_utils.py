@@ -78,9 +78,7 @@ class SpeechApiUtils(object):
         try:
             import usb.core
 
-            dev = usb.core.find(idVendor=0x2886, idProduct=0x0018)
-            return dev is not None
-        except ImportError:
-            return False
-        except Exception:
+            respeaker = usb.core.find(idVendor=0x2886, idProduct=0x0018)
+            return respeaker is not None
+        except (ImportError, Exception):
             return False
