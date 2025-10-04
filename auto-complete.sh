@@ -13,6 +13,8 @@ _run_sh_autocomplete() {
         hri)
             flags="$flags --build-display --open-display --download-model"
             ;;
+        integration)
+            flags="$flags --build --test-hri"
     esac
 
     local options
