@@ -38,6 +38,11 @@ def generate_launch_description():
         [ModuleNames.HRI.value],
     )["kws_oww"]["ros__parameters"]
 
+    aec_config = parse_ros_config(
+        os.path.join(get_package_share_directory("speech"), "config", "aec.yaml"),
+        [ModuleNames.HRI.value],
+    )["aec"]["ros__parameters"]
+
     nodes = [
         Node(
             package="speech",
@@ -70,6 +75,13 @@ def generate_launch_description():
             output="screen",
             emulate_tty=True,
             parameters=[oww_config],
+        ),
+        Node(
+            package="speech",
+            executable="aec.py",
+            name="aec_node",
+            parameters=[aec_config],
+            output="screen",
         ),
     ]
 

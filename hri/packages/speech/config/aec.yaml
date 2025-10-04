@@ -1,0 +1,9 @@
+aec:
+  ros__parameters:
+    filter_length: 512        # Filter tap length (higher = better cancellation, more CPU)
+    step_size: 0.1           # Adaptation speed (0.01-0.5)
+    regularization: 1e-6     # Numerical stability
+    sample_rate: 16000       # Must match audio system
+    chunk_size: 1024         # Processing block size
+    enable_aec: true         # Enable/disable AEC
+    adaptation_enabled: true # Allow filter to adapt
