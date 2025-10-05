@@ -38,17 +38,35 @@ from frida_constants.manipulation_constants import (
     MIN_CONFIGURATION_DISTANCE_TRESHOLD,
     XARM_SETMODE_MOVEIT_SERVICE,
 )
+
+# Link of documentation of xarm msgs https://wiki.ros.org/xarm 
+# it provides user with the ros service wrapper of the functions in xArm SDK  -----------------------------------------------------------------
 from xarm_msgs.srv import MoveVelocity, TrajPlay
+# ------------------------------------------------------------------------------------------------------------------------------
 from frida_interfaces.msg import CollisionObject
 from frida_motion_planning.utils.MoveItPlanner import MoveItPlanner
 from frida_motion_planning.utils.MoveItServo import MoveItServo
+# Here we import the xarm services to control the xarm directly -----------------------------------------------------------------
+# But we will need it to open and close the gripper
 from frida_motion_planning.utils.XArmServices import XArmServices
+# ------------------------------------------------------------------------------------------------------------------------------
+
+# New imports for publishing the trajectory to the controller
+from trajectory_msgs.msg import JointTrajectory
+from sensor_msgs.msg import JointState
+from rclpy.qos import QoSProfile
 
 
 class MotionPlanningServer(Node):
     def __init__(self):
         super().__init__("motion_planning_server")
         self.callback_group = ReentrantCallbackGroup()
+
+        # qos_profile = QoSProfile(depth=10)
+
+        qos_profile = QoSProfile(history=2, depth=1, reliability=rclpy.qos.QoSReliabilityPolicy.BEST_EFFORT)
+
+        # qos_profile = QoSProfile(depth=10, durability=DurabilityPolicy.TRANSIENT_LOCAL)
 
         # Here we can select other planner (if implemented)
         self.planner = MoveItPlanner(self, self.callback_group)
@@ -141,14 +159,17 @@ class MotionPlanningServer(Node):
             callback_group=self.callback_group,
         )
 
+        # HERE we are using manually the xarm------------------------------------------------------------------------------------------------
         self.play_traj_client = self.create_client(
             TrajPlay,
             "/xarm/playback_trajectory",
             callback_group=self.callback_group,
         )
+        # -----------------------------------------------------------------------------------------------------------------------------------
 
         # is MoveItPlanner could not spawn services, send None
         # TODO: I changed my mind, set_mode goes in this script, not on the MoveItPlanner
+        #
         if self.planner.mode_enabled:
             self.xarm_services = XArmServices(
                 self, self.planner.mode_client, self.planner.state_client
@@ -169,6 +190,22 @@ class MotionPlanningServer(Node):
             Empty,
             XARM_SETMODE_MOVEIT_SERVICE,
             self.set_moveit_mode_service,
+            callback_group=self.callback_group,
+        )
+
+        self.traj_pub = self.create_publisher(
+            JointTrajectory,
+            "/moveit/joint_trajectory",
+            qos_profile
+        )
+
+        self.joint_states_topic = "/joint_states"
+        # create listener
+        self.joint_states_sub = self.create_subscription(
+            JointState,
+            self.joint_states_topic,
+            self.joint_states_callback,
+            qos_profile,
             callback_group=self.callback_group,
         )
 
@@ -206,19 +243,30 @@ class MotionPlanningServer(Node):
         result = MoveToPose.Result()
         self.set_planning_settings(goal_handle)
         try:
-            result.success = self.move_to_pose(goal_handle, feedback)
+            was_successful= self.move_to_pose(goal_handle, feedback)
             self.get_logger().info(
                 "Move to pose finished with result: " + str(result.success)
             )
-            goal_handle.succeed()
-            self.reset_planning_settings(goal_handle)
-            return result
+            if was_successful:
+                self.get_logger().info("Move to pose succeeded")
+                goal_handle.succeed()
+                result.success = True
+            else:
+                self.get_logger().info("Move to pose failed")
+                goal_handle.abort()
+                result.success = False
+            
         except Exception as e:
             self.get_logger().error(f"Move to pose failed: {str(e)}")
-            goal_handle.succeed()
+            goal_handle.abort()
             self.reset_planning_settings(goal_handle)
             result.success = False
-            return result
+
+        finally:
+            self.get_logger().info("Resetting planning settings...")
+            self.reset_planning_settings(goal_handle)
+
+        return result
 
     def play_trayectory_callback(self, request, response):
         """Handle requests to play a trayectory from a file."""
@@ -300,26 +348,22 @@ class MotionPlanningServer(Node):
             if goal_handle.request.tolerance_orientation
             else 0.05
         )
-        if target_link != "":
-            result = self.planner.plan_pose_goal(
-                pose=pose,
-                target_link=target_link,
-                wait=True,
-                set_mode=True,
-                tolerance_position=tolerance_position,
-                tolerance_orientation=tolerance_orientation,
-            )
+
+        result, trajectory_plan = self.planner.plan_pose_goal(
+            pose=pose,
+            target_link=target_link,
+            wait=True,
+            set_mode=False,
+            tolerance_position=tolerance_position,
+            tolerance_orientation=tolerance_orientation,
+        )
+        if result:
+            self.get_logger().info("Pose goal planned successfully")
+            self.traj_pub.publish(trajectory_plan)
+            return True
         else:
-            result = self.planner.plan_pose_goal(
-                pose=pose,
-                wait=True,
-                set_mode=(self.current_mode != MOVEIT_MODE),
-                tolerance_position=tolerance_position,
-                tolerance_orientation=tolerance_orientation,
-            )
-        if not ALWAYS_SET_MODE:
-            self.current_mode = MOVEIT_MODE
-        return result
+            self.get_logger().error("Failed to plan pose goal")
+            return False
 
     def move_joints(self, goal_handle, feedback):
         self.get_logger().info(
@@ -354,16 +398,23 @@ class MotionPlanningServer(Node):
             return False
 
         self.get_logger().info("Planning joint goal...")
-        result = self.planner.plan_joint_goal(
+        result, trajectory_plan = self.planner.plan_joint_goal(
             joint_positions,
             joint_names,
             wait=True,
-            set_mode=(self.current_mode != MOVEIT_MODE),
+            set_mode=False,
         )
         self.get_logger().info(f"Move Joints Result: {result}")
-        if not ALWAYS_SET_MODE:
-            self.current_mode = MOVEIT_MODE
-        return result
+        # if not ALWAYS_SET_MODE:
+        #     self.current_mode = MOVEIT_MODE
+        if result:
+            self.get_logger().info("Successfully planned joint goal")
+            self.traj_pub.publish(trajectory_plan)
+            return True
+        else:
+            self.get_logger().error("Failed to plan joint goal")
+            return False
+        # return result
 
     def set_planning_settings(self, goal_handle):
         velocity = (
@@ -632,6 +683,11 @@ class MotionPlanningServer(Node):
         self.planner.reset_controller()
         self.get_logger().info("Reset controller")
         return response
+
+    def joint_states_callback(self, msg: JointState):
+        # TODO: make use of this information
+        # self.current_joint_positions = msg.position
+        pass 
 
 
 def main(args=None):
