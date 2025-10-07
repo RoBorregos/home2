@@ -10,7 +10,7 @@ import { MapModal } from "./MapModal";
 import { QuestionModal } from "./QuestionModal";
 import { MessageItem } from "./MessageItem";
 import { CurrentMessageOverlay } from "./CurrentMessageOverlay";
-import { useWebSocket } from "./useWebSocket";
+import { useWebSocket } from "../hooks/useWebSocket";
 
 const MjpegStream = dynamic(() => import("./video"), { ssr: false });
 
