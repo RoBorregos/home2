@@ -1,10 +1,11 @@
 import numpy as np
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import Float32MultiArray, Header
+from std_msgs.msg import Float32MultiArray
 from geometry_msgs.msg import Vector3
 import threading
 from collections import deque
+from frida_interfaces import AudioData
 
 
 class NLMSFilter:
@@ -125,27 +126,25 @@ class AECNode(Node):
         self.processing_active = False
 
         # Publishers
-        self.clean_audio_pub = self.create_publisher(
-            Float32MultiArray, "/audio/clean_audio", 10
-        )
+        self.clean_audio_pub = self.create_publisher(AudioData, "/cleanAudio", 10)
 
         self.aec_status_pub = self.create_publisher(
             Vector3,  # Using Vector3 for metrics: x=ERLE, y=convergence, z=enabled
-            "/audio/aec_status",
+            "/aecMetrics",
             10,
         )
 
         # Subscribers
         self.reference_sub = self.create_subscription(
             Float32MultiArray,
-            "/audio/speaker_output",  # Reference signal from speaker
+            "/speaker_output",  # Reference signal from speaker
             self.reference_callback,
             10,
         )
 
         self.microphone_sub = self.create_subscription(
-            Float32MultiArray,
-            "/audio/raw_microphone",  # Raw microphone input from audio_capturer
+            AudioData,
+            "/rawAudioChunk",  # Raw microphone input from audio_capturer
             self.microphone_callback,
             10,
         )
@@ -197,6 +196,21 @@ class AECNode(Node):
 
         except Exception as e:
             self.get_logger().error(f"Error in microphone callback: {e}")
+
+    def _convert_audiodata_to_float32(self, audio_bytes):
+        """Convert AudioData bytes to float32 array"""
+        try:
+            # Convert bytes to int16 numpy array
+            audio_int16 = np.frombuffer(audio_bytes, dtype=np.int16)
+
+            # Convert int16 [-32768, 32767] to float32 [-1.0, 1.0]
+            audio_float32 = audio_int16.astype(np.float32) / 32768.0
+
+            return audio_float32
+
+        except Exception as e:
+            self.get_logger().error(f"Error converting audio data: {e}")
+            return np.array([], dtype=np.float32)
 
     def process_audio(self):
         """Process audio for echo cancellation"""
@@ -256,18 +270,20 @@ class AECNode(Node):
             self.processing_active = False
 
     def publish_clean_audio(self, audio_data, header=None):
-        """Publish echo-cancelled audio"""
+        """Publish echo-cancelled audio in both formats"""
         try:
-            msg = Float32MultiArray()
-            if header:
-                msg.header = header
-            else:
-                msg.header = Header()
-                msg.header.stamp = self.get_clock().now().to_msg()
-                msg.header.frame_id = "microphone"
+            # 1. Publish as AudioData (for hear_streaming compatibility)
+            audio_int16 = (np.clip(audio_data, -1.0, 1.0) * 32767).astype(np.int16)
+            audio_bytes = audio_int16.tobytes()
 
-            msg.data = audio_data.tolist()
-            self.clean_audio_pub.publish(msg)
+            audiodata_msg = AudioData()
+            audiodata_msg.data = audio_bytes
+            self.clean_audio_pub.publish(audiodata_msg)
+
+            # 2. Also publish as Float32MultiArray (for debugging)
+            float_msg = Float32MultiArray()
+            float_msg.data = audio_data.tolist()
+            self.clean_audio_float_pub.publish(float_msg)
 
         except Exception as e:
             self.get_logger().error(f"Error publishing clean audio: {e}")

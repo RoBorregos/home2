@@ -41,7 +41,7 @@ def generate_launch_description():
     aec_config = parse_ros_config(
         os.path.join(get_package_share_directory("speech"), "config", "aec.yaml"),
         [ModuleNames.HRI.value],
-    )["aec"]["ros__parameters"]
+    )["aec_node"]["ros__parameters"]
 
     nodes = [
         Node(

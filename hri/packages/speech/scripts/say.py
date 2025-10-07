@@ -12,10 +12,14 @@ from pygame import mixer
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from speech.speech_api_utils import SpeechApiUtils
-from std_msgs.msg import Bool, String
+from std_msgs.msg import Bool, String, Float32MultiArray
 
 from frida_constants.hri_constants import SPEAK_SERVICE
 from frida_interfaces.srv import Speak
+
+import numpy as np
+import threading
+import time
 
 # Add the directory containing the protos to the Python path
 sys.path.append(os.path.join(os.path.dirname(__file__), "tts"))
@@ -101,6 +105,28 @@ class Say(Node):
 
         if not self.offline:
             self.connected = SpeechApiUtils.is_connected()
+
+        self.declare_parameter("enable_aec", True)
+        self.declare_parameter("speaker_reference_topic", "/speaker_output")
+
+        # Get AEC parameters
+        self.enable_aec = (
+            self.get_parameter("enable_aec").get_parameter_value().bool_value
+        )
+        speaker_ref_topic = (
+            self.get_parameter("speaker_reference_topic")
+            .get_parameter_value()
+            .string_value
+        )
+
+        # ADD: Publisher for AEC reference signal
+        if self.enable_aec:
+            self.speaker_ref_pub = self.create_publisher(
+                Float32MultiArray, speaker_ref_topic, 10
+            )
+            self.get_logger().info(
+                f"AEC reference publishing enabled on: {speaker_ref_topic}"
+            )
 
         self.create_service(Speak, speak_service, self.speak_service)
         self.publisher_ = self.create_publisher(Bool, speaking_topic, 10)
@@ -261,7 +287,71 @@ class Say(Node):
         self.get_logger().info("Saying...")
         self.play_audio(save_path)
 
+    def _load_audio_for_aec(self, file_path):
+        """Load audio file for AEC reference"""
+        try:
+            import librosa
+
+            # Load with same sample rate as microphone (16kHz)
+            audio_data, sr = librosa.load(file_path, sr=16000, mono=True)
+            return audio_data.astype(np.float32)
+        except ImportError:
+            self.get_logger().warn(
+                "librosa not available for AEC, install with: pip install librosa"
+            )
+            try:
+                # Fallback to wave module
+                import wave
+
+                with wave.open(file_path, "rb") as wav_file:
+                    frames = wav_file.getnframes()
+                    audio_data = wav_file.readframes(frames)
+                    # Convert to numpy array and normalize
+                    if wav_file.getsampwidth() == 2:  # 16-bit
+                        audio_array = np.frombuffer(audio_data, dtype=np.int16)
+                        # Resample if needed (this is a basic approach)
+                        return audio_array.astype(np.float32) / 32768.0
+            except Exception as e:
+                self.get_logger().error(f"Failed to load audio with wave: {e}")
+                return None
+        except Exception as e:
+            self.get_logger().error(f"Failed to load audio for AEC: {e}")
+            return None
+
+    def _publish_audio_realtime(self, audio_data):
+        """Publish audio data in real-time chunks to sync with playback"""
+
+        def publish_chunks():
+            chunk_size = 512  # Match microphone chunk size
+            sample_rate = 16000
+            chunk_duration = chunk_size / sample_rate  # Time per chunk in seconds
+
+            for i in range(0, len(audio_data), chunk_size):
+                if not rclpy.ok():
+                    break
+
+                chunk = audio_data[i : i + chunk_size]
+                if len(chunk) > 0:
+                    ref_msg = Float32MultiArray()
+                    ref_msg.data = chunk.tolist()
+                    self.speaker_ref_pub.publish(ref_msg)
+
+                    # Wait for real-time playback sync
+                    time.sleep(chunk_duration)
+
+        # Start publishing in separate thread
+        publish_thread = threading.Thread(target=publish_chunks)
+        publish_thread.daemon = True
+        publish_thread.start()
+
     def play_audio(self, file_path):
+        # Load and publish audio data for AEC BEFORE playing
+        if self.enable_aec:
+            audio_data = self._load_audio_for_aec(file_path)
+            if audio_data is not None:
+                # Publish in chunks to match real-time playback
+                self._publish_audio_realtime(audio_data)
+
         mixer.pre_init(frequency=48000, buffer=2048)
         mixer.init()
         while mixer.music.get_busy():

@@ -1,4 +1,4 @@
-aec:
+aec_node:
   ros__parameters:
     filter_length: 512        # Filter tap length (higher = better cancellation, more CPU)
     step_size: 0.1           # Adaptation speed (0.01-0.5)

@@ -36,7 +36,7 @@ class HearStreaming(Node):
         )
 
         audio_topic = (
-            self.declare_parameter("AUDIO_TOPIC", "/audio/clean_audio")
+            self.declare_parameter("AUDIO_TOPIC", "/cleanAudio")
             .get_parameter_value()
             .string_value
         )
