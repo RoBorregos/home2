@@ -29,7 +29,6 @@ var namespacefrida__constants_1_1hri__constants =
     [ "STT_SERVICE_NAME", "namespacefrida__constants_1_1hri__constants.html#a05d8fa1eccd50686fbaff0e84170dcb9", null ],
     [ "threshold", "namespacefrida__constants_1_1hri__constants.html#a57a8000db92c380cf72a62b5afca2ba8", null ],
     [ "USE_OWW", "namespacefrida__constants_1_1hri__constants.html#a21cf28c03858cd41c9c109e65272477e", null ],
-    [ "USE_RESPEAKER", "namespacefrida__constants_1_1hri__constants.html#ab84e29b708c588f21ca855005806888b", null ],
     [ "USEFUL_AUDIO_NODE_NAME", "namespacefrida__constants_1_1hri__constants.html#ab6800c1a435eaa0006c92a38068e003a", null ],
     [ "USEFUL_AUDIO_TOPIC", "namespacefrida__constants_1_1hri__constants.html#a3d4f04c35947523a35babc6389309733", null ],
     [ "WAKEWORD_TOPIC", "namespacefrida__constants_1_1hri__constants.html#a17e6a7edcef87329c3717fc4cd21dbee", null ]

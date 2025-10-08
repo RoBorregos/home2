@@ -93,7 +93,7 @@ $(document).ready(function(){initNavTree('md_docs_Run_Areas_nav.html',''); initR
   <div class="headertitle"><div class="title">Navigation Docs </div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><h1><a class="anchor" id="autotoc_md61"></a>
+<div class="textblock"><h1><a class="anchor" id="autotoc_md60"></a>
 How to Run</h1>
 <ol type="1">
 <li>Connect to <code>roborregos_home</code> on Wi-Fi.</li>
@@ -105,7 +105,7 @@ How to Run</h1>
 <li>Run</li>
 </ol>
 <hr  />
-<h1><a class="anchor" id="autotoc_md63"></a>
+<h1><a class="anchor" id="autotoc_md62"></a>
 Running Nav Basics</h1>
 <p>The Nav Basics include the following components:</p><ul>
 <li>Dashgo driver</li>
@@ -113,7 +113,7 @@ Running Nav Basics</h1>
 <li>EKF filter for odom transform</li>
 <li>(Optional) URDF state publisher to link <code>base_link</code> and lidar</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md64"></a>
+<h2><a class="anchor" id="autotoc_md63"></a>
 Arguments</h2>
 <ul>
 <li><code>publish_tf</code> (default: <code>true</code>): Active URDF publish state.<ul>
@@ -121,11 +121,11 @@ Arguments</h2>
 </ul>
 </li>
 </ul>
-<h2><a class="anchor" id="autotoc_md65"></a>
+<h2><a class="anchor" id="autotoc_md64"></a>
 Run Command</h2>
 <div class="fragment"><div class="line">ros2 launch nav_main nav_basics.launch.py</div>
 </div><!-- fragment --><hr  />
-<h1><a class="anchor" id="autotoc_md67"></a>
+<h1><a class="anchor" id="autotoc_md66"></a>
 Running AMCL Localization</h1>
 <p>The AMCL launch includes the following components:</p><ul>
 <li>Nav Basics launch (<b>Do not</b> launch <code><a class="el" href="namespacenav__basics.html">nav_basics</a></code> in another terminal if AMCL launch is running)</li>
@@ -133,7 +133,7 @@ Running AMCL Localization</h1>
 <li>Nav2 AMCL</li>
 <li>Nav2 Lifecycle Manager</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md68"></a>
+<h2><a class="anchor" id="autotoc_md67"></a>
 Arguments</h2>
 <ul>
 <li><code>publish_tf</code> (default: <code>true</code>): Active URDF publish state.<ul>
@@ -142,11 +142,11 @@ Arguments</h2>
 </li>
 <li><code>map</code> (default: Path for lab map): Provide an <b>absolute path</b> to import the map.</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md69"></a>
+<h2><a class="anchor" id="autotoc_md68"></a>
 Run Command</h2>
 <div class="fragment"><div class="line">ros2 launch nav_main nav_amcl.launch.py</div>
 </div><!-- fragment --><hr  />
-<h1><a class="anchor" id="autotoc_md71"></a>
+<h1><a class="anchor" id="autotoc_md70"></a>
 Running Navigation Node</h1>
 <blockquote class="doxtable">
 <p>&zwj;<b>IMPORTANT:</b> You must run a SLAM before. Examples include <code>nav_amcl</code> or <code>rtabmap</code> (in development). </p>
@@ -154,12 +154,12 @@ Running Navigation Node</h1>
 <p>The Navigation Node includes the following components:</p><ul>
 <li>Nav2 Server</li>
 </ul>
-<h2><a class="anchor" id="autotoc_md72"></a>
+<h2><a class="anchor" id="autotoc_md71"></a>
 Arguments</h2>
 <ul>
 <li><code>Custom yaml config</code></li>
 </ul>
-<h2><a class="anchor" id="autotoc_md73"></a>
+<h2><a class="anchor" id="autotoc_md72"></a>
 Run Command</h2>
 <div class="fragment"><div class="line">ros2 launch nav_main navigation_launch.py</div>
 </div><!-- fragment --> </div></div><!-- contents -->

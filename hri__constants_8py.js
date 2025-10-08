@@ -29,7 +29,6 @@ var hri__constants_8py =
     [ "STT_SERVICE_NAME", "hri__constants_8py.html#a05d8fa1eccd50686fbaff0e84170dcb9", null ],
     [ "threshold", "hri__constants_8py.html#a57a8000db92c380cf72a62b5afca2ba8", null ],
     [ "USE_OWW", "hri__constants_8py.html#a21cf28c03858cd41c9c109e65272477e", null ],
-    [ "USE_RESPEAKER", "hri__constants_8py.html#ab84e29b708c588f21ca855005806888b", null ],
     [ "USEFUL_AUDIO_NODE_NAME", "hri__constants_8py.html#ab6800c1a435eaa0006c92a38068e003a", null ],
     [ "USEFUL_AUDIO_TOPIC", "hri__constants_8py.html#a3d4f04c35947523a35babc6389309733", null ],
     [ "WAKEWORD_TOPIC", "hri__constants_8py.html#a17e6a7edcef87329c3717fc4cd21dbee", null ]
