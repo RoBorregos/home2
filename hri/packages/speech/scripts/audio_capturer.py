@@ -25,15 +25,13 @@ class AudioCapturer(Node):
         self.declare_parameter("MIC_DEVICE_NAME", "default")
         self.declare_parameter("MIC_INPUT_CHANNELS", 32)
         self.declare_parameter("MIC_OUT_CHANNELS", 32)
-        self.declare_parameter("USE_RESPEAKER", False)
 
         publish_topic = (
             self.get_parameter("publish_topic").get_parameter_value().string_value
         )
 
-        self.use_respeaker = (
-            self.get_parameter("USE_RESPEAKER").get_parameter_value().bool_value
-        )
+        self.use_respeaker = SpeechApiUtils.respeaker_available()
+        self.get_logger().info(f"ReSpeaker detected: {self.use_respeaker}")
 
         mic_device_name = (
             self.get_parameter("MIC_DEVICE_NAME").get_parameter_value().string_value
