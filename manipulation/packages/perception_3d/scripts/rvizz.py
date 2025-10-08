@@ -12,11 +12,11 @@ class PlyPublisher(Node):
     def __init__(self):
         super().__init__("ply_publisher")
 
-        # Publicador de PointCloud2
+        # PointCloud2 Publisher
         self.publisher_ = self.create_publisher(PointCloud2, "/pointcloud_topic", 10)
         self.get_logger().info("PlyPublisher has started.")
 
-        # Leer PLY con Open3D
+        # Read PLY with Open3D
         script_dir = os.path.dirname(os.path.realpath(__file__))
         package_share = get_package_share_directory('perception_3d')
         ply_path = os.path.join(package_share, "pointcloud.ply")
@@ -24,7 +24,7 @@ class PlyPublisher(Node):
         pcd = o3d.io.read_point_cloud(ply_path)
         self.points = np.asarray(pcd.points, dtype=np.float32)
 
-        # Timer para publicar periódicamente
+        # Timer 
         self.timer = self.create_timer(0.1, self.publish_cloud)  # 10 Hz
 
     def publish_cloud(self):
