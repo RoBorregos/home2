@@ -94,7 +94,7 @@ rtabmap_viz:
     frame_id: "base_link"
     odom_frame_id: "odom"
     map_frame_id: "map"
-    database_path: "/workspace/rtabmap2.db"
+    database_path: "/workspace/rtabmap.db"
     approx_sync: true
     #RTABMAP PARAMETERS
     "Rtabmap/DetectionRate": "15"
