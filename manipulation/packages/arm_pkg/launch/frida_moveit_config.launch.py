@@ -28,6 +28,8 @@ def launch_setup(context, *args, **kwargs):
     baud_checkset = LaunchConfiguration("baud_checkset", default=True)
     default_gripper_baud = LaunchConfiguration("default_gripper_baud", default=2000000)
 
+    show_rviz = LaunchConfiguration("show_rviz", default=True)
+
     dof = LaunchConfiguration("dof", default=6)
     robot_type = LaunchConfiguration("robot_type", default="xarm")
     prefix = LaunchConfiguration("prefix", default="")
@@ -169,6 +171,7 @@ def launch_setup(context, *args, **kwargs):
             "attach_xyz": attach_xyz,
             "attach_rpy": attach_rpy,
             "no_gui_ctrl": no_gui_ctrl,
+            "show_rviz": show_rviz,
             "use_sim_time": "false",
             "moveit_config_dump": yaml.dump(moveit_config.to_dict()),
         }.items(),

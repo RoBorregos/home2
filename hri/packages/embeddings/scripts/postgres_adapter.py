@@ -103,11 +103,25 @@ class PostgresAdapter:
         ]
 
     def query_location(
-        self, name: str, threshold: float = 0.0, top_k: int = 100
+        self,
+        name: str,
+        threshold: float = 0.0,
+        top_k: int = 100,
+        use_context: bool = False,
     ) -> list[Location]:
         embedding = self.embedding_model.encode(name, convert_to_tensor=True)
+        command = (
+            (
+                "SELECT id, area, subarea, context, 1 - (embedding <=> %s) as similarity FROM locations WHERE 1 - (embedding <=> %s) >= %s ORDER BY similarity DESC LIMIT %s"
+            )
+            if not use_context
+            else (
+                "SELECT id, area, subarea, context, 1 - (context_embedding <=> %s) as similarity FROM locations WHERE 1 - (context_embedding <=> %s) >= %s ORDER BY similarity DESC LIMIT %s"
+            )
+        )
+
         self.cursor.execute(
-            "SELECT id, area, subarea, context, 1 - (embedding <=> %s) as similarity FROM locations WHERE 1 - (embedding <=> %s) >= %s ORDER BY similarity DESC LIMIT %s",
+            command,
             (
                 json.dumps(embedding.tolist()),
                 json.dumps(embedding.tolist()),

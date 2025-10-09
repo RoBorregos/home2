@@ -127,7 +127,7 @@ SERVICE_NAME="integration"  # Change this to your service name in docker-compose
 EXISTING_CONTAINER=$(docker ps -a -q -f name=$SERVICE_NAME)
 if [ -z "$EXISTING_CONTAINER" ]; then
     echo "No container with the name $SERVICE_NAME exists. Building and starting the container now..."
-    docker compose up --build -d
+    docker compose up -d
 fi
 
 # Check if the container is running
@@ -136,15 +136,16 @@ RUNNING_CONTAINER=$(docker ps -q -f name=$SERVICE_NAME)
 # If the container is not running, start it
 if [ -z "$RUNNING_CONTAINER" ]; then
     echo "Container $SERVICE_NAME is not running. Starting it now..."
-    docker compose up --build -d
+    docker compose up -d
 fi
 
 # Commands to run inside the container
+GENERATE_BAML_CLIENT="baml-cli generate --from /workspace/src/task_manager/scripts/utils/baml_src/"
 SOURCE_ROS="source /opt/ros/humble/setup.bash"
 SOURCE_INTERFACES="source frida_interfaces_cache/install/local_setup.bash"
-COLCON="colcon build --packages-ignore frida_interfaces frida_constants --packages-up-to "
+COLCON="colcon build --packages-ignore frida_interfaces frida_constants --packages-up-to task_manager"
 SOURCE="source install/setup.bash"
-SETUP="$SOURCE_ROS && $SOURCE_INTERFACES && $COLCON task_manager && $SOURCE"
+SETUP="$GENERATE_BAML_CLIENT && $SOURCE_ROS && $SOURCE_INTERFACES && $COLCON && $SOURCE"
 RUN=""
 MOONDREAM=false
 
@@ -159,18 +160,8 @@ case $TASK in
         RUN="ros2 run task_manager gpsr_task_manager.py"
         ;;
     *)
-        RUN=""
+        RUN="bash"
         ;;
 esac
 
-# check if TASK is not empty
-if [ -z "$TASK" ]; then
-    docker compose exec $SERVICE_NAME /bin/bash
-else
-    if [ -z "$detached" ]; then
-        docker compose exec $SERVICE_NAME bash -c "$SETUP && $RUN"
-    else
-        echo "Running in detached mode..."
-        docker compose exec -d $SERVICE_NAME bash -c "$SETUP && $RUN"
-    fi
-fi
+docker compose exec $detached $SERVICE_NAME bash -c "$SETUP && $RUN"

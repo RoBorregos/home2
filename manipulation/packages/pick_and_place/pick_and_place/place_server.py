@@ -13,13 +13,13 @@ from frida_constants.manipulation_constants import (
     REMOVE_COLLISION_OBJECT_SERVICE,
     GET_COLLISION_OBJECTS_SERVICE,
     PICK_OBJECT_NAMESPACE,
-    GRASP_LINK_FRAME,
     EEF_LINK_NAME,
     EEF_CONTACT_LINKS,
     PLACE_MOTION_ACTION_SERVER,
     AIM_STRAIGHT_FRONT_QUAT,
     SHELF_POSITION_PREPLACE_POSE,
     GRIPPER_SET_STATE_SERVICE,
+    GRASP_LINK_FRAME,
 )
 from frida_interfaces.srv import (
     AttachCollisionObject,
@@ -116,8 +116,8 @@ class PlaceMotionServer(Node):
             )
 
         # generate several place_poses, so try every time higher from plane
-        n_poses = 5
-        poses_dist = 0.03
+        n_poses = 8
+        poses_dist = 0.05
         place_poses = []
         for i in range(n_poses):
             ee_link_pose = copy.deepcopy(place_pose)
@@ -139,7 +139,7 @@ class PlaceMotionServer(Node):
                 )
                 # send it a little bit back, then forward
                 offset_distance = SHELF_POSITION_PREPLACE_POSE  # Desired distance in meters along the local z-axis
-                offset_distance_half = SHELF_POSITION_PREPLACE_POSE * (2 / 3)
+                offset_distance_half = SHELF_POSITION_PREPLACE_POSE * (1 / 2)
                 # Compute the offset along the local z-axis
                 quat = [
                     ee_link_pre_pose.pose.orientation.w,

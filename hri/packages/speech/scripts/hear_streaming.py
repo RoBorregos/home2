@@ -8,7 +8,7 @@ import time
 import grpc
 import numpy as np
 import rclpy
-from rclpy.action import ActionServer
+from rclpy.action import ActionServer, CancelResponse
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.executors import ExternalShutdownException, MultiThreadedExecutor
 from rclpy.node import Node
@@ -47,17 +47,18 @@ class HearStreaming(Node):
             .string_value
         )
 
-        default_hotwords = (
+        self.default_hotwords = (
             self.declare_parameter("DEFAULT_HOTWORDS", "Frida RoBorregos")
             .get_parameter_value()
             .string_value
         )
 
-        self.hotwords = default_hotwords
+        self.hotwords = self.default_hotwords
         self.current_transcription = ""
         self.stop_flag = threading.Event()
         self.stop_flag.set()
         self.transcript_thread = None
+        self.cancel_requested = False
 
         # gRPC Stub
         channel = grpc.insecure_channel(server_ip)
@@ -81,6 +82,7 @@ class HearStreaming(Node):
             self.action_server_name,
             self.execute_callback,
             callback_group=action_group,
+            cancel_callback=self.cancel_callback,
         )
 
         self.transcription_publisher = self.create_publisher(
@@ -88,6 +90,12 @@ class HearStreaming(Node):
         )
 
         self.get_logger().info("*Hear Streaming Node is ready*")
+
+    def cancel_callback(self, goal_handle):
+        """Accept cancellation requests."""
+        self.get_logger().info("Received cancel request")
+        self.cancel_requested = True
+        return CancelResponse.ACCEPT
 
     def audio_callback(self, msg):
         audio_data = np.frombuffer(msg.data, dtype=np.int16)
@@ -146,6 +154,7 @@ class HearStreaming(Node):
         self.audio_buffer.clear()
         self.current_transcription = ""
         self.prev_transcription = ""
+        self.cancel_requested = False
 
         start_time = time.time()
         last_word_time = start_time
@@ -153,12 +162,15 @@ class HearStreaming(Node):
         if goal_handle.request.hotwords:
             self.hotwords = goal_handle.request.hotwords
             self.get_logger().info(f"Updated hotwords: {self.hotwords}")
+        else:
+            self.hotwords = self.default_hotwords
 
         self.record_subscribed(self.hotwords)
 
         try:
             while (
                 not goal_handle.is_cancel_requested
+                and not self.cancel_requested
                 and time.time() - start_time < goal_handle.request.timeout
                 and (
                     (
@@ -185,7 +197,7 @@ class HearStreaming(Node):
                         String(data=self.prev_transcription)
                     )
 
-                # rclpy.spin_once(self, timeout_sec=0.1)
+                # Use a short sleep to avoid busy waiting while still being responsive to cancellation
                 time.sleep(0.1)
         except Exception as e:
             self.get_logger().error(f"Execution interrupted: {e}")
@@ -194,18 +206,28 @@ class HearStreaming(Node):
             self.get_logger().info(
                 f"Silence detected for more than {goal_handle.request.silence_time}, stopping transcription."
             )
+            reason = "silence"
         elif time.time() - start_time >= goal_handle.request.timeout:
             self.get_logger().info(
                 f"Timeout of {goal_handle.request.timeout} seconds reached, stopping transcription."
             )
-        elif goal_handle.is_cancel_requested:
+            reason = "timeout"
+        elif goal_handle.is_cancel_requested or self.cancel_requested:
             self.get_logger().info("Action goal cancelled, stopping transcription.")
+            reason = "cancelled"
         else:
             self.get_logger().info("Transcription completed successfully.")
+            reason = "completed"
 
         self.stop_flag.set()
         self.transcript_thread.join()
-        goal_handle.succeed()
+
+        # Handle the goal result based on the reason for stopping
+        if reason == "cancelled":
+            goal_handle.canceled()
+        else:
+            goal_handle.succeed()
+
         result = SpeechStream.Result()
         result.transcription = self.current_transcription.strip()
         self.get_logger().info(f"Final transcription: {result.transcription}")

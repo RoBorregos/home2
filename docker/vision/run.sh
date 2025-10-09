@@ -125,7 +125,7 @@ SERVICES=()
 
 case $TASK in
     "--receptionist")
-        PACKAGES="vision_general"
+        PACKAGES="vision_general object_detector_2d object_detection_handler"
         RUN="ros2 launch vision_general receptionist_launch.py"
         PROFILES=("vision" "moondream")
         SERVICES=("vision" "moondream-node" "moondream-server")
@@ -162,6 +162,10 @@ esac
 if [ -n "$TASK" ]; then
     COMMAND="source /opt/ros/humble/setup.bash && $SOURCE_INTERFACES && colcon build $IGNORE_PACKAGES --packages-up-to $PACKAGES && source install/setup.bash && $RUN"
     echo "COMMAND= $COMMAND " >> .env
+
+    # moondream_node
+    COMMAND2="source /opt/ros/humble/setup.bash && $SOURCE_INTERFACES && colcon build $IGNORE_PACKAGES --packages-up-to moondream_run  && source install/setup.bash && ros2 run moondream_run moondream_node.py"
+    echo "COMMAND2= $COMMAND2 " >> .env
 fi
 
 # Add services to compose profiles

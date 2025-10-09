@@ -35,4 +35,6 @@ RUN git clone https://github.com/ultralytics/yolov5.git
 RUN pip install timm && \
     python3 -c "import timm; timm.create_model('swin_base_patch4_window7_224', pretrained=True)" 
 
+RUN sudo pip install openai-clip
+
 USER ros

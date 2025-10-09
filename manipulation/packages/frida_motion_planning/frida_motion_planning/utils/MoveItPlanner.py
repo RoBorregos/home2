@@ -1,22 +1,23 @@
+import time
+from concurrent.futures import Future
+from typing import List, Union
+
+import rclpy
+from controller_manager_msgs.srv import SwitchController
+from frida_motion_planning.utils.Planner import Planner
+from frida_pymoveit2.robots import xarm6
+from geometry_msgs.msg import PoseStamped
+from pymoveit2 import GripperInterface, MoveIt2, MoveIt2State
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.node import Node
+from sensor_msgs.msg import JointState
+from xarm_msgs.srv import SetInt16
 
-from pymoveit2 import MoveIt2, MoveIt2State, GripperInterface
-from frida_pymoveit2.robots import xarm6
 from frida_constants.manipulation_constants import (
+    MOVEIT_MODE,
     XARM_SETMODE_SERVICE,
     XARM_SETSTATE_SERVICE,
-    MOVEIT_MODE,
 )
-from typing import List, Union
-from concurrent.futures import Future
-from xarm_msgs.srv import SetInt16
-from frida_motion_planning.utils.Planner import Planner
-from geometry_msgs.msg import PoseStamped
-from sensor_msgs.msg import JointState
-from controller_manager_msgs.srv import SwitchController
-import time
-import rclpy
 
 PYMOVEIT_FUTURE_TIMEOUT = 3
 
@@ -80,6 +81,7 @@ class MoveItPlanner(Planner):
                         if using fake controller, ignore this message"
             )
             self.mode_enabled = False
+
         self.joint_states = None
         # Set initial parameters
         self.moveit2.max_velocity = max_velocity
@@ -94,6 +96,12 @@ class MoveItPlanner(Planner):
 
     def set_planner(self, planner_id: str) -> None:
         self.moveit2.planner_id = planner_id
+
+    def set_planning_time(self, planning_time: float) -> None:
+        self.moveit2.allowed_planning_time = planning_time
+
+    def set_planning_attempts(self, planning_attempts: int) -> None:
+        self.moveit2.num_planning_attempts = planning_attempts
 
     def plan_joint_goal(
         self,
@@ -135,6 +143,8 @@ class MoveItPlanner(Planner):
         pose: PoseStamped,
         target_link: str = xarm6.end_effector_name(),
         cartesian: bool = False,
+        tolerance_position: float = 0.015,
+        tolerance_orientation: float = 0.02,
         wait: bool = True,
         set_mode: bool = True,
     ) -> Union[bool, Future]:
@@ -145,8 +155,8 @@ class MoveItPlanner(Planner):
             pose=pose,
             cartesian=cartesian,
             target_link=target_link,
-            tolerance_position=0.015,
-            tolerance_orientation=0.02,
+            tolerance_position=tolerance_position,
+            tolerance_orientation=tolerance_orientation,
         )
         if not trajectory:
             return False
@@ -177,8 +187,8 @@ class MoveItPlanner(Planner):
         pose: PoseStamped,
         cartesian: bool = False,
         target_link: str = xarm6.end_effector_name(),
-        tolerance_position: float = 0.015,
-        tolerance_orientation: float = 0.1,
+        tolerance_position: float = 0.01,
+        tolerance_orientation: float = 0.05,
         weight_position: float = 1.0,
         weight_orientation: float = 1.0,
         cartesian_max_step: float = 0.05,
@@ -218,7 +228,7 @@ class MoveItPlanner(Planner):
         )
 
     def set_mode(self, mode: int = 0) -> bool:
-        if not self.mode_enabled:
+        if True:  # not self.mode_enabled:
             return True
         # self.mode_client.wait_for_service()
         # request = SetInt16.Request()
@@ -261,6 +271,25 @@ class MoveItPlanner(Planner):
             else:
                 self.node.get_logger().error("Failed to call switch controller service")
                 return False
+        return True
+
+    def reset_controller(self):
+        time.sleep(0.1)
+        # Activate controller
+        if self.switch_controller_client is not None:
+            request = SwitchController.Request()
+            request.start_controllers = ["xarm6_traj_controller"]
+            future = self.switch_controller_client.call_async(request)
+            while rclpy.ok() and not future.done():
+                pass
+            if future.result() is not None:
+                self.node.get_logger().info(
+                    f"Switch controller service response: {future.result().ok}"
+                )
+            else:
+                self.node.get_logger().error("Failed to call switch controller service")
+                return False
+        time.sleep(1)
         return True
 
     def get_current_operation_state(self) -> MoveIt2State:
@@ -421,8 +450,10 @@ class MoveItPlanner(Planner):
         self.moveit2.update_planning_scene()
 
     def get_planning_scene(self) -> None:
-        self.update_planning_scene()
-        return self.moveit2.get_planning_scene()
+        self.update_planning_scene()  # check the pymoveit2 library
+        return (
+            self.moveit2.planning_scene
+        )  # Return the current planning scene after the update
 
     def remove_collision_object(self, id: str) -> None:
         self.moveit2.remove_collision_object(id)

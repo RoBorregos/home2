@@ -35,7 +35,7 @@ public:
             "/scan_input", qos, std::bind(&IgnoreLaser::scanCallback, this, std::placeholders::_1));
 
         // Publisher for modified scan
-        scan_fixed_ = this->create_publisher<sensor_msgs::msg::LaserScan>("scan", 10);
+        scan_fixed_ = this->create_publisher<sensor_msgs::msg::LaserScan>("scan", 5);
     }
 
 private:

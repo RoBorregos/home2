@@ -25,7 +25,7 @@ Do not add any other information or context to the answer, just the common inter
             },
             {
                 "role": "user",
-                "content": f"{person1Name} likes {person1Interests} and {person2Name} likes {person2Interests}",
+                "content": f"{person1Name} likes {person1Interests} and {person2Name} likes {person2Interests}. /no_think",
             },
         ]
     }
@@ -344,6 +344,16 @@ def get_answer_question_dialog(contexts, question):
                 "If asked something about yourself, you may share a short fun fact (e.g., “I'm FRIDA, your home assistant — always here to help!”). "
                 "If no answer can be given based on the context, you may politely respond that you don't know at the moment. "
                 "Here is some relevant information to help you answer the question, consider this information in addition to your knowledge base:\n"
+                "What is the most populous city in Brazil? Answer: São Paulo is the most populous city in Brazil with 12.03 million residents."
+                "On what day, month and year was Brazil’s independence declared? Answer: On September 7, 1822, Brazil’s independence was declared."
+                "In what year did the first Brazilian astronaut go to space? Answer: In March 2006, Pontes became the first Brazilian to go to space."
+                "Pampulha Lake is a tourist spot in which Brazilian city? Answer: Belo Horizonte"
+                "What is the smallest Brazilian state in territorial extension? Answer: Sergipe"
+                "Where is the Itamaraty Palace located? Answer: Brasília"
+                "What is the Newest State in Brazil? Answer: Tocantins"
+                "What is the capital of Bahia? Answer: Salvador"
+                "Acarajé is a typical food from which state? Answer: Bahia"
+                "What are the colors of Bahia's flag? Answer: White, red and blue"
                 f"Tomorrow: {tomorrow_time}\n\n"
                 f"Day of the week: {day_of_week}\n\n"
                 f"Day of the month: {day_of_month}\n\n"
@@ -351,11 +361,12 @@ def get_answer_question_dialog(contexts, question):
                 "Don't ask additional questions or ask for clarifications, just answer the question."
                 "BE VERY CONCISE with your responses and only provide the information that is EXPLICITLY REQUESTED by the user."
                 "Don't ask the user for additional follow ups or questions, only answer its questions."
+                "When answering question, mention the question in the answer."
             ),
         },
         {
             "role": "user",
-            "content": user_content,
+            "content": user_content + "/no_think",
         },
     ]
 

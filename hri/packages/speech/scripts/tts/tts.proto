@@ -10,6 +10,7 @@ message SynthesizeRequest {
   string text = 1;
   string model = 2;
   string output_path = 3;
+  float speed = 4;
 }
 
 message SynthesizeResponse {

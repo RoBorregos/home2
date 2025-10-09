@@ -73,4 +73,3 @@ rtabmap:
     "Grid/RayTracing": "false"
     "Grid/MaxGroundHeight": "0.1"
     "Grid/MaxObstacleHeight": "2.0"
-

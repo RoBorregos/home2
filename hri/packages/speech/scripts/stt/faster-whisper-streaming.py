@@ -28,7 +28,7 @@ class WhisperServicer(speech_pb2_grpc.SpeechStreamServicer):
                 clip_audio=False,
                 model=self.model,
                 language="en",
-                # task=options["task"],
+                task="translate",
                 same_output_threshold=10,
                 transcriber=self.transcriber,
             )
@@ -107,6 +107,7 @@ def serve(port, model, log_transcriptions):
         device=device,
         compute_type=compute_type,
         local_files_only=False,
+        download_root="./models",
     )
 
     warmup_file = "./warmup.wav"

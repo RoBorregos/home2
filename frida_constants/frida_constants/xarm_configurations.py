@@ -16,7 +16,7 @@ FRONT_LOW_STARE = {
         "joint2": -45.0,
         "joint3": -90.0,
         "joint4": 0.0,
-        "joint5": 20.0,
+        "joint5": 35.0,
         "joint6": 45.0,
     },
     "degrees": True,
@@ -28,7 +28,7 @@ TABLE_STARE = {
         "joint2": -80.0,
         "joint3": -70.0,
         "joint4": 0.0,
-        "joint5": 60.0,
+        "joint5": 50.0,
         "joint6": 45.0,
     },
     "degrees": True,
@@ -64,10 +64,22 @@ PICK_STARE_AT_TABLE = {
 NAV_POSE = {
     "joints": {
         "joint1": -90.0,
-        "joint2": -60.0,
-        "joint3": -55.0,
+        "joint2": -70.0,
+        "joint3": -45.0,
         "joint4": 0,
-        "joint5": 25.0,
+        "joint5": 10.0,
+        "joint6": 45.0,
+    },
+    "degrees": True,
+}
+
+CARRY_POSE = {
+    "joints": {
+        "joint1": -90.0,
+        "joint2": -70.0,
+        "joint3": -47.0,
+        "joint4": 0,
+        "joint5": -12.0,
         "joint6": 45.0,
     },
     "degrees": True,
@@ -81,4 +93,5 @@ XARM_CONFIGURATIONS = {
     "receive_object": RECEIVE_OBJECT,
     "pick_stare_at_table": PICK_STARE_AT_TABLE,
     "nav_pose": NAV_POSE,
+    "carry_pose": CARRY_POSE,
 }

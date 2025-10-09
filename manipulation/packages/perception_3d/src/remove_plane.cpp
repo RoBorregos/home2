@@ -1,5 +1,6 @@
 #include "rclcpp/rclcpp.hpp"
 #include <ament_index_cpp/get_package_share_directory.hpp>
+#include <pcl-1.12/pcl/sample_consensus/model_types.h>
 #include <pcl/common/transforms.h>
 #include <rclcpp/duration.hpp>
 #include <rclcpp/logging.hpp>
@@ -36,6 +37,7 @@
 
 #include <frida_interfaces/srv/cluster_object_from_point.hpp>
 #include <frida_interfaces/srv/remove_plane.hpp>
+#include <frida_interfaces/srv/remove_vertical_plane.hpp>
 #include <frida_interfaces/srv/test.hpp>
 
 enum class PassThroughFilterType { X, Y, Z };
@@ -48,6 +50,8 @@ private:
       remove_place_srv;
   rclcpp::Service<frida_interfaces::srv::ClusterObjectFromPoint>::SharedPtr
       cluster_object_from_point_srv;
+  rclcpp::Service<frida_interfaces::srv::RemoveVerticalPlane>::SharedPtr
+      remove_vertical_plane_srv;
 
   rclcpp::Subscription<sensor_msgs::msg::PointCloud2>::SharedPtr cloud_sub_;
 
@@ -118,6 +122,12 @@ public:
             std::bind(&TableSegmentationNode::test_cluster, this,
                       std::placeholders::_1, std::placeholders::_2,
                       std::placeholders::_3));
+    this->remove_vertical_plane_srv =
+        this->create_service<frida_interfaces::srv::RemoveVerticalPlane>(
+            REMOVE_VERTICAL_PLANE_SERVICE,
+            std::bind(&TableSegmentationNode::remove_vertical_plane, this,
+                      std::placeholders::_1, std::placeholders::_2,
+                      std::placeholders::_3));
     RCLCPP_INFO(this->get_logger(), "Service created");
   }
 
@@ -150,6 +160,7 @@ public:
 
     if (request->close_point.header.frame_id == "") {
       // only filter too far from the robot
+      RCLCPP_INFO(this->get_logger(), "Using close point");
       pcl::PointXYZ req_point;
       req_point.x = 0.0;
       req_point.y = 0.0;
@@ -158,6 +169,7 @@ public:
           cloud_out, req_point, cloud_out, 5.0, request->min_height,
           request->max_height);
     } else {
+      RCLCPP_INFO(this->get_logger(), "Using close point");
       geometry_msgs::msg::PointStamped point;
       if (request->close_point.header.frame_id != "base_link") {
         try {
@@ -175,9 +187,12 @@ public:
       req_point.x = point.point.x;
       req_point.y = point.point.y;
       req_point.z = point.point.z;
+      request->min_height = point.point.z - 0.25;
+      request->max_height = point.point.z + 0.25;
+      
 
       response->health_response = this->DistanceFilterFromPoint(
-          cloud_out, req_point, cloud_out, 1.0, request->min_height,
+          cloud_out, req_point, cloud_out, 0.4, request->min_height,
           request->max_height);
     }
 
@@ -450,6 +465,8 @@ public:
       const float distance = 0.5, const float min_height = 0.1,
       const float max_height = 2.5) {
 
+        RCLCPP_INFO(this->get_logger(), "as distance: %f , min_h: %f , max_height: %f , point: x: %f y: %f z: %f", distance, min_height, max_height, point.x, point.y, point.z);
+
     pcl::PassThrough<pcl::PointXYZ> pass;
     pass.setInputCloud(cloud);
     pass.setFilterFieldName("z");
@@ -487,6 +504,212 @@ public:
     cloud_out->width = cloud_out->points.size();
 
     return OK;
+  }
+
+  STATUS_RESPONSE vertical_plane(
+      _IN_ const std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud,
+      _OUT_ const std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud_out) {
+
+    pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
+    pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
+    pcl::SACSegmentation<pcl::PointXYZ> seg;
+    // set segmentation parameters
+    seg.setOptimizeCoefficients(true);
+    seg.setModelType(pcl::SACMODEL_PARALLEL_PLANE);
+    seg.setMethodType(pcl::SAC_RANSAC);
+    // eps to 90 degrees
+    seg.setEpsAngle(90.0 * M_PI / 180.0);
+    seg.setAxis(Eigen::Vector3f::UnitZ());
+    seg.setMaxIterations(1000);
+    seg.setDistanceThreshold(0.03);
+    // segment the largest planar component from the input cloud
+    seg.setInputCloud(cloud);
+    seg.segment(*inliers, *coefficients);
+    if (inliers->indices.size() == 0) {
+      RCLCPP_ERROR(this->get_logger(), "Could not estimate a vertical plane");
+      return COULD_NOT_ESTIMATE_PLANAR_MODEL;
+    }
+    RCLCPP_INFO(this->get_logger(), "Vertical plane found with %zu inliers",
+                inliers->indices.size());
+    pcl::ExtractIndices<pcl::PointXYZ> extract;
+    extract.setInputCloud(cloud);
+    extract.setIndices(inliers);
+    extract.setNegative(true);
+    extract.filter(*cloud_out);
+
+    RCLCPP_INFO(this->get_logger(), "Extracted vertical plane with %zu points",
+                cloud_out->points.size());
+    if (cloud_out->points.size() == 0) {
+      RCLCPP_ERROR(this->get_logger(), "Could not extract vertical plane");
+      return COULD_NOT_ESTIMATE_PLANAR_MODEL;
+    }
+    // save the vertical plane to a file
+    // std::string filename = this->package_path + "/vertical_plane.pcd";
+    // try {
+    //   pcl::io::savePCDFile(this->package_path + "/vertical_plane.pcd",
+    //                        *cloud_out);
+    // } catch (const std::exception &e) {
+    //   RCLCPP_ERROR(this->get_logger(), "Error saving vertical plane: %s",
+    //                e.what());
+    //   // return COULD_NOT_SAVE_POINT_CLOUD;
+    // }
+    // RCLCPP_INFO(this->get_logger(), "Saved vertical plane to %s",
+    //             (this->package_path + "/vertical_plane.pcd").c_str());
+    // euclidean clustering get closest cluster
+    pcl::search::KdTree<pcl::PointXYZ>::Ptr tree(
+        new pcl::search::KdTree<pcl::PointXYZ>);
+    tree->setInputCloud(cloud_out);
+    std::vector<pcl::PointIndices> cluster_indices;
+    pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
+    ec.setClusterTolerance(0.04); // 5cm
+    ec.setMinClusterSize(100);
+    ec.setMaxClusterSize(25000);
+    ec.setSearchMethod(tree);
+    ec.setInputCloud(cloud_out);
+    ec.extract(cluster_indices);
+    if (cluster_indices.empty()) {
+      RCLCPP_ERROR(this->get_logger(), "No clusters found in vertical plane");
+      return POINT_CLOUD_EMPTY;
+    }
+
+    RCLCPP_INFO(this->get_logger(), "Found %zu clusters in vertical plane",
+                cluster_indices.size());
+    // get the largest cluster
+    // int largest_cluster_index = 0;
+    // size_t largest_cluster_size = 0;
+    // for (size_t i = 0; i < cluster_indices.size(); ++i) {
+    //   if (cluster_indices[i].indices.size() > largest_cluster_size) {
+    //     largest_cluster_size = cluster_indices[i].indices.size();
+    //     largest_cluster_index = i;
+    //   }
+    // }
+    // get closest cluster to the robot 
+    int largest_cluster_index = -1;
+    size_t closest_cluster_distance = 0;
+    pcl::PointXYZ robot_position(0.0, 0.0, 0.5); // 0.5 meters above the ground
+    for (size_t i = 0; i < cluster_indices.size(); ++i) {
+      pcl::PointXYZ cluster_center(0.0, 0.0, 0.0);
+      for (const auto &index : cluster_indices[i].indices) {
+        cluster_center.x += cloud_out->points[index].x;
+        cluster_center.y += cloud_out->points[index].y;
+        cluster_center.z += cloud_out->points[index].z;
+      }
+      // cluster_center.x /= cluster_indices[i].indices.size();
+      // cluster_center.y /= cluster_indices[i].indices.size();
+      // cluster_center.z /= cluster_indices[i].indices.size();
+      float dx = cluster_center.x - robot_position.x;
+      float dy = cluster_center.y - robot_position.y;
+      float dz = cluster_center.z - robot_position.z;
+      float distance = std::sqrt(dx*dx + dy*dy + dz*dz);
+      if (distance < closest_cluster_distance ||
+          largest_cluster_index == -1) {
+        closest_cluster_distance = distance;
+        largest_cluster_index = i;
+      }
+    }
+
+    RCLCPP_INFO(this->get_logger(), "Largest cluster has %zu points", 
+                cluster_indices[largest_cluster_index].indices.size());
+    // extract the largest cluster
+    pcl::PointIndices::Ptr largest_cluster_indices(
+        new pcl::PointIndices(cluster_indices[largest_cluster_index]));
+    pcl::ExtractIndices<pcl::PointXYZ> extract_largest;
+    extract_largest.setInputCloud(cloud_out);
+    extract_largest.setIndices(largest_cluster_indices);
+    extract_largest.setNegative(false);
+    extract_largest.filter(*cloud_out);
+    RCLCPP_INFO(this->get_logger(), "Extracted largest cluster with %zu points",
+                cloud_out->points.size());
+    if (cloud_out->points.size() == 0) {
+      RCLCPP_ERROR(this->get_logger(), "Could not extract largest cluster");
+      return POINT_CLOUD_EMPTY;
+    }
+
+    return OK;
+  }
+
+  void remove_vertical_plane(
+      const std::shared_ptr<rmw_request_id_t> request_header,
+      const std::shared_ptr<frida_interfaces::srv::RemoveVerticalPlane::Request>
+          request,
+      const std::shared_ptr<
+          frida_interfaces::srv::RemoveVerticalPlane::Response>
+          response) {
+    RCLCPP_INFO(this->get_logger(), "remove_vertical_plane");
+    response->health_response = OK;
+
+    if (this->last_ == nullptr) {
+      response->health_response = NO_POINTCLOUD;
+      return;
+    }
+
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_out(
+        new pcl::PointCloud<pcl::PointXYZ>);
+
+    response->health_response = copyPointCloud(last_, cloud_out);
+
+    ASSERT_AND_RETURN_CODE(response->health_response, OK,
+                           "Error copying point cloud with code %d",
+                           response->health_response);
+
+    if (request->close_point.header.frame_id == "") {
+      // only filter too far from the robot
+      pcl::PointXYZ req_point;
+      req_point.x = 0.0;
+      req_point.y = 0.0;
+      req_point.z = 0.0;
+      response->health_response = this->DistanceFilterFromPoint(
+          cloud_out, req_point, cloud_out, 0.3, request->close_point.point.z - 0.3,
+          request->close_point.point.z + 0.3);
+    } else {
+
+      response->health_response = this->passThroughPlane(
+          cloud_out, cloud_out, 0.15, 2.1, PassThroughFilterType::Z);
+      ASSERT_AND_RETURN_CODE(response->health_response, OK,
+                            "Error filtering point cloud by height with code %d",
+                            response->health_response);
+      response->health_response = this->passThroughPlane(
+          cloud_out, cloud_out, -1.0, 1.0, PassThroughFilterType::Y);
+      ASSERT_AND_RETURN_CODE(response->health_response, OK,
+                            "Error filtering point cloud by height with code%d",
+                            response->health_response);
+      response->health_response = this->passThroughPlane(
+          cloud_out, cloud_out, -1.0, 1.0, PassThroughFilterType::X);
+      ASSERT_AND_RETURN_CODE(response->health_response, OK,
+                            "Error filtering point cloud by height with code%d",
+                            response->health_response);
+    }
+
+
+    pcl::PointCloud<pcl::PointXYZ>::Ptr vertical_plane_removed(
+        new pcl::PointCloud<pcl::PointXYZ>);
+    response->health_response =
+        vertical_plane(cloud_out, vertical_plane_removed);
+    ASSERT_AND_RETURN_CODE(response->health_response, OK,
+                           "Error extracting vertical plane with code %d",
+                           response->health_response);
+    response->cloud = sensor_msgs::msg::PointCloud2();
+    try {
+      pcl::toROSMsg(*vertical_plane_removed, response->cloud);
+    } catch (const std::exception &e) {
+      RCLCPP_ERROR(this->get_logger(), "Error converting point cloud: %s",
+                   e.what());
+      response->health_response = COULD_NOT_CONVERT_POINT_CLOUD;
+      return;
+    }
+    response->cloud.header.frame_id = "base_link";
+    response->cloud.header.stamp = this->now();
+    response->health_response = OK;
+    RCLCPP_INFO(this->get_logger(),
+                "Publishing point cloud without vertical "
+                "plane with %zu points",
+                vertical_plane_removed->points.size());
+    this->cloud_pub_->publish(response->cloud);
+    RCLCPP_INFO(this->get_logger(),
+                "Published point cloud without vertical "
+                "plane with %zu points",
+                vertical_plane_removed->points.size());
+    return;
   }
 
   uint32_t
@@ -553,12 +776,13 @@ public:
       //                               rclcpp::Duration(5.0));
 
       // tf_listener->lookupTransform("base_link", msg->header.frame_id,
-      //                              msg->header.stamp, rclcpp::Duration(5.0));
+      //                              msg->header.stamp,
+      //                              rclcpp::Duration(5.0));
       // bool can_transform = this->tf_buffer->canTransform(
       //     "base_link", msg->header.frame_id, tf2::TimePointZero);
       // if (!can_transform) {
-      //   RCLCPP_ERROR(this->get_logger(), "Could not transform point cloud");
-      //   return COULD_NOT_CONVERT_POINT_CLOUD;
+      //   RCLCPP_ERROR(this->get_logger(), "Could not transform point
+      //   cloud"); return COULD_NOT_CONVERT_POINT_CLOUD;
       // }
 
       pcl_ros::transformPointCloud("base_link", *msg, msg2, *this->tf_buffer);
@@ -630,7 +854,7 @@ public:
     }
     pcl::PassThrough<pcl::PointXYZ> pass;
     pass.setInputCloud(cloud);
-    pass.setFilterFieldName("z");
+    pass.setFilterFieldName(filter_field_name);
     pass.setFilterLimits(min_val, max_val);
     pass.filter(*cloud_out);
 
@@ -644,12 +868,14 @@ public:
   }
 
   /**
-   * \brief Extracts the plane from a point cloud. If extract_negative is true,
+   * \brief Extracts the plane from a point cloud. If extract_negative is
+   true,
    * the plane is removed from the point cloud
 
    * @param cloud: IN Point cloud to extract the plane from
    * @param cloud_out: OUT Point cloud to store the extracted plane
-   * @param extract_negative: If true, the plane is removed from the point cloud
+   * @param extract_negative: If true, the plane is removed from the point
+   cloud
    */
 
   uint32_t extractPlane(_IN_ const pcl::PointCloud<pcl::PointXYZ>::Ptr cloud,
@@ -730,7 +956,7 @@ public:
 
     std::vector<pcl::PointIndices> cluster_indices;
     pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;
-    ec.setClusterTolerance(0.015);
+    ec.setClusterTolerance(0.025);
     ec.setMinClusterSize(10);   // Minimum number of points in a cluster
     ec.setMaxClusterSize(6000); // Maximum number of points in a cluster
     ec.setSearchMethod(tree);

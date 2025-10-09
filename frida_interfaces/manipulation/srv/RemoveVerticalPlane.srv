@@ -1,0 +1,4 @@
+geometry_msgs/PointStamped close_point
+---
+sensor_msgs/PointCloud2 cloud
+int32 health_response
