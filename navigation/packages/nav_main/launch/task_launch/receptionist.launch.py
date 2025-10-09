@@ -10,16 +10,16 @@ from launch.conditions import UnlessCondition, IfCondition
 
 def generate_launch_description():
     pkg_file_route = get_package_share_directory('nav_main')
-    rtab_params_file = os.path.join(pkg_file_route,'config', 'rtabmap', 'rtabmap_follow_config.yaml')
-    nav2_params_file = os.path.join(pkg_file_route,'config', 'nav2_following.yaml')
+    rtab_params_file = os.path.join(pkg_file_route,'config', 'rtabmap', 'rtabmap_default_config.yaml')
+    nav2_params_file = os.path.join(pkg_file_route,'config', 'nav2_standard.yaml')
 
-    rtabmap_map_name = LaunchConfiguration('map_name', default='rtabmap_follow.db')
+    rtabmap_map_name = LaunchConfiguration('map_name', default='rtabmap_map.db')
     rtab_params = LaunchConfiguration('rtab_config_file', default=rtab_params_file)
     nav2_params = LaunchConfiguration('nav2_config_file', default=nav2_params_file)
-    localization = LaunchConfiguration('localization', default='false')
+    localization = LaunchConfiguration('localization', default='true')
     nav2_activate = LaunchConfiguration('nav2', default='true')
     use_sim = LaunchConfiguration('use_sim', default='false')
-
+    docking = LaunchConfiguration('use_docking', default='true')
 
     nav_basics = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -42,21 +42,11 @@ def generate_launch_description():
                     "rtabnav2.launch.py",
                 ]
             )),
-        launch_arguments={'localization': localization, 'rtab_config_file': rtab_params, 'nav2_config_file': nav2_params, 'nav2': nav2_activate, 'map_name': rtabmap_map_name}.items(),
+        launch_arguments={'localization': localization, 'rtab_config_file': rtab_params, 'nav2_config_file': nav2_params, 'nav2': nav2_activate, 'map_name': rtabmap_map_name, 'use_docking': docking}.items(),
         )
-    transformer = Node(
-                package='nav_main',
-                executable='transform_target.py',
-                output='screen')
-    map_erode = Node(
-                package='nav_main',
-                executable='map_cleaner.py',
-                output='screen')
     
     return LaunchDescription([
         nav_basics,
         rtabmapnav,
-        transformer,
-        map_erode
         
     ])

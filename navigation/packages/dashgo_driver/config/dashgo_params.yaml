@@ -1,6 +1,6 @@
 DashgoDriver:
   ros__parameters:    
-    port: /dev/ttyUSB1
+    port: /dev/ttyUSB0
     baud: 115200
     timeout: 0.1
     rate: 20

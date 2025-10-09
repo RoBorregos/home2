@@ -7,16 +7,18 @@ from launch.conditions import UnlessCondition, IfCondition
 from ament_index_python.packages import get_package_share_directory
 import os
 
+
 def generate_launch_description():
     pkg_file_route = get_package_share_directory('nav_main')
-    rtab_params_file = os.path.join(pkg_file_route,'config', 'rtabmap', 'rtabmap_default_config.yaml')
+    rtab_params_file = os.path.join(pkg_file_route,'config', 'rtabmap', 'rtabmap_follow_config.yaml')
     nav2_params_file = os.path.join(pkg_file_route,'config', 'nav2_following.yaml')
 
     rtab_params_ = LaunchConfiguration('rtab_config_file', default=rtab_params_file)
     nav2_params_ = LaunchConfiguration('nav2_config_file', default=nav2_params_file)
-    localization = LaunchConfiguration('localization', default='true')
+    localization = LaunchConfiguration('localization', default='false')
     nav2_activate = LaunchConfiguration('nav2', default='true')
-    rtabmap_map_name = LaunchConfiguration('map_name', default='rtabmap_mapping.db')
+    docking = LaunchConfiguration('use_docking', default='false')
+    rtabmap_map_name = LaunchConfiguration('map_name', default='rtabmap_map.db')
     
 
     nav2_params = ParameterFile(nav2_params_, allow_substs=True)
@@ -33,6 +35,7 @@ def generate_launch_description():
           ('rgb/image', '/zed/zed_node/rgb/image_rect_color'),
           ('rgb/camera_info', '/zed/zed_node/rgb/camera_info'),
           ('depth/image', '/zed/zed_node/depth/depth_registered')]
+
 
 
     container = ComposableNodeContainer(
@@ -52,7 +55,8 @@ def generate_launch_description():
                 name='rtabmap',
                 parameters=[rtab_params, 
                 {'Mem/IncrementalMemory':'False',
-               'Mem/InitWMWithAllNodes':'True'}]
+               'Mem/InitWMWithAllNodes':'True'}],
+                
             ),
             ComposableNode(
                 condition=UnlessCondition(localization),
@@ -61,6 +65,7 @@ def generate_launch_description():
                 name='rtabmap',
                 parameters=[rtab_params, 
                 {'delete_db_on_start': True}]
+                # remappings=[('/map', 'map_input'),]
             ),
             ComposableNode(
                 package='rtabmap_sync',
@@ -76,13 +81,15 @@ def generate_launch_description():
                 package='nav2_controller',
                 plugin='nav2_controller::ControllerServer',
                 name='controller_server',
-                parameters=[nav2_params],),
+                parameters=[nav2_params],
+               ),
             ComposableNode(
                 condition=IfCondition(nav2_activate),
                 package='nav2_smoother',
                 plugin='nav2_smoother::SmootherServer',
                 name='smoother_server',
                 parameters=[nav2_params],
+              
                 ),
             ComposableNode(
                 condition=IfCondition(nav2_activate),
@@ -90,6 +97,7 @@ def generate_launch_description():
                 plugin='nav2_planner::PlannerServer',
                 name='planner_server',
                 parameters=[nav2_params],
+              
                 ),
             ComposableNode(
                 condition=IfCondition(nav2_activate),
@@ -97,6 +105,7 @@ def generate_launch_description():
                 plugin='behavior_server::BehaviorServer',
                 name='behavior_server',
                 parameters=[nav2_params],
+              
                 ),
             ComposableNode(
                 condition=IfCondition(nav2_activate),
@@ -104,6 +113,7 @@ def generate_launch_description():
                 plugin='nav2_bt_navigator::BtNavigator',
                 name='bt_navigator',
                 parameters=[nav2_params],
+           
                 ),
             ComposableNode(
                 condition=IfCondition(nav2_activate),
@@ -111,7 +121,16 @@ def generate_launch_description():
                 plugin='nav2_velocity_smoother::VelocitySmoother',
                 name='velocity_smoother',
                 parameters=[nav2_params],
+            
                 ),
+            ComposableNode(
+                package='opennav_docking',
+                plugin='opennav_docking::DockingServer',
+                name='docking_server',
+                parameters=[nav2_params],
+                condition=IfCondition(docking),
+                ),
+
             ComposableNode(
             condition=IfCondition(nav2_activate),
             package='nav2_lifecycle_manager',
@@ -127,6 +146,7 @@ def generate_launch_description():
                     'behavior_server',
                     'bt_navigator',
                     'velocity_smoother',
+                    # 'docking_server',
                 ]
             }],
             ),

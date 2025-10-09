@@ -17,7 +17,7 @@ def generate_launch_description():
         Node(
             package='nav_main',
             executable='ignore_laser',
-            parameters = [{'ignore_array': '-176 ,-166, -129,-119, -85, -67, -56, -46, -10,5, 25,60, 131,149'}],
+            parameters = [{'ignore_array': '4, 14, 51, 61, 95, 113, 124, 134, 165, 180, -179, -175, -155, -120, -49, -31'}],
             condition=UnlessCondition(use_sim)
         ),
         Node(
@@ -31,10 +31,10 @@ def generate_launch_description():
             executable='sllidar_node',
             name='sllidar_node',
             parameters=[{'channel_type':'serial',
-                         'serial_port': '/dev/ttyUSB0', 
+                         'serial_port': '/dev/ttyUSB1', 
                          'serial_baudrate': 115200, 
                          'frame_id': 'laser',
-                         'inverted': True, 
+                         'inverted': True,
                          'angle_compensate': True}],
             output='screen',
             remappings=[
