@@ -5,8 +5,6 @@ Node to handle GPSR commands.
 """
 
 import cv2
-from ultralytics import YOLO
-import pathlib
 
 import rclpy
 from rclpy.node import Node
@@ -41,20 +39,15 @@ from frida_constants.vision_constants import (
 
 from frida_constants.vision_enums import Poses, Gestures, DetectBy
 
+from frida_interfaces.srv import YoloDetect  
+from frida_interfaces.msg import Detection   
+
 from pose_detection import PoseDetection
 
 package_share_dir = get_package_share_directory("vision_general")
 
 constants = get_package_share_directory("frida_constants")
 file_path = os.path.join(constants, "map_areas/areas.json")
-
-YOLO_LOCATION = str(pathlib.Path(__file__).parent) + "/Utils/yolov8n.pt"
-PERCENTAGE = 0.3
-MAX_DEGREE = 30
-AREA_PERCENTAGE_THRESHOLD = 0.2
-CONF_THRESHOLD = 0.5
-TIMEOUT = 5.0
-TIMEOUT = 5.0
 
 
 class GPSRCommands(Node):
@@ -112,11 +105,16 @@ class GPSRCommands(Node):
 
         self.image_publisher = self.create_publisher(Image, IMAGE_TOPIC, 10)
 
+        self.yolo_client = self.create_client(YoloDetect, "yolo_detect", callback_group=self.callback_group)
+
+        while not self.yolo_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info("YOLO service not available, waiting...")
+
         self.image = None
-        self.yolo_model = YOLO(YOLO_LOCATION)
         self.pose_detection = PoseDetection()
         self.qr_detector = cv2.QRCodeDetector()
         self.output_image = []
+        self.people = []
 
         self.get_logger().info("GPSRCommands Ready.")
         # self.create_timer(0.1, self.publish_image)
@@ -137,7 +135,7 @@ class GPSRCommands(Node):
                 return
 
             self.output_image = self.image.copy()
-            self.get_detections(self.image, 0)  # default: 0  - person
+            self.get_detections(0)  # default: 0  - person
 
         except Exception as e:
             print(f"Error: {e}")
@@ -172,7 +170,7 @@ class GPSRCommands(Node):
             response.count = 0
             return response
 
-        self.get_detections(frame, 0)
+        self.get_detections(0)
 
         if len(self.people) == 0:
             self.get_logger().warn("No people detected in the image.")
@@ -229,7 +227,7 @@ class GPSRCommands(Node):
             return response
 
         # Detect people using YOLO
-        self.get_detections(frame, 0)
+        self.get_detections(0)
 
         gesture = self.count_gestures(frame)
 
@@ -284,7 +282,7 @@ class GPSRCommands(Node):
         self.output_image = frame.copy()
 
         # Detect people using YOLO
-        self.get_detections(frame, 0)
+        self.get_detections(0)
 
         # Count people detected
         people_count = len(self.people)
@@ -309,7 +307,7 @@ class GPSRCommands(Node):
         clothing = request.clothing
         color = request.color
 
-        self.get_detections(frame, 0)
+        self.get_detections(0)
 
         if len(self.people) == 0:
             self.get_logger().warn("No people detected in the image.")
@@ -355,7 +353,7 @@ class GPSRCommands(Node):
         self.output_image = frame.copy()
 
         # Detect people using YOLO
-        self.get_detections(frame, 0)
+        self.get_detections(0)
 
         if len(self.people) == 0:
             self.get_logger().warn("No people detected in the image.")
@@ -455,37 +453,44 @@ class GPSRCommands(Node):
 
         return Gestures.UNKNOWN.value
 
-    def get_detections(self, frame, comp_class) -> None:
-        """Obtain YOLO detections for people."""
-        results = self.yolo_model(frame, verbose=False, classes=[comp_class])
+    def get_detections(self, comp_class=None, timeout=5.0):
+        """
+        Obtain YOLO detections via the YOLO service.
+        comp_class: int or None (None = detect all classes)
+        """
 
+        # Create request
+        req = YoloDetect.Request()
+        req.classes = [comp_class] if comp_class is not None else []
+
+        # Call YOLO service
+        future = self.yolo_client.call_async(req)
+
+        # Wait for the future while spinning the node
+        future = self.wait_for_future(future, 15)
+        result = future.result()
+        
+        if result is None or not result.success:
+            self.get_logger().error("YOLO detection failed")
+            return []
+
+        # Parse detections
+        detections = []
+        for det in result.detections:
+            x1, y1, x2, y2 = det.x1, det.y1, det.x2, det.y2
+            conf, cls_id = det.confidence, det.class_id
+            detections.append({
+                "bbox": (x1, y1, x2, y2),
+                "confidence": conf,
+                "class_id": cls_id,
+                "area": (x2 - x1) * (y2 - y1),
+            })
+
+        # Store people if comp_class == 0
         if comp_class == 0:
-            self.people = []
-            for out in results:
-                for box in out.boxes:
-                    x1, y1, x2, y2 = [round(x) for x in box.xyxy[0].tolist()]
-                    confidence = box.conf.item()
+            self.people = [d for d in detections if d["class_id"] == 0]
 
-                    if confidence > CONF_THRESHOLD:
-                        self.people.append(
-                            {
-                                "bbox": (x1, y1, x2, y2),
-                                "confidence": confidence,
-                                "area": (x2 - x1) * (y2 - y1),
-                            }
-                        )
-
-                    cv2.rectangle(self.output_image, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                    cv2.putText(
-                        self.output_image,
-                        "Person",
-                        (x1, y1),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        1,
-                        (0, 255, 0),
-                        2,
-                        cv2.LINE_AA,
-                    )
+        return detections
 
     def wait_for_future(self, future, timeout=5):
         start_time = time.time()
