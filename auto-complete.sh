@@ -4,7 +4,7 @@ _run_sh_autocomplete() {
     local cur prev words cword
     _init_completion || return
 
-    local areas="manipulation navigation hri vision integration zed"
+    local areas="manipulation navigation hri vision integration"
     local tasks="--carry --receptionist --storing-groceries --gpsr --moondream --egpsr --clean-table --hand --restaurant"
     local flags="--rebuild --help -h -d"
     
