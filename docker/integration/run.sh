@@ -2,10 +2,13 @@
 ARGS=("$@")  # Save all arguments in an array
 TASK=${ARGS[0]}
 detached=""
+BUILD=""
 # check if one of the arguments is --detached
 for arg in "${ARGS[@]}"; do
   if [ "$arg" == "-d" ]; then
     detached="-d"
+  elif [ "$arg" == "--build" ]; then
+    BUILD="true"
   fi
 done
 
@@ -145,19 +148,26 @@ SOURCE_ROS="source /opt/ros/humble/setup.bash"
 SOURCE_INTERFACES="source frida_interfaces_cache/install/local_setup.bash"
 COLCON="colcon build --packages-ignore frida_interfaces frida_constants --packages-up-to task_manager"
 SOURCE="source install/setup.bash"
-SETUP="$GENERATE_BAML_CLIENT && $SOURCE_ROS && $SOURCE_INTERFACES && $COLCON && $SOURCE"
+if [ "$BUILD" == "true" ]; then
+    SETUP="$GENERATE_BAML_CLIENT && $SOURCE_ROS && $SOURCE_INTERFACES && $COLCON && $SOURCE"
+else
+    SETUP="$SOURCE_ROS && $SOURCE_INTERFACES && $SOURCE"
+fi
 RUN=""
 MOONDREAM=false
-
+RUN_TASK="ros2 run task_manager"
 case $TASK in
     "--receptionist")
-        RUN="ros2 run task_manager receptionist_task_manager.py"
+        RUN="$RUN_TASK receptionist_task_manager.py"
         ;;
     "--help-me-carry")
-        RUN="ros2 run task_manager help_me_carry.py"
+        RUN="$RUN_TASK help_me_carry.py"
         ;;
     "--gpsr")
-        RUN="ros2 run task_manager gpsr_task_manager.py"
+        RUN="$RUN_TASK gpsr_task_manager.py"
+        ;;
+    "--test-hri")
+        RUN="$RUN_TASK test_hri_manager.py"
         ;;
     *)
         RUN="bash"
