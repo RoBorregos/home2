@@ -166,18 +166,17 @@ class MotionPlanningServer(Node):
         #     callback_group=self.callback_group,
         # )
         # -----------------------------------------------------------------------------------------------------------------------------------
-
         # is MoveItPlanner could not spawn services, send None
         # TODO: I changed my mind, set_mode goes in this script, not on the MoveItPlanner
         #
-        # if self.planner.mode_enabled:
-        #     self.xarm_services = XArmServices(
-        #         self, self.planner.mode_client, self.planner.state_client
-        #     )
-        #     self.real_xarm = True
-        # else:
-        #     self.xarm_services = XArmServices(self, None, None)
-        #     self.real_xarm = False
+        if self.planner.mode_enabled:
+            self.xarm_services = XArmServices(
+                self, self.planner.mode_client, self.planner.state_client
+            )
+            self.real_xarm = True
+        else:
+            self.xarm_services = XArmServices(self, None, None)
+            self.real_xarm = False
 
         # self.xarm_joint_velocity_service = self.create_service(
         #     MoveVelocity,

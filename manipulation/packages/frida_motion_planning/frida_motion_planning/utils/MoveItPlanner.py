@@ -56,7 +56,9 @@ class MoveItPlanner(Planner):
         ros2 service call /controller_manager/switch_controller controller_manager_msgs/srv/SwitchController {"activate_controllers : [xarm6_traj_controller]}"
         
         """
-
+        self.mode_client = self.node.create_client(SetInt16, XARM_SETMODE_SERVICE)
+        self.state_client = self.node.create_client(SetInt16, XARM_SETSTATE_SERVICE)
+        self.switch_controller_client = None
         self.mode_enabled = True
 
         self.joint_states = None
