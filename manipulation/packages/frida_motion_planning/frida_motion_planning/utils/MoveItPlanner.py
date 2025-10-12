@@ -3,7 +3,6 @@ from concurrent.futures import Future
 from typing import List, Union
 
 import rclpy
-from controller_manager_msgs.srv import SwitchController
 from frida_motion_planning.utils.Planner import Planner
 from frida_pymoveit2.robots import xarm6
 from geometry_msgs.msg import PoseStamped
@@ -14,7 +13,6 @@ from sensor_msgs.msg import JointState
 from xarm_msgs.srv import SetInt16
 
 from frida_constants.manipulation_constants import (
-    MOVEIT_MODE,
     XARM_SETMODE_SERVICE,
     XARM_SETSTATE_SERVICE,
 )
@@ -81,7 +79,7 @@ class MoveItPlanner(Planner):
 
     def set_planning_attempts(self, planning_attempts: int) -> None:
         self.moveit2.num_planning_attempts = planning_attempts
-        
+
     def plan_joint_goal(self, joint_positions: List[float], joint_names: List[str]):
         self.node.get_logger().info("Generating a plan for a joint goal...")
 
@@ -94,10 +92,12 @@ class MoveItPlanner(Planner):
             # Returns a tuple: (success, trajectory_plan)
             return True, trajectory_plan
         else:
-            self.node.get_logger().warn("MoveIt failed to generate a plan for the joint goal.")
+            self.node.get_logger().warn(
+                "MoveIt failed to generate a plan for the joint goal."
+            )
             # Returns a tuple consistent also in case of failure
             return False, None
-        
+
     def execute_plan(self, trajectory, wait: bool = True):
         """
         Takes a pre-planned trajectory and executes it.
@@ -138,13 +138,15 @@ class MoveItPlanner(Planner):
             if execution_success:
                 self.node.get_logger().info("Execution completed successfully.")
             else:
-                self.node.get_logger().error(f"Execution failed with status code: {future.result().status}")
-            
+                self.node.get_logger().error(
+                    f"Execution failed with status code: {future.result().status}"
+                )
+
             return execution_success
 
         # If not requested to wait, simply return True to indicate that execution started.
         return True
-        
+
     # Past implementation, now split into plan and execute (using joint trajectory)
     # def plan_joint_goal(
     #     self,
@@ -180,15 +182,15 @@ class MoveItPlanner(Planner):
     #             pass
     #         return future.result().status == 4
     #     return True
-    
+
     def plan_pose_goal(
         self,
         pose: PoseStamped,
         target_link: str = xarm6.end_effector_name(),
         cartesian: bool = False,
         tolerance_position: float = 0.015,
-        tolerance_orientation: float = 0.02,):
-        
+        tolerance_orientation: float = 0.02,
+    ):
         self.node.get_logger().info("Generating a plan for a pose goal...")
 
         # Calls the internal function that uses pymoveit2 to get the plan
@@ -206,7 +208,9 @@ class MoveItPlanner(Planner):
             # Return a tuple: (success, trajectory_plan)
             return True, trajectory_plan
         else:
-            self.node.get_logger().warn("MoveIt failed to generate a plan for the pose goal.")
+            self.node.get_logger().warn(
+                "MoveIt failed to generate a plan for the pose goal."
+            )
             # Return a consistent tuple also in case of failure
             return False, None
 

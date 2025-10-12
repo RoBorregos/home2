@@ -19,12 +19,13 @@ from frida_interfaces.srv import (
     GetCollisionObjects,
     PlayTrayectory,
 )
-from frida_motion_planning.utils.ros_utils import wait_for_future
+
+# from frida_motion_planning.utils.ros_utils import wait_for_future
 from frida_constants.manipulation_constants import (
     ALWAYS_SET_MODE,
-    MOVEIT_MODE,
+    # MOVEIT_MODE,
     JOINT_VELOCITY_MODE,
-    SET_JOINT_VELOCITY_SERVICE,
+    # SET_JOINT_VELOCITY_SERVICE,
     PICK_PLANNER,
     MOVE_TO_POSE_ACTION_SERVER,
     DEBUG_POSE_GOAL_TOPIC,
@@ -36,16 +37,16 @@ from frida_constants.manipulation_constants import (
     TOGGLE_SERVO_SERVICE,
     GRIPPER_SET_STATE_SERVICE,
     MIN_CONFIGURATION_DISTANCE_TRESHOLD,
-    XARM_SETMODE_MOVEIT_SERVICE,
 )
 
-# Link of documentation of xarm msgs https://wiki.ros.org/xarm 
+# Link of documentation of xarm msgs https://wiki.ros.org/xarm
 # it provides user with the ros service wrapper of the functions in xArm SDK  -----------------------------------------------------------------
 # from xarm_msgs.srv import MoveVelocity, TrajPlay
 # ------------------------------------------------------------------------------------------------------------------------------
 from frida_interfaces.msg import CollisionObject
 from frida_motion_planning.utils.MoveItPlanner import MoveItPlanner
 from frida_motion_planning.utils.MoveItServo import MoveItServo
+
 # Here we import the xarm services to control the xarm directly -----------------------------------------------------------------
 # But we will need it to open and close the gripper
 from frida_motion_planning.utils.XArmServices import XArmServices
@@ -64,7 +65,9 @@ class MotionPlanningServer(Node):
 
         # qos_profile = QoSProfile(depth=10)
 
-        qos_profile = QoSProfile(history=2, depth=1, reliability=rclpy.qos.QoSReliabilityPolicy.BEST_EFFORT)
+        qos_profile = QoSProfile(
+            history=2, depth=1, reliability=rclpy.qos.QoSReliabilityPolicy.BEST_EFFORT
+        )
 
         # qos_profile = QoSProfile(depth=10, durability=DurabilityPolicy.TRANSIENT_LOCAL)
 
@@ -193,9 +196,7 @@ class MotionPlanningServer(Node):
         # )
 
         self.traj_pub = self.create_publisher(
-            JointTrajectory,
-            "/moveit/joint_trajectory",
-            qos_profile
+            JointTrajectory, "/moveit/joint_trajectory", qos_profile
         )
 
         self.joint_states_topic = "/joint_states"
@@ -242,7 +243,7 @@ class MotionPlanningServer(Node):
         result = MoveToPose.Result()
         self.set_planning_settings(goal_handle)
         try:
-            was_successful= self.move_to_pose(goal_handle, feedback)
+            was_successful = self.move_to_pose(goal_handle, feedback)
             self.get_logger().info(
                 "Move to pose finished with result: " + str(result.success)
             )
@@ -254,7 +255,7 @@ class MotionPlanningServer(Node):
                 self.get_logger().info("Move to pose failed")
                 goal_handle.abort()
                 result.success = False
-            
+
         except Exception as e:
             self.get_logger().error(f"Move to pose failed: {str(e)}")
             goal_handle.abort()
@@ -271,13 +272,19 @@ class MotionPlanningServer(Node):
         """
         Reads a trajectory from a file, converts it to JointTrajectory, and executes it.
         """
-        self.get_logger().info(f"Playing trajectory from file: {request.trayectory_filename}")
+        self.get_logger().info(
+            f"Playing trajectory from file: {request.trayectory_filename}"
+        )
         try:
             # Step 1: Parse the file to get a JointTrajectory message
-            trajectory_msg = self.parse_xarm_trajectory_file(request.trayectory_filename)
+            trajectory_msg = self.parse_xarm_trajectory_file(
+                request.trayectory_filename
+            )
 
             if trajectory_msg:
-                self.get_logger().info("Trajectory file parsed successfully. Executing plan...")
+                self.get_logger().info(
+                    "Trajectory file parsed successfully. Executing plan..."
+                )
                 # Step 2: Use the planner's execution function
                 response.success = self.planner.execute_plan(trajectory_msg)
             else:
@@ -291,9 +298,11 @@ class MotionPlanningServer(Node):
     def parse_xarm_trajectory_file(self, filename: str) -> JointTrajectory:
         # Here you should implement the logic to read your .traj file and
         # build a JointTrajectory message with its points.
-        self.get_logger().warn("The function 'parse_xarm_trajectory_file' is not yet implemented.")
+        self.get_logger().warn(
+            "The function 'parse_xarm_trajectory_file' is not yet implemented."
+        )
         return None
-    
+
     def move_joints_execute_callback(self, goal_handle):
         """Manages the lifecycle of the MoveJoints action."""
         self.get_logger().info("Executing joint goal action...")
@@ -311,12 +320,14 @@ class MotionPlanningServer(Node):
             else:
                 goal_handle.abort()
                 result.success = False
-                
+
         except Exception as e:
-            self.get_logger().error(f"An unexpected error occurred in MoveJoints: {str(e)}")
+            self.get_logger().error(
+                f"An unexpected error occurred in MoveJoints: {str(e)}"
+            )
             goal_handle.abort()
             result.success = False
-            
+
         finally:
             self.reset_planning_settings(goal_handle)
 
@@ -337,10 +348,10 @@ class MotionPlanningServer(Node):
             else 0.05
         )
         was_plan_successful, trajectory_plan = self.planner.plan_pose_goal(
-        pose=pose,
-        target_link=target_link,
-        tolerance_position=tolerance_position,
-        tolerance_orientation=tolerance_orientation,
+            pose=pose,
+            target_link=target_link,
+            tolerance_position=tolerance_position,
+            tolerance_orientation=tolerance_orientation,
         )
 
         if was_plan_successful:
@@ -402,7 +413,7 @@ class MotionPlanningServer(Node):
         else:
             self.get_logger().error("Cannot execute because planning failed.")
             return False
-        
+
     def execute_trajectory(self, trajectory):
         """Publish the trajectory to the controller topic."""
         self.get_logger().info("Publishing trajectory to controller...")
@@ -680,7 +691,7 @@ class MotionPlanningServer(Node):
     def joint_states_callback(self, msg: JointState):
         # TODO: make use of this information
         # self.current_joint_positions = msg.position
-        pass 
+        pass
 
 
 def main(args=None):
