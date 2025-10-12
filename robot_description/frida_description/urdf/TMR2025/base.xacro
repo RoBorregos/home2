@@ -23,12 +23,6 @@
         <mesh filename="${mesh_path}base_link.STL" />
       </geometry>
     </collision>
-    <collision>
-      <origin xyz=".09 -0.12 .49" rpy="0 0 0"/>
-      <geometry>
-        <sphere radius="0.063"/>
-      </geometry>
-    </collision>
   </link>
 
   <link name="base_footprint" />
