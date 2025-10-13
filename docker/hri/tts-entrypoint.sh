@@ -1,1 +1,0 @@
-python3 kokoro-tts.py --port 50050

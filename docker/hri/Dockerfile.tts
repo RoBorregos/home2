@@ -17,5 +17,3 @@ RUN sudo apt update && \
     portaudio19-dev
 
 RUN apt-get -qq -y install espeak-ng > /dev/null 2>&1
-
-COPY docker/hri/tts-entrypoint.sh /
