@@ -16,7 +16,7 @@ class JointRecorder(Node):
         frequency_param = self.declare_parameter("frequency", frequency)
         self.frequency = frequency_param.value
 
-        self.frequency = frequency
+        self.frequency = frequency  # Duplicate variable assignment
         self.joint_names = joint_names
         self.joint_values = {}
         self.lock = Lock()

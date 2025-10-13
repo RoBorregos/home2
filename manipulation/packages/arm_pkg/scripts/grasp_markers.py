@@ -108,7 +108,7 @@ class GraspVisualizer(Node):
 
     def publish_pcl(self):
         """Publish PointCloud2 in /grasp_pcl topic"""
-        if self.current_cloud is not None:
+        if self.current_cloud is not None:  # This is not initialized in topic mode
             self.get_logger().info(
                 f"Publishing PointCloud2 with frame_id: {self.current_cloud.header.frame_id}"
             )

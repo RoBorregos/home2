@@ -72,10 +72,6 @@ class ServoDS4(Node):
             ),
         )
         self.get_logger().info("Servo DS4 node started")
-        # self.start_service = self.create_client(ToggleServo, "/manipulation/toggle_servo")
-        # self.start_service.wait_for_service()
-        # future = self.start_service.call_async(ToggleServo.Request(enable=True))
-        # rclpy.spin_until_future_complete(self, future)
         self.busy_planner = False
         self.busy_gripper = False
         self.speak_busy = False

@@ -115,7 +115,7 @@ def main(args=None):
         executor.shutdown()
         look_at_node.destroy_node()
         rclpy.shutdown()
-        look_at_node.get_logger().info("Node destroyed")
+        look_at_node.get_logger().info("Node destroyed")  # logs before shutdown??
         look_at_node.get_logger().info("Node shutdown")
 
 
