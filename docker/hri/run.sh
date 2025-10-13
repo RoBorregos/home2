@@ -102,7 +102,7 @@ bash setup.bash
 [ "$download_model" == "true" ] && bash ../../hri/packages/nlp/assets/download-model.sh
 
 # Create dirs with current user to avoid permission problems
-mkdir -p install build log ../../hri/packages/speech/assets/downloads/offline_voice/model
+mkdir -p install build log ../../hri/packages/speech/assets/downloads/offline_voice/model/
 
 
 # Check if display setup is needed
