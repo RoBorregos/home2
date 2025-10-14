@@ -1,5 +1,6 @@
 var NAVTREEINDEX24 =
 {
+"namespaceformat.html#a2a29f347a155ccc16cb32c49b561e449":[20,0,47,0],
 "namespaceformat.html#ad68caf3b2ac11c6981af7cda72d732bf":[20,0,47,2],
 "namespaceformat.html#af0893b47c7fbeda9b19ea7006e54f925":[20,0,47,1],
 "namespacefrida__constants.html":[20,0,48],
@@ -248,6 +249,5 @@ var NAVTREEINDEX24 =
 "namespacelocal__camera.html":[20,0,69],
 "namespacelocal__camera.html#a370b7792a1778760c0b396393c1dc169":[20,0,69,3],
 "namespacelocal__camera.html#afff3f00fd586a1308f7b1090b40ec44e":[20,0,69,2],
-"namespacelook__at__example.html":[20,0,70],
-"namespacelook__at__example.html#adc1b4dbd73f98a092d682f946ed57ef3":[20,0,70,1]
+"namespacelook__at__example.html":[20,0,70]
 };

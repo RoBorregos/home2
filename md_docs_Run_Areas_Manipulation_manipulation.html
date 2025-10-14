@@ -124,7 +124,10 @@ Pick and Place</h3>
 <p>Most manipulation functions are enclosed within a manipulation server that handles tasks involving moving and interacting with objects. To run the manipulation server, use the following command: </p><div class="fragment"><div class="line">ros2 launch pick_and_place pick_and_place.launch.py</div>
 </div><!-- fragment --><h3><a class="anchor" id="autotoc_md47"></a>
 Examples</h3>
-<p>Examples to move the robot, edit collision objects, plan trajectories and using task-specific functions are available in most packages. </p>
+<p>Examples to move the robot, edit collision objects, plan trajectories and using task-specific functions are available in most packages.</p>
+<h2><a class="anchor" id="autotoc_md48"></a>
+Additional Information</h2>
+<p>It's important to note that to publish all the necessary services of the xarm 6 robot, it is required to set in the <code>xarm_params.yaml</code> file the parameter <code>debug</code> to <code>true</code>. This ensures that all services are available for the manipulation tasks. </p>
 </div></div><!-- contents -->
 </div><!-- PageDoc -->
 </div><!-- doc-content -->
