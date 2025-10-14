@@ -83,6 +83,7 @@ $ source install/setup.bash
 | Camila Tite        | [@CamilaTite26](https://github.com/CamilaTite26)     | HRI                             |
 | Daniela Herrera    | [@DanHeGa](https://github.com/DanHeGa)               | Vision                          |
 | Gilberto Malagamba | [@GilMM27](https://github.com/GilMM27)               | HRI, Integration                |
+| José Domínguez     | [@JLDominguezM](https://github.com/JLDominguezM)     | Manipulation, Integration       |
 
 # Legacy
 
