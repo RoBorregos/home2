@@ -100,7 +100,6 @@ class DashgoDriver(Node):
         self.create_subscription(Twist,'cmd_vel',self.cmdVelCallback,10)
         self.imuPub = self.create_publisher(Imu, 'imu', 5)
         self.imuAnglePub = self.create_publisher(Float32, 'imu_angle', 5)
-        #self.odomPub = self.create_publisher(Odometry, 'odom', 5)
         self.odomPub = self.create_publisher(Odometry, 'dashgo_odom', 5)
 
         self.controller = Stm32(self.port, self.baud, self.timeout)
@@ -119,8 +118,6 @@ class DashgoDriver(Node):
         self.timer = self.create_timer(timer_period, self.base_controller)
 
     def base_controller(self):
-        # print(f"voltage = {self.controller.get_voltage()}")
-
         self.now = self.get_clock().now()
         try:
             stat_, left_enc,right_enc = self.controller.get_encoder_counts()
@@ -137,7 +134,6 @@ class DashgoDriver(Node):
                 if yaw_vel>=32768:
                     yaw_vel = yaw_vel-65535
                 yaw_vel = yaw_vel/100.0
-                #rospy.loginfo("yaw: " + str(yaw/100)+" yaw_vel: " + str(yaw_vel))     
                 imu_data = Imu()  
                 imu_data.header.stamp = self.get_clock().now().to_msg()
                 imu_data.header.frame_id = self.imu_frame_id 
@@ -192,8 +188,6 @@ class DashgoDriver(Node):
                 self.r_wheel_mult = self.r_wheel_mult - 1
             else:
                     self.r_wheel_mult = 0
-            #dright = (right_enc - self.enc_right) / self.ticks_per_meter
-            #dleft = (left_enc - self.enc_left) / self.ticks_per_meter
             dleft = 1.0 * (left_enc + self.l_wheel_mult * (self.encoder_max - self.encoder_min)-self.enc_left) / self.ticks_per_meter 
             dright = 1.0 * (right_enc + self.r_wheel_mult * (self.encoder_max - self.encoder_min)-self.enc_right) / self.ticks_per_meter 
 
@@ -250,9 +244,6 @@ class DashgoDriver(Node):
         odom.twist.twist.linear.x = vxy
         odom.twist.twist.linear.y = 0.0
         odom.twist.twist.angular.z = vth
-
-        #odom.pose.covariance = ODOM_POSE_COVARIANCE
-        #odom.twist.covariance = ODOM_TWIST_COVARIANCE
         odom.pose.covariance = ODOM_POSE_COVARIANCE2
         odom.twist.covariance = ODOM_TWIST_COVARIANCE2
 
@@ -284,7 +275,6 @@ class DashgoDriver(Node):
         # Set motor speeds in encoder ticks per PID loop
         #if not self.stopped:
         if ((not self.stopped)):
-            # print(f"vel l {self.v_left} and vel r {self.v_right}")
             self.controller.drive(int(self.v_left), int(self.v_right))
 
 
