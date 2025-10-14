@@ -253,7 +253,7 @@ class PourMotionServer(Node):
     def transform_pose_to_gripper_center(self, pose):
         offset_distance = -0.15  # Desired distance in meters along the local z-axis
 
-        offset_distance
+        offset_distance  # Why this??
 
         # Compute the offset along the local z-axis
         quat = [

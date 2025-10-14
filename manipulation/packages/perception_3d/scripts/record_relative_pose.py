@@ -4,13 +4,7 @@ from rclpy.node import Node
 import tf2_ros
 import yaml
 from geometry_msgs.msg import PoseStamped
-
-# , Pose
-
-# import tf2_py
 from tf_transformations import euler_from_quaternion
-# , quaternion_from_euler
-# from builtin_interfaces.msg import Time
 
 
 class DockingPoseRecorder(Node):
@@ -84,13 +78,11 @@ class DockingPoseRecorder(Node):
             self.get_logger().warn(f"TF lookup or processing failed: {e}")
 
 
-print("DockingPoseRecorder initialized. Waiting for /door_handle_pose...")
-
-
 def main(args=None):
     print("Starting DockingPoseRecorder...")
     rclpy.init(args=args)
     node = DockingPoseRecorder()
+    print("DockingPoseRecorder initialized. Waiting for /door_handle_pose...")
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()

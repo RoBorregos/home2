@@ -171,7 +171,7 @@ class PickMotionServer(Node):
                     )
                     continue
 
-                grasp_pose_handler, grasp_pose_result = self.move_to_pose(ee_link_pose)
+                grasp_pose_result = self.move_to_pose(ee_link_pose)
 
                 print(f"Grasp Pose {i} result: {grasp_pose_result}")
                 if grasp_pose_result.result.success:

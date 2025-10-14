@@ -1,8 +1,8 @@
 #ifndef MACROS_HPP
 #define MACROS_HPP
 #include <cstdint>
-#define _IN_
-#define _OUT_
+#define _IN_  // used ?? 
+#define _OUT_  // used ??
 
 enum u32bStatusErrorCodes {
   OK = 0,

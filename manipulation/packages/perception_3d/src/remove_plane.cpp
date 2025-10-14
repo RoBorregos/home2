@@ -131,7 +131,7 @@ public:
     RCLCPP_INFO(this->get_logger(), "Service created");
   }
 
-  void remove_plane(
+  void remove_plane(  // parameters used?? 
       const std::shared_ptr<rmw_request_id_t> request_header,
       const std::shared_ptr<frida_interfaces::srv::RemovePlane::Request>
           request,
@@ -585,7 +585,7 @@ public:
     // }
     // get closest cluster to the robot 
     int largest_cluster_index = -1;
-    size_t closest_cluster_distance = 0;
+    size_t closest_cluster_distance = 0; // Variable sin inicializar
     pcl::PointXYZ robot_position(0.0, 0.0, 0.5); // 0.5 meters above the ground
     for (size_t i = 0; i < cluster_indices.size(); ++i) {
       pcl::PointXYZ cluster_center(0.0, 0.0, 0.0);

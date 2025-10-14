@@ -87,7 +87,7 @@ def main(args=None):
     manipulation_client = ManipulationClient()
     executor.add_node(manipulation_client)
     executor.spin()
-    manipulation_client.stop()
+    manipulation_client.stop()  # does stop works??
     rclpy.shutdown()
 
 
