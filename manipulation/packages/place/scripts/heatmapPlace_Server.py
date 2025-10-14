@@ -132,7 +132,8 @@ class HeatmapServer(Node):
             closeness_map = np.exp(-closeness_map / (grid_size_mm * 2))
             # normalize so smallest value is 0 and largest is 1
             closeness_map = (closeness_map - np.min(closeness_map)) / (
-                np.max(closeness_map) - np.min(closeness_map)
+                np.max(closeness_map)
+                - np.min(closeness_map)  # Could be 0 when min == max
             )
             closeness_map = (
                 closeness_map**3
