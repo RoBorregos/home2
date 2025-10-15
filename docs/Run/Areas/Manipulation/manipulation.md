@@ -70,3 +70,6 @@ ros2 launch pick_and_place pick_and_place.launch.py
 
 ### Examples
 Examples to move the robot, edit collision objects, plan trajectories and using task-specific functions are available in most packages.
+
+## Additional Information
+It's important to note that to publish all the necessary services of the xarm 6 robot, it is required to set in the `xarm_params.yaml` file the parameter `debug` to `true`. This ensures that all services are available for the manipulation tasks.
