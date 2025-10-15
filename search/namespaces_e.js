@@ -13,6 +13,9 @@ var searchData=
   ['robot_5fsim_10',['robot_sim',['../namespacerobot__sim.html',1,'']]],
   ['ros_5futils_11',['ros_utils',['../namespaceros__utils.html',1,'']]],
   ['rplidar_5ffixed_12',['rplidar_fixed',['../namespacerplidar__fixed.html',1,'']]],
-  ['rtabnav2_13',['rtabnav2',['../namespacertabnav2.html',1,'']]],
-  ['run_5fwhile_5fhearing_14',['run_while_hearing',['../namespacerun__while__hearing.html',1,'']]]
+  ['rtabmap_13',['rtabmap',['../namespacertabmap.html',1,'']]],
+  ['rtabmap_5fprocess_14',['rtabmap_process',['../namespacertabmap__process.html',1,'']]],
+  ['rtabnav2_15',['rtabnav2',['../namespacertabnav2.html',1,'']]],
+  ['rtabtest_5fchecker_16',['rtabtest_checker',['../namespacertabtest__checker.html',1,'']]],
+  ['run_5fwhile_5fhearing_17',['run_while_hearing',['../namespacerun__while__hearing.html',1,'']]]
 ];

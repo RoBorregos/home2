@@ -47,9 +47,10 @@ var NAVTREEINDEX20 =
 "dir_d5f5cb8e065cf56f721a6d2950c389f4.html":[22,0,3,0,0,5],
 "dir_d6ea1fb454f7cad534a3dbbe58dee6ce.html":[22,0,7,0,3,3],
 "dir_d89c5ea1f1635b650fa16423f2851ead.html":[22,0,3,0,5,1],
+"dir_d9a9990f8d19d476eb3418119c6ce20c.html":[22,0,4,0,1,0,0],
 "dir_dafe0b1426346d1cf04b71ae40010d5b.html":[22,0,7,0,3,1],
 "dir_dd3fcdd5f7d5b8b10e8da434bfc4edb7.html":[22,0,7,0],
-"dir_de357348e548d05702c25df7dc5bff5f.html":[22,0,4,0,1,0,0],
+"dir_de357348e548d05702c25df7dc5bff5f.html":[22,0,4,0,1,0,1],
 "dir_de8d746afc10ae92c4c7056992d00612.html":[22,0,3,0,2,1,0],
 "dir_e037e32b242ccb5961249715ec47d567.html":[22,0,3,0,4,0,0],
 "dir_e53cd27313e91804e88607ffab7b8cd9.html":[22,0,2,3,0],
@@ -92,8 +93,8 @@ var NAVTREEINDEX20 =
 "ds4__demo_8py.html#a4c6991237427da870d97ade2a44fdfec":[22,0,3,0,1,0,3,3],
 "ds4__demo_8py.html#a9537b385d440de90c55689e7d09e9b5d":[22,0,3,0,1,0,3,2],
 "ds4__demo_8py.html#a9ee64277947c3be58860b6df419273bd":[22,0,3,0,1,0,3,1],
-"dualshock__cmd__vel_8launch_8py.html":[22,0,4,0,1,0,1],
-"dualshock__cmd__vel_8launch_8py.html#a432ab17ac92da4fc48450236583614a3":[22,0,4,0,1,0,1,0],
+"dualshock__cmd__vel_8launch_8py.html":[22,0,4,0,1,0,2],
+"dualshock__cmd__vel_8launch_8py.html#a432ab17ac92da4fc48450236583614a3":[22,0,4,0,1,0,2,0],
 "egpsr__task__manager_8py.html":[22,0,6,1,7],
 "egpsr__task__manager_8py.html#a127f19f794b41f65a7a9d0aae5fbec99":[22,0,6,1,7,7],
 "egpsr__task__manager_8py.html#a409e19ab5fd511004f98c53b43c58fc4":[22,0,6,1,7,5],
@@ -248,6 +249,5 @@ var NAVTREEINDEX20 =
 "functions_func_r.html":[21,3,1,17],
 "functions_func_s.html":[21,3,1,18],
 "functions_func_t.html":[21,3,1,19],
-"functions_func_u.html":[21,3,1,20],
-"functions_func_v.html":[21,3,1,21]
+"functions_func_u.html":[21,3,1,20]
 };

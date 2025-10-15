@@ -1,5 +1,6 @@
 var NAVTREEINDEX21 =
 {
+"functions_func_v.html":[21,3,1,21],
 "functions_func_w.html":[21,3,1,22],
 "functions_func_z.html":[21,3,1,23],
 "functions_func_~.html":[21,3,1,24],
@@ -246,8 +247,7 @@ var NAVTREEINDEX21 =
 "manipulation_2packages_2frida__motion__planning_2frida__motion__planning_2utils_2ros__utils_8py.html":[22,0,3,0,1,1,1,3],
 "manipulation_2packages_2frida__motion__planning_2frida__motion__planning_2utils_2ros__utils_8py.html#a227defc8d5be1b7e83089ef7134f5ef2":[22,0,3,0,1,1,1,3,0],
 "manipulation_2packages_2frida__pymoveit2_2frida__pymoveit2_2____init_____8py.html":[22,0,3,0,2,1,1],
-"manipulation_2packages_2manipulation__general_2manipulation__general_2____init_____8py.html":[22,0,3,0,3,1,0],
-"manipulation_2packages_2perception__3d_2perception__3d_2____init_____8py.html":[22,0,3,0,4,2,0],
-"manipulation_2packages_2pick__and__place_2pick__and__place_2____init_____8py.html":[22,0,3,0,5,1,3],
-"manipulation_2packages_2place_2place_2____init_____8py.html":[22,0,3,0,6,0,0]
+"manipulation_2packages_2manipulation__general_2launch_2receptionist_8launch_8py.html":[22,0,3,0,3,0,2],
+"manipulation_2packages_2manipulation__general_2launch_2receptionist_8launch_8py.html#aff8a76b94a8d8c1b2665d82bfafa608b":[22,0,3,0,3,0,2,0],
+"manipulation_2packages_2manipulation__general_2manipulation__general_2____init_____8py.html":[22,0,3,0,3,1,0]
 };

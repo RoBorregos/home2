@@ -1,5 +1,8 @@
 var NAVTREEINDEX22 =
 {
+"manipulation_2packages_2perception__3d_2perception__3d_2____init_____8py.html":[22,0,3,0,4,2,0],
+"manipulation_2packages_2pick__and__place_2pick__and__place_2____init_____8py.html":[22,0,3,0,5,1,3],
+"manipulation_2packages_2place_2place_2____init_____8py.html":[22,0,3,0,6,0,0],
 "manipulation_2packages_2xarm__utils_2xarm__utils_2____init_____8py.html":[22,0,3,0,7,1,0],
 "manipulation__client_8py.html":[22,0,3,0,5,1,6],
 "manipulation__client_8py.html#a07257cb905504438e2be1b6aa9c7c4d8":[22,0,3,0,5,1,6,1],
@@ -126,8 +129,8 @@ var NAVTREEINDEX22 =
 "map__cleaner_8py.html#a774fe55aa05648dcb1bb760b3c1f8a56":[22,0,4,0,1,2,2,1],
 "map__publisher_8py.html":[22,0,4,0,1,2,3],
 "map__publisher_8py.html#a9d18f91950638e3c533f05c59cb83061":[22,0,4,0,1,2,3,1],
-"mapping_8launch_8py.html":[22,0,4,0,1,0,0,1],
-"mapping_8launch_8py.html#ac951e3077b2a262f96039858d7fa2b20":[22,0,4,0,1,0,0,1,0],
+"mapping_8launch_8py.html":[22,0,4,0,1,0,1,1],
+"mapping_8launch_8py.html#ac951e3077b2a262f96039858d7fa2b20":[22,0,4,0,1,0,1,1,0],
 "masive__testin_8cpp.html":[22,0,3,0,4,4,2],
 "masive__testin_8cpp.html#a0ddf1224851353fc92bfbff6f499fa97":[22,0,3,0,4,4,2,2],
 "masive__testin_8cpp.html#a403677990f5903485dfa1d2871dd6bc9":[22,0,3,0,4,4,2,3],
@@ -246,8 +249,5 @@ var NAVTREEINDEX22 =
 "moondream__lib_8py.html#a92853496cf2484aa703bdf5a8402bc73":[22,0,7,0,0,2,1,11],
 "moondream__lib_8py.html#a9424832bdb6a9f4a1bbe60ce2004f8e7":[22,0,7,0,0,2,1,1],
 "moondream__lib_8py.html#a96f271e464064797e7edcff4e9851282":[22,0,7,0,0,2,1,7],
-"moondream__lib_8py.html#a982a539331047f39736ef58952c3e722":[22,0,7,0,0,2,1,13],
-"moondream__lib_8py.html#abe40f656e14ad3a830e4548b2a3f436d":[22,0,7,0,0,2,1,8],
-"moondream__lib_8py.html#ac84395d9ed2025a9e954251124789ae7":[22,0,7,0,0,2,1,10],
-"moondream__lib_8py.html#adb038b52a38e3ae02b1571585802ebb8":[22,0,7,0,0,2,1,2]
+"moondream__lib_8py.html#a982a539331047f39736ef58952c3e722":[22,0,7,0,0,2,1,13]
 };
