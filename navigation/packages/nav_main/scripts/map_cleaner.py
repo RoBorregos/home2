@@ -11,11 +11,22 @@ class MapCleaner(Node):
     def __init__(self):
         super().__init__("map_cleaner")
 
-        self.subscription = self.create_subscription(
-            OccupancyGrid, "/map", self.map_callback, 10
+        qos = rclpy.qos.QoSProfile(
+            history=rclpy.qos.HistoryPolicy.KEEP_LAST,
+            depth=5,
+            reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
+        )
+        qos2 = rclpy.qos.QoSProfile(
+            reliability=rclpy.qos.ReliabilityPolicy.RELIABLE,
+            depth=10,
+            durability=rclpy.qos.DurabilityPolicy.TRANSIENT_LOCAL
         )
 
-        self.publisher = self.create_publisher(OccupancyGrid, "/map_cleaned", 10)
+        self.subscription = self.create_subscription(
+            OccupancyGrid, "/map_input", self.map_callback,  qos
+        )
+
+        self.publisher = self.create_publisher(OccupancyGrid, "/map", qos2)
 
     def map_callback(self, msg):
         width = msg.info.width
@@ -26,21 +37,8 @@ class MapCleaner(Node):
         binary = np.where(grid > 50, 255, 0).astype(np.uint8)
 
         cleaned_binary = cv2.morphologyEx(
-            binary, cv2.MORPH_CLOSE, np.ones((2, 2), np.uint8), iterations=2
+            binary, cv2.MORPH_CLOSE, np.ones((2, 2), np.uint8), iterations=3
         )
-
-        cleaned_binary = cv2.morphologyEx(
-            cleaned_binary, cv2.MORPH_OPEN, np.ones((2, 2), np.uint8), iterations=1
-        )
-
-        # # Dilation to connect nearby obstacles
-        # kernel_dilate = np.ones((2, 2), np.uint8)
-        # cleaned_binary = cv2.dilate(cleaned_binary, kernel_dilate, iterations=1)
-
-        # # Erosion to remove small artifacts
-        # kernel_erode = np.ones((2, 2), np.uint8)
-        # cleaned_binary = cv2.erode(cleaned_binary, kernel_erode, iterations=2)
-
         # Back to occupancy values
         cleaned = np.where(cleaned_binary == 255, 100, 0).astype(np.int8)
         cleaned[grid == -1] = -1  # preserve unknowns
