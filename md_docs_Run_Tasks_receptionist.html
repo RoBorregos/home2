@@ -93,19 +93,19 @@ $(document).ready(function(){initNavTree('md_docs_Run_Tasks_receptionist.html','
   <div class="headertitle"><div class="title">Receptionist </div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><h1><a class="anchor" id="autotoc_md85"></a>
+<div class="textblock"><h1><a class="anchor" id="autotoc_md99"></a>
 ZED</h1>
 <p>Run container. From the root directory (home2), run: </p><div class="fragment"><div class="line">ros2 launch zed_wrapper zed_camera.launch.py camera_model:=zed publish_tf:=false</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md86"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md100"></a>
 Integration</h1>
 <p>Run container. From the root directory (home2), run: </p><div class="fragment"><div class="line">./run.sh integration --receptionist</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md87"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md101"></a>
 Vision</h1>
 <p>Run container. From the root directory (home2), run: </p><div class="fragment"><div class="line">./run.sh vision --receptionist</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md88"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md102"></a>
 HRI</h1>
 <p>Run containers. From the root directory (home2), run: </p><div class="fragment"><div class="line">./run.sh hri --receptionist</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md89"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md103"></a>
 Navigation</h1>
 <p>!! WARNING !!</p>
 <p>"Frida_moveit_config" should be running from the manipulation namespace in order for navigation to work.</p>
@@ -115,21 +115,21 @@ Navigation</h1>
 <li>Check the RViz window that pops up on the Orin. After a few seconds, you should see the TF and the local costmap moving. If not, restart the Docker container and verify that both the ZED and Frida MoveIt config are running.</li>
 <li>Check the position of the TF in the map. If it’s not correctly positioned, use the "2D Estimate Pose" tool located at the top of RViz. Click on the map where the robot should be, and remember to hold the click and drag to set the orientation angle as well.</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md90"></a>
+<h1><a class="anchor" id="autotoc_md104"></a>
 Manipulation</h1>
 <p>Run container. From the root directory (home2), run: </p><div class="fragment"><div class="line">./run.sh manipulation</div>
 </div><!-- fragment --><p>Note: ollama models are downloaded and mounted on the repo. Run the repo at the path <code>/home/orin/home2</code> to avoid having to re-download the models. </p>
-<h2><a class="anchor" id="autotoc_md91"></a>
+<h2><a class="anchor" id="autotoc_md105"></a>
 Launch</h2>
 <p>To launch the manipulation stack, run the following command: </p><div class="fragment"><div class="line">ros2 launch manipulation_general receptionist.launch.py</div>
 </div><!-- fragment --><p>The launch runs the following nodes: </p>
-<h2><a class="anchor" id="autotoc_md92"></a>
+<h2><a class="anchor" id="autotoc_md106"></a>
 Arm bringup</h2>
 <p>To test on the real robot, run the launch to bring up the robot and MoveIt planning: </p><div class="fragment"><div class="line">ros2 launch arm_pkg frida_moveit_config.launch.py robot_ip:=192.168.31.180</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md93"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md107"></a>
 Motion Planning</h2>
 <p>Check that the motion planning interface is running: </p><div class="fragment"><div class="line">ros2 run frida_motion_planning motion_planning_server.py</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md94"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md108"></a>
 Follow face</h2>
 <p>To follow a face, run the following command: </p><div class="fragment"><div class="line">ros2 run task_manager follow_face_node.py</div>
 </div><!-- fragment --> </div></div><!-- contents -->

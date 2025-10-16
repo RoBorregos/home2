@@ -10,5 +10,6 @@ var searchData=
   ['zero_5fshot_5fdetections_5fimage_5ftopic_7',['ZERO_SHOT_DETECTIONS_IMAGE_TOPIC',['../namespacefrida__constants_1_1vision__constants.html#a99bf7fc47980ca830919b21802b1a268',1,'frida_constants::vision_constants']]],
   ['zero_5fshot_5fdetections_5fposes_5ftopic_8',['ZERO_SHOT_DETECTIONS_POSES_TOPIC',['../namespacefrida__constants_1_1vision__constants.html#a1a7dd349184716ff0e10091fae59c7b4',1,'frida_constants::vision_constants']]],
   ['zero_5fshot_5fdetections_5ftopic_9',['ZERO_SHOT_DETECTIONS_TOPIC',['../structHandlerParams.html#a1f270f1dbdeadeaf66bd3dc801eaa4d7',1,'HandlerParams::ZERO_SHOT_DETECTIONS_TOPIC()'],['../namespacefrida__constants_1_1vision__constants.html#a4f1a9aa60634d84c2d9ed3cc92933a8a',1,'frida_constants.vision_constants.ZERO_SHOT_DETECTIONS_TOPIC()']]],
-  ['zero_5fshot_5fmodel_10',['ZERO_SHOT_MODEL',['../namespacefrida__constants_1_1vision__constants.html#af37f420f0d40b4c4fe368e24fc0c756e',1,'frida_constants::vision_constants']]]
+  ['zero_5fshot_5fmodel_10',['ZERO_SHOT_MODEL',['../namespacefrida__constants_1_1vision__constants.html#af37f420f0d40b4c4fe368e24fc0c756e',1,'frida_constants::vision_constants']]],
+  ['zip_5fsafe_11',['zip_safe',['../namespacesetup.html#a13510753661cb74083a0c664db11dde9',1,'setup']]]
 ];

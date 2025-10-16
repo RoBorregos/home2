@@ -94,38 +94,38 @@ $(document).ready(function(){initNavTree('md_docs_Run_Areas_Manipulation_manipul
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p>To run or test the modules it is necessary to have Ubuntu 22.04. Alternatively, you can use the docker setup provided in this repository.</p>
-<h1><a class="anchor" id="autotoc_md40"></a>
+<h1><a class="anchor" id="autotoc_md54"></a>
 Docker setup</h1>
 <p>To make a container and open a shell for developing or testing the vision package, use the script <code>docker/manipulation/run.sh</code>. This can be accessed from the general script <code>./run.sh</code> in the root directory by passing the argument vision. This will first build the base image according to your system (cpu, cuda or jetson) as well as the image for the vision module and then run the container.</p>
 <p>In root directory (home2), run: </p><div class="fragment"><div class="line">./run.sh manipulation</div>
 </div><!-- fragment --><p>If the script is not executable, run: </p><div class="fragment"><div class="line">chmod +x run.sh</div>
 </div><!-- fragment --><p>If the camera is not available run the following command before running the <code>/run.sh vision</code> command: </p><div class="fragment"><div class="line">sudo chmod 666 /dev/video0</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md41"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md55"></a>
 Running the vision module</h1>
 <p>Once in the docker workspace or using ROS2 in the home2 directory, run the following commands:</p>
-<h3><a class="anchor" id="autotoc_md42"></a>
+<h3><a class="anchor" id="autotoc_md56"></a>
 Build</h3>
 <p>The manipulation packages require building several packages stored as submodules. Remember to pull them from their repositories:</p>
 <div class="fragment"><div class="line">git submodule update --init --recursive</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md43"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md57"></a>
 Real Robot and Simulation bringup</h3>
 <p>To test on simulation, run the launch to bring up the simulation environment and MoveIt planning: </p><div class="fragment"><div class="line">ros2 launch frida_description moveit.launch.py add_gripper:=true add_realsense_d435i:=true</div>
 </div><!-- fragment --><p>To test on the real robot, run the launch to bring up the robot and MoveIt planning: </p><div class="fragment"><div class="line">ros2 launch arm_pkg frida_moveit_config.launch.py robot_ip:=192.168.31.180</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md44"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md58"></a>
 Perception 3d</h3>
 <p>To run the downsample for the pointcloud. </p><div class="fragment"><div class="line">ros2 run perception_3d down_sample_pc</div>
 </div><!-- fragment --><p>Simulation: </p><div class="fragment"><div class="line">ros2 run perception_3d down_sample_pc --ros-args -p input_topic:=&quot;/depth/color/points&quot; -p leaf_size:=0.01</div>
 </div><!-- fragment --><p>Perception service (Cluster and plane remove/extraction) </p><div class="fragment"><div class="line">ros2 launch perception_3d test.launch.py</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md45"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md59"></a>
 Motion Planning</h3>
 <p>Check that the motion planning interface is running: </p><div class="fragment"><div class="line">ros2 run frida_motion_planning motion_planning_server.py</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md46"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md60"></a>
 Pick and Place</h3>
 <p>Most manipulation functions are enclosed within a manipulation server that handles tasks involving moving and interacting with objects. To run the manipulation server, use the following command: </p><div class="fragment"><div class="line">ros2 launch pick_and_place pick_and_place.launch.py</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md47"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md61"></a>
 Examples</h3>
 <p>Examples to move the robot, edit collision objects, plan trajectories and using task-specific functions are available in most packages.</p>
-<h2><a class="anchor" id="autotoc_md48"></a>
+<h2><a class="anchor" id="autotoc_md62"></a>
 Additional Information</h2>
 <p>It's important to note that to publish all the necessary services of the xarm 6 robot, it is required to set in the <code>xarm_params.yaml</code> file the parameter <code>debug</code> to <code>true</code>. This ensures that all services are available for the manipulation tasks. </p>
 </div></div><!-- contents -->

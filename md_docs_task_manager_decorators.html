@@ -93,10 +93,10 @@ $(document).ready(function(){initNavTree('md_docs_task_manager_decorators.html',
   <div class="headertitle"><div class="title">Decorators </div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><h1><a class="anchor" id="autotoc_md108"></a>
+<div class="textblock"><h1><a class="anchor" id="autotoc_md122"></a>
 Mockable</h1>
 <p>This decorator is used to return a default value for a function. This is important when mocking individual functions or a complete area. In task managers, when an area is set to mock, all functions in that area will be mocked even if their decorator mock value is false.</p>
-<h2><a class="anchor" id="autotoc_md109"></a>
+<h2><a class="anchor" id="autotoc_md123"></a>
 Parameters</h2>
 <p>Arguments:</p><ul>
 <li><code>return_value</code>:</li>
@@ -113,17 +113,17 @@ Parameters</h2>
 </ul>
 <p>If true, the function will be mocked and the default value will be returned.</p>
 <p>Default is false.</p>
-<h2><a class="anchor" id="autotoc_md110"></a>
+<h2><a class="anchor" id="autotoc_md124"></a>
 Implementation</h2>
 <div class="fragment"><div class="line"><span class="preprocessor">@mockable(return_value=&lt;default_value&gt;, delay=(int)</span>&lt;delay-seconds&gt;, mock=(bool)&lt;mock&gt;)</div>
 </div><!-- fragment --><p> Example </p><div class="fragment"><div class="line"><span class="preprocessor">@mockable(return_value=&quot;Success&quot;, delay=2, mock=True)</span> </div>
 <div class="line"><span class="keyword">def </span>do_something(self):</div>
 <div class="line">    <span class="stringliteral">&quot;&quot;&quot;&lt;docstring&gt;&quot;&quot;&quot;</span></div>
 <div class="line">    <span class="comment"># function implementation</span></div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md111"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md125"></a>
 Service Check</h1>
 <p>This decorator will internally wait for a service to check if it is available and return a default value if it is not. When not implemented, if a task manager is running and a service is not available, the task will get stuck without any indication. Therefore, this decorator is important to ensure that the task manager does not get stuck and can return an error value.</p>
-<h2><a class="anchor" id="autotoc_md112"></a>
+<h2><a class="anchor" id="autotoc_md126"></a>
 Parameters</h2>
 <p>Arguments:</p><ul>
 <li><code>client</code>:</li>
@@ -137,14 +137,14 @@ Parameters</h2>
 <li><code>timeout</code>:</li>
 </ul>
 <p>The time set to wait for service. Default is 3 seconds.</p>
-<h2><a class="anchor" id="autotoc_md113"></a>
+<h2><a class="anchor" id="autotoc_md127"></a>
 Implementation</h2>
 <div class="fragment"><div class="line"><span class="preprocessor">@service_check(client=&quot;client_name&quot;, default_value=&lt;default_value&gt;, timeout=(int)</span>&lt;timeout-seconds&gt;)</div>
 </div><!-- fragment --><p>Example </p><div class="fragment"><div class="line"><span class="preprocessor">@service_check(client=&quot;client_name&quot;, default_value=&quot;Error&quot;, timeout=2)</span></div>
 <div class="line"><span class="keyword">def </span>do_something(self):</div>
 <div class="line">    <span class="stringliteral">&quot;&quot;&quot;&lt;docstring&gt;&quot;&quot;&quot;</span></div>
 <div class="line">    <span class="comment"># function implementation</span></div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md114"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md128"></a>
 Example</h1>
 <p>*If using both, the mockable should come first:</p>
 <div class="fragment"><div class="line"><span class="preprocessor">@mockable(return_value=Status.EXECUTION_SUCCESS, delay=2)</span></div>

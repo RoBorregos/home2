@@ -94,29 +94,29 @@ $(document).ready(function(){initNavTree('index.html',''); initResizable(); });
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p><a class="anchor" id="md_docs_ROS2"></a> </p>
-<h1><a class="anchor" id="autotoc_md22"></a>
+<h1><a class="anchor" id="autotoc_md36"></a>
 Main commands</h1>
-<h2><a class="anchor" id="autotoc_md23"></a>
+<h2><a class="anchor" id="autotoc_md37"></a>
 Build</h2>
 <p>From the root of the workspace (home2) with ROS2 installed.</p>
 <p>Build all packages (this should be run after updating a script, dependencies, packages, etc): </p><div class="fragment"><div class="line">colcon build</div>
 </div><!-- fragment --><p>Build specific package/s: </p><div class="fragment"><div class="line">colcon build --packages-select &lt;package_name1&gt; &lt;package_name2&gt; ...</div>
 </div><!-- fragment --> <div class="fragment"><div class="line">colcon build --packages-select frida_interfaces vision_general</div>
 </div><!-- fragment --><p>Source the workspace (this is needed to run the nodes): </p><div class="fragment"><div class="line">source install/setup.bash</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md24"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md38"></a>
 Run</h2>
 <p>Run a node: </p><div class="fragment"><div class="line">ros2 run &lt;package_name&gt; &lt;node_name&gt;</div>
 </div><!-- fragment --> <div class="fragment"><div class="line">ros2 run vision_general example_node</div>
 </div><!-- fragment --><p>Run a launch file (this is a file that can run multiple nodes): </p><div class="fragment"><div class="line">ros2 launch &lt;package_name&gt; &lt;launch_file&gt;</div>
 </div><!-- fragment --> <div class="fragment"><div class="line">ros2 launch vision_general example_launch.py</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md25"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md39"></a>
 Debug</h2>
 <p>Check current topics: </p><div class="fragment"><div class="line">ros2 topic list</div>
 </div><!-- fragment --><p>For build issues, you can clean the workspace and rebuild: </p><div class="fragment"><div class="line">rm -rf build/ install/ log/</div>
 <div class="line">colcon build</div>
 <div class="line">source install/setup.bash</div>
 </div><!-- fragment --><p>If your node is not appearing when running ros2 run ... It is possible that it does not have the correct permissions. You can change the permissions of the file: </p><div class="fragment"><div class="line">chmod +x &lt;file_name&gt;</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md26"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md40"></a>
 General Node Structure (Python)</h1>
 <p>In general, a node is a script that will run and interact with the ROS2 system through topics, services, actions, etc. A <code>topic</code> is a channel where nodes can send and receive messages.</p>
 <div class="fragment"><div class="line">#!/usr/bin/env python3</div>
@@ -171,7 +171,7 @@ General Node Structure (Python)</h1>
 <div class="line">if __name__ == &quot;__main__&quot;:</div>
 <div class="line">    main()</div>
 </div><!-- fragment --><p> Check the complete node in <a href="../vision/vision_general/scripts/example_node.py">example_node.py</a></p>
-<h1><a class="anchor" id="autotoc_md27"></a>
+<h1><a class="anchor" id="autotoc_md41"></a>
 Subscribers</h1>
 <p>A subscriber will listen to a topic and receive messages from it. It should have a callback function that will be called every time a message is received. In this case the type of the message is <code>String</code>, which sould be imported from <code>std_msgs.msg</code>.</p>
 <div class="fragment"><div class="line">def __init__(self):</div>
@@ -185,7 +185,7 @@ Subscribers</h1>
 <div class="line">    self.get_logger().info(&quot;I heard: &quot; + msg.data)</div>
 </div><!-- fragment --><p>To test a subscriber, you can run the node in one terminal and publish messages in another terminal: </p><div class="fragment"><div class="line">ros2 run vision_general example_node</div>
 </div><!-- fragment --><div class="fragment"><div class="line">ros2 topic pub /example/subscriber_topic std_msgs/msg/String &quot;data: hi&quot;</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md28"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md42"></a>
 Publishers and Timers</h1>
 <p>A publisher is a node that sends messages to a topic. After creating the publisher, you can create a message and publish it. If you want to send messages periodically, you can use a timer that calls a function every x seconds. This example also publishes a message of type <code>String</code>.</p>
 <div class="fragment"><div class="line">def __init__(self):</div>
@@ -206,7 +206,7 @@ Publishers and Timers</h1>
 <div class="line">    self.example_publisher.publish(msg)</div>
 </div><!-- fragment --><p>To test a publisher, you can run the node in one terminal and listen to the topic in another terminal: </p><div class="fragment"><div class="line">ros2 run vision_general example_node</div>
 </div><!-- fragment --><div class="fragment"><div class="line">ros2 topic echo /example/publisher_topic</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md29"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md43"></a>
 Services</h1>
 <p>A service is a node that provides a service to other nodes. This means that it receives a request and should return a response. For this, it should have a callback function that will be called when the service is requested.</p>
 <p>In this example, we are using a srv file called <code>SetBool</code> that has the following structure:</p>
@@ -240,7 +240,7 @@ Services</h1>
 </div><!-- fragment --><p> Example:</p>
 <div class="fragment"><div class="line">ros2 run vision_general example_node</div>
 </div><!-- fragment --><div class="fragment"><div class="line">ros2 service call /example/service_topic std_srvs/srv/SetBool &quot;data: true&quot;</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md30"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md44"></a>
 Action services</h1>
 <p>An action service is a more complex service that allows for feedback and goal handling. This also receives a request and should return a response, but it can also send feedback during the process. The ActionServer should be imported from <code>rclpy.action</code>. In this example we are using an action file called <code>DetectPerson</code> that should be imported from <code>frida_interfaces</code> and has the following structure:</p>
 <div class="fragment"><div class="line">bool request</div>
@@ -285,10 +285,10 @@ Action services</h1>
 </div><!-- fragment --><p> Example:</p>
 <div class="fragment"><div class="line">ros2 run vision_general example_node</div>
 </div><!-- fragment --><div class="fragment"><div class="line">ros2 action send_goal /example/action_service_topic frida_interfaces/action/DetectPerson &quot;request: true&quot; --feedback</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md31"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md45"></a>
 Interfaces</h1>
 <p>Interfaces are files that define the structure of messages, services, and actions. They are defined in <code>.msg</code>, <code>.srv</code>, and <code>.action</code> files respectively. For this repo, the interfaces are located in the <code>frida_interfaces</code> package according to each area.</p>
-<h2><a class="anchor" id="autotoc_md32"></a>
+<h2><a class="anchor" id="autotoc_md46"></a>
 Message</h2>
 <p>A message is a structure that can be sent through a topic. It can have multiple fields of different types.</p>
 <p>Example: In <code><a class="el" href="Person_8msg.html">frida_interfaces/vision/msg/Person.msg</a></code>:</p>
@@ -299,7 +299,7 @@ Message</h2>
 </div><!-- fragment --><p>A message can also include an array of other messages like in <code><a class="el" href="PersonList_8msg.html">frida_interfaces/vision/msg/PersonList.msg</a></code>:</p>
 <div class="fragment"><div class="line"># Example message for an array of people</div>
 <div class="line">frida_interfaces/Person[] list</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md33"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md47"></a>
 Service</h2>
 <p>A service is a structure that defines a request and a response. It can have multiple fields of different types.</p>
 <p>Example: In <code><a class="el" href="FindSeat_8srv.html">frida_interfaces/vision/srv/FindSeat.srv</a></code>:</p>
@@ -307,7 +307,7 @@ Service</h2>
 <div class="line">---</div>
 <div class="line">float32 angle</div>
 <div class="line">bool success</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md34"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md48"></a>
 Action</h2>
 <p>An action is a structure that defines a goal, feedback, and result. It can have multiple fields of different types.</p>
 <p>Example: <code>ExampleDetectObject.action</code>:</p>

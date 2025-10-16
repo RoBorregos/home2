@@ -94,27 +94,27 @@ $(document).ready(function(){initNavTree('md_docs_Run_Areas_vision.html',''); in
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p>To run or test the modules it is necessary to have Ubuntu 22.04. Alternatively, you can use the docker setup provided in this repository.</p>
-<h1><a class="anchor" id="autotoc_md75"></a>
+<h1><a class="anchor" id="autotoc_md89"></a>
 Docker setup</h1>
 <p>To make a container and open a shell for developing or testing the vision package, use the script <code>docker/vision/run.sh</code>. This can be accessed from the general script <code>./run.sh</code> in the root directory by passing the argument vision. This will first build the base image according to your system (cpu, cuda or jetson) as well as the image for the vision module and then run the container.</p>
 <p>In root directory (home2), run: </p><div class="fragment"><div class="line">./run.sh vision</div>
 </div><!-- fragment --><p>If the script is not executable, run: </p><div class="fragment"><div class="line">chmod +x run.sh</div>
 </div><!-- fragment --><p>If the camera is not available run the following command before running the <code>/run.sh vision</code> command: </p><div class="fragment"><div class="line">sudo chmod 666 /dev/video0</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md76"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md90"></a>
 Running the vision module</h1>
 <p>Once in the docker workspace or using ROS2 in the home2 directory, run the following commands:</p>
-<h3><a class="anchor" id="autotoc_md77"></a>
+<h3><a class="anchor" id="autotoc_md91"></a>
 Build</h3>
 <p>Run the following command for each package or packages that should be built:</p>
 <div class="fragment"><div class="line">colcon build --packages-up-to vision_general </div>
 </div><!-- fragment --><p>Then source:</p>
 <div class="fragment"><div class="line">source install/setup.bash</div>
-</div><!-- fragment --><h3><a class="anchor" id="autotoc_md78"></a>
+</div><!-- fragment --><h3><a class="anchor" id="autotoc_md92"></a>
 Run</h3>
 <p>Run a node using the following command:</p>
 <div class="fragment"><div class="line">ros2 run &lt;package&gt; &lt;node_name&gt;</div>
 <div class="line">ros2 run vision_general zed_simulator.py</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md79"></a>
+</div><!-- fragment --><h1><a class="anchor" id="autotoc_md93"></a>
 Structure</h1>
 <p>Vision is divided into the following packages:</p><ul>
 <li><a class="el" href="namespacevision__general.html">vision_general</a></li>
@@ -122,7 +122,7 @@ Structure</h1>
 <li>object_detector_2d</li>
 <li>object_detection_handler</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md80"></a>
+<h1><a class="anchor" id="autotoc_md94"></a>
 Camera</h1>
 <p>To use de zed camera run the following command in orin:</p>
 <div class="fragment"><div class="line">ros2 launch zed_wrapper zed_camera.launch.py camera_model:=zed2 publish_tf:=false</div>
