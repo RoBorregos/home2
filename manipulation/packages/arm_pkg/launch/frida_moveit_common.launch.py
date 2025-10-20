@@ -69,6 +69,22 @@ def launch_setup(context, *args, **kwargs):
         "octomap_frame": "base_link",
         "octomap_resolution": 0.025,
         "max_range": 2.0,
+        # Parámetros para reducir actualizaciones durante movimiento
+        "filter_speckles": True,
+        "filter_ground": True,
+        "base_frame_id": "base_link",
+        "map_frame_id": "map",
+        # Parámetros críticos para movimiento
+        "listen_tf_timeout": 3.0,
+        "tf_timeout": 5.0,
+        "tf_prefix": "",
+        "transform_tolerance": 0.2,  # Más tolerante a delays en TF
+        #  # Nuevos parámetros para control inteligente
+        # "pause_updates_during_motion": True,     # Pausar durante movimiento
+        # "motion_detection_threshold": 0.01,      # Umbral de velocidad (m/s)
+        # "resume_updates_delay": 2.0,             # Esperar 2s después del movimiento
+        # "max_memory_usage": 500,                 # MB máximo de memoria
+        # "auto_cleanup_period": 30.0,             # Limpiar cada 30s
     }
 
     octomap_updater_config = load_yaml("arm_pkg", "config/sensors_3d.yaml")

@@ -32,6 +32,31 @@ class PickManager:
 
     def __init__(self, node):
         self.node = node
+        self.octomap = False
+        self.last_motion_time = False
+
+    def pause_octomap_updates(self):
+        """Pausar actualizaciones del octomap durante movimiento"""
+        if not self.octomap_paused:
+            self.node.get_logger().info("Pausing octomap updates during motion")
+            # Llamar servicio para pausar octomap
+            self.node.pause_octomap_service()
+            self.octomap_paused = True
+
+    def resume_octomap_updates(self, delay=2.0):
+        """Resumir actualizaciones después de un delay"""
+        import threading
+
+        def delayed_resume():
+            time.sleep(delay)
+            if self.octomap_paused:
+                self.node.get_logger().info("Resuming octomap updates")
+                self.node.resume_octomap_service()
+                self.octomap_paused = False
+
+        thread = threading.Thread(target=delayed_resume)
+        thread.daemon = True
+        thread.start()
 
     def execute(
         self, object_name: str, point: PointStamped, pick_params
@@ -47,6 +72,8 @@ class PickManager:
                 named_position="table_stare",
                 velocity=0.75,
             )
+
+        self.pause_octomap_updates()
 
         for i in range(3):
             if point is not None and (
@@ -184,6 +211,7 @@ class PickManager:
                 continue
 
             # Call Pick Motion Action
+            self.pause_octomap_updates()
 
             # Create goal
             goal_msg = PickMotion.Goal()
@@ -224,6 +252,7 @@ class PickManager:
 
         self.node.get_logger().info("Returning to position")
 
+        self.resume_octomap_updates(delay=2.0)
         self.node.clear_octomap()
         for i in range(5):
             # return to configured position
