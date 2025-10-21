@@ -63,13 +63,15 @@ class Respeaker(Node):
         self.declare_parameter("dsp.aec.gamma_etail", 1.0)  # GAMMA_ETAIL (tail)
         self.declare_parameter("dsp.aec.gamma_enl", 1.0)
 
-        doa_publish_topic = self.get_parameter(
-            "RESPEAKER_DOA_TOPIC"
-        ).get_parameter_value().string_value
+        doa_publish_topic = (
+            self.get_parameter("RESPEAKER_DOA_TOPIC").get_parameter_value().string_value
+        )
         doa_timer = self.get_parameter("doa_timer").get_parameter_value().double_value
-        light_subscriber_topic = self.get_parameter(
-            "RESPEAKER_LIGHT_TOPIC"
-        ).get_parameter_value().string_value
+        light_subscriber_topic = (
+            self.get_parameter("RESPEAKER_LIGHT_TOPIC")
+            .get_parameter_value()
+            .string_value
+        )
 
         # Properties
         self.dev = usb.core.find(idVendor=0x2886, idProduct=0x0018)
@@ -85,7 +87,9 @@ class Respeaker(Node):
         # ROS interactions
         self.publisher_ = self.create_publisher(Int16, doa_publish_topic, 20)
         self.create_timer(doa_timer, self.publish_DOA)
-        self.create_subscription(String, light_subscriber_topic, self.callback_light, 10)
+        self.create_subscription(
+            String, light_subscriber_topic, self.callback_light, 10
+        )
 
         self.get_logger().info("Respeaker node initialized.")
 
