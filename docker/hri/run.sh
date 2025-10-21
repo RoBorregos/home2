@@ -8,6 +8,7 @@ detached=""
 build_display=""
 open_display=""
 download_model=""
+
 # Check if one of the arguments is --detached, --build-display, or --open-display
 for arg in "${ARGS[@]}"; do
   if [ "$arg" == "-d" ]; then
@@ -98,7 +99,7 @@ esac
 
 #_________________________SETUP_________________________
 
-bash setup.bash
+bash scripts/setup.bash
 [ "$download_model" == "true" ] && bash ../../hri/packages/nlp/assets/download-model.sh
 
 # Create dirs with current user to avoid permission problems
@@ -109,8 +110,8 @@ mkdir -p install build log ../../hri/packages/speech/assets/downloads/offline_vo
 if [ ! -d "../../hri/display/dist" ] || [ ! -d "../../hri/display/node_modules" ] || [ ! -d "../../hri/display/web-ui/.next" ] || [ ! -d "../../hri/display/web-ui/node_modules" ] || [ "$build_display" == "true" ]; then
   echo "Setting up display environment..."
 
-  compose_file="display.yaml"
-  [ "$ENV_TYPE" == "jetson" ] && compose_file="display-l4t.yaml"
+  compose_file="compose/display.yaml"
+  [ "$ENV_TYPE" == "jetson" ] && compose_file="compose/display-l4t.yaml"
   
   echo "Installing dependencies and building project inside temporary container..."
   docker compose -f "$compose_file" run --entrypoint "" display bash -c "source /opt/ros/humble/setup.bash && npm run build"
@@ -149,7 +150,7 @@ case $TASK in
 esac
 
 COMPOSE_PROFILES=$(IFS=, ; echo "${PROFILES[*]}")
-add_or_update_variable .env "COMPOSE_PROFILES" "$COMPOSE_PROFILES"
+add_or_update_variable compose/.env "COMPOSE_PROFILES" "$COMPOSE_PROFILES"
 
 GENERATE_BAML_CLIENT="baml-cli generate --from /workspace/src/task_manager/scripts/utils/baml_src/"
 SOURCE_INTERFACES="source frida_interfaces_cache/install/local_setup.bash"
@@ -157,7 +158,7 @@ IGNORE_PACKAGES="--packages-ignore frida_interfaces frida_constants xarm_msgs"
 COMMAND="$GENERATE_BAML_CLIENT && source /opt/ros/humble/setup.bash && $SOURCE_INTERFACES && colcon build $IGNORE_PACKAGES --symlink-install --packages-up-to speech nlp embeddings && source ~/.bashrc && $RUN"
 
 # echo "COMMAND= $COMMAND " >> .env
-add_or_update_variable .env "COMMAND" "$COMMAND"
+add_or_update_variable compose/.env "COMMAND" "$COMMAND"
 
 # Trap Ctrl+C to clean up
 cleanup() {
@@ -173,12 +174,12 @@ wait_and_launch_display() {
     printf '.'
     sleep 1
   done
-  bash open-display.bash
+  bash scripts/open-display.bash
 }
 
-compose_file="docker-compose-cpu.yml"
-[ "$ENV_TYPE" == "gpu" ] && compose_file="docker-compose-gpu.yml"
-[ "$ENV_TYPE" == "jetson" ] && compose_file="docker-compose.yml"
+compose_file="compose/docker-compose-cpu.yml"
+[ "$ENV_TYPE" == "gpu" ] && compose_file="compose/docker-compose-gpu.yml"
+[ "$ENV_TYPE" == "jetson" ] && compose_file="compose/docker-compose.yml"
 
 # Run the selected docker compose file
 if [ -n "$detached" ]; then
