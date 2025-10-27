@@ -145,15 +145,45 @@ class ManipulationCore(Node):
             self.tf_buffer, self, qos=qos, spin_thread=True
         )
 
-        self._clear_octomap_client = self.create_client(Empty, "/clear_octomap")
-
         self.pick_manager = PickManager(self)
         self.pick_result = PickResult()
         self.pour_manager = PourManager(self)
 
         self.place_manager = PlaceManager(self)
 
+        self.octomap_clear_client = self.create_client(Empty, "/clear_octomap")
+
+        self.declare_parameter("octomap_update_during_motion", False)
+        self.declare_parameter("octomap_update_rate_slow", 0.2)
+        self.declare_parameter("octomap_update_rate_normal", 1.0)
+
+        self.octomap_paused = False
+
         self.get_logger().info("Manipulation Core has been started")
+
+    def pause_octomap(self):
+        if not self.octomap_paused:
+            self.get_logger().info("Pausing octomap")
+
+            self.octomap_paused = True
+
+    def resume_octomap_service(self):
+        if self.octomap_paused:
+            self.get_logger().info("Resuming octomap updates")
+
+            self.octomap_paused = False
+
+    def clear_octomap(self):
+        if self.octomap_clear_client.wait_for_service(timeout_sec=1.0):
+            request = Empty.Request()
+            future = self.octomap_clear_client.call_async(request)
+            future = wait_for_future(future, timeout=1.0)
+            if future:
+                self.get_logger().info("Octomap cleared successfully")
+            else:
+                self.get_logger().warn("Octomap clear service timeout")
+        else:
+            self.get_logger().warn("Octomap clear service not available")
 
     def pick_execute(self, object_name=None, object_point=None, pick_params=None):
         self.get_logger().info(f"Goal: {object_point}")
@@ -291,13 +321,13 @@ class ManipulationCore(Node):
         wait_for_future(future)
         return future.result().success
 
-    def clear_octomap(self):
-        """Clear the octomap."""
-        request = Empty.Request()
-        self.get_logger().info("Clearing octomap")
-        future = self._clear_octomap_client.call_async(request)
-        wait_for_future(future)
-        return True
+    # def clear_octomap(self):
+    #     """Clear the octomap."""
+    #     request = Empty.Request()
+    #     self.get_logger().info("Clearing octomap")
+    #     future = self._clear_octomap_client.call_async(request)
+    #     wait_for_future(future)
+    #     return True
 
     def scan_environment(self):
         """Scan the environment and update the octomap."""
