@@ -32,8 +32,8 @@ class PickManager:
 
     def __init__(self, node):
         self.node = node
-        self.octomap = False
-        self.last_motion_time = False
+        self.octomap_paused = False
+        self.last_motion_time = None
 
     def pause_octomap_updates(self):
         """Pausar actualizaciones del octomap durante movimiento"""
@@ -237,7 +237,8 @@ class PickManager:
         if not pick_result_success:
             self.node.get_logger().error("Pick motion failed")
             return False, None
-
+        else:
+            self.resume_octomap_updates(delay=3.0)
         # close gripper
         for i in range(2):
             gripper_request = SetBool.Request()
