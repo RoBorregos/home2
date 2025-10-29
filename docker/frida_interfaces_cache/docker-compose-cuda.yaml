@@ -1,0 +1,17 @@
+services:
+  frida_interfaces_cache:
+    build:
+      context: .
+      dockerfile: ../Dockerfile.ROS
+      args:
+        BASE_IMAGE: ubuntu:22.04
+    image: roborregos/home2:cuda_base
+    container_name: home2-frida-interfaces-cache
+    volumes:
+      - ../../:/workspace/src
+      - ./build:/workspace/build
+      - ./install:/workspace/install
+      - ./log:/workspace/log
+    tty: true
+    entrypoint: ["bash", "-il", "-c"]
+    command: ["source /opt/ros/humble/setup.bash && colcon build --packages-select frida_interfaces frida_constants xarm_msgs"]

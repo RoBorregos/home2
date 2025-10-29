@@ -18,10 +18,6 @@ To run a specific task, specify it with the flag `--task`:
 ./run.sh hri --receptionist
 ```
 
-### Respeaker
-
-When running using a microphone other than the ReSpeaker, you need to modify the variable `USE_RESPEAKER` in the `frida_constants/frida_constants/hri_constants.py` file to `False`.
-
 # Additional Information
 
 You may want to only launch some of the services. For example, running the module without the LLM, etc. To do so, please check the docker-compose files in the `hri` folder, and disable the services you do not want to run.

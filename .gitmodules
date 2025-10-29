@@ -2,7 +2,7 @@
 
 [submodule "manipulation/packages/gpd"]
 	path = manipulation/packages/gpd
-	url = https://github.com/Deivideich/gpd
+	url = https://github.com/RoBorregos/gpd.git
 	
 [submodule "manipulation/packages/xarm_ros2"]
 	path = manipulation/packages/xarm_ros2
