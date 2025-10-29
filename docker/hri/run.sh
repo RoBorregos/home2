@@ -111,10 +111,11 @@ if [ ! -d "../../hri/display/dist" ] || [ ! -d "../../hri/display/node_modules" 
   echo "Setting up display environment..."
 
   compose_file="compose/display.yaml"
-  [ "$ENV_TYPE" == "jetson" ] && compose_file="compose/display-l4t.yaml"
+  service="display"
+  [ "$ENV_TYPE" == "jetson" ] && compose_file="compose/display-l4t.yaml" && service="display-l4t"
   
   echo "Installing dependencies and building project inside temporary container..."
-  docker compose -f "$compose_file" run --entrypoint "" display bash -c "source /opt/ros/humble/setup.bash && npm run build"
+  docker compose -f "$compose_file" run --entrypoint "" "$service" bash -c "source /opt/ros/humble/setup.bash && npm run build"
 fi
 
 #_________________________RUN_________________________
