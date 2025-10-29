@@ -2,12 +2,10 @@ services:
   frida_interfaces_cache:
     build:
       context: .
-      # Dockerfile.ROS is the same for both CPU and GPU
       dockerfile: ../Dockerfile.ROS
       args:
         BASE_IMAGE: ubuntu:22.04
-    image: roborregos/home2:cpu_base
-
+    image: roborregos/home2:cuda_base
     container_name: home2-frida-interfaces-cache
     volumes:
       - ../../:/workspace/src
@@ -16,5 +14,4 @@ services:
       - ./log:/workspace/log
     tty: true
     entrypoint: ["bash", "-il", "-c"]
-    # command: ["bash"]
-    command: ["source /opt/ros/humble/setup.bash && colcon build --packages-select frida_interfaces frida_constants"]
+    command: ["source /opt/ros/humble/setup.bash && colcon build --packages-select frida_interfaces frida_constants xarm_msgs"]
