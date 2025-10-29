@@ -18,6 +18,10 @@ for arg in "${ARGS[@]}"; do
     open_display="true"
   elif [ "$arg" == "--download-model" ]; then
     download_model="true"
+  elif [ "$arg" == "--gpsr-display" ]; then
+    display_mode="gpsr"
+  elif [ "$arg" == "--groceries-display" ]; then
+    display_mode="groceries"
   fi
 done
 
@@ -142,6 +146,14 @@ case $TASK in
         PROFILES=("gpsr")
         RUN="ros2 launch speech hri_launch.py"
         ;;
+    "--gpsr-display")
+        PROFILES=("gpsr_display")
+        RUN="ros2 launch speech hri_launch.py"
+        ;;
+    "--groceries-display")
+        PROFILES=("groceries_display")
+        RUN="ros2 launch speech hri_launch.py"
+        ;;
     *)
         PROFILES=("*")
         RUN="bash"
@@ -180,10 +192,19 @@ compose_file="docker-compose-cpu.yml"
 [ "$ENV_TYPE" == "gpu" ] && compose_file="docker-compose-gpu.yml"
 [ "$ENV_TYPE" == "jetson" ] && compose_file="docker-compose.yml"
 
+if [ "$display_mode" == "gpsr" ]; then
+  echo "Launching GPSR display..."
+  export DISPLAY_MODE="gpsr"
+elif [ "$display_mode" == "groceries" ]; then
+  echo "Launching Groceries display..."
+  export DISPLAY_MODE="groceries"
+fi
+
 # Run the selected docker compose file
 if [ -n "$detached" ]; then
   docker compose -f "$compose_file" up -d
   [ "$open_display" == "true" ] && wait_and_launch_display
+
 else
   ROLE=$PROFILES docker compose -f "$compose_file" up &
   compose_pid=$!
