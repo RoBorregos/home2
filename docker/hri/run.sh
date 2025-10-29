@@ -119,13 +119,29 @@ IGNORE_PACKAGES="--packages-ignore frida_interfaces frida_constants xarm_msgs"
 COMMAND="$GENERATE_BAML_CLIENT && source /opt/ros/humble/setup.bash && $SOURCE_INTERFACES && colcon build $IGNORE_PACKAGES --symlink-install --packages-up-to speech nlp embeddings && source ~/.bashrc && $RUN"
 add_or_update_variable compose/.env "COMMAND" "$COMMAND"
 
-# Trap Ctrl+C to clean up
+# Trap Ctrl+C/SIGTERM to clean up containers
+sigint_count=0
 cleanup() {
-  [ -n "$compose_pid" ] && kill "$compose_pid" 2>/dev/null
-  [ -n "$curl_pid" ] && kill "$curl_pid" 2>/dev/null
-  exit 1
+  sigint_count=$((sigint_count + 1))
+
+  # Stop background display opener if running
+  [ -n "$curl_pid" ] && kill "$curl_pid" 2>/dev/null || true
+
+  if [ -n "$compose_file" ]; then
+    if [ "$sigint_count" -eq 1 ]; then
+      echo " Caught Ctrl+C — stopping containers (press Ctrl+C again to force kill)..."
+      # Gracefully stop and remove containers started by this compose file
+      ROLE=$PROFILES docker compose -f "$compose_file" stop 2>/dev/null || true
+    else
+      echo " Force killing containers..."
+      ROLE=$PROFILES docker compose -f "$compose_file" kill 2>/dev/null || true
+    fi
+  fi
+
+  # Ensure the compose client process (if any) is not left running
+  [ -n "$compose_pid" ] && kill "$compose_pid" 2>/dev/null || true
 }
-trap cleanup SIGINT
+trap cleanup SIGINT SIGTERM
 
 # Function to wait for service and launch display
 wait_and_launch_display() {
@@ -140,7 +156,7 @@ compose_file="compose/docker-compose-${ENV_TYPE}.yml"
 
 # Run the selected docker compose file
 if [ -n "$detached" ]; then
-  docker compose -f "$compose_file" up -d
+  ROLE=$PROFILES docker compose -f "$compose_file" up -d
   [ "$open_display" == "true" ] && wait_and_launch_display
 else
   ROLE=$PROFILES docker compose -f "$compose_file" up &
@@ -153,5 +169,7 @@ else
 
   # Wait for docker compose to finish, then kill the curl loop if it exists
   wait $compose_pid
-  [ -n "$curl_pid" ] && kill $curl_pid 2>/dev/null
+  if [ -n "$curl_pid" ] && kill -0 "$curl_pid" 2>/dev/null; then
+    kill "$curl_pid" 2>/dev/null
+  fi
 fi
