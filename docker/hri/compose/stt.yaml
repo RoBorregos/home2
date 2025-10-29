@@ -1,19 +1,14 @@
 services:
   stt:
     profiles: [receptionist, carry, gpsr, storing]
-
     container_name: home2-hri-stt
     image: roborregos/home2:hri-stt
     build:
-      context: ../..
-      dockerfile: docker/hri/Dockerfile.stt
-    ports:
-      - "50051:50051"
+      context: ../../..
+      dockerfile: docker/hri/dockerfiles/Dockerfile.stt
     volumes:
-      - ../../hri/packages/speech/scripts/stt/:/app
-      - ../../hri/packages/speech/speech/:/app/speech
-    environment:
-      ROS_LOCALHOST_ONLY: 1
+      - ../../../hri/packages/speech/scripts/stt/:/app
+      - ../../../hri/packages/speech/speech/:/app/speech
     network_mode: host
     command:
       [
