@@ -1,5 +1,7 @@
 #!/bin/bash
 
+#_________________________ARGUMENTS_________________________
+
 ARGS=("$@")  # Save all arguments in an array
 TASK=${ARGS[0]}
 
@@ -24,23 +26,6 @@ done
 
 #_________________________BUILD_________________________
 
-# Image names
-CPU_IMAGE="roborregos/home2:cpu_base"
-CUDA_IMAGE="roborregos/home2:cuda_base"
-JETSON_IMAGE="roborregos/home2:l4t_base"
-
-# Function to check if an image exists
-check_image_exists() {
-    local image_name=$1
-    if ! docker images --format "{{.Repository}}:{{.Tag}}" | grep -q "^${image_name}$"; then
-        echo "Image $image_name does not exist. Building it..."
-        return 1  # Image doesn't exist
-    else
-        echo "Image $image_name already exists. Skipping build."
-        return 0  # Image exists
-    fi
-}
-
 # Function to add or update a variable in a file
 add_or_update_variable() {
     local file=$1
@@ -57,45 +42,16 @@ add_or_update_variable() {
     fi
 }
 
-# Check type of environment (CPU, GPU, or Jetson), default CPU
+# Check type of environment (cpu, cuda, or l4t), default cpu
 ENV_TYPE="cpu"
 
 # Check device type
-if [[ -f /etc/nv_tegra_release ]]; then
-    ENV_TYPE="jetson"
-else
-    # Check if NVIDIA GPUs are available
-    if command -v nvidia-smi > /dev/null 2>&1; then
-        if nvidia-smi > /dev/null 2>&1; then
-            ENV_TYPE="gpu"
-        fi
-    fi
+if [ -f /etc/nv_tegra_release ]; then
+  ENV_TYPE="l4t"
+elif command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi >/dev/null 2>&1; then
+  ENV_TYPE="cuda"
 fi
 echo "Detected environment: $ENV_TYPE"
-
-# Build base image
-case $ENV_TYPE in
-  "gpu")
-    ;&
-  "cpu")
-    
-    check_image_exists "$CPU_IMAGE"
-    if [ $? -eq 1 ]; then
-        docker compose -f ../cpu.yaml build
-    fi
-    ;;
-  "jetson")
-    
-    check_image_exists "$JETSON_IMAGE"
-    if [ $? -eq 1 ]; then
-        docker compose -f ../l4t.yaml build
-    fi
-    ;;
-  *)
-    echo "Unknown environment type!"
-    exit 1
-    ;;
-esac
 
 #_________________________SETUP_________________________
 
@@ -105,6 +61,10 @@ bash scripts/setup.bash
 # Create dirs with current user to avoid permission problems
 mkdir -p install build log ../../hri/packages/speech/assets/downloads/offline_voice/model/
 
+# Ensure compose/.env exists
+if [ ! -f "compose/.env" ]; then
+  touch compose/.env
+fi
 
 # Check if display setup is needed
 if [ ! -d "../../hri/display/dist" ] || [ ! -d "../../hri/display/node_modules" ] || [ ! -d "../../hri/display/web-ui/.next" ] || [ ! -d "../../hri/display/web-ui/node_modules" ] || [ "$build_display" == "true" ]; then
@@ -112,7 +72,7 @@ if [ ! -d "../../hri/display/dist" ] || [ ! -d "../../hri/display/node_modules" 
 
   compose_file="compose/display.yaml"
   service="display"
-  [ "$ENV_TYPE" == "jetson" ] && compose_file="compose/display-l4t.yaml" && service="display-l4t"
+  [ "$ENV_TYPE" == "l4t" ] && compose_file="compose/display-l4t.yaml" && service="display-l4t"
   
   echo "Installing dependencies and building project inside temporary container..."
   docker compose -f "$compose_file" run --entrypoint "" "$service" bash -c "source /opt/ros/humble/setup.bash && npm run build"
@@ -157,8 +117,6 @@ GENERATE_BAML_CLIENT="baml-cli generate --from /workspace/src/task_manager/scrip
 SOURCE_INTERFACES="source frida_interfaces_cache/install/local_setup.bash"
 IGNORE_PACKAGES="--packages-ignore frida_interfaces frida_constants xarm_msgs"
 COMMAND="$GENERATE_BAML_CLIENT && source /opt/ros/humble/setup.bash && $SOURCE_INTERFACES && colcon build $IGNORE_PACKAGES --symlink-install --packages-up-to speech nlp embeddings && source ~/.bashrc && $RUN"
-
-# echo "COMMAND= $COMMAND " >> .env
 add_or_update_variable compose/.env "COMMAND" "$COMMAND"
 
 # Trap Ctrl+C to clean up
@@ -178,9 +136,7 @@ wait_and_launch_display() {
   bash scripts/open-display.bash
 }
 
-compose_file="compose/docker-compose-cpu.yml"
-[ "$ENV_TYPE" == "gpu" ] && compose_file="compose/docker-compose-gpu.yml"
-[ "$ENV_TYPE" == "jetson" ] && compose_file="compose/docker-compose.yml"
+compose_file="compose/docker-compose-${ENV_TYPE}.yml"
 
 # Run the selected docker compose file
 if [ -n "$detached" ]; then
