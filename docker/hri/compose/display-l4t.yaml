@@ -1,20 +1,14 @@
 services:
-  display:
+  display-l4t:
     container_name: home2-hri-display-l4t
     image: roborregos/home2:hri-display-l4t
     build:
-      context: ../..
-      dockerfile: docker/hri/Dockerfile.display
+      context: ../../..
+      dockerfile: docker/hri/dockerfiles/Dockerfile.display
       args:
         BASE_IMAGE: roborregos/home2:l4t_base
     volumes:
-      - ../../hri/display/:/app
+      - ../../../hri/display/:/app
       - /dev:/dev
-    environment:
-      ROS_LOCALHOST_ONLY: 1
-    ports:
-      - "3000:3000"
-      - "8001:8001"
-      - "8080:8080"
     network_mode: host
     command: ["/bin/bash", "/display-entrypoint.sh"]

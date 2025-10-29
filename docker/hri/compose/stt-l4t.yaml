@@ -1,21 +1,15 @@
 services:
   stt-l4t:
     profiles: [receptionist, carry, gpsr, storing]
-
     container_name: home2-hri-stt-l4t
-    # user: 1000:1000
     image: roborregos/home2:hri-stt-l4t
     runtime: nvidia
     build:
-      context: ../..
-      dockerfile: docker/hri/Dockerfile.stt-l4t
-    ports:
-      - 50051:50051
+      context: ../../..
+      dockerfile: docker/hri/dockerfiles/Dockerfile.stt-l4t
     volumes:
-      - ../../hri/packages/speech/scripts/stt/:/app
-      - ../../hri/packages/speech/speech/:/app/speech      
-    environment:
-      ROS_LOCALHOST_ONLY: 1
+      - ../../../hri/packages/speech/scripts/stt/:/app
+      - ../../../hri/packages/speech/speech/:/app/speech      
     network_mode: host
     # Any language -> english: distil-large-v3
     # Any language -> Any language: large-v3-turbo

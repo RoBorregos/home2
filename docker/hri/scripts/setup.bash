@@ -25,7 +25,8 @@ sudo usermod -aG audio $USER # Make sure current user has access to audio resour
 SCRIPT_PATH="$HOME/scripts/hri_devices.bash"
 BASHRC="$HOME/.bashrc"
 SCRIPT_CMD="source $SCRIPT_PATH"
-SOURCE_SCRIPT="./mic_script.bash"
+SOURCE_SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SOURCE_SCRIPT="$SOURCE_SCRIPT_DIR/mic_script.bash"
 
 # Check if the script already exists, otherwise copy it
 if [ ! -f "$SCRIPT_PATH" ]; then

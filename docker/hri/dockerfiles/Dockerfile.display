@@ -18,6 +18,6 @@ RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.2/install.sh | b
 
 RUN sudo apt update && sudo apt install -y ros-humble-web-video-server
 
-COPY docker/hri/display-entrypoint.sh /
+COPY docker/hri/scripts/display-entrypoint.sh /
 
 WORKDIR /app
