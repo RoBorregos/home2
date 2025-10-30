@@ -7,6 +7,7 @@ say:
     SPEAK_SERVICE: REPLACE
     speak_topic: "/speech/speak_now"
     speaking_topic: "saying"
+    robot_audio_topic: "/robot_audio_output" # For AEC reference
 
     model: "af_heart"
     offline: True
