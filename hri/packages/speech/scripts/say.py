@@ -272,8 +272,6 @@ class Say(Node):
         self.play_audio(save_path)
 
     def play_audio(self, file_path):
-        """Play audio file and publish its content for AEC reference."""
-        # Read the audio file first to publish for AEC
         try:
             audio_data, sample_rate = sf.read(file_path, dtype="int16")
 
@@ -300,7 +298,6 @@ class Say(Node):
         except Exception as e:
             self.get_logger().warn(f"Could not read audio file for AEC: {e}")
 
-        # Now play the audio normally
         mixer.pre_init(frequency=48000, buffer=2048)
         mixer.init()
         while mixer.music.get_busy():

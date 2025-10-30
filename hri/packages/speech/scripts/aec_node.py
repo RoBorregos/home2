@@ -22,8 +22,6 @@ from speech.stft_aec import STFTEchoCanceller, normalize_audio
 
 
 class AECNode(Node):
-    """ROS2 node for real-time acoustic echo cancellation."""
-
     def __init__(self):
         super().__init__("aec_node")
         self.get_logger().info("*Starting AEC Node*")
@@ -89,7 +87,7 @@ class AECNode(Node):
         )
         self.max_delay_samples = int(max_delay_ms * 1e-3 * sample_rate)
 
-        # Audio buffers
+        # Audio buffers with timestamps: (timestamp_ns, audio_data)
         self.mic_buffer = collections.deque(maxlen=buffer_size)
         self.robot_buffer = collections.deque(maxlen=buffer_size)
         self.buffer_lock = threading.Lock()
@@ -162,18 +160,20 @@ class AECNode(Node):
         audio_data = (
             np.frombuffer(msg.data, dtype=np.int16).astype(np.float64) / 32768.0
         )
+        timestamp = self.get_clock().now().nanoseconds
 
         with self.buffer_lock:
-            self.mic_buffer.append(audio_data)
+            self.mic_buffer.append((timestamp, audio_data))
 
     def robot_audio_callback(self, msg):
         """Callback for robot audio output (reference signal)."""
         audio_data = (
             np.frombuffer(msg.data, dtype=np.int16).astype(np.float64) / 32768.0
         )
+        timestamp = self.get_clock().now().nanoseconds
 
         with self.buffer_lock:
-            self.robot_buffer.append(audio_data)
+            self.robot_buffer.append((timestamp, audio_data))
             self.last_robot_audio_time = time.time()
 
     def start_processing_thread(self):
@@ -199,16 +199,34 @@ class AECNode(Node):
                         time.sleep(0.01)
                         continue
 
-                    mic_chunk = self.mic_buffer.popleft()
+                    mic_timestamp, mic_chunk = self.mic_buffer.popleft()
 
                     # Check if robot is speaking or spoke recently
                     time_since_robot_audio = time.time() - self.last_robot_audio_time
                     robot_active = self.robot_speaking or time_since_robot_audio < 1.0
 
+                    # Find the robot audio chunk closest in time to the mic chunk
+                    robot_chunk = None
                     if robot_active and len(self.robot_buffer) > 0:
-                        robot_chunk = self.robot_buffer.popleft()
-                    else:
-                        robot_chunk = None
+                        # Look for robot audio within sync tolerance
+                        sync_tolerance_ns = int(self.sync_tolerance_ms * 1e6)
+                        best_match = None
+                        best_diff = float("inf")
+
+                        # Find closest matching timestamp
+                        for i, (robot_ts, robot_data) in enumerate(self.robot_buffer):
+                            time_diff = abs(robot_ts - mic_timestamp)
+                            if time_diff < best_diff:
+                                best_diff = time_diff
+                                best_match = i
+
+                        # Use the match if within tolerance
+                        if best_match is not None and best_diff < sync_tolerance_ns:
+                            _, robot_chunk = self.robot_buffer[best_match]
+                            # Remove used and older chunks
+                            for _ in range(best_match + 1):
+                                if len(self.robot_buffer) > 0:
+                                    self.robot_buffer.popleft()
 
                 # Process audio
                 if robot_chunk is not None and len(robot_chunk) > 0:

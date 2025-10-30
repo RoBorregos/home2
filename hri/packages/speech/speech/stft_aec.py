@@ -1,10 +1,3 @@
-"""
-STFT-based Acoustic Echo Cancellation (AEC) module.
-
-This module implements a frequency-domain echo canceller using Short-Time
-Fourier Transform (STFT) with a smoothed Wiener filter approach.
-"""
-
 import numpy as np
 from scipy.signal import correlate
 from typing import Tuple
@@ -42,7 +35,7 @@ class STFTEchoCanceller:
         self.freq_bins = frame_size // 2 + 1
         self.win = np.hanning(frame_size)
 
-        # Power Spectral Densities (smoothed)
+        # Power Spectral Densities
         self.Pxx = np.ones(self.freq_bins) * 1e-10  # Auto-PSD of reference
         self.Pxd = np.ones(self.freq_bins, dtype=np.complex128) * 1e-10  # Cross-PSD
 

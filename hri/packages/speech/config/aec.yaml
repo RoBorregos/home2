@@ -21,4 +21,4 @@ aec_node:
     # Buffer and processing
     buffer_size: 5000 # Maximum buffer size for audio chunks
     enable_normalization: true
-    sync_tolerance_ms: 50.0 # Synchronization tolerance (ms)
+    sync_tolerance_ms: 50.0 # Max time difference (ms) to match mic/robot audio chunks
