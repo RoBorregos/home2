@@ -135,7 +135,7 @@ install(DIRECTORY launch
 
 # find_package(ament_python REQUIRED)
 
-ament_python_install_package(${PROJECT_NAME})
+# ament_python_install_package(${PROJECT_NAME})
 
 install(PROGRAMS
   scripts/record_relative_pose.py

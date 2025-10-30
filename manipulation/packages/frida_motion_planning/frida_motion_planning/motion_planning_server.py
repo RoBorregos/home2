@@ -179,7 +179,7 @@ class MotionPlanningServer(Node):
             callback_group=self.callback_group,
         )
 
-        self.xarm_set_moveit_mode_service = self.create_service(
+        self.xarm_set_moveit_mode_service = self.create_service(  # Duplicate service??
             Empty,
             XARM_SETMODE_MOVEIT_SERVICE,
             self.set_moveit_mode_service,
@@ -238,20 +238,7 @@ class MotionPlanningServer(Node):
                 f"Playing trayectory with times: {req.times}, double_speed: {req.double_speed}, wait: {req.wait}"
             )
             future = self.play_traj_client.call_async(req)
-            # now = time.time()
-            # timeout = 10
             wait_for_future(future)
-            # rclpy.spin_until_future_complete(self, future)
-            # result = future.result()
-
-            # if result.ret == 0:
-            #     response.success = True
-            #     self.get_logger().info("Trayectory played successfully")
-            # else:
-            #     response.success = False
-            #     self.get_logger().error(
-            #         f"Failed to play trayectory: {result.ret} with message: {result.message}"
-            #     )
             response.success = True
             # return response
         except Exception as e:

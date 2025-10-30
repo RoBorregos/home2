@@ -128,7 +128,7 @@ class FixPositionToPlane(Node):
         transform.transform.rotation.x = pose.pose.orientation.x
         transform.transform.rotation.y = pose.pose.orientation.x
         transform.transform.rotation.z = pose.pose.orientation.x
-        transform.transform.rotation.w = pose.pose.orientation.x
+        transform.transform.rotation.w = pose.pose.orientation.x  # Send de same all??
 
         # Broadcast the transform
         self.tf_broadcaster.sendTransform(transform)
@@ -169,6 +169,7 @@ class FixPositionToPlane(Node):
         print(f"New point: {new_point}")
         return new_point
 
+    # This work better that the get_line_from_points??
     @staticmethod
     def get_line_from_points2(p1: MyPoint, p2: MyPoint, distance: float):
         # y = mx + b

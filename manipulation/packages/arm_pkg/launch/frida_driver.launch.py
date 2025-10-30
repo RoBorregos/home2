@@ -23,7 +23,7 @@ from launch.launch_description_sources import load_python_launch_file_as_module
 
 def launch_setup(context, *args, **kwargs):
     # Declare arguments
-    declared_arguments = []
+    declared_arguments = []  # Are this being used??
     declared_arguments.append(
         DeclareLaunchArgument(
             "robot_ip",
@@ -41,7 +41,7 @@ def launch_setup(context, *args, **kwargs):
     declared_arguments.append(
         DeclareLaunchArgument(
             "dof",
-            default_value="6",
+            default_value="6",  # Should be number or string??
             description="Degree of freedom of manipulator, defalut is 7.",
         )
     )
@@ -56,7 +56,7 @@ def launch_setup(context, *args, **kwargs):
     # Initialize Arguments
     robot_ip = LaunchConfiguration("robot_ip")
     report_type = LaunchConfiguration("report_type", default="normal")
-    dof = LaunchConfiguration("dof", default=7)
+    dof = LaunchConfiguration("dof", default=7)  # Should be number or string??
     hw_ns = LaunchConfiguration("hw_ns", default="xarm")
     add_gripper = LaunchConfiguration("add_gripper", default=False)
     add_vacuum_gripper = LaunchConfiguration("add_vacuum_gripper", default=False)
@@ -140,7 +140,7 @@ def launch_setup(context, *args, **kwargs):
 
 def generate_launch_description():
     return LaunchDescription(
-        [
+        [  # could add declared_arguments here if being used
             OpaqueFunction(function=launch_setup),
         ]
     )

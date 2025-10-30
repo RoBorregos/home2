@@ -249,7 +249,7 @@ class PourManager:
                 # Send goal
                 self.node.get_logger().info("Sending pick motion goal...")
                 future = self.node._pick_motion_action_client.send_goal_async(goal_msg)
-                future = wait_for_future(future, timeout=30)
+                future = wait_for_future(future, timeout=30)  # This is duplicate??
                 if not future:
                     break
                 # Check result

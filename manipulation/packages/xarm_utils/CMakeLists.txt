@@ -12,15 +12,19 @@ find_package(ament_cmake_python REQUIRED)
 # Install Python package
 ament_python_install_package(xarm_utils)
 
-# Install examples
-set(SCRIPTS_DIR xarm_utils)
-  
-install(PROGRAMS
-    ${SCRIPTS_DIR}/ir_gripper.py
-    DESTINATION lib/${PROJECT_NAME}
-)
+# Verify script exists before installing
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/xarm_utils/ir_gripper.py")
+  install(PROGRAMS
+      xarm_utils/ir_gripper.py
+      DESTINATION lib/${PROJECT_NAME}
+  )
+else()
+  message(WARNING "ir_gripper.py not found")
+endif()
 
+# Install launch files
 install(DIRECTORY launch
-  DESTINATION share/${PROJECT_NAME})
+  DESTINATION share/${PROJECT_NAME}
+)
 
 ament_package()
