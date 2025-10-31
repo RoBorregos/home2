@@ -73,3 +73,43 @@ docker exec -it <container_name> bash
 ## Dockerfile.ROS
 
 The `Dockerfile.ROS` file is a template that can be used to install ROS humble in a plain docker image. This is used to build the base image for both `cpu.yaml` and `cuda.yaml`.
+
+## Docker Hub Integration (Orin/Jetson Images)
+
+For building and pushing Jetson Orin/L4T images to Docker Hub:
+
+- **Quick Reference**: See [QUICK_REFERENCE.md](./QUICK_REFERENCE.md) for common commands
+- **Full Documentation**: See [DOCKER_HUB_GUIDE.md](./DOCKER_HUB_GUIDE.md) for complete guide
+
+### Quick Start
+
+```bash
+# Build and push all Orin images (using scripts)
+./docker/push-orin-images.sh v1.0.0
+
+# Or using Makefile
+cd docker/
+make deploy VERSION=v1.0.0
+
+# Pull images
+./docker/pull-orin-images.sh v1.0.0
+```
+
+### Available Scripts
+
+- `push-orin-images.sh` - Build and push all Jetson images to Docker Hub
+- `pull-orin-images.sh` - Pull all Jetson images from Docker Hub
+- `list-orin-images.sh` - List available local Jetson images
+- `Makefile` - Build automation with make commands
+
+### GitHub Actions
+
+The repository includes automated CI/CD via GitHub Actions (`.github/workflows/docker-orin.yml`). Images are automatically built and pushed when:
+
+- Code is pushed to `main` or `stable` branches
+- A new release is created
+- Workflow is manually triggered
+
+```
+
+```
