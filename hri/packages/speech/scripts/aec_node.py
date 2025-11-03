@@ -163,6 +163,11 @@ class AECNode(Node):
         timestamp = self.get_clock().now().nanoseconds
 
         with self.buffer_lock:
+            # Check for buffer overflow
+            if len(self.mic_buffer) >= self.mic_buffer.maxlen - 10:
+                self.get_logger().warning(
+                    "Mic buffer near full! Processing may be too slow."
+                )
             self.mic_buffer.append((timestamp, audio_data))
 
     def robot_audio_callback(self, msg):
@@ -173,6 +178,11 @@ class AECNode(Node):
         timestamp = self.get_clock().now().nanoseconds
 
         with self.buffer_lock:
+            # Check for buffer overflow
+            if len(self.robot_buffer) >= self.robot_buffer.maxlen - 10:
+                self.get_logger().warning(
+                    "Robot buffer near full! Processing may be too slow."
+                )
             self.robot_buffer.append((timestamp, audio_data))
             self.last_robot_audio_time = time.time()
 

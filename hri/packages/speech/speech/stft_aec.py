@@ -192,9 +192,11 @@ class STFTEchoCanceller:
         output_length = num_frames * self.hop_size
         output = e_out[:output_length]
 
-        # Remove processed samples from buffers
-        self.x_buffer = self.x_buffer[output_length:]
-        self.d_buffer = self.d_buffer[output_length:]
+        # Remove processed samples from buffers (ensure sync)
+        min_buffer_len = min(len(self.x_buffer), len(self.d_buffer))
+        consumed = min(output_length, min_buffer_len)
+        self.x_buffer = self.x_buffer[consumed:]
+        self.d_buffer = self.d_buffer[consumed:]
 
         return output
 
