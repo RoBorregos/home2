@@ -4,10 +4,6 @@
 	path = manipulation/packages/gpd
 	url = https://github.com/RoBorregos/gpd.git
 	
-[submodule "manipulation/packages/xarm_ros2"]
-	path = manipulation/packages/xarm_ros2
-	url = https://github.com/xArm-Developer/xarm_ros2.git
-	branch = humble
 [submodule "manipulation/packages/pymoveit2"]
 	path = manipulation/packages/pymoveit2
 	url = https://github.com/RoBorregos/pymoveit2
