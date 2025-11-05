@@ -5,13 +5,13 @@ _run_sh_autocomplete() {
     _init_completion || return
 
     local areas="manipulation navigation hri vision integration"
-    local tasks="--carry --receptionist --storing-groceries --gpsr --moondream --egpsr --clean-table --hand --restaurant"
+    local tasks="--carry --receptionist --storing-groceries --gpsr  --gpsr-display --groceries-display --moondream --egpsr --clean-table --hand --restaurant"
     local flags="--rebuild --help -h -d"
     
     # Add area specific flags
     case "${words[1]}" in
         hri)
-            flags="$flags --build-display --open-display --download-model"
+            flags="$flags --build-display --open-display --download-model --open-groceries-display --open-gpsr-display --display=GPSR --display=StoreGroceries"
             ;;
         integration)
             flags="$flags --build --test-hri"

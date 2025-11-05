@@ -8,21 +8,29 @@ detached=""
 build_display=""
 open_display=""
 download_model=""
+display_mode=""
+DISPLAY_TASK=""
 # Check if one of the arguments is --detached, --build-display, or --open-display
 for arg in "${ARGS[@]}"; do
-  if [ "$arg" == "-d" ]; then
-    detached="-d"
-  elif [ "$arg" == "--build-display" ]; then
-    build_display="true"
-  elif [ "$arg" == "--open-display" ]; then
-    open_display="true"
-  elif [ "$arg" == "--download-model" ]; then
-    download_model="true"
-  elif [ "$arg" == "--gpsr-display" ]; then
-    display_mode="gpsr"
-  elif [ "$arg" == "--groceries-display" ]; then
-    display_mode="groceries"
-  fi
+  case "$arg" in
+    -d) detached="-d" ;;
+    --build-display) build_display="true" ;;
+    --open-display) open_display="true" ;;
+    --download-model) download_model="true" ;;
+    -h|--help) ;; # handled elsewhere
+    --display-gpsr|--gpsr-display|--open-gpsr-display)
+      DISPLAY_TASK="GPSR"
+      display_mode="gpsr"
+      ;;
+    --display-store-groceries|--groceries-display|--open-groceries-display|--display-grocery|--display-store)
+      DISPLAY_TASK="StoreGroceries"
+      display_mode="groceries"
+      ;;
+    --display=*)
+      DISPLAY_TASK="${arg#--display=}"
+      display_mode="$(echo "${DISPLAY_TASK}" | tr '[:upper:]' '[:lower:]')"
+      ;;
+  esac
 done
 
 #_________________________BUILD_________________________
@@ -117,7 +125,12 @@ if [ ! -d "../../hri/display/dist" ] || [ ! -d "../../hri/display/node_modules" 
   [ "$ENV_TYPE" == "jetson" ] && compose_file="display-l4t.yaml"
   
   echo "Installing dependencies and building project inside temporary container..."
-  docker compose -f "$compose_file" run --entrypoint "" display bash -c "source /opt/ros/humble/setup.bash && npm run build"
+  if [ -n "${DISPLAY_TASK}" ]; then
+    # pass display preset into the build container so NEXT_PUBLIC_DISPLAY_TASK is baked into .next
+    docker compose -f "$compose_file" run --rm -e NEXT_PUBLIC_DISPLAY_TASK="${DISPLAY_TASK}" --entrypoint "" display bash -c "cd web-ui && export NEXT_PUBLIC_DISPLAY_TASK=${DISPLAY_TASK} && source /opt/ros/humble/setup.bash && npm ci --silent && npm run build"
+  else
+    docker compose -f "$compose_file" run --rm --entrypoint "" display bash -c "cd web-ui && source /opt/ros/humble/setup.bash && npm ci --silent && npm run build"
+  fi
 fi
 
 #_________________________RUN_________________________
