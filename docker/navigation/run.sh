@@ -1,160 +1,104 @@
 #!/bin/bash
-ARGS=("$@")  # Save all arguments in an array
-TASK=${ARGS[0]}
-detached=""
-# check if one of the arguments is --detached
-for arg in "${ARGS[@]}"; do
-  if [ "$arg" == "-d" ]; then
-    detached="-d"
-  fi
-done
-#_________________________BUILD_________________________
-
-# Image names
-CPU_IMAGE="roborregos/home2:cpu_base"
-CUDA_IMAGE="roborregos/home2:gpu_base"
-
-# Function to check if an image exists
-check_image_exists() {
-    local image_name=$1
-    if ! docker images --format "{{.Repository}}:{{.Tag}}" | grep -q "^${image_name}$"; then
-        echo "Image $image_name does not exist. Building it..."
-        return 1  # Image doesn't exist
-    else
-        echo "Image $image_name already exists. Skipping build."
-        return 0  # Image exists
-    fi
-}
-
-# Check type of environment (CPU, GPU, or Jetson), default CPU
-ENV_TYPE="cpu"
-
-# Check device type
-if [[ -f /etc/nv_tegra_release ]]; then
-    ENV_TYPE="jetson"
-else
-    # Check if NVIDIA GPUs are available
-    if command -v nvidia-smi > /dev/null 2>&1; then
-        if nvidia-smi > /dev/null 2>&1; then
-            ENV_TYPE="gpu"
-        fi
-    fi
-fi
-echo "Detected environment: $ENV_TYPE"
-> .env
-# Write environment variables to .env file for Docker Compose and build base images
-case $ENV_TYPE in
-  "cpu")
-    #_____CPU_____
-    echo "DOCKERFILE=docker/navigation/Dockerfile.cpu" >> .env
-    echo "BASE_IMAGE=roborregos/home2:cpu_base" >> .env
-    echo "IMAGE_NAME=roborregos/home2:navigation-cpu" >> .env
-    
-    # Build the base image if it doesn't exist
-    check_image_exists "$CPU_IMAGE"
-    if [ $? -eq 1 ]; then
-        docker compose -f ../cpu.yaml build
-    fi
-    ;;
-  "gpu")
-    #_____GPU_____
-    echo "DOCKERFILE=docker/navigation/Dockerfile.gpu" >> .env
-    echo "BASE_IMAGE=roborregos/home2:gpu_base" >> .env
-    echo "IMAGE_NAME=roborregos/home2:navigation-gpu" >> .env
-
-    # Build the base image if it doesn't exist
-    check_image_exists "$CUDA_IMAGE"
-    if [ $? -eq 1 ]; then
-        docker compose -f ../cuda.yaml build
-    fi
-
-    ;;
-  "jetson")
-    #_____Jetson_____
-    echo "DOCKERFILE=docker/navigation/Dockerfile.jetson" >> .env
-    echo "BASE_IMAGE=roborregos/home2:l4t_base" >> .env
-    echo "IMAGE_NAME=roborregos/home2:navigation-jetson" >> .env
-    echo "DISPLAY=:0" >> .env
-    ;;
-  *)
-    echo "Unknown environment type!"
-    exit 1
-    ;;
-esac
-
-
-#_________________________SETUP_________________________
+source ../../lib.sh
 
 # Export user
 export LOCAL_USER_ID=$(id -u)
 export LOCAL_GROUP_ID=$(id -g)
+
+#_________________________ARGUMENTS_________________________
+
+ARGS=("$@")
+TASK=${ARGS[0]}
+ENV_TYPE="${*: -1}"
+
+DETACHED=""
+BUILD=""
+BUILD_IMAGE=""
+COMPOSE="docker-compose-${ENV_TYPE}.yaml"
+
+# Parse arguments
+for arg in "${ARGS[@]}"; do
+    case $arg in
+    "-d")
+        DETACHED="-d"
+        ;;
+    "--build")
+        BUILD="true"
+        ;;
+    "--recreate")
+        docker compose down
+        ;;
+    "--down")
+        docker compose down
+        exit 0
+        ;;
+    "--stop")
+        docker compose stop
+        exit 0
+        ;;
+    "--build-image")
+        BUILD_IMAGE="--build"
+        ;;
+    esac
+done
+
+#_________________________SETUP_________________________
+
+# Ensure .env exists
+if [ ! -f ".env" ]; then
+    touch .env
+fi
+
+add_or_update_variable .env "BASE_IMAGE" "roborregos/home2:${ENV_TYPE}_base"
+add_or_update_variable .env "IMAGE_NAME" "roborregos/home2:navigation-${ENV_TYPE}"
+add_or_update_variable .env "DOCKERFILE" "docker/navigation/Dockerfile.${ENV_TYPE}"
 
 # Create dirs with current user to avoid permission problems
 mkdir -p install build log
 
 #_________________________RUN_________________________
 
-NAV_NAME="home2-navigation"
-# Check which commands and services to run
-echo "TASK=$TASK"
+COLCON="colcon build --symlink-install --packages-up-to nav_main --packages-ignore frida_interfaces"
+SOURCE_ROS="source /opt/ros/humble/setup.bash"
+SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
+SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
+
+if [ "$BUILD" == "true" ]; then
+    SETUP="$SOURCE_ROS && $SOURCE_INTERFACES && $SOURCE && $COLCON"
+else
+    SETUP="$SOURCE_ROS && $SOURCE_INTERFACES && $SOURCE"
+fi
+
 case $TASK in
     "--receptionist")
-        PACKAGES="nav_main dashgo_driver sllidar_ros2"
-        RUN="cp /workspace/src/navigation/rtabmapdbs/lab.db /home/ros/.ros/rtabmap.db && ros2 launch nav_main receptionist.launch.py"
+        RUN="ls"
+        ;;
+    "--mapping")
+        RUN="ls"
         ;;
     "--help-me-carry")
-        PACKAGES="nav_main dashgo_driver sllidar_ros2"
         RUN="ros2 launch nav_main carry_my.launch.py"
         ;;
     "--storing-groceries")
-        PACKAGES="nav_main dashgo_driver sllidar_ros2"
-        RUN="cp /workspace/src/navigation/rtabmapdbs/lab_3d_grid.db /home/ros/.ros/rtabmap.db && ros2 launch nav_main storing_groceries.launch.py"
+        RUN="ros2 launch nav_main storing_groceries.launch.py"
+        ;;
+        *)
+        RUN="bash"
         ;;
 
 esac
-echo "PACKAGES=$PACKAGES"
-echo "RUN=$RUN"
 
+COMMAND="$SETUP && $RUN"
+add_or_update_variable .env "COMMAND" "$COMMAND"
 
-if [ -n "$TASK" ]; then
-    COMMAND="source /opt/ros/humble/setup.bash && colcon build --symlink-install --packages-up-to $PACKAGES && source install/setup.bash && $RUN"
-    echo "COMMAND= $COMMAND " >> .env
-fi
-
-NEEDS_BUILD=false
-
-# Check if any enabled service is missing a container
-CONTAINER=$(docker ps -a --filter "name=${NAV_NAME}" --format "{{.ID}}")
-if [ -z "$CONTAINER" ]; then
-    echo "No container found for '$NAV_NAME'."
-    NEEDS_BUILD=false
-    break 
-fi
-# NEEDS_BUILD=true
-
-
-# If no task set, enter with bash
-if [ -z "$TASK" ]; then
-    if [ "$NEEDS_BUILD" = true ]; then
-        docker compose up --build -d
+if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
+    EXISTING_CONTAINER=$(docker ps -a -q -f name="navigation")
+    if [ -z "$EXISTING_CONTAINER" ] || [ "$BUILD_IMAGE" == "--build" ]; then
+        docker compose up -d $BUILD_IMAGE
     else
-        echo "checking container run"
-       RUNNING=$(docker ps --filter "name=home2-navigation" --format "{{.ID}}")
-       echo "RUNNING=$RUNNING"
-        if [ -z "$RUNNING" ]; then
-            echo "Starting navigation docker container..."
-            docker compose up -d
-        fi 
-        docker start home2-navigation
-        docker exec -it home2-navigation /bin/bash
+        docker compose start
     fi
-
+    docker compose exec navigation bash -c "$COMMAND"
 else
-    if [ "$NEEDS_BUILD" = true ]; then
-        echo "Building and starting containers..."
-        docker compose up --build -d
-    else
-        echo "All containers exist. Starting without build..."
-        docker compose up
-    fi
+    docker compose up $DETACHED $BUILD_IMAGE
 fi

@@ -3,10 +3,10 @@ services:
     container_name: home2-navigation
     build:
       context: ../..
-      dockerfile: ${DOCKERFILE:-docker/navigation/Dockerfile.cpu}
+      dockerfile: ${DOCKERFILE:-docker/navigation/Dockerfile.l4t}
       args:
-        BASE_IMAGE: ${BASE_IMAGE:-roborregos/home2:cpu_base} 
-    image: ${IMAGE_NAME:-roborregos/home2:navigation-cpu}
+        BASE_IMAGE: ${BASE_IMAGE:-roborregos/home2:l4t_base} 
+    image: ${IMAGE_NAME:-roborregos/home2:navigation-l4t}
     volumes:
       - ../../:/workspace/src
       - /dev:/dev
@@ -15,22 +15,19 @@ services:
       - /tmp/.X11-unix:/tmp/.X11-unix
       - ./build:/workspace/build
       - ./install:/workspace/install
+      - ../frida_interfaces_cache:/workspace/frida_interfaces_cache
       - ./log:/workspace/log
-  
     network_mode: host
-    user: 1000:1000
+    user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
     privileged: true
     runtime : nvidia
     group_add: 
       - video
-
     environment:
       DISPLAY: :0
       TERM: xterm-256color
       QT_X11_NO_MITSHM: 1
       QT_DEBUG_PLUGINS: 1
-      ROS_LOCALHOST_ONLY: 1
-
     tty: true
     stdin_open: true    
     working_dir: /workspace
