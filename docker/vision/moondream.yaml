@@ -66,7 +66,6 @@ services:
       TERM: xterm-256color
       QT_X11_NO_MITSHM: 1
       QT_DEBUG_PLUGINS: 1
-      ROS_LOCALHOST_ONLY: 1
 
     tty: true
     stdin_open: true
@@ -75,4 +74,4 @@ services:
     # command: bash -c "source /opt/ros/humble/setup.bash && colcon build --packages-up-to moondream_run && source install/setup.bash && ros2 run moondream_run moondream_node.py"
     # command: bash -c "source /opt/ros/humble/setup.bash && source install/setup.bash && ros2 run moondream_run moondream_node.py"
     command: >
-      bash -c "${COMMAND2:-source /opt/ros/humble/setup.bash && colcon build --packages-up-to moondream_run && source install/setup.bash && ros2 run moondream_run moondream_node.py}"
+      bash -c "${COMMAND_MOONDREAM:-source /opt/ros/humble/setup.bash && colcon build --packages-up-to moondream_run && source install/setup.bash && ros2 run moondream_run moondream_node.py}"

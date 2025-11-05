@@ -14,7 +14,6 @@ ENV_TYPE="${*: -1}"
 DETACHED=""
 BUILD=""
 BUILD_IMAGE=""
-COMPOSE="docker-compose-${ENV_TYPE}.yaml"
 
 # Parse arguments
 for arg in "${ARGS[@]}"; do
@@ -27,6 +26,8 @@ for arg in "${ARGS[@]}"; do
         ;;
     "--recreate")
         docker compose down
+    "--storing-groceries")
+        RU
         ;;
     "--down")
         docker compose down
@@ -71,13 +72,10 @@ fi
 
 case $TASK in
     "--receptionist")
-        RUN="ls"
+        RUN="ros2 launch nav_main receptionist.launch.py"
         ;;
     "--mapping")
-        RUN="ls"
-        ;;
-    "--help-me-carry")
-        RUN="ros2 launch nav_main carry_my.launch.py"
+        RUN="ros2 launch nav_main mapping.launch.py"
         ;;
     "--storing-groceries")
         RUN="ros2 launch nav_main storing_groceries.launch.py"

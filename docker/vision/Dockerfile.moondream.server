@@ -21,6 +21,9 @@ RUN pip install accelerate
 # protobuf==5.29.1
 RUN pip install grpcio==1.71.0
 RUN pip install protobuf==5.29.1
+RUN pip uninstall -y numpy
+RUN pip install --no-cache-dir numpy==1.24
+RUN python3 -c "import numpy as np; print(np.__version__)"
 
 WORKDIR /workspace
 # CV-bridge

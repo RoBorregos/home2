@@ -1,177 +1,114 @@
 #!/bin/bash
-ARGS=("$@")  # Save all arguments in an array
-TASK=${ARGS[0]}
-detached=""
-BUILD=""
-# check if one of the arguments is --detached
-for arg in "${ARGS[@]}"; do
-  if [ "$arg" == "-d" ]; then
-    detached="-d"
-  elif [ "$arg" == "--build" ]; then
-    BUILD="true"
-  fi
-done
+source ../../lib.sh
 
-#_________________________BUILD_________________________
-
-# Image names
-CPU_IMAGE="roborregos/home2:cpu_base"
-CUDA_IMAGE="roborregos/home2:cuda_base"
-JETSON_IMAGE="roborregos/home2:l4t_base"
-
-# Function to check if an image exists
-check_image_exists() {
-    local image_name=$1
-    if ! docker images --format "{{.Repository}}:{{.Tag}}" | grep -q "^${image_name}$"; then
-        echo "Image $image_name does not exist. Building it..."
-        return 1  # Image doesn't exist
-    else
-        echo "Image $image_name already exists. Skipping build."
-        return 0  # Image exists
-    fi
-}
-
-# Check type of environment (CPU, GPU, or Jetson), default CPU
-ENV_TYPE="cpu"
-
-# Check device type
-if [[ -f /etc/nv_tegra_release ]]; then
-    ENV_TYPE="jetson"
-else
-    # Check if NVIDIA GPUs are available
-    if command -v nvidia-smi > /dev/null 2>&1; then
-        if nvidia-smi > /dev/null 2>&1; then
-            ENV_TYPE="gpu"
-        fi
-    fi
-fi
-echo "Detected environment: $ENV_TYPE"
-> .env
-# Write environment variables to .env file for Docker Compose and build base images
-case $ENV_TYPE in
-  "cpu")
-    #_____CPU_____
-    echo "DOCKERFILE=docker/integration/Dockerfile.cpu" >> .env
-    echo "BASE_IMAGE=roborregos/home2:cpu_base" >> .env
-    echo "IMAGE_NAME=roborregos/home2:integration-cpu" >> .env
-    echo "DOCKER_RUNTIME=''" >> .env
-    
-    # Build the base image if it doesn't exist
-    check_image_exists "$CPU_IMAGE"
-    if [ $? -eq 1 ]; then
-        docker compose -f ../cpu.yaml build
-    fi
-    ;;
-  "gpu")
-    #_____GPU_____
-    echo "DOCKERFILE=docker/integration/Dockerfile.gpu" >> .env
-    echo "BASE_IMAGE=roborregos/home2:cuda_base" >> .env
-    echo "IMAGE_NAME=roborregos/home2:integration-gpu" >> .env
-
-    # Build the base image if it doesn't exist
-    check_image_exists "$CUDA_IMAGE"
-    if [ $? -eq 1 ]; then
-        docker compose -f ../cuda.yaml build
-    fi
-
-    echo "DOCKER_RUNTIME=nvidia" >> .env
-    ;;
-  "jetson")
-    #_____Jetson_____
-    echo "DOCKERFILE=docker/integration/Dockerfile.jetson" >> .env
-    echo "BASE_IMAGE=roborregos/home2:l4t_base" >> .env
-    echo "IMAGE_NAME=roborregos/home2:integration-jetson" >> .env
-
-    # Build the base image if it doesn't exist
-    check_image_exists "$JETSON_IMAGE"
-    if [ $? -eq 1 ]; then
-        docker compose -f ../jetson.yaml build
-    fi
-
-    echo "DOCKER_RUNTIME=nvidia" >> .env
-    echo "DISPLAY=:0" >> .env
-    ;;
-  *)
-    echo "Unknown environment type!"
-    exit 1
-    ;;
-esac
-
-
-#_________________________SETUP_________________________
-
-mkdir -p install build log
 # Export user
 export LOCAL_USER_ID=$(id -u)
 export LOCAL_GROUP_ID=$(id -g)
 
-# Remove current install, build and log directories if they exist 
-# if [ -d "../../install" ] || [ -d "../../log" ] || [ -d "../../build" ]; then
-#   read -p "Do you want to delete 'install', 'log', and 'build' directories (Recommended for first build)? (y/n): " confirmation
-#   if [[ "$confirmation" == "y" ]]; then
-#     rm -rf ../../install/ ../../log/ ../../build/
-#     echo "Directories deleted."
-#   else
-#     echo "Operation cancelled."
-#   fi
-# fi
+#_________________________ARGUMENTS_________________________
 
-# Setup camera permissions
-# if [ -e /dev/video0 ]; then
-#     echo "Setting permissions for /dev/video0..."
-#     sudo chmod 666 /dev/video0  # Allow the container to access the camera device
-# fi
+ARGS=("$@")  # Save all arguments in an array
+TASK=${ARGS[0]}
+ENV_TYPE="${*: -1}"
+
+# IMPORTANT: Also edit auto-complete.sh to add new arguments
+DETACHED=""
+BUILD=""
+BUILD_IMAGE=""
+
+# Parse arguments
+for arg in "${ARGS[@]}"; do
+    case $arg in
+    "-d")
+        DETACHED="-d"
+        ;;
+    "--build")
+        BUILD="true"
+        ;;
+    "--recreate")
+        docker compose down
+        ;;
+    "--down")
+        docker compose down
+        exit 0
+        ;;
+    "--stop")
+        docker compose stop
+        exit 0
+        ;;
+    "--build-image")
+        BUILD_IMAGE="--build"
+        ;;
+    esac
+done
+
+#_________________________SETUP_________________________
+
+# Ensure .env exists
+if [ ! -f ".env" ]; then
+  touch .env
+fi
+
+# Write environment variables to .env file for Docker Compose and build base images
+add_or_update_variable .env "BASE_IMAGE" "roborregos/home2:${ENV_TYPE}_base"
+add_or_update_variable .env "IMAGE_NAME" "roborregos/home2:integration-${ENV_TYPE}"
+case $ENV_TYPE in
+  "cuda")
+      add_or_update_variable .env "DOCKER_RUNTIME" "nvidia"
+      ;;
+  "l4t")
+      add_or_update_variable .env "DOCKER_RUNTIME" "nvidia"
+      add_or_update_variable .env "DISPLAY" ":0"
+      ;;
+esac
+
+# Create dirs with current user to avoid permission problems
+mkdir -p install build log
 
 #_________________________RUN_________________________
-
-SERVICE_NAME="integration"  # Change this to your service name in docker-compose.yml
-
-# Check if the container exists
-EXISTING_CONTAINER=$(docker ps -a -q -f name=$SERVICE_NAME)
-if [ -z "$EXISTING_CONTAINER" ]; then
-    echo "No container with the name $SERVICE_NAME exists. Building and starting the container now..."
-    docker compose up -d
-fi
-
-# Check if the container is running
-RUNNING_CONTAINER=$(docker ps -q -f name=$SERVICE_NAME)
-
-# If the container is not running, start it
-if [ -z "$RUNNING_CONTAINER" ]; then
-    echo "Container $SERVICE_NAME is not running. Starting it now..."
-    docker compose up -d
-fi
 
 # Commands to run inside the container
 GENERATE_BAML_CLIENT="baml-cli generate --from /workspace/src/task_manager/scripts/utils/baml_src/"
 SOURCE_ROS="source /opt/ros/humble/setup.bash"
-SOURCE_INTERFACES="source frida_interfaces_cache/install/local_setup.bash"
+SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
+SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
 COLCON="colcon build --packages-ignore frida_interfaces frida_constants --packages-up-to task_manager"
-SOURCE="source install/setup.bash"
+
 if [ "$BUILD" == "true" ]; then
     SETUP="$GENERATE_BAML_CLIENT && $SOURCE_ROS && $SOURCE_INTERFACES && $COLCON && $SOURCE"
 else
     SETUP="$SOURCE_ROS && $SOURCE_INTERFACES && $SOURCE"
 fi
-RUN=""
-MOONDREAM=false
-RUN_TASK="ros2 run task_manager"
+
 case $TASK in
     "--receptionist")
-        RUN="$RUN_TASK receptionist_task_manager.py"
+        RUN="ros2 run task_manager receptionist_task_manager.py"
         ;;
     "--help-me-carry")
-        RUN="$RUN_TASK help_me_carry.py"
+        RUN="ros2 run task_manager help_me_carry.py"
         ;;
     "--gpsr")
-        RUN="$RUN_TASK gpsr_task_manager.py"
+        RUN="ros2 run task_manager gpsr_task_manager.py"
         ;;
     "--test-hri")
-        RUN="$RUN_TASK test_hri_manager.py"
+        RUN="ros2 run task_manager test_hri_manager.py"
         ;;
     *)
         RUN="bash"
         ;;
 esac
 
-docker compose exec $detached $SERVICE_NAME bash -c "$SETUP && $RUN"
+COMMAND="$SETUP && $RUN"
+add_or_update_variable .env "COMMAND" "$COMMAND"
+
+if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
+    EXISTING_CONTAINER=$(docker ps -a -q -f name="integration")
+    if [ -z "$EXISTING_CONTAINER" ] || [ "$BUILD_IMAGE" == "--build" ]; then
+        docker compose up -d $BUILD_IMAGE
+    else
+        docker compose start
+    fi
+    docker compose exec integration bash -c "$COMMAND"
+else
+    docker compose up $DETACHED $BUILD_IMAGE
+fi

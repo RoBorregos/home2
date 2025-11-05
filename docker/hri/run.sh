@@ -1,9 +1,11 @@
 #!/bin/bash
+source ../../lib.sh
 
 #_________________________ARGUMENTS_________________________
 
 ARGS=("$@")  # Save all arguments in an array
 TASK=${ARGS[0]}
+ENV_TYPE="${*: -1}"
 
 # IMPORTANT: Also edit auto-complete.sh to add new arguments
 detached=""
@@ -11,47 +13,23 @@ build_display=""
 open_display=""
 download_model=""
 
-# Check if one of the arguments is --detached, --build-display, or --open-display
+# Set flags from arguments
 for arg in "${ARGS[@]}"; do
-  if [ "$arg" == "-d" ]; then
-    detached="-d"
-  elif [ "$arg" == "--build-display" ]; then
-    build_display="true"
-  elif [ "$arg" == "--open-display" ]; then
-    open_display="true"
-  elif [ "$arg" == "--download-model" ]; then
-    download_model="true"
-  fi
+  case "$arg" in
+    -d)
+      detached="-d"
+      ;;
+    --build-display)
+      build_display="true"
+      ;;
+    --open-display)
+      open_display="true"
+      ;;
+    --download-model)
+      download_model="true"
+      ;;
+  esac
 done
-
-#_________________________BUILD_________________________
-
-# Function to add or update a variable in a file
-add_or_update_variable() {
-    local file=$1
-    local variable=$2
-    local value=$3
-
-    local escaped_value
-    escaped_value=$(printf '%s\n' "$value" | sed -e 's/[&/\]/\\&/g')
-
-    if grep -q "^${variable}=" "$file"; then
-        sed -i "s|^${variable}=.*|${variable}=${escaped_value}|" "$file"
-    else
-        echo "${variable}=${value}" >> "$file"
-    fi
-}
-
-# Check type of environment (cpu, cuda, or l4t), default cpu
-ENV_TYPE="cpu"
-
-# Check device type
-if [ -f /etc/nv_tegra_release ]; then
-  ENV_TYPE="l4t"
-elif command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi >/dev/null 2>&1; then
-  ENV_TYPE="cuda"
-fi
-echo "Detected environment: $ENV_TYPE"
 
 #_________________________SETUP_________________________
 
@@ -116,7 +94,8 @@ add_or_update_variable compose/.env "COMPOSE_PROFILES" "$COMPOSE_PROFILES"
 GENERATE_BAML_CLIENT="baml-cli generate --from /workspace/src/task_manager/scripts/utils/baml_src/"
 SOURCE_INTERFACES="source frida_interfaces_cache/install/local_setup.bash"
 IGNORE_PACKAGES="--packages-ignore frida_interfaces frida_constants xarm_msgs"
-COMMAND="$GENERATE_BAML_CLIENT && source /opt/ros/humble/setup.bash && $SOURCE_INTERFACES && colcon build $IGNORE_PACKAGES --symlink-install --packages-up-to speech nlp embeddings && source ~/.bashrc && $RUN"
+SOURCE_ROS="source /opt/ros/humble/setup.bash"
+COMMAND="$GENERATE_BAML_CLIENT && $SOURCE_ROS && $SOURCE_INTERFACES && colcon build $IGNORE_PACKAGES --symlink-install --packages-up-to speech nlp embeddings && source ~/.bashrc && $RUN"
 add_or_update_variable compose/.env "COMMAND" "$COMMAND"
 
 # Trap Ctrl+C/SIGTERM to clean up containers
@@ -149,6 +128,7 @@ wait_and_launch_display() {
     printf '.'
     sleep 1
   done
+  chmod +x scripts/open-display.bash
   bash scripts/open-display.bash
 }
 
