@@ -20,6 +20,7 @@ def generate_launch_description():
     nav2_activate = LaunchConfiguration('nav2', default='true')
     use_sim = LaunchConfiguration('use_sim', default='false')
 
+
     nav_basics = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution(
@@ -47,10 +48,15 @@ def generate_launch_description():
                 package='nav_main',
                 executable='transform_target.py',
                 output='screen')
+    map_erode = Node(
+                package='nav_main',
+                executable='map_cleaner.py',
+                output='screen')
     
     return LaunchDescription([
         nav_basics,
         rtabmapnav,
-        transformer
+        transformer,
+        map_erode
         
     ])

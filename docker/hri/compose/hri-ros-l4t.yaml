@@ -1,0 +1,36 @@
+# Speech variables
+x-speech-devices: &speech-devices
+  PULSE_SERVER: unix:/tmp/pulse/pulseaudio.socket
+  PULSE_COOKIE: /tmp/pulse/pulseaudio.cookie
+
+services:
+  hri-ros-l4t:
+    container_name: home2-hri-ros-l4t
+    build:
+      context: ../../..
+      dockerfile: docker/hri/dockerfiles/Dockerfile.ROS
+      args:
+        BASE_IMAGE: roborregos/home2:l4t_base
+    image: roborregos/home2:hri-l4t
+    volumes:
+      - ../../../:/workspace/src
+      - ~/.config/pulse:/tmp/pulse
+      - /dev:/dev
+      - ../build:/workspace/build
+      - ../install:/workspace/install
+      - ../log:/workspace/log
+      - ../../frida_interfaces_cache:/workspace/frida_interfaces_cache
+    network_mode: host
+    user: 1000:1000
+    privileged: true
+    group_add:
+      - video
+    environment:
+      <<:
+        - *speech-devices
+      DISPLAY: ${DISPLAY}
+    env_file:
+      - .env
+    tty: true
+    entrypoint: ["bash", "-il", "-c"]
+    command: ["${COMMAND:-/bin/bash}"]

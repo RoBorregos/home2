@@ -1,11 +1,24 @@
 aec_node:
   ros__parameters:
-    frame_size: 512
-    filter_length: 2048
-    sample_rate: 16000
-    raw_audio_topic: "/rawAudioChunk"
-    far_audio_topic: "/farAudioChunk"
-    clean_audio_topic: "/cleanAudioChunk"
-    speaker_state_topic: "/saying"
-    buffer_size: 10
-    interrupt_enabled: true
+    # Enable/disable AEC processing
+    enabled: true
+
+    # Topic names
+    mic_topic: "/rawAudioChunk"
+    robot_audio_topic: "/robot_audio_output"
+    output_topic: "/aec_audio_output"
+    status_topic: "/aec_status"
+
+    # STFT parameters
+    frame_size: 1024 # STFT frame size (samples)
+    hop_size: 256 # STFT hop size (samples)
+    beta: 0.9 # PSD smoothing factor [0..1], higher = more smoothing
+
+    # Audio parameters
+    sample_rate: 16000 # Sample rate in Hz
+    max_delay_ms: 200.0 # Maximum delay to search for alignment (ms)
+
+    # Buffer and processing
+    buffer_size: 5000 # Maximum buffer size for audio chunks
+    enable_normalization: true
+    sync_tolerance_ms: 15.0 # Max time difference (ms) to match mic/robot audio chunks

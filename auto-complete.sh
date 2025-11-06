@@ -4,21 +4,33 @@ _run_sh_autocomplete() {
     local cur prev words cword
     _init_completion || return
 
-    local areas="manipulation navigation hri vision integration"
+    local areas="manipulation navigation hri vision integration frida_interfaces"
     local tasks="--carry --receptionist --storing-groceries --gpsr --moondream --egpsr --clean-table --hand --restaurant"
     local flags="--rebuild --help -h -d"
+    
+    # Add area specific flags
+    case "${words[1]}" in
+        hri)
+            flags="$flags --build-display --open-display --download-model"
+            ;;
+        integration)
+            flags="$flags --build --test-hri"
+    esac
 
+    local options
     case ${COMP_CWORD} in
         1)
-            COMPREPLY=( $(compgen -W "$areas $flags" -- "$cur") )
+            options="$areas"
             ;;
         2)
-            COMPREPLY=( $(compgen -W "$tasks $flags" -- "$cur") )
+            options="$tasks"
             ;;
-        *)
-            COMPREPLY=( $(compgen -W "$flags" -- "$cur") )
+        *)  
+            options=""
             ;;
     esac
+    
+    COMPREPLY=( $(compgen -W "$options $flags" -- "$cur") )
 }
 
 complete -F _run_sh_autocomplete ./run.sh

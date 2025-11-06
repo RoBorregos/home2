@@ -9,7 +9,9 @@ from collections import OrderedDict
 
 import numpy as np
 import grpc
+import numpy as np
 import rclpy
+import soundfile as sf
 from gtts import gTTS
 from pygame import mixer
 from rclpy.executors import ExternalShutdownException
@@ -59,8 +61,7 @@ class Say(Node):
         self.connected = False
         self.declare_parameter("speaking_topic", "/saying")
         self.declare_parameter("text_spoken", "/speech/text_spoken")
-        self.declare_parameter("far_audio_topic", "/farAudioChunk")
-        self.declare_parameter("interrupt_topic", "/speech/interrupt")
+        self.declare_parameter("robot_audio_topic", "/robot_audio_output")
 
         self.declare_parameter("SPEAK_SERVICE", SPEAK_SERVICE)
         self.declare_parameter("model", "en_US-amy-medium")
@@ -99,11 +100,8 @@ class Say(Node):
         text_spoken = (
             self.get_parameter("text_spoken").get_parameter_value().string_value
         )
-        far_audio_topic = (
-            self.get_parameter("far_audio_topic").get_parameter_value().string_value
-        )
-        interrupt_topic = (
-            self.get_parameter("interrupt_topic").get_parameter_value().string_value
+        robot_audio_topic = (
+            self.get_parameter("robot_audio_topic").get_parameter_value().string_value
         )
 
         self.model = self.get_parameter("model").get_parameter_value().string_value
@@ -118,11 +116,9 @@ class Say(Node):
         self.create_service(Speak, speak_service, self.speak_service)
         self.publisher_ = self.create_publisher(Bool, speaking_topic, 10)
         self.text_publisher_ = self.create_publisher(String, text_spoken, 10)
-        self.far_audio_publisher = self.create_publisher(AudioData, far_audio_topic, 20)
-
-        # Speech interrupt handling
-        self.speech_interrupted = False
-        self.create_subscription(String, interrupt_topic, self.interrupt_callback, 10)
+        self.robot_audio_publisher_ = self.create_publisher(
+            AudioData, robot_audio_topic, 10
+        )
 
         self.get_logger().info("Say node initialized.")
 
@@ -289,18 +285,32 @@ class Say(Node):
         self.play_audio(save_path)
 
     def play_audio(self, file_path):
-        """Play audio file and publish audio data for AEC."""
-        if self.speech_interrupted:
-            return
+        try:
+            audio_data, sample_rate = sf.read(file_path, dtype="int16")
 
-        # Load audio file for reference publishing
-        audio_thread = threading.Thread(
-            target=self.publish_audio_reference, args=(file_path,)
-        )
-        audio_thread.daemon = True
-        audio_thread.start()
+            # If stereo, convert to mono
+            if len(audio_data.shape) > 1:
+                audio_data = np.mean(audio_data, axis=1).astype(np.int16)
 
-        # Play audio using pygame
+            # Resample to 16kHz if needed (for AEC compatibility)
+            if sample_rate != 16000:
+                from scipy.signal import resample_poly
+                from math import gcd
+
+                g = gcd(sample_rate, 16000)
+                up = 16000 // g
+                down = sample_rate // g
+                audio_data = resample_poly(audio_data, up, down).astype(np.int16)
+
+            # Publish robot audio in chunks for real-time AEC
+            chunk_size = 512  # Match typical audio chunk size
+            for i in range(0, len(audio_data), chunk_size):
+                chunk = audio_data[i : i + chunk_size]
+                self.robot_audio_publisher_.publish(AudioData(data=chunk.tobytes()))
+
+        except Exception as e:
+            self.get_logger().warn(f"Could not read audio file for AEC: {e}")
+
         mixer.pre_init(frequency=48000, buffer=2048)
         mixer.init()
         while mixer.music.get_busy():

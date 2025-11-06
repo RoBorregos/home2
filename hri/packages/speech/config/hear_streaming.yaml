@@ -1,6 +1,6 @@
 hear_streaming:
   ros__parameters:
-    STT_SERVER_IP: '127.0.0.1:50051'
+    STT_SERVER_IP: "127.0.0.1:50051"
     STT_ACTION_SERVER_NAME: REPLACE
-    AUDIO_TOPIC: '/cleanAudioChunk'
+    AUDIO_TOPIC: "/aec_audio_output" # Use AEC output instead of raw audio
     DEFAULT_HOTWORDS: REPLACE

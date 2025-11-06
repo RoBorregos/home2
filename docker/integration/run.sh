@@ -2,10 +2,13 @@
 ARGS=("$@")  # Save all arguments in an array
 TASK=${ARGS[0]}
 detached=""
+BUILD=""
 # check if one of the arguments is --detached
 for arg in "${ARGS[@]}"; do
   if [ "$arg" == "-d" ]; then
     detached="-d"
+  elif [ "$arg" == "--build" ]; then
+    BUILD="true"
   fi
 done
 
@@ -140,37 +143,35 @@ if [ -z "$RUNNING_CONTAINER" ]; then
 fi
 
 # Commands to run inside the container
+GENERATE_BAML_CLIENT="baml-cli generate --from /workspace/src/task_manager/scripts/utils/baml_src/"
 SOURCE_ROS="source /opt/ros/humble/setup.bash"
 SOURCE_INTERFACES="source frida_interfaces_cache/install/local_setup.bash"
-COLCON="colcon build --packages-ignore frida_interfaces frida_constants --packages-up-to "
+COLCON="colcon build --packages-ignore frida_interfaces frida_constants --packages-up-to task_manager"
 SOURCE="source install/setup.bash"
-SETUP="$SOURCE_ROS && $SOURCE_INTERFACES && $COLCON task_manager && $SOURCE"
+if [ "$BUILD" == "true" ]; then
+    SETUP="$GENERATE_BAML_CLIENT && $SOURCE_ROS && $SOURCE_INTERFACES && $COLCON && $SOURCE"
+else
+    SETUP="$SOURCE_ROS && $SOURCE_INTERFACES && $SOURCE"
+fi
 RUN=""
 MOONDREAM=false
-
+RUN_TASK="ros2 run task_manager"
 case $TASK in
     "--receptionist")
-        RUN="ros2 run task_manager receptionist_task_manager.py"
+        RUN="$RUN_TASK receptionist_task_manager.py"
         ;;
     "--help-me-carry")
-        RUN="ros2 run task_manager help_me_carry.py"
+        RUN="$RUN_TASK help_me_carry.py"
         ;;
     "--gpsr")
-        RUN="ros2 run task_manager gpsr_task_manager.py"
+        RUN="$RUN_TASK gpsr_task_manager.py"
+        ;;
+    "--test-hri")
+        RUN="$RUN_TASK test_hri_manager.py"
         ;;
     *)
-        RUN=""
+        RUN="bash"
         ;;
 esac
 
-# check if TASK is not empty
-if [ -z "$TASK" ]; then
-    docker compose exec $SERVICE_NAME /bin/bash
-else
-    if [ -z "$detached" ]; then
-        docker compose exec $SERVICE_NAME bash -c "$SETUP && $RUN"
-    else
-        echo "Running in detached mode..."
-        docker compose exec -d $SERVICE_NAME bash -c "$SETUP && $RUN"
-    fi
-fi
+docker compose exec $detached $SERVICE_NAME bash -c "$SETUP && $RUN"

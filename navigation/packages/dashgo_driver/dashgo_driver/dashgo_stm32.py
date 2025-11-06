@@ -59,7 +59,6 @@ class Stm32:
     def connect(self):
         try:
             print("Connecting to Stm32 on port", self.port, "...")
-            # self.port = Serial(port="/dev/port1", baudrate=115200, timeout=0.1, writeTimeout=0.1)
             self.port = Serial(port=self.port, baudrate=self.baudrate, timeout=self.timeout, writeTimeout=self.writeTimeout)
             # The next line is necessary to give the firmware time to wake up.
             time.sleep(1)
@@ -99,7 +98,6 @@ class Stm32:
 
     def receiveFiniteStates(self, rx_data):
         if self.receive_state_ == self.WAITING_FF:
-            #print str(binascii.b2a_hex(rx_data))
             if rx_data == b'\xff':
                 self.receive_state_ = self.WAITING_AA
                 self.receive_check_sum_ =0
@@ -129,20 +127,12 @@ class Stm32:
              uc_tmp_, = struct.unpack("B",rx_data)
              self.receive_check_sum_ = self.receive_check_sum_ + uc_tmp_
              self.byte_count_ +=1
-             #print "byte:"+str(byte_count_) +","+ "rece_len:"+str(receive_message_length_)
              if self.byte_count_ >= self.receive_message_length_:
                  self.receive_state_ = self.RECEIVE_CHECK
 
         elif self.receive_state_ == self.RECEIVE_CHECK:
-            #print "checksun:" + str(rx_data) + " " + str(self.receive_check_sum_%255)
-            #uc_tmp_, = struct.unpack("B",rx_data)
-            #print "checksum:" + str(uc_tmp_) +" " + str((self.receive_check_sum_)%255)
-            #if uc_tmp_ == (self.receive_check_sum_)%255:
             if 1:
                 self.receive_state_ = self.WAITING_FF
-                #print str(binascii.b2a_hex(value))
-                #left, right, = struct.unpack('hh', value)
-                #print "left:"+str(left)+", right:"+str(right)
                 return 1 
             else:
                 self.receive_state_ = self.WAITING_FF
@@ -160,10 +150,8 @@ class Stm32:
         value = ''
         attempts = 0
         c = self.port.read(1)
-        #print str(binascii.b2a_hex(c))
         while self.receiveFiniteStates(c) != 1:
             c = self.port.read(1)
-            #print str(binascii.b2a_hex(c))
             attempts += 1
             if attempts * self.interCharTimeout > timeout:
                 return 0
@@ -197,7 +185,6 @@ class Stm32:
                     self.port.flushInput()
                     self.port.write(cmd)
                     res = self.recv(self.timeout)
-                    #print "response : " + str(binascii.b2a_hex(res))
                 except:
                     print("Exception executing command: " + str(binascii.b2a_hex(cmd)))
                 attempts += 1
@@ -218,7 +205,6 @@ class Stm32:
            val, = struct.unpack('I', self.payload_args)
            return  self.SUCCESS, val 
         else:
-           # print("ACK", self.payload_ack, self.payload_ack == b'\x00', self.execute(cmd_str)==1)
            return self.FAIL, 0
 
     def get_encoder_counts(self):
@@ -447,7 +433,6 @@ class Stm32:
         '''
         cmd_str=struct.pack("4B", self.HEADER0, self.HEADER1, 0x01, 0x17) + struct.pack("B", 0x18)
         if (self.execute(cmd_str))==1 and self.payload_ack == b'\x00':
-           #print("payload:"+str(binascii.b2a_hex(self.payload_args)))
            way, = struct.unpack('I', self.payload_args)
            return  self.SUCCESS, way
         else:

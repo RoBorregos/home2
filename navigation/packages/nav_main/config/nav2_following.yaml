@@ -139,7 +139,7 @@ local_costmap:
       use_sim_time: False
       rolling_window: true
       width: 3
-      height: 3
+      height: 1
       resolution: 0.05
       footprint: "[ [0.32, 0.21], [0.32, -0.21], [-0.17, -0.21], [-0.17, 0.21] ]"
       plugins: ["voxel_layer", "inflation_layer", "rgbd_obstacle_layer"]
@@ -173,7 +173,7 @@ local_costmap:
       rgbd_obstacle_layer:
         plugin: "spatio_temporal_voxel_layer/SpatioTemporalVoxelLayer"
         enabled:               true
-        voxel_decay:           5.0     #seconds if linear, e^n if exponential
+        voxel_decay:           2.0     #seconds if linear, e^n if exponential
         decay_model:           0      #0=linear, 1=exponential, -1=persistent
         voxel_size:            0.05   #meters
         track_unknown_space:   true   #default space is unknown
@@ -191,7 +191,7 @@ local_costmap:
         observation_sources:   rgbd1_clear rgbd1_mark
         rgbd1_mark:
           data_type: PointCloud2
-          topic: /point_cloud
+          topic: /point_cloud_nav
           marking: true
           clearing: false
           min_obstacle_height: 0.3     #default 0, meters
@@ -205,7 +205,7 @@ local_costmap:
         rgbd1_clear:
           enabled: true                #default true, can be toggled on/off with associated service call
           data_type: PointCloud2
-          topic: /point_cloud
+          topic: /point_cloud_nav
           marking: false
           clearing: true
           min_z: 0.1                   #default 0, meters
@@ -214,7 +214,7 @@ local_costmap:
           horizontal_fov_angle: 1.04   #default 1.04, radians
           decay_acceleration: 1.       #default 0, 1/s^2. If laser scanner MUST be 0
           model_type: 0                #default 0 (depth camera). Use 1 for 3D Lidar
-      always_send_full_costmap: True
+      always_send_full_costmap: false
 
 global_costmap:
   global_costmap:
@@ -249,12 +249,12 @@ global_costmap:
         plugin: "nav2_costmap_2d::InflationLayer"
         cost_scaling_factor: 3.0
         inflation_radius: 0.55
-      always_send_full_costmap: True
+      always_send_full_costmap: false
 
 planner_server:
     ros__parameters:
       expected_planner_frequency: 20.0
-      use_sim_time: True
+      use_sim_time: False
       planner_plugins: ["GridBased"]
       GridBased:
         plugin: "nav2_navfn_planner/NavfnPlanner"

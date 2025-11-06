@@ -172,7 +172,6 @@ class PointTransformer(Node):
             self.navigation_in_progress = False
 
     def point_callback(self, msg: PointStamped):
-        print("qpd papu pro?")
         # Skip processing if not following
         if not self.is_following:
             return
@@ -234,7 +233,7 @@ class PointTransformer(Node):
             # Create goal pose message
             goal_update = PoseStamped()
             goal_update.header.frame_id = 'map'
-            goal_update.header.stamp = self.get_clock().now().to_msg()
+            goal_update.header.stamp = transformed_point.header.stamp
             goal_update.pose.position.x = transformed_point.point.x
             goal_update.pose.position.y = transformed_point.point.y
             goal_update.pose.position.z = 0.0

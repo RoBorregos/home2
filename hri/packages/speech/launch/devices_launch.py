@@ -3,9 +3,9 @@ import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch_ros.actions import Node
+from speech.speech_api_utils import SpeechApiUtils
 
 from frida_constants import ModuleNames, parse_ros_config
-from frida_constants.hri_constants import USE_RESPEAKER
 
 
 def generate_launch_description():
@@ -41,7 +41,7 @@ def generate_launch_description():
     aec_config = parse_ros_config(
         os.path.join(get_package_share_directory("speech"), "config", "aec.yaml"),
         [ModuleNames.HRI.value],
-    )["aec"]["ros__parameters"]
+    )["aec_node"]["ros__parameters"]
 
     nodes = [
         Node(
@@ -54,7 +54,7 @@ def generate_launch_description():
         ),
         Node(
             package="speech",
-            executable="aec.py",
+            executable="aec_node.py",
             name="aec",
             output="screen",
             emulate_tty=True,
@@ -86,7 +86,8 @@ def generate_launch_description():
         ),
     ]
 
-    if USE_RESPEAKER:
+    if SpeechApiUtils.respeaker_available():
+        print("ReSpeaker detected - adding respeaker node to launch")
         nodes.append(
             Node(
                 package="speech",
@@ -97,5 +98,7 @@ def generate_launch_description():
                 parameters=[respeaker_config],
             )
         )
+    else:
+        print("ReSpeaker not detected - skipping respeaker node")
 
     return LaunchDescription(nodes)
