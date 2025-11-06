@@ -8,7 +8,6 @@ joint_limits:
     has_acceleration_limits: true
     max_acceleration: 10.0
     min_position: -4.71
-    # max_position: 4.71 ???
   joint2:
     has_velocity_limits: true
     max_velocity: 2.14

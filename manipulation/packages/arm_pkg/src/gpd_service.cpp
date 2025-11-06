@@ -14,11 +14,6 @@
 #include <pcl/point_types.h>
 #include <pcl/point_cloud.h>
 
-// Flata?? 
-// include <pcl/common/centroid.h>
-// #include <algorithm>  // Para std::clamp, std::max_element
-// #include <cmath>    
-
 namespace gpd_ros2 {
 
 class GraspDetectionService : public rclcpp::Node {
@@ -207,7 +202,7 @@ private:
   }
 
   // Function to convert Pose to Affine3d
-  Eigen::Affine3d pose_to_affine(const geometry_msgs::msg::Pose& pose) { // function never used
+  Eigen::Affine3d pose_to_affine(const geometry_msgs::msg::Pose& pose) {
     Eigen::Affine3d transform;
     transform.translation() = Eigen::Vector3d(
         pose.position.x,
