@@ -1,7 +1,7 @@
 #!/bin/bash
 
 DEBIAN_FRONTEND=noninteractive
-SCRIPT_DIR=$(dirname "$(realpath "$0")")
+SCRIPT_DIR=$(realpath "$(dirname "$0")/../..")
 CURRENT_DIR="$(pwd)"
 
 echo "LS MANIPULATION"
