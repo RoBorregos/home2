@@ -3,13 +3,11 @@
 import json
 import os
 import sys
-import threading
 import time
 from collections import OrderedDict
 
 import numpy as np
 import grpc
-import numpy as np
 import rclpy
 import soundfile as sf
 from gtts import gTTS
