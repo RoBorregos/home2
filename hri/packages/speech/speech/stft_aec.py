@@ -250,7 +250,9 @@ def normalize_audio(audio: np.ndarray, target_level: float = 0.8) -> np.ndarray:
     """
     max_val = np.max(np.abs(audio))
     if max_val > 1e-6:
-        return audio * (target_level / max_val) if max_val > target_level else audio
+        out = audio * (target_level / max_val) if max_val > target_level else audio
+        # Ensure range [-1, 1]
+        return np.clip(out, -1.0, 1.0)
     return audio
 
 

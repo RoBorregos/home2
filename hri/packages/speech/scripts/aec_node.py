@@ -9,6 +9,7 @@ and the microphone input (near-end + echo), then publishes echo-cancelled audio.
 import collections
 import threading
 import time
+import traceback
 
 import numpy as np
 import rclpy
@@ -41,7 +42,7 @@ class AECNode(Node):
 
         self.declare_parameter("buffer_size", 5000)
         self.declare_parameter("enable_normalization", True)
-        self.declare_parameter("sync_tolerance_ms", 50.0)
+        self.declare_parameter("sync_tolerance_ms", 15.0)
 
         # Get parameters
         self.enabled = self.get_parameter("enabled").get_parameter_value().bool_value
@@ -157,6 +158,11 @@ class AECNode(Node):
 
     def mic_callback(self, msg):
         """Callback for microphone audio data."""
+        # Guard against empty payloads
+        if not hasattr(msg, "data") or not msg.data:
+            self.get_logger().warning("Received empty mic audio message")
+            return
+
         audio_data = (
             np.frombuffer(msg.data, dtype=np.int16).astype(np.float64) / 32768.0
         )
@@ -172,6 +178,11 @@ class AECNode(Node):
 
     def robot_audio_callback(self, msg):
         """Callback for robot audio output (reference signal)."""
+        # Guard against empty payloads
+        if not hasattr(msg, "data") or not msg.data:
+            self.get_logger().warning("Received empty robot audio message")
+            return
+
         audio_data = (
             np.frombuffer(msg.data, dtype=np.int16).astype(np.float64) / 32768.0
         )
@@ -247,9 +258,11 @@ class AECNode(Node):
                         # Normalize if enabled
                         if self.enable_normalization:
                             output = normalize_audio(output, target_level=0.8)
+                        # Clip to [-1,1] before scaling to avoid overflow
+                        output = np.clip(output, -1.0, 1.0)
 
                         # Convert back to int16 and publish
-                        output_int16 = (output * 32768.0).astype(np.int16)
+                        output_int16 = (output * 32767.0).astype(np.int16)
                         self.output_publisher.publish(
                             AudioData(data=output_int16.tobytes())
                         )
@@ -258,11 +271,15 @@ class AECNode(Node):
                     if self.enable_normalization:
                         mic_chunk = normalize_audio(mic_chunk, target_level=0.8)
 
-                    mic_int16 = (mic_chunk * 32768.0).astype(np.int16)
+                    # Clip before conversion
+                    mic_chunk = np.clip(mic_chunk, -1.0, 1.0)
+                    mic_int16 = (mic_chunk * 32767.0).astype(np.int16)
                     self.output_publisher.publish(AudioData(data=mic_int16.tobytes()))
 
             except Exception as e:
-                self.get_logger().error(f"Error in AEC processing loop: {e}")
+                # Log the traceback for easier debugging
+                tb = traceback.format_exc()
+                self.get_logger().error(f"Error in AEC processing loop: {e}\n{tb}")
                 time.sleep(0.1)
 
     def publish_status(self, message: str):
