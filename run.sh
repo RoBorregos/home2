@@ -10,10 +10,10 @@ if [ "$AREA" == "--help" ] || [ "$AREA" == "-h" ] || [ -z "$AREA" ]; then
 fi
 
 case $AREA in
-  vision|manipulation|navigation|integration|hri|frida_interfaces)
+  vision|manipulation|navigation|integration|hri|frida_interfaces|stop)
     ;;
   *)
-    echo "Invalid service name provided. Valid args are: vision, manipulation, navigation, integration, hri, frida_interfaces"
+    echo "Invalid service name provided. Valid args are: vision, manipulation, navigation, integration, hri, frida_interfaces, stop"
     exit 1
     ;;
 esac
@@ -38,6 +38,18 @@ fi
 if [ "$AREA" = "frida_interfaces" ]; then
   echo "Running frida_interfaces_cache to build frida_interfaces"
   docker compose -f docker/frida_interfaces_cache/docker-compose-${ENV_TYPE}.yaml run --rm frida_interfaces_cache
+elif [ "$AREA" = "stop" ]; then
+  echo "Stopping all container and tmux sessions"
+  if tmux ls >/dev/null 2>&1; then
+    tmux kill-server || true
+  fi
+  if docker info >/dev/null 2>&1; then
+        running_containers="$(docker ps -q)"
+        if [ -n "$running_containers" ]; then
+            docker stop $running_containers >/dev/null
+            echo "Stopped containers: $running_containers"
+        fi
+    fi
 else
   # If frida_interfaces_cache hasn't been built yet, build it first
   if [ ! -d "docker/frida_interfaces_cache/build" ]; then
