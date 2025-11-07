@@ -1,5 +1,5 @@
 services:
-  display-l4t:
+  display:
     container_name: home2-hri-display-l4t
     image: roborregos/home2:hri-display-l4t
     build:

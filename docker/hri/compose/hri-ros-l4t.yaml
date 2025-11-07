@@ -4,7 +4,7 @@ x-speech-devices: &speech-devices
   PULSE_COOKIE: /tmp/pulse/pulseaudio.cookie
 
 services:
-  hri-ros-l4t:
+  hri-ros:
     container_name: home2-hri-ros-l4t
     build:
       context: ../../..
@@ -21,7 +21,7 @@ services:
       - ../log:/workspace/log
       - ../../frida_interfaces_cache:/workspace/frida_interfaces_cache
     network_mode: host
-    user: 1000:1000
+    user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
     privileged: true
     group_add:
       - video
@@ -29,6 +29,7 @@ services:
       <<:
         - *speech-devices
       DISPLAY: ${DISPLAY}
+      TERM: xterm-256color
     env_file:
       - .env
     tty: true

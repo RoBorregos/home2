@@ -13,7 +13,7 @@ services:
       - ../../../hri/packages/speech/assets/downloads/offline_voice/audios/:/app/audios
       - ../../../hri/packages/speech/assets/downloads/offline_voice/model/:/home/ros/.cache/huggingface/hub
       - ~/.config/pulse:/tmp/pulse
-    user: 1000:1000
+    user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
     privileged: true
     tty: true
     environment:

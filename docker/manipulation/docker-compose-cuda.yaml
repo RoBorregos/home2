@@ -3,10 +3,10 @@ services:
     container_name: home2-manipulation
     build:
       context: ../..
-      dockerfile: ${DOCKERFILE:-docker/manipulation/Dockerfile.cpu}
+      dockerfile: docker/manipulation/Dockerfile.cuda
       args:
-        BASE_IMAGE: ${BASE_IMAGE:-roborregos/home2:cpu_base} 
-    image: ${IMAGE_NAME:-roborregos/home2:manipulation-cpu}
+        BASE_IMAGE: roborregos/home2:cuda_base} 
+    image: roborregos/home2:manipulation-cuda
     volumes:
       - ../../:/workspace/src/home2
       - /dev:/dev
@@ -17,7 +17,6 @@ services:
       - ./log:/workspace/log
       - ../frida_interfaces_cache:/workspace/frida_interfaces_cache
       - ./.bash_aliases:/home/ros/.bash_aliases
-      
     deploy:
       resources:
         reservations:
@@ -32,9 +31,8 @@ services:
       - /dev:/dev
       - /dev/video0:/dev/video0
     environment:
-      DISPLAY: ${DISPLAY}
+      DISPLAY: :0
       TERM: xterm-256color
-      ROS_LOCALHOST_ONLY: 1
     # Memory limits for non-Ubuntu distributions
     ulimits:
       nofile:
