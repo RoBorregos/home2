@@ -20,12 +20,9 @@ from frida_interfaces.srv import (
     PlayTrayectory,
 )
 
-# from frida_motion_planning.utils.ros_utils import wait_for_future
 from frida_constants.manipulation_constants import (
     ALWAYS_SET_MODE,
-    # MOVEIT_MODE,
     JOINT_VELOCITY_MODE,
-    # SET_JOINT_VELOCITY_SERVICE,
     PICK_PLANNER,
     MOVE_TO_POSE_ACTION_SERVER,
     DEBUG_POSE_GOAL_TOPIC,
@@ -39,20 +36,13 @@ from frida_constants.manipulation_constants import (
     MIN_CONFIGURATION_DISTANCE_TRESHOLD,
 )
 
-# Link of documentation of xarm msgs https://wiki.ros.org/xarm
-# it provides user with the ros service wrapper of the functions in xArm SDK  -----------------------------------------------------------------
-# from xarm_msgs.srv import MoveVelocity, TrajPlay
-# ------------------------------------------------------------------------------------------------------------------------------
 from frida_interfaces.msg import CollisionObject
 from frida_motion_planning.utils.MoveItPlanner import MoveItPlanner
 from frida_motion_planning.utils.MoveItServo import MoveItServo
 
-# Here we import the xarm services to control the xarm directly -----------------------------------------------------------------
-# But we will need it to open and close the gripper
-from frida_motion_planning.utils.XArmServices import XArmServices
-# ------------------------------------------------------------------------------------------------------------------------------
 
-# New imports for publishing the trajectory to the controller
+from frida_motion_planning.utils.XArmServices import XArmServices
+
 from trajectory_msgs.msg import JointTrajectory
 from sensor_msgs.msg import JointState
 from rclpy.qos import QoSProfile
@@ -162,16 +152,6 @@ class MotionPlanningServer(Node):
             callback_group=self.callback_group,
         )
 
-        # HERE we are using manually the xarm------------------------------------------------------------------------------------------------
-        # self.play_traj_client = self.create_client(
-        #     TrajPlay,
-        #     "/xarm/playback_trajectory",
-        #     callback_group=self.callback_group,
-        # )
-        # -----------------------------------------------------------------------------------------------------------------------------------
-        # is MoveItPlanner could not spawn services, send None
-        # TODO: I changed my mind, set_mode goes in this script, not on the MoveItPlanner
-        #
         if self.planner.mode_enabled:
             self.xarm_services = XArmServices(
                 self, self.planner.mode_client, self.planner.state_client
@@ -180,20 +160,6 @@ class MotionPlanningServer(Node):
         else:
             self.xarm_services = XArmServices(self, None, None)
             self.real_xarm = False
-
-        # self.xarm_joint_velocity_service = self.create_service(
-        #     MoveVelocity,
-        #     SET_JOINT_VELOCITY_SERVICE,
-        #     self.set_joint_velocity_callback,
-        #     callback_group=self.callback_group,
-        # )
-
-        # self.xarm_set_moveit_mode_service = self.create_service(
-        #     Empty,
-        #     XARM_SETMODE_MOVEIT_SERVICE,
-        #     self.set_moveit_mode_service,
-        #     callback_group=self.callback_group,
-        # )
 
         self.traj_pub = self.create_publisher(
             JointTrajectory, "/moveit/joint_trajectory", qos_profile
@@ -215,12 +181,6 @@ class MotionPlanningServer(Node):
             self.reset_xarm_controller,
             callback_group=self.callback_group,
         )
-
-        # self.xarm_set_moveit_mode_service = self.create_service(
-        #     Empty,
-        #     XARM_SETMODE_MOVEIT_SERVICE,
-        #     self.set_moveit_mode_service,
-        # )
 
         self.current_mode = -1
 
@@ -310,10 +270,10 @@ class MotionPlanningServer(Node):
         self.set_planning_settings(goal_handle)
 
         try:
-            # Llama al trabajador y obtiene el resultado final (True o False)
+            # Here we call the worker and get the final result (True or False)
             was_successful = self.move_joints(goal_handle, feedback=None)
 
-            # EL GESTOR es el único que decide el estado final
+            # Manage the goal based on the worker's result
             if was_successful:
                 goal_handle.succeed()
                 result.success = True

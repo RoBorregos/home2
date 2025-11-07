@@ -147,42 +147,6 @@ class MoveItPlanner(Planner):
         # If not requested to wait, simply return True to indicate that execution started.
         return True
 
-    # Past implementation, now split into plan and execute (using joint trajectory)
-    # def plan_joint_goal(
-    #     self,
-    #     joint_positions: List[float],
-    #     joint_names: List[str],
-    #     wait: bool = True,
-    #     set_mode: bool = True,
-    # ) -> Union[bool, Future]:
-    #     if set_mode:
-    #         self.set_mode(MOVEIT_MODE)
-    #     if joint_names is None or len(joint_names) == 0:
-    #         joint_names = xarm6.joint_names()
-    #     trajectory = self._plan_joint_goal(joint_positions, joint_names)
-    #     if not trajectory:
-    #         self.node.get_logger().error(
-    #             "Failed to plan joint goal, \
-    #                     probably due to timeout, check if MoveIt is running"
-    #         )
-    #         return False
-    #     self.moveit2.execute(trajectory)
-    #     future = None
-    #     start_time = time.time()
-    #     while future is None and time.time() - start_time < PYMOVEIT_FUTURE_TIMEOUT:
-    #         future = self.moveit2.get_execution_future()
-    #     if future is None:
-    #         self.node.get_logger().error(
-    #             "Failed to get execution future, \
-    #                     probably due to timeout, check if MoveIt is running"
-    #         )
-    #         return False
-    #     if wait:
-    #         while not future.done():
-    #             pass
-    #         return future.result().status == 4
-    #     return True
-
     def plan_pose_goal(
         self,
         pose: PoseStamped,
@@ -213,51 +177,6 @@ class MoveItPlanner(Planner):
             )
             # Return a consistent tuple also in case of failure
             return False, None
-
-    # Past implementation, now split into plan and execute (using joint trajectory)
-    # def plan_pose_goal(
-    #     self,
-    #     pose: PoseStamped,
-    #     target_link: str = xarm6.end_effector_name(),
-    #     cartesian: bool = False,
-    #     tolerance_position: float = 0.015,
-    #     tolerance_orientation: float = 0.02,
-    #     wait: bool = True,
-    #     set_mode: bool = True,
-    # ) -> Union[bool, Future]:
-    #     if set_mode:
-    #         self.set_mode(MOVEIT_MODE)
-    #     self.node.get_logger().info("Planning pose goal")
-    #     trajectory = self._plan(
-    #         pose=pose,
-    #         cartesian=cartesian,
-    #         target_link=target_link,
-    #         tolerance_position=tolerance_position,
-    #         tolerance_orientation=tolerance_orientation,
-    #     )
-    #     if not trajectory:
-    #         return False
-    #     self.node.get_logger().info("Executing trajectory")
-    #     self.moveit2.execute(trajectory)
-    #     future = None
-    #     start_time = time.time()
-    #     while future is None and time.time() - start_time < PYMOVEIT_FUTURE_TIMEOUT:
-    #         future = self.moveit2.get_execution_future()
-    #     if future is None:
-    #         self.node.get_logger().error(
-    #             "Failed to get execution future, \
-    #                     probably due to timeout, check if MoveIt is running"
-    #         )
-    #         return False
-    #     if wait:
-    #         while not future.done():
-    #             pass
-    #         self.node.get_logger().info(
-    #             "Execution done witth status: " + str(future.result().status)
-    #         )
-    #         return future.result().status == 4  # 4 is the status for success
-
-    #     return self.moveit2.get_execution_future()
 
     def _plan(
         self,
