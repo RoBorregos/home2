@@ -1,108 +1,72 @@
 #!/bin/bash
+source ../../lib.sh
+
+#_________________________ARGUMENTS_________________________
+
 ARGS=("$@")  # Save all arguments in an array
 TASK=${ARGS[0]}
+ENV_TYPE="${*: -1}"
 
-echo "Task: $TASK"
+# IMPORTANT: Also edit auto-complete.sh to add new arguments
+DETACHED=""
+BUILD=""
+BUILD_IMAGE=""
 
-#_________________________BUILD_________________________
+COMPOSE="docker-compose-${ENV_TYPE}.yaml"
 
-# Image names
-CPU_IMAGE="roborregos/home2:cpu_base"
-CUDA_IMAGE="roborregos/home2:cuda_base"
-CONTAINER_NAME="home2-manipulation" # Service name in docker-compose yaml file
+# Parse arguments
+for arg in "${ARGS[@]}"; do
+    case $arg in
+    "-d")
+        DETACHED="-d"
+        ;;
+    "--build")
+        BUILD="true"
+        ;;
+    "--recreate")
+        docker compose -f "$COMPOSE" down
+        ;;
+    "--down")
+        docker compose -f "$COMPOSE" down
+        exit 0
+        ;;
+    "--stop")
+        docker compose -f "$COMPOSE" stop
+        exit 0
+        ;;
+    "--build-image")
+        BUILD_IMAGE="--build"
+        ;;
+    esac
+done
 
-rebuild=0
+#_________________________SETUP_________________________
 
-# Check if --rebuild flag is passed
-if [ "$1" == "--rebuild" ]; then
-    echo "Rebuilding image..."
-    rebuild=1
-    # if container exists, prompt the user to ensure they want to delete it
-    if [ -n "$(docker ps -a -q -f "name=home2-manipulation")" ]; then
-        read -p "Do you want to delete the existing container? (y/n): " confirmation
-        if [[ "$confirmation" == "y" ]]; then
-            docker stop home2-manipulation
-            docker rm home2-manipulation
-            echo "Container deleted."
-        else
-            echo "Operation cancelled."
-        fi 
-    fi
-fi
+# Reset .env
+echo "" > .env
 
-# Function to check if an image exists
-check_image_exists() {
-    local image_name=$1
-    if ! docker images --format "{{.Repository}}:{{.Tag}}" | grep -q "^${image_name}$"; then
-        echo "Image $image_name does not exist. Building it..."
-        return 1  # Image doesn't exist
-    else
-        echo "Image $image_name already exists. Skipping build."
-        return 0  # Image exists
-    fi
-}
+# Export user
+add_or_update_variable .env "LOCAL_USER_ID" "$(id -u)"
+add_or_update_variable .env "LOCAL_GROUP_ID" "$(id -g)"
 
-# Check type of environment (CPU, cuda, or Jetson), default CPU
-ENV_TYPE="cpu"
+# Create dirs with current user to avoid permission problems
+mkdir -p install build log
 
-# Check device type
-if [[ -f /etc/nv_tegra_release ]]; then
-    ENV_TYPE="jetson"
+#_________________________RUN_________________________
+
+
+SOURCE_ROS="source /opt/ros/humble/setup.bash"
+SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
+GPD_SETUP=". /home/ros/setup_gpd.sh"
+GPD_EXPORT="export GPD_INSTALL_DIR=/workspace/install/gpd"
+SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
+COLCON="colcon build --symlink-install --packages-up-to manipulation_general --packages-ignore realsense_gazebo_plugin xarm_gazebo frida_interfaces"
+
+if [ "$BUILD" == "true" ]; then
+    SETUP="$GPD_SETUP && $GPD_EXPORT && $SOURCE_ROS && $SOURCE_INTERFACES && $COLCON && $SOURCE"
 else
-    # Check if NVIDIA cudas are available
-    if command -v nvidia-smi > /dev/null 2>&1; then
-        if nvidia-smi > /dev/null 2>&1; then
-            ENV_TYPE="cuda"
-        fi
-    fi
+    SETUP="$GPD_SETUP && $GPD_EXPORT && $SOURCE_ROS && $SOURCE_INTERFACES && $SOURCE"
 fi
-echo "Detected environment: $ENV_TYPE"
-> .env
-# Write environment variables to .env file for Docker Compose and build base images
-USER_UID=$(id -u)
-USER_GID=$(id -g)
-echo "USER_UID=$USER_UID, USER_GID=$USER_GID"
-
-case $ENV_TYPE in
-  "cpu")
-    #_____CPU_____
-    echo "DOCKERFILE=docker/manipulation/Dockerfile.cpu" >> .env
-    echo "BASE_IMAGE=roborregos/home2:cpu_base" >> .env
-    echo "IMAGE_NAME=roborregos/home2:manipulation-cpu" >> .env
-    
-    # Build the base image if it doesn't exist or if --rebuild flag is passed
-    check_image_exists "$CPU_IMAGE" || [ $rebuild -eq 1 ]
-    if [ $? -eq 1 ]; then
-        docker compose -f ../cpu.yaml build --build-arg "USER_UID=$(id -u)" --build-arg "USER_GID=$(id -g)"
-        rebuild=1
-    fi
-    ;;
-  "cuda")
-    #_____cuda_____
-    echo "DOCKERFILE=docker/manipulation/Dockerfile.cuda" >> .env
-    echo "BASE_IMAGE=roborregos/home2:cuda_base" >> .env
-    echo "IMAGE_NAME=roborregos/home2:manipulation-cuda" >> .env
-
-    # Build the base image if it doesn't exist or if --rebuild flag is passed
-    check_image_exists "$CUDA_IMAGE" || [ $rebuild -eq 1 ]
-    if [ $? -eq 1 ]; then
-        docker compose -f ../cuda.yaml build --build-arg "USER_UID=$(id -u)" --build-arg "USER_GID=$(id -g)"
-        rebuild=1
-    fi
-
-    ;;
-    "jetson")
-    #_____Jetson_____
-    echo "DOCKERFILE=docker/manipulation/Dockerfile.jetson" >> .env
-    echo "BASE_IMAGE=roborregos/home2:l4t_base" >> .env
-    echo "IMAGE_NAME=roborregos/home2:manipulation-jetson" >> .env
-    echo "DISPLAY=:0" >> .env
-    ;;
-  *)
-    echo "Unknown environment type!"
-    exit 1
-    ;;
-esac
 
 case $TASK in
     "--receptionist")
@@ -118,123 +82,21 @@ case $TASK in
         RUN="ros2 launch manipulation_general gpsr.launch.py"
         ;;
     *)
-        RUN="/bin/bash"
+        RUN="bash"
         ;;
 esac
 
-COMMAND="source /opt/ros/humble/setup.bash && \
-         source /workspace/frida_interfaces_cache/install/local_setup.bash && \
-         source /workspace/install/setup.bash && $RUN"
-echo "COMMAND= $COMMAND" >> .env
+COMMAND="$SETUP && $RUN"
+add_or_update_variable .env "COMMAND" "$COMMAND"
 
-#_________________________SETUP_________________________
-
-# Export user
-export LOCAL_USER_ID=$(id -u)
-export LOCAL_GROUP_ID=$(id -g)
-
-#_________________________RUN_________________________
-xhost +
-SERVICE=manipulation
-NEEDS_BUILD=false
-
-# CONTAINER=$(docker ps -a --filter "name=${SERVICE}" --format "{{.ID}}")
-# if [ -z "$CONTAINER" ]; then
-#     echo "No container found for service '$SERVICE'."
-#     NEEDS_BUILD=true
-# fi
-# echo "Needs build: $NEEDS_BUILD"
-
-# # If it needs build 
-# if [ "$NEEDS_BUILD" = true ]; then
-
-#     if [ -z "$TASK" ]; then
-        
-#         if [ $ENV_TYPE == "cpu" ]; then
-#             docker compose -f docker-compose-cpu.yaml up --build -d
-#         elif [ $ENV_TYPE == "cuda" ]; then
-#             docker compose -f docker-compose-cuda.yaml up --build -d
-#         elif [ $ENV_TYPE == "jetson" ]; then
-#             docker compose -f docker-compose-jetson.yaml up --build -d
-#         fi
-
-#         docker compose exec manipulation /bin/bash
-    
-#     else
-#         if [ $ENV_TYPE == "cpu" ]; then
-#             docker compose -f docker-compose-cpu.yaml up --build
-#         elif [ $ENV_TYPE == "cuda" ]; then
-#             docker compose -f docker-compose-cuda.yaml up --build
-#         elif [ $ENV_TYPE == "jetson" ]; then
-#             docker compose -f docker-compose-jetson.yaml up --build
-#         fi
-#     fi
-
-# else
-
-#     if [ -z "$TASK" ]; then
-#     echo "NO TASK"
-#         RUNNING=$(docker ps --filter "name=manipulation" --format "{{.ID}}")
-#         echo "FUN $RUNNING"
-#         if [ -z "$RUNNING" ]; then
-#             echo "Starting manipulation service..."
-#             if [ $ENV_TYPE == "cpu" ]; then
-#                 docker compose -f docker-compose-cpu.yaml up -d
-#             elif [ $ENV_TYPE == "cuda" ]; then
-#                 docker compose -f docker-compose-cuda.yaml up  -d
-#             elif [ $ENV_TYPE == "jetson" ]; then
-#             echo "JETSOON"
-#                 docker compose -f docker-compose-jetson.yaml up -d
-#             fi
-#         fi
-#         docker compose exec manipulation /bin/bash
-#     else    
-#         echo "Starting manipulation service..."
-#         if [ $ENV_TYPE == "cpu" ]; then
-#             docker compose -f docker-compose-cpu.yaml up
-#         elif [ $ENV_TYPE == "cuda" ]; then
-#             docker compose -f docker-compose-cuda.yaml up 
-#         elif [ $ENV_TYPE == "jetson" ]; then
-#             docker compose -f docker-compose-jetson.yaml up
-#         fi
-#     fi
-# fi
-
-
-# Check if the container exists
-EXISTING_CONTAINER=$(docker ps -a -q -f "name=$CONTAINER_NAME")
-if [ -z "$EXISTING_CONTAINER" ]; then
-    echo "No container with the name $CONTAINER_NAME exists. Building and starting the container now..."
-    if [ $ENV_TYPE == "cpu" ]; then
-        docker compose -f docker-compose-cpu.yaml up --build -d
-    elif [ $ENV_TYPE == "cuda" ]; then
-        docker compose -f docker-compose-cuda.yaml up --build -d
-    elif [ $ENV_TYPE == "jetson" ]; then
-        docker compose -f docker-compose-jetson.yaml up --build -d
-    fi
-    echo "Running prebuild script..."
-    docker start $CONTAINER_NAME
-    # docker exec -it $CONTAINER_NAME /bin/bash -c "./src/home2/prebuild.sh"
-fi
-
-# Check if the container is running
-RUNNING_CONTAINER=$(docker ps -q -f "name=$CONTAINER_NAME")
-
-if [ -n "$RUNNING_CONTAINER" ]; then
-    echo "Container $CONTAINER_NAME is already running. Executing bash..."
-    docker start $CONTAINER_NAME
-    if [ -z "$TASK" ]; then
-        docker exec -it $CONTAINER_NAME /bin/bash
+if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
+    EXISTING_CONTAINER=$(docker ps -a -q -f name="manipulation")
+    if [ -z "$EXISTING_CONTAINER" ] || [ -n "$BUILD_IMAGE" ]; then
+        docker compose -f "$COMPOSE" up -d $BUILD_IMAGE
     else
-        docker exec -it $CONTAINER_NAME /bin/bash -c "$COMMAND"
+        docker compose -f "$COMPOSE" start
     fi
+    docker compose -f "$COMPOSE" exec manipulation bash -c "$COMMAND"
 else
-    echo "Container $CONTAINER_NAME is stopped. Starting it now..."
-    docker compose up --build -d
-    docker start $CONTAINER_NAME
-    if [ -z "$TASK" ]; then
-        docker exec -it $CONTAINER_NAME /bin/bash
-    else
-        docker exec -it $CONTAINER_NAME /bin/bash -c "$COMMAND"
-    fi
+    docker compose -f "$COMPOSE" up $DETACHED $BUILD_IMAGE
 fi
