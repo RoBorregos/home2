@@ -5,13 +5,22 @@
 ARGS=("$@")  # Save all arguments in an array
 TASK=${ARGS[0]}
 
+# Source image utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+source "${SCRIPT_DIR}/docker/image_utils.sh"
+
+# Check for image management commands
+PUSH_IMAGE=false
+PULL_IMAGE=false
+IMAGE_VERSION=""
+
 # IMPORTANT: Also edit auto-complete.sh to add new arguments
 detached=""
 build_display=""
 open_display=""
 download_model=""
 
-# Check if one of the arguments is --detached, --build-display, or --open-display
+# Check if one of the arguments is --detached, --build-display, --open-display, --push-image, --pull-image
 for arg in "${ARGS[@]}"; do
   if [ "$arg" == "-d" ]; then
     detached="-d"
@@ -21,8 +30,27 @@ for arg in "${ARGS[@]}"; do
     open_display="true"
   elif [ "$arg" == "--download-model" ]; then
     download_model="true"
+  elif [ "$arg" == "--push-image" ]; then
+    PUSH_IMAGE=true
+  elif [ "$arg" == "--pull-image" ]; then
+    PULL_IMAGE=true
   fi
 done
+
+# Get version from arguments
+for i in "${!ARGS[@]}"; do
+  if [ "${ARGS[$i]}" == "--push-image" ] || [ "${ARGS[$i]}" == "--pull-image" ]; then
+    IMAGE_VERSION="${ARGS[$((i+1))]}"
+    break
+  fi
+done
+
+# Set default version
+if [ "$PUSH_IMAGE" = true ] && [ -z "$IMAGE_VERSION" ]; then
+  IMAGE_VERSION=$(date +%Y%m%d)
+elif [ "$PULL_IMAGE" = true ] && [ -z "$IMAGE_VERSION" ]; then
+  IMAGE_VERSION="latest"
+fi
 
 #_________________________BUILD_________________________
 
@@ -52,6 +80,20 @@ elif command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi >/dev/null 2>&1; then
   ENV_TYPE="cuda"
 fi
 echo "Detected environment: $ENV_TYPE"
+
+# Handle push image command
+if [ "$PUSH_IMAGE" = true ]; then
+  ENV_SUFFIX="$ENV_TYPE"
+  push_area_image "hri" "$ENV_SUFFIX" "$IMAGE_VERSION" "$SCRIPT_DIR"
+  exit $?
+fi
+
+# Handle pull image command
+if [ "$PULL_IMAGE" = true ]; then
+  ENV_SUFFIX="$ENV_TYPE"
+  pull_area_image "hri" "$ENV_SUFFIX" "$IMAGE_VERSION"
+  exit $?
+fi
 
 #_________________________SETUP_________________________
 

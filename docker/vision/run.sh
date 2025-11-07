@@ -2,6 +2,42 @@
 ARGS=("$@")  # Save all arguments in an array
 TASK=${ARGS[0]}
 detached=""
+
+# Source image utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+source "${SCRIPT_DIR}/docker/image_utils.sh"
+
+# Check for image management commands
+PUSH_IMAGE=false
+PULL_IMAGE=false
+IMAGE_VERSION=""
+
+# Parse arguments for image management and flags
+for arg in "${ARGS[@]}"; do
+  if [ "$arg" == "-d" ]; then
+    detached="-d"
+  elif [ "$arg" == "--push-image" ]; then
+    PUSH_IMAGE=true
+  elif [ "$arg" == "--pull-image" ]; then
+    PULL_IMAGE=true
+  fi
+done
+
+# Get version from arguments
+for i in "${!ARGS[@]}"; do
+  if [ "${ARGS[$i]}" == "--push-image" ] || [ "${ARGS[$i]}" == "--pull-image" ]; then
+    IMAGE_VERSION="${ARGS[$((i+1))]}"
+    break
+  fi
+done
+
+# Set default version
+if [ "$PUSH_IMAGE" = true ] && [ -z "$IMAGE_VERSION" ]; then
+  IMAGE_VERSION=$(date +%Y%m%d)
+elif [ "$PULL_IMAGE" = true ] && [ -z "$IMAGE_VERSION" ]; then
+  IMAGE_VERSION="latest"
+fi
+
 # check if one of the arguments is --detached
 for arg in "${ARGS[@]}"; do
   if [ "$arg" == "-d" ]; then
@@ -44,6 +80,24 @@ else
 fi
 echo "Detected environment: $ENV_TYPE"
 > .env
+
+# Handle push image command
+if [ "$PUSH_IMAGE" = true ]; then
+  # Vision uses 'gpu' locally but 'cuda' for image names
+  ENV_SUFFIX="$ENV_TYPE"
+  [ "$ENV_TYPE" = "gpu" ] && ENV_SUFFIX="cuda"
+  push_area_image "vision" "$ENV_SUFFIX" "$IMAGE_VERSION" "$SCRIPT_DIR"
+  exit $?
+fi
+
+# Handle pull image command
+if [ "$PULL_IMAGE" = true ]; then
+  # Vision uses 'gpu' locally but 'cuda' for image names
+  ENV_SUFFIX="$ENV_TYPE"
+  [ "$ENV_TYPE" = "gpu" ] && ENV_SUFFIX="cuda"
+  pull_area_image "vision" "$ENV_SUFFIX" "$IMAGE_VERSION"
+  exit $?
+fi
 
 # Write environment variables to .env file for Docker Compose and build base images
 case $ENV_TYPE in

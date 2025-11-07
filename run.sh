@@ -16,6 +16,42 @@ case $AREA in
     ;;
 esac
 
+# Source image utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/docker/image_utils.sh"
+
+# Check for image management commands
+PUSH_IMAGE=false
+PULL_IMAGE=false
+IMAGE_VERSION=""
+
+# Parse arguments for image management
+ARGS=("$@")
+for i in "${!ARGS[@]}"; do
+  if [ "${ARGS[$i]}" == "--push-image" ]; then
+    PUSH_IMAGE=true
+    # Get version from next argument if provided
+    next_idx=$((i + 1))
+    if [ $next_idx -lt ${#ARGS[@]} ] && [[ ! "${ARGS[$next_idx]}" =~ ^-- ]]; then
+      IMAGE_VERSION="${ARGS[$next_idx]}"
+    fi
+  elif [ "${ARGS[$i]}" == "--pull-image" ]; then
+    PULL_IMAGE=true
+    # Get version from next argument if provided
+    next_idx=$((i + 1))
+    if [ $next_idx -lt ${#ARGS[@]} ] && [[ ! "${ARGS[$next_idx]}" =~ ^-- ]]; then
+      IMAGE_VERSION="${ARGS[$next_idx]}"
+    fi
+  fi
+done
+
+# Set default versions
+if [ "$PUSH_IMAGE" = true ] && [ -z "$IMAGE_VERSION" ]; then
+  IMAGE_VERSION=$(date +%Y%m%d)
+elif [ "$PULL_IMAGE" = true ] && [ -z "$IMAGE_VERSION" ]; then
+  IMAGE_VERSION="latest"
+fi
+
 # Function to check if an image exists
 check_image_exists() {
     local image_name=$1
@@ -37,6 +73,38 @@ elif command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi >/dev/null 2>&1; then
   ENV_TYPE=cuda
 fi
 echo "Detected environment: $ENV_TYPE"
+
+# Handle push image command
+if [ "$PUSH_IMAGE" = true ]; then
+  if [ "$AREA" = "frida_interfaces" ]; then
+    echo "Error: Cannot push frida_interfaces as a standalone image"
+    exit 1
+  fi
+  
+  # Normalize 'gpu' to 'cuda' for consistent image naming
+  ENV_SUFFIX="$ENV_TYPE"
+  [ "$ENV_TYPE" = "gpu" ] && ENV_SUFFIX="cuda"
+  
+  echo "Pushing image for area: $AREA with environment: $ENV_SUFFIX"
+  push_area_image "$AREA" "$ENV_SUFFIX" "$IMAGE_VERSION" "$SCRIPT_DIR"
+  exit $?
+fi
+
+# Handle pull image command
+if [ "$PULL_IMAGE" = true ]; then
+  if [ "$AREA" = "frida_interfaces" ]; then
+    echo "Error: Cannot pull frida_interfaces as a standalone image"
+    exit 1
+  fi
+  
+  # Normalize 'gpu' to 'cuda' for consistent image naming
+  ENV_SUFFIX="$ENV_TYPE"
+  [ "$ENV_TYPE" = "gpu" ] && ENV_SUFFIX="cuda"
+  
+  echo "Pulling image for area: $AREA with environment: $ENV_SUFFIX"
+  pull_area_image "$AREA" "$ENV_SUFFIX" "$IMAGE_VERSION"
+  exit $?
+fi
 
 # Check and build base image if it doesn't exist
 check_image_exists "roborregos/home2:${ENV_TYPE}_base"

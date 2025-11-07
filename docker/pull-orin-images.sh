@@ -7,13 +7,12 @@
 
 set -e  # Exit on error
 
-# Colors for output
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-NC='\033[0m' # No Color
+# Source shared utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "${SCRIPT_DIR}/image_utils.sh"
 
 # Get version from argument or use 'latest'
-VERSION="${1:-latest}"
+VERSION=$(get_version "${1:-latest}")
 echo -e "${GREEN}Pulling version: ${VERSION}${NC}"
 
 # Array of images to pull
@@ -27,12 +26,7 @@ IMAGES=(
 
 # Pull each image
 for image in "${IMAGES[@]}"; do
-    echo -e "\n${YELLOW}Pulling ${image}-${VERSION}...${NC}"
-    docker pull "${image}-${VERSION}"
-    
-    # Tag as the base name (without version suffix) for local use
-    docker tag "${image}-${VERSION}" "${image}"
-    echo -e "${GREEN}✓ Successfully pulled ${image}${NC}"
+    pull_image "$image" "$VERSION"
 done
 
 echo -e "\n${GREEN}═══════════════════════════════════════════${NC}"

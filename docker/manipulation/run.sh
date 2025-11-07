@@ -4,6 +4,39 @@ TASK=${ARGS[0]}
 
 echo "Task: $TASK"
 
+# Source image utilities
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+source "${SCRIPT_DIR}/docker/image_utils.sh"
+
+# Check for image management commands
+PUSH_IMAGE=false
+PULL_IMAGE=false
+IMAGE_VERSION=""
+
+# Parse arguments for image management
+for arg in "${ARGS[@]}"; do
+  if [ "$arg" == "--push-image" ]; then
+    PUSH_IMAGE=true
+  elif [ "$arg" == "--pull-image" ]; then
+    PULL_IMAGE=true
+  fi
+done
+
+# Get version from arguments (after --push-image or --pull-image)
+for i in "${!ARGS[@]}"; do
+  if [ "${ARGS[$i]}" == "--push-image" ] || [ "${ARGS[$i]}" == "--pull-image" ]; then
+    IMAGE_VERSION="${ARGS[$((i+1))]}"
+    break
+  fi
+done
+
+# Set default version
+if [ "$PUSH_IMAGE" = true ] && [ -z "$IMAGE_VERSION" ]; then
+  IMAGE_VERSION=$(date +%Y%m%d)
+elif [ "$PULL_IMAGE" = true ] && [ -z "$IMAGE_VERSION" ]; then
+  IMAGE_VERSION="latest"
+fi
+
 #_________________________BUILD_________________________
 
 # Image names
@@ -103,6 +136,20 @@ case $ENV_TYPE in
     exit 1
     ;;
 esac
+
+# Handle push image command
+if [ "$PUSH_IMAGE" = true ]; then
+  ENV_SUFFIX="$ENV_TYPE"
+  push_area_image "manipulation" "$ENV_SUFFIX" "$IMAGE_VERSION" "$SCRIPT_DIR"
+  exit $?
+fi
+
+# Handle pull image command
+if [ "$PULL_IMAGE" = true ]; then
+  ENV_SUFFIX="$ENV_TYPE"
+  pull_area_image "manipulation" "$ENV_SUFFIX" "$IMAGE_VERSION"
+  exit $?
+fi
 
 case $TASK in
     "--receptionist")
