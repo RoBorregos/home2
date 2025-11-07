@@ -1,9 +1,6 @@
 #!/bin/bash
 source ../../lib.sh
 
-export LOCAL_USER_ID=$(id -u)
-export LOCAL_GROUP_ID=$(id -g)
-
 #_________________________ARGUMENTS_________________________
 
 ARGS=("$@")  # Save all arguments in an array
@@ -13,6 +10,7 @@ ENV_TYPE="${*: -1}"
 # IMPORTANT: Also edit auto-complete.sh to add new arguments
 DETACHED=""
 BUILD=""
+BUILD_IMAGE=""
 
 # check if one of the arguments is --detached
 for arg in "${ARGS[@]}"; do
@@ -34,16 +32,20 @@ for arg in "${ARGS[@]}"; do
         docker compose stop
         exit 0
         ;;
-    # TODO: build
+    "--build-image")
+        BUILD_IMAGE="--build"
+        ;;
     esac
 done
 
-#_________________________BUILD_________________________
+#_________________________SETUP_________________________
 
-# Ensure .env exists
-if [ ! -f ".env" ]; then
-  touch .env
-fi
+# Reset .env
+echo "" > .env
+
+# Export user
+add_or_update_variable .env "LOCAL_USER_ID" "$(id -u)"
+add_or_update_variable .env "LOCAL_GROUP_ID" "$(id -g)"
 
 # Write environment variables to .env file for Docker Compose and build base images
 add_or_update_variable .env "BASE_IMAGE" "roborregos/home2:${ENV_TYPE}_base"
@@ -64,27 +66,22 @@ case $ENV_TYPE in
     ;;
 esac
 
-
-#_________________________SETUP_________________________
-
 mkdir -p install build log moondream/install moondream/build moondream/log
 
 #_________________________RUN_________________________
 
-# Check which commands and services to run
 SOURCE_ROS="source /opt/ros/humble/setup.bash"
 SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
-IGNORE_PACKAGES="--packages-ignore frida_interfaces frida_constants xarm_msgs"
+IGNORE_PACKAGES="--packages-ignore frida_interfaces frida_constants"
 MOONDREAM_PACKAGES="moondream_run"
 MOONDREAM_COMMAND="ros2 run moondream_run moondream_node.py"
 SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
-
 PROFILES=()
 
 case $TASK in
     "--receptionist")
         PACKAGES="vision_general object_detector_2d object_detection_handler"
-        RUN="ros2 launch vision_general receptionist_launch.py"
+        RUN="ros2 launch object_detector_2d object_detector_combined.launch.py"
         PROFILES=("vision" "moondream")
         ;;
     "--carry")
@@ -106,26 +103,34 @@ case $TASK in
         PROFILES=("moondream")
         ;;
     *)
+        PACKAGES="vision_general object_detector_2d object_detection_handler"
+        RUN="bash"
         PROFILES=("vision")
         ;;
 esac
 
 if [ "$BUILD" == "true" ]; then
     SETUP="$SOURCE_ROS && $SOURCE_INTERFACES && colcon build $IGNORE_PACKAGES --packages-up-to $PACKAGES && $SOURCE"
-  COMMAND_MOONDREAM="$SOURCE_ROS && $SOURCE_INTERFACES && colcon build $IGNORE_PACKAGES --packages-up-to $MOONDREAM_PACKAGES  && $SOURCE && $MOONDREAM_COMMAND"
-
 else
     SETUP="$SOURCE_ROS && $SOURCE_INTERFACES && $SOURCE"
 fi
 
 COMMAND="$SETUP && $RUN"
+COMMAND_MOONDREAM="$SOURCE_ROS && $SOURCE_INTERFACES && colcon build $IGNORE_PACKAGES --packages-up-to $MOONDREAM_PACKAGES && $SOURCE && $MOONDREAM_COMMAND"
 add_or_update_variable .env "COMMAND" "$COMMAND"
 add_or_update_variable .env "COMMAND_MOONDREAM" "$COMMAND_MOONDREAM"
 
-
-
-# Add services to compose profiles
 COMPOSE_PROFILES=$(IFS=, ; echo "${PROFILES[*]}")
 add_or_update_variable .env "COMPOSE_PROFILES" "$COMPOSE_PROFILES"
 
-docker compose up $DETACHED
+if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
+    EXISTING_CONTAINER=$(docker ps -a -q -f name="vision")
+    if [ -z "$EXISTING_CONTAINER" ] || [ -n "$BUILD_IMAGE" ]; then
+        docker compose up -d $BUILD_IMAGE
+    else
+        docker compose start
+    fi
+    docker compose exec vision bash -c "$COMMAND"
+else
+    docker compose up $DETACHED $BUILD_IMAGE
+fi

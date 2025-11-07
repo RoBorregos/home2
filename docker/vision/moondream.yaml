@@ -7,8 +7,7 @@ services:
       context: ../..
       dockerfile: docker/vision/Dockerfile.moondream.server
       args:
-        # BASE_IMAGE: ${BASE_IMAGE:-roborregos/home2:cuda_base}
-        BASE_IMAGE: roborregos/home2:l4t_base
+        BASE_IMAGE: ${BASE_IMAGE:-roborregos/home2:cpu_base}
     ports:
       - "50052:50052"
     volumes:
@@ -52,26 +51,19 @@ services:
       - ./moondream/install:/workspace/install
       - ./moondream/log:/workspace/log
       - ../frida_interfaces_cache:/workspace/frida_interfaces_cache
-
-
     network_mode: host
     user: 1000:1000
     privileged: true
     runtime: ${RUNTIME:-}
     group_add:
       - video
-
     environment:
       DISPLAY: ${DISPLAY}
       TERM: xterm-256color
       QT_X11_NO_MITSHM: 1
       QT_DEBUG_PLUGINS: 1
-
     tty: true
     stdin_open: true
     working_dir: /workspace
-    # command: ["/bin/bash", "-i", "-l"]
-    # command: bash -c "source /opt/ros/humble/setup.bash && colcon build --packages-up-to moondream_run && source install/setup.bash && ros2 run moondream_run moondream_node.py"
-    # command: bash -c "source /opt/ros/humble/setup.bash && source install/setup.bash && ros2 run moondream_run moondream_node.py"
     command: >
       bash -c "${COMMAND_MOONDREAM:-source /opt/ros/humble/setup.bash && colcon build --packages-up-to moondream_run && source install/setup.bash && ros2 run moondream_run moondream_node.py}"

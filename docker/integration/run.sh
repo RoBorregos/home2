@@ -1,10 +1,6 @@
 #!/bin/bash
 source ../../lib.sh
 
-# Export user
-export LOCAL_USER_ID=$(id -u)
-export LOCAL_GROUP_ID=$(id -g)
-
 #_________________________ARGUMENTS_________________________
 
 ARGS=("$@")  # Save all arguments in an array
@@ -44,10 +40,12 @@ done
 
 #_________________________SETUP_________________________
 
-# Ensure .env exists
-if [ ! -f ".env" ]; then
-  touch .env
-fi
+# Reset .env
+echo "" > .env
+
+# Export user
+add_or_update_variable .env "LOCAL_USER_ID" "$(id -u)"
+add_or_update_variable .env "LOCAL_GROUP_ID" "$(id -g)"
 
 # Write environment variables to .env file for Docker Compose and build base images
 add_or_update_variable .env "BASE_IMAGE" "roborregos/home2:${ENV_TYPE}_base"
@@ -103,7 +101,7 @@ add_or_update_variable .env "COMMAND" "$COMMAND"
 
 if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
     EXISTING_CONTAINER=$(docker ps -a -q -f name="integration")
-    if [ -z "$EXISTING_CONTAINER" ] || [ "$BUILD_IMAGE" == "--build" ]; then
+    if [ -z "$EXISTING_CONTAINER" ] || [ -n "$BUILD_IMAGE" ]; then
         docker compose up -d $BUILD_IMAGE
     else
         docker compose start
