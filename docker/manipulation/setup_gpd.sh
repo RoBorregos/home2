@@ -7,7 +7,7 @@ LIB_DIR="/usr/local/include/gpd"
 
 # Check if GPD is in home2 workspace
 if [ -z "$GPD_DIR" ]; then
-    echo "GPD not fund downloading ... "
+    echo "GPD not found downloading ... "
     cd $WORKSPACE_DIR && git submodule update --init --recursive
     echo "GPD downloaded continuing ... "  
 fi

@@ -26,8 +26,6 @@ for arg in "${ARGS[@]}"; do
         ;;
     "--recreate")
         docker compose down
-    "--storing-groceries")
-        RU
         ;;
     "--down")
         docker compose down
