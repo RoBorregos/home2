@@ -2,7 +2,7 @@
 source lib.sh
 
 INPUT=$1
-AREAS="vision manipulation navigation integration hri frida_interfaces"
+AREAS="vision manipulation navigation integration hri"
 # check arguments passed as --help or -h
 if [ "$INPUT" == "--help" ] || [ "$INPUT" == "-h" ] || [ -z "$INPUT" ]; then
   echo "Usage: ./run.sh [area] [--task] [--flags]"
@@ -57,8 +57,10 @@ elif [ "$INPUT" = "down" ]; then
     echo "Area: $area"
     AREA_RUN="docker/${area}/run.sh"
     if [ -f "$AREA_RUN" ]; then
-      echo "Running: bash $AREA_RUN --stop ${ENV_TYPE}"
-      bash "$AREA_RUN" --stop "${ENV_TYPE}"
+      echo "Running: bash $AREA_RUN --stop"
+      cd "docker/${area}" || continue
+      bash "./run.sh" --stop "${ENV_TYPE}"
+      cd - > /dev/null
       continue
     fi
   done
