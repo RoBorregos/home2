@@ -11,6 +11,7 @@ ENV_TYPE="${*: -1}"
 DETACHED=""
 BUILD=""
 BUILD_IMAGE=""
+UPLOAD_IMAGE=""
 
 # Parse arguments
 for arg in "${ARGS[@]}"; do
@@ -35,10 +36,48 @@ for arg in "${ARGS[@]}"; do
     "--build-image")
         BUILD_IMAGE="--build"
         ;;
+    "--upload-image")
+        BUILD_IMAGE="--build"
+        ;;
+    
     esac
 done
 
 #_________________________SETUP_________________________
+if [ "$UPLOAD_IMAGE" = "true" ]; then
+  docker login
+  echo "Building integration images for ${ENV_TYPE}"
+  docker compose -f "$COMPOSE" build
+
+  # Extract explicit image names
+  IMAGES=$(docker compose -f "$COMPOSE" config 2>/dev/null \
+    | awk '/^\s*image:/ {print $2}' | sort -u || true)
+  IMAGES=$(echo "$IMAGES" | grep '^roborregos/home2' || true)
+
+  if [ -z "$IMAGES" ]; then
+    echo "Nothing to push."
+    exit 1
+  fi
+
+  echo "Images to push:"
+  echo "$IMAGES"
+
+  rc=0
+  while IFS= read -r image; do
+    [ -z "$image" ] && continue
+    echo "Pushing $image ..."
+    if ! docker push "$image"; then
+      echo "Failed to push $image"
+      rc=1
+    fi
+
+  if [ $rc -eq 0 ]; then
+    echo "All pushes finished."
+  else
+    echo "One or more pushes failed."
+  fi
+  exit $rc
+fi
 
 # Reset .env
 echo "" > .env

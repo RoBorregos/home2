@@ -14,6 +14,7 @@ BUILD_IMAGE=""
 BUILD_DISPLAY=""
 OPEN_DISPLAY=""
 DOWNLOAD_MODEL=""
+UPLOAD_IMAGE=""
 
 COMPOSE="compose/docker-compose-${ENV_TYPE}.yml"
 
@@ -49,10 +50,47 @@ for arg in "${ARGS[@]}"; do
     "--download-model")
         DOWNLOAD_MODEL="true"
         ;;
+    "--upload-image")
+        UPLOAD_IMAGE="true"
+        ;;
   esac
 done
 
 #_________________________SETUP_________________________
+if [ "$UPLOAD_IMAGE" = "true" ]; then
+  docker login
+  echo "Building HRI images for ${ENV_TYPE}"
+  docker compose -f "$COMPOSE" build
+
+  # Extract explicit image names
+  IMAGES=$(docker compose -f "$COMPOSE" config 2>/dev/null \
+    | awk '/^\s*image:/ {print $2}' | sort -u || true)
+  IMAGES=$(echo "$IMAGES" | grep '^roborregos/home2' || true)
+
+  if [ -z "$IMAGES" ]; then
+    echo "Nothing to push."
+    exit 1
+  fi
+
+  echo "Images to push:"
+  echo "$IMAGES"
+
+  rc=0
+  while IFS= read -r image; do
+    [ -z "$image" ] && continue
+    echo "Pushing $image ..."
+    if ! docker push "$image"; then
+      echo "Failed to push $image"
+      rc=1
+    fi
+
+  if [ $rc -eq 0 ]; then
+    echo "All pushes finished."
+  else
+    echo "One or more pushes failed."
+  fi
+  exit $rc
+fi
 
 bash scripts/setup.bash
 [ "$DOWNLOAD_MODEL" == "true" ] && bash ../../hri/packages/nlp/assets/download-model.sh
