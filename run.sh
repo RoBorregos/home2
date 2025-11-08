@@ -1,22 +1,24 @@
 #!/bin/bash
 source lib.sh
 
-AREA=$1
+INPUT=$1
+AREAS="vision manipulation navigation integration hri frida_interfaces"
 # check arguments passed as --help or -h
-if [ "$AREA" == "--help" ] || [ "$AREA" == "-h" ] || [ -z "$AREA" ]; then
+if [ "$INPUT" == "--help" ] || [ "$INPUT" == "-h" ] || [ -z "$INPUT" ]; then
   echo "Usage: ./run.sh [area] [--task] [--flags]"
   echo "Example: ./run.sh hri --receptionist --open-display"
   exit 0
 fi
 
-case $AREA in
-  vision|manipulation|navigation|integration|hri|frida_interfaces|stop)
+case $INPUT in
+  vision|manipulation|navigation|integration|hri|frida_interfaces|stop|down)
     ;;
   *)
-    echo "Invalid service name provided. Valid args are: vision, manipulation, navigation, integration, hri, frida_interfaces, stop"
+    echo "Invalid service name provided. Valid args are: vision, manipulation, navigation, integration, hri, frida_interfaces, stop, down"
     exit 1
     ;;
 esac
+
 
 # Check type of environment (cpu, cuda, or l4t), default cpu
 ENV_TYPE=cpu
@@ -35,10 +37,10 @@ if [ $? -eq 1 ]; then
 fi
 
 # Run the selected area
-if [ "$AREA" = "frida_interfaces" ]; then
+if [ "$INPUT" = "frida_interfaces" ]; then
   echo "Running frida_interfaces_cache to build frida_interfaces"
   docker compose -f docker/frida_interfaces_cache/docker-compose-${ENV_TYPE}.yaml run --rm frida_interfaces_cache
-elif [ "$AREA" = "stop" ]; then
+elif [ "$INPUT" = "stop" ]; then
   echo "Stopping all container and tmux sessions"
   if tmux ls >/dev/null 2>&1; then
     tmux kill-server || true
@@ -50,6 +52,18 @@ elif [ "$AREA" = "stop" ]; then
             echo "Stopped containers: $running_containers"
         fi
     fi
+elif [ "$INPUT" = "down" ]; then
+  for area in $AREAS; do
+    echo "Area: $area"
+    AREA_RUN="docker/${area}/run.sh"
+    if [ -f "$AREA_RUN" ]; then
+      echo "Running: bash $AREA_RUN --stop ${ENV_TYPE}"
+      bash "$AREA_RUN" --stop "${ENV_TYPE}"
+      continue
+    fi
+  done
+  echo "All areas down."
+  exit 0
 else
   # If frida_interfaces_cache hasn't been built yet, build it first
   if [ ! -d "docker/frida_interfaces_cache/build" ]; then
@@ -57,7 +71,7 @@ else
     docker compose -f docker/frida_interfaces_cache/docker-compose-${ENV_TYPE}.yaml run --rm frida_interfaces_cache
   fi
 
-  echo "Running image from area: $AREA"
-  cd "docker/$AREA" || { echo "Error: failed to cd into docker/$AREA" >&2; exit 1; }
+  echo "Running image from area: $INPUT"
+  cd "docker/$INPUT" || { echo "Error: failed to cd into docker/$INPUT" >&2; exit 1; }
   ./run.sh "${@:2}" ${ENV_TYPE}
 fi
