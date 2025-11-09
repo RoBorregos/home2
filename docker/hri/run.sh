@@ -15,6 +15,7 @@ BUILD_DISPLAY=""
 OPEN_DISPLAY=""
 DOWNLOAD_MODEL=""
 UPLOAD_IMAGE=""
+PULL_IMAGE=""
 
 COMPOSE="compose/docker-compose-${ENV_TYPE}.yml"
 
@@ -53,43 +54,28 @@ for arg in "${ARGS[@]}"; do
     "--upload-image")
         UPLOAD_IMAGE="true"
         ;;
+    "--pull-image")
+        PULL_IMAGE="true"
+        ;;
   esac
 done
 
 #_________________________SETUP_________________________
 if [ "$UPLOAD_IMAGE" = "true" ]; then
-  docker login
-  echo "Building HRI images for ${ENV_TYPE}"
-  docker compose -f "$COMPOSE" build
-
-  # Extract explicit image names
-  IMAGES=$(docker compose -f "$COMPOSE" config 2>/dev/null \
-    | awk '/^\s*image:/ {print $2}' | sort -u || true)
-  IMAGES=$(echo "$IMAGES" | grep '^roborregos/home2' || true)
-
-  if [ -z "$IMAGES" ]; then
-    echo "Nothing to push."
-    exit 1
-  fi
-
-  echo "Images to push:"
-  echo "$IMAGES"
-
-  rc=0
-  while IFS= read -r image; do
-    [ -z "$image" ] && continue
-    echo "Pushing $image ..."
-    if ! docker push "$image"; then
-      echo "Failed to push $image"
-      rc=1
+  upload_images "$COMPOSE"
+  exit $?
+elif [ "${PULL_IMAGE:-}" = "true" ]; then
+  if [ -n "$COMPOSE" ] && [ -f "$COMPOSE" ]; then
+    echo "Pull flag set: pulling prebuilt images referenced in $COMPOSE ..."
+    if pull_image --compose "$COMPOSE"; then
+      echo "Pulled images successfully — skipping local image builds."
+      BUILD_IMAGE=""
+    else
+      echo "Pull failed. Falling back to local build (if requested)." >&2
     fi
-
-  if [ $rc -eq 0 ]; then
-    echo "All pushes finished."
   else
-    echo "One or more pushes failed."
+    echo "Compose file not found; cannot pull images." >&2
   fi
-  exit $rc
 fi
 
 bash scripts/setup.bash
