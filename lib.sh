@@ -48,34 +48,6 @@ run_frida_interfaces() {
   docker compose -f "$compose_yaml" run --rm frida_interfaces_cache
 }
 
-stop_all() {
-  if command -v tmux >/dev/null 2>&1 && tmux ls >/dev/null 2>&1; then
-    tmux kill-server || true
-  fi
-  for area in ${AREAS:-}; do
-    AREA_RUN="docker/${area}/run.sh"
-    if [ -f "$AREA_RUN" ]; then
-      echo "Calling stop for area: $area"
-      (cd "docker/${area}" && bash "./run.sh" --stop "${ENV_TYPE}") || true
-    fi
-  done
-  echo "All stops attempted."
-  exit 0
-}
-
-down_all() {
-  echo "Taking all areas down"
-  for area in ${AREAS:-}; do
-    AREA_RUN="docker/${area}/run.sh"
-    if [ -f "$AREA_RUN" ]; then
-      echo "Running down for area: $area"
-      (cd "docker/${area}" && bash "./run.sh" --down "${ENV_TYPE}") || true
-    fi
-  done
-  echo "All areas down."
-  exit 0
-}
-
 run_area() {
   if [ ! -d "docker/frida_interfaces_cache/build" ]; then
     echo "Cache directory missing. Building frida_interfaces_cache first..."
@@ -92,4 +64,83 @@ run_area() {
   echo "Running image from $INPUT"
   (cd "docker/$INPUT" && bash "./run.sh" "${@:2}" "${ENV_TYPE}")
   return $?
+}
+
+detect_cores() {
+    if command -v nproc >/dev/null 2>&1; then
+      nproc
+    else
+      sysctl -n hw.ncpu 2>/dev/null || echo 4
+    fi
+  }
+stop_all() {
+  if command -v tmux >/dev/null 2>&1 && tmux ls >/dev/null 2>&1; then
+    tmux kill-server || true
+  fi
+
+  PARALLEL=${PARALLEL:-$(detect_cores)}
+  pids=()
+  areas_launched=()
+  for area in ${AREAS:-}; do
+    AREA_RUN="docker/${area}/run.sh"
+    if [ -f "$AREA_RUN" ]; then
+      echo "Starting stop for area: $area"
+      # throttle to PARALLEL background jobs
+      while [ "$(jobs -rp | wc -l)" -ge "$PARALLEL" ]; do
+        sleep 0.1
+      done
+      ( cd "docker/${area}" && bash "./run.sh" --stop "${ENV_TYPE}" ) &
+      pids+=($!)
+      areas_launched+=("$area")
+    fi
+  done
+
+  rc=0
+  for i in "${!pids[@]}"; do
+    pid=${pids[i]}
+    area=${areas_launched[i]}
+    if wait "$pid"; then
+      echo "Area $area stopped successfully."
+    else
+      echo "Area $area stop failed." >&2
+      rc=1
+    fi
+  done
+
+  echo "All stops attempted."
+  return $rc
+}
+
+down_all() {
+  echo "Taking all areas down"
+  PARALLEL=${PARALLEL:-$(detect_cores)}
+  pids=()
+  areas_launched=()
+
+  for area in ${AREAS:-}; do
+    AREA_RUN="docker/${area}/run.sh"
+    if [ -f "$AREA_RUN" ]; then
+      echo "Starting down for area: $area"
+      while [ "$(jobs -rp | wc -l)" -ge "$PARALLEL" ]; do
+        sleep 0.1
+      done
+      ( cd "docker/${area}" && bash "./run.sh" --down "${ENV_TYPE}" ) &
+      pids+=($!)
+      areas_launched+=("$area")
+    fi
+  done
+
+  rc=0
+  for i in "${!pids[@]}"; do
+    pid=${pids[i]}
+    area=${areas_launched[i]}
+    if wait "$pid"; then
+      echo "Area $area down successfully."
+    else
+      echo "Area $area down failed." >&2
+      rc=1
+    fi
+  done
+  echo "All areas down."
+  exit 0
 }
