@@ -110,7 +110,6 @@ control() {
   for area in ${AREAS:-}; do
     AREA_RUN="docker/${area}/run.sh"
     if [ -f "$AREA_RUN" ]; then
-      echo "Starting ${msg} for area: $area"
       while [ "$(jobs -rp | wc -l)" -ge "$PARALLEL" ]; do
         sleep 0.1
       done
