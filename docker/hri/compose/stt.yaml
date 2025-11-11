@@ -1,8 +1,8 @@
 services:
   stt:
     profiles: [receptionist, carry, gpsr, storing]
-    container_name: home2-hri-stt
-    image: roborregos/home2:hri-stt
+    container_name: home2-hri-stt-${ENV_TYPE:-cpu}
+    image: roborregos/home2:hri-stt-${ENV_TYPE:-cpu}
     build:
       context: ../../..
       dockerfile: docker/hri/dockerfiles/Dockerfile.stt
@@ -10,11 +10,11 @@ services:
       - ../../../hri/packages/speech/scripts/stt/:/app
       - ../../../hri/packages/speech/speech/:/app/speech
     network_mode: host
-    command:
-      [
+    command: [
         "bash",
         "-c",
         # If transcription is too slow try tiny.en or if it's too imprecise try small.en
         # Larger models than these aren't recommended for CPU inference
         "python3 -u faster-whisper-streaming.py --port 50051 --model base.en --log_transcriptions",
+        # "tail -f /dev/null",
       ]

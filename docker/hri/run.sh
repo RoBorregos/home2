@@ -58,7 +58,7 @@ bash scripts/setup.bash
 [ "$DOWNLOAD_MODEL" == "true" ] && bash ../../hri/packages/nlp/assets/download-model.sh
 
 # Create dirs with current user to avoid permission problems
-mkdir -p install build log ../../hri/packages/speech/assets/downloads/offline_voice/model/
+mkdir -p install build log ../../hri/packages/speech/assets/downloads/offline_voice/model/ ../../hri/packages/speech/assets/downloads/offline_voice/audios/
 
 # Reset .env
 echo "" > compose/.env
@@ -66,6 +66,11 @@ echo "" > compose/.env
 # Export user
 add_or_update_variable compose/.env "LOCAL_USER_ID" "$(id -u)"
 add_or_update_variable compose/.env "LOCAL_GROUP_ID" "$(id -g)"
+
+add_or_update_variable compose/.env "ENV_TYPE" "$ENV_TYPE"
+if [ "$ENV_TYPE" != "cpu" ]; then
+  add_or_update_variable compose/.env "RUNTIME" "nvidia"
+fi
 
 # Check if display setup is needed
 if [ ! -d "../../hri/display/dist" ] || [ ! -d "../../hri/display/node_modules" ] || [ ! -d "../../hri/display/web-ui/.next" ] || [ ! -d "../../hri/display/web-ui/node_modules" ] || [ "$BUILD_DISPLAY" == "true" ]; then
