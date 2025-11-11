@@ -5,7 +5,7 @@ services:
       context: ../..
       dockerfile: docker/manipulation/Dockerfile.cuda
       args:
-        BASE_IMAGE: roborregos/home2:cuda_base} 
+        BASE_IMAGE: roborregos/home2:cuda_base
     image: roborregos/home2:manipulation-cuda
     volumes:
       - ../../:/workspace/src/home2
