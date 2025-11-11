@@ -73,23 +73,48 @@ detect_cores() {
       sysctl -n hw.ncpu 2>/dev/null || echo 4
     fi
   }
-stop_all() {
-  if command -v tmux >/dev/null 2>&1 && tmux ls >/dev/null 2>&1; then
+
+control() {
+  local op=${1:-}
+  if [ -z "$op" ]; then
+    echo "Usage: control --stop|--down" >&2
+    return 2
+  fi
+
+  local op_flag msg success_msg fail_msg kill_tmux
+  case "$op" in
+    --stop)
+      op_flag="--stop"
+      msg="stop"
+      kill_tmux=true
+      ;;
+    --down)
+      op_flag="--down"
+      msg="down"
+      kill_tmux=false
+      ;;
+    *)
+      echo "Unsupported op: $op" >&2
+      return 2
+      ;;
+  esac
+
+  if $kill_tmux && command -v tmux >/dev/null 2>&1 && tmux ls >/dev/null 2>&1; then
     tmux kill-server || true
   fi
 
   PARALLEL=${PARALLEL:-$(detect_cores)}
   pids=()
   areas_launched=()
+
   for area in ${AREAS:-}; do
     AREA_RUN="docker/${area}/run.sh"
     if [ -f "$AREA_RUN" ]; then
-      echo "Starting stop for area: $area"
-      # throttle to PARALLEL background jobs
+      echo "Starting ${msg} for area: $area"
       while [ "$(jobs -rp | wc -l)" -ge "$PARALLEL" ]; do
         sleep 0.1
       done
-      ( cd "docker/${area}" && bash "./run.sh" --stop "${ENV_TYPE}" ) &
+      ( cd "docker/${area}" && bash "./run.sh" "${op_flag}" "${ENV_TYPE}" ) &
       pids+=($!)
       areas_launched+=("$area")
     fi
@@ -100,47 +125,13 @@ stop_all() {
     pid=${pids[i]}
     area=${areas_launched[i]}
     if wait "$pid"; then
-      echo "Area $area stopped successfully."
+      echo "Area ${area}: ${msg} completed"
     else
-      echo "Area $area stop failed." >&2
+      echo "Area ${area}: ${msg} failed" >&2
       rc=1
     fi
   done
 
-  echo "All stops attempted."
+  echo "All ${msg}s attempted."
   return $rc
-}
-
-down_all() {
-  echo "Taking all areas down"
-  PARALLEL=${PARALLEL:-$(detect_cores)}
-  pids=()
-  areas_launched=()
-
-  for area in ${AREAS:-}; do
-    AREA_RUN="docker/${area}/run.sh"
-    if [ -f "$AREA_RUN" ]; then
-      echo "Starting down for area: $area"
-      while [ "$(jobs -rp | wc -l)" -ge "$PARALLEL" ]; do
-        sleep 0.1
-      done
-      ( cd "docker/${area}" && bash "./run.sh" --down "${ENV_TYPE}" ) &
-      pids+=($!)
-      areas_launched+=("$area")
-    fi
-  done
-
-  rc=0
-  for i in "${!pids[@]}"; do
-    pid=${pids[i]}
-    area=${areas_launched[i]}
-    if wait "$pid"; then
-      echo "Area $area down successfully."
-    else
-      echo "Area $area down failed." >&2
-      rc=1
-    fi
-  done
-  echo "All areas down."
-  exit 0
 }

@@ -32,10 +32,10 @@ case $INPUT in
     run_frida_interfaces
     ;;
   stop)
-    stop_all
+    control --stop
     ;;
   down)
-    down_all
+    control --down
     ;;
   vision|manipulation|navigation|integration|hri)
     run_area "$@"
