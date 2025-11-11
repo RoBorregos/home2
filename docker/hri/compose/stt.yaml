@@ -16,5 +16,4 @@ services:
         # If transcription is too slow try tiny.en or if it's too imprecise try small.en
         # Larger models than these aren't recommended for CPU inference
         "python3 -u faster-whisper-streaming.py --port 50051 --model base.en --log_transcriptions",
-        # "tail -f /dev/null",
       ]
