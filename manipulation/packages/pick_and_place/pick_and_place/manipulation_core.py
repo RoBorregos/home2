@@ -188,6 +188,7 @@ class ManipulationCore(Node):
             if not result:
                 self.get_logger().error("Place failed")
                 return False
+            self.get_logger().info("[SUCCESS] Place executed successfully")
             return result
         except Exception as e:
             self.get_logger().error(f"Place exception: {e}")
@@ -296,7 +297,7 @@ class ManipulationCore(Node):
         request = Empty.Request()
         self.get_logger().info("Clearing octomap")
         future = self._clear_octomap_client.call_async(request)
-        wait_for_future(future)
+        wait_for_future(future, timeout=2.0) # Be careful with timeout, prev = 0
         return True
 
     def scan_environment(self):

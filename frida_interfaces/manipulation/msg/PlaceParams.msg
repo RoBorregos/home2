@@ -5,3 +5,5 @@ bool is_shelf
 
 string close_to
 geometry_msgs/PoseStamped forced_pose
+
+string special_request

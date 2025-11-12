@@ -14,6 +14,11 @@ from frida_constants.manipulation_constants import (
     PLACE_MAX_DISTANCE,
     PLACE_POINT_DEBUG_TOPIC,
 )
+import json
+from place.heatmap_generators.close_by_generators import (
+    generate_close_to_heatmap,
+    generate_directional_heatmap,
+)
 
 # change matplotlib backend to avoid X server dependency
 import matplotlib
@@ -39,6 +44,18 @@ class HeatmapServer(Node):
         # Convert PointCloud2 to numpy array
         point_cloud = request.pointcloud
         prefer_closest = request.prefer_closest
+
+        request_dict = None
+        if request.special_request != "":
+            try:
+                # Attempt to parse the special request as JSON
+                request_dict = json.loads(request.special_request)
+            except json.JSONDecodeError:
+                self.get_logger().error(
+                    f"Invalid JSON in special request: {request.special_request}"
+                )
+                response.place_point = PointStamped()
+
         if point_cloud.header.frame_id != "base_link":
             self.get_logger().warn(
                 f"PointCloud2 frame_id is {point_cloud.header.frame_id}, expected base_link"
@@ -69,19 +86,25 @@ class HeatmapServer(Node):
             response.place_point = PointStamped()
             return response
 
-        grid_size = 0.015  # meters
-        grid_size_mm = int(grid_size * 1000)
+        self.grid_size = 0.015  # meters
+        self.grid_size_mm = int(self.grid_size * 1000)
 
         # Convert points to mm coordinates
-        x_mm = (cloud_points[:, 0] * 1000).astype(int)
-        y_mm = (cloud_points[:, 1] * 1000).astype(int)
+        self.x_mm = (cloud_points[:, 0] * 1000).astype(int)
+        self.y_mm = (cloud_points[:, 1] * 1000).astype(int)
 
         # Create histogram bins
-        x_range = np.arange(min(x_mm), max(x_mm) + grid_size_mm, grid_size_mm)
-        y_range = np.arange(min(y_mm), max(y_mm) + grid_size_mm, grid_size_mm)
-        hist, xedges, yedges = np.histogram2d(x_mm, y_mm, bins=[x_range, y_range])
-        min_x_mm = xedges[0]
-        min_y_mm = yedges[0]
+        x_range = np.arange(
+            min(self.x_mm), max(self.x_mm) + self.grid_size_mm, self.grid_size_mm
+        )
+        y_range = np.arange(
+            min(self.y_mm), max(self.y_mm) + self.grid_size_mm, self.grid_size_mm
+        )
+        hist, xedges, yedges = np.histogram2d(
+            self.x_mm, self.y_mm, bins=[x_range, y_range]
+        )
+        self.min_x_mm = xedges[0]
+        self.min_y_mm = yedges[0]
 
         # Generate binary map
         binary_map = hist > 0
@@ -93,7 +116,7 @@ class HeatmapServer(Node):
         cool_multiplier = 10.0
 
         # Heat kernel
-        heat_kernel_size = int(heat_kernel_length / grid_size)
+        heat_kernel_size = int(heat_kernel_length / self.grid_size)
         xx, yy = np.mgrid[
             -heat_kernel_size // 2 : heat_kernel_size // 2 + 1,
             -heat_kernel_size // 2 : heat_kernel_size // 2 + 1,
@@ -102,7 +125,7 @@ class HeatmapServer(Node):
         heat_kernel *= heat_multiplier
 
         # Cool kernel
-        cool_kernel_size = int(cool_kernel_length / grid_size)
+        cool_kernel_size = int(cool_kernel_length / self.grid_size)
         xx, yy = np.mgrid[
             -cool_kernel_size // 2 : cool_kernel_size // 2 + 1,
             -cool_kernel_size // 2 : cool_kernel_size // 2 + 1,
@@ -126,10 +149,10 @@ class HeatmapServer(Node):
             closeness_map = np.zeros_like(binary_map, dtype=float)
             for i in range(closeness_map.shape[0]):
                 for j in range(closeness_map.shape[1]):
-                    x = (min_x_mm + (i + 0.5) * grid_size_mm) / 1000.0
-                    y = (min_y_mm + (j + 0.5) * grid_size_mm) / 1000.0
+                    x = (self.min_x_mm + (i + 0.5) * self.grid_size_mm) / 1000.0
+                    y = (self.min_y_mm + (j + 0.5) * self.grid_size_mm) / 1000.0
                     closeness_map[i, j] = np.sqrt(x**2 + y**2)
-            closeness_map = np.exp(-closeness_map / (grid_size_mm * 2))
+            closeness_map = np.exp(-closeness_map / (self.grid_size_mm * 2))
             # normalize so smallest value is 0 and largest is 1
             closeness_map = (closeness_map - np.min(closeness_map)) / (
                 np.max(closeness_map) - np.min(closeness_map)
@@ -142,6 +165,14 @@ class HeatmapServer(Node):
             # Normalize final map
             final_map = final_map / np.max(final_map)
             final_map = np.clip(final_map, 0, None)
+
+        special_request_map = self.generate_special_request_map(
+            binary_map, request, request_dict
+        )
+
+        if special_request_map is not None:
+            self.get_logger().info("Applying special request map")
+            final_map = final_map * special_request_map
 
         object_point = request.close_point
 
@@ -162,8 +193,8 @@ class HeatmapServer(Node):
         # Find best position
         max_idx = np.unravel_index(np.argmax(final_map), final_map.shape)
 
-        x_center = (min_x_mm + (max_idx[0] + 0.5) * grid_size_mm) / 1000.0
-        y_center = (min_y_mm + (max_idx[1] + 0.5) * grid_size_mm) / 1000.0
+        x_center = (self.min_x_mm + (max_idx[0] + 0.5) * self.grid_size_mm) / 1000.0
+        y_center = (self.min_y_mm + (max_idx[1] + 0.5) * self.grid_size_mm) / 1000.0
 
         # get the closest point to this one and extract its z coordinate
         closest_point = None
@@ -190,7 +221,7 @@ class HeatmapServer(Node):
         # Save visualization
         if self.save_image:
             try:
-                plt.figure(figsize=(16, 6))
+                plt.figure(figsize=(16, 8)) # Parameter changed to 8, prev 6 
 
                 plt.subplot(241)
                 plt.scatter(cloud_points[:, 0], cloud_points[:, 1], s=1, c="blue")
@@ -292,6 +323,24 @@ class HeatmapServer(Node):
                     plt.title("Closeness Map")
                     plt.colorbar()
 
+                if special_request_map is not None:
+                    plt.subplot(248)
+                    plt.imshow(
+                        special_request_map.T,
+                        origin="lower",
+                        extent=[
+                            xedges[0] / 1000,
+                            xedges[-1] / 1000,
+                            yedges[0] / 1000,
+                            yedges[-1] / 1000,
+                        ],
+                        cmap="plasma",
+                        aspect="auto",
+                    )
+                    plt.title(
+                        f"{request_dict.get('request', 'Unknown')}, {request_dict.get('position', 'Unknown')}"
+                    )
+
                 output_dir = "/workspace/heatmap_results"
                 os.makedirs(output_dir, exist_ok=True)
                 plt.savefig(os.path.join(output_dir, "heatmap_result.png"))
@@ -324,6 +373,52 @@ class HeatmapServer(Node):
                     if distance <= max_distance:
                         heatmap[i, j] = max(0, 1 - (distance / max_distance))
         return heatmap
+
+    def generate_special_request_map(self, binary_map, request, request_dict):
+        """
+        Generate a special request map based on the request and request_dict.
+        This is a placeholder function that can be customized based on specific requirements.
+        """
+        special_request_map = None
+        if request_dict is not None:
+            task = request_dict.get("request", "")
+            position = request_dict.get("position", "")
+            if task == "close_by":
+                object_point = request.close_point
+
+                if object_point.header.frame_id != "base_link":
+                    self.get_logger().error(
+                        f"Invalid close point, frame_id: {object_point.header.frame_id}"
+                    )
+
+                elif position == "close":
+                    self.get_logger().info("Generating close to heatmap")
+                    special_request_map = generate_close_to_heatmap(
+                        binary_map,
+                        [object_point.point.x, object_point.point.y],
+                        self.min_x_mm,
+                        self.min_y_mm,
+                        self.grid_size_mm,
+                    )
+                elif position in ["front", "back", "left", "right"]:
+                    self.get_logger().info("Generating directional heatmap")
+                    special_request_map = generate_directional_heatmap(
+                        binary_map,
+                        [object_point.point.x, object_point.point.y],
+                        position,
+                        self.min_x_mm,
+                        self.min_y_mm,
+                        self.grid_size_mm,
+                    )
+                else:
+                    self.get_logger().error(f"Unknown request: {position}")
+            else:
+                self.get_logger().error(f"Unknown task: {task}")
+
+        else:
+            self.get_logger().warn("No special request provided, returning binary map")
+
+        return special_request_map
 
 
 def main(args=None):
