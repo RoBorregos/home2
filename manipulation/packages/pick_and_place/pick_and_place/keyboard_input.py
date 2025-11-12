@@ -85,7 +85,16 @@ class KeyboardInput(Node):
         self.get_logger().info(f"Pick request for {object_name} sent")
 
     def send_place_request(
-        self, is_shelf=False, table_height=None, table_height_tolerance=None
+        self,
+       
+        is_shelf=False,
+       
+        table_height=None,
+       
+        table_height_tolerance=None,
+        special_request_position=None,
+        special_request_object=None,,
+        close_to="",
     ):
         self.get_logger().warning("Sending place request")
 
@@ -196,7 +205,7 @@ def main(args=None):
             print("-5. Place on shelf (with plane height)")
             print("-6. Pour")
             print("-7. Place on clicked point")
-            print("-8. Place closeto") # Deleted from place_by branch 
+            print("-8. Special Request Place")
             print("q. Quit")
 
             choice = input("\nEnter your choice: ")
