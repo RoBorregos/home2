@@ -74,7 +74,9 @@ fi
 [ "$DOWNLOAD_MODEL" == "true" ] && bash ../../hri/packages/nlp/assets/download-model.sh
 
 # Create dirs with current user to avoid permission problems
-mkdir -p install build log ../../hri/packages/speech/assets/downloads/offline_voice/model/ ../../hri/packages/speech/assets/downloads/offline_voice/audios/
+mkdir -p install build log \
+  ../../hri/packages/speech/assets/downloads/offline_voice/model/ \
+  ../../hri/packages/speech/assets/downloads/offline_voice/audios/
 
 # Reset .env
 echo "" > compose/.env
@@ -97,7 +99,7 @@ fi
 # Check if display setup is needed
 if [ ! -d "../../hri/display/dist" ] || [ ! -d "../../hri/display/node_modules" ] || [ ! -d "../../hri/display/web-ui/.next" ] || [ ! -d "../../hri/display/web-ui/node_modules" ] || [ "$BUILD_DISPLAY" == "true" ]; then
   echo "Installing dependencies and building project inside temporary container..."
-  docker compose -f compose/display.yaml run --entrypoint "" display bash -c "source /opt/ros/humble/setup.bash && npm run build"
+  docker compose -f compose/display.yaml run $BUILD_IMAGE --rm --entrypoint "" display bash -c "source /opt/ros/humble/setup.bash && npm run build"
 fi
 
 #_________________________RUN_________________________

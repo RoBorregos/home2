@@ -10,5 +10,8 @@ services:
     volumes:
       - ../../../hri/display/:/app
       - /dev:/dev
+    environment:
+      NPM_CONFIG_CACHE: /tmp/.npm
+    user: ${LOCAL_USER_ID:-1000}:${LOCAL_GROUP_ID:-1000}
     network_mode: host
     command: ["/bin/bash", "/display-entrypoint.sh"]

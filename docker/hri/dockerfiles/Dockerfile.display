@@ -1,23 +1,19 @@
 ARG BASE_IMAGE
 FROM ${BASE_IMAGE}
+USER root
+ENV DEBIAN_FRONTEND=noninteractive
 
-WORKDIR /install
-USER ros
+RUN apt-get update && apt-get install -y ca-certificates gnupg \
+ && curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /usr/share/keyrings/nodesource.gpg \
+ && echo "deb [signed-by=/usr/share/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" \
+    > /etc/apt/sources.list.d/nodesource.list \
+ && apt-get update && apt-get install -y nodejs \
+ && corepack enable \
+ && npm i -g concurrently \
+ && rm -rf /var/lib/apt/lists/*
 
-# Set NVM environment variables
-ENV NODE_VERSION=22.14.0
-ENV NVM_DIR=/home/ros/.nvm
-ENV PATH="$NVM_DIR/versions/node/v${NODE_VERSION}/bin:$PATH"
+RUN apt-get update && apt-get install -y ros-humble-web-video-server \
+ && rm -rf /var/lib/apt/lists/*
 
-# Download and install nvm, and install Node.js
-RUN curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.2/install.sh | bash && \
-    . "$NVM_DIR/nvm.sh" && \
-    nvm install ${NODE_VERSION} && \
-    nvm use ${NODE_VERSION} && \
-    nvm alias default ${NODE_VERSION}
-
-RUN sudo apt update && sudo apt install -y ros-humble-web-video-server
-
-COPY docker/hri/scripts/display-entrypoint.sh /
-
+COPY docker/hri/scripts/display-entrypoint.sh /display-entrypoint.sh
 WORKDIR /app
