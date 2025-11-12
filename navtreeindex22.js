@@ -1,5 +1,7 @@
 var NAVTREEINDEX22 =
 {
+"heatmapPlace__Server_8py.html#a722ba8c49613d837163c253b9d93d6a8":[23,0,3,0,6,1,0,1],
+"help__me__carry_8py.html":[23,0,6,1,17],
 "help__me__carry_8py.html#ab5e4a679e827451f1c0776fcf4137ac0":[23,0,6,1,17,2],
 "help__me__carry_8py.html#ac88fe056201780c2060003e5b20f4b6e":[23,0,6,1,17,1],
 "help__me__carry_8py.html#aeaa16e1397df6dada482cd75156c8788":[23,0,6,1,17,3],
@@ -247,7 +249,5 @@ var NAVTREEINDEX22 =
 "map__tagger_8launch_8py.html":[23,0,4,0,2,0,0],
 "map__tagger_8launch_8py.html#af422056b86cc336e771f50b135b60d6c":[23,0,4,0,2,0,0,0],
 "map__tagger_8py.html":[23,0,4,0,2,1,1],
-"map__tagger_8py.html#a2f5423f83efa1418fbc68dc28dcd72ce":[23,0,4,0,2,1,1,1],
-"mapping_8launch_8py.html":[23,0,4,0,3,0,1,1],
-"mapping_8launch_8py.html#ac951e3077b2a262f96039858d7fa2b20":[23,0,4,0,3,0,1,1,0]
+"map__tagger_8py.html#a2f5423f83efa1418fbc68dc28dcd72ce":[23,0,4,0,2,1,1,1]
 };

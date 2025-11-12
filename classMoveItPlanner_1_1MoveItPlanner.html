@@ -119,14 +119,12 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:ad5e95f1ed12969a857b880d0b3a67f7b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a862ec15d3c59156146eedd06b92a0c96"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classMoveItPlanner_1_1MoveItPlanner.html#a862ec15d3c59156146eedd06b92a0c96">set_planning_attempts</a> (self, int planning_attempts)</td></tr>
 <tr class="separator:a862ec15d3c59156146eedd06b92a0c96"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a212fd1bd7543264335f726ab91985df3"><td class="memItemLeft" align="right" valign="top">Union[bool, Future]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classMoveItPlanner_1_1MoveItPlanner.html#a212fd1bd7543264335f726ab91985df3">plan_joint_goal</a> (self, List[float] joint_positions, List[str] joint_names, bool wait=True, bool <a class="el" href="classMoveItPlanner_1_1MoveItPlanner.html#ac0b375ebd06fabb94d5a2bebfdef7f3c">set_mode</a>=True)</td></tr>
-<tr class="separator:a212fd1bd7543264335f726ab91985df3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0792789d12ca1a7eaea5a9331082f71a"><td class="memItemLeft" align="right" valign="top">Union[bool, Future]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classMoveItPlanner_1_1MoveItPlanner.html#a0792789d12ca1a7eaea5a9331082f71a">plan_pose_goal</a> (self, PoseStamped pose, str target_link=<a class="el" href="namespacexarm6.html#a98e484bb41a72ad13138043f3728bf2c">xarm6.end_effector_name</a>(), bool cartesian=False, float tolerance_position=0.015, float tolerance_orientation=0.02, bool wait=True, bool <a class="el" href="classMoveItPlanner_1_1MoveItPlanner.html#ac0b375ebd06fabb94d5a2bebfdef7f3c">set_mode</a>=True)</td></tr>
-<tr class="separator:a0792789d12ca1a7eaea5a9331082f71a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac0b375ebd06fabb94d5a2bebfdef7f3c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classMoveItPlanner_1_1MoveItPlanner.html#ac0b375ebd06fabb94d5a2bebfdef7f3c">set_mode</a> (self, int mode=0)</td></tr>
-<tr class="separator:ac0b375ebd06fabb94d5a2bebfdef7f3c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6a54a63595c98b02fd0f8b48fb73b36f"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classMoveItPlanner_1_1MoveItPlanner.html#a6a54a63595c98b02fd0f8b48fb73b36f">reset_controller</a> (self)</td></tr>
-<tr class="separator:a6a54a63595c98b02fd0f8b48fb73b36f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a95bde4c9a317016dc3d86a058d00920a"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classMoveItPlanner_1_1MoveItPlanner.html#a95bde4c9a317016dc3d86a058d00920a">plan_joint_goal</a> (self, List[float] joint_positions, List[str] joint_names)</td></tr>
+<tr class="separator:a95bde4c9a317016dc3d86a058d00920a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a15a0739b7c05572eed120cc4e845ad22"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classMoveItPlanner_1_1MoveItPlanner.html#a15a0739b7c05572eed120cc4e845ad22">execute_plan</a> (self, trajectory, bool wait=True)</td></tr>
+<tr class="separator:a15a0739b7c05572eed120cc4e845ad22"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac1c81b0be7e6b68826c012c69e651250"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classMoveItPlanner_1_1MoveItPlanner.html#ac1c81b0be7e6b68826c012c69e651250">plan_pose_goal</a> (self, PoseStamped pose, str target_link=<a class="el" href="namespacexarm6.html#a98e484bb41a72ad13138043f3728bf2c">xarm6.end_effector_name</a>(), bool cartesian=False, float tolerance_position=0.015, float tolerance_orientation=0.02)</td></tr>
+<tr class="separator:ac1c81b0be7e6b68826c012c69e651250"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad3111a445cab8660718d6a9b5f147417"><td class="memItemLeft" align="right" valign="top">MoveIt2State&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classMoveItPlanner_1_1MoveItPlanner.html#ad3111a445cab8660718d6a9b5f147417">get_current_operation_state</a> (self)</td></tr>
 <tr class="separator:ad3111a445cab8660718d6a9b5f147417"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3378bd32ccc5bf571b1d7d10cfeaaa14"><td class="memItemLeft" align="right" valign="top">dict[float]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classMoveItPlanner_1_1MoveItPlanner.html#a3378bd32ccc5bf571b1d7d10cfeaaa14">get_joint_positions</a> (self, timeout=1)</td></tr>
@@ -733,6 +731,42 @@ Protected Member Functions</h2></td></tr>
 
 </div>
 </div>
+<a id="a15a0739b7c05572eed120cc4e845ad22" name="a15a0739b7c05572eed120cc4e845ad22"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a15a0739b7c05572eed120cc4e845ad22">&#9670;&#160;</a></span>execute_plan()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def MoveItPlanner.MoveItPlanner.execute_plan </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>trajectory</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool &#160;</td>
+          <td class="paramname"><em>wait</em> = <code>True</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Takes a pre-planned trajectory and executes it.
+Monitors the execution and returns True if completed successfully.
+</pre> 
+</div>
+</div>
 <a id="ad3111a445cab8660718d6a9b5f147417" name="ad3111a445cab8660718d6a9b5f147417"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ad3111a445cab8660718d6a9b5f147417">&#9670;&#160;</a></span>get_current_operation_state()</h2>
 
@@ -881,14 +915,14 @@ Protected Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a212fd1bd7543264335f726ab91985df3" name="a212fd1bd7543264335f726ab91985df3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a212fd1bd7543264335f726ab91985df3">&#9670;&#160;</a></span>plan_joint_goal()</h2>
+<a id="a95bde4c9a317016dc3d86a058d00920a" name="a95bde4c9a317016dc3d86a058d00920a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a95bde4c9a317016dc3d86a058d00920a">&#9670;&#160;</a></span>plan_joint_goal()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"> Union[bool, Future] MoveItPlanner.MoveItPlanner.plan_joint_goal </td>
+          <td class="memname">def MoveItPlanner.MoveItPlanner.plan_joint_goal </td>
           <td>(</td>
           <td class="paramtype">&#160;</td>
           <td class="paramname"><em>self</em>, </td>
@@ -903,19 +937,7 @@ Protected Member Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">List[str]&#160;</td>
-          <td class="paramname"><em>joint_names</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool &#160;</td>
-          <td class="paramname"><em>wait</em> = <code>True</code>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool &#160;</td>
-          <td class="paramname"><em>set_mode</em> = <code>True</code>&#160;</td>
+          <td class="paramname"><em>joint_names</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -927,14 +949,14 @@ Protected Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a0792789d12ca1a7eaea5a9331082f71a" name="a0792789d12ca1a7eaea5a9331082f71a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0792789d12ca1a7eaea5a9331082f71a">&#9670;&#160;</a></span>plan_pose_goal()</h2>
+<a id="ac1c81b0be7e6b68826c012c69e651250" name="ac1c81b0be7e6b68826c012c69e651250"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac1c81b0be7e6b68826c012c69e651250">&#9670;&#160;</a></span>plan_pose_goal()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"> Union[bool, Future] MoveItPlanner.MoveItPlanner.plan_pose_goal </td>
+          <td class="memname">def MoveItPlanner.MoveItPlanner.plan_pose_goal </td>
           <td>(</td>
           <td class="paramtype">&#160;</td>
           <td class="paramname"><em>self</em>, </td>
@@ -967,19 +989,7 @@ Protected Member Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">float &#160;</td>
-          <td class="paramname"><em>tolerance_orientation</em> = <code>0.02</code>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool &#160;</td>
-          <td class="paramname"><em>wait</em> = <code>True</code>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">bool &#160;</td>
-          <td class="paramname"><em>set_mode</em> = <code>True</code>&#160;</td>
+          <td class="paramname"><em>tolerance_orientation</em> = <code>0.02</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -1047,24 +1057,6 @@ Protected Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a6a54a63595c98b02fd0f8b48fb73b36f" name="a6a54a63595c98b02fd0f8b48fb73b36f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6a54a63595c98b02fd0f8b48fb73b36f">&#9670;&#160;</a></span>reset_controller()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">def MoveItPlanner.MoveItPlanner.reset_controller </td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
 <a id="ad3afc41a64cd148af8247671cc295d15" name="ad3afc41a64cd148af8247671cc295d15"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ad3afc41a64cd148af8247671cc295d15">&#9670;&#160;</a></span>set_acceleration()</h2>
 
@@ -1116,34 +1108,6 @@ Protected Member Functions</h2></td></tr>
           <td></td>
           <td class="paramtype">float &#160;</td>
           <td class="paramname"><em>tolerance</em> = <code>0.1</code>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="ac0b375ebd06fabb94d5a2bebfdef7f3c" name="ac0b375ebd06fabb94d5a2bebfdef7f3c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac0b375ebd06fabb94d5a2bebfdef7f3c">&#9670;&#160;</a></span>set_mode()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"> bool MoveItPlanner.MoveItPlanner.set_mode </td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">int &#160;</td>
-          <td class="paramname"><em>mode</em> = <code>0</code>&#160;</td>
         </tr>
         <tr>
           <td></td>

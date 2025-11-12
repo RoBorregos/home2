@@ -1,5 +1,7 @@
 var NAVTREEINDEX20 =
 {
+"classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a92638453d10eef1561c912b2c1e3a559":[22,0,98,1,22],
+"classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a92638453d10eef1561c912b2c1e3a559":[21,0,166,1,22],
 "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a96ccd62786a70880b4ce090739066438":[22,0,98,1,5],
 "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a96ccd62786a70880b4ce090739066438":[21,0,166,1,5],
 "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#aa22c80a7146ec313b9571bfee73c3df3":[21,0,166,1,15],
@@ -247,7 +249,5 @@ var NAVTREEINDEX20 =
 "face__recognition__node_8py.html":[23,0,7,0,3,1,2],
 "face__recognition__node_8py.html#a036fbe5f51cfd2209b19a270357d2b35":[23,0,7,0,3,1,2,8],
 "face__recognition__node_8py.html#a166e5b8323737530752db607917e635f":[23,0,7,0,3,1,2,3],
-"face__recognition__node_8py.html#a2cdad657ac233e7e409732e4566479fb":[23,0,7,0,3,1,2,6],
-"face__recognition__node_8py.html#a33dbc1cbcf289e06efcd75671ebea200":[23,0,7,0,3,1,2,7],
-"face__recognition__node_8py.html#a56617f4391f49f52c38a3bdabc308aad":[23,0,7,0,3,1,2,5]
+"face__recognition__node_8py.html#a2cdad657ac233e7e409732e4566479fb":[23,0,7,0,3,1,2,6]
 };

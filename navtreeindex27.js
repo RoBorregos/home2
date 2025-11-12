@@ -1,5 +1,7 @@
 var NAVTREEINDEX27 =
 {
+"namespacesubtask__managers_1_1gpsr__tasks.html":[21,0,139,2],
+"namespacesubtask__managers_1_1gpsr__test__commands.html":[21,0,139,3],
 "namespacesubtask__managers_1_1gpsr__test__commands.html#a01cdf414d41e1b64b2192d5e894b0e69":[21,0,139,3,4],
 "namespacesubtask__managers_1_1gpsr__test__commands.html#a05ab4bcafeee38c420da272ab10cf24a":[21,0,139,3,8],
 "namespacesubtask__managers_1_1gpsr__test__commands.html#a10ca0398e0b0a7241df2ae42ea22976c":[21,0,139,3,0],
@@ -247,7 +249,5 @@ var NAVTREEINDEX27 =
 "pages.html":[],
 "perception__3d_8launch_8py.html":[23,0,3,0,4,1,1],
 "perception__3d_8launch_8py.html#a0e9c55f0d673d8e39208565acad51d8d":[23,0,3,0,4,1,1,0],
-"person__in__map_8py.html":[23,0,7,0,3,1,8],
-"person__in__map_8py.html#aa8f7ab459a2edeb67fd9efa74eb0fb33":[23,0,7,0,3,1,8,1],
-"pick__and__place_8launch_8py.html":[23,0,3,0,5,0,0]
+"person__in__map_8py.html":[23,0,7,0,3,1,8]
 };

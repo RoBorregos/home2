@@ -1,5 +1,7 @@
 var NAVTREEINDEX21 =
 {
+"face__recognition__node_8py.html#a33dbc1cbcf289e06efcd75671ebea200":[23,0,7,0,3,1,2,7],
+"face__recognition__node_8py.html#a56617f4391f49f52c38a3bdabc308aad":[23,0,7,0,3,1,2,5],
 "face__recognition__node_8py.html#a7d4636518fc66a1e7d866bd84deb7929":[23,0,7,0,3,1,2,4],
 "face__recognition__node_8py.html#abe2d04ddc5e2378a7b776a096ca9c278":[23,0,7,0,3,1,2,1],
 "face__recognition__node_8py.html#af990b03ce580e863acd6da4c4481f1ff":[23,0,7,0,3,1,2,2],
@@ -247,7 +249,5 @@ var NAVTREEINDEX21 =
 "hand__task__manager_8py.html#a91d2488b83a8d7b6e91bb400d9ff6b17":[23,0,6,1,16,2],
 "hand__task__manager_8py.html#a99cf5ff5956cbf1fe5d95cd0d41ba15e":[23,0,6,1,16,3],
 "heatmapPlace__Server_8py.html":[23,0,3,0,6,1,0],
-"heatmapPlace__Server_8py.html#a10435d751d9f6423cad540218af8f216":[23,0,3,0,6,1,0,2],
-"heatmapPlace__Server_8py.html#a722ba8c49613d837163c253b9d93d6a8":[23,0,3,0,6,1,0,1],
-"help__me__carry_8py.html":[23,0,6,1,17]
+"heatmapPlace__Server_8py.html#a10435d751d9f6423cad540218af8f216":[23,0,3,0,6,1,0,2]
 };
