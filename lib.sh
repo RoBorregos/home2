@@ -37,8 +37,6 @@ run_frida_interfaces() {
   local compose_yaml
   if [ -f "docker/frida_interfaces_cache/docker-compose-${ENV_TYPE}.yaml" ]; then
     compose_yaml="docker/frida_interfaces_cache/docker-compose-${ENV_TYPE}.yaml"
-  elif [ -f "docker/frida_interfaces_cache/docker-compose-${ENV_TYPE}.yml" ]; then
-    compose_yaml="docker/frida_interfaces_cache/docker-compose-${ENV_TYPE}.yml"
   else
     echo "frida_interfaces cache compose file not found for env=${ENV_TYPE}" >&2
     return 1
@@ -53,26 +51,19 @@ run_area() {
     echo "Cache directory missing. Building frida_interfaces_cache first..."
     run_frida_interfaces || { echo "frida_interfaces cache build failed" >&2; return 1; }
   fi
-  if [ -z "${INPUT:-}" ]; then
-    echo "input not defined" >&2
-    return 1
-  fi
-  if [ ! -d "docker/$INPUT" ]; then
-    echo "docker/$INPUT does not exist" >&2
-    return 1
-  fi
+
   echo "Running image from $INPUT"
   (cd "docker/$INPUT" && bash "./run.sh" "${@:2}" "${ENV_TYPE}")
   return $?
 }
 
 detect_cores() {
-    if command -v nproc >/dev/null 2>&1; then
-      nproc
-    else
-      sysctl -n hw.ncpu 2>/dev/null || echo 4
-    fi
-  }
+  if command -v nproc >/dev/null 2>&1; then
+    nproc
+  else
+    sysctl -n hw.ncpu 2>/dev/null || echo 4
+  fi
+}
 
 control() {
   local op=${1:-}
@@ -81,17 +72,11 @@ control() {
     return 2
   fi
 
-  local op_flag msg success_msg fail_msg kill_tmux
+  local op_flag msg success_msg fail_msg
   case "$op" in
-    --stop)
-      op_flag="--stop"
-      msg="stop"
-      kill_tmux=true
-      ;;
-    --down)
-      op_flag="--down"
-      msg="down"
-      kill_tmux=false
+    --stop|--down)
+      op_flag="$op"
+      msg="${op#--}"
       ;;
     *)
       echo "Unsupported op: $op" >&2
@@ -99,7 +84,8 @@ control() {
       ;;
   esac
 
-  if $kill_tmux && command -v tmux >/dev/null 2>&1 && tmux ls >/dev/null 2>&1; then
+  # TODO: instead of killing the whole tmux server, only kill home-related sessions.
+  if command -v tmux >/dev/null 2>&1 && tmux ls >/dev/null 2>&1; then
     tmux kill-server || true
   fi
 
@@ -107,6 +93,7 @@ control() {
   pids=()
   areas_launched=()
 
+  # Launch each area's run.sh in parallel up to $PARALLEL children. Each area is started in its directory and passed the control flag + environment type.
   for area in ${AREAS:-}; do
     AREA_RUN="docker/${area}/run.sh"
     if [ -f "$AREA_RUN" ]; then
@@ -119,6 +106,7 @@ control() {
     fi
   done
 
+  # Wait for launched area processes and report per-area result
   rc=0
   for i in "${!pids[@]}"; do
     pid=${pids[i]}
