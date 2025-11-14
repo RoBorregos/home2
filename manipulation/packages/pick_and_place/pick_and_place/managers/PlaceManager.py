@@ -1,92 +1,102 @@
-from frida_motion_planning.utils.ros_utils import wait_for_future
-from frida_motion_planning.utils.tf_utils import transform_pose
-from frida_interfaces.srv import (
-    PlacePerceptionService,
-    HeatmapPlace,
-    DetectionHandler,
+from build.frida_interfaces.ament_cmake_python.frida_interfaces.frida_interfaces.srv._pick_perception_service import (
     PickPerceptionService,
 )
+from frida_motion_planning.utils.ros_utils import wait_for_future
+
+# from frida_motion_planning.utils.tf_utils import transform_pose
+# from frida_interfaces.srv import (
+#     PlacePerceptionService,
+#     HeatmapPlace,
+#     DetectionHandler,
+#     PickPerceptionService,
+# )
+from frida_motion_planning.utils.tf_utils import transform_pose, transform_point
+from frida_interfaces.srv import PlacePerceptionService, HeatmapPlace
+from geometry_msgs.msg import PoseStamped
 from frida_interfaces.msg import PlaceParams
 from frida_interfaces.action import PlaceMotion
 from frida_motion_planning.utils.service_utils import (
     move_joint_positions as send_joint_goal,
 )
+from pick_and_place.utils.perception_utils import get_object_point
 from frida_interfaces.msg import PickResult
 from sensor_msgs_py import point_cloud2
 
-from geometry_msgs.msg import PointStamped, PoseStamped
+from geometry_msgs.msg import PointStamped
 import numpy as np
-import tf2_ros
-import rclpy
-from tf2_ros import TransformException, Buffer
-from typing import Tuple
-from tf2_geometry_msgs import do_transform_point
+# import tf2_ros
+# import rclpy
+# from tf2_ros import TransformException, Buffer
+# from typing import Tuple
+# from tf2_geometry_msgs import do_transform_point
+
+import json
 
 
-def transform_point(
-    point: PointStamped, target_frame: str, tf_buffer: Buffer
-) -> Tuple[bool, PointStamped]:
-    """
-    Transforms a point to a target frame using ROS2 tf2.
-    Args:
-        point (PointStamped): The point to transform.
-        target_frame (str): The target frame to transform the point to.
-        tf_buffer (Buffer): The tf2 buffer to use for looking up transforms.
-    Returns:
-        PointStamped: The transformed point.
-    """
-    success = False
-    transformed_point = PointStamped()
-    for i in range(5):
-        try:
-            # Wait for the transform to be available
-            t = tf_buffer.lookup_transform(
-                target_frame,
-                point.header.frame_id,
-                tf2_ros.Time(),
-                timeout=rclpy.duration.Duration(seconds=3.0),
-            )
-            transformed_point = do_transform_point(point, t)
-            transformed_point.header.frame_id = target_frame
-            success = True
-        except TransformException as e:
-            print(
-                f"Transform from {point.header.frame_id} to {target_frame} not available: {e}"
-            )
-        except Exception as e:
-            print(f"An error occurred while transforming point: {e}")
+# def transform_point(
+#     point: PointStamped, target_frame: str, tf_buffer: Buffer
+# ) -> Tuple[bool, PointStamped]:
+#     """
+#     Transforms a point to a target frame using ROS2 tf2.
+#     Args:
+#         point (PointStamped): The point to transform.
+#         target_frame (str): The target frame to transform the point to.
+#         tf_buffer (Buffer): The tf2 buffer to use for looking up transforms.
+#     Returns:
+#         PointStamped: The transformed point.
+#     """
+#     success = False
+#     transformed_point = PointStamped()
+#     for i in range(5):
+#         try:
+#             # Wait for the transform to be available
+#             t = tf_buffer.lookup_transform(
+#                 target_frame,
+#                 point.header.frame_id,
+#                 tf2_ros.Time(),
+#                 timeout=rclpy.duration.Duration(seconds=3.0),
+#             )
+#             transformed_point = do_transform_point(point, t)
+#             transformed_point.header.frame_id = target_frame
+#             success = True
+#         except TransformException as e:
+#             print(
+#                 f"Transform from {point.header.frame_id} to {target_frame} not available: {e}"
+#             )
+#         except Exception as e:
+#             print(f"An error occurred while transforming point: {e}")
 
-    return success, transformed_point
+#     return success, transformed_point
 
 
-def get_object_point(object_name: str, detection_handler_client) -> PointStamped:
-    request = DetectionHandler.Request()
-    request.label = object_name
-    request.closest_object = False
-    detection_handler_client.wait_for_service()
-    future = detection_handler_client.call_async(request)
-    future = wait_for_future(future, timeout=2.0)
-    point = PointStamped()
-    if not future:
-        return point
+# def get_object_point(object_name: str, detection_handler_client) -> PointStamped:
+#     request = DetectionHandler.Request()
+#     request.label = object_name
+#     request.closest_object = False
+#     detection_handler_client.wait_for_service()
+#     future = detection_handler_client.call_async(request)
+#     future = wait_for_future(future, timeout=2.0)
+#     point = PointStamped()
+#     if not future:
+#         return point
 
-    if len(future.result().detection_array.detections) == 1:
-        point = future.result().detection_array.detections[0].point3d
-    elif len(future.result().detection_array.detections) > 1:
-        closest_object = future.result().detection_array.detections[0]
-        closest_distance = float("inf")
-        for detection in future.result().detection_array.detections:
-            distance = (
-                detection.point3d.point.x**2
-                + detection.point3d.point.y**2
-                + detection.point3d.point.z**2
-            ) ** 0.5
-            if distance < closest_distance:
-                closest_distance = distance
-                closest_object = detection
-        point = closest_object.point3d
+#     if len(future.result().detection_array.detections) == 1:
+#         point = future.result().detection_array.detections[0].point3d
+#     elif len(future.result().detection_array.detections) > 1:
+#         closest_object = future.result().detection_array.detections[0]
+#         closest_distance = float("inf")
+#         for detection in future.result().detection_array.detections:
+#             distance = (
+#                 detection.point3d.point.x**2
+#                 + detection.point3d.point.y**2
+#                 + detection.point3d.point.z**2
+#             ) ** 0.5
+#             if distance < closest_distance:
+#                 closest_distance = distance
+#                 closest_object = detection
+#         point = closest_object.point3d
 
-    return point
+#     return point
 
 
 def get_object_cluster(
@@ -277,44 +287,134 @@ class PlaceManager:
 
                 heatmap_request.close_point = close_by_point
             # Call Perception Service to get object cluster and generate collision objects
-            self.node.get_logger().info("Extracting table cloud")
-            request = PlacePerceptionService.Request()
-            request.place_params = place_params
-            self.node.place_perception_3d_client.wait_for_service()
-            future = self.node.place_perception_3d_client.call_async(request)
-            wait_for_future(future, timeout=10)
-            try:
-                pcl_result = future.result().cluster_result
-                if len(pcl_result.data) == 0:
-                    self.node.get_logger().error("No plane cluster detected")
+
+            # self.node.get_logger().info("Extracting table cloud")
+            # request = PlacePerceptionService.Request()
+            # request.place_params = place_params
+            # self.node.place_perception_3d_client.wait_for_service()
+            # future = self.node.place_perception_3d_client.call_async(request)
+            # wait_for_future(future, timeout=10)
+            # try:
+            #     pcl_result = future.result().cluster_result
+            #     if len(pcl_result.data) == 0:
+            #         self.node.get_logger().error("No plane cluster detected")
+            #         return None
+            # except Exception as e:
+            #     self.node.get_logger().error(f"Failed to call perception service: {e}")
+            #     return None
+            # pcl_result = future.result().cluster_result
+            # if len(pcl_result.data) == 0:
+            #     self.node.get_logger().error("No plane cluster detected")
+            #     return None
+
+            # self.node.get_logger().info(
+            #     f"Plane cluster detected: {len(pcl_result.data)} points"
+            # )
+
+            # heatmap_request.pointcloud = pcl_result
+            # heatmap_request.prefer_closest = True
+            # if place_params.is_shelf:
+            #     heatmap_request.prefer_closest = True
+            # self.node.place_pose_client.wait_for_service()
+            # future = self.node.place_pose_client.call_async(heatmap_request)
+            # wait_for_future(future)
+            # point_result = future.result().place_point
+            heatmap_request = HeatmapPlace.Request()
+
+            if place_params.special_request != "":
+                request_dict = json.loads(place_params.special_request)
+                request = request_dict.get("request", "")
+                location = request_dict.get("location", "")
+                close_by_point = None
+                if request == "close_by":
+                    self.node.get_logger().info("Using close by place pose")
+                    close_by_object_name = request_dict["object"]
+                    for i in range(5):
+                        try:
+                            close_by_point = get_object_point(
+                                close_by_object_name,
+                                self.node.detection_handler_client,
+                            )
+                            if close_by_point is not None:
+                                break
+                            else:
+                                self.node.get_logger().warn(
+                                    f"Failed to get close by point for {close_by_object_name}, retrying..."
+                                )
+                        except Exception as e:
+                            self.node.get_logger().error(
+                                f"Failed to get object name: {e}"
+                            )
+
+                    transform_frame = "base_link"
+                    self.node.get_logger().info(
+                        f"Transforming close by point to {transform_frame} frame"
+                    )
+                    success, close_by_point = transform_point(
+                        close_by_point, transform_frame, self.node.tf_buffer
+                    )
+
+                    self.node.get_logger().info(f"Close by point: {close_by_point}")
+
+                    if not success:
+                        self.node.get_logger().error(
+                            "Failed to transform close by point"
+                        )
+                        return None
+
+                    if location == "top":
+                        # we want to place on top of the object
+                        result_pose.header.frame_id = close_by_point.header.frame_id
+                        result_pose.pose.position.x = close_by_point.point.x
+                        result_pose.pose.position.y = close_by_point.point.y
+                        result_pose.pose.position.z = close_by_point.point.z
+                    elif (
+                        close_by_point is not None
+                        and close_by_point.header.frame_id != ""
+                    ):
+                        heatmap_request.close_point = close_by_point
+                        heatmap_request.special_request = place_params.special_request
+
+            # if the task is not a forced pose or place on top of an object,
+            # we use the perception service to get optimal place pose
+            if result_pose.header.frame_id == "":
+                self.node.get_logger().info("Extracting table cloud")
+
+                request = PlacePerceptionService.Request()
+                request.place_params = place_params
+                self.node.place_perception_3d_client.wait_for_service()
+                future = self.node.place_perception_3d_client.call_async(request)
+                wait_for_future(future, timeout=10)
+                try:
+                    pcl_result = future.result().cluster_result
+                    if len(pcl_result.data) == 0:
+                        self.node.get_logger().error("No plane cluster detected")
+                        return None
+                except Exception as e:
+                    self.node.get_logger().error(
+                        f"Failed to call place perception service: {e}"
+                    )
                     return None
-            except Exception as e:
-                self.node.get_logger().error(f"Failed to call perception service: {e}")
-                return None
-            pcl_result = future.result().cluster_result
-            if len(pcl_result.data) == 0:
-                self.node.get_logger().error("No plane cluster detected")
-                return None
 
-            self.node.get_logger().info(
-                f"Plane cluster detected: {len(pcl_result.data)} points"
-            )
+                self.node.get_logger().info(
+                    f"Plane cluster detected: {len(pcl_result.data)} points"
+                )
 
-            heatmap_request.pointcloud = pcl_result
-            heatmap_request.prefer_closest = True
-            if place_params.is_shelf:
-                heatmap_request.prefer_closest = True
-            self.node.place_pose_client.wait_for_service()
-            future = self.node.place_pose_client.call_async(heatmap_request)
-            wait_for_future(future)
-            point_result = future.result().place_point
+                heatmap_request.pointcloud = pcl_result
 
-            self.node.get_logger().info(
-                f"Place point detected: {point_result.point.x}, {point_result.point.y}, {point_result.point.z}"
-            )
+                if place_params.is_shelf:
+                    heatmap_request.prefer_closest = True
+                self.node.place_pose_client.wait_for_service()
+                future = self.node.place_pose_client.call_async(heatmap_request)
+                wait_for_future(future)
+                point_result = future.result().place_point
 
-            result_pose.header = point_result.header
-            result_pose.pose.position = point_result.point
+                self.node.get_logger().info(
+                    f"Place point detected: {point_result.point.x}, {point_result.point.y}, {point_result.point.z}"
+                )
+
+                result_pose.header = point_result.header
+                result_pose.pose.position = point_result.point
 
         if (
             pick_result.object_pick_height == 0
