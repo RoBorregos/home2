@@ -44,7 +44,7 @@ private:
   float medium_radius = 2.5f; // 2.5m
   float sqr_small_rad;
   float sqr_med_rad;
-  int simplifiator_factor = 3;
+  int simplificator_factor = 3;
 
 public:
   DownSamplePointCloud() : Node("downsample_pointcloud") {
@@ -61,7 +61,7 @@ public:
 
     this->sqr_small_rad =  std::pow(small_radius, 2);
     this->sqr_med_rad = std::pow(medium_radius, 2);
-    this->simplifiator_factor = this->declare_parameter("simplifiator_factor", simplifiator_factor);
+    this->simplificator_factor = this->declare_parameter("simplificator_factor", simplificator_factor);
     rclcpp::QoS qos = rclcpp::QoS(rclcpp::SensorDataQoS());
     qos.reliability(rclcpp::ReliabilityPolicy::Reliable);
 
@@ -89,7 +89,7 @@ public:
     large_cloud->points.reserve(in_cloud->points.size() / 3);
     sampled_cloud->points.reserve(in_cloud->points.size());
 
-    for(size_t i = 0; i < in_cloud->points.size(); i += simplifiator_factor){
+    for(size_t i = 0; i < in_cloud->points.size(); i += simplificator_factor){
       const auto& pt = in_cloud->points[i];
       float sq_radius = (pt.x * pt.x + pt.y * pt.y + pt.z * pt.z);
       if(sq_radius < sqr_small_rad) small_cloud->points.push_back(pt); 
