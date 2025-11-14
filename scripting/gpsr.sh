@@ -1,3 +1,4 @@
+#!/bin/bash
 
 # Save password to use in scripts that require sudo
 echo "Please enter your sudo password:"
@@ -17,7 +18,7 @@ sudo -k
 
 bash zed.sh
 
-cd ./gpsr
+cd ./gpsr || exit
 for script in ./*.sh; do
     if [ -f "$script" ]; then
         echo "Executing $script"

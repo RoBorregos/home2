@@ -1,18 +1,21 @@
 #!/bin/bash
 
 _run_sh_autocomplete() {
-    local cur prev words cword
+    local cur words
     _init_completion || return
 
-    local areas="manipulation navigation hri vision integration zed"
+    local areas="manipulation navigation hri vision integration frida_interfaces"
     local tasks="--carry --receptionist --storing-groceries --gpsr --moondream --egpsr --clean-table --hand --restaurant"
-    local flags="--rebuild --help -h -d"
+    local flags="--build --build-image --recreate --down --stop --help -h -d"
     
     # Add area specific flags
     case "${words[1]}" in
         hri)
             flags="$flags --build-display --open-display --download-model"
             ;;
+        integration)
+            # TODO: add other important scripts
+            flags="$flags --test-hri"
     esac
 
     local options

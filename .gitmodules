@@ -2,12 +2,8 @@
 
 [submodule "manipulation/packages/gpd"]
 	path = manipulation/packages/gpd
-	url = https://github.com/Deivideich/gpd
+	url = https://github.com/RoBorregos/gpd.git
 	
-[submodule "manipulation/packages/xarm_ros2"]
-	path = manipulation/packages/xarm_ros2
-	url = https://github.com/xArm-Developer/xarm_ros2.git
-	branch = humble
 [submodule "manipulation/packages/pymoveit2"]
 	path = manipulation/packages/pymoveit2
 	url = https://github.com/RoBorregos/pymoveit2
@@ -19,3 +15,6 @@
 [submodule "navigation/packages/sllidar_ros2"]
 	path = navigation/packages/sllidar_ros2
 	url = https://github.com/Slamtec/sllidar_ros2
+[submodule "manipulation/packages/xarm_ros2"]
+	path = manipulation/packages/xarm_ros2
+	url = https://github.com/RoBorregos/xarm_ros2.git

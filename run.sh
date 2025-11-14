@@ -1,91 +1,51 @@
-ARGS=("$@")  # Save all arguments in an array
-AREA=${ARGS[0]}  # Get the first argument
-TASK=${ARGS[1]}  # Get the second argument
+#!/bin/bash
+source lib.sh
 
-# Check if the parameter is passed, if not, set a default value (e.g., "vision")
-if [ -z "$AREA" ]; then
-  echo "No service name provided or invalid. Valid args are: vision, hri, etc"
-  exit 1
-fi
-
-echo "Service name is: $AREA"
-
+AREA=$1
 # check arguments passed as --help or -h
-if [ "$AREA" == "--help" ] || [ "$AREA" == "-h" ]; then
-  echo "Usage: ./run.sh [service_name]"
-  echo "Example: ./run.sh vision"
+if [ "$AREA" == "--help" ] || [ "$AREA" == "-h" ] || [ -z "$AREA" ]; then
+  echo "Usage: ./run.sh [area] [--task] [--flags]"
+  echo "Example: ./run.sh hri --receptionist --open-display"
   exit 0
 fi
 
-area=""
-rebuild=0
-
-
 case $AREA in
-  vision)
-    echo "Running vision..."
-    area="vision"
-    ;;
-  manipulation)
-    echo "Running manipulation"
-    area="manipulation"
-    ;;
-  navigation)
-    echo "Running manipulation"
-    area="navigation"
-    ;;
-  integration)
-    echo "Running integration"
-    area="integration"
-    ;;
-  hri)
-    echo "Running hri"
-    area="hri"
-    ;;
-  zed)
-    echo "Running zed"
-    area="zed"
+  vision|manipulation|navigation|integration|hri|frida_interfaces)
     ;;
   *)
-    echo "Invalid service name provided. Valid args are: vision, hri, etc"
+    echo "Invalid service name provided. Valid args are: vision, manipulation, navigation, integration, hri, frida_interfaces"
     exit 1
     ;;
 esac
 
-REBUILD=0
-# check if one of the arguments is --rebuild
-for arg in "${ARGS[@]}"; do
-  if [ "$arg" == "--rebuild" ]; then
-    rebuild=1
-  fi
-done
+# Check type of environment (cpu, cuda, or l4t), default cpu
+ENV_TYPE=cpu
 
-detached=""
-# check if one of the arguments is --detached
-for arg in "${ARGS[@]}"; do
-  if [ "$arg" == "-d" ]; then
-    detached="-d"
-  fi
-done
+if [ -f /etc/nv_tegra_release ]; then
+  ENV_TYPE=l4t
+elif command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi >/dev/null 2>&1; then
+  ENV_TYPE=cuda
+fi
+echo "Detected environment: $ENV_TYPE"
 
-if [ "$area" == "zed" ]; then
-  echo "Running zed2"
-  cd docker/integration
-  docker compose -f zed.yml up $detached
-  exit 0
+# Check and build base image if it doesn't exist
+check_image_exists "roborregos/home2:${ENV_TYPE}_base"
+if [ $? -eq 1 ]; then
+  docker compose -f docker/${ENV_TYPE}.yaml build
 fi
 
-if [ -z "$area" ]; then
-  echo "Invalid service name provided. Valid args are: vision, hri, etc"
-  exit 1
-fi
-
-
-cd docker/$area
-if [ $rebuild -eq 1 ]; then
-  echo "Rebuilding image from area: $area"
-  ./run.sh $TASK --rebuild $detached
+# Run the selected area
+if [ "$AREA" = "frida_interfaces" ]; then
+  echo "Running frida_interfaces_cache to build frida_interfaces"
+  docker compose -f docker/frida_interfaces_cache/docker-compose-${ENV_TYPE}.yaml run --rm frida_interfaces_cache
 else
-  echo "Running image from area: $area"
-  ./run.sh $TASK $detached
+  # If frida_interfaces_cache hasn't been built yet, build it first
+  if [ ! -d "docker/frida_interfaces_cache/build" ]; then
+    echo "Cache directory missing. Running frida_interfaces_cache to build frida_interfaces"
+    docker compose -f docker/frida_interfaces_cache/docker-compose-${ENV_TYPE}.yaml run --rm frida_interfaces_cache
+  fi
+
+  echo "Running image from area: $AREA"
+  cd "docker/$AREA" || { echo "Error: failed to cd into docker/$AREA" >&2; exit 1; }
+  ./run.sh "${@:2}" ${ENV_TYPE}
 fi

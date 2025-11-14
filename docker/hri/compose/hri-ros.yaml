@@ -1,0 +1,34 @@
+# Speech variables
+x-speech-devices: &speech-devices
+  PULSE_SERVER: unix:/tmp/pulse/pulseaudio.socket
+  PULSE_COOKIE: /tmp/pulse/pulseaudio.cookie
+
+services:
+  hri-ros:
+    container_name: home2-hri-ros
+    build:
+      context: ../../..
+      dockerfile: docker/hri/dockerfiles/Dockerfile.ROS
+      args:
+        BASE_IMAGE: roborregos/home2:cpu_base
+    image: roborregos/home2:hri-cpu
+    volumes:
+      - ../../../:/workspace/src
+      - ~/.config/pulse:/tmp/pulse
+      - /dev:/dev
+      - ../build:/workspace/build
+      - ../install:/workspace/install
+      - ../log:/workspace/log
+      - ../../frida_interfaces_cache:/workspace/frida_interfaces_cache
+    network_mode: host
+    user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
+    privileged: true
+    environment:
+      <<:
+        - *speech-devices
+      DISPLAY: ${DISPLAY}
+    env_file:
+      - .env
+    tty: true
+    entrypoint: ["bash", "-il", "-c"]
+    command: ["${COMMAND:-/bin/bash}"]

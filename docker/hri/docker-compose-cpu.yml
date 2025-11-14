@@ -1,6 +1,0 @@
-include:
-  - path: hri-ros.yaml
-  - path: stt.yaml
-  - path: postgresql.yaml
-  - path: display.yaml
-  - path: tts.yaml

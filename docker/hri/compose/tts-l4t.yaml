@@ -1,0 +1,24 @@
+services:
+  tts:
+    container_name: home2-hri-tts-l4t
+    image: roborregos/home2:hri-tts-l4t
+    build:
+      context: ../../..
+      dockerfile: docker/hri/dockerfiles/Dockerfile.tts
+      args:
+        BASE_IMAGE: roborregos/home2:l4t_base
+    runtime: nvidia
+    volumes:
+      - ../../../hri/packages/speech/scripts/tts/:/app
+      - ../../../hri/packages/speech/assets/downloads/offline_voice/:/app/audios
+      - ../../../hri/packages/speech/assets/downloads/offline_voice/model/:/home/ros/.cache/huggingface/hub
+      - ~/.config/pulse:/tmp/pulse
+    network_mode: host
+    user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
+    privileged: true
+    tty: true
+    environment:
+      PULSE_SERVER: unix:/tmp/pulse/pulseaudio.socket
+      PULSE_COOKIE: /tmp/pulse/pulseaudio.cookie
+      HF_HUB_DISABLE_XET: 1
+    command: "python3 kokoro-tts.py --port 50050"

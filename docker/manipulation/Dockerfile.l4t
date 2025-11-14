@@ -1,0 +1,29 @@
+ARG BASE_IMAGE=dustynv/l4t-pytorch:r36.4.0
+FROM ${BASE_IMAGE}
+
+RUN mkdir -p /workspace
+
+# Python Requirements
+COPY manipulation/requirements.txt /workspace/requirements/requirements.txt
+RUN pip3 install -r /workspace/requirements/requirements.txt
+RUN rm -r /workspace/requirements/
+
+RUN chown -R ros:ros /workspace
+
+RUN apt update && apt install -y ros-humble-zed-msgs ros-humble-moveit*
+
+# Install manipulation dependencies
+WORKDIR /installs
+RUN git clone https://github.com/RoBorregos/home2 --recursive home2_install
+WORKDIR /installs/home2_install
+RUN rosdep init && rosdep update && rosdep install --from-paths /installs/home2_install/ --ignore-src -r --skip-keys "gpd opencv message_package eigen3 pcl-ros gazebo_ros gazebo_plugins libpcl-dev gazebo_ros2_control" -y
+RUN rosdep fix-permissions
+WORKDIR /
+RUN rm -r installs/
+
+#Copying GPD script and variables
+RUN echo ". /home/ros/setup_gpd.sh" >> /home/ros/.bashrc
+RUN echo "export GPD_INSTALL_DIR=/workspace/install/gpd" >> /home/ros/.bashrc
+RUN echo "source /workspace/frida_interfaces_cache/install/setup.bash" >> /home/ros/.bashrc
+
+WORKDIR /workspace

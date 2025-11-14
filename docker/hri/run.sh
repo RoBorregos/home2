@@ -1,199 +1,151 @@
 #!/bin/bash
+source ../../lib.sh
+
+#_________________________ARGUMENTS_________________________
 
 ARGS=("$@")  # Save all arguments in an array
 TASK=${ARGS[0]}
+ENV_TYPE="${*: -1}"
 
 # IMPORTANT: Also edit auto-complete.sh to add new arguments
-detached=""
-build_display=""
-open_display=""
-download_model=""
-# Check if one of the arguments is --detached, --build-display, or --open-display
+DETACHED=""
+BUILD=""
+BUILD_IMAGE=""
+BUILD_DISPLAY=""
+OPEN_DISPLAY=""
+DOWNLOAD_MODEL=""
+
+COMPOSE="compose/docker-compose-${ENV_TYPE}.yml"
+
+# Set flags from arguments
 for arg in "${ARGS[@]}"; do
-  if [ "$arg" == "-d" ]; then
-    detached="-d"
-  elif [ "$arg" == "--build-display" ]; then
-    build_display="true"
-  elif [ "$arg" == "--open-display" ]; then
-    open_display="true"
-  elif [ "$arg" == "--download-model" ]; then
-    download_model="true"
-  fi
+  case "$arg" in
+    "-d")
+        DETACHED="-d"
+        ;;
+    "--build")
+        BUILD="true"
+        ;;
+    "--recreate")
+        docker compose -f "$COMPOSE" down
+        ;;
+    "--down")
+        docker compose -f "$COMPOSE" down
+        exit 0
+        ;;
+    "--stop")
+        docker compose -f "$COMPOSE" stop
+        exit 0
+        ;;
+    "--build-image")
+        BUILD_IMAGE="--build"
+        ;;
+    "--build-display")
+        BUILD_DISPLAY="true"
+        ;;
+    "--open-display")
+        OPEN_DISPLAY="true"
+        ;;
+    "--download-model")
+        DOWNLOAD_MODEL="true"
+        ;;
+  esac
 done
-
-#_________________________BUILD_________________________
-
-# Image names
-CPU_IMAGE="roborregos/home2:cpu_base"
-CUDA_IMAGE="roborregos/home2:cuda_base"
-JETSON_IMAGE="roborregos/home2:l4t_base"
-
-# Function to check if an image exists
-check_image_exists() {
-    local image_name=$1
-    if ! docker images --format "{{.Repository}}:{{.Tag}}" | grep -q "^${image_name}$"; then
-        echo "Image $image_name does not exist. Building it..."
-        return 1  # Image doesn't exist
-    else
-        echo "Image $image_name already exists. Skipping build."
-        return 0  # Image exists
-    fi
-}
-
-# Function to add or update a variable in a file
-add_or_update_variable() {
-    local file=$1
-    local variable=$2
-    local value=$3
-
-    local escaped_value
-    escaped_value=$(printf '%s\n' "$value" | sed -e 's/[&/\]/\\&/g')
-
-    if grep -q "^${variable}=" "$file"; then
-        sed -i "s|^${variable}=.*|${variable}=${escaped_value}|" "$file"
-    else
-        echo "${variable}=${value}" >> "$file"
-    fi
-}
-
-# Check type of environment (CPU, GPU, or Jetson), default CPU
-ENV_TYPE="cpu"
-
-# Check device type
-if [[ -f /etc/nv_tegra_release ]]; then
-    ENV_TYPE="jetson"
-else
-    # Check if NVIDIA GPUs are available
-    if command -v nvidia-smi > /dev/null 2>&1; then
-        if nvidia-smi > /dev/null 2>&1; then
-            ENV_TYPE="gpu"
-        fi
-    fi
-fi
-echo "Detected environment: $ENV_TYPE"
-
-# Build base image
-case $ENV_TYPE in
-  "gpu")
-    ;&
-  "cpu")
-    
-    check_image_exists "$CPU_IMAGE"
-    if [ $? -eq 1 ]; then
-        docker compose -f ../cpu.yaml build
-    fi
-    ;;
-  "jetson")
-    
-    check_image_exists "$JETSON_IMAGE"
-    if [ $? -eq 1 ]; then
-        docker compose -f ../l4t.yaml build
-    fi
-    ;;
-  *)
-    echo "Unknown environment type!"
-    exit 1
-    ;;
-esac
 
 #_________________________SETUP_________________________
 
-bash setup.bash
-[ "$download_model" == "true" ] && bash ../../hri/packages/nlp/assets/download-model.sh
+bash scripts/setup.bash
+[ "$DOWNLOAD_MODEL" == "true" ] && bash ../../hri/packages/nlp/assets/download-model.sh
 
 # Create dirs with current user to avoid permission problems
 mkdir -p install build log ../../hri/packages/speech/assets/downloads/offline_voice/model/
 
+# Reset .env
+echo "" > compose/.env
+
+# Export user
+add_or_update_variable compose/.env "LOCAL_USER_ID" "$(id -u)"
+add_or_update_variable compose/.env "LOCAL_GROUP_ID" "$(id -g)"
 
 # Check if display setup is needed
-if [ ! -d "../../hri/display/dist" ] || [ ! -d "../../hri/display/node_modules" ] || [ ! -d "../../hri/display/web-ui/.next" ] || [ ! -d "../../hri/display/web-ui/node_modules" ] || [ "$build_display" == "true" ]; then
+if [ ! -d "../../hri/display/dist" ] || [ ! -d "../../hri/display/node_modules" ] || [ ! -d "../../hri/display/web-ui/.next" ] || [ ! -d "../../hri/display/web-ui/node_modules" ] || [ "$BUILD_DISPLAY" == "true" ]; then
   echo "Setting up display environment..."
 
-  compose_file="display.yaml"
-  [ "$ENV_TYPE" == "jetson" ] && compose_file="display-l4t.yaml"
+  compose_file="compose/display.yaml"
+  service="display"
+  [ "$ENV_TYPE" == "l4t" ] && compose_file="compose/display-l4t.yaml" && service="display-l4t"
   
   echo "Installing dependencies and building project inside temporary container..."
-  docker compose -f "$compose_file" run --entrypoint "" display bash -c "source /opt/ros/humble/setup.bash && npm run build"
+  docker compose -f "$compose_file" run --entrypoint "" "$service" bash -c "source /opt/ros/humble/setup.bash && npm run build"
 fi
 
 #_________________________RUN_________________________
 
+GENERATE_BAML_CLIENT="baml-cli generate --from /workspace/src/task_manager/scripts/utils/baml_src/"
+SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
+IGNORE_PACKAGES="--packages-ignore frida_interfaces frida_constants xarm_msgs"
+SOURCE_ROS="source /opt/ros/humble/setup.bash"
+PACKAGES="speech nlp embeddings"
 PROFILES=()
 RUN=""
 
 case $TASK in
-    "--receptionist")
-        RUN="ros2 launch speech hri_launch.py"
-        PROFILES=("receptionist")
-        ;;
-    "--carry")
-        PROFILES=("carry")
-        RUN="ros2 launch speech hri_launch.py"
-        ;;
-    "--storing")
-        PROFILES=("storing")
-        RUN="ros2 launch speech hri_launch.py"
-        ;;
-    "--storing-groceries")
-        PROFILES=("storing")
-        RUN="ros2 launch speech hri_launch.py"
-        ;;
-    "--gpsr")
-        PROFILES=("gpsr")
-        RUN="ros2 launch speech hri_launch.py"
-        ;;
-    *)
-        PROFILES=("*")
-        RUN="bash"
-        ;;
+  "--receptionist")
+    RUN="ros2 launch speech hri_launch.py"
+    PROFILES=("receptionist")
+    ;;
+  "--storing-groceries")
+    PROFILES=("storing")
+    RUN="ros2 launch speech hri_launch.py"
+    ;;
+  "--gpsr")
+    PROFILES=("gpsr")
+    RUN="ros2 launch speech hri_launch.py"
+    ;;
+  *)
+    PROFILES=("*")
+    RUN="bash"
+    ;;
 esac
 
+if [ "$BUILD" == "true" ]; then
+    BUILD_COMMAND="colcon build $IGNORE_PACKAGES --symlink-install --packages-up-to $PACKAGES &&"
+fi
+
 COMPOSE_PROFILES=$(IFS=, ; echo "${PROFILES[*]}")
-add_or_update_variable .env "COMPOSE_PROFILES" "$COMPOSE_PROFILES"
+add_or_update_variable compose/.env "COMPOSE_PROFILES" "$COMPOSE_PROFILES"
 
-GENERATE_BAML_CLIENT="baml-cli generate --from /workspace/src/task_manager/scripts/utils/baml_src/"
-SOURCE_INTERFACES="source frida_interfaces_cache/install/local_setup.bash"
-IGNORE_PACKAGES="--packages-ignore frida_interfaces frida_constants xarm_msgs"
-COMMAND="$GENERATE_BAML_CLIENT && source /opt/ros/humble/setup.bash && $SOURCE_INTERFACES && colcon build $IGNORE_PACKAGES --symlink-install --packages-up-to speech nlp embeddings && source ~/.bashrc && $RUN"
+COMMAND="$GENERATE_BAML_CLIENT && $SOURCE_ROS && $SOURCE_INTERFACES && $BUILD_COMMAND source ~/.bashrc && $RUN"
+add_or_update_variable compose/.env "COMMAND" "$COMMAND"
 
-# echo "COMMAND= $COMMAND " >> .env
-add_or_update_variable .env "COMMAND" "$COMMAND"
-
-# Trap Ctrl+C to clean up
 cleanup() {
-  [ -n "$compose_pid" ] && kill "$compose_pid" 2>/dev/null
-  [ -n "$curl_pid" ] && kill "$curl_pid" 2>/dev/null
-  exit 1
+  # Ensure the process is not left running
+  [ -n "$wait_for_display_pid" ] && kill "$wait_for_display_pid" 2>/dev/null || true
 }
-trap cleanup SIGINT
+trap cleanup SIGINT SIGTERM
 
 # Function to wait for service and launch display
 wait_and_launch_display() {
   until curl --output /dev/null --silent --head --fail http://localhost:3000; do
-    printf '.'
     sleep 1
   done
-  bash open-display.bash
+  chmod +x scripts/open-display.bash
+  bash scripts/open-display.bash
 }
 
-compose_file="docker-compose-cpu.yml"
-[ "$ENV_TYPE" == "gpu" ] && compose_file="docker-compose-gpu.yml"
-[ "$ENV_TYPE" == "jetson" ] && compose_file="docker-compose.yml"
+if [ -n "$OPEN_DISPLAY" ]; then
+  wait_and_launch_display &
+  wait_for_display_pid=$!
+fi
 
-# Run the selected docker compose file
-if [ -n "$detached" ]; then
-  docker compose -f "$compose_file" up -d
-  [ "$open_display" == "true" ] && wait_and_launch_display
+if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
+    EXISTING_CONTAINER=$(docker ps -a -q -f name="hri")
+    if [ -z "$EXISTING_CONTAINER" ] || [ -n "$BUILD_IMAGE" ]; then
+        docker compose -f "$COMPOSE" up -d $BUILD_IMAGE
+    else
+        docker compose -f "$COMPOSE" start
+    fi
+    docker compose -f "$COMPOSE" exec hri-ros bash -c "$COMMAND"
 else
-  ROLE=$PROFILES docker compose -f "$compose_file" up &
-  compose_pid=$!
-
-  if [ "$open_display" == "true" ]; then
-    wait_and_launch_display &
-    curl_pid=$!
-  fi
-
-  # Wait for docker compose to finish, then kill the curl loop if it exists
-  wait $compose_pid
-  [ -n "$curl_pid" ] && kill $curl_pid 2>/dev/null
+    docker compose -f "$COMPOSE" up $DETACHED $BUILD_IMAGE
 fi
