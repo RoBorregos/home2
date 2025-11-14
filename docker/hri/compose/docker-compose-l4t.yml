@@ -1,7 +1,7 @@
 include:
-  - path: hri-ros-l4t.yaml
+  - path: hri-ros.yaml
   - path: stt-l4t.yaml
   - path: ollama-l4t.yaml
   - path: postgresql.yaml
-  - path: display-l4t.yaml
-  - path: tts-l4t.yaml
+  - path: display.yaml
+  - path: tts.yaml
