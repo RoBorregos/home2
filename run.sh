@@ -1,5 +1,7 @@
-AREA=$1
+#!/bin/bash
+source lib.sh
 
+AREA=$1
 # check arguments passed as --help or -h
 if [ "$AREA" == "--help" ] || [ "$AREA" == "-h" ] || [ -z "$AREA" ]; then
   echo "Usage: ./run.sh [area] [--task] [--flags]"
@@ -15,18 +17,6 @@ case $AREA in
     exit 1
     ;;
 esac
-
-# Function to check if an image exists
-check_image_exists() {
-    local image_name=$1
-    if ! docker images --format "{{.Repository}}:{{.Tag}}" | grep -q "^${image_name}$"; then
-        echo "Image $image_name does not exist. Building it..."
-        return 1  # Image doesn't exist
-    else
-        echo "Image $image_name already exists. Skipping build."
-        return 0  # Image exists
-    fi
-}
 
 # Check type of environment (cpu, cuda, or l4t), default cpu
 ENV_TYPE=cpu
@@ -57,5 +47,5 @@ else
 
   echo "Running image from area: $AREA"
   cd "docker/$AREA" || { echo "Error: failed to cd into docker/$AREA" >&2; exit 1; }
-  ./run.sh "${@:2}"
+  ./run.sh "${@:2}" ${ENV_TYPE}
 fi

@@ -67,3 +67,7 @@ RUN apt-get update -qq && apt-get install -y  build-essential \
     terminator nano git wget iputils-ping \
     libcanberra-gtk-module libcanberra-gtk3-module \
     python3-pip
+
+ENV PIP_INDEX_URL=https://pypi.jetson-ai-lab.io/jp6/cu126 \
+    PIP_EXTRA_INDEX_URL=https://pypi.org/simple \
+    PIP_TRUSTED_HOST=pypi.jetson-ai-lab.io

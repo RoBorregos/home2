@@ -1,5 +1,5 @@
 services:
-  tts-l4t:
+  tts:
     container_name: home2-hri-tts-l4t
     image: roborregos/home2:hri-tts-l4t
     build:
@@ -14,7 +14,7 @@ services:
       - ../../../hri/packages/speech/assets/downloads/offline_voice/model/:/home/ros/.cache/huggingface/hub
       - ~/.config/pulse:/tmp/pulse
     network_mode: host
-    user: 1000:1000
+    user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
     privileged: true
     tty: true
     environment:

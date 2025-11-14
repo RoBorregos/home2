@@ -19,12 +19,10 @@ from frida_interfaces.srv import (
     GetCollisionObjects,
     PlayTrayectory,
 )
-from frida_motion_planning.utils.ros_utils import wait_for_future
+
 from frida_constants.manipulation_constants import (
     ALWAYS_SET_MODE,
-    MOVEIT_MODE,
     JOINT_VELOCITY_MODE,
-    SET_JOINT_VELOCITY_SERVICE,
     PICK_PLANNER,
     MOVE_TO_POSE_ACTION_SERVER,
     DEBUG_POSE_GOAL_TOPIC,
@@ -36,19 +34,32 @@ from frida_constants.manipulation_constants import (
     TOGGLE_SERVO_SERVICE,
     GRIPPER_SET_STATE_SERVICE,
     MIN_CONFIGURATION_DISTANCE_TRESHOLD,
-    XARM_SETMODE_MOVEIT_SERVICE,
 )
-from xarm_msgs.srv import MoveVelocity, TrajPlay
+
 from frida_interfaces.msg import CollisionObject
 from frida_motion_planning.utils.MoveItPlanner import MoveItPlanner
 from frida_motion_planning.utils.MoveItServo import MoveItServo
+
+
 from frida_motion_planning.utils.XArmServices import XArmServices
+
+from trajectory_msgs.msg import JointTrajectory
+from sensor_msgs.msg import JointState
+from rclpy.qos import QoSProfile
 
 
 class MotionPlanningServer(Node):
     def __init__(self):
         super().__init__("motion_planning_server")
         self.callback_group = ReentrantCallbackGroup()
+
+        # qos_profile = QoSProfile(depth=10)
+
+        qos_profile = QoSProfile(
+            history=2, depth=1, reliability=rclpy.qos.QoSReliabilityPolicy.BEST_EFFORT
+        )
+
+        # qos_profile = QoSProfile(depth=10, durability=DurabilityPolicy.TRANSIENT_LOCAL)
 
         # Here we can select other planner (if implemented)
         self.planner = MoveItPlanner(self, self.callback_group)
@@ -141,14 +152,6 @@ class MotionPlanningServer(Node):
             callback_group=self.callback_group,
         )
 
-        self.play_traj_client = self.create_client(
-            TrajPlay,
-            "/xarm/playback_trajectory",
-            callback_group=self.callback_group,
-        )
-
-        # is MoveItPlanner could not spawn services, send None
-        # TODO: I changed my mind, set_mode goes in this script, not on the MoveItPlanner
         if self.planner.mode_enabled:
             self.xarm_services = XArmServices(
                 self, self.planner.mode_client, self.planner.state_client
@@ -158,17 +161,17 @@ class MotionPlanningServer(Node):
             self.xarm_services = XArmServices(self, None, None)
             self.real_xarm = False
 
-        self.xarm_joint_velocity_service = self.create_service(
-            MoveVelocity,
-            SET_JOINT_VELOCITY_SERVICE,
-            self.set_joint_velocity_callback,
-            callback_group=self.callback_group,
+        self.traj_pub = self.create_publisher(
+            JointTrajectory, "/moveit/joint_trajectory", qos_profile
         )
 
-        self.xarm_set_moveit_mode_service = self.create_service(
-            Empty,
-            XARM_SETMODE_MOVEIT_SERVICE,
-            self.set_moveit_mode_service,
+        self.joint_states_topic = "/joint_states"
+        # create listener
+        self.joint_states_sub = self.create_subscription(
+            JointState,
+            self.joint_states_topic,
+            self.joint_states_callback,
+            qos_profile,
             callback_group=self.callback_group,
         )
 
@@ -177,12 +180,6 @@ class MotionPlanningServer(Node):
             "/manipulation/reset_xarm_controller",
             self.reset_xarm_controller,
             callback_group=self.callback_group,
-        )
-
-        self.xarm_set_moveit_mode_service = self.create_service(
-            Empty,
-            XARM_SETMODE_MOVEIT_SERVICE,
-            self.set_moveit_mode_service,
         )
 
         self.current_mode = -1
@@ -206,85 +203,95 @@ class MotionPlanningServer(Node):
         result = MoveToPose.Result()
         self.set_planning_settings(goal_handle)
         try:
-            result.success = self.move_to_pose(goal_handle, feedback)
+            was_successful = self.move_to_pose(goal_handle, feedback)
             self.get_logger().info(
                 "Move to pose finished with result: " + str(result.success)
             )
-            goal_handle.succeed()
-            self.reset_planning_settings(goal_handle)
-            return result
+            if was_successful:
+                self.get_logger().info("Move to pose succeeded")
+                goal_handle.succeed()
+                result.success = True
+            else:
+                self.get_logger().info("Move to pose failed")
+                goal_handle.abort()
+                result.success = False
+
         except Exception as e:
             self.get_logger().error(f"Move to pose failed: {str(e)}")
-            goal_handle.succeed()
-            self.reset_planning_settings(goal_handle)
+            goal_handle.abort()
+            # self.reset_planning_settings(goal_handle)
             result.success = False
-            return result
+
+        finally:
+            self.get_logger().info("Resetting planning settings...")
+            self.reset_planning_settings(goal_handle)
+
+        return result
 
     def play_trayectory_callback(self, request, response):
-        """Handle requests to play a trayectory from a file."""
+        """
+        Reads a trajectory from a file, converts it to JointTrajectory, and executes it.
+        """
         self.get_logger().info(
-            f"Playing trayectory from file: {request.trayectory_filename}"
+            f"Playing trajectory from file: {request.trayectory_filename}"
         )
         try:
-            self.xarm_services.set_mode(0)  # Set mode to 2 for trayectory playback
-            # self.xarm_services.set_state(0)
-            req = TrajPlay.Request()
-            req.filename = request.trayectory_filename
-            req.times = 1
-            req.double_speed = 1
-            req.wait = True
-            self.get_logger().info(f"Requesting to play trayectory: {req.filename}")
-            self.get_logger().info(
-                f"Playing trayectory with times: {req.times}, double_speed: {req.double_speed}, wait: {req.wait}"
+            # Step 1: Parse the file to get a JointTrajectory message
+            trajectory_msg = self.parse_xarm_trajectory_file(
+                request.trayectory_filename
             )
-            future = self.play_traj_client.call_async(req)
-            # now = time.time()
-            # timeout = 10
-            wait_for_future(future)
-            # rclpy.spin_until_future_complete(self, future)
-            # result = future.result()
 
-            # if result.ret == 0:
-            #     response.success = True
-            #     self.get_logger().info("Trayectory played successfully")
-            # else:
-            #     response.success = False
-            #     self.get_logger().error(
-            #         f"Failed to play trayectory: {result.ret} with message: {result.message}"
-            #     )
-            response.success = True
-            # return response
+            if trajectory_msg:
+                self.get_logger().info(
+                    "Trajectory file parsed successfully. Executing plan..."
+                )
+                # Step 2: Use the planner's execution function
+                response.success = self.planner.execute_plan(trajectory_msg)
+            else:
+                self.get_logger().error("Failed to parse trajectory file.")
+                response.success = False
         except Exception as e:
-            self.get_logger().error(f"Error playing trayectory: {str(e)}")
+            self.get_logger().error(f"Error processing trajectory: {str(e)}")
             response.success = False
-            return response
-        # response.success = True
-        self.get_logger().info("Trayectory playback completed")
-        response.success = True
-        self.xarm_services.set_mode(MOVEIT_MODE)  # Reset mode to MoveIt
-        # self.xarm_services.set_state(0)  # Reset state to 0
         return response
 
-    def move_joints_execute_callback(self, goal_handle):
-        """Execute the pick action when a goal is received."""
-        self.get_logger().info("Executing joint goal...")
+    def parse_xarm_trajectory_file(self, filename: str) -> JointTrajectory:
+        # Here you should implement the logic to read your .traj file and
+        # build a JointTrajectory message with its points.
+        self.get_logger().warn(
+            "The function 'parse_xarm_trajectory_file' is not yet implemented."
+        )
+        return None
 
-        # Initialize result
-        feedback = MoveJoints.Feedback()
+    def move_joints_execute_callback(self, goal_handle):
+        """Manages the lifecycle of the MoveJoints action."""
+        self.get_logger().info("Executing joint goal action...")
         result = MoveJoints.Result()
         self.set_planning_settings(goal_handle)
+
         try:
-            result.success = self.move_joints(goal_handle, feedback)
-            self.get_logger().info(
-                "Move joints finished with result: " + str(result.success)
-            )
-            goal_handle.succeed()
-            return result
+            # Here we call the worker and get the final result (True or False)
+            was_successful = self.move_joints(goal_handle, feedback=None)
+
+            # Manage the goal based on the worker's result
+            if was_successful:
+                goal_handle.succeed()
+                result.success = True
+            else:
+                goal_handle.abort()
+                result.success = False
+
         except Exception as e:
-            self.get_logger().error(f"Move joints failed: {str(e)}")
-            goal_handle.succeed()
+            self.get_logger().error(
+                f"An unexpected error occurred in MoveJoints: {str(e)}"
+            )
+            goal_handle.abort()
             result.success = False
-            return result
+
+        finally:
+            self.reset_planning_settings(goal_handle)
+
+        return result
 
     def move_to_pose(self, goal_handle, feedback):
         """Perform the pick operation."""
@@ -300,26 +307,20 @@ class MotionPlanningServer(Node):
             if goal_handle.request.tolerance_orientation
             else 0.05
         )
-        if target_link != "":
-            result = self.planner.plan_pose_goal(
-                pose=pose,
-                target_link=target_link,
-                wait=True,
-                set_mode=True,
-                tolerance_position=tolerance_position,
-                tolerance_orientation=tolerance_orientation,
-            )
+        was_plan_successful, trajectory_plan = self.planner.plan_pose_goal(
+            pose=pose,
+            target_link=target_link,
+            tolerance_position=tolerance_position,
+            tolerance_orientation=tolerance_orientation,
+        )
+
+        if was_plan_successful:
+            self.execute_trajectory(trajectory_plan)
+            was_execution_successful = self.planner.execute_plan(trajectory_plan)
+            return was_execution_successful
         else:
-            result = self.planner.plan_pose_goal(
-                pose=pose,
-                wait=True,
-                set_mode=(self.current_mode != MOVEIT_MODE),
-                tolerance_position=tolerance_position,
-                tolerance_orientation=tolerance_orientation,
-            )
-        if not ALWAYS_SET_MODE:
-            self.current_mode = MOVEIT_MODE
-        return result
+            self.get_logger().error("Cannot execute because planning failed.")
+            return False
 
     def move_joints(self, goal_handle, feedback):
         self.get_logger().info(
@@ -354,16 +355,30 @@ class MotionPlanningServer(Node):
             return False
 
         self.get_logger().info("Planning joint goal...")
-        result = self.planner.plan_joint_goal(
+        was_plan_successful, trajectory_plan = self.planner.plan_joint_goal(
             joint_positions,
             joint_names,
-            wait=True,
-            set_mode=(self.current_mode != MOVEIT_MODE),
+            # wait=True,
+            # set_mode=False,
         )
-        self.get_logger().info(f"Move Joints Result: {result}")
-        if not ALWAYS_SET_MODE:
-            self.current_mode = MOVEIT_MODE
-        return result
+        self.get_logger().info(f"Move Joints Result: {was_plan_successful}")
+        if was_plan_successful:
+            self.execute_trajectory(trajectory_plan)
+            was_execution_successful = self.planner.execute_plan(trajectory_plan)
+            if was_execution_successful:
+                self.get_logger().info("Trajectory executed successfully.")
+                return True
+            else:
+                self.get_logger().error("Trajectory execution failed.")
+        else:
+            self.get_logger().error("Cannot execute because planning failed.")
+            return False
+
+    def execute_trajectory(self, trajectory):
+        """Publish the trajectory to the controller topic."""
+        self.get_logger().info("Publishing trajectory to controller...")
+        self.traj_pub.publish(trajectory)
+        self.get_logger().info("Trajectory published.")
 
     def set_planning_settings(self, goal_handle):
         velocity = (
@@ -585,8 +600,8 @@ class MotionPlanningServer(Node):
             frame_id=msg.header.frame_id,
         )
 
-    def set_moveit_mode_service(self, request, response):
-        self.xarm_services.set_mode(MOVEIT_MODE)
+    # def set_moveit_mode_service(self, request, response):
+    #     self.xarm_services.set_mode(MOVEIT_MODE)
 
     def set_joint_velocity_callback(self, request, response):
         velocities = request.speeds
@@ -632,6 +647,11 @@ class MotionPlanningServer(Node):
         self.planner.reset_controller()
         self.get_logger().info("Reset controller")
         return response
+
+    def joint_states_callback(self, msg: JointState):
+        # TODO: make use of this information
+        # self.current_joint_positions = msg.position
+        pass
 
 
 def main(args=None):

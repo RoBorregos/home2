@@ -1,5 +1,9 @@
 FROM dustynv/l4t-pytorch:r36.4.0
 
+ENV PIP_INDEX_URL=https://pypi.jetson-ai-lab.io/jp6/cu126 \
+    PIP_EXTRA_INDEX_URL=https://pypi.org/simple \
+    PIP_TRUSTED_HOST=pypi.jetson-ai-lab.io
+
 # Install dependencies
 RUN apt-get update && apt-get install -y \
     libsndfile1 \
