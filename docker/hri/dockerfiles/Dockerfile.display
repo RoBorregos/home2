@@ -8,8 +8,6 @@ RUN apt-get update && apt-get install -y ca-certificates gnupg \
  && echo "deb [signed-by=/usr/share/keyrings/nodesource.gpg] https://deb.nodesource.com/node_22.x nodistro main" \
     > /etc/apt/sources.list.d/nodesource.list \
  && apt-get update && apt-get install -y nodejs \
- && corepack enable \
- && npm i -g concurrently \
  && rm -rf /var/lib/apt/lists/*
 
 RUN apt-get update && apt-get install -y ros-humble-web-video-server \
