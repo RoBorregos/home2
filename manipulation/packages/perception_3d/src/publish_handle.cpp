@@ -116,7 +116,7 @@ public:
         "/config/relative_docking_pose.yaml";
     */
 
-    std::string config_path = "/workspace/src/home2/manipulation/packages/"
+    std::string config_path = "/workspace/src/manipulation/packages/"
                               "perception_3d/config/relative_docking_pose.yaml";
     YAML::Node config = YAML::LoadFile(config_path);
     this->rel_x_ = config["x"].as<double>();
