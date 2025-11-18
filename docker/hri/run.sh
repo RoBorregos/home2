@@ -154,10 +154,16 @@ case $TASK in
     "--storing-groceries")
         PROFILES=("storing")
         RUN="ros2 launch speech hri_launch.py"
+        DISPLAY_TASK="StoreGroceries"
+        display_mode="groceries"
+        open_display="true"
         ;;
     "--gpsr")
         PROFILES=("gpsr")
         RUN="ros2 launch speech hri_launch.py"
+        DISPLAY_TASK="GPSR"
+        display_mode="gpsr"
+        open_display="true"
         ;;
     "--gpsr-display")
         PROFILES=("gpsr_display")
