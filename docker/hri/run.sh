@@ -2,6 +2,19 @@
 
 ARGS=("$@")  # Save all arguments in an array
 TASK=${ARGS[0]}
+TASK_NAME=$1
+
+export NEXT_PUBLIC_DISPLAY_TASK=$TASK_NAME
+if [ "$build_display" != "true" ]; then
+  build_display="true"
+fi
+
+compose_file="display.yaml"
+[ "$ENV_TYPE" == "jetson" ] && compose_file="display-l4t.yaml"
+
+echo "Building display..."
+docker compose -f "$compose_file" run --rm -e NEXT_PUBLIC_DISPLAY_TASK="${DISPLAY_TASK}" --entrypoint "" display bash -c "cd web-ui && npm ci --silent && npm run build"
+
 
 # IMPORTANT: Also edit auto-complete.sh to add new arguments
 detached=""

@@ -10,7 +10,7 @@ type Props = {
 
 export default function ClientTaskDisplay({ initialTask }: Props) {
   const searchParams = useSearchParams();
-  const param = searchParams?.get?.("task") ?? undefined;
+  const param = searchParams.get("task") ?? undefined;
   const task = param ?? initialTask ?? "GPSR";
 
   React.useEffect(() => {

@@ -12,6 +12,7 @@ services:
       - /dev:/dev
     environment:
       ROS_LOCALHOST_ONLY: 1
+      NEXT_PUBLIC_DISPLAY_TASK: ${NEXT_PUBLIC_DISPLAY_TASK}
     ports:
       - "3000:3000"
       - "8001:8001"
