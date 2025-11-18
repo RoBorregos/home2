@@ -2,18 +2,12 @@
 
 ARGS=("$@")  # Save all arguments in an array
 TASK=${ARGS[0]}
-TASK_NAME=$1
+
 
 export NEXT_PUBLIC_DISPLAY_TASK=$TASK_NAME
 if [ "$build_display" != "true" ]; then
   build_display="true"
 fi
-
-compose_file="display.yaml"
-[ "$ENV_TYPE" == "jetson" ] && compose_file="display-l4t.yaml"
-
-echo "Building display..."
-docker compose -f "$compose_file" run --rm -e NEXT_PUBLIC_DISPLAY_TASK="${DISPLAY_TASK}" --entrypoint "" display bash -c "cd web-ui && npm ci --silent && npm run build"
 
 
 # IMPORTANT: Also edit auto-complete.sh to add new arguments
@@ -138,10 +132,8 @@ if [ ! -d "../../hri/display/dist" ] || [ ! -d "../../hri/display/node_modules" 
   [ "$ENV_TYPE" == "jetson" ] && compose_file="display-l4t.yaml"
   
   echo "Installing dependencies and building project inside temporary container..."
-  if [ -n "${DISPLAY_TASK}" ]; then
-    # pass display preset into the build container so NEXT_PUBLIC_DISPLAY_TASK is baked into .next
-    docker compose -f "$compose_file" run --rm -e NEXT_PUBLIC_DISPLAY_TASK="${DISPLAY_TASK}" --entrypoint "" display bash -c "cd web-ui && export NEXT_PUBLIC_DISPLAY_TASK=${DISPLAY_TASK} && source /opt/ros/humble/setup.bash && npm ci --silent && npm run build"
-  else
+  if [ ! -d "../../hri/display/dist" ] || [ ! -d "../../hri/display/node_modules" ] || [ ! -d "../../hri/display/web-ui/.next" ] || [ ! -d "../../hri/display/web-ui/node_modules" ] || [ "$build_display" == "true" ]; then
+    echo "Setting up display environment..."
     docker compose -f "$compose_file" run --rm --entrypoint "" display bash -c "cd web-ui && source /opt/ros/humble/setup.bash && npm ci --silent && npm run build"
   fi
 fi
@@ -178,14 +170,6 @@ case $TASK in
         display_mode="gpsr"
         open_display="true"
         ;;
-    "--gpsr-display")
-        PROFILES=("gpsr_display")
-        RUN="ros2 launch speech hri_launch.py"
-        ;;
-    "--groceries-display")
-        PROFILES=("groceries_display")
-        RUN="ros2 launch speech hri_launch.py"
-        ;;
     *)
         PROFILES=("*")
         RUN="bash"
@@ -217,7 +201,11 @@ wait_and_launch_display() {
     printf '.'
     sleep 1
   done
-  bash open-display.bash
+  if [ "$DISPLAY_TASK" == "GPSR" ]; then
+    xdg-open "http://localhost:3000/?t=GPSR"
+  elif [ "$DISPLAY_TASK" == "StoreGroceries" ]; then
+    xdg-open "http://localhost:3000/?t=StoreGroceries"
+  fi
 }
 
 compose_file="docker-compose-cpu.yml"
