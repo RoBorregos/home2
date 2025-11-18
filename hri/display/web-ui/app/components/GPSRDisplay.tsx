@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 
 const Camera = dynamic(() => import("./video"), { ssr: false });
 
-// Use small local implementations only if real components are not present
+
 const Microphone: React.FC = () => (
   <div className="flex items-center justify-center">
     <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-600">🎤</div>
