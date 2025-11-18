@@ -31,6 +31,10 @@ var namespaces_dup =
     [ "client", "namespaceclient.html", [
       [ "run", "namespaceclient.html#a10d4416aef9193a3735b7f83fe3adae8", null ]
     ] ],
+    [ "close_by_generators", "namespaceclose__by__generators.html", [
+      [ "generate_close_to_heatmap", "namespaceclose__by__generators.html#a028e0770c12f1f056c05d8347126a88c", null ],
+      [ "generate_directional_heatmap", "namespaceclose__by__generators.html#a2833aebb91dad17af1c390b31894723e", null ]
+    ] ],
     [ "closed_door_test", "namespaceclosed__door__test.html", "namespaceclosed__door__test" ],
     [ "customer_node", "namespacecustomer__node.html", "namespacecustomer__node" ],
     [ "dashgo_driver", "namespacedashgo__driver.html", "namespacedashgo__driver" ],
@@ -221,6 +225,10 @@ var namespaces_dup =
     [ "perception_3d", "namespaceperception__3d.html", [
       [ "generate_launch_description", "namespaceperception__3d.html#a0e9c55f0d673d8e39208565acad51d8d", null ]
     ] ],
+    [ "perception_utils", "namespaceperception__utils.html", [
+      [ "get_object_cluster", "namespaceperception__utils.html#a31955e78e1302a61392ef9498f4a4511", null ],
+      [ "get_object_point", "namespaceperception__utils.html#adf7d95078b4cecc224d75c0f20109553", null ]
+    ] ],
     [ "person_in_map", "namespaceperson__in__map.html", "namespaceperson__in__map" ],
     [ "pick_and_place", "namespacepick__and__place.html", "namespacepick__and__place" ],
     [ "PickManager", "namespacePickManager.html", "namespacePickManager" ],
@@ -360,6 +368,7 @@ var namespaces_dup =
     [ "tf_utils", "namespacetf__utils.html", [
       [ "look_at", "namespacetf__utils.html#ae80e6757a54ce580a867947e596e576f", null ],
       [ "quat_to_rpy", "namespacetf__utils.html#a4f980b749ce3eb0c265b8573071bb85b", null ],
+      [ "transform_point", "namespacetf__utils.html#aa53ead24b1e4dc6caefbc64a1de35c75", null ],
       [ "transform_pose", "namespacetf__utils.html#acd9c843b0fe781b1c8f769decd9897e9", null ]
     ] ],
     [ "tracker_node", "namespacetracker__node.html", "namespacetracker__node" ],
