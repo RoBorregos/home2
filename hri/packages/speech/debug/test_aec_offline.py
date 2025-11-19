@@ -135,7 +135,7 @@ def main():
     # --- Rough delay alignment (critical for AEC to lock) ---
     print("Estimating delay...")
     robot_al, mic_al, delay = aec.align_signals(robot, mic, args.max_delay_ms)
-    print(f"Estimated delay: {delay} samples (~{1000.0*delay/sr:.1f} ms)")
+    print(f"Estimated delay: {delay} samples (~{1000.0 * delay / sr:.1f} ms)")
 
     # --- Run STFT AEC ---
     print("Running AEC processing...")
