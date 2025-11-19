@@ -3,12 +3,10 @@
 ARGS=("$@")  # Save all arguments in an array
 TASK=${ARGS[0]}
 
-
 export NEXT_PUBLIC_DISPLAY_TASK=$TASK_NAME
 if [ "$build_display" != "true" ]; then
   build_display="true"
 fi
-
 
 # IMPORTANT: Also edit auto-complete.sh to add new arguments
 detached=""
@@ -17,6 +15,7 @@ open_display=""
 download_model=""
 display_mode=""
 DISPLAY_TASK=""
+
 # Check if one of the arguments is --detached, --build-display, or --open-display
 for arg in "${ARGS[@]}"; do
   case "$arg" in
@@ -42,24 +41,21 @@ done
 
 #_________________________BUILD_________________________
 
-# Image names
 CPU_IMAGE="roborregos/home2:cpu_base"
 CUDA_IMAGE="roborregos/home2:cuda_base"
 JETSON_IMAGE="roborregos/home2:l4t_base"
 
-# Function to check if an image exists
 check_image_exists() {
     local image_name=$1
     if ! docker images --format "{{.Repository}}:{{.Tag}}" | grep -q "^${image_name}$"; then
         echo "Image $image_name does not exist. Building it..."
-        return 1  # Image doesn't exist
+        return 1
     else
         echo "Image $image_name already exists. Skipping build."
-        return 0  # Image exists
+        return 0
     fi
 }
 
-# Function to add or update a variable in a file
 add_or_update_variable() {
     local file=$1
     local variable=$2
@@ -75,14 +71,11 @@ add_or_update_variable() {
     fi
 }
 
-# Check type of environment (CPU, GPU, or Jetson), default CPU
 ENV_TYPE="cpu"
 
-# Check device type
 if [[ -f /etc/nv_tegra_release ]]; then
     ENV_TYPE="jetson"
 else
-    # Check if NVIDIA GPUs are available
     if command -v nvidia-smi > /dev/null 2>&1; then
         if nvidia-smi > /dev/null 2>&1; then
             ENV_TYPE="gpu"
@@ -91,19 +84,15 @@ else
 fi
 echo "Detected environment: $ENV_TYPE"
 
-# Build base image
 case $ENV_TYPE in
-  "gpu")
-    ;&
+  "gpu") ;&
   "cpu")
-    
     check_image_exists "$CPU_IMAGE"
     if [ $? -eq 1 ]; then
         docker compose -f ../cpu.yaml build
     fi
     ;;
   "jetson")
-    
     check_image_exists "$JETSON_IMAGE"
     if [ $? -eq 1 ]; then
         docker compose -f ../l4t.yaml build
@@ -120,22 +109,17 @@ esac
 bash setup.bash
 [ "$download_model" == "true" ] && bash ../../hri/packages/nlp/assets/download-model.sh
 
-# Create dirs with current user to avoid permission problems
 mkdir -p install build log ../../hri/packages/speech/assets/downloads/offline_voice/model/
 
-
-# Check if display setup is needed
 if [ ! -d "../../hri/display/dist" ] || [ ! -d "../../hri/display/node_modules" ] || [ ! -d "../../hri/display/web-ui/.next" ] || [ ! -d "../../hri/display/web-ui/node_modules" ] || [ "$build_display" == "true" ]; then
   echo "Setting up display environment..."
 
   compose_file="display.yaml"
   [ "$ENV_TYPE" == "jetson" ] && compose_file="display-l4t.yaml"
-  
+
   echo "Installing dependencies and building project inside temporary container..."
-  if [ ! -d "../../hri/display/dist" ] || [ ! -d "../../hri/display/node_modules" ] || [ ! -d "../../hri/display/web-ui/.next" ] || [ ! -d "../../hri/display/web-ui/node_modules" ] || [ "$build_display" == "true" ]; then
-    echo "Setting up display environment..."
-    docker compose -f "$compose_file" run --rm --entrypoint "" display bash -c "cd web-ui && source /opt/ros/humble/setup.bash && npm ci --silent && npm run build"
-  fi
+
+  docker compose -f "$compose_file" run --rm --entrypoint "" display bash -c "cd web-ui && source /opt/ros/humble/setup.bash && npm ci --silent && npm run build"
 fi
 
 #_________________________RUN_________________________
@@ -184,10 +168,8 @@ SOURCE_INTERFACES="source frida_interfaces_cache/install/local_setup.bash"
 IGNORE_PACKAGES="--packages-ignore frida_interfaces frida_constants xarm_msgs"
 COMMAND="$GENERATE_BAML_CLIENT && source /opt/ros/humble/setup.bash && $SOURCE_INTERFACES && colcon build $IGNORE_PACKAGES --symlink-install --packages-up-to speech nlp embeddings && source ~/.bashrc && $RUN"
 
-# echo "COMMAND= $COMMAND " >> .env
 add_or_update_variable .env "COMMAND" "$COMMAND"
 
-# Trap Ctrl+C to clean up
 cleanup() {
   [ -n "$compose_pid" ] && kill "$compose_pid" 2>/dev/null
   [ -n "$curl_pid" ] && kill "$curl_pid" 2>/dev/null
@@ -195,17 +177,16 @@ cleanup() {
 }
 trap cleanup SIGINT
 
-# Function to wait for service and launch display
+# ⭐⭐⭐ **MODIFICADO – versión correcta**
 wait_and_launch_display() {
   until curl --output /dev/null --silent --head --fail http://localhost:3000; do
-    printf '.'
     sleep 1
   done
-  if [ "$DISPLAY_TASK" == "GPSR" ]; then
-    xdg-open "http://localhost:3000/?t=GPSR"
-  elif [ "$DISPLAY_TASK" == "StoreGroceries" ]; then
-    xdg-open "http://localhost:3000/?t=StoreGroceries"
-  fi
+
+  chmod +x scripts/open-display.bash
+
+  # Pasar la task si existe
+  bash scripts/open-display.bash "$DISPLAY_TASK"
 }
 
 compose_file="docker-compose-cpu.yml"
@@ -224,7 +205,6 @@ fi
 if [ -n "$detached" ]; then
   docker compose -f "$compose_file" up -d
   [ "$open_display" == "true" ] && wait_and_launch_display
-
 else
   ROLE=$PROFILES docker compose -f "$compose_file" up &
   compose_pid=$!
@@ -234,7 +214,6 @@ else
     curl_pid=$!
   fi
 
-  # Wait for docker compose to finish, then kill the curl loop if it exists
   wait $compose_pid
   [ -n "$curl_pid" ] && kill $curl_pid 2>/dev/null
 fi
