@@ -1,19 +1,20 @@
 services:
   tts:
-    container_name: home2-hri-tts
-    image: roborregos/home2:hri-tts
+    container_name: home2-hri-tts-${ENV_TYPE:-cpu}
+    image: roborregos/home2:hri-tts-${ENV_TYPE:-cpu}
     build:
       context: ../../..
       dockerfile: docker/hri/dockerfiles/Dockerfile.tts
       args:
-        BASE_IMAGE: roborregos/home2:cpu_base
-    # BASE_IMAGE: roborregos/home2:cuda_base
+        BASE_IMAGE: roborregos/home2:${ENV_TYPE:-cpu}_base
     volumes:
       - ../../../hri/packages/speech/scripts/tts/:/app
       - ../../../hri/packages/speech/assets/downloads/offline_voice/audios/:/app/audios
       - ../../../hri/packages/speech/assets/downloads/offline_voice/model/:/home/ros/.cache/huggingface/hub
       - ~/.config/pulse:/tmp/pulse
-    user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
+    network_mode: host
+    runtime: ${RUNTIME:-}
+    user: ${LOCAL_USER_ID:-1000}:${LOCAL_GROUP_ID:-1000}
     privileged: true
     tty: true
     environment:

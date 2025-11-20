@@ -235,7 +235,7 @@ class Say(Node):
                     self.play_audio(filepath)
             else:
                 output_path = os.path.join(
-                    VOICE_DIRECTORY, f"{hash((chunk, speed))}.wav"
+                    VOICE_DIRECTORY, f"audios/{hash((chunk, speed))}.wav"
                 )
                 self.synthesize_voice_offline(
                     f"{hash((chunk, speed))}.wav", chunk, speed

@@ -9,7 +9,7 @@ services:
       dockerfile: docker/hri/dockerfiles/Dockerfile.stt-l4t
     volumes:
       - ../../../hri/packages/speech/scripts/stt/:/app
-      - ../../../hri/packages/speech/speech/:/app/speech      
+      - ../../../hri/packages/speech/speech/:/app/speech
     network_mode: host
     # Any language -> english: distil-large-v3
     # Any language -> Any language: large-v3-turbo
