@@ -2,8 +2,9 @@ services:
   l4t_base:
     build:
       context: .
-      # Dockerfile.ROS is the same for both CPU and GPU
       dockerfile: Dockerfile.ROS-l4t
       args:
         BASE_IMAGE: dustynv/l4t-pytorch:r36.4.0
+        USER_UID: ${USER_UID}
+        USER_GID: ${USER_GID}
     image: roborregos/home2:l4t_base
