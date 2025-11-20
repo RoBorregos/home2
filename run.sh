@@ -31,10 +31,10 @@ case $INPUT in
   frida_interfaces)
     run_frida_interfaces
     ;;
-  stop)
+  --stop)
     control --stop
     ;;
-  down)
+  --down)
     control --down
     ;;
   vision|manipulation|navigation|integration|hri)

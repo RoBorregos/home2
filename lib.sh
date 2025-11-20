@@ -66,23 +66,9 @@ detect_cores() {
 }
 
 control() {
-  local op=${1:-}
-  if [ -z "$op" ]; then
-    echo "Usage: control --stop|--down" >&2
-    return 2
-  fi
-
-  local op_flag msg success_msg fail_msg
-  case "$op" in
-    --stop|--down)
-      op_flag="$op"
-      msg="${op#--}"
-      ;;
-    *)
-      echo "Unsupported op: $op" >&2
-      return 2
-      ;;
-  esac
+  # No input validation required; accept whatever flag is passed and forward it.
+  local op_flag=${1:-}
+  local msg="${op_flag#--}"
 
   # TODO: instead of killing the whole tmux server, only kill home-related sessions.
   if command -v tmux >/dev/null 2>&1 && tmux ls >/dev/null 2>&1; then
@@ -90,8 +76,8 @@ control() {
   fi
 
   PARALLEL=${PARALLEL:-$(detect_cores)}
-  pids=()
-  areas_launched=()
+  local pids=()
+  local areas_launched=()
 
   # Launch each area's run.sh in parallel up to $PARALLEL children. Each area is started in its directory and passed the control flag + environment type.
   for area in ${AREAS:-}; do
@@ -107,7 +93,7 @@ control() {
   done
 
   # Wait for launched area processes and report per-area result
-  rc=0
+  local rc=0
   for i in "${!pids[@]}"; do
     pid=${pids[i]}
     area=${areas_launched[i]}
