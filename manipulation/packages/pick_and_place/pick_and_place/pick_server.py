@@ -171,7 +171,7 @@ class PickMotionServer(Node):
                     )
                     continue
 
-                grasp_pose_handler, grasp_pose_result = self.move_to_pose(ee_link_pose)
+                grasp_pose_result = self.move_to_pose(ee_link_pose)
 
                 print(f"Grasp Pose {i} result: {grasp_pose_result}")
                 if grasp_pose_result.result.success:
@@ -217,7 +217,8 @@ class PickMotionServer(Node):
         future = self._move_to_pose_action_client.send_goal_async(request)
         self.wait_for_future(future)
         action_result = future.result().get_result()
-        return future.result(), action_result
+        # return future.result(), action_result
+        return action_result
 
     def wait_for_future(self, future):
         if future is None:

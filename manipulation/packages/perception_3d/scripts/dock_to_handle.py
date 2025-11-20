@@ -8,7 +8,6 @@ from nav2_msgs.action import Dock
 from frida_interfaces.srv import DockToHandle
 
 from rclpy.qos import QoSProfile
-# import time
 
 
 class DockToHandleNode(Node):

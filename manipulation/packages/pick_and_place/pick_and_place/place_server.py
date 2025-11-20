@@ -192,16 +192,14 @@ class PlaceMotionServer(Node):
             ee_link_pose = poses[2]
             if is_shelf:
                 self.get_logger().info("Placing on shelf, pre-place pose")
-                place_pose_handler, place_pose_result = self.move_to_pose(
-                    ee_link_pre_pose
-                )
+                place_pose_result = self.move_to_pose(ee_link_pre_pose)
                 if not place_pose_result.result.success:
                     self.get_logger().error("Failed to reach pre-place pose")
                     continue
                 self.get_logger().info("Pre-place pose reached")
 
             self.get_logger().info("Placing on table, place pose")
-            place_pose_handler, place_pose_result = self.move_to_pose(ee_link_pose)
+            place_pose_result = self.move_to_pose(ee_link_pose)
             print(f"Grasp Pose {i} result: {place_pose_result}")
             if place_pose_result.result.success:
                 self.get_logger().info("Grasp pose reached")
@@ -210,9 +208,7 @@ class PlaceMotionServer(Node):
             elif is_shelf:
                 # try halfway through, but only if we are placing on shelf
                 self.get_logger().info("Placing on table, halfway")
-                place_pose_handler, place_pose_result = self.move_to_pose(
-                    ee_link_half_pose
-                )
+                place_pose_result = self.move_to_pose(ee_link_half_pose)
                 print(f"Grasp Pose {i} result: {place_pose_result}")
                 if place_pose_result.result.success:
                     self.get_logger().info("Grasp halfway pose reached")
@@ -232,9 +228,7 @@ class PlaceMotionServer(Node):
                 self.get_logger().info(
                     f"Going back to pre-place pose: {ee_link_pre_pose}"
                 )
-                place_pose_handler, place_pose_result = self.move_to_pose(
-                    ee_link_pre_pose
-                )
+                place_pose_result = self.move_to_pose(ee_link_pre_pose)
                 self.get_logger().info(f"Pre-place pose result: {place_pose_result}")
             return True
         self.get_logger().error("Failed to reach any grasp pose")
@@ -251,7 +245,8 @@ class PlaceMotionServer(Node):
         future = self._move_to_pose_action_client.send_goal_async(request)
         self.wait_for_future(future)
         action_result = future.result().get_result()
-        return future.result(), action_result
+        # return future.result(), action_result
+        return action_result
 
     def wait_for_future(self, future):
         if future is None:

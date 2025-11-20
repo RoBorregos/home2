@@ -84,13 +84,11 @@ class DockingPoseRecorder(Node):
             self.get_logger().warn(f"TF lookup or processing failed: {e}")
 
 
-print("DockingPoseRecorder initialized. Waiting for /door_handle_pose...")
-
-
 def main(args=None):
     print("Starting DockingPoseRecorder...")
     rclpy.init(args=args)
     node = DockingPoseRecorder()
+    print("DockingPoseRecorder initialized. Waiting for /door_handle_pose...")
     rclpy.spin(node)
     node.destroy_node()
     rclpy.shutdown()

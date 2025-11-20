@@ -163,7 +163,7 @@ class PourMotionServer(Node):
             self.get_logger().info(f"Pour pose: {new_pose.pose}")
             # call the move_to_pose function
             try:
-                goal_handle_result, action_result = self.move_to_pose(
+                action_result = self.move_to_pose(
                     new_pose,
                     useConstraint=True,
                     planning_time=10.0,
@@ -252,9 +252,6 @@ class PourMotionServer(Node):
 
     def transform_pose_to_gripper_center(self, pose):
         offset_distance = -0.15  # Desired distance in meters along the local z-axis
-
-        offset_distance
-
         # Compute the offset along the local z-axis
         quat = [
             pose.pose.orientation.x,
@@ -385,7 +382,8 @@ class PourMotionServer(Node):
         future = self._move_to_pose_action_client.send_goal_async(request)
         self.wait_for_future(future)
         action_result = future.result().get_result()
-        return future.result(), action_result
+        # return future.result(), action_result
+        return action_result
 
     def wait_for_future(self, future):
         if future is None:
