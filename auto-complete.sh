@@ -5,6 +5,7 @@ _run_sh_autocomplete() {
     _init_completion || return
 
     local areas="manipulation navigation hri vision integration frida_interfaces"
+    local inputs="--stop --down"
     local tasks="--carry --receptionist --storing-groceries --gpsr --moondream --egpsr --clean-table --hand --restaurant"
     local flags="--build --build-image --recreate --down --stop --help -h -d"
     
@@ -21,7 +22,7 @@ _run_sh_autocomplete() {
     local options
     case ${COMP_CWORD} in
         1)
-            options="$areas"
+            options="$areas $inputs"
             ;;
         2)
             options="$tasks"
