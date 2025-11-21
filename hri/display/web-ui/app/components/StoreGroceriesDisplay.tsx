@@ -27,11 +27,15 @@ export default function StoringGroceriesVideoDisplay() {
   );
 
   const { connected } = useWebSocket({
-    onAddMessage: (_type: string, _data: any) => {},
-    onAudioStateChange: (_event: string, _data: any) => {},
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    onAddMessage: (_type: string, _data: unknown) => {},
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    onAudioStateChange: (_event: string, _data: unknown) => {},
     onVideoTopicChange: setAudioTopic,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     onQuestionReceived: (_question: string) => {},
-    onMapReceived: (_map: any) => {},
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    onMapReceived: (_map: unknown) => {},
   });
 
   return (
