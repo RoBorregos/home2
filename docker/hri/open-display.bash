@@ -1,2 +1,7 @@
+#!/bin/bash
+
 export DISPLAY=:0
-nohup firefox localhost:3000 --kiosk --new-window > /dev/null 2>&1 &
+
+TASK=${1:-default}
+
+nohup firefox "http://localhost:3000/?task=$TASK" --kiosk --new-window > /dev/null 2>&1 &

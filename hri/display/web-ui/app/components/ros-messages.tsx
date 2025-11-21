@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
+import { useRouter } from "next/router";
 import { MessageCircle } from "lucide-react";
 import dynamic from "next/dynamic";
 
@@ -15,6 +16,17 @@ import { useWebSocket } from "../hooks/useWebSocket";
 const MjpegStream = dynamic(() => import("./video"), { ssr: false });
 
 export default function RosMessagesDisplay() {
+  const router = useRouter();
+  const [task, setTask] = useState<string>("default");
+
+  // Detect task from query param or environment variable
+  useEffect(() => {
+  if (router.isReady) {
+    const taskFromQuery = router.query.task as string | undefined;
+    setTask(taskFromQuery || process.env.NEXT_PUBLIC_DISPLAY_TASK || "default");
+    }
+  }, [router.isReady, router.query.task]);
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentMessage, setCurrentMessage] = useState<Message | null>(null);
   const [audioState, setAudioState] = useState<AudioState>({

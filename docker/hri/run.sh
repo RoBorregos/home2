@@ -3,10 +3,7 @@
 ARGS=("$@")  # Save all arguments in an array
 TASK=${ARGS[0]}
 
-export NEXT_PUBLIC_DISPLAY_TASK=$TASK_NAME
-if [ "$build_display" != "true" ]; then
-  build_display="true"
-fi
+
 
 # IMPORTANT: Also edit auto-complete.sh to add new arguments
 detached=""
@@ -18,25 +15,27 @@ DISPLAY_TASK=""
 
 # Check if one of the arguments is --detached, --build-display, or --open-display
 for arg in "${ARGS[@]}"; do
-  case "$arg" in
-    -d) detached="-d" ;;
-    --build-display) build_display="true" ;;
-    --open-display) open_display="true" ;;
-    --download-model) download_model="true" ;;
-    -h|--help) ;; # handled elsewhere
-    --display-gpsr|--gpsr-display|--open-gpsr-display)
-      DISPLAY_TASK="GPSR"
-      display_mode="gpsr"
-      ;;
-    --display-store-groceries|--groceries-display|--open-groceries-display|--display-grocery|--display-store)
-      DISPLAY_TASK="StoreGroceries"
-      display_mode="groceries"
-      ;;
-    --display=*)
-      DISPLAY_TASK="${arg#--display=}"
-      display_mode="$(echo "${DISPLAY_TASK}" | tr '[:upper:]' '[:lower:]')"
-      ;;
-  esac
+    case "$arg" in
+        -d) detached="-d" ;;
+        --build-display) build_display="true" ;;
+        --open-display) open_display="true" ;;
+        --download-model) download_model="true" ;;
+        --display-gpsr|--gpsr-display|--open-gpsr-display)
+            DISPLAY_TASK="GPSR"
+            display_mode="gpsr"
+            open_display="true"
+            ;;
+        --display-store-groceries|--groceries-display|--open-groceries-display|--display-store)
+            DISPLAY_TASK="StoreGroceries"
+            display_mode="groceries"
+            open_display="true"
+            ;;
+        --display=*)
+            DISPLAY_TASK="${arg#--display=}"
+            display_mode="$(echo "${DISPLAY_TASK}" | tr '[:upper:]' '[:lower:]')"
+            open_display="true"
+            ;;
+    esac
 done
 
 #_________________________BUILD_________________________
@@ -163,6 +162,14 @@ esac
 COMPOSE_PROFILES=$(IFS=, ; echo "${PROFILES[*]}")
 add_or_update_variable .env "COMPOSE_PROFILES" "$COMPOSE_PROFILES"
 
+# Function to wait for frontend and open display
+wait_and_launch_display() {
+    until curl --output /dev/null --silent --head --fail http://localhost:3000; do sleep 1; done
+    chmod +x scripts/open-display.bash
+    # Open display passing task as query param
+    bash scripts/open-display.bash "$DISPLAY_TASK"
+}
+
 GENERATE_BAML_CLIENT="baml-cli generate --from /workspace/src/task_manager/scripts/utils/baml_src/"
 SOURCE_INTERFACES="source frida_interfaces_cache/install/local_setup.bash"
 IGNORE_PACKAGES="--packages-ignore frida_interfaces frida_constants xarm_msgs"
@@ -177,17 +184,6 @@ cleanup() {
 }
 trap cleanup SIGINT
 
-# ⭐⭐⭐ **MODIFICADO – versión correcta**
-wait_and_launch_display() {
-  until curl --output /dev/null --silent --head --fail http://localhost:3000; do
-    sleep 1
-  done
-
-  chmod +x scripts/open-display.bash
-
-  # Pasar la task si existe
-  bash scripts/open-display.bash "$DISPLAY_TASK"
-}
 
 compose_file="docker-compose-cpu.yml"
 [ "$ENV_TYPE" == "gpu" ] && compose_file="docker-compose-gpu.yml"
