@@ -8,7 +8,7 @@ export default function ClientPage() {
   const task =
     searchParams?.get("task") ||
     process.env.NEXT_PUBLIC_DISPLAY_TASK ||
-    "GPSR";
+    "Storing-groceries";
 
   return <ClientTaskDisplay initialTask={task} />;
 }
