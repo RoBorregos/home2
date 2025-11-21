@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { MessageCircle } from "lucide-react";
+import { useRouter } from "next/router";
 import dynamic from "next/dynamic";
 
 import { Message, AudioState, MapData, mapSchema } from "../types";
@@ -15,6 +16,18 @@ import { useWebSocket } from "../hooks/useWebSocket";
 const MjpegStream = dynamic(() => import("./video"), { ssr: false });
 
 export default function GPSRDisplay() {
+  const router = useRouter();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [task, setTask] = useState<string>("default");
+
+  // Detect task from query param or environment variable
+  useEffect(() => {
+  if (router.isReady) {
+    const taskFromQuery = router.query.task as string | undefined;
+    setTask(taskFromQuery || process.env.NEXT_PUBLIC_DISPLAY_TASK || "default");
+    }
+  }, [router.isReady, router.query.task]);
+  
   const [messages, setMessages] = useState<Message[]>([]);
   const [currentMessage, setCurrentMessage] = useState<Message | null>(null);
   const [audioState, setAudioState] = useState<AudioState>({

@@ -17,6 +17,7 @@ const MjpegStream = dynamic(() => import("./video"), { ssr: false });
 
 export default function RosMessagesDisplay() {
   const router = useRouter();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [task, setTask] = useState<string>("default");
 
   // Detect task from query param or environment variable
