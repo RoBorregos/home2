@@ -16,7 +16,6 @@ WORKDIR /workspace/utils
 RUN baml-cli generate
 
 WORKDIR /workspace
-# 
 
 # CV-bridge
 RUN apt update

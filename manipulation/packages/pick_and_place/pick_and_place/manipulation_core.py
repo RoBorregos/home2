@@ -185,6 +185,14 @@ class ManipulationCore(Node):
         else:
             self.get_logger().warn("Octomap clear service not available")
 
+    #  def clear_octomap(self):
+    #     """Clear the octomap."""
+    #     request = Empty.Request()
+    #     self.get_logger().info("Clearing octomap")
+    #     future = self._clear_octomap_client.call_async(request)
+    #     wait_for_future(future, timeout=2.0)
+    #     return True
+
     def pick_execute(self, object_name=None, object_point=None, pick_params=None):
         self.get_logger().info(f"Goal: {object_point}")
         self.get_logger().info("Extracting object cloud")
@@ -218,6 +226,7 @@ class ManipulationCore(Node):
             if not result:
                 self.get_logger().error("Place failed")
                 return False
+            self.get_logger().info("[SUCCESS] Place executed successfully")
             return result
         except Exception as e:
             self.get_logger().error(f"Place exception: {e}")
@@ -320,14 +329,6 @@ class ManipulationCore(Node):
         future = self._remove_collision_object_client.call_async(request)
         wait_for_future(future)
         return future.result().success
-
-    # def clear_octomap(self):
-    #     """Clear the octomap."""
-    #     request = Empty.Request()
-    #     self.get_logger().info("Clearing octomap")
-    #     future = self._clear_octomap_client.call_async(request)
-    #     wait_for_future(future)
-    #     return True
 
     def scan_environment(self):
         """Scan the environment and update the octomap."""

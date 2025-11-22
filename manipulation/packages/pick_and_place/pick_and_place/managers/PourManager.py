@@ -23,7 +23,7 @@ import copy
 # path, is reversible
 CFG_PATHS = [
     [
-        "/workspace/src/home2/manipulation/packages/arm_pkg/config/frida_eigen_params_custom_gripper_testing.cfg",
+        "/workspace/src/manipulation/packages/arm_pkg/config/frida_eigen_params_custom_gripper_testing.cfg",
         True,
     ],
 ]
