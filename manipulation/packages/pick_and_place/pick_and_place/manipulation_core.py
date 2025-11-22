@@ -167,6 +167,14 @@ class ManipulationCore(Node):
 
             self.octomap_paused = True
 
+    def pause_octomap_service(self):
+        """Backward-compatible wrapper for pausing octomap updates.
+
+        Some callers expect a `pause_octomap_service` method name. Delegate
+        to `pause_octomap` to keep behavior consistent.
+        """
+        self.pause_octomap()
+
     def resume_octomap_service(self):
         if self.octomap_paused:
             self.get_logger().info("Resuming octomap updates")
