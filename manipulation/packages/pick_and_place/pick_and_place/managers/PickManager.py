@@ -42,8 +42,7 @@ class PickManager:
         """Pausar actualizaciones del octomap durante movimiento"""
         if not self.octomap_paused:
             self.node.get_logger().info("Pausing octomap updates during motion")
-            # Llamar servicio para pausar octomap
-            self.node.pause_octomap_service()
+            self.node.pause_octomap()
             self.octomap_paused = True
 
     def resume_octomap_updates(self, delay=2.0):
@@ -54,7 +53,7 @@ class PickManager:
             time.sleep(delay)
             if self.octomap_paused:
                 self.node.get_logger().info("Resuming octomap updates")
-                self.node.resume_octomap_service()
+                self.node.resume_octomap()
                 self.octomap_paused = False
 
         thread = threading.Thread(target=delayed_resume)

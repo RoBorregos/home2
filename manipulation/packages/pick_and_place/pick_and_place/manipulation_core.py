@@ -167,15 +167,12 @@ class ManipulationCore(Node):
 
             self.octomap_paused = True
 
-    def pause_octomap_service(self):
-        """Backward-compatible wrapper for pausing octomap updates.
+    def resume_octomap(self):
+        """Resume octomap updates (canonical name).
 
-        Some callers expect a `pause_octomap_service` method name. Delegate
-        to `pause_octomap` to keep behavior consistent.
+        Keep a single implementation and provide a backwards-compatible
+        alias for callers that use the older `resume_octomap_service` name.
         """
-        self.pause_octomap()
-
-    def resume_octomap_service(self):
         if self.octomap_paused:
             self.get_logger().info("Resuming octomap updates")
 
@@ -192,14 +189,6 @@ class ManipulationCore(Node):
                 self.get_logger().warn("Octomap clear service timeout")
         else:
             self.get_logger().warn("Octomap clear service not available")
-
-    #  def clear_octomap(self):
-    #     """Clear the octomap."""
-    #     request = Empty.Request()
-    #     self.get_logger().info("Clearing octomap")
-    #     future = self._clear_octomap_client.call_async(request)
-    #     wait_for_future(future, timeout=2.0)
-    #     return True
 
     def pick_execute(self, object_name=None, object_point=None, pick_params=None):
         self.get_logger().info(f"Goal: {object_point}")
