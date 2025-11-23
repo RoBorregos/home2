@@ -8,7 +8,7 @@ services:
         BASE_IMAGE: roborregos/home2:cuda_base
     image: roborregos/home2:manipulation-cuda
     volumes:
-      - ../../:/workspace/src/home2
+      - ../../:/workspace/src/
       - /dev:/dev
       - /tmp:/tmp
       - /tmp/.X11-unix:/tmp/.X11-unix
@@ -17,6 +17,7 @@ services:
       - ./log:/workspace/log
       - ../frida_interfaces_cache:/workspace/frida_interfaces_cache
       - ./.bash_aliases:/home/ros/.bash_aliases
+      - ./setup_gpd.sh:/home/ros/setup_gpd.sh
     deploy:
       resources:
         reservations:
