@@ -61,6 +61,12 @@ def launch_setup(context, *args, **kwargs):
     use_sim_time = LaunchConfiguration("use_sim_time", default=False)
     moveit_config_dump = LaunchConfiguration("moveit_config_dump")
 
+    clean_logs = LaunchConfiguration("clean_logs", default="true")
+
+    log_args = []
+    if clean_logs.perform(context).lower() == "true":
+        log_args = ["--ros-args", "--log-level", "WARN"]
+
     moveit_config_dump = moveit_config_dump.perform(context)
     moveit_config_dict = yaml.load(moveit_config_dump, Loader=yaml.FullLoader)
     moveit_config_package_name = "xarm_moveit_config"
@@ -78,6 +84,7 @@ def launch_setup(context, *args, **kwargs):
         package="moveit_ros_move_group",
         executable="move_group",
         output="screen",
+        arguments=log_args,
         parameters=[
             moveit_config_dict,
             {"use_sim_time": use_sim_time},
@@ -99,7 +106,7 @@ def launch_setup(context, *args, **kwargs):
         executable="rviz2",
         name="rviz2",
         output="screen",
-        arguments=["-d", rviz_config_file],
+        arguments=["-d", rviz_config_file] + log_args,
         parameters=[
             {
                 "robot_description": moveit_config_dict["robot_description"],
@@ -137,7 +144,7 @@ def launch_setup(context, *args, **kwargs):
         executable="static_transform_publisher",
         name="static_transform_publisher",
         output="screen",
-        arguments=args,
+        arguments=args + log_args,
         parameters=[{"use_sim_time": use_sim_time}],
     )
 
