@@ -53,6 +53,8 @@ from pick_and_place.managers.PlaceManager import PlaceManager
 from pick_and_place.managers.PourManager import PourManager
 from frida_interfaces.msg import PickResult
 import time
+from lifecycle_msgs.srv import ChangeState
+from lifecycle_msgs.msg import Transition
 
 # tf buffer
 from tf2_ros import Buffer, TransformListener
@@ -153,6 +155,16 @@ class ManipulationCore(Node):
 
         self.octomap_clear_client = self.create_client(Empty, "/clear_octomap")
 
+        # Candidate lifecycle change_state services for octomap-related nodes.
+        # We'll try these in order and use the first that responds.
+        self._octomap_lifecycle_candidates = [
+            "/octomap_server/change_state",
+            "/octomap/change_state",
+            "/move_group/change_state",
+            "/move_group/octomap_pc_updater/change_state",
+            "/move_group/octomap_server/change_state",
+        ]
+
         self.declare_parameter("octomap_update_during_motion", False)
         self.declare_parameter("octomap_update_rate_slow", 0.2)
         self.declare_parameter("octomap_update_rate_normal", 1.0)
@@ -164,6 +176,31 @@ class ManipulationCore(Node):
     def pause_octomap(self):
         if not self.octomap_paused:
             self.get_logger().info("Pausing octomap")
+            # Try to transition a lifecycle-enabled octomap node to INACTIVE
+            deactivated = False
+            for svc in self._octomap_lifecycle_candidates:
+                try:
+                    client = self.create_client(ChangeState, svc)
+                    if not client.wait_for_service(timeout_sec=0.5):
+                        continue
+                    req = ChangeState.Request()
+                    req.transition.id = Transition.TRANSITION_DEACTIVATE
+                    future = client.call_async(req)
+                    future = wait_for_future(future, timeout=1.0)
+                    if future is not None:
+                        self.get_logger().info(f"Octomap lifecycle deactivated via {svc}")
+                        deactivated = True
+                        break
+                except Exception as e:
+                    self.get_logger().warn(f"Lifecycle pause attempt on {svc} failed: {e}")
+
+            if not deactivated:
+                # Fallback: no lifecycle service found; we keep the boolean flag so
+                # other code knows we intend to pause, but this does not stop the
+                # octomap server unless it listens to this flag.
+                self.get_logger().warn(
+                    "No lifecycle change_state service found for octomap; pause is advisory only"
+                )
 
             self.octomap_paused = True
 
@@ -175,6 +212,29 @@ class ManipulationCore(Node):
         """
         if self.octomap_paused:
             self.get_logger().info("Resuming octomap updates")
+
+            # Try to transition a lifecycle-enabled octomap node back to ACTIVE
+            reactivated = False
+            for svc in self._octomap_lifecycle_candidates:
+                try:
+                    client = self.create_client(ChangeState, svc)
+                    if not client.wait_for_service(timeout_sec=0.5):
+                        continue
+                    req = ChangeState.Request()
+                    req.transition.id = Transition.TRANSITION_ACTIVATE
+                    future = client.call_async(req)
+                    future = wait_for_future(future, timeout=1.0)
+                    if future is not None:
+                        self.get_logger().info(f"Octomap lifecycle activated via {svc}")
+                        reactivated = True
+                        break
+                except Exception as e:
+                    self.get_logger().warn(f"Lifecycle resume attempt on {svc} failed: {e}")
+
+            if not reactivated:
+                self.get_logger().warn(
+                    "No lifecycle change_state service found for octomap; resume is advisory only"
+                )
 
             self.octomap_paused = False
 
