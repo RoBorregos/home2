@@ -1,10 +1,10 @@
 services:
   postgres:
-    image: roborregos/home2:hri-postgres
+    image: roborregos/home2:hri-postgres-${ENV_TYPE:-cpu}
     build:
       context: ..
       dockerfile: dockerfiles/Dockerfile.postgres
-    container_name: home2-hri-postgres
+    container_name: home2-hri-postgres-${ENV_TYPE:-cpu}
     restart: "no"
     environment:
       POSTGRES_USER: rbrgs

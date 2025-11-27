@@ -3,6 +3,7 @@ from frida_interfaces.srv import PickPerceptionService, DetectionHandler
 from geometry_msgs.msg import PointStamped
 from std_srvs.srv import SetBool
 from pick_and_place.utils.grasp_utils import get_grasps
+from pick_and_place.utils.perception_utils import get_object_cluster
 from frida_interfaces.action import PickMotion
 from frida_interfaces.msg import PickResult
 from frida_motion_planning.utils.service_utils import (
@@ -14,14 +15,16 @@ import copy
 from scipy.spatial.transform import Rotation as R
 from sensor_msgs_py import point_cloud2
 import numpy as np
+from pick_and_place.utils.perception_utils import get_object_point
+
 
 CFG_PATHS = [
     [
-        "/workspace/src/home2/manipulation/packages/arm_pkg/config/frida_eigen_params_custom_gripper_testing.cfg",
+        "/workspace/src/manipulation/packages/arm_pkg/config/frida_eigen_params_custom_gripper_testing.cfg",
         True,
     ],
     [
-        "/workspace/src/home2/manipulation/packages/arm_pkg/config/frida_eigen_params_custom_gripper.cfg",
+        "/workspace/src/manipulation/packages/arm_pkg/config/frida_eigen_params_custom_gripper.cfg",
         False,
     ],
 ]
@@ -55,7 +58,9 @@ class PickManager:
                 self.node.get_logger().info(f"Going for point: {point}")
             elif object_name is not None and object_name != "":
                 self.node.get_logger().info(f"Going for object name: {object_name}")
-                point = self.get_object_point(object_name)
+                point = get_object_point(
+                    object_name, self.node.detection_handler_client
+                )
                 if point.header.frame_id == "":
                     self.node.get_logger().error(
                         f"Object {object_name} not found, please provide a point"
@@ -68,8 +73,12 @@ class PickManager:
                 self.node.get_logger().error("No object name or point provided")
                 return False, None
 
+            self.node.get_logger().info(f"Object in point: {point}")
+
             # Call Perception Service to get object cluster and generate collision objects
-            object_cluster = self.get_object_cluster(point)
+            object_cluster = get_object_cluster(
+                point, self.node.pick_perception_3d_client
+            )
             if object_cluster is not None:
                 self.node.get_logger().info("Object cluster detected")
                 break

@@ -14,6 +14,11 @@ elif command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi >/dev/null 2>&1; then
 fi
 echo "Detected environment: $ENV_TYPE"
 
+# Reset .env
+echo "" > docker/.env
+add_or_update_variable docker/.env "USER_UID" "$(id -u)"
+add_or_update_variable docker/.env "USER_GID" "$(id -g)"
+
 # Check and build base image if it doesn't exist
 check_image_exists "roborregos/home2:${ENV_TYPE}_base"
 if [ $? -eq 1 ]; then
