@@ -1,22 +1,8 @@
 #!/bin/bash
 source lib.sh
 
-AREA=$1
-# check arguments passed as --help or -h
-if [ "$AREA" == "--help" ] || [ "$AREA" == "-h" ] || [ -z "$AREA" ]; then
-  echo "Usage: ./run.sh [area] [--task] [--flags]"
-  echo "Example: ./run.sh hri --receptionist --open-display"
-  exit 0
-fi
-
-case $AREA in
-  vision|manipulation|navigation|integration|hri|frida_interfaces)
-    ;;
-  *)
-    echo "Invalid service name provided. Valid args are: vision, manipulation, navigation, integration, hri, frida_interfaces"
-    exit 1
-    ;;
-esac
+INPUT=$1
+AREAS="vision manipulation navigation integration hri"
 
 # Check type of environment (cpu, cuda, or l4t), default cpu
 ENV_TYPE=cpu
@@ -39,18 +25,28 @@ if [ $? -eq 1 ]; then
   docker compose -f docker/${ENV_TYPE}.yaml build
 fi
 
-# Run the selected area
-if [ "$AREA" = "frida_interfaces" ]; then
-  echo "Running frida_interfaces_cache to build frida_interfaces"
-  docker compose -f docker/frida_interfaces_cache/docker-compose-${ENV_TYPE}.yaml run --rm frida_interfaces_cache
-else
-  # If frida_interfaces_cache hasn't been built yet, build it first
-  if [ ! -d "docker/frida_interfaces_cache/build" ]; then
-    echo "Cache directory missing. Running frida_interfaces_cache to build frida_interfaces"
-    docker compose -f docker/frida_interfaces_cache/docker-compose-${ENV_TYPE}.yaml run --rm frida_interfaces_cache
-  fi
-
-  echo "Running image from area: $AREA"
-  cd "docker/$AREA" || { echo "Error: failed to cd into docker/$AREA" >&2; exit 1; }
-  ./run.sh "${@:2}" ${ENV_TYPE}
+# check arguments passed as --help or -h
+if [ "$INPUT" == "--help" ] || [ "$INPUT" == "-h" ] || [ -z "$INPUT" ]; then
+  echo "Usage: ./run.sh [area] [--task] [--flags]"
+  echo "Example: ./run.sh hri --receptionist --open-display"
+  exit 0
 fi
+
+case $INPUT in
+  frida_interfaces)
+    run_frida_interfaces
+    ;;
+  --stop)
+    control --stop
+    ;;
+  --down)
+    control --down
+    ;;
+  vision|manipulation|navigation|integration|hri)
+    run_area "$@"
+    ;;
+  *)
+    echo "Invalid service name provided. Valid args are: vision, manipulation, navigation, integration, hri, frida_interfaces, stop, down"
+    exit 1
+    ;;
+esac
