@@ -6,6 +6,8 @@ if [[ -n "${__HOME2_LIB_SOURCED:-}" ]]; then
 fi
 __HOME2_LIB_SOURCED=1
 
+AREAS="vision manipulation navigation integration hri"
+
 # --- helpers ---
 
 check_image_exists() {
@@ -107,4 +109,15 @@ control() {
 
   echo "All ${msg}s attempted."
   return $rc
+}
+
+run_task() {
+  local TASK=$1
+
+  for area in $AREAS; do
+    SESSION_NAME="${area}-${TASK:1}"
+
+    tmux new-session -d -s "$SESSION_NAME"
+    tmux send-keys -t "$SESSION_NAME" "bash run.sh $area $*" C-m
+  done
 }

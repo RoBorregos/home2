@@ -2,11 +2,9 @@
 source lib.sh
 
 INPUT=$1
-AREAS="vision manipulation navigation integration hri"
 
 # Check type of environment (cpu, cuda, or l4t), default cpu
 ENV_TYPE=cpu
-
 if [ -f /etc/nv_tegra_release ]; then
   ENV_TYPE=l4t
 elif command -v nvidia-smi >/dev/null 2>&1 && nvidia-smi >/dev/null 2>&1; then
@@ -36,17 +34,13 @@ case $INPUT in
   frida_interfaces)
     run_frida_interfaces
     ;;
-  --stop)
-    control --stop
-    ;;
-  --down)
-    control --down
-    ;;
   vision|manipulation|navigation|integration|hri)
     run_area "$@"
     ;;
+  --stop|--down)
+    control "$INPUT"
+    ;;
   *)
-    echo "Invalid service name provided. Valid args are: vision, manipulation, navigation, integration, hri, frida_interfaces, stop, down"
-    exit 1
+    run_task "$@"
     ;;
 esac
