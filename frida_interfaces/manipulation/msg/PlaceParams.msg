@@ -4,4 +4,5 @@ float32 table_height_tolerance
 bool is_shelf
 
 string close_to
+string special_request
 geometry_msgs/PoseStamped forced_pose

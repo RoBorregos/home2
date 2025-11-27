@@ -6,4 +6,6 @@ services:
       dockerfile: Dockerfile.ROS
       args:
         BASE_IMAGE: ubuntu:22.04
+        USER_UID: ${USER_UID}
+        USER_GID: ${USER_GID}
     image: roborregos/home2:cpu_base

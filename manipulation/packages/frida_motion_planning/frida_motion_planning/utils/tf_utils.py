@@ -8,7 +8,7 @@ import tf2_ros
 import rclpy
 from tf2_ros import TransformException, Buffer
 from typing import Tuple
-from tf2_geometry_msgs import do_transform_pose
+from tf2_geometry_msgs import do_transform_pose, do_transform_point
 
 
 def quat_to_rpy(quat):
@@ -172,3 +172,39 @@ def transform_pose(
             )
 
     return success, transformed_pose
+
+
+def transform_point(
+    point: PointStamped, target_frame: str, tf_buffer: Buffer
+) -> Tuple[bool, PointStamped]:
+    """
+    Transforms a point to a target frame using ROS2 tf2.
+    Args:
+        point (PointStamped): The point to transform.
+        target_frame (str): The target frame to transform the point to.
+        tf_buffer (Buffer): The tf2 buffer to use for looking up transforms.
+    Returns:
+        PointStamped: The transformed point.
+    """
+    success = False
+    transformed_point = PointStamped()
+    for i in range(5):
+        try:
+            # Wait for the transform to be available
+            t = tf_buffer.lookup_transform(
+                target_frame,
+                point.header.frame_id,
+                tf2_ros.Time(),
+                timeout=rclpy.duration.Duration(seconds=3.0),
+            )
+            transformed_point = do_transform_point(point, t)
+            transformed_point.header.frame_id = target_frame
+            success = True
+        except TransformException as e:
+            print(
+                f"Transform from {point.header.frame_id} to {target_frame} not available: {e}"
+            )
+        except Exception as e:
+            print(f"An error occurred while transforming point: {e}")
+
+    return success, transformed_point
