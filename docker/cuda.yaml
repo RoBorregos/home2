@@ -6,4 +6,6 @@ services:
       dockerfile: Dockerfile.ROS
       args:
         BASE_IMAGE: nvidia/cuda:11.8.0-devel-ubuntu22.04
+        USER_UID: ${USER_UID}
+        USER_GID: ${USER_GID}
     image: roborregos/home2:cuda_base

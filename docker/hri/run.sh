@@ -78,11 +78,29 @@ elif [ "${PULL_IMAGE:-}" = "true" ]; then
   fi
 fi
 
-bash scripts/setup.bash
+# Read .env if it exists and export variables
+[ -f .env ] && { set -a; source .env; set +a; }
+
+# Run setup if .env doesn't indicate it has been done
+if [ -z "${SETUP_DONE:-}" ]; then
+  echo "Running setup..."
+  if bash scripts/setup.bash; then
+    export SETUP_DONE=true
+    add_or_update_variable .env "SETUP_DONE" "true"
+  else
+    echo "Error: setup failed" >&2
+    exit 1
+  fi
+else
+  export SETUP_DONE=true
+fi
+
 [ "$DOWNLOAD_MODEL" == "true" ] && bash ../../hri/packages/nlp/assets/download-model.sh
 
 # Create dirs with current user to avoid permission problems
-mkdir -p install build log ../../hri/packages/speech/assets/downloads/offline_voice/model/
+mkdir -p install build log \
+  ../../hri/packages/speech/assets/downloads/offline_voice/model/ \
+  ../../hri/packages/speech/assets/downloads/offline_voice/audios/
 
 # Reset .env
 echo "" > compose/.env
@@ -91,16 +109,21 @@ echo "" > compose/.env
 add_or_update_variable compose/.env "LOCAL_USER_ID" "$(id -u)"
 add_or_update_variable compose/.env "LOCAL_GROUP_ID" "$(id -g)"
 
+# Set environment type and runtime
+add_or_update_variable compose/.env "ENV_TYPE" "$ENV_TYPE"
+if [ "$ENV_TYPE" != "cpu" ]; then
+  add_or_update_variable compose/.env "RUNTIME" "nvidia"
+fi
+
+# If setup was done before persist it again now that .env has been reset
+if [ "${SETUP_DONE:-}" = "true" ]; then
+  add_or_update_variable .env "SETUP_DONE" "true"
+fi
+
 # Check if display setup is needed
 if [ ! -d "../../hri/display/dist" ] || [ ! -d "../../hri/display/node_modules" ] || [ ! -d "../../hri/display/web-ui/.next" ] || [ ! -d "../../hri/display/web-ui/node_modules" ] || [ "$BUILD_DISPLAY" == "true" ]; then
-  echo "Setting up display environment..."
-
-  compose_file="compose/display.yaml"
-  service="display"
-  [ "$ENV_TYPE" == "l4t" ] && compose_file="compose/display-l4t.yaml" && service="display-l4t"
-  
   echo "Installing dependencies and building project inside temporary container..."
-  docker compose -f "$compose_file" run --entrypoint "" "$service" bash -c "source /opt/ros/humble/setup.bash && npm run build"
+  docker compose -f compose/display.yaml run $BUILD_IMAGE --rm --entrypoint "" display bash -c "source /opt/ros/humble/setup.bash && npm run build"
 fi
 
 #_________________________RUN_________________________
@@ -141,6 +164,7 @@ add_or_update_variable compose/.env "COMPOSE_PROFILES" "$COMPOSE_PROFILES"
 
 COMMAND="$GENERATE_BAML_CLIENT && $SOURCE_ROS && $SOURCE_INTERFACES && $BUILD_COMMAND source ~/.bashrc && $RUN"
 add_or_update_variable compose/.env "COMMAND" "$COMMAND"
+add_or_update_variable compose/.env "ROLE" "${PROFILES[0]}"
 
 cleanup() {
   # Ensure the process is not left running
