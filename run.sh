@@ -39,6 +39,10 @@ case $INPUT in
   --stop)
     control --stop
     ;;
+  --upload-image)
+    upload_images "docker/${ENV_TYPE}.yaml"
+    exit $?
+    ;;
   --down)
     control --down
     ;;

@@ -11,7 +11,6 @@ DETACHED=""
 BUILD=""
 BUILD_IMAGE=""
 UPLOAD_IMAGE=""
-PULL_IMAGE=""
 
 COMPOSE="docker-compose.yaml"
 
@@ -41,28 +40,13 @@ for arg in "${ARGS[@]}"; do
     "--upload-image")
         UPLOAD_IMAGE="true"
         ;;
-    "--pull-image")
-        PULL_IMAGE="true"
-        ;;
     esac
 done
 
 #_________________________SETUP_________________________
 if [ "$UPLOAD_IMAGE" = "true" ]; then
-  upload_images "$COMPOSE"
-  exit $?
-elif [ "${PULL_IMAGE:-}" = "true" ]; then
-  if [ -n "$COMPOSE" ] && [ -f "$COMPOSE" ]; then
-    echo "Pull flag set: pulling prebuilt images referenced in $COMPOSE ..."
-    if pull_image --compose "$COMPOSE"; then
-      echo "Pulled images successfully — skipping local image builds."
-      BUILD_IMAGE=""
-    else
-      echo "Pull failed. Falling back to local build (if requested)." >&2
-    fi
-  else
-    echo "Compose file not found; cannot pull images." >&2
-  fi
+    upload_images "$COMPOSE"
+    exit $?
 fi
 
 # Reset .env
