@@ -14,6 +14,7 @@ BUILD_IMAGE=""
 BUILD_DISPLAY=""
 OPEN_DISPLAY=""
 DOWNLOAD_MODEL=""
+REGENERATE_DB=""
 
 COMPOSE="compose/docker-compose-${ENV_TYPE}.yml"
 
@@ -49,6 +50,9 @@ for arg in "${ARGS[@]}"; do
     "--download-model")
         DOWNLOAD_MODEL="true"
         ;;
+    "--regenerate-db")
+        REGENERATE_DB="true"
+        ;;
   esac
 done
 
@@ -72,6 +76,43 @@ else
 fi
 
 [ "$DOWNLOAD_MODEL" == "true" ] && bash ../../hri/packages/nlp/assets/download-model.sh
+
+# Regenerate database if flag is set
+if [ "$REGENERATE_DB" == "true" ]; then
+  echo "Regenerating HRI Database" >&2
+  
+  if ! python3 ../../hri/packages/embeddings/scripts/create_sql_dump.py; then
+    echo "Error: Failed to generate SQL dumps" >&2
+    exit 1
+  fi
+  
+  docker compose -f "$COMPOSE" down -v hri-postgres 2>/dev/null || true
+  if [ $? -ne 0 ]; then
+    echo "Warning: Could not stop postgres cleanly, attempting to remove volume"
+    docker volume rm "hri_hri-postgres-volume" 2>/dev/null || true
+  fi
+  
+  docker compose -f "$COMPOSE" up -d --build hri-postgres
+  
+  # Wait for PostgreSQL to be ready
+  POSTGRES_READY=false
+  MAX_ATTEMPTS=15
+  
+  for attempt in $(seq 1 $MAX_ATTEMPTS); do
+    if docker compose -f "$COMPOSE" exec -T hri-postgres pg_isready -U rbrgs > /dev/null 2>&1; then
+      POSTGRES_READY=true
+      break
+    fi
+    sleep 1
+  done
+  
+  if [ "$POSTGRES_READY" = "false" ]; then
+    echo "Error: Postgres failed to start" >&2
+    exit 1
+  fi
+  
+  echo "Database regeneration complete" >&2
+fi
 
 # Create dirs with current user to avoid permission problems
 mkdir -p install build log \
