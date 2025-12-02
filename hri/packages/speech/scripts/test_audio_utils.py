@@ -6,6 +6,7 @@ Usage:
 
 It will run reduce_noise -> regulate_gain and write `output.wav`.
 """
+
 import sys
 from pathlib import Path
 

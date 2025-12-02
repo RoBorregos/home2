@@ -2,7 +2,7 @@ kws_oww:
   ros__parameters:
     model_path: "/workspace/src/hri/packages/speech/assets/oww"
     inference_framework: "onnx"
-    audio_topic: "/rawAudioChunk"
+    audio_topic: "/processedAudioChunk"
     WAKEWORD_TOPIC: REPLACE
     chunk_size: 1280
     detection_cooldown: 1.0

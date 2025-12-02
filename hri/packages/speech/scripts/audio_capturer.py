@@ -11,6 +11,13 @@ from rclpy.node import Node
 from speech.speech_api_utils import SpeechApiUtils
 
 from frida_interfaces.msg import AudioData
+from speech.audio_processing import (
+    reduce_noise,
+    regulate_gain,
+    compress_dynamic_range,
+    adaptive_agc,
+    dereverb_spectral,
+)
 
 SAVE_PATH = "/workspace/src/hri/packages/speech/debug/"
 run_frames = []
@@ -21,10 +28,18 @@ class AudioCapturer(Node):
     def __init__(self):
         super().__init__("audio_capturer")
 
-        self.declare_parameter("publish_topic", "/rawAudioChunk")
+        # publish processed audio by default
+        self.declare_parameter("publish_topic", "/processedAudioChunk")
         self.declare_parameter("MIC_DEVICE_NAME", "default")
         self.declare_parameter("MIC_INPUT_CHANNELS", 32)
         self.declare_parameter("MIC_OUT_CHANNELS", 32)
+        self.declare_parameter("RESPEAKER_JOIN_METHOD", "avg")
+        self.declare_parameter("PUBLISH_PER_MIC", False)
+        # processing parameters
+        self.declare_parameter("apply_processing", True)
+        self.declare_parameter("pipeline", ["reduce_noise", "regulate_gain"])
+        self.declare_parameter("output_topic", "/processedAudioChunk")
+        self.declare_parameter("debug_dir", "/tmp/speech_audio")
 
         publish_topic = (
             self.get_parameter("publish_topic").get_parameter_value().string_value
@@ -42,8 +57,50 @@ class AudioCapturer(Node):
         mic_out_channels = (
             self.get_parameter("MIC_OUT_CHANNELS").get_parameter_value().integer_value
         )
+        # store for use in record()
+        self.mic_input_channels = mic_input_channels
+        self.mic_out_channels = mic_out_channels
+        self.join_method = (
+            self.get_parameter("RESPEAKER_JOIN_METHOD")
+            .get_parameter_value()
+            .string_value
+        )
+        self.publish_per_mic = (
+            self.get_parameter("PUBLISH_PER_MIC").get_parameter_value().bool_value
+        )
 
+        # processing config
+        self.apply_processing = (
+            self.get_parameter("apply_processing").get_parameter_value().bool_value
+        )
+        self.pipeline = (
+            self.get_parameter("pipeline").get_parameter_value().string_array_value
+        )
+        self.output_topic = (
+            self.get_parameter("output_topic").get_parameter_value().string_value
+        )
+        self.debug_dir = (
+            self.get_parameter("debug_dir").get_parameter_value().string_value
+        )
+        os.makedirs(self.debug_dir, exist_ok=True)
+
+        # Publisher: will publish processed audio (int16 bytes) to publish_topic
         self.publisher_ = self.create_publisher(AudioData, publish_topic, 20)
+        # Also create a processed-specific topic if requested (keeps backward compatibility)
+        if self.output_topic and self.output_topic != publish_topic:
+            self.processed_pub = self.create_publisher(AudioData, self.output_topic, 20)
+        else:
+            self.processed_pub = None
+        self.per_mic_publishers = []
+        if self.publish_per_mic:
+            # create per-mic topics dynamically when enabled; topics named <publish_topic>_mic0 ...
+            for i in range(
+                self.mic_input_channels if self.mic_input_channels > 0 else 4
+            ):
+                topic = publish_topic + f"_mic{i}"
+                self.per_mic_publishers.append(
+                    self.create_publisher(AudioData, topic, 10)
+                )
         self.input_device_index = SpeechApiUtils.getIndexByNameAndChannels(
             mic_device_name, mic_input_channels, mic_out_channels
         )
@@ -63,9 +120,12 @@ class AudioCapturer(Node):
         CHUNK_SIZE = 512
         self.FORMAT = pyaudio.paInt16  # Signed 2 bytes.
         self.debug = False
-        CHANNELS = 6 if self.use_respeaker else 1
+        # Default channel count used to open pyaudio stream. If using ReSpeaker,
+        # the real input channel count is provided by `self.mic_input_channels`.
+        CHANNELS = self.mic_input_channels if self.use_respeaker else 1
         self.RATE = 16000
-        EXTRACT_CHANNEL = 0  # Use channel 0. Tested with microphone.py. See channel meaning: https://wiki.seeedstudio.com/ReSpeaker-USB-Mic-Array/#update-firmware
+        # Default fallback extract channel for legacy behavior
+        EXTRACT_CHANNEL = 0  # Use channel 0.
 
         self.p = pyaudio.PyAudio()
         stream = self.p.open(
@@ -82,13 +142,105 @@ class AudioCapturer(Node):
                 in_data = stream.read(CHUNK_SIZE, exception_on_overflow=False)
 
                 if self.use_respeaker:
-                    in_data = np.frombuffer(in_data, dtype=np.int16)[EXTRACT_CHANNEL::6]
-                    in_data = in_data.tobytes()
+                    arr = np.frombuffer(in_data, dtype=np.int16)
 
-                local_audio = bytes(in_data)
+                    # Number of channels present in the captured stream.
+                    channels = (
+                        self.mic_input_channels
+                        if self.mic_input_channels and self.mic_input_channels > 0
+                        else CHANNELS
+                    )
 
+                    # Ensure we have a whole number of frames
+                    if channels <= 1 or arr.size < channels:
+                        # Fallback to legacy single-channel extraction
+                        mono = arr[EXTRACT_CHANNEL::6] if arr.size >= 6 else arr
+                        local_audio = mono.tobytes()
+                    else:
+                        n_frames = arr.size // channels
+                        usable = arr[: n_frames * channels]
+                        frames = usable.reshape(n_frames, channels)
+
+                        # Separate per-microphone channels
+                        per_mics = [
+                            frames[:, i].astype(np.int32)
+                            for i in range(min(channels, frames.shape[1]))
+                        ]
+
+                        # Optionally publish per-mic raw data (int16 bytes)
+                        if self.publish_per_mic and len(self.per_mic_publishers) > 0:
+                            for i, mic in enumerate(per_mics):
+                                mic16 = mic.astype(np.int16).tobytes()
+                                if i < len(self.per_mic_publishers):
+                                    self.per_mic_publishers[i].publish(
+                                        AudioData(data=mic16)
+                                    )
+
+                        # Join method: 'avg' (default), 'sum', 'first'
+                        if self.join_method == "sum":
+                            mixed = np.sum(np.vstack(per_mics), axis=0)
+                            mixed = np.clip(mixed, -32768, 32767).astype(np.int16)
+                        elif self.join_method == "first":
+                            mixed = per_mics[0].astype(np.int16)
+                        else:  # default and fallback to 'avg'
+                            mixed = np.mean(np.vstack(per_mics), axis=0).astype(
+                                np.int16
+                            )
+
+                        local_audio = mixed.tobytes()
+                else:
+                    local_audio = in_data
+
+                # ros_audio: raw int16 bytes (mono)
                 ros_audio = bytes(local_audio)
-                self.publisher_.publish(AudioData(data=ros_audio))
+
+                # Optionally apply processing pipeline before publishing
+                if self.apply_processing:
+                    try:
+                        arr16 = np.frombuffer(local_audio, dtype=np.int16)
+                        y = arr16.astype(np.float32) / 32768.0
+
+                        # apply pipeline in order
+                        for step in self.pipeline:
+                            try:
+                                if step == "reduce_noise":
+                                    y = reduce_noise(y, self.RATE)
+                                elif step == "regulate_gain":
+                                    y = regulate_gain(y, target_rms=0.05)
+                                elif step == "compress":
+                                    y = compress_dynamic_range(
+                                        y, threshold_db=-20.0, ratio=2.0
+                                    )
+                                elif step == "agc":
+                                    y, _ = adaptive_agc(y, target_rms=0.05)
+                                elif step == "dereverb":
+                                    y = dereverb_spectral(y, self.RATE)
+                                else:
+                                    # unknown step: skip
+                                    pass
+                            except Exception as e:
+                                self.get_logger().warning(
+                                    f"Processing step {step} failed: {e}"
+                                )
+
+                        # convert back to int16 bytes
+                        y_out = np.clip(y, -1.0, 1.0) * 32767.0
+                        y_out = y_out.astype(np.int16).tobytes()
+
+                        processed_bytes = bytes(y_out)
+                    except Exception as e:
+                        self.get_logger().warning(
+                            f"Failed to run processing pipeline: {e}"
+                        )
+                        processed_bytes = ros_audio
+                else:
+                    processed_bytes = ros_audio
+
+                # Publish processed audio on the main topic
+                self.publisher_.publish(AudioData(data=processed_bytes))
+                # If a separate processed topic was requested, publish there too
+                if self.processed_pub is not None:
+                    self.processed_pub.publish(AudioData(data=processed_bytes))
 
                 if self.debug:
                     run_frames.append(local_audio)
