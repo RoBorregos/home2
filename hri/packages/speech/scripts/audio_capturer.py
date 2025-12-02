@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import os
-import time
 import numpy as np
 import pyaudio
 import rclpy
@@ -77,7 +76,9 @@ class AudioCapturer(Node):
         if self.get_parameter("PUBLISH_PER_MIC").get_parameter_value().bool_value:
             for i in range(mic_input_channels if mic_input_channels > 0 else 4):
                 topic = publish_topic + f"_mic{i}"
-                self.per_mic_publishers.append(self.create_publisher(AudioData, topic, 10))
+                self.per_mic_publishers.append(
+                    self.create_publisher(AudioData, topic, 10)
+                )
 
         self.input_device_index = SpeechApiUtils.getIndexByNameAndChannels(
             mic_device_name, mic_input_channels, mic_out_channels
@@ -93,7 +94,9 @@ class AudioCapturer(Node):
         self.mic_input_channels = mic_input_channels
         self.mic_out_channels = mic_out_channels
         self.join_method = (
-            self.get_parameter("RESPEAKER_JOIN_METHOD").get_parameter_value().string_value
+            self.get_parameter("RESPEAKER_JOIN_METHOD")
+            .get_parameter_value()
+            .string_value
         )
         self.publish_per_mic = (
             self.get_parameter("PUBLISH_PER_MIC").get_parameter_value().bool_value
@@ -103,7 +106,7 @@ class AudioCapturer(Node):
 
     def record(self):
         self.get_logger().info("AudioCapturer node recording.")
-        iteration_step = 0
+        # iteration_step = 0
         CHUNK_SIZE = 512
         self.FORMAT = pyaudio.paInt16  # Signed 2 bytes.
         self.debug = False
@@ -129,7 +132,9 @@ class AudioCapturer(Node):
                 if self.use_respeaker:
                     arr = np.frombuffer(in_data, dtype=np.int16)
                     channels = (
-                        self.mic_input_channels if self.mic_input_channels and self.mic_input_channels > 0 else CHANNELS
+                        self.mic_input_channels
+                        if self.mic_input_channels and self.mic_input_channels > 0
+                        else CHANNELS
                     )
 
                     if channels <= 1 or arr.size < channels:
@@ -140,21 +145,28 @@ class AudioCapturer(Node):
                         usable = arr[: n_frames * channels]
                         frames = usable.reshape(n_frames, channels)
 
-                        per_mics = [frames[:, i].astype(np.int32) for i in range(min(channels, frames.shape[1]))]
+                        per_mics = [
+                            frames[:, i].astype(np.int32)
+                            for i in range(min(channels, frames.shape[1]))
+                        ]
 
                         if self.publish_per_mic and len(self.per_mic_publishers) > 0:
                             for i, mic in enumerate(per_mics):
                                 mic16 = mic.astype(np.int16).tobytes()
                                 if i < len(self.per_mic_publishers):
-                                    self.per_mic_publishers[i].publish(AudioData(data=mic16))
+                                    self.per_mic_publishers[i].publish(
+                                        AudioData(data=mic16)
+                                    )
 
                         if self.join_method == "sum":
                             mixed = np.sum(np.vstack(per_mics), axis=0)
                             mixed = np.clip(mixed, -32768, 32767).astype(np.int16)
                         elif self.join_method == "first":
                             mixed = per_mics[0].astype(np.int16)
-                        else: 
-                            mixed = np.mean(np.vstack(per_mics), axis=0).astype(np.int16)
+                        else:
+                            mixed = np.mean(np.vstack(per_mics), axis=0).astype(
+                                np.int16
+                            )
 
                         local_audio = mixed.tobytes()
                 else:
@@ -175,7 +187,9 @@ class AudioCapturer(Node):
                                 elif step == "regulate_gain":
                                     y = regulate_gain(y, target_rms=0.05)
                                 elif step == "compress":
-                                    y = compress_dynamic_range(y, threshold_db=-20.0, ratio=2.0)
+                                    y = compress_dynamic_range(
+                                        y, threshold_db=-20.0, ratio=2.0
+                                    )
                                 elif step == "agc":
                                     y, _ = adaptive_agc(y, target_rms=0.05)
                                 elif step == "dereverb":
@@ -183,14 +197,18 @@ class AudioCapturer(Node):
                                 else:
                                     pass
                             except Exception as e:
-                                self.get_logger().warning(f"Processing step {step} failed: {e}")
+                                self.get_logger().warning(
+                                    f"Processing step {step} failed: {e}"
+                                )
 
                         y_out = np.clip(y, -1.0, 1.0) * 32767.0
                         y_out = y_out.astype(np.int16).tobytes()
 
                         processed_bytes = bytes(y_out)
                     except Exception as e:
-                        self.get_logger().warning(f"Failed to run processing pipeline: {e}")
+                        self.get_logger().warning(
+                            f"Failed to run processing pipeline: {e}"
+                        )
                         processed_bytes = ros_audio
                 else:
                     processed_bytes = ros_audio
