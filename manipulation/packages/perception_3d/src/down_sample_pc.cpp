@@ -20,6 +20,7 @@
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <string>
 #include <variant>
+#include <omp.h>
 
 #include <frida_constants/manipulation_constants_cpp.hpp>
 
@@ -43,6 +44,7 @@ private:
   float medium_radius = 2.5f; // 2.5m
   float sqr_small_rad;
   float sqr_med_rad;
+  int simplificator_factor = 3;
 
 public:
   DownSamplePointCloud() : Node("downsample_pointcloud") {
@@ -59,6 +61,7 @@ public:
 
     this->sqr_small_rad =  std::pow(small_radius, 2);
     this->sqr_med_rad = std::pow(medium_radius, 2);
+    this->simplificator_factor = this->declare_parameter("simplificator_factor", simplificator_factor);
     rclcpp::QoS qos = rclcpp::QoS(rclcpp::SensorDataQoS());
     qos.reliability(rclcpp::ReliabilityPolicy::Reliable);
 
@@ -80,19 +83,40 @@ public:
     PointCloudNS::Ptr sampled_cloud(new PointCloudNS);
 
     pcl::fromROSMsg(*msg, *in_cloud);
+    
+    small_cloud->points.reserve(in_cloud->points.size() / 3);
+    medium_cloud->points.reserve(in_cloud->points.size() / 3);
+    large_cloud->points.reserve(in_cloud->points.size() / 3);
+    sampled_cloud->points.reserve(in_cloud->points.size());
 
-    for(size_t i=0; i < in_cloud->points.size(); i++){
+    for(size_t i = 0; i < in_cloud->points.size(); i += simplificator_factor){
       const auto& pt = in_cloud->points[i];
       float sq_radius = (pt.x * pt.x + pt.y * pt.y + pt.z * pt.z);
       if(sq_radius < sqr_small_rad) small_cloud->points.push_back(pt); 
       else if(sq_radius < sqr_med_rad) medium_cloud->points.push_back(pt);
       else large_cloud->points.push_back(pt);
     }
-    //insert clouds
-    insert_cloud(small_cloud, sampled_cloud, small_size);
-    insert_cloud(medium_cloud, sampled_cloud, medium_size);
-    insert_cloud(large_cloud, sampled_cloud, large_size);
-    
+
+    #pragma omp parallel sections
+    {
+      #pragma omp section
+      {
+          filter_cloud(small_cloud, small_size);
+      }
+      #pragma omp section
+      {
+          filter_cloud(medium_cloud, medium_size);
+      }
+      #pragma omp section
+      {
+          filter_cloud(large_cloud, large_size);
+      }
+    }
+
+    sampled_cloud->points.insert(sampled_cloud->points.end(), small_cloud->points.begin(), small_cloud->points.end());
+    sampled_cloud->points.insert(sampled_cloud->points.end(), medium_cloud->points.begin(), medium_cloud->points.end());
+    sampled_cloud->points.insert(sampled_cloud->points.end(), large_cloud->points.begin(), large_cloud->points.end());
+
     sensor_msgs::msg::PointCloud2 response;
     pcl::toROSMsg(*sampled_cloud, response);
     // response.header.frame_id = msg->header.frame_id;
@@ -103,14 +127,12 @@ public:
 
     publisher->publish(response);
   }
-  void insert_cloud(const PointCloudNS::Ptr& input_cloud,PointCloudNS::Ptr& output_cloud,float& leaf_size){
-    PointCloudNS::Ptr temporal_cloud(new PointCloudNS);
+  void filter_cloud(const PointCloudNS::Ptr& cloud, float& leaf_size){
+    if(cloud->points.empty()) return;
     pcl::VoxelGrid<pointCloudType> sor;
-    sor.setInputCloud(input_cloud);
     sor.setLeafSize(leaf_size, leaf_size, leaf_size);
-    sor.filter(*temporal_cloud);
-    output_cloud->insert(output_cloud->end(), temporal_cloud->begin(), temporal_cloud->end());
-    
+    sor.setInputCloud(cloud);
+    sor.filter(*cloud);
   }
 };
 

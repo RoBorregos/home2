@@ -13,7 +13,9 @@ from launch import LaunchDescription
 from launch.actions import (
     OpaqueFunction,
     IncludeLaunchDescription,
+    SetEnvironmentVariable,
 )
+from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
@@ -23,6 +25,15 @@ from uf_ros_lib.uf_robot_utils import generate_ros2_control_params_temp_file
 
 
 def launch_setup(context, *args, **kwargs):
+    clean_logs = LaunchConfiguration("clean_logs", default="true")
+    should_clean = clean_logs.perform(context)
+    if should_clean.lower() == "true":
+        print(
+            "\033[93m[LAUNCH] Modo Limpio ACTIVADO: Ocultando logs INFO (Markers, Init...)\033[0m"
+        )
+        os.environ["RCUTILS_LOGGING_SEVERITY_THRESHOLD"] = "WARN"
+        os.environ["ROS_LOG_LEVEL"] = "WARN"
+
     robot_ip = LaunchConfiguration("robot_ip", default="192.168.31.180")
     report_type = LaunchConfiguration("report_type", default="normal")
     baud_checkset = LaunchConfiguration("baud_checkset", default=True)
@@ -174,6 +185,7 @@ def launch_setup(context, *args, **kwargs):
             "show_rviz": show_rviz,
             "use_sim_time": "false",
             "moveit_config_dump": yaml.dump(moveit_config.to_dict()),
+            "clean_logs": clean_logs,
         }.items(),
     )
 
@@ -240,6 +252,16 @@ def launch_setup(context, *args, **kwargs):
     )
 
     return [
+        SetEnvironmentVariable(
+            name="ROS_LOG_LEVEL",
+            value="WARN",
+            condition=IfCondition(clean_logs),
+        ),
+        SetEnvironmentVariable(
+            name="RCUTILS_LOGGING_SEVERITY_THRESHOLD",
+            value="WARN",
+            condition=IfCondition(clean_logs),
+        ),
         robot_description_launch,
         robot_moveit_common_launch,
         joint_state_publisher_node,
