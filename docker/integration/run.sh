@@ -70,7 +70,7 @@ GENERATE_BAML_CLIENT="baml-cli generate --from /workspace/src/task_manager/scrip
 SOURCE_ROS="source /opt/ros/humble/setup.bash"
 SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
 SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
-COLCON="colcon build --packages-ignore frida_interfaces frida_constants --packages-up-to task_manager"
+COLCON="colcon build --symlink-install --packages-ignore frida_interfaces frida_constants xarm_ros2 --packages-up-to task_manager"
 
 if [ "$BUILD" == "true" ]; then
     SETUP="$GENERATE_BAML_CLIENT && $SOURCE_ROS && $SOURCE_INTERFACES && $COLCON && $SOURCE"
