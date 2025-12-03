@@ -9,11 +9,12 @@ services:
     runtime: nvidia
     network_mode: host
     volumes:
-      - ../scripts/ollama:/ollama
+      - ../../../hri/packages/nlp/assets:/ollama
+      - ../scripts/ollama:/scripts
     environment:
       OLLAMA_MODELS: /ollama
       ROLE: ${ROLE}
     stdin_open: true
     tty: true
     entrypoint:
-      ["/bin/bash", "-c", "/ollama/entrypoint.sh && tail -f /dev/null"]
+      ["/bin/bash", "-c", "/scripts/entrypoint.sh && tail -f /dev/null"]

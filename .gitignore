@@ -12,11 +12,8 @@
 **.pt
 **.pth
 **.gz
-docker/hri/scripts/ollama/**
 .cache
-!docker/hri/scripts/ollama/download-model.sh
-!docker/hri/scripts/ollama/Modelfile
-!docker/hri/scripts/ollama/entrypoint.sh
+hri/packages/nlp/assets/**
 **.bag
 **/rtabmapdbs
 yolov5/
