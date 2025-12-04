@@ -25,19 +25,21 @@ class AudioCapturer(Node):
     def __init__(self):
         super().__init__("audio_capturer")
 
-        self.declare_parameter("publish_topic", "/processedAudioChunk")
+        self.declare_parameter("output_topic", "/processedAudioChunk")
         self.declare_parameter("MIC_DEVICE_NAME", "default")
         self.declare_parameter("MIC_INPUT_CHANNELS", 32)
         self.declare_parameter("MIC_OUT_CHANNELS", 32)
         self.declare_parameter("RESPEAKER_JOIN_METHOD", "avg")
         self.declare_parameter("PUBLISH_PER_MIC", False)
         self.declare_parameter("apply_processing", True)
-        self.declare_parameter("pipeline", ["reduce_noise", "regulate_gain"])
-        self.declare_parameter("output_topic", "/processedAudioChunk")
+        self.declare_parameter(
+            "pipeline",
+            ["reduce_noise", "regulate_gain", "compress", "agc", "dereverb"],
+        )
         self.declare_parameter("debug_dir", "/tmp/speech_audio")
 
-        publish_topic = (
-            self.get_parameter("publish_topic").get_parameter_value().string_value
+        output_topic = (
+            self.get_parameter("output_topic").get_parameter_value().string_value
         )
 
         self.use_respeaker = SpeechApiUtils.respeaker_available()
@@ -59,23 +61,16 @@ class AudioCapturer(Node):
         self.pipeline = (
             self.get_parameter("pipeline").get_parameter_value().string_array_value
         )
-        self.output_topic = (
-            self.get_parameter("output_topic").get_parameter_value().string_value
-        )
         self.debug_dir = (
             self.get_parameter("debug_dir").get_parameter_value().string_value
         )
         os.makedirs(self.debug_dir, exist_ok=True)
 
-        self.publisher_ = self.create_publisher(AudioData, publish_topic, 20)
-        if self.output_topic and self.output_topic != publish_topic:
-            self.processed_pub = self.create_publisher(AudioData, self.output_topic, 20)
-        else:
-            self.processed_pub = None
+        self.publisher_ = self.create_publisher(AudioData, output_topic, 20)
         self.per_mic_publishers = []
         if self.get_parameter("PUBLISH_PER_MIC").get_parameter_value().bool_value:
             for i in range(mic_input_channels if mic_input_channels > 0 else 4):
-                topic = publish_topic + f"_mic{i}"
+                topic = output_topic + f"_mic{i}"
                 self.per_mic_publishers.append(
                     self.create_publisher(AudioData, topic, 10)
                 )
@@ -173,7 +168,6 @@ class AudioCapturer(Node):
                     local_audio = in_data
 
                 ros_audio = bytes(local_audio)
-                self.publisher_.publish(AudioData(data=ros_audio))
 
                 if self.apply_processing:
                     try:
@@ -212,10 +206,7 @@ class AudioCapturer(Node):
                         processed_bytes = ros_audio
                 else:
                     processed_bytes = ros_audio
-
                 self.publisher_.publish(AudioData(data=processed_bytes))
-                if self.processed_pub is not None:
-                    self.processed_pub.publish(AudioData(data=processed_bytes))
 
                 if self.debug:
                     run_frames.append(local_audio)
