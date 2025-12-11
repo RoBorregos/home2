@@ -132,14 +132,13 @@ case $TASK in
 esac
 
 if [ "$BUILD" == "true" ]; then
-    BUILD_COMMAND="colcon build $IGNORE_PACKAGES --symlink-install --packages-up-to $PACKAGES &&"
+    BUILD_COMMAND="colcon build --cmake-args -G \"Unix Makefiles\" $IGNORE_PACKAGES --symlink-install --packages-up-to $PACKAGES &&"
 fi
 
 COMPOSE_PROFILES=$(IFS=, ; echo "${PROFILES[*]}")
 add_or_update_variable compose/.env "COMPOSE_PROFILES" "$COMPOSE_PROFILES"
 
 COMMAND="$GENERATE_BAML_CLIENT && $SOURCE_ROS && $SOURCE_INTERFACES && $BUILD_COMMAND source ~/.bashrc && $RUN"
-add_or_update_variable compose/.env "COMMAND" "$COMMAND"
 add_or_update_variable compose/.env "ROLE" "${PROFILES[0]}"
 
 cleanup() {
@@ -163,8 +162,12 @@ if [ -n "$OPEN_DISPLAY" ]; then
 fi
 
 if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
-    docker compose -f "$COMPOSE" up -d $BUILD_IMAGE
+    ALREADY_RUNNING=$(docker ps -q -f name="hri-ros")
+    if [ -z "$ALREADY_RUNNING" ] || [ -n "$BUILD_IMAGE" ]; then
+        docker compose -f "$COMPOSE" up -d $BUILD_IMAGE
+    fi
     docker compose -f "$COMPOSE" exec hri-ros bash -c "$COMMAND"
 else
+    add_or_update_variable compose/.env "COMMAND" "$COMMAND"
     docker compose -f "$COMPOSE" up $DETACHED $BUILD_IMAGE
 fi

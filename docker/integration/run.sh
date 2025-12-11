@@ -97,11 +97,14 @@ case $TASK in
 esac
 
 COMMAND="$SETUP && $RUN"
-add_or_update_variable .env "COMMAND" "$COMMAND"
 
 if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
-    docker compose up -d $BUILD_IMAGE
+    ALREADY_RUNNING=$(docker ps -q -f name="integration")
+    if [ -z "$ALREADY_RUNNING" ] || [ -n "$BUILD_IMAGE" ]; then
+        docker compose up -d $BUILD_IMAGE
+    fi
     docker compose exec integration bash -c "$COMMAND"
 else
+    add_or_update_variable .env "COMMAND" "$COMMAND"
     docker compose up $DETACHED $BUILD_IMAGE
 fi
