@@ -132,7 +132,7 @@ case $TASK in
 esac
 
 if [ "$BUILD" == "true" ]; then
-    BUILD_COMMAND="colcon build --cmake-args -G \"Unix Makefiles\" $IGNORE_PACKAGES --symlink-install --packages-up-to $PACKAGES &&"
+    BUILD_COMMAND="colcon build $IGNORE_PACKAGES --symlink-install --packages-up-to $PACKAGES &&"
 fi
 
 COMPOSE_PROFILES=$(IFS=, ; echo "${PROFILES[*]}")
