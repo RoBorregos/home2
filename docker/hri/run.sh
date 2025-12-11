@@ -163,12 +163,7 @@ if [ -n "$OPEN_DISPLAY" ]; then
 fi
 
 if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
-    EXISTING_CONTAINER=$(docker ps -a -q -f name="hri")
-    if [ -z "$EXISTING_CONTAINER" ] || [ -n "$BUILD_IMAGE" ]; then
-        docker compose -f "$COMPOSE" up -d $BUILD_IMAGE
-    else
-        docker compose -f "$COMPOSE" start
-    fi
+    docker compose -f "$COMPOSE" up -d $BUILD_IMAGE
     docker compose -f "$COMPOSE" exec hri-ros bash -c "$COMMAND"
 else
     docker compose -f "$COMPOSE" up $DETACHED $BUILD_IMAGE
