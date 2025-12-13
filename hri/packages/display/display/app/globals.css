@@ -16,24 +16,8 @@
   
   --orange: oklch(0.704 0.191 22.216);
   --orange-bg: oklch(0.577 0.245 27.325 / 20%);
-}
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  --purple: oklch(0.627 0.265 303.9);
+  --purple-bg: oklch(0.627 0.265 303.9 / 20%);
+  --pulse: oklch(0.5 0.25 260);
 }
