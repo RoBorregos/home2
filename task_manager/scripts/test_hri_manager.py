@@ -56,7 +56,7 @@ def confirm_preference(interpreted_text, extracted_data):
 
 TEST_TASK = Task.DEBUG
 TEST_COMPOUND = False
-TEST_INDIVIDUAL_FUNCTIONS = True
+TEST_INDIVIDUAL_FUNCTIONS = False
 TEST_EMBEDDINGS = False
 TEST_ASYNC_LLM = False
 TEST_STREAMING = False
@@ -118,17 +118,17 @@ class TestHriManager(Node):
         s, drink = self.hri_manager.extract_data("name", user_request)
         self.get_logger().info(f"Extracted data: {drink}")
 
-        # # Test categorize objects
-        # s, categorized_shelves = self.hri_manager.get_shelves_categories(
-        #     {
-        #         "1": ["milk", "cheese", "yogurt"],
-        #         "2": ["apple", "banana", "grapes"],
-        #         "3": [],
-        #         "4": ["chicken", "beef"],
-        #     },
-        # )
+        # Test categorize objects
+        s, categorized_shelves = self.hri_manager.get_shelves_categories(
+            {
+                "1": ["milk", "cheese", "yogurt"],
+                "2": ["apple", "banana", "grapes"],
+                "3": [],
+                "4": ["chicken", "beef"],
+            },
+        )
 
-        # self.get_logger().info(f"categorized_shelves: {str(categorized_shelves)}")
+        self.get_logger().info(f"categorized_shelves: {str(categorized_shelves)}")
 
     def test_streaming(self):
         s, user_request = self.hri_manager.hear()
