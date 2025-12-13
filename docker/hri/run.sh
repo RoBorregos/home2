@@ -139,7 +139,6 @@ COMPOSE_PROFILES=$(IFS=, ; echo "${PROFILES[*]}")
 add_or_update_variable compose/.env "COMPOSE_PROFILES" "$COMPOSE_PROFILES"
 
 COMMAND="$GENERATE_BAML_CLIENT && $SOURCE_ROS && $SOURCE_INTERFACES && $BUILD_COMMAND source ~/.bashrc && $RUN"
-add_or_update_variable compose/.env "COMMAND" "$COMMAND"
 add_or_update_variable compose/.env "ROLE" "${PROFILES[0]}"
 
 cleanup() {
@@ -163,13 +162,12 @@ if [ -n "$OPEN_DISPLAY" ]; then
 fi
 
 if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
-    EXISTING_CONTAINER=$(docker ps -a -q -f name="hri")
-    if [ -z "$EXISTING_CONTAINER" ] || [ -n "$BUILD_IMAGE" ]; then
+    ALREADY_RUNNING=$(docker ps -q -f name="hri-ros")
+    if [ -z "$ALREADY_RUNNING" ] || [ -n "$BUILD_IMAGE" ]; then
         docker compose -f "$COMPOSE" up -d $BUILD_IMAGE
-    else
-        docker compose -f "$COMPOSE" start
     fi
     docker compose -f "$COMPOSE" exec hri-ros bash -c "$COMMAND"
 else
+    add_or_update_variable compose/.env "COMMAND" "$COMMAND"
     docker compose -f "$COMPOSE" up $DETACHED $BUILD_IMAGE
 fi
