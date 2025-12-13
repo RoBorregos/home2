@@ -47,6 +47,16 @@ export function AudioStateIndicator() {
     };
   }, []);
 
+  // Ensure non-idle states auto-timeout back to idle after 10 seconds
+  useEffect(() => {
+    if (audioState.state !== "idle") {
+      const timeout = setTimeout(() => {
+        setAudioState((prev) => ({ ...prev, state: "idle" }));
+      }, 10_000);
+      return () => clearTimeout(timeout);
+    }
+  }, [audioState.state]);
+
   const { state, vadLevel } = audioState;
 
   if (state === "idle") {
