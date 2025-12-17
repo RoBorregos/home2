@@ -85,17 +85,27 @@ def reduce_noise(
     Returns processed signal in same shape as input.
     """
     y = y.astype(np.float32)
+    if len(y) == 0:
+        return y
+    n_fft_eff = min(n_fft, len(y))
+    if n_fft_eff <= 1:
+        return y
+    hop_eff = max(1, min(hop_length, n_fft_eff - 1))
     if noise_clip is None:
         # use first 0.5s or less
         n_noise = min(len(y), int(0.5 * sr))
         if n_noise <= 0:
             return y
         noise_clip = y[:n_noise]
+    else:
+        noise_clip = noise_clip.astype(np.float32)
 
     # STFT
-    f, t, S = scipy.signal.stft(y, fs=sr, nperseg=n_fft, noverlap=n_fft - hop_length)
+    f, t, S = scipy.signal.stft(
+        y, fs=sr, nperseg=n_fft_eff, noverlap=n_fft_eff - hop_eff
+    )
     _, _, N = scipy.signal.stft(
-        noise_clip, fs=sr, nperseg=n_fft, noverlap=n_fft - hop_length
+        noise_clip, fs=sr, nperseg=n_fft_eff, noverlap=n_fft_eff - hop_eff
     )
 
     S_mag = np.abs(S)
@@ -114,7 +124,7 @@ def reduce_noise(
     S_filtered = S * mask_gain
     # Inverse STFT
     _, y_out = scipy.signal.istft(
-        S_filtered, fs=sr, nperseg=n_fft, noverlap=n_fft - hop_length
+        S_filtered, fs=sr, nperseg=n_fft_eff, noverlap=n_fft_eff - hop_eff
     )
     # match length
     if len(y_out) > len(y):
@@ -162,14 +172,23 @@ def dereverb_spectral(
     hop_length: int = 512,
 ) -> np.ndarray:
     """Light dereverberation by spectral median subtraction across time."""
-    f, t, S = scipy.signal.stft(y, fs=sr, nperseg=n_fft, noverlap=n_fft - hop_length)
+    if len(y) == 0:
+        return y.astype(np.float32)
+    n_fft_eff = min(n_fft, len(y))
+    if n_fft_eff <= 1:
+        return y.astype(np.float32)
+    hop_eff = max(1, min(hop_length, n_fft_eff - 1))
+
+    f, t, S = scipy.signal.stft(
+        y, fs=sr, nperseg=n_fft_eff, noverlap=n_fft_eff - hop_eff
+    )
     mag = np.abs(S)
     median_spec = np.median(mag, axis=1, keepdims=True)
     reduced = np.maximum(0.0, mag - decay_scale * median_spec)
     phase = np.angle(S)
     S_new = reduced * np.exp(1j * phase)
     _, y_out = scipy.signal.istft(
-        S_new, fs=sr, nperseg=n_fft, noverlap=n_fft - hop_length
+        S_new, fs=sr, nperseg=n_fft_eff, noverlap=n_fft_eff - hop_eff
     )
     if len(y_out) > len(y):
         y_out = y_out[: len(y)]
