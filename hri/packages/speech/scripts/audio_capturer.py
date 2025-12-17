@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import os
+import wave
+
 import numpy as np
 import pyaudio
 import rclpy
@@ -25,21 +27,20 @@ class AudioCapturer(Node):
     def __init__(self):
         super().__init__("audio_capturer")
 
-        self.declare_parameter("output_topic", "/processedAudioChunk")
+        self.declare_parameter("OUTPUT_TOPIC", "/processedAudioChunk")
         self.declare_parameter("MIC_DEVICE_NAME", "default")
-        self.declare_parameter("MIC_INPUT_CHANNELS", 32)
-        self.declare_parameter("MIC_OUT_CHANNELS", 32)
+        self.declare_parameter("MIC_INPUT_CHANNELS", 6)
+        self.declare_parameter("MIC_OUT_CHANNELS", 6)
         self.declare_parameter("RESPEAKER_JOIN_METHOD", "avg")
-        self.declare_parameter("PUBLISH_PER_MIC", False)
-        self.declare_parameter("apply_processing", True)
+        self.declare_parameter("APPLY_PROCESSING", True)
         self.declare_parameter(
-            "pipeline",
+            "PIPELINE",
             ["reduce_noise", "regulate_gain", "compress", "agc", "dereverb"],
         )
-        self.declare_parameter("debug_dir", "/tmp/speech_audio")
+        self.declare_parameter("DEBUG_DIR", "/tmp/speech_audio")
 
         output_topic = (
-            self.get_parameter("output_topic").get_parameter_value().string_value
+            self.get_parameter("OUTPUT_TOPIC").get_parameter_value().string_value
         )
 
         self.use_respeaker = SpeechApiUtils.respeaker_available()
@@ -56,24 +57,17 @@ class AudioCapturer(Node):
         )
 
         self.apply_processing = (
-            self.get_parameter("apply_processing").get_parameter_value().bool_value
+            self.get_parameter("APPLY_PROCESSING").get_parameter_value().bool_value
         )
         self.pipeline = (
-            self.get_parameter("pipeline").get_parameter_value().string_array_value
+            self.get_parameter("PIPELINE").get_parameter_value().string_array_value
         )
         self.debug_dir = (
-            self.get_parameter("debug_dir").get_parameter_value().string_value
+            self.get_parameter("DEBUG_DIR").get_parameter_value().string_value
         )
         os.makedirs(self.debug_dir, exist_ok=True)
 
         self.publisher_ = self.create_publisher(AudioData, output_topic, 20)
-        self.per_mic_publishers = []
-        if self.get_parameter("PUBLISH_PER_MIC").get_parameter_value().bool_value:
-            for i in range(mic_input_channels if mic_input_channels > 0 else 4):
-                topic = output_topic + f"_mic{i}"
-                self.per_mic_publishers.append(
-                    self.create_publisher(AudioData, topic, 10)
-                )
 
         self.input_device_index = SpeechApiUtils.getIndexByNameAndChannels(
             mic_device_name, mic_input_channels, mic_out_channels
@@ -93,20 +87,15 @@ class AudioCapturer(Node):
             .get_parameter_value()
             .string_value
         )
-        self.publish_per_mic = (
-            self.get_parameter("PUBLISH_PER_MIC").get_parameter_value().bool_value
-        )
 
         self.get_logger().info("AudioCapturer node initialized.")
 
     def record(self):
         self.get_logger().info("AudioCapturer node recording.")
-        # iteration_step = 0
         CHUNK_SIZE = 512
         self.FORMAT = pyaudio.paInt16  # Signed 2 bytes.
         self.debug = False
-        CHANNELS = 6 if self.use_respeaker else 1
-        CHANNELS = self.mic_input_channels if self.mic_input_channels else CHANNELS
+        CHANNELS = self.mic_input_channels  # Use configured channel count.
         self.RATE = 16000
         EXTRACT_CHANNEL = 0  # Use channel 0. Tested with microphone.py. See channel meaning: https://wiki.seeedstudio.com/ReSpeaker-USB-Mic-Array/#update-firmware
 
@@ -125,6 +114,7 @@ class AudioCapturer(Node):
                 in_data = stream.read(CHUNK_SIZE, exception_on_overflow=False)
 
                 if self.use_respeaker:
+                    # Handle multi-channel ReSpeaker (e.g., 6 channels: 4 mics + 2 refs) with optional per-mic publishing and mixing strategies.
                     arr = np.frombuffer(in_data, dtype=np.int16)
                     channels = (
                         self.mic_input_channels
@@ -133,6 +123,7 @@ class AudioCapturer(Node):
                     )
 
                     if channels <= 1 or arr.size < channels:
+                        # Mono fallback: extract single channel by striding (stride=6 for typical ReSpeaker layout).
                         mono = arr[EXTRACT_CHANNEL::6] if arr.size >= 6 else arr
                         local_audio = mono.tobytes()
                     else:
@@ -140,19 +131,13 @@ class AudioCapturer(Node):
                         usable = arr[: n_frames * channels]
                         frames = usable.reshape(n_frames, channels)
 
+                        # Split channels for mixing.
                         per_mics = [
                             frames[:, i].astype(np.int32)
                             for i in range(min(channels, frames.shape[1]))
                         ]
 
-                        if self.publish_per_mic and len(self.per_mic_publishers) > 0:
-                            for i, mic in enumerate(per_mics):
-                                mic16 = mic.astype(np.int16).tobytes()
-                                if i < len(self.per_mic_publishers):
-                                    self.per_mic_publishers[i].publish(
-                                        AudioData(data=mic16)
-                                    )
-
+                        # Mix to mono: "sum" (improves SNR, risks clipping), "first" (fastest), or "avg" (default, balanced).
                         if self.join_method == "sum":
                             mixed = np.sum(np.vstack(per_mics), axis=0)
                             mixed = np.clip(mixed, -32768, 32767).astype(np.int16)
@@ -225,8 +210,6 @@ class AudioCapturer(Node):
 
         self.get_logger().info("Saving audio stream.")
         output_file = os.path.join(SAVE_PATH, "last_run_audio.wav")
-
-        import wave
 
         with wave.open(output_file, "wb") as wf:
             wf.setnchannels(1)
