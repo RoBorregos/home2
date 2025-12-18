@@ -8,6 +8,7 @@ import time
 
 import rclpy
 from rclpy.node import Node
+from std_msgs.msg import String
 from subtask_managers.gpsr_single_tasks import GPSRSingleTask
 from subtask_managers.gpsr_tasks import GPSRTask
 
@@ -54,6 +55,8 @@ class GPSRTM(Node):
         self.subtask_manager = SubtaskManager(self, task=Task.GPSR, mock_areas=[""])
         self.gpsr_tasks = GPSRTask(self.subtask_manager)
         self.gpsr_individual_tasks = GPSRSingleTask(self.subtask_manager)
+        
+        self.display_view_pub = self.create_publisher(String, "/display/set_view", 10)
 
         self.current_state = (
             GPSRTM.States.WAITING_FOR_BUTTON
@@ -113,7 +116,12 @@ class GPSRTM(Node):
             while not self.subtask_manager.hri.start_button_clicked:
                 rclpy.spin_once(self, timeout_sec=0.1)
             Logger.success(self, "Start button pressed, receptionist task will begin now")
+            Logger.success(self, "Start button pressed, receptionist task will begin now")
             self.current_state = GPSRTM.States.START
+            
+            msg = String()
+            msg.data = "gpsr"
+            self.display_view_pub.publish(msg)
 
         if self.current_state == GPSRTM.States.START:
             res = "closed"
