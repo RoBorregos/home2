@@ -14,6 +14,7 @@ BUILD_IMAGE=""
 BUILD_DISPLAY=""
 OPEN_DISPLAY=""
 DOWNLOAD_MODEL=""
+REGENERATE_DB=""
 
 COMPOSE="compose/docker-compose-${ENV_TYPE}.yml"
 
@@ -49,6 +50,8 @@ for arg in "${ARGS[@]}"; do
     "--download-model")
         DOWNLOAD_MODEL="true"
         ;;
+    "--regenerate-db")
+        REGENERATE_DB="true"
   esac
 done
 
@@ -111,6 +114,7 @@ SOURCE_ROS="source /opt/ros/humble/setup.bash"
 PACKAGES="speech nlp embeddings"
 PROFILES=()
 RUN=""
+REGENERATE_DB="${REGENERATE_DB:-}"
 
 case $TASK in
   "--receptionist")
@@ -125,6 +129,10 @@ case $TASK in
     PROFILES=("gpsr")
     RUN="ros2 launch speech hri_launch.py"
     ;;
+    "--regenerate-db")
+      PROFILES=("*")
+      RUN="bash /workspace/src/docker/hri/scripts/regenerate_db.sh"
+      ;;
   *)
     PROFILES=("*")
     RUN="bash"
