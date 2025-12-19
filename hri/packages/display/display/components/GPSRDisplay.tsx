@@ -3,14 +3,15 @@
 import { useEffect, useState, useRef } from "react";
 import { MessageCircle } from "lucide-react";
 import dynamic from "next/dynamic";
+import { Topic } from "roslib";
+import { rosClient } from "../RosClient";
 
-import { Message, AudioState, MapData, mapSchema } from "../types";
+import { Message, AudioState } from "../types";
 import { AudioStateIndicator } from "./AudioStateIndicator";
 import { MapModal } from "./MapModal";
 import { QuestionModal } from "./QuestionModal";
 import { MessageItem } from "./MessageItem";
 import { CurrentMessageOverlay } from "./CurrentMessageOverlay";
-import { useWebSocket } from "../hooks/useWebSocket";
 
 const MjpegStream = dynamic(() => import("./video"), { ssr: false });
 
@@ -21,17 +22,14 @@ export default function GPSRDisplay() {
     state: "idle",
     vadLevel: 0,
   });
-  const [mapData, setMapData] = useState<MapData | null>(null);
-  const [showMapModal, setShowMapModal] = useState(false);
+
+  // We don't need mapData state here anymore as MapModal handles it
+
   const audioStateRef = useRef(audioState);
-  
+
   useEffect(() => {
     audioStateRef.current = audioState;
   }, [audioState]);
-
-  const [question, setQuestion] = useState<string | null>(null);
-  const [answer, setAnswer] = useState<string>("");
-  const [modalOpen, setModalOpen] = useState(false);
 
   const [videoTopic, setVideoTopic] = useState<string>(
     "/zed/zed_node/rgb/image_rect_color"
@@ -97,21 +95,6 @@ export default function GPSRDisplay() {
     }
   };
 
-  const handleMapMessage = (data: unknown) => {
-    try {
-      const parsedData = mapSchema.parse(data);
-      if (parsedData.image_path && parsedData.image_path.trim() !== "") {
-        setMapData(parsedData);
-        setShowMapModal(true);
-      } else {
-        setMapData(null);
-        setShowMapModal(false);
-      }
-    } catch (error) {
-      console.error("Error parsing map message:", error);
-    }
-  };
-
   useEffect(() => {
     if (audioState.state === "idle" && currentMessage) {
       setMessages(prev => [currentMessage, ...prev]);
@@ -123,35 +106,104 @@ export default function GPSRDisplay() {
     messagesStartRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const { connected, sendMessage } = useWebSocket({
-    onAddMessage: addMessage,
-    onAudioStateChange: handleMic,
-    onVideoTopicChange: setVideoTopic,
-    onQuestionReceived: (question: string) => {
-      if (!question?.trim()) {
-        setModalOpen(false);
-        setQuestion(null);
-        setAnswer("");
-      } else {
-        setModalOpen(true);
-        setQuestion(question);
+  const [connected, setConnected] = useState(false);
+
+  useEffect(() => {
+    // Connection handling
+    const handleConnection = () => setConnected(true);
+    const handleClose = () => setConnected(false);
+    const handleError = () => setConnected(false);
+
+    rosClient.on("connection", handleConnection);
+    rosClient.on("close", handleClose);
+    rosClient.on("error", handleError);
+    if (rosClient.isConnected) setConnected(true);
+
+    // Topics
+    const audioStateTopic = new Topic<{ data: string }>({
+      ros: rosClient,
+      name: "/AudioState",
+      messageType: "std_msgs/String",
+    });
+
+    const rawCommandTopic = new Topic<{ data: string }>({
+      ros: rosClient,
+      name: "/speech/raw_command",
+      messageType: "std_msgs/String",
+    });
+
+    const textSpokenTopic = new Topic<{ data: string }>({
+      ros: rosClient,
+      name: "/speech/text_spoken",
+      messageType: "std_msgs/String",
+    });
+
+    const owwTopic = new Topic<{ data: string }>({
+      ros: rosClient,
+      name: "/hri/speech/oww",
+      messageType: "std_msgs/String",
+    });
+
+    const vadTopic = new Topic<{ data: number }>({
+      ros: rosClient,
+      name: "/hri/speech/vad",
+      messageType: "std_msgs/Float32",
+    });
+
+    const answersTopic = new Topic<{ data: string }>({
+      ros: rosClient,
+      name: "/hri/display/answers",
+      messageType: "std_msgs/String",
+    });
+
+    const videoTopic = new Topic<{ data: string }>({
+      ros: rosClient,
+      name: "/hri/display/change_video",
+      messageType: "std_msgs/String",
+    });
+
+    // We subscribe to questions just to log them, QuestionModal handles display
+    const questionsTopic = new Topic<{ data: string }>({
+      ros: rosClient,
+      name: "/hri/display/frida_questions",
+      messageType: "std_msgs/String",
+    });
+
+    // Subscriptions
+    audioStateTopic.subscribe((msg) => handleMic("audioState", msg.data));
+    rawCommandTopic.subscribe((msg) => addMessage("heard", msg.data));
+    textSpokenTopic.subscribe((msg) => addMessage("spoken", msg.data));
+    owwTopic.subscribe((msg) => addMessage("keyword", msg.data));
+    vadTopic.subscribe((msg) => handleMic("vad", msg.data));
+    answersTopic.subscribe((msg) => addMessage("answer", msg.data));
+    videoTopic.subscribe((msg) => setVideoTopic(msg.data));
+
+    questionsTopic.subscribe((msg) => {
+      const question = msg.data;
+      if (question?.trim()) {
         addMessage("spoken", question);
       }
-    },
-    onMapReceived: handleMapMessage,
-  });
+    });
 
-  const sendAnswer = () => {
-    if (!answer.trim()) return;
-    addMessage("answer", answer);
-    sendMessage({ type: "answer", answer, isLocal: true });
-    setModalOpen(false);
-    setAnswer("");
-  };
+    return () => {
+      rosClient.off("connection", handleConnection);
+      rosClient.off("close", handleClose);
+      rosClient.off("error", handleError);
+
+      audioStateTopic.unsubscribe();
+      rawCommandTopic.unsubscribe();
+      textSpokenTopic.unsubscribe();
+      owwTopic.unsubscribe();
+      vadTopic.unsubscribe();
+      answersTopic.unsubscribe();
+      videoTopic.unsubscribe();
+      questionsTopic.unsubscribe();
+    };
+  }, []);
 
   return (
     <div className="flex flex-col h-screen bg-[oklch(0.145_0_0)] text-[oklch(0.985_0_0)] overflow-y-hidden">
-      
+
       {/* HEADER */}
       <div className="p-4 border-b border-[oklch(1_0_0/10%)] flex items-center justify-between">
         <h1 className="text-xl font-bold flex items-center">
@@ -159,7 +211,7 @@ export default function GPSRDisplay() {
           GPSR Commands
         </h1>
         <div className="flex items-center gap-3">
-          <AudioStateIndicator state={audioState} />
+          <AudioStateIndicator />
           <div
             className={
               connected
@@ -218,25 +270,11 @@ export default function GPSRDisplay() {
         </p>
       </div>
 
-      {/* Map Modal */}
-      {showMapModal && mapData && (
-        <MapModal mapData={mapData} onClose={() => setShowMapModal(false)} />
-      )}
+      {/* Map Modal - Self-contained */}
+      <MapModal />
 
-      {/* Question Modal */}
-      {modalOpen && question && (
-        <QuestionModal
-          question={question}
-          answer={answer}
-          onAnswerChange={setAnswer}
-          onSendAnswer={sendAnswer}
-          onClose={() => {
-            setModalOpen(false);
-            setQuestion(null);
-            setAnswer("");
-          }}
-        />
-      )}
+      {/* Question Modal - Self-contained */}
+      <QuestionModal />
     </div>
   );
 }

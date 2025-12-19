@@ -125,6 +125,17 @@ flowchart TD
     stt -->|Feedback & Result| hs
 ```
 
+## Display pipeline
+
+### /display/set_view
+
+Topic to control the active view of the display.
+
+*   **Values:**
+    *   `"gpsr"`: Switches to the GPSR task view.
+    *   `"store_groceries"`: Switches to the Store Groceries task view.
+    *   `"default"`: Switches to the default view.
+
 ## Testing the project
 
 Most of the final commands will be executed using `run.sh`. However, here are some testing commands:
@@ -132,6 +143,9 @@ Most of the final commands will be executed using `run.sh`. However, here are so
 ```bash
 # Launch HRI (includes speech, and nlp)
 ros2 launch speech hri_launch.py
+
+# Launch Display (includes Next.js app, rosbridge, and web_video_server)
+ros2 launch display display_launch.py
 
 # Speech (Remember to start the stt docker before, this is done automatically if running the hri docker compose file)
 ros2 launch speech devices_launch.py
@@ -186,6 +200,17 @@ ros2 topic pub /hri/display/frida_questions std_msgs/msg/String '{data: "What is
 
 # Verify that the answer is received
 ros2 topic echo /hri/display/answers
+```
+
+# Switch display view
+# Switch to GPSR
+ros2 topic pub --once /display/set_view std_msgs/msg/String "data: 'gpsr'"
+
+# Switch to Store Groceries
+ros2 topic pub --once /display/set_view std_msgs/msg/String "data: 'store_groceries'"
+
+# Switch to Default
+ros2 topic pub --once /display/set_view std_msgs/msg/String "data: 'default'"
 ```
 
 ## Other useful commands
