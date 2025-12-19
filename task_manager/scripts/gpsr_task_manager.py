@@ -56,7 +56,7 @@ class GPSRTM(Node):
         self.subtask_manager = SubtaskManager(self, task=Task.GPSR, mock_areas=[""])
         self.gpsr_tasks = GPSRTask(self.subtask_manager)
         self.gpsr_individual_tasks = GPSRSingleTask(self.subtask_manager)
-        
+
         self.display_view_pub = self.create_publisher(String, DISPLAY_VIEW_TOPIC, 10)
 
         self.current_state = (
@@ -119,7 +119,7 @@ class GPSRTM(Node):
             Logger.success(self, "Start button pressed, receptionist task will begin now")
             Logger.success(self, "Start button pressed, receptionist task will begin now")
             self.current_state = GPSRTM.States.START
-            
+
             msg = String()
             msg.data = "gpsr"
             self.display_view_pub.publish(msg)

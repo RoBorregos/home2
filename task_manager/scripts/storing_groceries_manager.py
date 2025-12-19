@@ -236,11 +236,11 @@ class StoringGroceriesManager(Node):
             while not self.subtask_manager.hri.start_button_clicked:
                 rclpy.spin_once(self, timeout_sec=0.1)
             Logger.success(self, "Start button pressed, receptionist task will begin now")
-            
+
             msg = String()
             msg.data = "store_groceries"
             self.display_view_pub.publish(msg)
-            
+
             self.subtask_manager.hri.say(text="Waiting for door to open")
             self.state = ExecutionStates.INIT_NAV_TO_SHELF
             # self.state = ExecutionStates.INIT_NAV_TO_TABLE
