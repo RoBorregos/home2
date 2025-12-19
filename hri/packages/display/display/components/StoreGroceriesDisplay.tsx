@@ -4,33 +4,44 @@ import { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { MessageCircle } from "lucide-react";
 import { AudioStateIndicator } from "./AudioStateIndicator";
-import { useWebSocket } from "../hooks/useWebSocket";
+import { Topic } from "roslib";
+import { rosClient } from "../RosClient";
 
 const MjpegStream = dynamic(() => import("./video"), { ssr: false });
 
 export default function StoringGroceriesVideoDisplay() {
   const [audioTopic, setAudioTopic] = useState("/zed/zed_node/rgb/image_rect_color");
-  const [audioState, setAudioState] = useState<{ state: "idle" | "listening" | "saying"; vadLevel: number }>({
-    state: "idle",
-    vadLevel: 0,
-  });
+  const [connected, setConnected] = useState(false);
 
-  const { connected } = useWebSocket({
-    onAddMessage: () => {},
-    onAudioStateChange: (type: string, content: string | number) => {
-      if (type === "audioState") {
-        setAudioState((prev) => ({ ...prev, state: content as "idle" | "listening" | "saying" }));
-      } else if (type === "vad") {
-        setAudioState((prev) => ({
-          ...prev,
-          vadLevel: typeof content === "number" ? content : Number.parseFloat(content as string),
-        }));
-      }
-    },
-    onVideoTopicChange: setAudioTopic,
-    onQuestionReceived: () => {},
-    onMapReceived: () => {},
-  });
+  useEffect(() => {
+    // Connection handling
+    const handleConnection = () => setConnected(true);
+    const handleClose = () => setConnected(false);
+    const handleError = () => setConnected(false);
+
+    rosClient.on("connection", handleConnection);
+    rosClient.on("close", handleClose);
+    rosClient.on("error", handleError);
+    if (rosClient.isConnected) setConnected(true);
+
+    const videoTopic = new Topic<{ data: string }>({
+      ros: rosClient,
+      name: "/hri/display/change_video",
+      messageType: "std_msgs/String",
+    });
+
+    videoTopic.subscribe((msg) => {
+      setAudioTopic(msg.data);
+    });
+
+    return () => {
+      rosClient.off("connection", handleConnection);
+      rosClient.off("close", handleClose);
+      rosClient.off("error", handleError);
+
+      videoTopic.unsubscribe();
+    };
+  }, []);
 
   return (
     <div className="flex flex-col h-screen bg-[oklch(0.145_0_0)] text-[oklch(0.985_0_0)] overflow-hidden">
@@ -42,7 +53,7 @@ export default function StoringGroceriesVideoDisplay() {
         </h1>
 
         <div className="flex items-center gap-3">
-          <AudioStateIndicator state={audioState} />
+          <AudioStateIndicator />
 
           <div
             className={
