@@ -6,6 +6,7 @@ from collections import defaultdict
 from enum import Enum
 
 import rclpy
+from frida_constants.hri_constants import DISPLAY_VIEW_TOPIC
 from frida_constants.vision_classes import BBOX
 from frida_interfaces.srv import PointTransformation
 from geometry_msgs.msg import PointStamped, Twist
@@ -162,7 +163,7 @@ class StoringGroceriesManager(Node):
         self.transform_tf = self.create_client(PointTransformation, POINT_TRANSFORMER_TOPIC)
         self.transform_tf = self.create_client(PointTransformation, POINT_TRANSFORMER_TOPIC)
         self.cmd_vel_pub = self.create_publisher(Twist, "/cmd_vel", 10)
-        self.display_view_pub = self.create_publisher(String, "/display/set_view", 10)
+        self.display_view_pub = self.create_publisher(String, DISPLAY_VIEW_TOPIC, 10)
 
     def generate_manual_levels(self):
         """Generate manual levels"""
