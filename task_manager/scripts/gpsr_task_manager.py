@@ -9,6 +9,7 @@ import time
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
+from frida_constants.hri_constants import DISPLAY_VIEW_TOPIC
 from subtask_managers.gpsr_single_tasks import GPSRSingleTask
 from subtask_managers.gpsr_tasks import GPSRTask
 
@@ -56,7 +57,7 @@ class GPSRTM(Node):
         self.gpsr_tasks = GPSRTask(self.subtask_manager)
         self.gpsr_individual_tasks = GPSRSingleTask(self.subtask_manager)
         
-        self.display_view_pub = self.create_publisher(String, "/display/set_view", 10)
+        self.display_view_pub = self.create_publisher(String, DISPLAY_VIEW_TOPIC, 10)
 
         self.current_state = (
             GPSRTM.States.WAITING_FOR_BUTTON
