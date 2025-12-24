@@ -3,7 +3,6 @@ from PIL import Image
 import io
 import pickle
 import argparse
-import torch
 
 NOT_FOUND = "not found"
 
@@ -81,7 +80,11 @@ class MoonDreamModel:
         if not detections:
             return NOT_FOUND
 
-        objects = detections["objects"] if isinstance(detections, dict) and "objects" in detections else detections
+        objects = (
+            detections["objects"]
+            if isinstance(detections, dict) and "objects" in detections
+            else detections
+        )
 
         if not objects:
             return NOT_FOUND
@@ -116,7 +119,7 @@ class MoonDreamModel:
             if location != "":
                 location += ", "
             location += (
-               f"to the right of the {objects[left_pos].get('name', 'object').lower()}"
+                f"to the right of the {objects[left_pos].get('name', 'object').lower()}"
             )
         elif right_pos is not None:
             if location != "":
