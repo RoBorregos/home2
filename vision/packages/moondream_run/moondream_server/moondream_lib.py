@@ -3,6 +3,7 @@ from PIL import Image
 import io
 import pickle
 import argparse
+import torch
 
 NOT_FOUND = "not found"
 
@@ -28,8 +29,8 @@ order_labels = [
 class MoonDreamModel:
     def __init__(
         self,
-        model_name="vikhyatk/moondream2",
-        revision="2025-01-09",
+        model_name="moondream/moondream3-preview",
+        revision=None,
         device_map={"": 0},
         **kwargs,
     ):
@@ -77,14 +78,23 @@ class MoonDreamModel:
         left_pos = None
         right_pos = None
 
-        if not detections["objects"]:
+        if not detections:
             return NOT_FOUND
 
-        for i, obj in enumerate(detections["objects"]):
-            x_center = (obj["x_min"] + obj["x_max"]) / 2
+        objects = detections["objects"] if isinstance(detections, dict) and "objects" in detections else detections
+
+        if not objects:
+            return NOT_FOUND
+
+        for i, obj in enumerate(objects):
+            x_min = obj.get("x_min", obj.get("xmin"))
+            x_max = obj.get("x_max", obj.get("xmax"))
+            name = obj.get("name", obj.get("label", "unknown"))
+
+            x_center = (x_min + x_max) / 2
             x_pos.append((x_center, i))
 
-            if obj["name"].lower() == subject.lower():
+            if name.lower() == subject.lower():
                 drink_pos = i
 
         if drink_pos is None:
@@ -106,13 +116,13 @@ class MoonDreamModel:
             if location != "":
                 location += ", "
             location += (
-                f"to the right of the {detections['objects'][left_pos]['name'].lower()}"
+               f"to the right of the {objects[left_pos].get('name', 'object').lower()}"
             )
         elif right_pos is not None:
             if location != "":
                 location += ", "
             location += (
-                f"to the left of the {detections['objects'][right_pos]['name'].lower()}"
+                f"to the left of the {objects[right_pos].get('name', 'object').lower()}"
             )
 
         if location == "":
@@ -131,13 +141,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model_name",
         type=str,
-        default="vikhyatk/moondream2",
+        default="moondream/moondream3-preview",
         help="Name of the MoonDream model to load from Hugging Face Hub",
     )
     parser.add_argument(
         "--revision",
         type=str,
-        default="2025-01-09",
+        default=None,
         help="Revision of the MoonDream model to load from Hugging Face Hub",
     )
 
