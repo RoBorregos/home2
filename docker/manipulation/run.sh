@@ -88,16 +88,14 @@ case $TASK in
 esac
 
 COMMAND="$SETUP && $RUN"
-add_or_update_variable .env "COMMAND" "$COMMAND"
 
 if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
-    EXISTING_CONTAINER=$(docker ps -a -q -f name="manipulation")
-    if [ -z "$EXISTING_CONTAINER" ] || [ -n "$BUILD_IMAGE" ]; then
+    ALREADY_RUNNING=$(docker ps -q -f name="manipulation")
+    if [ -z "$ALREADY_RUNNING" ] || [ -n "$BUILD_IMAGE" ]; then
         docker compose -f "$COMPOSE" up -d $BUILD_IMAGE
-    else
-        docker compose -f "$COMPOSE" start
     fi
     docker compose -f "$COMPOSE" exec manipulation bash -c "$COMMAND"
 else
+    add_or_update_variable .env "COMMAND" "$COMMAND"
     docker compose -f "$COMPOSE" up $DETACHED $BUILD_IMAGE
 fi
