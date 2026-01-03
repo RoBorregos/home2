@@ -1,6 +1,7 @@
 import sys
 
 sys.path.append("..")
+sys.path.append("../../../../frida_constants")
 
 import pytest
 from deepeval import assert_test
@@ -10,8 +11,6 @@ from nlp.assets.dialogs import format_response, get_extract_data_args
 from nlp.assets.schemas import ExtractedData
 from openai import OpenAI
 from openai._types import NOT_GIVEN
-from tqdm import tqdm
-
 from frida_constants.hri_constants import MODEL
 from config import API_KEY, BASE_URL, TEMPERATURE
 from metrics.json_insensitive_values_match import JsonInsensitiveValuesMatch
@@ -45,58 +44,51 @@ def structured_response(response, response_format):
     return formatted_response.choices[0].message.content
 
 
-test_cases = [
+RAW_TEST_CASES = [
     # Test possible receptionist dialogs
-    ("My name is Oscar and I like Fanta", "drink", None, ExtractedData(data="Fanta").model_dump_json()),
-    ("My name is Oscar and I like Fanta", "name", None, ExtractedData(data="Oscar").model_dump_json()),
-    ("I like fanta but my favorite drink is Coke", "drink", None, ExtractedData(data="Coke").model_dump_json()),
-    ("My favorite drink is fanta but I also drink Coke", "drink", None, ExtractedData(data="fanta").model_dump_json()),
+    ("My name is Oscar and I like Fanta", "drink", None, "Fanta"),
+    ("My name is Oscar and I like Fanta", "name", None, "Oscar"),
+    ("I like fanta but my favorite drink is Coke", "drink", None, "Coke"),
+    ("My favorite drink is fanta but I also drink Coke", "drink", None, "fanta"),
     # Test with context
-    (
-        "I hate Lemonade. However, I like Fanta",
-        "drink",
-        "The user was asked 'which drink do you hate'. We want to infer his hated drink from response",
-        ExtractedData(data="Lemonade").model_dump_json(),
-    ),
-    (
-        "I hate Lemonade. However, I like Fanta",
-        "drink",
-        "The user was asked 'what is your favorite drink'. We want to infer his favorite drink from response",
-        ExtractedData(data="Fanta").model_dump_json(),
-    ),
+    ("I hate Lemonade. However, I like Fanta", "drink", "The user was asked 'which drink do you hate'. We want to infer his hated drink from response", "Lemonade"),
+    ("I hate Lemonade. However, I like Fanta", "drink", "The user was asked 'what is your favorite drink'. We want to infer his favorite drink from response", "Fanta"),
     # Test extracting different information from the same sentence
-    ("John enjoys eating pizza with his friends", "food", None, ExtractedData(data="pizza").model_dump_json()),
-    ("John enjoys eating pizza with his friends", "name", None, ExtractedData(data="John").model_dump_json()),
+    ("John enjoys eating pizza with his friends", "food", None, "pizza"),
+    ("John enjoys eating pizza with his friends", "name", None, "John"),
     # Random Cases
-    ("There is a dog in the backyard", "animal", None, ExtractedData(data="dog").model_dump_json()),
-    ("She studies computer science at university", "major", None, ExtractedData(data="computer science").model_dump_json()),
-    ("Maria's favorite fruit is mango", "fruit", None, ExtractedData(data="mango").model_dump_json()),
-    ("The Eiffel Tower is located in Paris", "city", None, ExtractedData(data="Paris").model_dump_json()),
-    ("We watched a great movie called Inception", "movie", None, ExtractedData(data="Inception").model_dump_json()),
-    ("Carlos loves programming in Python", "language", None, ExtractedData(data="Python").model_dump_json()),
-    ("The capital of France is Paris", "capital", None, ExtractedData(data="Paris").model_dump_json()),
-    ("We traveled to Japan last summer", "country", None, ExtractedData(data="Japan").model_dump_json()),
-    ("His favorite sport is basketball", "sport", None, ExtractedData(data="basketball").model_dump_json()),
-    ("Sarah lives in New York City", "location", None, ExtractedData(data="New York City").model_dump_json()),
-    ("My best friend’s name is Daniel", "friend", None, ExtractedData(data="Daniel").model_dump_json()),
-    ("Go to the kitchen", "place", None, ExtractedData(data="kitchen").model_dump_json()),
+    ("There is a dog in the backyard", "animal", None, "dog"),
+    ("She studies computer science at university", "major", None, "computer science"),
+    ("Maria's favorite fruit is mango", "fruit", None, "mango"),
+    ("The Eiffel Tower is located in Paris", "city", None, "Paris"),
+    ("We watched a great movie called Inception", "movie", None, "Inception"),
+    ("Carlos loves programming in Python", "language", None, "Python"),
+    ("The capital of France is Paris", "capital", None, "Paris"),
+    ("We traveled to Japan last summer", "country", None, "Japan"),
+    ("His favorite sport is basketball", "sport", None, "basketball"),
+    ("Sarah lives in New York City", "location", None, "New York City"),
+    ("My best friend's name is Daniel", "friend", None, "Daniel"),
+    ("Go to the kitchen", "place", None, "kitchen"),
     # Test with few words
-    ("Lemonade", "drink", None, ExtractedData(data="Lemonade").model_dump_json()),
-    ("Oscar", "name", None, ExtractedData(data="Oscar").model_dump_json()),
+    ("Lemonade", "drink", None, "Lemonade"),
+    ("Oscar", "name", None, "Oscar"),
     # Test empty
-    ("", "drink", None, ExtractedData(data="").model_dump_json()),
+    ("", "drink", None, ""),
 ]
 
 # Define test cases
 test_cases = [
     LLMTestCase(
-        input=test_case[0],
-        expected_output=test_case[3],
-        actual_output=generate_response(test_case[0], test_case[1], test_case[2]),
+        input=text,
+        expected_output=ExtractedData(data=expected).model_dump_json(),
+        actual_output=None,
+        additional_metadata={
+            "data_to_extract": data_to_extract,
+            "context": context,
+        },
     )
-    for test_case in tqdm(test_cases, desc="Generating test case responses")
+    for text, data_to_extract, context, expected in RAW_TEST_CASES
 ]
-
 
 dataset = EvaluationDataset(test_cases=test_cases)
 
@@ -106,4 +98,12 @@ dataset = EvaluationDataset(test_cases=test_cases)
     dataset,
 )
 def test_data_extractor(test_case: LLMTestCase):
+    meta = test_case.additional_metadata
+
+    test_case.actual_output = generate_response(
+        test_case.input,
+        meta["data_to_extract"],
+        meta["context"],
+    )
+
     assert_test(test_case, [JsonInsensitiveValuesMatch()])
