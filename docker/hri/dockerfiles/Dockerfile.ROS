@@ -24,3 +24,13 @@ RUN sudo usermod -aG audio ros
 RUN sudo chown -R ros /usr/lib/python3.10/
 RUN sudo chown -R ros /usr/local/lib/python3.10/
 RUN sudo pip install baml-py==0.86.1
+
+USER root
+RUN apt-get update && apt-get install -y curl
+RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+RUN apt-get install -y nodejs
+RUN node -v
+RUN npm -v
+
+RUN apt-get install -y ros-humble-web-video-server ros-humble-rosbridge-server
+

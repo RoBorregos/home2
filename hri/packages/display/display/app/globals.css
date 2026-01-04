@@ -1,0 +1,23 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  
+  --bg-dark: oklch(0.145 0 0);
+  --bg-darker: oklch(0.205 0 0 / 50%);
+  --text-light: oklch(0.985 0 0);
+  --text-gray: oklch(0.708 0 0);
+  --border-light: oklch(1 0 0 / 10%);
+  
+  --blue: oklch(0.488 0.243 264.376);
+  --blue-bg: oklch(0.488 0.243 264.376 / 20%);
+  --blue-hover: oklch(0.488 0.243 264.376 / 80%);
+  
+  --orange: oklch(0.704 0.191 22.216);
+  --orange-bg: oklch(0.577 0.245 27.325 / 20%);
+
+  --purple: oklch(0.627 0.265 303.9);
+  --purple-bg: oklch(0.627 0.265 303.9 / 20%);
+  --pulse: oklch(0.5 0.25 260);
+}

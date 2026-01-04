@@ -16,10 +16,16 @@ def generate_launch_description():
     nlp_launch_path = os.path.join(
         get_package_share_directory("nlp"), "launch", "nlp_launch.py"
     )
+    display_launch_path = os.path.join(
+        get_package_share_directory("display"), "launch", "display_launch.py"
+    )
 
     return LaunchDescription(
         [
             IncludeLaunchDescription(PythonLaunchDescriptionSource(speech_launch_path)),
             IncludeLaunchDescription(PythonLaunchDescriptionSource(nlp_launch_path)),
+            IncludeLaunchDescription(
+                PythonLaunchDescriptionSource(display_launch_path)
+            ),
         ]
     )
