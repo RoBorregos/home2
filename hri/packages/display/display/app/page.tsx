@@ -12,10 +12,9 @@ import { QuestionModal } from "../components/QuestionModal";
 import { VideoFeed } from "../components/VideoFeed";
 import { StartButton } from "../components/StartButton";
 import GPSRDisplay from "../components/GPSRDisplay";
-import StoreGroceriesDisplay from "../components/StoreGroceriesDisplay";
 
 export default function Home() {
-  const [currentView, setCurrentView] = useState<"default" | "gpsr" | "store_groceries">("default");
+  const [currentView, setCurrentView] = useState<"default" | "gpsr" >("default");
 
   useEffect(() => {
     const viewTopic = new Topic<{ data: string }>({
@@ -27,8 +26,6 @@ export default function Home() {
     viewTopic.subscribe((msg) => {
       if (msg.data === "gpsr") {
         setCurrentView("gpsr");
-      } else if (msg.data === "store_groceries") {
-        setCurrentView("store_groceries");
       } else {
         setCurrentView("default");
       }
@@ -43,9 +40,6 @@ export default function Home() {
     return <GPSRDisplay />;
   }
 
-  if (currentView === "store_groceries") {
-    return <StoreGroceriesDisplay />;
-  }
 
   return (
     <div className="flex flex-col h-screen bg-(--bg-dark) text-(--text-light) overflow-y-hidden">
