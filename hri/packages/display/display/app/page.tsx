@@ -1,9 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import { MessageCircle } from "lucide-react";
-import { Topic } from "roslib";
-import { rosClient } from "../RosClient";
 import { AudioStateIndicator } from "../components/AudioStateIndicator";
 import { ConnectionStatus } from "../components/ConnectionStatus";
 import { MessagesList } from "../components/MessagesList";
@@ -11,36 +8,8 @@ import { MapModal } from "../components/MapModal";
 import { QuestionModal } from "../components/QuestionModal";
 import { VideoFeed } from "../components/VideoFeed";
 import { StartButton } from "../components/StartButton";
-import GPSRDisplay from "../components/GPSRDisplay";
 
 export default function Home() {
-  const [currentView, setCurrentView] = useState<"default" | "gpsr" >("default");
-
-  useEffect(() => {
-    const viewTopic = new Topic<{ data: string }>({
-      ros: rosClient,
-      name: "/display/set_view",
-      messageType: "std_msgs/String",
-    });
-
-    viewTopic.subscribe((msg) => {
-      if (msg.data === "gpsr") {
-        setCurrentView("gpsr");
-      } else {
-        setCurrentView("default");
-      }
-    });
-
-    return () => {
-      viewTopic.unsubscribe();
-    };
-  }, []);
-
-  if (currentView === "gpsr") {
-    return <GPSRDisplay />;
-  }
-
-
   return (
     <div className="flex flex-col h-screen bg-(--bg-dark) text-(--text-light) overflow-y-hidden">
       <div className="p-4 border-b border-(--border-light) flex items-center justify-between">

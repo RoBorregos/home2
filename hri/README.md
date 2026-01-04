@@ -125,17 +125,6 @@ flowchart TD
     stt -->|Feedback & Result| hs
 ```
 
-## Display pipeline
-
-### /display/set_view
-
-Topic to control the active view of the display.
-
-*   **Values:**
-    *   `"gpsr"`: Switches to the GPSR task view.
-    *   `"store_groceries"`: Switches to the Store Groceries task view.
-    *   `"default"`: Switches to the default view.
-
 ## Testing the project
 
 Most of the final commands will be executed using `run.sh`. However, here are some testing commands:
@@ -143,9 +132,6 @@ Most of the final commands will be executed using `run.sh`. However, here are so
 ```bash
 # Launch HRI (includes speech, and nlp)
 ros2 launch speech hri_launch.py
-
-# Launch Display (includes Next.js app, rosbridge, and web_video_server)
-ros2 launch display display_launch.py
 
 # Speech (Remember to start the stt docker before, this is done automatically if running the hri docker compose file)
 ros2 launch speech devices_launch.py
@@ -198,19 +184,21 @@ ros2 topic pub --once /hri/display/map std_msgs/msg/String "data: '{\"image_path
 # Simulate sending a question to the display
 ros2 topic pub /hri/display/frida_questions std_msgs/msg/String '{data: "What is your favorite color?"}' -1
 
-# Verify that the answer is received
-ros2 topic echo /hri/display/answers
 ```
 
 # Switch display view
-# Switch to GPSR
-ros2 topic pub --once /display/set_view std_msgs/msg/String "data: 'gpsr'"
+# The display now opens the correct task view automatically when launched with the --open-display flag
 
-# Switch to Store Groceries
-ros2 topic pub --once /display/set_view std_msgs/msg/String "data: 'store_groceries'"
+# Launch GPSR with display
+./run.sh hri --gpsr --open-display
 
-# Switch to Default
-ros2 topic pub --once /display/set_view std_msgs/msg/String "data: 'default'"
+# Launch Store Groceries with display
+./run.sh hri --storing-groceries --open-display
+
+# To open a specific view manually in a browser:
+# GPSR: http://localhost:3000/gpsr
+# Store Groceries: http://localhost:3000/storing-groceries
+# Default: http://localhost:3000/
 ```
 
 ## Other useful commands

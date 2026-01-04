@@ -5,11 +5,8 @@ Task Manager for GPSR task of Robocup @Home 2025
 """
 
 import time
-
 import rclpy
 from rclpy.node import Node
-from std_msgs.msg import String
-from frida_constants.hri_constants import DISPLAY_VIEW_TOPIC
 from subtask_managers.gpsr_single_tasks import GPSRSingleTask
 from subtask_managers.gpsr_tasks import GPSRTask
 
@@ -23,6 +20,7 @@ ATTEMPT_LIMIT = 3
 MAX_COMMANDS = 3
 USE_QR = True  # Set to False if you want to use speech recognition instead of QR code reading
 QR_CODE_ATTEMPTS = 20
+DISPLAY_URL = "http://localhost:3000/gpsr"
 
 
 def confirm_command(interpreted_text, target_info):
@@ -56,8 +54,6 @@ class GPSRTM(Node):
         self.subtask_manager = SubtaskManager(self, task=Task.GPSR, mock_areas=[""])
         self.gpsr_tasks = GPSRTask(self.subtask_manager)
         self.gpsr_individual_tasks = GPSRSingleTask(self.subtask_manager)
-
-        self.display_view_pub = self.create_publisher(String, DISPLAY_VIEW_TOPIC, 10)
 
         self.current_state = (
             GPSRTM.States.WAITING_FOR_BUTTON
@@ -117,12 +113,7 @@ class GPSRTM(Node):
             while not self.subtask_manager.hri.start_button_clicked:
                 rclpy.spin_once(self, timeout_sec=0.1)
             Logger.success(self, "Start button pressed, receptionist task will begin now")
-            Logger.success(self, "Start button pressed, receptionist task will begin now")
             self.current_state = GPSRTM.States.START
-
-            msg = String()
-            msg.data = "gpsr"
-            self.display_view_pub.publish(msg)
 
         if self.current_state == GPSRTM.States.START:
             res = "closed"
