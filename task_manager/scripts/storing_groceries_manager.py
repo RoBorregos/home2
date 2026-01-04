@@ -6,13 +6,12 @@ from collections import defaultdict
 from enum import Enum
 
 import rclpy
-from frida_constants.hri_constants import DISPLAY_VIEW_TOPIC
+
 from frida_constants.vision_classes import BBOX
 from frida_interfaces.srv import PointTransformation
 from geometry_msgs.msg import PointStamped, Twist
 from pydantic import BaseModel
 from rclpy.node import Node
-from std_msgs.msg import String
 from utils.logger import Logger
 from utils.status import Status
 from utils.subtask_manager import SubtaskManager, Task
@@ -161,9 +160,7 @@ class StoringGroceriesManager(Node):
         self.prev_uid = None
         self.pick_uid = None
         self.transform_tf = self.create_client(PointTransformation, POINT_TRANSFORMER_TOPIC)
-        self.transform_tf = self.create_client(PointTransformation, POINT_TRANSFORMER_TOPIC)
         self.cmd_vel_pub = self.create_publisher(Twist, "/cmd_vel", 10)
-        self.display_view_pub = self.create_publisher(String, DISPLAY_VIEW_TOPIC, 10)
 
     def generate_manual_levels(self):
         """Generate manual levels"""
@@ -236,10 +233,6 @@ class StoringGroceriesManager(Node):
             while not self.subtask_manager.hri.start_button_clicked:
                 rclpy.spin_once(self, timeout_sec=0.1)
             Logger.success(self, "Start button pressed, receptionist task will begin now")
-
-            msg = String()
-            msg.data = "store_groceries"
-            self.display_view_pub.publish(msg)
 
             self.subtask_manager.hri.say(text="Waiting for door to open")
             self.state = ExecutionStates.INIT_NAV_TO_SHELF
