@@ -105,6 +105,12 @@ if [ ! -d "../../hri/display/dist" ] || [ ! -d "../../hri/display/node_modules" 
   docker compose -f compose/display.yaml run $BUILD_IMAGE --rm --entrypoint "" display bash -c "source /opt/ros/humble/setup.bash && npm run build"
 fi
 
+# Regenerate database if requested
+if [ "$REGENERATE_DB" == "true" ]; then
+  echo "Regenerating database..."
+  bash scripts/regenerate_db.sh "$ENV_TYPE"
+fi
+
 #_________________________RUN_________________________
 
 GENERATE_BAML_CLIENT="baml-cli generate --from /workspace/src/task_manager/scripts/utils/baml_src/"
@@ -113,8 +119,6 @@ IGNORE_PACKAGES="--packages-ignore frida_interfaces frida_constants xarm_msgs"
 SOURCE_ROS="source /opt/ros/humble/setup.bash"
 PACKAGES="speech nlp embeddings"
 PROFILES=()
-RUN=""
-REGENERATE_DB="${REGENERATE_DB:-}"
 
 case $TASK in
   "--receptionist")
@@ -129,10 +133,6 @@ case $TASK in
     PROFILES=("gpsr")
     RUN="ros2 launch speech hri_launch.py"
     ;;
-    "--regenerate-db")
-      PROFILES=("*")
-      RUN="bash /workspace/src/docker/hri/scripts/regenerate_db.sh"
-      ;;
   *)
     PROFILES=("*")
     RUN="bash"

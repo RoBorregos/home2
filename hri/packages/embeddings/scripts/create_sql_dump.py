@@ -215,7 +215,6 @@ def main():
     frida_constants_jsons = get_jsons(FRIDA_CONSTANTS_PATH)
 
     print(f"Found {len(jsons)} JSON files.")
-    # print(jsons)
 
     print(f"Writing SQL dumps to {DOCKER_PATH}...")
     print("Writing items")
@@ -249,17 +248,14 @@ def main():
         ),
     )
 
-    if "hand_items.json" in frida_constants_jsons:
-        print("Writing hand items")
-        hand_json = frida_constants_jsons["hand_items.json"]
-        # some packages place markers under a top-level "markers" key
-        markers = hand_json.get("markers", hand_json)
-        write_to_file(
-            os.path.join(DOCKER_PATH, "04-hand_location.sql"),
-            json_to_hand_items_dumps(markers),
-        )
-    else:
-        print("Skipping hand_location: frida_constants/data/hand_items.json not found")
+    print("Writing hand items")
+    hand_json = frida_constants_jsons["hand_items.json"]
+    # some packages place markers under a top-level "markers" key
+    markers = hand_json.get("markers", hand_json)
+    write_to_file(
+        os.path.join(DOCKER_PATH, "04-hand_location.sql"),
+        json_to_hand_items_dumps(markers),
+    )
 
     print("Writing locations")
     write_to_file(
