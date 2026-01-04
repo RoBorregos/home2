@@ -14,6 +14,7 @@ BUILD_IMAGE=""
 BUILD_DISPLAY=""
 OPEN_DISPLAY=""
 DOWNLOAD_MODEL=""
+REGENERATE_DB=""
 
 COMPOSE="compose/docker-compose-${ENV_TYPE}.yml"
 
@@ -49,6 +50,8 @@ for arg in "${ARGS[@]}"; do
     "--download-model")
         DOWNLOAD_MODEL="true"
         ;;
+    "--regenerate-db")
+        REGENERATE_DB="true"
   esac
 done
 
@@ -102,6 +105,12 @@ if [ ! -d "../../hri/display/dist" ] || [ ! -d "../../hri/display/node_modules" 
   docker compose -f compose/display.yaml run $BUILD_IMAGE --rm --entrypoint "" display bash -c "source /opt/ros/humble/setup.bash && npm run build"
 fi
 
+# Regenerate database if requested
+if [ "$REGENERATE_DB" == "true" ]; then
+  echo "Regenerating database..."
+  bash scripts/regenerate_db.sh "$ENV_TYPE"
+fi
+
 #_________________________RUN_________________________
 
 GENERATE_BAML_CLIENT="baml-cli generate --from /workspace/src/task_manager/scripts/utils/baml_src/"
@@ -110,7 +119,6 @@ IGNORE_PACKAGES="--packages-ignore frida_interfaces frida_constants xarm_msgs"
 SOURCE_ROS="source /opt/ros/humble/setup.bash"
 PACKAGES="speech nlp embeddings"
 PROFILES=()
-RUN=""
 
 case $TASK in
   "--receptionist")
