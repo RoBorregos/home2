@@ -6,6 +6,7 @@ RUN mkdir -p /workspace/requirements
 # Requirements
 COPY task_manager/requirements /workspace/requirements
 WORKDIR /workspace/requirements
+RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
 COPY ../../hri/requirements/postgres.txt /workspace/requirements/postgres.txt
