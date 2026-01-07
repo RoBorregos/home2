@@ -154,12 +154,7 @@ wait_and_launch_display() {
     sleep 1
   done
   chmod +x scripts/open-display.bash
-  local task_route=""
-  case $TASK in
-    "--gpsr") task_route="gpsr" ;;
-    "--storing-groceries") task_route="storing-groceries" ;;
-    *) task_route="" ;;
-  esac
+  local task_route="${TASK#--}"
   bash scripts/open-display.bash "$task_route"
 }
 
