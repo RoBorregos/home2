@@ -6,7 +6,6 @@ from collections import defaultdict
 from enum import Enum
 
 import rclpy
-
 from frida_constants.vision_classes import BBOX
 from frida_interfaces.srv import PointTransformation
 from geometry_msgs.msg import PointStamped, Twist
