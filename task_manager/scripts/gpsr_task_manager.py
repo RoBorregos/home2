@@ -20,7 +20,6 @@ ATTEMPT_LIMIT = 3
 MAX_COMMANDS = 3
 USE_QR = True  # Set to False if you want to use speech recognition instead of QR code reading
 QR_CODE_ATTEMPTS = 20
-DISPLAY_URL = "http://localhost:3000/gpsr"
 
 
 def confirm_command(interpreted_text, target_info):
