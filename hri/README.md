@@ -32,7 +32,7 @@ home2/
 │
 ├──packages/ # ROS packages for the project
 │   ├──embeddings/
-│   │   ├──config/ # ROS launch configs. REPLACE keyword uses hri_constans.py values
+│   │   ├──config/ # ROS launch configs. REPLACE keyword uses hri_constants.py values
 │   │   ├──embeddings/
 │   │   │   └──dataframes/ # Json files with data
 │   │   ├──launch/ # ROS launch files
@@ -40,7 +40,7 @@ home2/
 │   │   └──scripts/ # Classes, functions and nodes
 │   ├──nlp/
 │   │   ├──assets/ # Persists models
-│   │   ├──config/ # ROS launch configs. REPLACE keyword uses hri_constans.py values
+│   │   ├──config/ # ROS launch configs. REPLACE keyword uses hri_constants.py values
 │   │   ├──launch/ # ROS launch files
 │   │   │   ├──extract_data_launch.py # Launches extract data node
 │   │   │   └──nlp_launch.py # Launches NLP nodes
@@ -59,7 +59,7 @@ home2/
 │       │   │       ├──model/ # Persists model
 │       │   │       └──audio_cache.json/ # Maps texts to audio files
 │       │   └──oww/ # Open Wake Word models
-│       ├──config/ # ROS launch configs. REPLACE keyword uses hri_constans.py values
+│       ├──config/ # ROS launch configs. REPLACE keyword uses hri_constanst.py values
 │       ├──debug/ # Scripts for debugging
 │       ├──launch/ # ROS launch files
 │       │   ├──devices_launch.py # Launches speech nodes
@@ -104,7 +104,7 @@ Captures raw audio in chunks and publishes it.
 
 ### kws_oww.py
 
-Uses Open Wake Word to detect keywords sush as "Frida".
+Uses Open Wake Word to detect keywords such as "Frida".
 
 ### hear_streaming.py
 
@@ -142,6 +142,7 @@ ros2 service call /hri/speech/speak frida_interfaces/srv/Speak "{text: \"Go to t
 # Extract data from a sentence
 ros2 service call /hri/nlp/data_extractor frida_interfaces/srv/ExtractInfo "{full_text: 'Hello, my name is Oscar', data: 'name'}"
 
+
 # Is positive
 ros2 service call /hri/nlp/is_positive frida_interfaces/srv/IsPositive "{text: 'I confirm'}"
 
@@ -170,6 +171,7 @@ ros2 topic pub /speech/text_spoken std_msgs/msg/String '{data: "My name is Frida
 # Simulate keyword detection
 ros2 topic pub /hri/speech/oww std_msgs/msg/String '{data: "Frida"}' -1
 
+
 # Simulate voice activity
 ros2 topic pub /AudioState std_msgs/msg/String '{data: "listening"}' -1
 
@@ -182,22 +184,23 @@ ros2 topic pub /AudioState std_msgs/msg/String '{data: "idle"}' -1
 ros2 topic pub --once /hri/display/map std_msgs/msg/String "data: '{\"image_path\": \"test-map.png\", \"markers\": [{\"x\": 0, \"y\": 0.0, \"color\": \"#ff0000\", \"color_name\": \"red\"}, {\"x\": 100.0, \"y\": 100.0, \"color\": \"#00ff00\", \"color_name\": \"green\"}, {\"x\": 50.0, \"y\": 50.0, \"color\": \"#0000ff\", \"color_name\": \"blue asdads\", \"test\": \"a\"}]}'"
 
 # Simulate sending a question to the display
-ros2 topic pub /hri/display/frida_questions std_msgs/msg/String '{data: "What is your favorite color?"}' -1
+ros2 topic pub /hri/display/robot_questions std_msgs/msg/String '{data: "What is your favorite color?"}' -1
 
-```
+# Verify that the answer is received
+ros2 topic echo /hri/display/answers
+
 
 # Switch display view
 # The display now opens the correct task view automatically when launched with the --open-display flag
 
-# Launch GPSR with display
+# Launch a task with display
+./run.sh hri --<task_name> --open-display
+
+# Example: Launch GPSR with display
 ./run.sh hri --gpsr --open-display
 
-# Launch Store Groceries with display
-./run.sh hri --storing-groceries --open-display
-
 # To open a specific view manually in a browser:
-# GPSR: http://localhost:3000/gpsr
-# Store Groceries: http://localhost:3000/storing-groceries
+# Task view: http://localhost:3000/<task_name>
 # Default: http://localhost:3000/
 ```
 
@@ -250,7 +253,7 @@ pactl list short sources
 
 ### Speaker
 
-If the speaker isn't loud, make sure to increase the volume level in the device that controlls the speaker.
+If the speaker isn't loud, make sure to increase the volume level in the device that controls the speaker.
 
 ```bash
 amixer -D pulse sset Master 100%
@@ -285,7 +288,7 @@ docker exec -it home2-hri-postgres psql -U rbrgs -d postgres
 ```
 
 ```sql
-ivan@ivan:~/home2/docker/hri$ docker exec -it home2-hri-postgres psql -U rbrgs -d postgres
+user@host:~/home2/docker/hri$ docker exec -it home2-hri-postgres psql -U rbrgs -d postgres
 psql (17.4 (Debian 17.4-1.pgdg120+2))
 Type "help" for help.
 
@@ -303,7 +306,8 @@ postgres=# \dt
 postgres=#
 ```
 
-```sql-- List all columns in a table
+```sql
+-- List all columns in a table
 \d <table_name>
 ```
 
