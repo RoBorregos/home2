@@ -16,6 +16,7 @@ from nlp.assets.dialogs import (
     get_categorize_shelves_args,
     get_common_interests_dialog,
     get_previous_command_answer,
+    get_is_coherent_dialog,
 )
 from openai import OpenAI
 from rclpy.executors import ExternalShutdownException
@@ -69,6 +70,7 @@ class LLMUtils(Node):
         self.declare_parameter("GRAMMAR_SERVICE", "/nlp/grammar")
         self.declare_parameter("LLM_WRAPPER_SERVICE", "/nlp/llm")
         self.declare_parameter("COMMON_INTEREST_SERVICE", "/nlp/common_interest")
+        self.declare_parameter("IS_COHERENT_SERVICE", "/nlp/is_coherent")
         self.declare_parameter("IS_POSITIVE_SERVICE", "/nlp/is_positive")
         self.declare_parameter("IS_NEGATIVE_SERVICE", "/nlp/is_negative")
         self.declare_parameter("CATEGORIZE_SERVICE", "/nlp/categorize_shelves")
@@ -102,7 +104,9 @@ class LLMUtils(Node):
             .get_parameter_value()
             .string_value
         )
-
+        is_coherent_service = (
+            self.get_parameter("IS_COHERENT_SERVICE").get_parameter_value().string_value
+        )
         is_positive_service = (
             self.get_parameter("IS_POSITIVE_SERVICE").get_parameter_value().string_value
         )
@@ -152,6 +156,9 @@ class LLMUtils(Node):
 
         self.create_service(IsPositive, is_positive_service, self.is_positive)
         self.create_service(IsNegative, is_negative_service, self.is_negative)
+        self.create_service(
+            IsPositive, is_coherent_service, self.is_coherent_service_callback
+        )
 
         self.create_service(
             CategorizeShelves, categorize_shelves_service, self.categorize_shelves
@@ -203,6 +210,27 @@ class LLMUtils(Node):
             response = response.split("</think>")[-1].strip()
 
         res.answer = response
+        return res
+
+    def is_coherent_service_callback(self, req, res):
+        self.logger.info(f"Checking coherence for: {req.text}")
+        dialog = get_is_coherent_dialog(req.text)
+        response = (
+            self.client.beta.chat.completions.parse(
+                model=MODEL.LLM_WRAPPER.value,
+                temperature=self.temperature,
+                messages=dialog["messages"],
+                response_format=dialog["response_format"],
+            )
+            .choices[0]
+            .message.content
+        )
+        self.logger.info(f"Coherence result: {response}")
+        try:
+            res.is_positive = json.loads(response)["is_positive"]
+        except Exception as e:
+            self.logger.error(f"Failed to parse coherence response: {e}")
+            res.is_positive = False
         return res
 
     def common_interest(self, req, res):
