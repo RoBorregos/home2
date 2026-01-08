@@ -254,23 +254,46 @@ class EGPSRTM(Node):
         )
 
     def detect_trash(self):
-        """Detect trash in the current location"""
+        """Detect trash using YOLO-E workflow"""
         if self.problems_solved.get("trash", 0) < MAX_TRASH_SOLVED:
-            s, trash_detected = self.subtask_manager.vision.detect_trash()
-            if s == Status.EXECUTION_SUCCESS and trash_detected:
-                self.found_trash.append(
-                    {"object": "trash", "location": self.curr_location, "timestamp": time.time()}
+            
+            status, trash_items = self.subtask_manager.vision.get_trash_bboxes()
+            
+            if status == Status.EXECUTION_SUCCESS and len(trash_items) > 0:
+                
+                for item in trash_items:
+                    self.found_trash.append({
+                        'bbox': item['bbox'],
+                        'trash_type': item['trash_type'],       
+                        'confidence': item['confidence'],
+                        'location': self.curr_location,
+                        'sublocation': self.curr_sublocation,
+                        'timestamp': time.time(),
+                    })
+                
+                self.get_logger().info(
+                    f"Detected {len(trash_items)} items in {self.curr_location}:"
                 )
-                self.get_logger().info(f"Trash detected in {self.curr_location}")
+                
+                for item in trash_items:
+                    self.get_logger().info(
+                        f"{item['trash_type']} (bbox: {item['bbox']}) \n"
+                    )
+                
                 if self.solve_immediately:
-                    # Save current exploration state
+                    #Save current exploration state
                     self.interrupted_exploration_location = self.curr_location
                     self.get_logger().info(
                         f"Interrupting exploration at {self.interrupted_exploration_location} to handle trash"
                     )
-
                     # Change state to handle trash immediately
                     self.current_state = EGPSRTM.States.HANDLE_TRASH
+                    
+            elif status == Status.TARGET_NOT_FOUND:
+                self.get_logger().info(f"No trash found in {self.curr_location}")
+                
+            else:
+                self.get_logger().warning(f"zero shot trash detection failed: {status}")
 
     def detect_misplaced_objects(self):
         """Detect misplaced objects in the current location"""
