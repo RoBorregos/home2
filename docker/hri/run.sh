@@ -154,7 +154,8 @@ wait_and_launch_display() {
     sleep 1
   done
   chmod +x scripts/open-display.bash
-  bash scripts/open-display.bash
+  local task_route="${TASK#--}"
+  bash scripts/open-display.bash "$task_route"
 }
 
 if [ -n "$OPEN_DISPLAY" ]; then
