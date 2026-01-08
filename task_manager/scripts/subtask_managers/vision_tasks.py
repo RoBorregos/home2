@@ -129,7 +129,7 @@ class VisionTasks:
 
         # YOLO-E detection client (using existing trash detection node)
         self.yoloe_detection_client = self.node.create_client(
-            DetectionHandler, '/vision/grounding_dino_detection'
+            DetectionHandler, '/vision/zero_shot_detection'
         )
 
         self.services = {

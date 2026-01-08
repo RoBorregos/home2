@@ -35,7 +35,7 @@ class TrashDetectionNode(Node):
         
         self.detection_service = self.create_service(
             DetectionHandler, 
-            '/vision/grounding_dino_detection',
+            '/vision/zero_shot_detection',
             self.detect_objects_callback
         )
         
