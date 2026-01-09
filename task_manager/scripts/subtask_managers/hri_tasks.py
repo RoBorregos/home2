@@ -45,6 +45,7 @@ from frida_interfaces.srv import (
     HearMultiThread,
     IsNegative,
     IsPositive,
+    IsCoherent,
     LLMWrapper,
     Speak,
 )
@@ -302,11 +303,11 @@ class HRITasks(metaclass=SubtaskMeta):
     def check_coherence(self, text: str) -> bool:
         """Check if the command is coherent and possible for the robot."""
         Logger.info(self.node, f"Checking coherence: {text}")
-        request = IsPositive.Request(text=text)
+        request = IsCoherent.Request(text=text)
         future = self.is_coherent_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
         if future.result() is not None:
-            return future.result().is_positive
+            return future.result().is_coherent
         return False
 
     @service_check("extract_data_service", (Status.SERVICE_CHECK, ""), TIMEOUT)

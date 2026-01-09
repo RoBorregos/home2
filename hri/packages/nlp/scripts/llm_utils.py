@@ -31,6 +31,7 @@ from frida_interfaces.srv import (
     Grammar,
     IsNegative,
     IsPositive,
+    IsCoherent,
     LLMWrapper,
 )
 
@@ -157,7 +158,7 @@ class LLMUtils(Node):
         self.create_service(IsPositive, is_positive_service, self.is_positive)
         self.create_service(IsNegative, is_negative_service, self.is_negative)
         self.create_service(
-            IsPositive, is_coherent_service, self.is_coherent_service_callback
+            IsCoherent, is_coherent_service, self.is_coherent_service_callback
         )
 
         self.create_service(
@@ -226,11 +227,12 @@ class LLMUtils(Node):
             .message.content
         )
         self.logger.info(f"Coherence result: {response}")
+        self.logger.info(f"Coherence result: {response}")
         try:
-            res.is_positive = json.loads(response)["is_positive"]
+            res.is_coherent = json.loads(response)["is_positive"]
         except Exception as e:
             self.logger.error(f"Failed to parse coherence response: {e}")
-            res.is_positive = False
+            res.is_coherent = False
         return res
 
     def common_interest(self, req, res):

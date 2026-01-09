@@ -203,16 +203,14 @@ class GPSRTM(Node):
                 else:
                     self.subtask_manager.hri.say("I am sorry, I could not understand you.")
                     self.current_hear_attempt += 1
+            elif not self.subtask_manager.hri.check_coherence(user_command):
+                self.subtask_manager.hri.say(
+                    "I didn't catch that correctly or the command was incomplete. Please tell me again.",
+                    wait=True,
+                )
+                self.current_hear_attempt += 1
+                return  # this should hopefully cause a retry
             else:
-                # coherence check in here before attempting the command execution logic
-                coherent = self.subtask_manager.hri.check_coherence(user_command)
-                if not coherent:
-                    self.subtask_manager.hri.say(
-                        "I didn't catch that correctly or the command was incomplete. Please tell me again.",
-                        wait=True,
-                    )
-                    self.current_hear_attempt += 1
-                    return  # not so sure if we should return in here to restart the process
                 self.subtask_manager.hri.say(
                     "I am planning how to perform your command, please wait a moment", wait=False
                 )
