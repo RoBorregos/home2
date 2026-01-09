@@ -10,8 +10,6 @@ import time
 import csv
 from datetime import datetime
 from typing import Union
-from prompt_toolkit.shortcuts import radiolist_dialog
-from enum import Enum
 
 import rclpy
 from config.hri.debug import config as test_hri_config
@@ -55,33 +53,21 @@ InterpreterAvailableCommands = Union[
     SayWithContext,
 ]
 
-DATA_DIR = "/workspace/src/hri/packages/nlp/test/"
-OUTPUT_DIR = os.path.join(DATA_DIR, "output")
-
 
 def confirm_preference(interpreted_text, extracted_data):
     return "I heard you like " + extracted_data + ". Is that correct?"
 
 
-class TestOption(Enum):
-    COMPOUND = "Compound functions"
-    INDIVIDUAL = "Individual functions"
-    EMBEDDINGS = "Test embeddings"
-    ASYNC_LLM = "Async LLM test"
-    STREAMING = "Streaming test"
-    MAP = "Map test"
-    OBJECT_LOCATION = "Object location test"
-    IS_POSITIVE = "Is positive test"
-
-
-def select_test():
-    result = radiolist_dialog(
-        title="HRI Test Selector",
-        text="Select a test to run:",
-        values=[(opt, opt.value) for opt in TestOption],
-    ).run()
-
-    return result
+DATA_DIR = "/workspace/src/hri/packages/nlp/test/"
+OUTPUT_DIR = os.path.join(DATA_DIR, "output")
+TEST_COMPOUND = False
+TEST_INDIVIDUAL_FUNCTIONS = False
+TEST_EMBEDDINGS = False
+TEST_ASYNC_LLM = False
+TEST_STREAMING = False
+TEST_MAP = False
+TEST_OBJECT_LOCATION = False
+TEST_IS_POSITIVE = False
 
 
 class TestHriManager(Node):
@@ -94,30 +80,28 @@ class TestHriManager(Node):
         self.run()
 
     def run(self):
-        selection = select_test()
-
-        if selection == TestOption.COMPOUND:
+        if TEST_COMPOUND:
             self.compound_functions()
 
-        elif selection == TestOption.INDIVIDUAL:
+        elif TEST_INDIVIDUAL_FUNCTIONS:
             self.individual_functions()
 
-        elif selection == TestOption.EMBEDDINGS:
+        elif TEST_EMBEDDINGS:
             self.test_embeddings()
 
-        elif selection == TestOption.ASYNC_LLM:
+        elif TEST_ASYNC_LLM:
             self.async_llm_test()
 
-        elif selection == TestOption.STREAMING:
+        elif TEST_STREAMING:
             self.test_streaming()
 
-        elif selection == TestOption.MAP:
+        elif TEST_MAP:
             self.test_map()
 
-        elif selection == TestOption.OBJECT_LOCATION:
+        elif TEST_OBJECT_LOCATION:
             self.test_object_location()
 
-        elif selection == TestOption.IS_POSITIVE:
+        elif TEST_IS_POSITIVE:
             self.test_is_positive()
 
         exit(0)
