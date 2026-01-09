@@ -83,25 +83,25 @@ class TestHriManager(Node):
         if TEST_COMPOUND:
             self.compound_functions()
 
-        elif TEST_INDIVIDUAL_FUNCTIONS:
+        if TEST_INDIVIDUAL_FUNCTIONS:
             self.individual_functions()
 
-        elif TEST_EMBEDDINGS:
+        if TEST_EMBEDDINGS:
             self.test_embeddings()
 
-        elif TEST_ASYNC_LLM:
+        if TEST_ASYNC_LLM:
             self.async_llm_test()
 
-        elif TEST_STREAMING:
+        if TEST_STREAMING:
             self.test_streaming()
 
-        elif TEST_MAP:
+        if TEST_MAP:
             self.test_map()
 
-        elif TEST_OBJECT_LOCATION:
+        if TEST_OBJECT_LOCATION:
             self.test_object_location()
 
-        elif TEST_IS_POSITIVE:
+        if TEST_IS_POSITIVE:
             self.test_is_positive()
 
         exit(0)
