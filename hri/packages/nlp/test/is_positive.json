@@ -1,0 +1,22 @@
+[
+    ["Yes", true],
+    ["That's right", true],
+    ["Correct", true],
+    ["Absolutely", true],
+    ["Of course", true],
+    ["Sure", true],
+    ["Exactly", true],
+    ["I agree", true],
+    ["Indeed", true],
+    ["Affirmative", true],
+    ["No", false],
+    ["That's wrong", false],
+    ["Incorrect", false],
+    ["I don’t think so", false],
+    ["Not at all", false],
+    ["I don't know", false],
+    ["Maybe", false],
+    ["I'm not sure", false],
+    ["Huh?", false],
+    ["What do you mean?", false]
+]

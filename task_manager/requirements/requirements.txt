@@ -1,2 +1,3 @@
-pydantic
+pydantic==2.12.5
 baml-py==0.86.1
+transformers==4.51.3

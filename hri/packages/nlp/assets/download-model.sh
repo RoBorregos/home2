@@ -24,6 +24,7 @@ echo "Running: docker run -d --rm --runtime=nvidia -v \"$SCRIPT_DIR\":/ollama -e
 CONTAINER_ID=$(docker run -d --rm --runtime=nvidia -v "$SCRIPT_DIR":/ollama -e OLLAMA_MODELS=/ollama "$IMAGE" $COMMAND)
 
 docker exec "$CONTAINER_ID" ollama pull qwen3
+docker exec "$CONTAINER_ID" ollama pull nomic-embed-text
 docker exec "$CONTAINER_ID" ollama create -f /ollama/Modelfile rbrgs
 
 docker stop "$CONTAINER_ID"

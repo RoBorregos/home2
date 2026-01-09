@@ -1,21 +1,23 @@
 import sys
 
 sys.path.append("..")
-import time
+sys.path.append("../../../../frida_constants")
 
+import pytest
+from deepeval import assert_test
+from deepeval.dataset import EvaluationDataset
 from deepeval.test_case import LLMTestCase
-from nlp.assets.dialogs import format_response, get_common_interests_dialog
+from nlp.assets.dialogs import get_common_interests_dialog
 from openai import OpenAI
 from frida_constants.hri_constants import MODEL
-
 from config import API_KEY, BASE_URL, TEMPERATURE
 from metrics.embeddings_similarity import EmbeddingSimilarity
 
 
-# Sample function to test
-def generate_response(person1Name, person2Name, person1Interests, person2Interests, two_steps=False):
+def generate_response(person1, person2, interests1, interests2):
     client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
-    messages = get_common_interests_dialog(person1Name, person2Name, person1Interests, person2Interests)
+
+    messages = get_common_interests_dialog(person1, person2, interests1, interests2)
 
     response = client.beta.chat.completions.parse(
         model=MODEL.GENERATE_RESPONSE.value,
@@ -26,18 +28,7 @@ def generate_response(person1Name, person2Name, person1Interests, person2Interes
     return response.choices[0].message.content
 
 
-def structured_response(response, response_format):
-    client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
-    formatted_response = client.beta.chat.completions.parse(
-        model=MODEL.STRUCTURED_RESPONSE.value,
-        temperature=TEMPERATURE,
-        messages=format_response(response),
-        response_format=response_format,
-    )
-    return formatted_response.choices[0].message.content
-
-
-test_cases = [
+RAW_TEST_CASES = [
     # Test possible receptionist dialogs
     ("Oscar", "John", "movies and tv series", "tv series and videogames", "tv series"),
     ("Alice", "Bob", "reading and hiking", "hiking and swimming", "Alice and Bob's common interest is hiking."),
@@ -63,45 +54,34 @@ test_cases = [
     ("Riley", "Jack", "football and basketball", "basketball and baseball", "Riley and Jack's common interest is basketball."),
 ]
 
-# generate_response(test_case[0], test_case[1], test_case[2], test_case[3])
 # Define test cases
 test_cases = [
     LLMTestCase(
-        input=(test_case[0], test_case[1], test_case[2], test_case[3]),
-        expected_output=test_case[4],
-        actual_output="",
+        input=f"{p1} | {p2} | {i1} | {i2}",
+        expected_output=expected,
+        actual_output=None,
+        additional_metadata={
+            "person1": p1,
+            "person2": p2,
+            "interests1": i1,
+            "interests2": i2,
+        },
     )
-    for test_case in test_cases
+    for p1, p2, i1, i2, expected in RAW_TEST_CASES
 ]
 
-
-count = 0
-print("\n\n")
-for test_case in test_cases:
-    start_time = time.time()
-    threshold = test_case.additional_metadata.get("threshold", 0.5) if test_case.additional_metadata else 0.5
-    metric = EmbeddingSimilarity(threshold=threshold)
-    test_case.actual_output = generate_response(test_case.input[0], test_case.input[1], test_case.input[2], test_case.input[3])
-    end_time = time.time()
-    duration = end_time - start_time
-    if metric.measure(test_case) == 0:
-        count += 1
-        print("\033[91mTest case failed:\033[0m")
-        print("\033[94minput:\033[0m", test_case.input)
-        print("\033[93mexpected_output:\033[0m", test_case.expected_output)
-        print("\033[93mactual_output:\033[0m", test_case.actual_output)
-        print(f"\033[96mTime taken: {duration:.2f} seconds\033[0m")
-        print("\n\n")
-    else:
-        # Optionally print success message with time
-        print(f"\033[92mTest case passed in {duration:.2f} seconds\033[0m")
-        print("\033[94minput:\033[0m", test_case.input)
-        print("\033[93mexpected_output:\033[0m", test_case.expected_output)
-        print("\033[93mactual_output:\033[0m", test_case.actual_output)
-        print("\n")
+dataset = EvaluationDataset(test_cases=test_cases)
 
 
-if count == 0:
-    print(f"\n\033[92mAll test cases passed ({len(test_cases)}/{len(test_cases)})!\033[0m")
-else:
-    print(f"\n\033[91m{count} test cases failed out of {len(test_cases)}\033[0m")
+@pytest.mark.parametrize("test_case", dataset)
+def test_common_interests(test_case: LLMTestCase):
+    meta = test_case.additional_metadata
+
+    test_case.actual_output = generate_response(
+        meta["person1"],
+        meta["person2"],
+        meta["interests1"],
+        meta["interests2"],
+    )
+
+    assert_test(test_case, [EmbeddingSimilarity(threshold=0.5)])
