@@ -71,7 +71,7 @@ else
   export SETUP_DONE=true
 fi
 
-[ "$DOWNLOAD_MODEL" == "true" ] && bash ../../hri/packages/nlp/assets/download-model.sh
+[ "$DOWNLOAD_MODEL" == "true" ] && bash ./scripts/ollama/download-model.sh
 
 # Create dirs with current user to avoid permission problems
 mkdir -p install build log \

@@ -2,3 +2,7 @@ FROM ollama/ollama
 
 # Install curl to preload models
 RUN apt-get update && apt-get install -y curl && apt-get clean
+
+# Copy entrypoint script into the image
+COPY docker/hri/scripts/ollama/entrypoint.sh /scripts/entrypoint.sh
+RUN chmod +x /scripts/entrypoint.sh
