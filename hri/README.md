@@ -1,65 +1,133 @@
-# HRI
+# Human Robot Interaction (HRI)
 
-Tree structure
-
-```bash
-home2
-│
-│frida_interfaces # Contains the interfaces for the project
-├── hri
-│   ├── msg
-│   └── srv
-│
-│hri
-├── packages # Contains packages for the project
-│   ├── nlp
-│   └── speech
-│       ├── CMakeLists.txt
-│       ├── launch
-│       ├── package.xml
-│       ├── scripts
-│       │   └── say.py # Allows robot to speak
-│       └── speech
-│           ├── __init__.py
-│           ├── speech_api_utils.py # Contains util functions for speech
-│           └── wav_utils.py # Contians util functions for wav files
-├── README.md # This file
-└── requirements # Python dependencies for the project
-    ├── nlp.txt
-    └── speech.txt
-```
-
-
-## Setup with docker
-
-Run the script `setup.bash` located in `home2/docker/hri` to setup the configuration for docker.
-
-In addition, the following files are required:
-- `docker/hri/.env`: Contains the environment variables for the docker compose files. `docker/hri/.env.example` contains examples of the required variables.
-
-
-## Using with docker
+## Tree structure
 
 ```bash
-# Build base image
-# pwd -> home2/docker
-docker compose -f cuda.yaml build
-# or -> docker compose -f cpu.yaml build
-
-# Build and run HRI containers
-# pwd -> home2/docker/hri
-docker compose up
-
-# Enter the container (this container has the ros 2 environment)
-docker exec -it home2-hri-cuda-devices bash
-
+home2/
+│
+│frida_constants/ # Constants for the project
+├──data/ # Files with information like names and objects
+├──frida_constants/
+│   └──hri_constants.py # Constants such as topic names and other values
+│
+│frida_interfaces/ # Contains the ROS interfaces for the project
+├──hri/
+│   ├──action/
+│   ├──msg/
+│   └──srv/
+│
+│hri/
+├──display/
+│   ├──index.ts # ROS to websockets backend
+│   └──web-ui/
+│       ├──components/
+│       │   └──ui/ # Shadcn components
+│       └──app/
+│           ├──components/ # React UI components
+│           ├──hooks/ # React hooks and functions
+│           ├──types/
+│           │   └──index.ts # Interfaces and types
+│           ├──layout.tsx # Root layout
+│           └──page.tsx # Main page
+│
+├──packages/ # ROS packages for the project
+│   ├──embeddings/
+│   │   ├──config/ # ROS launch configs. REPLACE keyword uses hri_constans.py values
+│   │   ├──embeddings/
+│   │   │   └──dataframes/ # Json files with data
+│   │   ├──launch/ # ROS launch files
+│   │   │   └──embeddings_launch.py # Launches knowledge base node
+│   │   └──scripts/ # Classes, functions and nodes
+│   ├──nlp/
+│   │   ├──assets/ # Persists models
+│   │   ├──config/ # ROS launch configs. REPLACE keyword uses hri_constans.py values
+│   │   ├──launch/ # ROS launch files
+│   │   │   ├──extract_data_launch.py # Launches extract data node
+│   │   │   └──nlp_launch.py # Launches NLP nodes
+│   │   ├──nlp/
+│   │   │   └──assets/
+│   │   │       ├──data_extraction_priority.py
+│   │   │       ├──dialogs.py # Prompts
+│   │   │       └──schemas.py
+│   │   ├──scripts/ # ROS nodes
+│   │   └──test/ # ROS nodes
+│   └──speech/
+│       ├──assets/
+│       │   ├──downloads/ # Persists models
+│       │   │   └──offline_voice/ # Gets created on run.sh for TTS
+│       │   │       ├──audios/ # Persists .wav files
+│       │   │       ├──model/ # Persists model
+│       │   │       └──audio_cache.json/ # Maps texts to audio files
+│       │   └──oww/ # Open Wake Word models
+│       ├──config/ # ROS launch configs. REPLACE keyword uses hri_constans.py values
+│       ├──debug/ # Scripts for debugging
+│       ├──launch/ # ROS launch files
+│       │   ├──devices_launch.py # Launches speech nodes
+│       │   └──hri_launch.py # Launches both NLP and Speech nodes
+│       ├──scripts/ # ROS nodes
+│       │   ├──stt/ # gRPC microservice for Speech To Text
+│       │   └──tts/ # gRPC microservice for Text To Speech
+│       ├──speech/ # Static util functions
+│       ├──CMakeLists.txt # Description of compilation of the package
+│       └──package.xml # Declare dependencies of the package
+│
+└──requirements/ # Python dependencies for the project
+    ├──nlp.txt
+    ├──postgres.txt
+    └──speech.txt
 ```
 
-## Running the project
+## Setup speech default sink and source
 
-Most of the final commands will be executed using the docker compose file.
+Sinks and sources are the audio devices that pulseaudio uses to play and record audio. Setting the default sink and source is useful to make sure that the audio is played and recorded from the correct device.
 
-However, some testing commands are the following:
+```bash
+# Set default sink
+nano ~/.config/pulse/default.pa
+# Add the following line
+
+# Respeaker 4 mic array
+set-default-source alsa_input.usb-SEEED_ReSpeaker_4_Mic_Array__UAC1.0_-00.multichannel-input
+
+# Frida's speaker
+set-default-sink alsa_output.usb-GeneralPlus_USB_Audio_Device-00.analog-stereo
+
+# Restart pulseaudio (add to .bashrc)
+pulseaudio -k && pulseaudio --start
+```
+
+## Speech pipeline
+
+### audio_capturer.py
+
+Captures raw audio in chunks and publishes it.
+
+### kws_oww.py
+
+Uses Open Wake Word to detect keywords sush as "Frida".
+
+### hear_streaming.py
+
+Takes audio, performs STT with gRPC service and publishes it.
+
+### faster-whisper-streaming.py
+
+Serves gRPC server and defines Transcribe function which performs STT using faster-whisper and returns feedback live.
+
+```mermaid
+flowchart TD
+    ad[audio_capturer] -->|publish| rac(/rawAudioChunk)
+    rac -->|subscribe| kws[kws_oww]
+    kws -->|publish| oww(/speech/oww)
+    rac -->|subscribe| hs[hear_streaming]
+    hs -->|publish| rc(/speech/raw_command)
+    hs -->|SpeechStream| stt[faster-whisper-streaming]
+    stt -->|Feedback & Result| hs
+```
+
+## Testing the project
+
+Most of the final commands will be executed using `run.sh`. However, here are some testing commands:
 
 ```bash
 # Launch HRI (includes speech, and nlp)
@@ -92,21 +160,22 @@ knowledge_type: []
 ros2 service call /hri/speech/STT frida_interfaces/srv/STT {}
 
 # Interact with robot's display
-## Simulate hear text
+
+# Simulate hear text
 ros2 topic pub /speech/raw_command std_msgs/msg/String '{data: "hello"}' -1
 
-## Simulate the robot saying something
+# Simulate the robot saying something
 ros2 topic pub /speech/text_spoken std_msgs/msg/String '{data: "My name is Frida"}' -1
 
-## Simulate keyword detection
+# Simulate keyword detection
 ros2 topic pub /hri/speech/oww std_msgs/msg/String '{data: "Frida"}' -1
 
-## Simulate voice activity
+# Simulate voice activity
 ros2 topic pub /AudioState std_msgs/msg/String '{data: "listening"}' -1
 
 ros2 topic pub /hri/speech/vad std_msgs/msg/Float32 '{data: 0.8}' -1
 
-## Stop voice simulation
+# Stop voice simulation
 ros2 topic pub /AudioState std_msgs/msg/String '{data: "idle"}' -1
 
 # Display map
@@ -118,77 +187,28 @@ ros2 topic pub /hri/display/frida_questions std_msgs/msg/String '{data: "What is
 # Verify that the answer is received
 ros2 topic echo /hri/display/answers
 ```
+
 ## Other useful commands
 
 Source the environment (this is automatically done in the .bashrc)
+
 ```bash
+# Inside home2-hri-ros container
 source /workspace/install/setup.bash
 ```
 
 Build the hri packages (this is automatically done in `hri-ros.yaml` docker compose file)
+
 ```bash
+# Inside home2-hri-ros container
 colcon build --symlink-install --packages-select task_manager frida_interfaces frida_constants speech nlp embeddings
 ```
 
 Enable file permissions for the current user, this is useful if there is a mismatch between the user in the container and the user in the host.
+
 ```bash
 # pwd -> home2
 sudo chown -R $(id -u):$(id -g) .
-```
-
-## Speech pipeline
-
-### AudioCapturer.py
-
-Captures raw audio in chunks and publishes it.
-
-- publish -> rawAudioChunk
-
-### KWS.py
-
-Uses porcupine to detect kew words sush as "Frida".
-
-- subscribe -> rawAudioChunk
-- publish -> keyword_detected
-
-### UsefulAudio.py
-
-Uses silero VAD to identify speech in raw audio and publish it to UsefulAudio.
-
-- subscribe
-    -> rawAudioChunk
-    | saying
-    | keyword_detected
-- publish
-    -> UsefulAudio
-    | AudioState
-    | colorInstruction
-    | /ReSpeaker/light
-
-### Hear.py
-
-Takes UsefulAudio, performs STT with gRPC servers and publishes it.
-
-- subscribe -> UsefulAudio
-- publish -> /speech/transcription
-
-## Setup speech default sink and source
-
-Sinks and sources are the audio devices that pulseaudio uses to play and record audio. Setting the default sink and source is useful to make sure that the audio is played and recorded from the correct device.
-
-```bash 
-# Set default sink
-nano ~/.config/pulse/default.pa
-# Add the following line
-
-# Respeaker 4 mic array
-set-default-source alsa_input.usb-SEEED_ReSpeaker_4_Mic_Array__UAC1.0_-00.multichannel-input
-
-# Frida's speaker
-set-default-sink alsa_output.usb-GeneralPlus_USB_Audio_Device-00.analog-stereo
-
-# Restart pulseaudio (add to .bashrc)
-pulseaudio -k && pulseaudio --start
 ```
 
 ### Debug speech devices
@@ -218,6 +238,7 @@ pactl list short sources
 ### Speaker
 
 If the speaker isn't loud, make sure to increase the volume level in the device that controlls the speaker.
+
 ```bash
 amixer -D pulse sset Master 100%
 ```
@@ -233,15 +254,17 @@ openwakeword.utils.download_models()
 # Embeddings store
 
 ## PostgreSQL with PGVector
-PostgreSQL is used to store the embeddings and the data extracted from the sentences. The `postgresql.yaml` file contains the configuration for the PostgreSQL container.
-The `postgres_adapter.py` file contains the code to interact with the PostgreSQL database and store the embeddings. It mainly uses an embeddings model to generate embeddings from the text and store them in the database in the vector columns. 
 
-In order to interact directly with the database, you can use the `psql` command line tool in the container: 
+PostgreSQL is used to store the embeddings and the data extracted from the sentences. The `postgresql.yaml` file contains the configuration for the PostgreSQL container.
+The `postgres_adapter.py` file contains the code to interact with the PostgreSQL database and store the embeddings. It mainly uses an embeddings model to generate embeddings from the text and store them in the database in the vector columns.
+
+In order to interact directly with the database, you can use the `psql` command line tool in the container:
 
 ```bash
 docker exec -it home2-hri-postgres psql -U rbrgs -d postgres
 ```
-Useful commands in `psql`:
+
+### Useful commands for `psql`:
 
 ```sql
 -- List all tables
@@ -255,7 +278,7 @@ Type "help" for help.
 
 postgres=# \dt
             List of relations
- Schema |      Name       | Type  | Owner 
+ Schema |      Name       | Type  | Owner
 --------+-----------------+-------+-------
  public | actions         | table | rbrgs
  public | command_history | table | rbrgs
@@ -264,13 +287,13 @@ postgres=# \dt
  public | locations       | table | rbrgs
 (5 rows)
 
-postgres=# 
+postgres=#
 ```
-
 
 ```sql-- List all columns in a table
 \d <table_name>
 ```
+
 ```sql
 SELECT * FROM <table_name>;
 ```
