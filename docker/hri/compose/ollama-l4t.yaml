@@ -7,7 +7,6 @@ services:
     network_mode: host
     volumes:
       - ../../../hri/packages/nlp/assets:/ollama
-      - ../scripts/ollama:/scripts
     environment:
       OLLAMA_MODELS: /ollama
       ROLE: ${ROLE}
