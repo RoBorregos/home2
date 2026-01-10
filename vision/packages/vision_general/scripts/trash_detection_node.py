@@ -12,6 +12,7 @@ from frida_constants.vision_constants import (
     CAMERA_TOPIC,
     ZERO_SHOT_DETECTIONS_TOPIC,
     SET_DETECTOR_CLASSES_SERVICE,
+    TRASH_DETECTION_SERVICE
 )
 
 class TrashDetectionNode(Node):
@@ -35,7 +36,7 @@ class TrashDetectionNode(Node):
         
         self.detection_service = self.create_service(
             DetectionHandler, 
-            '/vision/zero_shot_detection',
+            TRASH_DETECTION_SERVICE,
             self.detect_objects_callback
         )
         
@@ -62,21 +63,38 @@ class TrashDetectionNode(Node):
         """
         Handle detection request using yolo-e zero-shot detector
         """
-        try:
-            if hasattr(request, 'text_queries') and len(request.text_queries) > 0:
-                classes_to_detect = request.text_queries
+        try:            
+            if hasattr(request, 'label'):
+                classes_to_detect = [request.label.strip()] 
                 self._set_yoloe_classes(classes_to_detect)
-                self.get_logger().info(f"yolo-e classes: {classes_to_detect}")
                 
                 import time
-                time.sleep(0.5)
+                time.sleep(1.0) 
             
-            response.detections = []
+            if self.current_image is None:
+                self.get_logger().warn("No current image available")
+                response.detection_array = ObjectDetectionArray()
+                response.detection_array.detections = []
+                response.success = False
+                return response
+            
+            # DEBUG
+            num_raw_detections = len(self.latest_detections.detections)
+            self.get_logger().info(f"Raw detections from yolo-e: {num_raw_detections}")
+            
+            if num_raw_detections > 0:
+                for i, det in enumerate(self.latest_detections.detections):
+                    self.get_logger().info(f"Detection {i}: label='{det.label}', confidence={det.confidence:.3f}")
+            else:
+                self.get_logger().warn("No raw detections received from yolo-e")
+            
+            response.detection_array = ObjectDetectionArray()
+            response.detection_array.detections = []
             
             if self.current_image is not None:
                 h, w = self.current_image.shape[:2]
                 
-                for detection in self.latest_detections.detections:
+                for detection in self.latest_detections.detections:                    
                     obj_detection = ObjectDetection()
                     obj_detection.label_text = detection.label
                     obj_detection.score = detection.confidence
@@ -87,18 +105,17 @@ class TrashDetectionNode(Node):
                     obj_detection.xmax = min(w, int(detection.bbox.x2 * w))
                     obj_detection.ymax = min(h, int(detection.bbox.y2 * h))
                     
-                    response.detections.append(obj_detection)
+                    response.detection_array.detections.append(obj_detection)
             
             response.success = True
-            response.message = f"Detected {len(response.detections)} objects"
             
-            num_detections = len(response.detections)
-            self.get_logger().info(f"{num_detections} detections")
+            num_detections = len(response.detection_array.detections)
+            self.get_logger().info(f"Final detections: {num_detections}")
             
         except Exception as e:
             self.get_logger().error(f"error: {str(e)}")
             response.success = False
-            response.message = str(e)
+            response.detection_array = ObjectDetectionArray()  
         
         return response
     
@@ -114,10 +131,11 @@ class TrashDetectionNode(Node):
         request.classes = classes
         
         future = self.set_classes_client.call_async(request)
-        rclpy.spin_until_future_complete(self, future, timeout_sec=2.0)
+        rclpy.spin_until_future_complete(self, future, timeout_sec=5.0)
         
         if future.result() is not None:
-            return True
+            result = future.result()
+            return result.success
         else:
             self.get_logger().warn("Failed to set classes")
             return False

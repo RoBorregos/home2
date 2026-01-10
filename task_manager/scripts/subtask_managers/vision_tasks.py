@@ -33,6 +33,7 @@ from frida_constants.vision_constants import (
     SET_TARGET_BY_TOPIC,
     SET_TARGET_TOPIC,
     SHELF_DETECTION_TOPIC,
+    TRASH_DETECTION_SERVICE
 )
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.msg import ObjectDetection, PersonList
@@ -129,7 +130,7 @@ class VisionTasks:
 
         # YOLO-E detection client (using existing trash detection node)
         self.yoloe_detection_client = self.node.create_client(
-            DetectionHandler, '/vision/zero_shot_detection'
+            DetectionHandler, TRASH_DETECTION_SERVICE
         )
 
         self.services = {
