@@ -2,12 +2,7 @@ services:
   ollama:
     profiles: [receptionist, carry, gpsr, storing]
     container_name: home2-hri-ollama-l4t
-    build:
-      context: ..
-      dockerfile: dockerfiles/Dockerfile.ollama
-      args:
-        BASE_IMAGE: dustynv/ollama:0.6.8-r36.4
-    image: roborregos/home2:hri-ollama-l4t
+    image: dustynv/ollama:0.6.8-r36.4
     runtime: nvidia
     network_mode: host
     volumes:
