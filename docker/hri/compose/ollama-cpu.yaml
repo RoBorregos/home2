@@ -1,15 +1,14 @@
 services:
   ollama:
     profiles: [receptionist, carry, gpsr, storing]
-    container_name: home2-hri-ollama-l4t
+    container_name: home2-hri-ollama-cpu
     build:
       context: ..
       dockerfile: dockerfiles/Dockerfile.ollama
-      args:
-        BASE_IMAGE: dustynv/ollama:0.6.8-r36.4
-    image: roborregos/home2:hri-ollama-l4t
-    runtime: nvidia
-    network_mode: host
+    image: roborregos/home2:hri-ollama-cpu
+    # No nvidia runtime for CPU/macOS
+    ports:
+      - "11434:11434"  # Expose Ollama API port
     volumes:
       - ../../../hri/packages/nlp/assets:/ollama
     environment:
@@ -18,4 +17,4 @@ services:
     stdin_open: true
     tty: true
     entrypoint:
-      ["/bin/bash", "-c", "/scripts/entrypoint.sh && tail -f /dev/null"]
+      ["/bin/bash", "-c", "/ollama/entrypoint.sh && tail -f /dev/null"]
