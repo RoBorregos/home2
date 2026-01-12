@@ -1008,7 +1008,7 @@ class VisionTasks:
         ]
         
         request = DetectionHandler.Request()
-        request.text_queries = search_terms
+        request.labels = search_terms
         
         try:
             future = self.yoloe_detection_client.call_async(request)
@@ -1016,11 +1016,11 @@ class VisionTasks:
             result = future.result()
             
             if not result.success:
-                Logger.error(self.node, f"Trash detection failed: {result.message}")
+                Logger.error(self.node, f"Trash detection failed")
                 return Status.TARGET_NOT_FOUND, []
             
             trash_bboxes = []
-            for detection in result.detections:
+            for detection in result.detection_array.detections:
                 if detection.score > 0.3:
                     trash_bboxes.append({
                         'bbox': [

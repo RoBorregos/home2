@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import time
 import rclpy
 from rclpy.node import Node
 import cv2
@@ -7,6 +8,7 @@ import numpy as np
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
 from frida_interfaces.srv import DetectionHandler, SetDetectorClasses
+from rclpy.callback_groups import ReentrantCallbackGroup
 from frida_interfaces.msg import ObjectDetectionArray, ObjectDetection
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
@@ -18,6 +20,8 @@ from frida_constants.vision_constants import (
 class TrashDetectionNode(Node):
     def __init__(self):
         super().__init__('trash_detection_node')
+
+        self.callback_group = ReentrantCallbackGroup()
         
         self.bridge = CvBridge()
         self.current_image = None
@@ -37,7 +41,8 @@ class TrashDetectionNode(Node):
         self.detection_service = self.create_service(
             DetectionHandler, 
             TRASH_DETECTION_SERVICE,
-            self.detect_objects_callback
+            self.detect_objects_callback,
+            callback_group=self.callback_group
         )
         
         self.set_classes_client = self.create_client(
@@ -64,11 +69,18 @@ class TrashDetectionNode(Node):
         Handle detection request using yolo-e zero-shot detector
         """
         try:            
-            if hasattr(request, 'label'):
-                classes_to_detect = [request.label.strip()] 
+            classes_to_detect = []
+            
+            # Handle both single label and multiple labels
+            if hasattr(request, 'labels') and request.labels:
+                # Multiple labels passed as list
+                classes_to_detect = request.labels
+            elif hasattr(request, 'label') and request.label:
+                # Single label passed
+                classes_to_detect = [request.label.strip()]
+            
+            if classes_to_detect:
                 self._set_yoloe_classes(classes_to_detect)
-                
-                import time
                 time.sleep(1.0) 
             
             if self.current_image is None:
@@ -84,7 +96,7 @@ class TrashDetectionNode(Node):
             
             if num_raw_detections > 0:
                 for i, det in enumerate(self.latest_detections.detections):
-                    self.get_logger().info(f"Detection {i}: label='{det.label}', confidence={det.confidence:.3f}")
+                    self.get_logger().info(f"Detection {i}: label='{det.label}', confidence={det.score:.3f}")
             else:
                 self.get_logger().warn("No raw detections received from yolo-e")
             
@@ -97,7 +109,7 @@ class TrashDetectionNode(Node):
                 for detection in self.latest_detections.detections:                    
                     obj_detection = ObjectDetection()
                     obj_detection.label_text = detection.label
-                    obj_detection.score = detection.confidence
+                    obj_detection.score = detection.score
                     
                     # Convert normalized coordinates to pixels
                     obj_detection.xmin = max(0, int(detection.bbox.x1 * w))
@@ -128,10 +140,10 @@ class TrashDetectionNode(Node):
             return False
         
         request = SetDetectorClasses.Request()
-        request.classes = classes
+        request.class_names = classes
         
         future = self.set_classes_client.call_async(request)
-        rclpy.spin_until_future_complete(self, future, timeout_sec=5.0)
+        future = self.wait_for_future(future, 15)
         
         if future.result() is not None:
             result = future.result()
@@ -139,18 +151,35 @@ class TrashDetectionNode(Node):
         else:
             self.get_logger().warn("Failed to set classes")
             return False
+    
+    def wait_for_future(self, future, timeout=5):
+        start_time = time.time()
+        while future is None and (time.time() - start_time) < timeout:
+            pass
+        if future is None:
+            return False
+        while not future.done() and (time.time() - start_time) < timeout:
+            # print("Waiting for future to complete...")
+            pass
+
+        return future
 
 def main():
     rclpy.init()
     node = TrashDetectionNode()
+
+    executor = rclpy.executors.MultiThreadedExecutor(8)
+    executor.add_node(node)
+    executor.spin()
+    rclpy.shutdown()
     
-    try:
-        rclpy.spin(node)
-    except KeyboardInterrupt:
-        pass
-    finally:
-        node.destroy_node()
-        rclpy.shutdown()
+    # try:
+    #     rclpy.spin(node)
+    # except KeyboardInterrupt:
+    #     pass
+    # finally:
+    #     node.destroy_node()
+    #     rclpy.shutdown()
 
 if __name__ == '__main__':
     main()
