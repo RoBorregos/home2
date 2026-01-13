@@ -1,5 +1,7 @@
 var NAVTREEINDEX20 =
 {
+"classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a4ce6cf1243aa6dfbfcc7f3d52d689029":[22,0,168,1,6],
+"classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a4d82449488b4dac3b4dd8a7823ddca30":[22,0,168,1,14],
 "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a4d82449488b4dac3b4dd8a7823ddca30":[23,0,98,1,14],
 "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a5d15ed5dcbd28c3ede2282ca94f64163":[22,0,168,1,8],
 "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a5d15ed5dcbd28c3ede2282ca94f64163":[23,0,98,1,8],
@@ -25,8 +27,8 @@ var NAVTREEINDEX20 =
 "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#acf72ea3bacd4232fd222b96bd37bbe8a":[22,0,168,1,21],
 "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#ae0b79e45defa3b4f7abf69f3c1cd8fdf":[23,0,98,1,20],
 "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#ae0b79e45defa3b4f7abf69f3c1cd8fdf":[22,0,168,1,20],
-"classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#ae15bf8710d5c4b818a55509a00b49d51":[23,0,98,1,18],
 "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#ae15bf8710d5c4b818a55509a00b49d51":[22,0,168,1,18],
+"classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#ae15bf8710d5c4b818a55509a00b49d51":[23,0,98,1,18],
 "clean__table__task__manager_8py.html":[24,0,6,1,5],
 "clean__table__task__manager_8py.html#a6d6481110f09efcfcf71d4ab0fe44857":[24,0,6,1,5,2],
 "clean__table__task__manager_8py.html#aecd8ca5335f820bcaf186001008ab3d4":[24,0,6,1,5,3],
@@ -247,7 +249,5 @@ var NAVTREEINDEX20 =
 "ekf_8launch_8py.html":[24,0,4,0,0,1,1],
 "ekf_8launch_8py.html#a32e94cb02311b88f95d5b52017cf6948":[24,0,4,0,0,1,1,0],
 "ex__gripper_8py.html":[24,0,3,0,2,0,0],
-"ex__gripper_8py.html#a6be88f1664d375f6790226f8c67eec80":[24,0,3,0,2,0,0,0],
-"ex__joint__goal_8py.html":[24,0,3,0,2,0,1],
-"ex__joint__goal_8py.html#abaf27f3c9452030c3c49c26a423dff79":[24,0,3,0,2,0,1,0]
+"ex__gripper_8py.html#a6be88f1664d375f6790226f8c67eec80":[24,0,3,0,2,0,0,0]
 };
