@@ -1,5 +1,7 @@
 var NAVTREEINDEX23 =
 {
+"manipulation__core_8py.html#a8186701a4f2197fd8462d338e413ed97":[24,0,3,0,5,1,7,1],
+"manipulation__tasks_8py.html":[24,0,6,1,1,7],
 "manipulation__tasks_8py.html#a19b76436f0b458641aa91942bdcb5d5e":[24,0,6,1,1,7,7],
 "manipulation__tasks_8py.html#a30dbfece62a421c750fb045a6f58ce53":[24,0,6,1,1,7,9],
 "manipulation__tasks_8py.html#a57195ba5d28cdb77a773bbc5b7ebae59":[24,0,6,1,1,7,4],
@@ -247,7 +249,5 @@ var NAVTREEINDEX23 =
 "namespacecarry__my.html":[22,0,9],
 "namespacecarry__my.html#a44586ac38fc8f4089bcb5c467200a1c5":[22,0,9,0],
 "namespacecarry__my__lougage.html":[22,0,10],
-"namespacecarry__my__lougage.html#ab4d71836dd74a1528d9b2d8f750c9491":[22,0,10,1],
-"namespacecarry__my__lougage.html#ab8f6aac2d5abfdc388398a5170e8577f":[22,0,10,0],
-"namespaceclean__table__task__manager.html":[22,0,11]
+"namespacecarry__my__lougage.html#ab4d71836dd74a1528d9b2d8f750c9491":[22,0,10,1]
 };

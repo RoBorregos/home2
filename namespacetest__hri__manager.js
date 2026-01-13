@@ -10,6 +10,7 @@ var namespacetest__hri__manager =
     [ "TEST_COMPOUND", "namespacetest__hri__manager.html#af084794917df55eb7c98942b498ec083", null ],
     [ "TEST_EMBEDDINGS", "namespacetest__hri__manager.html#a0103d8be7196ba99bf9b56a12808fa85", null ],
     [ "TEST_INDIVIDUAL_FUNCTIONS", "namespacetest__hri__manager.html#a914b4542d179c1bd4ffea5b5fd5917b4", null ],
+    [ "TEST_IS_NEGATIVE", "namespacetest__hri__manager.html#a0badb875d731e79a361252aae7631ac1", null ],
     [ "TEST_IS_POSITIVE", "namespacetest__hri__manager.html#ad6e339590c518dbf7c365f89e90b8be8", null ],
     [ "TEST_MAP", "namespacetest__hri__manager.html#a6dab12c78ddfca13d1fd313af30f27bf", null ],
     [ "TEST_OBJECT_LOCATION", "namespacetest__hri__manager.html#afab82146d21339556bbeec1207843778", null ],

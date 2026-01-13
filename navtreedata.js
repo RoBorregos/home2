@@ -216,17 +216,17 @@ var NAVTREEINDEX =
 "classsubtask__managers_1_1hri__hand_1_1HRIHand.html#a6a4f4e0a7733f2c6f5731a17d3faeeed",
 "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a438ab6ce314c52fdd6fa2402f66040f6",
 "classtemp__follow_1_1FollowPersonNode.html#a877b2f0da3327a4e5b195a7e605198fb",
-"classtracker__node__fregoso_1_1SingleTracker.html#aaedb31d12ff8c99a7d436fbdb4b4d539",
-"classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a4ce6cf1243aa6dfbfcc7f3d52d689029",
-"ex__joint__goal_8py.html",
-"gpsr__test__commands_8py.html#ac3bee4bf5fb634df18b9e37ebcb9e186",
-"manipulation__tasks_8py.html#a19b76436f0b458641aa91942bdcb5d5e",
-"namespaceclean__table__task__manager.html#a6d6481110f09efcfcf71d4ab0fe44857",
-"namespacefrida__constants_1_1manipulation__constants.html#af8b011a4e4212fb9450412d1c99bffc2",
-"namespacemodel.html#a5bca4354e053d953c18cc9430074d2ba",
-"namespacestart__button__text.html#a5ec46aa3a81108cdbd008e06c9b88012",
-"objectDetectionHandler_8launch_8py.html",
-"test__copyright_8py.html#a156f4f961887d49bfb4cc9f6e7f6af0a"
+"classtracker__node__fregoso_1_1SingleTracker.html#aae11b44a33083b3a90bffe58d6007214",
+"classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a4b0d9fecd88d5c0411594c19ac3c75e8",
+"ex__gripper_8py.html",
+"gpsr__test__commands_8py.html#aa03e1e368b97d99d52d1c4ef88d7fa90",
+"manipulation__core_8py.html#a8186701a4f2197fd8462d338e413ed97",
+"namespacecarry__my__lougage.html#ab8f6aac2d5abfdc388398a5170e8577f",
+"namespacefrida__constants_1_1manipulation__constants.html#aeea4aa8b33083068c17925172ed1bd2b",
+"namespacemodel.html#a3baae9af564a2bb723d1dbd93d773b81",
+"namespacestart__button__text.html#a46936919c4b25b2c14a2019b9d8e5c6f",
+"new__tracker_8py.html#ac2bec6fa6022496184746730db5af638",
+"temp__follow_8py.html#aa2e3d3b8ea13dedf08e552c9beb5868e"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

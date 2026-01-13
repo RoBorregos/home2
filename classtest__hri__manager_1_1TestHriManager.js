@@ -6,6 +6,7 @@ var classtest__hri__manager_1_1TestHriManager =
     [ "individual_functions", "classtest__hri__manager_1_1TestHriManager.html#a71aa05a56df14e610a5a43647e27180c", null ],
     [ "run", "classtest__hri__manager_1_1TestHriManager.html#aed2c5bfb3ae73cb7c694cb6d4d3508f5", null ],
     [ "test_embeddings", "classtest__hri__manager_1_1TestHriManager.html#ab01cb42b6ebab8c04d391925d1b5142c", null ],
+    [ "test_is_negative", "classtest__hri__manager_1_1TestHriManager.html#a5ffc27f537aa91090fa44f0e715250e5", null ],
     [ "test_is_positive", "classtest__hri__manager_1_1TestHriManager.html#a5e36aa8c1a7e0afb23ab8950f8ee5b1e", null ],
     [ "test_map", "classtest__hri__manager_1_1TestHriManager.html#a54c69995753f4ce05bd076720a89c6b6", null ],
     [ "test_object_location", "classtest__hri__manager_1_1TestHriManager.html#abc972947f62b9ac49382f61b0e245d6e", null ],

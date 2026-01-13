@@ -10,6 +10,7 @@ var test__hri__manager_8py =
     [ "TEST_COMPOUND", "test__hri__manager_8py.html#af084794917df55eb7c98942b498ec083", null ],
     [ "TEST_EMBEDDINGS", "test__hri__manager_8py.html#a0103d8be7196ba99bf9b56a12808fa85", null ],
     [ "TEST_INDIVIDUAL_FUNCTIONS", "test__hri__manager_8py.html#a914b4542d179c1bd4ffea5b5fd5917b4", null ],
+    [ "TEST_IS_NEGATIVE", "test__hri__manager_8py.html#a0badb875d731e79a361252aae7631ac1", null ],
     [ "TEST_IS_POSITIVE", "test__hri__manager_8py.html#ad6e339590c518dbf7c365f89e90b8be8", null ],
     [ "TEST_MAP", "test__hri__manager_8py.html#a6dab12c78ddfca13d1fd313af30f27bf", null ],
     [ "TEST_OBJECT_LOCATION", "test__hri__manager_8py.html#afab82146d21339556bbeec1207843778", null ],
