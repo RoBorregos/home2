@@ -4,7 +4,11 @@
 Task Manager for testing the subtask managers
 """
 
+import os
+import json
 import time
+import csv
+from datetime import datetime
 from typing import Union
 
 import rclpy
@@ -54,7 +58,8 @@ def confirm_preference(interpreted_text, extracted_data):
     return "I heard you like " + extracted_data + ". Is that correct?"
 
 
-TEST_TASK = Task.DEBUG
+DATA_DIR = "/workspace/src/hri/packages/nlp/test/"
+OUTPUT_DIR = os.path.join(DATA_DIR, "output")
 TEST_COMPOUND = False
 TEST_INDIVIDUAL_FUNCTIONS = False
 TEST_EMBEDDINGS = False
@@ -62,13 +67,15 @@ TEST_ASYNC_LLM = False
 TEST_STREAMING = False
 TEST_MAP = False
 TEST_OBJECT_LOCATION = False
+TEST_IS_POSITIVE = False
 
 
 class TestHriManager(Node):
     def __init__(self):
         super().__init__("test_hri_task_manager")
-        self.hri_manager = HRITasks(self, config=test_hri_config, task=TEST_TASK)
+        self.hri_manager = HRITasks(self, config=test_hri_config, task=Task.DEBUG)
         rclpy.spin_once(self, timeout_sec=1.0)
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
         self.get_logger().info("TestTaskManager has started.")
         self.run()
 
@@ -93,6 +100,11 @@ class TestHriManager(Node):
 
         if TEST_OBJECT_LOCATION:
             self.test_object_location()
+
+        if TEST_IS_POSITIVE:
+            self.test_is_positive()
+
+        exit(0)
 
     def individual_functions(self):
         # Test say
@@ -344,6 +356,56 @@ class TestHriManager(Node):
         res_with_context = self.hri_manager.query_location(object_name, top_k=3, use_context=True)
         for i, location in enumerate(res_with_context):
             self.get_logger().info(f"{i + 1}: {location}")
+
+    def test_is_positive(self):
+        test_cases_file = os.path.join(DATA_DIR, "is_positive.json")
+        with open(test_cases_file, "r") as f:
+            test_cases = json.load(f)
+
+        # Prepare output directory and file
+        date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        output_file = os.path.join(OUTPUT_DIR, f"is_positive_{date_str}.csv")
+
+        results = []
+        passed_tests = 0
+
+        for i, (input_text, expected_output) in enumerate(test_cases, 1):
+            self.get_logger().info(f"Test case {i}")
+
+            actual_output = None
+            success = False
+
+            try:
+                s, is_positive = self.hri_manager.is_positive(input_text)
+
+                if s == Status.EXECUTION_SUCCESS:
+                    actual_output = is_positive
+                    success = is_positive == expected_output
+                    if success:
+                        passed_tests += 1
+                        self.get_logger().info("Test passed!")
+                    else:
+                        self.get_logger().error("Test failed.")
+
+                else:
+                    self.get_logger().error(f"FAILED: {s}")
+                    actual_output = f"ERROR: {s}"
+
+            except Exception as e:
+                self.get_logger().error(f"EXCEPTION: {str(e)}")
+                actual_output = f"EXCEPTION: {str(e)}"
+
+            results.append([i, input_text, expected_output, actual_output, success])
+            self.get_logger().info("-" * 50)
+
+        # Write results to CSV
+        with open(output_file, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(["test_number", "input", "expected_output", "actual_output", "success"])
+            writer.writerows(results)
+
+        self.get_logger().info(f"Results saved to {output_file}")
+        self.get_logger().info(f"{passed_tests} out of {len(test_cases)} passed")
 
 
 def main(args=None):
