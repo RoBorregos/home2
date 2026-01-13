@@ -21,7 +21,7 @@ def generate_launch_description():
     return LaunchDescription(
         [
             ExecuteProcess(
-                cmd=["npm", "run", "dev"],
+                cmd=["npm", "run", "start"],
                 cwd=["/workspace/src/hri/packages/display/display"],
                 output="screen",
             ),
