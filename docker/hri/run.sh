@@ -97,9 +97,10 @@ if [ "${SETUP_DONE:-}" = "true" ]; then
 fi
 
 # Check if display setup is needed
-if [ ! -d "../../hri/display/dist" ] || [ ! -d "../../hri/display/node_modules" ] || [ ! -d "../../hri/display/web-ui/.next" ] || [ ! -d "../../hri/display/web-ui/node_modules" ] || [ "$BUILD_DISPLAY" == "true" ]; then
+DISPLAY_DIR="../../hri/packages/display/display"
+if [ ! -d "$DISPLAY_DIR/node_modules" ] || [ ! -d "$DISPLAY_DIR/.next" ] || [ "$BUILD_DISPLAY" == "true" ]; then
   echo "Installing dependencies and building project inside temporary container..."
-  docker compose -f compose/display.yaml run $BUILD_IMAGE --rm --entrypoint "" display bash -c "source /opt/ros/humble/setup.bash && npm run build"
+  docker compose -f compose/hri-ros.yaml run $BUILD_IMAGE --rm --entrypoint "" hri-ros bash -c "cd /workspace/src/hri/packages/display/display && npm i && npm run build"
 fi
 
 #_________________________RUN_________________________
@@ -108,7 +109,7 @@ GENERATE_BAML_CLIENT="baml-cli generate --from /workspace/src/task_manager/scrip
 SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
 IGNORE_PACKAGES="--packages-ignore frida_interfaces frida_constants xarm_msgs"
 SOURCE_ROS="source /opt/ros/humble/setup.bash"
-PACKAGES="speech nlp embeddings"
+PACKAGES="speech nlp embeddings display"
 PROFILES=()
 RUN=""
 
