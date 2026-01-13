@@ -284,17 +284,16 @@ class HRITasks(metaclass=SubtaskMeta):
     def say(self, text: str, wait: bool = True, speed: float = 1.15) -> None:
         """Method to publish directly text to the speech node"""
         Logger.info(self.node, f"Sending to saying service: {text}")
+        self.set_light_state(AudioStates.SAYING)
 
-        # return Status.EXECUTION_SUCCESS
         request = Speak.Request(text=text, speed=float(speed))
-
         future = self.speak_service.call_async(request)
 
         if wait:
             rclpy.spin_until_future_complete(self.node, future)
             return Status.EXECUTION_SUCCESS if future.result().success else Status.EXECUTION_ERROR
-        Logger.info(self.node, "Saying service finished executing")
 
+        Logger.info(self.node, "Saying service finished executing")
         return Status.EXECUTION_SUCCESS
 
     @service_check("extract_data_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
@@ -876,6 +875,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
     def cancel_hear_action(self):
         # Cancel all goals sent by this action client
+        self.set_light_state(AudioStates.IDLE)
 
         cancel_future = []
         for goal_handle in self._active_goals:
@@ -890,8 +890,6 @@ class HRITasks(metaclass=SubtaskMeta):
 
         for f in cancel_future:
             rclpy.spin_until_future_complete(self.node, f, timeout_sec=1)
-
-        self.set_light_state(AudioStates.IDLE)
 
     @service_check("answer_question_service", (Status.SERVICE_CHECK, "", 0.5), TIMEOUT)
     def answer_question(
