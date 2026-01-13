@@ -1,5 +1,7 @@
 var NAVTREEINDEX23 =
 {
+"manipulation__constants__cpp_8hpp_source.html":[24,0,1,2,0,0],
+"manipulation__core_8py.html":[24,0,3,0,5,1,7],
 "manipulation__core_8py.html#a8186701a4f2197fd8462d338e413ed97":[24,0,3,0,5,1,7,1],
 "manipulation__tasks_8py.html":[24,0,6,1,1,7],
 "manipulation__tasks_8py.html#a19b76436f0b458641aa91942bdcb5d5e":[24,0,6,1,1,7,7],
@@ -247,7 +249,5 @@ var NAVTREEINDEX23 =
 "namespacecarry.html":[22,0,8],
 "namespacecarry.html#a13d8f63b1ec69c76e488d9b0960dc65c":[22,0,8,0],
 "namespacecarry__my.html":[22,0,9],
-"namespacecarry__my.html#a44586ac38fc8f4089bcb5c467200a1c5":[22,0,9,0],
-"namespacecarry__my__lougage.html":[22,0,10],
-"namespacecarry__my__lougage.html#ab4d71836dd74a1528d9b2d8f750c9491":[22,0,10,1]
+"namespacecarry__my.html#a44586ac38fc8f4089bcb5c467200a1c5":[22,0,9,0]
 };

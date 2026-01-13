@@ -1,7 +1,7 @@
 var searchData=
 [
-  ['package_5fname_0',['PACKAGE_NAME',['../namespacenew__tracker.html#a33180eaf9f71838d633518a2a04c8eb7',1,'new_tracker']]],
-  ['package_5fname_1',['package_name',['../namespacesetup.html#a69903e4f05cebc9e005b22b36f5724eb',1,'setup']]],
+  ['package_5fname_0',['package_name',['../namespacesetup.html#a69903e4f05cebc9e005b22b36f5724eb',1,'setup']]],
+  ['package_5fname_1',['PACKAGE_NAME',['../namespacenew__tracker.html#a33180eaf9f71838d633518a2a04c8eb7',1,'new_tracker']]],
   ['package_5fpath_2',['package_path',['../classarm__pkg_1_1moveit__configs__builder__sim_1_1MoveItConfigs.html#abac858e52a580d162f90262bc93cef07',1,'arm_pkg.moveit_configs_builder_sim.MoveItConfigs.package_path()'],['../classarm__pkg_1_1moveit__configs__builder_1_1MoveItConfigs.html#ae0a65b0746b30b5d6818155c5317de6e',1,'arm_pkg.moveit_configs_builder.MoveItConfigs.package_path()']]],
   ['package_5fshare_5fdir_3',['package_share_dir',['../namespacereceptionist__commands.html#adf7320f4ca5b97e2b7f447a48a59008a',1,'receptionist_commands.package_share_dir()'],['../namespacegpsr__commands.html#a7dce31766c14809575920f9d6ebe53a2',1,'gpsr_commands.package_share_dir()']]],
   ['packages_4',['packages',['../namespacesetup.html#aff2375a361fd5865c77bd9aa093be747',1,'setup']]],

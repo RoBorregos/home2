@@ -8,6 +8,7 @@ var test__hri__manager_8py =
     [ "OUTPUT_DIR", "test__hri__manager_8py.html#a0111244d1518203a96ff4932fbb6d4ef", null ],
     [ "TEST_ASYNC_LLM", "test__hri__manager_8py.html#a413f9c068afedd81078d3f34c44b4ab2", null ],
     [ "TEST_COMPOUND", "test__hri__manager_8py.html#af084794917df55eb7c98942b498ec083", null ],
+    [ "TEST_DATA_EXTRACTOR", "test__hri__manager_8py.html#a5b93f7cb6e796bceeecdee57dc3c7aac", null ],
     [ "TEST_EMBEDDINGS", "test__hri__manager_8py.html#a0103d8be7196ba99bf9b56a12808fa85", null ],
     [ "TEST_INDIVIDUAL_FUNCTIONS", "test__hri__manager_8py.html#a914b4542d179c1bd4ffea5b5fd5917b4", null ],
     [ "TEST_IS_NEGATIVE", "test__hri__manager_8py.html#a0badb875d731e79a361252aae7631ac1", null ],

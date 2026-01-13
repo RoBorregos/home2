@@ -8,6 +8,7 @@ var namespacetest__hri__manager =
     [ "OUTPUT_DIR", "namespacetest__hri__manager.html#a0111244d1518203a96ff4932fbb6d4ef", null ],
     [ "TEST_ASYNC_LLM", "namespacetest__hri__manager.html#a413f9c068afedd81078d3f34c44b4ab2", null ],
     [ "TEST_COMPOUND", "namespacetest__hri__manager.html#af084794917df55eb7c98942b498ec083", null ],
+    [ "TEST_DATA_EXTRACTOR", "namespacetest__hri__manager.html#a5b93f7cb6e796bceeecdee57dc3c7aac", null ],
     [ "TEST_EMBEDDINGS", "namespacetest__hri__manager.html#a0103d8be7196ba99bf9b56a12808fa85", null ],
     [ "TEST_INDIVIDUAL_FUNCTIONS", "namespacetest__hri__manager.html#a914b4542d179c1bd4ffea5b5fd5917b4", null ],
     [ "TEST_IS_NEGATIVE", "namespacetest__hri__manager.html#a0badb875d731e79a361252aae7631ac1", null ],
