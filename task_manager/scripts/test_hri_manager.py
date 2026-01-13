@@ -475,6 +475,7 @@ class TestHriManager(Node):
         output_file = os.path.join(OUTPUT_DIR, f"data_extractor_{date_str}.csv")
 
         results = []
+        passed_tests = 0
 
         for i, (input_text, query, context, expected_output) in enumerate(test_cases, 1):
             self.get_logger().info(f"Test case {i}")
@@ -489,6 +490,7 @@ class TestHriManager(Node):
                     actual_output = extracted_data
                     success = extracted_data == expected_output
                     if success:
+                        passed_tests += 1
                         self.get_logger().info("Test passed!")
                     else:
                         self.get_logger().error("Test failed.")
@@ -521,6 +523,7 @@ class TestHriManager(Node):
             writer.writerows(results)
 
         self.get_logger().info(f"Results saved to {output_file}")
+        self.get_logger().info(f"{passed_tests} out of {len(test_cases)} passed")
 
 
 def main(args=None):
