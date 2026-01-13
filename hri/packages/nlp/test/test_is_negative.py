@@ -1,6 +1,7 @@
 import sys
 
 sys.path.append("..")
+sys.path.append("../../../../frida_constants")
 
 import pytest
 from deepeval import assert_test
@@ -9,8 +10,6 @@ from deepeval.test_case import LLMTestCase
 from nlp.assets.dialogs import get_is_answer_negative_args
 from nlp.assets.schemas import IsAnswerNegative
 from openai import OpenAI
-
-
 from frida_constants.hri_constants import MODEL
 from config import API_KEY, BASE_URL, TEMPERATURE
 from metrics.json_insensitive_values_match import JsonInsensitiveValuesMatch
@@ -30,40 +29,40 @@ def generate_response(interpreted_text: str):
     return response.choices[0].message.content
 
 
-test_cases = [
+RAW_TEST_CASES = [
     # Negative test cases
-    ("No", IsAnswerNegative(is_negative=True).model_dump_json()),
-    ("That's wrong", IsAnswerNegative(is_negative=True).model_dump_json()),
-    ("Incorrect", IsAnswerNegative(is_negative=True).model_dump_json()),
-    ("Not at all", IsAnswerNegative(is_negative=True).model_dump_json()),
-    ("I don't think so", IsAnswerNegative(is_negative=True).model_dump_json()),
+    ("No", True),
+    ("That's wrong", True),
+    ("Incorrect", True),
+    ("Not at all", True),
+    ("I don't think so", True),
     # Positive test cases
-    ("Yes", IsAnswerNegative(is_negative=False).model_dump_json()),
-    ("That's right", IsAnswerNegative(is_negative=False).model_dump_json()),
-    ("Correct", IsAnswerNegative(is_negative=False).model_dump_json()),
-    ("Absolutely", IsAnswerNegative(is_negative=False).model_dump_json()),
-    ("Of course", IsAnswerNegative(is_negative=False).model_dump_json()),
-    ("Sure", IsAnswerNegative(is_negative=False).model_dump_json()),
-    ("Exactly", IsAnswerNegative(is_negative=False).model_dump_json()),
-    ("I agree", IsAnswerNegative(is_negative=False).model_dump_json()),
-    ("Indeed", IsAnswerNegative(is_negative=False).model_dump_json()),
-    ("Affirmative", IsAnswerNegative(is_negative=False).model_dump_json()),
+    ("Yes", False),
+    ("That's right", False),
+    ("Correct", False),
+    ("Absolutely", False),
+    ("Of course", False),
+    ("Sure", False),
+    ("Exactly", False),
+    ("I agree", False),
+    ("Indeed", False),
+    ("Affirmative", False),
     # Uncertain test cases
-    ("I don't know", IsAnswerNegative(is_negative=False).model_dump_json()),
-    ("Maybe", IsAnswerNegative(is_negative=False).model_dump_json()),
-    ("I'm not sure", IsAnswerNegative(is_negative=False).model_dump_json()),
-    ("Huh?", IsAnswerNegative(is_negative=False).model_dump_json()),
-    ("What do you mean?", IsAnswerNegative(is_negative=False).model_dump_json()),
+    ("I don't know", False),
+    ("Maybe", False),
+    ("I'm not sure", False),
+    ("Huh?", False),
+    ("What do you mean?", False),
 ]
 
 # Define test cases
 test_cases = [
     LLMTestCase(
-        input=test_case[0],
-        expected_output=test_case[1],
-        actual_output=generate_response(test_case[0]),
+        input=text,
+        expected_output=IsAnswerNegative(is_negative=expected).model_dump_json(),
+        actual_output=None,
     )
-    for test_case in test_cases
+    for text, expected in RAW_TEST_CASES
 ]
 
 dataset = EvaluationDataset(test_cases=test_cases)
@@ -74,4 +73,5 @@ dataset = EvaluationDataset(test_cases=test_cases)
     dataset,
 )
 def test_is_negative(test_case: LLMTestCase):
+    test_case.actual_output = generate_response(test_case.input)
     assert_test(test_case, [JsonInsensitiveValuesMatch()])
