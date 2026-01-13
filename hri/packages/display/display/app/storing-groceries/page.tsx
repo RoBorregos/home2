@@ -36,7 +36,6 @@ export default function StoreGroceriesPage() {
 
             {/* FOOTER */}
             <div className="p-3 border-t border-(--border-light) bg-(--bg-darker) text-center">
-                <p className="text-sm text-(--text-gray)">Video Display Ready</p>
             </div>
         </div>
     );
