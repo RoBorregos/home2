@@ -522,6 +522,63 @@ class TestHriManager(Node):
 
         self.get_logger().info(f"Results saved to {output_file}")
 
+    def test_data_extractor(self):
+        test_cases_file = os.path.join(DATA_DIR, "data_extractor.json")
+        with open(test_cases_file, "r") as f:
+            test_cases = json.load(f)
+
+        # Prepare output directory and file
+        date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        output_file = os.path.join(OUTPUT_DIR, f"data_extractor_{date_str}.csv")
+
+        results = []
+
+        for i, (input_text, query, context, expected_output) in enumerate(test_cases, 1):
+            self.get_logger().info(f"Test case {i}")
+
+            actual_output = None
+            success = False
+
+            try:
+                s, extracted_data = self.hri_manager.extract_data(query, input_text, context)
+
+                if s == Status.EXECUTION_SUCCESS:
+                    actual_output = extracted_data
+                    success = extracted_data == expected_output
+                    if success:
+                        self.get_logger().info("Test passed!")
+                    else:
+                        self.get_logger().error("Test failed.")
+
+                else:
+                    self.get_logger().error(f"FAILED: {s}")
+                    actual_output = f"ERROR: {s}"
+
+            except Exception as e:
+                self.get_logger().error(f"EXCEPTION: {str(e)}")
+                actual_output = f"EXCEPTION: {str(e)}"
+
+            results.append([i, input_text, query, context, expected_output, actual_output, success])
+            self.get_logger().info("-" * 50)
+
+        # Write results to CSV
+        with open(output_file, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(
+                [
+                    "test_number",
+                    "input",
+                    "query",
+                    "context",
+                    "expected_output",
+                    "actual_output",
+                    "success",
+                ]
+            )
+            writer.writerows(results)
+
+        self.get_logger().info(f"Results saved to {output_file}")
+
 
 def main(args=None):
     rclpy.init(args=args)
