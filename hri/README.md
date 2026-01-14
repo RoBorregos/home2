@@ -142,7 +142,6 @@ ros2 service call /hri/speech/speak frida_interfaces/srv/Speak "{text: \"Go to t
 # Extract data from a sentence
 ros2 service call /hri/nlp/data_extractor frida_interfaces/srv/ExtractInfo "{full_text: 'Hello, my name is Oscar', data: 'name'}"
 
-
 # Is positive
 ros2 service call /hri/nlp/is_positive frida_interfaces/srv/IsPositive "{text: 'I confirm'}"
 
@@ -170,7 +169,6 @@ ros2 topic pub /speech/text_spoken std_msgs/msg/String '{data: "My name is Frida
 
 # Simulate keyword detection
 ros2 topic pub /hri/speech/oww std_msgs/msg/String '{data: "Frida"}' -1
-
 
 # Simulate voice activity
 ros2 topic pub /AudioState std_msgs/msg/String '{data: "listening"}' -1
