@@ -7,3 +7,4 @@
 **/__pychache__/
 **/models
 **.pyc
+packages/nlp/test/output/

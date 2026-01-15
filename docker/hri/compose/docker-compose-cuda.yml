@@ -3,5 +3,4 @@ include:
   - path: stt.yaml
   - path: ollama-cuda.yaml
   - path: postgresql.yaml
-  - path: display.yaml
   - path: tts.yaml

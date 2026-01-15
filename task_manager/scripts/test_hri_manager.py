@@ -4,7 +4,11 @@
 Task Manager for testing the subtask managers
 """
 
+import os
+import json
 import time
+import csv
+from datetime import datetime
 from typing import Union
 
 import rclpy
@@ -54,21 +58,26 @@ def confirm_preference(interpreted_text, extracted_data):
     return "I heard you like " + extracted_data + ". Is that correct?"
 
 
-TEST_TASK = Task.DEBUG
+DATA_DIR = "/workspace/src/hri/packages/nlp/test/"
+OUTPUT_DIR = os.path.join(DATA_DIR, "output")
 TEST_COMPOUND = False
 TEST_INDIVIDUAL_FUNCTIONS = False
-TEST_EMBEDDINGS = False
+TEST_CATEGORIZE_SHELVES = False
 TEST_ASYNC_LLM = False
 TEST_STREAMING = False
 TEST_MAP = False
 TEST_OBJECT_LOCATION = False
+TEST_IS_POSITIVE = False
+TEST_IS_NEGATIVE = False
+TEST_DATA_EXTRACTOR = False
 
 
 class TestHriManager(Node):
     def __init__(self):
         super().__init__("test_hri_task_manager")
-        self.hri_manager = HRITasks(self, config=test_hri_config, task=TEST_TASK)
+        self.hri_manager = HRITasks(self, config=test_hri_config, task=Task.DEBUG)
         rclpy.spin_once(self, timeout_sec=1.0)
+        os.makedirs(OUTPUT_DIR, exist_ok=True)
         self.get_logger().info("TestTaskManager has started.")
         self.run()
 
@@ -79,8 +88,8 @@ class TestHriManager(Node):
         if TEST_INDIVIDUAL_FUNCTIONS:
             self.individual_functions()
 
-        if TEST_EMBEDDINGS:
-            self.test_embeddings()
+        if TEST_CATEGORIZE_SHELVES:
+            self.test_categorize_shelves()
 
         if TEST_ASYNC_LLM:
             self.async_llm_test()
@@ -93,6 +102,17 @@ class TestHriManager(Node):
 
         if TEST_OBJECT_LOCATION:
             self.test_object_location()
+
+        if TEST_IS_POSITIVE:
+            self.test_is_positive()
+
+        if TEST_IS_NEGATIVE:
+            self.test_is_negative()
+
+        if TEST_DATA_EXTRACTOR:
+            self.test_data_extractor()
+
+        exit(0)
 
     def individual_functions(self):
         # Test say
@@ -180,111 +200,84 @@ class TestHriManager(Node):
 
         # self.hri_manager.say(common_interest)
 
-    def test_embeddings(self):
-        """Testing the embeddings service via HRITasks using only specified objects from the given list"""
+    def test_categorize_shelves(self):
+        test_cases_file = os.path.join(DATA_DIR, "categorize_objects.json")
+        with open(test_cases_file, "r") as f:
+            test_cases = json.load(f)
 
-        test_cases = [
-            {
-                "name": "Drinks, fruits, and snacks",
-                "table_objects": ["apple", "fanta", "lemon", "crisps", "chocolate_bar"],
-                "shelves": {0: ["coffee", "coke"], 1: ["tangerine"], 2: ["cornflakes"]},
-                "answer": {
-                    0: {"category": "drink", "objects_to_add": ["fanta"]},
-                    1: {"category": "fruit", "objects_to_add": ["apple", "lemon"]},
-                    2: {
-                        "category": "snack",
-                        "objects_to_add": ["crisps", "chocolate_bar"],
-                    },
-                },
-            },
-            {
-                "name": "Snacks, dishes, and cleaning",
-                "table_objects": ["gum_balls", "fork", "spoon", "sponge"],
-                "shelves": {0: ["chocolate_bar"], 1: ["bowl"], 2: ["cloth"]},
-                "answer": {
-                    0: {"category": "snack", "objects_to_add": ["gum_balls"]},
-                    1: {"category": "dish", "objects_to_add": ["fork", "spoon"]},
-                    2: {"category": "cleaning_supply", "objects_to_add": ["sponge"]},
-                },
-            },
-            {
-                "name": "Drinks and dishes",
-                "table_objects": ["milk", "fanta", "fork"],
-                "shelves": {0: ["orange_juice", "coffee"], 1: ["plate"]},
-                "answer": {
-                    0: {"category": "drink", "objects_to_add": ["milk", "fanta"]},
-                    1: {"category": "dish", "objects_to_add": ["fork"]},
-                },
-            },
-            {
-                "name": "Miscellaneous objects with empty shelves",
-                "table_objects": ["milk", "fanta", "fork", "ketchup", "tangerine"],
-                "shelves": {0: ["orange_juice", "coffee"], 1: ["plate"], 2: []},
-                "answer": {
-                    0: {"category": "drink", "objects_to_add": ["milk", "fanta"]},
-                    1: {"category": "dish", "objects_to_add": ["fork"]},
-                    2: {
-                        "category": "miscellaneous",
-                        "objects_to_add": ["tangerine", "ketchup"],
-                    },
-                },
-            },
-        ]
+        # Prepare output directory and file
+        date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        output_file = os.path.join(OUTPUT_DIR, f"categorize_objects_{date_str}.csv")
+
+        results = []
+        passed_tests = 0
 
         for i, test_case in enumerate(test_cases, 1):
-            self.get_logger().info(f"\n=== Test Case {i}: {test_case['name']} ===")
-            self.get_logger().info(f"Table objects: {test_case['table_objects']}")
-            self.get_logger().info(f"Shelves: {test_case['shelves']}")
+            self.get_logger().info(f"Test case {i}: {test_case['name']}")
+
+            # Convert string keys to integers for shelves
+            shelves = {int(k): v for k, v in test_case["shelves"].items()}
+            expected = {int(k): v for k, v in test_case["answer"].items()}
+
+            actual_output = None
+            success = False
 
             try:
-                s, categorized_shelves, objects_to_add = self.hri_manager.categorize_objects(
-                    test_case["table_objects"], test_case["shelves"]
+                s, _, objects_to_add, categorized_shelves = self.hri_manager.categorize_objects(
+                    test_case["table_objects"], shelves
                 )
 
                 if s == Status.EXECUTION_SUCCESS:
-                    expected_added_objects = test_case["answer"]
+                    actual_output = {
+                        "objects_to_add": objects_to_add,
+                        "categories": categorized_shelves,
+                    }
 
-                    test_passed = True
-
-                    for shelve in expected_added_objects:
-                        if len(objects_to_add[shelve]) != len(
-                            expected_added_objects[shelve]["objects_to_add"]
-                        ):
-                            test_passed = False
+                    success = True
+                    for shelve in expected:
+                        if len(objects_to_add[shelve]) != len(expected[shelve]["objects_to_add"]):
+                            success = False
                             break
 
-                        if test_case["answer"][shelve]["category"] != categorized_shelves[shelve]:
-                            test_passed = False
+                        # Handle category as a list - take first element
+                        actual_category = categorized_shelves[shelve]
+                        if isinstance(actual_category, list):
+                            actual_category = actual_category[0] if actual_category else None
+
+                        if expected[shelve]["category"] != actual_category:
+                            success = False
                             break
 
                         for placed_object in objects_to_add[shelve]:
-                            if (
-                                placed_object
-                                not in expected_added_objects[shelve]["objects_to_add"]
-                            ):
-                                test_passed = False
+                            if placed_object not in expected[shelve]["objects_to_add"]:
+                                success = False
                                 break
 
-                    if test_passed:
+                    if success:
+                        passed_tests += 1
                         self.get_logger().info("Test passed!")
                     else:
                         self.get_logger().error("Test failed.")
-                        self.get_logger().error("Expected answer: " + str(expected_added_objects))
-                        self.get_logger().error(
-                            "Function response: "
-                            + "objects_to_add: "
-                            + str(objects_to_add)
-                            + ", categories: "
-                            + str(categorized_shelves)
-                        )
 
                 else:
-                    self.get_logger().error(f"✗ FAILED - Status: {s}")
+                    self.get_logger().error(f"FAILED: {s}")
+                    actual_output = f"ERROR: {s}"
 
             except Exception as e:
-                self.get_logger().error(f"✗ EXCEPTION in test case {i}: {str(e)}")
+                self.get_logger().error(f"EXCEPTION: {str(e)}")
+                actual_output = f"EXCEPTION: {str(e)}"
 
+            results.append([i, test_case["name"], str(expected), str(actual_output), success])
             self.get_logger().info("-" * 50)
+
+        # Write results to CSV
+        with open(output_file, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(["test_number", "name", "expected_output", "actual_output", "success"])
+            writer.writerows(results)
+
+        self.get_logger().info(f"Results saved to {output_file}")
+        self.get_logger().info(f"{passed_tests} out of {len(test_cases)} passed")
 
     def async_llm_test(self):
         test = self.hri_manager.extract_data("LLM_name", "My name is John Doe", is_async=True)
@@ -344,6 +337,166 @@ class TestHriManager(Node):
         res_with_context = self.hri_manager.query_location(object_name, top_k=3, use_context=True)
         for i, location in enumerate(res_with_context):
             self.get_logger().info(f"{i + 1}: {location}")
+
+    def test_is_positive(self):
+        test_cases_file = os.path.join(DATA_DIR, "is_positive.json")
+        with open(test_cases_file, "r") as f:
+            test_cases = json.load(f)
+
+        # Prepare output directory and file
+        date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        output_file = os.path.join(OUTPUT_DIR, f"is_positive_{date_str}.csv")
+
+        results = []
+        passed_tests = 0
+
+        for i, (input_text, expected_output) in enumerate(test_cases, 1):
+            self.get_logger().info(f"Test case {i}")
+
+            actual_output = None
+            success = False
+
+            try:
+                s, is_positive = self.hri_manager.is_positive(input_text)
+
+                if s == Status.EXECUTION_SUCCESS:
+                    actual_output = is_positive
+                    success = is_positive == expected_output
+                    if success:
+                        passed_tests += 1
+                        self.get_logger().info("Test passed!")
+                    else:
+                        self.get_logger().error("Test failed.")
+
+                else:
+                    self.get_logger().error(f"FAILED: {s}")
+                    actual_output = f"ERROR: {s}"
+
+            except Exception as e:
+                self.get_logger().error(f"EXCEPTION: {str(e)}")
+                actual_output = f"EXCEPTION: {str(e)}"
+
+            results.append([i, input_text, expected_output, actual_output, success])
+            self.get_logger().info("-" * 50)
+
+        # Write results to CSV
+        with open(output_file, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(["test_number", "input", "expected_output", "actual_output", "success"])
+            writer.writerows(results)
+
+        self.get_logger().info(f"Results saved to {output_file}")
+        self.get_logger().info(f"{passed_tests} out of {len(test_cases)} passed")
+
+    def test_is_negative(self):
+        test_cases_file = os.path.join(DATA_DIR, "is_negative.json")
+        with open(test_cases_file, "r") as f:
+            test_cases = json.load(f)
+
+        # Prepare output directory and file
+        date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        output_file = os.path.join(OUTPUT_DIR, f"is_negative_{date_str}.csv")
+
+        results = []
+        passed_tests = 0
+
+        for i, (input_text, expected_output) in enumerate(test_cases, 1):
+            self.get_logger().info(f"Test case {i}")
+
+            actual_output = None
+            success = False
+
+            try:
+                s, is_negative = self.hri_manager.is_negative(input_text)
+
+                if s == Status.EXECUTION_SUCCESS:
+                    actual_output = is_negative
+                    success = is_negative == expected_output
+                    if success:
+                        passed_tests += 1
+                        self.get_logger().info("Test passed!")
+                    else:
+                        self.get_logger().error("Test failed.")
+
+                else:
+                    self.get_logger().error(f"FAILED: {s}")
+                    actual_output = f"ERROR: {s}"
+
+            except Exception as e:
+                self.get_logger().error(f"EXCEPTION: {str(e)}")
+                actual_output = f"EXCEPTION: {str(e)}"
+
+            results.append([i, input_text, expected_output, actual_output, success])
+            self.get_logger().info("-" * 50)
+
+        # Write results to CSV
+        with open(output_file, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(["test_number", "input", "expected_output", "actual_output", "success"])
+            writer.writerows(results)
+
+        self.get_logger().info(f"Results saved to {output_file}")
+        self.get_logger().info(f"{passed_tests} out of {len(test_cases)} passed")
+
+    def test_data_extractor(self):
+        test_cases_file = os.path.join(DATA_DIR, "data_extractor.json")
+        with open(test_cases_file, "r") as f:
+            test_cases = json.load(f)
+
+        # Prepare output directory and file
+        date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        output_file = os.path.join(OUTPUT_DIR, f"data_extractor_{date_str}.csv")
+
+        results = []
+        passed_tests = 0
+
+        for i, (input_text, query, context, expected_output) in enumerate(test_cases, 1):
+            self.get_logger().info(f"Test case {i}")
+
+            actual_output = None
+            success = False
+
+            try:
+                s, extracted_data = self.hri_manager.extract_data(query, input_text, context)
+
+                if s == Status.EXECUTION_SUCCESS:
+                    actual_output = extracted_data
+                    success = extracted_data == expected_output
+                    if success:
+                        passed_tests += 1
+                        self.get_logger().info("Test passed!")
+                    else:
+                        self.get_logger().error("Test failed.")
+
+                else:
+                    self.get_logger().error(f"FAILED: {s}")
+                    actual_output = f"ERROR: {s}"
+
+            except Exception as e:
+                self.get_logger().error(f"EXCEPTION: {str(e)}")
+                actual_output = f"EXCEPTION: {str(e)}"
+
+            results.append([i, input_text, query, context, expected_output, actual_output, success])
+            self.get_logger().info("-" * 50)
+
+        # Write results to CSV
+        with open(output_file, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(
+                [
+                    "test_number",
+                    "input",
+                    "query",
+                    "context",
+                    "expected_output",
+                    "actual_output",
+                    "success",
+                ]
+            )
+            writer.writerows(results)
+
+        self.get_logger().info(f"Results saved to {output_file}")
+        self.get_logger().info(f"{passed_tests} out of {len(test_cases)} passed")
 
 
 def main(args=None):
