@@ -33,7 +33,6 @@ from frida_constants.vision_constants import (
     SET_TARGET_BY_TOPIC,
     SET_TARGET_TOPIC,
     SHELF_DETECTION_TOPIC,
-    TRASH_DETECTION_SERVICE
 )
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.msg import ObjectDetection, PersonList
@@ -128,11 +127,6 @@ class VisionTasks:
 
         self.count_by_color_client = self.node.create_client(CountByColor, COUNT_BY_COLOR_TOPIC)
 
-        # YOLO-E detection client (using existing trash detection node)
-        self.yoloe_detection_client = self.node.create_client(
-            DetectionHandler, TRASH_DETECTION_SERVICE
-        )
-
         self.services = {
             Task.RECEPTIONIST: {
                 "detect_person": {"client": self.detect_person_action_client, "type": "action"},
@@ -186,10 +180,6 @@ class VisionTasks:
                 },
                 "count_by_color": {
                     "client": self.count_by_color_client,
-                    "type": "service",
-                },
-                "yoloe_detection": {
-                    "client": self.yoloe_detection_client,
                     "type": "service",
                 },
             },
@@ -812,30 +802,17 @@ class VisionTasks:
         return self.moondream_query(prompt, query_person=False)
 
     def detect_trash(self):
-        """Return if there is trash in the floor and its type"""
+        """Return if there is trash in the floor"""
         Logger.info(self.node, "Detecting trash in the floor")
-        
-        prompt1 = "Reply only with 1 if there is trash on the floor. Otherwise, reply only with 0."
-        status, response_q = self.moondream_query(prompt1, query_person=False)
-        
-        if status != Status.EXECUTION_SUCCESS:
-            return status, False, ""
-        
-        response_clean = response_q.strip()
-        if response_clean != "1":
-            return Status.EXECUTION_SUCCESS, False, ""
-        
-        prompt2 = (
-            "What type of trash do you see on the floor? "
-            "Reply with ONE word: bottle, can, wrapper, bag, cup, container, paper, or box"
-        )
-        status2, trash_type = self.moondream_query(prompt2, query_person=False)
-        
-        if status2 != Status.EXECUTION_SUCCESS:
-            return status2, True, "trash"
-        
-        Logger.success(self.node, f"Identified trash: {trash_type.strip()}")
-        return Status.EXECUTION_SUCCESS, True, trash_type.strip().lower()
+        prompt = "Reply only with 1 if there is trash on the floor. Otherwise, reply only with 0."
+        status, response_q = self.moondream_query(prompt, query_person=False)
+        if status:
+            response_clean = response_q.strip()
+            if response_clean == "1":
+                response_clean = True
+            else:
+                response_clean = False
+        return status, response_clean
 
     def count_objects(self, object: str):
         """Count the number of objects in the image"""
@@ -979,66 +956,6 @@ class VisionTasks:
 
         return Status.EXECUTION_SUCCESS, location
 
-    @mockable(return_value=(Status.EXECUTION_SUCCESS, []), delay=2)
-    @service_check("yoloe_detection_client", (Status.EXECUTION_ERROR, []), TIMEOUT)
-    def get_trash_bboxes(self) -> tuple[int, list[dict]]:
-        """
-        Get bounding boxes for specific trash type using yolo-e zero-shot
-        """
-        Logger.info(self.node, "Starting trash detection workflow")
-        
-        status, is_trash, trash_type = self.detect_trash()
-        
-        if status != Status.EXECUTION_SUCCESS:
-            return status, []
-        
-        if not is_trash:
-            Logger.info(self.node, "No trash detected")
-            return Status.TARGET_NOT_FOUND, []
-        Logger.info(self.node, f"Getting trash bboxes for: {trash_type}")
-        
-        search_terms = [
-            trash_type,
-            f"{trash_type} trash", 
-            f"discarded {trash_type}",
-            f"empty {trash_type}",
-            "trash",
-            "garbage", 
-            "litter"
-        ]
-        
-        request = DetectionHandler.Request()
-        request.labels = search_terms
-        
-        try:
-            future = self.yoloe_detection_client.call_async(request)
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
-            result = future.result()
-            
-            if not result.success:
-                Logger.error(self.node, f"Trash detection failed")
-                return Status.TARGET_NOT_FOUND, []
-            
-            trash_bboxes = []
-            for detection in result.detection_array.detections:
-                if detection.score > 0.3:
-                    trash_bboxes.append({
-                        'bbox': [
-                            detection.xmin,
-                            detection.ymin, 
-                            detection.xmax,
-                            detection.ymax
-                        ],
-                        'confidence': detection.score,
-                        'trash_type': trash_type,
-                    })
-            
-            Logger.success(self.node, f"Found {len(trash_bboxes)} detections")
-            return Status.EXECUTION_SUCCESS, trash_bboxes
-            
-        except Exception as e:
-            Logger.error(self.node, f"Trash node zero shot error: {e}")
-            return Status.EXECUTION_ERROR, []
 
 if __name__ == "__main__":
     rclpy.init()
