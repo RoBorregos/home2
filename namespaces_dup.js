@@ -341,10 +341,8 @@ var namespaces_dup =
       [ "version", "namespacesetup.html#a2aa722b36a933088812b50ea79b97a5c", null ],
       [ "zip_safe", "namespacesetup.html#a13510753661cb74083a0c664db11dde9", null ]
     ] ],
-    [ "Shelf_OCV", "namespaceShelf__OCV.html", "namespaceShelf__OCV" ],
     [ "show_object_detection", "namespaceshow__object__detection.html", "namespaceshow__object__detection" ],
     [ "start_button_text", "namespacestart__button__text.html", "namespacestart__button__text" ],
-    [ "storing_groceries_commands", "namespacestoring__groceries__commands.html", "namespacestoring__groceries__commands" ],
     [ "storing_groceries_launch", "namespacestoring__groceries__launch.html", [
       [ "generate_launch_description", "namespacestoring__groceries__launch.html#a84e56b2514a7f4c75214c14f7b9a38a4", null ]
     ] ],

@@ -291,20 +291,11 @@ var annotated_dup =
     [ "Servo", "namespaceServo.html", [
       [ "Servo", "classServo_1_1Servo.html", "classServo_1_1Servo" ]
     ] ],
-    [ "Shelf_OCV", "namespaceShelf__OCV.html", [
-      [ "BBox", "classShelf__OCV_1_1BBox.html", null ],
-      [ "OpenCVShelfDetector", "classShelf__OCV_1_1OpenCVShelfDetector.html", "classShelf__OCV_1_1OpenCVShelfDetector" ],
-      [ "ShelfDetection", "classShelf__OCV_1_1ShelfDetection.html", null ],
-      [ "ShelfDetector", "classShelf__OCV_1_1ShelfDetector.html", "classShelf__OCV_1_1ShelfDetector" ]
-    ] ],
     [ "show_object_detection", "namespaceshow__object__detection.html", [
       [ "ShowDetectionNode", "classshow__object__detection_1_1ShowDetectionNode.html", "classshow__object__detection_1_1ShowDetectionNode" ]
     ] ],
     [ "start_button_text", "namespacestart__button__text.html", [
       [ "TestHriManager", "classstart__button__text_1_1TestHriManager.html", "classstart__button__text_1_1TestHriManager" ]
-    ] ],
-    [ "storing_groceries_commands", "namespacestoring__groceries__commands.html", [
-      [ "StoringGroceriesCommands", "classstoring__groceries__commands_1_1StoringGroceriesCommands.html", "classstoring__groceries__commands_1_1StoringGroceriesCommands" ]
     ] ],
     [ "storing_groceries_manager", "namespacestoring__groceries__manager.html", [
       [ "ExecutionStates", "classstoring__groceries__manager_1_1ExecutionStates.html", null ],

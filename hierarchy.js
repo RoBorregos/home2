@@ -2,7 +2,6 @@ var hierarchy =
 [
     [ "frida_constants.vision_classes.BBOX", "classfrida__constants_1_1vision__classes_1_1BBOX.html", null ],
     [ "ObjectDetector.BBOX", "classObjectDetector_1_1BBOX.html", null ],
-    [ "Shelf_OCV.BBox", "classShelf__OCV_1_1BBox.html", null ],
     [ "BoxPrimitiveParams", "structBoxPrimitiveParams.html", null ],
     [ "utils.config.MockConfig.Config", "classutils_1_1config_1_1MockConfig_1_1Config.html", null ],
     [ "utils.config.SubtaskConfig.Config", "classutils_1_1config_1_1SubtaskConfig_1_1Config.html", null ],
@@ -79,7 +78,6 @@ var hierarchy =
     [ "vision_general.pose_detection.PoseDetection", "classvision__general_1_1pose__detection_1_1PoseDetection.html", null ],
     [ "PourManager.PourManager", "classPourManager_1_1PourManager.html", null ],
     [ "frida_constants.vision_classes.ShelfDetection", "classfrida__constants_1_1vision__classes_1_1ShelfDetection.html", null ],
-    [ "Shelf_OCV.ShelfDetection", "classShelf__OCV_1_1ShelfDetection.html", null ],
     [ "demo_manager.DemoTM.States", "classdemo__manager_1_1DemoTM_1_1States.html", null ],
     [ "egpsr_task_manager.EGPSRTM.States", "classegpsr__task__manager_1_1EGPSRTM_1_1States.html", null ],
     [ "egsr_cut.EGPSRTM.States", "classegsr__cut_1_1EGPSRTM_1_1States.html", null ],
@@ -102,10 +100,7 @@ var hierarchy =
     [ "ABC", null, [
       [ "ObjectDetector.ObjectDectector", "classObjectDetector_1_1ObjectDectector.html", null ],
       [ "Planner.Planner", "classPlanner_1_1Planner.html", null ],
-      [ "Servo.Servo", "classServo_1_1Servo.html", null ],
-      [ "Shelf_OCV.ShelfDetector", "classShelf__OCV_1_1ShelfDetector.html", [
-        [ "Shelf_OCV.OpenCVShelfDetector", "classShelf__OCV_1_1OpenCVShelfDetector.html", null ]
-      ] ]
+      [ "Servo.Servo", "classServo_1_1Servo.html", null ]
     ] ],
     [ "BaseModel", null, [
       [ "storing_groceries_manager.Shelf", "classstoring__groceries__manager_1_1Shelf.html", null ],
@@ -192,7 +187,6 @@ var hierarchy =
       [ "safety_task_manager.SafetyTaskManager", "classsafety__task__manager_1_1SafetyTaskManager.html", null ],
       [ "show_object_detection.ShowDetectionNode", "classshow__object__detection_1_1ShowDetectionNode.html", null ],
       [ "start_button_text.TestHriManager", "classstart__button__text_1_1TestHriManager.html", null ],
-      [ "storing_groceries_commands.StoringGroceriesCommands", "classstoring__groceries__commands_1_1StoringGroceriesCommands.html", null ],
       [ "storing_groceries_manager.StoringGroceriesManager", "classstoring__groceries__manager_1_1StoringGroceriesManager.html", null ],
       [ "temp_follow.FollowPersonNode", "classtemp__follow_1_1FollowPersonNode.html", null ],
       [ "test_env.TestNode", "classtest__env_1_1TestNode.html", null ],
