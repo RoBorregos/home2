@@ -24,7 +24,7 @@ export function StartButton() {
 
   return (
     <button
-      className="mb-4 px-4 py-2 bg-(--blue) text-white rounded-lg hover:bg-(--blue-hover) transition-colors w-3/4 h-16 text-lg font-semibold"
+      className="mb-4 px-4 py-2 bg-(--blue) text-white rounded-lg hover:bg-(--blue-hover) transition-colors w-4/4 h-16 text-lg font-semibold"
       onClick={handleClick}
     >
       Start

@@ -32,7 +32,7 @@ home2/
 │
 ├──packages/ # ROS packages for the project
 │   ├──embeddings/
-│   │   ├──config/ # ROS launch configs. REPLACE keyword uses hri_constans.py values
+│   │   ├──config/ # ROS launch configs. REPLACE keyword uses hri_constants.py values
 │   │   ├──embeddings/
 │   │   │   └──dataframes/ # Json files with data
 │   │   ├──launch/ # ROS launch files
@@ -40,7 +40,7 @@ home2/
 │   │   └──scripts/ # Classes, functions and nodes
 │   ├──nlp/
 │   │   ├──assets/ # Persists models
-│   │   ├──config/ # ROS launch configs. REPLACE keyword uses hri_constans.py values
+│   │   ├──config/ # ROS launch configs. REPLACE keyword uses hri_constants.py values
 │   │   ├──launch/ # ROS launch files
 │   │   │   ├──extract_data_launch.py # Launches extract data node
 │   │   │   └──nlp_launch.py # Launches NLP nodes
@@ -59,7 +59,7 @@ home2/
 │       │   │       ├──model/ # Persists model
 │       │   │       └──audio_cache.json/ # Maps texts to audio files
 │       │   └──oww/ # Open Wake Word models
-│       ├──config/ # ROS launch configs. REPLACE keyword uses hri_constans.py values
+│       ├──config/ # ROS launch configs. REPLACE keyword uses hri_constanst.py values
 │       ├──debug/ # Scripts for debugging
 │       ├──launch/ # ROS launch files
 │       │   ├──devices_launch.py # Launches speech nodes
@@ -104,7 +104,7 @@ Captures raw audio in chunks and publishes it.
 
 ### kws_oww.py
 
-Uses Open Wake Word to detect keywords sush as "Frida".
+Uses Open Wake Word to detect keywords such as "Frida".
 
 ### hear_streaming.py
 
@@ -186,6 +186,20 @@ ros2 topic pub /hri/display/frida_questions std_msgs/msg/String '{data: "What is
 
 # Verify that the answer is received
 ros2 topic echo /hri/display/answers
+
+
+# Switch display view
+# The display now opens the correct task view automatically when launched with the --open-display flag
+
+# Launch a task with display
+./run.sh hri --<task_name> --open-display
+
+# Example: Launch GPSR with display
+./run.sh hri --gpsr --open-display
+
+# To open a specific view manually in a browser:
+# Task view: http://localhost:3000/<task_name>
+# Default: http://localhost:3000/
 ```
 
 ## Other useful commands
@@ -237,7 +251,7 @@ pactl list short sources
 
 ### Speaker
 
-If the speaker isn't loud, make sure to increase the volume level in the device that controlls the speaker.
+If the speaker isn't loud, make sure to increase the volume level in the device that controls the speaker.
 
 ```bash
 amixer -D pulse sset Master 100%
@@ -290,7 +304,8 @@ postgres=# \dt
 postgres=#
 ```
 
-```sql-- List all columns in a table
+```sql
+-- List all columns in a table
 \d <table_name>
 ```
 
