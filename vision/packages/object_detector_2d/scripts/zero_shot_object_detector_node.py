@@ -181,7 +181,9 @@ class zero_shot_object_detector_node(object_detector_node):
             self.get_parameter("USE_YOLO8").get_parameter_value().bool_value
         )
         self.node_params.SET_DETECTOR_CLASSES_SERVICE = (
-            self.get_parameter("SET_DETECTOR_CLASSES_SERVICE").get_parameter_value().string_value
+            self.get_parameter("SET_DETECTOR_CLASSES_SERVICE")
+            .get_parameter_value()
+            .string_value
         )
 
     def handlePublishers(self):
