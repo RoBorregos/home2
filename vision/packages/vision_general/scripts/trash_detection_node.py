@@ -108,14 +108,14 @@ class TrashDetectionNode(Node):
                 
                 for detection in self.latest_detections.detections:                    
                     obj_detection = ObjectDetection()
-                    obj_detection.label_text = detection.label
+                    obj_detection.label_text = detection.label_text
                     obj_detection.score = detection.score
                     
                     # Convert normalized coordinates to pixels
-                    obj_detection.xmin = max(0, int(detection.bbox.x1 * w))
-                    obj_detection.ymin = max(0, int(detection.bbox.y1 * h))
-                    obj_detection.xmax = min(w, int(detection.bbox.x2 * w))
-                    obj_detection.ymax = min(h, int(detection.bbox.y2 * h))
+                    obj_detection.xmin = max(0, float(detection.xmin * w))
+                    obj_detection.ymin = max(0, float(detection.ymin * h))
+                    obj_detection.xmax = min(w, float(detection.xmax * w))
+                    obj_detection.ymax = min(h, float(detection.ymax * h))
                     
                     response.detection_array.detections.append(obj_detection)
             
@@ -172,14 +172,6 @@ def main():
     executor.add_node(node)
     executor.spin()
     rclpy.shutdown()
-    
-    # try:
-    #     rclpy.spin(node)
-    # except KeyboardInterrupt:
-    #     pass
-    # finally:
-    #     node.destroy_node()
-    #     rclpy.shutdown()
 
 if __name__ == '__main__':
     main()
