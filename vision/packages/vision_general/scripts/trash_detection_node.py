@@ -109,13 +109,11 @@ class TrashDetectionNode(Node):
                 for detection in self.latest_detections.detections:                    
                     obj_detection = ObjectDetection()
                     obj_detection.label_text = detection.label_text
-                    obj_detection.score = detection.score
-                    
-                    # Convert normalized coordinates to pixels
-                    obj_detection.xmin = max(0, float(detection.xmin * w))
-                    obj_detection.ymin = max(0, float(detection.ymin * h))
-                    obj_detection.xmax = min(w, float(detection.xmax * w))
-                    obj_detection.ymax = min(h, float(detection.ymax * h))
+                    obj_detection.score = detection.score                    
+                    obj_detection.xmin = detection.xmin
+                    obj_detection.ymin = detection.ymin
+                    obj_detection.xmax = detection.xmax
+                    obj_detection.ymax = detection.ymax
                     
                     response.detection_array.detections.append(obj_detection)
             
