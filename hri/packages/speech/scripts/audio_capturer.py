@@ -88,6 +88,22 @@ class AudioCapturer(Node):
             .string_value
         )
 
+        # channel extraction: which mic channel to extract when using ReSpeaker
+        self.declare_parameter("EXTRACT_CHANNEL", 0)
+        self.extract_channel = (
+            self.get_parameter("EXTRACT_CHANNEL").get_parameter_value().integer_value
+        )
+
+        # Topic to receive the selected active mic (published by a DOA/wakeword handler)
+        self.declare_parameter("ACTIVE_MIC_TOPIC", "/speech/active_mic")
+        active_mic_topic = (
+            self.get_parameter("ACTIVE_MIC_TOPIC").get_parameter_value().string_value
+        )
+        # Subscribe to active mic commands (simple JSON string or 'channel:<n>')
+        from std_msgs.msg import String
+
+        self.create_subscription(String, active_mic_topic, self._active_mic_cb, 10)
+
         self.get_logger().info("AudioCapturer node initialized.")
 
     def record(self):
@@ -97,7 +113,8 @@ class AudioCapturer(Node):
         self.debug = False
         CHANNELS = self.mic_input_channels  # Use configured channel count.
         self.RATE = 16000
-        EXTRACT_CHANNEL = 0  # Use channel 0. Tested with microphone.py. See channel meaning: https://wiki.seeedstudio.com/ReSpeaker-USB-Mic-Array/#update-firmware
+        # Use configured extract channel (dynamic, can be updated via ACTIVE_MIC_TOPIC)
+        EXTRACT_CHANNEL = self.extract_channel
 
         self.p = pyaudio.PyAudio()
         stream = self.p.open(
@@ -131,24 +148,33 @@ class AudioCapturer(Node):
                         usable = arr[: n_frames * channels]
                         frames = usable.reshape(n_frames, channels)
 
-                        # Split channels for mixing.
-                        per_mics = [
-                            frames[:, i].astype(np.int32)
-                            for i in range(min(channels, frames.shape[1]))
-                        ]
-
-                        # Mix to mono: "sum" (improves SNR, risks clipping), "first" (fastest), or "avg" (default, balanced).
-                        if self.join_method == "sum":
-                            mixed = np.sum(np.vstack(per_mics), axis=0)
-                            mixed = np.clip(mixed, -32768, 32767).astype(np.int16)
-                        elif self.join_method == "first":
-                            mixed = per_mics[0].astype(np.int16)
+                        # If extract channel is set, prefer extracting that single mic instead of mixing
+                        if (
+                            EXTRACT_CHANNEL is not None
+                            and EXTRACT_CHANNEL >= 0
+                            and EXTRACT_CHANNEL < frames.shape[1]
+                        ):
+                            extracted = frames[:, EXTRACT_CHANNEL].astype(np.int16)
+                            local_audio = extracted.tobytes()
                         else:
-                            mixed = np.mean(np.vstack(per_mics), axis=0).astype(
-                                np.int16
-                            )
+                            # Split channels for mixing.
+                            per_mics = [
+                                frames[:, i].astype(np.int32)
+                                for i in range(min(channels, frames.shape[1]))
+                            ]
 
-                        local_audio = mixed.tobytes()
+                            # Mix to mono: "sum" (improves SNR, risks clipping), "first" (fastest), or "avg" (default, balanced).
+                            if self.join_method == "sum":
+                                mixed = np.sum(np.vstack(per_mics), axis=0)
+                                mixed = np.clip(mixed, -32768, 32767).astype(np.int16)
+                            elif self.join_method == "first":
+                                mixed = per_mics[0].astype(np.int16)
+                            else:
+                                mixed = np.mean(np.vstack(per_mics), axis=0).astype(
+                                    np.int16
+                                )
+
+                            local_audio = mixed.tobytes()
                 else:
                     local_audio = in_data
 
