@@ -1,4 +1,5 @@
 string label
+string[] labels
 bool closest_object
 ---
 frida_interfaces/ObjectDetectionArray detection_array
