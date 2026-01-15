@@ -6,6 +6,7 @@ from nlp.assets.schemas import (
     ExtractedData,
     IsAnswerNegative,
     IsAnswerPositive,
+    IsAnswerCoherent,
 )
 
 
@@ -401,10 +402,10 @@ Your task is to determine if a command given by a user is **complete**, **unambi
 The robot needs to know **what** to do and **what/who/where** the target is.
 If a command is cut off, missing a target object/person/location, or is too vague, mark it as **false**.
 
-Output a JSON with a single boolean field `is_positive`.
-- Set `is_positive` to **true** if the command is complete and executable.
+Output a JSON with a single boolean field `is_coherent`.
+- Set `is_coherent` to **true** if the command is complete and executable.
     - Examples: "Go to the kitchen", "Find the apple", "Pick up the bottle", "Follow me", "Tell me the time", "Take the bag to the living room".
-- Set `is_positive` to **false** if the command is incomplete, ambiguous, or lacks context.
+- Set `is_coherent` to **false** if the command is incomplete, ambiguous, or lacks context.
     - Examples: "Go to", "Find the", "Pick up", "Take", "Bring me the", "Search for", "The kitchen", "Apple".
 """,
             },
@@ -413,5 +414,5 @@ Output a JSON with a single boolean field `is_positive`.
                 "content": f"Command: {text} /no_think",
             },
         ],
-        "response_format": IsAnswerPositive,
+        "response_format": IsAnswerCoherent,
     }
