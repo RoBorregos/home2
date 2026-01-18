@@ -2,7 +2,12 @@ services:
   ollama:
     profiles: [receptionist, carry, gpsr, storing]
     container_name: home2-hri-ollama-l4t
-    image: dustynv/ollama:0.6.8-r36.4
+    build:
+      context: ..
+      dockerfile: dockerfiles/Dockerfile.ollama
+      args:
+        BASE_IMAGE: dustynv/ollama:0.6.8-r36.4
+    image: roborregos/home2:hri-ollama-l4t
     runtime: nvidia
     network_mode: host
     volumes:
@@ -13,4 +18,4 @@ services:
     stdin_open: true
     tty: true
     entrypoint:
-      ["/bin/bash", "-c", "/ollama/entrypoint.sh && tail -f /dev/null"]
+      ["/bin/bash", "-c", "/scripts/entrypoint.sh && tail -f /dev/null"]
