@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # Download model and Modelfile to the directory where this script is located
-SCRIPT_DIR="$(cd "$(dirname "$0")/../../../hri/packages/nlp/assets" && pwd)"
+SCRIPT_DIR="../../hri/packages/nlp/assets" 
 [ ! -f "$SCRIPT_DIR/rbrgs.F16.gguf" ] && curl -L https://huggingface.co/diegohc/rbrgs-finetuning/resolve/paraphrased-dataset/q4/unsloth.Q4_K_M.gguf -o "$SCRIPT_DIR/rbrgs.F16.gguf"
 
 # Detect available image
