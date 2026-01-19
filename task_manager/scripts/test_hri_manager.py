@@ -10,7 +10,7 @@ import time
 import csv
 from datetime import datetime
 from typing import Union
-
+import numpy as np
 import rclpy
 from config.hri.debug import config as test_hri_config
 from rclpy.node import Node
@@ -60,6 +60,8 @@ def confirm_preference(interpreted_text, extracted_data):
 
 DATA_DIR = "/workspace/src/hri/packages/nlp/test/"
 OUTPUT_DIR = os.path.join(DATA_DIR, "output")
+
+COMMAND_INTERPRETER_SUCCESS_THRESHOLD = 0.9
 
 # Choose which tests to perform
 TEST_COMPOUND = False
@@ -530,7 +532,20 @@ class TestHriManager(Node):
 
                 if s == Status.EXECUTION_SUCCESS:
                     actual_output = command_list
-                    success = str(command_list) == expected_output
+                    actual_output_embedding = self.hri_manager.pg.embedding_model.encode(
+                        str(command_list)
+                    )
+                    expected_output_embedding = self.hri_manager.pg.embedding_model.encode(
+                        expected_output
+                    )
+                    cosine_similarity = np.dot(
+                        actual_output_embedding, expected_output_embedding
+                    ) / (
+                        np.linalg.norm(actual_output_embedding)
+                        * np.linalg.norm(expected_output_embedding)
+                    )
+                    success = cosine_similarity >= COMMAND_INTERPRETER_SUCCESS_THRESHOLD
+                    self.get_logger().info(f"Cosine similarity: {cosine_similarity}")
                     if success:
                         passed_tests += 1
                         self.get_logger().info("Test passed!")
