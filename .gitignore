@@ -12,11 +12,9 @@
 **.pt
 **.pth
 **.gz
-hri/packages/nlp/assets/**
 .cache
-!hri/packages/nlp/assets/download-model.sh
-!hri/packages/nlp/assets/Modelfile
-!hri/packages/nlp/assets/entrypoint.sh
+hri/packages/nlp/assets/**
+!hri/packages/nlp/assets/ModelFile
 **.bag
 **/rtabmapdbs
 yolov5/
