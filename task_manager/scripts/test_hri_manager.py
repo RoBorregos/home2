@@ -60,6 +60,8 @@ def confirm_preference(interpreted_text, extracted_data):
 
 DATA_DIR = "/workspace/src/hri/packages/nlp/test/"
 OUTPUT_DIR = os.path.join(DATA_DIR, "output")
+
+# Choose which tests to perform
 TEST_COMPOUND = False
 TEST_INDIVIDUAL_FUNCTIONS = False
 TEST_CATEGORIZE_SHELVES = False
@@ -70,6 +72,7 @@ TEST_OBJECT_LOCATION = False
 TEST_IS_POSITIVE = False
 TEST_IS_NEGATIVE = False
 TEST_DATA_EXTRACTOR = False
+TEST_COMMAND_INTERPRETER = True
 
 
 class TestHriManager(Node):
@@ -111,6 +114,9 @@ class TestHriManager(Node):
 
         if TEST_DATA_EXTRACTOR:
             self.test_data_extractor()
+
+        if TEST_COMMAND_INTERPRETER:
+            self.test_command_interpreter()
 
         exit(0)
 
@@ -488,6 +494,67 @@ class TestHriManager(Node):
                     "input",
                     "query",
                     "context",
+                    "expected_output",
+                    "actual_output",
+                    "success",
+                ]
+            )
+            writer.writerows(results)
+
+        self.get_logger().info(f"Results saved to {output_file}")
+        self.get_logger().info(f"{passed_tests} out of {len(test_cases)} passed")
+
+    def test_command_interpreter(self):
+        test_cases_file = os.path.join(DATA_DIR, "command_interpreter.json")
+        with open(test_cases_file, "r") as f:
+            test_cases = json.load(f)
+
+        # Prepare output directory and file
+        date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        output_file = os.path.join(OUTPUT_DIR, f"command_interpreter_{date_str}.csv")
+
+        results = []
+        passed_tests = 0
+
+        for i, test_case in enumerate(test_cases, 1):
+            input_text = test_case["string_cmd"]
+            expected_output = test_case["structured_cmd"]
+
+            self.get_logger().info(f"Test case {i}")
+
+            actual_output = None
+            success = False
+
+            try:
+                s, command_list = self.hri_manager.command_interpreter(input_text)
+
+                if s == Status.EXECUTION_SUCCESS:
+                    actual_output = command_list
+                    success = str(command_list) == expected_output
+                    if success:
+                        passed_tests += 1
+                        self.get_logger().info("Test passed!")
+                    else:
+                        self.get_logger().error("Test failed.")
+
+                else:
+                    self.get_logger().error(f"FAILED: {s}")
+                    actual_output = f"ERROR: {s}"
+
+            except Exception as e:
+                self.get_logger().error(f"EXCEPTION: {str(e)}")
+                actual_output = f"EXCEPTION: {str(e)}"
+
+            results.append([i, input_text, expected_output, actual_output, success])
+            self.get_logger().info("-" * 50)
+
+        # Write results to CSV
+        with open(output_file, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(
+                [
+                    "test_number",
+                    "input",
                     "expected_output",
                     "actual_output",
                     "success",
