@@ -10,6 +10,7 @@ var dir_a89c3d2d3adb8b7698d1aac82a56a6d1 =
     [ "ExtractInfo.srv", "ExtractInfo_8srv.html", null ],
     [ "Grammar.srv", "Grammar_8srv.html", null ],
     [ "GuestInfo.srv", "GuestInfo_8srv.html", null ],
+    [ "IsCoherent.srv", "IsCoherent_8srv.html", null ],
     [ "IsNegative.srv", "IsNegative_8srv.html", null ],
     [ "IsPositive.srv", "IsPositive_8srv.html", null ],
     [ "LLMWrapper.srv", "LLMWrapper_8srv.html", null ],

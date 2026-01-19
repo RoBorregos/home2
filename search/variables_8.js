@@ -17,8 +17,8 @@ var searchData=
   ['help_14',['help',['../namespacemoondream__lib.html#a96f271e464064797e7edcff4e9851282',1,'moondream_lib.help()'],['../namespaceserver.html#a692f59b384dd93287c366eb7e7c0608b',1,'server.help()']]],
   ['help_5fme_5fcarry_15',['HELP_ME_CARRY',['../classutils_1_1task_1_1Task.html#a5fc9810f491d09ab9c3164914f09405b',1,'utils::task::Task']]],
   ['hotword_5fservice_5fname_16',['HOTWORD_SERVICE_NAME',['../namespacefrida__constants_1_1hri__constants.html#a56cb7bea1e6304de74676a11d4effdf9',1,'frida_constants::hri_constants']]],
-  ['hri_17',['HRI',['../classfrida__constants_1_1ModuleNames.html#a26bf7d8ace6b622f93e4c9f9dfe97f41',1,'frida_constants::ModuleNames']]],
-  ['hri_18',['hri',['../classutils_1_1subtask__manager_1_1SubtaskManager.html#a0a2b5ff79896271b6bc24c0253b617f2',1,'utils::subtask_manager::SubtaskManager']]],
+  ['hri_17',['hri',['../classutils_1_1subtask__manager_1_1SubtaskManager.html#a0a2b5ff79896271b6bc24c0253b617f2',1,'utils::subtask_manager::SubtaskManager']]],
+  ['hri_18',['HRI',['../classfrida__constants_1_1ModuleNames.html#a26bf7d8ace6b622f93e4c9f9dfe97f41',1,'frida_constants::ModuleNames']]],
   ['hri_5fmanager_19',['hri_manager',['../classstart__button__text_1_1TestHriManager.html#adf781239d424b342b20fa301cecb17f5',1,'start_button_text.TestHriManager.hri_manager()'],['../classsubtask__managers_1_1hri__hand_1_1HRIHand.html#aef0d0569d094ba0a9b63279c9cc981e3',1,'subtask_managers.hri_hand.HRIHand.hri_manager()'],['../classtest__hri__manager_1_1TestHriManager.html#a24fdd546d6ff1fd85f6802baac27733b',1,'test_hri_manager.TestHriManager.hri_manager()']]],
   ['hz_20',['HZ',['../classlocal__camera_1_1NodeParams.html#ae2914b29f06d811ab1d84056097899a6',1,'local_camera::NodeParams']]]
 ];

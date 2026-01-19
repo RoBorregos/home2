@@ -15,6 +15,7 @@ var namespacefrida__constants_1_1hri__constants =
     [ "GPSR_COMMANDS", "namespacefrida__constants_1_1hri__constants.html#aae7202a78fec255321e754d7a99ad996", null ],
     [ "GRAMMAR_SERVICE", "namespacefrida__constants_1_1hri__constants.html#a030ffe3f2fb1fc6cb72b2f14441d6e97", null ],
     [ "HOTWORD_SERVICE_NAME", "namespacefrida__constants_1_1hri__constants.html#a56cb7bea1e6304de74676a11d4effdf9", null ],
+    [ "IS_COHERENT_SERVICE", "namespacefrida__constants_1_1hri__constants.html#aa04127dd3af14465c6ed0fdea141cd3c", null ],
     [ "IS_NEGATIVE_SERVICE", "namespacefrida__constants_1_1hri__constants.html#a40d771feb1bf4ea070ce564f294ec534", null ],
     [ "IS_POSITIVE_SERVICE", "namespacefrida__constants_1_1hri__constants.html#afa75347167cbfc3cf035e80d0f56bacf", null ],
     [ "KEYWORD_TOPIC", "namespacefrida__constants_1_1hri__constants.html#a99a70242344952dd09be65d3260da4a7", null ],

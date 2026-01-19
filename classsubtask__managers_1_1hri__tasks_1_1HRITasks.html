@@ -114,6 +114,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a7d2e844fa32fad9b41c58f766997fc4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaf93c33753ea74b978ef22aa2c8c715b"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#aaf93c33753ea74b978ef22aa2c8c715b">say</a> (self, str text, bool wait=True, float speed=1.15)</td></tr>
 <tr class="separator:aaf93c33753ea74b978ef22aa2c8c715b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abefd4479636be39edcbfa032ba13f5a2"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#abefd4479636be39edcbfa032ba13f5a2">check_coherence</a> (self, str text)</td></tr>
+<tr class="separator:abefd4479636be39edcbfa032ba13f5a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab1d1586a91c8bdf01b8c6b034d678aa3"><td class="memItemLeft" align="right" valign="top">str|Future&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#ab1d1586a91c8bdf01b8c6b034d678aa3">extract_data</a> (self, query, complete_text, context=&quot;&quot;, is_async=False)</td></tr>
 <tr class="separator:ab1d1586a91c8bdf01b8c6b034d678aa3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a579a2698905fceb2e83cbb4015d0f6db"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a579a2698905fceb2e83cbb4015d0f6db">execute_command</a> (self, str command, str complement, str characteristic)</td></tr>
@@ -201,6 +203,8 @@ Public Attributes</h2></td></tr>
 <tr class="separator:ae80c690f473dcf2cd035894129e8153d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0270605c8b1724c66cb959cdfc94b4d1"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a0270605c8b1724c66cb959cdfc94b4d1">is_negative_service</a></td></tr>
 <tr class="separator:a0270605c8b1724c66cb959cdfc94b4d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a931e6823b087f8adcbfe52f96a8c9ead"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a931e6823b087f8adcbfe52f96a8c9ead">is_coherent_service</a></td></tr>
+<tr class="separator:a931e6823b087f8adcbfe52f96a8c9ead"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a07cf42b5a2f5223d73209bf7bfdec965"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a07cf42b5a2f5223d73209bf7bfdec965">display_publisher</a></td></tr>
 <tr class="separator:a07cf42b5a2f5223d73209bf7bfdec965"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aae276d16a44121fe3127e98fa887a0d5"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#aae276d16a44121fe3127e98fa887a0d5">display_map_publisher</a></td></tr>
@@ -715,6 +719,34 @@ Args:
 Returns:
     dict[int, list[str]]: Dictionary mapping shelf levels to categorized objects.
 </pre> 
+</div>
+</div>
+<a id="abefd4479636be39edcbfa032ba13f5a2" name="abefd4479636be39edcbfa032ba13f5a2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abefd4479636be39edcbfa032ba13f5a2">&#9670;&#160;</a></span>check_coherence()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> bool subtask_managers.hri_tasks.HRITasks.check_coherence </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">str&#160;</td>
+          <td class="paramname"><em>text</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Check if the command is coherent and possible for the robot.</pre> 
 </div>
 </div>
 <a id="a44a08c8557807d172922b7f281345b05" name="a44a08c8557807d172922b7f281345b05"></a>
@@ -1966,6 +1998,20 @@ This method is called when the start button is pressed.
       <table class="memname">
         <tr>
           <td class="memname">subtask_managers.hri_tasks.HRITasks.hear_multi_service</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a931e6823b087f8adcbfe52f96a8c9ead" name="a931e6823b087f8adcbfe52f96a8c9ead"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a931e6823b087f8adcbfe52f96a8c9ead">&#9670;&#160;</a></span>is_coherent_service</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">subtask_managers.hri_tasks.HRITasks.is_coherent_service</td>
         </tr>
       </table>
 </div><div class="memdoc">

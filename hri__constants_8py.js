@@ -15,6 +15,7 @@ var hri__constants_8py =
     [ "GPSR_COMMANDS", "hri__constants_8py.html#aae7202a78fec255321e754d7a99ad996", null ],
     [ "GRAMMAR_SERVICE", "hri__constants_8py.html#a030ffe3f2fb1fc6cb72b2f14441d6e97", null ],
     [ "HOTWORD_SERVICE_NAME", "hri__constants_8py.html#a56cb7bea1e6304de74676a11d4effdf9", null ],
+    [ "IS_COHERENT_SERVICE", "hri__constants_8py.html#aa04127dd3af14465c6ed0fdea141cd3c", null ],
     [ "IS_NEGATIVE_SERVICE", "hri__constants_8py.html#a40d771feb1bf4ea070ce564f294ec534", null ],
     [ "IS_POSITIVE_SERVICE", "hri__constants_8py.html#afa75347167cbfc3cf035e80d0f56bacf", null ],
     [ "KEYWORD_TOPIC", "hri__constants_8py.html#a99a70242344952dd09be65d3260da4a7", null ],
