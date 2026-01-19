@@ -10,8 +10,8 @@ import time
 import csv
 from datetime import datetime
 from typing import Union
-import numpy as np
 import rclpy
+from sklearn.metrics.pairwise import cosine_similarity
 from config.hri.debug import config as test_hri_config
 from rclpy.node import Node
 from subtask_managers.hri_tasks import HRITasks
@@ -61,7 +61,7 @@ def confirm_preference(interpreted_text, extracted_data):
 DATA_DIR = "/workspace/src/hri/packages/nlp/test/"
 OUTPUT_DIR = os.path.join(DATA_DIR, "output")
 
-COMMAND_INTERPRETER_SUCCESS_THRESHOLD = 0.9
+COMMAND_INTERPRETER_SUCCESS_THRESHOLD = 0.9  # Higher than 1 for exact match only
 
 # Choose which tests to perform
 TEST_COMPOUND = False
@@ -532,20 +532,48 @@ class TestHriManager(Node):
 
                 if s == Status.EXECUTION_SUCCESS:
                     actual_output = command_list
-                    actual_output_embedding = self.hri_manager.pg.embedding_model.encode(
-                        str(command_list)
-                    )
-                    expected_output_embedding = self.hri_manager.pg.embedding_model.encode(
-                        expected_output
-                    )
-                    cosine_similarity = np.dot(
-                        actual_output_embedding, expected_output_embedding
-                    ) / (
-                        np.linalg.norm(actual_output_embedding)
-                        * np.linalg.norm(expected_output_embedding)
-                    )
-                    success = cosine_similarity >= COMMAND_INTERPRETER_SUCCESS_THRESHOLD
-                    self.get_logger().info(f"Cosine similarity: {cosine_similarity}")
+                    success = True
+
+                    # Parse expected_output string into list of command objects
+                    expected_commands = eval(expected_output)
+
+                    # Check if lists have the same length
+                    if len(command_list) != len(expected_commands):
+                        success = False
+                        self.get_logger().error(
+                            f"Command list length mismatch: {len(command_list)} vs {len(expected_commands)}"
+                        )
+                    else:
+                        # Compare each command in the list
+                        for cmd_idx, (actual_cmd, expected_cmd) in enumerate(
+                            zip(command_list, expected_commands)
+                        ):
+                            # Direct comparison first
+                            if actual_cmd == expected_cmd:
+                                self.get_logger().info(f"Command {cmd_idx + 1}: Exact match")
+                                continue
+
+                            # Use cosine similarity if not an exact match
+                            actual_cmd_embedding = self.hri_manager.pg.embedding_model.encode(
+                                str(actual_cmd)
+                            )
+                            expected_cmd_embedding = self.hri_manager.pg.embedding_model.encode(
+                                str(expected_cmd)
+                            )
+                            similarity = cosine_similarity(
+                                [actual_cmd_embedding], [expected_cmd_embedding]
+                            )[0][0]
+                            self.get_logger().info(
+                                f"Command {cmd_idx + 1}: Cosine similarity = {similarity:.4f}"
+                            )
+
+                            if similarity < COMMAND_INTERPRETER_SUCCESS_THRESHOLD:
+                                success = False
+                                self.get_logger().error(
+                                    f"Command {cmd_idx + 1} failed: {actual_cmd} vs {expected_cmd}"
+                                )
+                                break
+
                     if success:
                         passed_tests += 1
                         self.get_logger().info("Test passed!")
