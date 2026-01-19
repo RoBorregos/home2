@@ -41,6 +41,15 @@ class PlaceManager:
             "/manipulator/place_ee_link_pose",
             10,
         )
+        # Read optional tuning parameters (use safe defaults if not declared)
+        try:
+            self.perception_retries = int(self.node.get_parameter("perception_retries").value)
+        except Exception:
+            self.perception_retries = 5
+        try:
+            self.fail_fast = bool(self.node.get_parameter("fail_fast").value)
+        except Exception:
+            self.fail_fast = True
 
     def execute(self, place_params: PlaceParams, pick_result: PickResult) -> bool:
         self.node.get_logger().info("Executing Place Task")
@@ -135,7 +144,8 @@ class PlaceManager:
                 )
 
                 close_by_object_name = place_params.close_to
-                for i in range(5):
+                max_attempts = 1 if self.fail_fast else self.perception_retries
+                for i in range(max_attempts):
                     try:
                         self.node.get_logger().info("getting point")
                         close_by_point = get_object_point(
@@ -231,7 +241,8 @@ class PlaceManager:
                 if request == "close_by":
                     self.node.get_logger().info("Using close by place pose")
                     close_by_object_name = request_dict["object"]
-                    for i in range(5):
+                        max_attempts = 1 if self.fail_fast else self.perception_retries
+                        for i in range(max_attempts):
                         try:
                             close_by_point = get_object_point(
                                 close_by_object_name,

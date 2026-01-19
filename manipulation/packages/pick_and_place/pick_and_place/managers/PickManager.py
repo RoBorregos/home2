@@ -35,6 +35,15 @@ class PickManager:
 
     def __init__(self, node):
         self.node = node
+        # tuning parameters
+        try:
+            self.pick_retries = int(self.node.get_parameter("pick_retries").value)
+        except Exception:
+            self.pick_retries = 3
+        try:
+            self.fail_fast = bool(self.node.get_parameter("fail_fast").value)
+        except Exception:
+            self.fail_fast = True
 
     def execute(
         self, object_name: str, point: PointStamped, pick_params
@@ -51,7 +60,8 @@ class PickManager:
                 velocity=0.75,
             )
 
-        for i in range(3):
+        initial_attempts = 1 if self.fail_fast else max(1, self.pick_retries)
+        for i in range(initial_attempts):
             if point is not None and (
                 point.point.x != 0 and point.point.y != 0 and point.point.z != 0
             ):
@@ -212,7 +222,10 @@ class PickManager:
                 pick_result_success = True
                 break
             else:
-                # give time for new gpd
+                # give time for new gpd or fail-fast
+                if self.fail_fast:
+                    self.node.get_logger().error("Fail-fast: aborting pick after failed attempt")
+                    return False, None
                 time.sleep(1.0)
 
         if not pick_result_success:

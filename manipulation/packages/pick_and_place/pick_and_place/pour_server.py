@@ -65,6 +65,11 @@ from frida_interfaces.srv import GetJoints
 class PourMotionServer(Node):
     def __init__(self):
         super().__init__("pour_server")
+        # Parameters: allow tuning caps and fail-fast behaviour
+        self.declare_parameter("planning_attempts_cap", 3)
+        self.declare_parameter("fail_fast", True)
+        self.declare_parameter("pose_retries_initial", 1)
+        self.declare_parameter("pose_retries_secondary", 2)
         self.callback_group = ReentrantCallbackGroup()
         self.joint_states = None  # Aquí se almacenarán las posiciones
 
@@ -155,7 +160,20 @@ class PourMotionServer(Node):
         new_pose = curr_pose
         new_pose.pose.position.z += 0.2
 
-        tries = 2
+        try:
+            cap = int(self.get_parameter("planning_attempts_cap").value)
+        except Exception:
+            cap = 3
+        try:
+            initial_retries = int(self.get_parameter("pose_retries_initial").value)
+        except Exception:
+            initial_retries = 1
+        try:
+            fail_fast = bool(self.get_parameter("fail_fast").value)
+        except Exception:
+            fail_fast = True
+
+        tries = 1 if fail_fast else initial_retries
         distance_between_tries = 0.025
         for i in range(tries):
             self.get_logger().warn("Trying to move to pour pose")
@@ -166,8 +184,8 @@ class PourMotionServer(Node):
                 goal_handle_result, action_result = self.move_to_pose(
                     new_pose,
                     useConstraint=True,
-                    planning_time=10.0,
-                    planning_attempts=100,
+                    planning_time=5.0,
+                    planning_attempts=cap,
                 )
             except Exception as e:
                 self.get_logger().error(f"Failed to move to pour pose: {e}")
@@ -192,7 +210,11 @@ class PourMotionServer(Node):
         pose = self.transform_pose_to_gripper_center(pose)
         pose = self.transform_pose_y(pose, offset_distance=offset_distance)
 
-        tries = 5
+        try:
+            secondary_retries = int(self.get_parameter("pose_retries_secondary").value)
+        except Exception:
+            secondary_retries = 2
+        tries = 1 if fail_fast else secondary_retries
         distance_between_tries = 0.025
         for i in range(tries):
             # self.get_logger().warn(f"Trying to pour object: {self.node.pour.request.object_name}")
@@ -202,7 +224,7 @@ class PourMotionServer(Node):
             # call the move_to_pose function
             try:
                 goal_handle_result, action_result = self.move_to_pose(
-                    pose, isConstrained, planning_time=10.0, planning_attempts=100
+                    pose, isConstrained, planning_time=10.0, planning_attempts=cap
                 )
             except Exception as e:
                 self.get_logger().error(f"Failed to move to pour pose: {e}")
@@ -217,8 +239,9 @@ class PourMotionServer(Node):
                 break
             else:
                 self.get_logger().error("Failed to reach pour pose")
-                if i == tries - 1:
-                    self.get_logger().error("Max tries reached")
+                # Fail-fast: abort further alternative offsets if configured
+                if fail_fast:
+                    self.get_logger().error("Fail-fast: aborting pour after failed attempt")
                     return False, None
                 else:
                     self.get_logger().info(f"Retrying pour pose: {pose.pose}")
