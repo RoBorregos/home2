@@ -25,6 +25,7 @@ from frida_constants.hri_constants import (
     EXTRACT_DATA_SERVICE,
     GRAMMAR_SERVICE,
     IS_NEGATIVE_SERVICE,
+    IS_COHERENT_SERVICE,
     IS_POSITIVE_SERVICE,
     LLM_WRAPPER_SERVICE,
     RAG_SERVICE,
@@ -45,6 +46,7 @@ from frida_interfaces.srv import (
     HearMultiThread,
     IsNegative,
     IsPositive,
+    IsCoherent,
     LLMWrapper,
     Speak,
 )
@@ -173,6 +175,7 @@ class HRITasks(metaclass=SubtaskMeta):
         )
         self.is_positive_service = self.node.create_client(IsPositive, IS_POSITIVE_SERVICE)
         self.is_negative_service = self.node.create_client(IsNegative, IS_NEGATIVE_SERVICE)
+        self.is_coherent_service = self.node.create_client(IsCoherent, IS_COHERENT_SERVICE)
         self.display_publisher = self.node.create_publisher(String, DISPLAY_IMAGE_TOPIC, 10)
         self.display_map_publisher = self.node.create_publisher(String, DISPLAY_MAP_TOPIC, 10)
         self.answers_publisher = self.node.create_publisher(String, "/hri/display/answers", 10)
@@ -295,6 +298,17 @@ class HRITasks(metaclass=SubtaskMeta):
 
         Logger.info(self.node, "Saying service finished executing")
         return Status.EXECUTION_SUCCESS
+
+    @service_check("is_coherent_service", (Status.SERVICE_CHECK, False), TIMEOUT)
+    def check_coherence(self, text: str) -> bool:
+        """Check if the command is coherent and possible for the robot."""
+        Logger.info(self.node, f"Checking coherence: {text}")
+        request = IsCoherent.Request(text=text)
+        future = self.is_coherent_service.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+        if future.result() is not None:
+            return future.result().is_coherent
+        return False
 
     @service_check("extract_data_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def extract_data(self, query, complete_text, context="", is_async=False) -> str | Future:
