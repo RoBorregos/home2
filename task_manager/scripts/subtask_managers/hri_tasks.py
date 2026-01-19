@@ -144,6 +144,8 @@ class AudioStates(Enum):
     SAYING = "saying"
     LISTEN = "listening"
     IDLE = "idle"
+    THINKING = "thinking"
+    LOADING = "loading"
 
     @classmethod
     def respeaker_light(cls, state):
@@ -153,6 +155,10 @@ class AudioStates(Enum):
             return "listen"
         elif state == AudioStates.IDLE:
             return "off"
+        elif state == AudioStates.THINKING:
+            return "think"
+        elif state == AudioStates.LOADING:
+            return "think"
         else:
             raise ValueError(f"Unknown audio state: {state}")
 
@@ -769,6 +775,7 @@ class HRITasks(metaclass=SubtaskMeta):
         )
 
         if is_async:
+            self.set_light_state(AudioStates.THINKING)
             future = Future()
 
             request = CommandInterpreter.Request(text=text)
@@ -792,6 +799,7 @@ class HRITasks(metaclass=SubtaskMeta):
             return future
 
         # Legacy synchronous call
+        self.set_light_state(AudioStates.THINKING)
         command_list = b.GenerateCommandList(request=text)
 
         Logger.info(

@@ -10,6 +10,8 @@ import rclpy
 from openwakeword.model import Model
 from rclpy.node import Node
 from std_msgs.msg import String
+import subprocess
+
 
 from frida_interfaces.msg import AudioData
 
@@ -103,6 +105,12 @@ class OpenWakeWordNode(Node):
                     )
                     detection_info = {"keyword": keyword, "score": scores[-1]}
                     self.publisher.publish(String(data=str(detection_info)))
+
+                    # Play listening chime
+                    chime_path = os.path.join(ASSETS_DIR, "..", "listening_chime.wav")
+                    if os.path.exists(chime_path):
+                        subprocess.Popen(["aplay", "-q", chime_path])
+
                     self.last_detection_time = current_time
                 break
 
