@@ -216,17 +216,17 @@ var NAVTREEINDEX =
 "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a4e6847b7798ca93ce14789f32a94597a",
 "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#ae6bb471c910683efe8b15c3ee314c2ef",
 "classtest__env_1_1TestNode.html#a4d15926d3ee574cf995244445dadb5a1",
-"classtransform__target_1_1PointTransformer.html#a3cc494ae7a03169537f955cce2cc7c46",
-"closed__door__test_8py.html#a80a43b75516681e5c85f308641abc316",
-"follow__face__node__copt_8py.html#a5903c4cfc4244d134940886f4c1aef53",
-"hri__constants_8py.html#a40d771feb1bf4ea070ce564f294ec534",
-"md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md75",
-"namespacedemo__manager.html#ab66bcf0b1e73374f9ca70e16f7a3d5c3",
-"namespacefrida__constants_1_1vision__constants.html#a61f2adb62a4241e6f38f55297eec5712",
-"namespacemoondream__proto__pb2__grpc.html#aa946769636bca376ac4227070567a942",
-"namespacesubtask__managers_1_1gpsr__test__commands.html#a7ec1ac68bc2c97b7f2ff77f3be166cf6",
-"point__transformer_8py.html",
-"tracker__node_8py.html"
+"classtransform__target_1_1PointTransformer.html#a37e33ed9a0446e6ae4ddd20f885962d6",
+"close__by__generators_8py.html#a2833aebb91dad17af1c390b31894723e",
+"follow__face__node__copt_8py.html#a43f7f811867c1ab77ef3b2a259d3e30d",
+"hri__constants_8py.html#a3eafbf8ea957a6995529edc2d3fcc7e8",
+"md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md73",
+"namespacedemo__manager.html#a7d58cd5ab1fd7d95716325611205ed32",
+"namespacefrida__constants_1_1vision__constants.html#a5c8ba66a04dae03f35aa7b0551566f08",
+"namespacemoondream__proto__pb2__grpc.html",
+"namespacesubtask__managers_1_1gpsr__test__commands.html#a67fe8986c1f07187d3efe207b9fa2fd2",
+"pick__server_8py.html",
+"test__vision__manager_8py.html#ab07fdf87aae798e843e30ddd91760bd0"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

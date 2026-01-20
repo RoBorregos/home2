@@ -1,5 +1,7 @@
 var NAVTREEINDEX23 =
 {
+"md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md73":[13,2],
+"md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md74":[13,2,0],
 "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md75":[13,3],
 "md_docs_Run_Areas_hri.html":[11],
 "md_docs_Run_Areas_hri.html#autotoc_md52":[11,0],
@@ -247,7 +249,5 @@ var NAVTREEINDEX23 =
 "namespacedemo__manager.html#a2beab80f142431eb61e00531f3e19774":[22,0,21,3],
 "namespacedemo__manager.html#a44da8b44a149c1ac1cf0220e7c0fc227":[22,0,21,4],
 "namespacedemo__manager.html#a51e78fe12c7e5ee07d540e5f4bd46cf2":[22,0,21,2],
-"namespacedemo__manager.html#a62ce8766f52bf96b489df0459fec5928":[22,0,21,7],
-"namespacedemo__manager.html#a7d58cd5ab1fd7d95716325611205ed32":[22,0,21,5],
-"namespacedemo__manager.html#a891f55a494f20d29760d6fd74a348244":[22,0,21,1]
+"namespacedemo__manager.html#a62ce8766f52bf96b489df0459fec5928":[22,0,21,7]
 };
