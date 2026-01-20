@@ -81,6 +81,7 @@ class OpenWakeWordNode(Node):
 
         self.publisher = self.create_publisher(String, wakeword_topic, 10)
         self.create_subscription(AudioData, audio_topic, self.audio_callback, 10)
+        self.create_subscription(String, "/AudioState", self.audio_state_callback, 10)
 
         # Flag to prevent rapid repeated publishing
         self.last_detection_time = time.time() - self.detection_cooldown
@@ -106,13 +107,19 @@ class OpenWakeWordNode(Node):
                     detection_info = {"keyword": keyword, "score": scores[-1]}
                     self.publisher.publish(String(data=str(detection_info)))
 
-                    # Play listening chime
+                    # Play sound
                     chime_path = os.path.join(ASSETS_DIR, "..", "listening_chime.wav")
                     if os.path.exists(chime_path):
                         subprocess.Popen(["aplay", "-q", chime_path])
-
                     self.last_detection_time = current_time
                 break
+
+    def audio_state_callback(self, msg):
+        """Play sound when state changes to listening."""
+        if msg.data == "listening":
+            chime_path = os.path.join(ASSETS_DIR, "..", "listening_chime.wav")
+            if os.path.exists(chime_path):
+                subprocess.Popen(["aplay", "-q", chime_path])
 
     def download_models(self):
         # Download melospectogram
