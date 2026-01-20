@@ -10,8 +10,8 @@ import time
 import csv
 from datetime import datetime
 from typing import Union
-
 import rclpy
+from sklearn.metrics.pairwise import cosine_similarity
 from config.hri.debug import config as test_hri_config
 from rclpy.node import Node
 from subtask_managers.hri_tasks import HRITasks
@@ -60,6 +60,10 @@ def confirm_preference(interpreted_text, extracted_data):
 
 DATA_DIR = "/workspace/src/hri/packages/nlp/test/"
 OUTPUT_DIR = os.path.join(DATA_DIR, "output")
+
+COMMAND_INTERPRETER_SUCCESS_THRESHOLD = 0.9  # Higher than 1 for exact match only
+
+# Choose which tests to perform
 TEST_COMPOUND = False
 TEST_INDIVIDUAL_FUNCTIONS = False
 TEST_CATEGORIZE_SHELVES = False
@@ -70,6 +74,7 @@ TEST_OBJECT_LOCATION = False
 TEST_IS_POSITIVE = False
 TEST_IS_NEGATIVE = False
 TEST_DATA_EXTRACTOR = False
+TEST_COMMAND_INTERPRETER = False
 
 
 class TestHriManager(Node):
@@ -111,6 +116,9 @@ class TestHriManager(Node):
 
         if TEST_DATA_EXTRACTOR:
             self.test_data_extractor()
+
+        if TEST_COMMAND_INTERPRETER:
+            self.test_command_interpreter()
 
         exit(0)
 
@@ -488,6 +496,108 @@ class TestHriManager(Node):
                     "input",
                     "query",
                     "context",
+                    "expected_output",
+                    "actual_output",
+                    "success",
+                ]
+            )
+            writer.writerows(results)
+
+        self.get_logger().info(f"Results saved to {output_file}")
+        self.get_logger().info(f"{passed_tests} out of {len(test_cases)} passed")
+
+    def test_command_interpreter(self):
+        test_cases_file = os.path.join(DATA_DIR, "command_interpreter.json")
+        with open(test_cases_file, "r") as f:
+            test_cases = json.load(f)
+
+        # Prepare output directory and file
+        date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        output_file = os.path.join(OUTPUT_DIR, f"command_interpreter_{date_str}.csv")
+
+        results = []
+        passed_tests = 0
+
+        for i, test_case in enumerate(test_cases, 1):
+            input_text = test_case["string_cmd"]
+            expected_output = test_case["structured_cmd"]
+
+            self.get_logger().info(f"Test case {i}")
+
+            actual_output = None
+            success = False
+
+            try:
+                s, command_list = self.hri_manager.command_interpreter(input_text)
+
+                if s == Status.EXECUTION_SUCCESS:
+                    actual_output = command_list
+                    success = True
+
+                    # Parse expected_output string into list of command objects
+                    expected_commands = eval(expected_output)
+
+                    # Check if lists have the same length
+                    if len(command_list) != len(expected_commands):
+                        success = False
+                        self.get_logger().error(
+                            f"Command list length mismatch: {len(command_list)} vs {len(expected_commands)}"
+                        )
+                    else:
+                        # Compare each command in the list
+                        for cmd_idx, (actual_cmd, expected_cmd) in enumerate(
+                            zip(command_list, expected_commands)
+                        ):
+                            # Direct comparison first
+                            if actual_cmd == expected_cmd:
+                                self.get_logger().info(f"Command {cmd_idx + 1}: Exact match")
+                                continue
+
+                            # Use cosine similarity if not an exact match
+                            actual_cmd_embedding = self.hri_manager.pg.embedding_model.encode(
+                                str(actual_cmd)
+                            )
+                            expected_cmd_embedding = self.hri_manager.pg.embedding_model.encode(
+                                str(expected_cmd)
+                            )
+                            similarity = cosine_similarity(
+                                [actual_cmd_embedding], [expected_cmd_embedding]
+                            )[0][0]
+                            self.get_logger().info(
+                                f"Command {cmd_idx + 1}: Cosine similarity = {similarity:.4f}"
+                            )
+
+                            if similarity < COMMAND_INTERPRETER_SUCCESS_THRESHOLD:
+                                success = False
+                                self.get_logger().error(
+                                    f"Command {cmd_idx + 1} failed: {actual_cmd} vs {expected_cmd}"
+                                )
+                                break
+
+                    if success:
+                        passed_tests += 1
+                        self.get_logger().info("Test passed!")
+                    else:
+                        self.get_logger().error("Test failed.")
+
+                else:
+                    self.get_logger().error(f"FAILED: {s}")
+                    actual_output = f"ERROR: {s}"
+
+            except Exception as e:
+                self.get_logger().error(f"EXCEPTION: {str(e)}")
+                actual_output = f"EXCEPTION: {str(e)}"
+
+            results.append([i, input_text, expected_output, actual_output, success])
+            self.get_logger().info("-" * 50)
+
+        # Write results to CSV
+        with open(output_file, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(
+                [
+                    "test_number",
+                    "input",
                     "expected_output",
                     "actual_output",
                     "success",
