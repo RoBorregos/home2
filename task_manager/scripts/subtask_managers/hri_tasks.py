@@ -158,7 +158,7 @@ class AudioStates(Enum):
         elif state == AudioStates.THINKING:
             return "think"
         elif state == AudioStates.LOADING:
-            return "think"
+            return "loading"
         else:
             raise ValueError(f"Unknown audio state: {state}")
 

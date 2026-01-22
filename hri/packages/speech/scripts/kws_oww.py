@@ -12,7 +12,6 @@ from rclpy.node import Node
 from std_msgs.msg import String
 import subprocess
 
-
 from frida_interfaces.msg import AudioData
 
 CURRENT_FILE_PATH = os.path.abspath(__file__)
