@@ -1,0 +1,12 @@
+[
+    ["Go to the kitchen", true],
+    ["Pick up the apple", true],
+    ["Navigate to the bedroom", true],
+    ["Find the bottle on the table", true],
+    ["Jump over the moon", false],
+    ["Eat the wall", false],
+    ["Fly to mars", false],
+    ["Turn into a car", false],
+    ["What is your name?", true],
+    ["Kjsd kjasd kasjd", false]
+]

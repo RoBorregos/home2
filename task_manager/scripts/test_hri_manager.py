@@ -73,6 +73,7 @@ TEST_MAP = False
 TEST_OBJECT_LOCATION = False
 TEST_IS_POSITIVE = False
 TEST_IS_NEGATIVE = False
+TEST_IS_COHERENT = False
 TEST_DATA_EXTRACTOR = False
 TEST_COMMAND_INTERPRETER = False
 
@@ -113,6 +114,9 @@ class TestHriManager(Node):
 
         if TEST_IS_NEGATIVE:
             self.test_is_negative()
+
+        if TEST_IS_COHERENT:
+            self.test_is_coherent()
 
         if TEST_DATA_EXTRACTOR:
             self.test_data_extractor()
@@ -445,6 +449,57 @@ class TestHriManager(Node):
 
         self.get_logger().info(f"Results saved to {output_file}")
         self.get_logger().info(f"{passed_tests} out of {len(test_cases)} passed")
+
+    def test_is_coherent(self):
+        test_cases_file = os.path.join(DATA_DIR, "is_coherent.json")
+        with open(test_cases_file, "r") as f:
+            test_cases = json.load(f)
+
+        # Prepare output directory and file
+        date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        output_file = os.path.join(OUTPUT_DIR, f"is_coherent_{date_str}.csv")
+
+        results = []
+        passed_tests = 0
+
+        self.get_logger().info(f"Starting Is Coherent Test with {len(test_cases)} cases")
+
+        for i, (input_text, expected_output) in enumerate(test_cases, 1):
+            self.get_logger().info(f"Test case {i}: '{input_text}' (Expected: {expected_output})")
+
+            actual_output = None
+            success = False
+
+            try:
+                # Call the method in hri_tasks.py
+                is_coherent = self.hri_manager.check_coherence(input_text)
+
+                actual_output = is_coherent
+                success = is_coherent == expected_output
+
+                if success:
+                    passed_tests += 1
+                    self.get_logger().info("Test passed!")
+                else:
+                    self.get_logger().error(
+                        f"Test failed. Got {is_coherent}, expected {expected_output}"
+                    )
+
+            except Exception as e:
+                self.get_logger().error(f"EXCEPTION: {str(e)}")
+                actual_output = f"EXCEPTION: {str(e)}"
+
+            results.append([i, input_text, expected_output, actual_output, success])
+            self.get_logger().info("-" * 50)
+
+        # Write results to CSV
+        with open(output_file, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(["ID", "Input", "Expected", "Actual", "Success"])
+            writer.writerows(results)
+
+        self.get_logger().info(f"Test finished. Passed {passed_tests}/{len(test_cases)} tests.")
+        self.get_logger().info(f"Results saved to {output_file}")
 
     def test_data_extractor(self):
         test_cases_file = os.path.join(DATA_DIR, "data_extractor.json")
