@@ -16,5 +16,6 @@ var searchData=
   ['trackby_2esrv_13',['TrackBy.srv',['../TrackBy_8srv.html',1,'']]],
   ['tracker_5fnode_2epy_14',['tracker_node.py',['../tracker__node_8py.html',1,'']]],
   ['tracker_5fnode_5ffregoso_2epy_15',['tracker_node_fregoso.py',['../tracker__node__fregoso_8py.html',1,'']]],
-  ['transform_5ftarget_2epy_16',['transform_target.py',['../transform__target_8py.html',1,'']]]
+  ['transform_5ftarget_2epy_16',['transform_target.py',['../transform__target_8py.html',1,'']]],
+  ['trash_5fdetection_5fnode_2epy_17',['trash_detection_node.py',['../trash__detection__node_8py.html',1,'']]]
 ];

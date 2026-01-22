@@ -22,5 +22,6 @@ var classzero__shot__object__detector__node_1_1zero__shot__object__detector__nod
     [ "object_detector_parameters", "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a374b95c92366d0d4bab514e1d65adfbd", null ],
     [ "rgb_image", "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#ae0b79e45defa3b4f7abf69f3c1cd8fdf", null ],
     [ "runThread", "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#acf72ea3bacd4232fd222b96bd37bbe8a", null ],
+    [ "set_detector_classes_service", "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a2560ee772931f221edc0988b0d8198b4", null ],
     [ "tfBuffer", "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a92638453d10eef1561c912b2c1e3a559", null ]
 ];

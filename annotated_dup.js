@@ -360,6 +360,9 @@ var annotated_dup =
     [ "transform_target", "namespacetransform__target.html", [
       [ "PointTransformer", "classtransform__target_1_1PointTransformer.html", "classtransform__target_1_1PointTransformer" ]
     ] ],
+    [ "trash_detection_node", "namespacetrash__detection__node.html", [
+      [ "TrashDetectionNode", "classtrash__detection__node_1_1TrashDetectionNode.html", "classtrash__detection__node_1_1TrashDetectionNode" ]
+    ] ],
     [ "utils", "namespaceutils.html", [
       [ "config", "namespaceutils_1_1config.html", [
         [ "MockConfig", "classutils_1_1config_1_1MockConfig.html", "classutils_1_1config_1_1MockConfig" ],

@@ -12,5 +12,6 @@ var searchData=
   ['tf_5futils_9',['tf_utils',['../namespacetf__utils.html',1,'']]],
   ['tracker_5fnode_10',['tracker_node',['../namespacetracker__node.html',1,'']]],
   ['tracker_5fnode_5ffregoso_11',['tracker_node_fregoso',['../namespacetracker__node__fregoso.html',1,'']]],
-  ['transform_5ftarget_12',['transform_target',['../namespacetransform__target.html',1,'']]]
+  ['transform_5ftarget_12',['transform_target',['../namespacetransform__target.html',1,'']]],
+  ['trash_5fdetection_5fnode_13',['trash_detection_node',['../namespacetrash__detection__node.html',1,'']]]
 ];

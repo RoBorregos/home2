@@ -14,5 +14,6 @@ var dir_dafe0b1426346d1cf04b71ae40010d5b =
     [ "receptionist_commands.py", "receptionist__commands_8py.html", "receptionist__commands_8py" ],
     [ "tracker_node.py", "tracker__node_8py.html", "tracker__node_8py" ],
     [ "tracker_node_fregoso.py", "tracker__node__fregoso_8py.html", "tracker__node__fregoso_8py" ],
+    [ "trash_detection_node.py", "trash__detection__node_8py.html", "trash__detection__node_8py" ],
     [ "zed_simulator.py", "zed__simulator_8py.html", "zed__simulator_8py" ]
 ];

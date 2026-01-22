@@ -197,6 +197,7 @@ var hierarchy =
       [ "tracker_node.SingleTracker", "classtracker__node_1_1SingleTracker.html", null ],
       [ "tracker_node_fregoso.SingleTracker", "classtracker__node__fregoso_1_1SingleTracker.html", null ],
       [ "transform_target.PointTransformer", "classtransform__target_1_1PointTransformer.html", null ],
+      [ "trash_detection_node.TrashDetectionNode", "classtrash__detection__node_1_1TrashDetectionNode.html", null ],
       [ "virtual_stop_button.VirtualStop", "classvirtual__stop__button_1_1VirtualStop.html", null ],
       [ "wait_for_controller_input_node.WaitForControllerInputNode", "classwait__for__controller__input__node_1_1WaitForControllerInputNode.html", null ],
       [ "xarm_utils.ir_gripper.IRGripper", "classxarm__utils_1_1ir__gripper_1_1IRGripper.html", null ],

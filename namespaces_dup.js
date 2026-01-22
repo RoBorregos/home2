@@ -372,6 +372,7 @@ var namespaces_dup =
     [ "tracker_node", "namespacetracker__node.html", "namespacetracker__node" ],
     [ "tracker_node_fregoso", "namespacetracker__node__fregoso.html", "namespacetracker__node__fregoso" ],
     [ "transform_target", "namespacetransform__target.html", "namespacetransform__target" ],
+    [ "trash_detection_node", "namespacetrash__detection__node.html", "namespacetrash__detection__node" ],
     [ "utils", "namespaceutils.html", "namespaceutils" ],
     [ "virtual_stop_button", "namespacevirtual__stop__button.html", "namespacevirtual__stop__button" ],
     [ "vision_3D_utils", "namespacevision__3D__utils.html", [

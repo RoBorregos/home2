@@ -131,6 +131,7 @@ var namespacefrida__constants =
       [ "SHELF_DETECTION_TOPIC", "namespacefrida__constants_1_1vision__constants.html#af3422ede0e186367f2078ca2c576e108", null ],
       [ "SHOW_DETECTION_TOPIC", "namespacefrida__constants_1_1vision__constants.html#a88a70827ccfcbe95b1d791638bc4fc1c", null ],
       [ "TRACKER_IMAGE_TOPIC", "namespacefrida__constants_1_1vision__constants.html#a8f74338abc4820939f0ea2c55782f55c", null ],
+      [ "TRASH_DETECTION_SERVICE", "namespacefrida__constants_1_1vision__constants.html#ab11f1c731c6dd0e3f3c6e08246abbd3c", null ],
       [ "ZERO_SHOT_DEFAULT_CLASSES", "namespacefrida__constants_1_1vision__constants.html#a4211ec5821d72ea37c79ae48043809ee", null ],
       [ "ZERO_SHOT_DETECTIONS_3D_TOPIC", "namespacefrida__constants_1_1vision__constants.html#a7316a8a42cc71661c5ca4eb92817b704", null ],
       [ "ZERO_SHOT_DETECTIONS_ACTIVE_TOPIC", "namespacefrida__constants_1_1vision__constants.html#a6f90a10daccfc0110d2f85790bc5f970", null ],

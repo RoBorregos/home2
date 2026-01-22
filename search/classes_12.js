@@ -9,5 +9,6 @@ var searchData=
   ['testtaskmanager_6',['TestTaskManager',['../classnav__test_1_1TestTaskManager.html',1,'nav_test.TestTaskManager'],['../classtest__manager_1_1TestTaskManager.html',1,'test_manager.TestTaskManager'],['../classtest__manipulation__manager_1_1TestTaskManager.html',1,'test_manipulation_manager.TestTaskManager']]],
   ['testvision_7',['TestVision',['../classtest__vision__manager_1_1TestVision.html',1,'test_vision_manager']]],
   ['topicconfig_8',['TopicConfig',['../classutils_1_1config_1_1TopicConfig.html',1,'utils::config']]],
-  ['typeenum_9',['TypeEnum',['../classutils_1_1config_1_1TypeEnum.html',1,'utils::config']]]
+  ['trashdetectionnode_9',['TrashDetectionNode',['../classtrash__detection__node_1_1TrashDetectionNode.html',1,'trash_detection_node']]],
+  ['typeenum_10',['TypeEnum',['../classutils_1_1config_1_1TypeEnum.html',1,'utils::config']]]
 ];
