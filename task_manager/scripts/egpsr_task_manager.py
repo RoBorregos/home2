@@ -14,12 +14,12 @@ from collections import deque
 
 import rclpy
 from ament_index_python.packages import get_package_share_directory
-from exploration_planner import ExplorationPlanner
 from rclpy.node import Node
 from subtask_managers.gpsr_single_tasks import GPSRSingleTask
 from subtask_managers.gpsr_tasks import GPSRTask
 
 # from subtask_managers.gpsr_test_commands import get_gpsr_comands
+from utils.exploration_planner import ExplorationPlanner
 from utils.baml_client.types import CommandListLLM
 from utils.logger import Logger
 from utils.status import Status
