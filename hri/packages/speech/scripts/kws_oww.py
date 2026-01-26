@@ -105,11 +105,6 @@ class OpenWakeWordNode(Node):
                     )
                     detection_info = {"keyword": keyword, "score": scores[-1]}
                     self.publisher.publish(String(data=str(detection_info)))
-
-                    # Play sound
-                    chime_path = os.path.join(ASSETS_DIR, "..", "listening_chime.wav")
-                    if os.path.exists(chime_path):
-                        subprocess.Popen(["aplay", "-q", chime_path])
                     self.last_detection_time = current_time
                 break
 
