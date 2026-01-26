@@ -8,7 +8,7 @@ var hierarchy =
     [ "utils.config.TopicConfig.Config", "classutils_1_1config_1_1TopicConfig_1_1Config.html", null ],
     [ "ObjectDetector.Detection", "classObjectDetector_1_1Detection.html", null ],
     [ "DetectionRecord", "structDetectionRecord.html", null ],
-    [ "exploration_planner.ExplorationPlanner", "classexploration__planner_1_1ExplorationPlanner.html", null ],
+    [ "utils.exploration_planner.ExplorationPlanner", "classutils_1_1exploration__planner_1_1ExplorationPlanner.html", null ],
     [ "subtask_managers.generic_tasks.GenericTask", "classsubtask__managers_1_1generic__tasks_1_1GenericTask.html", [
       [ "subtask_managers.gpsr_single_tasks.GPSRSingleTask", "classsubtask__managers_1_1gpsr__single__tasks_1_1GPSRSingleTask.html", null ],
       [ "subtask_managers.gpsr_tasks.GPSRTask", "classsubtask__managers_1_1gpsr__tasks_1_1GPSRTask.html", null ]
@@ -186,13 +186,13 @@ var hierarchy =
       [ "run_while_hearing.ServiceClientServerNode", "classrun__while__hearing_1_1ServiceClientServerNode.html", null ],
       [ "safety_task_manager.SafetyTaskManager", "classsafety__task__manager_1_1SafetyTaskManager.html", null ],
       [ "show_object_detection.ShowDetectionNode", "classshow__object__detection_1_1ShowDetectionNode.html", null ],
-      [ "start_button_text.TestHriManager", "classstart__button__text_1_1TestHriManager.html", null ],
       [ "storing_groceries_manager.StoringGroceriesManager", "classstoring__groceries__manager_1_1StoringGroceriesManager.html", null ],
       [ "temp_follow.FollowPersonNode", "classtemp__follow_1_1FollowPersonNode.html", null ],
       [ "test_env.TestNode", "classtest__env_1_1TestNode.html", null ],
       [ "test_hri_manager.TestHriManager", "classtest__hri__manager_1_1TestHriManager.html", null ],
       [ "test_manager.TestTaskManager", "classtest__manager_1_1TestTaskManager.html", null ],
       [ "test_manipulation_manager.TestTaskManager", "classtest__manipulation__manager_1_1TestTaskManager.html", null ],
+      [ "test_start_button.TestHriManager", "classtest__start__button_1_1TestHriManager.html", null ],
       [ "test_vision_manager.TestVision", "classtest__vision__manager_1_1TestVision.html", null ],
       [ "tracker_node.SingleTracker", "classtracker__node_1_1SingleTracker.html", null ],
       [ "tracker_node_fregoso.SingleTracker", "classtracker__node__fregoso_1_1SingleTracker.html", null ],

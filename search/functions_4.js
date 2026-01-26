@@ -34,7 +34,7 @@ var searchData=
   ['determine_5fobject_31',['determine_object',['../classsubtask__managers_1_1hri__hand_1_1HRIHand.html#a54e23ab81da41a3c2910fd6d58769288',1,'subtask_managers::hri_hand::HRIHand']]],
   ['deterministic_5fcategorization_32',['deterministic_categorization',['../classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#acce54536a7b0d369c7eb1574fd0b0d6e',1,'subtask_managers::hri_tasks::HRITasks']]],
   ['deus_5fpick_33',['deus_pick',['../classclean__table__task__manager_1_1CleanTableTM.html#a59a97f7ab6f165e7c2d73696594a22cc',1,'clean_table_task_manager.CleanTableTM.deus_pick()'],['../classsubtask__managers_1_1gpsr__single__tasks_1_1GPSRSingleTask.html#a529e2f049a319b6ed6a7d4c746be0227',1,'subtask_managers.gpsr_single_tasks.GPSRSingleTask.deus_pick()']]],
-  ['dijkstra_5fshortest_5fpath_34',['dijkstra_shortest_path',['../classexploration__planner_1_1ExplorationPlanner.html#aa24171d77144ca57a519338193e19e86',1,'exploration_planner::ExplorationPlanner']]],
+  ['dijkstra_5fshortest_5fpath_34',['dijkstra_shortest_path',['../classutils_1_1exploration__planner_1_1ExplorationPlanner.html#ac667077b5eabd4f0e399cb7c6822a5d1',1,'utils::exploration_planner::ExplorationPlanner']]],
   ['disable_5fservo_35',['disable_servo',['../classMoveItServo_1_1MoveItServo.html#aa565a04b08de4f38f32cba61bcd209c0',1,'MoveItServo.MoveItServo.disable_servo()'],['../classServo_1_1Servo.html#adcd1d2dd3dbda96a8259b543d43b5d7f',1,'Servo.Servo.disable_servo()']]],
   ['distancefilterfrompoint_36',['DistanceFilterFromPoint',['../classTableSegmentationNode.html#ad2da055f7b664be1145348e9cc728cd6',1,'TableSegmentationNode']]],
   ['downsampleobject_37',['DownSampleObject',['../classAddPrimitivesNode.html#ab4b274748308508e4238c6e55d882c3a',1,'AddPrimitivesNode']]],

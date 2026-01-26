@@ -1,4 +1,4 @@
 var exploration__planner_8py =
 [
-    [ "exploration_planner.ExplorationPlanner", "classexploration__planner_1_1ExplorationPlanner.html", "classexploration__planner_1_1ExplorationPlanner" ]
+    [ "utils.exploration_planner.ExplorationPlanner", "classutils_1_1exploration__planner_1_1ExplorationPlanner.html", "classutils_1_1exploration__planner_1_1ExplorationPlanner" ]
 ];

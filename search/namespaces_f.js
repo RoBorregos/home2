@@ -14,10 +14,9 @@ var searchData=
   ['servo_11',['Servo',['../namespaceServo.html',1,'']]],
   ['setup_12',['setup',['../namespacesetup.html',1,'']]],
   ['show_5fobject_5fdetection_13',['show_object_detection',['../namespaceshow__object__detection.html',1,'']]],
-  ['start_5fbutton_5ftext_14',['start_button_text',['../namespacestart__button__text.html',1,'']]],
-  ['storing_5fgroceries_5flaunch_15',['storing_groceries_launch',['../namespacestoring__groceries__launch.html',1,'']]],
-  ['storing_5fgroceries_5fmanager_16',['storing_groceries_manager',['../namespacestoring__groceries__manager.html',1,'']]],
-  ['subtask_5fmanagers_17',['subtask_managers',['../namespacesubtask__managers.html',1,'']]],
-  ['subtask_5fmeta_18',['subtask_meta',['../namespacesubtask__managers_1_1subtask__meta.html',1,'subtask_managers']]],
-  ['vision_5ftasks_19',['vision_tasks',['../namespacesubtask__managers_1_1vision__tasks.html',1,'subtask_managers']]]
+  ['storing_5fgroceries_5flaunch_14',['storing_groceries_launch',['../namespacestoring__groceries__launch.html',1,'']]],
+  ['storing_5fgroceries_5fmanager_15',['storing_groceries_manager',['../namespacestoring__groceries__manager.html',1,'']]],
+  ['subtask_5fmanagers_16',['subtask_managers',['../namespacesubtask__managers.html',1,'']]],
+  ['subtask_5fmeta_17',['subtask_meta',['../namespacesubtask__managers_1_1subtask__meta.html',1,'subtask_managers']]],
+  ['vision_5ftasks_18',['vision_tasks',['../namespacesubtask__managers_1_1vision__tasks.html',1,'subtask_managers']]]
 ];

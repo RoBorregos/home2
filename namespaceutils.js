@@ -5,6 +5,7 @@ var namespaceutils =
       [ "mockable", "namespaceutils_1_1decorators.html#a941f5ed30d7544d8f102feee2e6a2a72", null ],
       [ "service_check", "namespaceutils_1_1decorators.html#adcfc2d40a4fb55163e4d810f7b980736", null ]
     ] ],
+    [ "exploration_planner", "namespaceutils_1_1exploration__planner.html", "namespaceutils_1_1exploration__planner" ],
     [ "logger", "namespaceutils_1_1logger.html", "namespaceutils_1_1logger" ],
     [ "status", "namespaceutils_1_1status.html", "namespaceutils_1_1status" ],
     [ "subtask_manager", "namespaceutils_1_1subtask__manager.html", "namespaceutils_1_1subtask__manager" ],

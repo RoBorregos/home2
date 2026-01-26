@@ -95,7 +95,6 @@ var namespaces_dup =
       [ "generate_launch_description", "namespaceexample__launch.html#af49d150abaa0c5580b32932333d2f2c8", null ]
     ] ],
     [ "example_node", "namespaceexample__node.html", "namespaceexample__node" ],
-    [ "exploration_planner", "namespaceexploration__planner.html", "namespaceexploration__planner" ],
     [ "face_recognition_node", "namespaceface__recognition__node.html", "namespaceface__recognition__node" ],
     [ "follow_face_node", "namespacefollow__face__node.html", "namespacefollow__face__node" ],
     [ "follow_face_node_copt", "namespacefollow__face__node__copt.html", "namespacefollow__face__node__copt" ],
@@ -342,7 +341,6 @@ var namespaces_dup =
       [ "zip_safe", "namespacesetup.html#a13510753661cb74083a0c664db11dde9", null ]
     ] ],
     [ "show_object_detection", "namespaceshow__object__detection.html", "namespaceshow__object__detection" ],
-    [ "start_button_text", "namespacestart__button__text.html", "namespacestart__button__text" ],
     [ "storing_groceries_launch", "namespacestoring__groceries__launch.html", [
       [ "generate_launch_description", "namespacestoring__groceries__launch.html#a84e56b2514a7f4c75214c14f7b9a38a4", null ]
     ] ],
@@ -362,6 +360,7 @@ var namespaces_dup =
     [ "test_pep257", "namespacetest__pep257.html", [
       [ "test_pep257", "namespacetest__pep257.html#ac69de1fd6a28f245460be3110acc273f", null ]
     ] ],
+    [ "test_start_button", "namespacetest__start__button.html", "namespacetest__start__button" ],
     [ "test_vision_manager", "namespacetest__vision__manager.html", "namespacetest__vision__manager" ],
     [ "tf_utils", "namespacetf__utils.html", [
       [ "look_at", "namespacetf__utils.html#ae80e6757a54ce580a867947e596e576f", null ],

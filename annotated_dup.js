@@ -65,9 +65,6 @@ var annotated_dup =
     [ "example_node", "namespaceexample__node.html", [
       [ "ExampleNode", "classexample__node_1_1ExampleNode.html", "classexample__node_1_1ExampleNode" ]
     ] ],
-    [ "exploration_planner", "namespaceexploration__planner.html", [
-      [ "ExplorationPlanner", "classexploration__planner_1_1ExplorationPlanner.html", "classexploration__planner_1_1ExplorationPlanner" ]
-    ] ],
     [ "face_recognition_node", "namespaceface__recognition__node.html", [
       [ "FaceRecognition", "classface__recognition__node_1_1FaceRecognition.html", "classface__recognition__node_1_1FaceRecognition" ]
     ] ],
@@ -294,9 +291,6 @@ var annotated_dup =
     [ "show_object_detection", "namespaceshow__object__detection.html", [
       [ "ShowDetectionNode", "classshow__object__detection_1_1ShowDetectionNode.html", "classshow__object__detection_1_1ShowDetectionNode" ]
     ] ],
-    [ "start_button_text", "namespacestart__button__text.html", [
-      [ "TestHriManager", "classstart__button__text_1_1TestHriManager.html", "classstart__button__text_1_1TestHriManager" ]
-    ] ],
     [ "storing_groceries_manager", "namespacestoring__groceries__manager.html", [
       [ "ExecutionStates", "classstoring__groceries__manager_1_1ExecutionStates.html", null ],
       [ "Retries", "classstoring__groceries__manager_1_1Retries.html", null ],
@@ -348,6 +342,9 @@ var annotated_dup =
     [ "test_manipulation_manager", "namespacetest__manipulation__manager.html", [
       [ "TestTaskManager", "classtest__manipulation__manager_1_1TestTaskManager.html", "classtest__manipulation__manager_1_1TestTaskManager" ]
     ] ],
+    [ "test_start_button", "namespacetest__start__button.html", [
+      [ "TestHriManager", "classtest__start__button_1_1TestHriManager.html", "classtest__start__button_1_1TestHriManager" ]
+    ] ],
     [ "test_vision_manager", "namespacetest__vision__manager.html", [
       [ "TestVision", "classtest__vision__manager_1_1TestVision.html", "classtest__vision__manager_1_1TestVision" ]
     ] ],
@@ -369,6 +366,9 @@ var annotated_dup =
         [ "SubtaskConfig", "classutils_1_1config_1_1SubtaskConfig.html", "classutils_1_1config_1_1SubtaskConfig" ],
         [ "TopicConfig", "classutils_1_1config_1_1TopicConfig.html", "classutils_1_1config_1_1TopicConfig" ],
         [ "TypeEnum", "classutils_1_1config_1_1TypeEnum.html", null ]
+      ] ],
+      [ "exploration_planner", "namespaceutils_1_1exploration__planner.html", [
+        [ "ExplorationPlanner", "classutils_1_1exploration__planner_1_1ExplorationPlanner.html", "classutils_1_1exploration__planner_1_1ExplorationPlanner" ]
       ] ],
       [ "logger", "namespaceutils_1_1logger.html", [
         [ "Logger", "classutils_1_1logger_1_1Logger.html", null ]

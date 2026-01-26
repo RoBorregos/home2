@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['qr_5fcode_5fattempts_0',['QR_CODE_ATTEMPTS',['../namespacegpsr__task__manager.html#af90cbd2322b7cf65799b411242b7cd14',1,'gpsr_task_manager.QR_CODE_ATTEMPTS()'],['../namespacedemo__manager.html#ab66bcf0b1e73374f9ca70e16f7a3d5c3',1,'demo_manager.QR_CODE_ATTEMPTS()']]],
+  ['qr_5fcode_5fattempts_0',['QR_CODE_ATTEMPTS',['../namespacedemo__manager.html#ab66bcf0b1e73374f9ca70e16f7a3d5c3',1,'demo_manager.QR_CODE_ATTEMPTS()'],['../namespacegpsr__task__manager.html#af90cbd2322b7cf65799b411242b7cd14',1,'gpsr_task_manager.QR_CODE_ATTEMPTS()']]],
   ['qr_5fdetector_1',['qr_detector',['../classgpsr__commands_1_1GPSRCommands.html#accc36be2604f905aa0ef065064401fa0',1,'gpsr_commands::GPSRCommands']]],
   ['quat_5fto_5frpy_2',['quat_to_rpy',['../namespacetf__utils.html#a4f980b749ce3eb0c265b8573071bb85b',1,'tf_utils']]],
   ['query_3',['Query',['../classmoondream__proto__pb2__grpc_1_1MoonDreamServiceStub.html#a29d869563ec9ade68e283407fde63863',1,'moondream_proto_pb2_grpc.MoonDreamServiceStub.Query()'],['../classmoondream__proto__pb2__grpc_1_1MoonDreamServiceServicer.html#a2c6db3029753790f54490b85014f47bb',1,'moondream_proto_pb2_grpc.MoonDreamServiceServicer.Query()'],['../classmoondream__proto__pb2__grpc_1_1MoonDreamService.html#ae42288130bff71688f03401b4b1354ed',1,'moondream_proto_pb2_grpc.MoonDreamService.Query()'],['../classserver_1_1MoonDreamServicer.html#a789906be9dbf478c3e66d5a8c8fbf42f',1,'server.MoonDreamServicer.Query()']]],
