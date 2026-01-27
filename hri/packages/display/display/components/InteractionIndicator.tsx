@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Mic, Speaker, VolumeX } from "lucide-react";
+import { Mic, Speaker, VolumeX, Loader, Brain } from "lucide-react";
 import { Topic } from "roslib";
 import { rosClient } from "../RosClient";
 import { AudioState } from "../types";
@@ -23,7 +23,7 @@ export function AudioStateIndicator() {
     audioStateTopic.subscribe((msg: { data: string }) => {
       setAudioState((prev) => ({
         ...prev,
-        state: msg.data as "idle" | "listening" | "saying",
+        state: msg.data as "idle" | "listening" | "saying" | "thinking" | "loading",
       }));
     });
 
@@ -73,6 +73,43 @@ export function AudioStateIndicator() {
       <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-(--purple-bg)">
         <Speaker className="h-4 w-4 text-(--purple) animate-pulse" />
         <span className="text-xs font-medium text-(--purple)">Speaking</span>
+      </div>
+    );
+  }
+
+  if (state === "thinking") {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 pointer-events-none">
+        <div className="relative flex flex-col items-center gap-4">
+          <div className="relative">
+            <div className="absolute inset-0 rounded-full bg-(--purple) opacity-20 animate-ping" />
+            <div className="relative z-10 h-32 w-32 rounded-full bg-(--bg-dark) border-4 border-(--purple) flex items-center justify-center shadow-lg">
+              <Brain className="h-16 w-16 text-(--purple) animate-pulse" />
+            </div>
+          </div>
+          <div className="bg-(--bg-dark) px-6 py-2 rounded-full border border-(--border-light) shadow-lg">
+            <span className="text-lg font-medium text-(--text-light) animate-pulse">
+              Thinking...
+            </span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (state === "loading") {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 pointer-events-none">
+        <div className="relative flex flex-col items-center gap-4">
+          <div className="relative z-10 h-32 w-32 rounded-full bg-(--bg-dark) border-4 border-(--text-gray) flex items-center justify-center shadow-lg">
+            <Loader className="h-16 w-16 text-(--text-gray) animate-spin" />
+          </div>
+          <div className="bg-(--bg-dark) px-6 py-2 rounded-full border border-(--border-light) shadow-lg">
+            <span className="text-lg font-medium text-(--text-light)">
+              Loading...
+            </span>
+          </div>
+        </div>
       </div>
     );
   }
