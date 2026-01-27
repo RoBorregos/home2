@@ -43,9 +43,15 @@
       <material name="">
         <color rgba="${black_rgba}" />
       </material>
+      <geometry>
+        <box size="0.01 0.01 0.01"/> 
+      </geometry>
     </visual>
     <collision>
       <origin xyz="0 0 0" rpy="0 0 0" />
+      <geometry>
+        <box size="0.001 0.001 0.001"/>
+      </geometry>
     </collision>
   </link>
   <joint name="imu_base_joint" type="fixed">
