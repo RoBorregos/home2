@@ -6,8 +6,4 @@
 **/.vscode/
 **/__pychache__/
 **/.cache
-Docker_command.txt
-ws/src/robot_localization
-dashgo_Driver_ros1.py
-driver_ros1kk.py
 
