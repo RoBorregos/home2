@@ -160,7 +160,6 @@ var hierarchy =
       [ "local_camera.Camera", "classlocal__camera_1_1Camera.html", null ],
       [ "look_at_example.LookAt", "classlook__at__example_1_1LookAt.html", null ],
       [ "map_cleaner.MapCleaner", "classmap__cleaner_1_1MapCleaner.html", null ],
-      [ "map_context_tests.map_tagger.MapTagger", "classmap__context__tests_1_1map__tagger_1_1MapTagger.html", null ],
       [ "map_publisher.SimpleMapServer", "classmap__publisher_1_1SimpleMapServer.html", null ],
       [ "moondream_node.MoondreamNode", "classmoondream__node_1_1MoondreamNode.html", null ],
       [ "move_to_location.MoveActionServer", "classmove__to__location_1_1MoveActionServer.html", null ],

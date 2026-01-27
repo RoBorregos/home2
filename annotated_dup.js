@@ -145,11 +145,6 @@ var annotated_dup =
     [ "map_cleaner", "namespacemap__cleaner.html", [
       [ "MapCleaner", "classmap__cleaner_1_1MapCleaner.html", "classmap__cleaner_1_1MapCleaner" ]
     ] ],
-    [ "map_context_tests", "namespacemap__context__tests.html", [
-      [ "map_tagger", "namespacemap__context__tests_1_1map__tagger.html", [
-        [ "MapTagger", "classmap__context__tests_1_1map__tagger_1_1MapTagger.html", "classmap__context__tests_1_1map__tagger_1_1MapTagger" ]
-      ] ]
-    ] ],
     [ "map_publisher", "namespacemap__publisher.html", [
       [ "SimpleMapServer", "classmap__publisher_1_1SimpleMapServer.html", "classmap__publisher_1_1SimpleMapServer" ]
     ] ],

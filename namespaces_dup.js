@@ -156,11 +156,7 @@ var namespaces_dup =
     [ "local_camera", "namespacelocal__camera.html", "namespacelocal__camera" ],
     [ "look_at_example", "namespacelook__at__example.html", "namespacelook__at__example" ],
     [ "map_cleaner", "namespacemap__cleaner.html", "namespacemap__cleaner" ],
-    [ "map_context_tests", "namespacemap__context__tests.html", "namespacemap__context__tests" ],
     [ "map_publisher", "namespacemap__publisher.html", "namespacemap__publisher" ],
-    [ "map_tagger", "namespacemap__tagger.html", [
-      [ "generate_launch_description", "namespacemap__tagger.html#af422056b86cc336e771f50b135b60d6c", null ]
-    ] ],
     [ "mapping", "namespacemapping.html", [
       [ "generate_launch_description", "namespacemapping.html#ac951e3077b2a262f96039858d7fa2b20", null ]
     ] ],
@@ -325,21 +321,6 @@ var namespaces_dup =
       [ "open_gripper", "namespaceservice__utils.html#a4518b7fb3dfa02b7b1dfff5bf0e306b8", null ]
     ] ],
     [ "Servo", "namespaceServo.html", "namespaceServo" ],
-    [ "setup", "namespacesetup.html", [
-      [ "data_files", "namespacesetup.html#ad027a8e9452da003dca32bf7467bd16e", null ],
-      [ "description", "namespacesetup.html#aedf461ec52a946bda975938ba0b93ec0", null ],
-      [ "entry_points", "namespacesetup.html#ada7058afc98897f073d3f3b8b9157059", null ],
-      [ "install_requires", "namespacesetup.html#abead4f26b530856f858f0d44c7cf2588", null ],
-      [ "license", "namespacesetup.html#a8ed6f50a28bd6a8794f8e1153baa6de9", null ],
-      [ "maintainer", "namespacesetup.html#aa1a7cf9bbf76004bb72697dc00bbee9d", null ],
-      [ "maintainer_email", "namespacesetup.html#a92a81adbfdd219564d5246ce8d77f869", null ],
-      [ "name", "namespacesetup.html#ab3a7a0638d76a01367c5bc3cc699447f", null ],
-      [ "package_name", "namespacesetup.html#a69903e4f05cebc9e005b22b36f5724eb", null ],
-      [ "packages", "namespacesetup.html#aff2375a361fd5865c77bd9aa093be747", null ],
-      [ "tests_require", "namespacesetup.html#a6369bb060267ccf90b93519796e7cc2c", null ],
-      [ "version", "namespacesetup.html#a2aa722b36a933088812b50ea79b97a5c", null ],
-      [ "zip_safe", "namespacesetup.html#a13510753661cb74083a0c664db11dde9", null ]
-    ] ],
     [ "show_object_detection", "namespaceshow__object__detection.html", "namespaceshow__object__detection" ],
     [ "storing_groceries_launch", "namespacestoring__groceries__launch.html", [
       [ "generate_launch_description", "namespacestoring__groceries__launch.html#a84e56b2514a7f4c75214c14f7b9a38a4", null ]
@@ -347,19 +328,10 @@ var namespaces_dup =
     [ "storing_groceries_manager", "namespacestoring__groceries__manager.html", "namespacestoring__groceries__manager" ],
     [ "subtask_managers", "namespacesubtask__managers.html", "namespacesubtask__managers" ],
     [ "temp_follow", "namespacetemp__follow.html", "namespacetemp__follow" ],
-    [ "test_copyright", "namespacetest__copyright.html", [
-      [ "test_copyright", "namespacetest__copyright.html#a156f4f961887d49bfb4cc9f6e7f6af0a", null ]
-    ] ],
     [ "test_env", "namespacetest__env.html", "namespacetest__env" ],
-    [ "test_flake8", "namespacetest__flake8.html", [
-      [ "test_flake8", "namespacetest__flake8.html#a19bfcf597a661a366225b7d0cedd123c", null ]
-    ] ],
     [ "test_hri_manager", "namespacetest__hri__manager.html", "namespacetest__hri__manager" ],
     [ "test_manager", "namespacetest__manager.html", "namespacetest__manager" ],
     [ "test_manipulation_manager", "namespacetest__manipulation__manager.html", "namespacetest__manipulation__manager" ],
-    [ "test_pep257", "namespacetest__pep257.html", [
-      [ "test_pep257", "namespacetest__pep257.html#ac69de1fd6a28f245460be3110acc273f", null ]
-    ] ],
     [ "test_start_button", "namespacetest__start__button.html", "namespacetest__start__button" ],
     [ "test_vision_manager", "namespacetest__vision__manager.html", "namespacetest__vision__manager" ],
     [ "tf_utils", "namespacetf__utils.html", [
