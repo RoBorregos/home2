@@ -95,7 +95,7 @@ else
   export SETUP_DONE=true
 fi
 
-[ "$DOWNLOAD_MODEL" == "true" ] && bash ../../hri/packages/nlp/assets/download-model.sh
+[ "$DOWNLOAD_MODEL" == "true" ] && bash ./scripts/download-model.sh
 
 # Create dirs with current user to avoid permission problems
 mkdir -p install build log \
@@ -121,9 +121,10 @@ if [ "${SETUP_DONE:-}" = "true" ]; then
 fi
 
 # Check if display setup is needed
-if [ ! -d "../../hri/display/dist" ] || [ ! -d "../../hri/display/node_modules" ] || [ ! -d "../../hri/display/web-ui/.next" ] || [ ! -d "../../hri/display/web-ui/node_modules" ] || [ "$BUILD_DISPLAY" == "true" ]; then
+DISPLAY_DIR="../../hri/packages/display/display"
+if [ ! -d "$DISPLAY_DIR/node_modules" ] || [ ! -d "$DISPLAY_DIR/.next" ] || [ "$BUILD_DISPLAY" == "true" ]; then
   echo "Installing dependencies and building project inside temporary container..."
-  docker compose -f compose/display.yaml run $BUILD_IMAGE --rm --entrypoint "" display bash -c "source /opt/ros/humble/setup.bash && npm run build"
+  docker compose -f compose/hri-ros.yaml run $BUILD_IMAGE --rm --entrypoint "" hri-ros bash -c "cd /workspace/src/hri/packages/display/display && npm i && npm run build"
 fi
 
 #_________________________RUN_________________________
@@ -132,7 +133,7 @@ GENERATE_BAML_CLIENT="baml-cli generate --from /workspace/src/task_manager/scrip
 SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
 IGNORE_PACKAGES="--packages-ignore frida_interfaces frida_constants xarm_msgs"
 SOURCE_ROS="source /opt/ros/humble/setup.bash"
-PACKAGES="speech nlp embeddings"
+PACKAGES="speech nlp embeddings display"
 PROFILES=()
 RUN=""
 
@@ -163,7 +164,6 @@ COMPOSE_PROFILES=$(IFS=, ; echo "${PROFILES[*]}")
 add_or_update_variable compose/.env "COMPOSE_PROFILES" "$COMPOSE_PROFILES"
 
 COMMAND="$GENERATE_BAML_CLIENT && $SOURCE_ROS && $SOURCE_INTERFACES && $BUILD_COMMAND source ~/.bashrc && $RUN"
-add_or_update_variable compose/.env "COMMAND" "$COMMAND"
 add_or_update_variable compose/.env "ROLE" "${PROFILES[0]}"
 
 cleanup() {
@@ -178,7 +178,8 @@ wait_and_launch_display() {
     sleep 1
   done
   chmod +x scripts/open-display.bash
-  bash scripts/open-display.bash
+  local task_route="${TASK#--}"
+  bash scripts/open-display.bash "$task_route"
 }
 
 if [ -n "$OPEN_DISPLAY" ]; then
@@ -187,13 +188,12 @@ if [ -n "$OPEN_DISPLAY" ]; then
 fi
 
 if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
-    EXISTING_CONTAINER=$(docker ps -a -q -f name="hri")
-    if [ -z "$EXISTING_CONTAINER" ] || [ -n "$BUILD_IMAGE" ]; then
+    ALREADY_RUNNING=$(docker ps -q -f name="hri-ros")
+    if [ -z "$ALREADY_RUNNING" ] || [ -n "$BUILD_IMAGE" ]; then
         docker compose -f "$COMPOSE" up -d $BUILD_IMAGE
-    else
-        docker compose -f "$COMPOSE" start
     fi
     docker compose -f "$COMPOSE" exec hri-ros bash -c "$COMMAND"
 else
+    add_or_update_variable compose/.env "COMMAND" "$COMMAND"
     docker compose -f "$COMPOSE" up $DETACHED $BUILD_IMAGE
 fi

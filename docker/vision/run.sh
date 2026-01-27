@@ -125,20 +125,18 @@ fi
 
 COMMAND="$SETUP && $RUN"
 COMMAND_MOONDREAM="$SOURCE_ROS && $SOURCE_INTERFACES && colcon build $IGNORE_PACKAGES --packages-up-to $MOONDREAM_PACKAGES && $SOURCE && $MOONDREAM_COMMAND"
-add_or_update_variable .env "COMMAND" "$COMMAND"
 add_or_update_variable .env "COMMAND_MOONDREAM" "$COMMAND_MOONDREAM"
 
 COMPOSE_PROFILES=$(IFS=, ; echo "${PROFILES[*]}")
 add_or_update_variable .env "COMPOSE_PROFILES" "$COMPOSE_PROFILES"
 
 if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
-    EXISTING_CONTAINER=$(docker ps -a -q -f name="vision")
-    if [ -z "$EXISTING_CONTAINER" ] || [ -n "$BUILD_IMAGE" ]; then
+    ALREADY_RUNNING=$(docker ps -q -f name="vision")
+    if [ -z "$ALREADY_RUNNING" ] || [ -n "$BUILD_IMAGE" ]; then
         docker compose up -d $BUILD_IMAGE
-    else
-        docker compose start
     fi
     docker compose exec vision bash -c "$COMMAND"
 else
+    add_or_update_variable .env "COMMAND" "$COMMAND"
     docker compose up $DETACHED $BUILD_IMAGE
 fi

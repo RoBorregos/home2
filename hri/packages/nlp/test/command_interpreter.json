@@ -1,0 +1,117 @@
+[
+    {
+        "cmd_type": "goToLoc",
+        "string_cmd": "head to the sofa, grab a cleanser you find there, and bring it back to me",
+        "structured_cmd": "[GoTo(action='go_to', location_to_go='sofa'), PickObject(action='pick_object', object_to_pick='cleanser'), GoTo(action='go_to', location_to_go='start_location'), GiveObject(action='give_object')]"
+    },
+    {
+        "cmd_type": "takeObjFromPlcmt",
+        "string_cmd": "pick up a strawberry from the kitchen table and give it to the person standing in the office",
+        "structured_cmd": "[GoTo(action='go_to', location_to_go='kitchen table'), PickObject(action='pick_object', object_to_pick='strawberry'), GoTo(action='go_to', location_to_go='office'), FindPerson(action='find_person', attribute_value='standing person'), GiveObject(action='give_object')]"
+    },
+    {
+        "cmd_type": "findPrsInRoom",
+        "string_cmd": "find someone lying down in the office and escort them to the dishwasher",
+        "structured_cmd": "[GoTo(action='go_to', location_to_go='office'), FindPerson(action='find_person', attribute_value='lying person'), GuidePersonTo(action='guide_person_to', destination_room='dishwasher')]"
+    },
+    {
+        "cmd_type": "findObjInRoom",
+        "string_cmd": "find a sugar in the living room, take it, and set it down on the desk",
+        "structured_cmd": "[GoTo(action='go_to', location_to_go='living room'), PickObject(action='pick_object', object_to_pick='sugar'), GoTo(action='go_to', location_to_go='desk'), PlaceObject(action='place_object')]"
+    },
+    {
+        "cmd_type": "meetPrsAtBeac",
+        "string_cmd": "go to the bathroom, find Jane, and follow her",
+        "structured_cmd": "[GoTo(action='go_to', location_to_go='bathroom'), FindPersonByName(action='find_person_by_name', name='Jane'), FollowPersonUntil(action='follow_person_until', destination='canceled')]"
+    },
+    {
+        "cmd_type": "countObjOnPlcmt",
+        "string_cmd": "count the drinks on the tv stand and report the number to me",
+        "structured_cmd": "[GoTo(action='go_to', location_to_go='tv stand'), Count(action='count', target_to_count='drinks'), GoTo(action='go_to', location_to_go='start_location'), SayWithContext(action='say_with_context', user_instruction='count the drinks on the tv stand and report the number to me', previous_command_info=['count'])]"
+    },
+    {
+        "cmd_type": "countPrsInRoom",
+        "string_cmd": "report how many people are standing in the living room",
+        "structured_cmd": "[GoTo(action='go_to', location_to_go='living room'), Count(action='count', target_to_count='standing persons'), GoTo(action='go_to', location_to_go='start_location'), SayWithContext(action='say_with_context', user_instruction='tell me how many standing persons are in the living room', previous_command_info=['count'])]"
+    },
+    {
+        "cmd_type": "tellPrsInfoInLoc",
+        "string_cmd": "observe and tell me what gesture the person near the waste basket is making",
+        "structured_cmd": "[GoTo(action='go_to', location_to_go='waste basket'), FindPerson(action='find_person', attribute_value=''), GetPersonInfo(action='get_person_info', info_type='gesture'), GoTo(action='go_to', location_to_go='start_location'), SayWithContext(action='say_with_context', user_instruction='tell me the gesture of the person at the waste basket', previous_command_info=['get_person_info'])]"
+    },
+    {
+        "cmd_type": "tellObjPropOnPlcmt",
+        "string_cmd": "identify the thinnest object on the bed and tell me what it is",
+        "structured_cmd": "[GoTo(action='go_to', location_to_go='bed'), GetVisualInfo(action='get_visual_info', measure='thinnest', object_category='object'), GoTo(action='go_to', location_to_go='start_location'), SayWithContext(action='say_with_context', user_instruction='tell me what is the thinnest object on the bed', previous_command_info=['get_visual_info'])]"
+    },
+    {
+        "cmd_type": "talkInfoToGestPrsInRoom",
+        "string_cmd": "tell the person pointing left in the office what day it will be tomorrow",
+        "structured_cmd": "[GoTo(action='go_to', location_to_go='office'), FindPerson(action='find_person', attribute_value='person pointing to the left'), SayWithContext(action='say_with_context', user_instruction='tell what day is tomorrow to the person pointing to the left in the office', previous_command_info=['what day is tomorrow'])]"
+    },
+    {
+        "cmd_type": "answerToGestPrsInRoom",
+        "string_cmd": "respond to the quiz from the person who has their left arm raised in the living room",
+        "structured_cmd": "[GoTo(action='go_to', location_to_go='living room'), FindPerson(action='find_person', attribute_value='person raising their left arm'), AnswerQuestion(action='answer_question')]"
+    },
+    {
+        "cmd_type": "followNameFromBeacToRoom",
+        "string_cmd": "track Paris as they move from the sink to the office",
+        "structured_cmd": "[GoTo(action='go_to', location_to_go='sink'), FindPersonByName(action='find_person_by_name', name='Paris'), FollowPersonUntil(action='follow_person_until', destination='office')]"
+    },
+    {
+        "cmd_type": "guideNameFromBeacToBeac",
+        "string_cmd": "escort Simone from the sofa to the office",
+        "structured_cmd": "[GoTo(action='go_to', location_to_go='sofa'), FindPersonByName(action='find_person_by_name', name='Simone'), GuidePersonTo(action='guide_person_to', destination_room='office')]"
+    },
+    {
+        "cmd_type": "guidePrsFromBeacToBeac",
+        "string_cmd": "help the person lying at the desk get to the exit",
+        "structured_cmd": "[GoTo(action='go_to', location_to_go='desk'), FindPerson(action='find_person', attribute_value='lying person'), GuidePersonTo(action='guide_person_to', destination_room='exit')]"
+    },
+    {
+        "cmd_type": "guideClothPrsFromBeacToBeac",
+        "string_cmd": "guide the individual in a white coat from the sofa over to the living room",
+        "structured_cmd": "[GoTo(action='go_to', location_to_go='sofa'), FindPerson(action='find_person', attribute_value='white coat'), GuidePersonTo(action='guide_person_to', destination_room='living room')]"
+    },
+    {
+        "cmd_type": "bringMeObjFromPlcmt",
+        "string_cmd": "go get a peach from the bed and bring it to me",
+        "structured_cmd": "[GoTo(action='go_to', location_to_go='bed'), PickObject(action='pick_object', object_to_pick='peach'), GoTo(action='go_to', location_to_go='start_location'), GiveObject(action='give_object')]"
+    },
+    {
+        "cmd_type": "tellCatPropOnPlcmt",
+        "string_cmd": "find the lightest dish on the side tables and let me know what it is",
+        "structured_cmd": "[GoTo(action='go_to', location_to_go='side tables'), GetVisualInfo(action='get_visual_info', measure='lightest', object_category='dish'), GoTo(action='go_to', location_to_go='start_location'), SayWithContext(action='say_with_context', user_instruction='tell me what is the lightest dish on the side tables', previous_command_info=['get_visual_info'])]"
+    },
+    {
+        "cmd_type": "greetClothDscInRm",
+        "string_cmd": "say hello to the person in a black sweater in the bedroom and walk with them to the shelf",
+        "structured_cmd": "[GoTo(action='go_to', location_to_go='bedroom'), FindPerson(action='find_person', attribute_value='black sweater'), SayWithContext(action='say_with_context', user_instruction='say hello to the person in a black sweater in the bedroom and walk with them to the shelf', previous_command_info=['introduction']), GuidePersonTo(action='guide_person_to', destination_room='shelf')]"
+    },
+    {
+        "cmd_type": "greetNameInRm",
+        "string_cmd": "greet Jane in the office and escort her to the storage rack",
+        "structured_cmd": "[GoTo(action='go_to', location_to_go='office'), FindPersonByName(action='find_person_by_name', name='Jane'), SayWithContext(action='say_with_context', user_instruction='greet Jane in the office and escort her to the storage rack', previous_command_info=['introduction']), GuidePersonTo(action='guide_person_to', destination_room='storage rack')]"
+    },
+    {
+        "cmd_type": "meetNameAtLocThenFindInRm",
+        "string_cmd": "find Robin near the waste basket and then search for them in the bathroom",
+        "structured_cmd": "[GoTo(action='go_to', location_to_go='waste basket'), FindPersonByName(action='find_person_by_name', name='Robin'), GoTo(action='go_to', location_to_go='bathroom'), FindPersonByName(action='find_person_by_name', name='Robin')]"
+    },
+    {
+        "cmd_type": "countClothPrsInRoom",
+        "string_cmd": "count how many individuals wearing black sweaters are in the bathroom and let me know",
+        "structured_cmd": "[GoTo(action='go_to', location_to_go='bathroom'), Count(action='count', target_to_count='people wearing black sweaters'), GoTo(action='go_to', location_to_go='start_location'), SayWithContext(action='say_with_context', user_instruction='count how many people in the bathroom are wearing black sweaters and tell something about yourself', previous_command_info=['count'])]"
+    },
+    {
+        "cmd_type": "tellPrsInfoAtLocToPrsAtLoc",
+        "string_cmd": "inform the person by the bookshelf about the gesture of the individual near the side tables",
+        "structured_cmd": "[GoTo(action='go_to', location_to_go='side tables'), FindPerson(action='find_person', attribute_value=''), GetPersonInfo(action='get_person_info', info_type='gesture'), GoTo(action='go_to', location_to_go='bookshelf'), FindPerson(action='find_person', attribute_value=''), SayWithContext(action='say_with_context', user_instruction='tell the gesture of the person at the side tables to the person at the bookshelf', previous_command_info=['get_person_info'])]"
+    },
+    {
+        "cmd_type": "followPrsAtLoc",
+        "string_cmd": "trail the person who is pointing right next to the refrigerator",
+        "structured_cmd": "[GoTo(action='go_to', location_to_go='refrigerator'), FindPerson(action='find_person', attribute_value='person pointing to the right'), FollowPersonUntil(action='follow_person_until', destination='canceled')]"
+    }
+]

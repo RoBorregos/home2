@@ -1,0 +1,41 @@
+[
+    {
+        "name": "Drinks, fruits, and snacks",
+        "table_objects": ["apple", "fanta", "lemon", "crisps", "chocolate_bar"],
+        "shelves": {"0": ["coffee", "coke"], "1": ["tangerine"], "2": ["cornflakes"]},
+        "answer": {
+            "0": {"category": "drink", "objects_to_add": ["fanta"]},
+            "1": {"category": "fruit", "objects_to_add": ["apple", "lemon"]},
+            "2": {"category": "snack", "objects_to_add": ["crisps", "chocolate_bar"]}
+        }
+    },
+    {
+        "name": "Snacks, dishes, and cleaning",
+        "table_objects": ["gum_balls", "fork", "spoon", "sponge"],
+        "shelves": {"0": ["chocolate_bar"], "1": ["bowl"], "2": ["cloth"]},
+        "answer": {
+            "0": {"category": "snack", "objects_to_add": ["gum_balls"]},
+            "1": {"category": "dish", "objects_to_add": ["fork", "spoon"]},
+            "2": {"category": "cleaning_supply", "objects_to_add": ["sponge"]}
+        }
+    },
+    {
+        "name": "Drinks and dishes",
+        "table_objects": ["milk", "fanta", "fork"],
+        "shelves": {"0": ["orange_juice", "coffee"], "1": ["plate"]},
+        "answer": {
+            "0": {"category": "drink", "objects_to_add": ["milk", "fanta"]},
+            "1": {"category": "dish", "objects_to_add": ["fork"]}
+        }
+    },
+    {
+        "name": "Miscellaneous objects with empty shelves",
+        "table_objects": ["milk", "fanta", "fork", "ketchup", "tangerine"],
+        "shelves": {"0": ["orange_juice", "coffee"], "1": ["plate"], "2": []},
+        "answer": {
+            "0": {"category": "drink", "objects_to_add": ["milk", "fanta"]},
+            "1": {"category": "dish", "objects_to_add": ["fork"]},
+            "2": {"category": "miscellaneous", "objects_to_add": ["tangerine", "ketchup"]}
+        }
+    }
+]
