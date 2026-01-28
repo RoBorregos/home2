@@ -15,6 +15,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from config.hri.debug import config as test_hri_config
 from rclpy.node import Node
 from subtask_managers.hri_tasks import HRITasks
+import subprocess
 
 # from subtask_managers.subtask_meta import SubtaskMeta
 from utils.baml_client.types import (
@@ -75,6 +76,7 @@ TEST_IS_POSITIVE = False
 TEST_IS_NEGATIVE = False
 TEST_DATA_EXTRACTOR = False
 TEST_COMMAND_INTERPRETER = False
+TEST_COMMAND_INTERPRETER_BAML = False
 
 
 class TestHriManager(Node):
@@ -119,6 +121,9 @@ class TestHriManager(Node):
 
         if TEST_COMMAND_INTERPRETER:
             self.test_command_interpreter()
+
+        if TEST_COMMAND_INTERPRETER_BAML:
+            self.test_command_interpreter_baml()
 
         exit(0)
 
@@ -607,6 +612,36 @@ class TestHriManager(Node):
 
         self.get_logger().info(f"Results saved to {output_file}")
         self.get_logger().info(f"{passed_tests} out of {len(test_cases)} passed")
+
+    def test_command_interpreter_baml(self):
+        # Prepare output file
+        date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        output_file = os.path.join(OUTPUT_DIR, f"command_interpreter_baml_{date_str}.txt")
+
+        self.get_logger().info("Running baml-cli test for command interpreter")
+        self.get_logger().info("This may take a minute...")
+        result = subprocess.run(
+            ["baml-cli", "test"],
+            cwd="/workspace/src/task_manager/scripts/utils/",
+            capture_output=True,
+            text=True,
+        )
+
+        # Print to terminal
+        if result.stdout:
+            print(result.stdout)
+        if result.stderr:
+            print(result.stderr)
+
+        # Save to file
+        with open(output_file, "w") as f:
+            f.write("=== STDOUT ===\n")
+            f.write(result.stdout or "")
+            f.write("\n=== STDERR ===\n")
+            f.write(result.stderr or "")
+            f.write(f"\n=== RETURN CODE: {result.returncode} ===\n")
+
+        self.get_logger().info(f"Results saved to {output_file}")
 
 
 def main(args=None):
