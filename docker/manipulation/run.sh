@@ -58,14 +58,15 @@ mkdir -p install build log
 SOURCE_ROS="source /opt/ros/humble/setup.bash"
 SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
 GPD_SETUP=". /home/ros/setup_gpd.sh"
+VAMP_SETUP=". /home/ros/setup_vamp.sh"
 GPD_EXPORT="export GPD_INSTALL_DIR=/workspace/install/gpd"
 SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
 COLCON="colcon build --symlink-install --packages-up-to manipulation_general --packages-ignore realsense_gazebo_plugin xarm_gazebo frida_interfaces"
 
 if [ "$BUILD" == "true" ]; then
-    SETUP="$GPD_SETUP && $GPD_EXPORT && $SOURCE_ROS && $SOURCE_INTERFACES && $COLCON && $SOURCE"
+    SETUP="$GPD_SETUP && $VAMP_SETUP && $GPD_EXPORT && $SOURCE_ROS && $SOURCE_INTERFACES && $COLCON && $SOURCE"
 else
-    SETUP="$GPD_SETUP && $GPD_EXPORT && $SOURCE_ROS && $SOURCE_INTERFACES && $SOURCE"
+    SETUP="$GPD_SETUP && $VAMP_SETUP && $GPD_EXPORT && $SOURCE_ROS && $SOURCE_INTERFACES && $SOURCE"
 fi
 
 case $TASK in

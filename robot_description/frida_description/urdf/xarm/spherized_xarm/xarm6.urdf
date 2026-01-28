@@ -117,11 +117,11 @@
           izz="0.0273447" />
       </inertial>
       <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
         <geometry>
           <mesh filename="meshes/link2.stl"/>
         </geometry>
-        <origin xyz="0 0 0" rpy="0 0 0"/>
-        <material name="">
+        <material name="white_link2">
           <color rgba="1.0 1.0 1.0 1.0" />
         </material>
       </visual>
@@ -235,10 +235,10 @@
           izz="0.00595768" />
       </inertial>
       <visual>
+        <origin xyz="0 0 0" rpy="0 0 0"/>
         <geometry>
           <mesh filename="meshes/link3.stl"/>
         </geometry>
-        <origin xyz="0 0 0" rpy="0 0 0"/>
         <material name="">
           <color rgba="1.0 1.0 1.0 1.0" />
         </material>
@@ -275,8 +275,9 @@
         <origin xyz="0.077 0.134 -0.002" rpy="0 0 0"/>
         <geometry><sphere radius="0.1"/></geometry>
       </collision>
-        </geometry>
+      <collision>
         <origin xyz="0 0 0" rpy="0 0 0"/>
+        <geometry><sphere radius="0.1"/></geometry>
       </collision>
     </link>
 

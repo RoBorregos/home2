@@ -18,3 +18,12 @@
 [submodule "manipulation/packages/xarm_ros2"]
 	path = manipulation/packages/xarm_ros2
 	url = https://github.com/RoBorregos/xarm_ros2.git
+[submodule "manipulation/packages/foam"]
+	path = manipulation/packages/foam
+	url = https://github.com/CoMMALab/foam.git
+[submodule "manipulation/packages/cricket"]
+	path = manipulation/packages/cricket
+	url = https://github.com/CoMMALab/cricket.git
+[submodule "manipulation/packages/vamp"]
+	path = manipulation/packages/vamp
+	url = https://github.com/KavrakiLab/vamp.git
