@@ -10,6 +10,7 @@ var namespacetest__hri__manager =
     [ "TEST_ASYNC_LLM", "namespacetest__hri__manager.html#a413f9c068afedd81078d3f34c44b4ab2", null ],
     [ "TEST_CATEGORIZE_SHELVES", "namespacetest__hri__manager.html#a7257db83f899b3514ec9da39b9875697", null ],
     [ "TEST_COMMAND_INTERPRETER", "namespacetest__hri__manager.html#a6126879bbfe70d91a45d5c99e98ac3f9", null ],
+    [ "TEST_COMMAND_INTERPRETER_BAML", "namespacetest__hri__manager.html#acba16bc04fcf4b594f5c4335ff8f9239", null ],
     [ "TEST_COMPOUND", "namespacetest__hri__manager.html#af084794917df55eb7c98942b498ec083", null ],
     [ "TEST_DATA_EXTRACTOR", "namespacetest__hri__manager.html#a5b93f7cb6e796bceeecdee57dc3c7aac", null ],
     [ "TEST_INDIVIDUAL_FUNCTIONS", "namespacetest__hri__manager.html#a914b4542d179c1bd4ffea5b5fd5917b4", null ],

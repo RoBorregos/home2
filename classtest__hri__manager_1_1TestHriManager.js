@@ -7,6 +7,7 @@ var classtest__hri__manager_1_1TestHriManager =
     [ "run", "classtest__hri__manager_1_1TestHriManager.html#aed2c5bfb3ae73cb7c694cb6d4d3508f5", null ],
     [ "test_categorize_shelves", "classtest__hri__manager_1_1TestHriManager.html#ac58177fd7c3d68c7846e03aded7e7f94", null ],
     [ "test_command_interpreter", "classtest__hri__manager_1_1TestHriManager.html#a31b4ead34622ba59c45873059886afd7", null ],
+    [ "test_command_interpreter_baml", "classtest__hri__manager_1_1TestHriManager.html#aa699b42d8a441cfe496bfcf51549495e", null ],
     [ "test_data_extractor", "classtest__hri__manager_1_1TestHriManager.html#ac7b8e854452c4c97691ba34c48661e35", null ],
     [ "test_is_negative", "classtest__hri__manager_1_1TestHriManager.html#a5ffc27f537aa91090fa44f0e715250e5", null ],
     [ "test_is_positive", "classtest__hri__manager_1_1TestHriManager.html#a5e36aa8c1a7e0afb23ab8950f8ee5b1e", null ],

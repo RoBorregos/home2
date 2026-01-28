@@ -1,5 +1,7 @@
 var NAVTREEINDEX25 =
 {
+"namespacegpsr__task__manager.html#aefc24fa8a7ba799498cc9d238f9dceb1":[21,0,60,7],
+"namespacegpsr__task__manager.html#af90cbd2322b7cf65799b411242b7cd14":[21,0,60,6],
 "namespacegrasp__detection__example.html":[21,0,61],
 "namespacegrasp__detection__example.html#a40a8024a9f168af4327222571de3ea94":[21,0,61,1],
 "namespacegrasp__markers.html":[21,0,62],
@@ -247,7 +249,5 @@ var NAVTREEINDEX25 =
 "namespacereceptionist__commands.html#a46439c4b5773a7470cf9753eb1e5d089":[21,0,110,8],
 "namespacereceptionist__commands.html#a7fc25575051bffd52755b91b89ea9c35":[21,0,110,5],
 "namespacereceptionist__commands.html#a83055be02e8dfd93dc6e2bd3214d8ffe":[21,0,110,1],
-"namespacereceptionist__commands.html#ad46952196d7a38bd782ab49477c88655":[21,0,110,4],
-"namespacereceptionist__commands.html#adf7320f4ca5b97e2b7f447a48a59008a":[21,0,110,6],
-"namespacereceptionist__launch.html":[21,0,111]
+"namespacereceptionist__commands.html#ad46952196d7a38bd782ab49477c88655":[21,0,110,4]
 };

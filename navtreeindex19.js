@@ -1,5 +1,7 @@
 var NAVTREEINDEX19 =
 {
+"classutils_1_1subtask__manager_1_1SubtaskManager.html#a6f7b362ec92b3c4eaab03a2f02187e2f":[21,0,147,5,0,1],
+"classutils_1_1subtask__manager_1_1SubtaskManager.html#a6f7b362ec92b3c4eaab03a2f02187e2f":[22,0,85,4,0,1],
 "classutils_1_1subtask__manager_1_1SubtaskManager.html#a72810a24bcc297cdf2b77e3e8b92db6e":[21,0,147,5,0,4],
 "classutils_1_1subtask__manager_1_1SubtaskManager.html#a72810a24bcc297cdf2b77e3e8b92db6e":[22,0,85,4,0,4],
 "classutils_1_1subtask__manager_1_1SubtaskManager.html#a7f7634392cd1aadb4b9598234230b5b0":[22,0,85,4,0,3],
@@ -247,7 +249,5 @@ var NAVTREEINDEX19 =
 "dir_441d76b8bb9d0eea1a7e9435ba127b87.html":[23,0,2,1,1],
 "dir_46504ad5e296ac52172e7c5dbaede544.html":[23,0,3,0,2,1],
 "dir_49e56c817e5e54854c35e136979f97ca.html":[23,0,0],
-"dir_4a8c666d5a84e9c3cae828ca937c6f3b.html":[23,0,7,0,2,2],
-"dir_4b78da67142102227ca2887ed54fb9cd.html":[23,0,3,0,0,2,0],
-"dir_4c5699a308e77797c29195d36c3ea3a0.html":[23,0,6,1,1]
+"dir_4a8c666d5a84e9c3cae828ca937c6f3b.html":[23,0,7,0,2,2]
 };
