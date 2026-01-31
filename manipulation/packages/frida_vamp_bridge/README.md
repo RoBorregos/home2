@@ -36,28 +36,13 @@ docker run --user $(id -u):$(id -g)   -v $(pwd):/workspace   -v path_to_your_foa
 ```
 * Important: Move the generated file to the VAMP implementation folder: mv frida_real.hh ~/roborregos/home_ws/src/manipulation/packages/vamp/src/impl/vamp/robots/
 
-### Import the new robot in VAMP
-Edit the `cmake/Python.cmake` file in VAMP to include the new robot:
-```cmake
-if(NOT VAMP_ROBOT_MODULES)
-    list(APPEND VAMP_ROBOT_MODULES
-      sphere
-      ur5
-      panda
-      fetch
-      baxter
-      frida_real
-    )
+### Import the new robot in VAMP 
 
-    list(APPEND VAMP_ROBOT_STRUCTS
-      Sphere
-      UR5
-      Panda
-      Fetch
-      Baxter
-      FridaReal
-    )
-  endif()
+Edit the CMakeLists.txt in the VAMP package to include the new robot module and struct:
+
+```cmake
+set(VAMP_ROBOT_MODULES frida_real xarm sphere)
+set(VAMP_ROBOT_STRUCTS FRIDA_Real Xarm Sphere)
 ```
 
 ### Phase 3: The "Ghost Fix" (Materializing the Robot)
