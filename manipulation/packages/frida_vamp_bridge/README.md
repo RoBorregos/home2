@@ -31,13 +31,37 @@ foam frida_original.urdf frida_spherized.urdf
 Cricket translates the URDF spheres into ultra-low latency C++ mathematical collision functions.
 
 ```bash
-# Generate the C++ header
-cricket frida_spherized.urdf -o frida_real.hh
+cd ../cricket
+docker run --user $(id -u):$(id -g)   -v $(pwd):/workspace   -v path_to_your_foam_output:/foam_output  -w /workspace   cricket-tool frida.json
 ```
 * Important: Move the generated file to the VAMP implementation folder: mv frida_real.hh ~/roborregos/home_ws/src/manipulation/packages/vamp/src/impl/vamp/robots/
 
+### Import the new robot in VAMP
+Edit the `cmake/Python.cmake` file in VAMP to include the new robot:
+```cmake
+if(NOT VAMP_ROBOT_MODULES)
+    list(APPEND VAMP_ROBOT_MODULES
+      sphere
+      ur5
+      panda
+      fetch
+      baxter
+      frida_real
+    )
+
+    list(APPEND VAMP_ROBOT_STRUCTS
+      Sphere
+      UR5
+      Panda
+      Fetch
+      Baxter
+      FridaReal
+    )
+  endif()
+```
+
 ### Phase 3: The "Ghost Fix" (Materializing the Robot)
-Cricket may generate empty collision blocks { }. Without this fix, the robot behaves like a "ghost," detecting collisions but failing to signal the planner to stop.
+Cricket may generate empty collision blocks { }. Without this fix, the robot behaves like a "ghost," detecting collisions but failing to signal the planner to stop. This is not extremely necessary if you know that your urdf is correct.
 
 Run the repair script:
 
@@ -56,7 +80,7 @@ What does this script do?
 Rebuild the C++ engine and update the Python bindings.
 ```bash
 cd ~/roborregos/home_ws/src/manipulation/packages/vamp/build
-rm -rf * && cmake ..
+rm -rf * && cmake .. -DVAMP_BUILD_PYTHON_BINDINGS=ON
 make -j$(nproc)
 
 # Update the binary in the Python library
@@ -68,7 +92,7 @@ To test the system with a dynamic obstacle in PyBullet:
 
 ```bash
 cd /src/manipulation/packages/vamp/scripts
-python3 test_frida.py
+PYTHONPATH=../src:../build python3 test_frida.py
 ```
 
 ## Technical Concepts Applied
