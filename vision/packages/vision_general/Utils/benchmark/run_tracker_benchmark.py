@@ -26,7 +26,7 @@ except ImportError:
 
 # Import ROS tracker wrappers
 try:
-    from ros_tracker_wrappers import (
+    from vision.packages.vision_general.Utils.benchmark.ros_tracker_wrappers import (
         NewTrackerWrapper as ROSNewTracker,
         OldTrackerWrapper as ROSOldTracker,
         TrackerNodeWrapper as ROSTrackerNode,
