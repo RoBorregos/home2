@@ -32,4 +32,4 @@ datasets/
 onnxruntime_gpu-1.17.0-cp38-cp38-linux_aarch64.whl
 vision/MOT16/
 vision/packages/vision_general/Utils/benchmark/output
-vision/packages/vision_general/Utils/deep_sort/resources
+vision/packages/vision_general/Utils/deep_sort/resourcesvision/packages/vision_general/Utils/deep_sort/resources/
