@@ -30,3 +30,5 @@ mobileclip_blt.ts
 *.traj
 datasets/
 onnxruntime_gpu-1.17.0-cp38-cp38-linux_aarch64.whl
+vision/MOT16/
+vision/packages/vision_general/Utils/full_benchmark_output/
