@@ -129,6 +129,7 @@ def main():
 
     # Evaluate
     print("[3/3] Evaluating...")
+    os.makedirs(results_dir, exist_ok=True)
     results = run_benchmark(gt_dir, tracker_outputs, out_csv=f"{results_dir}/summary.csv")
 
     print("\nResults:")
