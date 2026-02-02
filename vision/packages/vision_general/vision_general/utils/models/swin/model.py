@@ -5,7 +5,7 @@ from torchvision import models
 from torch.autograd import Variable
 import pretrainedmodels
 import timm
-from utils import load_state_dict_mute
+from .utils import load_state_dict_mute
 ######################################################################
 def weights_init_kaiming(m):
     classname = m.__class__.__name__

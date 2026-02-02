@@ -27,10 +27,10 @@ except ImportError:
 
 # DeepSORT imports for Hector Tracker
 try:
-    # Add vision_general package to path
-    vision_general_path = Path(__file__).parent.parent / "vision_general"
-    if str(vision_general_path) not in sys.path:
-        sys.path.insert(0, str(vision_general_path.parent))
+    # Add vision_general package to path (Utils/benchmark -> packages)
+    vision_general_base = Path(__file__).parent.parent.parent
+    if str(vision_general_base) not in sys.path:
+        sys.path.insert(0, str(vision_general_base))
 
     from vision_general.utils.deep_sort import nn_matching
     from vision_general.utils.deep_sort.detection import Detection as DeepSortDetection
