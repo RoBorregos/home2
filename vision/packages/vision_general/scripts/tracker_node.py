@@ -28,7 +28,9 @@ import copy
 from vision_general.utils.reid_model import (
     load_network,
     compare_images,
+    compare_images_batch,
     extract_feature_from_img,
+    extract_feature_from_img_batch,
     get_structure,
 )
 
@@ -52,6 +54,8 @@ from frida_constants.vision_enums import DetectBy
 
 CONF_THRESHOLD = 0.8
 DEPTH_THRESHOLD = 100
+REID_EXTRACT_FREQ = 0.3
+MAX_EMBEDDINGS = 128
 
 
 class SingleTracker(Node):
@@ -101,6 +105,7 @@ class SingleTracker(Node):
 
         self.verbose = self.declare_parameter("verbose", True)
         self.setup()
+        self.last_reid_extraction = time.time()
         self.create_timer(0.1, self.run)
         self.create_timer(0.01, self.publish_image)
 
@@ -113,6 +118,7 @@ class SingleTracker(Node):
         self.person_data = {
             "id": None,
             "embeddings": None,
+            "num_embeddings": 0,
             "forward": None,
             "backward": None,
             "left": None,
@@ -482,20 +488,50 @@ class SingleTracker(Node):
                         )
                         cropped_image = self.frame[y1:y2, x1:x2]
                         embedding = None
+                        pil_image = PILImage.fromarray(cropped_image)
 
-                        if self.person_data["embeddings"] is None:
-                            pil_image = PILImage.fromarray(cropped_image)
-
+                        if self.person_data[
+                            "embeddings"
+                        ] is None or time.time() - self.last_reid_extraction > (
+                            1 / REID_EXTRACT_FREQ
+                        ):
+                            self.last_reid_extraction = time.time()
                             with torch.no_grad():
                                 embedding = extract_feature_from_img(
                                     pil_image, self.model_reid
                                 )
+                            if self.person_data["embeddings"] is None:
+                                self.person_data["embeddings"] = torch.zeros(
+                                    (MAX_EMBEDDINGS, embedding.shape[1]),
+                                    device="cuda"
+                                    if torch.cuda.is_available()
+                                    else "cpu",
+                                )
+                                self.person_data["embeddings"][
+                                    self.person_data["num_embeddings"]
+                                ] = embedding.squeeze()
+                                self.person_data["num_embeddings"] += 1
+                            else:
+                                """ Compare embeddings from the person with the current one
+                                if they are different, we can add a new embedding as we have certainty this is the same person
+                                with a different view -- not necessarily from a different angle"""
+                                embedding_exists = compare_images_batch(
+                                    embedding,
+                                    self.person_data["embeddings"],
+                                    threshold=0.7,
+                                )
 
-                            self.person_data["embeddings"] = embedding
-
+                                if (
+                                    not embedding_exists
+                                    and self.person_data["num_embeddings"]
+                                    < MAX_EMBEDDINGS
+                                ):
+                                    self.person_data["embeddings"][
+                                        self.person_data["num_embeddings"]
+                                    ] = embedding.squeeze()
+                                    self.person_data["num_embeddings"] += 1
                         angle = self.pose_detection.personAngle(cropped_image)
                         if angle is not None and self.person_data[angle] is None:
-                            print("Added angle: ", angle)
                             if embedding is None:
                                 pil_image = PILImage.fromarray(cropped_image)
                                 with torch.no_grad():
@@ -521,22 +557,34 @@ class SingleTracker(Node):
                     )
 
             if not person_in_frame and len(people) > 0:
+                img_list = []
                 for person in people:
                     cropped_image = self.frame[
                         person["y1"] : person["y2"], person["x1"] : person["x2"]
                     ]
                     pil_image = PILImage.fromarray(cropped_image)
-                    with torch.no_grad():
-                        embedding = extract_feature_from_img(pil_image, self.model_reid)
+                    img_list.append(pil_image)
+
+                with torch.no_grad():
+                    embeddings_batch = extract_feature_from_img_batch(
+                        img_list, self.model_reid
+                    )
+
+                for i, person in enumerate(people):
+                    cropped_image = self.frame[
+                        person["y1"] : person["y2"], person["x1"] : person["x2"]
+                    ]
+                    embedding = embeddings_batch[i]
                     person_angle = self.pose_detection.personAngle(cropped_image)
 
                     if person_angle is not None:
                         if self.person_data[person_angle] is not None:
                             if compare_images(
-                                embedding,
-                                self.person_data[person_angle],
-                                threshold=0.75,
+                                embedding, self.person_data[person_angle], threshold=0.7
                             ):
+                                self.success(
+                                    f"Person re-identified: {person['track_id']} with angle {person_angle}"
+                                )
                                 self.person_data["id"] = person["track_id"]
                                 self.person_data["coordinates"] = (
                                     person["x1"],
@@ -544,22 +592,26 @@ class SingleTracker(Node):
                                     person["x2"],
                                     person["y2"],
                                 )
-                                self.success(
-                                    f"Person re-identified: {person['track_id']} with angle {person_angle}"
-                                )
                                 person_in_frame = True
                                 break
-                        else:
-                            if compare_images(
-                                embedding,
-                                self.person_data["embeddings"],
-                                threshold=0.75,
-                            ):
-                                self.person_data["id"] = person["track_id"]
+                    else:
+                        person_found = False
+                        if (
+                            self.person_data["embeddings"] is not None
+                            and self.person_data["num_embeddings"] > 0
+                        ):
+                            embedding_exists = compare_images_batch(
+                                embedding, self.person_data["embeddings"], threshold=0.7
+                            )
+                            if embedding_exists:
                                 self.success(
                                     f"Person re-identified: {person['track_id']} without angle"
                                 )
-                                break
+                                self.person_data["id"] = person["track_id"]
+                                person_in_frame = True
+                                person_found = True
+                        if person_found:
+                            break
             if person_in_frame:
                 self.is_tracking_result = True
                 if len(self.depth_image) > 0 and (
