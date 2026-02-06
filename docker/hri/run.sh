@@ -110,7 +110,7 @@ if [ "$REGENERATE_DB" == "true" ]; then
   echo "Regenerating database..."
   bash scripts/regenerate_db.sh "$ENV_TYPE"
 fi
-
+exit 0 
 #_________________________RUN_________________________
 
 GENERATE_BAML_CLIENT="baml-cli generate --from /workspace/src/task_manager/scripts/utils/baml_src/"
@@ -119,6 +119,7 @@ IGNORE_PACKAGES="--packages-ignore frida_interfaces frida_constants xarm_msgs"
 SOURCE_ROS="source /opt/ros/humble/setup.bash"
 PACKAGES="speech nlp embeddings"
 PROFILES=()
+RUN=""
 
 case $TASK in
   "--receptionist")

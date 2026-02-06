@@ -25,7 +25,7 @@ readarray -t TABLES <<< "$TABLES_ARRAY"
 for t in "${TABLES[@]}"; do
   [ -z "${t:-}" ] && continue
   truncated=0
-  #look for matching dump files
+  # Look for matching dump files
   for file in "$DUMPS_DIR"/04-*.sql; do
     [ -f "$file" ] || continue
     base=$(basename "$file")
@@ -33,7 +33,7 @@ for t in "${TABLES[@]}"; do
     name=${name%.sql}
     tbl_from_file=${name%%-*}
     if [ "$tbl_from_file" = "$t" ]; then
-    #truncate table only once and load matching dump
+    # Truncate table only once and load matching dump
       if [ "$truncated" -eq 0 ]; then
         echo "Truncating: $t"
         if ! docker compose -f "$COMPOSE" exec -T postgres psql -U rbrgs -d postgres -c "TRUNCATE TABLE \"$t\" RESTART IDENTITY CASCADE;"; then
