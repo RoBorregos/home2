@@ -38,7 +38,7 @@ case $INPUT in
   --stop|--down)
     control "$INPUT"
     ;;
-  --hric|--ppc|--gpsr|--dlc|--finals)
+  --hric|--ppc|--gpsr|--dlc|--restaurant|--finals)
     run_task "$@"
     ;;
   vision|manipulation|navigation|integration|hri)
