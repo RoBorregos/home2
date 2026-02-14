@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# TODO: allow viewing local sessions
 # Configuration
 REMOTE_SERVER="orin@10.22.131.69"  # Change this to your server details
 
