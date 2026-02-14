@@ -1,0 +1,13 @@
+train: ../train/images
+val: ../valid/images
+test: ../test/images
+
+nc: 2
+names: ['clutery_bin', 'empty_slot']
+
+roboflow:
+  workspace: dishwashermodel
+  project: dishwasher-empty-slots
+  version: 2
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/dishwashermodel/dishwasher-empty-slots/dataset/2

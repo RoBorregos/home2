@@ -2,3 +2,4 @@ pretrainedmodels
 mediapipe
 ultralytics
 lap
+roboflow

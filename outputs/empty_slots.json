@@ -1,0 +1,482 @@
+{
+  "IMG_7408_jpg.rf.d0678a9705043ae41731d3c0aa30bb83.jpg": [],
+  "IMG_7409_jpg.rf.8d9c8174be2ed6bc4555ab12a84f0bb2.jpg": [],
+  "IMG_7411_jpg.rf.574525a8f07aa43911e40d4f26e06132.jpg": [],
+  "IMG_7419_jpg.rf.2486c62c2fb4b0b755ed568ae96495bd.jpg": [
+    {
+      "class": "empty_slot",
+      "confidence": 0.7607,
+      "bbox": [
+        386.98,
+        0.0,
+        640.0,
+        433.61
+      ],
+      "area": 109712.04
+    }
+  ],
+  "IMG_7420_jpg.rf.9050c325ae5a482a2583bd5c96759822.jpg": [
+    {
+      "class": "empty_slot",
+      "confidence": 0.8403,
+      "bbox": [
+        78.47,
+        0.0,
+        610.48,
+        238.09
+      ],
+      "area": 126665.67
+    }
+  ],
+  "IMG_7424_jpg.rf.f5febad9e6b8050ba8ce5cfe04368781.jpg": [
+    {
+      "class": "empty_slot",
+      "confidence": 0.7307,
+      "bbox": [
+        51.01,
+        0.0,
+        619.49,
+        193.05
+      ],
+      "area": 109741.78
+    }
+  ],
+  "IMG_7429_jpg.rf.13f8330a2c26e0895c2eef774a8d9a02.jpg": [
+    {
+      "class": "empty_slot",
+      "confidence": 0.7995,
+      "bbox": [
+        323.74,
+        145.9,
+        622.57,
+        441.09
+      ],
+      "area": 88213.56
+    },
+    {
+      "class": "empty_slot",
+      "confidence": 0.697,
+      "bbox": [
+        367.72,
+        448.57,
+        481.42,
+        639.88
+      ],
+      "area": 21752.11
+    }
+  ],
+  "IMG_7430_jpg.rf.f1098c964b2a1d8e9377099f270032e4.jpg": [
+    {
+      "class": "empty_slot",
+      "confidence": 0.8763,
+      "bbox": [
+        315.07,
+        179.2,
+        625.93,
+        446.02
+      ],
+      "area": 82942.41
+    },
+    {
+      "class": "empty_slot",
+      "confidence": 0.437,
+      "bbox": [
+        368.74,
+        0.03,
+        492.23,
+        155.78
+      ],
+      "area": 19233.44
+    }
+  ],
+  "IMG_7432_jpg.rf.fd87590e80f5827b76be8406211673df.jpg": [
+    {
+      "class": "empty_slot",
+      "confidence": 0.8383,
+      "bbox": [
+        370.18,
+        129.17,
+        635.16,
+        419.97
+      ],
+      "area": 77054.19
+    }
+  ],
+  "IMG_7433_jpg.rf.3cbfeb1708813ae6f1beaebd3eb3a1f1.jpg": [
+    {
+      "class": "empty_slot",
+      "confidence": 0.8712,
+      "bbox": [
+        168.5,
+        5.42,
+        443.94,
+        247.69
+      ],
+      "area": 66732.69
+    },
+    {
+      "class": "empty_slot",
+      "confidence": 0.4116,
+      "bbox": [
+        418.69,
+        203.01,
+        639.54,
+        338.5
+      ],
+      "area": 29924.21
+    }
+  ],
+  "IMG_7436_jpg.rf.4525f12f55ca9eee7d143a19d3bee2e9.jpg": [
+    {
+      "class": "empty_slot",
+      "confidence": 0.7483,
+      "bbox": [
+        397.72,
+        233.41,
+        621.71,
+        506.51
+      ],
+      "area": 61172.44
+    },
+    {
+      "class": "empty_slot",
+      "confidence": 0.561,
+      "bbox": [
+        344.15,
+        4.21,
+        453.9,
+        229.04
+      ],
+      "area": 24675.3
+    }
+  ],
+  "IMG_7505-1-_jpg.rf.dd453780cd727b78c8ed0db49d7aad24.jpg": [
+    {
+      "class": "empty_slot",
+      "confidence": 0.863,
+      "bbox": [
+        392.75,
+        153.02,
+        640.0,
+        468.76
+      ],
+      "area": 78067.94
+    }
+  ],
+  "IMG_7508-1-_jpg.rf.aeea662cac8c0e01bdbbf133c74dc6d0.jpg": [
+    {
+      "class": "empty_slot",
+      "confidence": 0.8458,
+      "bbox": [
+        4.3,
+        184.9,
+        211.54,
+        463.64
+      ],
+      "area": 57764.64
+    },
+    {
+      "class": "empty_slot",
+      "confidence": 0.7943,
+      "bbox": [
+        435.12,
+        174.85,
+        556.26,
+        513.31
+      ],
+      "area": 41002.63
+    },
+    {
+      "class": "empty_slot",
+      "confidence": 0.7156,
+      "bbox": [
+        184.81,
+        535.6,
+        360.58,
+        640.0
+      ],
+      "area": 18349.87
+    }
+  ],
+  "IMG_7509_jpg.rf.5398ca686650d4f12287cab77341cdd2.jpg": [
+    {
+      "class": "empty_slot",
+      "confidence": 0.8652,
+      "bbox": [
+        0.0,
+        181.95,
+        231.18,
+        513.52
+      ],
+      "area": 76654.51
+    }
+  ],
+  "IMG_7512-1-_jpg.rf.1a106c3afd400d13e0bce200105f865d.jpg": [
+    {
+      "class": "empty_slot",
+      "confidence": 0.8745,
+      "bbox": [
+        125.78,
+        425.02,
+        447.67,
+        639.92
+      ],
+      "area": 69175.41
+    },
+    {
+      "class": "empty_slot",
+      "confidence": 0.5549,
+      "bbox": [
+        506.1,
+        364.89,
+        640.0,
+        506.23
+      ],
+      "area": 18925.58
+    }
+  ],
+  "IMG_7520-1-_jpg.rf.7745773812abacd65e571eb9fa297114.jpg": [
+    {
+      "class": "empty_slot",
+      "confidence": 0.8901,
+      "bbox": [
+        201.35,
+        0.0,
+        473.1,
+        201.84
+      ],
+      "area": 54849.2
+    },
+    {
+      "class": "empty_slot",
+      "confidence": 0.7797,
+      "bbox": [
+        0.92,
+        159.15,
+        147.17,
+        298.28
+      ],
+      "area": 20348.25
+    },
+    {
+      "class": "empty_slot",
+      "confidence": 0.7324,
+      "bbox": [
+        193.54,
+        378.89,
+        467.93,
+        476.33
+      ],
+      "area": 26735.59
+    }
+  ],
+  "IMG_7523-1-_jpg.rf.130a4aca69a8a142cd6a271734351ed4.jpg": [
+    {
+      "class": "empty_slot",
+      "confidence": 0.8443,
+      "bbox": [
+        453.53,
+        145.66,
+        638.9,
+        509.32
+      ],
+      "area": 67411.81
+    }
+  ],
+  "IMG_7523-1-_jpg.rf.b0bc4d07aa0a8941de67858f7bfe4cd7.jpg": [
+    {
+      "class": "empty_slot",
+      "confidence": 0.8568,
+      "bbox": [
+        0.09,
+        145.1,
+        185.76,
+        521.44
+      ],
+      "area": 69874.07
+    }
+  ],
+  "IMG_7529-1-_jpg.rf.1e421f5c1ac3a56f398cec313a8ef0cc.jpg": [
+    {
+      "class": "empty_slot",
+      "confidence": 0.8895,
+      "bbox": [
+        170.27,
+        0.0,
+        453.33,
+        200.11
+      ],
+      "area": 56643.62
+    },
+    {
+      "class": "empty_slot",
+      "confidence": 0.4767,
+      "bbox": [
+        554.19,
+        173.96,
+        640.0,
+        308.43
+      ],
+      "area": 11539.05
+    }
+  ],
+  "IMG_7533_jpg.rf.c74558e4c4697e367a83c8d03deae8cd.jpg": [
+    {
+      "class": "empty_slot",
+      "confidence": 0.8788,
+      "bbox": [
+        143.01,
+        416.42,
+        412.93,
+        639.71
+      ],
+      "area": 60270.46
+    },
+    {
+      "class": "empty_slot",
+      "confidence": 0.8094,
+      "bbox": [
+        455.93,
+        337.22,
+        636.4,
+        460.53
+      ],
+      "area": 22252.79
+    }
+  ],
+  "IMG_7554_jpg.rf.088add4857ddb948c5a21ab267ca59a4.jpg": [
+    {
+      "class": "empty_slot",
+      "confidence": 0.8407,
+      "bbox": [
+        186.84,
+        455.02,
+        486.07,
+        639.49
+      ],
+      "area": 55199.94
+    }
+  ],
+  "IMG_7556_jpg.rf.895a8f61cd7ca256839c7761ef8fd53e.jpg": [
+    {
+      "class": "empty_slot",
+      "confidence": 0.9032,
+      "bbox": [
+        202.22,
+        0.0,
+        481.71,
+        216.91
+      ],
+      "area": 60623.41
+    },
+    {
+      "class": "empty_slot",
+      "confidence": 0.7602,
+      "bbox": [
+        0.33,
+        158.71,
+        139.01,
+        294.9
+      ],
+      "area": 18888.19
+    }
+  ],
+  "IMG_7557_jpg.rf.51f1a05b2e3256fe635458edeefe7684.jpg": [
+    {
+      "class": "empty_slot",
+      "confidence": 0.899,
+      "bbox": [
+        0.82,
+        96.98,
+        172.31,
+        384.97
+      ],
+      "area": 49387.35
+    },
+    {
+      "class": "empty_slot",
+      "confidence": 0.7887,
+      "bbox": [
+        136.87,
+        458.05,
+        285.22,
+        639.45
+      ],
+      "area": 26911.11
+    }
+  ],
+  "IMG_7558_jpg.rf.00ebc17eb29d7c9aa6d956431d0d9349.jpg": [
+    {
+      "class": "empty_slot",
+      "confidence": 0.8694,
+      "bbox": [
+        417.02,
+        191.97,
+        640.0,
+        529.54
+      ],
+      "area": 75272.18
+    }
+  ],
+  "IMG_7562_jpg.rf.296cc2410f3ad6db071d45649a14bfc1.jpg": [
+    {
+      "class": "empty_slot",
+      "confidence": 0.8831,
+      "bbox": [
+        107.81,
+        0.0,
+        411.99,
+        202.77
+      ],
+      "area": 61679.23
+    }
+  ],
+  "IMG_7574-1-_jpg.rf.c87aee01feed613016a5915ce06e920b.jpg": [
+    {
+      "class": "empty_slot",
+      "confidence": 0.8603,
+      "bbox": [
+        465.71,
+        140.33,
+        640.0,
+        452.89
+      ],
+      "area": 54473.93
+    },
+    {
+      "class": "empty_slot",
+      "confidence": 0.6282,
+      "bbox": [
+        323.83,
+        0.0,
+        482.92,
+        105.7
+      ],
+      "area": 16815.4
+    }
+  ],
+  "IMG_7593_jpg.rf.8b8e92bdb85c4abea08e1f7195f8ab44.jpg": [
+    {
+      "class": "empty_slot",
+      "confidence": 0.8758,
+      "bbox": [
+        237.32,
+        0.76,
+        510.49,
+        251.99
+      ],
+      "area": 68625.84
+    },
+    {
+      "class": "empty_slot",
+      "confidence": 0.6344,
+      "bbox": [
+        249.79,
+        445.52,
+        542.4,
+        551.53
+      ],
+      "area": 31017.25
+    }
+  ]
+}
