@@ -7,6 +7,7 @@ bool scan_environment
 ---
 #result definition
 int32 success
+bool out_of_range
 ---
 #feedback
 string execution_state
