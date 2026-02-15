@@ -171,7 +171,7 @@ class SingleTracker(Node):
         if self.is_tracking_result:
             self.get_logger().info("Tracking")
         else:
-            self.get_logger().info("Not racking")
+            self.get_logger().info("Not tracking")
         return response
 
     def image_info_callback(self, data):
@@ -240,7 +240,7 @@ class SingleTracker(Node):
     def is_waving(self, pose, track_by):
         print("TRACKKK", track_by)
         if track_by == "wavingCustomer":
-            if pose == "raising_left_arm" or pose == "raising_left_arm":
+            if pose == "raising_left_arm" or pose == "raising_right_arm":
                 return True
         return False
 
@@ -294,6 +294,7 @@ class SingleTracker(Node):
 
                 else:
                     cropped_image = self.frame[y1:y2, x1:x2]
+                    pose = None
 
                     if track_by == DetectBy.GESTURES.value:
                         self.get_logger().info(f"Detecting gesture {value} ")
@@ -327,7 +328,7 @@ class SingleTracker(Node):
                             response_clean = value
 
                     if response_clean == value or response_clean == "1":
-                        if pose.value == value:
+                        if pose is not None and pose.value == value:
                             self.success(f"Target found by {track_by}: {pose.value}")
                         elif response_clean == value:
                             self.success(
@@ -371,14 +372,22 @@ class SingleTracker(Node):
             return False
 
     def wait_for_future(self, future, timeout=5):
-        start_time = time.time()
-        while future is None and (time.time() - start_time) < timeout:
-            pass
+        """Wait for a future to complete using proper ROS2 async patterns"""
         if future is None:
-            return False
-        while not future.done() and (time.time() - start_time) < timeout:
-            print("Waiting for future to complete...")
-        return future
+            return None
+
+        # Use rclpy to properly wait for the future with timeout
+        rclpy.spin_until_future_complete(
+            self,
+            future,
+            timeout_sec=timeout
+        )
+
+        if future.done():
+            return future
+        else:
+            self.get_logger().warn(f"Future timed out after {timeout} seconds")
+            return None
 
     def moondream_crop_query(self, prompt: str, bbox: list[float]) -> tuple[int, str]:
         """Makes a query of the current image using moondream."""
@@ -400,6 +409,11 @@ class SingleTracker(Node):
 
         future = self.moondream_client.call_async(request)
         future = self.wait_for_future(future, 15)
+
+        if future is None:
+            self.get_logger().error("Moondream service call timed out or failed.")
+            return 0, "0"
+
         result = future.result()
         if result is None:
             self.get_logger().error("Moondream service returned None.")
@@ -408,38 +422,31 @@ class SingleTracker(Node):
             self.get_logger().info(f"Moondream result: {result.result}")
             return 1, result.result
 
+        return 0, "0"
+
     def run(self):
         """Main loop to run the tracker"""
 
-        if True:  # self.target_set:
-            self.frame = self.image
-            # image_time = copy.deepcopy(self.image_time)
-            # depth_image_time = copy.deepcopy(self.depth_image_time)
-            if self.frame is None:
-                self.get_logger().error("No image available")
-                return
+        if not self.target_set:
+            return
 
-            # if self.target_set:
-            #     self.frame = self.image
+        self.frame = self.image
+        if self.frame is None:
+            self.get_logger().error("No image available")
+            return
 
-            self.output_image = self.frame.copy()
+        self.output_image = self.frame.copy()
 
-            if self.frame is None:
-                return
+        self.results = self.model.track(
+            self.frame,
+            persist=True,
+            tracker="bytetrack.yaml",
+            classes=0,
+            verbose=False,
+        )
 
-            self.output_image = self.frame.copy()
-
-            self.results = self.model.track(
-                self.frame,
-                persist=True,
-                tracker="bytetrack.yaml",
-                classes=0,
-                verbose=False,
-            )
-
-            if self.person_data["id"] is None:
-                # self.frame = None
-                return
+        if self.person_data["id"] is None:
+            return
 
             person_in_frame = False
 
@@ -656,7 +663,6 @@ class SingleTracker(Node):
                 # self.get_logger().warn("Depth image not available")
             else:
                 self.is_tracking_result = False
-        self.frame = None
 
 
 def main(args=None):
