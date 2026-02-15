@@ -198,7 +198,10 @@ def main(args=None):
     script_args = parser.parse_args(args)
 
     rclpy.init(args=args)
-    node = KeyboardInput(script_args.min_distance, script_args.max_distance)
+    node = KeyboardInput(
+        script_args.min_distance or 0.0,
+        script_args.max_distance or float("inf"),
+    )
 
     try:
         while rclpy.ok():
