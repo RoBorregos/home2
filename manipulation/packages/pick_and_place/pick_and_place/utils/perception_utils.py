@@ -46,6 +46,9 @@ def get_object_cluster(point: PointStamped, perception_3d_client):
         return None
     return pcl_result
 
-def point_in_range(point: PointStamped, min_distance: float, max_distance: float) -> bool:
+
+def point_in_range(
+    point: PointStamped, min_distance: float, max_distance: float
+) -> bool:
     distance = (point.point.x**2 + point.point.y**2 + point.point.z**2) ** 0.5
     return min_distance <= distance <= max_distance

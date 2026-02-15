@@ -67,7 +67,9 @@ class KeyboardInput(Node):
         # Assuming msg contains a list of object names
         self.objects = []
         for detection in msg.detections:
-            if detection.label_text not in self.objects and point_in_range(detection.point3d, self.min_distance, self.max_distance):
+            if detection.label_text not in self.objects and point_in_range(
+                detection.point3d, self.min_distance, self.max_distance
+            ):
                 self.objects.append(detection.label_text)
 
     def send_pick_request(self, object_name):
@@ -193,8 +195,12 @@ class KeyboardInput(Node):
 
 def main(args=None):
     parser = argparse.ArgumentParser()
-    parser.add_argument("--min_distance", type=float, help="Minimum distance for picking objects")
-    parser.add_argument("--max_distance", type=float, help="Maximum distance for picking objects")
+    parser.add_argument(
+        "--min_distance", type=float, help="Minimum distance for picking objects"
+    )
+    parser.add_argument(
+        "--max_distance", type=float, help="Maximum distance for picking objects"
+    )
     script_args = parser.parse_args(args)
 
     rclpy.init(args=args)
