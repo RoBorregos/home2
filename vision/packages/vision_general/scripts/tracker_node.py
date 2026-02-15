@@ -61,7 +61,6 @@ MAX_EMBEDDINGS = 128
 class SingleTracker(Node):
     def __init__(self):
         super().__init__("tracker_node")
-        print("/???????????????????????????????_________________")
         self.bridge = CvBridge()
         self.callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
 
@@ -216,18 +215,16 @@ class SingleTracker(Node):
         if len(self.customer_image) != 0:
             h, w = self.customer_image.shape[:2]
 
-            # 3. Determine square size (max of h or w)
             square_size = max(h, w)
 
-            # 4. Create a black square image
             square_img = cv2.copyMakeBorder(
                 self.customer_image,
                 top=(square_size - h) // 2,
-                bottom=(square_size - h + 1) // 2,  # Handles odd differences
+                bottom=(square_size - h + 1) // 2,  
                 left=(square_size - w) // 2,
                 right=(square_size - w + 1) // 2,
                 borderType=cv2.BORDER_CONSTANT,
-                value=(0, 0, 0),  # Black padding (BGR)
+                value=(0, 0, 0),  
             )
             self.customer_publisher.publish(
                 self.bridge.cv2_to_imgmsg(square_img, "bgr8")
@@ -236,13 +233,6 @@ class SingleTracker(Node):
     def success(self, message) -> None:
         """Print success message"""
         self.get_logger().info(f"\033[92mSUCCESS:\033[0m {message}")
-
-    def is_waving(self, pose, track_by):
-        print("TRACKKK", track_by)
-        if track_by == "wavingCustomer":
-            if pose == "raising_left_arm" or pose == "raising_right_arm":
-                return True
-        return False
 
     def set_target(self, track_by="largest_person", value=""):
         """Set the target to track (Default: Largest person in frame)"""
@@ -266,18 +256,15 @@ class SingleTracker(Node):
             "bbox": None,
         }
         response_clean = ""
-        # Check each detection
         for out in results:
             for box in out.boxes:
                 x1, y1, x2, y2 = [round(x) for x in box.xyxy[0].tolist()]
 
-                # Get class name
                 try:
                     track_id = box.id[0].item()
                 except Exception:
                     track_id = -1
 
-                # Get confidence
                 prob = round(box.conf[0].item(), 2)
 
                 if prob < CONF_THRESHOLD:
@@ -339,7 +326,6 @@ class SingleTracker(Node):
                         largest_person["id"] = track_id
                         largest_person["area"] = area
                         largest_person["bbox"] = (x1, y1, x2, y2)
-                        # cv2.im(cropped_image)
                         self.customer_image = copy.deepcopy(cropped_image)
                     else:
                         self.get_logger().warn(
@@ -376,7 +362,6 @@ class SingleTracker(Node):
         if future is None:
             return None
 
-        # Use rclpy to properly wait for the future with timeout
         rclpy.spin_until_future_complete(
             self,
             future,
@@ -390,39 +375,44 @@ class SingleTracker(Node):
             return None
 
     def moondream_crop_query(self, prompt: str, bbox: list[float]) -> tuple[int, str]:
-        """Makes a query of the current image using moondream."""
-        self.get_logger().info(f"Querying image with prompt: {prompt}")
+        """Query the current image crop using moondream vision model.
 
+        Args:
+            prompt: Query prompt for the vision model
+            bbox: Bounding box [y1, x1, y2, x2] in pixel coordinates
+
+        Returns:
+            Tuple of (success: 1 or 0, result: str)
+        """
+        self.get_logger().info(f"Querying image: {prompt}")
+
+        # Normalize bbox coordinates to [0, 1] range
         height, width = self.image.shape[:2]
-
-        ymin = bbox[0] / height
-        xmin = bbox[1] / width
-        ymax = bbox[2] / height
-        xmax = bbox[3] / width
-
         request = CropQuery.Request()
         request.query = prompt
-        request.ymin = ymin
-        request.xmin = xmin
-        request.ymax = ymax
-        request.xmax = xmax
+        request.ymin, request.xmin, request.ymax, request.xmax = [
+            bbox[0] / height,
+            bbox[1] / width,
+            bbox[2] / height,
+            bbox[3] / width
+        ]
 
+        # Call service and wait for response
         future = self.moondream_client.call_async(request)
-        future = self.wait_for_future(future, 15)
+        future = self.wait_for_future(future, timeout=15)
 
         if future is None:
-            self.get_logger().error("Moondream service call timed out or failed.")
+            self.get_logger().error("Moondream service timed out or failed.")
             return 0, "0"
 
         result = future.result()
-        if result is None:
-            self.get_logger().error("Moondream service returned None.")
+        if result is None or not result.success:
+            error_msg = "returned None" if result is None else "query failed"
+            self.get_logger().error(f"Moondream {error_msg}.")
             return 0, "0"
-        if result.success:
-            self.get_logger().info(f"Moondream result: {result.result}")
-            return 1, result.result
 
-        return 0, "0"
+        self.get_logger().info(f"Moondream result: {result.result}")
+        return 1, result.result
 
     def run(self):
         """Main loop to run the tracker"""
@@ -447,222 +437,6 @@ class SingleTracker(Node):
 
         if self.person_data["id"] is None:
             return
-
-            person_in_frame = False
-
-            people = []
-
-            # Check each detection
-            for out in self.results:
-                for box in out.boxes:
-                    x1, y1, x2, y2 = [round(x) for x in box.xyxy[0].tolist()]
-
-                    # Get class name
-                    class_id = box.cls[0].item()
-                    label = self.model.names[class_id]
-
-                    # id
-                    try:
-                        track_id = box.id[0].item()
-                    except Exception as e:
-                        print("Track id exception: ", e)
-                        track_id = -1
-
-                    # Get confidence
-                    prob = round(box.conf[0].item(), 2)
-
-                    if prob < CONF_THRESHOLD:
-                        continue
-
-                    people.append(
-                        {
-                            "track_id": track_id,
-                            "x1": x1,
-                            "y1": y1,
-                            "x2": x2,
-                            "y2": y2,
-                        }
-                    )
-
-                    angle = None
-
-                    # Check if person is in frame:
-                    if track_id == self.person_data["id"]:
-                        person_in_frame = True
-                        self.person_data["coordinates"] = (x1, y1, x2, y2)
-                        cv2.rectangle(
-                            self.output_image, (x1, y1), (x2, y2), (0, 255, 0), 2
-                        )
-                        cropped_image = self.frame[y1:y2, x1:x2]
-                        embedding = None
-                        pil_image = PILImage.fromarray(cropped_image)
-
-                        if self.person_data[
-                            "embeddings"
-                        ] is None or time.time() - self.last_reid_extraction > (
-                            1 / REID_EXTRACT_FREQ
-                        ):
-                            self.last_reid_extraction = time.time()
-                            with torch.no_grad():
-                                embedding = extract_feature_from_img(
-                                    pil_image, self.model_reid
-                                )
-                            if self.person_data["embeddings"] is None:
-                                self.person_data["embeddings"] = torch.zeros(
-                                    (MAX_EMBEDDINGS, embedding.shape[1]),
-                                    device="cuda"
-                                    if torch.cuda.is_available()
-                                    else "cpu",
-                                )
-                                self.person_data["embeddings"][
-                                    self.person_data["num_embeddings"]
-                                ] = embedding.squeeze()
-                                self.person_data["num_embeddings"] += 1
-                            else:
-                                """ Compare embeddings from the person with the current one
-                                if they are different, we can add a new embedding as we have certainty this is the same person
-                                with a different view -- not necessarily from a different angle"""
-                                embedding_exists = compare_images_batch(
-                                    embedding,
-                                    self.person_data["embeddings"],
-                                    threshold=0.7,
-                                )
-
-                                if (
-                                    not embedding_exists
-                                    and self.person_data["num_embeddings"]
-                                    < MAX_EMBEDDINGS
-                                ):
-                                    self.person_data["embeddings"][
-                                        self.person_data["num_embeddings"]
-                                    ] = embedding.squeeze()
-                                    self.person_data["num_embeddings"] += 1
-                        angle = self.pose_detection.personAngle(cropped_image)
-                        if angle is not None and self.person_data[angle] is None:
-                            if embedding is None:
-                                pil_image = PILImage.fromarray(cropped_image)
-                                with torch.no_grad():
-                                    embedding = extract_feature_from_img(
-                                        pil_image, self.model_reid
-                                    )
-
-                            self.person_data[angle] = embedding
-
-                    else:
-                        cv2.rectangle(
-                            self.output_image, (x1, y1), (x2, y2), (255, 0, 0), 2
-                        )
-
-                    cv2.putText(
-                        self.output_image,
-                        f"{label} {track_id}, Prob: {prob}, Angle: {angle}",
-                        (x1, y1 - 10),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        0.9,
-                        (0, 255, 0),
-                        2,
-                    )
-
-            if not person_in_frame and len(people) > 0:
-                img_list = []
-                for person in people:
-                    cropped_image = self.frame[
-                        person["y1"] : person["y2"], person["x1"] : person["x2"]
-                    ]
-                    pil_image = PILImage.fromarray(cropped_image)
-                    img_list.append(pil_image)
-
-                with torch.no_grad():
-                    embeddings_batch = extract_feature_from_img_batch(
-                        img_list, self.model_reid
-                    )
-
-                for i, person in enumerate(people):
-                    cropped_image = self.frame[
-                        person["y1"] : person["y2"], person["x1"] : person["x2"]
-                    ]
-                    embedding = embeddings_batch[i]
-                    person_angle = self.pose_detection.personAngle(cropped_image)
-
-                    if person_angle is not None:
-                        if self.person_data[person_angle] is not None:
-                            if compare_images(
-                                embedding, self.person_data[person_angle], threshold=0.7
-                            ):
-                                self.success(
-                                    f"Person re-identified: {person['track_id']} with angle {person_angle}"
-                                )
-                                self.person_data["id"] = person["track_id"]
-                                self.person_data["coordinates"] = (
-                                    person["x1"],
-                                    person["y1"],
-                                    person["x2"],
-                                    person["y2"],
-                                )
-                                person_in_frame = True
-                                break
-                    else:
-                        person_found = False
-                        if (
-                            self.person_data["embeddings"] is not None
-                            and self.person_data["num_embeddings"] > 0
-                        ):
-                            embedding_exists = compare_images_batch(
-                                embedding, self.person_data["embeddings"], threshold=0.7
-                            )
-                            if embedding_exists:
-                                self.success(
-                                    f"Person re-identified: {person['track_id']} without angle"
-                                )
-                                self.person_data["id"] = person["track_id"]
-                                person_in_frame = True
-                                person_found = True
-                        if person_found:
-                            break
-            if person_in_frame:
-                self.is_tracking_result = True
-                if len(self.depth_image) > 0 and (
-                    (
-                        self.depth_image_time.nanosec - self.image_time.nanosec
-                        > -DEPTH_THRESHOLD
-                    )
-                    and (
-                        self.depth_image_time.nanosec - self.image_time.nanosec
-                        < DEPTH_THRESHOLD
-                    )
-                ):
-                    coords = PointStamped()
-                    coords.header.frame_id = self.frame_id
-                    coords.header.stamp = self.depth_image_time
-                    point2D = get2DCentroid(
-                        self.person_data["coordinates"], self.depth_image
-                    )
-                    point2D_x_coord = float(point2D[1])
-                    point2D_x_coord_normalized = (
-                        point2D_x_coord / (self.frame.shape[1] / 2)
-                    ) - 1
-                    point2Dpoint = Point()
-                    point2Dpoint.x = float(point2D_x_coord_normalized)
-                    point2Dpoint.y = 0.0
-                    point2Dpoint.z = 0.0
-                    # self.get_logger().info(f"frame_shape: {self.frame.shape[1]} Point2D: {point2D[1]} normalized_point2D: {point2D_x_coord_normalized}")
-                    self.centroid_publisher.publish(point2Dpoint)
-                    depth = get_depth(self.depth_image, point2D)
-                    point_2d_temp = (point2D[1], point2D[0])
-                    point3D = deproject_pixel_to_point(
-                        self.imageInfo, point_2d_temp, depth
-                    )
-                    # print(point3D)
-                    point3D = float(point3D[0]), float(point3D[1]), float(point3D[2])
-                    coords.point.x = point3D[0]
-                    coords.point.y = point3D[1]
-                    coords.point.z = point3D[2]
-                    # self.point_pub.publish(coords)
-                    self.results_publisher.publish(coords)
-                # else:
-                # self.get_logger().warn("Depth image not available")
-            else:
-                self.is_tracking_result = False
 
 
 def main(args=None):
