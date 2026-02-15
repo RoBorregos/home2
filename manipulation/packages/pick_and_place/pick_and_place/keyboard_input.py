@@ -8,6 +8,7 @@ from frida_interfaces.msg import ManipulationTask
 import time
 from geometry_msgs.msg import PointStamped, PoseStamped
 from frida_interfaces.msg import ObjectDetectionArray
+from pick_and_place.utils.perception_utils import point_in_range
 from frida_constants.vision_constants import (
     DETECTIONS_TOPIC,
 )
@@ -19,8 +20,10 @@ import argparse
 
 
 class KeyboardInput(Node):
-    def __init__(self):
+    def __init__(self, min_distance=0.0, max_distance=float("inf")):
         super().__init__("keyboard_input")
+        self.min_distance = min_distance
+        self.max_distance = max_distance
 
         callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
 
@@ -64,10 +67,10 @@ class KeyboardInput(Node):
         # Assuming msg contains a list of object names
         self.objects = []
         for detection in msg.detections:
-            if detection.label_text not in self.objects:
+            if detection.label_text not in self.objects and point_in_range(detection.point3d, self.min_distance, self.max_distance):
                 self.objects.append(detection.label_text)
 
-    def send_pick_request(self, object_name, min_distance=None, max_distance=None):
+    def send_pick_request(self, object_name):
         self.get_logger().warning(f"Sending pick request for: {object_name}")
 
         if not self._action_client.wait_for_server(timeout_sec=5.0):
@@ -77,8 +80,8 @@ class KeyboardInput(Node):
         goal_msg = ManipulationAction.Goal()
         goal_msg.task_type = ManipulationTask.PICK
         goal_msg.pick_params.object_name = object_name
-        goal_msg.pick_params.min_distance = min_distance if min_distance is not None else 0.0
-        goal_msg.pick_params.max_distance = max_distance if max_distance is not None else float("inf")
+        goal_msg.pick_params.min_distance = self.min_distance
+        goal_msg.pick_params.max_distance = self.max_distance
         self.get_logger().info(f"Sending pick request for: {object_name}")
         future = self._action_client.send_goal_async(
             goal_msg, feedback_callback=self.feedback_callback
@@ -195,7 +198,7 @@ def main(args=None):
     script_args = parser.parse_args(args)
 
     rclpy.init(args=args)
-    node = KeyboardInput()
+    node = KeyboardInput(script_args.min_distance, script_args.max_distance)
 
     try:
         while rclpy.ok():
@@ -302,13 +305,13 @@ def main(args=None):
                 try:
                     choice_num = int(choice)
                     if 0 <= choice_num - 1 < len(node.objects):
-                        node.send_pick_request(node.objects[choice_num - 1], script_args.min_distance, script_args.max_distance)
+                        node.send_pick_request(node.objects[choice_num - 1])
                     else:
                         print("Invalid choice. Please try again.")
                 except ValueError:
                     print("Invalid input. Please enter a number.")
             else:
-                node.send_pick_request(choice, script_args.min_distance, script_args.max_distance)
+                node.send_pick_request(choice)
 
     except KeyboardInterrupt:
         pass
