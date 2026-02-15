@@ -3,7 +3,7 @@ from frida_interfaces.srv import PickPerceptionService, DetectionHandler
 from geometry_msgs.msg import PointStamped
 from std_srvs.srv import SetBool
 from pick_and_place.utils.grasp_utils import get_grasps
-from pick_and_place.utils.perception_utils import get_object_cluster
+from pick_and_place.utils.perception_utils import get_object_cluster, point_in_range
 from frida_interfaces.action import PickMotion
 from frida_interfaces.msg import PickResult
 from frida_motion_planning.utils.service_utils import (
@@ -61,6 +61,13 @@ class PickManager:
                 point = get_object_point(
                     object_name, self.node.detection_handler_client
                 )
+                min_distance = pick_params.min_distance or 0.0
+                max_distance = pick_params.max_distance or float("inf")
+                if not point_in_range(point, min_distance, max_distance):
+                    self.node.get_logger().error(
+                        f"Object {object_name} is out of range (distance: {(point.point.x**2 + point.point.y**2 + point.point.z**2) ** 0.5:.2f} m, expected range: [{min_distance}, {max_distance}] m)"
+                    )
+                    return False, None
                 if point.header.frame_id == "":
                     self.node.get_logger().error(
                         f"Object {object_name} not found, please provide a point"

@@ -15,6 +15,7 @@ from frida_constants.manipulation_constants import (
     MANIPULATION_ACTION_SERVER,
 )
 import json
+import argparse
 
 
 class KeyboardInput(Node):
@@ -66,7 +67,7 @@ class KeyboardInput(Node):
             if detection.label_text not in self.objects:
                 self.objects.append(detection.label_text)
 
-    def send_pick_request(self, object_name):
+    def send_pick_request(self, object_name, min_distance=None, max_distance=None):
         self.get_logger().warning(f"Sending pick request for: {object_name}")
 
         if not self._action_client.wait_for_server(timeout_sec=5.0):
@@ -76,7 +77,8 @@ class KeyboardInput(Node):
         goal_msg = ManipulationAction.Goal()
         goal_msg.task_type = ManipulationTask.PICK
         goal_msg.pick_params.object_name = object_name
-
+        goal_msg.pick_params.min_distance = min_distance
+        goal_msg.pick_params.max_distance = max_distance
         self.get_logger().info(f"Sending pick request for: {object_name}")
         future = self._action_client.send_goal_async(
             goal_msg, feedback_callback=self.feedback_callback
@@ -187,6 +189,11 @@ class KeyboardInput(Node):
 
 
 def main(args=None):
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--min_distance", type=float, help="Minimum distance for picking objects")
+    parser.add_argument("--max_distance", type=float, help="Maximum distance for picking objects")
+    args = parser.parse_args(args)
+
     rclpy.init(args=args)
     node = KeyboardInput()
 
@@ -295,13 +302,13 @@ def main(args=None):
                 try:
                     choice_num = int(choice)
                     if 0 <= choice_num - 1 < len(node.objects):
-                        node.send_pick_request(node.objects[choice_num - 1])
+                        node.send_pick_request(node.objects[choice_num - 1], args.min_distance, args.max_distance)
                     else:
                         print("Invalid choice. Please try again.")
                 except ValueError:
                     print("Invalid input. Please enter a number.")
             else:
-                node.send_pick_request(choice)
+                node.send_pick_request(choice, args.min_distance, args.max_distance)
 
     except KeyboardInterrupt:
         pass
