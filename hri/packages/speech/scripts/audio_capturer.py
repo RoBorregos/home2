@@ -174,7 +174,9 @@ class AudioCapturer(Node):
                             total = sum(f.shape[0] for f in self.noise_frames)
                             if total >= noise_target:
                                 concat = np.concatenate(self.noise_frames)
-                                self.noise_clip = concat[:noise_target].astype(np.float32)
+                                self.noise_clip = concat[:noise_target].astype(
+                                    np.float32
+                                )
                                 # free frames list
                                 self.noise_frames = []
                                 self.get_logger().info("ANC: noise clip captured")
@@ -186,7 +188,9 @@ class AudioCapturer(Node):
                                 noise_clip=self.noise_clip,
                             )
                             # convert back to int16 and bytes
-                            processed_int16 = np.clip(processed, -32768, 32767).astype(np.int16)
+                            processed_int16 = np.clip(processed, -32768, 32767).astype(
+                                np.int16
+                            )
                             ros_audio = processed_int16.tobytes()
                     except Exception as e:
                         self.get_logger().warn(f"ANC processing error: {e}")
