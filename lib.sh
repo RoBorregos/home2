@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+AREAS="vision manipulation navigation integration hri"
+
 # --- guard against multiple sourcing ---
 if [[ -n "${__HOME2_LIB_SOURCED:-}" ]]; then
   return 0
@@ -154,4 +156,13 @@ upload_images() {
   fi
   return $rc
 
+}
+
+run_task() {
+  local task=$1
+  for area in ${AREAS}; do
+    SESSION_NAME=$area
+    tmux new-session -d -s "$SESSION_NAME"
+    tmux send-keys -t "$SESSION_NAME" "bash run.sh $area $task" C-m
+  done
 }

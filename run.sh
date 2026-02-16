@@ -2,7 +2,6 @@
 source lib.sh
 
 INPUT=$1
-AREAS="vision manipulation navigation integration hri"
 
 # Check type of environment (cpu, cuda, or l4t), default cpu
 ENV_TYPE=cpu
@@ -36,15 +35,15 @@ case $INPUT in
   frida_interfaces)
     run_frida_interfaces
     ;;
-  --stop)
-    control --stop
+  --stop|--down)
+    control "$INPUT"
     ;;
   --upload-image)
     upload_images "docker/${ENV_TYPE}.yaml"
     exit $?
     ;;
-  --down)
-    control --down
+  --hric|--ppc|--gpsr|--dlc|--restaurant|--finals)
+    run_task "$@"
     ;;
   vision|manipulation|navigation|integration|hri)
     run_area "$@"
