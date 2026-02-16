@@ -3,8 +3,5 @@ audio_capturer:
     MIC_DEVICE_NAME: "default"
     MIC_INPUT_CHANNELS: 6
     MIC_OUT_CHANNELS: 6
-    OUTPUT_TOPIC: "/processedAudioChunk"
-    APPLY_PROCESSING: true
-    PIPELINE: ["reduce_noise", "regulate_gain", "compress", "agc", "dereverb"]
-    DEBUG_DIR: "/tmp/speech_audio"
-    RESPEAKER_JOIN_METHOD: "avg"
+    publish_topic: "/processedAudioChunk"
+    ENABLE_ANC: true
