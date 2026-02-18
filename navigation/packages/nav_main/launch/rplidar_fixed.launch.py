@@ -35,7 +35,8 @@ def generate_launch_description():
                          'serial_baudrate': 460800, 
                          'frame_id': 'laser',
                          'inverted': False,
-                         'angle_compensate': True}],
+                         'angle_compensate': True,
+                         'scan_mode': 'Standard'}],
             output='screen',
             remappings=[
             ('/scan', '/scan_input')],
