@@ -86,7 +86,9 @@ class MoveItPlanner(Planner):
         capped = max(1, min(planning_attempts, cap))
         self.moveit2.num_planning_attempts = capped
         try:
-            self.node.get_logger().info(f"Set planning attempts: {capped} (requested: {planning_attempts}, cap: {cap})")
+            self.node.get_logger().info(
+                f"Set planning attempts: {capped} (requested: {planning_attempts}, cap: {cap})"
+            )
         except Exception:
             pass
 

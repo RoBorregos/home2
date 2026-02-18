@@ -224,7 +224,9 @@ class PickManager:
             else:
                 # give time for new gpd or fail-fast
                 if self.fail_fast:
-                    self.node.get_logger().error("Fail-fast: aborting pick after failed attempt")
+                    self.node.get_logger().error(
+                        "Fail-fast: aborting pick after failed attempt"
+                    )
                     return False, None
                 time.sleep(1.0)
 

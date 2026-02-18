@@ -241,7 +241,9 @@ class PourMotionServer(Node):
                 self.get_logger().error("Failed to reach pour pose")
                 # Fail-fast: abort further alternative offsets if configured
                 if fail_fast:
-                    self.get_logger().error("Fail-fast: aborting pour after failed attempt")
+                    self.get_logger().error(
+                        "Fail-fast: aborting pour after failed attempt"
+                    )
                     return False, None
                 else:
                     self.get_logger().info(f"Retrying pour pose: {pose.pose}")

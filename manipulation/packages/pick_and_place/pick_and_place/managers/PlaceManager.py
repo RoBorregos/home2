@@ -43,7 +43,9 @@ class PlaceManager:
         )
         # Read optional tuning parameters (use safe defaults if not declared)
         try:
-            self.perception_retries = int(self.node.get_parameter("perception_retries").value)
+            self.perception_retries = int(
+                self.node.get_parameter("perception_retries").value
+            )
         except Exception:
             self.perception_retries = 5
         try:
@@ -241,8 +243,8 @@ class PlaceManager:
                 if request == "close_by":
                     self.node.get_logger().info("Using close by place pose")
                     close_by_object_name = request_dict["object"]
-                        max_attempts = 1 if self.fail_fast else self.perception_retries
-                        for i in range(max_attempts):
+                    max_attempts = 1 if self.fail_fast else self.perception_retries
+                    for i in range(max_attempts):
                         try:
                             close_by_point = get_object_point(
                                 close_by_object_name,
