@@ -110,18 +110,30 @@
     </xacro:if>
 
     <!-- Camera mounting point (the threaded screw hole in the bottom) -->
-    <link name="${name}_camera_link" />
+    <link name="${name}_camera_link" >
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <mass value="0.001"/>
+        <inertia ixx="0.000001" ixy="0" ixz="0" iyy="0.000001" iyz="0" izz="0.000001"/>
+      </inertial>
+    </link>
 
     <xacro:unless value="${attach_to == ''}">
       <joint name="zed_attach_joint" type="fixed">
         <parent link="${attach_to}"/>
         <child link="${name}_camera_link"/>
         <origin xyz="${xyz}" rpy="${rpy}"/>
+        <axis xyz="0 0 1"/>
       </joint>
     </xacro:unless>
     
     <!-- Camera Center -->
     <link name="${name}_camera_center">
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <mass value="0.001"/>
+        <inertia ixx="0.000001" ixy="0" ixz="0" iyy="0.000001" iyz="0" izz="0.000001"/>
+      </inertial>
       <xacro:unless value="${model == 'virtual'}">
         <visual>
           <origin xyz="${screw_offset_x} 0 ${screw_offset_z}" rpy="0 0 0"/>
@@ -142,11 +154,17 @@
       <parent link="${name}_camera_link"/>
       <child link="${name}_camera_center"/>
       <origin xyz="0 0 ${height/2}" rpy="0 ${bottom_slope} 0" />
+      <axis xyz="0 0 1"/>
     </joint>
 
     <xacro:unless value="${mono}">
       <!-- Left Camera -->
       <link name="${name}_left_camera_frame">
+        <inertial>
+          <origin xyz="0 0 0" rpy="0 0 0" />
+          <mass value="0.001"/>
+          <inertia ixx="0.000001" ixy="0" ixz="0" iyy="0.000001" iyz="0" izz="0.000001"/>
+        </inertial>
         <xacro:if value="${model == 'virtual'}">
           <visual>
             <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -163,21 +181,41 @@
           </collision>
         </xacro:if>
       </link>
+
+      <mujoco>
+        <reference name="${name}_left_camera_frame">
+          <camera name="${name}_left_camera" mode="fixed" fovy="45" quat="0.5 0.5 -0.5 -0.5"/>
+        </reference>
+      </mujoco>
+
       <joint name="${name}_left_camera_joint" type="fixed">
         <parent link="${name}_camera_center"/>
         <child link="${name}_left_camera_frame"/>
         <origin xyz="${optical_offset_x} ${baseline/2} 0" rpy="0 0 0" />
+        <axis xyz="0 0 1"/>
       </joint>
 
-      <link name="${name}_left_camera_optical_frame"/>
+      <link name="${name}_left_camera_optical_frame">
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <mass value="0.001"/>
+        <inertia ixx="0.000001" ixy="0" ixz="0" iyy="0.000001" iyz="0" izz="0.000001"/>
+      </inertial>
+      </link>
       <joint name="${name}_left_camera_optical_joint" type="fixed">
         <origin xyz="0 0 0" rpy="-${M_PI/2} 0.0 -${M_PI/2}"/>
+        <axis xyz="0 0 1"/>
         <parent link="${name}_left_camera_frame"/>
         <child link="${name}_left_camera_optical_frame"/>
       </joint>
 
       <!-- Right Camera -->
       <link name="${name}_right_camera_frame">
+        <inertial>
+          <origin xyz="0 0 0" rpy="0 0 0" />
+          <mass value="0.001"/>
+          <inertia ixx="0.000001" ixy="0" ixz="0" iyy="0.000001" iyz="0" izz="0.000001"/>
+        </inertial>
         <xacro:if value="${model == 'virtual'}">
           <visual>
             <origin xyz="0 0 0" rpy="0 0 0"/>
@@ -198,59 +236,109 @@
         <parent link="${name}_camera_center"/>
         <child link="${name}_right_camera_frame"/>
         <origin xyz="${optical_offset_x} -${baseline/2} 0" rpy="0 0 0" />
+        <axis xyz="0 0 1"/>
       </joint>
 
-      <link name="${name}_right_camera_optical_frame"/>
+      <link name="${name}_right_camera_optical_frame">
+      <inertial>
+        <origin xyz="0 0 0" rpy="0 0 0" />
+        <mass value="0.001"/>
+        <inertia ixx="0.000001" ixy="0" ixz="0" iyy="0.000001" iyz="0" izz="0.000001"/>
+      </inertial>
+      </link>
       <joint name="${name}_right_camera_optical_joint" type="fixed">
         <origin xyz="0 0 0" rpy="-${M_PI/2} 0.0 -${M_PI/2}"/>
+        <axis xyz="0 0 1"/>
         <parent link="${name}_right_camera_frame"/>
         <child link="${name}_right_camera_optical_frame"/>
       </joint>
 
       <!-- ZED2 Sensors -->
       <xacro:if value="${model == 'zed2'}">
-        <link name="${name}_mag_link" />
+        <link name="${name}_mag_link">
+          <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <mass value="0.001"/>
+            <inertia ixx="0.000001" ixy="0" ixz="0" iyy="0.000001" iyz="0" izz="0.000001"/>
+          </inertial>
+        </link>
         <joint name="${name}_mag_joint" type="fixed">
           <parent link="${name}_camera_center"/>
           <child link="${name}_mag_link"/>
-          <origin xyz="0 0 0" rpy="0 0 0" />
-        </joint>
+<origin xyz="0 0 0" rpy="0 0 0" />
+        <axis xyz="0 0 1"/>
+      </joint>
 
-        <link name="${name}_baro_link" />
+        <link name="${name}_baro_link">
+          <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <mass value="0.001"/>
+            <inertia ixx="0.000001" ixy="0" ixz="0" iyy="0.000001" iyz="0" izz="0.000001"/>
+          </inertial>
+        </link>
         <joint name="${name}_baro_joint" type="fixed">
           <parent link="${name}_camera_center"/>
           <child link="${name}_baro_link"/>
-          <origin xyz="0 0 0" rpy="0 0 0" />
-        </joint>
+<origin xyz="0 0 0" rpy="0 0 0" />
+        <axis xyz="0 0 1"/>
+      </joint>
 
-        <link name="${name}_temp_left_link" />
+        <link name="${name}_temp_left_link">
+          <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <mass value="0.001"/>
+            <inertia ixx="0.000001" ixy="0" ixz="0" iyy="0.000001" iyz="0" izz="0.000001"/>
+          </inertial>
+        </link>
         <joint name="${name}_temp_left_joint" type="fixed">
           <parent link="${name}_left_camera_frame"/>
           <child link="${name}_temp_left_link"/>
-          <origin xyz="0 0 0" rpy="0 0 0" />
-        </joint>
+<origin xyz="0 0 0" rpy="0 0 0" />
+        <axis xyz="0 0 1"/>
+      </joint>
 
-        <link name="${name}_temp_right_link" />
+        <link name="${name}_temp_right_link">
+          <inertial>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <mass value="0.001"/>
+            <inertia ixx="0.000001" ixy="0" ixz="0" iyy="0.000001" iyz="0" izz="0.000001"/>
+          </inertial>
+        </link>
         <joint name="${name}_temp_right_joint" type="fixed">
           <parent link="${name}_right_camera_frame"/>
           <child link="${name}_temp_right_link"/>
-          <origin xyz="0 0 0" rpy="0 0 0" />
-        </joint>
+<origin xyz="0 0 0" rpy="0 0 0" />
+        <axis xyz="0 0 1"/>
+      </joint>
       </xacro:if>      
     </xacro:unless>
 
     <xacro:if value="${mono}">
       <!-- Camera -->
-      <link name="${name}_camera_frame" />
+      <link name="${name}_camera_frame">
+        <inertial>
+          <origin xyz="0 0 0" rpy="0 0 0" />
+          <mass value="0.001"/>
+          <inertia ixx="0.000001" ixy="0" ixz="0" iyy="0.000001" iyz="0" izz="0.000001"/>
+        </inertial>
+      </link>
       <joint name="${name}_camera_joint" type="fixed">
         <parent link="${name}_camera_center"/>
         <child link="${name}_camera_frame"/>
         <origin xyz="${optical_offset_x} 0 0" rpy="0 0 0" />
+        <axis xyz="0 0 1"/>
       </joint>
 
-      <link name="${name}_camera_optical_frame"/>
+      <link name="${name}_camera_optical_frame">
+        <inertial>
+          <origin xyz="0 0 0" rpy="0 0 0" />
+          <mass value="0.001"/>
+          <inertia ixx="0.000001" ixy="0" ixz="0" iyy="0.000001" iyz="0" izz="0.000001"/>
+        </inertial>
+      </link>
       <joint name="${name}_camera_optical_joint" type="fixed">
         <origin xyz="0 0 0" rpy="-${M_PI/2} 0.0 -${M_PI/2}"/>
+        <axis xyz="0 0 1"/>
         <parent link="${name}_camera_frame"/>
         <child link="${name}_camera_optical_frame"/>
       </joint>
@@ -262,11 +350,18 @@
     </xacro:if>
     
     <xacro:if value="${enable_gnss}">
-      <link name="${name}_gnss_link" />
+      <link name="${name}_gnss_link">
+        <inertial>
+          <origin xyz="0 0 0" rpy="0 0 0" />
+          <mass value="0.001"/>
+          <inertia ixx="0.000001" ixy="0" ixz="0" iyy="0.000001" iyz="0" izz="0.000001"/>
+        </inertial>
+      </link>
       <joint name="${name}_gnss_joint" type="fixed">
         <parent link="${name}_camera_link"/>
         <child link="${name}_gnss_link"/>
         <xacro:insert_block name="gnss_origin" />
+        <axis xyz="0 0 1"/>
       </joint>
     </xacro:if>
 

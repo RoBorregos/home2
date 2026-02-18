@@ -41,8 +41,10 @@
     robot_sn:='' 
     mesh_suffix:='stl' 
     kinematics_suffix:=''
+    mujoco_plugin:=true
     "
     > 
+
 
     <!-- Load Common Material -->
     <xacro:include filename="$(find xarm_description)/urdf/_private_macro.xacro" />
@@ -69,15 +71,18 @@
     <xacro:property name="model_num" value="${scope_parent_model_num}"/>
 
     <!-- add one world link if no 'attach_to' specified  -->
-    <xacro:if value="${attach_to == 'world' and create_attach_link}">
-      <link name="world" />
-    </xacro:if>
+    <xacro:if value = "${create_attach_link}">
+      <xacro:if value="${attach_to == 'world'}">
+        <link name="world" />
+      </xacro:if>
 
-    <joint name="${prefix}world_joint" type="fixed">
-      <parent link="${attach_to}" />
-      <child link="${prefix}link_base" />
-      <origin xyz="${attach_xyz}" rpy="${attach_rpy}" />
-    </joint>
+      <joint name="${prefix}world_joint" type="fixed">
+        <parent link="${attach_to}" />
+        <child link="${prefix}link_base" />
+        <origin xyz="${attach_xyz}" rpy="${attach_rpy}" />
+        <axis xyz="0 0 1"/>
+      </joint>
+    </xacro:if>
 
     <xacro:if value="${effort_control}"> 
       <xacro:property name="hard_interface" value="EffortJointInterface" />
@@ -227,6 +232,7 @@
       <origin xyz="0 0 0" rpy="0 0 0" />
       <parent link="${prefix}link${dof}" />
       <child link="${prefix}link_eef" />
+      <axis xyz="0 0 1"/>
     </joint>
     
     <xacro:if value="${add_gripper}">
@@ -308,7 +314,11 @@
       <xacro:camera_gazebo prefix="${prefix}" />
     </xacro:if>
 
-    <xacro:device_macro_end />
+    
 
+
+
+    <xacro:device_macro_end />
+    
   </xacro:macro>
 </robot>

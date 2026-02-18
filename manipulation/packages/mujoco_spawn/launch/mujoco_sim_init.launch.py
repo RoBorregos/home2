@@ -18,9 +18,10 @@ def generate_nodes_for_spawn(context: LaunchContext):
     prefix = LaunchConfiguration('prefix', default='')
     hw_ns = LaunchConfiguration('hw_ns', default='xarm')
     limited = LaunchConfiguration('limited', default=False)
-    effort_control = LaunchConfiguration('effort_control', default=True)
-    velocity_control = LaunchConfiguration('velocity_control', default=True)
+    effort_control = LaunchConfiguration('effort_control', default=False)
+    velocity_control = LaunchConfiguration('velocity_control', default=False)
     add_gripper = LaunchConfiguration('add_gripper', default=False)
+    load_zed = LaunchConfiguration('load_zed', default=True)
     add_vacuum_gripper = LaunchConfiguration('add_vacuum_gripper', default=False)
     add_bio_gripper = LaunchConfiguration('add_bio_gripper', default=False)
     dof = LaunchConfiguration('dof', default=6)
@@ -28,12 +29,13 @@ def generate_nodes_for_spawn(context: LaunchContext):
     ros2_control_plugin = LaunchConfiguration('ros2_control_plugin', default='mujoco_ros2_control/MujocoSystem')
     
     add_realsense_d435i = LaunchConfiguration('add_realsense_d435i', default=False)
-    add_d435i_links = LaunchConfiguration('add_d435i_links', default=True)
+    add_d435i_links = LaunchConfiguration('add_d435i_links', default=False)
     model1300 = LaunchConfiguration('model1300', default=False)
     robot_sn = LaunchConfiguration('robot_sn', default='')
     attach_to = LaunchConfiguration('attach_to', default='base_link')
     attach_xyz = LaunchConfiguration('attach_xyz', default='"0 0 0"')
     attach_rpy = LaunchConfiguration('attach_rpy', default='"0 0 0"')
+    mujoco_plugin = LaunchConfiguration('mujoco_plugin', default=True)
 
     add_other_geometry = LaunchConfiguration('add_other_geometry', default=False)
     geometry_type = LaunchConfiguration('geometry_type', default='box')
@@ -73,7 +75,7 @@ def generate_nodes_for_spawn(context: LaunchContext):
         add_gripper=add_gripper.perform(context) in ('True', 'true'),
         add_bio_gripper=add_bio_gripper.perform(context) in ('True', 'true'),
         ros_namespace=ros_namespace,
-        update_rate=1000,
+        update_rate=500,
         robot_type=robot_type.perform(context)
     )
     # robot_description
@@ -88,6 +90,8 @@ def generate_nodes_for_spawn(context: LaunchContext):
                 'dof': dof,
                 'robot_type': robot_type,
                 'add_gripper': add_gripper,
+                'load_zed':load_zed,
+                'mujoco_plugin':mujoco_plugin,
                 'add_vacuum_gripper': add_vacuum_gripper,
                 'add_bio_gripper': add_bio_gripper,
                 'hw_ns': hw_ns.perform(context).strip('/'),
@@ -120,13 +124,14 @@ def generate_nodes_for_spawn(context: LaunchContext):
         ),
     }
     
-    ##Props to be loaded:
     additional_files = []
     additional_files.append(os.path.join(get_package_share_directory("mujoco_ros2_control"), "mjcf", "scene.xml"))
-    additional_files.append(os.path.join(get_package_share_directory("task_table_mujoco"), "urdf", "task_table.urdf.xacro"))
+    
     
     # as this node require a string array
     robot_description_string = robot_description['robot_description'].perform(context)
+    
+    print(robot_description_string)
     # Define the xacro2mjcf node, this translates the xacro urdf into MJFL
     xacro2mjcf = Node(
     package="mujoco_ros2_control",
@@ -137,9 +142,9 @@ def generate_nodes_for_spawn(context: LaunchContext):
             {"output_file": save_xml_file},       # Mujoco output file
             {"mujoco_files_path": save_xml_folder}, # Mujoco project folder
             # Floating base related params:
+            {"base_link": "base_link"},
             {"floating": True},
-            {"base_link": "base_link"}, 
-            {"initial_position": "0 0 1.05"},
+            {"initial_position": "0 0 0.2"},
             {"initial_orientation": "0 0 0"}
         ]
     )
@@ -162,7 +167,7 @@ def generate_nodes_for_spawn(context: LaunchContext):
         parameters=[
             robot_description,
             ros2_control_params,
-            {"simulation_frequency": 1000.0},
+            {"simulation_frequency": 500.0},
             {"realtime_factor": 1.0},
             {"robot_model_path": save_xml_file},
             {"show_gui": True},

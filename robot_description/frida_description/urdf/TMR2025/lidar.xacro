@@ -28,7 +28,7 @@
     <origin xyz="0.15026 0 0.002" rpy="0 0 1.57" />
     <parent link="base_link" />
     <child link="laser" />
-    <axis xyz="0 0 0" />
+    <axis xyz="0 0 1"/>
   </joint>
 
 <link name="imu_base">
@@ -58,7 +58,7 @@
     <origin xyz="0.15026 0 0.002" rpy="3.1416 3.1416 1.57" />
     <parent link="base_link" />
     <child link="imu_base" />
-    <axis xyz="0 0 0" />
+    <axis xyz="0 0 1"/>
   </joint>
 
 </robot>

@@ -9,6 +9,7 @@
         <parent link="${attach_to}"/>
         <child link="gripper"/>
         <origin xyz="${xyz}" rpy="${rpy}"/>
+        <axis xyz="0 0 1"/>
       </joint>
     </xacro:unless>
 
@@ -101,7 +102,7 @@
     <origin xyz="0 -0.095626 -0.005" rpy="0 -0.7854 -1.5708" />
     <parent link="gripper" />
     <child link="zed" />
-    <axis xyz="0 0 0" />
+    <axis xyz="0 0 1"/>
   </joint>
   
 </robot>
