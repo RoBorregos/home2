@@ -262,7 +262,7 @@ amixer -D pulse sset Master 100%
 Truncate each table that has a corresponding JSON file (where the filename matches the table name) in /workspace/src/hri/packages/embeddings/embeddings/dataframes/ and frida_constants/data/. Then, generate new embeddings/SQL dumps and insert them to restore or upgrade the DB.
 
 ```bash
-./run hri --regenerate-db
+./run.sh hri --regenerate-db
 ```
 
 ## Download openwakeword base model
