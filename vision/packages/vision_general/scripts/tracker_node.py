@@ -35,8 +35,7 @@ from vision_general.utils.reid_model import (
 )
 
 from std_srvs.srv import SetBool, Trigger
-from frida_interfaces.srv import TrackBy, CropQuery
-from pose_detection import PoseDetection
+from frida_interfaces.srv import TrackBy
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
     SET_TARGET_TOPIC,
@@ -46,11 +45,9 @@ from frida_constants.vision_constants import (
     RESULTS_TOPIC,
     CAMERA_INFO_TOPIC,
     CENTROID_TOIC,
-    CROP_QUERY_TOPIC,
     IS_TRACKING_TOPIC,
     CUSTOMER,
 )
-from frida_constants.vision_enums import DetectBy
 
 CONF_THRESHOLD = 0.8
 DEPTH_THRESHOLD = 100
@@ -98,10 +95,6 @@ class SingleTracker(Node):
 
         self.centroid_publisher = self.create_publisher(Point, CENTROID_TOIC, 10)
 
-        self.moondream_client = self.create_client(
-            CropQuery, CROP_QUERY_TOPIC, callback_group=self.callback_group
-        )
-
         self.verbose = self.declare_parameter("verbose", True)
         self.setup()
         self.last_reid_extraction = time.time()
@@ -128,7 +121,6 @@ class SingleTracker(Node):
         pbar = tqdm.tqdm(total=1, desc="Loading models")
 
         self.model = YOLO("yolov8n.pt")
-        self.pose_detection = PoseDetection()
 
         # Load the ReID model
         structure = get_structure()
@@ -255,7 +247,6 @@ class SingleTracker(Node):
             "area": 0,
             "bbox": None,
         }
-        response_clean = ""
         for out in results:
             for box in out.boxes:
                 x1, y1, x2, y2 = [round(x) for x in box.xyxy[0].tolist()]
@@ -273,64 +264,10 @@ class SingleTracker(Node):
                 cv2.rectangle(self.output_image, (x1, y1), (x2, y2), (0, 0, 255), 2)
 
                 area = (x2 - x1) * (y2 - y1)
-                if track_by == "largest_person":
-                    if area > largest_person["area"]:
-                        largest_person["id"] = track_id
-                        largest_person["area"] = area
-                        largest_person["bbox"] = (x1, y1, x2, y2)
-
-                else:
-                    cropped_image = self.frame[y1:y2, x1:x2]
-                    pose = None
-
-                    if track_by == DetectBy.GESTURES.value:
-                        self.get_logger().info(f"Detecting gesture {value} ")
-                        pose = self.pose_detection.detectGesture(cropped_image)
-                        response_clean = pose.value
-                        print("POSEEEE", response_clean)
-
-                    elif track_by == DetectBy.POSES.value:
-                        prompt = "Respond 'standing' if the person in the image is standing, 'sitting' if the person in the image is sitting, 'lying down' if the person in the image is lying down or 'unknown' if the person is not doing any of the previous."
-                        status, response_q = self.moondream_crop_query(
-                            prompt, [float(y1), float(x1), float(y2), float(x2)]
-                        )
-
-                        if status:
-                            self.get_logger().info(f"The person is {response_q}.")
-                            response_clean = response_q.replace(" ", "_")
-                            response_clean = response_clean.replace("_", "", 1)
-
-                    elif track_by == DetectBy.COLOR.value:
-                        prompt = f"Reply only with 1 if the person is wearing {value}. Otherwise, reply only with 0."
-                        status, response_q = self.moondream_crop_query(
-                            prompt, [float(y1), float(x1), float(y2), float(x2)]
-                        )
-                        if status:
-                            response_clean = response_q.strip()
-
-                    if value == "wavingCustomer":
-                        raising = self.pose_detection.is_waving_customer(cropped_image)
-                        if raising:
-                            print("IS RAISING HANDDDDDDDDDDDDDDDDDD")
-                            response_clean = value
-
-                    if response_clean == value or response_clean == "1":
-                        if pose is not None and pose.value == value:
-                            self.success(f"Target found by {track_by}: {pose.value}")
-                        elif response_clean == value:
-                            self.success(
-                                f"Target found by {track_by}: {response_clean}"
-                            )
-                        elif response_clean == "1":
-                            self.success(f"Target found by {track_by}: {value}")
-                        largest_person["id"] = track_id
-                        largest_person["area"] = area
-                        largest_person["bbox"] = (x1, y1, x2, y2)
-                        self.customer_image = copy.deepcopy(cropped_image)
-                    else:
-                        self.get_logger().warn(
-                            f"Person detected with {track_by}: {response_clean} but not {value}"
-                        )
+                if area > largest_person["area"]:
+                    largest_person["id"] = track_id
+                    largest_person["area"] = area
+                    largest_person["bbox"] = (x1, y1, x2, y2)
 
         if largest_person["id"] is not None:
             self.person_data["id"] = largest_person["id"]
@@ -356,63 +293,6 @@ class SingleTracker(Node):
         else:
             self.get_logger().warn("No person found")
             return False
-
-    def wait_for_future(self, future, timeout=5):
-        """Wait for a future to complete using proper ROS2 async patterns"""
-        if future is None:
-            return None
-
-        rclpy.spin_until_future_complete(
-            self,
-            future,
-            timeout_sec=timeout
-        )
-
-        if future.done():
-            return future
-        else:
-            self.get_logger().warn(f"Future timed out after {timeout} seconds")
-            return None
-
-    def moondream_crop_query(self, prompt: str, bbox: list[float]) -> tuple[int, str]:
-        """Query the current image crop using moondream vision model.
-
-        Args:
-            prompt: Query prompt for the vision model
-            bbox: Bounding box [y1, x1, y2, x2] in pixel coordinates
-
-        Returns:
-            Tuple of (success: 1 or 0, result: str)
-        """
-        self.get_logger().info(f"Querying image: {prompt}")
-
-        # Normalize bbox coordinates to [0, 1] range
-        height, width = self.image.shape[:2]
-        request = CropQuery.Request()
-        request.query = prompt
-        request.ymin, request.xmin, request.ymax, request.xmax = [
-            bbox[0] / height,
-            bbox[1] / width,
-            bbox[2] / height,
-            bbox[3] / width
-        ]
-
-        # Call service and wait for response
-        future = self.moondream_client.call_async(request)
-        future = self.wait_for_future(future, timeout=15)
-
-        if future is None:
-            self.get_logger().error("Moondream service timed out or failed.")
-            return 0, "0"
-
-        result = future.result()
-        if result is None or not result.success:
-            error_msg = "returned None" if result is None else "query failed"
-            self.get_logger().error(f"Moondream {error_msg}.")
-            return 0, "0"
-
-        self.get_logger().info(f"Moondream result: {result.result}")
-        return 1, result.result
 
     def run(self):
         """Main loop to run the tracker"""
