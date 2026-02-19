@@ -93,6 +93,7 @@ PERSON_POSTURE_TOPIC = "/vision/person_posture"
 QUERY_TOPIC = "/vision/query"
 PERSON_POSTURE_TOPIC = "/vision/person_posture"
 CROP_QUERY_TOPIC = "/vision/crop_query"
+IS_SITTING_TOPIC = "/vision/is_sitting"
 
 # Face recognition
 SAVE_NAME_TOPIC = "/vision/new_name"

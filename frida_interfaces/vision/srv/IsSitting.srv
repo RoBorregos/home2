@@ -1,0 +1,4 @@
+sensor_msgs/Image image
+---
+bool answer
+bool success

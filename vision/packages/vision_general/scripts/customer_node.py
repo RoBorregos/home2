@@ -22,7 +22,7 @@ from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import Point, PointStamped
 import copy
 
-from frida_interfaces.srv import CropQuery, Customer
+from frida_interfaces.srv import CropQuery, Customer, IsSitting
 from pose_detection import PoseDetection
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
@@ -32,6 +32,7 @@ from frida_constants.vision_constants import (
     CAMERA_INFO_TOPIC,
     CENTROID_TOIC,
     CROP_QUERY_TOPIC,
+    IS_SITTING_TOPIC,
     CUSTOMER,
     GET_CUSTOMER_TOPIC,
 )
@@ -75,6 +76,9 @@ class CustomerNode(Node):
         self.moondream_client = self.create_client(
             CropQuery, CROP_QUERY_TOPIC, callback_group=self.callback_group
         )
+        self.moondream_sitting_client = self.create_client(
+            IsSitting, IS_SITTING_TOPIC, callback_group=self.callback_group
+        )
 
         self.verbose = self.declare_parameter("verbose", True)
         self.setup()
@@ -92,7 +96,7 @@ class CustomerNode(Node):
         pbar = tqdm.tqdm(total=1, desc="Loading models")
 
         self.model = YOLO("yolov8n.pt")
-        self.pose_detection = PoseDetection()
+        self.pose_detection = PoseDetection(self.is_sitting_moondream)
 
         self.output_image = []
         self.depth_image = []
@@ -245,6 +249,30 @@ class CustomerNode(Node):
         while not future.done() and (time.time() - start_time) < timeout:
             print("Waiting for future to complete...")
         return future
+
+    def is_sitting_moondream(self, image):
+        if image is None:
+            return False
+
+        if not self.moondream_sitting_client.wait_for_service(timeout_sec=0.1):
+            return False
+
+        request = IsSitting.Request()
+        request.image = self.bridge.cv2_to_imgmsg(image, "bgr8")
+
+        future = self.moondream_sitting_client.call_async(request)
+        future = self.wait_for_future(future, timeout=2)
+        if not future:
+            return False
+
+        result = future.result()
+        if result is None:
+            return False
+
+        if not result.success:
+            return False
+
+        return bool(result.answer)
 
     def run(self):
         """Main loop to run the tracker"""

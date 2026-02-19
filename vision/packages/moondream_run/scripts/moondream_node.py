@@ -18,7 +18,7 @@ from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 
 from frida_interfaces.srv import BeverageLocation
-from frida_interfaces.srv import PersonPosture, Query, CropQuery
+from frida_interfaces.srv import PersonPosture, Query, CropQuery, IsSitting
 
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
@@ -26,6 +26,7 @@ from frida_constants.vision_constants import (
     BEVERAGE_TOPIC,
     QUERY_TOPIC,
     CROP_QUERY_TOPIC,
+    IS_SITTING_TOPIC,
 )
 from enum import Enum
 
@@ -76,6 +77,10 @@ class MoondreamNode(Node):
 
         self.crop_query_service = self.create_service(
             CropQuery, CROP_QUERY_TOPIC, self.crop_query_callback
+        )
+
+        self.is_sitting_service = self.create_service(
+            IsSitting, IS_SITTING_TOPIC, self.is_sitting_callback
         )
 
         self.yolo_model = YOLO(YOLO_LOCATION)
@@ -194,6 +199,46 @@ class MoondreamNode(Node):
             response.success = False
 
         return response
+
+    def is_sitting_callback(self, request, response):
+        """Callback to determine if a person in the provided image is sitting."""
+        self.get_logger().info("Executing service Is Sitting")
+
+        try:
+            image = self.bridge.imgmsg_to_cv2(request.image, "bgr8")
+            success, image_bytes = cv2.imencode(".jpg", image)
+            if not success:
+                response.answer = False
+                response.success = False
+                return response
+
+            encoded = self.stub.EncodeImage(
+                moondream_proto_pb2.ImageRequest(image_data=image_bytes.tobytes())
+            )
+
+            prompt = (
+                "Is the person in this image sitting? "
+                "Answer only with yes or no."
+            )
+            query_response = self.stub.Query(
+                moondream_proto_pb2.QueryRequest(
+                    encoded_image=encoded.encoded_image,
+                    query=prompt,
+                )
+            )
+
+            answer = query_response.answer.strip()
+            normalized = answer.lower()
+
+            response.answer = normalized.startswith("yes")
+            response.success = True
+            return response
+
+        except Exception as e:
+            self.get_logger().error(f"Error checking sitting posture: {e}")
+            response.answer = False
+            response.success = False
+            return response
 
     def beverage_location_callback(self, request, response):
         """Callback to locate x,y bounding box in the image."""
