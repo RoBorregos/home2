@@ -52,9 +52,13 @@ class MotionPlanningServer(Node):
     def __init__(self):
         super().__init__("motion_planning_server")
         # Configurable parameters to tune planning behaviour
-        self.declare_parameter("planning_attempts_cap", 3)
+        self.declare_parameter(
+            "planning_attempts_cap", 2
+        )  # Balanced: 2 attempts for robustness
         self.declare_parameter("fail_fast", True)
-        self.declare_parameter("default_planning_attempts", 3)
+        self.declare_parameter(
+            "default_planning_attempts", 2
+        )  # Balanced: 2 attempts for robustness
         self.callback_group = ReentrantCallbackGroup()
 
         # qos_profile = QoSProfile(depth=10)
