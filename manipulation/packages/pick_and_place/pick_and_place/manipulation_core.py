@@ -66,6 +66,11 @@ class ManipulationCore(Node):
         super().__init__("manipulation_core")
         self.callback_group = ReentrantCallbackGroup()
 
+        # Declare tuning parameters for fast planning
+        self.declare_parameter("fail_fast", True)
+        self.declare_parameter("pick_retries", 1)
+        self.declare_parameter("perception_retries", 2)
+
         self._manipulation_server = ActionServer(
             self,
             ManipulationAction,

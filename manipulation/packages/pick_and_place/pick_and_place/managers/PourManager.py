@@ -50,6 +50,16 @@ class PourManager:
             PointStamped, "/manipulation/debug_bowl_centroid", 10
         )
 
+        # tuning parameters (optional on the node)
+        try:
+            self.pick_retries = int(self.node.get_parameter("pick_retries").value)
+        except Exception:
+            self.pick_retries = 1  # Changed from 3 to 1 for fast planning
+        try:
+            self.fail_fast = bool(self.node.get_parameter("fail_fast").value)
+        except Exception:
+            self.fail_fast = True
+
     def execute(self, object_name: str, container_object_name: str) -> bool:
         self.node.get_logger().info("Executing Pour Task")
 
@@ -177,7 +187,7 @@ class PourManager:
         self.node.get_logger().info(f"2 Gripper Result: {str(gripper_request.data)}")
         pick_result_success = False
         print("Gripper Result:", result)
-        tries = 3
+        tries = 1 if self.fail_fast else max(1, self.pick_retries)
         for i in range(tries):
             for CFG_PATH in CFG_PATHS:
                 cfg_path = CFG_PATH[0]
