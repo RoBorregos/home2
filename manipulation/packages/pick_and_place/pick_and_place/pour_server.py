@@ -376,7 +376,7 @@ class PourMotionServer(Node):
         pose,
         useConstraint: bool = False,
         planning_time: float = 0.5,
-        planning_attempts: int = 5,
+        planning_attempts: int = 2,  # Balanced: 2 attempts for robustness
     ):
         """Move the robot to the given pose."""
         self.get_logger().warn(f"Moving to pose: {pose}")

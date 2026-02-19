@@ -48,6 +48,7 @@ class PickMotionServer(Node):
         # Declare and retrieve the parameter for the end-effector link offset
         self.declare_parameter("ee_link_offset", -0.125)
         self.ee_link_offset = self.get_parameter("ee_link_offset").value
+        self.declare_parameter("fail_fast", True)
         self.get_logger().info(f"End-effector link offset: {self.ee_link_offset} m")
         self.get_logger().info(f"Pick Velocity: {PICK_VELOCITY} m/s")
 

@@ -47,7 +47,9 @@ class PlaceManager:
                 self.node.get_parameter("perception_retries").value
             )
         except Exception:
-            self.perception_retries = 5
+            self.perception_retries = (
+                2  # Balanced: 2 attempts for perception robustness
+            )
         try:
             self.fail_fast = bool(self.node.get_parameter("fail_fast").value)
         except Exception:

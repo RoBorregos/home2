@@ -54,7 +54,7 @@ class PourManager:
         try:
             self.pick_retries = int(self.node.get_parameter("pick_retries").value)
         except Exception:
-            self.pick_retries = 3
+            self.pick_retries = 1  # Changed from 3 to 1 for fast planning
         try:
             self.fail_fast = bool(self.node.get_parameter("fail_fast").value)
         except Exception:
