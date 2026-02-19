@@ -31,7 +31,7 @@ class OpenWakeWordNode(Node):
             "model_path", "/workspace/src/hri/packages/speech/assets/oww"
         )
         self.declare_parameter("inference_framework", "onnx")
-        self.declare_parameter("audio_topic", "/rawAudioChunk")
+        self.declare_parameter("audio_topic", "/processedAudioChunk")
         self.declare_parameter("WAKEWORD_TOPIC", "/speech/oww")
         self.declare_parameter("chunk_size", 1280)
         self.declare_parameter("detection_cooldown", 1.0)
