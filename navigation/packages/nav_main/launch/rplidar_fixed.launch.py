@@ -15,15 +15,21 @@ def generate_launch_description():
     return LaunchDescription([
         declare_use_sim,
         Node(
-            package='nav_main',
-            executable='ignore_laser',
-            parameters = [{'ignore_array': '4, 14, 51, 61, 95, 113, 124, 134, 165, 180, -179, -175, -155, -120, -49, -31'}],
+            package='tf2_ros',
+            executable='static_transform_publisher',
+            arguments=['0','0','0','0','3.1416','0','base_link','laser'],
             condition=UnlessCondition(use_sim)
         ),
         Node(
             package='nav_main',
             executable='ignore_laser',
-            parameters=[{'ignore_array': '-176 ,-160, -129,-119, -85, -67, -56, -46, -15,5'}],
+            parameters = [{'ignore_array': '11, 17, 32, 38, 80, 85, 124, 138, -20, 0, -40, -33, -85 , -80, -136, -122,0,0'}],
+            condition=UnlessCondition(use_sim)
+        ),
+        Node(
+            package='nav_main',
+            executable='ignore_laser',
+            #parameters=[{'ignore_array': '-176 ,-160, -129,-119, -85, -67, -56, -46, -15,5'}],
             condition=IfCondition(use_sim)
         ),
         Node(
