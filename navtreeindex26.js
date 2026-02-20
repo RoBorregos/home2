@@ -1,5 +1,7 @@
 var NAVTREEINDEX26 =
 {
+"namespacereceptionist__commands.html#a83055be02e8dfd93dc6e2bd3214d8ffe":[21,0,110,1],
+"namespacereceptionist__commands.html#ad46952196d7a38bd782ab49477c88655":[21,0,110,4],
 "namespacereceptionist__commands.html#adf7320f4ca5b97e2b7f447a48a59008a":[21,0,110,6],
 "namespacereceptionist__launch.html":[21,0,111],
 "namespacereceptionist__launch.html#a1d8b268d07aad010deb06846832876f6":[21,0,111,0],
@@ -210,6 +212,7 @@ var NAVTREEINDEX26 =
 "namespacetest__hri__manager.html#a6dab12c78ddfca13d1fd313af30f27bf":[21,0,137,16],
 "namespacetest__hri__manager.html#a6f21b71aab324a85f5de81194460a195":[21,0,137,18],
 "namespacetest__hri__manager.html#a7257db83f899b3514ec9da39b9875697":[21,0,137,8],
+"namespacetest__hri__manager.html#a7b7c0ae72e11593bfca6a7c3665c6351":[21,0,137,19],
 "namespacetest__hri__manager.html#a8784d90496e001b92067dffd903450e2":[21,0,137,3],
 "namespacetest__hri__manager.html#a914b4542d179c1bd4ffea5b5fd5917b4":[21,0,137,13],
 "namespacetest__hri__manager.html#acba16bc04fcf4b594f5c4335ff8f9239":[21,0,137,10],
@@ -246,8 +249,5 @@ var NAVTREEINDEX26 =
 "namespacetf__utils.html#ae80e6757a54ce580a867947e596e576f":[21,0,142,0],
 "namespacetracker__node.html":[21,0,143],
 "namespacetracker__node.html#a4f09fb58504d2b95f1a827ae612f045b":[21,0,143,2],
-"namespacetracker__node.html#a92bbfa214a690f290f9c0ef5e891393d":[21,0,143,3],
-"namespacetracker__node.html#ad68321e5e3401c6b2e69591f3f62aa2a":[21,0,143,1],
-"namespacetracker__node__fregoso.html":[21,0,144],
-"namespacetracker__node__fregoso.html#a06e5ae8c2496d1cf9aeec78c602cb3b9":[21,0,144,1]
+"namespacetracker__node.html#a92bbfa214a690f290f9c0ef5e891393d":[21,0,143,3]
 };

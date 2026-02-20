@@ -18,5 +18,6 @@ var test__hri__manager_8py =
     [ "TEST_IS_POSITIVE", "test__hri__manager_8py.html#ad6e339590c518dbf7c365f89e90b8be8", null ],
     [ "TEST_MAP", "test__hri__manager_8py.html#a6dab12c78ddfca13d1fd313af30f27bf", null ],
     [ "TEST_OBJECT_LOCATION", "test__hri__manager_8py.html#afab82146d21339556bbeec1207843778", null ],
-    [ "TEST_STREAMING", "test__hri__manager_8py.html#a6f21b71aab324a85f5de81194460a195", null ]
+    [ "TEST_STREAMING", "test__hri__manager_8py.html#a6f21b71aab324a85f5de81194460a195", null ],
+    [ "TEST_WORD_CONFIDENCES", "test__hri__manager_8py.html#a7b7c0ae72e11593bfca6a7c3665c6351", null ]
 ];

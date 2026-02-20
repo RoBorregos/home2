@@ -14,5 +14,6 @@ var classtest__hri__manager_1_1TestHriManager =
     [ "test_map", "classtest__hri__manager_1_1TestHriManager.html#a54c69995753f4ce05bd076720a89c6b6", null ],
     [ "test_object_location", "classtest__hri__manager_1_1TestHriManager.html#abc972947f62b9ac49382f61b0e245d6e", null ],
     [ "test_streaming", "classtest__hri__manager_1_1TestHriManager.html#ada6686724ccf7d0d09899ff380ccebf6", null ],
+    [ "test_word_confidences", "classtest__hri__manager_1_1TestHriManager.html#a9f50023c7e1734e13e81c2030137adb2", null ],
     [ "hri_manager", "classtest__hri__manager_1_1TestHriManager.html#a24fdd546d6ff1fd85f6802baac27733b", null ]
 ];
