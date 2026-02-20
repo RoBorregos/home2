@@ -416,7 +416,7 @@ class HRITasks(metaclass=SubtaskMeta):
             self.node.get_logger().error(f"Error: {e}")
             self.keyword = ""
 
-    @service_check("_action_client", (Status.SERVICE_CHECK, ""), TIMEOUT)
+    @service_check("_action_client", (Status.SERVICE_CHECK, "", []), TIMEOUT)
     def hear(
         self,
         hotwords="",
@@ -446,21 +446,27 @@ class HRITasks(metaclass=SubtaskMeta):
         rclpy.spin_until_future_complete(self.node, goal_future, timeout_sec=max_audio_length + 1)
         self.cancel_hear_action()
 
+        result = goal_future.result().result
         execution_status = (
-            Status.EXECUTION_SUCCESS
-            if len(goal_future.result().result.transcription) > 0
-            else Status.TARGET_NOT_FOUND
+            Status.EXECUTION_SUCCESS if len(result.transcription) > 0 else Status.TARGET_NOT_FOUND
         )
+
+        word_confidences = list(zip(result.words, result.confidences)) if result.words else []
 
         if execution_status == Status.EXECUTION_SUCCESS:
             Logger.info(
                 self.node,
-                f"hearing result: {goal_future.result().result.transcription}",
+                f"hearing result: {result.transcription}",
             )
+            if word_confidences:
+                Logger.info(
+                    self.node,
+                    "word confidences: " + ", ".join(f"{w}({c:.2f})" for w, c in word_confidences),
+                )
         else:
             Logger.warn(self.node, "hearing result: no text heard")
 
-        return execution_status, goal_future.result().result.transcription
+        return execution_status, result.transcription, word_confidences
 
     def hear_streaming(
         self,
@@ -653,7 +659,7 @@ class HRITasks(metaclass=SubtaskMeta):
             start_time = self.node.get_clock().now()
 
             self.say(question)
-            hear_status, interpreted_text = self.hear(hotwords=hotwords)
+            hear_status, interpreted_text, _ = self.hear(hotwords=hotwords)
 
             if hear_status == Status.EXECUTION_SUCCESS:
                 target_info = interpreted_text
