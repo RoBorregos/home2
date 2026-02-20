@@ -77,6 +77,7 @@ TEST_IS_NEGATIVE = False
 TEST_DATA_EXTRACTOR = False
 TEST_COMMAND_INTERPRETER = False
 TEST_COMMAND_INTERPRETER_BAML = False
+TEST_WORD_CONFIDENCES = False
 
 
 class TestHriManager(Node):
@@ -125,6 +126,9 @@ class TestHriManager(Node):
         if TEST_COMMAND_INTERPRETER_BAML:
             self.test_command_interpreter_baml()
 
+        if TEST_WORD_CONFIDENCES:
+            self.test_word_confidences()
+
         exit(0)
 
     def individual_functions(self):
@@ -133,7 +137,7 @@ class TestHriManager(Node):
         self.get_logger().info("Hearing from the user...")
 
         # Test hear
-        s, user_request = self.hri_manager.hear()
+        s, user_request, _ = self.hri_manager.hear()
         self.get_logger().info(f"Heard: {user_request}")
 
         # Test extract_data
@@ -144,7 +148,7 @@ class TestHriManager(Node):
         self.get_logger().info("Hearing from the user...")
 
         # Test hear
-        s, user_request = self.hri_manager.hear()
+        s, user_request, _ = self.hri_manager.hear()
         self.get_logger().info(f"Heard: {user_request}")
 
         # Test extract_data
@@ -164,11 +168,28 @@ class TestHriManager(Node):
         self.get_logger().info(f"categorized_shelves: {str(categorized_shelves)}")
 
     def test_streaming(self):
-        s, user_request = self.hri_manager.hear()
+        s, user_request, _ = self.hri_manager.hear()
         self.get_logger().info(f"Heard: {user_request}")
 
         s, keyword = self.hri_manager.interpret_keyword(["yes", "no", "maybe"], timeout=5.0)
         self.get_logger().info(f"Interpreted keyword: {keyword}")
+
+    def test_word_confidences(self):
+        self.hri_manager.say("Please say something.", wait=True)
+        s, transcription, word_confidences = self.hri_manager.hear()
+
+        if s != Status.EXECUTION_SUCCESS:
+            self.get_logger().warn("No speech detected.")
+            return
+
+        self.get_logger().info(f"Transcription: {transcription}")
+        self.get_logger().info("Word confidences:")
+        for word, confidence in word_confidences:
+            self.get_logger().info(f"  {word:20s} -> {confidence:.4f}")
+
+        if word_confidences:
+            avg_confidence = sum(c for _, c in word_confidences) / len(word_confidences)
+            self.get_logger().info(f"Average confidence: {avg_confidence:.4f}")
 
     def compound_functions(self):
         s, loc, orientation = self.hri_manager.get_location_orientation("kitchen")
