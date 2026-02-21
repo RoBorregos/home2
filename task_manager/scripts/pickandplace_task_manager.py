@@ -7,10 +7,12 @@ Task Manager for Pick and Place Challenge - RoboCup @Home 2026
 from enum import Enum
 
 # import time
-from datetime import datetime
+from datetime import datetime, time
 import rclpy
 from rclpy.node import Node
 from utils.logger import Logger
+import utils.status as Status
+# from utils.subtask_manager import SubtaskManager, Task
 
 ATTEMPT_LIMIT = 3
 
@@ -122,6 +124,36 @@ class PickAndPlaceTM(Node):
         if self.state_times:
             total_time = sum(self.state_times.values())
             Logger.info(self, f"Total time elapsed: {total_time:.2f} seconds")
+
+    def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
+        """Navigate to a location"""
+        self.subtask_manager.manipulation.move_to_position("nav_pose")
+        self.subtask_manager.nav.resume_nav()
+
+        if say:
+            Logger.info(self, f"Moving to {location}")
+            self.subtask_manager.hri.say(f"Moving to {location}.", wait=False)
+
+        result = Status.EXECUTION_ERROR
+        retry = 0
+
+        while result == Status.EXECUTION_ERROR and retry < ATTEMPT_LIMIT:
+            future = self.subtask_manager.nav.move_to_location(location, sublocation)
+            if "navigation" not in self.subtask_manager.get_mocked_areas():
+                rclpy.spin_until_future_complete(self, future)
+                result = future.result()
+            else:
+                result = Status.EXECUTION_SUCCESS
+            retry += 1
+
+        self.subtask_manager.nav.pause_nav()
+        return result
+
+    def timeout(self, duration: float = 2.0):
+        """Simple timeout function to wait for a specified duration"""
+        start_time = time.time()
+        while time.time() - start_time < duration:
+            rclpy.spin_once(self, timeout_sec=0.1)
 
 
 def main(args=None):
