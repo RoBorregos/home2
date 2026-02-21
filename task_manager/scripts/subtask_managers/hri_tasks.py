@@ -682,7 +682,7 @@ class HRITasks(metaclass=SubtaskMeta):
                                 target_info = closest_match[0]
                                 similarity = similarities[0]
 
-                    if similarity > 0.5 and word_confidences.get(target_info, 0) < 0.5:
+                    if similarity > 0.5 and word_confidences.get(target_info, 0) > 0.5:
                         skip_confirmation = True
 
                     if remap is not None and target_info in remap:
