@@ -6,7 +6,7 @@ cd "$(dirname "${BASH_SOURCE[0]}")" || exit 1
 COMPOSE="../compose/docker-compose-${ENV_TYPE}.yml"
 
 echo "regenerate-db: Using compose file $COMPOSE"
-docker compose -f "$COMPOSE" up -d postgres hri-ros
+docker compose -f "$COMPOSE" up -d hri-ros postgres 
 
 echo "Deleting existing Dumps"
 DUMPS_DIR="../sql_dumps"
@@ -14,14 +14,13 @@ mkdir -p "$DUMPS_DIR"
 rm -f "$DUMPS_DIR"/*.sql || true
 
 echo "Generrating new SQL dumps "
-docker compose -f "$COMPOSE" exec -T hri-ros bash -il -c 'python3 /workspace/src/hri/packages/embeddings/scripts/create_sql_dump.py'
-
+docker compose -f "$COMPOSE" run --rm hri-ros "python3 /workspace/src/hri/packages/embeddings/scripts/create_sql_dump.py"
 echo "Truncating existing tables in the database and loading new dumps"
 
 # Gather the list of tables present in the database 
 TABLES_ARRAY=$(docker compose -f "$COMPOSE" exec -T postgres psql -U rbrgs -d postgres -tAc "SELECT table_name FROM information_schema.tables WHERE table_schema='public' ORDER BY table_name;")
 
-readarray -t TABLES <<< "$TABLES_ARRAY"
+readarray -t TABLES <<< "$TABLES_ARRAY" 
 for t in "${TABLES[@]}"; do
   [ -z "${t:-}" ] && continue
   truncated=0
