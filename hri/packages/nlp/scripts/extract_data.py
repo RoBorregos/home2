@@ -171,7 +171,9 @@ class DataExtractor(Node):
         # Add a fallback to the text if no loc is found
 
         if len(loc) == 0:
-            self.get_logger().info(f"spaCy NER failed for {text} (It returned an empty string). Falling back to Ollama")
+            self.get_logger().info(
+                f"spaCy NER failed for {text} (It returned an empty string). Falling back to Ollama"
+            )
             messages, response_format = get_extract_data_args(text, "location", "")
             response_content = (
                 self.client.beta.chat.completions.parse(
@@ -192,7 +194,7 @@ class DataExtractor(Node):
 
         if len(loc) == 0:
             self.get_logger().error(
-                f"No location found in {text}. Defaulting to returning empty string"
+                f"No location found in {text}. Defaulting to returning same text"
             )
             loc = text
         return loc
