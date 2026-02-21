@@ -166,14 +166,35 @@ class DataExtractor(Node):
         return name
 
     def extract_loc(self, text: str) -> str:
-        loc = extract_by_priority(self.nlp(text).ents, LOC_PRIORITY_LABELS)
+        doc = self.nlp(text)
+        loc = extract_by_priority(doc.ents, LOC_PRIORITY_LABELS)
         # Add a fallback to the text if no loc is found
+
+        if len(loc) == 0:
+            self.get_logger().info(f"spaCy NER failed for {text} (It returned an empty string). Falling back to Ollama")
+            messages, response_format = get_extract_data_args(text, "location", "")
+            response_content = (
+                self.client.beta.chat.completions.parse(
+                    model=MODEL.EXTRACT_INFO_REQUESTED.value,
+                    temperature=self.temperature,
+                    messages=messages,
+                    response_format=response_format,
+                )
+                .choices[0]
+                .message.content
+            )
+            try:
+                result = ExtractedData(**json.loads(response_content))
+                if result.data:
+                    loc = result.data
+            except Exception as e:
+                self.get_logger().error(f"LLM fallback error for extract text: {e}")
+
         if len(loc) == 0:
             self.get_logger().error(
-                f"No location found in {text}. Defaulting to returning the same input"
+                f"No location found in {text}. Defaulting to returning empty string"
             )
             loc = text
-
         return loc
 
 
