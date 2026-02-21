@@ -12,7 +12,7 @@ import rclpy
 from rclpy.node import Node
 from utils.logger import Logger
 import utils.status as Status
-# from utils.subtask_manager import SubtaskManager, Task
+from utils.subtask_manager import SubtaskManager, Task
 
 ATTEMPT_LIMIT = 3
 
@@ -104,6 +104,46 @@ class PickAndPlaceTM(Node):
 
         END = "END"
         DEBUG = "DEBUG"
+
+    def __init__(self):
+        """Initialize the node"""
+        super().__init__("pick_and_place_task_manager")
+        self.subtask_manager = SubtaskManager(self, task=Task.PICK_AND_PLACE, mock_areas=[])
+
+        self.use_side_table = False
+        self.attempt_optional_tasks = False
+
+        self.detected_objects = []
+        self.current_object_index = 0
+        self.grasped_object = None
+        self.first_pick = True
+
+        self.breakfast_items = {
+            "bowl": {"location": Location.BREAKFAST_SURFACE, "picked": False, "placed": False},
+            "spoon": {"location": Location.BREAKFAST_SURFACE, "picked": False, "placed": False},
+            "milk": {"location": Location.CABINET, "picked": False, "placed": False},
+            "cereal": {"location": Location.CABINET, "picked": False, "placed": False},
+        }
+        self.current_breakfast_item = None
+
+        self.dishwasher_open = False
+        self.dishwasher_rack_pulled = False
+
+        self.shelf_categories = {}
+
+        self.task_phase = "cleanup"
+
+        self.current_attempts = 0
+        self.running_task = True
+
+        self.state_start_time = None
+        self.state_times = {}
+        self.total_start_time = datetime.now()
+        self.previous_state = None
+        self.current_state = PickAndPlaceTM.TaskStates.WAIT_FOR_BUTTON
+        self.subtask_manager.manipulation.move_to_position("nav_pose")
+
+        Logger.info(self, "Pick and Place Task Manager has started.")
 
     def track_state_change(self, new_state: str):
         """Track state changes and time spent in each state"""
