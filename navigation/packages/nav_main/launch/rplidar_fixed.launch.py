@@ -15,21 +15,15 @@ def generate_launch_description():
     return LaunchDescription([
         declare_use_sim,
         Node(
-            package='tf2_ros',
-            executable='static_transform_publisher',
-            arguments=['0','0','0','0','3.1416','0','base_link','laser'],
+            package='nav_main',
+            executable='ignore_laser',
+            parameters = [{'ignore_array': '2,20, 30,44, 77,94,121,130'}],  #ATRAS, ATRAS IZQUIERDA, ENFRENTE IZQUIERDA_ATRAS, ENFRENTE IZQUIERDA, 
             condition=UnlessCondition(use_sim)
         ),
         Node(
             package='nav_main',
             executable='ignore_laser',
-            parameters = [{'ignore_array': '11, 17, 32, 38, 80, 85, 124, 138, -20, 0, -40, -33, -85 , -80, -136, -122,0,0'}],
-            condition=UnlessCondition(use_sim)
-        ),
-        Node(
-            package='nav_main',
-            executable='ignore_laser',
-            #parameters=[{'ignore_array': '-176 ,-160, -129,-119, -85, -67, -56, -46, -15,5'}],
+            parameters=[{'ignore_array': '-176 ,-160, -129,-119, -85, -67, -56, -46, -15,5'}],
             condition=IfCondition(use_sim)
         ),
         Node(
@@ -37,12 +31,11 @@ def generate_launch_description():
             executable='sllidar_node',
             name='sllidar_node',
             parameters=[{'channel_type':'serial',
-                         'serial_port': '/dev/ttyUSB0', 
+                         'serial_port': '/dev/ttyUSB1', 
                          'serial_baudrate': 460800, 
                          'frame_id': 'laser',
-                         'inverted': False,
-                         'angle_compensate': True,
-                         'scan_mode': 'Standard'}],
+                         'inverted': True,
+                         'angle_compensate': True}],
             output='screen',
             remappings=[
             ('/scan', '/scan_input')],
