@@ -6,6 +6,8 @@ Task Manager for Pick and Place Challenge - RoboCup @Home 2026
 
 from enum import Enum
 
+# import time
+from datetime import datetime
 import rclpy
 from rclpy.node import Node
 from utils.logger import Logger
@@ -101,17 +103,34 @@ class PickAndPlaceTM(Node):
         END = "END"
         DEBUG = "DEBUG"
 
-    def __init__(self):
-        # Progress ongoing development
-        self.logger = Logger(self.get_logger())
-        self.logger.info("Initializing Pick and Place Task Manager...")
+    def track_state_change(self, new_state: str):
+        """Track state changes and time spent in each state"""
+        current_time = datetime.now()
 
-    def main(args=None):
-        rclpy.init(args=args)
-        tm = PickAndPlaceTM()
-        rclpy.spin(tm)
-        tm.destroy_node()
-        rclpy.shutdown()
+        if self.previous_state and self.state_start_time:
+            time_spent = (current_time - self.state_start_time).total_seconds()
+            if self.previous_state in self.state_times:
+                self.state_times[self.previous_state] += time_spent
+            else:
+                self.state_times[self.previous_state] = time_spent
 
-    if __name__ == "__main__":
-        main()
+            Logger.info(self, f"State '{self.previous_state}' took {time_spent:.2f} seconds")
+
+        self.previous_state = new_state
+        self.state_start_time = current_time
+
+        if self.state_times:
+            total_time = sum(self.state_times.values())
+            Logger.info(self, f"Total time elapsed: {total_time:.2f} seconds")
+
+
+def main(args=None):
+    rclpy.init(args=args)
+    tm = PickAndPlaceTM()
+    rclpy.spin(tm)
+    tm.destroy_node()
+    rclpy.shutdown()
+
+
+if __name__ == "__main__":
+    main()
