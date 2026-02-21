@@ -12,6 +12,5 @@ var dir_4c5699a308e77797c29195d36c3ea3a0 =
     [ "nav_test.py", "nav__test_8py.html", "nav__test_8py" ],
     [ "point_transformer.py", "point__transformer_8py.html", "point__transformer_8py" ],
     [ "run_while_hearing.py", "run__while__hearing_8py.html", "run__while__hearing_8py" ],
-    [ "safety_task_manager.py", "safety__task__manager_8py.html", "safety__task__manager_8py" ],
     [ "temp_follow.py", "temp__follow_8py.html", "temp__follow_8py" ]
 ];

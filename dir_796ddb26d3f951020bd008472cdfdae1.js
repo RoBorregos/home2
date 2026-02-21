@@ -12,5 +12,6 @@ var dir_796ddb26d3f951020bd008472cdfdae1 =
     [ "hand_task_manager.py", "hand__task__manager_8py.html", "hand__task__manager_8py" ],
     [ "receptionist_task_manager.py", "receptionist__task__manager_8py.html", "receptionist__task__manager_8py" ],
     [ "restaurant_task_manager.py", "restaurant__task__manager_8py.html", "restaurant__task__manager_8py" ],
+    [ "safety_task_manager.py", "safety__task__manager_8py.html", "safety__task__manager_8py" ],
     [ "storing_groceries_manager.py", "storing__groceries__manager_8py.html", "storing__groceries__manager_8py" ]
 ];
