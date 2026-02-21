@@ -3,10 +3,10 @@ services:
     container_name: home2-navigation
     build:
       context: ../..
-      dockerfile: ${DOCKERFILE:-docker/navigation/Dockerfile.cpu}
+      dockerfile: ${DOCKERFILE:-docker/navigation/Dockerfile.gpu}
       args:
-        BASE_IMAGE: ${BASE_IMAGE:-roborregos/home2:cpu_base} 
-    image: ${IMAGE_NAME:-roborregos/home2:navigation-cpu}
+        BASE_IMAGE: ${BASE_IMAGE:-roborregos/home2:gpu_base} 
+    image: ${IMAGE_NAME:-roborregos/home2:navigation-gpu}
     volumes:
       - ../../:/workspace/src
       - /dev:/dev
@@ -20,7 +20,13 @@ services:
     network_mode: host
     user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
     privileged: true
-    runtime : ${DOCKER_RUNTIME:-runc}
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     group_add: 
       - video
     environment:
