@@ -10,6 +10,7 @@ from frida_interfaces.action import PlaceMotion
 from frida_motion_planning.utils.service_utils import (
     move_joint_positions as send_joint_goal,
 )
+from frida_constants.frida_constants.manipulation_constants import TOP_SAFETY_MARGIN
 from pick_and_place.utils.perception_utils import get_object_point, get_object_cluster
 from frida_interfaces.msg import PickResult
 from sensor_msgs_py import point_cloud2
@@ -17,7 +18,7 @@ import numpy as np
 import json
 
 
-def get_object_centroid(object_cluster):
+def get_object_cloud_params(object_cluster):
     # 8. Compute Centroid/Height and Set Pour Pose
     cloud_gen = point_cloud2.read_points(
         object_cluster, field_names=("x", "y", "z"), skip_nans=True
@@ -28,7 +29,8 @@ def get_object_centroid(object_cluster):
 
     points_np = np.array(points)
     centroid = np.mean(points_np, axis=0)
-    return centroid
+    max_z = np.max(points_np[:, 2])
+    return centroid, max_z
 
 
 class PlaceManager:
@@ -101,6 +103,7 @@ class PlaceManager:
         self, place_params: PlaceParams, pick_result: PickResult
     ) -> PoseStamped:
         result_pose = PoseStamped()
+        place_on_top = False
 
         if place_params.forced_pose.header.frame_id != "":
             self.node.get_logger().info("Using forced place pose")
@@ -158,7 +161,7 @@ class PlaceManager:
                             )
                             self.node.remove_all_collision_object(attached=False)
                             # get centroid and use that as the close by point instead
-                            object_centroid = get_object_centroid(object_cluster)
+                            object_centroid, max_z = get_object_cloud_params(object_cluster)
                             close_by_point.point.x = float(object_centroid[0])
                             close_by_point.point.y = float(object_centroid[1])
                             close_by_point.point.z = float(object_centroid[2])
@@ -226,7 +229,7 @@ class PlaceManager:
             if place_params.special_request != "":
                 request_dict = json.loads(place_params.special_request)
                 request = request_dict.get("request", "")
-                location = request_dict.get("location", "")
+                special_position = request_dict.get("position", "")
                 close_by_point = None
                 if request == "close_by":
                     self.node.get_logger().info("Using close by place pose")
@@ -264,12 +267,34 @@ class PlaceManager:
                         )
                         return None
 
-                    if location == "top":
-                        # we want to place on top of the object
+                    if special_position == "top":
+                        # We want to place on top of the object
                         result_pose.header.frame_id = close_by_point.header.frame_id
                         result_pose.pose.position.x = close_by_point.point.x
                         result_pose.pose.position.y = close_by_point.point.y
-                        result_pose.pose.position.z = close_by_point.point.z
+                        top_z = close_by_point.point.z
+                        try:
+                            # Query for object_cluster if not defined in this scope
+                            if "object_cluster" not in locals() or object_cluster is None:
+                                object_cluster = get_object_cluster(
+                                    close_by_point,
+                                    self.node.pick_perception_3d_client,
+                                    add_collision_object = False
+                                )
+                            if object_cluster is not None:
+                                cluster_params = get_object_cloud_params(object_cluster)
+                                if cluster_params is not None:
+                                    _, max_z = cluster_params
+                                    top_z = float(max_z)
+                                    self.node.get_logger().info(f"Computed object top z from cluster: {top_z}")
+                        except Exception as e:
+                            self.node.get_logger().warn(f"Could not compute top z from cluster: {e}")
+                        
+                        # Set z to the object top and add safety margin
+                        result_pose.pose.position.z = top_z + TOP_SAFETY_MARGIN
+                        place_on_top = True
+                            
+
                     elif (
                         close_by_point is not None
                         and close_by_point.header.frame_id != ""
@@ -335,10 +360,11 @@ class PlaceManager:
                 f"Object height detected: {pick_result.object_pick_height}"
             )
 
-        # forget height if placing on shelf
-        result_pose.pose.position.z += (
-            pick_result.object_pick_height if not place_params.is_shelf else 0.1
-        )
+        # forget height if placing on shelf. If placing on top, we already set z above, skipp adding object_pick_height
+        if not place_on_top:
+            result_pose.pose.position.z += (
+                pick_result.object_pick_height if not place_params.is_shelf else 0.1
+            )
         result_pose.pose.orientation = pick_result.pick_pose.pose.orientation
 
         return result_pose

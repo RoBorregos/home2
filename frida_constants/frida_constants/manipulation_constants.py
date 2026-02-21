@@ -63,6 +63,7 @@ PLACE_MOTION_ACTION_SERVER = "/manipulation/place_motion_action_server"
 CLOSE_BY_MAX_DISTANCE = 0.3  # Maximum distance for close-by heatmap generation
 
 MANIPULATION_ACTION_SERVER = "/manipulation/manipulation_action_server"
+TOP_SAFETY_MARGIN = 0.15
 
 ATTACH_COLLISION_OBJECT_SERVICE = "/manipulation/attach_collision_object"
 ADD_COLLISION_OBJECT_SERVICE = "/manipulation/add_collision_objects"
