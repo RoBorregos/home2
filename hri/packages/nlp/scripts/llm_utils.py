@@ -387,12 +387,14 @@ class LLMUtils(Node):
 
         scores = result["scores"]
         labels = result["labels"]
-        
+
         # Get the index of the maximum score
         max_index = scores.index(max(scores))
         max_label = labels[max_index]
         idk_index = labels.index("i don't know")
-        if (max_label == "yes" or max_label == "no") and ((scores[max_index] - scores[idk_index]) < 0.01):
+        if (max_label == "yes" or max_label == "no") and (
+            (scores[max_index] - scores[idk_index]) < 0.01
+        ):
             return "i don't know"
         return max_label
 
