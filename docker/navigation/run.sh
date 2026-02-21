@@ -10,7 +10,7 @@ ENV_TYPE="${*: -1}"
 DETACHED=""
 BUILD=""
 BUILD_IMAGE=""
-
+COMPOSE_FILE="docker-compose.yaml"
 # Parse arguments
 for arg in "${ARGS[@]}"; do
     case $arg in
@@ -50,6 +50,18 @@ add_or_update_variable .env "BASE_IMAGE" "roborregos/home2:${ENV_TYPE}_base"
 add_or_update_variable .env "IMAGE_NAME" "roborregos/home2:navigation-${ENV_TYPE}"
 add_or_update_variable .env "DOCKERFILE" "docker/navigation/Dockerfile.${ENV_TYPE}"
 
+case $ENV_TYPE in
+    "cpu")
+        add_or_update_variable .env "DOCKER_RUNTIME" "runc"
+        ;;
+    "gpu")
+        COMPOSE_FILE="docker-compose-gpu.yaml"
+        ;;
+    *)
+        add_or_update_variable .env "DOCKER_RUNTIME" "nvidia"
+        ;;
+esac
+
 # Create dirs with current user to avoid permission problems
 mkdir -p install build log
 
@@ -68,13 +80,13 @@ fi
 
 case $TASK in
     "--receptionist")
-        RUN="ros2 launch nav_main receptionist.launch.py"
+        RUN="echo 'WORKING IN PROGRESS'"
         ;;
     "--mapping")
-        RUN="ros2 launch nav_main mapping.launch.py"
+        RUN="echo 'WORKING IN PROGRESS'"
         ;;
     "--storing-groceries")
-        RUN="ros2 launch nav_main storing_groceries.launch.py"
+        RUN="echo 'WORKING IN PROGRESS'"
         ;;
     *)
         RUN="bash"
@@ -86,10 +98,10 @@ COMMAND="$SETUP && $RUN"
 if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
     ALREADY_RUNNING=$(docker ps -q -f name="navigation")
     if [ -z "$ALREADY_RUNNING" ] || [ -n "$BUILD_IMAGE" ]; then
-        docker compose up -d $BUILD_IMAGE
+        docker compose -f $COMPOSE_FILE up -d $BUILD_IMAGE 
     fi
-    docker compose exec navigation bash -c "$COMMAND"
+    docker compose -f $COMPOSE_FILE exec navigation bash -c "$COMMAND"
 else
     add_or_update_variable .env "COMMAND" "$COMMAND"
-    docker compose up $DETACHED $BUILD_IMAGE
+    docker compose -f $COMPOSE_FILE up $DETACHED $BUILD_IMAGE
 fi
