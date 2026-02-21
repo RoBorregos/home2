@@ -21,5 +21,10 @@
     ["Go to the kitchen", "location", "", "kitchen"],
     ["Lemonade", "LLM_drink", "", "Lemonade"],
     ["Oscar", "name", "", "Oscar"],
-    ["", "LLM_drink", "", ""]
+    ["Go to the bedroom", "location", "", "bedroom"],                                                                                       
+    ["Navigate to the living room", "location", "", "living room"],                                                                         
+    ["Meet me at the entrance", "location", "", "entrance"],                                                                                
+    ["Bring the cup from the dining room", "location", "", "dining room"],                                                                  
+    ["There is someone in the hallway", "location", "", "hallway"],                                                                         
+    ["Take this to the garage", "location", "", "garage"]
 ]
