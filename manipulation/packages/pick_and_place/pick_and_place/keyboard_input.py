@@ -16,14 +16,17 @@ from frida_constants.manipulation_constants import (
     MANIPULATION_ACTION_SERVER,
 )
 import json
-import argparse
 
 
 class KeyboardInput(Node):
-    def __init__(self, min_distance=0.0, max_distance=float("inf")):
+    def __init__(self):
         super().__init__("keyboard_input")
-        self.min_distance = min_distance
-        self.max_distance = max_distance
+
+        self.declare_parameter("min_distance", 0.0)
+        self.declare_parameter("max_distance", float("inf"))
+
+        self.min_distance = self.get_parameter("min_distance").value
+        self.max_distance = self.get_parameter("max_distance").value
 
         callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
 
@@ -194,20 +197,8 @@ class KeyboardInput(Node):
 
 
 def main(args=None):
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "--min_distance", type=float, help="Minimum distance for picking objects"
-    )
-    parser.add_argument(
-        "--max_distance", type=float, help="Maximum distance for picking objects"
-    )
-    script_args = parser.parse_args(args)
-
     rclpy.init(args=args)
-    node = KeyboardInput(
-        script_args.min_distance or 0.0,
-        script_args.max_distance or float("inf"),
-    )
+    node = KeyboardInput()
 
     try:
         while rclpy.ok():
