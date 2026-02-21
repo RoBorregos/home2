@@ -19,7 +19,16 @@ message AudioRequest {
     string hotwords = 2;
 }
 
+// Word-level transcription info with confidence
+message WordInfo {
+  string word = 1;
+  float confidence = 2;
+  float start = 3;
+  float end = 4;
+}
+
 // The message containing the transcribed text
 message TextResponse {
   string text = 1;
+  repeated WordInfo words = 2;
 }

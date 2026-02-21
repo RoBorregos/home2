@@ -23,7 +23,7 @@ class WhisperServicer(speech_pb2_grpc.SpeechStreamServicer):
             first_chunk = next(request_iterator)
 
             client = ServeClientFasterWhisper(
-                initial_prompt=first_chunk.hotwords,
+                hotwords=first_chunk.hotwords,
                 send_last_n_segments=10,
                 clip_audio=False,
                 model=self.model,
@@ -56,7 +56,17 @@ class WhisperServicer(speech_pb2_grpc.SpeechStreamServicer):
                         prev_text = text
                         print("Transcription updated:", str(text))
 
-                        yield speech_pb2.TextResponse(text=text)
+                        word_infos = [
+                            speech_pb2.WordInfo(
+                                word=w["word"],
+                                confidence=w["confidence"],
+                                start=w["start"],
+                                end=w["end"],
+                            )
+                            for w in client.word_confidences
+                        ]
+
+                        yield speech_pb2.TextResponse(text=text, words=word_infos)
 
                 except Exception as e:
                     print(f"Error processing chunk: {str(e)}")
