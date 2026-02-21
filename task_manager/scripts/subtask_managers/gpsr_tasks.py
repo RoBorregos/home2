@@ -426,7 +426,7 @@ class GPSRTask(GenericTask):
 
         possibilities = [v.value for v in Gestures] + [v.value for v in Poses] + ["clothes"]
 
-        status, value = self.subtask_manager.hri.find_closest(
+        status, value, _ = self.subtask_manager.hri.find_closest(
             possibilities, command.target_to_count
         )
         value = value[0]
@@ -444,11 +444,11 @@ class GPSRTask(GenericTask):
         counter = 0
 
         if not is_value_in_enum(value, Gestures) and not is_value_in_enum(value, Poses):
-            s, color = self.subtask_manager.hri.find_closest(
+            s, color, _ = self.subtask_manager.hri.find_closest(
                 self.color_list, command.target_to_count
             )
             cache_color = color[0]
-            s, cloth = self.subtask_manager.hri.find_closest(
+            s, cloth, _ = self.subtask_manager.hri.find_closest(
                 self.clothe_list, command.target_to_count
             )
             cache_cloth = cloth[0]
@@ -491,7 +491,7 @@ class GPSRTask(GenericTask):
 
         possibilities = [v.value for v in Gestures] + [v.value for v in Poses] + ["clothes"]
 
-        status, value = self.subtask_manager.hri.find_closest(
+        status, value, _ = self.subtask_manager.hri.find_closest(
             possibilities, command.attribute_value
         )
         value = value[0]
@@ -503,11 +503,11 @@ class GPSRTask(GenericTask):
         )
 
         if not is_value_in_enum(value, Gestures) and not is_value_in_enum(value, Poses):
-            s, color = self.subtask_manager.hri.find_closest(
+            s, color, _ = self.subtask_manager.hri.find_closest(
                 self.color_list, command.attribute_value
             )
             cache_color = color[0]
-            s, cloth = self.subtask_manager.hri.find_closest(
+            s, cloth, _ = self.subtask_manager.hri.find_closest(
                 self.clothe_list, command.attribute_value
             )
             cache_cloth = cloth[0]
@@ -525,11 +525,11 @@ class GPSRTask(GenericTask):
                 status, count = self.subtask_manager.vision.count_by_pose(value)
             else:
                 if cache_color is None or cache_cloth is None:
-                    s, color = self.subtask_manager.hri.find_closest(
+                    s, color, _ = self.subtask_manager.hri.find_closest(
                         self.color_list, command.attribute_value
                     )
                     cache_color = color[0]
-                    s, cloth = self.subtask_manager.hri.find_closest(
+                    s, cloth, _ = self.subtask_manager.hri.find_closest(
                         self.clothe_list, command.attribute_value
                     )
                     cache_cloth = cloth[0]

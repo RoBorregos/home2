@@ -451,7 +451,7 @@ class HRITasks(metaclass=SubtaskMeta):
             Status.EXECUTION_SUCCESS if len(result.transcription) > 0 else Status.TARGET_NOT_FOUND
         )
 
-        word_confidences = list(zip(result.words, result.confidences)) if result.words else []
+        word_confidences = dict(zip(result.words, result.confidences)) if result.words else {}
 
         if execution_status == Status.EXECUTION_SUCCESS:
             Logger.info(
@@ -461,7 +461,8 @@ class HRITasks(metaclass=SubtaskMeta):
             if word_confidences:
                 Logger.info(
                     self.node,
-                    "word confidences: " + ", ".join(f"{w}({c:.2f})" for w, c in word_confidences),
+                    "word confidences: "
+                    + ", ".join(f"{w}({c:.2f})" for w, c in word_confidences.items()),
                 )
         else:
             Logger.warn(self.node, "hearing result: no text heard")
@@ -659,13 +660,13 @@ class HRITasks(metaclass=SubtaskMeta):
             start_time = self.node.get_clock().now()
 
             self.say(question)
-            hear_status, interpreted_text, _ = self.hear(hotwords=hotwords)
+            hear_status, interpreted_text, word_confidences = self.hear(hotwords=hotwords)
 
             if hear_status == Status.EXECUTION_SUCCESS:
                 target_info = interpreted_text
+                similarity = 1
                 if not skip_extract_data and not options:
                     s, target_info = self.extract_data(query, interpreted_text, context)
-
                 try:
                     if options is not None:
                         foundExact = False
@@ -673,17 +674,21 @@ class HRITasks(metaclass=SubtaskMeta):
                             if option.lower() in target_info.lower():
                                 target_info = option
                                 foundExact = True
+                                skip_confirmation = True
                                 break
                         if not foundExact:
-                            target_info = self.find_closest(options, target_info)[0]
-                except Exception as e:
-                    print("Failed options:", e)
+                            s, closest_match, similarities = self.find_closest(options, target_info)
+                            if s == Status.EXECUTION_SUCCESS:
+                                target_info = closest_match[0]
+                                similarity = similarities[0]
 
-                try:
+                    if similarity > 0.5 and word_confidences.get(target_info, 0) < 0.5:
+                        skip_confirmation = True
+
                     if remap is not None and target_info in remap:
                         target_info = remap[target_info]
                 except Exception as e:
-                    print("Failed remap:", e)
+                    print("Failed matching result:", e)
 
                 if skip_confirmation:
                     return Status.EXECUTION_SUCCESS, target_info
@@ -997,15 +1002,18 @@ class HRITasks(metaclass=SubtaskMeta):
 
     def find_closest(
         self, documents: list, query: str, top_k: int = 1, threshold: float = 0.0
-    ) -> list[str]:
+    ) -> tuple[Status, list[str], list[float]]:
         """
         Method to find the closest item to the query.
         Args:
             documents: the documents to search among
             query: the query to search for
+            top_k: the number of results to return
+            threshold: the minimum similarity score to include
         Returns:
             Status: the status of the execution
             list[str]: the results of the query
+            list[float]: the normalized cosine similarity scores for each result
         """
         emb = self.pg.embedding_model.encode(query)
 
@@ -1016,10 +1024,11 @@ class HRITasks(metaclass=SubtaskMeta):
         docs = [doc for doc in docs if doc[1] >= threshold]
         results = sorted(docs, key=lambda x: x[1], reverse=True)[:top_k]
 
+        similarities = [doc[1] for doc in results]
         results = [doc[0] for doc in results]
-        s = Status.EXECUTION_SUCCESS if len(results) > 1 else Status.TARGET_NOT_FOUND
+        s = Status.EXECUTION_SUCCESS if len(results) > 0 else Status.TARGET_NOT_FOUND
 
-        return s, results
+        return s, results, similarities
 
     def find_closest_raw(self, documents: list, query: str, top_k: int = 4) -> list[str]:
         """
@@ -1162,7 +1171,9 @@ class HRITasks(metaclass=SubtaskMeta):
         """
         try:
             # Get closest embedding word
-            s, closest = self.find_closest(self.objects_data["all_objects"], object_name, top_k=1)
+            s, closest, _ = self.find_closest(
+                self.objects_data["all_objects"], object_name, top_k=1
+            )
             closest = closest[0]
 
             # Return the associated category

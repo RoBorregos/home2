@@ -350,7 +350,7 @@ class ReceptionistTM(Node):
             if s == Status.EXECUTION_SUCCESS:
                 Logger.info(self, "Detected drinks with detector: " + str(detections))
                 labels = self.subtask_manager.vision.get_labels(detections)
-                status, detected_drink = self.subtask_manager.hri.find_closest(
+                status, detected_drink, _ = self.subtask_manager.hri.find_closest(
                     labels, self.get_guest().drink, threshold=0.4
                 )
                 # print("drinkKKK: ", detected_drink)
