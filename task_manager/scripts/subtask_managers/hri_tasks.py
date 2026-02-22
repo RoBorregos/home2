@@ -19,13 +19,12 @@ from embeddings.postgres_adapter import PostgresAdapter
 from frida_constants.hri_constants import (
     CATEGORIZE_SERVICE,
     COMMAND_INTERPRETER_SERVICE,
-    COMMON_INTEREST_SERVICE,
     DISPLAY_IMAGE_TOPIC,
     DISPLAY_MAP_TOPIC,
     EXTRACT_DATA_SERVICE,
     GRAMMAR_SERVICE,
-    IS_NEGATIVE_SERVICE,
     IS_COHERENT_SERVICE,
+    IS_NEGATIVE_SERVICE,
     IS_POSITIVE_SERVICE,
     LLM_WRAPPER_SERVICE,
     RAG_SERVICE,
@@ -37,16 +36,15 @@ from frida_constants.hri_constants import (
 )
 from frida_interfaces.action import SpeechStream
 from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
+from frida_interfaces.srv import CategorizeShelves  # AddEntry,
 from frida_interfaces.srv import (
-    CategorizeShelves,  # AddEntry,
     CommandInterpreter,
-    CommonInterest,
     ExtractInfo,
     Grammar,
     HearMultiThread,
+    IsCoherent,
     IsNegative,
     IsPositive,
-    IsCoherent,
     LLMWrapper,
     Speak,
 )
@@ -54,6 +52,8 @@ from rclpy.action import ActionClient
 from rclpy.node import Node
 from rclpy.task import Future
 from std_msgs.msg import Empty, String
+from subtask_managers.hri_hand import HRIHand
+from subtask_managers.subtask_meta import SubtaskMeta
 from utils.baml_client.sync_client import b
 from utils.baml_client.types import (
     AnswerQuestion,
@@ -75,9 +75,6 @@ from utils.decorators import service_check
 from utils.logger import Logger
 from utils.status import Status
 from utils.task import Task
-
-from subtask_managers.hri_hand import HRIHand
-from subtask_managers.subtask_meta import SubtaskMeta
 
 InterpreterAvailableCommands = Union[
     CommandListLLM,
@@ -176,9 +173,7 @@ class HRITasks(metaclass=SubtaskMeta):
         self.extract_data_service = self.node.create_client(ExtractInfo, EXTRACT_DATA_SERVICE)
         self.task = task
         self.grammar_service = self.node.create_client(Grammar, GRAMMAR_SERVICE)
-        self.common_interest_service = self.node.create_client(
-            CommonInterest, COMMON_INTEREST_SERVICE
-        )
+
         self.is_positive_service = self.node.create_client(IsPositive, IS_POSITIVE_SERVICE)
         self.is_negative_service = self.node.create_client(IsNegative, IS_NEGATIVE_SERVICE)
         self.is_coherent_service = self.node.create_client(IsCoherent, IS_COHERENT_SERVICE)
@@ -229,10 +224,6 @@ class HRITasks(metaclass=SubtaskMeta):
             },
             "extract_data_service": {
                 "client": self.extract_data_service,
-                "type": "service",
-            },
-            "common_interest_service": {
-                "client": self.common_interest_service,
                 "type": "service",
             },
         }
@@ -828,56 +819,6 @@ class HRITasks(metaclass=SubtaskMeta):
         )
 
         return Status.EXECUTION_SUCCESS, command_list.commands
-
-    @service_check("common_interest_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
-    def common_interest(
-        self,
-        person1,
-        interest1,
-        person2,
-        interest2,
-        remove_thinking=True,
-        is_async=False,
-    ):
-        try:
-            future = Future()
-            Logger.info(
-                self.node,
-                f"Finding common interest between {person1}({interest1}) and {person2}({interest2})",
-            )
-            request = CommonInterest.Request(
-                person1=person1,
-                interests1=interest1,
-                person2=person2,
-                interests2=interest2,
-            )
-            common_interest_future = self.common_interest_service.call_async(request)
-
-            def callback(f):
-                result = f.result().common_interest
-                if remove_thinking:
-                    result = re.sub(r"<think>.*?</think>", "", result, flags=re.DOTALL)
-
-                Logger.info(
-                    self.node,
-                    f"Common interest computed between {person1} and {person2}: {result}",
-                )
-
-                future.set_result(
-                    (
-                        Status.TARGET_NOT_FOUND if "don't" in result else Status.EXECUTION_SUCCESS,
-                        result,
-                    )
-                )
-
-            common_interest_future.add_done_callback(callback)
-            if not is_async:
-                rclpy.spin_until_future_complete(self.node, future, timeout_sec=15)
-                return future.result()
-            return future
-        except Exception as e:
-            Logger.error(self.node, f"Error in common interest service: {e}")
-            return Status.EXECUTION_ERROR, ""
 
     @service_check("is_positive_service", (Status.SERVICE_CHECK, False), TIMEOUT)
     def is_positive(self, text, async_call=False):

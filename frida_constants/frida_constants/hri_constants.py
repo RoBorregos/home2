@@ -15,7 +15,6 @@ IS_COHERENT_SERVICE = "/hri/nlp/is_coherent"
 CATEGORIZE_SERVICE = "/hri/nlp/categorize"
 CONVESATION_SERVICE = "/hri/nlp/conversation"
 GRAMMAR_SERVICE = "/hri/nlp/grammar"
-COMMON_INTEREST_SERVICE = "/hri/nlp/common_interest"
 RAG_SERVICE = "/hri/rag/answer_question"
 
 DISPLAY_IMAGE_TOPIC = "/hri/display/change_video"
@@ -48,7 +47,6 @@ GPSR_COMMANDS = {
 class MODEL(Enum):
     GRAMMAR = "qwen3"
     LLM_WRAPPER = "qwen3"
-    COMMON_INTEREST = "qwen3"
     CATEGORIZE_SHELVES = "qwen3"
 
     IS_POSITIVE = "qwen3"
@@ -58,7 +56,6 @@ class MODEL(Enum):
     STRUCTURED_RESPONSE = "qwen3"
     EXTRACT_INFO_REQUESTED = "qwen3"
     GET_COMMANDS = "qwen3"
-    CommonInterest = "qwen3"
 
 
 class KNOWLEDGE_TYPE(Enum):

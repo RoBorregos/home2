@@ -10,6 +10,7 @@ from datetime import datetime
 import rclpy
 from frida_constants.vision_constants import FACE_RECOGNITION_IMAGE, IMAGE_TOPIC_RECEPTIONIST
 from rclpy.node import Node
+from utils.config.hri.mocked import mock_common_interest
 from utils.logger import Logger
 from utils.status import Status
 from utils.subtask_manager import SubtaskManager, Task
@@ -249,20 +250,18 @@ class ReceptionistTM(Node):
             guest1 = self.guests[1]
             host = self.guests[0]
 
-            common_message_guest1_future = self.subtask_manager.hri.common_interest(
+            common_message_guest1_future = mock_common_interest(
                 self.get_guest().name,
                 self.get_guest().interest,
                 guest1.name,
                 guest1.interest,
-                is_async=True,
             )
 
-            common_message_host_future = self.subtask_manager.hri.common_interest(
+            common_message_host_future = mock_common_interest(
                 self.get_guest().name,
                 self.get_guest().interest,
                 host.name,
                 host.interest,
-                is_async=True,
             )
 
             self.subtask_manager.hri.say(
@@ -556,5 +555,4 @@ def main(args=None):
 
 
 if __name__ == "__main__":
-    main()
     main()
