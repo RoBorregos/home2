@@ -10,7 +10,6 @@ from datetime import datetime
 import rclpy
 from frida_constants.vision_constants import FACE_RECOGNITION_IMAGE, IMAGE_TOPIC_RECEPTIONIST
 from rclpy.node import Node
-from utils.config.hri.mocked import mock_common_interest
 from utils.logger import Logger
 from utils.status import Status
 from utils.subtask_manager import SubtaskManager, Task
@@ -31,6 +30,12 @@ class Guest:
     def __str__(self):
         """Return the string representation of the class"""
         return f"Name: {self.name}, Drink: {self.drink}, Interest: {self.interest}"
+
+
+def mock_common_interest(person1, interest1, person2, interest2, remove_thinking=True):
+    """Pick a random word from keywords"""
+
+    return Status.MOCKED, f"{person1} and {person2} both like {interest1}"
 
 
 class ReceptionistTM(Node):
