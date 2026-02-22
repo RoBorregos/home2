@@ -138,7 +138,7 @@ class GPSRSingleTask(GenericTask):
                 break
 
         labels = self.subtask_manager.vision.get_labels(detections)
-        s, object_to_pick = self.subtask_manager.hri.find_closest(labels, command.object_to_pick)
+        s, object_to_pick, _ = self.subtask_manager.hri.find_closest(labels, command.object_to_pick)
         if isinstance(object_to_pick, list):
             object_to_pick = object_to_pick[0]
         current_try = 0

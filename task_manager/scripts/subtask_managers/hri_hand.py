@@ -29,7 +29,7 @@ class HRIHand:
 
         if status == Status.EXECUTION_SUCCESS:
             # Use find_closest to determine if it's furniture or object
-            closest_status, closest_match = self.hri_manager.find_closest(
+            closest_status, closest_match, _ = self.hri_manager.find_closest(
                 ["furniture", "object"], response
             )
             return closest_status, closest_match[0] if closest_match else "object"
@@ -169,7 +169,7 @@ class HRIHand:
         if status == Status.EXECUTION_SUCCESS:
             # Find the closest matching orientation
             orientation_options = ["left", "right", "front", "back", "top", "nearby"]
-            closest_status, closest_match = self.hri_manager.find_closest(
+            closest_status, closest_match, _ = self.hri_manager.find_closest(
                 orientation_options, response
             )
 
