@@ -13,6 +13,8 @@ var classpick__and__place_1_1keyboard__input_1_1KeyboardInput =
     [ "_action_client", "classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a7f84aec58c1875772973d0cc475e60b5", null ],
     [ "clicked_point", "classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a628e15df859d1b4449eb694b7f657f2e", null ],
     [ "clicked_point_subscription", "classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#aef2e351e8adfdaeef220ee1714bb925c", null ],
+    [ "max_distance", "classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#aec58b84038489fbeb837dc5561500862", null ],
+    [ "min_distance", "classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a725946b5a12e05e5a49465e2c3e79533", null ],
     [ "objects", "classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a45199d8efd5b1ad858a71d606c98a427", null ],
     [ "objects_subscription", "classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a802de74404dd23f304dd8611a540932f", null ]
 ];

@@ -30,6 +30,7 @@ var manipulation__constants_8py =
     [ "MOVE_TO_POSE_ACTION_SERVER", "manipulation__constants_8py.html#a32210c7d93399e9823a0af37fffcf4c0", null ],
     [ "MOVEIT_MODE", "manipulation__constants_8py.html#a21af79d5b4fabb9ddd588da869e67c4b", null ],
     [ "PICK_ACCELERATION", "manipulation__constants_8py.html#a9b1b384133b9135e786071e6e8b1b441", null ],
+    [ "PICK_MAX_DISTANCE", "manipulation__constants_8py.html#a96beb25701dbaff9ccbb86d0b54bef01", null ],
     [ "PICK_MIN_HEIGHT", "manipulation__constants_8py.html#ab65c663bc0e5f75a060598e9e0c4a01a", null ],
     [ "PICK_MOTION_ACTION_SERVER", "manipulation__constants_8py.html#a65f44cfc928074d0f412e7f80a134307", null ],
     [ "PICK_MOTION_ACTION_SERVER_NODE", "manipulation__constants_8py.html#a854557db27a8ca25b4ee83b5abde6945", null ],

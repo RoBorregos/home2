@@ -222,7 +222,8 @@ var namespaces_dup =
     ] ],
     [ "perception_utils", "namespaceperception__utils.html", [
       [ "get_object_cluster", "namespaceperception__utils.html#a31955e78e1302a61392ef9498f4a4511", null ],
-      [ "get_object_point", "namespaceperception__utils.html#adf7d95078b4cecc224d75c0f20109553", null ]
+      [ "get_object_point", "namespaceperception__utils.html#adf7d95078b4cecc224d75c0f20109553", null ],
+      [ "point_in_range", "namespaceperception__utils.html#a906076edfe03facab943fe84636d2f69", null ]
     ] ],
     [ "person_in_map", "namespaceperson__in__map.html", "namespaceperson__in__map" ],
     [ "pick_and_place", "namespacepick__and__place.html", "namespacepick__and__place" ],

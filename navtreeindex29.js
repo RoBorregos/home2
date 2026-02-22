@@ -1,5 +1,13 @@
 var NAVTREEINDEX29 =
 {
+"vision__tasks_8py.html#af8b434b2944d2e99338e040a7bb1d7c5":[23,0,6,1,2,10,2],
+"wait__for__controller__input__node_8py.html":[23,0,6,1,4,0],
+"wait__for__controller__input__node_8py.html#abe191a8897bb324ceaa8765539c4a73e":[23,0,6,1,4,0,2],
+"wait__for__controller__input__node_8py.html#acbf56aac299c905ea9db596606231f61":[23,0,6,1,4,0,1],
+"xarm6_8py.html":[23,0,3,0,2,1,0,0],
+"xarm6_8py.html#a26baf8750ec84dc6d4deea500c98907a":[23,0,3,0,2,1,0,0,0],
+"xarm6_8py.html#a5b0cec9095cd260e03b3ea69e5262082":[23,0,3,0,2,1,0,0,7],
+"xarm6_8py.html#a658ce8043db1fe58f180500b27de9ede":[23,0,3,0,2,1,0,0,1],
 "xarm6_8py.html#a870c5989a729d42092392e1737069109":[23,0,3,0,2,1,0,0,12],
 "xarm6_8py.html#a893ae1eec16bcdcb49fb55beba0b100c":[23,0,3,0,2,1,0,0,6],
 "xarm6_8py.html#a9649ce4d40a9809abf26012833265db2":[23,0,3,0,2,1,0,0,5],

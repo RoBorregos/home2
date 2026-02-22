@@ -37,6 +37,7 @@ var namespacefrida__constants =
       [ "MOVE_TO_POSE_ACTION_SERVER", "namespacefrida__constants_1_1manipulation__constants.html#a32210c7d93399e9823a0af37fffcf4c0", null ],
       [ "MOVEIT_MODE", "namespacefrida__constants_1_1manipulation__constants.html#a21af79d5b4fabb9ddd588da869e67c4b", null ],
       [ "PICK_ACCELERATION", "namespacefrida__constants_1_1manipulation__constants.html#a9b1b384133b9135e786071e6e8b1b441", null ],
+      [ "PICK_MAX_DISTANCE", "namespacefrida__constants_1_1manipulation__constants.html#a96beb25701dbaff9ccbb86d0b54bef01", null ],
       [ "PICK_MIN_HEIGHT", "namespacefrida__constants_1_1manipulation__constants.html#ab65c663bc0e5f75a060598e9e0c4a01a", null ],
       [ "PICK_MOTION_ACTION_SERVER", "namespacefrida__constants_1_1manipulation__constants.html#a65f44cfc928074d0f412e7f80a134307", null ],
       [ "PICK_MOTION_ACTION_SERVER_NODE", "namespacefrida__constants_1_1manipulation__constants.html#a854557db27a8ca25b4ee83b5abde6945", null ],
