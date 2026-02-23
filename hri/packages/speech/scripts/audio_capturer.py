@@ -25,8 +25,8 @@ def reduce_noise(
     noise_clip: Optional[np.ndarray] = None,
     n_fft: int = 2048,
     hop_length: int = 512,
-    n_std_thresh: float = 1.5,
-    prop_decrease: float = 1.0,
+    n_std_thresh: float = 3.0,
+    prop_decrease: float = 0.5,
 ) -> np.ndarray:
     """Spectral gating noise reduction. Estimates noise from noise_clip or first 0.5s.
     Returns processed signal in same shape as input.
