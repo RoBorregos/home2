@@ -30,6 +30,11 @@ install(PROGRAMS
   DESTINATION lib/${PROJECT_NAME}
 )
 
+# Install YOLO26 model
+install(FILES Utils/yolo26n.pt
+  DESTINATION lib/${PROJECT_NAME}/Utils
+)
+
 ######################### Testing  #########################
 ##For testing
 if(BUILD_TESTING)

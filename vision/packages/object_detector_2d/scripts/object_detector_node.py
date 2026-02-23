@@ -18,6 +18,7 @@ from typing import List
 import cv2 as cv
 from detectors.YoloV5ObjectDetector import YoloV5ObjectDetector
 from detectors.YoloV8ObjectDetector import YoloV8ObjectDetector
+from detectors.YoloV26ObjectDetector import YoloV26ObjectDetector
 from detectors.ObjectDetector import Detection, ObjectDectectorParams
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
@@ -94,7 +95,11 @@ class object_detector_node(rclpy.node.Node):
         self.set_parameters()
         self.active_flag = not self.node_params.USE_ACTIVE_FLAG
 
-        if self.node_params.USE_YOLO8:
+        if self.node_params.USE_YOLO26:
+            self.object_detector_2d = YoloV26ObjectDetector(
+                self.node_params.YOLO_MODEL_PATH, self.object_detector_parameters
+            )
+        elif self.node_params.USE_YOLO8:
             self.object_detector_2d = YoloV8ObjectDetector(
                 self.node_params.YOLO_MODEL_PATH, self.object_detector_parameters
             )
