@@ -229,7 +229,7 @@ class MoondreamNode(Node):
 
             answer = query_response.answer.strip()
             normalized = answer.lower()
-
+            print("moondream answer" + answer)
             response.answer = normalized.startswith("yes")
             response.success = True
             return response
