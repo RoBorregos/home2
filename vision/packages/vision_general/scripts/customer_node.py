@@ -247,7 +247,9 @@ class CustomerNode(Node):
         if future is None:
             return False
         while not future.done() and (time.time() - start_time) < timeout:
-            print("Waiting for future to complete...")
+            #print("Waiting for future to complete...")
+            print(".", end="", flush=True)
+            time.sleep(0.5)
         return future
 
     def is_sitting_moondream(self, image):
@@ -255,6 +257,7 @@ class CustomerNode(Node):
             return False
 
         if not self.moondream_sitting_client.wait_for_service(timeout_sec=0.1):
+            print("Moondream sitting service not available")
             return False
 
         request = IsSitting.Request()

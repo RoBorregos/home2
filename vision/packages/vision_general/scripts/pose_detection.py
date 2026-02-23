@@ -285,16 +285,21 @@ class PoseDetection:
                 for side in sides
             )
             if sitting_sides >= min_sides_sitting:
+                print("is sitting yolo: True")
                 return True
 
+        print("is sitting yolo: False")
         return False
     
     def is_sitting_moondream(self, image):
         if self.moondream_sitting_checker is None:
+            print("Moondream sitting checker not provided, skipping Moondream sitting detection.")
             return False
 
         try:
-            return bool(self.moondream_sitting_checker(image))
+            sitting = self.moondream_sitting_checker(image)
+            print("is sitting moondream: " + str(sitting))
+            return bool(sitting)
         except Exception:
             return False
 
