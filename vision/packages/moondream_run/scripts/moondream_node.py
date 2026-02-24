@@ -217,8 +217,7 @@ class MoondreamNode(Node):
             )
 
             prompt = (
-                "Is the person in this image sitting? "
-                "Answer only with yes or no."
+                "Is the person in this image sitting? " "Answer only with yes or no."
             )
             query_response = self.stub.Query(
                 moondream_proto_pb2.QueryRequest(
@@ -228,16 +227,18 @@ class MoondreamNode(Node):
             )
 
             answer = query_response.answer.strip()
-            normalized = answer.lower()
-            if answer == "yes": response.answer = True
-            elif answer == "no": response.answer = False
+            answer = answer.lower()
+            if answer == "yes":
+                response.answer = True
+            elif answer == "no":
+                response.answer = False
             else:
                 self.get_logger().warn(
                     f"Unexpected answer from Moondream: '{answer}'. Expected 'yes' or 'no'."
                 )
                 response.answer = False
-                
-            print("moondream answer" + answer + "returnin")
+
+            self.get_logger().info("Moondream answer: %s", answer)
             response.success = True
             return response
 

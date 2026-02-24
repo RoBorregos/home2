@@ -183,9 +183,14 @@ class CustomerNode(Node):
                 cropped_image = self.frame[y1:y2, x1:x2]
                 self.customer_image = copy.deepcopy(cropped_image)
                 raising = self.pose_detection.is_waving_customer(cropped_image)
+                sitting = self.pose_detection.is_sitting_yolo(cropped_image)
 
-                if raising:
-                    print("IS RAISING HANDDDDDDDDDDDDDDDDDD")
+                if not sitting:
+                    self.get_logger().info("Checking sitting with moondream")
+                    sitting = self.is_sitting_moondream(cropped_image)
+
+                if raising and sitting:
+                    self.get_logger().info("Customer raising hand and sitting detected")
                     cv2.rectangle(
                         self.output_image,
                         (x1, y1),
@@ -237,52 +242,36 @@ class CustomerNode(Node):
                         res.found = True
                         self.success("Customer found")
                         return res
-        self.get_logger().warn("No customer raising hand")
+        self.get_logger().warn("No customer raising hand and sitting detected")
         return res
-
-    def wait_for_future(self, future, timeout=5):
-        start_time = time.time()
-        while future is None and (time.time() - start_time) < timeout:
-            pass
-        if future is None:
-            return False
-        while not future.done() and (time.time() - start_time) < timeout:
-            #print("Waiting for future to complete...")
-            print(".", end="", flush=True)
-            time.sleep(0.5)
-        return future
 
     def is_sitting_moondream(self, image):
         if image is None:
             return False
 
         if not self.moondream_sitting_client.wait_for_service(timeout_sec=0.1):
-            print("Moondream sitting service not available")
+            self.get_logger().warn("Moondream sitting service not available")
             return False
 
         request = IsSitting.Request()
         request.image = self.bridge.cv2_to_imgmsg(image, "bgr8")
 
         future = self.moondream_sitting_client.call_async(request)
-
-        rclpy.spin_until_future_complete(self, future, timeout_sec=10)
+        rclpy.spin_until_future_complete(self, future, timeout_sec=7)
 
         if not future.done():
-            print("Service call timed out")
+            self.get_logger().warn("Service call timed out")
             return False
 
         if future.exception() is not None:
-            print("Service call failed:", future.exception())
+            self.get_logger().error("Service call failed: %s", future.exception())
             return False
 
         result = future.result()
-        if result is None:
+        if result is None or not result.success:
             return False
 
-        if not result.success:
-            return False
-
-        return bool(result.answer)
+        return result.answer
 
     def run(self):
         """Main loop to run the tracker"""

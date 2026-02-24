@@ -42,7 +42,6 @@ def serve(**kwargs):
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10), options=options)
     print("Loading MoonDream model...")
     md_model = MoonDreamModel(**kwargs)
-    print("Model loaded.")
 
     moondream_proto_pb2_grpc.add_MoonDreamServiceServicer_to_server(
         MoonDreamServicer(md_model), server
