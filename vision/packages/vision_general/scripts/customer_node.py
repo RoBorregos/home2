@@ -264,8 +264,15 @@ class CustomerNode(Node):
         request.image = self.bridge.cv2_to_imgmsg(image, "bgr8")
 
         future = self.moondream_sitting_client.call_async(request)
-        future = self.wait_for_future(future, timeout=2)
-        if not future:
+
+        rclpy.spin_until_future_complete(self, future, timeout_sec=10)
+
+        if not future.done():
+            print("Service call timed out")
+            return False
+
+        if future.exception() is not None:
+            print("Service call failed:", future.exception())
             return False
 
         result = future.result()

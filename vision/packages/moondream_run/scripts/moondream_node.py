@@ -229,8 +229,15 @@ class MoondreamNode(Node):
 
             answer = query_response.answer.strip()
             normalized = answer.lower()
-            print("moondream answer" + answer)
-            response.answer = normalized.startswith("yes")
+            if answer == "yes": response.answer = True
+            elif answer == "no": response.answer = False
+            else:
+                self.get_logger().warn(
+                    f"Unexpected answer from Moondream: '{answer}'. Expected 'yes' or 'no'."
+                )
+                response.answer = False
+                
+            print("moondream answer" + answer + "returnin")
             response.success = True
             return response
 

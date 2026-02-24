@@ -15,7 +15,7 @@ class PoseDetection:
         self.mp_pose = mp.solutions.pose
         self.pose = self.mp_pose.Pose()
         self.mp_drawing = mp.solutions.drawing_utils
-        self.yolo_pose = YOLO("yolo26m-pose.pt")
+        self.yolo_pose = YOLO("yolo11m-pose.pt")
         self.moondream_sitting_checker = moondream_sitting_checker
 
     def detect(self, frame):
