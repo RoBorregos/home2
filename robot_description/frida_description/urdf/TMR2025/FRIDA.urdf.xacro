@@ -52,6 +52,20 @@
 
   <xacro:include filename="robot.xacro"/>
 
+      <!-- Mujoco Config -->
+    <xacro:if value="$(arg mujoco_plugin)">
+      <mujoco>
+        <compiler angle="radian" balanceinertia="true" />
+      </mujoco>
+      <!-- Important to add additional files in the spawn -->
+      <link name="world" />
+      <joint name="world_to_base" type="floating">
+        <parent link="world" />
+        <child link="base_link" />
+        <origin rpy="0 0 0" xyz="0 0 0.5" />
+      </joint>
+    </xacro:if>
+    
   <xacro:include filename="$(find frida_description)/urdf/xarm/xarm_device_macro.xacro" />
     <xacro:xarm_device prefix="$(arg prefix)" hw_ns="$(arg hw_ns)" limited="$(arg limited)" 
     effort_control="$(arg effort_control)" velocity_control="$(arg velocity_control)"
@@ -59,7 +73,7 @@
     add_bio_gripper="$(arg add_bio_gripper)" dof="$(arg dof)" 
     ros2_control_plugin="$(arg ros2_control_plugin)" robot_type="$(arg robot_type)" 
     mujoco_plugin="$(arg mujoco_plugin)"
-    load_gazebo_plugin="true" ros2_control_params="$(arg ros2_control_params)"
+    load_gazebo_plugin="false" ros2_control_params="$(arg ros2_control_params)"
     add_realsense_d435i="$(arg add_realsense_d435i)" 
     add_d435i_links="$(arg add_d435i_links)" 
     add_other_geometry="$(arg add_other_geometry)" 
@@ -74,12 +88,7 @@
     model1300="$(arg model1300)" attach_to="$(arg attach_to)" attach_xyz="$(arg attach_xyz)" attach_rpy="$(arg attach_rpy)"
     robot_sn="$(arg robot_sn)" use_gazebo_camera="$(arg use_gazebo_camera)" mesh_suffix="$(arg mesh_suffix)" kinematics_suffix="$(arg kinematics_suffix)" />
 
-        <!-- Mujoco Config -->
-    <xacro:if value="$(arg mujoco_plugin)">
-      <mujoco>
-        <compiler angle="radian" />
-      </mujoco>
-    </xacro:if>
+    
 <joint name="gripper_grasp_joint" type="fixed">
       <parent link="link_eef"/>
       <child link="gripper_grasp_frame"/>

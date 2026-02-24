@@ -41,7 +41,7 @@
     robot_sn:='' 
     mesh_suffix:='stl' 
     kinematics_suffix:=''
-    mujoco_plugin:=true
+    mujoco_plugin:=false
     "
     > 
 
@@ -176,7 +176,8 @@
           model_num="${model_num}"
           inertial_params_filename="${inertial_params_filename}"
           kinematics_params_filename="${kinematics_params_filename}"
-          hard_interface="${hard_interface}" />
+          hard_interface="${hard_interface}" 
+          mujoco_plugin = "${mujoco_plugin}" />
       </xacro:unless>
     </xacro:if>
     <xacro:unless value="${dof == 5 or dof == 6}">

@@ -32,7 +32,6 @@ def generate_nodes_for_spawn(context: LaunchContext):
     add_d435i_links = LaunchConfiguration('add_d435i_links', default=False)
     model1300 = LaunchConfiguration('model1300', default=False)
     robot_sn = LaunchConfiguration('robot_sn', default='')
-    attach_to = LaunchConfiguration('attach_to', default='base_link')
     attach_xyz = LaunchConfiguration('attach_xyz', default='"0 0 0"')
     attach_rpy = LaunchConfiguration('attach_rpy', default='"0 0 0"')
     mujoco_plugin = LaunchConfiguration('mujoco_plugin', default=True)
@@ -51,7 +50,7 @@ def generate_nodes_for_spawn(context: LaunchContext):
     geometry_mesh_tcp_rpy = LaunchConfiguration('geometry_mesh_tcp_rpy', default='"0 0 0"')
     kinematics_suffix = LaunchConfiguration('kinematics_suffix', default='')
     
-    load_controller = LaunchConfiguration('load_controller', default=False)
+    load_controller = LaunchConfiguration('load_controller', default=True)
     show_rviz = LaunchConfiguration('show_rviz', default=False)
     no_gui_ctrl = LaunchConfiguration('no_gui_ctrl', default=False)
     
@@ -104,7 +103,6 @@ def generate_nodes_for_spawn(context: LaunchContext):
                 'add_d435i_links': add_d435i_links,
                 'model1300': model1300,
                 'robot_sn': robot_sn,
-                'attach_to': attach_to,
                 'attach_xyz': attach_xyz,
                 'attach_rpy': attach_rpy,
                 'add_other_geometry': add_other_geometry,
@@ -126,7 +124,7 @@ def generate_nodes_for_spawn(context: LaunchContext):
     
     additional_files = []
     additional_files.append(os.path.join(get_package_share_directory("mujoco_ros2_control"), "mjcf", "scene.xml"))
-    
+    additional_files.append(os.path.join(get_package_share_directory("task_table_mujoco"), "urdf", "task_table.urdf.xacro"))
     
     # as this node require a string array
     robot_description_string = robot_description['robot_description'].perform(context)
@@ -142,10 +140,7 @@ def generate_nodes_for_spawn(context: LaunchContext):
             {"output_file": save_xml_file},       # Mujoco output file
             {"mujoco_files_path": save_xml_folder}, # Mujoco project folder
             # Floating base related params:
-            {"base_link": "base_link"},
-            {"floating": True},
-            {"initial_position": "0 0 0.2"},
-            {"initial_orientation": "0 0 0"}
+        
         ]
     )
     
@@ -188,15 +183,30 @@ def generate_nodes_for_spawn(context: LaunchContext):
         )
     )
     
-    load_joint_state_broadcaster = Node(
-    package="controller_manager",
-    executable="spawner",
-    arguments=[
-        "joint_state_broadcaster",
-        "--controller-manager",
-        ["/", "controller_manager"],
-        ],
-    )
+    # Load controllers
+    controllers = [
+        'joint_state_broadcaster',
+        '{}{}_traj_controller'.format(prefix.perform(context), xarm_type),
+    ]
+    if robot_type.perform(context) != 'lite' and add_gripper.perform(context) in ('True', 'true'):
+        controllers.append('{}{}_gripper_traj_controller'.format(prefix.perform(context), robot_type.perform(context)))
+    elif robot_type.perform(context) != 'lite' and add_bio_gripper.perform(context) in ('True', 'true'):
+        controllers.append('{}bio_gripper_traj_controller'.format(prefix.perform(context)))
+    
+    controller_nodes = []
+    if load_controller.perform(context) in ('True', 'true'):
+        for controller in controllers:
+            controller_nodes.append(Node(
+                package='controller_manager',
+                executable='spawner',
+                output='screen',
+                arguments=[
+                    controller,
+                    '--controller-manager', '{}/controller_manager'.format(ros_namespace)
+                ],
+                parameters=[{'use_sim_time': True}],
+            ))
+
     
     ##load after mujoco start
     load_controllers = RegisterEventHandler(
@@ -204,7 +214,7 @@ def generate_nodes_for_spawn(context: LaunchContext):
             target_action=mujoco,
             on_start=[
                 LogInfo(msg="Starting joint state broadcaster..."),
-                load_joint_state_broadcaster
+                *controller_nodes
             ],
         )
     )
