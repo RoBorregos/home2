@@ -65,7 +65,8 @@ class HearStreaming(Node):
         channel = grpc.insecure_channel(server_ip)
         self.stub = speech_pb2_grpc.SpeechStreamStub(channel)
 
-        self.audio_buffer = collections.deque(maxlen=10000)
+        self.audio_buffer = collections.deque(maxlen=50000)  # ~3 seconds at 16kHz
+        self.audio_chunk_count = 0
 
         subscription_group = MutuallyExclusiveCallbackGroup()
         action_group = MutuallyExclusiveCallbackGroup()
@@ -101,6 +102,11 @@ class HearStreaming(Node):
     def audio_callback(self, msg):
         audio_data = np.frombuffer(msg.data, dtype=np.int16)
         self.audio_buffer.append(audio_data)
+        self.audio_chunk_count += 1
+        if self.audio_chunk_count % 100 == 0:
+            self.get_logger().info(
+                f"Audio chunks received: {self.audio_chunk_count}, buffer size: {len(self.audio_buffer)}"
+            )
 
     def record_subscribed(self, hotwords):
         self.get_logger().info("HearStreaming node recording.")
@@ -108,10 +114,27 @@ class HearStreaming(Node):
         call = None
 
         def request_generator():
+            sent_count = 0
+            # Buffer length is in chunks, not frames. With CHUNK_SIZE=512 at 16kHz,
+            # 10 chunks ≈ 320ms. Keep small so streaming starts promptly.
+            min_buffer_chunks = 10
+            buffer_ready = False
+
             while not self.stop_flag.is_set() and rclpy.ok():
                 try:
+                    # Wait for minimum buffer before sending
+                    if not buffer_ready:
+                        if len(self.audio_buffer) < min_buffer_chunks:
+                            time.sleep(0.05)
+                            continue
+                        else:
+                            buffer_ready = True
+                            self.get_logger().info(
+                                f"Buffer ready with {len(self.audio_buffer)} chunks, starting stream..."
+                            )
+
                     if not self.audio_buffer:
-                        time.sleep(0.1)
+                        time.sleep(0.02)
                         continue
                     local_audio = self.audio_buffer.popleft()
 
@@ -120,6 +143,11 @@ class HearStreaming(Node):
                         continue
 
                     grpc_audio = local_audio.tobytes()
+                    sent_count += 1
+                    if sent_count % 50 == 0:
+                        self.get_logger().info(
+                            f"Audio chunks sent to STT: {sent_count}, buffer size: {len(self.audio_buffer)}"
+                        )
                     yield speech_pb2.AudioRequest(
                         audio_data=grpc_audio, hotwords=hotwords
                     )
