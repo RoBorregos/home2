@@ -1,0 +1,57 @@
+
+
+
+planning_plugin: vamp_moveit_plugin/VampPlannerManager
+
+
+request_adapters: >-
+  default_planner_request_adapters/AddTimeOptimalParameterization
+  default_planner_request_adapters/FixWorkspaceBounds
+  default_planner_request_adapters/FixStartStateBounds
+  default_planner_request_adapters/FixStartStateCollision
+  default_planner_request_adapters/FixStartStatePathConstraints
+
+
+response_adapters: >-
+  default_planner_response_adapters/AddTimeOptimalParameterization
+  default_planner_response_adapters/ValidateSolution  
+
+
+vamp_moveit_plugin:
+  default_planner_config: VAMP_RRTConnect
+  planning_time: 5.0  
+  max_iterations: 10000
+  goal_tolerance: 0.01  
+  use_gpu: true  
+  
+
+arm:  
+  planner_configs:
+    - VAMP_RRTConnect
+    - VAMP_RRT
+    - VAMP_RRTStar
+    - VAMP_PRM
+    
+  
+  default_planner_config: VAMP_RRTConnect
+  
+  
+  projection_evaluator: joints(shoulder_pan_joint,shoulder_lift_joint,elbow_joint)
+  
+  
+  longest_valid_segment_fraction: 0.005
+
+
+gripper:
+  planner_configs:
+    - VAMP_RRTConnect
+  default_planner_config: VAMP_RRTConnect
+  longest_valid_segment_fraction: 0.01
+
+
+frida_full:  
+  planner_configs:
+    - VAMP_RRTConnect
+    - VAMP_RRTStar
+  default_planner_config: VAMP_RRTConnect
+  longest_valid_segment_fraction: 0.005
