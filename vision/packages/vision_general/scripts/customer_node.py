@@ -6,7 +6,6 @@ re-id them if necessary
 """
 
 import cv2
-import time
 from ultralytics import YOLO
 import tqdm
 from vision_general.utils.calculations import (
