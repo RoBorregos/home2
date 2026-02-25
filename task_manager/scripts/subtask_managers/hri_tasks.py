@@ -666,6 +666,7 @@ class HRITasks(metaclass=SubtaskMeta):
                 target_info = interpreted_text
                 similarity = 1
                 if not skip_extract_data and not options:
+                    # TODO: test if fails returns interpreted_text?
                     s, target_info = self.extract_data(query, interpreted_text, context)
                 try:
                     if options is not None:
