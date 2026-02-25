@@ -29,10 +29,10 @@ class HRIHand:
 
         if status == Status.EXECUTION_SUCCESS:
             # Use find_closest to determine if it's furniture or object
-            closest_status, closest_match, _ = self.hri_manager.find_closest(
+            closest_status, closest = self.hri_manager.find_closest(
                 ["furniture", "object"], response
             )
-            return closest_status, closest_match[0] if closest_match else "object"
+            return closest_status, closest.results[0] if closest.results else "object"
 
         return status, "furniture"  # Default to furniture if unclear
 
@@ -169,12 +169,10 @@ class HRIHand:
         if status == Status.EXECUTION_SUCCESS:
             # Find the closest matching orientation
             orientation_options = ["left", "right", "front", "back", "top", "nearby"]
-            closest_status, closest_match, _ = self.hri_manager.find_closest(
-                orientation_options, response
-            )
+            closest_status, closest = self.hri_manager.find_closest(orientation_options, response)
 
-            if closest_status == Status.EXECUTION_SUCCESS and closest_match:
-                orientation = closest_match[0]
+            if closest_status == Status.EXECUTION_SUCCESS and closest.results:
+                orientation = closest.results[0]
 
                 # Confirm with the user
                 prefix = "on the " if orientation != "nearby" else ""
@@ -186,8 +184,8 @@ class HRIHand:
                     return status, orientation
                 else:
                     # Try the second best match if available
-                    if len(closest_match) > 1:
-                        second_orientation = closest_match[1]
+                    if len(closest.results) > 1:
+                        second_orientation = closest.results[1]
                         prefix = "on the " if second_orientation != "nearby" else ""
                         confirm_status, confirmation = self.hri_manager.confirm(
                             f"How about {prefix}{second_orientation}?", use_hotwords=True, retries=2
