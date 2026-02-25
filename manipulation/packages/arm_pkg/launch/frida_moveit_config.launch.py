@@ -149,6 +149,8 @@ def launch_setup(context, *args, **kwargs):
         pipelines=["vamp", "ompl"],
         default_planning_pipeline="vamp"
     ).to_moveit_configs()
+    
+    moveit_config.planning_pipelines["vamp"]["planning_plugin"] = "vamp_moveit_plugin/VampPlannerManager"
 
     # robot description launch
     # xarm_description/launch/_robot_description.launch.py
