@@ -307,15 +307,13 @@ class PoseDetection:
         angle_l = self.get_angle(left_shoulder, left_elbow, left_wrist)
 
         if (
-            angle_l
-            > 27
+            angle_l > 27
             # and left_wrist.y < left_shoulder.y
         ):
             return True
 
         elif (
-            angle_r
-            > 27
+            angle_r > 27
             # and right_wrist.y < right_shoulder.y
         ):
             return True
