@@ -694,7 +694,7 @@ class HRITasks(metaclass=SubtaskMeta):
                                 target_info = closest.results[0]
                                 similarity = closest.similarities[0]
 
-                    # Skip confirmation depending on the similarity to an option if options are provided or on transcription confidence
+                    # Skip confirmation depending on the similarity to an option if options are provided and/or on transcription confidence
                     if (
                         similarity > SKIP_CONFIRMATION_SIMILARITY_THRESHOLD
                         and word_confidences.get(target_info, 0)
