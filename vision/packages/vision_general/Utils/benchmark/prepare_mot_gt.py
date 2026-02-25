@@ -18,7 +18,9 @@ def prepare_ground_truth(mot_root: str, split: str, output_dir: str) -> None:
     Output structure: output_dir/MOT16-XX.txt
     """
     split_path = os.path.join(mot_root, split)
-    sequences = sorted([d for d in glob.glob(os.path.join(split_path, "MOT16-*")) if os.path.isdir(d)])
+    sequences = sorted(
+        [d for d in glob.glob(os.path.join(split_path, "MOT16-*")) if os.path.isdir(d)]
+    )
 
     os.makedirs(output_dir, exist_ok=True)
 
@@ -39,10 +41,16 @@ def prepare_ground_truth(mot_root: str, split: str, output_dir: str) -> None:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Prepare MOT16 ground truth for benchmarking")
+    parser = argparse.ArgumentParser(
+        description="Prepare MOT16 ground truth for benchmarking"
+    )
     parser.add_argument("--mot-root", required=True, help="Path to MOT16 root folder")
-    parser.add_argument("--split", default="train", choices=["train", "test"], help="MOT16 split")
-    parser.add_argument("--output", required=True, help="Output folder for ground truth files")
+    parser.add_argument(
+        "--split", default="train", choices=["train", "test"], help="MOT16 split"
+    )
+    parser.add_argument(
+        "--output", required=True, help="Output folder for ground truth files"
+    )
 
     args = parser.parse_args()
 

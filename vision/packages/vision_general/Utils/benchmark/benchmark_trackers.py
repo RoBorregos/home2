@@ -51,8 +51,12 @@ def iou_matrix(gt_boxes: List[List[float]], trk_boxes: List[List[float]]) -> np.
     tr = np.asarray(trk_boxes, dtype=np.float64)
 
     # Convert from [x, y, w, h] to [x1, y1, x2, y2]
-    gt_xy = np.column_stack((gt[:, 0], gt[:, 1], gt[:, 0] + gt[:, 2], gt[:, 1] + gt[:, 3]))
-    tr_xy = np.column_stack((tr[:, 0], tr[:, 1], tr[:, 0] + tr[:, 2], tr[:, 1] + tr[:, 3]))
+    gt_xy = np.column_stack(
+        (gt[:, 0], gt[:, 1], gt[:, 0] + gt[:, 2], gt[:, 1] + gt[:, 3])
+    )
+    tr_xy = np.column_stack(
+        (tr[:, 0], tr[:, 1], tr[:, 0] + tr[:, 2], tr[:, 1] + tr[:, 3])
+    )
 
     # Compute IOU matrix manually (NumPy 2.0 compatible)
     n_gt = len(gt_xy)
@@ -137,7 +141,9 @@ def run_benchmark(gt_root: str, trackers: Dict[str, str], out_csv: str = None):
             seq_names.append(seq_name)
 
         mh = mm.metrics.create()
-        summary = mh.compute_many(accs, names=seq_names, metrics=metrics_list, generate_overall=True)
+        summary = mh.compute_many(
+            accs, names=seq_names, metrics=metrics_list, generate_overall=True
+        )
         overall = summary.loc["OVERALL"]
 
         row = {"tracker": trk_name}
@@ -173,14 +179,18 @@ def parse_trackers_arg(arg_list: List[str]) -> Dict[str, str]:
 
 def main():
     parser = argparse.ArgumentParser(description="Benchmark trackers against MOT16 GT")
-    parser.add_argument("--gt", required=True, help="Path to MOT16 ground-truth folder (txt files)")
+    parser.add_argument(
+        "--gt", required=True, help="Path to MOT16 ground-truth folder (txt files)"
+    )
     parser.add_argument(
         "--trackers",
         required=True,
         nargs="+",
         help="Tracker entries in the form name:folder_with_txts",
     )
-    parser.add_argument("--out", default="benchmark_summary.csv", help="Output CSV summary file")
+    parser.add_argument(
+        "--out", default="benchmark_summary.csv", help="Output CSV summary file"
+    )
 
     args = parser.parse_args()
     trackers = parse_trackers_arg(args.trackers)

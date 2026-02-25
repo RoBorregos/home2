@@ -4,17 +4,18 @@ MOT16 Tracker Benchmark
 Usage: python3 benchmark.py --trackers botsort bytetrack hector_tracker
 Commands to install: pip3 install ultralytics motmetrics opencv-python tqdm pretrainedmodels timm
 """
+
 import argparse
 import os
 import glob
 import cv2
-import numpy as np
 from pathlib import Path
 from tqdm import tqdm
 from ultralytics import YOLO
 
 # Add vision_general to path
 import sys
+
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 # Import evaluation
@@ -28,8 +29,9 @@ from ros_tracker_wrappers import (
     TrackerNodeWrapper,
     TrackerNodeFregosoWrapper,
     NorfairNodeWrapper,
-    HectorTracker
+    HectorTracker,
 )
+
 
 # Ultralytics tracker wrapper
 class UltralyticsTracker:
@@ -42,7 +44,14 @@ class UltralyticsTracker:
         self.model.predictor = None
 
     def process_frame(self, frame):
-        results = self.model.track(frame, conf=self.conf, classes=[0], persist=True, tracker=self.tracker_config, verbose=False)
+        results = self.model.track(
+            frame,
+            conf=self.conf,
+            classes=[0],
+            persist=True,
+            tracker=self.tracker_config,
+            verbose=False,
+        )
         detections = []
         for r in results:
             if r.boxes is None or r.boxes.id is None:
@@ -51,8 +60,11 @@ class UltralyticsTracker:
             ids = r.boxes.id.cpu().numpy().astype(int)
             for box, tid in zip(boxes, ids):
                 x1, y1, x2, y2 = box
-                detections.append((int(tid), [float(x1), float(y1), float(x2-x1), float(y2-y1)]))
+                detections.append(
+                    (int(tid), [float(x1), float(y1), float(x2 - x1), float(y2 - y1)])
+                )
         return detections
+
 
 def run_tracker_on_sequence(tracker, seq_path, output_path):
     tracker.reset()
@@ -66,20 +78,39 @@ def run_tracker_on_sequence(tracker, seq_path, output_path):
         detections = tracker.process_frame(frame)
         for track_id, bbox in detections:
             x, y, w, h = bbox
-            results.append(f"{frame_idx + 1},{track_id},{x:.2f},{y:.2f},{w:.2f},{h:.2f},1,-1,-1")
+            results.append(
+                f"{frame_idx + 1},{track_id},{x:.2f},{y:.2f},{w:.2f},{h:.2f},1,-1,-1"
+            )
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     with open(output_path, "w") as f:
         f.write("\n".join(results))
 
+
 def main():
     parser = argparse.ArgumentParser(description="MOT16 Tracker Benchmark")
-    parser.add_argument("--mot-root", default="/home/lalo/Desktop/home2/vision/MOT16", help="MOT16 root path")
+    parser.add_argument(
+        "--mot-root",
+        default="/home/lalo/Desktop/home2/vision/MOT16",
+        help="MOT16 root path",
+    )
     parser.add_argument("--split", default="train", choices=["train", "test"])
     parser.add_argument("--output", default="./output", help="Output folder")
-    parser.add_argument("--trackers", nargs="+", required=True,
-                        choices=["botsort", "bytetrack", "new_tracker", "old_tracker",
-                                 "tracker_node", "tracker_node_fregoso", "norfair_node", "hector_tracker"])
+    parser.add_argument(
+        "--trackers",
+        nargs="+",
+        required=True,
+        choices=[
+            "botsort",
+            "bytetrack",
+            "new_tracker",
+            "old_tracker",
+            "tracker_node",
+            "tracker_node_fregoso",
+            "norfair_node",
+            "hector_tracker",
+        ],
+    )
     parser.add_argument("--model", default="yolov8n.pt", help="YOLO model")
     parser.add_argument("--conf", type=float, default=0.6, help="Confidence threshold")
     args = parser.parse_args()
@@ -119,7 +150,9 @@ def main():
             tracker = HectorTracker(0.4)
 
         # Run on sequences
-        sequences = sorted(glob.glob(os.path.join(args.mot_root, args.split, "MOT16-*")))
+        sequences = sorted(
+            glob.glob(os.path.join(args.mot_root, args.split, "MOT16-*"))
+        )
         for seq_path in sequences:
             seq_name = os.path.basename(seq_path)
             output_file = os.path.join(tracker_dir, f"{seq_name}.txt")
@@ -130,13 +163,16 @@ def main():
     # Evaluate
     print("[3/3] Evaluating...")
     os.makedirs(results_dir, exist_ok=True)
-    results = run_benchmark(gt_dir, tracker_outputs, out_csv=f"{results_dir}/summary.csv")
+    results = run_benchmark(
+        gt_dir, tracker_outputs, out_csv=f"{results_dir}/summary.csv"
+    )
 
     print("\nResults:")
     for r in results:
         print(f"{r['tracker']}: MOTA={r['mota']:.3f}, IDF1={r['idf1']:.3f}")
 
     print(f"\nDone! Results: {results_dir}/summary.csv")
+
 
 if __name__ == "__main__":
     main()

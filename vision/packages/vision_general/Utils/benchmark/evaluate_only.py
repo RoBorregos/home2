@@ -2,6 +2,7 @@
 """
 Quick evaluation script - runs only the evaluation step using existing tracker outputs
 """
+
 import os
 import sys
 from pathlib import Path
@@ -10,6 +11,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from benchmark_trackers import run_benchmark
+
 
 def main():
     output_dir = "./output"
@@ -36,13 +38,16 @@ def main():
 
     print("\nEvaluating...")
     os.makedirs(results_dir, exist_ok=True)
-    results = run_benchmark(gt_dir, tracker_outputs, out_csv=f"{results_dir}/summary.csv")
+    results = run_benchmark(
+        gt_dir, tracker_outputs, out_csv=f"{results_dir}/summary.csv"
+    )
 
     print("\nResults:")
     for r in results:
         print(f"{r['tracker']}: MOTA={r['mota']:.3f}, IDF1={r['idf1']:.3f}")
 
     print(f"\nDone! Results saved to: {results_dir}/summary.csv")
+
 
 if __name__ == "__main__":
     main()

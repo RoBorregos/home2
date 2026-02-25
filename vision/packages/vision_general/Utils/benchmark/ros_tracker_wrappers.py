@@ -7,7 +7,6 @@ These wrappers extract the core tracking logic from ROS nodes for use in MOT16 e
 from __future__ import annotations
 
 import sys
-import os
 from pathlib import Path
 from typing import List, Tuple
 import numpy as np
@@ -17,10 +16,11 @@ import cv2
 vision_scripts = Path(__file__).parent.parent / "scripts"
 sys.path.insert(0, str(vision_scripts))
 
-from ultralytics import YOLO
+from ultralytics import YOLO  # noqa: E402
 
 try:
     from norfair import Detection, Tracker as NorfairTracker
+
     NORFAIR_AVAILABLE = True
 except ImportError:
     NORFAIR_AVAILABLE = False
@@ -35,10 +35,15 @@ try:
     from vision_general.utils.deep_sort import nn_matching
     from vision_general.utils.deep_sort.detection import Detection as DeepSortDetection
     from vision_general.utils.deep_sort.tracker import Tracker as DeepSORTTracker
-    from vision_general.utils.reid_model import load_network, extract_feature_from_img, get_structure
+    from vision_general.utils.reid_model import (
+        load_network,
+        extract_feature_from_img,
+        get_structure,
+    )
     import torch
     import torch.nn as nn
     from PIL import Image as PILImage
+
     DEEPSORT_AVAILABLE = True
 except ImportError as e:
     DEEPSORT_AVAILABLE = False
@@ -104,7 +109,9 @@ class NewTrackerWrapper(BaseOfflineTrackerWrapper):
                 x1, y1, x2, y2 = box
                 w = x2 - x1
                 h = y2 - y1
-                detections.append((int(track_id), [float(x1), float(y1), float(w), float(h)]))
+                detections.append(
+                    (int(track_id), [float(x1), float(y1), float(w), float(h)])
+                )
 
         return detections
 
@@ -149,7 +156,9 @@ class OldTrackerWrapper(BaseOfflineTrackerWrapper):
                 x1, y1, x2, y2 = box
                 w = x2 - x1
                 h = y2 - y1
-                detections.append((int(track_id), [float(x1), float(y1), float(w), float(h)]))
+                detections.append(
+                    (int(track_id), [float(x1), float(y1), float(w), float(h)])
+                )
 
         return detections
 
@@ -194,7 +203,9 @@ class TrackerNodeWrapper(BaseOfflineTrackerWrapper):
                 x1, y1, x2, y2 = box
                 w = x2 - x1
                 h = y2 - y1
-                detections.append((int(track_id), [float(x1), float(y1), float(w), float(h)]))
+                detections.append(
+                    (int(track_id), [float(x1), float(y1), float(w), float(h)])
+                )
 
         return detections
 
@@ -239,7 +250,9 @@ class TrackerNodeFregosoWrapper(BaseOfflineTrackerWrapper):
                 x1, y1, x2, y2 = box
                 w = x2 - x1
                 h = y2 - y1
-                detections.append((int(track_id), [float(x1), float(y1), float(w), float(h)]))
+                detections.append(
+                    (int(track_id), [float(x1), float(y1), float(w), float(h)])
+                )
 
         return detections
 
@@ -250,13 +263,18 @@ class HectorTracker(BaseOfflineTrackerWrapper):
     Hector's DeepSORT tracker with person re-identification
     """
 
-    def __init__(self, conf_threshold: float = 0.4,
-                 max_cosine_distance: float = 0.3,
-                 nn_budget: int = 100):
+    def __init__(
+        self,
+        conf_threshold: float = 0.4,
+        max_cosine_distance: float = 0.3,
+        nn_budget: int = 100,
+    ):
         super().__init__(conf_threshold)
 
         if not DEEPSORT_AVAILABLE:
-            raise ImportError("DeepSORT is not available. Check vision_general.utils.deep_sort imports.")
+            raise ImportError(
+                "DeepSORT is not available. Check vision_general.utils.deep_sort imports."
+            )
 
         self.detector = YOLO("yolov8n.pt")
         self.max_cosine_distance = max_cosine_distance
@@ -264,9 +282,7 @@ class HectorTracker(BaseOfflineTrackerWrapper):
 
         # Initialize DeepSORT
         metric = nn_matching.NearestNeighborDistanceMetric(
-            "cosine",
-            max_cosine_distance,
-            nn_budget
+            "cosine", max_cosine_distance, nn_budget
         )
         self.tracker = DeepSORTTracker(metric)
 
@@ -275,7 +291,9 @@ class HectorTracker(BaseOfflineTrackerWrapper):
             structure = get_structure()
             self.reid_model = load_network(structure)
             # Remove classifier head
-            if hasattr(self.reid_model, 'classifier') and hasattr(self.reid_model.classifier, 'classifier'):
+            if hasattr(self.reid_model, "classifier") and hasattr(
+                self.reid_model.classifier, "classifier"
+            ):
                 self.reid_model.classifier.classifier = nn.Sequential()
 
             self.use_gpu = torch.cuda.is_available()
@@ -292,13 +310,13 @@ class HectorTracker(BaseOfflineTrackerWrapper):
         super().reset()
         # Reset DeepSORT tracker
         metric = nn_matching.NearestNeighborDistanceMetric(
-            "cosine",
-            self.max_cosine_distance,
-            self.nn_budget
+            "cosine", self.max_cosine_distance, self.nn_budget
         )
         self.tracker = DeepSORTTracker(metric)
 
-    def _extract_reid_feature(self, image_bgr: np.ndarray, bbox: Tuple[int, int, int, int]) -> np.ndarray:
+    def _extract_reid_feature(
+        self, image_bgr: np.ndarray, bbox: Tuple[int, int, int, int]
+    ) -> np.ndarray:
         """Extract ReID feature from person crop"""
         if self.reid_model is None:
             return None
@@ -335,7 +353,7 @@ class HectorTracker(BaseOfflineTrackerWrapper):
                 feature = feature / norm
 
                 return feature
-        except Exception as e:
+        except Exception:
             return None
 
     def process_frame(self, frame: np.ndarray) -> List[Tuple[int, List[float]]]:
@@ -393,7 +411,9 @@ class HectorTracker(BaseOfflineTrackerWrapper):
             bbox = track.to_tlwh()
             x, y, w, h = bbox
 
-            tracked_detections.append((int(track.track_id), [float(x), float(y), float(w), float(h)]))
+            tracked_detections.append(
+                (int(track.track_id), [float(x), float(y), float(w), float(h)])
+            )
 
         return tracked_detections
 
@@ -404,10 +424,13 @@ class NorfairNodeWrapper(BaseOfflineTrackerWrapper):
     Norfair 2-point tracker with YOLO detection
     """
 
-    def __init__(self, conf_threshold: float = 0.6,
-                 distance_threshold: float = 65.0,
-                 hit_counter_max: int = 25,
-                 init_delay: int = 2):
+    def __init__(
+        self,
+        conf_threshold: float = 0.6,
+        distance_threshold: float = 65.0,
+        hit_counter_max: int = 25,
+        init_delay: int = 2,
+    ):
         super().__init__(conf_threshold)
 
         if not NORFAIR_AVAILABLE:
@@ -521,7 +544,9 @@ class NorfairNodeWrapper(BaseOfflineTrackerWrapper):
                 x1, y1, x2, y2 = bboxes[bbox_idx]
                 w = x2 - x1
                 h = y2 - y1
-                detections.append((int(track.id), [float(x1), float(y1), float(w), float(h)]))
+                detections.append(
+                    (int(track.id), [float(x1), float(y1), float(w), float(h)])
+                )
 
         return detections
 
@@ -540,15 +565,17 @@ def create_tracker(tracker_name: str, **kwargs) -> BaseOfflineTrackerWrapper:
         Tracker wrapper instance
     """
     trackers = {
-        'new_tracker': NewTrackerWrapper,
-        'old_tracker': OldTrackerWrapper,
-        'tracker_node': TrackerNodeWrapper,
-        'tracker_node_fregoso': TrackerNodeFregosoWrapper,
-        'norfair_node': NorfairNodeWrapper,
-        'hector_tracker': HectorTracker,
+        "new_tracker": NewTrackerWrapper,
+        "old_tracker": OldTrackerWrapper,
+        "tracker_node": TrackerNodeWrapper,
+        "tracker_node_fregoso": TrackerNodeFregosoWrapper,
+        "norfair_node": NorfairNodeWrapper,
+        "hector_tracker": HectorTracker,
     }
 
     if tracker_name not in trackers:
-        raise ValueError(f"Unknown tracker: {tracker_name}. Available: {list(trackers.keys())}")
+        raise ValueError(
+            f"Unknown tracker: {tracker_name}. Available: {list(trackers.keys())}"
+        )
 
     return trackers[tracker_name](**kwargs)
