@@ -72,6 +72,15 @@ bool VampPlanningContext::solve(planning_interface::MotionPlanResponse& res)
         request->sphere_centers_flat.push_back(global_pose.translation().y());
         request->sphere_centers_flat.push_back(global_pose.translation().z());
         request->sphere_radii.push_back(s->radius);
+      } else if (object->shapes_[i]->type == shapes::BOX) {
+        const auto* b = static_cast<const shapes::Box*>(object->shapes_[i].get());
+        request->box_centers_flat.push_back(global_pose.translation().x());
+        request->box_centers_flat.push_back(global_pose.translation().y());
+        request->box_centers_flat.push_back(global_pose.translation().z());
+
+        request->box_sizes_flat.push_back(b->size[0]);
+        request->box_sizes_flat.push_back(b->size[1]);
+        request->box_sizes_flat.push_back(b->size[2]);
       }
     }
   }
