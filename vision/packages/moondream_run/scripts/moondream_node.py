@@ -238,7 +238,7 @@ class MoondreamNode(Node):
                 )
                 response.answer = False
 
-            self.get_logger().info("Moondream answer: %s", answer)
+            self.get_logger().info(f"Moondream answer: {answer}")
             response.success = True
             return response
 

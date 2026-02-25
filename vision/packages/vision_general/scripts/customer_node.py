@@ -238,9 +238,9 @@ class CustomerNode(Node):
                         # self.point_pub.publish(coords)
                         self.results_publisher.publish(coords)
                         res.point = coords
-                        res.found = True
-                        self.success("Customer found")
-                        return res
+                    res.found = True
+                    self.success("Customer found")
+                    return res
         self.get_logger().warn("No customer raising hand and sitting detected")
         return res
 
