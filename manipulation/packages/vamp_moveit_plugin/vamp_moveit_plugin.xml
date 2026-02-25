@@ -1,0 +1,10 @@
+<library path="vamp_moveit_plugin">
+  <class name="vamp_moveit_plugin/VampPlannerManager"
+         type="vamp_moveit_plugin::VampPlannerManager"
+         base_class_type="planning_interface::PlannerManager">
+    <description>
+      VAMP (Volumetric Accelerated Motion Planning) planner plugin for MoveIt 2.
+      Provides hardware-accelerated motion planning for the FRIDA 8-DOF arm.
+    </description>
+  </class>
+</library>

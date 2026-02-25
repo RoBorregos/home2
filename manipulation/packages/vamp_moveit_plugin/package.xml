@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
+<package format="3">
+  <name>vamp_moveit_plugin</name>
+  <version>0.0.0</version>
+  <description>MoveIt 2 planner plugin integrating VAMP (Volumetric Accelerated Motion Planning) for the FRIDA 8-DOF arm</description>
+  <maintainer email="A01285873@tec.mx">dominguez</maintainer>
+  <license>MIT</license>
+
+  <buildtool_depend>ament_cmake</buildtool_depend>
+
+  <depend>rclcpp</depend>
+  <depend>moveit_core</depend>
+  <depend>moveit_ros_planning</depend>
+  <depend>moveit_msgs</depend>
+  <depend>vamp_cpp</depend>
+  <depend>pluginlib</depend>
+  <depend>geometric_shapes</depend>
+
+  <test_depend>ament_lint_auto</test_depend>
+  <test_depend>ament_lint_common</test_depend>
+
+  <export>
+    <build_type>ament_cmake</build_type>
+    <moveit_core plugin="${prefix}/vamp_moveit_plugin.xml"/>
+  </export>
+
+  <buildtool_depend>rosidl_default_generators</buildtool_depend>
+  <exec_depend>rosidl_default_runtime</exec_depend>
+  <member_of_group>rosidl_interface_packages</member_of_group>
+</package>
