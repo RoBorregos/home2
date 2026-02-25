@@ -20,7 +20,7 @@ VampPlanningContext::VampPlanningContext(const std::string& name,
     node_(node),
     robot_model_(model)
 {
-  RCLCPP_INFO(node_->get_logger(), "VampPlanningContext inicializado para: %s", getGroupName().c_str());
+  RCLCPP_INFO(node_->get_logger(), "VampPlanningContext initialized for: %s", getGroupName().c_str());
 }
 
 VampPlanningContext::~VampPlanningContext() {}
@@ -45,7 +45,7 @@ bool VampPlanningContext::solve(planning_interface::MotionPlanResponse& res)
       goal_state.push_back(jc.position);
     }
   } else {
-    RCLCPP_ERROR(node_->get_logger(), "VAMP: No se proporcionaron Goal Constraints válidas.");
+    RCLCPP_ERROR(node_->get_logger(), "VAMP: No valid Goal Constraints provided.");
     res.error_code_.val = moveit_msgs::msg::MoveItErrorCodes::INVALID_GOAL_CONSTRAINTS;
     return false;
   }
@@ -61,14 +61,16 @@ bool VampPlanningContext::solve(planning_interface::MotionPlanResponse& res)
 
   for (const auto& object_id : world->getObjectIds()) {
     auto object = world->getObject(object_id);
+
+    Eigen::Isometry3d global_pose = scene->getFrameTransform(object_id);
+
     for (size_t i = 0; i < object->shapes_.size(); ++i) {
       if (object->shapes_[i]->type == shapes::SPHERE) {
         const auto* s = static_cast<const shapes::Sphere*>(object->shapes_[i].get());
-        auto pose = object->shape_poses_[i];
-        
-        request->sphere_centers_flat.push_back(pose.translation().x());
-        request->sphere_centers_flat.push_back(pose.translation().y());
-        request->sphere_centers_flat.push_back(pose.translation().z());
+
+        request->sphere_centers_flat.push_back(global_pose.translation().x());
+        request->sphere_centers_flat.push_back(global_pose.translation().y());
+        request->sphere_centers_flat.push_back(global_pose.translation().z());
         request->sphere_radii.push_back(s->radius);
       }
     }
@@ -79,7 +81,7 @@ bool VampPlanningContext::solve(planning_interface::MotionPlanResponse& res)
   auto client = temp_node->create_client<vamp_moveit_plugin::srv::VampPlan>("plan_vamp_path");
 
   if (!client->wait_for_service(std::chrono::seconds(2))) {
-    RCLCPP_ERROR(node_->get_logger(), "Servidor VAMP no disponible.");
+    RCLCPP_ERROR(node_->get_logger(), "VAMP server not available.");
     res.error_code_.val = moveit_msgs::msg::MoveItErrorCodes::FAILURE;
     return false;
   }
@@ -89,14 +91,14 @@ bool VampPlanningContext::solve(planning_interface::MotionPlanResponse& res)
   if (rclcpp::spin_until_future_complete(temp_node, result_future, std::chrono::seconds(10)) != 
       rclcpp::FutureReturnCode::SUCCESS) 
   {
-    RCLCPP_ERROR(node_->get_logger(), "Timeout esperando respuesta de VAMP.");
+    RCLCPP_ERROR(node_->get_logger(), "Timeout waiting for VAMP response.");
     res.error_code_.val = moveit_msgs::msg::MoveItErrorCodes::TIMED_OUT;
     return false;
   }
 
   auto result = result_future.get();
   if (!result->success) {
-    RCLCPP_WARN(node_->get_logger(), "VAMP no pudo encontrar una trayectoria válida.");
+    RCLCPP_WARN(node_->get_logger(), "VAMP could not find a valid trajectory.");
     res.error_code_.val = moveit_msgs::msg::MoveItErrorCodes::PLANNING_FAILED;
     return false;
   }
@@ -119,7 +121,7 @@ bool VampPlanningContext::solve(planning_interface::MotionPlanResponse& res)
   res.trajectory_->setRobotTrajectoryMsg(start_robot_state, trajectory_msg);
   res.error_code_.val = moveit_msgs::msg::MoveItErrorCodes::SUCCESS;
 
-  RCLCPP_INFO(node_->get_logger(), "¡VAMP planificó con éxito esquivando %ld esferas!", request->sphere_radii.size());
+  RCLCPP_INFO(node_->get_logger(), "VAMP planning succeeded, avoiding %ld spheres!", request->sphere_radii.size());
   return true;
 }
 

@@ -14,11 +14,10 @@ class VampServer(Node):
         super().__init__('vamp_server')
         self.srv = self.create_service(VampPlan, 'plan_vamp_path', self.plan_callback)
         
-        
         self.settings = vamp.RRTCSettings()
         self.settings.max_iterations = 2000
-        
-        self.get_logger().info('Frida RRTC VAMP Server ready to receive planning requests.')
+
+        self.get_logger().info('Server FRIDA ready. Waiting for planning of all joints...')
 
     def plan_callback(self, request, response):
         self.get_logger().info("--- Planning Attempt ---")
@@ -26,18 +25,46 @@ class VampServer(Node):
         try:
             
             env = vamp.Environment()
-            
-            
             centers = np.array(request.sphere_centers_flat, dtype=np.float64)
             radii = np.array(request.sphere_radii, dtype=np.float64)
+
+
+            self.get_logger().info("Inspection Obstacles Received:")
             for i in range(len(radii)):
                 idx = i * 3
-                env.add_sphere(vamp.Sphere(centers[idx:idx+3], radii[i]))
+                pos = centers[idx:idx+3]
+                self.get_logger().info(f"   -> Sphere {i+1}: Position [X: {pos[0]:.4f}, Y: {pos[1]:.4f}, Z: {pos[2]:.4f}] | Radius: {radii[i]:.4f}")
+                env.add_sphere(vamp.Sphere(pos, radii[i]))
 
             
             
-            start_8 = np.array(list(request.start_state) + [0.0, 0.0], dtype=np.float64)
-            goal_8 = np.array(list(request.goal_state) + [0.0, 0.0], dtype=np.float64)
+            dedo_izq = 0.8
+            dedo_der = 0.8
+            start_8 = np.array(list(request.start_state) + [dedo_izq, dedo_der], dtype=np.float64)
+            goal_8 = np.array(list(request.goal_state) + [dedo_izq, dedo_der], dtype=np.float64)
+
+            
+            
+            is_start_valid = vamp.frida_real.validate(start_8, env)
+            is_goal_valid = vamp.frida_real.validate(goal_8, env)
+
+            if not is_start_valid:
+                self.get_logger().error("VAMP reject the START: The white arm is already touching the sphere (or itself).")
+            if not is_goal_valid:
+                self.get_logger().error("VAMP reject the GOAL: The orange arm is already touching the sphere (or itself).")
+
+            if not is_start_valid or not is_goal_valid:
+                
+                env_limpio = vamp.Environment()
+                if vamp.frida_real.validate(start_8, env_limpio) and vamp.frida_real.validate(goal_8, env_limpio):
+                     self.get_logger().info("Info: Without obstacles, both START and GOAL are valid. The issue is likely due to the arm colliding with itself or its base configuration (Auto-collision).")
+                else:
+                     self.get_logger().error("Error: Even without obstacles, either START or GOAL is invalid. Please check the joint values and ensure they are within the robot's limits and not in a self-colliding configuration.")
+                
+                response.success = False
+                return response
+
+            self.get_logger().info("START and GOAL are clean. Launching RRTC...")
 
             
             rng = vamp.frida_real.xorshift()
@@ -59,7 +86,7 @@ class VampServer(Node):
                     p2 = np.array(raw_path[i+1])
                     
                     
-                    for t in np.linspace(0, 1, 100, endpoint=False):
+                    for t in np.linspace(0, 1, 10, endpoint=False):
                         interp_wp = p1 + (p2 - p1) * t
                         
                         for j in range(6):
@@ -78,7 +105,7 @@ class VampServer(Node):
                 response.success = False
                 
         except Exception as e:
-            self.get_logger().error(f"Error in server: {e}")
+            self.get_logger().error(f"Error in the server: {e}")
             response.success = False
             
         return response
