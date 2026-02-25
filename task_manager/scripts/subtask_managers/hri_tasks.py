@@ -37,6 +37,7 @@ from frida_constants.hri_constants import (
     WAKEWORD_TOPIC,
     SKIP_CONFIRMATION_SIMILARITY_THRESHOLD,
     SKIP_CONFIRMATION_CONFIDENCE_THRESHOLD,
+    TIMEOUT,
 )
 from frida_interfaces.action import SpeechStream
 from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
@@ -98,10 +99,6 @@ InterpreterAvailableCommands = Union[
     PlaceObject,
     SayWithContext,
 ]
-
-TIMEOUT = 5.0
-
-# set_log_level("INFO")  # Set to "ERROR" in prod
 
 
 def confirm_query(interpreted_text, target_info):
@@ -177,7 +174,7 @@ class AudioStates(Enum):
 
 
 class HRITasks(metaclass=SubtaskMeta):
-    """Class to manage the vision tasks"""
+    """Class to manage the HRI tasks"""
 
     def __init__(self, task_manager: Node, config=None, task=Task.RECEPTIONIST) -> None:
         self.node = task_manager
