@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# TODO: Test task manager with FRIDA
 
 """
 Task Manager for Human Robot Interaction Challenge task of Robocup @Home 2026
@@ -34,11 +35,9 @@ class Guest:
 
 
 class HRIC_TM(Node):
-    """Class to manage the hric task"""
+    """Human Robot Interaction Challenge Task Manager"""
 
     class TaskStates:
-        """Class to manage the task states"""
-
         WAIT_FOR_BUTTON = "WAIT_FOR_BUTTON"
         START = "START"
         WAIT_FOR_GUEST = "WAIT_FOR_GUEST"
@@ -49,6 +48,7 @@ class HRIC_TM(Node):
         FIND_SEAT = "FIND_SEAT"
         INTRODUCTION = "INTRODUCTION"
         NAVIGATE_TO_ENTRANCE = "NAVIGATE_TO_ENTRANCE"
+        TAKE_BAG = "TAKE_BAG"
         END = "END"
         DEBUG = "DEBUG"
 
@@ -78,7 +78,6 @@ class HRIC_TM(Node):
         Logger.info(self, "HRICTaskManager has started.")
 
     def get_current_guest(self) -> Guest:
-        """Get the current guest"""
         return self.guests[self.current_guest_idx]
 
     def _track_state_change(self, new_state: str):
@@ -226,10 +225,12 @@ class HRIC_TM(Node):
         if self.current_state == HRIC_TM.TaskStates.TAKE_BAG:
             self._track_state_change(HRIC_TM.TaskStates.TAKE_BAG)
             self.subtask_manager.hri.say(
-                "I see you brought a bag for the host. Please let me take care of it for you.",
+                # TODO: uncomment and delete next line
+                # "I see you brought a bag for the host. Please let me take care of it for you.",
+                "Sorry, I currently can't take care of your bag.",
                 wait=False,
             )
-            # TODO: Implement bag taking functionality here.
+            # TODO: Implement bag taking functionality here
             guest_1 = self.guests[FIRST_GUEST_IDX]
             self.subtask_manager.hri.say(
                 f"Please follow me to the living room. By the way, another guest named {guest_1.name} is already in the living room. {guest_1.description}.",
@@ -267,12 +268,13 @@ class HRIC_TM(Node):
 
         if self.current_state == HRIC_TM.TaskStates.INTRODUCTION:
             self._track_state_change(HRIC_TM.TaskStates.INTRODUCTION)
-            self.subtask_manager.hri.publish_display_topic(FACE_RECOGNITION_IMAGE)
             guest_1 = self.guests[FIRST_GUEST_IDX]
+            guest_2 = self.get_current_guest()
+            self.subtask_manager.hri.publish_display_topic(FACE_RECOGNITION_IMAGE)
             self.subtask_manager.manipulation.move_to_position("front_low_stare")
             self.subtask_manager.vision.follow_by_name(guest_1.name)
             self.subtask_manager.hri.say(
-                f"Thanks for taking a seat {self.get_current_guest().name}. Allow me to introduce you to {guest_1.name}, they're favorite drink is {guest_1.drink}.",
+                f"Thanks for taking a seat {guest_2.name}. Allow me to introduce you to {guest_1.name}, they're favorite drink is {guest_1.drink}.",
                 wait=True,
             )
             person_found = False
@@ -285,7 +287,7 @@ class HRIC_TM(Node):
                 self.current_attempts = 0
 
                 while self.current_attempts < ATTEMPT_LIMIT:
-                    result = self.subtask_manager.vision.isPerson(guest_1.name)
+                    result = self.subtask_manager.vision.isPerson(guest_2.name)
                     if result:
                         person_found = True
                         break
@@ -295,11 +297,11 @@ class HRIC_TM(Node):
 
             self.subtask_manager.manipulation.follow_face(True)
             self.subtask_manager.hri.say(
-                f"Hello {guest_1.name}. This is {self.get_current_guest().name} and they're favorite drink is {self.get_current_guest().drink}"
+                f"Hello {guest_2.name}. This is {guest_1.name} and they're favorite drink is {guest_1.drink}"
             )
             self.subtask_manager.manipulation.follow_face(False)
 
-            self.current_state = HRIC_TM.TaskStates.END
+            self.current_state = HRIC_TM.TaskStates.TAKE_BAG
 
         if self.current_state == HRIC_TM.TaskStates.NAVIGATE_TO_ENTRANCE:
             self._track_state_change(HRIC_TM.TaskStates.NAVIGATE_TO_ENTRANCE)
@@ -307,6 +309,11 @@ class HRIC_TM(Node):
             self.current_guest_idx = SECOND_GUEST_IDX
             self.navigate_to("entrance", say=False)
             self.current_state = HRIC_TM.TaskStates.WAIT_FOR_GUEST
+
+        if self.current_state == HRIC_TM.TaskStates.TAKE_BAG:
+            self._track_state_change(HRIC_TM.TaskStates.TAKE_BAG)
+            # TODO: Follow the host and leave the bag
+            self.current_state = HRIC_TM.TaskStates.END
 
         if self.current_state == HRIC_TM.TaskStates.END:
             Logger.state(self, "Ending task")
@@ -338,7 +345,6 @@ class HRIC_TM(Node):
 
 
 def main(args=None):
-    """Main function"""
     rclpy.init(args=args)
     node = HRIC_TM()
 
@@ -354,5 +360,4 @@ def main(args=None):
 
 
 if __name__ == "__main__":
-    main()
     main()
