@@ -255,7 +255,6 @@ class PoseDetection:
         keypoint_score = 0.2
         knee_max_angle = 120.0
         hip_max_angle = 150.0
-        min_sides_sitting = 1
         keypoints = {
             "shoulder_l": 5,
             "shoulder_r": 6,
@@ -273,8 +272,8 @@ class PoseDetection:
             return False
 
         for points, scores in zip(points_batch, scores_batch):
-            sitting_sides = sum(
-                self._is_sitting_side(
+            for side in sides:
+                if self._is_sitting_side(
                     points,
                     scores,
                     side,
@@ -282,14 +281,11 @@ class PoseDetection:
                     keypoint_score,
                     knee_max_angle,
                     hip_max_angle,
-                )
-                for side in sides
-            )
-            if sitting_sides >= min_sides_sitting:
-                self.get_logger().info("Sitting yolo: True")
-                return True
+                ):
+                    print("Sitting yolo: True")
+                    return True
 
-        self.get_logger().info("Sitting yolo: False")
+        print("Sitting yolo: False")
         return False
 
     def is_closer_to_left_shoulder(self, wrist, left_shoulder, right_shoulder):

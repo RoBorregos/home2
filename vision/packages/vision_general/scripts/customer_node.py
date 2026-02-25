@@ -96,7 +96,7 @@ class CustomerNode(Node):
         pbar = tqdm.tqdm(total=1, desc="Loading models")
 
         self.model = YOLO("yolov8n.pt")
-        self.pose_detection = PoseDetection(self.is_sitting_moondream)
+        self.pose_detection = PoseDetection()
 
         self.output_image = []
         self.depth_image = []
