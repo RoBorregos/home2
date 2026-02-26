@@ -203,13 +203,13 @@ class MoondreamNode(Node):
     def is_sitting_callback(self, request, response):
         """Callback to determine if a person in the provided image is sitting."""
         self.get_logger().info("Executing service Is Sitting")
+        response.answer = False
+        response.success = False
 
         try:
             image = self.bridge.imgmsg_to_cv2(request.image, "bgr8")
             success, image_bytes = cv2.imencode(".jpg", image)
             if not success:
-                response.answer = False
-                response.success = False
                 return response
 
             encoded = self.stub.EncodeImage(
@@ -226,17 +226,13 @@ class MoondreamNode(Node):
                 )
             )
 
-            answer = query_response.answer.strip()
-            answer = answer.lower()
-            if answer == "yes":
+            answer = query_response.answer.strip().lower()
+            if answer.startswith("yes"):
                 response.answer = True
-            elif answer == "no":
-                response.answer = False
-            else:
+            elif not answer.startswith("no"):
                 self.get_logger().warn(
                     f"Unexpected answer from Moondream: '{answer}'. Expected 'yes' or 'no'."
                 )
-                response.answer = False
 
             self.get_logger().info(f"Moondream answer: {answer}")
             response.success = True
@@ -244,8 +240,6 @@ class MoondreamNode(Node):
 
         except Exception as e:
             self.get_logger().error(f"Error checking sitting posture: {e}")
-            response.answer = False
-            response.success = False
             return response
 
     def beverage_location_callback(self, request, response):
