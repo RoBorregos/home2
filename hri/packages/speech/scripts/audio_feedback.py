@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import os
 import subprocess
+
 import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
@@ -32,7 +33,6 @@ class AudioFeedbackNode(Node):
     def audio_state_callback(self, msg):
         """Play sound when state changes to listening."""
         if msg.data == "listening":
-
             if self.chime_path and os.path.exists(self.chime_path):
                 self.get_logger().info("Playing listening chime.")
                 subprocess.Popen(["aplay", "-q", self.chime_path])
