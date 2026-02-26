@@ -2,6 +2,7 @@
 import os
 import subprocess
 import rclpy
+from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from std_msgs.msg import String
 from ament_index_python.packages import get_package_share_directory
@@ -25,14 +26,13 @@ class AudioFeedbackNode(Node):
 
         if not os.path.exists(self.chime_path):
             self.get_logger().error(f"Chime file not found at {self.chime_path}")
-        else:
-            self.get_logger().info(f"Chime file found: {self.chime_path}")
 
         self.get_logger().info("Audio Feedback node initialized.")
 
     def audio_state_callback(self, msg):
         """Play sound when state changes to listening."""
         if msg.data == "listening":
+
             if self.chime_path and os.path.exists(self.chime_path):
                 self.get_logger().info("Playing listening chime.")
                 subprocess.Popen(["aplay", "-q", self.chime_path])
@@ -47,10 +47,10 @@ def main(args=None):
     try:
         node = AudioFeedbackNode()
         rclpy.spin(node)
-    except KeyboardInterrupt:
+    except (ExternalShutdownException, KeyboardInterrupt):
         pass
     finally:
-        rclpy.shutdown()
+        rclpy.try_shutdown()
 
 
 if __name__ == "__main__":

@@ -75,8 +75,6 @@ def generate_launch_description():
             package="speech",
             executable="audio_feedback.py",
             name="audio_feedback",
-            output="screen",
-            emulate_tty=True,
         ),
     ]
 
