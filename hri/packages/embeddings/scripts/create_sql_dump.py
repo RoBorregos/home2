@@ -152,6 +152,7 @@ def json_to_knowledge_dumps(json: list[dict[str, str]], knowledge_type="") -> st
 def json_to_hand_items_dumps(json: list[dict[str, str]]) -> str:
     hand_items = []
     for item in json:
+<<<<<<< HEAD
         embedding_name = p.embedding_model.encode(item["name"])
         embedding_description = p.embedding_model.encode(item["description"])
         hand_items.append(
@@ -165,6 +166,32 @@ def json_to_hand_items_dumps(json: list[dict[str, str]]) -> str:
                 "m_loc_x": item["m_loc_x"],
                 "m_loc_y": item["m_loc_y"],
                 "color": item["color"],
+=======
+        # Support two possible shapes:
+        # legacy marker objects under {"markers": [ ... ]} with keys x,y,color_name
+        # flat items with keys x_loc,y_loc,color
+        name = item.get("name")
+        description = item.get("description", "")
+        embedding_name = p.embedding_model.encode(name)
+        embedding_description = p.embedding_model.encode(description)
+        x_loc = item.get("x_loc", item.get("x"))
+        y_loc = item.get("y_loc", item.get("y"))
+        m_loc_x = item.get("m_loc_x")
+        m_loc_y = item.get("m_loc_y")
+        # prefer explicit hex `color`, fall back to `color_name` if present
+        color = item.get("color", item.get("color_name", ""))
+        hand_items.append(
+            {
+                "name": name,
+                "description": description,
+                "embedding_name": embedding_name.tolist(),
+                "embedding_description": embedding_description.tolist(),
+                "x_loc": x_loc,
+                "y_loc": y_loc,
+                "m_loc_x": m_loc_x,
+                "m_loc_y": m_loc_y,
+                "color": color,
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
             }
         )
     sql = "INSERT INTO hand_location (name, description, embedding_name, embedding_description, x_loc, y_loc, m_loc_x, m_loc_y, color) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);"
@@ -199,12 +226,21 @@ def main():
     FRIDA_CONSTANTS_PATH = "/workspace/src/frida_constants"
     DOCKER_PATH = "/workspace/src/docker/hri/sql_dumps"
 
+<<<<<<< HEAD
+=======
+    # Create sql_dumps directory if it doesn't exist
+    os.makedirs(DOCKER_PATH, exist_ok=True)
+
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
     print("Loading JSON files...")
     jsons = get_jsons(DATAFRAME_PATH)
     frida_constants_jsons = get_jsons(FRIDA_CONSTANTS_PATH)
 
     print(f"Found {len(jsons)} JSON files.")
+<<<<<<< HEAD
     print(jsons)
+=======
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
 
     print(f"Writing SQL dumps to {DOCKER_PATH}...")
     print("Writing items")
@@ -218,24 +254,39 @@ def main():
         json_to_actions_dumps(jsons["actions.json"]),
     )
     print("Writing knowledge")
+<<<<<<< HEAD
     write_to_file(
         os.path.join(DOCKER_PATH, "04-tec-knowledge.sql"),
+=======
+
+    write_to_file(
+        os.path.join(DOCKER_PATH, "04-knowledge-tec.sql"),
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
         json_to_knowledge_dumps(jsons["tec_knowledge.json"], KNOWLEDGE_TYPE.TEC.value),
     )
     print("Writing roborregos knowledge")
     write_to_file(
+<<<<<<< HEAD
         os.path.join(DOCKER_PATH, "04-roborregos-knowledge.sql"),
+=======
+        os.path.join(DOCKER_PATH, "04-knowledge-roborregos.sql"),
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
         json_to_knowledge_dumps(
             jsons["roborregos_knowledge.json"], KNOWLEDGE_TYPE.ROBORREGOS.value
         ),
     )
     print("Writing frida knowledge")
     write_to_file(
+<<<<<<< HEAD
         os.path.join(DOCKER_PATH, "04-frida-knowledge.sql"),
+=======
+        os.path.join(DOCKER_PATH, "04-knowledge-frida.sql"),
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
         json_to_knowledge_dumps(
             jsons["frida_knowledge.json"], KNOWLEDGE_TYPE.FRIDA.value
         ),
     )
+<<<<<<< HEAD
     # print("Writing hand items")
     # write_to_file(
     #     os.path.join(DOCKER_PATH, "04-hand-items.sql"),
@@ -258,6 +309,19 @@ def write_locations():
     print("Loading JSON files...")
     frida_constants_jsons = get_jsons(FRIDA_CONSTANTS_PATH)
     print(f"Found {len(frida_constants_jsons)} JSON files.")
+=======
+
+    print("Writing hand items")
+    hand_json = frida_constants_jsons["hand_items.json"]
+    # some packages place markers under a top-level "markers" key
+    markers = hand_json.get("markers", hand_json)
+    write_to_file(
+        os.path.join(DOCKER_PATH, "04-hand_location.sql"),
+        json_to_hand_items_dumps(markers),
+    )
+
+    print("Writing locations")
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
     write_to_file(
         os.path.join(DOCKER_PATH, "04-locations.sql"),
         json_to_locations_dumps(
@@ -269,4 +333,7 @@ def write_locations():
 
 if __name__ == "__main__":
     main()
+<<<<<<< HEAD
     # write_locations()
+=======
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c

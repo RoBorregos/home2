@@ -165,7 +165,11 @@ class SingleTracker(Node):
         if self.is_tracking_result:
             self.get_logger().info("Tracking")
         else:
+<<<<<<< HEAD
             self.get_logger().info("Not tracking")
+=======
+            self.get_logger().info("Not racking")
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
         return response
 
     def image_info_callback(self, data):

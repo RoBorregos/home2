@@ -1,7 +1,11 @@
 "use client";
 
 import { MessageCircle } from "lucide-react";
+<<<<<<< HEAD
 import { AudioStateIndicator } from "../components/AudioStateIndicator";
+=======
+import { AudioStateIndicator } from "../components/InteractionIndicator";
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
 import { ConnectionStatus } from "../components/ConnectionStatus";
 import { MessagesList } from "../components/MessagesList";
 import { MapModal } from "../components/MapModal";

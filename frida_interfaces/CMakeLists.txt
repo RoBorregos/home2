@@ -104,6 +104,10 @@ set(srv_files
   "hri/srv/GuestInfo.srv"
   "hri/srv/IsNegative.srv"
   "hri/srv/IsPositive.srv"
+<<<<<<< HEAD
+=======
+  "hri/srv/IsCoherent.srv"
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
   "hri/srv/LLMWrapper.srv"
   "hri/srv/QueryEntry.srv"
   "hri/srv/Speak.srv"

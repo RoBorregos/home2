@@ -60,6 +60,10 @@ ZERO_SHOT_DEFAULT_CLASSES = [
     # "orange",
     # "cup",
 ]
+<<<<<<< HEAD
+=======
+TRASH_DETECTION_SERVICE = "/vision/zero_shot_trash_detection"
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
 
 CUSTOMER = "/vision/customer"
 GET_CUSTOMER_TOPIC = "/vision/get_customer"

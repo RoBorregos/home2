@@ -1,4 +1,16 @@
+<<<<<<< HEAD
 FROM ollama/ollama
 
 # Install curl to preload models
 RUN apt-get update && apt-get install -y curl && apt-get clean
+=======
+ARG BASE_IMAGE=ollama/ollama
+FROM ${BASE_IMAGE}
+
+# Install curl to preload models
+RUN apt-get update && apt-get install -y curl && apt-get clean
+
+# Copy entrypoint script into the image
+COPY scripts/ollama-entrypoint.sh /scripts/entrypoint.sh
+RUN chmod +x /scripts/entrypoint.sh
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c

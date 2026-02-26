@@ -1,4 +1,8 @@
 string label
+<<<<<<< HEAD
+=======
+string[] labels
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
 bool closest_object
 ---
 frida_interfaces/ObjectDetectionArray detection_array

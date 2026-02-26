@@ -16,4 +16,8 @@ services:
     stdin_open: true
     tty: true
     entrypoint:
+<<<<<<< HEAD
       ["/bin/bash", "-c", "/ollama/entrypoint.sh && tail -f /dev/null"]
+=======
+      ["/bin/bash", "-c", "/scripts/entrypoint.sh && tail -f /dev/null"]
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c

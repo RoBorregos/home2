@@ -12,11 +12,17 @@
 **.pt
 **.pth
 **.gz
+<<<<<<< HEAD
 hri/packages/nlp/assets/**
 .cache
 !hri/packages/nlp/assets/download-model.sh
 !hri/packages/nlp/assets/Modelfile
 !hri/packages/nlp/assets/entrypoint.sh
+=======
+.cache
+hri/packages/nlp/assets/**
+!hri/packages/nlp/assets/ModelFile
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
 **.bag
 **/rtabmapdbs
 yolov5/
@@ -30,6 +36,10 @@ mobileclip_blt.ts
 *.traj
 datasets/
 onnxruntime_gpu-1.17.0-cp38-cp38-linux_aarch64.whl
+<<<<<<< HEAD
 vision/MOT16/
 vision/packages/vision_general/Utils/benchmark/output
 vision/packages/vision_general/Utils/deep_sort/resources/
+=======
+docker/hri/sql_dumps
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c

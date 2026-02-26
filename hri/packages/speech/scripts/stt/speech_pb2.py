@@ -24,7 +24,11 @@ _sym_db = _symbol_database.Default()
 
 
 
+<<<<<<< HEAD
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0cspeech.proto\x12\x06speech\"4\n\x0c\x41udioRequest\x12\x12\n\naudio_data\x18\x01 \x01(\x0c\x12\x10\n\x08hotwords\x18\x02 \x01(\t\"\x1c\n\x0cTextResponse\x12\x0c\n\x04text\x18\x01 \x01(\t2I\n\rSpeechService\x12\x38\n\nTranscribe\x12\x14.speech.AudioRequest\x1a\x14.speech.TextResponse2L\n\x0cSpeechStream\x12<\n\nTranscribe\x12\x14.speech.AudioRequest\x1a\x14.speech.TextResponse(\x01\x30\x01\x62\x06proto3')
+=======
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x0cspeech.proto\x12\x06speech\"4\n\x0c\x41udioRequest\x12\x12\n\naudio_data\x18\x01 \x01(\x0c\x12\x10\n\x08hotwords\x18\x02 \x01(\t\"H\n\x08WordInfo\x12\x0c\n\x04word\x18\x01 \x01(\t\x12\x12\n\nconfidence\x18\x02 \x01(\x02\x12\r\n\x05start\x18\x03 \x01(\x02\x12\x0b\n\x03\x65nd\x18\x04 \x01(\x02\"=\n\x0cTextResponse\x12\x0c\n\x04text\x18\x01 \x01(\t\x12\x1f\n\x05words\x18\x02 \x03(\x0b\x32\x10.speech.WordInfo2I\n\rSpeechService\x12\x38\n\nTranscribe\x12\x14.speech.AudioRequest\x1a\x14.speech.TextResponse2L\n\x0cSpeechStream\x12<\n\nTranscribe\x12\x14.speech.AudioRequest\x1a\x14.speech.TextResponse(\x01\x30\x01\x62\x06proto3')
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -33,10 +37,21 @@ if not _descriptor._USE_C_DESCRIPTORS:
   DESCRIPTOR._loaded_options = None
   _globals['_AUDIOREQUEST']._serialized_start=24
   _globals['_AUDIOREQUEST']._serialized_end=76
+<<<<<<< HEAD
   _globals['_TEXTRESPONSE']._serialized_start=78
   _globals['_TEXTRESPONSE']._serialized_end=106
   _globals['_SPEECHSERVICE']._serialized_start=108
   _globals['_SPEECHSERVICE']._serialized_end=181
   _globals['_SPEECHSTREAM']._serialized_start=183
   _globals['_SPEECHSTREAM']._serialized_end=259
+=======
+  _globals['_WORDINFO']._serialized_start=78
+  _globals['_WORDINFO']._serialized_end=150
+  _globals['_TEXTRESPONSE']._serialized_start=152
+  _globals['_TEXTRESPONSE']._serialized_end=213
+  _globals['_SPEECHSERVICE']._serialized_start=215
+  _globals['_SPEECHSERVICE']._serialized_end=288
+  _globals['_SPEECHSTREAM']._serialized_start=290
+  _globals['_SPEECHSTREAM']._serialized_end=366
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
 # @@protoc_insertion_point(module_scope)

@@ -6,6 +6,11 @@ float32 start_silence_time
 ---
 #result definition
 string transcription
+<<<<<<< HEAD
+=======
+string[] words
+float32[] confidences
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
 ---
 #feedback
 string current_transcription

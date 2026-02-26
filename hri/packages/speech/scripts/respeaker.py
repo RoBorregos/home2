@@ -78,8 +78,17 @@ class Respeaker(Node):
     def callback_light(self, data):
         command = data.data
 
+<<<<<<< HEAD
         if command == "off" or command == "think" or command == "speak":
             pixel_ring.off()
+=======
+        if command == "off":
+            pixel_ring.off()
+        elif command == "think" or command == "loading":
+            pixel_ring.think()
+        elif command == "speak":
+            pixel_ring.speak()
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
         elif command == "listen":
             pixel_ring.listen()
         else:

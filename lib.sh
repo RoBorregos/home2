@@ -1,5 +1,10 @@
 #!/usr/bin/env bash
 
+<<<<<<< HEAD
+=======
+AREAS="vision manipulation navigation integration hri"
+
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
 # --- guard against multiple sourcing ---
 if [[ -n "${__HOME2_LIB_SOURCED:-}" ]]; then
   return 0
@@ -107,4 +112,16 @@ control() {
 
   echo "All ${msg}s attempted."
   return $rc
+<<<<<<< HEAD
+=======
+}
+
+run_task() {
+  local task=$1
+  for area in ${AREAS}; do
+    SESSION_NAME=$area
+    tmux new-session -d -s "$SESSION_NAME"
+    tmux send-keys -t "$SESSION_NAME" "bash run.sh $area $task" C-m
+  done
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
 }

@@ -14,6 +14,7 @@ def generate_launch_description():
     )
     return LaunchDescription([
         declare_use_sim,
+<<<<<<< HEAD
         Node(
             package='nav_main',
             executable='ignore_laser',
@@ -27,15 +28,45 @@ def generate_launch_description():
             condition=IfCondition(use_sim)
         ),
         Node(
+=======
+        Node(
+            package='tf2_ros',
+            executable='static_transform_publisher',
+            arguments=['0','0','0','0','3.1416','0','base_link','laser'],
+            condition=UnlessCondition(use_sim)
+        ),
+        Node(
+            package='nav_main',
+            executable='ignore_laser',
+            parameters = [{'ignore_array': '11, 17, 32, 38, 80, 85, 124, 138, -20, 0, -40, -33, -85 , -80, -136, -122,0,0'}],
+            condition=UnlessCondition(use_sim)
+        ),
+        Node(
+            package='nav_main',
+            executable='ignore_laser',
+            #parameters=[{'ignore_array': '-176 ,-160, -129,-119, -85, -67, -56, -46, -15,5'}],
+            condition=IfCondition(use_sim)
+        ),
+        Node(
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
             package='sllidar_ros2',
             executable='sllidar_node',
             name='sllidar_node',
             parameters=[{'channel_type':'serial',
+<<<<<<< HEAD
                          'serial_port': '/dev/ttyUSB1', 
                          'serial_baudrate': 115200, 
                          'frame_id': 'laser',
                          'inverted': True,
                          'angle_compensate': True}],
+=======
+                         'serial_port': '/dev/ttyUSB0', 
+                         'serial_baudrate': 460800, 
+                         'frame_id': 'laser',
+                         'inverted': False,
+                         'angle_compensate': True,
+                         'scan_mode': 'Standard'}],
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
             output='screen',
             remappings=[
             ('/scan', '/scan_input')],

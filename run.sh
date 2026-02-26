@@ -2,7 +2,10 @@
 source lib.sh
 
 INPUT=$1
+<<<<<<< HEAD
 AREAS="vision manipulation navigation integration hri"
+=======
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
 
 # Check type of environment (cpu, cuda, or l4t), default cpu
 ENV_TYPE=cpu
@@ -36,11 +39,19 @@ case $INPUT in
   frida_interfaces)
     run_frida_interfaces
     ;;
+<<<<<<< HEAD
   --stop)
     control --stop
     ;;
   --down)
     control --down
+=======
+  --stop|--down)
+    control "$INPUT"
+    ;;
+  --hric|--ppc|--gpsr|--dlc|--restaurant|--finals)
+    run_task "$@"
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
     ;;
   vision|manipulation|navigation|integration|hri)
     run_area "$@"

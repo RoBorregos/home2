@@ -29,6 +29,10 @@ export interface Message {
 }
 
 export interface AudioState {
+<<<<<<< HEAD
   state: "idle" | "listening" | "saying";
+=======
+  state: "idle" | "listening" | "saying" | "thinking" | "loading";
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
   vadLevel: number;
 }

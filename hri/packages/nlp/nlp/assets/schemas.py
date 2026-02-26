@@ -19,6 +19,13 @@ class IsAnswerNegative(BaseModel):
     is_negative: bool
 
 
+<<<<<<< HEAD
+=======
+class IsAnswerCoherent(BaseModel):
+    is_coherent: bool
+
+
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
 class CommandShape(BaseModel):
     action: str = Field(description="The action to be performed")
     characteristic: Optional[str] = Field(

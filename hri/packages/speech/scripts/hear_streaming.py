@@ -55,6 +55,10 @@ class HearStreaming(Node):
 
         self.hotwords = self.default_hotwords
         self.current_transcription = ""
+<<<<<<< HEAD
+=======
+        self.current_words = []
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
         self.stop_flag = threading.Event()
         self.stop_flag.set()
         self.transcript_thread = None
@@ -136,6 +140,13 @@ class HearStreaming(Node):
                         break
                     self.get_logger().info(f"Transcript: {response.text}")
                     self.current_transcription = response.text
+<<<<<<< HEAD
+=======
+                    self.current_words = [
+                        {"word": w.word, "confidence": w.confidence}
+                        for w in response.words
+                    ]
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
             except grpc.RpcError as e:
                 if "locally cancelled" not in e.details().lower():
                     self.get_logger().error(f"gRPC stream error: {e}")
@@ -153,6 +164,10 @@ class HearStreaming(Node):
         self.stop_flag.clear()
         self.audio_buffer.clear()
         self.current_transcription = ""
+<<<<<<< HEAD
+=======
+        self.current_words = []
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
         self.prev_transcription = ""
         self.cancel_requested = False
 
@@ -230,7 +245,21 @@ class HearStreaming(Node):
 
         result = SpeechStream.Result()
         result.transcription = self.current_transcription.strip()
+<<<<<<< HEAD
         self.get_logger().info(f"Final transcription: {result.transcription}")
+=======
+        if hasattr(result, "words"):
+            result.words = [w["word"] for w in self.current_words]
+            result.confidences = [w["confidence"] for w in self.current_words]
+        self.get_logger().info(f"Final transcription: {result.transcription}")
+        if self.current_words:
+            self.get_logger().info(
+                "Word confidences: "
+                + ", ".join(
+                    f"{w['word']}({w['confidence']:.2f})" for w in self.current_words
+                )
+            )
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
 
         return result
 

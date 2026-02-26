@@ -14,6 +14,10 @@ BUILD_IMAGE=""
 BUILD_DISPLAY=""
 OPEN_DISPLAY=""
 DOWNLOAD_MODEL=""
+<<<<<<< HEAD
+=======
+REGENERATE_DB=""
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
 
 COMPOSE="compose/docker-compose-${ENV_TYPE}.yml"
 
@@ -49,6 +53,11 @@ for arg in "${ARGS[@]}"; do
     "--download-model")
         DOWNLOAD_MODEL="true"
         ;;
+<<<<<<< HEAD
+=======
+    "--regenerate-db")
+        REGENERATE_DB="true"
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
   esac
 done
 
@@ -71,7 +80,11 @@ else
   export SETUP_DONE=true
 fi
 
+<<<<<<< HEAD
 [ "$DOWNLOAD_MODEL" == "true" ] && bash ../../hri/packages/nlp/assets/download-model.sh
+=======
+[ "$DOWNLOAD_MODEL" == "true" ] && bash ./scripts/download-model.sh
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
 
 # Create dirs with current user to avoid permission problems
 mkdir -p install build log \
@@ -103,6 +116,15 @@ if [ ! -d "$DISPLAY_DIR/node_modules" ] || [ ! -d "$DISPLAY_DIR/.next" ] || [ "$
   docker compose -f compose/hri-ros.yaml run $BUILD_IMAGE --rm --entrypoint "" hri-ros bash -c "cd /workspace/src/hri/packages/display/display && npm i && npm run build"
 fi
 
+<<<<<<< HEAD
+=======
+# Regenerate database if requested
+if [ "$REGENERATE_DB" == "true" ]; then
+  echo "Regenerating database..."
+  bash scripts/regenerate_db.sh "$ENV_TYPE"
+fi
+
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
 #_________________________RUN_________________________
 
 GENERATE_BAML_CLIENT="baml-cli generate --from /workspace/src/task_manager/scripts/utils/baml_src/"
@@ -154,7 +176,12 @@ wait_and_launch_display() {
     sleep 1
   done
   chmod +x scripts/open-display.bash
+<<<<<<< HEAD
   bash scripts/open-display.bash
+=======
+  local task_route="${TASK#--}"
+  bash scripts/open-display.bash "$task_route"
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
 }
 
 if [ -n "$OPEN_DISPLAY" ]; then
@@ -171,4 +198,8 @@ if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
 else
     add_or_update_variable compose/.env "COMMAND" "$COMMAND"
     docker compose -f "$COMPOSE" up $DETACHED $BUILD_IMAGE
+<<<<<<< HEAD
 fi
+=======
+fi
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c

@@ -11,12 +11,19 @@ LLM_WRAPPER_SERVICE = "/hri/nlp/llm"
 EXTRACT_DATA_SERVICE = "/hri/nlp/data_extractor"
 IS_POSITIVE_SERVICE = "/hri/nlp/is_positive"
 IS_NEGATIVE_SERVICE = "/hri/nlp/is_negative"
+<<<<<<< HEAD
+=======
+IS_COHERENT_SERVICE = "/hri/nlp/is_coherent"
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
 CATEGORIZE_SERVICE = "/hri/nlp/categorize"
 CONVESATION_SERVICE = "/hri/nlp/conversation"
 GRAMMAR_SERVICE = "/hri/nlp/grammar"
 COMMON_INTEREST_SERVICE = "/hri/nlp/common_interest"
 RAG_SERVICE = "/hri/rag/answer_question"
+<<<<<<< HEAD
 
+=======
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
 DISPLAY_IMAGE_TOPIC = "/hri/display/change_video"
 DISPLAY_MAP_TOPIC = "/hri/display/map"
 DISPLAY_PUBLISHER = "/hri/display/frida_questions"
@@ -24,6 +31,10 @@ ANSWER_PUBLISHER = "/hri/display/answers"
 RESPEAKER_LIGHT_TOPIC = "/hri/speech/respeaker/light"
 RESPEAKER_DOA_TOPIC = "/hri/speech/respeaker/doa"
 STT_ACTION_SERVER_NAME = "/hri/speech/STT_action_server"
+<<<<<<< HEAD
+=======
+START_BUTTON_CLIENT = "/hri/display/button_press"
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
 
 GPSR_COMMANDS = {
     "go_to",
@@ -49,7 +60,10 @@ class MODEL(Enum):
     LLM_WRAPPER = "qwen3"
     COMMON_INTEREST = "qwen3"
     CATEGORIZE_SHELVES = "qwen3"
+<<<<<<< HEAD
 
+=======
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
     IS_POSITIVE = "qwen3"
     IS_NEGATIVE = "qwen3"
     GENERIC_STRUCTURED_OUTPUT = "qwen3"
@@ -66,13 +80,28 @@ class KNOWLEDGE_TYPE(Enum):
     ROBORREGOS = "roborregos_knowledge"
 
 
+<<<<<<< HEAD
 USEFUL_AUDIO_NODE_NAME = "useful_audio_node"
 
+=======
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
 # OpenWakeWord
 USE_OWW = True
 SENSITIVITY_THRESHOLD = 0.2
 threshold = 0.6
 
+<<<<<<< HEAD
 DEFAULT_HOTWORDS = "Frida RoBorregos"
 
 START_BUTTON_CLIENT = "/hri/display/button_press"
+=======
+# STT
+USEFUL_AUDIO_NODE_NAME = "useful_audio_node"
+DEFAULT_HOTWORDS = "Frida RoBorregos"
+
+
+# HRI Subtask Manager
+SKIP_CONFIRMATION_SIMILARITY_THRESHOLD = 0.5
+SKIP_CONFIRMATION_CONFIDENCE_THRESHOLD = 0.5
+TIMEOUT = 5.0
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c

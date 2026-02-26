@@ -100,7 +100,11 @@ class zero_shot_object_detector_node(object_detector_node):
 
         self.handleSubcriptions()
         self.handlePublishers()
+<<<<<<< HEAD
         # self.handleServices()
+=======
+        self.handleServices()
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
         self.runThread = None
 
         self.tfBuffer = tf2_ros.Buffer()
@@ -180,6 +184,14 @@ class zero_shot_object_detector_node(object_detector_node):
         self.node_params.USE_YOLO8 = (
             self.get_parameter("USE_YOLO8").get_parameter_value().bool_value
         )
+<<<<<<< HEAD
+=======
+        self.node_params.SET_DETECTOR_CLASSES_SERVICE = (
+            self.get_parameter("SET_DETECTOR_CLASSES_SERVICE")
+            .get_parameter_value()
+            .string_value
+        )
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
 
     def handlePublishers(self):
         self.detections_publisher = self.create_publisher(
@@ -215,11 +227,19 @@ class zero_shot_object_detector_node(object_detector_node):
             SetDetectorClasses.Response: Response object.
         """
         response = SetDetectorClasses.Response()
+<<<<<<< HEAD
         self.object_detector_2d.set_classes(request.classes)
         return response
 
     def handleServices(self):
         object.set_detector_classes_service = self.create_service(
+=======
+        self.object_detector_2d.set_classes(request.class_names)
+        return response
+
+    def handleServices(self):
+        self.set_detector_classes_service = self.create_service(
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
             SetDetectorClasses,
             self.node_params.SET_DETECTOR_CLASSES_SERVICE,
             self.set_detector_classes_callback,

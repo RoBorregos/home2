@@ -1,9 +1,19 @@
 #!/usr/bin/env python3
 
 """
+<<<<<<< HEAD
 Node to detect people and find
 available seats. Tasks for receptionist
 commands.
+=======
+Node to manage the manipulation tasks of the robot.
+It provides a high-level interface to control the robot's arm
+and gripper, as well as to perform manipulation tasks such as
+picking and placing objects, following faces, pouring liquids,
+moving to specific positions, and interacting with planes and shelves.
+This node abstracts away the low-level details of the robot's
+control and provides a simple interface for the task manager to use.
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
 """
 
 import rclpy

@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Testing BAML command interpreter
 
 1. Install the BAML package and sentence transformers (for embeddings):
@@ -57,3 +58,17 @@ deepeval set-local-embeddings --model-name=nomic-embed-text:latest \
 ```bash
 deepeval test run test_<script>.py
 ```
+=======
+# NLP tests
+
+## How to run
+
+This directory holds json files with tests for different `hri_tasks.py` functions and are used in `test_hri_manager.py`. Modify the constants in the script to select which tests to run.
+
+```bash
+# pwd -> home2
+./run.sh integration --test-hri --build
+```
+
+Most tests will output a report with the results here in `output/`.
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c

@@ -23,6 +23,11 @@ file (GLOB UTIL_NODES scripts/util_nodes/*.py)
 file (GLOB SUBTASK_MANAGERS scripts/subtask_managers/*.py)
 file (GLOB UTILS scripts/utils/*.py)
 file (GLOB BAML_CLIENT scripts/utils/baml_client/*.py)
+<<<<<<< HEAD
+=======
+file (GLOB TEST_SUBTASK_MANAGERS scripts/test/*.py)
+file (GLOB MISC_NODES scripts/misc/*.py)
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
 
 
 # Install python scripts
@@ -51,10 +56,22 @@ ${BAML_CLIENT}
 DESTINATION lib/${PROJECT_NAME}/utils/baml_client
 )
 
+<<<<<<< HEAD
 # install(PROGRAMS
 # ${UTILS}
 # DESTINATION lib/${PROJECT_NAME}/subtask_managers/utils
 # )
+=======
+install(PROGRAMS
+${TEST_SUBTASK_MANAGERS}
+DESTINATION lib/${PROJECT_NAME}
+)
+
+install(PROGRAMS
+${MISC_NODES}
+DESTINATION lib/${PROJECT_NAME}
+)
+>>>>>>> 53eaec2f433ebaf3acc49743c2903ceb6f00d99c
 
 install(DIRECTORY launch scripts
  DESTINATION share/${PROJECT_NAME})
