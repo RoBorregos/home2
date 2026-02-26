@@ -8,16 +8,12 @@ from std_msgs.msg import String
 CURRENT_FILE_PATH = os.path.abspath(__file__)
 
 
-# More robust path resolution: find the 'packages' or 'speech' directory
 def find_assets_dir():
-    # Start from the script directory
     current = os.path.dirname(CURRENT_FILE_PATH)
     while current != "/":
-        # Check if assets exist in a parent or sibling directory
         potential_assets = os.path.join(current, "assets")
         if os.path.exists(potential_assets) and os.path.isdir(potential_assets):
             return potential_assets
-        # Move up to parent
         parent = os.path.dirname(current)
         if parent == current:
             break
