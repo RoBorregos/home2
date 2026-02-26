@@ -211,6 +211,9 @@ class HRITasks(metaclass=SubtaskMeta):
         self.respeaker_light_publisher = self.node.create_publisher(
             String, RESPEAKER_LIGHT_TOPIC, 10
         )
+        self.task_status_publisher = self.node.create_publisher(
+            String, "/hri/display/task_status", 10
+        )
 
         self._action_client = ActionClient(self.node, SpeechStream, STT_ACTION_SERVER_NAME)
 
@@ -1209,6 +1212,14 @@ class HRITasks(metaclass=SubtaskMeta):
         This method is called when the start button is pressed.
         """
         self.start_button_clicked = True
+        self.task_status_publisher.publish(String(data="active"))
+
+    def reset_task_status(self):
+        """
+        Reset the task status to idle and the start button clicked flag.
+        """
+        self.start_button_clicked = False
+        self.task_status_publisher.publish(String(data="idle"))
 
 
 if __name__ == "__main__":

@@ -106,7 +106,7 @@ class GPSRTM(Node):
 
         if self.current_state == GPSRTM.States.WAITING_FOR_BUTTON:
             Logger.state(self, "Waiting for start button...")
-            self.subtask_manager.hri.start_button_clicked = False
+            self.subtask_manager.hri.reset_task_status()
             self.subtask_manager.hri.say("Waiting for start button to be pressed to start the task")
             # Wait for the start button to be pressed
 
@@ -136,7 +136,7 @@ class GPSRTM(Node):
             # Wait for the start button to be pressed
             say_time = 5
             start_time = time.time()
-            self.subtask_manager.hri.start_button_clicked = False
+            self.subtask_manager.hri.reset_task_status()
             while not self.subtask_manager.hri.start_button_clicked:
                 if time.time() - start_time > say_time:
                     start_time = time.time()

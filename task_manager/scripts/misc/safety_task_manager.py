@@ -62,9 +62,9 @@ class SafetyTaskManager(Node):
 
     def run(self):
         Logger.info(self, "starting safety")
-        Logger.state(self, "Waiting for start button...")
         # Wait for the start button to be pressed
         self.state = ExecutionStates.WAIT_FOR_BUTTON
+        self.subtask_manager.hri.reset_task_status()
         while not self.subtask_manager.hri.start_button_clicked:
             rclpy.spin_once(self, timeout_sec=0.1)
         Logger.success(self, "Start button pressed, safety task will begin now")
@@ -94,13 +94,13 @@ class SafetyTaskManager(Node):
 
         # self.subtask_manager.hri.send_display_answer("I couldn't understand you. Can you write your response here? (deus ex machina example)")
 
-        self.subtask_manager.hri.start_button_clicked = False
+        self.subtask_manager.hri.reset_task_status()
 
         Logger.info(self, "Waiting for robot press")
         while not self.subtask_manager.hri.start_button_clicked:
             rclpy.spin_once(self, timeout_sec=0.1)
-        Logger.success(self, "Start button pressed, safety task continue begin now")
-        self.subtask_manager.hri.start_button_clicked = False
+        Logger.success(self, "Start button pressed, safety task will begin now")
+        self.subtask_manager.hri.reset_task_status()
 
         self.state = ExecutionStates.GO_TO_SAFE_PLACE
 

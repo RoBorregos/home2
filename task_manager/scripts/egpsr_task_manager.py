@@ -636,7 +636,7 @@ class EGPSRTM(Node):
     def run(self):
         if self.current_state == EGPSRTM.States.WAITING_FOR_BUTTON:
             Logger.state(self, "Waiting for start button...")
-            self.subtask_manager.hri.start_button_clicked = False
+            self.subtask_manager.hri.reset_task_status()
             self.subtask_manager.hri.say("Waiting for start button to be pressed to start the task")
             # Wait for the start button to be pressed
 
