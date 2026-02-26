@@ -7,6 +7,7 @@ import { rosClient } from "../RosClient";
 export function StartButton() {
   const [publisher, setPublisher] = useState<Topic<{}> | null>(null);
   const [isTaskActive, setIsTaskActive] = useState(false);
+  const [isMaximized, setIsMaximized] = useState(false);
 
   useEffect(() => {
     const buttonPublisher = new Topic<{}>({
@@ -23,7 +24,11 @@ export function StartButton() {
     });
 
     taskStatusTopic.subscribe((msg: { data: string }) => {
-      setIsTaskActive(msg.data === "active");
+      const active = msg.data === "active";
+      setIsTaskActive(active);
+      if (active) {
+        setIsMaximized(false);
+      }
     });
 
     return () => {
@@ -34,16 +39,25 @@ export function StartButton() {
   const handleClick = () => {
     if (publisher) {
       publisher.publish({});
+      setIsMaximized(false);
     }
   };
 
+  if (isTaskActive && !isMaximized) {
+    return (
+      <button
+        className="fixed bottom-2 right-2 w-3 h-3 bg-white/5 hover:bg-white/20 rounded-full transition-all duration-300 z-50 cursor-default"
+        onClick={() => setIsMaximized(true)}
+        aria-label="Setup attempt"
+      />
+    );
+  }
+
   return (
     <button
-      className={`mb-4 px-4 bg-(--blue) text-white rounded-lg hover:bg-(--blue-hover) transition-all duration-300 font-semibold flex items-center justify-center ${isTaskActive ? "w-32 h-10 text-sm" : "w-full h-16 text-lg"
-        }`}
+      className="mb-4 px-4 bg-(--blue) text-white rounded-lg hover:bg-(--blue-hover) transition-all duration-300 font-semibold flex items-center justify-center w-full h-16"
       onClick={handleClick}
     >
-      Start
     </button>
   );
 }
