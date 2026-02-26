@@ -494,9 +494,7 @@ class SingleTracker(Node):
             if track_id == self.person_data["id"]:
                 person_in_frame = True
                 self.person_data["coordinates"] = (x1, y1, x2, y2)
-                cv2.rectangle(
-                    self.output_image, (x1, y1), (x2, y2), (0, 255, 0), 2
-                )
+                cv2.rectangle(self.output_image, (x1, y1), (x2, y2), (0, 255, 0), 2)
                 cropped_image = self.frame[y1:y2, x1:x2]
                 embedding = None
                 pil_image = PILImage.fromarray(cropped_image)
@@ -508,9 +506,7 @@ class SingleTracker(Node):
                 ):
                     self.last_reid_extraction = time.time()
                     with torch.no_grad():
-                        embedding = extract_feature_from_img(
-                            pil_image, self.model_reid
-                        )
+                        embedding = extract_feature_from_img(pil_image, self.model_reid)
                     if self.person_data["embeddings"] is None:
                         self.person_data["embeddings"] = torch.zeros(
                             (MAX_EMBEDDINGS, embedding.shape[1]),
@@ -546,9 +542,7 @@ class SingleTracker(Node):
                     self.person_data[angle] = embedding
 
             else:
-                cv2.rectangle(
-                    self.output_image, (x1, y1), (x2, y2), (255, 0, 0), 2
-                )
+                cv2.rectangle(self.output_image, (x1, y1), (x2, y2), (255, 0, 0), 2)
 
             cv2.putText(
                 self.output_image,
@@ -646,9 +640,7 @@ class SingleTracker(Node):
                 self.centroid_publisher.publish(point2Dpoint)
                 depth = get_depth(self.depth_image, point2D)
                 point_2d_temp = (point2D[1], point2D[0])
-                point3D = deproject_pixel_to_point(
-                    self.imageInfo, point_2d_temp, depth
-                )
+                point3D = deproject_pixel_to_point(self.imageInfo, point_2d_temp, depth)
                 point3D = float(point3D[0]), float(point3D[1]), float(point3D[2])
                 coords.point.x = point3D[0]
                 coords.point.y = point3D[1]
