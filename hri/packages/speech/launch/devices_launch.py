@@ -71,6 +71,11 @@ def generate_launch_description():
             emulate_tty=True,
             parameters=[oww_config],
         ),
+        Node(
+            package="speech",
+            executable="audio_feedback.py",
+            name="audio_feedback",
+        ),
     ]
 
     if SpeechApiUtils.respeaker_available():
