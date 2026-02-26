@@ -213,7 +213,7 @@ class CleanTableTM(Node):
             #     labels,
             #     object_to_pick,
             # )
-            # self.detected_object = target[0]
+            # self.detected_object = target.results[0]
 
             self.subtask_manager.hri.say(
                 f"I have detected a {self.detected_object} on the table. I will now try to pick it up.",
