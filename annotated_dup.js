@@ -307,6 +307,7 @@ var annotated_dup =
       ] ],
       [ "hri_tasks", "namespacesubtask__managers_1_1hri__tasks.html", [
         [ "AudioStates", "classsubtask__managers_1_1hri__tasks_1_1AudioStates.html", "classsubtask__managers_1_1hri__tasks_1_1AudioStates" ],
+        [ "FindClosestResult", "classsubtask__managers_1_1hri__tasks_1_1FindClosestResult.html", null ],
         [ "HRITasks", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html", "classsubtask__managers_1_1hri__tasks_1_1HRITasks" ]
       ] ],
       [ "manipulation_tasks", "namespacesubtask__managers_1_1manipulation__tasks.html", [

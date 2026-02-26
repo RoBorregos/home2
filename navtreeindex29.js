@@ -1,5 +1,11 @@
 var NAVTREEINDEX29 =
 {
+"vision__tasks_8py.html#a1abb56fac59a5fec5b7cdb4f1b3a2ba5":[23,0,6,1,2,10,5],
+"vision__tasks_8py.html#a35a3ccf19eee1ced86e734c35eb4d16b":[23,0,6,1,2,10,3],
+"vision__tasks_8py.html#a3a4bd0269cff5c8d45098a6a0baed265":[23,0,6,1,2,10,7],
+"vision__tasks_8py.html#aa1f67b14ca9b6d1f206441038d9b045e":[23,0,6,1,2,10,6],
+"vision__tasks_8py.html#ae7683efea5f76a87a8709bf0dc062fd4":[23,0,6,1,2,10,4],
+"vision__tasks_8py.html#af7131cd2974024262937309e08bd5baf":[23,0,6,1,2,10,1],
 "vision__tasks_8py.html#af8b434b2944d2e99338e040a7bb1d7c5":[23,0,6,1,2,10,2],
 "wait__for__controller__input__node_8py.html":[23,0,6,1,4,0],
 "wait__for__controller__input__node_8py.html#abe191a8897bb324ceaa8765539c4a73e":[23,0,6,1,4,0,2],

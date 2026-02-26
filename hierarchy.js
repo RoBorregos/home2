@@ -9,6 +9,7 @@ var hierarchy =
     [ "ObjectDetector.Detection", "classObjectDetector_1_1Detection.html", null ],
     [ "DetectionRecord", "structDetectionRecord.html", null ],
     [ "utils.exploration_planner.ExplorationPlanner", "classutils_1_1exploration__planner_1_1ExplorationPlanner.html", null ],
+    [ "subtask_managers.hri_tasks.FindClosestResult", "classsubtask__managers_1_1hri__tasks_1_1FindClosestResult.html", null ],
     [ "subtask_managers.generic_tasks.GenericTask", "classsubtask__managers_1_1generic__tasks_1_1GenericTask.html", [
       [ "subtask_managers.gpsr_single_tasks.GPSRSingleTask", "classsubtask__managers_1_1gpsr__single__tasks_1_1GPSRSingleTask.html", null ],
       [ "subtask_managers.gpsr_tasks.GPSRTask", "classsubtask__managers_1_1gpsr__tasks_1_1GPSRTask.html", null ]

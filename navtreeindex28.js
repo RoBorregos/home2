@@ -1,5 +1,11 @@
 var NAVTREEINDEX28 =
 {
+"robot__description_2frida__description_2frida__description_2____init_____8py.html":[23,0,5,0,0,0],
+"robot__sim_8launch_8py.html":[23,0,5,0,1,8],
+"robot__sim_8launch_8py.html#aa1de369c762aa456d4c9e31388d6f617":[23,0,5,0,1,8,0],
+"robot__sim_8launch_8py.html#aa842398b51f41c4ee2a7105e1e83009e":[23,0,5,0,1,8,1],
+"rplidar__fixed_8launch_8py.html":[23,0,4,0,1,0,5],
+"rplidar__fixed_8launch_8py.html#a34c12a29f8ab4229ce3f1118c9f1c3c2":[23,0,4,0,1,0,5,0],
 "rtabmap_8launch_8py.html":[23,0,4,0,1,0,0,1],
 "rtabmap_8launch_8py.html#a31a89438859fa170112ba301bb992e1e":[23,0,4,0,1,0,0,1,1],
 "rtabmap_8launch_8py.html#a3f49f7dd6c62dbef074437baae77ace8":[23,0,4,0,1,0,0,1,0],
@@ -243,11 +249,5 @@ var NAVTREEINDEX28 =
 "vision__enums_8py.html#a0332e09d677c452e51fd0d08415fefb5":[23,0,1,1,8,3],
 "vision__general_2pose__detection_8py.html":[23,0,7,0,3,3,2],
 "vision__general_2pose__detection_8py.html#a4329d8c46a61af41a5e1122a017f84b2":[23,0,7,0,3,3,2,1],
-"vision__tasks_8py.html":[23,0,6,1,2,10],
-"vision__tasks_8py.html#a1abb56fac59a5fec5b7cdb4f1b3a2ba5":[23,0,6,1,2,10,5],
-"vision__tasks_8py.html#a35a3ccf19eee1ced86e734c35eb4d16b":[23,0,6,1,2,10,3],
-"vision__tasks_8py.html#a3a4bd0269cff5c8d45098a6a0baed265":[23,0,6,1,2,10,7],
-"vision__tasks_8py.html#aa1f67b14ca9b6d1f206441038d9b045e":[23,0,6,1,2,10,6],
-"vision__tasks_8py.html#ae7683efea5f76a87a8709bf0dc062fd4":[23,0,6,1,2,10,4],
-"vision__tasks_8py.html#af7131cd2974024262937309e08bd5baf":[23,0,6,1,2,10,1]
+"vision__tasks_8py.html":[23,0,6,1,2,10]
 };

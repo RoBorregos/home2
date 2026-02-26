@@ -18,7 +18,7 @@ var classsubtask__managers_1_1hri__tasks_1_1HRITasks =
     [ "execute_command", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a579a2698905fceb2e83cbb4015d0f6db", null ],
     [ "extract_data", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#ab1d1586a91c8bdf01b8c6b034d678aa3", null ],
     [ "feedback_callback", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#ac22a2611cfa6eb9a8fa500713627354a", null ],
-    [ "find_closest", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a9594a0b4d833d3a6c7f82df07c9493c6", null ],
+    [ "find_closest", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a3a45e4bd9cbdf82415286ccfdbaef361", null ],
     [ "find_closest_raw", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#aed25755e192c9c0599370020d38a39ad", null ],
     [ "get_location_orientation", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#ad7ed5801ffe42acec58a792bdf30163a", null ],
     [ "hear", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a11a837be0a6bcedef1ac9c87318a7981", null ],

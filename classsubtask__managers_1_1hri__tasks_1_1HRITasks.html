@@ -160,8 +160,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:af38150add6c037a0af32c905b4dc327e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7b849cdde8d552d65603a2e85ec4698f"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a7b849cdde8d552d65603a2e85ec4698f">query_location</a> (self, str query, int top_k=1, bool use_context=False)</td></tr>
 <tr class="separator:a7b849cdde8d552d65603a2e85ec4698f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9594a0b4d833d3a6c7f82df07c9493c6"><td class="memItemLeft" align="right" valign="top">list[str]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a9594a0b4d833d3a6c7f82df07c9493c6">find_closest</a> (self, list documents, str query, int top_k=1, float threshold=0.0)</td></tr>
-<tr class="separator:a9594a0b4d833d3a6c7f82df07c9493c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3a45e4bd9cbdf82415286ccfdbaef361"><td class="memItemLeft" align="right" valign="top">tuple[<a class="el" href="classutils_1_1status_1_1Status.html">Status</a>, <a class="el" href="classsubtask__managers_1_1hri__tasks_1_1FindClosestResult.html">FindClosestResult</a>]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a3a45e4bd9cbdf82415286ccfdbaef361">find_closest</a> (self, list documents, str query, int top_k=1, float threshold=0.0)</td></tr>
+<tr class="separator:a3a45e4bd9cbdf82415286ccfdbaef361"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aed25755e192c9c0599370020d38a39ad"><td class="memItemLeft" align="right" valign="top">list[str]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#aed25755e192c9c0599370020d38a39ad">find_closest_raw</a> (self, list documents, str query, int top_k=4)</td></tr>
 <tr class="separator:aed25755e192c9c0599370020d38a39ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af1839168018c952b32e71d2752636e42"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#af1839168018c952b32e71d2752636e42">answer_with_context</a> (self, str question, str context)</td></tr>
@@ -263,7 +263,7 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:af9ef1a3ad4756ed82c4ba7cad90f361e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><pre class="fragment">Class to manage the vision tasks</pre> </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<div class="textblock"><pre class="fragment">Class to manage the HRI tasks</pre> </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a4f915f07715543395fc0cde111e35c99" name="a4f915f07715543395fc0cde111e35c99"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a4f915f07715543395fc0cde111e35c99">&#9670;&#160;</a></span>__init__()</h2>
 
@@ -1060,14 +1060,14 @@ Returns:
 
 </div>
 </div>
-<a id="a9594a0b4d833d3a6c7f82df07c9493c6" name="a9594a0b4d833d3a6c7f82df07c9493c6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9594a0b4d833d3a6c7f82df07c9493c6">&#9670;&#160;</a></span>find_closest()</h2>
+<a id="a3a45e4bd9cbdf82415286ccfdbaef361" name="a3a45e4bd9cbdf82415286ccfdbaef361"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3a45e4bd9cbdf82415286ccfdbaef361">&#9670;&#160;</a></span>find_closest()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"> list[str] subtask_managers.hri_tasks.HRITasks.find_closest </td>
+          <td class="memname"> tuple[<a class="el" href="classutils_1_1status_1_1Status.html">Status</a>, <a class="el" href="classsubtask__managers_1_1hri__tasks_1_1FindClosestResult.html">FindClosestResult</a>] subtask_managers.hri_tasks.HRITasks.find_closest </td>
           <td>(</td>
           <td class="paramtype">&#160;</td>
           <td class="paramname"><em>self</em>, </td>
@@ -1107,9 +1107,11 @@ Returns:
 Args:
     documents: the documents to search among
     query: the query to search for
+    top_k: the number of results to return
+    threshold: the minimum similarity score to include
 Returns:
     Status: the status of the execution
-    list[str]: the results of the query
+    FindClosestResult: the results and similarity scores of the query
 </pre> 
 </div>
 </div>
