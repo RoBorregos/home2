@@ -4,24 +4,7 @@ import subprocess
 import rclpy
 from rclpy.node import Node
 from std_msgs.msg import String
-
-CURRENT_FILE_PATH = os.path.abspath(__file__)
-
-
-def find_assets_dir():
-    current = os.path.dirname(CURRENT_FILE_PATH)
-    while current != "/":
-        potential_assets = os.path.join(current, "assets")
-        if os.path.exists(potential_assets) and os.path.isdir(potential_assets):
-            return potential_assets
-        parent = os.path.dirname(current)
-        if parent == current:
-            break
-        current = parent
-    return None
-
-
-ASSETS_DIR = find_assets_dir()
+from ament_index_python.packages import get_package_share_directory
 
 
 class AudioFeedbackNode(Node):
@@ -31,14 +14,19 @@ class AudioFeedbackNode(Node):
 
         self.create_subscription(String, "/AudioState", self.audio_state_callback, 10)
 
-        if ASSETS_DIR:
-            self.chime_path = os.path.join(ASSETS_DIR, "listening_chime.wav")
-        else:
-            self.chime_path = None
-            self.get_logger().error("Assets directory not found!")
+        try:
+            share_dir = get_package_share_directory("speech")
+            self.chime_path = os.path.join(share_dir, "assets", "listening_chime.wav")
+        except Exception:
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            self.chime_path = os.path.join(
+                current_dir, "..", "assets", "listening_chime.wav"
+            )
 
-        if self.chime_path and not os.path.exists(self.chime_path):
-            self.get_logger().warn(f"Chime file not found at {self.chime_path}")
+        if not os.path.exists(self.chime_path):
+            self.get_logger().error(f"Chime file not found at {self.chime_path}")
+        else:
+            self.get_logger().info(f"Chime file found: {self.chime_path}")
 
         self.get_logger().info("Audio Feedback node initialized.")
 
