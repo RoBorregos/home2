@@ -26,8 +26,46 @@ fi
 
 # check arguments passed as --help or -h
 if [ "$INPUT" == "--help" ] || [ "$INPUT" == "-h" ] || [ -z "$INPUT" ]; then
-  echo "Usage: ./run.sh [area] [--task] [--flags]"
-  echo "Example: ./run.sh hri --receptionist --open-display"
+  cat << EOF
+Usage: ./run.sh [area | task | command] [flags]
+
+Description:
+  This script is the main entry point to initialize and manage the Docker 
+  container environment for the FRIDA robot. It automatically detects the 
+  architecture (CPU, CUDA, L4T) and spins up the corresponding services.
+
+Available Areas:
+  vision             Spins up the containers and nodes for the vision area.
+  manipulation       Spins up the containers and nodes for manipulation.
+  navigation         Spins up the containers and nodes for navigation.
+  hri                Spins up the containers and nodes for human-robot interaction.
+  integration        Spins up the complete integration environment.
+  frida_interfaces   Builds and configures FRIDA's custom interfaces/messages.
+
+Competition Tasks:
+  --hric             Runs the Human-Robot Interaction challenge.
+  --ppc              Runs the Pick and Place challenge.
+  --gpsr             Runs the General Purpose Service Robot challenge.
+  --dlc              Runs the navigation and manipulation task.
+  --restaurant       Runs the Restaurant challenge.
+  --finals           Runs the finals stage routine.
+
+Control Commands:
+  --stop             Stops the running containers without removing them.
+  --down             Stops and removes all containers, networks, and volumes.
+
+Additional Flags:
+  --build            Forces the building of Docker images before starting.
+  --recreate         Forces the recreation of containers (useful for network or .env changes).
+  --open-display     Opens the graphical interface (UI/Display) required for HRI or Vision.
+  --task             (Replace with task name) Specifies a sub-task within an area.
+
+Examples:
+  ./run.sh hri --receptionist --open-display
+  ./run.sh vision --build
+  ./run.sh --gpsr --recreate
+  ./run.sh --down
+EOF
   exit 0
 fi
 
@@ -45,7 +83,7 @@ case $INPUT in
     run_area "$@"
     ;;
   *)
-    echo "Invalid service name provided. Valid args are: vision, manipulation, navigation, integration, hri, frida_interfaces, stop, down"
+    echo "Invalid service name provided. Valid args are: vision, manipulation, navigation, integration, hri, frida_interfaces, --stop, --down"
     exit 1
     ;;
 esac
