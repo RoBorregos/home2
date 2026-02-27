@@ -29,7 +29,7 @@ rtabmap:
     "Mem/ReduceGraph": "false"
     "Kp/NNStrategy": "4"
     "Kp/MaxFeatures": "500"
-    "Kp/DetectorStrategy": "8"
+    "Kp/DetectorStrategy": "0"
     "GFTT/Gpu": "true"
     "ORB/Gpu": "true"
     "RGBD/LinearUpdate": "0.1"

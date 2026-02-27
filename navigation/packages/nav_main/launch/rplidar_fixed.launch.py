@@ -15,15 +15,10 @@ def generate_launch_description():
     return LaunchDescription([
         declare_use_sim,
         Node(
-            package='tf2_ros',
-            executable='static_transform_publisher',
-            arguments=['0','0','0','0','3.1416','0','base_link','laser'],
-            condition=UnlessCondition(use_sim)
-        ),
-        Node(
             package='nav_main',
             executable='ignore_laser',
-            parameters = [{'ignore_array': '-138.4, -120.4, -86.9, -78.4, -39.8, -32.3, -22.3, -4.8, 33.3, 39.8, 77.9, 86.9, 122.4, 139.9'}],
+            parameters = [{'ignore_array': '-139.9, -122.4, -86.4, -78.4, -39.8, -34.3, 3.3, 21.8, 32.8, 38.3, 78.4, 86.9, 120.9, 138.4'}],
+	    #parameters = [{'ignore_array': '-138.4, -120.4, -86.9, -78.4, -39.8, -32.3, -22.3, -4.8, 33.3, 39.8, 77.9, 86.9, 122.4, 139.9'}],
             condition=UnlessCondition(use_sim)
         ),
         Node(
@@ -40,7 +35,7 @@ def generate_launch_description():
                          'serial_port': '/dev/ttyUSB0', 
                          'serial_baudrate': 460800, 
                          'frame_id': 'laser',
-                         'inverted': False,
+                         'inverted': True,
                          'angle_compensate': True,
                          'scan_mode': 'Standard'}],
             output='screen',
