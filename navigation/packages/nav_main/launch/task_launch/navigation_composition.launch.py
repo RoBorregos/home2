@@ -12,7 +12,7 @@ def generate_launch_description():
     pkg_file_route = get_package_share_directory('nav_main')
     rtab_params_file = os.path.join(pkg_file_route,'config', 'rtabmap', 'rtabmap_default_config.yaml')
     nav2_params_file = os.path.join(pkg_file_route,'config', 'nav2_standard.yaml')
-    rtabmap_map_name = LaunchConfiguration('map_name', default='rtabmap_robocuptesting.db')
+    rtabmap_map_name = LaunchConfiguration('map_name', default='rtab_lab.db')
     rtab_params = LaunchConfiguration('rtab_config_file', default=rtab_params_file)
     nav2_params = LaunchConfiguration('nav2_config_file', default=nav2_params_file)
     localization = LaunchConfiguration('localization', default='true')
