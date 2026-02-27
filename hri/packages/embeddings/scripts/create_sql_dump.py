@@ -210,6 +210,9 @@ def main():
     FRIDA_CONSTANTS_PATH = "/workspace/src/frida_constants"
     DOCKER_PATH = "/workspace/src/docker/hri/sql_dumps"
 
+    # Create sql_dumps directory if it doesn't exist
+    os.makedirs(DOCKER_PATH, exist_ok=True)
+
     print("Loading JSON files...")
     jsons = get_jsons(DATAFRAME_PATH)
     frida_constants_jsons = get_jsons(FRIDA_CONSTANTS_PATH)

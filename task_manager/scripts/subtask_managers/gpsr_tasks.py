@@ -426,10 +426,10 @@ class GPSRTask(GenericTask):
 
         possibilities = [v.value for v in Gestures] + [v.value for v in Poses] + ["clothes"]
 
-        status, value, _ = self.subtask_manager.hri.find_closest(
+        status, closest = self.subtask_manager.hri.find_closest(
             possibilities, command.target_to_count
         )
-        value = value[0]
+        value = closest.results[0]
 
         print(f"Value: {value}", command.target_to_count)
 
@@ -444,14 +444,14 @@ class GPSRTask(GenericTask):
         counter = 0
 
         if not is_value_in_enum(value, Gestures) and not is_value_in_enum(value, Poses):
-            s, color, _ = self.subtask_manager.hri.find_closest(
+            s, color_match = self.subtask_manager.hri.find_closest(
                 self.color_list, command.target_to_count
             )
-            cache_color = color[0]
-            s, cloth, _ = self.subtask_manager.hri.find_closest(
+            cache_color = color_match.results[0]
+            s, cloth_match = self.subtask_manager.hri.find_closest(
                 self.clothe_list, command.target_to_count
             )
-            cache_cloth = cloth[0]
+            cache_cloth = cloth_match.results[0]
             value = f"{cache_color} {cache_cloth}s"
             command.target_to_count = value
 
@@ -491,10 +491,10 @@ class GPSRTask(GenericTask):
 
         possibilities = [v.value for v in Gestures] + [v.value for v in Poses] + ["clothes"]
 
-        status, value, _ = self.subtask_manager.hri.find_closest(
+        status, closest = self.subtask_manager.hri.find_closest(
             possibilities, command.attribute_value
         )
-        value = value[0]
+        value = closest.results[0]
 
         self.subtask_manager.manipulation.move_to_position("front_stare")
 
@@ -503,14 +503,14 @@ class GPSRTask(GenericTask):
         )
 
         if not is_value_in_enum(value, Gestures) and not is_value_in_enum(value, Poses):
-            s, color, _ = self.subtask_manager.hri.find_closest(
+            s, color_match = self.subtask_manager.hri.find_closest(
                 self.color_list, command.attribute_value
             )
-            cache_color = color[0]
-            s, cloth, _ = self.subtask_manager.hri.find_closest(
+            cache_color = color_match.results[0]
+            s, cloth_match = self.subtask_manager.hri.find_closest(
                 self.clothe_list, command.attribute_value
             )
-            cache_cloth = cloth[0]
+            cache_cloth = cloth_match.results[0]
             value = f"{cache_color} {cache_cloth}s"
             command.attribute_value = value
 
@@ -525,14 +525,14 @@ class GPSRTask(GenericTask):
                 status, count = self.subtask_manager.vision.count_by_pose(value)
             else:
                 if cache_color is None or cache_cloth is None:
-                    s, color, _ = self.subtask_manager.hri.find_closest(
+                    s, color_match = self.subtask_manager.hri.find_closest(
                         self.color_list, command.attribute_value
                     )
-                    cache_color = color[0]
-                    s, cloth, _ = self.subtask_manager.hri.find_closest(
+                    cache_color = color_match.results[0]
+                    s, cloth_match = self.subtask_manager.hri.find_closest(
                         self.clothe_list, command.attribute_value
                     )
-                    cache_cloth = cloth[0]
+                    cache_cloth = cloth_match.results[0]
 
                 status, count = self.subtask_manager.vision.count_by_color(cache_color, cache_cloth)
 
