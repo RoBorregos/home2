@@ -8,6 +8,9 @@
 #include <geometric_shapes/shapes.h>
 #include <geometric_shapes/shape_operations.h>
 #include <moveit/planning_scene/planning_scene.h>
+#include <moveit/trajectory_processing/time_optimal_trajectory_generation.h>
+
+#include <octomap/octomap.h>
 
 namespace vamp_moveit_plugin
 {
@@ -81,6 +84,29 @@ bool VampPlanningContext::solve(planning_interface::MotionPlanResponse& res)
         request->box_sizes_flat.push_back(b->size[0]);
         request->box_sizes_flat.push_back(b->size[1]);
         request->box_sizes_flat.push_back(b->size[2]);
+      } else if (object->shapes_[i]->type == shapes::OCTREE) {
+        
+        const auto* octree_shape = static_cast<const shapes::OcTree*>(object->shapes_[i].get());
+        std::shared_ptr<const octomap::OcTree> octree = octree_shape->octree;
+        
+        
+        for (auto it = octree->begin(octree->getTreeDepth()), end = octree->end(); it != end; ++it) {
+            if (octree->isNodeOccupied(*it)) {
+                
+                Eigen::Vector3d local_pos(it.getX(), it.getY(), it.getZ());
+                Eigen::Vector3d global_pos = global_pose * local_pos;
+
+                
+                double size = it.getSize();
+                double radius = (size * 1.73205) / 2.0;
+
+                
+                request->sphere_centers_flat.push_back(global_pos.x());
+                request->sphere_centers_flat.push_back(global_pos.y());
+                request->sphere_centers_flat.push_back(global_pos.z());
+                request->sphere_radii.push_back(radius);
+            }
+        }
       }
     }
   }
@@ -128,9 +154,32 @@ bool VampPlanningContext::solve(planning_interface::MotionPlanResponse& res)
 
   res.trajectory_ = std::make_shared<robot_trajectory::RobotTrajectory>(robot_model_, getGroupName());
   res.trajectory_->setRobotTrajectoryMsg(start_robot_state, trajectory_msg);
-  res.error_code_.val = moveit_msgs::msg::MoveItErrorCodes::SUCCESS;
 
-  RCLCPP_INFO(node_->get_logger(), "VAMP planning succeeded, avoiding %ld spheres!", request->sphere_radii.size());
+  
+  
+  
+
+  trajectory_processing::TimeOptimalTrajectoryGeneration totg;
+
+  
+  double max_vel_scaling = req.max_velocity_scaling_factor > 0.0 ? req.max_velocity_scaling_factor : 1.0;
+  double max_acc_scaling = req.max_acceleration_scaling_factor > 0.0 ? req.max_acceleration_scaling_factor : 1.0;
+
+  RCLCPP_INFO(node_->get_logger(), "Aplicando suavizado de trayectoria (TOTG)...");
+  
+  
+  bool success_totg = totg.computeTimeStamps(*res.trajectory_, max_vel_scaling, max_acc_scaling);
+
+  if (success_totg) {
+      RCLCPP_INFO(node_->get_logger(), "✅ Trayectoria suavizada correctamente (Protección de motores activada).");
+  } else {
+      RCLCPP_WARN(node_->get_logger(), "⚠️ TOTG falló. El brazo se moverá sin perfil de velocidad.");
+  }
+  
+
+  
+  res.error_code_.val = moveit_msgs::msg::MoveItErrorCodes::SUCCESS;
+  RCLCPP_INFO(node_->get_logger(), "VAMP planning succeeded, avoiding %ld boxes/spheres!", request->box_sizes_flat.size() / 3);
   return true;
 }
 
