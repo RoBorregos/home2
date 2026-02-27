@@ -31,6 +31,7 @@ class ServeClientFasterWhisper(ServeClientBase):
         same_output_threshold=10,
         cache_path="~/.cache/whisper-live/",
         transcriber=None,
+        hotwords=None,
     ):
         """
         Initialize a ServeClient instance.
@@ -84,6 +85,7 @@ class ServeClientFasterWhisper(ServeClientBase):
         self.language = "en" if self.model_size_or_path.endswith("en") else language
         self.task = task
         self.initial_prompt = initial_prompt
+        self.hotwords = hotwords
         self.vad_parameters = None  # vad_parameters or {"onset": 0.5}
         try:
             import torch
@@ -117,6 +119,7 @@ class ServeClientFasterWhisper(ServeClientBase):
                 return
 
         self.use_vad = use_vad
+        self.word_confidences = []
 
         # threading
         self.trans_thread = threading.Thread(target=self.speech_to_text)
@@ -209,12 +212,12 @@ class ServeClientFasterWhisper(ServeClientBase):
             ServeClientFasterWhisper.SINGLE_MODEL_LOCK.acquire()
         result, info = self.transcriber.transcribe(
             input_sample,
-            # initial_prompt=self.initial_prompt,
-            hotwords="Maria Ana Francisca Antônia Adriana Juliana Marcia Fernanda Patrícia Aline Jose Joao Antonio Francisco Carlos gum_balls sponge chocolate_bar coke lemon cornflakes orange_juice peanuts bowl brush milk fork pear tangerine cheese_snack cup broth lime coffee pringles apple knife fanta mayo cloth oats crisps plate tuna spoon ketchup corn_flour kuat polish",
+            hotwords=self.hotwords,
             language=self.language,
             task=self.task,
             vad_filter=self.use_vad,
             vad_parameters=self.vad_parameters if self.use_vad else None,
+            word_timestamps=True,
         )
 
         if ServeClientFasterWhisper.SINGLE_MODEL:
@@ -234,9 +237,23 @@ class ServeClientFasterWhisper(ServeClientBase):
             duration (float): Duration of the transcribed audio chunk.
         """
         segments = []
+        words = []
+        result = list(result)
         if len(result):
             self.t_start = None
+            for segment in result:
+                if segment.words:
+                    for w in segment.words:
+                        words.append(
+                            {
+                                "word": w.word.strip(),
+                                "confidence": w.probability,
+                                "start": w.start,
+                                "end": w.end,
+                            }
+                        )
             last_segment = self.update_segments(result, duration)
             segments = self.prepare_segments(last_segment)
 
         self.segments = segments
+        self.word_confidences = words

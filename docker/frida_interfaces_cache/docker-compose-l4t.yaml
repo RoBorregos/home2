@@ -9,9 +9,28 @@ services:
     container_name: home2-frida-interfaces-cache
     volumes:
       - ../../:/workspace/src
+      - /dev:/dev
+      - /dev/video0:/dev/video0
+      - /tmp:/tmp
+      - /tmp/.X11-unix:/tmp/.X11-unix
       - ./build:/workspace/build
       - ./install:/workspace/install
       - ./log:/workspace/log
+      - $HOME/.Xauthority:/home/ros/.Xauthority:rw
+
+    network_mode: host
+    runtime : ${DOCKER_RUNTIME:-runc}
+    group_add: 
+      - video
+    environment:
+      DISPLAY: ${DISPLAY:-:0}
+      TERM: xterm-256color
+      QT_X11_NO_MITSHM: 1
+      QT_DEBUG_PLUGINS: 1
+    stdin_open: true    
+    working_dir: /workspace
     tty: true
-    entrypoint: ["bash", "-il", "-c"]
-    command: ["source /opt/ros/humble/setup.bash && colcon build --packages-select frida_interfaces frida_constants xarm_msgs"]
+    user: ${UID}:${GID}
+    privileged: true
+    command: >
+      bash -c "source /opt/ros/humble/setup.bash && colcon build --packages-select frida_interfaces frida_constants xarm_msgs"
