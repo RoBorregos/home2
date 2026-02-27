@@ -1,7 +1,7 @@
 var searchData=
 [
   ['read_5fcluster_2ecpp_0',['read_cluster.cpp',['../read__cluster_8cpp.html',1,'']]],
-  ['readme_2emd_1',['README.md',['../vision_2README_8md.html',1,'(Global Namespace)'],['../robot__description_2frida__description_2README_8md.html',1,'(Global Namespace)'],['../navigation_2README_8md.html',1,'(Global Namespace)'],['../manipulation_2README_8md.html',1,'(Global Namespace)']]],
+  ['readme_2emd_1',['README.md',['../vision_2README_8md.html',1,'(Global Namespace)'],['../robot__description_2frida__description_2README_8md.html',1,'(Global Namespace)'],['../navigation_2README_8md.html',1,'(Global Namespace)'],['../navigation_2packages_2map__context_2config_2rosbag_2README_8md.html',1,'(Global Namespace)'],['../manipulation_2README_8md.html',1,'(Global Namespace)']]],
   ['readpcdfile_2esrv_2',['ReadPcdFile.srv',['../ReadPcdFile_8srv.html',1,'']]],
   ['readqr_2esrv_3',['ReadQr.srv',['../ReadQr_8srv.html',1,'']]],
   ['receptionist_2elaunch_2epy_4',['receptionist.launch.py',['../navigation_2packages_2nav__main_2launch_2task__launch_2receptionist_8launch_8py.html',1,'(Global Namespace)'],['../manipulation_2packages_2manipulation__general_2launch_2receptionist_8launch_8py.html',1,'(Global Namespace)']]],
@@ -22,7 +22,7 @@ var searchData=
   ['returnlocation_2esrv_19',['ReturnLocation.srv',['../ReturnLocation_8srv.html',1,'']]],
   ['robot_5fsim_2elaunch_2epy_20',['robot_sim.launch.py',['../robot__sim_8launch_8py.html',1,'']]],
   ['ros2_2emd_21',['ROS2.md',['../ROS2_8md.html',1,'']]],
-  ['ros_5futils_2epy_22',['ros_utils.py',['../vision_2packages_2object__detector__2d_2object__detector__2d_2Utils_2ros__utils_8py.html',1,'(Global Namespace)'],['../manipulation_2packages_2frida__motion__planning_2frida__motion__planning_2utils_2ros__utils_8py.html',1,'(Global Namespace)']]],
+  ['ros_5futils_2epy_22',['ros_utils.py',['../manipulation_2packages_2frida__motion__planning_2frida__motion__planning_2utils_2ros__utils_8py.html',1,'(Global Namespace)'],['../vision_2packages_2object__detector__2d_2object__detector__2d_2Utils_2ros__utils_8py.html',1,'(Global Namespace)']]],
   ['rplidar_5ffixed_2elaunch_2epy_23',['rplidar_fixed.launch.py',['../rplidar__fixed_8launch_8py.html',1,'']]],
   ['rtabmap_2elaunch_2epy_24',['rtabmap.launch.py',['../rtabmap_8launch_8py.html',1,'']]],
   ['rtabmap_5fprocess_2elaunch_2epy_25',['rtabmap_process.launch.py',['../rtabmap__process_8launch_8py.html',1,'']]],

@@ -13,6 +13,7 @@ var namespaces_dup =
       [ "map", "namespacecalculations.html#ab20c1a0c376ea6c16cebfb03541d2ee3", null ],
       [ "FLT_EPSILON", "namespacecalculations.html#a7bc607213c6ce6ae2313c9733977f388", null ]
     ] ],
+    [ "calibrate_ignore_laser", "namespacecalibrate__ignore__laser.html", "namespacecalibrate__ignore__laser" ],
     [ "call_joint_goal", "namespacecall__joint__goal.html", "namespacecall__joint__goal" ],
     [ "call_pick_action", "namespacecall__pick__action.html", "namespacecall__pick__action" ],
     [ "call_pose_goal", "namespacecall__pose__goal.html", "namespacecall__pose__goal" ],
@@ -323,6 +324,10 @@ var namespaces_dup =
     ] ],
     [ "Servo", "namespaceServo.html", "namespaceServo" ],
     [ "show_object_detection", "namespaceshow__object__detection.html", "namespaceshow__object__detection" ],
+    [ "simulate_map", "namespacesimulate__map.html", [
+      [ "generate_launch_description", "namespacesimulate__map.html#ad6149f6889b194fc6ef401af9ad4a40b", null ]
+    ] ],
+    [ "simulate_position", "namespacesimulate__position.html", "namespacesimulate__position" ],
     [ "storing_groceries_launch", "namespacestoring__groceries__launch.html", [
       [ "generate_launch_description", "namespacestoring__groceries__launch.html#a84e56b2514a7f4c75214c14f7b9a38a4", null ]
     ] ],

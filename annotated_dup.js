@@ -15,6 +15,9 @@ var annotated_dup =
         [ "MoveItConfigsBuilder", "classarm__pkg_1_1moveit__configs__builder__sim_1_1MoveItConfigsBuilder.html", "classarm__pkg_1_1moveit__configs__builder__sim_1_1MoveItConfigsBuilder" ]
       ] ]
     ] ],
+    [ "calibrate_ignore_laser", "namespacecalibrate__ignore__laser.html", [
+      [ "LidarCalibrator", "classcalibrate__ignore__laser_1_1LidarCalibrator.html", "classcalibrate__ignore__laser_1_1LidarCalibrator" ]
+    ] ],
     [ "call_joint_goal", "namespacecall__joint__goal.html", [
       [ "MoveJointsClient", "classcall__joint__goal_1_1MoveJointsClient.html", "classcall__joint__goal_1_1MoveJointsClient" ]
     ] ],
@@ -285,6 +288,9 @@ var annotated_dup =
     ] ],
     [ "show_object_detection", "namespaceshow__object__detection.html", [
       [ "ShowDetectionNode", "classshow__object__detection_1_1ShowDetectionNode.html", "classshow__object__detection_1_1ShowDetectionNode" ]
+    ] ],
+    [ "simulate_position", "namespacesimulate__position.html", [
+      [ "SimulatePosition", "classsimulate__position_1_1SimulatePosition.html", "classsimulate__position_1_1SimulatePosition" ]
     ] ],
     [ "storing_groceries_manager", "namespacestoring__groceries__manager.html", [
       [ "ExecutionStates", "classstoring__groceries__manager_1_1ExecutionStates.html", null ],

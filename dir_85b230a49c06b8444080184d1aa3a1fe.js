@@ -1,5 +1,6 @@
 var dir_85b230a49c06b8444080184d1aa3a1fe =
 [
+    [ "calibrate_ignore_laser.py", "calibrate__ignore__laser_8py.html", "calibrate__ignore__laser_8py" ],
     [ "closed_door_test.py", "closed__door__test_8py.html", "closed__door__test_8py" ],
     [ "laser_filter.py", "laser__filter_8py.html", null ],
     [ "map_cleaner.py", "map__cleaner_8py.html", "map__cleaner_8py" ],

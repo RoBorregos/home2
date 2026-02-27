@@ -128,6 +128,7 @@ var hierarchy =
     ] ],
     [ "Node", null, [
       [ "_storing_groceries.StoringGroceriesTM", "class__storing__groceries_1_1StoringGroceriesTM.html", null ],
+      [ "calibrate_ignore_laser.LidarCalibrator", "classcalibrate__ignore__laser_1_1LidarCalibrator.html", null ],
       [ "call_joint_goal.MoveJointsClient", "classcall__joint__goal_1_1MoveJointsClient.html", null ],
       [ "call_pick_action.PickMotionClient", "classcall__pick__action_1_1PickMotionClient.html", null ],
       [ "call_pose_goal.MoveToPoseClient", "classcall__pose__goal_1_1MoveToPoseClient.html", null ],
@@ -186,6 +187,7 @@ var hierarchy =
       [ "run_while_hearing.ServiceClientServerNode", "classrun__while__hearing_1_1ServiceClientServerNode.html", null ],
       [ "safety_task_manager.SafetyTaskManager", "classsafety__task__manager_1_1SafetyTaskManager.html", null ],
       [ "show_object_detection.ShowDetectionNode", "classshow__object__detection_1_1ShowDetectionNode.html", null ],
+      [ "simulate_position.SimulatePosition", "classsimulate__position_1_1SimulatePosition.html", null ],
       [ "storing_groceries_manager.StoringGroceriesManager", "classstoring__groceries__manager_1_1StoringGroceriesManager.html", null ],
       [ "temp_follow.FollowPersonNode", "classtemp__follow_1_1FollowPersonNode.html", null ],
       [ "test_env.TestNode", "classtest__env_1_1TestNode.html", null ],

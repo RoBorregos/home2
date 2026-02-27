@@ -55,5 +55,6 @@ var searchData=
   ['nodeparams_52',['NodeParams',['../classlocal__camera_1_1NodeParams.html',1,'local_camera.NodeParams'],['../classobject__detector__node_1_1NodeParams.html',1,'object_detector_node.NodeParams'],['../classzero__shot__object__detector__node_1_1NodeParams.html',1,'zero_shot_object_detector_node.NodeParams']]],
   ['not_5fall_5fobjects_5fpicked_53',['NOT_ALL_OBJECTS_PICKED',['../classstoring__groceries__manager_1_1ExecutionStates.html#aa3c4bdc2f769c7ddfcb587eadddaa165',1,'storing_groceries_manager::ExecutionStates']]],
   ['not_5ffound_54',['NOT_FOUND',['../namespacemoondream__lib.html#a92853496cf2484aa703bdf5a8402bc73',1,'moondream_lib.NOT_FOUND()'],['../namespacemoondream__node.html#aa2e1e7b7b490eadcc4fe5414c36631b1',1,'moondream_node.NOT_FOUND()'],['../classmoondream__node_1_1Position.html#aad94fcef34a535fba8ed00410b8646fa',1,'moondream_node.Position.NOT_FOUND()']]],
-  ['now_55',['now',['../classdashgo__driver2_1_1DashgoDriver.html#aa30de516b59e4de82ba7181b3c4639ef',1,'dashgo_driver2::DashgoDriver']]]
+  ['now_55',['now',['../classdashgo__driver2_1_1DashgoDriver.html#aa30de516b59e4de82ba7181b3c4639ef',1,'dashgo_driver2::DashgoDriver']]],
+  ['num_5fscans_5fto_5fcollect_56',['num_scans_to_collect',['../classcalibrate__ignore__laser_1_1LidarCalibrator.html#ae1957112179d6433fe8d0d823351772d',1,'calibrate_ignore_laser::LidarCalibrator']]]
 ];
