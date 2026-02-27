@@ -1,9 +1,0 @@
-**/install
-**/devel
-**/build
-**/log
-*.user
-**/.vscode/
-**/__pychache__/
-**/.cache
-
