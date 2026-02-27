@@ -13,5 +13,6 @@ services:
       - ./install:/workspace/install
       - ./log:/workspace/log
     tty: true
+    user: ${UID}:${GID}
     entrypoint: ["bash", "-il", "-c"]
     command: ["source /opt/ros/humble/setup.bash && colcon build --packages-select frida_interfaces frida_constants"]
