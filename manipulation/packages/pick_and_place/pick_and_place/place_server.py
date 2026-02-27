@@ -80,6 +80,9 @@ class PlaceMotionServer(Node):
 
         self.target_link = EEF_LINK_NAME
 
+        # Declare fail_fast parameter
+        self.declare_parameter("fail_fast", True)
+
         self.get_logger().info("Place Action Server has been started")
 
     async def execute_callback(self, goal_handle):

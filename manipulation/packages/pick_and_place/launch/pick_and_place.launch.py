@@ -28,7 +28,13 @@ def generate_launch_description():
                 name="manipulation_core",
                 output="screen",
                 emulate_tty=True,
-                parameters=[],
+                parameters=[
+                    {
+                        "fail_fast": True,
+                        "pick_retries": 1,
+                        "perception_retries": 2,
+                    }
+                ],
             ),
             # Node(
             #     package="pick_and_place",
@@ -48,6 +54,7 @@ def generate_launch_description():
                     {
                         # based on distance between end-effector link and contact point with objects e.g. where you grip
                         "ee_link_offset": -0.09,
+                        "fail_fast": True,
                     }
                 ],
             ),
@@ -57,6 +64,11 @@ def generate_launch_description():
                 name="place_server",
                 output="screen",
                 emulate_tty=True,
+                parameters=[
+                    {
+                        "fail_fast": True,
+                    }
+                ],
             ),
             Node(
                 package="pick_and_place",
@@ -84,6 +96,13 @@ def generate_launch_description():
             Node(
                 package="frida_motion_planning",
                 executable="motion_planning_server.py",
+                parameters=[
+                    {
+                        "fail_fast": True,
+                        "planning_attempts_cap": 2,
+                        "default_planning_attempts": 2,
+                    }
+                ],
             ),
             Node(
                 package="pick_and_place",

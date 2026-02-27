@@ -78,7 +78,19 @@ class MoveItPlanner(Planner):
         self.moveit2.allowed_planning_time = planning_time
 
     def set_planning_attempts(self, planning_attempts: int) -> None:
-        self.moveit2.num_planning_attempts = planning_attempts
+        # Cap planning attempts to avoid excessive retries and prefer fail-fast behavior
+        try:
+            cap = int(self.node.get_parameter("planning_attempts_cap").value)
+        except Exception:
+            cap = 3
+        capped = max(1, min(planning_attempts, cap))
+        self.moveit2.num_planning_attempts = capped
+        try:
+            self.node.get_logger().info(
+                f"Set planning attempts: {capped} (requested: {planning_attempts}, cap: {cap})"
+            )
+        except Exception:
+            pass
 
     def plan_joint_goal(self, joint_positions: List[float], joint_names: List[str]):
         self.node.get_logger().info("Generating a plan for a joint goal...")
