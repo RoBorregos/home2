@@ -1,4 +1,3 @@
-
 import sys
 import rclpy
 from rclpy.node import Node
@@ -18,57 +17,48 @@ class VampServer(Node):
         self.settings.max_iterations = 20000
         self.settings.range = 0.05
 
-        self.get_logger().info('Server FRIDA ready. Waiting for planning of all joints...')
+        self.get_logger().info('VAMP server for FRIDA is ready and waiting for planning requests')
 
     def plan_callback(self, request, response):
-        self.get_logger().info("--- Planning Attempt ---")
+        self.get_logger().info("Received new planning request")
         
         try:
-            
             env = vamp.Environment()
             centers = np.array(request.sphere_centers_flat, dtype=np.float64)
             radii = np.array(request.sphere_radii, dtype=np.float64)
 
-
-            self.get_logger().info("Inspection Obstacles Received:")
+            self.get_logger().info("Processing collision environment:")
             for i in range(len(radii)):
                 idx = i * 3
                 pos = centers[idx:idx+3]
-                self.get_logger().info(f"   -> Sphere {i+1}: Position [X: {pos[0]:.4f}, Y: {pos[1]:.4f}, Z: {pos[2]:.4f}] | Radius: {radii[i]:.4f}")
+                self.get_logger().info(f"  Sphere {i+1}: center=[{pos[0]:.4f}, {pos[1]:.4f}, {pos[2]:.4f}], radius={radii[i]:.4f}")
                 env.add_sphere(vamp.Sphere(pos, radii[i]))
-
             box_centers = np.array(request.box_centers_flat, dtype=np.float64)
             box_sizes = np.array(request.box_sizes_flat, dtype=np.float64)
             
             num_boxes = len(box_sizes) // 3
             for i in range(num_boxes):
                 idx = i * 3
-                
                 pos = [float(x) for x in box_centers[idx:idx+3]]
-                
                 
                 lx = float(box_sizes[idx])
                 ly = float(box_sizes[idx+1])
                 lz = float(box_sizes[idx+2])
                 
+                step = 0.05 
+                nx = max(2, int(lx / step))
+                ny = max(2, int(ly / step))
+                nz = max(2, int(lz / step))
                 
-                paso = 0.05 
-                nx = max(2, int(lx / paso))
-                ny = max(2, int(ly / paso))
-                nz = max(2, int(lz / paso))
-                
-                
-                radio_esfera = 0.03
+                sphere_radius = 0.03
 
-                self.get_logger().info(f"   ->  Box {i+1} of {lx}x{ly}x{lz} with {nx*ny*nz} exact spheres...")
+                self.get_logger().info(f"  Box {i+1}: size={lx:.3f}x{ly:.3f}x{lz:.3f}, approximating with {nx*ny*nz} spheres")
                 
                 for dx in np.linspace(-lx/2.0, lx/2.0, nx):
                     for dy in np.linspace(-ly/2.0, ly/2.0, ny):
                         for dz in np.linspace(-lz/2.0, lz/2.0, nz):
-                            centro_esfera = [float(pos[0] + dx), float(pos[1] + dy), float(pos[2] + dz)]
-                            env.add_sphere(vamp.Sphere(centro_esfera, float(radio_esfera)))
-                    
-
+                            sphere_center = [float(pos[0] + dx), float(pos[1] + dy), float(pos[2] + dz)]
+                            env.add_sphere(vamp.Sphere(sphere_center, float(sphere_radius)))
             finger_left = 0.8
             finger_right = 0.8
             start_8 = np.array(list(request.start_state) + [finger_left, finger_right], dtype=np.float64)
@@ -78,22 +68,21 @@ class VampServer(Node):
             is_goal_valid = vamp.frida_real.validate(goal_8, env)
 
             if not is_start_valid:
-                self.get_logger().error("VAMP reject the START: The white arm is already touching the sphere (or itself).")
+                self.get_logger().error("Start state is in collision with environment or self-colliding")
             if not is_goal_valid:
-                self.get_logger().error("VAMP reject the GOAL: The orange arm is already touching the sphere (or itself).")
+                self.get_logger().error("Goal state is in collision with environment or self-colliding")
 
             if not is_start_valid or not is_goal_valid:
-                
-                env_limpio = vamp.Environment()
-                if vamp.frida_real.validate(start_8, env_limpio) and vamp.frida_real.validate(goal_8, env_limpio):
-                     self.get_logger().info("Info: Without obstacles, both START and GOAL are valid. The issue is likely due to the arm colliding with itself or its base configuration (Auto-collision).")
+                clean_env = vamp.Environment()
+                if vamp.frida_real.validate(start_8, clean_env) and vamp.frida_real.validate(goal_8, clean_env):
+                     self.get_logger().info("Note: Both states are valid without obstacles. The collision is likely due to self-collision or joint limits")
                 else:
-                     self.get_logger().error("Error: Even without obstacles, either START or GOAL is invalid. Please check the joint values and ensure they are within the robot's limits and not in a self-colliding configuration.")
+                     self.get_logger().error("States are invalid even without obstacles. Check joint values and ensure they're within limits and not self-colliding")
                 
                 response.success = False
                 return response
 
-            self.get_logger().info("START and GOAL are clean. Launching RRTC...")
+            self.get_logger().info("Start and goal states validated successfully. Starting RRT-Connect planner...")
 
             
             rng = vamp.frida_real.xorshift()
@@ -103,63 +92,78 @@ class VampServer(Node):
                 raw_path = result.path
                 n_points = len(raw_path)
                 
-                self.get_logger().info(f"✨ RRT Solved con {n_points} nodos. Aislamiento de tensores...")
+                self.get_logger().info(f"Planning succeeded with {n_points} waypoints. Now validating and densifying path...")
                 
-                
-                path_nodos = []
+                path_nodes = []
                 for i in range(n_points):
-                    
                     idx = int(i)
-                    
                     wp_tensor = raw_path[idx]
                     wp_array = np.array(list(wp_tensor), dtype=np.float64)
-                    path_nodos.append(wp_array)
+                    path_nodes.append(wp_array)
                 
-                self.get_logger().info("🔍 Iniciando Microscopio de VAMP (Validación de aristas)...")
+                self.get_logger().info("Running collision validation on interpolated path segments...")
                 
-                
-                flat_path = []
-                ruta_es_segura = True
+                dense_path = []
+                path_is_safe = True
                 
                 for i in range(n_points - 1):
-                    p1 = path_nodos[i]
-                    p2 = path_nodos[i+1]
+                    p1 = path_nodes[i]
+                    p2 = path_nodes[i+1]
                     
                     
-                    pasos = 10
-                    for t in np.linspace(0, 1, pasos, endpoint=False):
+                    node_distance = np.linalg.norm(p1[:6] - p2[:6])
+                    num_steps = max(2, int(node_distance / 0.04))
+                    
+                    for t in np.linspace(0, 1, num_steps, endpoint=False):
                         interp_wp = p1 + (p2 - p1) * t
                         
-                        
                         if not vamp.frida_real.validate(interp_wp, env):
-                            self.get_logger().error(f"❌ VAMP se atrapó a sí mismo chocando entre el nodo {i} y {i+1}. Ruta rechazada.")
-                            ruta_es_segura = False
+                            self.get_logger().error(f"Collision detected during path interpolation at segment {i}")
+                            path_is_safe = False
                             break
-                        
-                        
-                        for j in range(6):
-                            flat_path.append(float(interp_wp[j]))
                             
-                    if not ruta_es_segura:
+                        
+                        dense_path.append(interp_wp)
+                        
+                    if not path_is_safe:
                         break
-                
-                if ruta_es_segura:
+                        
+                if path_is_safe:
                     
-                    for j in range(6):
-                        flat_path.append(float(path_nodos[-1][j]))
+                    dense_path.append(path_nodes[-1])
                     
+                    
+                    flat_path = []
+                    clean_points = [dense_path[0]]
+                    
+                    
+                    for wp in dense_path[1:]:
+                        dist = np.linalg.norm(wp[:6] - clean_points[-1][:6])
+                        if dist >= 0.02: 
+                            clean_points.append(wp)
+                            
+                    
+                    final_distance = np.linalg.norm(dense_path[-1][:6] - clean_points[-1][:6])
+                    if final_distance > 0.001:
+                        clean_points.append(dense_path[-1])
+                        
+                    
+                    for wp in clean_points:
+                        for j in range(6):
+                            flat_path.append(float(wp[j]))
+                            
                     response.waypoints_flat = flat_path
                     response.success = True
-                    self.get_logger().info(f"✅ Validación perfecta. Enviando {len(flat_path)//6} waypoints a MoveIt.")
+                    self.get_logger().info(f"Path generation complete: refined from {n_points} raw waypoints to {len(clean_points)} smooth waypoints")
                 else:
-                    self.get_logger().warn("⚠️ RRT cortó una esquina peligrosa. Mueve ligeramente el brazo en RViz e intenta de nuevo.")
+                    self.get_logger().warn("Path validation failed due to internal collision. Please try planning again")
                     response.success = False
             else:
-                self.get_logger().warn("⚠️ VAMP no pudo encontrar una ruta válida.")
+                self.get_logger().warn("VAMP planner could not find a valid path within the given constraints")
                 response.success = False
                 
         except Exception as e:
-            self.get_logger().error(f"Error in the server: {e}")
+            self.get_logger().error(f"Planning failed with exception: {e}")
             response.success = False
             
         return response
