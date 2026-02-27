@@ -4,6 +4,8 @@ import os
 import wave
 
 import numpy as np
+import scipy.signal
+from typing import Optional
 import pyaudio
 import rclpy
 from rclpy.executors import ExternalShutdownException
@@ -17,17 +19,85 @@ run_frames = []
 SAVE_IT = 100
 
 
+def reduce_noise(
+    y: np.ndarray,
+    sr: int,
+    noise_clip: Optional[np.ndarray] = None,
+    n_fft: int = 2048,
+    hop_length: int = 512,
+    n_std_thresh: float = 3.0,
+    prop_decrease: float = 0.5,
+) -> np.ndarray:
+    """Spectral gating noise reduction. Estimates noise from noise_clip or first 0.5s.
+    Returns processed signal in same shape as input.
+    """
+    y = y.astype(np.float32)
+    if len(y) == 0:
+        return y
+    n_fft_eff = min(n_fft, len(y))
+    if n_fft_eff <= 1:
+        return y
+    hop_eff = max(1, min(hop_length, n_fft_eff - 1))
+    if noise_clip is None:
+        # use first 0.5s or less
+        n_noise = min(len(y), int(0.5 * sr))
+        if n_noise <= 0:
+            return y
+        noise_clip = y[:n_noise]
+    else:
+        noise_clip = noise_clip.astype(np.float32)
+
+    # STFT
+    f, t, S = scipy.signal.stft(
+        y, fs=sr, nperseg=n_fft_eff, noverlap=n_fft_eff - hop_eff
+    )
+    _, _, N = scipy.signal.stft(
+        noise_clip, fs=sr, nperseg=n_fft_eff, noverlap=n_fft_eff - hop_eff
+    )
+
+    S_mag = np.abs(S)
+    N_mag = np.abs(N)
+
+    # Estimate noise mean and std per-bin
+    noise_mean = np.mean(N_mag, axis=1, keepdims=True)
+    noise_std = np.std(N_mag, axis=1, keepdims=True)
+
+    # Threshold
+    thresh = noise_mean + n_std_thresh * noise_std
+    mask_gain = 1.0 - prop_decrease * np.minimum(
+        1.0, np.maximum(0.0, (thresh - S_mag) / (S_mag + 1e-12))
+    )
+
+    S_filtered = S * mask_gain
+    # Inverse STFT
+    _, y_out = scipy.signal.istft(
+        S_filtered, fs=sr, nperseg=n_fft_eff, noverlap=n_fft_eff - hop_eff
+    )
+    # match length
+    if len(y_out) > len(y):
+        y_out = y_out[: len(y)]
+    elif len(y_out) < len(y):
+        y_out = np.pad(y_out, (0, len(y) - len(y_out)))
+    return y_out.astype(np.float32)
+
+
 class AudioCapturer(Node):
     def __init__(self):
         super().__init__("audio_capturer")
 
-        self.declare_parameter("publish_topic", "/rawAudioChunk")
+        self.declare_parameter("publish_topic", "/processedAudioChunk")
         self.declare_parameter("MIC_DEVICE_NAME", "default")
         self.declare_parameter("MIC_INPUT_CHANNELS", 32)
         self.declare_parameter("MIC_OUT_CHANNELS", 32)
+        self.declare_parameter("ENABLE_ANC", True)
 
         publish_topic = (
             self.get_parameter("publish_topic").get_parameter_value().string_value
+        )
+
+        # enable active noise cancellation (spectral gating)
+        self.enable_anc = (
+            self.get_parameter("ENABLE_ANC").get_parameter_value().bool_value
         )
 
         self.use_respeaker = SpeechApiUtils.respeaker_available()
@@ -56,6 +126,10 @@ class AudioCapturer(Node):
             )
 
         self.get_logger().info("AudioCapturer node initialized.")
+
+        # for ANC noise clip accumulation
+        self.noise_frames = []
+        self.noise_clip = None
 
     def record(self):
         self.get_logger().info("AudioCapturer node recording.")
@@ -86,8 +160,40 @@ class AudioCapturer(Node):
                     in_data = in_data.tobytes()
 
                 local_audio = bytes(in_data)
-
+                # Optionally apply active noise cancellation (spectral gating)
                 ros_audio = bytes(local_audio)
+                if self.enable_anc:
+                    try:
+                        # Convert to int16 numpy array
+                        audio_arr = np.frombuffer(local_audio, dtype=np.int16)
+
+                        # If we don't have a noise clip yet, accumulate initial frames
+                        noise_target = int(0.5 * self.RATE)
+                        if self.noise_clip is None:
+                            self.noise_frames.append(audio_arr)
+                            total = sum(f.shape[0] for f in self.noise_frames)
+                            if total >= noise_target:
+                                concat = np.concatenate(self.noise_frames)
+                                self.noise_clip = concat[:noise_target].astype(
+                                    np.float32
+                                )
+                                # free frames list
+                                self.noise_frames = []
+                                self.get_logger().info("ANC: noise clip captured")
+                        # If we have noise clip, run reduction on this chunk
+                        if self.noise_clip is not None:
+                            processed = reduce_noise(
+                                audio_arr.astype(np.float32),
+                                sr=self.RATE,
+                                noise_clip=self.noise_clip,
+                            )
+                            # convert back to int16 and bytes
+                            processed_int16 = np.clip(processed, -32768, 32767).astype(
+                                np.int16
+                            )
+                            ros_audio = processed_int16.tobytes()
+                    except Exception as e:
+                        self.get_logger().warn(f"ANC processing error: {e}")
                 self.publisher_.publish(AudioData(data=ros_audio))
 
                 if self.debug:
