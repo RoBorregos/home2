@@ -5,6 +5,8 @@ var xarm__configurations_8py =
     [ "FRONT_STARE", "xarm__configurations_8py.html#a3f9c52b155ebdeebba61a6e7b5c195fd", null ],
     [ "NAV_POSE", "xarm__configurations_8py.html#acd030439b63a120bde3ac743e5bab1f8", null ],
     [ "PICK_STARE_AT_TABLE", "xarm__configurations_8py.html#ad38289acbba239b01fe845ab57a5026b", null ],
+    [ "PLACE_FLOOR_LEFT", "xarm__configurations_8py.html#a749105a6a0190f46d91824dc4ba5aad8", null ],
+    [ "PLACE_FLOOR_RIGHT", "xarm__configurations_8py.html#a9bf638907a515f7a982e0735f1a1d6de", null ],
     [ "RECEIVE_OBJECT", "xarm__configurations_8py.html#a1ebb73dff17d4fb86c8530a2eda2fe58", null ],
     [ "TABLE_STARE", "xarm__configurations_8py.html#a9eb785a1b94b7fb277bc12ed1644044b", null ],
     [ "XARM_CONFIGURATIONS", "xarm__configurations_8py.html#a9904f63744fd7b0759bfcf87a03f8ff9", null ]

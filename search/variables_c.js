@@ -16,7 +16,7 @@ var searchData=
   ['latest_5fdetections_13',['latest_detections',['../classtrash__detection__node_1_1TrashDetectionNode.html#a3bc5abe3485e2fa69e43754d12df284c',1,'trash_detection_node::TrashDetectionNode']]],
   ['latest_5fperson_5fpoint_14',['latest_person_point',['../classperson__in__map_1_1PersonLocation.html#a3d95d28a680964e016292b66e5c2d07b',1,'person_in_map::PersonLocation']]],
   ['latest_5fpose_15',['latest_pose',['../classdock__to__handle_1_1DockToHandleNode.html#acd24507ba4bc1f40440f3aad02924f32',1,'dock_to_handle::DockToHandleNode']]],
-  ['left_16',['LEFT',['../classmoondream__node_1_1Position.html#a48592042d7675fc4112e600c62334d60',1,'moondream_node::Position']]],
+  ['left_16',['LEFT',['../classmoondream__node_1_1Position.html#a48592042d7675fc4112e600c62334d60',1,'moondream_node.Position.LEFT()'],['../classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks_1_1Direction.html#a5c6700c363c0d364be9ee674c5f10c41',1,'subtask_managers.manipulation_tasks.ManipulationTasks.Direction.LEFT()']]],
   ['left_5fhand_17',['LEFT_HAND',['../classpointing__detection_1_1DetectPointingObjectServer.html#a1b06bc53ae8fa25c37c9a3bc89335b47',1,'pointing_detection::DetectPointingObjectServer']]],
   ['left_5fshoulder_18',['LEFT_SHOULDER',['../classpointing__detection_1_1DetectPointingObjectServer.html#afa7c0645fef708339e1118db4befa0cd',1,'pointing_detection::DetectPointingObjectServer']]],
   ['level_19',['level',['../classfrida__constants_1_1vision__classes_1_1ShelfDetection.html#a1438ced405785d5f29c4cfde7e433fad',1,'frida_constants::vision_classes::ShelfDetection']]],

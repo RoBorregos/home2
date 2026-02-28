@@ -342,7 +342,7 @@ var annotated_dup =
       [ "TestTaskManager", "classtest__manager_1_1TestTaskManager.html", "classtest__manager_1_1TestTaskManager" ]
     ] ],
     [ "test_manipulation_manager", "namespacetest__manipulation__manager.html", [
-      [ "TestTaskManager", "classtest__manipulation__manager_1_1TestTaskManager.html", "classtest__manipulation__manager_1_1TestTaskManager" ]
+      [ "TestManipulationManager", "classtest__manipulation__manager_1_1TestManipulationManager.html", "classtest__manipulation__manager_1_1TestManipulationManager" ]
     ] ],
     [ "test_start_button", "namespacetest__start__button.html", [
       [ "TestHriManager", "classtest__start__button_1_1TestHriManager.html", "classtest__start__button_1_1TestHriManager" ]

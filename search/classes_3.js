@@ -7,8 +7,9 @@ var searchData=
   ['detectionrecord_4',['DetectionRecord',['../structDetectionRecord.html',1,'']]],
   ['detectionshandlernode_5',['DetectionsHandlerNode',['../classDetectionsHandlerNode.html',1,'']]],
   ['detectpointingobjectserver_6',['DetectPointingObjectServer',['../classpointing__detection_1_1DetectPointingObjectServer.html',1,'pointing_detection']]],
-  ['dockingposerecorder_7',['DockingPoseRecorder',['../classrecord__relative__pose_1_1DockingPoseRecorder.html',1,'record_relative_pose']]],
-  ['docktohandlenode_8',['DockToHandleNode',['../classdock__to__handle_1_1DockToHandleNode.html',1,'dock_to_handle']]],
-  ['downsamplepointcloud_9',['DownSamplePointCloud',['../classDownSamplePointCloud.html',1,'']]],
-  ['dualmoveitconfigsbuilder_10',['DualMoveItConfigsBuilder',['../classarm__pkg_1_1moveit__configs__builder_1_1DualMoveItConfigsBuilder.html',1,'arm_pkg.moveit_configs_builder.DualMoveItConfigsBuilder'],['../classarm__pkg_1_1moveit__configs__builder__sim_1_1DualMoveItConfigsBuilder.html',1,'arm_pkg.moveit_configs_builder_sim.DualMoveItConfigsBuilder']]]
+  ['direction_7',['Direction',['../classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks_1_1Direction.html',1,'subtask_managers::manipulation_tasks::ManipulationTasks']]],
+  ['dockingposerecorder_8',['DockingPoseRecorder',['../classrecord__relative__pose_1_1DockingPoseRecorder.html',1,'record_relative_pose']]],
+  ['docktohandlenode_9',['DockToHandleNode',['../classdock__to__handle_1_1DockToHandleNode.html',1,'dock_to_handle']]],
+  ['downsamplepointcloud_10',['DownSamplePointCloud',['../classDownSamplePointCloud.html',1,'']]],
+  ['dualmoveitconfigsbuilder_11',['DualMoveItConfigsBuilder',['../classarm__pkg_1_1moveit__configs__builder_1_1DualMoveItConfigsBuilder.html',1,'arm_pkg.moveit_configs_builder.DualMoveItConfigsBuilder'],['../classarm__pkg_1_1moveit__configs__builder__sim_1_1DualMoveItConfigsBuilder.html',1,'arm_pkg.moveit_configs_builder_sim.DualMoveItConfigsBuilder']]]
 ];

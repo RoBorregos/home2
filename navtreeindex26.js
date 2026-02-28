@@ -1,5 +1,15 @@
 var NAVTREEINDEX26 =
 {
+"namespacenav__basics.html#a0ad8a434cdfa5b959bd6a1d5df652146":[22,0,88,0],
+"namespacenav__basics.html#ac5d23aeb26e79af148252a849c2905ca":[22,0,88,1],
+"namespacenav__test.html":[22,0,89],
+"namespacenav__test.html#a44c83e30e18161b30b4506e589b3bd50":[22,0,89,1],
+"namespacenavigation__composition.html":[22,0,90],
+"namespacenavigation__composition.html#a80cc34be81f4980454e52c3045744557":[22,0,90,0],
+"namespacenavigation__multi.html":[22,0,91],
+"namespacenavigation__multi.html#a8f0e3fb276f78b91f6c6d87f9e583409":[22,0,91,0],
+"namespacenew__tracker.html":[22,0,92],
+"namespacenew__tracker.html#a33180eaf9f71838d633518a2a04c8eb7":[22,0,92,7],
 "namespacenew__tracker.html#a403d7921c624573e1cc1b9857ab3df19":[22,0,92,8],
 "namespacenew__tracker.html#a632d8155dd22a4532fb696e3febe7f1b":[22,0,92,4],
 "namespacenew__tracker.html#a643baaa61b2aedb4a2860c59ab6c3244":[22,0,92,1],
@@ -239,15 +249,5 @@ var NAVTREEINDEX26 =
 "namespacesubtask__managers_1_1nav__tasks.html#a35bf842183e21b6c6070cc6d2219644e":[22,0,137,7,6],
 "namespacesubtask__managers_1_1nav__tasks.html#a5b4d09d800913ff80b44923281185579":[22,0,137,7,8],
 "namespacesubtask__managers_1_1nav__tasks.html#a6f0a3307d2c3d8bc3c5fcd2f15a84c08":[22,0,137,7,9],
-"namespacesubtask__managers_1_1nav__tasks.html#a736666918ed4f70d5cf2d995c1e7351e":[22,0,137,7,14],
-"namespacesubtask__managers_1_1nav__tasks.html#a9bc4c8ca04bec963a671843a28955aa1":[22,0,137,7,3],
-"namespacesubtask__managers_1_1nav__tasks.html#aa7b04782b5901be32c84688667a26486":[22,0,137,7,1],
-"namespacesubtask__managers_1_1nav__tasks.html#aaa02d00cc5e15e35dc701c256933265d":[22,0,137,7,4],
-"namespacesubtask__managers_1_1nav__tasks.html#aad10e56dffc669dc8cb618d129cb81e8":[22,0,137,7,11],
-"namespacesubtask__managers_1_1nav__tasks.html#aafc34321ab5320cb34772ce8394217ac":[22,0,137,7,13],
-"namespacesubtask__managers_1_1nav__tasks.html#ab5d12d6aa928c8486939ec6f32d6349f":[22,0,137,7,2],
-"namespacesubtask__managers_1_1nav__tasks.html#ad3bd539f5cb55fdd51c9fc250cfbc35d":[22,0,137,7,12],
-"namespacesubtask__managers_1_1nav__tasks.html#add335a5f17a44eb14de8877023fea371":[22,0,137,7,7],
-"namespacesubtask__managers_1_1nav__tasks.html#aeb62e19e4057171ba188344f69678d4b":[22,0,137,7,10],
-"namespacesubtask__managers_1_1subtask__meta.html":[22,0,137,8]
+"namespacesubtask__managers_1_1nav__tasks.html#a736666918ed4f70d5cf2d995c1e7351e":[22,0,137,7,14]
 };

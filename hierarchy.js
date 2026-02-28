@@ -122,6 +122,7 @@ var hierarchy =
       [ "storing_groceries_manager.ExecutionStates", "classstoring__groceries__manager_1_1ExecutionStates.html", null ],
       [ "storing_groceries_manager.Retries", "classstoring__groceries__manager_1_1Retries.html", null ],
       [ "subtask_managers.hri_tasks.AudioStates", "classsubtask__managers_1_1hri__tasks_1_1AudioStates.html", null ],
+      [ "subtask_managers.manipulation_tasks.ManipulationTasks.Direction", "classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks_1_1Direction.html", null ],
       [ "utils.config.TypeEnum", "classutils_1_1config_1_1TypeEnum.html", null ],
       [ "utils.status.Status", "classutils_1_1status_1_1Status.html", null ],
       [ "utils.task.Task", "classutils_1_1task_1_1Task.html", null ]
@@ -193,7 +194,7 @@ var hierarchy =
       [ "test_env.TestNode", "classtest__env_1_1TestNode.html", null ],
       [ "test_hri_manager.TestHriManager", "classtest__hri__manager_1_1TestHriManager.html", null ],
       [ "test_manager.TestTaskManager", "classtest__manager_1_1TestTaskManager.html", null ],
-      [ "test_manipulation_manager.TestTaskManager", "classtest__manipulation__manager_1_1TestTaskManager.html", null ],
+      [ "test_manipulation_manager.TestManipulationManager", "classtest__manipulation__manager_1_1TestManipulationManager.html", null ],
       [ "test_start_button.TestHriManager", "classtest__start__button_1_1TestHriManager.html", null ],
       [ "test_vision_manager.TestVision", "classtest__vision__manager_1_1TestVision.html", null ],
       [ "tracker_node.SingleTracker", "classtracker__node_1_1SingleTracker.html", null ],

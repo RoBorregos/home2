@@ -206,19 +206,19 @@ var NAVTREEINDEX =
 "classreceptionist__task__manager_1_1ReceptionistTM.html#ac10102c9fb3fbb3dee2172c167d4acc6",
 "classstoring__groceries__manager_1_1StoringGroceriesManager.html#a76254b69eff060f50c7853a579c9a7a6",
 "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#ae5741cfa50a327b34517a797392b9122",
-"classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#aaf9af33acead67f77338c436be1f8c41",
-"classtracker__node_1_1SingleTracker.html#a23ca6ef5b81acaa0d815e73fb86d712d",
-"classutils_1_1CrossEntropyLabelSmooth.html#ab5db0b598734ef8bc6a2b57faacd4109",
-"decorators_8py.html#a941f5ed30d7544d8f102feee2e6a2a72",
-"follow__person__node_8py.html#a44bd9b7dd07ac60865c69767af3940a2",
-"hri__constants_8py.html#ae336bc5e472cc38814ce9b4eb0928c31",
-"md_docs_Run_Areas_vision.html#autotoc_md85",
-"namespaceegpsr__task__manager.html#a127f19f794b41f65a7a9d0aae5fbec99",
-"namespacefrida__constants_1_1vision__constants.html#ab6f09741cb770fc257e257b6fd02fea0",
-"namespacenew__tracker.html#a403d7921c624573e1cc1b9857ab3df19",
-"namespacesubtask__managers_1_1vision__tasks.html",
-"receptionist__task__manager_8py.html#ab6e6d47fc4ae90351efa864eacc5c880",
-"vision__constants_8py.html#a28ae7767028a1fb6be896bcdef1aae7e"
+"classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a9776c22576d5d74168eac2d73233c527",
+"classtracker__node_1_1SingleTracker.html#a10e75e91092cbd1219712ac89ff78b13",
+"classutils_1_1CrossEntropyLabelSmooth.html",
+"dashgo__driver2_8py.html#acc466769d2772016d37de4afb11ea7e1",
+"follow__person__node_01copy_8py.html#a68ec802191c92765bbdce822fc0fb8cc",
+"hri__constants_8py.html#aaa486a9f7f79cd7c69c81ff85d8ba336",
+"md_docs_Run_Areas_nav.html#autotoc_md74",
+"namespacedownsample__pc.html#ac2b4cab7e9652eb5d6142f99b1981c55",
+"namespacefrida__constants_1_1vision__constants.html#a88a70827ccfcbe95b1d791638bc4fc1c",
+"namespacenav__basics.html#a0ad8a434cdfa5b959bd6a1d5df652146",
+"namespacesubtask__managers_1_1nav__tasks.html#a9bc4c8ca04bec963a671843a28955aa1",
+"receptionist__commands_8py.html#ad46952196d7a38bd782ab49477c88655",
+"vision__constants_8py.html#a1a7dd349184716ff0e10091fae59c7b4"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

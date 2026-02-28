@@ -1,5 +1,15 @@
 var NAVTREEINDEX27 =
 {
+"namespacesubtask__managers_1_1nav__tasks.html#a9bc4c8ca04bec963a671843a28955aa1":[22,0,137,7,3],
+"namespacesubtask__managers_1_1nav__tasks.html#aa7b04782b5901be32c84688667a26486":[22,0,137,7,1],
+"namespacesubtask__managers_1_1nav__tasks.html#aaa02d00cc5e15e35dc701c256933265d":[22,0,137,7,4],
+"namespacesubtask__managers_1_1nav__tasks.html#aad10e56dffc669dc8cb618d129cb81e8":[22,0,137,7,11],
+"namespacesubtask__managers_1_1nav__tasks.html#aafc34321ab5320cb34772ce8394217ac":[22,0,137,7,13],
+"namespacesubtask__managers_1_1nav__tasks.html#ab5d12d6aa928c8486939ec6f32d6349f":[22,0,137,7,2],
+"namespacesubtask__managers_1_1nav__tasks.html#ad3bd539f5cb55fdd51c9fc250cfbc35d":[22,0,137,7,12],
+"namespacesubtask__managers_1_1nav__tasks.html#add335a5f17a44eb14de8877023fea371":[22,0,137,7,7],
+"namespacesubtask__managers_1_1nav__tasks.html#aeb62e19e4057171ba188344f69678d4b":[22,0,137,7,10],
+"namespacesubtask__managers_1_1subtask__meta.html":[22,0,137,8],
 "namespacesubtask__managers_1_1vision__tasks.html":[22,0,137,9],
 "namespacesubtask__managers_1_1vision__tasks.html#a1abb56fac59a5fec5b7cdb4f1b3a2ba5":[22,0,137,9,5],
 "namespacesubtask__managers_1_1vision__tasks.html#a35a3ccf19eee1ced86e734c35eb4d16b":[22,0,137,9,3],
@@ -44,11 +54,7 @@ var NAVTREEINDEX27 =
 "namespacetest__manager.html":[22,0,141],
 "namespacetest__manager.html#a493f4e40d62cf85e734ad364fce0608a":[22,0,141,1],
 "namespacetest__manipulation__manager.html":[22,0,142],
-"namespacetest__manipulation__manager.html#a2e4916feda2a7aa1e0a86ea656b3da76":[22,0,142,5],
-"namespacetest__manipulation__manager.html#a3b72ce9a4e2bcde880e7bc5e63ecf6e1":[22,0,142,4],
-"namespacetest__manipulation__manager.html#a72a147bc4af7ae06185218de079133c1":[22,0,142,3],
 "namespacetest__manipulation__manager.html#aa1d1240f6e1bf9a1472e8c9e914fcfb4":[22,0,142,1],
-"namespacetest__manipulation__manager.html#ab2e46995905d6d94571d83336328e9d3":[22,0,142,2],
 "namespacetest__start__button.html":[22,0,143],
 "namespacetest__start__button.html#a2a27485c0bb05130ef7b47bab273b816":[22,0,143,9],
 "namespacetest__start__button.html#a3fd1d1efe1e66a95ad7bed4a0864d03c":[22,0,143,1],
@@ -243,11 +249,5 @@ var NAVTREEINDEX27 =
 "receptionist__commands_8py.html#a45c3922aa3e807226b3b341d68a3bcd7":[24,0,7,0,3,1,11,2],
 "receptionist__commands_8py.html#a46439c4b5773a7470cf9753eb1e5d089":[24,0,7,0,3,1,11,8],
 "receptionist__commands_8py.html#a7fc25575051bffd52755b91b89ea9c35":[24,0,7,0,3,1,11,5],
-"receptionist__commands_8py.html#a83055be02e8dfd93dc6e2bd3214d8ffe":[24,0,7,0,3,1,11,1],
-"receptionist__commands_8py.html#ad46952196d7a38bd782ab49477c88655":[24,0,7,0,3,1,11,4],
-"receptionist__commands_8py.html#adf7320f4ca5b97e2b7f447a48a59008a":[24,0,7,0,3,1,11,6],
-"receptionist__launch_8py.html":[24,0,7,0,3,0,3],
-"receptionist__launch_8py.html#a1d8b268d07aad010deb06846832876f6":[24,0,7,0,3,0,3,0],
-"receptionist__task__manager_8py.html":[24,0,6,1,10],
-"receptionist__task__manager_8py.html#a190fa117b34e8f98afa854494e664047":[24,0,6,1,10,4]
+"receptionist__commands_8py.html#a83055be02e8dfd93dc6e2bd3214d8ffe":[24,0,7,0,3,1,11,1]
 };

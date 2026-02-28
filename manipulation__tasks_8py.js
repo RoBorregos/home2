@@ -1,6 +1,7 @@
 var manipulation__tasks_8py =
 [
     [ "subtask_managers.manipulation_tasks.ManipulationTasks", "classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html", "classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks" ],
+    [ "subtask_managers.manipulation_tasks.ManipulationTasks.Direction", "classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks_1_1Direction.html", null ],
     [ "DEG_TO_RAD", "manipulation__tasks_8py.html#a74311b2870f92bbb0f496f0da68c7add", null ],
     [ "Manipulation_tasks", "manipulation__tasks_8py.html#a69940aff1560ff0e7ef858bb25cdfcd6", null ],
     [ "node", "manipulation__tasks_8py.html#a870497229f85a84e775caa5b76744b47", null ],
