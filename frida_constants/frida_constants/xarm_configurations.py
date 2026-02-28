@@ -87,24 +87,24 @@ CARRY_POSE = {
 
 PLACE_FLOOR_LEFT = {
     "joints": {
-        "joint1": 182.4,
-        "joint2": -110.0,
-        "joint3": -214.4,
-        "joint4": -181,
-        "joint5": 4.2,
-        "joint6": 229.8,
+        "joint1": 3.2,
+        "joint2": 96.4,
+        "joint3": -110.1,
+        "joint4": -171.1,
+        "joint5": -11.8,
+        "joint6": 43.3,
     },
     "degrees": True,
 }
 
 PLACE_FLOOR_RIGHT = {
     "joints": {
-        "joint1": 176,
-        "joint2": 113.4,
-        "joint3": -165.3,
-        "joint4": -182.7,
-        "joint5": -41,
-        "joint6": 43.1,
+        "joint1": 182.9,
+        "joint2": 97.6,
+        "joint3": -103.3,
+        "joint4": -171,
+        "joint5": 4.8,
+        "joint6": 43.4,
     },
     "degrees": True,
 }
@@ -117,4 +117,6 @@ XARM_CONFIGURATIONS = {
     "pick_stare_at_table": PICK_STARE_AT_TABLE,
     "nav_pose": NAV_POSE,
     "carry_pose": CARRY_POSE,
+    "place_floor_right": PLACE_FLOOR_RIGHT,
+    "place_floor_left": PLACE_FLOOR_LEFT,
 }
