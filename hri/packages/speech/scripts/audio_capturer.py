@@ -14,6 +14,27 @@ from speech.speech_api_utils import SpeechApiUtils
 
 from frida_interfaces.msg import AudioData
 
+# Try to import DeepFilterNet (deepfilternet). If available, use it for enhancement.
+DF_AVAILABLE = False
+DF_ENHANCER = None
+try:
+    import deepfilternet as df
+
+    # Prefer a simple functional API if available
+    if hasattr(df, "enhance"):
+        DF_AVAILABLE = True
+        DF_ENHANCER = df
+    elif hasattr(df, "DeepFilterNet"):
+        # instantiate if the class is provided
+        try:
+            DF_ENHANCER = df.DeepFilterNet()
+            DF_AVAILABLE = True
+        except Exception:
+            DF_AVAILABLE = False
+    else:
+        DF_AVAILABLE = False
+except Exception:
+    DF_AVAILABLE = False
 SAVE_PATH = "/workspace/src/hri/packages/speech/debug/"
 run_frames = []
 SAVE_IT = 100
@@ -35,6 +56,30 @@ def reduce_noise(
     y = y.astype(np.float32)
     if len(y) == 0:
         return y
+
+    # If DeepFilterNet is available, use it for higher-quality, low-latency
+    # enhancement. It handles small chunks (20ms+) reliably.
+    if DF_AVAILABLE:
+        try:
+            # DeepFilterNet typically expects float32 or int16 PCM arrays.
+            # Convert to float32 in [-1,1] range for safety.
+            max_int16 = 32768.0
+            y_in = (y / max_int16).astype(np.float32)
+
+            # If DF_ENHANCER is the module with an enhance function
+            if hasattr(DF_ENHANCER, "enhance"):
+                y_out = DF_ENHANCER.enhance(y_in, sr)
+            else:
+                # If it's an instantiated object with enhance method
+                y_out = DF_ENHANCER.enhance(y_in, sr)
+
+            # Expect output in [-1,1] float32 — convert back to int16-like range
+            y_out = np.nan_to_num(y_out, nan=0.0, posinf=0.0, neginf=0.0)
+            y_out = np.clip(y_out, -1.0, 1.0) * max_int16
+            return y_out.astype(np.float32)
+        except Exception:
+            # If DFN fails, fall back to spectral gating below
+            pass
 
     # For streaming chunks (e.g., 512 samples), avoid STFT artifacts.
     # Return original audio if the chunk is too short for reliable FFT.
