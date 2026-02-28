@@ -1,5 +1,15 @@
 var NAVTREEINDEX15 =
 {
+"classstoring__groceries__manager_1_1StoringGroceriesManager.html#a76254b69eff060f50c7853a579c9a7a6":[23,0,74,3,3],
+"classstoring__groceries__manager_1_1StoringGroceriesManager.html#a78ec343929974c6fa851e9d594583506":[22,0,136,3,6],
+"classstoring__groceries__manager_1_1StoringGroceriesManager.html#a78ec343929974c6fa851e9d594583506":[23,0,74,3,6],
+"classstoring__groceries__manager_1_1StoringGroceriesManager.html#a82ee3cb756ebeb2620e5209489948d5c":[22,0,136,3,21],
+"classstoring__groceries__manager_1_1StoringGroceriesManager.html#a82ee3cb756ebeb2620e5209489948d5c":[23,0,74,3,21],
+"classstoring__groceries__manager_1_1StoringGroceriesManager.html#a898da9f308fa7f89447ae863dcd8fede":[23,0,74,3,11],
+"classstoring__groceries__manager_1_1StoringGroceriesManager.html#a898da9f308fa7f89447ae863dcd8fede":[22,0,136,3,11],
+"classstoring__groceries__manager_1_1StoringGroceriesManager.html#a91441738c9d7cb88606e7fbca0216ada":[22,0,136,3,30],
+"classstoring__groceries__manager_1_1StoringGroceriesManager.html#a91441738c9d7cb88606e7fbca0216ada":[23,0,74,3,30],
+"classstoring__groceries__manager_1_1StoringGroceriesManager.html#a92a4d2946a42f7d3d43e2fbeb02262ca":[23,0,74,3,18],
 "classstoring__groceries__manager_1_1StoringGroceriesManager.html#a92a4d2946a42f7d3d43e2fbeb02262ca":[22,0,136,3,18],
 "classstoring__groceries__manager_1_1StoringGroceriesManager.html#a9c097536a6ddf838f648d863ddae1c7f":[22,0,136,3,9],
 "classstoring__groceries__manager_1_1StoringGroceriesManager.html#a9c097536a6ddf838f648d863ddae1c7f":[23,0,74,3,9],
@@ -239,15 +249,5 @@ var NAVTREEINDEX15 =
 "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#ad7ed5801ffe42acec58a792bdf30163a":[23,0,75,4,2,20],
 "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#ada2fad0cc8a67fe7e770b7c0289ff222":[22,0,137,5,2,58],
 "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#ada2fad0cc8a67fe7e770b7c0289ff222":[23,0,75,4,2,58],
-"classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#ae5741cfa50a327b34517a797392b9122":[22,0,137,5,2,64],
-"classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#ae5741cfa50a327b34517a797392b9122":[23,0,75,4,2,64],
-"classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#ae80c690f473dcf2cd035894129e8153d":[22,0,137,5,2,56],
-"classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#ae80c690f473dcf2cd035894129e8153d":[23,0,75,4,2,56],
-"classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#aea25ba46c62a0f5799df8cce48b61114":[23,0,75,4,2,60],
-"classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#aea25ba46c62a0f5799df8cce48b61114":[22,0,137,5,2,60],
-"classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#aed25755e192c9c0599370020d38a39ad":[22,0,137,5,2,19],
-"classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#aed25755e192c9c0599370020d38a39ad":[23,0,75,4,2,19],
-"classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#af0d5230e471a80d6892495c440d35ef1":[23,0,75,4,2,23],
-"classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#af0d5230e471a80d6892495c440d35ef1":[22,0,137,5,2,23],
-"classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#af1839168018c952b32e71d2752636e42":[23,0,75,4,2,6]
+"classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#ae5741cfa50a327b34517a797392b9122":[22,0,137,5,2,64]
 };

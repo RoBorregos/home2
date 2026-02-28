@@ -1,5 +1,15 @@
 var NAVTREEINDEX19 =
 {
+"classutils_1_1CrossEntropyLabelSmooth.html#ab5db0b598734ef8bc6a2b57faacd4109":[22,0,150,7,3],
+"classutils_1_1CrossEntropyLabelSmooth.html#af5f494562463ad4636f548f54f558da9":[23,0,87,6,0],
+"classutils_1_1CrossEntropyLabelSmooth.html#af5f494562463ad4636f548f54f558da9":[22,0,150,7,0],
+"classutils_1_1config_1_1MockConfig.html":[22,0,150,0,0],
+"classutils_1_1config_1_1MockConfig.html":[23,0,87,0,0],
+"classutils_1_1config_1_1MockConfig_1_1Config.html":[23,0,87,0,0,0],
+"classutils_1_1config_1_1MockConfig_1_1Config.html":[22,0,150,0,0,0],
+"classutils_1_1config_1_1SubtaskConfig.html":[22,0,150,0,1],
+"classutils_1_1config_1_1SubtaskConfig.html":[23,0,87,0,1],
+"classutils_1_1config_1_1SubtaskConfig_1_1Config.html":[22,0,150,0,1,0],
 "classutils_1_1config_1_1SubtaskConfig_1_1Config.html":[23,0,87,0,1,0],
 "classutils_1_1config_1_1TopicConfig.html":[22,0,150,0,2],
 "classutils_1_1config_1_1TopicConfig.html":[23,0,87,0,2],
@@ -239,15 +249,5 @@ var NAVTREEINDEX19 =
 "debug_8py.html":[24,0,6,1,0,0,0],
 "debug_8py.html#a2a2ea829f61015ff6529ee756ac35d9d":[24,0,6,1,0,0,0,1],
 "debug_8py.html#aa47889ce4161b7b36eb8c72cc7fcf016":[24,0,6,1,0,0,0,0],
-"decorators_8py.html":[24,0,6,1,5,2],
-"decorators_8py.html#a941f5ed30d7544d8f102feee2e6a2a72":[24,0,6,1,5,2,0],
-"decorators_8py.html#adcfc2d40a4fb55163e4d810f7b980736":[24,0,6,1,5,2,1],
-"demo__ds4_8launch_8py.html":[24,0,3,0,1,2,0],
-"demo__ds4_8launch_8py.html#a3b92a5a114f0a71450f4b47c440d3352":[24,0,3,0,1,2,0,0],
-"demo__face_8launch_8py.html":[24,0,6,0,1],
-"demo__face_8launch_8py.html#ae3adde7c73c08762a4607a57106cd131":[24,0,6,0,1,0],
-"demo__manager_8py.html":[24,0,6,1,1,1],
-"demo__manager_8py.html#a2beab80f142431eb61e00531f3e19774":[24,0,6,1,1,1,4],
-"demo__manager_8py.html#a44da8b44a149c1ac1cf0220e7c0fc227":[24,0,6,1,1,1,5],
-"demo__manager_8py.html#a51e78fe12c7e5ee07d540e5f4bd46cf2":[24,0,6,1,1,1,3]
+"decorators_8py.html":[24,0,6,1,5,2]
 };

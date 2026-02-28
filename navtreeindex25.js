@@ -1,5 +1,15 @@
 var NAVTREEINDEX25 =
 {
+"namespacefrida__constants_1_1vision__constants.html#ab6f09741cb770fc257e257b6fd02fea0":[22,0,49,6,38],
+"namespacefrida__constants_1_1vision__constants.html#abac3ea9294a623d83fbd48ba165a33e6":[22,0,49,6,19],
+"namespacefrida__constants_1_1vision__constants.html#abc5e18f6e69092965dc734ef457a8122":[22,0,49,6,6],
+"namespacefrida__constants_1_1vision__constants.html#abfb57b52b5acfed535e61b4e7f700bce":[22,0,49,6,20],
+"namespacefrida__constants_1_1vision__constants.html#ac39eb080f42ff5e41406deaef1ac2073":[22,0,49,6,7],
+"namespacefrida__constants_1_1vision__constants.html#ac8a0b118ce5720f4ebf6377d410a6513":[22,0,49,6,40],
+"namespacefrida__constants_1_1vision__constants.html#acceb0d31e9392751549f943e983af41f":[22,0,49,6,29],
+"namespacefrida__constants_1_1vision__constants.html#acda94204316d127125cb8c635a12a998":[22,0,49,6,0],
+"namespacefrida__constants_1_1vision__constants.html#adb75a39014b3fd92e84a9b62fc570e3c":[22,0,49,6,8],
+"namespacefrida__constants_1_1vision__constants.html#ae81858853172505ec9962a0534d48b01":[22,0,49,6,5],
 "namespacefrida__constants_1_1vision__constants.html#af3422ede0e186367f2078ca2c576e108":[22,0,49,6,46],
 "namespacefrida__constants_1_1vision__constants.html#af37f420f0d40b4c4fe368e24fc0c756e":[22,0,49,6,56],
 "namespacefrida__constants_1_1vision__constants.html#afb389b8319a0ea3880ffcdd8fe70c122":[22,0,49,6,15],
@@ -239,15 +249,5 @@ var NAVTREEINDEX25 =
 "namespacenavigation__multi.html":[22,0,91],
 "namespacenavigation__multi.html#a8f0e3fb276f78b91f6c6d87f9e583409":[22,0,91,0],
 "namespacenew__tracker.html":[22,0,92],
-"namespacenew__tracker.html#a33180eaf9f71838d633518a2a04c8eb7":[22,0,92,7],
-"namespacenew__tracker.html#a403d7921c624573e1cc1b9857ab3df19":[22,0,92,8],
-"namespacenew__tracker.html#a632d8155dd22a4532fb696e3febe7f1b":[22,0,92,4],
-"namespacenew__tracker.html#a643baaa61b2aedb4a2860c59ab6c3244":[22,0,92,1],
-"namespacenew__tracker.html#a88e5c096e37c837e32d391f453e4d206":[22,0,92,5],
-"namespacenew__tracker.html#ac2bec6fa6022496184746730db5af638":[22,0,92,2],
-"namespacenew__tracker.html#acd4ec4ccaa29f5d5b05055ac9444f55c":[22,0,92,6],
-"namespacenew__tracker.html#afc7e7bf51cd9f174dd03a8b8a05e2491":[22,0,92,3],
-"namespaceobjectDetectionHandler.html":[22,0,95],
-"namespaceobjectDetectionHandler.html#a57f57849cc3ad33855b1ebfb1fa9f347":[22,0,95,0],
-"namespaceobject__detector__combined.html":[22,0,93]
+"namespacenew__tracker.html#a33180eaf9f71838d633518a2a04c8eb7":[22,0,92,7]
 };

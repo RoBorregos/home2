@@ -93,6 +93,7 @@ $(document).ready(function(){initNavTree('classpose__detection_1_1PoseDetection.
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
+<a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="classpose__detection_1_1PoseDetection-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">pose_detection.PoseDetection Class Reference</div></div>
 </div><!--header-->
@@ -122,6 +123,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aebaea0078464790f8aeb7c543fe130ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab75bf40ebad014d58bdb33d54f042647"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpose__detection_1_1PoseDetection.html#ab75bf40ebad014d58bdb33d54f042647">is_waving_customer</a> (self, image)</td></tr>
 <tr class="separator:ab75bf40ebad014d58bdb33d54f042647"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af23d3406fc52cbd6ead03f28405e190d"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpose__detection_1_1PoseDetection.html#af23d3406fc52cbd6ead03f28405e190d">is_sitting_yolo</a> (self, image)</td></tr>
+<tr class="separator:af23d3406fc52cbd6ead03f28405e190d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aad1d5e3a089d58e26aea89a91efac6b2"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpose__detection_1_1PoseDetection.html#aad1d5e3a089d58e26aea89a91efac6b2">is_closer_to_left_shoulder</a> (self, wrist, left_shoulder, right_shoulder)</td></tr>
 <tr class="separator:aad1d5e3a089d58e26aea89a91efac6b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa4484c3a8be2a1a85a5c0de83bc37a96"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpose__detection_1_1PoseDetection.html#aa4484c3a8be2a1a85a5c0de83bc37a96">is_waving</a> (self, results)</td></tr>
@@ -147,6 +150,17 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a777851ccd8a86937712579e897095913"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a22f341f58c7f7588c25d65b2204ab276"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpose__detection_1_1PoseDetection.html#a22f341f58c7f7588c25d65b2204ab276">mp_drawing</a></td></tr>
 <tr class="separator:a22f341f58c7f7588c25d65b2204ab276"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af9d5c553c3a7877a86ae5551fc2ff2a7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpose__detection_1_1PoseDetection.html#af9d5c553c3a7877a86ae5551fc2ff2a7">yolo_pose</a></td></tr>
+<tr class="separator:af9d5c553c3a7877a86ae5551fc2ff2a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
+Protected Member Functions</h2></td></tr>
+<tr class="memitem:aec23b7251d8318102db210fa754ca063"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpose__detection_1_1PoseDetection.html#aec23b7251d8318102db210fa754ca063">_joint_angle_vectors</a> (self, vec_a, vec_b)</td></tr>
+<tr class="separator:aec23b7251d8318102db210fa754ca063"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa3965cee4daa76f011550f8c50034676"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpose__detection_1_1PoseDetection.html#aa3965cee4daa76f011550f8c50034676">_is_sitting_side</a> (self, points, scores, side, keypoints, keypoint_score, knee_max_angle, hip_max_angle)</td></tr>
+<tr class="separator:aa3965cee4daa76f011550f8c50034676"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7e107124189e9ec6c0ddb0abaf3e06c4"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpose__detection_1_1PoseDetection.html#a7e107124189e9ec6c0ddb0abaf3e06c4">_get_pose_points_scores</a> (self, image)</td></tr>
+<tr class="separator:a7e107124189e9ec6c0ddb0abaf3e06c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a12578d18c579ca2a03b0732d7880dc56" name="a12578d18c579ca2a03b0732d7880dc56"></a>
@@ -168,6 +182,156 @@ Public Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a7e107124189e9ec6c0ddb0abaf3e06c4" name="a7e107124189e9ec6c0ddb0abaf3e06c4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7e107124189e9ec6c0ddb0abaf3e06c4">&#9670;&#160;</a></span>_get_pose_points_scores()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def pose_detection.PoseDetection._get_pose_points_scores </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>image</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aa3965cee4daa76f011550f8c50034676" name="aa3965cee4daa76f011550f8c50034676"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa3965cee4daa76f011550f8c50034676">&#9670;&#160;</a></span>_is_sitting_side()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def pose_detection.PoseDetection._is_sitting_side </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>points</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>scores</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>side</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>keypoints</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>keypoint_score</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>knee_max_angle</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>hip_max_angle</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aec23b7251d8318102db210fa754ca063" name="aec23b7251d8318102db210fa754ca063"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aec23b7251d8318102db210fa754ca063">&#9670;&#160;</a></span>_joint_angle_vectors()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def pose_detection.PoseDetection._joint_angle_vectors </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>vec_a</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>vec_b</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a709d6401bbe407280ce5ef0158adfcca" name="a709d6401bbe407280ce5ef0158adfcca"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a709d6401bbe407280ce5ef0158adfcca">&#9670;&#160;</a></span>are_arms_down()</h2>
 
@@ -656,6 +820,34 @@ Public Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="af23d3406fc52cbd6ead03f28405e190d" name="af23d3406fc52cbd6ead03f28405e190d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af23d3406fc52cbd6ead03f28405e190d">&#9670;&#160;</a></span>is_sitting_yolo()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def pose_detection.PoseDetection.is_sitting_yolo </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>image</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Detects if the person is sitting using yolo pose keypoints.</pre> 
+</div>
+</div>
 <a id="acb7b09423326e99fb18546766cfaadea" name="acb7b09423326e99fb18546766cfaadea"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#acb7b09423326e99fb18546766cfaadea">&#9670;&#160;</a></span>is_visible()</h2>
 
@@ -811,6 +1003,20 @@ Public Attributes</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">pose_detection.PoseDetection.pose</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="af9d5c553c3a7877a86ae5551fc2ff2a7" name="af9d5c553c3a7877a86ae5551fc2ff2a7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af9d5c553c3a7877a86ae5551fc2ff2a7">&#9670;&#160;</a></span>yolo_pose</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">pose_detection.PoseDetection.yolo_pose</td>
         </tr>
       </table>
 </div><div class="memdoc">

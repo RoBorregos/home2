@@ -1,6 +1,9 @@
 var classpose__detection_1_1PoseDetection =
 [
     [ "__init__", "classpose__detection_1_1PoseDetection.html#a12578d18c579ca2a03b0732d7880dc56", null ],
+    [ "_get_pose_points_scores", "classpose__detection_1_1PoseDetection.html#a7e107124189e9ec6c0ddb0abaf3e06c4", null ],
+    [ "_is_sitting_side", "classpose__detection_1_1PoseDetection.html#aa3965cee4daa76f011550f8c50034676", null ],
+    [ "_joint_angle_vectors", "classpose__detection_1_1PoseDetection.html#aec23b7251d8318102db210fa754ca063", null ],
     [ "are_arms_down", "classpose__detection_1_1PoseDetection.html#a709d6401bbe407280ce5ef0158adfcca", null ],
     [ "detect", "classpose__detection_1_1PoseDetection.html#a07f1c9aa7f707ac4d8e076ac270890a8", null ],
     [ "detectGesture", "classpose__detection_1_1PoseDetection.html#aebaea0078464790f8aeb7c543fe130ca", null ],
@@ -15,11 +18,13 @@ var classpose__detection_1_1PoseDetection =
     [ "is_pointing_right", "classpose__detection_1_1PoseDetection.html#a160a6fdc64eed7f4e8fd17222360eede", null ],
     [ "is_raising_left_arm", "classpose__detection_1_1PoseDetection.html#ac8a1b942c284d17699042f8783c8d17e", null ],
     [ "is_raising_right_arm", "classpose__detection_1_1PoseDetection.html#a8c3df34d7a972ccc6f1a816abc158f8f", null ],
+    [ "is_sitting_yolo", "classpose__detection_1_1PoseDetection.html#af23d3406fc52cbd6ead03f28405e190d", null ],
     [ "is_visible", "classpose__detection_1_1PoseDetection.html#acb7b09423326e99fb18546766cfaadea", null ],
     [ "is_waving", "classpose__detection_1_1PoseDetection.html#aa4484c3a8be2a1a85a5c0de83bc37a96", null ],
     [ "is_waving_customer", "classpose__detection_1_1PoseDetection.html#ab75bf40ebad014d58bdb33d54f042647", null ],
     [ "personAngle", "classpose__detection_1_1PoseDetection.html#a77e94394775915cc37d80cf58608aaa6", null ],
     [ "mp_drawing", "classpose__detection_1_1PoseDetection.html#a22f341f58c7f7588c25d65b2204ab276", null ],
     [ "mp_pose", "classpose__detection_1_1PoseDetection.html#ae72890d863cab068162f5f934e779413", null ],
-    [ "pose", "classpose__detection_1_1PoseDetection.html#a777851ccd8a86937712579e897095913", null ]
+    [ "pose", "classpose__detection_1_1PoseDetection.html#a777851ccd8a86937712579e897095913", null ],
+    [ "yolo_pose", "classpose__detection_1_1PoseDetection.html#af9d5c553c3a7877a86ae5551fc2ff2a7", null ]
 ];

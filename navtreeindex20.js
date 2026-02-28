@@ -1,5 +1,15 @@
 var NAVTREEINDEX20 =
 {
+"decorators_8py.html#a941f5ed30d7544d8f102feee2e6a2a72":[24,0,6,1,5,2,0],
+"decorators_8py.html#adcfc2d40a4fb55163e4d810f7b980736":[24,0,6,1,5,2,1],
+"demo__ds4_8launch_8py.html":[24,0,3,0,1,2,0],
+"demo__ds4_8launch_8py.html#a3b92a5a114f0a71450f4b47c440d3352":[24,0,3,0,1,2,0,0],
+"demo__face_8launch_8py.html":[24,0,6,0,1],
+"demo__face_8launch_8py.html#ae3adde7c73c08762a4607a57106cd131":[24,0,6,0,1,0],
+"demo__manager_8py.html":[24,0,6,1,1,1],
+"demo__manager_8py.html#a2beab80f142431eb61e00531f3e19774":[24,0,6,1,1,1,4],
+"demo__manager_8py.html#a44da8b44a149c1ac1cf0220e7c0fc227":[24,0,6,1,1,1,5],
+"demo__manager_8py.html#a51e78fe12c7e5ee07d540e5f4bd46cf2":[24,0,6,1,1,1,3],
 "demo__manager_8py.html#a62ce8766f52bf96b489df0459fec5928":[24,0,6,1,1,1,8],
 "demo__manager_8py.html#a7d58cd5ab1fd7d95716325611205ed32":[24,0,6,1,1,1,6],
 "demo__manager_8py.html#a891f55a494f20d29760d6fd74a348244":[24,0,6,1,1,1,2],
@@ -239,15 +249,5 @@ var NAVTREEINDEX20 =
 "follow__person__node_01copy_8py.html#afbafccba439fd1e80310a15e83958299":[24,0,6,1,1,5,7],
 "follow__person__node_8py.html":[24,0,6,1,1,6],
 "follow__person__node_8py.html#a3094696c3de17bc4d279ba3bf1c2684f":[24,0,6,1,1,6,10],
-"follow__person__node_8py.html#a448d579804da144965357e505dff5c0f":[24,0,6,1,1,6,3],
-"follow__person__node_8py.html#a44bd9b7dd07ac60865c69767af3940a2":[24,0,6,1,1,6,6],
-"follow__person__node_8py.html#a63f3789e3e174b5f2f3760788e0de37d":[24,0,6,1,1,6,5],
-"follow__person__node_8py.html#a7fbfc6c654608c97d18f4f00417fce9d":[24,0,6,1,1,6,1],
-"follow__person__node_8py.html#a90b67154da683ca1afd7e81d0ecd53ea":[24,0,6,1,1,6,8],
-"follow__person__node_8py.html#ab451655c396f8f960bd7200a4c4b04cb":[24,0,6,1,1,6,4],
-"follow__person__node_8py.html#ab58be493cccf04e2d04d51c8d7e89053":[24,0,6,1,1,6,11],
-"follow__person__node_8py.html#ae66d60046d004ac46b9533d8a95636bc":[24,0,6,1,1,6,2],
-"follow__person__node_8py.html#af3059a3dad952d77f7c8cfc496f0fbad":[24,0,6,1,1,6,9],
-"follow__person__node_8py.html#af6451d851044b737000c8c1fb6ca5f82":[24,0,6,1,1,6,7],
-"follow__person__v2_8py.html":[24,0,6,1,1,7]
+"follow__person__node_8py.html#a448d579804da144965357e505dff5c0f":[24,0,6,1,1,6,3]
 };
