@@ -369,7 +369,7 @@ class ManipulationTasks:
             Logger.error(self.node, "Place request failed")
             return Status.EXECUTION_ERROR
         return Status.EXECUTION_SUCCESS
-    
+
     def _check_collision_direction(self, direction: str) -> bool:
         """
         Physically moves the arm 5 degrees to check for obstacles.
@@ -378,56 +378,52 @@ class ManipulationTasks:
         try:
             current_joints = self.get_joint_positions(degrees=True)
             test_joints = current_joints.copy()
-            
-            offset = 90.0 
+
+            offset = 90.0
             if direction == "left":
                 test_joints["joint1"] += offset
             elif direction == "right":
                 test_joints["joint1"] -= offset
-                
+
             Logger.info(self.node, f"Scanning {direction}...")
             result = self.move_joint_positions(
-                joint_positions=test_joints, 
-                velocity=0.2, 
-                degrees=True
+                joint_positions=test_joints, velocity=0.2, degrees=True
             )
-            
+
             lower_offset = 20.0
             test_joints["joint5"] += lower_offset
             result = self.move_joint_positions(
-                joint_positions=test_joints, 
-                velocity=0.2, 
-                degrees=True
+                joint_positions=test_joints, velocity=0.2, degrees=True
             )
-            
+
             if result == Status.EXECUTION_SUCCESS:
                 Logger.info(self.node, f"Path to {direction} is CLEAR")
                 return False
             else:
                 Logger.warn(self.node, f"Path to {direction} is BLOCKED")
                 return True
-                
+
         except Exception as e:
             Logger.warning(self.node, f"Error scanning {direction}: {e}")
             return True
-        
+
     def place_on_floor(self) -> int:
         try:
             Logger.info(self.node, "Moving to front_low_stare...")
             result = self.move_joint_positions(named_position="front_low_stare", velocity=0.2)
-            
+
             if result != Status.EXECUTION_SUCCESS:
                 Logger.error(self.node, "Failed to reach start position")
                 return Status.EXECUTION_ERROR
-            
+
             has_collision_left = self._check_collision_direction("left")
-            
+
             self.move_joint_positions(named_position="front_low_stare", velocity=0.3)
-            
+
             has_collision_right = self._check_collision_direction("right")
-            
+
             self.move_joint_positions(named_position="front_low_stare", velocity=0.3)
-            
+
             if not has_collision_left:
                 Logger.info(self.node, "Left side clear. Attempting place_floor_left...")
                 res_l = self.move_joint_positions(named_position="place_floor_left", velocity=0.3)
@@ -441,8 +437,7 @@ class ManipulationTasks:
                     self.move_joint_positions(named_position="front_low_stare", velocity=0.3)
                     return Status.EXECUTION_SUCCESS
                 Logger.warn(self.node, "Movement to left failed, trying right side...")
-            
-            
+
             if not has_collision_right:
                 Logger.info(self.node, "Right side clear. Attempting place_floor_right...")
                 res_r = self.move_joint_positions(named_position="place_floor_right", velocity=0.3)
@@ -456,14 +451,14 @@ class ManipulationTasks:
                     self.move_joint_positions(named_position="front_low_stare", velocity=0.3)
                     return Status.EXECUTION_SUCCESS
                 Logger.error(self.node, "Movement to right also failed")
-            
+
             Logger.error(self.node, "CRITICAL: Both sides are blocked or planning failed")
             return Status.EXECUTION_ERROR
-                
+
         except Exception as e:
             Logger.error(self.node, f"Error in place_on_floor: {e}")
             return Status.EXECUTION_ERROR
-    
+
     def place_on_shelf(self, plane_height: int, tolerance: int):
         # if not self._manipulation_action_client.wait_for_server(timeout_sec=TIMEOUT):
         #     Logger.error(self.node, "Manipulation action server not available")
@@ -541,7 +536,7 @@ class ManipulationTasks:
         self.move_joint_positions(joint_positions=joint_positions, velocity=0.75, degrees=True)
 
     def move_to_position(self, named_position: str, velocity: float = 0.75):
-        self.move_joint_positions(named_position=named_position, velocity=velocity , degrees=True)
+        self.move_joint_positions(named_position=named_position, velocity=velocity, degrees=True)
 
     @mockable(return_value=Status.EXECUTION_SUCCESS)
     @service_check(
