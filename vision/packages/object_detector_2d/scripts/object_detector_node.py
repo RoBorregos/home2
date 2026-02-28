@@ -74,6 +74,7 @@ class NodeParams:
     USE_ACTIVE_FLAG: bool = None
     VERBOSE: bool = None
     USE_YOLO8: bool = None
+    USE_YOLO26: bool = None
 
 
 # TODO DEFINE HOW TO GET params
@@ -95,11 +96,7 @@ class object_detector_node(rclpy.node.Node):
         self.set_parameters()
         self.active_flag = not self.node_params.USE_ACTIVE_FLAG
 
-        if self.node_params.USE_YOLO26:
-            self.object_detector_2d = YoloV26ObjectDetector(
-                self.node_params.YOLO_MODEL_PATH, self.object_detector_parameters
-            )
-        elif self.node_params.USE_YOLO8:
+        if self.node_params.USE_YOLO26 or self.node_params.USE_YOLO8:
             self.object_detector_2d = YoloV8ObjectDetector(
                 self.node_params.YOLO_MODEL_PATH, self.object_detector_parameters
             )
@@ -178,7 +175,6 @@ class object_detector_node(rclpy.node.Node):
         self.node_params.YOLO_MODEL_PATH = MODELS_PATH + (
             self.get_parameter("YOLO_MODEL_PATH").get_parameter_value().string_value
         )
-        print("PATH_FINALLLLL: ", self.node_params.YOLO_MODEL_PATH)
         self.get_logger().info(f"path: {self.node_params.YOLO_MODEL_PATH}")
         self.node_params.USE_ACTIVE_FLAG = (
             self.get_parameter("USE_ACTIVE_FLAG").get_parameter_value().bool_value
@@ -189,7 +185,9 @@ class object_detector_node(rclpy.node.Node):
         self.node_params.USE_YOLO8 = (
             self.get_parameter("USE_YOLO8").get_parameter_value().bool_value
         )
-
+        self.node_params.USE_YOLO26 = (
+            self.get_parameter("USE_YOLO26").get_parameter_value().bool_value
+        )
         self.get_logger().info(
             "Listening to image on topic: " + self.node_params.RGB_IMAGE_TOPIC
         )
