@@ -1,4 +1,4 @@
-<library path="vamp_moveit_plugin">
+<library path="vamp_moveit_plugin_lib">
   <class name="vamp_moveit_plugin/VampPlannerManager"
          type="vamp_moveit_plugin::VampPlannerManager"
          base_class_type="planning_interface::PlannerManager">
