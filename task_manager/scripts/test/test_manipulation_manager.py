@@ -19,10 +19,12 @@ class TestManipulationManager(Node):
     def run(self):
         # self.get_logger().info("--- STARTING PLACE ON FLOOR TEST ---")
         
-        # result = self.manipulation_manager.place_on_floor()
-        # result = self.manipulation_manager.move_to_position("pick_stare_at_table",velocity=0.1)
+        result = self.manipulation_manager.place_on_floor()
+        # result = self.manipulation_manager.move_to_position("front_stare",velocity=0.1)
         # result = self.manipulation_manager.move_to_position("place_floor_right", velocity=0.1)
-        result = self.manipulation_manager.move_to_position("place_floor_left", velocity=0.1)
+        # result = self.manipulation_manager.move_to_position("place_floor_left", velocity=0.1)
+        
+        # result = self.manipulation_manager.move_joint_positions(named_position="place_floor_right", velocity=0.1, degrees=True)
         
         if result == Status.EXECUTION_SUCCESS:
             self.get_logger().info("SUCCESS: Robot moved to floor position.")
