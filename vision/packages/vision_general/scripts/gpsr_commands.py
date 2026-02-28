@@ -20,7 +20,6 @@ from frida_interfaces.srv import (
     PersonPoseGesture,
     CropQuery,
     CountByColor,
-    ReadQr,
 )
 
 from ament_index_python.packages import get_package_share_directory
@@ -34,13 +33,11 @@ from frida_constants.vision_constants import (
     POSE_GESTURE_TOPIC,
     CROP_QUERY_TOPIC,
     COUNT_BY_GESTURE_TOPIC,
-    READ_QR_TOPIC,
 )
 
 from frida_constants.vision_enums import Poses, Gestures, DetectBy
 
 from frida_interfaces.srv import YoloDetect  
-from frida_interfaces.msg import Detection   
 
 from pose_detection import PoseDetection
 
@@ -95,13 +92,6 @@ class GPSRCommands(Node):
             callback_group=self.callback_group,
         )
 
-        self.read_qr_service = self.create_service(
-            ReadQr,
-            READ_QR_TOPIC,
-            self.read_qr_callback,
-            callback_group=self.callback_group,
-        )
-
         self.image_publisher = self.create_publisher(Image, IMAGE_TOPIC, 10)
 
         self.yolo_client = self.create_client(YoloDetect, "yolo_detect", callback_group=self.callback_group)
@@ -111,7 +101,6 @@ class GPSRCommands(Node):
 
         self.image = None
         self.pose_detection = PoseDetection()
-        self.qr_detector = cv2.QRCodeDetector()
         self.output_image = []
         self.people = []
 
@@ -134,8 +123,7 @@ class GPSRCommands(Node):
                 return
 
             self.output_image = self.image.copy()
-            self.get_detections(0)  # default: 0  - person
-
+            
         except Exception as e:
             print(f"Error: {e}")
 
@@ -157,6 +145,7 @@ class GPSRCommands(Node):
 
         frame = self.image
         self.output_image = frame.copy()
+        self.people = self.get_detections(0)
 
         pose_requested = request.pose_requested
 
@@ -168,8 +157,6 @@ class GPSRCommands(Node):
             response.success = False
             response.count = 0
             return response
-
-        self.get_detections(0)
 
         if len(self.people) == 0:
             self.get_logger().warn("No people detected in the image.")
@@ -213,6 +200,7 @@ class GPSRCommands(Node):
 
         frame = self.image
         self.output_image = frame.copy()
+        self.people = self.get_detections(0)
 
         gesture_requested = request.pose_requested
 
@@ -224,9 +212,6 @@ class GPSRCommands(Node):
             response.success = False
             response.count = 0
             return response
-
-        # Detect people using YOLO
-        self.get_detections(0)
 
         gesture = self.count_gestures(frame)
 
@@ -247,6 +232,8 @@ class GPSRCommands(Node):
             Gestures.POINTING_LEFT: 0,
             Gestures.POINTING_RIGHT: 0,
         }
+
+        self.people = self.get_detections(0)
 
         if len(self.people) == 0:
             self.get_logger().warn("No people detected in the image.")
@@ -279,9 +266,7 @@ class GPSRCommands(Node):
 
         frame = self.image
         self.output_image = frame.copy()
-
-        # Detect people using YOLO
-        self.get_detections(0)
+        self.people = self.get_detections(0)
 
         # Count people detected
         people_count = len(self.people)
@@ -302,11 +287,10 @@ class GPSRCommands(Node):
 
         frame = self.image
         self.output_image = frame.copy()
+        self.people = self.get_detections(0)
 
         clothing = request.clothing
         color = request.color
-
-        self.get_detections(0)
 
         if len(self.people) == 0:
             self.get_logger().warn("No people detected in the image.")
@@ -350,9 +334,7 @@ class GPSRCommands(Node):
 
         frame = self.image
         self.output_image = frame.copy()
-
-        # Detect people using YOLO
-        self.get_detections(0)
+        self.people = self.get_detections(0)
 
         if len(self.people) == 0:
             self.get_logger().warn("No people detected in the image.")
@@ -396,31 +378,6 @@ class GPSRCommands(Node):
         self.get_logger().info(f"{type_requested} detected: {response_clean}")
         return response
 
-    def read_qr_callback(self, request, response):
-        """Callback to detect and decode QR code in the image"""
-        self.get_logger().info("Executing service Read Qr")
-        if self.image is None:
-            response.success = False
-            response.result = ""
-            return response
-
-        frame = self.image
-        self.output_image = frame.copy()
-
-        # Detect QR using cv2.QRCodeDetector
-        retval, _, _ = self.qr_detector.detectAndDecode(frame)
-
-        if retval == "":
-            response.success = False
-            response.result = ""
-            self.get_logger().warn("No qr code detected")
-            return response
-
-        self.success(f"QR code read successfully: {retval}")
-        response.result = retval
-        response.success = True
-        return response
-
     def success(self, message):
         """Log a success message."""
         self.get_logger().info(f"\033[92mSUCCESS:\033[0m {message}")
@@ -435,7 +392,7 @@ class GPSRCommands(Node):
             )
 
     def detect_gesture(self, cropped_frame):
-        """Detect the pose in the image."""
+        """Detect the gesture in the image."""
         gestures = [
             Gestures.UNKNOWN,
             Gestures.WAVING,
@@ -445,6 +402,7 @@ class GPSRCommands(Node):
             Gestures.POINTING_RIGHT,
         ]
 
+        self.people = self.get_detections(0)
         gesture = self.pose_detection.detectGesture(cropped_frame)
 
         if gesture in gestures:
@@ -545,7 +503,6 @@ class GPSRCommands(Node):
                 if x < xinters:
                     inside = not inside
         return inside
-
 
 def main(args=None):
     rclpy.init(args=args)
