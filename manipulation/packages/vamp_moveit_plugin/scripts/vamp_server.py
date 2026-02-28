@@ -24,6 +24,28 @@ class VampServer(Node):
 
         self.get_logger().info('VAMP server for FRIDA is ready and waiting for planning requests')
 
+    def apply_smoothing_filter(self, path_nodes, window_size=5, passes=3):
+        """
+        Mathematical filter to eliminate micro-zigzags from RRT and generate organic curves for MoveIt.
+        """
+        if len(path_nodes) < 3:
+            return path_nodes
+            
+        smoothed = np.array(path_nodes).copy()
+        n_points = len(smoothed)
+        
+        for _ in range(passes):
+            new_smoothed = smoothed.copy()
+
+            for i in range(1, n_points - 1):
+                start_idx = max(0, i - window_size // 2)
+                end_idx = min(n_points, i + window_size // 2 + 1)
+
+                new_smoothed[i] = np.mean(smoothed[start_idx:end_idx], axis=0)
+            smoothed = new_smoothed
+            
+        return list(smoothed)
+
     def plan_callback(self, request, response):
         self.get_logger().info("Received new planning request")
         
@@ -168,6 +190,8 @@ class VampServer(Node):
                     if final_distance > 0.01:
                         clean_points.append(dense_path[-1])
                         
+                    clean_points = self.apply_smoothing_filter(clean_points)
+                    
                     for wp in clean_points:
                         for j in range(6):
                             flat_path.append(float(wp[j]))
