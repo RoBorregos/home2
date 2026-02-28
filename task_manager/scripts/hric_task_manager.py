@@ -48,7 +48,7 @@ class HRIC_TM(Node):
         FIND_SEAT = "FIND_SEAT"
         INTRODUCTION = "INTRODUCTION"
         NAVIGATE_TO_ENTRANCE = "NAVIGATE_TO_ENTRANCE"
-        TAKE_BAG = "TAKE_BAG"
+        LEAVE_BAG = "LEAVE_BAG"
         END = "END"
         DEBUG = "DEBUG"
 
@@ -225,12 +225,13 @@ class HRIC_TM(Node):
         if self.current_state == HRIC_TM.TaskStates.TAKE_BAG:
             self._track_state_change(HRIC_TM.TaskStates.TAKE_BAG)
             self.subtask_manager.hri.say(
-                # TODO: uncomment and delete next line
-                # "I see you brought a bag for the host. Please let me take care of it for you.",
-                "Sorry, I currently can't take care of your bag.",
-                wait=False,
+                "I see you brought a bag for the host. Please let me take care of it for you.",
             )
             # TODO: Implement bag taking functionality here
+            self.subtask_manager.hri.say(
+                "I will close my gripper in 3... 2... 1...",
+            )
+            self.subtask_manager.manipulation.close_gripper()
             guest_1 = self.guests[FIRST_GUEST_IDX]
             self.subtask_manager.hri.say(
                 f"Please follow me to the living room. By the way, another guest named {guest_1.name} is already in the living room. {guest_1.description}.",
@@ -301,7 +302,7 @@ class HRIC_TM(Node):
             )
             self.subtask_manager.manipulation.follow_face(False)
 
-            self.current_state = HRIC_TM.TaskStates.TAKE_BAG
+            self.current_state = HRIC_TM.TaskStates.LEAVE_BAG
 
         if self.current_state == HRIC_TM.TaskStates.NAVIGATE_TO_ENTRANCE:
             self._track_state_change(HRIC_TM.TaskStates.NAVIGATE_TO_ENTRANCE)
@@ -310,9 +311,10 @@ class HRIC_TM(Node):
             self.navigate_to("entrance", say=False)
             self.current_state = HRIC_TM.TaskStates.WAIT_FOR_GUEST
 
-        if self.current_state == HRIC_TM.TaskStates.TAKE_BAG:
-            self._track_state_change(HRIC_TM.TaskStates.TAKE_BAG)
-            # TODO: Follow the host and leave the bag
+        if self.current_state == HRIC_TM.TaskStates.LEAVE_BAG:
+            self._track_state_change(HRIC_TM.TaskStates.LEAVE_BAG)
+            # TODO: Follow host
+            self.subtask_manager.manipulation.place_on_floor()
             self.current_state = HRIC_TM.TaskStates.END
 
         if self.current_state == HRIC_TM.TaskStates.END:
