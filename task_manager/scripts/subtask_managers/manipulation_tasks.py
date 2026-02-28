@@ -370,80 +370,92 @@ class ManipulationTasks:
             return Status.EXECUTION_ERROR
         return Status.EXECUTION_SUCCESS
     
-    def place_on_floor(self):
-        # First we want to check if we have any collision to the left and right to call the correct pose, if we have a collision on the left we 
-        # want to place on the right and vice versa, if we have no collision we can place in one of the side.
+    def _check_collision_direction(self, direction: str) -> bool:
+        """
+        Physically moves the arm 5 degrees to check for obstacles.
+        Returns True if blocked, False if clear.
+        """
         try:
-            # Note: This assumes you have a way to get collision information
-            # You may need to implement collision checking based on your specific setup
-            has_collision_right = self._check_collision_direction("right")
+            current_joints = self.get_joint_positions(degrees=True)
+            test_joints = current_joints.copy()
+            
+            offset = 90.0 
+            if direction == "left":
+                test_joints["joint1"] += offset
+            elif direction == "right":
+                test_joints["joint1"] -= offset
+                
+            Logger.info(self.node, f"Scanning {direction}...")
+            result = self.move_joint_positions(
+                joint_positions=test_joints, 
+                velocity=0.2, 
+                degrees=True
+            )
+            
+            lower_offset = 20.0
+            test_joints["joint5"] += lower_offset
+            result = self.move_joint_positions(
+                joint_positions=test_joints, 
+                velocity=0.2, 
+                degrees=True
+            )
+            
+            if result == Status.EXECUTION_SUCCESS:
+                Logger.info(self.node, f"Path to {direction} is CLEAR")
+                return False
+            else:
+                Logger.warn(self.node, f"Path to {direction} is BLOCKED")
+                return True
+                
+        except Exception as e:
+            Logger.warning(self.node, f"Error scanning {direction}: {e}")
+            return True
+        
+    def place_on_floor(self) -> int:
+        try:
+            Logger.info(self.node, "Moving to front_low_stare...")
+            result = self.move_joint_positions(named_position="front_low_stare", velocity=0.2)
+            
+            if result != Status.EXECUTION_SUCCESS:
+                Logger.error(self.node, "Failed to reach start position")
+                return Status.EXECUTION_ERROR
+            
             has_collision_left = self._check_collision_direction("left")
             
-            if has_collision_right and not has_collision_left:
-                self.move_to_position("PLACE_FLOOR_LEFT")
-                Logger.info(self.node, "Placing on floor left due to right collision")
-            elif has_collision_left and not has_collision_right:
-                self.move_to_position("PLACE_FLOOR_RIGHT")
-                Logger.info(self.node, "Placing on floor right due to left collision")
-            elif not has_collision_left and not has_collision_right:
-                # Default to left if no collisions
-                self.move_to_position("PLACE_FLOOR_LEFT")
-                Logger.info(self.node, "Placing on floor left (no collisions detected)")
-            else:
-                Logger.error(self.node, "Cannot place on floor - collisions on both sides")
-                return Status.EXECUTION_ERROR
+            self.move_joint_positions(named_position="front_low_stare", velocity=0.3)
+            
+            has_collision_right = self._check_collision_direction("right")
+            
+            self.move_joint_positions(named_position="front_low_stare", velocity=0.3)
+            
+            if not has_collision_left:
+                Logger.info(self.node, "Left side clear. Attempting place_floor_left...")
+                res_l = self.move_joint_positions(named_position="place_floor_left", velocity=0.3)
+                if res_l == Status.EXECUTION_SUCCESS:
+                    Logger.success(self.node, "Object placed on LEFT")
+                    open_gripper_result = self.open_gripper()
+                    self.move_joint_positions(named_position="front_low_stare", velocity=0.3)
+                    return Status.EXECUTION_SUCCESS
+                Logger.warn(self.node, "Movement to left failed, trying right side...")
+            
+            
+            if not has_collision_right:
+                Logger.info(self.node, "Right side clear. Attempting place_floor_right...")
+                res_r = self.move_joint_positions(named_position="place_floor_right", velocity=0.3)
+                if res_r == Status.EXECUTION_SUCCESS:
+                    Logger.success(self.node, "Object placed on RIGHT")
+                    open_gripper_result = self.open_gripper()
+                    self.move_joint_positions(named_position="front_low_stare", velocity=0.3)
+                    return Status.EXECUTION_SUCCESS
+                Logger.error(self.node, "Movement to right also failed")
+            
+            Logger.error(self.node, "CRITICAL: Both sides are blocked or planning failed")
+            return Status.EXECUTION_ERROR
                 
         except Exception as e:
             Logger.error(self.node, f"Error in place_on_floor: {e}")
             return Status.EXECUTION_ERROR
-            
-        return Status.EXECUTION_SUCCESS
     
-    def _check_collision_direction(self, direction: str) -> bool:
-        """
-        Helper method to check for collisions in a specific direction.
-        This is a placeholder - you'll need to implement based on your collision detection system.
-        """
-        try:
-            # Get current joint positions to calculate test pose
-            current_joints = self.get_joint_positions(degrees=True)
-            
-            # Define test poses for collision checking
-            test_joints = current_joints.copy()
-            
-            if direction == "left":
-                # Modify joint to check left direction (adjust joint1 for left movement)
-                test_joints["joint1"] = current_joints["joint1"] + 30  # 30 degrees left
-            elif direction == "right":
-                # Modify joint to check right direction (adjust joint1 for right movement)
-                test_joints["joint1"] = current_joints["joint1"] - 30  # 30 degrees right
-            
-            # Try to plan to the test position without executing
-            # If planning fails, there's likely a collision
-            future = self._send_joint_goal(
-                joint_names=list(test_joints.keys()),
-                joint_positions=[x * DEG_TO_RAD for x in test_joints.values()],
-                velocity=0.1
-            )
-            
-            # Wait briefly for planning result
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=2.0)
-            goal_handle = future.result()
-            
-            if goal_handle is None or not goal_handle.accepted:
-                # Planning failed, likely collision
-                Logger.info(self.node, f"Collision detected in {direction} direction")
-                return True
-            else:
-                # Cancel the goal since we only wanted to check feasibility
-                goal_handle.cancel_goal_async()
-                Logger.info(self.node, f"No collision detected in {direction} direction")
-                return False
-                
-        except Exception as e:
-            Logger.warning(self.node, f"Error checking collision in {direction}: {e}")
-            return True
-
     def place_on_shelf(self, plane_height: int, tolerance: int):
         # if not self._manipulation_action_client.wait_for_server(timeout_sec=TIMEOUT):
         #     Logger.error(self.node, "Manipulation action server not available")
@@ -520,8 +532,8 @@ class ManipulationTasks:
         joint_positions["joint5"] = joint_positions["joint5"] - degrees
         self.move_joint_positions(joint_positions=joint_positions, velocity=0.75, degrees=True)
 
-    def move_to_position(self, named_position: str):
-        self.move_joint_positions(named_position=named_position, velocity=0.75, degrees=True)
+    def move_to_position(self, named_position: str, velocity: float = 0.75):
+        self.move_joint_positions(named_position=named_position, velocity=velocity , degrees=True)
 
     @mockable(return_value=Status.EXECUTION_SUCCESS)
     @service_check(
