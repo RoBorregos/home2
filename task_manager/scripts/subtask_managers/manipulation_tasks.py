@@ -39,6 +39,8 @@ from frida_constants.manipulation_constants import (
 )
 # import time as t
 
+from enum import Enum
+
 XARM_ENABLE_SERVICE = "/xarm/motion_enable"
 XARM_SETMODE_SERVICE = "/xarm/set_mode"
 XARM_SETSTATE_SERVICE = "/xarm/set_state"
@@ -370,6 +372,121 @@ class ManipulationTasks:
             return Status.EXECUTION_ERROR
         return Status.EXECUTION_SUCCESS
 
+    class Direction(Enum):
+        LEFT = "left"
+        RIGHT = "right"
+
+    def _attempt_place_on_side(self, direction: Direction) -> int:
+        """
+        Attempts to place an object on the floor at the specified side.
+        Returns Status.EXECUTION_SUCCESS if successful, Status.EXECUTION_ERROR otherwise.
+
+        Args:
+            direction: Direction.LEFT or Direction.RIGHT
+
+        Returns:
+            Status code indicating success or failure
+        """
+        side_name = direction.value
+        named_position = f"place_floor_{side_name}"
+
+        Logger.info(
+            self.node, f"{side_name.capitalize()} side clear. Attempting {named_position}..."
+        )
+
+        result = self.move_joint_positions(named_position=named_position, velocity=0.3)
+
+        if result == Status.EXECUTION_SUCCESS:
+            Logger.success(self.node, f"Object placed on {side_name.upper()}")
+
+            open_gripper_result = self.open_gripper()
+            if open_gripper_result == Status.EXECUTION_SUCCESS:
+                Logger.success(self.node, "Gripper opened successfully")
+            else:
+                Logger.error(self.node, "Failed to open gripper")
+
+            self.move_joint_positions(named_position="front_low_stare", velocity=0.3)
+            return Status.EXECUTION_SUCCESS
+
+        Logger.warn(self.node, f"Movement to {side_name} failed")
+        return Status.EXECUTION_ERROR
+
+    def _check_side_blocked(self, direction: Direction) -> bool:
+        """
+        Physically moves the arm 5 degrees to check for obstacles.
+        Returns True if blocked, False if clear.
+        """
+        try:
+            current_joints = self.get_joint_positions(degrees=True)
+            test_joints = current_joints.copy()
+
+            offset = 90.0
+            if direction == self.Direction.LEFT:
+                test_joints["joint1"] += offset
+            elif direction == self.Direction.RIGHT:
+                test_joints["joint1"] -= offset
+
+            Logger.info(self.node, f"Scanning {direction.value}...")
+            result_pan = self.move_joint_positions(
+                joint_positions=test_joints, velocity=0.2, degrees=True
+            )
+            if result_pan != Status.EXECUTION_SUCCESS:
+                Logger.warn(self.node, "Path is BLOCKED at pan")
+                return True
+
+            lower_offset = 20.0
+            test_joints["joint5"] += lower_offset
+            result_tilt = self.move_joint_positions(
+                joint_positions=test_joints, velocity=0.2, degrees=True
+            )
+
+            if result_tilt == Status.EXECUTION_SUCCESS:
+                Logger.info(self.node, f"Path to {direction.value} is CLEAR")
+                return False
+            else:
+                Logger.warn(self.node, f"Path to {direction.value} is BLOCKED")
+                return True
+
+        except Exception as e:
+            Logger.warning(self.node, f"Error scanning {direction.value}: {e}")
+            return True
+
+    def place_on_floor(self) -> int:
+        try:
+            Logger.info(self.node, "Moving to front_low_stare...")
+            result = self.move_joint_positions(named_position="front_low_stare", velocity=0.2)
+
+            if result != Status.EXECUTION_SUCCESS:
+                Logger.error(self.node, "Failed to reach start position")
+                return Status.EXECUTION_ERROR
+
+            has_collision_left = self._check_side_blocked(self.Direction.LEFT)
+
+            self.move_joint_positions(named_position="front_low_stare", velocity=0.3)
+
+            if not has_collision_left:
+                result = self._attempt_place_on_side(self.Direction.LEFT)
+                if result == Status.EXECUTION_SUCCESS:
+                    return Status.EXECUTION_SUCCESS
+                Logger.warn(self.node, "Movement to left failed, trying right side...")
+
+            has_collision_right = self._check_side_blocked(self.Direction.RIGHT)
+
+            self.move_joint_positions(named_position="front_low_stare", velocity=0.3)
+
+            if not has_collision_right:
+                result = self._attempt_place_on_side(self.Direction.RIGHT)
+                if result == Status.EXECUTION_SUCCESS:
+                    return Status.EXECUTION_SUCCESS
+                Logger.error(self.node, "Movement to right also failed")
+
+            Logger.error(self.node, "CRITICAL: Both sides are blocked or planning failed")
+            return Status.EXECUTION_ERROR
+
+        except Exception as e:
+            Logger.error(self.node, f"Error in place_on_floor: {e}")
+            return Status.EXECUTION_ERROR
+
     def place_on_shelf(self, plane_height: int, tolerance: int):
         # if not self._manipulation_action_client.wait_for_server(timeout_sec=TIMEOUT):
         #     Logger.error(self.node, "Manipulation action server not available")
@@ -446,8 +563,8 @@ class ManipulationTasks:
         joint_positions["joint5"] = joint_positions["joint5"] - degrees
         self.move_joint_positions(joint_positions=joint_positions, velocity=0.75, degrees=True)
 
-    def move_to_position(self, named_position: str):
-        self.move_joint_positions(named_position=named_position, velocity=0.75, degrees=True)
+    def move_to_position(self, named_position: str, velocity: float = 0.75):
+        self.move_joint_positions(named_position=named_position, velocity=velocity, degrees=True)
 
     @mockable(return_value=Status.EXECUTION_SUCCESS)
     @service_check(
