@@ -369,6 +369,80 @@ class ManipulationTasks:
             Logger.error(self.node, "Place request failed")
             return Status.EXECUTION_ERROR
         return Status.EXECUTION_SUCCESS
+    
+    def place_on_floor(self):
+        # First we want to check if we have any collision to the left and right to call the correct pose, if we have a collision on the left we 
+        # want to place on the right and vice versa, if we have no collision we can place in one of the side.
+        try:
+            # Note: This assumes you have a way to get collision information
+            # You may need to implement collision checking based on your specific setup
+            has_collision_right = self._check_collision_direction("right")
+            has_collision_left = self._check_collision_direction("left")
+            
+            if has_collision_right and not has_collision_left:
+                self.move_to_position("PLACE_FLOOR_LEFT")
+                Logger.info(self.node, "Placing on floor left due to right collision")
+            elif has_collision_left and not has_collision_right:
+                self.move_to_position("PLACE_FLOOR_RIGHT")
+                Logger.info(self.node, "Placing on floor right due to left collision")
+            elif not has_collision_left and not has_collision_right:
+                # Default to left if no collisions
+                self.move_to_position("PLACE_FLOOR_LEFT")
+                Logger.info(self.node, "Placing on floor left (no collisions detected)")
+            else:
+                Logger.error(self.node, "Cannot place on floor - collisions on both sides")
+                return Status.EXECUTION_ERROR
+                
+        except Exception as e:
+            Logger.error(self.node, f"Error in place_on_floor: {e}")
+            return Status.EXECUTION_ERROR
+            
+        return Status.EXECUTION_SUCCESS
+    
+    def _check_collision_direction(self, direction: str) -> bool:
+        """
+        Helper method to check for collisions in a specific direction.
+        This is a placeholder - you'll need to implement based on your collision detection system.
+        """
+        try:
+            # Get current joint positions to calculate test pose
+            current_joints = self.get_joint_positions(degrees=True)
+            
+            # Define test poses for collision checking
+            test_joints = current_joints.copy()
+            
+            if direction == "left":
+                # Modify joint to check left direction (adjust joint1 for left movement)
+                test_joints["joint1"] = current_joints["joint1"] + 30  # 30 degrees left
+            elif direction == "right":
+                # Modify joint to check right direction (adjust joint1 for right movement)
+                test_joints["joint1"] = current_joints["joint1"] - 30  # 30 degrees right
+            
+            # Try to plan to the test position without executing
+            # If planning fails, there's likely a collision
+            future = self._send_joint_goal(
+                joint_names=list(test_joints.keys()),
+                joint_positions=[x * DEG_TO_RAD for x in test_joints.values()],
+                velocity=0.1
+            )
+            
+            # Wait briefly for planning result
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=2.0)
+            goal_handle = future.result()
+            
+            if goal_handle is None or not goal_handle.accepted:
+                # Planning failed, likely collision
+                Logger.info(self.node, f"Collision detected in {direction} direction")
+                return True
+            else:
+                # Cancel the goal since we only wanted to check feasibility
+                goal_handle.cancel_goal_async()
+                Logger.info(self.node, f"No collision detected in {direction} direction")
+                return False
+                
+        except Exception as e:
+            Logger.warning(self.node, f"Error checking collision in {direction}: {e}")
+            return True
 
     def place_on_shelf(self, plane_height: int, tolerance: int):
         # if not self._manipulation_action_client.wait_for_server(timeout_sec=TIMEOUT):
