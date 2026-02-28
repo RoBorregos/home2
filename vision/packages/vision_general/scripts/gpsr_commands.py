@@ -4,8 +4,6 @@
 Node to handle GPSR commands.
 """
 
-import cv2
-
 import rclpy
 from rclpy.node import Node
 from cv_bridge import CvBridge
@@ -37,7 +35,7 @@ from frida_constants.vision_constants import (
 
 from frida_constants.vision_enums import Poses, Gestures, DetectBy
 
-from frida_interfaces.srv import YoloDetect  
+from frida_interfaces.srv import YoloDetect
 
 from pose_detection import PoseDetection
 
@@ -45,6 +43,7 @@ package_share_dir = get_package_share_directory("vision_general")
 
 constants = get_package_share_directory("frida_constants")
 file_path = os.path.join(constants, "map_areas/areas.json")
+
 
 class GPSRCommands(Node):
     def __init__(self):
@@ -94,7 +93,9 @@ class GPSRCommands(Node):
 
         self.image_publisher = self.create_publisher(Image, IMAGE_TOPIC, 10)
 
-        self.yolo_client = self.create_client(YoloDetect, "yolo_detect", callback_group=self.callback_group)
+        self.yolo_client = self.create_client(
+            YoloDetect, "yolo_detect", callback_group=self.callback_group
+        )
 
         while not self.yolo_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info("YOLO service not available, waiting...")
@@ -123,7 +124,7 @@ class GPSRCommands(Node):
                 return
 
             self.output_image = self.image.copy()
-            
+
         except Exception as e:
             print(f"Error: {e}")
 
@@ -436,12 +437,14 @@ class GPSRCommands(Node):
         for det in result.detections:
             x1, y1, x2, y2 = det.x1, det.y1, det.x2, det.y2
             conf, cls_id = det.confidence, det.class_id
-            detections.append({
-                "bbox": (x1, y1, x2, y2),
-                "confidence": conf,
-                "class_id": cls_id,
-                "area": (x2 - x1) * (y2 - y1),
-            })
+            detections.append(
+                {
+                    "bbox": (x1, y1, x2, y2),
+                    "confidence": conf,
+                    "class_id": cls_id,
+                    "area": (x2 - x1) * (y2 - y1),
+                }
+            )
 
         # Store people if comp_class == 0
         if comp_class == 0:
@@ -503,6 +506,7 @@ class GPSRCommands(Node):
                 if x < xinters:
                     inside = not inside
         return inside
+
 
 def main(args=None):
     rclpy.init(args=args)

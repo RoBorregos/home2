@@ -18,7 +18,6 @@ from typing import List
 import cv2 as cv
 from detectors.YoloV5ObjectDetector import YoloV5ObjectDetector
 from detectors.YoloV8ObjectDetector import YoloV8ObjectDetector
-from detectors.YoloV26ObjectDetector import YoloV26ObjectDetector
 from detectors.ObjectDetector import Detection, ObjectDectectorParams
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,

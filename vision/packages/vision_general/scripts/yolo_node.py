@@ -13,7 +13,7 @@ from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 
 from frida_constants.vision_constants import CAMERA_TOPIC
-from frida_interfaces.srv import YoloDetect  
+from frida_interfaces.srv import YoloDetect
 from frida_interfaces.msg import Detection
 
 import cv2
@@ -26,7 +26,7 @@ class YoloNode(Node):
     def __init__(self):
         super().__init__("yolo_node")
         self.bridge = CvBridge()
-        self.latest_frame = None  
+        self.latest_frame = None
 
         # Load YOLO once
         self.get_logger().info(f"Loading YOLO model from {YOLO_LOCATION}...")
@@ -74,10 +74,17 @@ class YoloNode(Node):
                 label = f"{self.model.names[cls_id]}: {conf:.2f}"
                 color = (0, 255, 0)
                 cv2.rectangle(annotated, (x1, y1), (x2, y2), color, 2)
-                cv2.putText(annotated, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+                cv2.putText(
+                    annotated,
+                    label,
+                    (x1, y1 - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.6,
+                    color,
+                    2,
+                )
         annotated_msg = self.bridge.cv2_to_imgmsg(annotated, encoding="bgr8")
         self.detections_image_publisher.publish(annotated_msg)
-
 
     def detect_callback(self, request, response):
         """Run YOLO on the latest cached frame."""
@@ -85,7 +92,9 @@ class YoloNode(Node):
             self.get_logger().warn("No image received yet from camera.")
             response.success = False
             response.detections = "[]"
-            self.get_logger().info(f"YOLO response: success={response.success}, detections={response.detections}")
+            self.get_logger().info(
+                f"YOLO response: success={response.success}, detections={response.detections}"
+            )
             return response
 
         # If caller provided class IDs, use them; otherwise detect all
@@ -115,7 +124,15 @@ class YoloNode(Node):
                 label = f"{self.model.names[cls_id]}: {conf:.2f}"
                 color = (0, 255, 0)
                 cv2.rectangle(annotated, (x1, y1), (x2, y2), color, 2)
-                cv2.putText(annotated, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+                cv2.putText(
+                    annotated,
+                    label,
+                    (x1, y1 - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.6,
+                    color,
+                    2,
+                )
 
         # Publish annotated image to topic
         annotated_msg = self.bridge.cv2_to_imgmsg(annotated, encoding="bgr8")
@@ -123,7 +140,9 @@ class YoloNode(Node):
 
         response.success = True
         response.detections = detections
-        self.get_logger().info(f"YOLO response: success={response.success}, detections={[(d.class_id, d.confidence) for d in detections]}")
+        self.get_logger().info(
+            f"YOLO response: success={response.success}, detections={[(d.class_id, d.confidence) for d in detections]}"
+        )
         return response
 
 

@@ -7,8 +7,6 @@ commands.
 """
 
 import cv2
-from ultralytics import YOLO
-import pathlib
 import numpy as np
 import queue
 import time
@@ -51,16 +49,25 @@ class ReceptionistCommands(Node):
         )
 
         self.find_seat_service = self.create_service(
-            FindSeat, FIND_SEAT_TOPIC, self.find_seat_callback, callback_group=self.callback_group
+            FindSeat,
+            FIND_SEAT_TOPIC,
+            self.find_seat_callback,
+            callback_group=self.callback_group,
         )
         self.image_publisher = self.create_publisher(
             Image, IMAGE_TOPIC_RECEPTIONIST, 10, callback_group=self.callback_group
         )
         self.person_detection_action_server = ActionServer(
-            self, DetectPerson, CHECK_PERSON_TOPIC, self.detect_person_callback, callback_group=self.callback_group
+            self,
+            DetectPerson,
+            CHECK_PERSON_TOPIC,
+            self.detect_person_callback,
+            callback_group=self.callback_group,
         )
 
-        self.yolo_client = self.create_client(YoloDetect, "yolo_detect", callback_group=self.callback_group)
+        self.yolo_client = self.create_client(
+            YoloDetect, "yolo_detect", callback_group=self.callback_group
+        )
 
         while not self.yolo_client.wait_for_service(timeout_sec=1.0):
             self.get_logger().info("YOLO service not available, waiting...")
@@ -182,9 +189,6 @@ class ReceptionistCommands(Node):
             x1, y1, x2, y2 = det.x1, det.y1, det.x2, det.y2
             confidence = det.confidence
             x = int((x1 + x2) / 2)
-            y = int((y1 + y2) / 2)
-            w = x2 - x1
-            h = y2 - y1
 
             if (
                 confidence > CONF_THRESHOLD
@@ -223,7 +227,9 @@ class ReceptionistCommands(Node):
             self.get_logger().error("YOLO detection failed")
             return
 
-        self.get_logger().info(f"YOLO service response: success={getattr(future.result(), 'success', None)}, detections={getattr(future.result(), 'detections', None)}")
+        self.get_logger().info(
+            f"YOLO service response: success={getattr(future.result(), 'success', None)}, detections={getattr(future.result(), 'detections', None)}"
+        )
 
         if future.result() is None or not future.result().success:
             self.get_logger().error("YOLO detection failed")
@@ -232,7 +238,7 @@ class ReceptionistCommands(Node):
         for det in future.result().detections:
             x1, y1, x2, y2 = det.x1, det.y1, det.x2, det.y2
             class_id = det.class_id
-            label = det.class_id  
+            label = det.class_id
             bbox = (x1, y1, x2, y2)
             confidence = det.confidence
             area = (x2 - x1) * (y2 - y1)
@@ -246,19 +252,13 @@ class ReceptionistCommands(Node):
                 continue
 
             if class_id == 0:
-                self.people.append(
-                    {"bbox": bbox, "label": label, "class": class_id}
-                )
+                self.people.append({"bbox": bbox, "label": label, "class": class_id})
                 color = (0, 0, 255)
             elif class_id == 56:
-                self.chairs.append(
-                    {"bbox": bbox, "label": label, "class": class_id}
-                )
+                self.chairs.append({"bbox": bbox, "label": label, "class": class_id})
             elif class_id == 57:
-                self.couches.append(
-                    {"bbox": bbox, "label": label, "class": class_id}
-                )
-            
+                self.couches.append({"bbox": bbox, "label": label, "class": class_id})
+
             cv2.rectangle(self.output_image, (x1, y1), (x2, y2), color, 2)
             cv2.putText(
                 self.output_image,
