@@ -4,7 +4,6 @@ import rclpy
 from rclpy.node import Node
 from vamp_moveit_plugin.srv import VampPlan
 import numpy as np
-import math
 
 # sys.path.append('/home/dominguez/roborregos/home_ws/src/manipulation/packages/vamp/src')
 # sys.path.append('/workspace/src/manipulation/packages/vamp/src')
