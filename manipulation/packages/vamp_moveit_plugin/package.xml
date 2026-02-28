@@ -22,7 +22,7 @@
 
   <export>
     <build_type>ament_cmake</build_type>
-    <moveit_core plugin="${prefix}/vamp_moveit_plugin.xml"/>
+    <moveit_ros_planning plugin="${prefix}/vamp_moveit_plugin.xml"/> 
   </export>
 
   <buildtool_depend>rosidl_default_generators</buildtool_depend>
