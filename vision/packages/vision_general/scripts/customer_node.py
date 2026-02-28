@@ -258,10 +258,6 @@ class CustomerNode(Node):
         xmax = max(0.0, min(1.0, float(x2) / float(width)))
         ymax = max(0.0, min(1.0, float(y2) / float(height)))
 
-        if xmin >= xmax or ymin >= ymax:
-            self.get_logger().warn("Invalid crop for sitting query")
-            return False
-
         request = CropQuery.Request()
         request.xmin = xmin
         request.ymin = ymin
@@ -279,7 +275,7 @@ class CustomerNode(Node):
             return False
 
         if future.exception() is not None:
-            self.get_logger().error("Service call failed: %s", future.exception())
+            self.get_logger().error(f"Service call failed: {future.exception()}")
             return False
 
         result = future.result()
