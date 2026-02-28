@@ -147,7 +147,6 @@ set(srv_files
   "vision/srv/PersonPoseGesture.srv"
   "vision/srv/PersonPosture.srv"
   "vision/srv/Query.srv"
-  "vision/srv/IsSitting.srv"
   "vision/srv/SaveName.srv"
   "vision/srv/SetDetectorClasses.srv"
   "vision/srv/SetPointingObjectClasses.srv"

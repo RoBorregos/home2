@@ -21,7 +21,7 @@ from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import Point, PointStamped
 import copy
 
-from frida_interfaces.srv import CropQuery, Customer, IsSitting
+from frida_interfaces.srv import CropQuery, Customer
 from pose_detection import PoseDetection
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
@@ -31,7 +31,6 @@ from frida_constants.vision_constants import (
     CAMERA_INFO_TOPIC,
     CENTROID_TOIC,
     CROP_QUERY_TOPIC,
-    IS_SITTING_TOPIC,
     CUSTOMER,
     GET_CUSTOMER_TOPIC,
 )
@@ -74,9 +73,6 @@ class CustomerNode(Node):
 
         self.moondream_client = self.create_client(
             CropQuery, CROP_QUERY_TOPIC, callback_group=self.callback_group
-        )
-        self.moondream_sitting_client = self.create_client(
-            IsSitting, IS_SITTING_TOPIC, callback_group=self.callback_group
         )
 
         self.verbose = self.declare_parameter("verbose", True)
@@ -186,7 +182,7 @@ class CustomerNode(Node):
 
                 if not sitting:
                     self.get_logger().info("Checking sitting with moondream")
-                    sitting = self.is_sitting_moondream(cropped_image)
+                    sitting = self.is_sitting_moondream(bbox)
 
                 if raising and sitting:
                     self.get_logger().info("Customer raising hand and sitting detected")
@@ -244,18 +240,38 @@ class CustomerNode(Node):
         self.get_logger().warn("No customer raising hand and sitting detected")
         return res
 
-    def is_sitting_moondream(self, image):
-        if image is None:
+    def is_sitting_moondream(self, bbox):
+        if self.frame is None or bbox is None:
             return False
 
-        if not self.moondream_sitting_client.wait_for_service(timeout_sec=0.1):
-            self.get_logger().warn("Moondream sitting service not available")
+        if not self.moondream_client.wait_for_service(timeout_sec=0.1):
+            self.get_logger().warn("Moondream crop query service not available")
             return False
 
-        request = IsSitting.Request()
-        request.image = self.bridge.cv2_to_imgmsg(image, "bgr8")
+        height, width = self.frame.shape[:2]
+        x1, y1, x2, y2 = bbox
+        if width <= 0 or height <= 0:
+            return False
 
-        future = self.moondream_sitting_client.call_async(request)
+        xmin = max(0.0, min(1.0, float(x1) / float(width)))
+        ymin = max(0.0, min(1.0, float(y1) / float(height)))
+        xmax = max(0.0, min(1.0, float(x2) / float(width)))
+        ymax = max(0.0, min(1.0, float(y2) / float(height)))
+
+        if xmin >= xmax or ymin >= ymax:
+            self.get_logger().warn("Invalid crop for sitting query")
+            return False
+
+        request = CropQuery.Request()
+        request.xmin = xmin
+        request.ymin = ymin
+        request.xmax = xmax
+        request.ymax = ymax
+        request.query = (
+            "Is the person in this image sitting? Answer only with yes or no."
+        )
+
+        future = self.moondream_client.call_async(request)
         rclpy.spin_until_future_complete(self, future, timeout_sec=7)
 
         if not future.done():
@@ -270,7 +286,16 @@ class CustomerNode(Node):
         if result is None or not result.success:
             return False
 
-        return result.answer
+        answer = result.result.strip().lower()
+        if answer.startswith("yes"):
+            return True
+        if answer.startswith("no"):
+            return False
+
+        self.get_logger().warn(
+            f"Unexpected answer from Moondream crop query: '{answer}'. Expected 'yes' or 'no'."
+        )
+        return False
 
     def run(self):
         """Main loop to run the tracker"""
