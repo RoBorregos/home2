@@ -525,9 +525,11 @@ class HRITasks(metaclass=SubtaskMeta):
                 # Add a callback to remove the goal when it's done
                 result_future = goal_handle.get_result_async()
                 result_future.add_done_callback(
-                    lambda _: self._active_goals.remove(goal_handle)
-                    if goal_handle in self._active_goals
-                    else None
+                    lambda _: (
+                        self._active_goals.remove(goal_handle)
+                        if goal_handle in self._active_goals
+                        else None
+                    )
                 )
 
         future.add_done_callback(goal_response_callback)
