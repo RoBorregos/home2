@@ -434,6 +434,10 @@ class ManipulationTasks:
                 if res_l == Status.EXECUTION_SUCCESS:
                     Logger.success(self.node, "Object placed on LEFT")
                     open_gripper_result = self.open_gripper()
+                    if open_gripper_result == Status.EXECUTION_SUCCESS:
+                        Logger.success("Gripper opened successfully")
+                    else:
+                        Logger.error(self.node, "Failed to open gripper")
                     self.move_joint_positions(named_position="front_low_stare", velocity=0.3)
                     return Status.EXECUTION_SUCCESS
                 Logger.warn(self.node, "Movement to left failed, trying right side...")
@@ -445,6 +449,10 @@ class ManipulationTasks:
                 if res_r == Status.EXECUTION_SUCCESS:
                     Logger.success(self.node, "Object placed on RIGHT")
                     open_gripper_result = self.open_gripper()
+                    if open_gripper_result == Status.EXECUTION_SUCCESS:
+                        Logger.success("Gripper opened successfully")
+                    else:
+                        Logger.error("Failed to open gripper")
                     self.move_joint_positions(named_position="front_low_stare", velocity=0.3)
                     return Status.EXECUTION_SUCCESS
                 Logger.error(self.node, "Movement to right also failed")
