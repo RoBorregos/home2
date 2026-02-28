@@ -85,6 +85,31 @@ CARRY_POSE = {
     "degrees": True,
 }
 
+PLACE_FLOOR_LEFT = {
+    "joints": {
+        "joint1": 182.4,
+        "joint2": -110.0,
+        "joint3": -214.4,
+        "joint4": -181,
+        "joint5": 4.2,
+        "joint6": 229.8,
+    },
+    "degrees": True,
+}
+
+PLACE_FLOOR_RIGHT = {
+    "joints": {
+        "joint1": 176,
+        "joint2": 113.4,
+        "joint3": -165.3,
+        "joint4": -182.7,
+        "joint5": -41,
+        "joint6": 43.1,
+    },
+    "degrees": True,
+}
+
+
 
 XARM_CONFIGURATIONS = {
     "front_stare": FRONT_STARE,
