@@ -14,6 +14,7 @@ from launch.actions import (
     OpaqueFunction,
     IncludeLaunchDescription,
     SetEnvironmentVariable,
+    DeclareLaunchArgument,
 )
 from launch.conditions import IfCondition
 from launch.launch_description_sources import PythonLaunchDescriptionSource
@@ -25,14 +26,12 @@ from uf_ros_lib.uf_robot_utils import generate_ros2_control_params_temp_file
 
 
 def launch_setup(context, *args, **kwargs):
-    clean_logs = LaunchConfiguration("clean_logs", default="true")
-    should_clean = clean_logs.perform(context)
-    if should_clean.lower() == "true":
-        print(
-            "\033[93m[LAUNCH] Modo Limpio ACTIVADO: Ocultando logs INFO (Markers, Init...)\033[0m"
-        )
-        os.environ["RCUTILS_LOGGING_SEVERITY_THRESHOLD"] = "WARN"
-        os.environ["ROS_LOG_LEVEL"] = "WARN"
+    debug = LaunchConfiguration("debug", default="false")
+    is_debug = debug.perform(context).lower() == "true"
+    log_level = "INFO" if is_debug else "WARN"
+
+    if not is_debug:
+        print("\033[94m[LAUNCH] Clean Mode \033[0m")
 
     robot_ip = LaunchConfiguration("robot_ip", default="192.168.31.180")
     report_type = LaunchConfiguration("report_type", default="normal")
@@ -153,7 +152,6 @@ def launch_setup(context, *args, **kwargs):
     moveit_config.planning_pipelines["vamp"]["planning_plugin"] = "vamp_moveit_plugin/VampPlannerManager"
 
     # robot description launch
-    # xarm_description/launch/_robot_description.launch.py
     robot_description_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution(
@@ -170,7 +168,6 @@ def launch_setup(context, *args, **kwargs):
     )
 
     # robot moveit common launch
-    # xarm_moveit_config/launch/_robot_moveit_common2.launch.py
     robot_moveit_common_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution(
@@ -190,7 +187,6 @@ def launch_setup(context, *args, **kwargs):
             "show_rviz": show_rviz,
             "use_sim_time": "false",
             "moveit_config_dump": yaml.dump(moveit_config.to_dict()),
-            "clean_logs": clean_logs,
         }.items(),
     )
 
@@ -220,7 +216,6 @@ def launch_setup(context, *args, **kwargs):
     )
 
     # ros2 control launch
-    # xarm_controller/launch/_ros2_control.launch.py
     ros2_control_launch = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             PathJoinSubstitution(
@@ -257,25 +252,23 @@ def launch_setup(context, *args, **kwargs):
     )
 
     return [
-        SetEnvironmentVariable(
-            name="ROS_LOG_LEVEL",
-            value="WARN",
-            condition=IfCondition(clean_logs),
-        ),
-        SetEnvironmentVariable(
-            name="RCUTILS_LOGGING_SEVERITY_THRESHOLD",
-            value="WARN",
-            condition=IfCondition(clean_logs),
-        ),
+        SetEnvironmentVariable(name="ROS_LOG_LEVEL", value=log_level),
+        SetEnvironmentVariable(name="RCUTILS_LOGGING_SEVERITY_THRESHOLD", value=log_level),
         robot_description_launch,
         robot_moveit_common_launch,
         joint_state_publisher_node,
         ros2_control_launch,
         control_node,
         downsample_pcd,
-        # robot_driver_launch,
     ]
 
 
 def generate_launch_description():
-    return LaunchDescription([OpaqueFunction(function=launch_setup)])
+    return LaunchDescription([
+        DeclareLaunchArgument(
+            "debug",
+            default_value="false",
+            description="If true, sets log level to INFO to show more details. Default is false (WARN level) for cleaner output."
+        ),
+        OpaqueFunction(function=launch_setup)
+    ])
