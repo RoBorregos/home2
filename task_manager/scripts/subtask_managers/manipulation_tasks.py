@@ -371,7 +371,7 @@ class ManipulationTasks:
             Logger.error(self.node, "Place request failed")
             return Status.EXECUTION_ERROR
         return Status.EXECUTION_SUCCESS
-    
+
     class Direction(Enum):
         LEFT = "left"
         RIGHT = "right"
@@ -380,32 +380,34 @@ class ManipulationTasks:
         """
         Attempts to place an object on the floor at the specified side.
         Returns Status.EXECUTION_SUCCESS if successful, Status.EXECUTION_ERROR otherwise.
-        
+
         Args:
             direction: Direction.LEFT or Direction.RIGHT
-        
+
         Returns:
             Status code indicating success or failure
         """
         side_name = direction.value
         named_position = f"place_floor_{side_name}"
-        
-        Logger.info(self.node, f"{side_name.capitalize()} side clear. Attempting {named_position}...")
-        
+
+        Logger.info(
+            self.node, f"{side_name.capitalize()} side clear. Attempting {named_position}..."
+        )
+
         result = self.move_joint_positions(named_position=named_position, velocity=0.3)
-        
+
         if result == Status.EXECUTION_SUCCESS:
             Logger.success(self.node, f"Object placed on {side_name.upper()}")
-            
+
             open_gripper_result = self.open_gripper()
             if open_gripper_result == Status.EXECUTION_SUCCESS:
                 Logger.success(self.node, "Gripper opened successfully")
             else:
                 Logger.error(self.node, "Failed to open gripper")
-            
+
             self.move_joint_positions(named_position="front_low_stare", velocity=0.3)
             return Status.EXECUTION_SUCCESS
-        
+
         Logger.warn(self.node, f"Movement to {side_name} failed")
         return Status.EXECUTION_ERROR
 
@@ -429,7 +431,7 @@ class ManipulationTasks:
                 joint_positions=test_joints, velocity=0.2, degrees=True
             )
             if result_pan != Status.EXECUTION_SUCCESS:
-                Logger.warn(self.node, f"Path is BLOCKED at pan")
+                Logger.warn(self.node, "Path is BLOCKED at pan")
                 return True
 
             lower_offset = 20.0
@@ -437,7 +439,7 @@ class ManipulationTasks:
             result_tilt = self.move_joint_positions(
                 joint_positions=test_joints, velocity=0.2, degrees=True
             )
-        
+
             if result_tilt == Status.EXECUTION_SUCCESS:
                 Logger.info(self.node, f"Path to {direction.value} is CLEAR")
                 return False
@@ -467,7 +469,7 @@ class ManipulationTasks:
                 if result == Status.EXECUTION_SUCCESS:
                     return Status.EXECUTION_SUCCESS
                 Logger.warn(self.node, "Movement to left failed, trying right side...")
-                
+
             has_collision_right = self._check_side_blocked(self.Direction.RIGHT)
 
             self.move_joint_positions(named_position="front_low_stare", velocity=0.3)

@@ -35,7 +35,7 @@ class TestTaskManager(Node):
     def run(self):
         # """testing vision tasks"""
         # self.subtask_manager["vision"].track_person()
-        
+
         # self.subtask_manager["hri"].say(
         #     "Hi, my name is frida. What is your favorite drink?", wait=True
         # )
