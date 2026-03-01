@@ -36,8 +36,8 @@ from frida_constants.hri_constants import (
 )
 from frida_interfaces.action import SpeechStream
 from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
-from frida_interfaces.srv import CategorizeShelves  # AddEntry,
 from frida_interfaces.srv import (
+    CategorizeShelves,
     CommandInterpreter,
     ExtractInfo,
     Grammar,
@@ -52,8 +52,6 @@ from rclpy.action import ActionClient
 from rclpy.node import Node
 from rclpy.task import Future
 from std_msgs.msg import Empty, String
-from subtask_managers.hri_hand import HRIHand
-from subtask_managers.subtask_meta import SubtaskMeta
 from utils.baml_client.sync_client import b
 from utils.baml_client.types import (
     AnswerQuestion,
@@ -75,6 +73,9 @@ from utils.decorators import service_check
 from utils.logger import Logger
 from utils.status import Status
 from utils.task import Task
+
+from subtask_managers.hri_hand import HRIHand
+from subtask_managers.subtask_meta import SubtaskMeta
 
 InterpreterAvailableCommands = Union[
     CommandListLLM,
