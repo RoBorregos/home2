@@ -6,18 +6,25 @@ from ultralytics import YOLO
 from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
-from frida_constants.vision_constants import CAMERA_TOPIC, DISHWASHER_LAYOUT_DETECTION_TOPIC
+from frida_constants.vision_constants import (
+    CAMERA_TOPIC, 
+    DISHWASHER_LAYOUT_DETECTION_TOPIC
+)
 from frida_interfaces.msg import ObjectDetection, ObjectDetectionArray
 from frida_interfaces.srv import DishwasherDetection
 
 class DishwasherNode(Node):
     def __init__(self):
-        super().__init__("dishwasher_model")
-        self.get_logger().info("Dishwasher model initialized")
+        super().__init__("dishwasher")
+        self.get_logger().info("Dishwasher node initialized")
 
+        MODELS_PATH = {
+            pathlib.Path(__file__).resolve().parent.parent / "Utils" / "models"
+        }
+        
+        self.layout_model = YOLO(str(MODELS_PATH / "dishwasher.pt"))
+        self.get_logger().info("Dishwasher layout model loaded")
 
-        MODELS_PATH = pathlib.Path(__file__).resolve().parent.parent / "Utils" / "models"
-        self.model = YOLO(str(MODELS_PATH / "dishwasher.pt"))
         self.bridge = CvBridge()
         self.callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
 
@@ -44,11 +51,12 @@ class DishwasherNode(Node):
             response.success = False
             return response
 
-        results = self.model(
+        results = self.layout_model(
             source=self.image,
             conf=0.35,
             verbose=False,
         )
+
         response.detection_array = ObjectDetectionArray()
         response.detection_array.detections = []
 
@@ -78,3 +86,4 @@ if __name__ == "__main__":
     dishwasher_node = DishwasherNode()
     rclpy.spin(dishwasher_node)
     rclpy.shutdown()
+
