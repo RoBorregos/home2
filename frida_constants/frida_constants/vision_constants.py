@@ -126,3 +126,7 @@ PERSON_POINT_TOPIC = "/vision/person_inside_point"
 
 # Show detection topic
 SHOW_DETECTION_TOPIC = "/vision/show_detection"
+
+# Dishwasher model
+DISHWASHER_LAYOUT_DETECTION_TOPIC = "/vision/dishwasher/layout_detection"
+DISHWASHER_RACK_DETECTION_TOPIC = "/vision/dishwasher/rack_detection"

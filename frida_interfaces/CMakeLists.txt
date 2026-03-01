@@ -141,6 +141,7 @@ set(srv_files
   "vision/srv/CountBy.srv"
   "vision/srv/CropQuery.srv"
   "vision/srv/DetectionHandler.srv"
+  "vision/srv/DishwasherDetection.srv"
   "vision/srv/DetectPointingObject.srv"
   "vision/srv/FindSeat.srv"
   "vision/srv/PersonPoseGesture.srv"
