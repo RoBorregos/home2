@@ -98,7 +98,6 @@ set(srv_files
   "hri/srv/BuildEmbeddings.srv"
   "hri/srv/CategorizeShelves.srv"
   "hri/srv/CommandInterpreter.srv"
-  "hri/srv/CommonInterest.srv"
   "hri/srv/ExtractInfo.srv"
   "hri/srv/Grammar.srv"
   "hri/srv/GuestInfo.srv"

@@ -10,30 +10,27 @@ from typing import Optional
 import pytz
 import rclpy
 import requests
+from frida_constants.hri_constants import MODEL
+from frida_interfaces.srv import (
+    CategorizeShelves,
+    CommandInterpreter,
+    Grammar,
+    IsCoherent,
+    IsNegative,
+    IsPositive,
+    LLMWrapper,
+)
 from nlp.assets.baml_client.sync_client import b
 from nlp.assets.dialogs import (
     format_response,
     get_categorize_shelves_args,
-    get_common_interests_dialog,
-    get_previous_command_answer,
     get_is_coherent_dialog,
+    get_previous_command_answer,
 )
 from openai import OpenAI
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from transformers import AutoModelForSequenceClassification, AutoTokenizer, pipeline
-
-from frida_constants.hri_constants import MODEL
-from frida_interfaces.srv import (
-    CategorizeShelves,
-    CommandInterpreter,
-    CommonInterest,
-    Grammar,
-    IsNegative,
-    IsPositive,
-    IsCoherent,
-    LLMWrapper,
-)
 
 CURRENT_CONTEXT = """
 Today is {CURRENT_DATE}.
@@ -70,7 +67,6 @@ class LLMUtils(Node):
         self.declare_parameter("base_url", "None")
         self.declare_parameter("GRAMMAR_SERVICE", "/nlp/grammar")
         self.declare_parameter("LLM_WRAPPER_SERVICE", "/nlp/llm")
-        self.declare_parameter("COMMON_INTEREST_SERVICE", "/nlp/common_interest")
         self.declare_parameter("IS_COHERENT_SERVICE", "/nlp/is_coherent")
         self.declare_parameter("IS_POSITIVE_SERVICE", "/nlp/is_positive")
         self.declare_parameter("IS_NEGATIVE_SERVICE", "/nlp/is_negative")
@@ -100,11 +96,6 @@ class LLMUtils(Node):
             self.get_parameter("LLM_WRAPPER_SERVICE").get_parameter_value().string_value
         )
 
-        common_interest_service = (
-            self.get_parameter("COMMON_INTEREST_SERVICE")
-            .get_parameter_value()
-            .string_value
-        )
         is_coherent_service = (
             self.get_parameter("IS_COHERENT_SERVICE").get_parameter_value().string_value
         )
@@ -150,10 +141,6 @@ class LLMUtils(Node):
         self.create_service(Grammar, grammar_service, self.grammar_service)
 
         self.create_service(LLMWrapper, llm_wrapper_service, self.llm_wrapper_service)
-
-        self.create_service(
-            CommonInterest, common_interest_service, self.common_interest
-        )
 
         self.create_service(IsPositive, is_positive_service, self.is_positive)
         self.create_service(IsNegative, is_negative_service, self.is_negative)
@@ -233,26 +220,6 @@ class LLMUtils(Node):
         except Exception as e:
             self.logger.error(f"Failed to parse coherence response: {e}")
             res.is_coherent = False
-        return res
-
-    def common_interest(self, req, res):
-        self.get_logger().info("Generating common interest")
-
-        messages = get_common_interests_dialog(
-            req.person1, req.person2, req.interests1, req.interests2
-        )["messages"]
-        response = (
-            self.client.beta.chat.completions.parse(
-                model=MODEL.CommonInterest.value,
-                temperature=self.temperature,
-                messages=messages,
-            )
-            .choices[0]
-            .message.content
-        )
-
-        res.common_interest = response
-
         return res
 
     def generic_structured_output(self, messages, response_format):
