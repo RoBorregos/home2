@@ -4,18 +4,19 @@
 Task Manager for testing the subtask managers
 """
 
-import os
-import json
-import time
 import csv
+import json
+import os
+import subprocess
+import time
 from datetime import datetime
 from typing import Union
+
 import rclpy
-from sklearn.metrics.pairwise import cosine_similarity
 from config.hri.debug import config as test_hri_config
 from rclpy.node import Node
+from sklearn.metrics.pairwise import cosine_similarity
 from subtask_managers.hri_tasks import HRITasks
-import subprocess
 
 # from subtask_managers.subtask_meta import SubtaskMeta
 from utils.baml_client.types import (
@@ -228,12 +229,6 @@ class TestHriManager(Node):
         #     5,
         # )
 
-        # s, common_interest = self.hri_manager.common_interest(
-        #     "mike", interest1, "rodrigo", interest2
-        # )
-
-        # self.hri_manager.say(common_interest)
-
     def test_categorize_shelves(self):
         test_cases_file = os.path.join(DATA_DIR, "categorize_objects.json")
         with open(test_cases_file, "r") as f:
@@ -328,19 +323,6 @@ class TestHriManager(Node):
         # Test original functionality
         test = self.hri_manager.extract_data("LLM_name", "My name is John Doe")
         self.get_logger().info(f"Extract data result: {test}")
-
-        s, res = self.hri_manager.common_interest("John", "Football", "Gilbert", "Basketball")
-
-        self.get_logger().info(f"Common interest result: {res}")
-
-        # Test async LLM with a timeout
-        f = self.hri_manager.common_interest(
-            "John", "Football", "Gilbert", "Basketball", is_async=True
-        )
-        rclpy.spin_until_future_complete(self, f)
-
-        self.get_logger().info(f"Common interest future: {f}")
-        self.get_logger().info(f"Common interest future status: {f.done()}, {f.result()}")
 
     def test_map(self):
         """
