@@ -357,7 +357,13 @@ class LLMUtils(Node):
 
         # Get the index of the maximum score
         max_index = scores.index(max(scores))
-        return labels[max_index]
+        max_label = labels[max_index]
+        idk_index = labels.index("i don't know")
+        if (max_label == "yes" or max_label == "no") and (
+            (scores[max_index] - scores[idk_index]) < 0.01
+        ):
+            return "no"
+        return max_label
 
     def command_interpreter(
         self, request: CommandInterpreter.Request, response: CommandInterpreter.Response

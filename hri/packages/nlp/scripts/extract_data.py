@@ -115,6 +115,34 @@ class DataExtractor(Node):
             return response
         elif request.data == "loc" or request.data == "location":
             response.result = self.extract_loc(request.full_text)
+            text = request.full_text
+            if response.result == "":
+                self.get_logger().info(
+                    f"spaCy NER failed for {text} (It returned an empty string). Falling back to Ollama"
+                )
+                messages, response_format = get_extract_data_args(text, "location", "")
+                response_content = (
+                    self.client.beta.chat.completions.parse(
+                        model=MODEL.EXTRACT_INFO_REQUESTED.value,
+                        temperature=self.temperature,
+                        messages=messages,
+                        response_format=response_format,
+                    )
+                    .choices[0]
+                    .message.content
+                )
+                try:
+                    response.result = ""
+                    result = ExtractedData(**json.loads(response_content))
+                    if result.data:
+                        response.result = result.data
+                except Exception as e:
+                    self.get_logger().error(f"LLM fallback error for extract text: {e}")
+            if len(response.result) == 0:
+                self.get_logger().error(
+                    f"No location found in {text}. Defaulting to returning same text"
+                )
+                response.result = text
             return response
 
         # Check if the data extraction must be performed using the LLM
@@ -166,14 +194,8 @@ class DataExtractor(Node):
         return name
 
     def extract_loc(self, text: str) -> str:
-        loc = extract_by_priority(self.nlp(text).ents, LOC_PRIORITY_LABELS)
-        # Add a fallback to the text if no loc is found
-        if len(loc) == 0:
-            self.get_logger().error(
-                f"No location found in {text}. Defaulting to returning the same input"
-            )
-            loc = text
-
+        doc = self.nlp(text)
+        loc = extract_by_priority(doc.ents, LOC_PRIORITY_LABELS)
         return loc
 
 
