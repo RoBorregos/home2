@@ -41,7 +41,7 @@ CONF_THRESHOLD = 0.4
 CHECK_TIMEOUT = 5
 
 
-class ReceptionistCommands(Node):
+class HRICCommands(Node):
     def __init__(self):
         super().__init__("HRIC_commands")
         self.bridge = CvBridge()
@@ -140,8 +140,6 @@ class ReceptionistCommands(Node):
     def publish_image(self):
         """Publish the image with the detections if available."""
         if len(self.output_image) != 0:
-            # cv2.imshow("Receptionist Commands", self.output_image)
-            # cv2.waitKey(1)
             self.image_publisher.publish(
                 self.bridge.cv2_to_imgmsg(self.output_image, "bgr8")
             )
@@ -358,7 +356,7 @@ class ReceptionistCommands(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = ReceptionistCommands()
+    node = HRICCommands()
 
     try:
         rclpy.spin(node)
