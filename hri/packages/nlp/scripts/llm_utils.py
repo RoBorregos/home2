@@ -395,7 +395,7 @@ class LLMUtils(Node):
         if (max_label == "yes" or max_label == "no") and (
             (scores[max_index] - scores[idk_index]) < 0.01
         ):
-            return "i don't know"
+            return "no"
         return max_label
 
     def command_interpreter(
