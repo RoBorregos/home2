@@ -5,7 +5,6 @@ var namespacefrida__constants_1_1hri__constants =
     [ "ANSWER_PUBLISHER", "namespacefrida__constants_1_1hri__constants.html#a04fcaea874b8335fbca4fb97bbbf0bb0", null ],
     [ "CATEGORIZE_SERVICE", "namespacefrida__constants_1_1hri__constants.html#ab2e7b071b2e0f95cd25b59442485423d", null ],
     [ "COMMAND_INTERPRETER_SERVICE", "namespacefrida__constants_1_1hri__constants.html#a1b90a05ff939b4a199c904ade172ace2", null ],
-    [ "COMMON_INTEREST_SERVICE", "namespacefrida__constants_1_1hri__constants.html#a46fbf5eabbd1779f553efd0d69f6dffb", null ],
     [ "CONVESATION_SERVICE", "namespacefrida__constants_1_1hri__constants.html#a0dea1a972213b590aaf0c24edf6bba9e", null ],
     [ "DEFAULT_HOTWORDS", "namespacefrida__constants_1_1hri__constants.html#ae34afe358408d95f63d076478b349b0b", null ],
     [ "DISPLAY_IMAGE_TOPIC", "namespacefrida__constants_1_1hri__constants.html#aaa486a9f7f79cd7c69c81ff85d8ba336", null ],

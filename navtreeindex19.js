@@ -1,10 +1,5 @@
 var NAVTREEINDEX19 =
 {
-"classutils_1_1CrossEntropyLabelSmooth.html":[22,0,150,7],
-"classutils_1_1CrossEntropyLabelSmooth.html#a26995bd4313b2259e0672f6095c4458c":[23,0,87,6,2],
-"classutils_1_1CrossEntropyLabelSmooth.html#a26995bd4313b2259e0672f6095c4458c":[22,0,150,7,2],
-"classutils_1_1CrossEntropyLabelSmooth.html#a77709ae16662dd3da8547f33f1e6d31a":[22,0,150,7,4],
-"classutils_1_1CrossEntropyLabelSmooth.html#a77709ae16662dd3da8547f33f1e6d31a":[23,0,87,6,4],
 "classutils_1_1CrossEntropyLabelSmooth.html#a986e36cf01db77cfb562757382145172":[22,0,150,7,1],
 "classutils_1_1CrossEntropyLabelSmooth.html#a986e36cf01db77cfb562757382145172":[23,0,87,6,1],
 "classutils_1_1CrossEntropyLabelSmooth.html#ab5db0b598734ef8bc6a2b57faacd4109":[22,0,150,7,3],
@@ -249,5 +244,10 @@ var NAVTREEINDEX19 =
 "dashgo__driver2_8py.html#a7220adc4c225226793143348c6e1ac6d":[24,0,4,0,0,2,0,7],
 "dashgo__driver2_8py.html#a94ba9cc15107c0317260b0f50dc0d5a1":[24,0,4,0,0,2,0,4],
 "dashgo__driver2_8py.html#a9f41d112ae449716ef1bcafdb8ab08ec":[24,0,4,0,0,2,0,1],
-"dashgo__driver2_8py.html#aadf359cf24f3f2b174deae106d37ef3f":[24,0,4,0,0,2,0,3]
+"dashgo__driver2_8py.html#aadf359cf24f3f2b174deae106d37ef3f":[24,0,4,0,0,2,0,3],
+"dashgo__driver2_8py.html#acc466769d2772016d37de4afb11ea7e1":[24,0,4,0,0,2,0,2],
+"dashgo__driver_8launch_8py.html":[24,0,4,0,0,1,0],
+"dashgo__driver_8launch_8py.html#ad8472bb2a91193478e4da29fca930bc2":[24,0,4,0,0,1,0,0],
+"dashgo__stm32_8py.html":[24,0,4,0,0,0,1],
+"debug_8py.html":[24,0,6,1,0,0,0]
 };

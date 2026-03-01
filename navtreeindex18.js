@@ -1,10 +1,5 @@
 var NAVTREEINDEX18 =
 {
-"classtracker__node_1_1SingleTracker.html#a10e75e91092cbd1219712ac89ff78b13":[22,0,146,0,21],
-"classtracker__node_1_1SingleTracker.html#a1a3f8d719e9e0c1c1cb2996e1e3d7e6c":[22,0,146,0,10],
-"classtracker__node_1_1SingleTracker.html#a1a3f8d719e9e0c1c1cb2996e1e3d7e6c":[23,0,83,0,10],
-"classtracker__node_1_1SingleTracker.html#a1b9951fa3e08730f4bbbbee4117e0de9":[22,0,146,0,25],
-"classtracker__node_1_1SingleTracker.html#a1b9951fa3e08730f4bbbbee4117e0de9":[23,0,83,0,25],
 "classtracker__node_1_1SingleTracker.html#a20d3d06992d5585d124f7c8f12ced1dc":[22,0,146,0,1],
 "classtracker__node_1_1SingleTracker.html#a20d3d06992d5585d124f7c8f12ced1dc":[23,0,83,0,1],
 "classtracker__node_1_1SingleTracker.html#a23ca6ef5b81acaa0d815e73fb86d712d":[22,0,146,0,30],
@@ -249,5 +244,10 @@ var NAVTREEINDEX18 =
 "classtrash__detection__node_1_1TrashDetectionNode.html#ae120ac4786414afda8f788c37bfafe4b":[23,0,86,0,3],
 "classtrash__detection__node_1_1TrashDetectionNode.html#af585894ef5e09579d4b4bf1bad7c7d96":[22,0,149,0,5],
 "classtrash__detection__node_1_1TrashDetectionNode.html#af585894ef5e09579d4b4bf1bad7c7d96":[23,0,86,0,5],
-"classutils_1_1CrossEntropyLabelSmooth.html":[23,0,87,6]
+"classutils_1_1CrossEntropyLabelSmooth.html":[23,0,87,6],
+"classutils_1_1CrossEntropyLabelSmooth.html":[22,0,150,7],
+"classutils_1_1CrossEntropyLabelSmooth.html#a26995bd4313b2259e0672f6095c4458c":[23,0,87,6,2],
+"classutils_1_1CrossEntropyLabelSmooth.html#a26995bd4313b2259e0672f6095c4458c":[22,0,150,7,2],
+"classutils_1_1CrossEntropyLabelSmooth.html#a77709ae16662dd3da8547f33f1e6d31a":[22,0,150,7,4],
+"classutils_1_1CrossEntropyLabelSmooth.html#a77709ae16662dd3da8547f33f1e6d31a":[23,0,87,6,4]
 };

@@ -120,12 +120,14 @@ Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
-<tr class="memitem:a1be2d075bae2c39d2b948028ce848998"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacesubtask__managers_1_1hri__tasks.html#a1be2d075bae2c39d2b948028ce848998">InterpreterAvailableCommands</a></td></tr>
-<tr class="separator:a1be2d075bae2c39d2b948028ce848998"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acfd005e4c5d7c9e7b6c73e12537399d0"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacesubtask__managers_1_1hri__tasks.html#acfd005e4c5d7c9e7b6c73e12537399d0">node</a></td></tr>
-<tr class="separator:acfd005e4c5d7c9e7b6c73e12537399d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa2840c03a44dc90e8c91833569951353"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacesubtask__managers_1_1hri__tasks.html#aa2840c03a44dc90e8c91833569951353">vision_tasks</a></td></tr>
-<tr class="separator:aa2840c03a44dc90e8c91833569951353"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7e3e376af45a0eb1103aaf5e923c32f5"><td class="memItemLeft" align="right" valign="top">Union&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacesubtask__managers_1_1hri__tasks.html#a7e3e376af45a0eb1103aaf5e923c32f5">InterpreterAvailableCommands</a></td></tr>
+<tr class="separator:a7e3e376af45a0eb1103aaf5e923c32f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:accbca8db8a990c91973f6514cdc35d6f"><td class="memItemLeft" align="right" valign="top">Node&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacesubtask__managers_1_1hri__tasks.html#accbca8db8a990c91973f6514cdc35d6f">node</a> = Node(&quot;hri_tasks&quot;)</td></tr>
+<tr class="separator:accbca8db8a990c91973f6514cdc35d6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aafc0136a349382c891b80a38fcf63125"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html">HRITasks</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacesubtask__managers_1_1hri__tasks.html#aafc0136a349382c891b80a38fcf63125">vision_tasks</a> = <a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html">HRITasks</a>(<a class="el" href="namespacesubtask__managers_1_1hri__tasks.html#accbca8db8a990c91973f6514cdc35d6f">node</a>)</td></tr>
+<tr class="separator:aafc0136a349382c891b80a38fcf63125"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4500ece7abda1dacd787a9d3cb89ae41"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacesubtask__managers_1_1hri__tasks.html#a4500ece7abda1dacd787a9d3cb89ae41">try</a> :</td></tr>
+<tr class="separator:a4500ece7abda1dacd787a9d3cb89ae41"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><pre class="fragment">HRI Subtask manager
@@ -238,42 +240,72 @@ Returns:
 </div>
 </div>
 <h2 class="groupheader">Variable Documentation</h2>
-<a id="a1be2d075bae2c39d2b948028ce848998" name="a1be2d075bae2c39d2b948028ce848998"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1be2d075bae2c39d2b948028ce848998">&#9670;&#160;</a></span>InterpreterAvailableCommands</h2>
+<a id="a7e3e376af45a0eb1103aaf5e923c32f5" name="a7e3e376af45a0eb1103aaf5e923c32f5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7e3e376af45a0eb1103aaf5e923c32f5">&#9670;&#160;</a></span>InterpreterAvailableCommands</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">subtask_managers.hri_tasks.InterpreterAvailableCommands</td>
+          <td class="memname">Union subtask_managers.hri_tasks.InterpreterAvailableCommands</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line"><span class="lineno">    1</span>=  Union[</div>
+<div class="line"><span class="lineno">    2</span>    CommandListLLM,</div>
+<div class="line"><span class="lineno">    3</span>    GoTo,</div>
+<div class="line"><span class="lineno">    4</span>    PickObject,</div>
+<div class="line"><span class="lineno">    5</span>    FindPersonByName,</div>
+<div class="line"><span class="lineno">    6</span>    FindPerson,</div>
+<div class="line"><span class="lineno">    7</span>    Count,</div>
+<div class="line"><span class="lineno">    8</span>    GetPersonInfo,</div>
+<div class="line"><span class="lineno">    9</span>    GetVisualInfo,</div>
+<div class="line"><span class="lineno">   10</span>    AnswerQuestion,</div>
+<div class="line"><span class="lineno">   11</span>    FollowPersonUntil,</div>
+<div class="line"><span class="lineno">   12</span>    GuidePersonTo,</div>
+<div class="line"><span class="lineno">   13</span>    GiveObject,</div>
+<div class="line"><span class="lineno">   14</span>    PlaceObject,</div>
+<div class="line"><span class="lineno">   15</span>    SayWithContext,</div>
+<div class="line"><span class="lineno">   16</span>]</div>
+</div><!-- fragment -->
+</div>
+</div>
+<a id="accbca8db8a990c91973f6514cdc35d6f" name="accbca8db8a990c91973f6514cdc35d6f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#accbca8db8a990c91973f6514cdc35d6f">&#9670;&#160;</a></span>node</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Node subtask_managers.hri_tasks.node = Node(&quot;hri_tasks&quot;)</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<a id="acfd005e4c5d7c9e7b6c73e12537399d0" name="acfd005e4c5d7c9e7b6c73e12537399d0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acfd005e4c5d7c9e7b6c73e12537399d0">&#9670;&#160;</a></span>node</h2>
+<a id="a4500ece7abda1dacd787a9d3cb89ae41" name="a4500ece7abda1dacd787a9d3cb89ae41"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4500ece7abda1dacd787a9d3cb89ae41">&#9670;&#160;</a></span>try</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">subtask_managers.hri_tasks.node</td>
+          <td class="memname">subtask_managers.hri_tasks.try :</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 </div>
 </div>
-<a id="aa2840c03a44dc90e8c91833569951353" name="aa2840c03a44dc90e8c91833569951353"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa2840c03a44dc90e8c91833569951353">&#9670;&#160;</a></span>vision_tasks</h2>
+<a id="aafc0136a349382c891b80a38fcf63125" name="aafc0136a349382c891b80a38fcf63125"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aafc0136a349382c891b80a38fcf63125">&#9670;&#160;</a></span>vision_tasks</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">subtask_managers.hri_tasks.vision_tasks</td>
+          <td class="memname"><a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html">HRITasks</a> subtask_managers.hri_tasks.vision_tasks = <a class="el" href="classsubtask__managers_1_1hri__tasks_1_1HRITasks.html">HRITasks</a>(<a class="el" href="namespacesubtask__managers_1_1hri__tasks.html#accbca8db8a990c91973f6514cdc35d6f">node</a>)</td>
         </tr>
       </table>
 </div><div class="memdoc">

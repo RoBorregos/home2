@@ -93,7 +93,9 @@ var hierarchy =
     [ "receptionist_task_manager.ReceptionistTM.TaskStates", "classreceptionist__task__manager_1_1ReceptionistTM_1_1TaskStates.html", null ],
     [ "restaurant_task_manager.RestaurantTaskManager.TaskStates", "classrestaurant__task__manager_1_1RestaurantTaskManager_1_1TaskStates.html", null ],
     [ "type", null, [
-      [ "subtask_managers.subtask_meta.SubtaskMeta", "classsubtask__managers_1_1subtask__meta_1_1SubtaskMeta.html", null ]
+      [ "subtask_managers.subtask_meta.SubtaskMeta", "classsubtask__managers_1_1subtask__meta_1_1SubtaskMeta.html", [
+        [ "subtask_managers.hri_tasks.HRITasks", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html", null ]
+      ] ]
     ] ],
     [ "subtask_managers.vision_tasks.VisionTasks", "classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html", null ],
     [ "XArmServices.XArmServices", "classXArmServices_1_1XArmServices.html", null ],
@@ -222,9 +224,6 @@ var hierarchy =
     ] ],
     [ "Servo", null, [
       [ "MoveItServo.MoveItServo", "classMoveItServo_1_1MoveItServo.html", null ]
-    ] ],
-    [ "SubtaskMeta", null, [
-      [ "subtask_managers.hri_tasks.HRITasks", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html", null ]
     ] ],
     [ "ZeroShotObjectDetector", null, [
       [ "YoloEObjectDetector.YoloEObjectDetector", "classYoloEObjectDetector_1_1YoloEObjectDetector.html", null ]

@@ -162,7 +162,6 @@ var namespaces_dup =
       [ "generate_launch_description", "namespacemapping.html#ac951e3077b2a262f96039858d7fa2b20", null ]
     ] ],
     [ "mocked", "namespacemocked.html", [
-      [ "mock_common_interest", "namespacemocked.html#a6a3d2afbd135dd06d43c490ed3684ae2", null ],
       [ "mock_extract_data", "namespacemocked.html#aeff3bb8bbe5365c9e7f330e0fb5cf578", null ],
       [ "mock_interpret_keyword", "namespacemocked.html#a66f0451a003eb34116afb2f43c5d4f12", null ],
       [ "config", "namespacemocked.html#a8518ed6ea6c53ce63671b70b1acd18a9", null ]
