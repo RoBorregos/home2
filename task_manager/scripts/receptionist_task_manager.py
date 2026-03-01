@@ -32,12 +32,6 @@ class Guest:
         return f"Name: {self.name}, Drink: {self.drink}, Interest: {self.interest}"
 
 
-def mock_common_interest(person1, interest1, person2, interest2, remove_thinking=True):
-    """Pick a random word from keywords"""
-
-    return Status.MOCKED, f"{person1} and {person2} both like {interest1}"
-
-
 class ReceptionistTM(Node):
     """Class to manage the receptionist task"""
 
@@ -255,18 +249,20 @@ class ReceptionistTM(Node):
             guest1 = self.guests[1]
             host = self.guests[0]
 
-            common_message_guest1_future = mock_common_interest(
+            common_message_guest1_future = self.subtask_manager.hri.common_interest(
                 self.get_guest().name,
                 self.get_guest().interest,
                 guest1.name,
                 guest1.interest,
+                is_async=True,
             )
 
-            common_message_host_future = mock_common_interest(
+            common_message_host_future = self.subtask_manager.hri.common_interest(
                 self.get_guest().name,
                 self.get_guest().interest,
                 host.name,
                 host.interest,
+                is_async=True,
             )
 
             self.subtask_manager.hri.say(
@@ -559,4 +555,5 @@ def main(args=None):
 
 
 if __name__ == "__main__":
+    main()
     main()
