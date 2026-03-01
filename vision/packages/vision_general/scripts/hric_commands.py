@@ -2,8 +2,7 @@
 
 """
 Node to detect people and find
-available seats. Tasks for receptionist
-commands.
+available seats. Tasks for HRIC commands.
 """
 
 import cv2
@@ -26,7 +25,7 @@ from frida_constants.vision_constants import (
     CAMERA_TOPIC,
     CHECK_PERSON_TOPIC,
     FIND_SEAT_TOPIC,
-    IMAGE_TOPIC_RECEPTIONIST,
+    IMAGE_TOPIC_HRIC,
 )
 
 from ament_index_python.packages import get_package_share_directory
@@ -42,9 +41,9 @@ CONF_THRESHOLD = 0.4
 CHECK_TIMEOUT = 5
 
 
-class ReceptionistCommands(Node):
+class HRICCommands(Node):
     def __init__(self):
-        super().__init__("receptionist_commands")
+        super().__init__("HRIC_commands")
         self.bridge = CvBridge()
 
         self.image_subscriber = self.create_subscription(
@@ -54,9 +53,7 @@ class ReceptionistCommands(Node):
         self.find_seat_service = self.create_service(
             FindSeat, FIND_SEAT_TOPIC, self.find_seat_callback
         )
-        self.image_publisher = self.create_publisher(
-            Image, IMAGE_TOPIC_RECEPTIONIST, 10
-        )
+        self.image_publisher = self.create_publisher(Image, IMAGE_TOPIC_HRIC, 10)
         self.person_detection_action_server = ActionServer(
             self, DetectPerson, CHECK_PERSON_TOPIC, self.detect_person_callback
         )
@@ -67,7 +64,7 @@ class ReceptionistCommands(Node):
         self.check = False
         # self.id = None
 
-        self.get_logger().info("ReceptionistCommands Ready.")
+        self.get_logger().info("HRIC Commands Ready.")
 
         self.create_timer(0.1, self.publish_image)
 
@@ -143,8 +140,6 @@ class ReceptionistCommands(Node):
     def publish_image(self):
         """Publish the image with the detections if available."""
         if len(self.output_image) != 0:
-            # cv2.imshow("Receptionist Commands", self.output_image)
-            # cv2.waitKey(1)
             self.image_publisher.publish(
                 self.bridge.cv2_to_imgmsg(self.output_image, "bgr8")
             )
@@ -361,7 +356,7 @@ class ReceptionistCommands(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = ReceptionistCommands()
+    node = HRICCommands()
 
     try:
         rclpy.spin(node)

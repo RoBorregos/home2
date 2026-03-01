@@ -18,8 +18,8 @@ def generate_launch_description():
         [
             Node(
                 package="vision_general",
-                executable="receptionist_commands.py",
-                name="receptionist_commands",
+                executable="hric_commands.py",
+                name="hric_commands",
                 output="screen",
                 emulate_tty=True,
                 # parameters=[config],

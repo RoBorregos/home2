@@ -2,7 +2,7 @@
 
 """
 Node to detect people and find
-available seats. Tasks for receptionist
+available seats. Tasks for HRIC
 commands.
 """
 
@@ -128,7 +128,7 @@ class VisionTasks:
         self.count_by_color_client = self.node.create_client(CountByColor, COUNT_BY_COLOR_TOPIC)
 
         self.services = {
-            Task.RECEPTIONIST: {
+            Task.HRIC: {
                 "detect_person": {"client": self.detect_person_action_client, "type": "action"},
                 "find_seat": {"client": self.find_seat_client, "type": "service"},
                 "save_face_name": {
@@ -960,7 +960,7 @@ class VisionTasks:
 if __name__ == "__main__":
     rclpy.init()
     node = Node("vision_tasks")
-    vision_tasks = VisionTasks(node, task="RECEPTIONIST")
+    vision_tasks = VisionTasks(node, task="HRIC")
 
     try:
         rclpy.spin(node)

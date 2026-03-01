@@ -81,7 +81,7 @@ class NavigationTasks:
             WaitForControllerInput, "wait_for_controller_input"
         )
         self.services = {
-            Task.RECEPTIONIST: {
+            Task.HRIC: {
                 "goal_client": {"client": self.goal_client, "type": "action"},
             },
             Task.HELP_ME_CARRY: {
