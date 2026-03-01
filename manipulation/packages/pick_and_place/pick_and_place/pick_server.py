@@ -23,13 +23,14 @@ from frida_constants.manipulation_constants import (
     PICK_MIN_HEIGHT,
     GRASP_LINK_FRAME,
     GRIPPER_SET_STATE_SERVICE,
+    OFFSET_MOVE_ACTION_SERVER,
 )
 from frida_interfaces.srv import (
     AttachCollisionObject,
     GetCollisionObjects,
     RemoveCollisionObject,
 )
-from frida_interfaces.action import PickMotion, MoveToPose
+from frida_interfaces.action import PickMotion, MoveToPose, OffsetMove
 from frida_interfaces.msg import PickResult
 import copy
 import numpy as np
@@ -56,6 +57,14 @@ class PickMotionServer(Node):
             PickMotion,
             PICK_MOTION_ACTION_SERVER,
             self.execute_callback,
+            callback_group=self.callback_group,
+        )
+
+        self._offset_move_action_server = ActionServer(
+            self,
+            OffsetMove,
+            OFFSET_MOVE_ACTION_SERVER,
+            self.execute_offset_move_callback,
             callback_group=self.callback_group,
         )
 
@@ -103,6 +112,33 @@ class PickMotionServer(Node):
             return result
         except Exception as e:
             self.get_logger().error(f"Pick failed: {str(e)}")
+            goal_handle.succeed()
+            result.success = False
+            return result
+
+    async def execute_offset_move_callback(self, goal_handle):
+        """Execute the offset move action when a goal is received."""
+        self.get_logger().info("Executing offset move goal...")
+        result = OffsetMove.Result()
+
+        offset = goal_handle.request.offset
+        direction = goal_handle.request.direction
+        if not offset:
+            offset = 0.3  # Default offset if not provided
+        if not direction:
+            direction = MoveToPose.Request.X  # Default direction if not provided
+
+        pose = self.compute_offset(offset, direction, goal_handle.request.pose)
+        try:
+            _, grasp_pose_result = self.move_to_pose(pose)
+
+            print(f"Grasp Pose result: {grasp_pose_result}")
+
+            goal_handle.succeed()
+            result.success = grasp_pose_result.result.success
+            return result
+        except Exception as e:
+            self.get_logger().error(f"Offset move failed: {str(e)}")
             goal_handle.succeed()
             result.success = False
             return result
@@ -219,6 +255,44 @@ class PickMotionServer(Node):
         action_result = future.result().get_result()
         return future.result(), action_result
 
+    def compute_offset(self, offset, direction, pose):
+
+        if pose is None or offset is None or direction is None:
+            self.get_logger().error(
+                "Pose, offset, and direction must be provided for offset computation."
+            )
+            return pose
+
+        if direction == MoveToPose.Request.UP:
+            pose.pose.position.z += offset
+
+        elif direction == MoveToPose.Request.DOWN:
+            pose.pose.position.z -= offset
+
+        elif direction == MoveToPose.Request.LEFT:
+            pose.pose.position.y += offset  # Y positivo es izquierda
+
+        elif direction == MoveToPose.Request.RIGHT:
+            pose.pose.position.y -= offset
+
+        elif direction == MoveToPose.Request.VERTICAL:
+            dist_minus = abs(pose.pose.position.z - offset)
+            dist_plus = abs(pose.pose.position.z + offset)
+            if dist_minus < dist_plus:
+                pose.pose.position.z -= offset
+            else:
+                pose.pose.position.z += offset
+
+        elif direction == MoveToPose.Request.HORIZONTAL:
+            dist_minus = abs(pose.pose.position.y - offset)
+            dist_plus = abs(pose.pose.position.y + offset)
+            if dist_minus < dist_plus:
+                pose.pose.position.y -= offset
+            else:
+                pose.pose.position.y += offset
+
+        return pose
+
     def wait_for_future(self, future):
         if future is None:
             self.get_logger().error("Service call failed: future is None")
@@ -295,7 +369,8 @@ class PickMotionServer(Node):
     def calculate_object_pick_height(self, obj, pose):
         """Calculate the height of the object, measured from where it was picked
         e.g. if a 30cm tall object is picked at 10cm, the height is 10cm
-        -> Reason for this is to know how high we should be to place the object, basically repeat same height"""
+        -> Reason for this is to know how high we should be to place the object, basically repeat same height
+        """
         if obj.pose.header.frame_id != pose.header.frame_id:
             self.get_logger().error(
                 "Object and pose frames do not match, cannot calculate height"

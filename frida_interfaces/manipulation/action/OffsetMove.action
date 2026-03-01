@@ -1,0 +1,16 @@
+int8 UP=1
+int8 DOWN=2
+int8 LEFT=3
+int8 RIGHT=4
+int8 X = 5
+int8 Y = 6
+
+geometry_msgs/PoseStamped pose
+float32 offset
+int8 direction
+---
+#result definition
+int32 success
+---
+#feedback
+string execution_state
