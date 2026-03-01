@@ -28,8 +28,10 @@ class DishwasherNode(Node):
         super().__init__("dishwasher")
         self.get_logger().info("Dishwasher node initialized")
 
-        MODELS_PATH = pathlib.Path(__file__).resolve().parent.parent / "Utils" / "models"
-        
+        MODELS_PATH = (
+            pathlib.Path(__file__).resolve().parent.parent / "Utils" / "models"
+        )
+
         self.layout_model = YOLO(str(MODELS_PATH / "dishwasher_layout.pt"))
         self.get_logger().info("Dishwasher layout model loaded")
 
@@ -142,9 +144,7 @@ class DishwasherNode(Node):
                 )
 
                 depth = get_depth(self.depth_image, point_2D)
-                point_3D_ = deproject_pixel_to_point(
-                    self.image_info, point_2D, depth
-                )
+                point_3D_ = deproject_pixel_to_point(self.image_info, point_2D, depth)
                 
                 point_3D = PointStamped()
                 point_3D.header.frame_id = CAMERA_FRAME
