@@ -23,10 +23,13 @@ from vision_general.utils.calculations import (
     get2DCentroid,
 )
 
+
 class DishwasherNode(Node):
     def __init__(self):
         super().__init__("dishwasher")
         self.get_logger().info("Dishwasher node initialized")
+        self.bridge = CvBridge()
+        self.callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
 
         MODELS_PATH = (
             pathlib.Path(__file__).resolve().parent.parent / "Utils" / "models"
@@ -37,9 +40,6 @@ class DishwasherNode(Node):
 
         self.rack_model = YOLO(str(MODELS_PATH / "dishwasher_rack.pt"))
         self.get_logger().info("Rack model loaded")
-
-        self.bridge = CvBridge()
-        self.callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
 
         self.image_subscriber = self.create_subscription(
             Image, CAMERA_TOPIC, self.image_callback, 10
@@ -66,7 +66,7 @@ class DishwasherNode(Node):
             self.dishwasher_rack_callback,
             callback_group=self.callback_group,
         )
-        
+
         self.image = None
 
     def image_callback(self, msg):
@@ -145,7 +145,7 @@ class DishwasherNode(Node):
 
                 depth = get_depth(self.depth_image, point_2D)
                 point_3D_ = deproject_pixel_to_point(self.image_info, point_2D, depth)
-                
+
                 point_3D = PointStamped()
                 point_3D.header.frame_id = CAMERA_FRAME
                 point_3D.header.stamp = self.get_clock().now().to_msg()
@@ -164,15 +164,15 @@ class DishwasherNode(Node):
                     ymax=y2,
                     point3d=point_3D,
                 )
-                
+
                 response.detection_array.detections.append(object_detection)
 
         response.success = True
         return response
+
 
 if __name__ == "__main__":
     rclpy.init()
     dishwasher_node = DishwasherNode()
     rclpy.spin(dishwasher_node)
     rclpy.shutdown()
-
