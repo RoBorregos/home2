@@ -126,7 +126,7 @@ class PickMotionServer(Node):
         if not offset:
             offset = 0.3  # Default offset if not provided
         if not direction:
-            direction = MoveToPose.Request.X  # Default direction if not provided
+            direction = OffsetMove.Goal.HORIZONTAL  # Default direction if not provided
 
         pose = self.compute_offset(offset, direction, goal_handle.request.pose)
         try:
@@ -263,19 +263,19 @@ class PickMotionServer(Node):
             )
             return pose
 
-        if direction == MoveToPose.Request.UP:
+        if direction == OffsetMove.Goal.UP:
             pose.pose.position.z += offset
 
-        elif direction == MoveToPose.Request.DOWN:
+        elif direction == OffsetMove.Goal.DOWN:
             pose.pose.position.z -= offset
 
-        elif direction == MoveToPose.Request.LEFT:
+        elif direction == OffsetMove.Goal.LEFT:
             pose.pose.position.y += offset  # Y positivo es izquierda
 
-        elif direction == MoveToPose.Request.RIGHT:
+        elif direction == OffsetMove.Goal.RIGHT:
             pose.pose.position.y -= offset
 
-        elif direction == MoveToPose.Request.VERTICAL:
+        elif direction == OffsetMove.Goal.VERTICAL:
             dist_minus = abs(pose.pose.position.z - offset)
             dist_plus = abs(pose.pose.position.z + offset)
             if dist_minus < dist_plus:
@@ -283,7 +283,7 @@ class PickMotionServer(Node):
             else:
                 pose.pose.position.z += offset
 
-        elif direction == MoveToPose.Request.HORIZONTAL:
+        elif direction == OffsetMove.Goal.HORIZONTAL:
             dist_minus = abs(pose.pose.position.y - offset)
             dist_plus = abs(pose.pose.position.y + offset)
             if dist_minus < dist_plus:
