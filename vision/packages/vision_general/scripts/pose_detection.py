@@ -6,6 +6,7 @@ import numpy as np
 from frida_constants.vision_enums import Gestures
 from math import degrees, acos
 import time
+from ultralytics import YOLO
 
 
 class PoseDetection:
@@ -14,6 +15,7 @@ class PoseDetection:
         self.mp_pose = mp.solutions.pose
         self.pose = self.mp_pose.Pose()
         self.mp_drawing = mp.solutions.drawing_utils
+        self.yolo_pose = YOLO("yolo11m-pose.pt")
 
     def detect(self, frame):
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
@@ -190,9 +192,101 @@ class PoseDetection:
                 return True
             if left_wrist.y < left_shoulder.y and right_wrist.y > right_shoulder.y:
                 return True
+
             return False
         except Exception:
             return False
+
+    def _joint_angle_vectors(self, vec_a, vec_b):
+        norm_a, norm_b = np.linalg.norm(vec_a), np.linalg.norm(vec_b)
+        if norm_a == 0 or norm_b == 0:
+            return 180.0
+        cosine = np.clip(np.dot(vec_a, vec_b) / (norm_a * norm_b), -1.0, 1.0)
+        return float(np.degrees(np.arccos(cosine)))
+
+    def _is_sitting_side(
+        self,
+        points,
+        scores,
+        side,
+        keypoints,
+        keypoint_score,
+        knee_max_angle,
+        hip_max_angle,
+    ):
+        shoulder_idx = keypoints[f"shoulder_{side}"]
+        hip_idx = keypoints[f"hip_{side}"]
+        knee_idx = keypoints[f"knee_{side}"]
+        ankle_idx = keypoints[f"ankle_{side}"]
+
+        if min(scores[hip_idx], scores[knee_idx], scores[ankle_idx]) < keypoint_score:
+            return False
+
+        hip, knee, ankle = points[[hip_idx, knee_idx, ankle_idx]]
+        torso_vec = (
+            points[shoulder_idx] - hip
+            if scores[shoulder_idx] >= keypoint_score
+            else np.array([0.0, -1.0], dtype=np.float32)
+        )
+
+        knee_angle = self._joint_angle_vectors(hip - knee, ankle - knee)
+        hip_angle = self._joint_angle_vectors(torso_vec, knee - hip)
+        return knee_angle <= knee_max_angle and hip_angle <= hip_max_angle
+
+    def _get_pose_points_scores(self, image):
+        results = self.yolo_pose(image)
+        if (
+            not results
+            or results[0].keypoints is None
+            or results[0].keypoints.xy is None
+        ):
+            return None, None
+
+        points_batch = results[0].keypoints.xy.cpu().numpy()
+        scores_batch = (
+            results[0].keypoints.conf.cpu().numpy()
+            if results[0].keypoints.conf is not None
+            else np.ones(points_batch.shape[:2], dtype=np.float32)
+        )
+        return points_batch, scores_batch
+
+    def is_sitting_yolo(self, image):
+        """Detects if the person is sitting using yolo pose keypoints."""
+        keypoint_score = 0.2
+        knee_max_angle = 120.0
+        hip_max_angle = 150.0
+        keypoints = {
+            "shoulder_l": 5,
+            "shoulder_r": 6,
+            "hip_l": 11,
+            "hip_r": 12,
+            "knee_l": 13,
+            "knee_r": 14,
+            "ankle_l": 15,
+            "ankle_r": 16,
+        }
+        sides = ("l", "r")
+
+        points_batch, scores_batch = self._get_pose_points_scores(image)
+        if points_batch is None:
+            return False
+
+        for points, scores in zip(points_batch, scores_batch):
+            for side in sides:
+                if self._is_sitting_side(
+                    points,
+                    scores,
+                    side,
+                    keypoints,
+                    keypoint_score,
+                    knee_max_angle,
+                    hip_max_angle,
+                ):
+                    print("Sitting yolo: True")
+                    return True
+
+        print("Sitting yolo: False")
+        return False
 
     def is_closer_to_left_shoulder(self, wrist, left_shoulder, right_shoulder):
         return abs(wrist.x - left_shoulder.x) < abs(wrist.x - right_shoulder.x)

@@ -185,11 +185,11 @@ class TestHriManager(Node):
 
         self.get_logger().info(f"Transcription: {transcription}")
         self.get_logger().info("Word confidences:")
-        for word, confidence in word_confidences:
+        for word, confidence in word_confidences.items():
             self.get_logger().info(f"  {word:20s} -> {confidence:.4f}")
 
         if word_confidences:
-            avg_confidence = sum(c for _, c in word_confidences) / len(word_confidences)
+            avg_confidence = sum(word_confidences.values()) / len(word_confidences)
             self.get_logger().info(f"Average confidence: {avg_confidence:.4f}")
 
     def compound_functions(self):
