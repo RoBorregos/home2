@@ -45,7 +45,8 @@ run_frida_interfaces() {
   fi
 
   echo "Running frida_interfaces_cache to build frida_interfaces (using $compose_yaml)"
-  docker compose -f "$compose_yaml" run --rm frida_interfaces_cache
+  mkdir -p "docker/frida_interfaces_cache/build" "docker/frida_interfaces_cache/install" "docker/frida_interfaces_cache/log"
+  export GID=$(id -g) && docker compose -f "$compose_yaml" run --rm frida_interfaces_cache
 }
 
 run_area() {

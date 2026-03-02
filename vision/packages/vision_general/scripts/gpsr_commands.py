@@ -12,7 +12,7 @@ import rclpy
 from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
-import time
+from vision_general.utils.ros_utils import wait_for_future
 import os
 import json
 
@@ -487,18 +487,6 @@ class GPSRCommands(Node):
                         cv2.LINE_AA,
                     )
 
-    def wait_for_future(self, future, timeout=5):
-        start_time = time.time()
-        while future is None and (time.time() - start_time) < timeout:
-            pass
-        if future is None:
-            return False
-        while not future.done() and (time.time() - start_time) < timeout:
-            # print("Waiting for future to complete...")
-            pass
-
-        return future
-
     def moondream_crop_query(self, prompt: str, bbox: list[float]) -> tuple[int, str]:
         """Makes a query of the current image using moondream."""
         self.get_logger().info(f"Querying image with prompt: {prompt}")
@@ -518,7 +506,7 @@ class GPSRCommands(Node):
         request.xmax = xmax
 
         future = self.moondream_client.call_async(request)
-        future = self.wait_for_future(future, 15)
+        future = wait_for_future(future, 15)
         result = future.result()
         if result is None:
             self.get_logger().error("Moondream service returned None.")

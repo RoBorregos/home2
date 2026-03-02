@@ -22,6 +22,7 @@ from vision_general.utils.calculations import (
 import copy
 import rclpy
 from rclpy.node import Node
+from vision_general.utils.ros_utils import wait_for_future
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import Point, PointStamped
@@ -441,7 +442,7 @@ class SingleTracker(Node):
         request.xmax = xmax
 
         future = self.moondream_client.call_async(request)
-        future = self.wait_for_future(future, 15)
+        future = wait_for_future(future, 15)
         result = future.result()
         if result is None:
             self.get_logger().error("Moondream service returned None.")
