@@ -315,13 +315,16 @@ class SingleTracker(Node):
         self.frame = copy.deepcopy(self.image)
         self.output_image = self.frame.copy()
 
-        # Run YOLO detection + DeepSORT tracking with ReID
-        yolo_results = self.model.predict(
-            self.frame,
-            classes=0,
-            verbose=False,
-        )
-        tracked_people = self._run_deepsort(self.frame, yolo_results)
+        # Run YOLO + DeepSORT multiple times to allow track confirmation (n_init frames)
+        tracked_people = []
+        for _ in range(DEEPSORT_N_INIT + 1):
+            self.frame = copy.deepcopy(self.image)
+            yolo_results = self.model.predict(
+                self.frame,
+                classes=0,
+                verbose=False,
+            )
+            tracked_people = self._run_deepsort(self.frame, yolo_results)
 
         largest_person = {
             "id": None,
