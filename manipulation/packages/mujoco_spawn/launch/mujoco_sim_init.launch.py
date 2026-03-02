@@ -124,7 +124,7 @@ def generate_nodes_for_spawn(context: LaunchContext):
     
     additional_files = []
     additional_files.append(os.path.join(get_package_share_directory("mujoco_ros2_control"), "mjcf", "scene.xml"))
-    additional_files.append(os.path.join(get_package_share_directory("task_table_mujoco"), "urdf", "task_table.urdf.xacro"))
+    #additional_files.append(os.path.join(get_package_share_directory("task_table_mujoco"), "urdf", "task_table.urdf.xacro"))
     
     # as this node require a string array
     robot_description_string = robot_description['robot_description'].perform(context)

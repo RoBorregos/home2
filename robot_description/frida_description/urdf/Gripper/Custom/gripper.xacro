@@ -104,5 +104,12 @@
     <child link="zed" />
     <axis xyz="0 0 1"/>
   </joint>
-  
+  <!-- <mujoco>
+    <reference body="right_finger">
+      <joint name="rightfinger" range="0 0.056" limited="true"/>
+    </reference>
+    <reference body="left_finger">
+      <joint name="leftfinger" range="0 0.056" limited="true"/>
+    </reference>
+  </mujoco> -->
 </robot>
