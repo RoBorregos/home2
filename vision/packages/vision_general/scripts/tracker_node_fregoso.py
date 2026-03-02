@@ -5,8 +5,6 @@ Node to track a single person and
 re-id them if necessary
 """
 
-import time
-
 import cv2
 import rclpy
 import torch
