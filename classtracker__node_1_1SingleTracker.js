@@ -14,7 +14,6 @@ var classtracker__node_1_1SingleTracker =
     [ "set_target_callback", "classtracker__node_1_1SingleTracker.html#ad922543b58aa166001d63ca35bf8fd64", null ],
     [ "setup", "classtracker__node_1_1SingleTracker.html#a32d3c3c6f7586fc5e70ca24068b9fc5a", null ],
     [ "success", "classtracker__node_1_1SingleTracker.html#a8b2ff344d595c2704718ff34ca09a42a", null ],
-    [ "wait_for_future", "classtracker__node_1_1SingleTracker.html#a418009bf5ab119199d834375bbab89a8", null ],
     [ "bridge", "classtracker__node_1_1SingleTracker.html#a051d4336f964eeb27d40dbe82e8b2b06", null ],
     [ "callback_group", "classtracker__node_1_1SingleTracker.html#a8d6a82844e14511d39f00cff93c0a6d5", null ],
     [ "centroid_publisher", "classtracker__node_1_1SingleTracker.html#ad1644dc9dc319c87398d2f5f0d54dc85", null ],

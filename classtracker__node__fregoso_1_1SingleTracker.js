@@ -13,7 +13,6 @@ var classtracker__node__fregoso_1_1SingleTracker =
     [ "set_target_callback", "classtracker__node__fregoso_1_1SingleTracker.html#a0bd8fcb48f45a29a3b84973196e0c2b2", null ],
     [ "setup", "classtracker__node__fregoso_1_1SingleTracker.html#a239fd98080ee22f4d54a876c7e790d5e", null ],
     [ "success", "classtracker__node__fregoso_1_1SingleTracker.html#ad36c93a6f47196cb188f56bb6b483c1c", null ],
-    [ "wait_for_future", "classtracker__node__fregoso_1_1SingleTracker.html#a29c03500f1fced6f598f34bf75a0ecce", null ],
     [ "bridge", "classtracker__node__fregoso_1_1SingleTracker.html#ae9b5cb64354a7bb8f27258ac8eab0a22", null ],
     [ "callback_group", "classtracker__node__fregoso_1_1SingleTracker.html#afc78160ef77014c06a203a0acb078803", null ],
     [ "centroid_publisher", "classtracker__node__fregoso_1_1SingleTracker.html#a1dac4f8f06ec5f718347ced10a6fa363", null ],

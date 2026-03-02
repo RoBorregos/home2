@@ -5,7 +5,6 @@ var classtrash__detection__node_1_1TrashDetectionNode =
     [ "detect_objects_callback", "classtrash__detection__node_1_1TrashDetectionNode.html#a98f56fb7942c98f1ec96b2f9b9f36b99", null ],
     [ "detections_callback", "classtrash__detection__node_1_1TrashDetectionNode.html#ae120ac4786414afda8f788c37bfafe4b", null ],
     [ "image_callback", "classtrash__detection__node_1_1TrashDetectionNode.html#a0bbe4aaeedf2803f750d26a904dfedbb", null ],
-    [ "wait_for_future", "classtrash__detection__node_1_1TrashDetectionNode.html#af585894ef5e09579d4b4bf1bad7c7d96", null ],
     [ "bridge", "classtrash__detection__node_1_1TrashDetectionNode.html#a89470eac16d94fa58dcebd2a4868e753", null ],
     [ "callback_group", "classtrash__detection__node_1_1TrashDetectionNode.html#a698885d1947ed2524ba4daadc04b90bd", null ],
     [ "current_image", "classtrash__detection__node_1_1TrashDetectionNode.html#a6edaaadf1b5d567c176b3efaee3b43a0", null ],

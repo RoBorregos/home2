@@ -13,7 +13,6 @@ var classold__tracker_1_1SingleTracker =
     [ "set_target_callback", "classold__tracker_1_1SingleTracker.html#a64ee28603be05d6f98f7a9e980853545", null ],
     [ "setup", "classold__tracker_1_1SingleTracker.html#a858268042493fa1c9449912c7c7a9e19", null ],
     [ "success", "classold__tracker_1_1SingleTracker.html#a3afa1bb4feb05075c9659011edf84c63", null ],
-    [ "wait_for_future", "classold__tracker_1_1SingleTracker.html#a9812cc6865c6bd4a0053bef7a72ca943", null ],
     [ "bridge", "classold__tracker_1_1SingleTracker.html#a08892184b23f4103c592603dd07c6163", null ],
     [ "callback_group", "classold__tracker_1_1SingleTracker.html#ae35f0cf6fce6ef3c125c4f6b8a675309", null ],
     [ "centroid_publisher", "classold__tracker_1_1SingleTracker.html#a8e8ffaf5403ff6a6cd5e545f2262ec17", null ],

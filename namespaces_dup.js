@@ -292,7 +292,7 @@ var namespaces_dup =
       [ "launch_setup", "namespacerobot__sim.html#aa842398b51f41c4ee2a7105e1e83009e", null ]
     ] ],
     [ "ros_utils", "namespaceros__utils.html", [
-      [ "wait_for_future", "namespaceros__utils.html#a227defc8d5be1b7e83089ef7134f5ef2", null ]
+      [ "wait_for_future", "namespaceros__utils.html#a788d5920b4a890dfdb242742b858f948", null ]
     ] ],
     [ "rplidar_fixed", "namespacerplidar__fixed.html", [
       [ "generate_launch_description", "namespacerplidar__fixed.html#a34c12a29f8ab4229ce3f1118c9f1c3c2", null ]

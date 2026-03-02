@@ -15,7 +15,6 @@ var classgpsr__commands_1_1GPSRCommands =
     [ "publish_image", "classgpsr__commands_1_1GPSRCommands.html#a189b2d11b148acfd29d57196fc37bb0b", null ],
     [ "read_qr_callback", "classgpsr__commands_1_1GPSRCommands.html#aedca1e7336c3e484c36e28e462590673", null ],
     [ "success", "classgpsr__commands_1_1GPSRCommands.html#a44fd2508682f74bbc718af3bb9550181", null ],
-    [ "wait_for_future", "classgpsr__commands_1_1GPSRCommands.html#a84567759a732df818847918ce2a829b4", null ],
     [ "areas", "classgpsr__commands_1_1GPSRCommands.html#a928bee0668cea771ab24a95f6b34ec16", null ],
     [ "bridge", "classgpsr__commands_1_1GPSRCommands.html#a2bf3849027b0522adbdb37289c178860", null ],
     [ "callback_group", "classgpsr__commands_1_1GPSRCommands.html#a1fcab1c5f9a5d54377e021e695f622eb", null ],
