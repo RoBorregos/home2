@@ -315,11 +315,9 @@ class SingleTracker(Node):
         self.frame = copy.deepcopy(self.image)
         self.output_image = self.frame.copy()
 
-        # Run YOLO + DeepSORT to get tracked people
-        yolo_results = self.model.track(
+        # Run YOLO detection + DeepSORT tracking with ReID
+        yolo_results = self.model.predict(
             self.frame,
-            persist=True,
-            tracker="bytetrack.yaml",
             classes=0,
             verbose=False,
         )
@@ -463,20 +461,16 @@ class SingleTracker(Node):
 
         self.output_image = self.frame.copy()
 
-        # Run YOLO detection
+        # Run YOLO detection + DeepSORT tracking with ReID
         start_time = time.time()
-        yolo_results = self.model.track(
+        yolo_results = self.model.predict(
             self.frame,
-            persist=True,
-            tracker="bytetrack.yaml",
             classes=0,
             verbose=False,
         )
         self.get_logger().info(
             f"Det+Tracking took {time.time() - start_time:.2f} seconds"
         )
-
-        # Run DeepSORT with ReID features
         tracked_people = self._run_deepsort(self.frame, yolo_results)
 
         if self.person_data["id"] is None:
