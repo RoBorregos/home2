@@ -174,7 +174,7 @@ class AudioStates(Enum):
 class HRITasks(metaclass=SubtaskMeta):
     """Class to manage the HRI tasks"""
 
-    def __init__(self, task_manager: Node, config=None, task=Task.RECEPTIONIST) -> None:
+    def __init__(self, task_manager: Node, config=None, task=Task.HRIC) -> None:
         self.node = task_manager
         self.start_button_clicked = False
         self.keyword = ""
@@ -245,7 +245,7 @@ class HRITasks(metaclass=SubtaskMeta):
         }
 
         self.services = {
-            Task.RECEPTIONIST: all_services,
+            Task.HRIC: all_services,
             Task.GPSR: all_services | gpsr_services,
             Task.HELP_ME_CARRY: all_services,
             Task.STORING_GROCERIES: all_services,

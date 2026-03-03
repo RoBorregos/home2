@@ -79,9 +79,9 @@ SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
 PROFILES=()
 
 case $TASK in
-    "--receptionist")
+    "--hric")
         PACKAGES="vision_general object_detector_2d object_detection_handler"
-        RUN="ros2 launch object_detector_2d object_detector_combined.launch.py"
+        RUN="ros2 launch vision_general hric_launch.py"
         PROFILES=("vision" "moondream")
         ;;
     "--carry")

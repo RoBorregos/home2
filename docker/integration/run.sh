@@ -79,8 +79,8 @@ else
 fi
 
 case $TASK in
-    "--receptionist")
-        RUN="ros2 run task_manager receptionist_task_manager.py"
+    "--hric")
+        RUN="ros2 run task_manager hric_task_manager.py"
         ;;
     "--help-me-carry")
         RUN="ros2 run task_manager help_me_carry.py"

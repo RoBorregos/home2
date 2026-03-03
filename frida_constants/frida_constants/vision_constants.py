@@ -102,10 +102,10 @@ PERSON_NAME_TOPIC = "/vision/person_detected_name"
 FACE_RECOGNITION_IMAGE = "/vision/face_recognition_image"
 FOLLOW_BY_TOPIC = "/vision/follow_by_name"
 
-# Receptionist commands node
-CHECK_PERSON_TOPIC = "/vision/receptionist/detect_person"
-FIND_SEAT_TOPIC = "/vision/receptionist/find_seat"
-IMAGE_TOPIC_RECEPTIONIST = "/vision/receptionist/img_person_detecion"
+# HRIC commands node
+CHECK_PERSON_TOPIC = "/vision/hric/detect_person"
+FIND_SEAT_TOPIC = "/vision/hric/find_seat"
+IMAGE_TOPIC_HRIC = "/vision/hric/img_person_detecion"
 
 # GPSR commands node
 COUNT_BY_COLOR_TOPIC = "/vision/gpsr/count_by_color"

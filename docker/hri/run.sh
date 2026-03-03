@@ -123,9 +123,9 @@ PROFILES=()
 RUN=""
 
 case $TASK in
-  "--receptionist")
+  "--hric")
     RUN="ros2 launch speech hri_launch.py"
-    PROFILES=("receptionist")
+    PROFILES=("hric")
     ;;
   "--storing-groceries")
     PROFILES=("storing")

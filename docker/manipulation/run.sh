@@ -69,8 +69,8 @@ else
 fi
 
 case $TASK in
-    "--receptionist")
-        RUN="ros2 launch manipulation_general receptionist.launch.py"
+    "--hric")
+        RUN="ros2 launch manipulation_general hric.launch.py"
         ;;
     "--carry")
         RUN="ros2 launch manipulation_general carry.launch.py"
