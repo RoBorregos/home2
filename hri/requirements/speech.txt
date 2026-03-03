@@ -24,4 +24,3 @@ grpcio==1.70.0
 grpcio-tools==1.70.0
 protobuf==5.29.0
 deepfilternet>=0.5.6
-torch>=2.1.0

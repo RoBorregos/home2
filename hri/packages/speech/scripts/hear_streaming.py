@@ -3,6 +3,7 @@
 import collections
 import os
 import sys
+import threading
 import time
 
 import grpc
@@ -18,8 +19,6 @@ from frida_interfaces.action import SpeechStream
 from frida_interfaces.msg import AudioData
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "stt"))
-import threading
-
 import speech_pb2
 import speech_pb2_grpc
 
@@ -39,6 +38,12 @@ class HearStreaming(Node):
             self.declare_parameter("AUDIO_TOPIC", "/rawAudioChunk")
             .get_parameter_value()
             .string_value
+        )
+
+        # Control verbose audio/buffer logging
+        self.declare_parameter("DEBUG_AUDIO_LOGS", False)
+        self.debug_audio_logs = (
+            self.get_parameter("DEBUG_AUDIO_LOGS").get_parameter_value().bool_value
         )
 
         self.action_server_name = (
@@ -103,7 +108,7 @@ class HearStreaming(Node):
         audio_data = np.frombuffer(msg.data, dtype=np.int16)
         self.audio_buffer.append(audio_data)
         self.audio_chunk_count += 1
-        if self.audio_chunk_count % 100 == 0:
+        if self.debug_audio_logs and self.audio_chunk_count % 100 == 0:
             self.get_logger().info(
                 f"Audio chunks received: {self.audio_chunk_count}, buffer size: {len(self.audio_buffer)}"
             )
@@ -117,7 +122,7 @@ class HearStreaming(Node):
             sent_count = 0
             # Buffer length is in chunks, not frames. With CHUNK_SIZE=512 at 16kHz,
             # 10 chunks ≈ 320ms. Keep small so streaming starts promptly.
-            min_buffer_chunks = 10
+            min_buffer_chunks = 3
             buffer_ready = False
 
             while not self.stop_flag.is_set() and rclpy.ok():
@@ -129,9 +134,10 @@ class HearStreaming(Node):
                             continue
                         else:
                             buffer_ready = True
-                            self.get_logger().info(
-                                f"Buffer ready with {len(self.audio_buffer)} chunks, starting stream..."
-                            )
+                            if self.debug_audio_logs:
+                                self.get_logger().info(
+                                    f"Buffer ready with {len(self.audio_buffer)} chunks, starting stream..."
+                                )
 
                     if not self.audio_buffer:
                         time.sleep(0.02)
@@ -144,7 +150,7 @@ class HearStreaming(Node):
 
                     grpc_audio = local_audio.tobytes()
                     sent_count += 1
-                    if sent_count % 50 == 0:
+                    if self.debug_audio_logs and sent_count % 50 == 0:
                         self.get_logger().info(
                             f"Audio chunks sent to STT: {sent_count}, buffer size: {len(self.audio_buffer)}"
                         )
