@@ -1,0 +1,6 @@
+noise_cancellation:
+  ros__parameters:
+    INPUT_TOPIC: "/rawAudioChunk"
+    OUTPUT_TOPIC: "/hri/processedAudioChunk"
+    ENABLE_ANC: true
+    GAIN: 1.0

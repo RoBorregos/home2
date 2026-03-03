@@ -4,5 +4,3 @@ audio_capturer:
     MIC_INPUT_CHANNELS: 32
     MIC_OUT_CHANNELS: 32
     publish_topic: "/rawAudioChunk"
-    ENABLE_ANC: true
-    GAIN: 1.0
