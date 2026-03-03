@@ -107,11 +107,6 @@ class HearStreaming(Node):
     def audio_callback(self, msg):
         audio_data = np.frombuffer(msg.data, dtype=np.int16)
         self.audio_buffer.append(audio_data)
-        self.audio_chunk_count += 1
-        if self.debug_audio_logs and self.audio_chunk_count % 100 == 0:
-            self.get_logger().info(
-                f"Audio chunks received: {self.audio_chunk_count}, buffer size: {len(self.audio_buffer)}"
-            )
 
     def record_subscribed(self, hotwords):
         self.get_logger().info("HearStreaming node recording.")
