@@ -12,11 +12,9 @@
 **.pt
 **.pth
 **.gz
-hri/packages/nlp/assets/**
 .cache
-!hri/packages/nlp/assets/download-model.sh
-!hri/packages/nlp/assets/Modelfile
-!hri/packages/nlp/assets/entrypoint.sh
+hri/packages/nlp/assets/**
+!hri/packages/nlp/assets/ModelFile
 **.bag
 **/rtabmapdbs
 yolov5/
@@ -30,3 +28,5 @@ mobileclip_blt.ts
 *.traj
 datasets/
 onnxruntime_gpu-1.17.0-cp38-cp38-linux_aarch64.whl
+navigation/packages/map_context/config/rosbag/*
+docker/hri/sql_dumps

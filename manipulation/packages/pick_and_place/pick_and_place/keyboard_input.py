@@ -8,6 +8,7 @@ from frida_interfaces.msg import ManipulationTask
 import time
 from geometry_msgs.msg import PointStamped, PoseStamped
 from frida_interfaces.msg import ObjectDetectionArray
+from pick_and_place.utils.perception_utils import point_in_range
 from frida_constants.vision_constants import (
     DETECTIONS_TOPIC,
 )
@@ -20,6 +21,12 @@ import json
 class KeyboardInput(Node):
     def __init__(self):
         super().__init__("keyboard_input")
+
+        self.declare_parameter("min_distance", 0.0)
+        self.declare_parameter("max_distance", float("inf"))
+
+        self.min_distance = self.get_parameter("min_distance").value
+        self.max_distance = self.get_parameter("max_distance").value
 
         callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
 
@@ -63,7 +70,9 @@ class KeyboardInput(Node):
         # Assuming msg contains a list of object names
         self.objects = []
         for detection in msg.detections:
-            if detection.label_text not in self.objects:
+            if detection.label_text not in self.objects and point_in_range(
+                detection.point3d, self.min_distance, self.max_distance
+            ):
                 self.objects.append(detection.label_text)
 
     def send_pick_request(self, object_name):
@@ -76,7 +85,8 @@ class KeyboardInput(Node):
         goal_msg = ManipulationAction.Goal()
         goal_msg.task_type = ManipulationTask.PICK
         goal_msg.pick_params.object_name = object_name
-
+        goal_msg.pick_params.min_distance = self.min_distance
+        goal_msg.pick_params.max_distance = self.max_distance
         self.get_logger().info(f"Sending pick request for: {object_name}")
         future = self._action_client.send_goal_async(
             goal_msg, feedback_callback=self.feedback_callback

@@ -14,6 +14,7 @@ BUILD_IMAGE=""
 BUILD_DISPLAY=""
 OPEN_DISPLAY=""
 DOWNLOAD_MODEL=""
+REGENERATE_DB=""
 
 COMPOSE="compose/docker-compose-${ENV_TYPE}.yml"
 
@@ -49,6 +50,8 @@ for arg in "${ARGS[@]}"; do
     "--download-model")
         DOWNLOAD_MODEL="true"
         ;;
+    "--regenerate-db")
+        REGENERATE_DB="true"
   esac
 done
 
@@ -71,7 +74,7 @@ else
   export SETUP_DONE=true
 fi
 
-[ "$DOWNLOAD_MODEL" == "true" ] && bash ../../hri/packages/nlp/assets/download-model.sh
+[ "$DOWNLOAD_MODEL" == "true" ] && bash ./scripts/download-model.sh
 
 # Create dirs with current user to avoid permission problems
 mkdir -p install build log \
@@ -101,6 +104,12 @@ DISPLAY_DIR="../../hri/packages/display/display"
 if [ ! -d "$DISPLAY_DIR/node_modules" ] || [ ! -d "$DISPLAY_DIR/.next" ] || [ "$BUILD_DISPLAY" == "true" ]; then
   echo "Installing dependencies and building project inside temporary container..."
   docker compose -f compose/hri-ros.yaml run $BUILD_IMAGE --rm --entrypoint "" hri-ros bash -c "cd /workspace/src/hri/packages/display/display && npm i && npm run build"
+fi
+
+# Regenerate database if requested
+if [ "$REGENERATE_DB" == "true" ]; then
+  echo "Regenerating database..."
+  bash scripts/regenerate_db.sh "$ENV_TYPE"
 fi
 
 #_________________________RUN_________________________
@@ -154,7 +163,8 @@ wait_and_launch_display() {
     sleep 1
   done
   chmod +x scripts/open-display.bash
-  bash scripts/open-display.bash
+  local task_route="${TASK#--}"
+  bash scripts/open-display.bash "$task_route"
 }
 
 if [ -n "$OPEN_DISPLAY" ]; then

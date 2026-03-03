@@ -152,8 +152,8 @@ class StoringGroceriesManager(Node):
         #         self.manual_heights = [0.04, 0.43, 0.67]
         #         self.shelf_level_threshold = 0.30
 
-        self.poseeeeensahsajsajasjhasjha = None
-        self.es_primer_vez = True
+        self.saved_table_pose = None
+        self.is_first_time = True
         self.shelf_level_down_threshold = 0.05
         self.picked_objects = 0
         self.prev_uid = None
@@ -403,7 +403,7 @@ class StoringGroceriesManager(Node):
             )
             if pose is None:
                 Logger.warn(self, "Pose not found couldn't navigate to table")
-                if self.poseeeeensahsajsajasjhasjha is not None:
+                if self.saved_table_pose is not None:
                     future = self.subtask_manager.nav.move_to_pose(pose)
                     rclpy.spin_until_future_complete(self, future)
                     Logger.info(self, f"Pose navigation result: {future.result()}")
@@ -431,7 +431,7 @@ class StoringGroceriesManager(Node):
                     rclpy.spin_until_future_complete(self, future)
                     Logger.info(self, f"Pose navigation result: {future.result()}")
             else:
-                self.poseeeeensahsajsajasjhasjha = pose
+                self.saved_table_pose = pose
                 future = self.subtask_manager.nav.move_to_pose(pose)
                 rclpy.spin_until_future_complete(self, future)
                 Logger.info(self, f"Pose navigation result: {future.result()}")
@@ -594,9 +594,9 @@ class StoringGroceriesManager(Node):
         elif self.state == ExecutionStates.NAV_TO_TABLE:
             print("qpd papu")
             print(f"self.papustate: {self.state}")
-            if self.es_primer_vez:
+            if self.is_first_time:
                 self.state = ExecutionStates.PICK_OBJECT
-                self.es_primer_vez = False
+                self.is_first_time = False
                 return
             # return
             try:
@@ -615,7 +615,7 @@ class StoringGroceriesManager(Node):
                 )
                 if pose is None:
                     Logger.warn(self, "Pose not found couldn't navigate to table")
-                    if self.poseeeeensahsajsajasjhasjha is not None:
+                    if self.saved_table_pose is not None:
                         future = self.subtask_manager.nav.move_to_pose(pose)
                         rclpy.spin_until_future_complete(self, future)
                         Logger.info(self, f"Pose navigation result: {future.result()}")

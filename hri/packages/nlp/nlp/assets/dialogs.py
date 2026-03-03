@@ -4,31 +4,10 @@ import pytz
 from nlp.assets.schemas import (
     CategorizeShelvesResult,
     ExtractedData,
+    IsAnswerCoherent,
     IsAnswerNegative,
     IsAnswerPositive,
 )
-
-
-def get_common_interests_dialog(
-    person1Name, person2Name, person1Interests, person2Interests
-):
-    return {
-        "messages": [
-            {
-                "role": "system",
-                "content": f"""You will be presented with the interests of two people, your task is to get the common interests between them.
-Try to ALWAYS find a common interest, only rely in specifying that there is no common interest if there is absolutely no relation at all between both of their interests. For example, if {person1Name} likes 'burgers' and {person2Name} likes 'pizza', you can say that they share a common interest in 'food'.
-
-Always provide an answer in the format: '{person1Name} and {person2Name}'s common interest is movies' if there is a common interest or '{person1Name} and {person2Name} don't have a common interest between them' in case they don't share one.
-Do not add any other information or context to the answer, just the common interest or the lack of it.
-""",
-            },
-            {
-                "role": "user",
-                "content": f"{person1Name} likes {person1Interests} and {person2Name} likes {person2Interests}. /no_think",
-            },
-        ]
-    }
 
 
 def get_extract_data_args(full_text, data_to_extract, context=None):
@@ -388,3 +367,30 @@ def get_previous_command_answer(context, question):
             "content": question,
         },
     ]
+
+
+def get_is_coherent_dialog(text):
+    return {
+        "messages": [
+            {
+                "role": "system",
+                "content": """You are a helpful assistant for a service robot named Frida.
+Your task is to determine if a command given by a user is **complete**, **unambiguous**, and **specific** enough for a robot to execute.
+
+The robot needs to know **what** to do and **what/who/where** the target is.
+If a command is cut off, missing a target object/person/location, or is too vague, mark it as **false**.
+
+Output a JSON with a single boolean field `is_coherent`.
+- Set `is_coherent` to **true** if the command is complete and executable.
+    - Examples: "Go to the kitchen", "Find the apple", "Pick up the bottle", "Follow me", "Tell me the time", "Take the bag to the living room".
+- Set `is_coherent` to **false** if the command is incomplete, ambiguous, or lacks context.
+    - Examples: "Go to", "Find the", "Pick up", "Take", "Bring me the", "Search for", "The kitchen", "Apple".
+""",
+            },
+            {
+                "role": "user",
+                "content": f"Command: {text} /no_think",
+            },
+        ],
+        "response_format": IsAnswerCoherent,
+    }

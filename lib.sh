@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+AREAS="vision manipulation navigation integration hri"
+
 # --- guard against multiple sourcing ---
 if [[ -n "${__HOME2_LIB_SOURCED:-}" ]]; then
   return 0
@@ -43,7 +45,8 @@ run_frida_interfaces() {
   fi
 
   echo "Running frida_interfaces_cache to build frida_interfaces (using $compose_yaml)"
-  docker compose -f "$compose_yaml" run --rm frida_interfaces_cache
+  mkdir -p "docker/frida_interfaces_cache/build" "docker/frida_interfaces_cache/install" "docker/frida_interfaces_cache/log"
+  export GID=$(id -g) && docker compose -f "$compose_yaml" run --rm frida_interfaces_cache
 }
 
 run_area() {
@@ -107,4 +110,13 @@ control() {
 
   echo "All ${msg}s attempted."
   return $rc
+}
+
+run_task() {
+  local task=$1
+  for area in ${AREAS}; do
+    SESSION_NAME=$area
+    tmux new-session -d -s "$SESSION_NAME"
+    tmux send-keys -t "$SESSION_NAME" "bash run.sh $area $task" C-m
+  done
 }
