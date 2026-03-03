@@ -425,7 +425,7 @@ class GPSRCommands(Node):
         future = self.yolo_client.call_async(req)
 
         # Wait for the future while spinning the node
-        future = self.wait_for_future(future, 15)
+        future = wait_for_future(future, 15)
         result = future.result()
 
         if result is None or not result.success:

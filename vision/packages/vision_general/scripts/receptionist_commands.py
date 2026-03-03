@@ -271,17 +271,6 @@ class ReceptionistCommands(Node):
                 cv2.LINE_AA,
             )
 
-    def wait_for_future(self, future, timeout=5):
-        start_time = time.time()
-        while future is None and (time.time() - start_time) < timeout:
-            pass
-        if future is None:
-            return False
-        while not future.done() and (time.time() - start_time) < timeout:
-            pass
-
-        return future
-
     def check_chairs(self, frame) -> tuple[bool, float]:
         """Check if there is an available chair with
         no person within the bbox and return the angle
