@@ -38,7 +38,7 @@ RUN bash -c "source ./scripts/activate.sh && ./scripts/build-deps && make && dea
 
 # Install additional Python dependencies
 WORKDIR /app
-COPY ../../hri/packages/speech/scripts/stt/requirements.txt .
+COPY ../../hri/requirements/stt.txt requirements.txt
 RUN python3 -m pip install --upgrade pip
 RUN pip install --no-cache-dir -r /app/requirements.txt
 RUN pip install --upgrade protobuf
