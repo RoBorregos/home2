@@ -188,7 +188,7 @@ class HRIC_TM(Node):
 
             status, drink = self.subtask_manager.hri.ask_and_confirm(
                 question="What is your favorite drink?",
-                query="drink",
+                query="LLM_drink",
             )
 
             if status == Status.EXECUTION_SUCCESS:
