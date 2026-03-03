@@ -20,7 +20,7 @@ class AudioCapturer(Node):
     def __init__(self):
         super().__init__("audio_capturer")
 
-        self.declare_parameter("publish_topic", "/hri/rawAudioChunk")
+        self.declare_parameter("RAW_AUDIO_TOPIC", "/hri/rawAudioChunk")
         self.declare_parameter("MIC_DEVICE_NAME", "default")
         self.declare_parameter("MIC_INPUT_CHANNELS", 32)
         self.declare_parameter("MIC_OUT_CHANNELS", 32)
@@ -34,7 +34,7 @@ class AudioCapturer(Node):
         self.RATE = 16000
 
         self.publisher_ = self.create_publisher(
-            AudioData, self.get_parameter("publish_topic").value, 20
+            AudioData, self.get_parameter("RAW_AUDIO_TOPIC").value, 20
         )
 
         mic_device_name = self.get_parameter("MIC_DEVICE_NAME").value
