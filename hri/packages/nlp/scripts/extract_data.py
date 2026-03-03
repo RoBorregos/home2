@@ -118,27 +118,10 @@ class DataExtractor(Node):
             text = request.full_text
             if response.result == "":
                 self.get_logger().info(
-                    f"spaCy NER failed for {text} (It returned an empty string). Falling back to Ollama"
+                    "No location found in text using spacy. Attempting to extract location using LLM."
                 )
-                messages, response_format = get_extract_data_args(text, "location", "")
-                response_content = (
-                    self.client.beta.chat.completions.parse(
-                        model=MODEL.EXTRACT_INFO_REQUESTED.value,
-                        temperature=self.temperature,
-                        messages=messages,
-                        response_format=response_format,
-                    )
-                    .choices[0]
-                    .message.content
-                )
-                try:
-                    response.result = ""
-                    result = ExtractedData(**json.loads(response_content))
-                    if result.data:
-                        response.result = result.data
-                except Exception as e:
-                    self.get_logger().error(f"LLM fallback error for extract text: {e}")
-            if len(response.result) == 0:
+                response.result = self.extract_via_llm(text, "location", "")
+            if response.result == "":
                 self.get_logger().error(
                     f"No location found in {text}. Defaulting to returning same text"
                 )
@@ -152,12 +135,14 @@ class DataExtractor(Node):
             )
             response.result = ""
             return response
-
         request.data = request.data.replace("LLM_", "")
-
-        messages, response_format = get_extract_data_args(
+        response.result = self.extract_via_llm(
             request.full_text, request.data, request.context
         )
+        return response
+
+    def extract_via_llm(self, text: str, data: str, context: str) -> str:
+        messages, response_format = get_extract_data_args(text, data, context)
 
         response_content = (
             self.client.beta.chat.completions.parse(
@@ -179,8 +164,7 @@ class DataExtractor(Node):
             self.get_logger().error(f"Service error: {e}")
             raise rclpy.exceptions.ServiceException(str(e))
 
-        response.result = result.data
-        return response
+        return result.data if result.data is not None else ""
 
     def extract_name(self, text: str) -> str:
         name = extract_by_priority(self.nlp(text).ents, NAME_PRIORITY_LABELS)
