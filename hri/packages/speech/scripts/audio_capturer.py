@@ -21,6 +21,7 @@ class AudioCapturer(Node):
 
         self.chunk_size = self.get_parameter("CHUNK_SIZE").value
         self.use_respeaker = SpeechApiUtils.respeaker_available()
+        self.get_logger().info(f"ReSpeaker detected: {self.use_respeaker}")
         self.RATE = 16000
 
         self.publisher_ = self.create_publisher(

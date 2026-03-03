@@ -33,12 +33,12 @@ class NoiseCancellation(Node):
         super().__init__("noise_cancellation")
 
         self.declare_parameter("INPUT_TOPIC", "/rawAudioChunk")
-        self.declare_parameter("OUTPUT_TOPIC", "/hri/processedAudioChunk")
+        self.declare_parameter("PROCESSED_AUDIO_TOPIC", "/hri/processedAudioChunk")
         self.declare_parameter("ENABLE_ANC", True)
         self.declare_parameter("GAIN", 1.0)
 
         input_topic = self.get_parameter("INPUT_TOPIC").value
-        output_topic = self.get_parameter("OUTPUT_TOPIC").value
+        output_topic = self.get_parameter("PROCESSED_AUDIO_TOPIC").value
         self.enable_anc = self.get_parameter("ENABLE_ANC").value
         self.gain = self.get_parameter("GAIN").value
 
