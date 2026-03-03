@@ -638,7 +638,7 @@ class HRITasks(metaclass=SubtaskMeta):
         remap: dict = None,
     ):
         """
-        Method to confirm a specific question.
+        Method to confirm a specific question. It includes auto-retry.
 
         Args:
             question: the inquiry to ask
@@ -666,7 +666,13 @@ class HRITasks(metaclass=SubtaskMeta):
                 target_info = interpreted_text
                 similarity = 1
                 if not skip_extract_data and not options:
-                    _, target_info = self.extract_data(query, interpreted_text, context)
+                    s, target_info = self.extract_data(query, interpreted_text, context)
+                    if s != Status.EXECUTION_SUCCESS or len(target_info) == 0:
+                        Logger.warn(
+                            self.node,
+                            f"Failed to extract data for query '{query}' from interpreted text: '{interpreted_text}'",
+                        )
+                        continue
 
                 try:
                     # If extracted data options provided look for exact or closest match
@@ -710,7 +716,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
                 s, confirmation = self.confirm(confirmation_text, use_hotwords, 3)
 
-                if confirmation == "yes":
+                if s == Status.EXECUTION_SUCCESS and confirmation == "yes":
                     return Status.EXECUTION_SUCCESS, target_info
 
             # Wait for the minimum time between retries
@@ -723,7 +729,7 @@ class HRITasks(metaclass=SubtaskMeta):
             self.node,
             "Ask and confirm timed out for question: " + question,
         )
-        return Status.TIMEOUT, ""
+        return Status.TIMEOUT, None
 
     def interpret_keyword(self, keywords: list[str], timeout: float) -> str:
         self.cancel_hear_action()
