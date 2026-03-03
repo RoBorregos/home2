@@ -23,14 +23,15 @@ from frida_constants.manipulation_constants import (
     PICK_MIN_HEIGHT,
     GRASP_LINK_FRAME,
     GRIPPER_SET_STATE_SERVICE,
-    OFFSET_MOVE_ACTION_SERVER,
+    GO_TO_HAND_ACTION_SERVER,
+    MOVE_TO_POINT_ACTION_SERVER,
 )
 from frida_interfaces.srv import (
     AttachCollisionObject,
     GetCollisionObjects,
     RemoveCollisionObject,
 )
-from frida_interfaces.action import PickMotion, MoveToPose, OffsetMove
+from frida_interfaces.action import PickMotion, MoveToPose, MoveToPoint, GoToHand
 from frida_interfaces.msg import PickResult
 import copy
 import numpy as np
@@ -60,11 +61,11 @@ class PickMotionServer(Node):
             callback_group=self.callback_group,
         )
 
-        self._offset_move_action_server = ActionServer(
+        self._go_to_hand_server = ActionServer(
             self,
-            OffsetMove,
-            OFFSET_MOVE_ACTION_SERVER,
-            self.execute_offset_move_callback,
+            GoToHand,
+            GO_TO_HAND_ACTION_SERVER,
+            self.execute_go_to_hand_callback,
             callback_group=self.callback_group,
         )
 
@@ -72,6 +73,12 @@ class PickMotionServer(Node):
             self,
             MoveToPose,
             MOVE_TO_POSE_ACTION_SERVER,
+        )
+
+        self._move_to_point_action_client = ActionClient(
+            self,
+            MoveToPoint,
+            MOVE_TO_POINT_ACTION_SERVER,
         )
 
         self._attach_collision_object_client = self.create_client(
@@ -95,6 +102,7 @@ class PickMotionServer(Node):
         )
 
         self._move_to_pose_action_client.wait_for_server()
+        self._move_to_point_action_client.wait_for_server()
 
         self.get_logger().info("Pick Action Server has been started")
 
@@ -115,30 +123,36 @@ class PickMotionServer(Node):
             goal_handle.succeed()
             result.success = False
             return result
-
-    async def execute_offset_move_callback(self, goal_handle):
-        """Execute the offset move action when a goal is received."""
-        self.get_logger().info("Executing offset move goal...")
-        result = OffsetMove.Result()
-
-        offset = goal_handle.request.offset
-        direction = goal_handle.request.direction
-        if not offset:
-            offset = 0.3  # Default offset if not provided
-        if not direction:
-            direction = OffsetMove.Goal.HORIZONTAL  # Default direction if not provided
-
-        pose = self.compute_offset(offset, direction, goal_handle.request.pose)
+        
+    async def execute_go_to_hand_callback(self, goal_handle):
+        """Execute the go to hand action when a goal is received."""
+        self.get_logger().info("Executing go to hand goal...")
+        test_angles = [0, 180, 270]
+        offset = 0.25  # 10cm offset for the go to hand pose
+        # Initialize result
+        feedback = GoToHand.Feedback()
+        result = GoToHand.Result()
         try:
-            _, grasp_pose_result = self.move_to_pose(pose)
+            # Try diferent directions for the go to hand pose, if one fails, try the other
+            for angle in test_angles:
+                point = copy.deepcopy(goal_handle.request.point)
+                point.point.x += offset * np.cos(np.radians(angle))
+                point.point.y += offset * np.sin(np.radians(angle))
+                move_result, action_result = self.move_to_point(point)
+                if action_result.result.success:
+                    break
 
-            print(f"Grasp Pose result: {grasp_pose_result}")
+            if action_result.result.success:
+                self.get_logger().info("Go to hand pose reached")
+                result.success = True
+            else:
+                self.get_logger().error("Failed to reach go to hand pose")
+                result.success = False
 
             goal_handle.succeed()
-            result.success = grasp_pose_result.result.success
             return result
         except Exception as e:
-            self.get_logger().error(f"Offset move failed: {str(e)}")
+            self.get_logger().error(f"Go to hand failed: {str(e)}")
             goal_handle.succeed()
             result.success = False
             return result
@@ -254,44 +268,21 @@ class PickMotionServer(Node):
         self.wait_for_future(future)
         action_result = future.result().get_result()
         return future.result(), action_result
-
-    def compute_offset(self, offset, direction, pose):
-
-        if pose is None or offset is None or direction is None:
-            self.get_logger().error(
-                "Pose, offset, and direction must be provided for offset computation."
-            )
-            return pose
-
-        if direction == OffsetMove.Goal.UP:
-            pose.pose.position.z += offset
-
-        elif direction == OffsetMove.Goal.DOWN:
-            pose.pose.position.z -= offset
-
-        elif direction == OffsetMove.Goal.LEFT:
-            pose.pose.position.y += offset  # Y positivo es izquierda
-
-        elif direction == OffsetMove.Goal.RIGHT:
-            pose.pose.position.y -= offset
-
-        elif direction == OffsetMove.Goal.VERTICAL:
-            dist_minus = abs(pose.pose.position.z - offset)
-            dist_plus = abs(pose.pose.position.z + offset)
-            if dist_minus < dist_plus:
-                pose.pose.position.z -= offset
-            else:
-                pose.pose.position.z += offset
-
-        elif direction == OffsetMove.Goal.HORIZONTAL:
-            dist_minus = abs(pose.pose.position.y - offset)
-            dist_plus = abs(pose.pose.position.y + offset)
-            if dist_minus < dist_plus:
-                pose.pose.position.y -= offset
-            else:
-                pose.pose.position.y += offset
-
-        return pose
+    
+    def move_to_point(self, point):
+        """Move the robot to the given point."""
+        request = MoveToPoint.Goal()
+        request.point = point
+        request.velocity = PICK_VELOCITY
+        request.acceleration = PICK_ACCELERATION
+        request.planner_id = PICK_PLANNER
+        request.target_link = GRASP_LINK_FRAME
+        request.tolerance_position = 0.005  # Set the position tolerance
+        request.tolerance_orientation = 0.02  # Set the orientation tolerance
+        future = self._move_to_point_action_client.send_goal_async(request)
+        self.wait_for_future(future)
+        action_result = future.result().get_result()
+        return future.result(), action_result
 
     def wait_for_future(self, future):
         if future is None:

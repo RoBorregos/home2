@@ -6,7 +6,7 @@ from rclpy.action import ActionServer
 from rclpy.callback_groups import ReentrantCallbackGroup
 from geometry_msgs.msg import TwistStamped, PoseStamped
 from std_srvs.srv import SetBool, Empty
-from frida_interfaces.action import MoveToPose, MoveJoints
+from frida_interfaces.action import MoveToPose, MoveToPoint, MoveJoints
 from frida_constants.manipulation_constants import (
     GET_COLLISION_OBJECTS_SERVICE,
 )
@@ -25,6 +25,7 @@ from frida_constants.manipulation_constants import (
     JOINT_VELOCITY_MODE,
     PICK_PLANNER,
     MOVE_TO_POSE_ACTION_SERVER,
+    MOVE_TO_POINT_ACTION_SERVER,
     DEBUG_POSE_GOAL_TOPIC,
     MOVE_JOINTS_ACTION_SERVER,
     GET_JOINT_SERVICE,
@@ -73,6 +74,14 @@ class MotionPlanningServer(Node):
             self.callback_group,
             max_velocity=0.1,
             max_acceleration=0.1,
+        )
+
+        self._move_to_point_server = ActionServer(
+            self,
+            MoveToPoint,
+            MOVE_TO_POINT_ACTION_SERVER,
+            self.move_to_point_execute_callback,
+            callback_group=self.callback_group,
         )
 
         self._move_to_pose_server = ActionServer(
@@ -227,6 +236,41 @@ class MotionPlanningServer(Node):
             self.reset_planning_settings(goal_handle)
 
         return result
+    
+    def move_to_point_execute_callback(self, goal_handle):
+        """Execute the move to point action when a goal is received."""
+        self.get_logger().info("Executing move to point goal...")
+
+        # Initialize result
+        # self._debug_pose_publisher.publish(goal_handle.request.pose)
+        feedback = MoveToPoint.Feedback()
+        result = MoveToPoint.Result()
+        self.set_planning_settings(goal_handle)
+        try:
+            was_successful = self.move_to_point(goal_handle, feedback)
+            self.get_logger().info(
+                "Move to point finished with result: " + str(result.success)
+            )
+            if was_successful:
+                self.get_logger().info("Move to point succeeded")
+                goal_handle.succeed()
+                result.success = True
+            else:
+                self.get_logger().info("Move to point failed")
+                goal_handle.abort()
+                result.success = False
+
+        except Exception as e:
+            self.get_logger().error(f"Move to point failed: {str(e)}")
+            goal_handle.abort()
+            # self.reset_planning_settings(goal_handle)
+            result.success = False
+
+        finally:
+            self.get_logger().info("Resetting planning settings...")
+            self.reset_planning_settings(goal_handle)
+
+        return result
 
     def play_trayectory_callback(self, request, response):
         """
@@ -312,6 +356,29 @@ class MotionPlanningServer(Node):
             target_link=target_link,
             tolerance_position=tolerance_position,
             tolerance_orientation=tolerance_orientation,
+        )
+
+        if was_plan_successful:
+            self.execute_trajectory(trajectory_plan)
+            was_execution_successful = self.planner.execute_plan(trajectory_plan)
+            return was_execution_successful
+        else:
+            self.get_logger().error("Cannot execute because planning failed.")
+            return False
+
+    def move_to_point(self, goal_handle, feedback):
+        """Perform the move to point operation."""
+        point = goal_handle.request.point
+        target_link = goal_handle.request.target_link
+        tolerance_position = (
+            goal_handle.request.tolerance_position
+            if goal_handle.request.tolerance_position
+            else 0.01
+        )
+        was_plan_successful, trajectory_plan = self.planner.plan_point_goal(
+            point=point,
+            target_link=target_link,
+            tolerance_position=tolerance_position,
         )
 
         if was_plan_successful:
