@@ -1,5 +1,6 @@
 var dir_7e514882d680e22f8bfc2d2d1cf9dfc5 =
 [
+    [ "Detection.msg", "Detection_8msg.html", null ],
     [ "ObjectDetection.msg", "ObjectDetection_8msg.html", null ],
     [ "ObjectDetectionArray.msg", "ObjectDetectionArray_8msg.html", null ],
     [ "Person.msg", "Person_8msg.html", null ],

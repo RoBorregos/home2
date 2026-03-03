@@ -8,12 +8,11 @@ var classgpsr__commands_1_1GPSRCommands =
     [ "count_gestures", "classgpsr__commands_1_1GPSRCommands.html#aba02cb99b56d7e37ef0547f8672ca75c", null ],
     [ "detect_gesture", "classgpsr__commands_1_1GPSRCommands.html#a5d7db3415e4863955cedbd8994206717", null ],
     [ "detect_pose_gesture_callback", "classgpsr__commands_1_1GPSRCommands.html#a256a9caf91423d065e0221ec477ead2f", null ],
-    [ "get_detections", "classgpsr__commands_1_1GPSRCommands.html#af81aef4d6e6284d7223fc15b338f9df5", null ],
+    [ "get_detections", "classgpsr__commands_1_1GPSRCommands.html#ad060e3a6d5c783408fff6a8df1c31cf5", null ],
     [ "image_callback", "classgpsr__commands_1_1GPSRCommands.html#ac2168d7eb41b42e92c53da56c1cd65c2", null ],
     [ "is_inside", "classgpsr__commands_1_1GPSRCommands.html#a9a752904ba82ff3a27caa9baa458c397", null ],
     [ "moondream_crop_query", "classgpsr__commands_1_1GPSRCommands.html#a758d3b60afd37459b07c4274205cd1d7", null ],
     [ "publish_image", "classgpsr__commands_1_1GPSRCommands.html#a189b2d11b148acfd29d57196fc37bb0b", null ],
-    [ "read_qr_callback", "classgpsr__commands_1_1GPSRCommands.html#aedca1e7336c3e484c36e28e462590673", null ],
     [ "success", "classgpsr__commands_1_1GPSRCommands.html#a44fd2508682f74bbc718af3bb9550181", null ],
     [ "areas", "classgpsr__commands_1_1GPSRCommands.html#a928bee0668cea771ab24a95f6b34ec16", null ],
     [ "bridge", "classgpsr__commands_1_1GPSRCommands.html#a2bf3849027b0522adbdb37289c178860", null ],
@@ -30,7 +29,5 @@ var classgpsr__commands_1_1GPSRCommands =
     [ "people", "classgpsr__commands_1_1GPSRCommands.html#a0098f10cc04efcf527d815497f1619e2", null ],
     [ "pose_detection", "classgpsr__commands_1_1GPSRCommands.html#a8f89fade140ca424d2ea96a4b38b9fb6", null ],
     [ "pose_gesture_detection_service", "classgpsr__commands_1_1GPSRCommands.html#a4e9ca299b34636b20eae3c1b7f3fba85", null ],
-    [ "qr_detector", "classgpsr__commands_1_1GPSRCommands.html#accc36be2604f905aa0ef065064401fa0", null ],
-    [ "read_qr_service", "classgpsr__commands_1_1GPSRCommands.html#a62c245e3ac401ab9a64daddf86484d48", null ],
-    [ "yolo_model", "classgpsr__commands_1_1GPSRCommands.html#abe493d61b583b871da925e584118fb5e", null ]
+    [ "yolo_client", "classgpsr__commands_1_1GPSRCommands.html#ab8dc1494d1a666e0ca9e963ec7f26e2b", null ]
 ];

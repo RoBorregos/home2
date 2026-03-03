@@ -133,6 +133,8 @@ Public Member Functions</h2></td></tr>
 Public Attributes</h2></td></tr>
 <tr class="memitem:ab3a1642a830a74acb9d1fd2db9289b66"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreceptionist__commands_1_1ReceptionistCommands.html#ab3a1642a830a74acb9d1fd2db9289b66">bridge</a></td></tr>
 <tr class="separator:ab3a1642a830a74acb9d1fd2db9289b66"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad3741ee5ec9b3d663e87e2721623e543"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreceptionist__commands_1_1ReceptionistCommands.html#ad3741ee5ec9b3d663e87e2721623e543">callback_group</a></td></tr>
+<tr class="separator:ad3741ee5ec9b3d663e87e2721623e543"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9e42e4bd44377f98d8e430ead7a7d3e1"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreceptionist__commands_1_1ReceptionistCommands.html#a9e42e4bd44377f98d8e430ead7a7d3e1">image_subscriber</a></td></tr>
 <tr class="separator:a9e42e4bd44377f98d8e430ead7a7d3e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9dfbeff87dc4be07cf0c784698f24094"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreceptionist__commands_1_1ReceptionistCommands.html#a9dfbeff87dc4be07cf0c784698f24094">find_seat_service</a></td></tr>
@@ -141,10 +143,10 @@ Public Attributes</h2></td></tr>
 <tr class="separator:ac6406f5ca06a0884be9fc0c25985382c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a300d7e43936426a42e6fce9c3045bf47"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreceptionist__commands_1_1ReceptionistCommands.html#a300d7e43936426a42e6fce9c3045bf47">person_detection_action_server</a></td></tr>
 <tr class="separator:a300d7e43936426a42e6fce9c3045bf47"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0c58196525247fe169df7af0a14a6ffd"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreceptionist__commands_1_1ReceptionistCommands.html#a0c58196525247fe169df7af0a14a6ffd">yolo_client</a></td></tr>
+<tr class="separator:a0c58196525247fe169df7af0a14a6ffd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2abb696bc1999eba6e20accc11686c1b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreceptionist__commands_1_1ReceptionistCommands.html#a2abb696bc1999eba6e20accc11686c1b">image</a></td></tr>
 <tr class="separator:a2abb696bc1999eba6e20accc11686c1b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af7d1ebe68ec92480be48087fa6af6bc4"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreceptionist__commands_1_1ReceptionistCommands.html#af7d1ebe68ec92480be48087fa6af6bc4">yolo_model</a></td></tr>
-<tr class="separator:af7d1ebe68ec92480be48087fa6af6bc4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5777201cb62f60d187cd1488557d93ac"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreceptionist__commands_1_1ReceptionistCommands.html#a5777201cb62f60d187cd1488557d93ac">output_image</a></td></tr>
 <tr class="separator:a5777201cb62f60d187cd1488557d93ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aebcc2acad6e5f70508e87d4b2ada994c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classreceptionist__commands_1_1ReceptionistCommands.html#aebcc2acad6e5f70508e87d4b2ada994c">check</a></td></tr>
@@ -260,8 +262,7 @@ couches and return the angle of the largest space.</pre>
         </tr>
       </table>
 </div><div class="memdoc">
-<pre class="fragment">Check if there is a person in the frame and
-resolve the future promise.</pre> 
+<pre class="fragment">Check if there is a person in the frame and resolve the future promise using YOLO service.</pre> 
 </div>
 </div>
 <a id="aa75cda1381523a884f7c8bc24bc1fb19" name="aa75cda1381523a884f7c8bc24bc1fb19"></a>
@@ -352,7 +353,7 @@ detected in a frame or timeout is reached.</pre>
         </tr>
       </table>
 </div><div class="memdoc">
-<pre class="fragment">Obtain yolo detections for people, chairs and couches.</pre> 
+<pre class="fragment">Obtain YOLO detections for people, chairs, and couches using YOLO service.</pre> 
 </div>
 </div>
 <a id="a8f21d974ba7bfb31ae88a9c49d0edfa1" name="a8f21d974ba7bfb31ae88a9c49d0edfa1"></a>
@@ -472,6 +473,20 @@ detected in a frame or timeout is reached.</pre>
       <table class="memname">
         <tr>
           <td class="memname">receptionist_commands.ReceptionistCommands.bridge</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ad3741ee5ec9b3d663e87e2721623e543" name="ad3741ee5ec9b3d663e87e2721623e543"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad3741ee5ec9b3d663e87e2721623e543">&#9670;&#160;</a></span>callback_group</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">receptionist_commands.ReceptionistCommands.callback_group</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -688,14 +703,14 @@ detected in a frame or timeout is reached.</pre>
 
 </div>
 </div>
-<a id="af7d1ebe68ec92480be48087fa6af6bc4" name="af7d1ebe68ec92480be48087fa6af6bc4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af7d1ebe68ec92480be48087fa6af6bc4">&#9670;&#160;</a></span>yolo_model</h2>
+<a id="a0c58196525247fe169df7af0a14a6ffd" name="a0c58196525247fe169df7af0a14a6ffd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0c58196525247fe169df7af0a14a6ffd">&#9670;&#160;</a></span>yolo_client</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">receptionist_commands.ReceptionistCommands.yolo_model</td>
+          <td class="memname">receptionist_commands.ReceptionistCommands.yolo_client</td>
         </tr>
       </table>
 </div><div class="memdoc">

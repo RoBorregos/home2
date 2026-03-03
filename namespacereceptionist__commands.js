@@ -7,6 +7,5 @@ var namespacereceptionist__commands =
     [ "CONF_THRESHOLD", "namespacereceptionist__commands.html#ad46952196d7a38bd782ab49477c88655", null ],
     [ "MAX_DEGREE", "namespacereceptionist__commands.html#a7fc25575051bffd52755b91b89ea9c35", null ],
     [ "package_share_dir", "namespacereceptionist__commands.html#adf7320f4ca5b97e2b7f447a48a59008a", null ],
-    [ "PERCENTAGE", "namespacereceptionist__commands.html#a0cc8b1e19a3a2a88252ad4ec455da2a8", null ],
-    [ "YOLO_LOCATION", "namespacereceptionist__commands.html#a46439c4b5773a7470cf9753eb1e5d089", null ]
+    [ "PERCENTAGE", "namespacereceptionist__commands.html#a0cc8b1e19a3a2a88252ad4ec455da2a8", null ]
 ];

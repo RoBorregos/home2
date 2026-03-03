@@ -382,6 +382,7 @@ var namespaces_dup =
     ] ],
     [ "xarm_utils", "namespacexarm__utils.html", "namespacexarm__utils" ],
     [ "XArmServices", "namespaceXArmServices.html", "namespaceXArmServices" ],
+    [ "yolo_node", "namespaceyolo__node.html", "namespaceyolo__node" ],
     [ "YoloEObjectDetector", "namespaceYoloEObjectDetector.html", "namespaceYoloEObjectDetector" ],
     [ "YoloV5ObjectDetector", "namespaceYoloV5ObjectDetector.html", "namespaceYoloV5ObjectDetector" ],
     [ "YoloV8ObjectDetector", "namespaceYoloV8ObjectDetector.html", "namespaceYoloV8ObjectDetector" ],

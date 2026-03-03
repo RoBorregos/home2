@@ -1,5 +1,13 @@
 var NAVTREEINDEX26 =
 {
+"namespacemoondream__lib.html#ae20e70a8e9b4400517bdbee89022d0bd":[22,0,79,12],
+"namespacemoondream__lib.html#ae7192007fe4505484cc637c6d11cd04d":[22,0,79,6],
+"namespacemoondream__lib.html#afe5bff27ba8743d77b82c97de0489055":[22,0,79,9],
+"namespacemoondream__node.html":[22,0,80],
+"namespacemoondream__node.html#a10b02c02e345a65f36ac440ca0b90cc6":[22,0,80,5],
+"namespacemoondream__node.html#a47c45534e210e7306268a61db7efadfe":[22,0,80,3],
+"namespacemoondream__node.html#a8a3e83538f335b2df8cad8475a2496db":[22,0,80,2],
+"namespacemoondream__node.html#aa2e1e7b7b490eadcc4fe5414c36631b1":[22,0,80,4],
 "namespacemoondream__node.html#ac1caaf53ee721311da50479da4ebfc13":[22,0,80,6],
 "namespacemoondream__proto__pb2.html":[22,0,81],
 "namespacemoondream__proto__pb2.html#a0c8c0cd876d97fa191cee4fc98977e35":[22,0,81,1],
@@ -102,7 +110,6 @@ var NAVTREEINDEX26 =
 "namespacereceptionist__commands.html#a0cc8b1e19a3a2a88252ad4ec455da2a8":[22,0,112,7],
 "namespacereceptionist__commands.html#a3fc853dee4fd320d5ddaee7a07876d8d":[22,0,112,3],
 "namespacereceptionist__commands.html#a45c3922aa3e807226b3b341d68a3bcd7":[22,0,112,2],
-"namespacereceptionist__commands.html#a46439c4b5773a7470cf9753eb1e5d089":[22,0,112,8],
 "namespacereceptionist__commands.html#a7fc25575051bffd52755b91b89ea9c35":[22,0,112,5],
 "namespacereceptionist__commands.html#a83055be02e8dfd93dc6e2bd3214d8ffe":[22,0,112,1],
 "namespacereceptionist__commands.html#ad46952196d7a38bd782ab49477c88655":[22,0,112,4],
@@ -242,12 +249,5 @@ var NAVTREEINDEX26 =
 "namespacesubtask__managers_1_1gpsr__test__commands.html#a7ec1ac68bc2c97b7f2ff77f3be166cf6":[22,0,138,3,1],
 "namespacesubtask__managers_1_1gpsr__test__commands.html#a84816510afb515fad2e73d7b5e6bb9a0":[22,0,138,3,15],
 "namespacesubtask__managers_1_1gpsr__test__commands.html#a8b43f8799b5da00c514c5b0698931ef8":[22,0,138,3,7],
-"namespacesubtask__managers_1_1gpsr__test__commands.html#aa03e1e368b97d99d52d1c4ef88d7fa90":[22,0,138,3,21],
-"namespacesubtask__managers_1_1gpsr__test__commands.html#abf7ee6d141b2e9ccaf7a46465b311a1b":[22,0,138,3,2],
-"namespacesubtask__managers_1_1gpsr__test__commands.html#ac3bee4bf5fb634df18b9e37ebcb9e186":[22,0,138,3,5],
-"namespacesubtask__managers_1_1gpsr__test__commands.html#ad073f80419b58cd912161e378963b11a":[22,0,138,3,6],
-"namespacesubtask__managers_1_1gpsr__test__commands.html#adab6ef159d03b2a2657820467d1337aa":[22,0,138,3,17],
-"namespacesubtask__managers_1_1gpsr__test__commands.html#ae9daadf5b9517850cde941a4cfceeef5":[22,0,138,3,22],
-"namespacesubtask__managers_1_1gpsr__test__commands.html#afb80298f63f6ea8e4c26e1c82b35b435":[22,0,138,3,10],
-"namespacesubtask__managers_1_1hri__hand.html":[22,0,138,4]
+"namespacesubtask__managers_1_1gpsr__test__commands.html#aa03e1e368b97d99d52d1c4ef88d7fa90":[22,0,138,3,21]
 };

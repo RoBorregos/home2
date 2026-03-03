@@ -207,6 +207,7 @@ var hierarchy =
       [ "virtual_stop_button.VirtualStop", "classvirtual__stop__button_1_1VirtualStop.html", null ],
       [ "wait_for_controller_input_node.WaitForControllerInputNode", "classwait__for__controller__input__node_1_1WaitForControllerInputNode.html", null ],
       [ "xarm_utils.ir_gripper.IRGripper", "classxarm__utils_1_1ir__gripper_1_1IRGripper.html", null ],
+      [ "yolo_node.YoloNode", "classyolo__node_1_1YoloNode.html", null ],
       [ "zed_simulator.ZedSimulator", "classzed__simulator_1_1ZedSimulator.html", null ]
     ] ],
     [ "ObjectDectector", null, [

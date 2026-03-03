@@ -408,6 +408,9 @@ var annotated_dup =
     [ "XArmServices", "namespaceXArmServices.html", [
       [ "XArmServices", "classXArmServices_1_1XArmServices.html", "classXArmServices_1_1XArmServices" ]
     ] ],
+    [ "yolo_node", "namespaceyolo__node.html", [
+      [ "YoloNode", "classyolo__node_1_1YoloNode.html", "classyolo__node_1_1YoloNode" ]
+    ] ],
     [ "YoloEObjectDetector", "namespaceYoloEObjectDetector.html", [
       [ "SuppressStream", "classYoloEObjectDetector_1_1SuppressStream.html", "classYoloEObjectDetector_1_1SuppressStream" ],
       [ "YoloEObjectDetector", "classYoloEObjectDetector_1_1YoloEObjectDetector.html", "classYoloEObjectDetector_1_1YoloEObjectDetector" ]

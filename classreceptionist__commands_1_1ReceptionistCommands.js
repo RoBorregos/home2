@@ -12,6 +12,7 @@ var classreceptionist__commands_1_1ReceptionistCommands =
     [ "publish_image", "classreceptionist__commands_1_1ReceptionistCommands.html#ad1799dce913b4854e48f0643f828bff8", null ],
     [ "success", "classreceptionist__commands_1_1ReceptionistCommands.html#a6c2292c8c5f7850726a927d16b77cb3f", null ],
     [ "bridge", "classreceptionist__commands_1_1ReceptionistCommands.html#ab3a1642a830a74acb9d1fd2db9289b66", null ],
+    [ "callback_group", "classreceptionist__commands_1_1ReceptionistCommands.html#ad3741ee5ec9b3d663e87e2721623e543", null ],
     [ "chairs", "classreceptionist__commands_1_1ReceptionistCommands.html#a0d5a288393972c4168f003c18458dca6", null ],
     [ "check", "classreceptionist__commands_1_1ReceptionistCommands.html#aebcc2acad6e5f70508e87d4b2ada994c", null ],
     [ "couches", "classreceptionist__commands_1_1ReceptionistCommands.html#a425cf735c4c43b17f780e6fbab6c3dc8", null ],
@@ -27,5 +28,5 @@ var classreceptionist__commands_1_1ReceptionistCommands =
     [ "person_found", "classreceptionist__commands_1_1ReceptionistCommands.html#a9b7949976a0e9888076c7c04d610e93d", null ],
     [ "start_time", "classreceptionist__commands_1_1ReceptionistCommands.html#a5822bd85ec3b303ce9d1f9b15576f98e", null ],
     [ "timer", "classreceptionist__commands_1_1ReceptionistCommands.html#a394266fb92f6a8834d299c3cc50f9bc4", null ],
-    [ "yolo_model", "classreceptionist__commands_1_1ReceptionistCommands.html#af7d1ebe68ec92480be48087fa6af6bc4", null ]
+    [ "yolo_client", "classreceptionist__commands_1_1ReceptionistCommands.html#a0c58196525247fe169df7af0a14a6ffd", null ]
 ];
