@@ -137,7 +137,6 @@ def generate_launch_description():
             plugin='nav2_lifecycle_manager::LifecycleManager',
             name='lifecycle_manager_navigation',
             parameters=[{
-                'use_sim_time': False,
                 'autostart': True,
                 'node_names': [
                     'controller_server',

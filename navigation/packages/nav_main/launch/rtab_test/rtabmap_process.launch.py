@@ -17,14 +17,12 @@ def launch_setup(context, *args, **kwargs):
     pkg_file_route = get_package_share_directory('nav_main')
     rtab_params_file = os.path.join(pkg_file_route,'config', 'rtabmap', 'rtabmap_default_config.yaml')
     nav2_params_file = os.path.join(pkg_file_route,'config', 'nav2_following.yaml')
-
     rtab_params_ = LaunchConfiguration('rtab_config_file', default=rtab_params_file)
     nav2_params = LaunchConfiguration('nav2_config_file', default=nav2_params_file)
     localization = LaunchConfiguration('localization', default='true')
     nav2_activate = LaunchConfiguration('nav2', default='true')
     # docking = LaunchConfiguration('use_docking', default='false')
     rtabmap_map_name = LaunchConfiguration('map_name', default='rtabmap_robocuptesting.db')
-    
 
     # nav2_params = ParameterFile(nav2_params_, allow_substs=True)
     map_substitution  = {'database_path': ['/workspace/src/navigation/rtabmapdbs/', rtabmap_map_name]}
