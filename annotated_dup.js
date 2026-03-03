@@ -50,6 +50,9 @@ var annotated_dup =
     [ "demo_manager", "namespacedemo__manager.html", [
       [ "DemoTM", "classdemo__manager_1_1DemoTM.html", "classdemo__manager_1_1DemoTM" ]
     ] ],
+    [ "dishwasher_node", "namespacedishwasher__node.html", [
+      [ "DishwasherNode", "classdishwasher__node_1_1DishwasherNode.html", "classdishwasher__node_1_1DishwasherNode" ]
+    ] ],
     [ "dock_to_handle", "namespacedock__to__handle.html", [
       [ "DockToHandleNode", "classdock__to__handle_1_1DockToHandleNode.html", "classdock__to__handle_1_1DockToHandleNode" ]
     ] ],

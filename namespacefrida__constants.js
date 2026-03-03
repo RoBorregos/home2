@@ -105,6 +105,8 @@ var namespacefrida__constants =
       [ "DETECTIONS_IMAGE_TOPIC", "namespacefrida__constants_1_1vision__constants.html#abac3ea9294a623d83fbd48ba165a33e6", null ],
       [ "DETECTIONS_POSES_TOPIC", "namespacefrida__constants_1_1vision__constants.html#abfb57b52b5acfed535e61b4e7f700bce", null ],
       [ "DETECTIONS_TOPIC", "namespacefrida__constants_1_1vision__constants.html#a181ff6edba78fa4bcb8532368721f561", null ],
+      [ "DISHWASHER_LAYOUT_DETECTION_TOPIC", "namespacefrida__constants_1_1vision__constants.html#a51b84466b6517eef4376980c6ca73f3e", null ],
+      [ "DISHWASHER_RACK_DETECTION_TOPIC", "namespacefrida__constants_1_1vision__constants.html#a3291271c82f20dc1ed484aa46aac41b8", null ],
       [ "FACE_RECOGNITION_IMAGE", "namespacefrida__constants_1_1vision__constants.html#a72b604ba881b2235f65ec47a8ea08f2e", null ],
       [ "FIND_SEAT_TOPIC", "namespacefrida__constants_1_1vision__constants.html#a81cbe5d1b77fa24c3b9197d8d0c9748c", null ],
       [ "FOLLOW_BY_TOPIC", "namespacefrida__constants_1_1vision__constants.html#aa53ce4ada056e62207854a581ea44737", null ],

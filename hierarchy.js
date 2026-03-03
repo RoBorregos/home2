@@ -140,6 +140,7 @@ var hierarchy =
       [ "customer_node.CustomerNode", "classcustomer__node_1_1CustomerNode.html", null ],
       [ "dashgo_driver2.DashgoDriver", "classdashgo__driver2_1_1DashgoDriver.html", null ],
       [ "demo_manager.DemoTM", "classdemo__manager_1_1DemoTM.html", null ],
+      [ "dishwasher_node.DishwasherNode", "classdishwasher__node_1_1DishwasherNode.html", null ],
       [ "dock_to_handle.DockToHandleNode", "classdock__to__handle_1_1DockToHandleNode.html", null ],
       [ "ds4_demo.ServoDS4", "classds4__demo_1_1ServoDS4.html", null ],
       [ "egpsr_task_manager.EGPSRTM", "classegpsr__task__manager_1_1EGPSRTM.html", null ],

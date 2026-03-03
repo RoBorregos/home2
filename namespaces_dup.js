@@ -51,6 +51,7 @@ var namespaces_dup =
       [ "generate_launch_description", "namespacedemo__face.html#ae3adde7c73c08762a4607a57106cd131", null ]
     ] ],
     [ "demo_manager", "namespacedemo__manager.html", "namespacedemo__manager" ],
+    [ "dishwasher_node", "namespacedishwasher__node.html", "namespacedishwasher__node" ],
     [ "display_gz", "namespacedisplay__gz.html", [
       [ "generate_launch_description", "namespacedisplay__gz.html#a4f95fbbb9f34a1fd59c2387ed4123947", null ]
     ] ],
