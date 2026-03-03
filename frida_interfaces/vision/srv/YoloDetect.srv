@@ -1,0 +1,4 @@
+int32[] classes
+---
+bool success
+Detection[] detections
