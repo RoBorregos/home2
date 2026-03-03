@@ -425,12 +425,11 @@ class ManipulationTasks:
             result_tilt = self.move_joint_positions(
                 joint_positions=test_joints, velocity=0.2, degrees=True
             )
-            
+
             if result_tilt != Status.EXECUTION_SUCCESS:
                 Logger.warn(self.node, "Path is BLOCKED at tilt")
                 return True
-            
-            
+
             offset = 170.0
             if direction == self.Direction.LEFT:
                 test_joints["joint1"] += offset
@@ -467,14 +466,14 @@ class ManipulationTasks:
             self.move_joint_positions(named_position="pick_stare_at_table", velocity=0.3)
 
             if not has_collision_left:
-                for (i) in range(3):
+                for i in range(3):
                     Logger.info(self.node, f"Attempt {i+1} to place on left side...")
                     result = self._attempt_place_on_side(self.Direction.LEFT)
                     if result == Status.EXECUTION_SUCCESS:
                         return Status.EXECUTION_SUCCESS
                     if i < 2:
                         Logger.warn(self.node, "Retrying left side...")
-                        t.sleep(1)  
+                        t.sleep(1)
                 Logger.warn(self.node, "Movement to left failed, trying right side...")
 
             has_collision_right = self._check_side_blocked(self.Direction.RIGHT)
@@ -482,7 +481,7 @@ class ManipulationTasks:
             self.move_joint_positions(named_position="pick_stare_at_table", velocity=0.3)
 
             if not has_collision_right:
-                for (i) in range(3):
+                for i in range(3):
                     Logger.info(self.node, f"Attempt {i+1} to place on right side...")
                     result = self._attempt_place_on_side(self.Direction.RIGHT)
                     if result == Status.EXECUTION_SUCCESS:
