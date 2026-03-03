@@ -116,7 +116,7 @@ Serves gRPC server and defines Transcribe function which performs STT using fast
 
 ```mermaid
 flowchart TD
-    ad[audio_capturer] -->|publish| rac(/rawAudioChunk)
+    ad[audio_capturer] -->|publish| rac(/hri/rawAudioChunk)
     rac -->|subscribe| kws[kws_oww]
     kws -->|publish| oww(/speech/oww)
     rac -->|subscribe| hs[hear_streaming]

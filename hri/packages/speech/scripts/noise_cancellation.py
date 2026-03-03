@@ -10,29 +10,21 @@ from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 
 from frida_interfaces.msg import AudioData
+import df as DF_MODULE
 
-DF_AVAILABLE = False
-DF_MODULE = None
-try:
-    import df as df_module
-
-    DF_MODULE = df_module
-    DF_AVAILABLE = True
-except ImportError:
-    try:
-        import deepfilternet as df_module
-
-        DF_MODULE = df_module
-        DF_AVAILABLE = True
-    except ImportError:
-        DF_AVAILABLE = False
+QUEUE_SIZE = 20
+SAMPLE_RATE = 16000
+RESAMPLE_FACTOR = 3  # 16kHz * 3 = 48kHz (DeepFilterNet native rate)
+INT16_SCALE = 32768.0
+INT16_MIN = -32768
+INT16_MAX = 32767
 
 
 class NoiseCancellation(Node):
     def __init__(self):
         super().__init__("noise_cancellation")
 
-        self.declare_parameter("INPUT_TOPIC", "/rawAudioChunk")
+        self.declare_parameter("INPUT_TOPIC", "/hri/rawAudioChunk")
         self.declare_parameter("PROCESSED_AUDIO_TOPIC", "/hri/processedAudioChunk")
         self.declare_parameter("ENABLE_ANC", True)
         self.declare_parameter("GAIN", 1.0)
@@ -45,10 +37,12 @@ class NoiseCancellation(Node):
         self.df_model = None
         self.df_state = None
         self.df_ready = False
-        self.use_df = bool(DF_AVAILABLE and self.enable_anc)
+        self.use_df = self.enable_anc
 
-        self.publisher_ = self.create_publisher(AudioData, output_topic, 20)
-        self.create_subscription(AudioData, input_topic, self._audio_callback, 20)
+        self.publisher_ = self.create_publisher(AudioData, output_topic, QUEUE_SIZE)
+        self.create_subscription(
+            AudioData, input_topic, self._audio_callback, QUEUE_SIZE
+        )
 
         self.get_logger().info(
             f"NoiseCancellation node ready. {input_topic} → {output_topic}"
@@ -83,7 +77,7 @@ class NoiseCancellation(Node):
             audio_arr = self._enhance(audio_arr)
         elif self.gain != 1.0:
             audio_arr = np.clip(
-                audio_arr.astype(np.float32) * self.gain, -32768, 32767
+                audio_arr.astype(np.float32) * self.gain, INT16_MIN, INT16_MAX
             ).astype(np.int16)
 
         self.publisher_.publish(AudioData(data=audio_arr.tobytes()))
@@ -92,10 +86,10 @@ class NoiseCancellation(Node):
         """Process audio: 16k -> 48k -> DeepFilterNet -> 16k -> Gain"""
         try:
             # 1. Normalize to float32
-            audio_float = audio_int16.astype(np.float32) / 32768.0
+            audio_float = audio_int16.astype(np.float32) / INT16_SCALE
 
             # 2. Resample 16k -> 48k
-            audio_48k = scipy.signal.resample_poly(audio_float, 3, 1)
+            audio_48k = scipy.signal.resample_poly(audio_float, RESAMPLE_FACTOR, 1)
 
             # 3. Prepare tensor on device
             device = next(self.df_model.parameters()).device
@@ -108,11 +102,11 @@ class NoiseCancellation(Node):
             enhanced_48k = enhanced_48k_t.cpu().numpy().squeeze()
 
             # 5. Resample 48k -> 16k
-            enhanced_16k = scipy.signal.resample_poly(enhanced_48k, 1, 3)
+            enhanced_16k = scipy.signal.resample_poly(enhanced_48k, 1, RESAMPLE_FACTOR)
 
-            return np.clip(enhanced_16k * self.gain * 32768.0, -32768, 32767).astype(
-                np.int16
-            )
+            return np.clip(
+                enhanced_16k * self.gain * INT16_SCALE, INT16_MIN, INT16_MAX
+            ).astype(np.int16)
         except Exception as e:
             self.get_logger().error(f"Error enhancing audio frame: {e}")
             return audio_int16

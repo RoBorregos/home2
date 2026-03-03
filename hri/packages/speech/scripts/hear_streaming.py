@@ -114,7 +114,6 @@ class HearStreaming(Node):
         call = None
 
         def request_generator():
-            sent_count = 0
             # Buffer length is in chunks, not frames. With CHUNK_SIZE=512 at 16kHz,
             # 10 chunks ≈ 320ms. Keep small so streaming starts promptly.
             min_buffer_chunks = 3
@@ -144,11 +143,6 @@ class HearStreaming(Node):
                         continue
 
                     grpc_audio = local_audio.tobytes()
-                    sent_count += 1
-                    if self.debug_audio_logs and sent_count % 50 == 0:
-                        self.get_logger().info(
-                            f"Audio chunks sent to STT: {sent_count}, buffer size: {len(self.audio_buffer)}"
-                        )
                     yield speech_pb2.AudioRequest(
                         audio_data=grpc_audio, hotwords=hotwords
                     )
