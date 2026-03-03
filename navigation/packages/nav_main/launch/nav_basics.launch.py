@@ -11,7 +11,6 @@ from launch import LaunchDescription
 import os
 def launch_setup(context, *args, **kwargs):
     publish_urdf = LaunchConfiguration('publish_tf', default='false')
-    use_sim = LaunchConfiguration('use_sim', default='false')
     use_dualshock = LaunchConfiguration('use_dualshock', default='true')
 
     dashgo_driver = IncludeLaunchDescription(
@@ -24,7 +23,6 @@ def launch_setup(context, *args, **kwargs):
                 ]
             )
             ),
-        condition=UnlessCondition(use_sim),
         )
     
     ekf_launch = IncludeLaunchDescription(
@@ -65,7 +63,6 @@ def launch_setup(context, *args, **kwargs):
                 ]
             )
         ),
-        condition=UnlessCondition(use_sim)
         )
     
     joint_state = Node(
@@ -87,7 +84,7 @@ def launch_setup(context, *args, **kwargs):
         condition=IfCondition(use_dualshock),
         )
 
-    if(publish_urdf.perform(context) == 'true' and use_sim.perform(context) == 'false'):
+    if(publish_urdf.perform(context) == 'true'):
         return_launch = [
         dashgo_driver,
         ekf_launch,

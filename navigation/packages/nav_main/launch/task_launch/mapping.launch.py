@@ -15,7 +15,6 @@ def generate_launch_description():
     rtab_params = LaunchConfiguration('rtab_config_file', default=rtab_params_file)
     localization = LaunchConfiguration('localization', default='false')
     nav2_activate = LaunchConfiguration('nav2', default='false')
-    use_sim = LaunchConfiguration('use_sim', default='false')
 
     nav_basics = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -25,8 +24,7 @@ def generate_launch_description():
                     "launch",
                     "nav_basics.launch.py",
                 ]
-            )),
-        launch_arguments={'use_sim': use_sim}.items()
+            ))
         )
 
     rtabmapnav = IncludeLaunchDescription(

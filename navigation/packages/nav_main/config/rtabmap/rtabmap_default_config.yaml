@@ -2,7 +2,6 @@
 rgbd_sync:
   ros__parameters:
     approx_sync: false
-    use_sim_time: false
     qos: 1
     qos_camera_info: 1
     # approx_sync_max_interval: 0.01
@@ -16,7 +15,6 @@ rtabmap:
     subscribe_rgb: false
     subscribe_depth: false
     subscribe_scan: true
-    use_sim_time: false
     odom_sensor_sync: true
     frame_id: "base_link"
     odom_frame_id: "odom"
@@ -89,7 +87,6 @@ rtabmap_viz:
     subscribe_rgb: false
     subscribe_depth: false
     subscribe_scan: true
-    use_sim_time: false
     odom_sensor_sync: true
     frame_id: "base_link"
     odom_frame_id: "odom"
