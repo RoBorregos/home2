@@ -36,11 +36,14 @@ class TestGoToHandClient(Node):
         self.get_logger().info(f"Received clicked point: {msg.point}")
 
         request = GoToHand.Goal()
-        request.point = msg.point
+        request.point = msg
+        self.get_logger().info("hola")
         future = self._client.send_goal_async(request)
+        self.get_logger().info("h2")
         self.wait_for_future(future)
+        self.get_logger().info("2.5")
         action_result = future.result().get_result()
-
+        self.get_logger().info("h3")
         return future.result(), action_result
     
     def wait_for_future(self, future):

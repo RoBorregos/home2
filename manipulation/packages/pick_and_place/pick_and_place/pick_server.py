@@ -127,8 +127,9 @@ class PickMotionServer(Node):
     async def execute_go_to_hand_callback(self, goal_handle):
         """Execute the go to hand action when a goal is received."""
         self.get_logger().info("Executing go to hand goal...")
-        test_angles = [0, 180, 270]
-        offset = 0.25  # 10cm offset for the go to hand pose
+        test_angles = [0, 180, 200, 220, 240, 270, 290, 90, 70, 30]
+
+        offset = 0.35  # 10cm offset for the go to hand pose
         # Initialize result
         feedback = GoToHand.Feedback()
         result = GoToHand.Result()
@@ -138,6 +139,7 @@ class PickMotionServer(Node):
                 point = copy.deepcopy(goal_handle.request.point)
                 point.point.x += offset * np.cos(np.radians(angle))
                 point.point.y += offset * np.sin(np.radians(angle))
+                self.get_logger().info(f"Trying go to hand pose with point: {point.point} and angle: {angle}")
                 move_result, action_result = self.move_to_point(point)
                 if action_result.result.success:
                     break

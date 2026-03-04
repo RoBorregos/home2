@@ -1,4 +1,4 @@
-geometry_msgs/PoseStamped point
+geometry_msgs/PointStamped point
 ---
 #result definition
 int32 success

@@ -5,7 +5,7 @@ from typing import List, Union
 import rclpy
 from frida_motion_planning.utils.Planner import Planner
 from frida_pymoveit2.robots import xarm6
-from geometry_msgs.msg import PoseStamped
+from geometry_msgs.msg import PoseStamped, PointStamped
 from pymoveit2 import GripperInterface, MoveIt2, MoveIt2State
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.node import Node
@@ -180,15 +180,20 @@ class MoveItPlanner(Planner):
 
     def plan_point_goal(
         self,
-        position: List[float],
+        point: PointStamped,
         target_link: str = xarm6.end_effector_name(),
         tolerance_position: float = 0.015,
     ):
         self.node.get_logger().info("Generating a plan for a point goal (free orientation)...")
 
         trajectory_plan = self.moveit2.plan(
-            position=position,
+            position=[
+                point.point.x,
+                point.point.y,
+                point.point.z,
+            ],
             target_link=target_link,
+            frame_id=point.header.frame_id,
             tolerance_position=tolerance_position,
             weight_position=1.0,
         )
