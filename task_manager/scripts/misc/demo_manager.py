@@ -142,7 +142,7 @@ class DemoTM(Node):
                 )
 
             self.executed_commands += 1
-
+            self.subtask_manager.hri.reset_task_status()
             self.subtask_manager.hri.say("I've finished executing the command.")
 
 

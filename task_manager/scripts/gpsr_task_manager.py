@@ -268,6 +268,7 @@ class GPSRTM(Node):
                 "I am done with the task. I will now return to my home position.",
                 wait=False,
             )
+            self.subtask_manager.hri.reset_task_status()
             self.running_task = False
 
         self.prev_state = initial_state

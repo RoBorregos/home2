@@ -111,6 +111,7 @@ class SafetyTaskManager(Node):
         Logger.info(self, "Arrived")
 
         self.subtask_manager.hri.say("I've arrived.")
+        self.subtask_manager.hri.reset_task_status()
 
 
 def main(args=None):

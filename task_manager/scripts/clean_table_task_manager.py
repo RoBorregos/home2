@@ -263,6 +263,7 @@ class CleanTableTM(Node):
 
         if self.current_state == CleanTableTM.TaskStates.END:
             Logger.state(self, "Ending Clean Table Task")
+            self.subtask_manager.hri.reset_task_status()
             self.running_task = False
 
 

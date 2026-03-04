@@ -530,6 +530,7 @@ class ReceptionistTM(Node):
 
             self.subtask_manager.hri.say("I have finished my task, I will rest now.")
             self.subtask_manager.manipulation.follow_face(False)
+            self.subtask_manager.hri.reset_task_status()
             self.running_task = False
 
         if self.current_state == ReceptionistTM.TaskStates.DEBUG:
