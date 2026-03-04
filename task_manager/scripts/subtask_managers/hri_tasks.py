@@ -666,13 +666,7 @@ class HRITasks(metaclass=SubtaskMeta):
                 target_info = interpreted_text
                 similarity = 1
                 if not skip_extract_data and not options:
-                    s, target_info = self.extract_data(query, interpreted_text, context)
-                    if s != Status.EXECUTION_SUCCESS or len(target_info) == 0:
-                        Logger.warn(
-                            self.node,
-                            f"Failed to extract data for query '{query}' from interpreted text: '{interpreted_text}'",
-                        )
-                        continue
+                    _, target_info = self.extract_data(query, interpreted_text, context)
 
                 try:
                     # If extracted data options provided look for exact or closest match
@@ -714,10 +708,11 @@ class HRITasks(metaclass=SubtaskMeta):
                 else:
                     confirmation_text = confirm_question
 
-                s, confirmation = self.confirm(confirmation_text, use_hotwords, 3)
+                if target_info is not None:
+                    s, confirmation = self.confirm(confirmation_text, use_hotwords, 3)
 
-                if s == Status.EXECUTION_SUCCESS and confirmation == "yes":
-                    return Status.EXECUTION_SUCCESS, target_info
+                    if s == Status.EXECUTION_SUCCESS and confirmation == "yes":
+                        return Status.EXECUTION_SUCCESS, target_info
 
             # Wait for the minimum time between retries
             while (
