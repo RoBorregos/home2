@@ -182,7 +182,7 @@ class MoveItPlanner(Planner):
         self,
         point: PointStamped,
         target_link: str = xarm6.end_effector_name(),
-        tolerance_position: float = 0.015,
+        tolerance_position: float = 0.05,
     ):
         self.node.get_logger().info("Generating a plan for a point goal (free orientation)...")
 

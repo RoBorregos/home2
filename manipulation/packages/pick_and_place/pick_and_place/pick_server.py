@@ -279,8 +279,8 @@ class PickMotionServer(Node):
         request.acceleration = PICK_ACCELERATION
         request.planner_id = PICK_PLANNER
         request.target_link = GRASP_LINK_FRAME
-        request.tolerance_position = 0.005  # Set the position tolerance
-        request.tolerance_orientation = 0.02  # Set the orientation tolerance
+        request.tolerance_position = 0.05  # Set the position tolerance
+        request.tolerance_orientation = 0.2  # Set the orientation tolerance
         future = self._move_to_point_action_client.send_goal_async(request)
         self.wait_for_future(future)
         action_result = future.result().get_result()

@@ -66,7 +66,7 @@ class MotionPlanningServer(Node):
         self.planner = MoveItPlanner(self, self.callback_group)
         self.planner.set_velocity(0.15)
         self.planner.set_acceleration(0.15)
-        self.planner.set_planning_time(5)
+        self.planner.set_planning_time(2.0)
         self.planner.set_planner(PICK_PLANNER)
 
         self.servo = MoveItServo(
@@ -373,7 +373,7 @@ class MotionPlanningServer(Node):
         tolerance_position = (
             goal_handle.request.tolerance_position
             if goal_handle.request.tolerance_position
-            else 0.01
+            else 0.05
         )
         was_plan_successful, trajectory_plan = self.planner.plan_point_goal(
             point=point,
