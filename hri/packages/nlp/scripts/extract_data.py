@@ -124,7 +124,7 @@ class DataExtractor(Node):
                 )
                 if response.result == "":
                     self.get_logger().error(
-                        f"No location found in {request.full_text}. Returning empty string as result."
+                        f"No location found in {request.full_text}. Returning empty string as a result."
                     )
             return response
 
