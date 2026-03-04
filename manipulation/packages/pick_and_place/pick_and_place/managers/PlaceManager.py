@@ -10,13 +10,13 @@ from frida_interfaces.action import PlaceMotion
 from frida_motion_planning.utils.service_utils import (
     move_joint_positions as send_joint_goal,
 )
-from frida_constants.frida_constants.manipulation_constants import TOP_SAFETY_MARGIN
+from frida_constants.manipulation_constants import TOP_SAFETY_MARGIN
 from pick_and_place.utils.perception_utils import get_object_point, get_object_cluster
 from frida_interfaces.msg import PickResult
 from sensor_msgs_py import point_cloud2
 import numpy as np
 import json
-
+    
 
 def get_object_cloud_params(object_cluster):
     # 8. Compute Centroid/Height and Set Pour Pose
