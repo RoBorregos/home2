@@ -1,5 +1,6 @@
 var NAVTREEINDEX23 =
 {
+"manipulation__tasks_8py.html#acafe51fecca22422d0d01b185e89de4d":[24,0,6,1,2,7,9],
 "map__cleaner_8py.html":[24,0,4,0,2,2,3],
 "map__cleaner_8py.html#a774fe55aa05648dcb1bb760b3c1f8a56":[24,0,4,0,2,2,3,1],
 "map__context_2src_2ignore__laser_8cpp.html":[24,0,4,0,1,4,0],
@@ -248,6 +249,5 @@ var NAVTREEINDEX23 =
 "namespacecustomer__node.html#ad8e46526be151f8b9b38ea6b9f91bd1b":[22,0,16,2],
 "namespacedashgo__driver.html":[22,0,17],
 "namespacedashgo__driver.html#ad8472bb2a91193478e4da29fca930bc2":[22,0,17,1],
-"namespacedashgo__driver2.html":[22,0,18],
-"namespacedashgo__driver2.html#a075f0ae4f3ed1d8869bee266d37c5a93":[22,0,18,5]
+"namespacedashgo__driver2.html":[22,0,18]
 };

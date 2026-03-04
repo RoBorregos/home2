@@ -1,5 +1,7 @@
 var NAVTREEINDEX26 =
 {
+"namespacemoondream__lib.html#ac84395d9ed2025a9e954251124789ae7":[22,0,79,10],
+"namespacemoondream__lib.html#adb038b52a38e3ae02b1571585802ebb8":[22,0,79,2],
 "namespacemoondream__lib.html#ae20e70a8e9b4400517bdbee89022d0bd":[22,0,79,12],
 "namespacemoondream__lib.html#ae7192007fe4505484cc637c6d11cd04d":[22,0,79,6],
 "namespacemoondream__lib.html#afe5bff27ba8743d77b82c97de0489055":[22,0,79,9],
@@ -247,7 +249,5 @@ var NAVTREEINDEX26 =
 "namespacesubtask__managers_1_1gpsr__test__commands.html#a67fe8986c1f07187d3efe207b9fa2fd2":[22,0,138,3,13],
 "namespacesubtask__managers_1_1gpsr__test__commands.html#a7803fd636add05ea3711d79b5b2a3066":[22,0,138,3,12],
 "namespacesubtask__managers_1_1gpsr__test__commands.html#a7ec1ac68bc2c97b7f2ff77f3be166cf6":[22,0,138,3,1],
-"namespacesubtask__managers_1_1gpsr__test__commands.html#a84816510afb515fad2e73d7b5e6bb9a0":[22,0,138,3,15],
-"namespacesubtask__managers_1_1gpsr__test__commands.html#a8b43f8799b5da00c514c5b0698931ef8":[22,0,138,3,7],
-"namespacesubtask__managers_1_1gpsr__test__commands.html#aa03e1e368b97d99d52d1c4ef88d7fa90":[22,0,138,3,21]
+"namespacesubtask__managers_1_1gpsr__test__commands.html#a84816510afb515fad2e73d7b5e6bb9a0":[22,0,138,3,15]
 };

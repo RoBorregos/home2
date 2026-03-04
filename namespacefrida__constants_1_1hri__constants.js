@@ -3,6 +3,7 @@ var namespacefrida__constants_1_1hri__constants =
     [ "KNOWLEDGE_TYPE", "classfrida__constants_1_1hri__constants_1_1KNOWLEDGE__TYPE.html", null ],
     [ "MODEL", "classfrida__constants_1_1hri__constants_1_1MODEL.html", null ],
     [ "ANSWER_PUBLISHER", "namespacefrida__constants_1_1hri__constants.html#a04fcaea874b8335fbca4fb97bbbf0bb0", null ],
+    [ "CATEGORIZE_IDK_THRESHOLD", "namespacefrida__constants_1_1hri__constants.html#a1390ba9a5cabebe5bec26fd43de484c3", null ],
     [ "CATEGORIZE_SERVICE", "namespacefrida__constants_1_1hri__constants.html#ab2e7b071b2e0f95cd25b59442485423d", null ],
     [ "COMMAND_INTERPRETER_SERVICE", "namespacefrida__constants_1_1hri__constants.html#a1b90a05ff939b4a199c904ade172ace2", null ],
     [ "CONVESATION_SERVICE", "namespacefrida__constants_1_1hri__constants.html#a0dea1a972213b590aaf0c24edf6bba9e", null ],

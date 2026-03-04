@@ -1,5 +1,7 @@
 var NAVTREEINDEX25 =
 {
+"namespacefrida__constants_1_1utils.html#a96ff95f105647bdc24dfcd4279d0bb53":[22,0,50,4,3],
+"namespacefrida__constants_1_1utils.html#a9b631b425573e8ac85d89568a5eda8b8":[22,0,50,4,1],
 "namespacefrida__constants_1_1utils.html#ae7b936491c8186fca21d1c7fc6354b97":[22,0,50,4,4],
 "namespacefrida__constants_1_1vision__classes.html":[22,0,50,5],
 "namespacefrida__constants_1_1vision__constants.html":[22,0,50,6],
@@ -247,7 +249,5 @@ var NAVTREEINDEX25 =
 "namespacemoondream__lib.html#a9424832bdb6a9f4a1bbe60ce2004f8e7":[22,0,79,1],
 "namespacemoondream__lib.html#a96f271e464064797e7edcff4e9851282":[22,0,79,7],
 "namespacemoondream__lib.html#a982a539331047f39736ef58952c3e722":[22,0,79,13],
-"namespacemoondream__lib.html#abe40f656e14ad3a830e4548b2a3f436d":[22,0,79,8],
-"namespacemoondream__lib.html#ac84395d9ed2025a9e954251124789ae7":[22,0,79,10],
-"namespacemoondream__lib.html#adb038b52a38e3ae02b1571585802ebb8":[22,0,79,2]
+"namespacemoondream__lib.html#abe40f656e14ad3a830e4548b2a3f436d":[22,0,79,8]
 };

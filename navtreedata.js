@@ -212,13 +212,13 @@ var NAVTREEINDEX =
 "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a86e25915887fac5aa51e5657bd6fa067",
 "example__launch_8py.html#af49d150abaa0c5580b32932333d2f2c8",
 "grasp__utils_8py.html#a9597ffd3c2a1573ab6036bd81117a64e",
-"map__cleaner_8py.html",
-"namespacedashgo__driver2.html#a11fe160e8e92a2ea6cbab643ed1d8a36",
-"namespacefrida__constants_1_1utils.html#ae7b936491c8186fca21d1c7fc6354b97",
-"namespacemoondream__lib.html#ae20e70a8e9b4400517bdbee89022d0bd",
-"namespacesubtask__managers_1_1gpsr__test__commands.html#abf7ee6d141b2e9ccaf7a46465b311a1b",
-"perception__3d_8launch_8py.html#a0e9c55f0d673d8e39208565acad51d8d",
-"tracker__node__fregoso_8py.html"
+"manipulation__tasks_8py.html#acafe51fecca22422d0d01b185e89de4d",
+"namespacedashgo__driver2.html#a075f0ae4f3ed1d8869bee266d37c5a93",
+"namespacefrida__constants_1_1utils.html#a96ff95f105647bdc24dfcd4279d0bb53",
+"namespacemoondream__lib.html#ac84395d9ed2025a9e954251124789ae7",
+"namespacesubtask__managers_1_1gpsr__test__commands.html#a8b43f8799b5da00c514c5b0698931ef8",
+"pages.html",
+"tracker__node_8py.html#a92bbfa214a690f290f9c0ef5e891393d"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

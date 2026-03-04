@@ -3,6 +3,7 @@ var hri__constants_8py =
     [ "frida_constants.hri_constants.MODEL", "classfrida__constants_1_1hri__constants_1_1MODEL.html", null ],
     [ "frida_constants.hri_constants.KNOWLEDGE_TYPE", "classfrida__constants_1_1hri__constants_1_1KNOWLEDGE__TYPE.html", null ],
     [ "ANSWER_PUBLISHER", "hri__constants_8py.html#a04fcaea874b8335fbca4fb97bbbf0bb0", null ],
+    [ "CATEGORIZE_IDK_THRESHOLD", "hri__constants_8py.html#a1390ba9a5cabebe5bec26fd43de484c3", null ],
     [ "CATEGORIZE_SERVICE", "hri__constants_8py.html#ab2e7b071b2e0f95cd25b59442485423d", null ],
     [ "COMMAND_INTERPRETER_SERVICE", "hri__constants_8py.html#a1b90a05ff939b4a199c904ade172ace2", null ],
     [ "CONVESATION_SERVICE", "hri__constants_8py.html#a0dea1a972213b590aaf0c24edf6bba9e", null ],
