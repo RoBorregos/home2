@@ -126,7 +126,7 @@ class DataExtractor(Node):
                     self.get_logger().error(
                         f"No location found in {request.full_text}. Defaulting to returning same text"
                     )
-                    response.result = request.full_text
+                    response.result = ""
 
             return response
 
