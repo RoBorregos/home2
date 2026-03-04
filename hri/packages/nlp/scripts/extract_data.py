@@ -112,6 +112,15 @@ class DataExtractor(Node):
         # Optimized implementations for specific data extraction requests
         if request.data == "name":
             response.result = self.extract_name(request.full_text)
+            if response.result == "":
+                self.get_logger().info(
+                    "No name found in text using spacy. Attempting to extract name using LLM."
+                )
+                response.result = self.extract_via_llm(request.full_text, "name", "")
+                if response.result == "":
+                    self.get_logger().error(
+                        f"No name found in {request.full_text}. Returning empty string as a result."
+                    )
             return response
         elif request.data == "loc" or request.data == "location":
             response.result = self.extract_loc(request.full_text)
