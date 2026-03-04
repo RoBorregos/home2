@@ -115,17 +115,19 @@ class DataExtractor(Node):
             return response
         elif request.data == "loc" or request.data == "location":
             response.result = self.extract_loc(request.full_text)
-            text = request.full_text
             if response.result == "":
                 self.get_logger().info(
                     "No location found in text using spacy. Attempting to extract location using LLM."
                 )
-                response.result = self.extract_via_llm(text, "location", "")
-            if response.result == "":
-                self.get_logger().error(
-                    f"No location found in {text}. Defaulting to returning same text"
+                response.result = self.extract_via_llm(
+                    request.full_text, "location", ""
                 )
-                response.result = text
+                if response.result == "":
+                    self.get_logger().error(
+                        f"No location found in {request.full_text}. Defaulting to returning same text"
+                    )
+                    response.result = request.full_text
+
             return response
 
         # Check if the data extraction must be performed using the LLM

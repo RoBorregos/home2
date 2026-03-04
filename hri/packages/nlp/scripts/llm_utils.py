@@ -10,7 +10,7 @@ from typing import Optional
 import pytz
 import rclpy
 import requests
-from frida_constants.hri_constants import MODEL
+from frida_constants.hri_constants import MODEL, CATEGORIZE_IDK_THRESHOLD
 from frida_interfaces.srv import (
     CategorizeShelves,
     CommandInterpreter,
@@ -360,7 +360,7 @@ class LLMUtils(Node):
         max_label = labels[max_index]
         idk_index = labels.index("i don't know")
         if (max_label == "yes" or max_label == "no") and (
-            (scores[max_index] - scores[idk_index]) < 0.01
+            (scores[max_index] - scores[idk_index]) < CATEGORIZE_IDK_THRESHOLD
         ):
             return "i don't know"
         return max_label

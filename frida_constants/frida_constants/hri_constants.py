@@ -68,6 +68,9 @@ USE_OWW = True
 SENSITIVITY_THRESHOLD = 0.2
 threshold = 0.6
 
+# Nlp
+CATEGORIZE_IDK_THRESHOLD = 0.01
+
 # STT
 USEFUL_AUDIO_NODE_NAME = "useful_audio_node"
 DEFAULT_HOTWORDS = "Frida RoBorregos"
