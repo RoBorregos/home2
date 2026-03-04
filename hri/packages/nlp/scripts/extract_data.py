@@ -124,10 +124,8 @@ class DataExtractor(Node):
                 )
                 if response.result == "":
                     self.get_logger().error(
-                        f"No location found in {request.full_text}. Defaulting to returning same text"
+                        f"No location found in {request.full_text}. Returning empty string as result."
                     )
-                    response.result = ""
-
             return response
 
         # Check if the data extraction must be performed using the LLM
