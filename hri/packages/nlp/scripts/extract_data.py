@@ -115,6 +115,17 @@ class DataExtractor(Node):
             return response
         elif request.data == "loc" or request.data == "location":
             response.result = self.extract_loc(request.full_text)
+            if response.result == "":
+                self.get_logger().info(
+                    "No location found in text using spacy. Attempting to extract location using LLM."
+                )
+                response.result = self.extract_via_llm(
+                    request.full_text, "location", ""
+                )
+                if response.result == "":
+                    self.get_logger().error(
+                        f"No location found in {request.full_text}. Returning empty string as a result."
+                    )
             return response
 
         # Check if the data extraction must be performed using the LLM
@@ -124,12 +135,14 @@ class DataExtractor(Node):
             )
             response.result = ""
             return response
-
         request.data = request.data.replace("LLM_", "")
-
-        messages, response_format = get_extract_data_args(
+        response.result = self.extract_via_llm(
             request.full_text, request.data, request.context
         )
+        return response
+
+    def extract_via_llm(self, text: str, data: str, context: str) -> str:
+        messages, response_format = get_extract_data_args(text, data, context)
 
         response_content = (
             self.client.beta.chat.completions.parse(
@@ -151,8 +164,7 @@ class DataExtractor(Node):
             self.get_logger().error(f"Service error: {e}")
             raise rclpy.exceptions.ServiceException(str(e))
 
-        response.result = result.data
-        return response
+        return result.data
 
     def extract_name(self, text: str) -> str:
         name = extract_by_priority(self.nlp(text).ents, NAME_PRIORITY_LABELS)
@@ -166,14 +178,8 @@ class DataExtractor(Node):
         return name
 
     def extract_loc(self, text: str) -> str:
-        loc = extract_by_priority(self.nlp(text).ents, LOC_PRIORITY_LABELS)
-        # Add a fallback to the text if no loc is found
-        if len(loc) == 0:
-            self.get_logger().error(
-                f"No location found in {text}. Defaulting to returning the same input"
-            )
-            loc = text
-
+        doc = self.nlp(text)
+        loc = extract_by_priority(doc.ents, LOC_PRIORITY_LABELS)
         return loc
 
 
