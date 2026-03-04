@@ -66,7 +66,7 @@ class MotionPlanningServer(Node):
         self.planner = MoveItPlanner(self, self.callback_group)
         self.planner.set_velocity(0.15)
         self.planner.set_acceleration(0.15)
-        self.planner.set_planning_time(2.0)
+        self.planner.set_planning_time(5.0)
         self.planner.set_planner(PICK_PLANNER)
 
         self.servo = MoveItServo(

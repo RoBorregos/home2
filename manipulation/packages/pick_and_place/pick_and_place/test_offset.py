@@ -4,7 +4,7 @@ import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionClient
 
-from geometry_msgs.msg import PoseStamped, PointStamped
+from geometry_msgs.msg import PointStamped
 from frida_interfaces.action import GoToHand
 from frida_constants.manipulation_constants import GO_TO_HAND_ACTION_SERVER
 
@@ -27,32 +27,63 @@ class TestGoToHandClient(Node):
             10
         )
 
+        self.get_logger().info("Waiting for GoToHand action server...")
         self._client.wait_for_server()
         self.get_logger().info("Connected to GoToHand action server.")
         self.get_logger().info("Waiting for clicked points in RViz...")
 
+    # ------------------------------------------------------------------
+
     def clicked_point_callback(self, msg: PointStamped):
 
-        self.get_logger().info(f"Received clicked point: {msg.point}")
+        self.get_logger().info(
+            f"Received clicked point: ({msg.point.x:.3f}, "
+            f"{msg.point.y:.3f}, {msg.point.z:.3f})"
+        )
 
-        request = GoToHand.Goal()
-        request.point = msg
-        self.get_logger().info("hola")
-        future = self._client.send_goal_async(request)
-        self.get_logger().info("h2")
-        self.wait_for_future(future)
-        self.get_logger().info("2.5")
-        action_result = future.result().get_result()
-        self.get_logger().info("h3")
-        return future.result(), action_result
-    
-    def wait_for_future(self, future):
-        if future is None:
-            self.get_logger().error("Service call failed: future is None")
-            return False
-        while not future.done():
-            pass
-        return future
+        goal = GoToHand.Goal()
+        goal.point = msg
+
+        send_goal_future = self._client.send_goal_async(goal)
+        send_goal_future.add_done_callback(self.goal_response_callback)
+
+    # ------------------------------------------------------------------
+
+    def goal_response_callback(self, future):
+
+        goal_handle = future.result()
+
+        if goal_handle is None:
+            self.get_logger().error("Goal handle is None (server not responding?)")
+            return
+
+        if not goal_handle.accepted:
+            self.get_logger().error("Goal rejected by server")
+            return
+
+        self.get_logger().info("Goal accepted by server")
+
+        result_future = goal_handle.get_result_async()
+        result_future.add_done_callback(self.get_result_callback)
+
+    # ------------------------------------------------------------------
+
+    def get_result_callback(self, future):
+
+        result = future.result()
+
+        if result is None:
+            self.get_logger().error("Failed to receive result")
+            return
+
+        action_result = result.result
+        status = result.status
+
+        self.get_logger().info(f"Action finished with status: {status}")
+        self.get_logger().info(f"Result: {action_result}")
+
+
+# ----------------------------------------------------------------------
 
 def main(args=None):
     rclpy.init(args=args)
