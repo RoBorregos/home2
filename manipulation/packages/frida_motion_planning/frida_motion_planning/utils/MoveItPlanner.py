@@ -184,7 +184,7 @@ class MoveItPlanner(Planner):
         target_link: str = xarm6.end_effector_name(),
         tolerance_position: float = 0.05,
     ):
-        self.node.get_logger().info("Generating a plan for a point goal (free orientation)...")
+        self.node.get_logger().info(f"Generating a plan for a point goal (free orientation), target link: {target_link}, tolerance: {tolerance_position}...")
 
         trajectory_plan = self.moveit2.plan(
             position=[
@@ -195,7 +195,6 @@ class MoveItPlanner(Planner):
             target_link=target_link,
             frame_id=point.header.frame_id,
             tolerance_position=tolerance_position,
-            weight_position=1.0,
         )
 
         if trajectory_plan:
