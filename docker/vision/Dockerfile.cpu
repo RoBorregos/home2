@@ -3,6 +3,8 @@ FROM ${BASE_IMAGE}
 
 RUN mkdir -p /workspace/requirements
 
+RUN pip install --upgrade pip
+
 # Requirements
 COPY vision/requirements /workspace/requirements
 WORKDIR /workspace/requirements
