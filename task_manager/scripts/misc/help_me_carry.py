@@ -284,7 +284,10 @@ class HelpMeCarryTM(Node):
             # MOCK: self.subtask_manager.manipulation.place(pose)
             self.current_state = HelpMeCarryTM.TASK_STATES["END"]
 
-        if self.current_state == HelpMeCarryTM.TASK_STATES["END"] or self.current_state == HelpMeCarryTM.TASK_STATES["TEST_END"]:
+        if (
+            self.current_state == HelpMeCarryTM.TASK_STATES["END"]
+            or self.current_state == HelpMeCarryTM.TASK_STATES["TEST_END"]
+        ):
             Logger.state(self, "Ending task")
             self.subtask_manager.hri.reset_task_status()
             self.running_task = False
