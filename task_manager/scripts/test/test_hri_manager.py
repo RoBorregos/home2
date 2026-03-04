@@ -494,6 +494,7 @@ class TestHriManager(Node):
 
             results.append([i, input_text, query, context, expected_output, actual_output, success])
             self.get_logger().info("-" * 50)
+            time.sleep(1)
 
         # Write results to CSV
         with open(output_file, "w", newline="") as f:
