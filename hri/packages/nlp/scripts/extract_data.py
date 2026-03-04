@@ -164,7 +164,7 @@ class DataExtractor(Node):
             self.get_logger().error(f"Service error: {e}")
             raise rclpy.exceptions.ServiceException(str(e))
 
-        return result.data if result.data is not None else ""
+        return result.data
 
     def extract_name(self, text: str) -> str:
         name = extract_by_priority(self.nlp(text).ents, NAME_PRIORITY_LABELS)
