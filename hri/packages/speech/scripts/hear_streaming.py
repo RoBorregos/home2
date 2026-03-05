@@ -22,6 +22,10 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "stt"))
 import speech_pb2
 import speech_pb2_grpc
 
+# Minimum buffer length (in chunks) before starting gRPC streaming.
+# With CHUNK_SIZE=512 at 16kHz, 10 chunks ≈ 320ms. Keep small so streaming starts promptly.
+MIN_BUFFER_CHUNKS = 10
+
 
 class HearStreaming(Node):
     def __init__(self):
@@ -114,9 +118,8 @@ class HearStreaming(Node):
         call = None
 
         def request_generator():
-            # Buffer length is in chunks, not frames. With CHUNK_SIZE=512 at 16kHz,
-            # 10 chunks ≈ 320ms. Keep small so streaming starts promptly.
-            min_buffer_chunks = 3
+            # Buffer length is in chunks, not frames. Use the module-level
+            min_buffer_chunks = MIN_BUFFER_CHUNKS
             buffer_ready = False
 
             while not self.stop_flag.is_set() and rclpy.ok():
