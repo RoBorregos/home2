@@ -35,6 +35,8 @@ from frida_interfaces.action import PickMotion, MoveToPose, MoveToPoint, GoToHan
 from frida_interfaces.msg import PickResult
 import copy
 import numpy as np
+from tf_transformations import quaternion_from_euler
+from transforms3d.quaternions import quat2mat
 from transforms3d.quaternions import quat2mat
 from frida_motion_planning.utils.service_utils import (
     close_gripper,
@@ -51,6 +53,11 @@ class PickMotionServer(Node):
         self.declare_parameter("ee_link_offset", -0.125)
         self.ee_link_offset = self.get_parameter("ee_link_offset").value
         self.get_logger().info(f"End-effector link offset: {self.ee_link_offset} m")
+
+        self.declare_parameter("ee_tip_offset", -0.125)
+        self.ee_tip_offset = self.get_parameter("ee_tip_offset").value
+        self.get_logger().info(f"End-effector tip offset: {self.ee_tip_offset} m")
+
         self.get_logger().info(f"Pick Velocity: {PICK_VELOCITY} m/s")
 
         self._action_server = ActionServer(
@@ -125,20 +132,47 @@ class PickMotionServer(Node):
             return result
         
     async def execute_go_to_hand_callback(self, goal_handle):
-        """Execute the go to hand action when a goal is received."""
+
         self.get_logger().info("Executing go to hand goal...")
+
+        base_point = copy.deepcopy(goal_handle.request.point)
+
+        # quaternion
+        qx, qy, qz, qw = quaternion_from_euler(0, 0, 0)
+        quat = [qx, qy, qz, qw]
+
+        # tip offset
+        rotation_matrix = quat2mat(quat)
+        z_axis = rotation_matrix[:, 2]
+
+        base_position = np.array([
+            base_point.point.x,
+            base_point.point.y,
+            base_point.point.z
+        ]) + z_axis * self.ee_tip_offset
+
+        hand_offset = goal_handle.request.hand_offset
         test_angles = [0, 180, 200, 220, 240, 270, 90]
-        offset = 0.25  # 10cm offset for the go to hand pose
-        # Initialize result
-        feedback = GoToHand.Feedback()
+
         result = GoToHand.Result()
+
         try:
-            # Try diferent directions for the go to hand pose, if one fails, try the other
+
             for angle in test_angles:
-                point = copy.deepcopy(goal_handle.request.point)
-                point.point.x += offset * np.cos(np.radians(angle))
-                point.point.y += offset * np.sin(np.radians(angle))
-                move_result, action_result = self.move_to_point(point)
+
+                point = copy.deepcopy(base_point)
+
+                point.point.x = base_position[0] + hand_offset * np.cos(np.radians(angle))
+                point.point.y = base_position[1] + hand_offset * np.sin(np.radians(angle))
+                point.point.z = base_position[2]
+
+                move_result, action_result = self.move_to_pose(
+                    point=point,
+                    quat_xyzw=quat,
+                    tolerance_position=0.01,
+                    tolerance_orientation=(0.001, 3.14, 3.14) # Allow rotation only around z-axis
+                )
+
                 if action_result.result.success:
                     break
 
@@ -151,7 +185,9 @@ class PickMotionServer(Node):
 
             goal_handle.succeed()
             return result
+
         except Exception as e:
+
             self.get_logger().error(f"Go to hand failed: {str(e)}")
             goal_handle.succeed()
             result.success = False
@@ -254,25 +290,28 @@ class PickMotionServer(Node):
         self.get_logger().error("Failed to reach any grasp pose")
         return False, pick_result
 
-    def move_to_pose(self, pose):
+    def move_to_pose(self, pose, point, quat_xyzw, tolerance_position=0.005, tolerance_orientation=0.02):
         """Move the robot to the given pose."""
         request = MoveToPose.Goal()
         request.pose = pose
+        request.point = point
+        request.quat_xyzw = quat_xyzw
         request.velocity = PICK_VELOCITY
         request.acceleration = PICK_ACCELERATION
         request.planner_id = PICK_PLANNER
         request.target_link = GRASP_LINK_FRAME
-        request.tolerance_position = 0.005  # Set the position tolerance
-        request.tolerance_orientation = 0.02  # Set the orientation tolerance
+        request.tolerance_position = tolerance_position
+        request.tolerance_orientation = tolerance_orientation
         future = self._move_to_pose_action_client.send_goal_async(request)
         self.wait_for_future(future)
         action_result = future.result().get_result()
         return future.result(), action_result
     
-    def move_to_point(self, point):
+    def move_to_point(self, point, quat_xyzw):
         """Move the robot to the given point."""
         request = MoveToPoint.Goal()
         request.point = point
+        request.quat_xyzw = quat_xyzw
         request.velocity = PICK_VELOCITY
         request.acceleration = PICK_ACCELERATION
         request.planner_id = PICK_PLANNER

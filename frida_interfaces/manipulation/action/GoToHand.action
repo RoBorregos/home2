@@ -1,4 +1,5 @@
 geometry_msgs/PointStamped point
+float32 hand_offset 0.15
 ---
 #result definition
 int32 success

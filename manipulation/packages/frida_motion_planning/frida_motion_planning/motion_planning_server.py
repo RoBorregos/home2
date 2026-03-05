@@ -340,6 +340,8 @@ class MotionPlanningServer(Node):
     def move_to_pose(self, goal_handle, feedback):
         """Perform the pick operation."""
         pose = goal_handle.request.pose
+        point = goal_handle.request.point
+        quat_xyzw = goal_handle.request.quat_xyzw
         target_link = goal_handle.request.target_link
         tolerance_position = (
             goal_handle.request.tolerance_position
@@ -353,6 +355,8 @@ class MotionPlanningServer(Node):
         )
         was_plan_successful, trajectory_plan = self.planner.plan_pose_goal(
             pose=pose,
+            point=point,
+            quat_xyzw=quat_xyzw,
             target_link=target_link,
             tolerance_position=tolerance_position,
             tolerance_orientation=tolerance_orientation,

@@ -154,6 +154,8 @@ class MoveItPlanner(Planner):
     def plan_pose_goal(
         self,
         pose: PoseStamped,
+        point: PointStamped,
+        quat_xyzw: List[float],
         target_link: str = xarm6.end_effector_name(),
         cartesian: bool = False,
         tolerance_position: float = 0.015,
@@ -162,14 +164,28 @@ class MoveItPlanner(Planner):
         self.node.get_logger().info("Generating a plan for a pose goal...")
 
         # Calls the internal function that uses pymoveit2 to get the plan
-        trajectory_plan = self._plan(
-            pose=pose,
-            cartesian=cartesian,
+        # Depending on whether a pose or a point is provided, it calls the appropriate planning method.
+        if pose.header.frame_id != "":
+            trajectory_plan = self._plan(
+                pose=pose,
+                cartesian=cartesian,
+                target_link=target_link,
+                tolerance_position=tolerance_position,
+                tolerance_orientation=tolerance_orientation,
+            )
+        elif point.header.frame_id != "" and quat_xyzw != [0.0, 0.0, 0.0, 0.0]:
+            trajectory_plan = self.moveit2.plan(
+            position=[point.point.x, point.point.y, point.point.z],
+            quat_xyzw=quat_xyzw,
             target_link=target_link,
+            frame_id=point.header.frame_id,
             tolerance_position=tolerance_position,
             tolerance_orientation=tolerance_orientation,
         )
-
+        else:
+            self.node.get_logger().error("Both pose and point goals are empty. Cannot plan.")
+            return False, None
+            
         # Check if a valid plan was found (if not None)
         if trajectory_plan:
             self.node.get_logger().info("Plan for pose goal generated successfully.")
