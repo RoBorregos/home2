@@ -102,6 +102,10 @@ pulseaudio -k && pulseaudio --start
 
 Captures raw audio in chunks and publishes it.
 
+### noise_cancellation.py
+
+Handles real-time neural noise suppression (DeepFilterNet).
+
 ### kws_oww.py
 
 Uses Open Wake Word to detect keywords such as "Frida".
