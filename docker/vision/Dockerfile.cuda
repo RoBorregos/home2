@@ -18,6 +18,8 @@ cmake --build .
 WORKDIR /workspace/dlib-19.21
 RUN python3 setup.py install --set DLIB_USE_CUDA=1
 
+RUN pip install --upgrade pip
+
 # Requirements
 WORKDIR /workspace/requirements
 
