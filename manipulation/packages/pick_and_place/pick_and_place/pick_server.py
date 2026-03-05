@@ -128,7 +128,7 @@ class PickMotionServer(Node):
         """Execute the go to hand action when a goal is received."""
         self.get_logger().info("Executing go to hand goal...")
         test_angles = [0, 180, 200, 220, 240, 270, 90]
-        offset = 0.15  # 10cm offset for the go to hand pose
+        offset = 0.25  # 10cm offset for the go to hand pose
         # Initialize result
         feedback = GoToHand.Feedback()
         result = GoToHand.Result()
@@ -277,7 +277,7 @@ class PickMotionServer(Node):
         request.acceleration = PICK_ACCELERATION
         request.planner_id = PICK_PLANNER
         request.target_link = GRASP_LINK_FRAME
-        request.tolerance_position = 0.1  # Set the position tolerance
+        request.tolerance_position = 0.05  # Set the position tolerance
         request.tolerance_orientation = 0.2  # Set the orientation tolerance
         future = self._move_to_point_action_client.send_goal_async(request)
         self.wait_for_future(future)

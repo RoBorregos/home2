@@ -11,7 +11,10 @@ from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.node import Node
 from sensor_msgs.msg import JointState
 from xarm_msgs.srv import SetInt16
-
+from tf_transformations import quaternion_from_euler
+from transforms3d.quaternions import quat2mat
+import numpy as np
+import time
 from frida_constants.manipulation_constants import (
     XARM_SETMODE_SERVICE,
     XARM_SETSTATE_SERVICE,
@@ -31,6 +34,7 @@ class MoveItPlanner(Planner):
         max_acceleration: float = 0.5,
         planner_id: str = "RRTConnect",
     ):
+        self.ee_link_offset = -0.2
         # Create callback group
         self.node = node
         # Create MoveIt 2 interface
@@ -185,16 +189,34 @@ class MoveItPlanner(Planner):
         tolerance_position: float = 0.05,
     ):
         self.node.get_logger().info(f"Generating a plan for a point goal (free orientation), target link: {target_link}, tolerance: {tolerance_position}...")
+        qx, qy, qz, qw = quaternion_from_euler(0, 0, 0) 
+        # convertir quaternion a matriz
+        quat = [qw, qx, qy, qz]
+        rotation_matrix = quat2mat(quat)
+
+        # eje Z local del end effector
+        z_axis = rotation_matrix[:, 2]
+
+        # aplicar offset
+        offset = self.ee_link_offset
+
+        position = np.array([
+            point.point.x,
+            point.point.y,
+            point.point.z
+        ]) + z_axis * offset
 
         trajectory_plan = self.moveit2.plan(
             position=[
-                point.point.x,
-                point.point.y,
-                point.point.z,
+                position[0],
+                position[1],
+                position[2],
             ],
+            quat_xyzw=[qx, qy, qz, qw],
             target_link=target_link,
             frame_id=point.header.frame_id,
             tolerance_position=tolerance_position,
+            tolerance_orientation=(0.001, 3.14, 3.14),
         )
 
         if trajectory_plan:
