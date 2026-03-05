@@ -17,7 +17,6 @@ def generate_launch_description():
     nav2_params = ParameterFile(nav2_params_, allow_substs=True)
 
     life_cyle_params = {
-        'use_sim_time': False,
         'autostart': True,
         'node_names': [
             'controller_server',
