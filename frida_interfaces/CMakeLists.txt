@@ -141,6 +141,7 @@ set(srv_files
   "vision/srv/CountByPose.srv"
   "vision/srv/CountBy.srv"
   "vision/srv/CropQuery.srv"
+  "vision/srv/CustomerTable.srv"
   "vision/srv/DetectionHandler.srv"
   "vision/srv/DishwasherDetection.srv"
   "vision/srv/DetectPointingObject.srv"
