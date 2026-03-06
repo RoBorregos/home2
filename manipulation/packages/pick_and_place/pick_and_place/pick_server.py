@@ -33,10 +33,10 @@ from frida_interfaces.srv import (
 )
 from frida_interfaces.action import PickMotion, MoveToPose, MoveToPoint, GoToHand
 from frida_interfaces.msg import PickResult
+from geometry_msgs.msg import PointStamped, PoseStamped
 import copy
 import numpy as np
 from tf_transformations import quaternion_from_euler
-from transforms3d.quaternions import quat2mat
 from transforms3d.quaternions import quat2mat
 from frida_motion_planning.utils.service_utils import (
     close_gripper,
@@ -54,7 +54,7 @@ class PickMotionServer(Node):
         self.ee_link_offset = self.get_parameter("ee_link_offset").value
         self.get_logger().info(f"End-effector link offset: {self.ee_link_offset} m")
 
-        self.declare_parameter("ee_tip_offset", -0.125)
+        self.declare_parameter("ee_tip_offset", -0.17)
         self.ee_tip_offset = self.get_parameter("ee_tip_offset").value
         self.get_logger().info(f"End-effector tip offset: {self.ee_tip_offset} m")
 
@@ -170,7 +170,7 @@ class PickMotionServer(Node):
                     point=point,
                     quat_xyzw=quat,
                     tolerance_position=0.01,
-                    tolerance_orientation=(0.001, 3.14, 3.14) # Allow rotation only around z-axis
+                    tolerance_orientation_list=[3.14, 3.14, 0.01]# Allow rotation only around z-axis
                 )
 
                 if action_result.result.success:
@@ -290,7 +290,7 @@ class PickMotionServer(Node):
         self.get_logger().error("Failed to reach any grasp pose")
         return False, pick_result
 
-    def move_to_pose(self, pose, point, quat_xyzw, tolerance_position=0.005, tolerance_orientation=0.02):
+    def move_to_pose(self, pose = PoseStamped(), point = PointStamped(), quat_xyzw = list[float], tolerance_position=0.005, tolerance_orientation=0.02, tolerance_orientation_list=list()):
         """Move the robot to the given pose."""
         request = MoveToPose.Goal()
         request.pose = pose
@@ -302,6 +302,7 @@ class PickMotionServer(Node):
         request.target_link = GRASP_LINK_FRAME
         request.tolerance_position = tolerance_position
         request.tolerance_orientation = tolerance_orientation
+        request.tolerance_orientation_list = tolerance_orientation_list
         future = self._move_to_pose_action_client.send_goal_async(request)
         self.wait_for_future(future)
         action_result = future.result().get_result()

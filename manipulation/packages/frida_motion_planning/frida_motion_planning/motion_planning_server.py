@@ -343,6 +343,7 @@ class MotionPlanningServer(Node):
         point = goal_handle.request.point
         quat_xyzw = goal_handle.request.quat_xyzw
         target_link = goal_handle.request.target_link
+        tolerance_orientation_list = tuple(goal_handle.request.tolerance_orientation_list)
         tolerance_position = (
             goal_handle.request.tolerance_position
             if goal_handle.request.tolerance_position
@@ -360,6 +361,7 @@ class MotionPlanningServer(Node):
             target_link=target_link,
             tolerance_position=tolerance_position,
             tolerance_orientation=tolerance_orientation,
+            tolerance_orientation_list=tolerance_orientation_list,
         )
 
         if was_plan_successful:

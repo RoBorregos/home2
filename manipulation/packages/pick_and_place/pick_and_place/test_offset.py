@@ -43,6 +43,7 @@ class TestGoToHandClient(Node):
 
         goal = GoToHand.Goal()
         goal.point = msg
+        goal.hand_offset = 0.1
 
         send_goal_future = self._client.send_goal_async(goal)
         send_goal_future.add_done_callback(self.goal_response_callback)

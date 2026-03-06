@@ -1,12 +1,13 @@
 geometry_msgs/PoseStamped pose
 geometry_msgs/PointStamped point
-geometry_msgs/QuaternionStamped quat_xyzw
+float32[4] quat_xyzw
 float32 velocity
 float32 acceleration
 float32 planning_time
 int32 planning_attempts
 float32 tolerance_position
 float32 tolerance_orientation
+float32[3] tolerance_orientation_list
 string planner_id
 string target_link
 bool apply_constraint
