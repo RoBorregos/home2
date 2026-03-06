@@ -152,7 +152,7 @@ class PickMotionServer(Node):
         ]) + z_axis * self.ee_tip_offset
 
         hand_offset = goal_handle.request.hand_offset
-        test_angles = [0, 180, 200, 220, 240, 270, 90]
+        test_angles = [0, 180, 200, 220, 240, 270]
 
         result = GoToHand.Result()
 
@@ -170,7 +170,7 @@ class PickMotionServer(Node):
                     point=point,
                     quat_xyzw=quat,
                     tolerance_position=0.01,
-                    tolerance_orientation_list=[3.14, 3.14, 0.01]# Allow rotation only around z-axis
+                    tolerance_orientation_list=[0.05, 0.05, 3.14]# Allow rotation only around z-axis
                 )
 
                 if action_result.result.success:
