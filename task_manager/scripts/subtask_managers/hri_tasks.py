@@ -664,11 +664,17 @@ class HRITasks(metaclass=SubtaskMeta):
 
             if hear_status == Status.EXECUTION_SUCCESS:
                 target_info = interpreted_text
+                target_found = False
                 similarity = 1
-                if not skip_extract_data and not options:
-                    _, target_info = self.extract_data(query, interpreted_text, context)
-
                 try:
+                    # If no options provided, directly extract the data without looking for matches
+                    if not skip_extract_data and not options:
+                        s, target_info = self.extract_data(query, interpreted_text, context)
+                        if s != Status.EXECUTION_SUCCESS:
+                            self.say("Sorry, I coudn't understand.")
+                            continue
+                        target_found = True
+
                     # If extracted data options provided look for exact or closest match
                     if options is not None:
                         foundExact = False
@@ -676,15 +682,18 @@ class HRITasks(metaclass=SubtaskMeta):
                             if option.lower() in target_info.lower():
                                 target_info = option
                                 foundExact = True
+                                target_found = True
                                 skip_confirmation = (
                                     True  # Skip confirmation if an exact match is found
                                 )
                                 break
+
                         if not foundExact:
-                            s, closest = self.find_closest(options, target_info)
+                            s, similarity_list = self.find_closest(options, target_info)
                             if s == Status.EXECUTION_SUCCESS:
-                                target_info = closest.results[0]
-                                similarity = closest.similarities[0]
+                                target_found = True
+                                target_info = similarity_list.results[0]
+                                similarity = similarity_list.similarities[0]
 
                     # Skip confirmation depending on the similarity to an option if options are provided and/or on transcription confidence
                     if (
@@ -694,8 +703,10 @@ class HRITasks(metaclass=SubtaskMeta):
                     ):
                         skip_confirmation = True
 
+                    # Remap the target_info if a remap dictionary is provided
                     if remap is not None and target_info in remap:
                         target_info = remap[target_info]
+
                 except Exception as e:
                     print("Failed matching result:", e)
 
@@ -708,9 +719,9 @@ class HRITasks(metaclass=SubtaskMeta):
                 else:
                     confirmation_text = confirm_question
 
-                if target_info is not None:
+                # Ask for confirmation
+                if target_info != "" and target_found:
                     s, confirmation = self.confirm(confirmation_text, use_hotwords, 3)
-
                     if s == Status.EXECUTION_SUCCESS and confirmation == "yes":
                         return Status.EXECUTION_SUCCESS, target_info
 
