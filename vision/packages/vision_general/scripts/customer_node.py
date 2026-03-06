@@ -150,7 +150,7 @@ class CustomerNode(Node):
     def get_customer_callback(self, req, res):
         """Set the target to track (Default: Largest person in frame)"""
         res.found = False
-        res.point = PointStamped()
+        res.points = []
         print("running")
         if self.image is None:
             self.get_logger().warn("No image available")
@@ -233,11 +233,11 @@ class CustomerNode(Node):
                         coords.point.z = point3D[2]
                         # self.point_pub.publish(coords)
                         self.results_publisher.publish(coords)
-                        res.point = coords
+                        res.points.append(coords)
                     res.found = True
                     self.success("Customer found")
-                    return res
-        self.get_logger().warn("No customer raising hand and sitting detected")
+
+        self.get_logger().warn(f"Customers detected: {len(res.points)}")
         return res
 
     def is_sitting_moondream(self, bbox):
