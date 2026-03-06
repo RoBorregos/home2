@@ -451,7 +451,11 @@ class HRITasks(metaclass=SubtaskMeta):
             Status.EXECUTION_SUCCESS if len(result.transcription) > 0 else Status.TARGET_NOT_FOUND
         )
 
-        word_confidences = dict(zip(result.words, result.confidences)) if result.words else {}
+        word_confidences = (
+            {w.strip(".,!?;:\"'()-"): c for w, c in zip(result.words, result.confidences)}
+            if result.words
+            else {}
+        )
 
         if execution_status == Status.EXECUTION_SUCCESS:
             Logger.info(
@@ -696,10 +700,18 @@ class HRITasks(metaclass=SubtaskMeta):
                                 similarity = similarity_list.similarities[0]
 
                     # Skip confirmation depending on the similarity to an option if options are provided and/or on transcription confidence
+                    target_words = target_info.lower().split()
+                    matched_confidences = [
+                        word_confidences[w] for w in target_words if w in word_confidences
+                    ]
+                    avg_confidence = (
+                        sum(matched_confidences) / len(matched_confidences)
+                        if matched_confidences
+                        else 0
+                    )
                     if (
                         similarity > SKIP_CONFIRMATION_SIMILARITY_THRESHOLD
-                        and word_confidences.get(target_info, 0)
-                        > SKIP_CONFIRMATION_CONFIDENCE_THRESHOLD
+                        and avg_confidence > SKIP_CONFIRMATION_CONFIDENCE_THRESHOLD
                     ):
                         skip_confirmation = True
 
