@@ -5,7 +5,7 @@ from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import PointStamped
-from frida_interfaces.vision.srv import DetectHand
+from frida_interfaces.srv import DetectHand
 from vision_general.utils.calculations import get_depth, deproject_pixel_to_point
 from frida_constants.frida_constants.vision_constants import (
     CAMERA_TOPIC,
