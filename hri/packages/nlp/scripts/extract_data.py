@@ -116,7 +116,9 @@ class DataExtractor(Node):
                 self.get_logger().info(
                     "No name found in text using spacy. Attempting to extract name using LLM."
                 )
-                response.result = self.extract_via_llm(request.full_text, "name", "")
+                response.result = self.extract_via_llm(
+                    request.full_text, "name", request.context
+                )
                 if response.result == "":
                     self.get_logger().error(
                         f"No name found in {request.full_text}. Returning empty string as a result."
@@ -129,7 +131,7 @@ class DataExtractor(Node):
                     "No location found in text using spacy. Attempting to extract location using LLM."
                 )
                 response.result = self.extract_via_llm(
-                    request.full_text, "location", ""
+                    request.full_text, "location", request.context
                 )
                 if response.result == "":
                     self.get_logger().error(
