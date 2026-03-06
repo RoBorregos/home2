@@ -79,7 +79,8 @@ fi
 # Create dirs with current user to avoid permission problems
 mkdir -p install build log \
   ../../hri/packages/speech/assets/downloads/offline_voice/model/ \
-  ../../hri/packages/speech/assets/downloads/offline_voice/audios/
+  ../../hri/packages/speech/assets/downloads/offline_voice/audios/ \
+  ../../hri/packages/speech/scripts/events/models/
 
 # Reset .env
 echo "" > compose/.env

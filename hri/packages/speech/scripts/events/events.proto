@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package events;
+
+service EventsService {
+  rpc Listen (stream AudioRequest) returns (stream TextResponse);
+}
+
+// The message containing audio data
+message AudioRequest {
+    bytes audio_data = 1;
+}
+
+// The message containing the detected event
+message TextResponse {
+  string text = 1;
+}

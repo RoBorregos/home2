@@ -1,0 +1,4 @@
+grpcio==1.70.0
+grpcio-tools==1.70.0
+tensorflow
+tensorflow_hub
