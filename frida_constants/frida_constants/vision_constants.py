@@ -81,6 +81,9 @@ TRACKER_IMAGE_TOPIC = "/vision/tracker_image"
 CENTROID_TOIC = "/vision/tracker_centroid"
 IS_TRACKING_TOPIC = "/vision/is_tracking"
 
+# Hand detection
+DETECT_HAND_SERVICE = "/vision/detect_hand"
+
 # Pointing
 POINTING_OBJECT_SERVICE = "/vision/pointing_object_service"
 POINTING_DETECTION_IMAGE_TOPIC = "/vision/pointing_detection_image"
