@@ -96,7 +96,12 @@ class DetectHandNode(Node):
         px, py = int(lm.x * w), int(lm.y * h)
 
         if self.depth_image is not None and self.camera_info is not None:
-            depth = get_depth(self.depth_image, (px, py))
+            dh, dw = self.depth_image.shape[:2]
+            dpx = int(px * dw / w)
+            dpy = int(py * dh / h)
+            dpx = max(0, min(dpx, dw - 1))
+            dpy = max(0, min(dpy, dh - 1))
+            depth = get_depth(self.depth_image, (dpx, dpy))
             point3d = deproject_pixel_to_point(self.camera_info, (px, py), depth)
 
             stamped = PointStamped()
