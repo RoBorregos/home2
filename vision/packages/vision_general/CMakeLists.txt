@@ -30,6 +30,12 @@ install(PROGRAMS
   DESTINATION lib/${PROJECT_NAME}
 )
 
+file(GLOB YOLO_MODELS Utils/*.pt)
+install(PROGRAMS
+  ${YOLO_MODELS}
+  DESTINATION lib/${PROJECT_NAME}/Utils
+)
+
 ######################### Testing  #########################
 ##For testing
 if(BUILD_TESTING)
