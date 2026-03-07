@@ -32,7 +32,7 @@ from frida_interfaces.srv import (
 )
 from frida_interfaces.action import PickMotion, MoveToPose, GoToHand
 from frida_interfaces.msg import PickResult
-from geometry_msgs.msg import PointStamped, PoseStamped
+from geometry_msgs.msg import PoseStamped
 import copy
 import numpy as np
 from tf_transformations import quaternion_from_euler
@@ -128,7 +128,7 @@ class PickMotionServer(Node):
 
         base_point = copy.deepcopy(goal_handle.request.point)
 
-        # quaternion
+        # quaternion position
         qx, qy, qz, qw = quaternion_from_euler(-np.pi/2, 0, 0)
         quat = [qx, qy, qz, qw]
 
