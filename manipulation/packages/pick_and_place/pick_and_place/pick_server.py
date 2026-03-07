@@ -31,7 +31,7 @@ from frida_interfaces.srv import (
     GetCollisionObjects,
     RemoveCollisionObject,
 )
-from frida_interfaces.action import PickMotion, MoveToPose, MoveToPoint, GoToHand
+from frida_interfaces.action import PickMotion, MoveToPose, GoToHand
 from frida_interfaces.msg import PickResult
 from geometry_msgs.msg import PointStamped, PoseStamped
 import copy
@@ -80,12 +80,6 @@ class PickMotionServer(Node):
             self,
             MoveToPose,
             MOVE_TO_POSE_ACTION_SERVER,
-        )
-
-        self._move_to_point_action_client = ActionClient(
-            self,
-            MoveToPoint,
-            MOVE_TO_POINT_ACTION_SERVER,
         )
 
         self._attach_collision_object_client = self.create_client(
@@ -304,22 +298,6 @@ class PickMotionServer(Node):
         request.tolerance_orientation = tolerance_orientation
         request.tolerance_orientation_list = tolerance_orientation_list
         future = self._move_to_pose_action_client.send_goal_async(request)
-        self.wait_for_future(future)
-        action_result = future.result().get_result()
-        return future.result(), action_result
-    
-    def move_to_point(self, point, quat_xyzw):
-        """Move the robot to the given point."""
-        request = MoveToPoint.Goal()
-        request.point = point
-        request.quat_xyzw = quat_xyzw
-        request.velocity = PICK_VELOCITY
-        request.acceleration = PICK_ACCELERATION
-        request.planner_id = PICK_PLANNER
-        request.target_link = GRASP_LINK_FRAME
-        request.tolerance_position = 0.05  # Set the position tolerance
-        request.tolerance_orientation = 0.2  # Set the orientation tolerance
-        future = self._move_to_point_action_client.send_goal_async(request)
         self.wait_for_future(future)
         action_result = future.result().get_result()
         return future.result(), action_result

@@ -60,7 +60,6 @@ set(action_files
   "manipulation/action/MoveJoints.action"
   "manipulation/action/MoveToPose.action"
   "manipulation/action/GoToHand.action"
-  "manipulation/action/MoveToPoint.action"
   "manipulation/action/PickMotion.action"
   "manipulation/action/PickTask.action"
   "manipulation/action/PlaceMotion.action"

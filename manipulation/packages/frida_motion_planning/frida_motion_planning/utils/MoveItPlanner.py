@@ -201,51 +201,6 @@ class MoveItPlanner(Planner):
             )
             # Return a consistent tuple also in case of failure
             return False, None
-
-    def plan_point_goal(
-        self,
-        point: PointStamped,
-        target_link: str = xarm6.end_effector_name(),
-        tolerance_position: float = 0.05,
-    ):
-        self.node.get_logger().info(f"Generating a plan for a point goal (free orientation), target link: {target_link}, tolerance: {tolerance_position}...")
-        qx, qy, qz, qw = quaternion_from_euler(0, 0, 0) 
-        # convertir quaternion a matriz
-        quat = [qw, qx, qy, qz]
-        rotation_matrix = quat2mat(quat)
-
-        # eje Z local del end effector
-        z_axis = rotation_matrix[:, 2]
-
-        # aplicar offset
-        offset = self.ee_link_offset
-
-        position = np.array([
-            point.point.x,
-            point.point.y,
-            point.point.z
-        ]) + z_axis * offset
-
-        trajectory_plan = self.moveit2.plan(
-            position=[
-                position[0],
-                position[1],
-                position[2],
-            ],
-            quat_xyzw=[qx, qy, qz, qw],
-            target_link=target_link,
-            frame_id=point.header.frame_id,
-            tolerance_position=tolerance_position,
-            tolerance_orientation=(0.001, 3.14, 3.14),
-        )
-
-        if trajectory_plan:
-            self.node.get_logger().info("Plan for point goal generated successfully.")
-            return True, trajectory_plan
-        else:
-            self.node.get_logger().warn("MoveIt failed to generate a plan for the point goal.")
-            return False, None
-       
     
     def _plan(
         self,

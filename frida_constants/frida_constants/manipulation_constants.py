@@ -25,7 +25,6 @@ JOINTN_VELOCITY_MODE = 4
 
 MOVE_JOINTS_ACTION_SERVER = "/manipulation/move_joints_action_server"
 MOVE_TO_POSE_ACTION_SERVER = "/manipulation/move_to_pose_action_server"
-MOVE_TO_POINT_ACTION_SERVER = "/manipulation/move_to_point_action_server"
 GET_JOINT_SERVICE = "/manipulation/get_joints"
 TOGGLE_SERVO_SERVICE = "/manipulation/toggle_servo"
 
@@ -45,7 +44,6 @@ ARM_LOWEST_0_0_HEIGHT = 0.95
 PICK_MOTION_ACTION_SERVER_NODE = "manipulation/pick_motion_server"
 PICK_MOTION_ACTION_SERVER = "/manipulation/pick_motion_action_server"
 GO_TO_HAND_ACTION_SERVER = "/manipulation/go_to_hand_action_server"
-OFFSET_MOVE_ACTION_SERVER = "/manipulation/offset_move_action_server"
 CLUSTER_OBJECT_SERVICE = "/manipulation/cluster_object"
 PICK_PERCEPTION_SERVICE = "/manipulation/pick_perception_service"
 GRASP_DETECTION_SERVICE = "/manipulation/detect_grasps"
