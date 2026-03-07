@@ -15,6 +15,7 @@ from frida_interfaces.srv import (
     PointTransformation,
     ReturnLocation,
     WaitForControllerInput,
+    MapAreas
 )
 from geometry_msgs.msg import PointStamped, PoseStamped
 from lifecycle_msgs.msg import Transition
@@ -73,6 +74,7 @@ class NavigationTasks:
         self.rtabmap_pause = self.node.create_client(Empty, RTAB_PAUSE_SERVICE)
         self.rtabmap_continue = self.node.create_client(Empty, RTAB_RESUME_SERVICE)
         self.ReturnLocation_client = self.node.create_client(ReturnLocation, RETURN_LOCATION)
+        self.areas_wrapper = self.node.create_client(MapAreas, "/areas_json")
         self.convert_point = (
             self.node.create_client(PointTransformation, "/integration/point_transformer"),
         )
@@ -101,7 +103,8 @@ class NavigationTasks:
                 "resume_rtab": {"client": self.rtabmap_continue, "type": "service"},
             },
             Task.DEBUG: {
-                "laser_send": {"client": self.laser_send, "type": "service"},
+                # "laser_send": {"client": self.laser_send, "type": "service"},
+                "areas_wrapper": {"client": self.areas_wrapper, "type":"service"}
             },
         }
 
@@ -140,8 +143,21 @@ class NavigationTasks:
             Logger.error(self.node, f"Error waiting for controller input: {e}")
             return Future().set_result(Status.EXECUTION_ERROR)
 
-    # def get_distance_to_zero(self):
-    #     self.getdist
+    @mockable(return_value="", delay=1)
+    @service_check("areas_wrapper", False, timeout=3)
+    def areas_dump(self):
+        req = MapAreas.Request()
+        future = self.areas_wrapper.call_async(req)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+        if (future.result() is None) or (future.result().areas == ""):
+            Logger.error(self.node, "Service call failed ")
+            return Status.EXECUTION_ERROR
+
+        else:
+            Logger.info(self.node, f"data: {future.result().areas}")
+            Logger.info(self.node, "Service call successfull")
+            return Status.EXECUTION_SUCCESS
+
     @mockable(return_value=True, delay=10)
     @service_check("pause_nav", False, timeout=3)
     def pause_nav(self):
