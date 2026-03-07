@@ -237,9 +237,7 @@ class RESTAURANTCommands(Node):
             conf, cls_id = det.confidence, det.class_id
             centroid = ((y1 + y2) / 2, (x1 + x2) / 2)
             depth = get_depth(self.depth_image, centroid)
-            point3d = deproject_pixel_to_point(
-                            self.imageInfo, centroid, depth
-                        )
+            point3d = deproject_pixel_to_point(self.imageInfo, centroid, depth)
             detections.append(
                 {
                     "bbox": (x1, y1, x2, y2),
