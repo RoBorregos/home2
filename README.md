@@ -9,61 +9,53 @@
 
 Ensure the following are installed on your system:
 
-- **ROS 2 Humble**  
-  Refer to the [installation guide](https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debs.html).
-- **ROSDEP**
-- **COLCON**
-- **CMAKE**
-- **MAKE**
+- **Docker**
+  Refer to the [installation guide](https://docs.docker.com/engine/install/).
+- **Docker Compose**
 - **GIT**
+- **NVIDIA Container Toolkit** (optional, for GPU support)
 
 ## Steps to Run the Repository
 
-### Ubuntu 22.04
-
-## ⚠️ Prebuild Warning
-
-It only runs once, to ensure the repository compiles correctly, **run `prebuild.sh` first**.
-
-Make sure to execute the script in the **workspace (`ws`) directory** where you plan to run `colcon build` afterward.
-
-#### 1 Create a Workspace
-
-If you don’t already have a target workspace, create one:
+#### 1. Clone the Repository
 
 ```bash
-# Skip this step if you already have a target workspace
-$ cd ~
-$ mkdir -p home_ws/src
-```
-
-#### 2 Obtain src and run prebuild of repository
-
-```bash
-#Remember to source ros2 environment settings first
-$ cd ~/home_ws/
-#DO NOT omit "--recursive"，or the source code of dependent submodule will not be downloaded.
-$ git clone https://github.com/RoBorregos/home2.git --recursive src/
-# or if you have already cloned the repository
-$ cd ~/home_ws/src/home2
+$ git clone https://github.com/RoBorregos/home2.git --recursive
+$ cd home2
+# If you already cloned without --recursive
 $ git submodule update --init --recursive
-#Pay attention where are you executing prebuild, it has to be on the home_ws directory.
-$ ./src/prebuild.sh
-#AFTER RUNNING PREBUILD IMPORTANT TO SOURCE .BASHRC
-$ source ~/.bashrc
 ```
 
-#### 3 Compile and source project
+#### 2. Run the Project
+
+The `run.sh` script automatically detects your environment (CPU, CUDA, or L4T) and manages the Docker containers.
 
 ```bash
-#AFTER RUNNING PREBUILD IMPORTANT TO SOURCE .BASHRC
-$ source ~/.bashrc
-#Remember to source ros2 environment settings first
-$ cd ~/home_ws/
-#You can add the --executor sequential for only one compiling thread
-$ colcon build --symlink-install
-$ source install/setup.bash
+# Show available commands and options
+$ ./run.sh --help
+
+# Run a specific area
+$ ./run.sh vision
+$ ./run.sh hri
+$ ./run.sh navigation
+$ ./run.sh manipulation
+$ ./run.sh integration
+
+# Run a competition task
+$ ./run.sh --gpsr
+$ ./run.sh --restaurant
 ```
+
+#### Available Flags
+
+| Flag | Description |
+| --- | --- |
+| `--build` | Builds the ROS 2 packages inside the container |
+| `--build-image` | Builds the Docker image for the specified area or task |
+| `--recreate` | Forces the recreation of containers |
+| `--open-display` | Opens the graphical interface for HRI or Vision |
+| `--stop` | Stops the running containers |
+| `--down` | Stops and removes all containers, networks, and volumes |
 
 # Rule Book
 
