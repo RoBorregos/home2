@@ -268,7 +268,7 @@ class PlaceManager:
                         return None
 
                     if special_position == "top":
-                        # We want to place on top of the object
+                        # Place object on top of object centroid 
                         result_pose.header.frame_id = close_by_point.header.frame_id
                         result_pose.pose.position.x = close_by_point.point.x
                         result_pose.pose.position.y = close_by_point.point.y
@@ -281,6 +281,8 @@ class PlaceManager:
                                     self.node.pick_perception_3d_client,
                                     add_collision_object = False
                                 )
+                            
+                            # Set maximun point of pointcloud 
                             if object_cluster is not None:
                                 cluster_params = get_object_cloud_params(object_cluster)
                                 if cluster_params is not None:
@@ -360,7 +362,7 @@ class PlaceManager:
                 f"Object height detected: {pick_result.object_pick_height}"
             )
 
-        # forget height if placing on shelf. If placing on top, we already set z above, skipp adding object_pick_height
+        # Forget height if placing on shelf. If placing on top, skip adding object_pick_height
         if not place_on_top:
             result_pose.pose.position.z += (
                 pick_result.object_pick_height if not place_params.is_shelf else 0.1
