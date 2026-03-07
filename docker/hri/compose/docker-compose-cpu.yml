@@ -3,3 +3,4 @@ include:
   - path: stt.yaml
   - path: postgresql.yaml
   - path: tts.yaml
+  - path: events.yaml

@@ -1,5 +1,5 @@
 services:
-  hri-ros:
+  events:
     container_name: home2-hri-events-${ENV_TYPE:-cpu}
     build:
       context: ../../..
@@ -17,5 +17,4 @@ services:
       TERM: xterm-256color
       TFHUB_CACHE_DIR: /app/models/
     tty: true
-    entrypoint: ["bash", "-il", "-c"]
-    command: "tail -f /dev/null"
+    command: "python3 -u events-detector.py --port 50053"

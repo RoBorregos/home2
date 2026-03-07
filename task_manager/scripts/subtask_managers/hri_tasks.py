@@ -20,6 +20,7 @@ from embeddings.postgres_adapter import PostgresAdapter
 from frida_constants.hri_constants import (
     CATEGORIZE_SERVICE,
     COMMAND_INTERPRETER_SERVICE,
+    DETECT_EVENT_SERVICE,
     DISPLAY_IMAGE_TOPIC,
     DISPLAY_MAP_TOPIC,
     EXTRACT_DATA_SERVICE,
@@ -43,6 +44,7 @@ from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
 from frida_interfaces.srv import (
     CategorizeShelves,
     CommandInterpreter,
+    DetectEvent,
     ExtractInfo,
     Grammar,
     HearMultiThread,
@@ -218,6 +220,8 @@ class HRITasks(metaclass=SubtaskMeta):
 
         self._action_client = ActionClient(self.node, SpeechStream, STT_ACTION_SERVER_NAME)
 
+        self.detect_event_service = self.node.create_client(DetectEvent, DETECT_EVENT_SERVICE)
+
         self._start_button_sub = self.node.create_subscription(
             Empty,
             START_BUTTON_CLIENT,
@@ -315,6 +319,19 @@ class HRITasks(metaclass=SubtaskMeta):
         if future.result() is not None:
             return future.result().is_coherent
         return False
+
+    @service_check("detect_event_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
+    def detect_event(self) -> tuple:
+        """Call the detect_event service and wait for a doorbell or knock event."""
+        Logger.info(self.node, "Calling detect_event service")
+        request = DetectEvent.Request()
+        future = self.detect_event_service.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+        if future.result() is not None:
+            event = future.result().event
+            Logger.info(self.node, f"Detected event: {event}")
+            return Status.EXECUTION_SUCCESS, event
+        return Status.EXECUTION_ERROR, ""
 
     @service_check("extract_data_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
     def extract_data(self, query, complete_text, context="", is_async=False) -> str | Future:
