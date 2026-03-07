@@ -22,7 +22,7 @@ install(DIRECTORY launch config maps
  add_executable(map_service
    src/map_service.cpp)
 target_link_libraries(map_service  nlohmann_json::nlohmann_json)
- ament_target_dependencies(map_service rclcpp frida_interfaces)
+ ament_target_dependencies(map_service rclcpp)
 
 #Added nodes
  install(TARGETS
