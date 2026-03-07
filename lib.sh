@@ -21,6 +21,27 @@ check_image_exists() {
   fi
 }
 
+# Ensure an image exists locally (build if missing) then push it.
+ensure_and_upload_image() {
+  local image="$1"
+  local compose_file="$2"
+  shift 2
+  local extra_args=("$@")
+
+  if docker image inspect "$image" > /dev/null 2>&1; then
+    echo "Image $image found locally, skipping build."
+  else
+    if [ -z "$compose_file" ]; then
+      echo "Error: image $image not found locally and no compose file provided to build it." >&2
+      return 1
+    fi
+    echo "Image $image not found locally. Building with: docker compose -f $compose_file build ${extra_args[*]}"
+    docker compose -f "$compose_file" build "${extra_args[@]}" || { echo "Build failed for $image" >&2; return 1; }
+  fi
+
+  upload_image "$image"
+}
+
 add_or_update_variable() {
   local file=$1 variable=$2 value=$3
 
