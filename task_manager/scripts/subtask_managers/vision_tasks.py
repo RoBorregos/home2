@@ -799,7 +799,7 @@ class VisionTasks:
         Logger.success(self.node, f"The person is: {result.result}")
         return Status.EXECUTION_SUCCESS, result.result
 
-    @mockable(return_value=(Status.EXECUTION_ERROR, None), delay=2, mock=False)
+    @mockable(return_value=(Status.EXECUTION_ERROR, None))
     @service_check("detect_hand_client", [Status.EXECUTION_ERROR, None], TIMEOUT)
     def detect_hand(self) -> tuple[int, PointStamped]:
         """Detect the hand and return its 3D position."""
