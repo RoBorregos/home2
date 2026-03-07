@@ -63,9 +63,7 @@ class DetectHandNode(Node):
     def image_callback(self, msg):
         self.image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
         if self.run_thread is None or not self.run_thread.is_alive():
-            self.run_thread = threading.Thread(
-                target=self.run_inference, daemon=True
-            )
+            self.run_thread = threading.Thread(target=self.run_inference, daemon=True)
             self.run_thread.start()
 
     def depth_callback(self, msg):
@@ -138,4 +136,3 @@ def main(args=None):
 
 if __name__ == "__main__":
     main()
-    
