@@ -7,22 +7,30 @@ commands.
 """
 
 import cv2
+import mediapipe as mp
 import numpy as np
 import queue
+import threading
 import time
 
 import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionServer
 from cv_bridge import CvBridge
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import Image, CameraInfo
+from geometry_msgs.msg import PointStamped
 from rclpy.task import Future
 
 from frida_interfaces.action import DetectPerson
-from frida_interfaces.srv import FindSeat, YoloDetect
+from frida_interfaces.srv import DetectHand, FindSeat, YoloDetect
+from vision_general.utils.calculations import get_depth, deproject_pixel_to_point
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
+    CAMERA_FRAME,
+    CAMERA_INFO_TOPIC,
     CHECK_PERSON_TOPIC,
+    DEPTH_IMAGE_TOPIC,
+    DETECT_HAND_SERVICE,
     FIND_SEAT_TOPIC,
     IMAGE_TOPIC_RECEPTIONIST,
 )
@@ -73,9 +81,39 @@ class ReceptionistCommands(Node):
             self.get_logger().info("YOLO service not available, waiting...")
 
         self.image = None
+        self.depth_image = None
+        self.camera_info = None
+        self.hand_point = None
+        self.hand_run_thread = None
         self.output_image = []
         self.check = False
-        # self.id = None
+
+        self.mp_hands = mp.solutions.hands
+        self.hands = self.mp_hands.Hands(
+            model_complexity=0,
+            min_detection_confidence=0.5,
+            min_tracking_confidence=0.5,
+        )
+
+        qos = rclpy.qos.QoSProfile(
+            depth=5,
+            reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
+            durability=rclpy.qos.DurabilityPolicy.VOLATILE,
+        )
+
+        self.depth_sub = self.create_subscription(
+            Image, DEPTH_IMAGE_TOPIC, self.depth_callback, qos
+        )
+        self.camera_info_sub = self.create_subscription(
+            CameraInfo, CAMERA_INFO_TOPIC, self.camera_info_callback, qos
+        )
+
+        self.detect_hand_service = self.create_service(
+            DetectHand,
+            DETECT_HAND_SERVICE,
+            self.detect_hand_callback,
+            callback_group=self.callback_group,
+        )
 
         self.get_logger().info("ReceptionistCommands Ready.")
 
@@ -83,8 +121,69 @@ class ReceptionistCommands(Node):
 
     def image_callback(self, data):
         """Callback to receive the image from the camera."""
-        # self.id = self.data
         self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
+        if self.hand_run_thread is None or not self.hand_run_thread.is_alive():
+            self.hand_run_thread = threading.Thread(target=self.run_hand_inference, daemon=True)
+            self.hand_run_thread.start()
+
+    def depth_callback(self, msg):
+        try:
+            self.depth_image = self.bridge.imgmsg_to_cv2(msg, "32FC1")
+        except Exception as e:
+            self.get_logger().error(f"Depth conversion error: {e}")
+
+    def camera_info_callback(self, msg):
+        self.camera_info = msg
+
+    def run_hand_inference(self):
+        if self.image is None:
+            return
+
+        image_rgb = cv2.cvtColor(self.image, cv2.COLOR_BGR2RGB)
+        image_rgb.flags.writeable = False
+        results = self.hands.process(image_rgb)
+
+        if not results.multi_hand_landmarks:
+            self.hand_point = None
+            return
+
+        hand_landmarks = results.multi_hand_landmarks[0]
+        lm = hand_landmarks.landmark[self.mp_hands.HandLandmark.MIDDLE_FINGER_TIP]
+
+        h, w, _ = self.image.shape
+        px, py = int(lm.x * w), int(lm.y * h)
+
+        if self.depth_image is not None and self.camera_info is not None:
+            dh, dw = self.depth_image.shape[:2]
+            dpx = int(px * dw / w)
+            dpy = int(py * dh / h)
+            dpx = max(0, min(dpx, dw - 1))
+            dpy = max(0, min(dpy, dh - 1))
+            depth = get_depth(self.depth_image, (dpx, dpy))
+            point3d = deproject_pixel_to_point(self.camera_info, (px, py), depth)
+
+            stamped = PointStamped()
+            stamped.header.frame_id = CAMERA_FRAME
+            stamped.header.stamp = self.get_clock().now().to_msg()
+            stamped.point.x = float(point3d[0])
+            stamped.point.y = float(point3d[1])
+            stamped.point.z = float(point3d[2])
+            self.hand_point = stamped
+        else:
+            self.hand_point = None
+
+    def detect_hand_callback(self, request, response):
+        if self.hand_point is not None:
+            response.point = self.hand_point
+            response.success = True
+            self.get_logger().info(
+                f"Hand detected at ({self.hand_point.point.x:.3f}, "
+                f"{self.hand_point.point.y:.3f}, {self.hand_point.point.z:.3f})"
+            )
+        else:
+            response.success = False
+            self.get_logger().info("No hand detected")
+        return response
 
     def find_seat_callback(self, request, response):
         """Callback to find an available seat."""
