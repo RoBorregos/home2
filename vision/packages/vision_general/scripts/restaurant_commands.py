@@ -35,9 +35,9 @@ from frida_interfaces.srv import YoloDetect
 
 TABLE_CUSTOMER_DISTANCE_THRESHOLD = 1.5  # meters
 
-class GPSRCommands(Node):
+class RESTAURANTCommands(Node):
     def __init__(self):
-        super().__init__("gpsr_commands")
+        super().__init__("restaurant_commands")
         self.bridge = CvBridge()
         self.callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
 
@@ -254,7 +254,7 @@ class GPSRCommands(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = GPSRCommands()
+    node = RESTAURANTCommands()
     executor = rclpy.executors.MultiThreadedExecutor(8)
     executor.add_node(node)
     executor.spin()
