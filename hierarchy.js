@@ -44,6 +44,7 @@ var hierarchy =
     [ "subtask_managers.nav_tasks.NavigationTasks", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html", null ],
     [ "rclcpp::Node", null, [
       [ "AddPrimitivesNode", "classAddPrimitivesNode.html", null ],
+      [ "AreasServices", "classAreasServices.html", null ],
       [ "CallServicesNode", "classCallServicesNode.html", null ],
       [ "ClientNode", "classClientNode.html", null ],
       [ "DetectionsHandlerNode", "classDetectionsHandlerNode.html", null ],
@@ -198,6 +199,7 @@ var hierarchy =
       [ "test_hri_manager.TestHriManager", "classtest__hri__manager_1_1TestHriManager.html", null ],
       [ "test_manager.TestTaskManager", "classtest__manager_1_1TestTaskManager.html", null ],
       [ "test_manipulation_manager.TestManipulationManager", "classtest__manipulation__manager_1_1TestManipulationManager.html", null ],
+      [ "test_nav_manager.TestNavigationManager", "classtest__nav__manager_1_1TestNavigationManager.html", null ],
       [ "test_start_button.TestHriManager", "classtest__start__button_1_1TestHriManager.html", null ],
       [ "test_vision_manager.TestVision", "classtest__vision__manager_1_1TestVision.html", null ],
       [ "tracker_node.SingleTracker", "classtracker__node_1_1SingleTracker.html", null ],

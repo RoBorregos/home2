@@ -1,8 +1,8 @@
 var searchData=
 [
   ['h_0',['h',['../namespacereid__model.html#af38d74c51ee6e8a581c116ac98a03817',1,'reid_model.h()'],['../classfrida__constants_1_1vision__classes_1_1BBOX.html#a38d9b91745429d6dd18dcafde08adc15',1,'frida_constants.vision_classes.BBOX.h()'],['../classObjectDetector_1_1BBOX.html#afcd37814eb448512ef6ecdfe6ebd9c9e',1,'ObjectDetector.BBOX.h()']]],
-  ['hand_1',['HAND',['../classutils_1_1task_1_1Task.html#af58b62e7f56cde4481a743f72041e006',1,'utils::task::Task']]],
-  ['hand_2',['hand',['../classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a37c3e83838ea87a1fd7906d74ee5e234',1,'subtask_managers::hri_tasks::HRITasks']]],
+  ['hand_1',['hand',['../classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a37c3e83838ea87a1fd7906d74ee5e234',1,'subtask_managers::hri_tasks::HRITasks']]],
+  ['hand_2',['HAND',['../classutils_1_1task_1_1Task.html#af58b62e7f56cde4481a743f72041e006',1,'utils::task::Task']]],
   ['hand_5fitems_3',['hand_items',['../classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a6b9f102ca71410c36dc4ce2d65922535',1,'subtask_managers::hri_tasks::HRITasks']]],
   ['hand_5ftask_5fmanager_4',['hand_task_manager',['../namespacehand__task__manager.html',1,'']]],
   ['hand_5ftask_5fmanager_2epy_5',['hand_task_manager.py',['../hand__task__manager_8py.html',1,'']]],

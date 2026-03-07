@@ -1,6 +1,7 @@
 var classsubtask__managers_1_1nav__tasks_1_1NavigationTasks =
 [
     [ "__init__", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a48ca97b4af80aecf1bd5829f32a9afe1", null ],
+    [ "areas_dump", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#af1dd370c01da509aae92727d2bcc871f", null ],
     [ "change_bt", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a98d3c3995cf96bf9182336350a52ea52", null ],
     [ "check_door", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#ac8392c9cae02b642c0c36fdc7f232f31", null ],
     [ "follow_person", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a641efdd1c22f2649d30330aedddf4034", null ],
@@ -18,6 +19,8 @@ var classsubtask__managers_1_1nav__tasks_1_1NavigationTasks =
     [ "_get_result_future", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a351d1aee550aba2fe1f80c462b954df2", null ],
     [ "_send_goal_future", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#aa28101355d5064ecefa63875098dba8a", null ],
     [ "activate_follow", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a7074c5fb978d4b98c3b01933b8c43044", null ],
+    [ "areas_backup", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a550c2d7cc942a9ca671cc642655b4c28", null ],
+    [ "areas_wrapper", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#ae33f36188697a99624a9f4741b9e1d3b", null ],
     [ "bt_lifecycle", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#aea97b781d538901274bd6ca1375bf616", null ],
     [ "bt_params", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a56cc925bf38082003a4fc0efba86a8ef", null ],
     [ "closed_distance", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a4c5866ee0fe98bf2baf2c4dc9c5d4cc5", null ],

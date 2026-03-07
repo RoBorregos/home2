@@ -338,6 +338,7 @@ var namespaces_dup =
     [ "test_hri_manager", "namespacetest__hri__manager.html", "namespacetest__hri__manager" ],
     [ "test_manager", "namespacetest__manager.html", "namespacetest__manager" ],
     [ "test_manipulation_manager", "namespacetest__manipulation__manager.html", "namespacetest__manipulation__manager" ],
+    [ "test_nav_manager", "namespacetest__nav__manager.html", "namespacetest__nav__manager" ],
     [ "test_start_button", "namespacetest__start__button.html", "namespacetest__start__button" ],
     [ "test_vision_manager", "namespacetest__vision__manager.html", "namespacetest__vision__manager" ],
     [ "tf_utils", "namespacetf__utils.html", [

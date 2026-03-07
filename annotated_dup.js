@@ -347,6 +347,9 @@ var annotated_dup =
     [ "test_manipulation_manager", "namespacetest__manipulation__manager.html", [
       [ "TestManipulationManager", "classtest__manipulation__manager_1_1TestManipulationManager.html", "classtest__manipulation__manager_1_1TestManipulationManager" ]
     ] ],
+    [ "test_nav_manager", "namespacetest__nav__manager.html", [
+      [ "TestNavigationManager", "classtest__nav__manager_1_1TestNavigationManager.html", "classtest__nav__manager_1_1TestNavigationManager" ]
+    ] ],
     [ "test_start_button", "namespacetest__start__button.html", [
       [ "TestHriManager", "classtest__start__button_1_1TestHriManager.html", "classtest__start__button_1_1TestHriManager" ]
     ] ],
@@ -432,6 +435,7 @@ var annotated_dup =
       [ "ZeroShotObjectDetector", "classZeroShotObjectDetector_1_1ZeroShotObjectDetector.html", "classZeroShotObjectDetector_1_1ZeroShotObjectDetector" ]
     ] ],
     [ "AddPrimitivesNode", "classAddPrimitivesNode.html", "classAddPrimitivesNode" ],
+    [ "AreasServices", "classAreasServices.html", "classAreasServices" ],
     [ "BoxPrimitiveParams", "structBoxPrimitiveParams.html", "structBoxPrimitiveParams" ],
     [ "CallServicesNode", "classCallServicesNode.html", "classCallServicesNode" ],
     [ "ClientNode", "classClientNode.html", "classClientNode" ],
