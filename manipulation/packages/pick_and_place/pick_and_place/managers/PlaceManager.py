@@ -16,7 +16,7 @@ from frida_interfaces.msg import PickResult
 from sensor_msgs_py import point_cloud2
 import numpy as np
 import json
-
+    
 
 def get_object_cloud_params(object_cluster):
     # 8. Compute Centroid/Height and Set Pour Pose
