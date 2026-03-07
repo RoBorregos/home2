@@ -157,6 +157,7 @@ set(srv_files
   "vision/srv/ShowDetection.srv"
   "vision/srv/Customer.srv"
   "vision/srv/YoloDetect.srv"
+  "navigation/srv/MapAreas.srv"
 )
 
 # Generate interfaces only keep the necessary runtimes (python, c++)
