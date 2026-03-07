@@ -7,7 +7,6 @@ ENV POSTGRES_DB=postgres
 RUN touch /docker-entrypoint-initdb.d/init.sql
 RUN echo "CREATE USER docker; \n CREATE DATABASE docker; \n GRANT ALL PRIVILEGES ON DATABASE docker TO docker;" > /docker-entrypoint-initdb.d/init.sql
 RUN echo "CREATE EXTENSION IF NOT EXISTS vector;" > /docker-entrypoint-initdb.d/00-create-extension.sql
-RUN ls
 COPY init.sql /docker-entrypoint-initdb.d/01-init.sql
 COPY sql_dumps/ /tmp/sql_dumps/
 RUN cp /tmp/sql_dumps/*.sql /docker-entrypoint-initdb.d/ 2>/dev/null || true && rm -rf /tmp/sql_dumps
