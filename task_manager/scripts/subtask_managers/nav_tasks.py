@@ -117,7 +117,7 @@ class NavigationTasks:
                 self.areas_backup = data
                 Logger.info(self.node, "Areas Json BackUp Loaded")
             else:
-                raise ExceptionType("Data is empty")
+                raise Exception("Data is empty")
         except Exception as e:
             self.areas_backup = Status.EXECUTION_ERROR
             Logger.warn(self.node, f"Areas Json Backup Failed Error: {e}")
@@ -165,7 +165,7 @@ class NavigationTasks:
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
         if (future.result() is None) or (future.result().areas == ""):
             Logger.error(self.node, "Service return empty data")
-            return self.areas_backup 
+            return self.areas_backup
 
         else:
             Logger.info(self.node, "Map Areas dumped Succesfully")
