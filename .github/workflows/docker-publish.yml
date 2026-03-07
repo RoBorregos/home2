@@ -49,8 +49,6 @@ jobs:
               - 'docker/cuda.yaml'
             hri:
               - 'docker/hri/**'
-              - 'docker/Dockerfile.ROS'
-              - 'docker/Dockerfile.ROS-l4t'
             vision:
               - 'docker/vision/**'
             navigation_cpu:
@@ -205,21 +203,34 @@ jobs:
             ollama)   echo "name=roborregos/home2:hri-ollama-${{ matrix.env }}" >> $GITHUB_OUTPUT ;;
           esac
 
-      - name: Set Dockerfile path
+      - name: Set Dockerfile path and context
         id: dockerfile
         run: |
           case "${{ matrix.service }}" in
-            ros)      echo "path=docker/hri/dockerfiles/Dockerfile.ROS" >> $GITHUB_OUTPUT ;;
+            ros)
+              echo "path=docker/hri/dockerfiles/Dockerfile.ROS" >> $GITHUB_OUTPUT
+              echo "context=." >> $GITHUB_OUTPUT
+              ;;
             stt)
               if [ "${{ matrix.env }}" = "l4t" ]; then
                 echo "path=docker/hri/dockerfiles/Dockerfile.stt-l4t" >> $GITHUB_OUTPUT
               else
                 echo "path=docker/hri/dockerfiles/Dockerfile.stt" >> $GITHUB_OUTPUT
               fi
+              echo "context=." >> $GITHUB_OUTPUT
               ;;
-            tts)      echo "path=docker/hri/dockerfiles/Dockerfile.tts" >> $GITHUB_OUTPUT ;;
-            postgres) echo "path=docker/hri/dockerfiles/Dockerfile.postgres" >> $GITHUB_OUTPUT ;;
-            ollama)   echo "path=docker/hri/dockerfiles/Dockerfile.ollama" >> $GITHUB_OUTPUT ;;
+            tts)
+              echo "path=docker/hri/dockerfiles/Dockerfile.tts" >> $GITHUB_OUTPUT
+              echo "context=." >> $GITHUB_OUTPUT
+              ;;
+            postgres)
+              echo "path=docker/hri/dockerfiles/Dockerfile.postgres" >> $GITHUB_OUTPUT
+              echo "context=docker/hri" >> $GITHUB_OUTPUT
+              ;;
+            ollama)
+              echo "path=docker/hri/dockerfiles/Dockerfile.ollama" >> $GITHUB_OUTPUT
+              echo "context=docker/hri" >> $GITHUB_OUTPUT
+              ;;
           esac
 
       - name: Set base image arg
@@ -234,7 +245,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: .
+          context: ${{ steps.dockerfile.outputs.context }}
           file: ${{ steps.dockerfile.outputs.path }}
           push: true
           tags: ${{ steps.image.outputs.name }}
