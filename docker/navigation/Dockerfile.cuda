@@ -12,6 +12,5 @@ WORKDIR /workspace
 COPY ./navigation /workspace/src
 RUN cd /workspace/src && sudo apt update && sudo rosdep init && rosdep update
 RUN rosdep install --from-paths . --ignore-src --skip-keys "frida_constants frida_interfaces" -y
-RUN ls
 RUN sudo rm -rf /workspace/src/
 WORKDIR /workspace
