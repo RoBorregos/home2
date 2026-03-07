@@ -682,14 +682,14 @@ class VisionTasks:
 
             if not result.found:
                 Logger.warn(self.node, "No person found")
-                return Status.TARGET_NOT_FOUND, result.point
+                return Status.TARGET_NOT_FOUND, result.points
 
         except Exception as e:
             Logger.error(self.node, f"Error tracking person: {e}")
-            return Status.EXECUTION_ERROR, result.point
+            return Status.EXECUTION_ERROR, result.points
 
         Logger.success(self.node, "Person tracking success")
-        return Status.EXECUTION_SUCCESS, result.point
+        return Status.EXECUTION_SUCCESS, result.points
 
     @mockable(return_value=[Status.EXECUTION_SUCCESS, 100])
     @service_check("count_by_pose_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)
