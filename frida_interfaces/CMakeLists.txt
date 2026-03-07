@@ -59,6 +59,7 @@ set(action_files
   "manipulation/action/ManipulationAction.action"
   "manipulation/action/MoveJoints.action"
   "manipulation/action/MoveToPose.action"
+  "manipulation/action/GoToHand.action"
   "manipulation/action/PickMotion.action"
   "manipulation/action/PickTask.action"
   "manipulation/action/PlaceMotion.action"
@@ -88,7 +89,8 @@ set(msg_files
   "vision/msg/Person.msg"
   "vision/msg/ShelfArray.msg"
   "vision/msg/ShelfDetection.msg"
-)
+  "vision/msg/Detection.msg"
+  )
 
 set(srv_files
   # "task_manager/srv/HearMultiThread.srv"
@@ -98,7 +100,6 @@ set(srv_files
   "hri/srv/BuildEmbeddings.srv"
   "hri/srv/CategorizeShelves.srv"
   "hri/srv/CommandInterpreter.srv"
-  "hri/srv/CommonInterest.srv"
   "hri/srv/ExtractInfo.srv"
   "hri/srv/Grammar.srv"
   "hri/srv/GuestInfo.srv"
@@ -156,6 +157,8 @@ set(srv_files
   "vision/srv/ReadQr.srv"
   "vision/srv/ShowDetection.srv"
   "vision/srv/Customer.srv"
+  "vision/srv/YoloDetect.srv"
+  "navigation/srv/MapAreas.srv"
 )
 
 # Generate interfaces only keep the necessary runtimes (python, c++)

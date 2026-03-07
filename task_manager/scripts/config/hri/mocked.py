@@ -18,12 +18,6 @@ def mock_interpret_keyword(keywords: list[str], timeout: float):
     return Status.MOCKED, keywords[randint(0, len(keywords) - 1)]
 
 
-def mock_common_interest(person1, interest1, person2, interest2, remove_thinking=True):
-    """Pick a random word from keywords"""
-
-    return Status.MOCKED, f"{person1} and {person2} both like {interest1}"
-
-
 __config = {
     "topic_config": [],
     "mock_config": [
@@ -51,11 +45,6 @@ __config = {
             "function_name": "interpret_keyword",
             "enabled": True,
             "mock_data": mock_interpret_keyword,
-        },
-        {
-            "function_name": "common_interest",
-            "enabled": True,
-            "mock_data": mock_common_interest,
         },
         {
             "function_name": "hear",
