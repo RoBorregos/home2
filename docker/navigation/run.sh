@@ -10,8 +10,8 @@ ENV_TYPE="${*: -1}"
 DETACHED=""
 BUILD=""
 BUILD_IMAGE=""
+UPLOAD_IMAGE=""
 COMPOSE_FILE="docker-compose.yaml"
-# Parse arguments
 for arg in "${ARGS[@]}"; do
     case $arg in
     "-d")
@@ -33,6 +33,9 @@ for arg in "${ARGS[@]}"; do
         ;;
     "--build-image")
         BUILD_IMAGE="--build"
+        ;;
+    "--upload-image")
+        UPLOAD_IMAGE="true"
         ;;
     esac
 done
@@ -94,6 +97,11 @@ case $TASK in
 esac
 
 COMMAND="$SETUP && $RUN"
+
+if [ "$UPLOAD_IMAGE" == "true" ]; then
+  echo "Uploading navigation image to DockerHub (env: ${ENV_TYPE})..."
+  ensure_and_upload_image "roborregos/home2:navigation-${ENV_TYPE}" "$COMPOSE_FILE"
+fi
 
 if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
     ALREADY_RUNNING=$(docker ps -q -f name="navigation")
