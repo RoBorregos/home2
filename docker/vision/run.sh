@@ -11,6 +11,7 @@ ENV_TYPE="${*: -1}"
 DETACHED=""
 BUILD=""
 BUILD_IMAGE=""
+UPLOAD_IMAGE=""
 
 # check if one of the arguments is --detached
 for arg in "${ARGS[@]}"; do
@@ -34,6 +35,9 @@ for arg in "${ARGS[@]}"; do
         ;;
     "--build-image")
         BUILD_IMAGE="--build"
+        ;;
+    "--upload-image")
+        UPLOAD_IMAGE="true"
         ;;
     esac
 done
@@ -121,6 +125,11 @@ add_or_update_variable .env "COMMAND_MOONDREAM" "$COMMAND_MOONDREAM"
 
 COMPOSE_PROFILES=$(IFS=, ; echo "${PROFILES[*]}")
 add_or_update_variable .env "COMPOSE_PROFILES" "$COMPOSE_PROFILES"
+
+if [ "$UPLOAD_IMAGE" == "true" ]; then
+  echo "Uploading vision image to DockerHub (env: ${ENV_TYPE})..."
+  ensure_and_upload_image "roborregos/home2:vision-${ENV_TYPE}" "docker-compose.yml"
+fi
 
 if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
     ALREADY_RUNNING=$(docker ps -q -f name="vision")
