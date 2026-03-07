@@ -21,6 +21,18 @@ check_image_exists() {
   fi
 }
 
+# Upload a docker image to DockerHub.
+upload_image() {
+  local image="$1"
+  echo "Pushing image: $image"
+  if docker push "$image"; then
+    echo "Successfully pushed: $image"
+  else
+    echo "Error: Failed to push $image" >&2
+    return 1
+  fi
+}
+
 # Ensure an image exists locally (build if missing) then push it.
 ensure_and_upload_image() {
   local image="$1"
