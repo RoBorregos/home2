@@ -121,7 +121,7 @@ class PickMotionServer(Node):
             goal_handle.succeed()
             result.success = False
             return result
-        
+
     async def execute_go_to_hand_callback(self, goal_handle):
 
         self.get_logger().info("Executing go to hand goal...")
@@ -129,18 +129,17 @@ class PickMotionServer(Node):
         base_point = copy.deepcopy(goal_handle.request.point)
 
         # quaternion position
-        qx, qy, qz, qw = quaternion_from_euler(-np.pi/2, 0, 0)
+        qx, qy, qz, qw = quaternion_from_euler(-np.pi / 2, 0, 0)
         quat = [qx, qy, qz, qw]
 
         # tip offset
         rotation_matrix = quat2mat(quat)
         z_axis = rotation_matrix[:, 1]
 
-        base_position = np.array([
-            base_point.point.x,
-            base_point.point.y,
-            base_point.point.z
-        ]) + z_axis * self.ee_tip_offset
+        base_position = (
+            np.array([base_point.point.x, base_point.point.y, base_point.point.z])
+            + z_axis * self.ee_tip_offset
+        )
 
         hand_offset = goal_handle.request.hand_offset
         test_angles = [0, 180, 200, 220, 240, 270]
@@ -151,12 +150,15 @@ class PickMotionServer(Node):
 
             for angle in test_angles:
 
-                
                 pose = PoseStamped()
                 pose.header.frame_id = base_point.header.frame_id
 
-                pose.pose.position.x = base_position[0] + hand_offset * np.cos(np.radians(angle))
-                pose.pose.position.y = base_position[1] + hand_offset * np.sin(np.radians(angle))
+                pose.pose.position.x = base_position[0] + hand_offset * np.cos(
+                    np.radians(angle)
+                )
+                pose.pose.position.y = base_position[1] + hand_offset * np.sin(
+                    np.radians(angle)
+                )
                 pose.pose.position.z = base_position[2]
 
                 pose.pose.orientation.x = quat[0]
@@ -296,7 +298,9 @@ class PickMotionServer(Node):
         request.planner_id = PICK_PLANNER
         request.target_link = GRASP_LINK_FRAME
         request.tolerance_position = tolerance_position  # Set the position tolerance
-        request.tolerance_orientation = tolerance_orientation  # Set the orientation tolerance
+        request.tolerance_orientation = (
+            tolerance_orientation  # Set the orientation tolerance
+        )
         future = self._move_to_pose_action_client.send_goal_async(request)
         self.wait_for_future(future)
         action_result = future.result().get_result()
