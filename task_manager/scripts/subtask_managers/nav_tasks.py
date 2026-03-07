@@ -15,7 +15,7 @@ from frida_interfaces.srv import (
     PointTransformation,
     ReturnLocation,
     WaitForControllerInput,
-    MapAreas
+    MapAreas,
 )
 from geometry_msgs.msg import PointStamped, PoseStamped
 from lifecycle_msgs.msg import Transition
@@ -104,7 +104,7 @@ class NavigationTasks:
             },
             Task.DEBUG: {
                 # "laser_send": {"client": self.laser_send, "type": "service"},
-                "areas_wrapper": {"client": self.areas_wrapper, "type":"service"}
+                "areas_wrapper": {"client": self.areas_wrapper, "type": "service"}
             },
         }
 

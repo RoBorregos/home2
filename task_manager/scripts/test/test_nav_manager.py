@@ -18,13 +18,13 @@ class TestNavigationManager(Node):
         self.run()
 
     def run(self):
-
         result = self.navigation_manager.areas_dump()
 
         if result == Status.EXECUTION_SUCCESS:
             self.get_logger().info("SUCCESS")
         else:
             self.get_logger().error("FAILED")
+
 
 def main(args=None):
     rclpy.init(args=args)
