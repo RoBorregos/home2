@@ -67,7 +67,7 @@ mkdir -p install build log
 
 #_________________________RUN_________________________
 
-COLCON="colcon build --symlink-install --packages-up-to nav_main --packages-ignore frida_interfaces"
+COLCON="colcon build --symlink-install --packages-up-to nav_main --packages-ignore frida_interfaces frida_constants"
 SOURCE_ROS="source /opt/ros/humble/setup.bash"
 SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
 SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
