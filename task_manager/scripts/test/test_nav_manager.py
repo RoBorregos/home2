@@ -20,7 +20,7 @@ class TestNavigationManager(Node):
     def run(self):
         result = self.navigation_manager.areas_dump()
 
-        if result == Status.EXECUTION_SUCCESS:
+        if result != Status.EXECUTION_ERROR:
             self.get_logger().info("SUCCESS")
         else:
             self.get_logger().error("FAILED")

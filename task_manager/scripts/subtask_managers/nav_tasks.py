@@ -108,6 +108,20 @@ class NavigationTasks:
             },
         }
 
+        try:
+            package_share_directory = get_package_share_directory("frida_constants")
+            file_path = os.path.join(package_share_directory, "map_areas/areas.json")
+            with open(file_path, "r") as file:
+                data = json.load(file)
+            if data is not None:
+                self.areas_backup = data
+                Logger.info(self.node, "Areas Json BackUp Loaded")
+            else:
+                raise ExceptionType("Data is empty")
+        except Exception as e:
+            self.areas_backup = Status.EXECUTION_ERROR
+            Logger.warn(self.node, f"Areas Json Backup Failed Error: {e}")
+
         if not self.mock_data:
             self.setup_services()
 
@@ -143,20 +157,19 @@ class NavigationTasks:
             Logger.error(self.node, f"Error waiting for controller input: {e}")
             return Future().set_result(Status.EXECUTION_ERROR)
 
-    @mockable(return_value="", delay=1)
-    @service_check("areas_wrapper", False, timeout=3)
+    @mockable(return_value=lambda self: self.areas_backup, delay=1)
+    @service_check("areas_wrapper", lambda self: self.areas_backup, timeout=3)
     def areas_dump(self):
         req = MapAreas.Request()
         future = self.areas_wrapper.call_async(req)
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
         if (future.result() is None) or (future.result().areas == ""):
-            Logger.error(self.node, "Service call failed ")
-            return Status.EXECUTION_ERROR
+            Logger.error(self.node, "Service return empty data")
+            return self.areas_backup 
 
         else:
-            Logger.info(self.node, f"data: {future.result().areas}")
-            Logger.info(self.node, "Service call successfull")
-            return Status.EXECUTION_SUCCESS
+            Logger.info(self.node, "Map Areas dumped Succesfully")
+            return str(future.result().areas)
 
     @mockable(return_value=True, delay=10)
     @service_check("pause_nav", False, timeout=3)
