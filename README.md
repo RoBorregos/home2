@@ -1,52 +1,59 @@
-# ROBORREGOS @HOME
+# RoBorregos @Home
 
-[![Ros Build](https://github.com/RoBorregos/home2/actions/workflows/ros2-build.yml/badge.svg)](https://github.com/RoBorregos/home2/actions/workflows/ros2-build.yml)
+[![ROS Build](https://github.com/RoBorregos/home2/actions/workflows/ros2-build.yml/badge.svg)](https://github.com/RoBorregos/home2/actions/workflows/ros2-build.yml)
 [![Pre-commit](https://github.com/RoBorregos/home2/actions/workflows/pre-commit.yml/badge.svg)](https://github.com/RoBorregos/home2/actions/workflows/pre-commit.yml)
 
-# Steps to Run the Repository
+ROS 2 repository for the RoBorregos @Home team, competing in the [RoboCup @Home](https://athome.robocup.org/) league. The project covers autonomous service robot capabilities including vision, navigation, manipulation, and human-robot interaction.
 
-## Prerequisites
+## Table of Contents
 
-Ensure the following are installed on your system:
+- [Getting Started](#getting-started)
+- [Usage](#usage)
+- [Documentation](#documentation)
+- [Video Demonstrations](#video-demonstrations)
+- [Team Members](#team-members)
+- [Past Contributors](#past-contributors)
 
-- **Docker**
-  Refer to the [installation guide](https://docs.docker.com/engine/install/).
-- **Docker Compose**
-- **GIT**
-- **NVIDIA Container Toolkit** (optional, for GPU support)
+## Getting Started
 
-## Steps to Run the Repository
+### Prerequisites
 
-#### 1. Clone the Repository
+- [Docker](https://docs.docker.com/engine/install/)
+- [Docker Compose](https://docs.docker.com/compose/install/)
+- Git
+- [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) (optional, for GPU support)
+
+### Installation
 
 ```bash
-$ git clone https://github.com/RoBorregos/home2.git --recursive
-$ cd home2
+git clone https://github.com/RoBorregos/home2.git --recursive
+cd home2
+
 # If you already cloned without --recursive
-$ git submodule update --init --recursive
+git submodule update --init --recursive
 ```
 
-#### 2. Run the Project
+## Usage
 
 The `run.sh` script automatically detects your environment (CPU, CUDA, or L4T) and manages the Docker containers.
 
 ```bash
 # Show available commands and options
-$ ./run.sh --help
+./run.sh --help
 
 # Run a specific area
-$ ./run.sh vision
-$ ./run.sh hri
-$ ./run.sh navigation
-$ ./run.sh manipulation
-$ ./run.sh integration
+./run.sh vision
+./run.sh hri
+./run.sh navigation
+./run.sh manipulation
+./run.sh integration
 
 # Run a competition task
-$ ./run.sh --gpsr
-$ ./run.sh --restaurant
+./run.sh --gpsr
+./run.sh --restaurant
 ```
 
-#### Available Flags
+### Available Flags
 
 | Flag | Description |
 | --- | --- |
@@ -57,48 +64,44 @@ $ ./run.sh --restaurant
 | `--stop` | Stops the running containers |
 | `--down` | Stops and removes all containers, networks, and volumes |
 
-# Rule Book
+## Documentation
 
-[Rule book](https://robocupathome.github.io/RuleBook/rulebook/master.pdf)
-
-# Team Members
-
-| Name               | Github                                               | Role                            |
-| ------------------ | ---------------------------------------------------- | ------------------------------- |
-| Oscar Arreola      | [@Oscar-gg](https://github.com/Oscar-gg)             | HRI, Integration                |
-| Gerardo Fregoso    | [@GerardoFJ](https://github.com/GerardoFJ)           | Navigation, Integration         |
-| Alejandra Coeto    | [@Ale-Coeto](https://github.com/Ale-Coeto)           | Vision, Integration             |
-| Danaé Sánchez      | [@DanaeSG](https://github.com/DanaeSG)               | Vision, Navigation, Integration |
-| Alejandro González | [@AleGonzcamilla](https://github.com/AleGonzcamilla) | Mechanics, Manipulation         |
-| Emil Winkler       | [@emilwinkp](https://github.com/emilwinkp)           | Manipulation                    |
-| Fernando Hernandez | [@Fernando94654](https://github.com/Fernando94654)   | Vision, Manipulation            |
-| Camila Tite        | [@CamilaTite26](https://github.com/CamilaTite26)     | HRI                             |
-| Daniela Herrera    | [@DanHeGa](https://github.com/DanHeGa)               | Vision                          |
-| Gilberto Malagamba | [@GilMM27](https://github.com/GilMM27)               | HRI, Integration                |
-| José Domínguez     | [@JLDominguezM](https://github.com/JLDominguezM)     | Manipulation, Integration       |
-
-# Legacy
-
-| Name                | Github                                                 | Role                                   |
-| ------------------- | ------------------------------------------------------ | -------------------------------------- |
-| Adán Flores-Ramírez | [@afr2903](https://github.com/afr2903)                 | Research                               |
-| David Vázquez       | [@deivideich](https://github.com/Deivideich)           | Manipulation                           |
-| Emiliano Flores     | [@EmilianoHFlores](https://github.com/EmilianoHFlores) | Manipulation, Vision, Integration      |
-| Iván Romero         | [@IvanRomero03](https://github.com/IvanRomero03)       | Integration, HRI, Manipulation, Vision |
-| Diego Hernández     | [@Diego-HC](https://github.com/Diego-HC)               | Integration, HRI, Navigation           |
-
-# Documentation
-
-[Docs](https://athome.roborregos.com/)
-
-[API documentation](https://roborregos.github.io/home2/)
+- [Project Docs](https://athome.roborregos.com/)
+- [API Reference](https://roborregos.github.io/home2/)
+- [RoboCup @Home Rule Book](https://robocupathome.github.io/RuleBook/rulebook/master.pdf)
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/RoBorregos/home2)
 
-## Video demonstrations
+## Video Demonstrations
 
 [![Explanatory video demonstration of task planning test using the command interpreter with the robot](https://img.youtube.com/vi/do1S1zfmMsA/0.jpg)](https://www.youtube.com/watch?v=do1S1zfmMsA)
 
 [![Video demonstration of the GPSR task during the Mexican Robotics Tournament 2025](https://img.youtube.com/vi/0bMz6ESv6B8/0.jpg)](https://www.youtube.com/watch?v=0bMz6ESv6B8)
 
 [![Video demonstration](https://img.youtube.com/vi/qUQNTDRBEKw/0.jpg)](https://www.youtube.com/watch?v=qUQNTDRBEKw)
+
+## Team Members
+
+| Name | GitHub | Role |
+| --- | --- | --- |
+| Oscar Arreola | [@Oscar-gg](https://github.com/Oscar-gg) | HRI, Integration |
+| Gerardo Fregoso | [@GerardoFJ](https://github.com/GerardoFJ) | Navigation, Integration |
+| Alejandra Coeto | [@Ale-Coeto](https://github.com/Ale-Coeto) | Vision, Integration |
+| Danae Sanchez | [@DanaeSG](https://github.com/DanaeSG) | Vision, Navigation, Integration |
+| Alejandro Gonzalez | [@AleGonzcamilla](https://github.com/AleGonzcamilla) | Mechanics, Manipulation |
+| Emil Winkler | [@emilwinkp](https://github.com/emilwinkp) | Manipulation |
+| Fernando Hernandez | [@Fernando94654](https://github.com/Fernando94654) | Vision, Manipulation |
+| Camila Tite | [@CamilaTite26](https://github.com/CamilaTite26) | HRI |
+| Daniela Herrera | [@DanHeGa](https://github.com/DanHeGa) | Vision |
+| Gilberto Malagamba | [@GilMM27](https://github.com/GilMM27) | HRI, Integration |
+| Jose Dominguez | [@JLDominguezM](https://github.com/JLDominguezM) | Manipulation, Integration |
+
+## Past Contributors
+
+| Name | GitHub | Role |
+| --- | --- | --- |
+| Adan Flores-Ramirez | [@afr2903](https://github.com/afr2903) | Research |
+| David Vazquez | [@deivideich](https://github.com/Deivideich) | Manipulation |
+| Emiliano Flores | [@EmilianoHFlores](https://github.com/EmilianoHFlores) | Manipulation, Vision, Integration |
+| Ivan Romero | [@IvanRomero03](https://github.com/IvanRomero03) | Integration, HRI, Manipulation, Vision |
+| Diego Hernandez | [@Diego-HC](https://github.com/Diego-HC) | Integration, HRI, Navigation |
