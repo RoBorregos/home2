@@ -73,6 +73,9 @@ LOCAL_CAMERA_TOPIC = "/vision/local_rbg_image"
 # OBJECT DETECTION HANDLER TOPICS
 DETECTION_HANDLER_TOPIC_SRV = "/vision/detection_handler"
 
+# HAND DETECTION SERVICE
+DETECT_HAND_SERVICE = "/vision/detect_hand"
+
 # Tracker node
 SET_TARGET_TOPIC = "/vision/set_tracking_target"
 SET_TARGET_BY_TOPIC = "/vision/set_tracking_target_by"
