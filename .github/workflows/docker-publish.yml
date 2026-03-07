@@ -2,7 +2,7 @@ name: Docker Publish
 
 on:
   push:
-    branches: [main]
+    branches: [docker-publish-workflow]
     paths:
       # Shared files that affect all areas
       - "docker/Dockerfile.ROS"
