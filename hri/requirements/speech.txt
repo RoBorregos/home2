@@ -23,4 +23,5 @@ piper==0.14.4
 grpcio==1.70.0
 grpcio-tools==1.70.0
 protobuf==5.29.0
+torchaudio<=2.5.0
 deepfilternet>=0.5.6
