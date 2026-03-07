@@ -123,7 +123,9 @@ class ReceptionistCommands(Node):
         """Callback to receive the image from the camera."""
         self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
         if self.hand_run_thread is None or not self.hand_run_thread.is_alive():
-            self.hand_run_thread = threading.Thread(target=self.run_hand_inference, daemon=True)
+            self.hand_run_thread = threading.Thread(
+                target=self.run_hand_inference, daemon=True
+            )
             self.hand_run_thread.start()
 
     def depth_callback(self, msg):
