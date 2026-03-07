@@ -120,8 +120,8 @@ class DataExtractor(Node):
                     request.full_text, "name", request.context
                 )
                 if response.result == "":
-                    self.get_logger().info(
-                        "No name found in text using LLM. Returning same string as a result."
+                    self.get_logger().error(
+                        "No name found in text using LLM. Returning empty string as a result."
                     )
                     response.result = ""
 
@@ -136,7 +136,7 @@ class DataExtractor(Node):
                     request.full_text, "location", request.context
                 )
                 if response.result == "":
-                    self.get_logger().info(
+                    self.get_logger().error(
                         "No location found in text using LLM. Returning empty string as result."
                     )
                     response.result = ""
@@ -180,7 +180,8 @@ class DataExtractor(Node):
         return result.data
 
     def extract_name(self, text: str) -> str:
-        name = extract_by_priority(self.nlp(text).ents, NAME_PRIORITY_LABELS)
+        doc = self.nlp(text)
+        name = extract_by_priority(doc.ents, NAME_PRIORITY_LABELS)
         return name
 
     def extract_loc(self, text: str) -> str:
