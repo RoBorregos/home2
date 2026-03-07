@@ -18,6 +18,7 @@ var manipulation__constants_8py =
     [ "GET_COLLISION_OBJECTS_SERVICE", "manipulation__constants_8py.html#a35ee56f396288b5c13e1a83118353872", null ],
     [ "GET_JOINT_SERVICE", "manipulation__constants_8py.html#ac3a0e78153e604056eb6b66a73f0f4f7", null ],
     [ "GET_JOINT_TOPIC", "manipulation__constants_8py.html#ab6d32e6ff959403c0f3f8f10aa6a1ab4", null ],
+    [ "GO_TO_HAND_ACTION_SERVER", "manipulation__constants_8py.html#afc80b7dd3c844ae6873add3579898cb9", null ],
     [ "GRASP_DETECTION_SERVICE", "manipulation__constants_8py.html#a520f33abe220f0f53b58bc4a6087abae", null ],
     [ "GRASP_LINK_FRAME", "manipulation__constants_8py.html#aaccddbdec7541f9e856c14beed78d764", null ],
     [ "GRIPPER_SET_STATE_SERVICE", "manipulation__constants_8py.html#a38b21f89e935776f5580a76d35638040", null ],

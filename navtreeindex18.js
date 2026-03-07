@@ -1,5 +1,12 @@
 var NAVTREEINDEX18 =
 {
+"classtest__manager_1_1TestTaskManager.html#a6953502ae5a02e035d87a06899bbe009":[22,0,142,0,0],
+"classtest__manager_1_1TestTaskManager.html#a6953502ae5a02e035d87a06899bbe009":[23,0,80,0,0],
+"classtest__manipulation__manager_1_1TestManipulationManager.html":[22,0,143,0],
+"classtest__manipulation__manager_1_1TestManipulationManager.html":[23,0,81,0],
+"classtest__manipulation__manager_1_1TestManipulationManager.html#a7115d4e6bc3bf8b3eb3f1d33eb2257ed":[23,0,81,0,1],
+"classtest__manipulation__manager_1_1TestManipulationManager.html#a7115d4e6bc3bf8b3eb3f1d33eb2257ed":[22,0,143,0,1],
+"classtest__manipulation__manager_1_1TestManipulationManager.html#a7192833499c49ad755e1cc2f0ddfb7f9":[23,0,81,0,2],
 "classtest__manipulation__manager_1_1TestManipulationManager.html#a7192833499c49ad755e1cc2f0ddfb7f9":[22,0,143,0,2],
 "classtest__manipulation__manager_1_1TestManipulationManager.html#a8402896fa951a79f640a0ad94a7591d2":[22,0,143,0,0],
 "classtest__manipulation__manager_1_1TestManipulationManager.html#a8402896fa951a79f640a0ad94a7591d2":[23,0,81,0,0],
@@ -242,12 +249,5 @@ var NAVTREEINDEX18 =
 "classtransform__target_1_1PointTransformer.html#ab35b88ed316777bd8db584ed54043088":[23,0,87,0,12],
 "classtransform__target_1_1PointTransformer.html#ab35b88ed316777bd8db584ed54043088":[22,0,150,0,12],
 "classtransform__target_1_1PointTransformer.html#ab47645f854bbd3f078f48d5a9927921b":[22,0,150,0,10],
-"classtransform__target_1_1PointTransformer.html#ab47645f854bbd3f078f48d5a9927921b":[23,0,87,0,10],
-"classtransform__target_1_1PointTransformer.html#aba0bfe8b161c88c54e1ea777ff934a42":[22,0,150,0,21],
-"classtransform__target_1_1PointTransformer.html#aba0bfe8b161c88c54e1ea777ff934a42":[23,0,87,0,21],
-"classtransform__target_1_1PointTransformer.html#acdf37574bbe924e86d3374c5fa1c6f9e":[23,0,87,0,22],
-"classtransform__target_1_1PointTransformer.html#acdf37574bbe924e86d3374c5fa1c6f9e":[22,0,150,0,22],
-"classtransform__target_1_1PointTransformer.html#ae591a80eea224d240068e25ccac1c5c2":[22,0,150,0,8],
-"classtransform__target_1_1PointTransformer.html#ae591a80eea224d240068e25ccac1c5c2":[23,0,87,0,8],
-"classtransform__target_1_1PointTransformer.html#aed71023fecf00309107cbfdb6d14d602":[23,0,87,0,18]
+"classtransform__target_1_1PointTransformer.html#ab47645f854bbd3f078f48d5a9927921b":[23,0,87,0,10]
 };

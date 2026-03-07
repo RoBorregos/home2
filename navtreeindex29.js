@@ -1,5 +1,14 @@
 var NAVTREEINDEX29 =
 {
+"test__hri__manager_8py.html#afab82146d21339556bbeec1207843778":[24,0,6,1,3,0,17],
+"test__manager_8py.html":[24,0,6,1,3,1],
+"test__manager_8py.html#a493f4e40d62cf85e734ad364fce0608a":[24,0,6,1,3,1,1],
+"test__manipulation__manager_8py.html":[24,0,6,1,3,2],
+"test__manipulation__manager_8py.html#aa1d1240f6e1bf9a1472e8c9e914fcfb4":[24,0,6,1,3,2,1],
+"test__nav__manager_8py.html":[24,0,6,1,3,3],
+"test__nav__manager_8py.html#ab0964f7c5e2456a9bbe75f0ea66499e5":[24,0,6,1,3,3,1],
+"test__start__button_8py.html":[24,0,6,1,3,4],
+"test__start__button_8py.html#a2a27485c0bb05130ef7b47bab273b816":[24,0,6,1,3,4,9],
 "test__start__button_8py.html#a3fd1d1efe1e66a95ad7bed4a0864d03c":[24,0,6,1,3,4,1],
 "test__start__button_8py.html#a4df91e2c705cdee964ae3f5a4f3e3b55":[24,0,6,1,3,4,5],
 "test__start__button_8py.html#a68e054a82f66e8d16de546e921d01174":[24,0,6,1,3,4,3],

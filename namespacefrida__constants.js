@@ -25,6 +25,7 @@ var namespacefrida__constants =
       [ "GET_COLLISION_OBJECTS_SERVICE", "namespacefrida__constants_1_1manipulation__constants.html#a35ee56f396288b5c13e1a83118353872", null ],
       [ "GET_JOINT_SERVICE", "namespacefrida__constants_1_1manipulation__constants.html#ac3a0e78153e604056eb6b66a73f0f4f7", null ],
       [ "GET_JOINT_TOPIC", "namespacefrida__constants_1_1manipulation__constants.html#ab6d32e6ff959403c0f3f8f10aa6a1ab4", null ],
+      [ "GO_TO_HAND_ACTION_SERVER", "namespacefrida__constants_1_1manipulation__constants.html#afc80b7dd3c844ae6873add3579898cb9", null ],
       [ "GRASP_DETECTION_SERVICE", "namespacefrida__constants_1_1manipulation__constants.html#a520f33abe220f0f53b58bc4a6087abae", null ],
       [ "GRASP_LINK_FRAME", "namespacefrida__constants_1_1manipulation__constants.html#aaccddbdec7541f9e856c14beed78d764", null ],
       [ "GRIPPER_SET_STATE_SERVICE", "namespacefrida__constants_1_1manipulation__constants.html#a38b21f89e935776f5580a76d35638040", null ],

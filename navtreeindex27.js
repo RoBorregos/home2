@@ -1,5 +1,14 @@
 var NAVTREEINDEX27 =
 {
+"namespacestoring__groceries__manager.html#a2fd3c5a7b46f6bb755f0abf70ca3120e":[22,0,137,9],
+"namespacestoring__groceries__manager.html#a5c5fb5ca9955697c9096cbed47fe0bd4":[22,0,137,4],
+"namespacestoring__groceries__manager.html#a6c6879c42f9db08122407e746f9f1743":[22,0,137,10],
+"namespacestoring__groceries__manager.html#a8b63e1cdbdbefa642e6a43a0aa606632":[22,0,137,6],
+"namespacestoring__groceries__manager.html#ad877050e492d039476b41e8c97e3f49e":[22,0,137,8],
+"namespacestoring__groceries__manager.html#aefba43d88a80d9a35a4c5de13f58c9d7":[22,0,137,7],
+"namespacesubtask__managers.html":[22,0,138],
+"namespacesubtask__managers_1_1generic__tasks.html":[22,0,138,0],
+"namespacesubtask__managers_1_1gpsr__single__tasks.html":[22,0,138,1],
 "namespacesubtask__managers_1_1gpsr__single__tasks.html#a1b987e491b2223fe612a9fcaaecd0450":[22,0,138,1,1],
 "namespacesubtask__managers_1_1gpsr__single__tasks.html#a2bcfc7fa30ee4d8f06ec6081c8cf15bc":[22,0,138,1,2],
 "namespacesubtask__managers_1_1gpsr__tasks.html":[22,0,138,2],
@@ -240,14 +249,5 @@ var NAVTREEINDEX27 =
 "new__tracker_8py.html#a33180eaf9f71838d633518a2a04c8eb7":[24,0,7,0,3,1,7,7],
 "new__tracker_8py.html#a403d7921c624573e1cc1b9857ab3df19":[24,0,7,0,3,1,7,8],
 "new__tracker_8py.html#a632d8155dd22a4532fb696e3febe7f1b":[24,0,7,0,3,1,7,4],
-"new__tracker_8py.html#a643baaa61b2aedb4a2860c59ab6c3244":[24,0,7,0,3,1,7,1],
-"new__tracker_8py.html#a88e5c096e37c837e32d391f453e4d206":[24,0,7,0,3,1,7,5],
-"new__tracker_8py.html#ac2bec6fa6022496184746730db5af638":[24,0,7,0,3,1,7,2],
-"new__tracker_8py.html#acd4ec4ccaa29f5d5b05055ac9444f55c":[24,0,7,0,3,1,7,6],
-"new__tracker_8py.html#afc7e7bf51cd9f174dd03a8b8a05e2491":[24,0,7,0,3,1,7,3],
-"objectDetectionHandler_8launch_8py.html":[24,0,7,0,1,0,0],
-"objectDetectionHandler_8launch_8py.html#a57f57849cc3ad33855b1ebfb1fa9f347":[24,0,7,0,1,0,0,0],
-"objectDetectionHandler_8local_8launch_8py.html":[24,0,7,0,1,0,1],
-"objectDetectionHandler_8local_8launch_8py.html#a57f57849cc3ad33855b1ebfb1fa9f347":[24,0,7,0,1,0,1,0],
-"object__detection__handler_8cpp.html":[24,0,7,0,1,1,0]
+"new__tracker_8py.html#a643baaa61b2aedb4a2860c59ab6c3244":[24,0,7,0,3,1,7,1]
 };

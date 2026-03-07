@@ -1,5 +1,12 @@
 var NAVTREEINDEX20 =
 {
+"classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a2560ee772931f221edc0988b0d8198b4":[22,0,166,1,22],
+"classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a2560ee772931f221edc0988b0d8198b4":[23,0,100,1,22],
+"classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a2ca06a585df136b9705d919d4e8fe281":[22,0,166,1,3],
+"classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a2ca06a585df136b9705d919d4e8fe281":[23,0,100,1,3],
+"classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a33e0c4d89ca62c6068e9b934af89cb1c":[23,0,100,1,11],
+"classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a33e0c4d89ca62c6068e9b934af89cb1c":[22,0,166,1,11],
+"classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a374b95c92366d0d4bab514e1d65adfbd":[23,0,100,1,19],
 "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a374b95c92366d0d4bab514e1d65adfbd":[22,0,166,1,19],
 "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a4321efc4380a3e0e9620ff180fa2946d":[23,0,100,1,13],
 "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a4321efc4380a3e0e9620ff180fa2946d":[22,0,166,1,13],
@@ -242,12 +249,5 @@ var NAVTREEINDEX20 =
 "dualshock__cmd__vel_8launch_8py.html":[24,0,4,0,2,0,2],
 "dualshock__cmd__vel_8launch_8py.html#a432ab17ac92da4fc48450236583614a3":[24,0,4,0,2,0,2,0],
 "egpsr__task__manager_8py.html":[24,0,6,1,7],
-"egpsr__task__manager_8py.html#a127f19f794b41f65a7a9d0aae5fbec99":[24,0,6,1,7,7],
-"egpsr__task__manager_8py.html#a409e19ab5fd511004f98c53b43c58fc4":[24,0,6,1,7,5],
-"egpsr__task__manager_8py.html#a639302bbe8575be8fb44f476048e3cc9":[24,0,6,1,7,6],
-"egpsr__task__manager_8py.html#aa05b1ec6be064ba60b91cf2e496a3019":[24,0,6,1,7,2],
-"egpsr__task__manager_8py.html#aa4920b76947aa71259901236fc3553bd":[24,0,6,1,7,4],
-"egpsr__task__manager_8py.html#ab3109aece7cc645c5993c76034b7466b":[24,0,6,1,7,3],
-"egpsr__task__manager_8py.html#ae6fc79bfcfcdb72a5a6f151c50d90945":[24,0,6,1,7,8],
-"egsr__cut_8py.html":[24,0,6,1,1,2]
+"egpsr__task__manager_8py.html#a127f19f794b41f65a7a9d0aae5fbec99":[24,0,6,1,7,7]
 };

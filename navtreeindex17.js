@@ -1,5 +1,12 @@
 var NAVTREEINDEX17 =
 {
+"classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a4074a19e89e915451bd71d1d624cace7":[22,0,138,9,0,2],
+"classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a4074a19e89e915451bd71d1d624cace7":[23,0,76,8,0,2],
+"classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a426899aff21ab194b40c2b5102165e85":[23,0,76,8,0,20],
+"classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a426899aff21ab194b40c2b5102165e85":[22,0,138,9,0,20],
+"classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a51b64ef8837b01ace46e4451db981f3a":[22,0,138,9,0,64],
+"classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a51b64ef8837b01ace46e4451db981f3a":[23,0,76,8,0,64],
+"classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a52a68ce97b189dc95e5f82528c9e7da1":[23,0,76,8,0,31],
 "classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a52a68ce97b189dc95e5f82528c9e7da1":[22,0,138,9,0,31],
 "classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a5e8d01cdbf3ed3146690906ca7acf49a":[22,0,138,9,0,18],
 "classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a5e8d01cdbf3ed3146690906ca7acf49a":[23,0,76,8,0,18],
@@ -242,12 +249,5 @@ var NAVTREEINDEX17 =
 "classtest__manager_1_1TestTaskManager.html#a1524259ed0bd426610078938e4251af1":[22,0,142,0,1],
 "classtest__manager_1_1TestTaskManager.html#a1524259ed0bd426610078938e4251af1":[23,0,80,0,1],
 "classtest__manager_1_1TestTaskManager.html#a37c1ad8283152a2acc1dd43d40d4bcd9":[22,0,142,0,2],
-"classtest__manager_1_1TestTaskManager.html#a37c1ad8283152a2acc1dd43d40d4bcd9":[23,0,80,0,2],
-"classtest__manager_1_1TestTaskManager.html#a6953502ae5a02e035d87a06899bbe009":[22,0,142,0,0],
-"classtest__manager_1_1TestTaskManager.html#a6953502ae5a02e035d87a06899bbe009":[23,0,80,0,0],
-"classtest__manipulation__manager_1_1TestManipulationManager.html":[22,0,143,0],
-"classtest__manipulation__manager_1_1TestManipulationManager.html":[23,0,81,0],
-"classtest__manipulation__manager_1_1TestManipulationManager.html#a7115d4e6bc3bf8b3eb3f1d33eb2257ed":[23,0,81,0,1],
-"classtest__manipulation__manager_1_1TestManipulationManager.html#a7115d4e6bc3bf8b3eb3f1d33eb2257ed":[22,0,143,0,1],
-"classtest__manipulation__manager_1_1TestManipulationManager.html#a7192833499c49ad755e1cc2f0ddfb7f9":[23,0,81,0,2]
+"classtest__manager_1_1TestTaskManager.html#a37c1ad8283152a2acc1dd43d40d4bcd9":[23,0,80,0,2]
 };
