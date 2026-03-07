@@ -9,45 +9,40 @@ import rclpy
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from speech.speech_api_utils import SpeechApiUtils
-
 from frida_interfaces.msg import AudioData
 
-SAVE_PATH = "/workspace/src/hri/packages/speech/debug/"
-run_frames = []
+SAVE_PATH = "/tmp"
 SAVE_IT = 100
+run_frames = []
 
 
 class AudioCapturer(Node):
     def __init__(self):
         super().__init__("audio_capturer")
 
-        self.declare_parameter("publish_topic", "/rawAudioChunk")
+        self.declare_parameter("RAW_AUDIO_TOPIC", "/hri/rawAudioChunk")
         self.declare_parameter("MIC_DEVICE_NAME", "default")
         self.declare_parameter("MIC_INPUT_CHANNELS", 32)
         self.declare_parameter("MIC_OUT_CHANNELS", 32)
+        self.declare_parameter("CHUNK_SIZE", 1024)
+        self.declare_parameter("DEBUG", False)
 
-        publish_topic = (
-            self.get_parameter("publish_topic").get_parameter_value().string_value
-        )
-
+        self.chunk_size = self.get_parameter("CHUNK_SIZE").value
+        self.debug = self.get_parameter("DEBUG").value
         self.use_respeaker = SpeechApiUtils.respeaker_available()
         self.get_logger().info(f"ReSpeaker detected: {self.use_respeaker}")
+        self.RATE = 16000
 
-        mic_device_name = (
-            self.get_parameter("MIC_DEVICE_NAME").get_parameter_value().string_value
-        )
-        mic_input_channels = (
-            self.get_parameter("MIC_INPUT_CHANNELS").get_parameter_value().integer_value
-        )
-        mic_out_channels = (
-            self.get_parameter("MIC_OUT_CHANNELS").get_parameter_value().integer_value
+        self.publisher_ = self.create_publisher(
+            AudioData, self.get_parameter("RAW_AUDIO_TOPIC").value, 20
         )
 
-        self.publisher_ = self.create_publisher(AudioData, publish_topic, 20)
+        mic_device_name = self.get_parameter("MIC_DEVICE_NAME").value
+        mic_input_channels = self.get_parameter("MIC_INPUT_CHANNELS").value
+        mic_out_channels = self.get_parameter("MIC_OUT_CHANNELS").value
         self.input_device_index = SpeechApiUtils.getIndexByNameAndChannels(
             mic_device_name, mic_input_channels, mic_out_channels
         )
-
         self.get_logger().info("Input device index: " + str(self.input_device_index))
 
         if self.input_device_index is None:
@@ -58,58 +53,55 @@ class AudioCapturer(Node):
         self.get_logger().info("AudioCapturer node initialized.")
 
     def record(self):
-        self.get_logger().info("AudioCapturer node recording.")
-        iteration_step = 0
-        CHUNK_SIZE = 512
-        self.FORMAT = pyaudio.paInt16  # Signed 2 bytes.
-        self.debug = False
-        CHANNELS = 6 if self.use_respeaker else 1
-        self.RATE = 16000
-        EXTRACT_CHANNEL = 0  # Use channel 0. Tested with microphone.py. See channel meaning: https://wiki.seeedstudio.com/ReSpeaker-USB-Mic-Array/#update-firmware
-
         self.p = pyaudio.PyAudio()
-        stream = self.p.open(
-            input_device_index=self.input_device_index,  # See list_audio_devices() or set it to None for default
-            format=self.FORMAT,
-            channels=CHANNELS,
-            rate=self.RATE,
-            input=True,
-            frames_per_buffer=CHUNK_SIZE,
-        )
+        self.FORMAT = pyaudio.paInt16
+        channels = 6 if self.use_respeaker else 1
+        iteration_step = 0
 
         try:
-            while stream.is_active() and rclpy.ok():
-                in_data = stream.read(CHUNK_SIZE, exception_on_overflow=False)
+            stream = self.p.open(
+                input_device_index=self.input_device_index,
+                format=self.FORMAT,
+                channels=channels,
+                rate=self.RATE,
+                input=True,
+                frames_per_buffer=self.chunk_size,
+            )
 
+            self.get_logger().info(
+                f"--- Listening on device index {self.input_device_index} ---"
+            )
+
+            while rclpy.ok() and stream.is_active():
+                data = stream.read(self.chunk_size, exception_on_overflow=False)
+                if not data:
+                    continue
+
+                # If ReSpeaker, extract channel 0 (main microphone), otherwise publish raw bytes
                 if self.use_respeaker:
-                    in_data = np.frombuffer(in_data, dtype=np.int16)[EXTRACT_CHANNEL::6]
-                    in_data = in_data.tobytes()
+                    data = np.frombuffer(data, dtype=np.int16)[0::6].tobytes()
 
-                local_audio = bytes(in_data)
-
-                ros_audio = bytes(local_audio)
-                self.publisher_.publish(AudioData(data=ros_audio))
+                self.publisher_.publish(AudioData(data=data))
 
                 if self.debug:
-                    run_frames.append(local_audio)
+                    run_frames.append(data)
+                    iteration_step += 1
+                    if iteration_step % SAVE_IT == 0:
+                        iteration_step = 0
+                        self.save_audio()
 
-                iteration_step += 1
-                if iteration_step % SAVE_IT == 0:
-                    iteration_step = 0
-                    self.save_audio()
-
-        except KeyboardInterrupt:
-            self.get_logger().info("Stopping on user interrupt.")
+        except Exception as e:
+            self.get_logger().error(f"Critical error in PyAudio: {e}")
         finally:
-            stream.stop_stream()
-            stream.close()
+            self.get_logger().info("Closing AudioCapturer...")
+            try:
+                stream.stop_stream()
+                stream.close()
+            except Exception:
+                pass
             self.p.terminate()
-            self.get_logger().info("Audio stream closed.")
 
     def save_audio(self):
-        if not self.debug:
-            return
-
         self.get_logger().info("Saving audio stream.")
         output_file = os.path.join(SAVE_PATH, "last_run_audio.wav")
 
@@ -122,8 +114,8 @@ class AudioCapturer(Node):
 
 def main(args=None):
     rclpy.init(args=args)
+    node = AudioCapturer()
     try:
-        node = AudioCapturer()
         node.record()
     except (ExternalShutdownException, KeyboardInterrupt):
         pass
