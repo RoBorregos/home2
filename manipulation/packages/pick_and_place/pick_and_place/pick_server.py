@@ -123,7 +123,6 @@ class PickMotionServer(Node):
             return result
 
     async def execute_go_to_hand_callback(self, goal_handle):
-
         self.get_logger().info("Executing go to hand goal...")
 
         base_point = copy.deepcopy(goal_handle.request.point)
@@ -147,9 +146,7 @@ class PickMotionServer(Node):
         result = GoToHand.Result()
 
         try:
-
             for angle in test_angles:
-
                 pose = PoseStamped()
                 pose.header.frame_id = base_point.header.frame_id
 
@@ -186,7 +183,6 @@ class PickMotionServer(Node):
             return result
 
         except Exception as e:
-
             self.get_logger().error(f"Go to hand failed: {str(e)}")
             goal_handle.succeed()
             result.success = False
