@@ -10,7 +10,7 @@ import math
 import time
 
 import rclpy
-from frida_constants.vision_classes import BBOX, ShelfDetection
+from frida_constants.vision_classes import BBOX
 from frida_constants.vision_constants import (
     BEVERAGE_TOPIC,
     CHECK_PERSON_TOPIC,
@@ -33,6 +33,7 @@ from frida_constants.vision_constants import (
     SET_TARGET_BY_TOPIC,
     SET_TARGET_TOPIC,
     SHELF_DETECTION_TOPIC,
+    CUSTOMER_TABLES_TOPIC,
 )
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.msg import ObjectDetection, PersonList
@@ -51,6 +52,7 @@ from frida_interfaces.srv import (
     SaveName,
     ShelfDetectionHandler,
     TrackBy,
+    CustomerTables,
 )
 from geometry_msgs.msg import Point, PointStamped
 from rclpy.action import ActionClient
@@ -112,6 +114,8 @@ class VisionTasks:
         )
 
         self.customer_client = self.node.create_client(Customer, GET_CUSTOMER_TOPIC)
+
+        self.detect_tables_client = self.node.create_client(CustomerTables, CUSTOMER_TABLES_TOPIC)
 
         self.detect_person_action_client = ActionClient(self.node, DetectPerson, CHECK_PERSON_TOPIC)
 
@@ -194,6 +198,10 @@ class VisionTasks:
                     "client": self.moondream_crop_query_client,
                     "type": "service",
                 },
+            },
+            Task.RESTAURANT: {
+                "customer": {"client": self.customer_client, "type": "service"},
+                "customer_tables": {"client": self.customer_tables_client, "type": "service"},
             },
         }
 
@@ -340,41 +348,6 @@ class VisionTasks:
 
         Logger.success(self.node, f"Qr code found: {result.result}")
         return Status.EXECUTION_SUCCESS, result.result
-
-    @mockable(return_value=(Status.EXECUTION_SUCCESS, []), delay=2)
-    # @service_check("shelf_detections_client", Status.EXECUTION_ERROR, TIMEOUT)
-    def detect_shelf(self, timeout: float = TIMEOUT) -> tuple[Status, list[ShelfDetection]]:
-        """Detect the shelf in the image"""
-        Logger.info(self.node, "Waiting for shelf detection")
-        request = ShelfDetectionHandler.Request()
-        detections = []
-
-        try:
-            future = self.shelf_detections_client.call_async(request)
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=timeout)
-            result = future.result()
-
-            if not result.success:
-                Logger.warn(self.node, "No shelf detected")
-                return Status.TARGET_NOT_FOUND, detections
-
-            results = result.shelf_array.shelf_detections
-            # for each result
-            for detection in results:
-                shelf_detection = ShelfDetection()
-                shelf_detection.x1 = detection.xmin
-                shelf_detection.x2 = detection.xmax
-                shelf_detection.y1 = detection.ymin
-                shelf_detection.y2 = detection.ymax
-                shelf_detection.level = detection.level
-                detections.append(shelf_detection)
-
-        except Exception as e:
-            Logger.error(self.node, f"Error detecting shelf: {e}")
-            return Status.EXECUTION_ERROR, detections
-
-        Logger.success(self.node, "Shelf detected")
-        return Status.EXECUTION_SUCCESS, detections
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, []), delay=2)
     @service_check("object_detector_client", (Status.EXECUTION_ERROR, []), TIMEOUT)
@@ -690,6 +663,29 @@ class VisionTasks:
 
         Logger.success(self.node, "Person tracking success")
         return Status.EXECUTION_SUCCESS, result.points
+
+    @mockable(return_value=(Status.EXECUTION_SUCCESS, []), delay=2)
+    @service_check("customer_tables_client", (Status.EXECUTION_ERROR, []), TIMEOUT)
+    def customer_tables(self) -> tuple[int, list[Point]]:
+        """Get the position of the customer tables"""
+        Logger.info(self.node, "Getting customer tables")
+        request = CustomerTables.Request()
+        request.request = True
+        try:
+            future = self.customer_tables_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+            result = future.result()
+
+            if not result.success:
+                Logger.warn(self.node, "No tables found")
+                return Status.TARGET_NOT_FOUND, result.table_points
+
+        except Exception as e:
+            Logger.error(self.node, f"Error getting customer tables: {e}")
+            return Status.EXECUTION_ERROR, result.table_points
+
+        Logger.success(self.node, "Customer tables found")
+        return Status.EXECUTION_SUCCESS, result.table_points
 
     @mockable(return_value=[Status.EXECUTION_SUCCESS, 100])
     @service_check("count_by_pose_client", [Status.EXECUTION_ERROR, 300], TIMEOUT)

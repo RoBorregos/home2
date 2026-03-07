@@ -36,7 +36,7 @@ from frida_interfaces.srv import YoloDetect
 TABLE_CUSTOMER_DISTANCE_THRESHOLD = 1.5  # meters
 
 
-class RESTAURANTCommands(Node):
+class RestaurantCommands(Node):
     def __init__(self):
         super().__init__("restaurant_commands")
         self.bridge = CvBridge()
@@ -205,7 +205,6 @@ class RESTAURANTCommands(Node):
     def publish_image(self):
         """Publish the image with the detections if available."""
         if len(self.output_image) != 0:
-
             self.image_publisher.publish(
                 self.bridge.cv2_to_imgmsg(self.output_image, "bgr8")
             )
@@ -254,7 +253,7 @@ class RESTAURANTCommands(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = RESTAURANTCommands()
+    node = RestaurantCommands()
     executor = rclpy.executors.MultiThreadedExecutor(8)
     executor.add_node(node)
     executor.spin()
