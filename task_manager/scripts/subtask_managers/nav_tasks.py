@@ -7,6 +7,7 @@ Node to move to a place.
 import json
 import os
 
+from frida_constants.frida_constants.navigation_constants import AREAS_SERVICE
 import rclpy
 from ament_index_python.packages import get_package_share_directory
 from frida_constants.navigation_constants import FOLLOWING_SERVICE, GOAL_TOPIC
@@ -74,7 +75,7 @@ class NavigationTasks:
         self.rtabmap_pause = self.node.create_client(Empty, RTAB_PAUSE_SERVICE)
         self.rtabmap_continue = self.node.create_client(Empty, RTAB_RESUME_SERVICE)
         self.ReturnLocation_client = self.node.create_client(ReturnLocation, RETURN_LOCATION)
-        self.areas_wrapper = self.node.create_client(MapAreas, "/areas_json")
+        self.areas_wrapper = self.node.create_client(MapAreas, AREAS_SERVICE)
         self.convert_point = (
             self.node.create_client(PointTransformation, "/integration/point_transformer"),
         )
