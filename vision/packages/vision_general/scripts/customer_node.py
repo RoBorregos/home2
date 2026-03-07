@@ -6,7 +6,6 @@ re-id them if necessary
 """
 
 import cv2
-import time
 from ultralytics import YOLO
 import tqdm
 from vision_general.utils.calculations import (
@@ -179,9 +178,14 @@ class CustomerNode(Node):
                 cropped_image = self.frame[y1:y2, x1:x2]
                 self.customer_image = copy.deepcopy(cropped_image)
                 raising = self.pose_detection.is_waving_customer(cropped_image)
+                sitting = self.pose_detection.is_sitting_yolo(cropped_image)
 
-                if raising:
-                    print("IS RAISING HANDDDDDDDDDDDDDDDDDD")
+                if not sitting:
+                    self.get_logger().info("Checking sitting with moondream")
+                    sitting = self.is_sitting_moondream(bbox)
+
+                if raising and sitting:
+                    self.get_logger().info("Customer raising hand and sitting detected")
                     cv2.rectangle(
                         self.output_image,
                         (x1, y1),
@@ -230,21 +234,64 @@ class CustomerNode(Node):
                         # self.point_pub.publish(coords)
                         self.results_publisher.publish(coords)
                         res.point = coords
-                        res.found = True
-                        self.success("Customer found")
-                        return res
-        self.get_logger().warn("No customer raising hand")
+                    res.found = True
+                    self.success("Customer found")
+                    return res
+        self.get_logger().warn("No customer raising hand and sitting detected")
         return res
 
-    def wait_for_future(self, future, timeout=5):
-        start_time = time.time()
-        while future is None and (time.time() - start_time) < timeout:
-            pass
-        if future is None:
+    def is_sitting_moondream(self, bbox):
+        if self.frame is None or bbox is None:
             return False
-        while not future.done() and (time.time() - start_time) < timeout:
-            print("Waiting for future to complete...")
-        return future
+
+        if not self.moondream_client.wait_for_service(timeout_sec=0.1):
+            self.get_logger().warn("Moondream crop query service not available")
+            return False
+
+        height, width = self.frame.shape[:2]
+        x1, y1, x2, y2 = bbox
+        if width <= 0 or height <= 0:
+            return False
+
+        xmin = max(0.0, min(1.0, float(x1) / float(width)))
+        ymin = max(0.0, min(1.0, float(y1) / float(height)))
+        xmax = max(0.0, min(1.0, float(x2) / float(width)))
+        ymax = max(0.0, min(1.0, float(y2) / float(height)))
+
+        request = CropQuery.Request()
+        request.xmin = xmin
+        request.ymin = ymin
+        request.xmax = xmax
+        request.ymax = ymax
+        request.query = (
+            "Is the person in this image sitting? Answer only with yes or no."
+        )
+
+        future = self.moondream_client.call_async(request)
+        rclpy.spin_until_future_complete(self, future, timeout_sec=7)
+
+        if not future.done():
+            self.get_logger().warn("Service call timed out")
+            return False
+
+        if future.exception() is not None:
+            self.get_logger().error(f"Service call failed: {future.exception()}")
+            return False
+
+        result = future.result()
+        if result is None or not result.success:
+            return False
+
+        answer = result.result.strip().lower()
+        if answer.startswith("yes"):
+            return True
+        if answer.startswith("no"):
+            return False
+
+        self.get_logger().warn(
+            f"Unexpected answer from Moondream crop query: '{answer}'. Expected 'yes' or 'no'."
+        )
+        return False
 
     def run(self):
         """Main loop to run the tracker"""

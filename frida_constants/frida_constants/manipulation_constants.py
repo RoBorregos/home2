@@ -56,6 +56,7 @@ GRASP_LINK_FRAME = "gripper_grasp_frame"
 PLACE_PERCEPTION_SERVICE = "/manipulation/place_perception_service"
 HEATMAP_PLACE_SERVICE = "/manipulation/heatmap_place_service"
 PLACE_POINT_DEBUG_TOPIC = "/manipulation/table_place_point_debug"
+PICK_MAX_DISTANCE = 1.0
 PLACE_MAX_DISTANCE = 0.8
 PLACE_MOTION_ACTION_SERVER = "/manipulation/place_motion_action_server"
 

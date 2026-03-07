@@ -3,7 +3,7 @@ FROM ${BASE_IMAGE}
 
 WORKDIR /app
 
-COPY ../../hri/packages/speech/scripts/tts/requirements.txt .
+COPY ../../hri/requirements/tts.txt requirements.txt
 RUN python3 -m pip install --upgrade pip
 RUN pip install --no-cache-dir -r /app/requirements.txt
 RUN pip install --upgrade protobuf
