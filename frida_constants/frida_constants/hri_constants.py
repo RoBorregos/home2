@@ -77,3 +77,4 @@ threshold = 0.6
 DEFAULT_HOTWORDS = "Frida RoBorregos"
 
 START_BUTTON_CLIENT = "/hri/display/button_press"
+TASK_STATUS_TOPIC = "/hri/display/task_status"

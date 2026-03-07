@@ -17,11 +17,13 @@ import rclpy
 from ament_index_python.packages import get_package_share_directory
 from embeddings.postgres_adapter import PostgresAdapter
 from frida_constants.hri_constants import (
+    ANSWER_PUBLISHER,
     CATEGORIZE_SERVICE,
     COMMAND_INTERPRETER_SERVICE,
     COMMON_INTEREST_SERVICE,
     DISPLAY_IMAGE_TOPIC,
     DISPLAY_MAP_TOPIC,
+    DISPLAY_PUBLISHER,
     EXTRACT_DATA_SERVICE,
     GRAMMAR_SERVICE,
     IS_NEGATIVE_SERVICE,
@@ -33,6 +35,7 @@ from frida_constants.hri_constants import (
     SPEAK_SERVICE,
     START_BUTTON_CLIENT,
     STT_ACTION_SERVER_NAME,
+    TASK_STATUS_TOPIC,
     WAKEWORD_TOPIC,
 )
 from frida_interfaces.action import SpeechStream
@@ -184,10 +187,8 @@ class HRITasks(metaclass=SubtaskMeta):
         self.is_coherent_service = self.node.create_client(IsCoherent, IS_COHERENT_SERVICE)
         self.display_publisher = self.node.create_publisher(String, DISPLAY_IMAGE_TOPIC, 10)
         self.display_map_publisher = self.node.create_publisher(String, DISPLAY_MAP_TOPIC, 10)
-        self.answers_publisher = self.node.create_publisher(String, "/hri/display/answers", 10)
-        self.questions_publisher = self.node.create_publisher(
-            String, "/hri/display/frida_questions", 10
-        )
+        self.answers_publisher = self.node.create_publisher(String, ANSWER_PUBLISHER, 10)
+        self.questions_publisher = self.node.create_publisher(String, DISPLAY_PUBLISHER, 10)
         self.pg = PostgresAdapter()
         self.llm_wrapper_service = self.node.create_client(LLMWrapper, LLM_WRAPPER_SERVICE)
         self.categorize_service = self.node.create_client(CategorizeShelves, CATEGORIZE_SERVICE)
@@ -211,9 +212,7 @@ class HRITasks(metaclass=SubtaskMeta):
         self.respeaker_light_publisher = self.node.create_publisher(
             String, RESPEAKER_LIGHT_TOPIC, 10
         )
-        self.task_status_publisher = self.node.create_publisher(
-            String, "/hri/display/task_status", 10
-        )
+        self.task_status_publisher = self.node.create_publisher(String, TASK_STATUS_TOPIC, 10)
 
         self._action_client = ActionClient(self.node, SpeechStream, STT_ACTION_SERVER_NAME)
 
