@@ -1,5 +1,9 @@
 var NAVTREEINDEX27 =
 {
+"namespaces.html":[22,0],
+"namespacesafety__task__manager.html":[22,0,129],
+"namespacesafety__task__manager.html#a207642360aafef76971e5142db35e75c":[22,0,129,3],
+"namespaceserver.html":[22,0,130],
 "namespaceserver.html#a3c8df1657c541fd80fbb8ffef44e8451":[22,0,130,8],
 "namespaceserver.html#a469f094fa099c5fafa3f1dc6960381fc":[22,0,130,1],
 "namespaceserver.html#a692f59b384dd93287c366eb7e7c0608b":[22,0,130,5],
@@ -245,9 +249,5 @@ var NAVTREEINDEX27 =
 "nav__tasks_8py.html#a35bf842183e21b6c6070cc6d2219644e":[24,0,6,1,2,8,6],
 "nav__tasks_8py.html#a5b4d09d800913ff80b44923281185579":[24,0,6,1,2,8,8],
 "nav__tasks_8py.html#a6f0a3307d2c3d8bc3c5fcd2f15a84c08":[24,0,6,1,2,8,9],
-"nav__tasks_8py.html#a736666918ed4f70d5cf2d995c1e7351e":[24,0,6,1,2,8,14],
-"nav__tasks_8py.html#a9bc4c8ca04bec963a671843a28955aa1":[24,0,6,1,2,8,3],
-"nav__tasks_8py.html#aa7b04782b5901be32c84688667a26486":[24,0,6,1,2,8,1],
-"nav__tasks_8py.html#aaa02d00cc5e15e35dc701c256933265d":[24,0,6,1,2,8,4],
-"nav__tasks_8py.html#aad10e56dffc669dc8cb618d129cb81e8":[24,0,6,1,2,8,11]
+"nav__tasks_8py.html#a736666918ed4f70d5cf2d995c1e7351e":[24,0,6,1,2,8,14]
 };
