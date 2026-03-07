@@ -9,6 +9,7 @@ RUN echo "CREATE USER docker; \n CREATE DATABASE docker; \n GRANT ALL PRIVILEGES
 RUN echo "CREATE EXTENSION IF NOT EXISTS vector;" > /docker-entrypoint-initdb.d/00-create-extension.sql
 COPY init.sql /docker-entrypoint-initdb.d/01-init.sql
 COPY sql_dumps/ /tmp/sql_dumps/
+RUN ls
 RUN cp /tmp/sql_dumps/*.sql /docker-entrypoint-initdb.d/ 2>/dev/null || true && rm -rf /tmp/sql_dumps
 
 CMD ["postgres"]
