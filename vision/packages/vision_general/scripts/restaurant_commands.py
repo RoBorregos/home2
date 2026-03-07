@@ -35,6 +35,7 @@ from frida_interfaces.srv import YoloDetect
 
 TABLE_CUSTOMER_DISTANCE_THRESHOLD = 1.5  # meters
 
+
 class RESTAURANTCommands(Node):
     def __init__(self):
         super().__init__("restaurant_commands")
@@ -62,12 +63,12 @@ class RESTAURANTCommands(Node):
         self.customer_client = self.create_client(
             Customer, GET_CUSTOMER_TOPIC, callback_group=self.callback_group
         )
-        
+
         self.customer_table_client = self.create_service(
-            CustomerTables, 
-            CUSTOMER_TABLES_TOPIC, 
-            self.customer_table_callback, 
-            callback_group=self.callback_group
+            CustomerTables,
+            CUSTOMER_TABLES_TOPIC,
+            self.customer_table_callback,
+            callback_group=self.callback_group,
         )
 
         while not self.yolo_client.wait_for_service(timeout_sec=1.0):
@@ -162,7 +163,7 @@ class RESTAURANTCommands(Node):
             + (float(p1[1]) - float(p2[1])) ** 2
             + (float(p1[2]) - float(p2[2])) ** 2
         )
-    
+
     def get_customer_points(self):
         """Get customers using the customer service."""
         req = Customer.Request()
@@ -187,7 +188,7 @@ class RESTAURANTCommands(Node):
 
         except Exception as e:
             print(f"Error: {e}")
-    
+
     def image_info_callback(self, data):
         """Callback to receive camera info"""
         self.imageInfo = data
@@ -249,6 +250,7 @@ class RESTAURANTCommands(Node):
             )
 
         return detections
+
 
 def main(args=None):
     rclpy.init(args=args)
