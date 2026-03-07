@@ -26,6 +26,8 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
+    group_add: 
+      - video
     network_mode: host
     user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
     privileged: true
@@ -33,8 +35,11 @@ services:
       - /dev:/dev
       - /dev/video0:/dev/video0
     environment:
-      DISPLAY: :0
+      DISPLAY: ${DISPLAY}
       TERM: xterm-256color
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: all
+      QT_X11_NO_MITSHM: 1
     # Memory limits for non-Ubuntu distributions
     ulimits:
       nofile:
