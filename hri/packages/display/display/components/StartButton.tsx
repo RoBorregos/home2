@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Play } from "lucide-react";
+import { Flame } from "lucide-react";
 import { Topic } from "roslib";
 import { rosClient } from "../RosClient";
 
@@ -44,25 +44,34 @@ export function StartButton() {
     }
   };
 
-  if (isTaskActive && !isMaximized) {
-    return (
+  const isShrunk = isTaskActive && !isMaximized;
+
+  return (
+    <div className="w-full h-16 mb-4 relative">
       <button
-        className="fixed bottom-4 right-4 w-10 h-10 bg-(--blue)/80 hover:bg-(--blue) text-white rounded-full transition-all duration-300 z-50 flex items-center justify-center shadow-lg"
+        className={`
+          relative w-full h-full bg-(--blue) hover:bg-(--blue-hover) text-white rounded-lg font-semibold text-lg flex items-center justify-center gap-2 shadow-lg z-10
+          transition-all duration-200 ease-out
+          ${isShrunk ? "opacity-0 scale-95 pointer-events-none" : "opacity-100 scale-100 pointer-events-auto"}
+        `}
+        onClick={handleClick}
+        aria-label="Start task"
+      >
+        <Flame className="h-5 w-5" />
+        <span>Start</span>
+      </button>
+
+      <button
+        className={`
+          fixed bottom-4 right-4 w-20 h-20 bg-(--blue)/80 hover:bg-(--blue) text-white rounded-full flex items-center justify-center shadow-lg z-50
+          transition-all duration-200 ease-out
+          ${isShrunk ? "opacity-100 scale-100 pointer-events-auto" : "opacity-0 scale-95 pointer-events-none"}
+        `}
         onClick={() => setIsMaximized(true)}
         aria-label="Show start button"
       >
-        <Play className="h-5 w-5" />
+        <Flame className="h-10 w-10" />
       </button>
-    );
-  }
-
-  return (
-    <button
-      className="mb-4 px-4 bg-(--blue) text-white rounded-lg hover:bg-(--blue-hover) transition-all duration-300 font-semibold flex items-center justify-center gap-2 w-full h-16 text-lg"
-      onClick={handleClick}
-    >
-      <Play className="h-5 w-5" />
-      Start
-    </button>
+    </div>
   );
 }
