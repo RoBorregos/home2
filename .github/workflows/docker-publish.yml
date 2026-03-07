@@ -38,12 +38,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          fetch-depth: 2
+          fetch-depth: 0
 
       - name: Detect changed paths
         uses: dorny/paths-filter@v3
         id: filter
         with:
+          base: ${{ github.event.before }}
           filters: |
             base:
               - 'docker/Dockerfile.ROS'
@@ -307,6 +308,7 @@ jobs:
           docker pull roborregos/home2:hri-cpu
           docker run --rm \
             --network host \
+            --user root \
             -v ${{ github.workspace }}:/workspace/src \
             roborregos/home2:hri-cpu \
             bash -c "
