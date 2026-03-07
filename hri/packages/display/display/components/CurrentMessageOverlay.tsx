@@ -8,7 +8,7 @@ interface CurrentMessageOverlayProps {
 
 export function CurrentMessageOverlay({ message }: CurrentMessageOverlayProps) {
   return (
-    <div className="fixed inset-0 z-40 flex items-end justify-center bg-black/20 backdrop-blur-[2px] pointer-events-none pb-12">
+    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/20 backdrop-blur-[2px] pointer-events-none translate-y-48">
       <div className="bg-(--bg-dark) border-2 border-(--blue) rounded-2xl p-8 max-w-2xl mx-4 shadow-2xl">
         <p className="text-3xl text-(--text-light) text-center font-medium">
           {message.content}
