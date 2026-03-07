@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
+import os
 import queue
 import threading
 import time
+import wave
 
 import numpy as np
 import rclpy
@@ -13,6 +15,10 @@ from rclpy.node import Node
 
 from frida_interfaces.msg import AudioData
 import df as DF_MODULE
+
+SAVE_PATH = "/tmp"
+SAVE_IT = 100
+run_frames = []
 
 QUEUE_SIZE = 20
 SAMPLE_RATE = 16000
@@ -32,11 +38,13 @@ class NoiseCancellation(Node):
         self.declare_parameter("PROCESSED_AUDIO_TOPIC", "/hri/processedAudioChunk")
         self.declare_parameter("ENABLE_ANC", True)
         self.declare_parameter("GAIN", 1.0)
+        self.declare_parameter("DEBUG", False)
 
         input_topic = self.get_parameter("RAW_AUDIO_TOPIC").value
         output_topic = self.get_parameter("PROCESSED_AUDIO_TOPIC").value
         self.enable_anc = self.get_parameter("ENABLE_ANC").value
         self.gain = self.get_parameter("GAIN").value
+        self.debug = self.get_parameter("DEBUG").value
 
         self.df_model = None
         self.df_state = None
@@ -110,6 +118,7 @@ class NoiseCancellation(Node):
 
     def _process_loop(self):
         """Background thread: pulls from queue, runs DF inference, publishes."""
+        iteration_step = 0
         while True:
             msg = self._audio_queue.get()
             audio_arr = np.frombuffer(msg.data, dtype=np.int16)
@@ -140,7 +149,24 @@ class NoiseCancellation(Node):
                     audio_arr.astype(np.float32) * self.gain, INT16_MIN, INT16_MAX
                 ).astype(np.int16)
 
-            self.publisher_.publish(AudioData(data=audio_arr.tobytes()))
+            out_bytes = audio_arr.tobytes()
+            self.publisher_.publish(AudioData(data=out_bytes))
+
+            if self.debug:
+                run_frames.append(out_bytes)
+                iteration_step += 1
+                if iteration_step % SAVE_IT == 0:
+                    iteration_step = 0
+                    self.save_audio()
+
+    def save_audio(self):
+        self.get_logger().info("Saving processed audio stream.")
+        output_file = os.path.join(SAVE_PATH, "last_run_noise_cancelled.wav")
+        with wave.open(output_file, "wb") as wf:
+            wf.setnchannels(1)
+            wf.setsampwidth(2)  # int16 = 2 bytes
+            wf.setframerate(SAMPLE_RATE)
+            wf.writeframes(b"".join(run_frames))
 
     def _enhance(self, audio_int16):
         """Process audio: 16k -> 48k -> DeepFilterNet -> 16k -> Gain
