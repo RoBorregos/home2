@@ -168,7 +168,6 @@ class PickMotionServer(Node):
                     pose=pose,
                     tolerance_position=0.01,
                     tolerance_orientation=0.1,
-                    quat_xyzw=quat,
                 )
 
                 if action_result.result.success:
@@ -288,7 +287,7 @@ class PickMotionServer(Node):
         self.get_logger().error("Failed to reach any grasp pose")
         return False, pick_result
 
-    def move_to_pose(self, pose):
+    def move_to_pose(self, pose, tolerance_position=0.005, tolerance_orientation=0.02):
         """Move the robot to the given pose."""
         request = MoveToPose.Goal()
         request.pose = pose
@@ -296,8 +295,8 @@ class PickMotionServer(Node):
         request.acceleration = PICK_ACCELERATION
         request.planner_id = PICK_PLANNER
         request.target_link = GRASP_LINK_FRAME
-        request.tolerance_position = 0.005  # Set the position tolerance
-        request.tolerance_orientation = 0.02  # Set the orientation tolerance
+        request.tolerance_position = tolerance_position  # Set the position tolerance
+        request.tolerance_orientation = tolerance_orientation  # Set the orientation tolerance
         future = self._move_to_pose_action_client.send_goal_async(request)
         self.wait_for_future(future)
         action_result = future.result().get_result()
