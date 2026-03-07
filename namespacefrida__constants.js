@@ -100,6 +100,7 @@ var namespacefrida__constants =
       [ "CUSTOMER", "namespacefrida__constants_1_1vision__constants.html#ab35182c94c1fbaaca0593e028e875669", null ],
       [ "DEBUG_IMAGE_TOPIC", "namespacefrida__constants_1_1vision__constants.html#a4b8e111e56a54c09d20b165b64879b20", null ],
       [ "DEPTH_IMAGE_TOPIC", "namespacefrida__constants_1_1vision__constants.html#afb389b8319a0ea3880ffcdd8fe70c122", null ],
+      [ "DETECT_HAND_SERVICE", "namespacefrida__constants_1_1vision__constants.html#ac3cae675675194c971abd743804acef6", null ],
       [ "DETECTION_HANDLER_TOPIC_SRV", "namespacefrida__constants_1_1vision__constants.html#a34990348c9c206559e830f9c3a79a560", null ],
       [ "DETECTIONS_3D_TOPIC", "namespacefrida__constants_1_1vision__constants.html#a825426a4a68d0fba45e3451fd9efdf44", null ],
       [ "DETECTIONS_ACTIVE_TOPIC", "namespacefrida__constants_1_1vision__constants.html#a511bbbbc9de50e4ec309675a388fa09e", null ],

@@ -16,6 +16,7 @@ var vision__constants_8py =
     [ "CUSTOMER", "vision__constants_8py.html#ab35182c94c1fbaaca0593e028e875669", null ],
     [ "DEBUG_IMAGE_TOPIC", "vision__constants_8py.html#a4b8e111e56a54c09d20b165b64879b20", null ],
     [ "DEPTH_IMAGE_TOPIC", "vision__constants_8py.html#afb389b8319a0ea3880ffcdd8fe70c122", null ],
+    [ "DETECT_HAND_SERVICE", "vision__constants_8py.html#ac3cae675675194c971abd743804acef6", null ],
     [ "DETECTION_HANDLER_TOPIC_SRV", "vision__constants_8py.html#a34990348c9c206559e830f9c3a79a560", null ],
     [ "DETECTIONS_3D_TOPIC", "vision__constants_8py.html#a825426a4a68d0fba45e3451fd9efdf44", null ],
     [ "DETECTIONS_ACTIVE_TOPIC", "vision__constants_8py.html#a511bbbbc9de50e4ec309675a388fa09e", null ],
