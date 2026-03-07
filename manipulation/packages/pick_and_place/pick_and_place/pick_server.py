@@ -138,12 +138,12 @@ class PickMotionServer(Node):
         base_point = copy.deepcopy(goal_handle.request.point)
 
         # quaternion
-        qx, qy, qz, qw = quaternion_from_euler(0, 0, 0)
+        qx, qy, qz, qw = quaternion_from_euler(-np.pi/2, 0, 0)
         quat = [qx, qy, qz, qw]
 
         # tip offset
         rotation_matrix = quat2mat(quat)
-        z_axis = rotation_matrix[:, 2]
+        z_axis = rotation_matrix[:, 1]
 
         base_position = np.array([
             base_point.point.x,
@@ -170,7 +170,7 @@ class PickMotionServer(Node):
                     point=point,
                     quat_xyzw=quat,
                     tolerance_position=0.01,
-                    tolerance_orientation_list=[0.05, 0.05, 3.14]# Allow rotation only around z-axis
+                    tolerance_orientation_list=[0.1, 0.1, 0.1]# Allow rotation only around z-axis
                 )
 
                 if action_result.result.success:
