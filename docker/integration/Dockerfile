@@ -15,7 +15,6 @@ RUN pip install -r postgres.txt
 COPY task_manager/scripts/utils /workspace/utils
 WORKDIR /workspace/utils
 RUN baml-cli generate
-RUN ls
 WORKDIR /workspace
 
 # CV-bridge
