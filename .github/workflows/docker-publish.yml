@@ -28,12 +28,12 @@ jobs:
     name: "Detect changed areas"
     runs-on: ubuntu-latest
     outputs:
+      base_needed: ${{ steps.base_check.outputs.needed }}
       hri: ${{ steps.filter.outputs.hri }}
       vision: ${{ steps.filter.outputs.vision }}
-      navigation: ${{ steps.filter.outputs.navigation }}
-      manipulation: ${{ steps.filter.outputs.manipulation }}
+      navigation_matrix: ${{ steps.matrices.outputs.navigation }}
+      manipulation_matrix: ${{ steps.matrices.outputs.manipulation }}
       integration: ${{ steps.filter.outputs.integration }}
-      base: ${{ steps.filter.outputs.base }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -53,12 +53,62 @@ jobs:
               - 'docker/Dockerfile.ROS-l4t'
             vision:
               - 'docker/vision/**'
-            navigation:
-              - 'docker/navigation/**'
-            manipulation:
-              - 'docker/manipulation/**'
+            navigation_cpu:
+              - 'docker/navigation/Dockerfile.cpu'
+            navigation_cuda:
+              - 'docker/navigation/Dockerfile.cuda'
+            manipulation_cpu:
+              - 'docker/manipulation/Dockerfile.cpu'
+            manipulation_cuda:
+              - 'docker/manipulation/Dockerfile.cuda'
             integration:
               - 'docker/integration/**'
+
+      - name: Check if base images exist on DockerHub
+        id: base_check
+        run: |
+          needed=false
+          if [ "${{ steps.filter.outputs.base }}" == "true" ]; then
+            needed=true
+          elif [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            needed=true
+          else
+            for tag in cpu_base cuda_base; do
+              if ! docker manifest inspect "roborregos/home2:${tag}" > /dev/null 2>&1; then
+                echo "::notice::Base image roborregos/home2:${tag} not found on DockerHub, will build"
+                needed=true
+                break
+              fi
+            done
+          fi
+          echo "needed=$needed" >> $GITHUB_OUTPUT
+
+      - name: Build dynamic matrices
+        id: matrices
+        run: |
+          # Navigation: only build the specific variant(s) that changed
+          nav='[]'
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            if [ "${{ github.event.inputs.area }}" == "navigation" ] || [ "${{ github.event.inputs.area }}" == "all" ]; then
+              nav='["cpu","cuda"]'
+            fi
+          else
+            [ "${{ steps.filter.outputs.navigation_cpu }}" == "true" ] && nav=$(echo "$nav" | jq -c '. + ["cpu"]')
+            [ "${{ steps.filter.outputs.navigation_cuda }}" == "true" ] && nav=$(echo "$nav" | jq -c '. + ["cuda"]')
+          fi
+          echo "navigation=$nav" >> $GITHUB_OUTPUT
+
+          # Manipulation: only build the specific variant(s) that changed
+          manip='[]'
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            if [ "${{ github.event.inputs.area }}" == "manipulation" ] || [ "${{ github.event.inputs.area }}" == "all" ]; then
+              manip='["cpu","cuda"]'
+            fi
+          else
+            [ "${{ steps.filter.outputs.manipulation_cpu }}" == "true" ] && manip=$(echo "$manip" | jq -c '. + ["cpu"]')
+            [ "${{ steps.filter.outputs.manipulation_cuda }}" == "true" ] && manip=$(echo "$manip" | jq -c '. + ["cuda"]')
+          fi
+          echo "manipulation=$manip" >> $GITHUB_OUTPUT
 
   # ─────────────────────────────────────────────────────────────
   # BASE — cpu_base and cuda_base images (required by other jobs)
@@ -67,9 +117,7 @@ jobs:
     name: "Base [${{ matrix.env }}]"
     runs-on: ubuntu-latest
     needs: detect
-    if: |
-      (github.event_name == 'workflow_dispatch') ||
-      (github.event_name == 'push' && needs.detect.outputs.base == 'true')
+    if: needs.detect.outputs.base_needed == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -291,14 +339,11 @@ jobs:
       always() &&
       (needs.detect.result == 'success') &&
       (needs.base.result == 'success' || needs.base.result == 'skipped') &&
-      (
-        (github.event_name == 'workflow_dispatch' && (github.event.inputs.area == 'navigation' || github.event.inputs.area == 'all')) ||
-        (github.event_name == 'push' && needs.detect.outputs.navigation == 'true')
-      )
+      needs.detect.outputs.navigation_matrix != '[]'
     strategy:
       fail-fast: false
       matrix:
-        env: [cpu, cuda] # l4t excluded (requires self-hosted Jetson runner)
+        env: ${{ fromJSON(needs.detect.outputs.navigation_matrix) }}
 
     steps:
       - name: Checkout
@@ -347,14 +392,11 @@ jobs:
       always() &&
       (needs.detect.result == 'success') &&
       (needs.base.result == 'success' || needs.base.result == 'skipped') &&
-      (
-        (github.event_name == 'workflow_dispatch' && (github.event.inputs.area == 'manipulation' || github.event.inputs.area == 'all')) ||
-        (github.event_name == 'push' && needs.detect.outputs.manipulation == 'true')
-      )
+      needs.detect.outputs.manipulation_matrix != '[]'
     strategy:
       fail-fast: false
       matrix:
-        env: [cpu, cuda] # l4t excluded (requires self-hosted Jetson runner)
+        env: ${{ fromJSON(needs.detect.outputs.manipulation_matrix) }}
 
     steps:
       - name: Checkout
