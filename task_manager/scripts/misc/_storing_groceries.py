@@ -609,6 +609,7 @@ class StoringGroceriesTM(Node):
             Logger.state(self, "Ending task")
             self.subtask_manager.hri.say("I have completed storing all groceries.")
             self.subtask_manager.hri.say(f"Final score with penalties: {self.total_score}")
+            self.subtask_manager.hri.reset_task_status()
             self.running_task = False
 
 
