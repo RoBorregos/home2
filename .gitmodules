@@ -18,3 +18,4 @@
 [submodule "manipulation/packages/xarm_ros2"]
 	path = manipulation/packages/xarm_ros2
 	url = https://github.com/RoBorregos/xarm_ros2.git
+	branch = Roborregos_xarm_ros2
