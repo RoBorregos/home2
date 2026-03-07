@@ -10,7 +10,6 @@ import cv2
 import mediapipe as mp
 import numpy as np
 import queue
-import threading
 import time
 
 import rclpy
@@ -83,8 +82,6 @@ class ReceptionistCommands(Node):
         self.image = None
         self.depth_image = None
         self.camera_info = None
-        self.hand_point = None
-        self.hand_run_thread = None
         self.output_image = []
         self.check = False
 
@@ -122,7 +119,6 @@ class ReceptionistCommands(Node):
     def image_callback(self, data):
         """Callback to receive the image from the camera."""
         self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
-        self.run_hand_inference()
 
     def depth_callback(self, msg):
         try:
@@ -142,8 +138,8 @@ class ReceptionistCommands(Node):
         results = self.hands.process(image_rgb)
 
         if not results.multi_hand_landmarks:
-            self.hand_point = None
-            return
+            self.get_logger().info("No hand detected")
+            return None
 
         hand_landmarks = results.multi_hand_landmarks[0]
         lm = hand_landmarks.landmark[self.mp_hands.HandLandmark.MIDDLE_FINGER_TIP]
@@ -166,17 +162,19 @@ class ReceptionistCommands(Node):
             stamped.point.x = float(point3d[0])
             stamped.point.y = float(point3d[1])
             stamped.point.z = float(point3d[2])
-            self.hand_point = stamped
+            return stamped
         else:
-            self.hand_point = None
+            self.get_logger().warn("Depth image or camera info not available")
+            return None
 
     def detect_hand_callback(self, request, response):
-        if self.hand_point is not None:
-            response.point = self.hand_point
+        hand_point = self.run_hand_inference()
+        if hand_point is not None:
+            response.point = hand_point
             response.success = True
             self.get_logger().info(
-                f"Hand detected at ({self.hand_point.point.x:.3f}, "
-                f"{self.hand_point.point.y:.3f}, {self.hand_point.point.z:.3f})"
+                f"Hand detected at ({hand_point.point.x:.3f}, "
+                f"{hand_point.point.y:.3f}, {hand_point.point.z:.3f})"
             )
         else:
             response.success = False
