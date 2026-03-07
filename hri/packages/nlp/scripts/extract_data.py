@@ -123,8 +123,6 @@ class DataExtractor(Node):
                     self.get_logger().error(
                         "No name found in text using LLM. Returning empty string as a result."
                     )
-                    response.result = ""
-
             return response
         elif request.data == "loc" or request.data == "location":
             response.result = self.extract_loc(request.full_text)
@@ -139,7 +137,6 @@ class DataExtractor(Node):
                     self.get_logger().error(
                         "No location found in text using LLM. Returning empty string as result."
                     )
-                    response.result = ""
             return response
 
         # Check if the data extraction must be performed using the LLM
@@ -177,6 +174,7 @@ class DataExtractor(Node):
         except Exception as e:
             self.get_logger().error(f"Service error: {e}")
             raise rclpy.exceptions.ServiceException(str(e))
+
         return result.data
 
     def extract_name(self, text: str) -> str:
