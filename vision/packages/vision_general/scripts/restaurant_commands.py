@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-Node to handle GPSR commands.
+Node to handle RESTAURANT commands.
 """
 
 import rclpy
