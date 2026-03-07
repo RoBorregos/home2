@@ -5,16 +5,13 @@ from typing import List, Union
 import rclpy
 from frida_motion_planning.utils.Planner import Planner
 from frida_pymoveit2.robots import xarm6
-from geometry_msgs.msg import PoseStamped, PointStamped
+from geometry_msgs.msg import PoseStamped
 from pymoveit2 import GripperInterface, MoveIt2, MoveIt2State
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.node import Node
 from sensor_msgs.msg import JointState
 from xarm_msgs.srv import SetInt16
-from tf_transformations import quaternion_from_euler
-from transforms3d.quaternions import quat2mat
-import numpy as np
-import time
+
 from frida_constants.manipulation_constants import (
     XARM_SETMODE_SERVICE,
     XARM_SETSTATE_SERVICE,
@@ -34,7 +31,6 @@ class MoveItPlanner(Planner):
         max_acceleration: float = 0.5,
         planner_id: str = "RRTConnect",
     ):
-        self.ee_link_offset = -0.2
         # Create callback group
         self.node = node
         # Create MoveIt 2 interface
@@ -154,42 +150,22 @@ class MoveItPlanner(Planner):
     def plan_pose_goal(
         self,
         pose: PoseStamped,
-        point: PointStamped,
-        quat_xyzw: list[float],
         target_link: str = xarm6.end_effector_name(),
         cartesian: bool = False,
         tolerance_position: float = 0.015,
         tolerance_orientation: float = 0.02,
-        tolerance_orientation_list: tuple[float,float,float] = (0.01,0.01,0.01)
     ):
         self.node.get_logger().info("Generating a plan for a pose goal...")
+
         # Calls the internal function that uses pymoveit2 to get the plan
-        # Depending on whether a pose or a point is provided, it calls the appropriate planning method.
-        if pose.header.frame_id != "":
-            trajectory_plan = self._plan(
-                pose=pose,
-                cartesian=cartesian,
-                target_link=target_link,
-                tolerance_position=tolerance_position,
-                tolerance_orientation=tolerance_orientation,
-            )
-        elif point.header.frame_id != "":
-            trajectory_plan = self.moveit2.plan(
-            position=[point.point.x, point.point.y, point.point.z],
-            quat_xyzw=quat_xyzw,
+        trajectory_plan = self._plan(
+            pose=pose,
+            cartesian=cartesian,
             target_link=target_link,
-            frame_id=point.header.frame_id,
             tolerance_position=tolerance_position,
-            tolerance_orientation=(
-                float(tolerance_orientation_list[0]),
-                float(tolerance_orientation_list[1]),
-                float(tolerance_orientation_list[2]),
-            ),
+            tolerance_orientation=tolerance_orientation,
         )
-        else:
-            self.node.get_logger().error("Both pose and point goals are empty. Cannot plan.")
-            return False, None
-            
+
         # Check if a valid plan was found (if not None)
         if trajectory_plan:
             self.node.get_logger().info("Plan for pose goal generated successfully.")
@@ -201,7 +177,7 @@ class MoveItPlanner(Planner):
             )
             # Return a consistent tuple also in case of failure
             return False, None
-    
+
     def _plan(
         self,
         pose: PoseStamped,

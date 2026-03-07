@@ -24,7 +24,6 @@ from frida_constants.manipulation_constants import (
     GRASP_LINK_FRAME,
     GRIPPER_SET_STATE_SERVICE,
     GO_TO_HAND_ACTION_SERVER,
-    MOVE_TO_POINT_ACTION_SERVER,
 )
 from frida_interfaces.srv import (
     AttachCollisionObject,
@@ -103,8 +102,6 @@ class PickMotionServer(Node):
         )
 
         self._move_to_pose_action_client.wait_for_server()
-        self._move_to_point_action_client.wait_for_server()
-
         self.get_logger().info("Pick Action Server has been started")
 
     async def execute_callback(self, goal_handle):
@@ -154,17 +151,24 @@ class PickMotionServer(Node):
 
             for angle in test_angles:
 
-                point = copy.deepcopy(base_point)
+                
+                pose = PoseStamped()
+                pose.header.frame_id = base_point.header.frame_id
 
-                point.point.x = base_position[0] + hand_offset * np.cos(np.radians(angle))
-                point.point.y = base_position[1] + hand_offset * np.sin(np.radians(angle))
-                point.point.z = base_position[2]
+                pose.pose.position.x = base_position[0] + hand_offset * np.cos(np.radians(angle))
+                pose.pose.position.y = base_position[1] + hand_offset * np.sin(np.radians(angle))
+                pose.pose.position.z = base_position[2]
+
+                pose.pose.orientation.x = quat[0]
+                pose.pose.orientation.y = quat[1]
+                pose.pose.orientation.z = quat[2]
+                pose.pose.orientation.w = quat[3]
 
                 move_result, action_result = self.move_to_pose(
-                    point=point,
-                    quat_xyzw=quat,
+                    pose=pose,
                     tolerance_position=0.01,
-                    tolerance_orientation_list=[0.1, 0.1, 0.1]# Allow rotation only around z-axis
+                    tolerance_orientation=0.1,
+                    quat_xyzw=quat,
                 )
 
                 if action_result.result.success:
@@ -284,19 +288,16 @@ class PickMotionServer(Node):
         self.get_logger().error("Failed to reach any grasp pose")
         return False, pick_result
 
-    def move_to_pose(self, pose = PoseStamped(), point = PointStamped(), quat_xyzw = list[float], tolerance_position=0.005, tolerance_orientation=0.02, tolerance_orientation_list=list()):
+    def move_to_pose(self, pose):
         """Move the robot to the given pose."""
         request = MoveToPose.Goal()
         request.pose = pose
-        request.point = point
-        request.quat_xyzw = quat_xyzw
         request.velocity = PICK_VELOCITY
         request.acceleration = PICK_ACCELERATION
         request.planner_id = PICK_PLANNER
         request.target_link = GRASP_LINK_FRAME
-        request.tolerance_position = tolerance_position
-        request.tolerance_orientation = tolerance_orientation
-        request.tolerance_orientation_list = tolerance_orientation_list
+        request.tolerance_position = 0.005  # Set the position tolerance
+        request.tolerance_orientation = 0.02  # Set the orientation tolerance
         future = self._move_to_pose_action_client.send_goal_async(request)
         self.wait_for_future(future)
         action_result = future.result().get_result()
