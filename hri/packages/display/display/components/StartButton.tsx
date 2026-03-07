@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Play } from "lucide-react";
 import { Topic } from "roslib";
 import { rosClient } from "../RosClient";
 
@@ -46,18 +47,22 @@ export function StartButton() {
   if (isTaskActive && !isMaximized) {
     return (
       <button
-        className="fixed bottom-2 right-2 w-3 h-3 bg-white/5 hover:bg-white/20 rounded-full transition-all duration-300 z-50 cursor-default"
+        className="fixed bottom-4 right-4 w-10 h-10 bg-(--blue)/80 hover:bg-(--blue) text-white rounded-full transition-all duration-300 z-50 flex items-center justify-center shadow-lg"
         onClick={() => setIsMaximized(true)}
-        aria-label="Setup attempt"
-      />
+        aria-label="Show start button"
+      >
+        <Play className="h-5 w-5" />
+      </button>
     );
   }
 
   return (
     <button
-      className="mb-4 px-4 bg-(--blue) text-white rounded-lg hover:bg-(--blue-hover) transition-all duration-300 font-semibold flex items-center justify-center w-full h-16"
+      className="mb-4 px-4 bg-(--blue) text-white rounded-lg hover:bg-(--blue-hover) transition-all duration-300 font-semibold flex items-center justify-center gap-2 w-full h-16 text-lg"
       onClick={handleClick}
     >
+      <Play className="h-5 w-5" />
+      Start
     </button>
   );
 }
