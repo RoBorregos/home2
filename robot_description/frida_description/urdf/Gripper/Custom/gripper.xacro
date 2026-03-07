@@ -3,7 +3,7 @@
 
 <xacro:property name="mesh_path" value="file://$(find frida_description)/urdf/meshes/Gripper/Custom/" />
 
-<xacro:macro name="load_gripper" params="attach_to:='' xyz:='0 0 0' rpy:='0 0 0' fixed_joints:='false'">
+<xacro:macro name="load_gripper" params="attach_to:='' xyz:='0 0 0' rpy:='0 0 0' fixed_joints:='false' mujoco_plugin:=false">
     <xacro:unless value="${attach_to == ''}">
       <joint name="gripper_fix" type="fixed">
         <parent link="${attach_to}"/>
@@ -95,6 +95,28 @@
     <mimic joint="rightfinger" multiplier="1" offset="0" />
   </joint>
 
+  <xacro:if value="${mujoco_plugin}">
+    <mujoco>
+      <reference name="right_finger">
+          <joint range="0 0.056" limited="true" />
+      </reference>
+      <reference name="left_finger">
+          <joint range="0 0.056" limited="true" />
+      </reference>
+      <equality>
+        <joint name="gripper_mimic_joint" joint1= "leftfinger" joint2="rightfinger" polycoef="0 1 0 0"/>
+      </equality>
+      <actuator>
+        <position name="finger_actuator_position" joint="rightfinger" ctrlrange="0 0.056" forcerange= "-50 50" kp ="50"/>
+        <velocity name="finger_actuator_velocity" joint="rightfinger" ctrlrange="0 0.056" forcerange= "-50 50" kv ="10"/>
+      </actuator>
+    </mujoco>
+    <xacro:include filename="$(find frida_description)/urdf/Gripper/Custom/gripper_mujoco_ros2_control.xacro" />
+    <xacro:gripper_mujoco_control/>
+  </xacro:if>
+
+
+
   </xacro:macro>
 
   <link name="zed"  />
@@ -104,12 +126,9 @@
     <child link="zed" />
     <axis xyz="0 0 1"/>
   </joint>
-  <!-- <mujoco>
-    <reference body="right_finger">
-      <joint name="rightfinger" range="0 0.056" limited="true"/>
-    </reference>
-    <reference body="left_finger">
-      <joint name="leftfinger" range="0 0.056" limited="true"/>
-    </reference>
-  </mujoco> -->
+
+
+  
+
+
 </robot>

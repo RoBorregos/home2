@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:macro name="gripper_mujoco_control" params="prefix:=''" >
+
+    <ros2_control name="${prefix}gripper_mujoco_system" type="system">
+      <hardware>
+        <plugin>mujoco_ros2_control/MujocoSystem</plugin>
+      </hardware>
+        <!-- Right Gripper Joint -->
+        <joint name="rightfinger">
+          <command_interface name="position">
+            <param name="min">0.0</param>
+            <param name="max">0.056</param>
+          </command_interface>
+          <state_interface name="position">
+            <param name="initial_value">0.0</param>
+          </state_interface>
+          <state_interface name="velocity"/>
+          <state_interface name="effort"/>
+        </joint>
+
+    </ros2_control>
+
+  </xacro:macro>
+
+</robot>

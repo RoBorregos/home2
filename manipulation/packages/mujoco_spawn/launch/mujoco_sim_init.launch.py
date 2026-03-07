@@ -27,6 +27,7 @@ def generate_nodes_for_spawn(context: LaunchContext):
     dof = LaunchConfiguration('dof', default=6)
     robot_type = LaunchConfiguration('robot_type', default='xarm')
     ros2_control_plugin = LaunchConfiguration('ros2_control_plugin', default='mujoco_ros2_control/MujocoSystem')
+    gripper_yaml = LaunchConfiguration('gripper_yaml',     default=os.path.join(get_package_share_directory('frida_description'), 'config', 'custom_gripper_controllers.yaml'))
     
     add_realsense_d435i = LaunchConfiguration('add_realsense_d435i', default=False)
     add_d435i_links = LaunchConfiguration('add_d435i_links', default=False)
@@ -68,7 +69,7 @@ def generate_nodes_for_spawn(context: LaunchContext):
     # xarm_controller/launch/lib/robot_controller_lib.py
     mod = load_python_launch_file_as_module(os.path.join(get_package_share_directory('xarm_controller'), 'launch', 'lib', 'robot_controller_lib.py'))
     generate_ros2_control_params_temp_file = getattr(mod, 'generate_ros2_control_params_temp_file')
-    ros2_control_params = generate_ros2_control_params_temp_file(
+    ros2_xarm_params_file = generate_ros2_control_params_temp_file(
         os.path.join(get_package_share_directory('xarm_controller'), 'config', '{}_controllers.yaml'.format(xarm_type)),
         prefix=prefix.perform(context), 
         add_gripper=add_gripper.perform(context) in ('True', 'true'),
@@ -77,6 +78,15 @@ def generate_nodes_for_spawn(context: LaunchContext):
         update_rate=500,
         robot_type=robot_type.perform(context)
     )
+
+    ##Union of the yaml files for less problems
+    xarm_params = yaml_loader(ros2_xarm_params_file)
+    gripper_params = yaml_loader(gripper_yaml.perform(context))
+    ros2_control_raw_params = deep_update(xarm_params, gripper_params)
+    yaml_dump('/tmp/final_frida.yaml', ros2_control_raw_params)
+    
+    
+    
     # robot_description
     # xarm_description/launch/lib/robot_description_lib.py
     mod = load_python_launch_file_as_module(os.path.join(get_package_share_directory('xarm_description'), 'launch', 'lib', 'robot_description_lib.py'))
@@ -98,7 +108,7 @@ def generate_nodes_for_spawn(context: LaunchContext):
                 'effort_control': effort_control,
                 'velocity_control': velocity_control,
                 'ros2_control_plugin': ros2_control_plugin,
-                'ros2_control_params': ros2_control_params,
+                'ros2_control_params': '/tmp/final_frida.yaml',
                 'add_realsense_d435i': add_realsense_d435i,
                 'add_d435i_links': add_d435i_links,
                 'model1300': model1300,
@@ -129,7 +139,6 @@ def generate_nodes_for_spawn(context: LaunchContext):
     # as this node require a string array
     robot_description_string = robot_description['robot_description'].perform(context)
     
-    print(robot_description_string)
     # Define the xacro2mjcf node, this translates the xacro urdf into MJFL
     xacro2mjcf = Node(
     package="mujoco_ros2_control",
@@ -161,7 +170,7 @@ def generate_nodes_for_spawn(context: LaunchContext):
         executable="mujoco_ros2_control",
         parameters=[
             robot_description,
-            ros2_control_params,
+            '/tmp/final_frida.yaml',
             {"simulation_frequency": 500.0},
             {"realtime_factor": 1.0},
             {"robot_model_path": save_xml_file},
@@ -182,10 +191,11 @@ def generate_nodes_for_spawn(context: LaunchContext):
             ],
         )
     )
-    
+
     # Load controllers
     controllers = [
         'joint_state_broadcaster',
+        'xarm_gripper_traj_controller',
         '{}{}_traj_controller'.format(prefix.perform(context), xarm_type),
     ]
     if robot_type.perform(context) != 'lite' and add_gripper.perform(context) in ('True', 'true'):
@@ -206,18 +216,26 @@ def generate_nodes_for_spawn(context: LaunchContext):
                 ],
                 parameters=[{'use_sim_time': True}],
             ))
-
+                
+    load_gripper_bridge = Node(
+        package="mujoco_spawn",
+        executable="Xarm_gripper_mujoco_bridge",
+        output='screen'
+    )
+    
     
     ##load after mujoco start
     load_controllers = RegisterEventHandler(
         OnProcessStart(
             target_action=mujoco,
             on_start=[
-                LogInfo(msg="Starting joint state broadcaster..."),
-                *controller_nodes
+                LogInfo(msg="Starting controllers..."),
+                *controller_nodes,
+                load_gripper_bridge
             ],
         )
     )
+
     return [
         robot_state_publisher,
         xacro2mjcf,
@@ -231,3 +249,26 @@ def generate_launch_description():
     return LaunchDescription([
         OpaqueFunction(function=generate_nodes_for_spawn)  # Use OpaqueFunction for node creation. For more information refere to the mujoco_ros2_controll package
     ])
+
+
+
+def yaml_loader(filepath):
+    #Loads a yaml file
+    with open(filepath,'r')as file_descriptor:
+        data = yaml.load(file_descriptor, Loader=yaml.SafeLoader)
+    return data
+
+
+def yaml_dump(filepath,data):
+    #writtes a yaml file
+    with open(filepath,"w") as file_descriptor:
+        yaml.dump(data, file_descriptor)
+
+##Joints all their values into a single yaml file
+def deep_update(source, overrides):
+    for key, value in overrides.items():
+        if isinstance(value, dict) and key in source and isinstance(source[key], dict):
+            source[key] = deep_update(source[key], value)
+        else:
+            source[key] = value
+    return source

@@ -7,13 +7,36 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
-# uncomment the following section in order to fill in
-# further dependencies manually.
-# find_package(<dependency> REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(rclcpp_lifecycle REQUIRED)
+find_package(xarm_msgs REQUIRED)  # Correct package name
+find_package(controller_manager REQUIRED)
+find_package(hardware_interface REQUIRED)
+find_package(std_srvs REQUIRED)
+
+# Executable
+add_executable(Xarm_gripper_mujoco_bridge
+  src/xarm_gripper_mujoco_bridge.cpp
+)
+
+ament_target_dependencies(Xarm_gripper_mujoco_bridge
+  rclcpp
+  rclcpp_lifecycle
+  xarm_msgs
+  controller_manager
+  hardware_interface
+  std_srvs
+)
+
 
 install(
   DIRECTORY launch
   DESTINATION share/${PROJECT_NAME}
+)
+
+install (TARGETS 
+  Xarm_gripper_mujoco_bridge
+  DESTINATION lib/${PROJECT_NAME}
 )
 
 

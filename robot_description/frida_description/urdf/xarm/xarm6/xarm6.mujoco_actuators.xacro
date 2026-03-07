@@ -93,10 +93,6 @@
         upper="${joint6_upper}" 
         velocity="${joint6_velocity}" 
         effort="${joint6_effort}" />
-      <xacro:if value="${add_gripper}">
-        <position forcelimited="true" forcerange="-20 20" ctrllimited="true" ctrlrange="0 0.05" joint="${arm_id}_joint7" kp="100" name="pos_joint7"/>
-        <velocity forcelimited="true" forcerange="-20 20" joint="${arm_id}_joint7" kv="10" name="vel_joint7"/>
-      </xacro:if>
     </actuator>
   </xacro:macro>
 </robot>
