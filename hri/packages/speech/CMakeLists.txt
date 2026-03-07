@@ -59,6 +59,7 @@ install(PROGRAMS
 install(
   DIRECTORY scripts/stt
   DIRECTORY scripts/tts
+  DIRECTORY scripts/events
   DESTINATION lib/${PROJECT_NAME}
   FILES_MATCHING PATTERN "*.py"
 )

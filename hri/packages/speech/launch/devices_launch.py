@@ -38,6 +38,11 @@ def generate_launch_description():
         [ModuleNames.HRI.value],
     )["kws_oww"]["ros__parameters"]
 
+    events_config = parse_ros_config(
+        os.path.join(get_package_share_directory("speech"), "config", "events.yaml"),
+        [ModuleNames.HRI.value],
+    )["events"]["ros__parameters"]
+
     nodes = [
         Node(
             package="speech",
@@ -75,6 +80,14 @@ def generate_launch_description():
             package="speech",
             executable="audio_feedback.py",
             name="audio_feedback",
+        ),
+        Node(
+            package="speech",
+            executable="events.py",
+            name="events",
+            output="screen",
+            emulate_tty=True,
+            parameters=[events_config],
         ),
     ]
 

@@ -1,0 +1,7 @@
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
+
+COPY ../../hri/requirements/events.txt /workspace/requirements/events.txt
+RUN pip install -r /workspace/requirements/events.txt
+
+WORKDIR /app
