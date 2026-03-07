@@ -1,0 +1,397 @@
+name: Docker Publish
+
+on:
+  push:
+    branches: [main]
+    paths:
+      # Shared files that affect all areas
+      - "docker/Dockerfile.ROS"
+      - "docker/Dockerfile.ROS-l4t"
+      # Area-specific files
+      - "docker/hri/**"
+      - "docker/vision/**"
+      - "docker/navigation/**"
+      - "docker/manipulation/**"
+      - "docker/integration/**"
+  workflow_dispatch:
+    inputs:
+      area:
+        description: "Area to build and push (hri/vision/navigation/manipulation/integration/all)"
+        required: false
+        default: "all"
+
+jobs:
+  # ─────────────────────────────────────────────────────────────
+  # HRI — 5 images × 3 envs (ollama only for cuda/l4t)
+  # ─────────────────────────────────────────────────────────────
+  hri:
+    name: "HRI [${{ matrix.service }}] [${{ matrix.env }}]"
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' && (github.event.inputs.area == 'hri' || github.event.inputs.area == 'all') ||
+      github.event_name == 'push'
+    strategy:
+      fail-fast: false
+      matrix:
+        env: [cpu, cuda, l4t]
+        service: [ros, stt, tts, postgres, ollama]
+        exclude:
+          # ollama only exists for cuda and l4t
+          - service: ollama
+            env: cpu
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Check if HRI files changed
+        id: changed
+        uses: tj-actions/changed-files@v44
+        with:
+          files: |
+            docker/hri/**
+            docker/Dockerfile.ROS
+            docker/Dockerfile.ROS-l4t
+
+      - name: Skip if no relevant changes (push event)
+        if: github.event_name == 'push' && steps.changed.outputs.any_changed == 'false'
+        run: |
+          echo "No HRI files changed, skipping."
+          exit 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: roborregos
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Set image name
+        id: image
+        run: |
+          case "${{ matrix.service }}" in
+            ros)      echo "name=roborregos/home2:hri-${{ matrix.env }}" >> $GITHUB_OUTPUT ;;
+            stt)      echo "name=roborregos/home2:hri-stt-${{ matrix.env }}" >> $GITHUB_OUTPUT ;;
+            tts)      echo "name=roborregos/home2:hri-tts-${{ matrix.env }}" >> $GITHUB_OUTPUT ;;
+            postgres) echo "name=roborregos/home2:hri-postgres-${{ matrix.env }}" >> $GITHUB_OUTPUT ;;
+            ollama)   echo "name=roborregos/home2:hri-ollama-${{ matrix.env }}" >> $GITHUB_OUTPUT ;;
+          esac
+
+      - name: Set Dockerfile path
+        id: dockerfile
+        run: |
+          case "${{ matrix.service }}" in
+            ros)      echo "path=docker/hri/dockerfiles/Dockerfile.ROS" >> $GITHUB_OUTPUT ;;
+            stt)
+              if [ "${{ matrix.env }}" = "l4t" ]; then
+                echo "path=docker/hri/dockerfiles/Dockerfile.stt-l4t" >> $GITHUB_OUTPUT
+              else
+                echo "path=docker/hri/dockerfiles/Dockerfile.stt" >> $GITHUB_OUTPUT
+              fi
+              ;;
+            tts)      echo "path=docker/hri/dockerfiles/Dockerfile.tts" >> $GITHUB_OUTPUT ;;
+            postgres) echo "path=docker/hri/dockerfiles/Dockerfile.postgres" >> $GITHUB_OUTPUT ;;
+            ollama)   echo "path=docker/hri/dockerfiles/Dockerfile.ollama" >> $GITHUB_OUTPUT ;;
+          esac
+
+      - name: Set base image arg
+        id: base
+        run: |
+          case "${{ matrix.env }}" in
+            cpu)  echo "image=roborregos/home2:cpu_base" >> $GITHUB_OUTPUT ;;
+            cuda) echo "image=roborregos/home2:cuda_base" >> $GITHUB_OUTPUT ;;
+            l4t)  echo "image=roborregos/home2:l4t_base" >> $GITHUB_OUTPUT ;;
+          esac
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ steps.dockerfile.outputs.path }}
+          push: true
+          tags: ${{ steps.image.outputs.name }}
+          build-args: |
+            BASE_IMAGE=${{ steps.base.outputs.image }}
+          cache-from: type=registry,ref=${{ steps.image.outputs.name }}
+          cache-to: type=inline
+
+  # ─────────────────────────────────────────────────────────────
+  # VISION — vision image + moondream × 3 envs
+  # ─────────────────────────────────────────────────────────────
+  vision:
+    name: "Vision [${{ matrix.image }}] [${{ matrix.env }}]"
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' && (github.event.inputs.area == 'vision' || github.event.inputs.area == 'all') ||
+      github.event_name == 'push'
+    strategy:
+      fail-fast: false
+      matrix:
+        env: [cpu, cuda, l4t]
+        image: [vision, moondream-server, moondream-node]
+        exclude:
+          # moondream images are env-independent (single tag), skip duplicates
+          - image: moondream-server
+            env: cuda
+          - image: moondream-server
+            env: l4t
+          - image: moondream-node
+            env: cuda
+          - image: moondream-node
+            env: l4t
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Check if Vision files changed
+        id: changed
+        uses: tj-actions/changed-files@v44
+        with:
+          files: docker/vision/**
+
+      - name: Skip if no relevant changes (push event)
+        if: github.event_name == 'push' && steps.changed.outputs.any_changed == 'false'
+        run: |
+          echo "No Vision files changed, skipping."
+          exit 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: roborregos
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Set image name and Dockerfile
+        id: meta
+        run: |
+          case "${{ matrix.image }}" in
+            vision)
+              echo "name=roborregos/home2:vision-${{ matrix.env }}" >> $GITHUB_OUTPUT
+              echo "dockerfile=docker/vision/Dockerfile.${{ matrix.env }}" >> $GITHUB_OUTPUT
+              ;;
+            moondream-server)
+              echo "name=roborregos/home2:moondream-server" >> $GITHUB_OUTPUT
+              echo "dockerfile=docker/vision/Dockerfile.moondream.server" >> $GITHUB_OUTPUT
+              ;;
+            moondream-node)
+              echo "name=roborregos/home2:moondream-node" >> $GITHUB_OUTPUT
+              echo "dockerfile=docker/vision/Dockerfile.moondream" >> $GITHUB_OUTPUT
+              ;;
+          esac
+
+      - name: Set base image arg
+        id: base
+        run: |
+          case "${{ matrix.env }}" in
+            cpu)  echo "image=roborregos/home2:cpu_base" >> $GITHUB_OUTPUT ;;
+            cuda) echo "image=roborregos/home2:cuda_base" >> $GITHUB_OUTPUT ;;
+            l4t)  echo "image=roborregos/home2:l4t_base" >> $GITHUB_OUTPUT ;;
+          esac
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ steps.meta.outputs.dockerfile }}
+          push: true
+          tags: ${{ steps.meta.outputs.name }}
+          build-args: |
+            BASE_IMAGE=${{ steps.base.outputs.image }}
+          cache-from: type=registry,ref=${{ steps.meta.outputs.name }}
+          cache-to: type=inline
+
+  # ─────────────────────────────────────────────────────────────
+  # NAVIGATION — 3 envs
+  # ─────────────────────────────────────────────────────────────
+  navigation:
+    name: "Navigation [${{ matrix.env }}]"
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' && (github.event.inputs.area == 'navigation' || github.event.inputs.area == 'all') ||
+      github.event_name == 'push'
+    strategy:
+      fail-fast: false
+      matrix:
+        env: [cpu, cuda, l4t]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Check if Navigation files changed
+        id: changed
+        uses: tj-actions/changed-files@v44
+        with:
+          files: docker/navigation/**
+
+      - name: Skip if no relevant changes (push event)
+        if: github.event_name == 'push' && steps.changed.outputs.any_changed == 'false'
+        run: |
+          echo "No Navigation files changed, skipping."
+          exit 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: roborregos
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Set base image arg
+        id: base
+        run: |
+          case "${{ matrix.env }}" in
+            cpu)  echo "image=roborregos/home2:cpu_base" >> $GITHUB_OUTPUT ;;
+            cuda) echo "image=roborregos/home2:cuda_base" >> $GITHUB_OUTPUT ;;
+            l4t)  echo "image=roborregos/home2:l4t_base" >> $GITHUB_OUTPUT ;;
+          esac
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/navigation/Dockerfile.${{ matrix.env }}
+          push: true
+          tags: roborregos/home2:navigation-${{ matrix.env }}
+          build-args: |
+            BASE_IMAGE=${{ steps.base.outputs.image }}
+          cache-from: type=registry,ref=roborregos/home2:navigation-${{ matrix.env }}
+          cache-to: type=inline
+
+  # ─────────────────────────────────────────────────────────────
+  # MANIPULATION — 3 envs
+  # ─────────────────────────────────────────────────────────────
+  manipulation:
+    name: "Manipulation [${{ matrix.env }}]"
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' && (github.event.inputs.area == 'manipulation' || github.event.inputs.area == 'all') ||
+      github.event_name == 'push'
+    strategy:
+      fail-fast: false
+      matrix:
+        env: [cpu, cuda, l4t]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Check if Manipulation files changed
+        id: changed
+        uses: tj-actions/changed-files@v44
+        with:
+          files: docker/manipulation/**
+
+      - name: Skip if no relevant changes (push event)
+        if: github.event_name == 'push' && steps.changed.outputs.any_changed == 'false'
+        run: |
+          echo "No Manipulation files changed, skipping."
+          exit 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: roborregos
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Set base image arg
+        id: base
+        run: |
+          case "${{ matrix.env }}" in
+            cpu)  echo "image=roborregos/home2:cpu_base" >> $GITHUB_OUTPUT ;;
+            cuda) echo "image=roborregos/home2:cuda_base" >> $GITHUB_OUTPUT ;;
+            l4t)  echo "image=roborregos/home2:l4t_base" >> $GITHUB_OUTPUT ;;
+          esac
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/manipulation/Dockerfile.${{ matrix.env }}
+          push: true
+          tags: roborregos/home2:manipulation-${{ matrix.env }}
+          build-args: |
+            BASE_IMAGE=${{ steps.base.outputs.image }}
+          cache-from: type=registry,ref=roborregos/home2:manipulation-${{ matrix.env }}
+          cache-to: type=inline
+
+  # ─────────────────────────────────────────────────────────────
+  # INTEGRATION — 3 envs (single Dockerfile, env via BASE_IMAGE)
+  # ─────────────────────────────────────────────────────────────
+  integration:
+    name: "Integration [${{ matrix.env }}]"
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'workflow_dispatch' && (github.event.inputs.area == 'integration' || github.event.inputs.area == 'all') ||
+      github.event_name == 'push'
+    strategy:
+      fail-fast: false
+      matrix:
+        env: [cpu, cuda, l4t]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Check if Integration files changed
+        id: changed
+        uses: tj-actions/changed-files@v44
+        with:
+          files: docker/integration/**
+
+      - name: Skip if no relevant changes (push event)
+        if: github.event_name == 'push' && steps.changed.outputs.any_changed == 'false'
+        run: |
+          echo "No Integration files changed, skipping."
+          exit 0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: roborregos
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Set base image arg
+        id: base
+        run: |
+          case "${{ matrix.env }}" in
+            cpu)  echo "image=roborregos/home2:cpu_base" >> $GITHUB_OUTPUT ;;
+            cuda) echo "image=roborregos/home2:cuda_base" >> $GITHUB_OUTPUT ;;
+            l4t)  echo "image=roborregos/home2:l4t_base" >> $GITHUB_OUTPUT ;;
+          esac
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/integration/Dockerfile
+          push: true
+          tags: roborregos/home2:integration-${{ matrix.env }}
+          build-args: |
+            BASE_IMAGE=${{ steps.base.outputs.image }}
+          cache-from: type=registry,ref=roborregos/home2:integration-${{ matrix.env }}
+          cache-to: type=inline
