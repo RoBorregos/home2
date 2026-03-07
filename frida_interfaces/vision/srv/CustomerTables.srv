@@ -1,4 +1,4 @@
 
 ---
-frida_interfaces/CustomerTable[] customerTables
+frida_interfaces/CustomerTable[] customer_tables
 bool success

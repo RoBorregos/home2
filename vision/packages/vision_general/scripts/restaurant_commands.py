@@ -205,7 +205,6 @@ class RESTAURANTCommands(Node):
     def publish_image(self):
         """Publish the image with the detections if available."""
         if len(self.output_image) != 0:
-
             self.image_publisher.publish(
                 self.bridge.cv2_to_imgmsg(self.output_image, "bgr8")
             )
