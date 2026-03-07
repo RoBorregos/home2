@@ -33,12 +33,33 @@ upload_image() {
   fi
 }
 
+# Ensure logged in to DockerHub as roborregos.
+docker_login() {
+  local current_user
+  current_user=$(docker system info 2>/dev/null | grep "Username:" | awk '{print $2}')
+
+  if [ "$current_user" = "roborregos" ]; then
+    echo "Already logged in as roborregos."
+    return 0
+  fi
+
+  if [ -n "$current_user" ]; then
+    echo "Error: logged in as '$current_user', must be 'roborregos'. Run: docker logout && docker login" >&2
+    return 1
+  fi
+
+  echo "Not logged in to DockerHub. Please log in as roborregos:"
+  docker login || return 1
+}
+
 # Ensure an image exists locally (build if missing) then push it.
 ensure_and_upload_image() {
   local image="$1"
   local compose_file="$2"
   shift 2
   local extra_args=("$@")
+
+  docker_login || return 1
 
   if docker image inspect "$image" > /dev/null 2>&1; then
     echo "Image $image found locally, skipping build."
