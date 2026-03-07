@@ -42,6 +42,11 @@ for arg in "${ARGS[@]}"; do
     esac
 done
 
+#_________________________SETUP_________________________
+
+# Reset .env
+echo "" > .env
+
 # Export user
 add_or_update_variable .env "LOCAL_USER_ID" "$(id -u)"
 add_or_update_variable .env "LOCAL_GROUP_ID" "$(id -g)"
