@@ -100,3 +100,5 @@ $ ./run.sh --restaurant
 [![Explanatory video demonstration of task planning test using the command interpreter with the robot](https://img.youtube.com/vi/do1S1zfmMsA/0.jpg)](https://www.youtube.com/watch?v=do1S1zfmMsA)
 
 [![Video demonstration of the GPSR task during the Mexican Robotics Tournament 2025](https://img.youtube.com/vi/0bMz6ESv6B8/0.jpg)](https://www.youtube.com/watch?v=0bMz6ESv6B8)
+
+[![Video demonstration](https://img.youtube.com/vi/qUQNTDRBEKw/0.jpg)](https://www.youtube.com/watch?v=qUQNTDRBEKw)
