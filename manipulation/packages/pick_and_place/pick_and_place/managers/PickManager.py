@@ -18,16 +18,9 @@ from sensor_msgs_py import point_cloud2
 import numpy as np
 from pick_and_place.utils.perception_utils import get_object_point
 
-CFG_PATHS = [
-    [
-        "/workspace/src/manipulation/packages/arm_pkg/config/frida_eigen_params_custom_gripper_testing.cfg",
-        True,
-    ],
-    [
-        "/workspace/src/manipulation/packages/arm_pkg/config/frida_eigen_params_custom_gripper.cfg",
-        False,
-    ],
-]
+# GraspNet does not use cfg files — cfg_path is ignored by graspnet_service.py
+# is_reversible=False: GraspNet already returns optimal approach directions
+CFG_PATHS = [["", False]]
 
 
 class PickManager:

@@ -12,15 +12,22 @@ from launch.substitutions import PathJoinSubstitution
 def generate_launch_description():
     return LaunchDescription(
         [
-            # gpd
+            # graspnet (replaces gpd_service)
             Node(
                 package="arm_pkg",
-                executable="gpd_service",
-                name="gpd_service",
+                executable="graspnet_service.py",
+                name="graspnet_service",
                 output="screen",
                 emulate_tty=True,
-                respawn=True,
-                parameters=[],
+                parameters=[
+                    {
+                        "target_frame": "link_base",
+                        "checkpoint_dir": "/workspace/src/manipulation/packages/contact_graspnet/checkpoints/scene_test_2048_bs3_hor_sigma_001",
+                        "num_points": 20000,
+                        "num_grasps": 10,
+                        "forward_passes": 1,
+                    }
+                ],
             ),
             Node(
                 package="pick_and_place",
