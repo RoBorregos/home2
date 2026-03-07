@@ -112,20 +112,13 @@ class DataExtractor(Node):
         # Optimized implementations for specific data extraction requests
         if request.data == "name":
             response.result = self.extract_name(request.full_text)
+            if response.result == "":
+                response.result = self.fallback_extract(request, "name")
             return response
         elif request.data == "loc" or request.data == "location":
             response.result = self.extract_loc(request.full_text)
             if response.result == "":
-                self.get_logger().info(
-                    "No location found in text using spacy. Attempting to extract location using LLM."
-                )
-                response.result = self.extract_via_llm(
-                    request.full_text, "location", ""
-                )
-                if response.result == "":
-                    self.get_logger().error(
-                        f"No location found in {request.full_text}. Returning empty string as a result."
-                    )
+                response.result = self.fallback_extract(request, "location")
             return response
 
         # Check if the data extraction must be performed using the LLM
@@ -140,6 +133,17 @@ class DataExtractor(Node):
             request.full_text, request.data, request.context
         )
         return response
+
+    def fallback_extract(self, request: ExtractInfo.Request, data_type: str) -> str:
+        self.get_logger().info(
+            f"No {data_type} found in text using spacy. Using LLM to extract {data_type} as fallback"
+        )
+        result = self.extract_via_llm(request.full_text, data_type, request.context)
+        if result == "":
+            self.get_logger().error(
+                f"No {data_type} found in text using LLM. Returning empty string as result."
+            )
+        return result
 
     def extract_via_llm(self, text: str, data: str, context: str) -> str:
         messages, response_format = get_extract_data_args(text, data, context)
@@ -167,14 +171,8 @@ class DataExtractor(Node):
         return result.data
 
     def extract_name(self, text: str) -> str:
-        name = extract_by_priority(self.nlp(text).ents, NAME_PRIORITY_LABELS)
-        # Add a fallback to the text if no name is found
-        if len(name) == 0:
-            self.get_logger().error(
-                f"No name found in {text}. Defaulting to returning the same input"
-            )
-            name = text
-
+        doc = self.nlp(text)
+        name = extract_by_priority(doc.ents, NAME_PRIORITY_LABELS)
         return name
 
     def extract_loc(self, text: str) -> str:
