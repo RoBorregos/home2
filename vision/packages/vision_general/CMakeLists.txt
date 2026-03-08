@@ -16,6 +16,11 @@ find_package(frida_constants REQUIRED)
 install(DIRECTORY launch Utils config
   DESTINATION share/${PROJECT_NAME})
 
+# Install model weights alongside the Python package
+install(DIRECTORY ${PROJECT_NAME}/utils/models/
+  DESTINATION ${PYTHON_INSTALL_DIR}/${PROJECT_NAME}/utils/models/
+)
+
 
 ######################### Python  #########################
 #Python compatability
