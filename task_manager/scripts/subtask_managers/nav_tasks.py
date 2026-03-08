@@ -84,7 +84,7 @@ class NavigationTasks:
         )
         self.services = {
             Task.SAFETY_CHECK: {
-                "goal_client":{"client": self.goal_client, "type":"action"},
+                "goal_client": {"client": self.goal_client, "type": "action"},
             },
             Task.RECEPTIONIST: {
                 "goal_client": {"client": self.goal_client, "type": "action"},

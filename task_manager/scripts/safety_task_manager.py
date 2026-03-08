@@ -9,18 +9,20 @@ from utils.subtask_manager import SubtaskManager, Task
 
 class SafetyTaskManager(Node):
     class TaskStates:
-            WAIT_DOOR_OPEN= "WAIT_DOOR_OPEN"
-            GO_TO_SAFE_PLACE = "GO_TO_SAFE_PLACE"
-            PRESENTATION = "PRESENTATION"
-            WAIT_FOR_BUTTON = "WAIT_FOR_BUTTON"
-            GO_TO_EXIT = "GO_TO_EXIT"
-            END = "END"
-            DEBUG = "DEBUG"
+        WAIT_DOOR_OPEN = "WAIT_DOOR_OPEN"
+        GO_TO_SAFE_PLACE = "GO_TO_SAFE_PLACE"
+        PRESENTATION = "PRESENTATION"
+        WAIT_FOR_BUTTON = "WAIT_FOR_BUTTON"
+        GO_TO_EXIT = "GO_TO_EXIT"
+        END = "END"
+        DEBUG = "DEBUG"
 
     def __init__(self):
         super().__init__("safety_task_node")
         Logger.info(self, "Initiating safety task manager")
-        self.subtask_manager = SubtaskManager(self, task=Task.SAFETY_CHECK, mock_areas=["hri","nav","manipulation","vision"])
+        self.subtask_manager = SubtaskManager(
+            self, task=Task.SAFETY_CHECK, mock_areas=["hri", "nav", "manipulation", "vision"]
+        )
         self.current_state = SafetyTaskManager.TaskStates.WAIT_DOOR_OPEN
         self.running_task = True
         Logger.info(self, "Safety Task Started")
@@ -58,7 +60,7 @@ class SafetyTaskManager(Node):
                 time.sleep(1)
                 status, res = self.subtask_manager.nav.check_door()
             self.current_state = SafetyTaskManager.TaskStates.GO_TO_SAFE_PLACE
-            
+
         if self.current_state == SafetyTaskManager.TaskStates.GO_TO_SAFE_PLACE:
             Logger.state(self, "Going to safe place")
             self.subtask_manager.hri.say("Navigating to safe place")
@@ -74,28 +76,21 @@ class SafetyTaskManager(Node):
 
         if self.current_state == SafetyTaskManager.TaskStates.WAIT_FOR_BUTTON:
             Logger.state(self, "Waiting for button to continue")
-            self.subtask_manager.hri.say(
-                "Waiting for button to exit arena"
-            )
+            self.subtask_manager.hri.say("Waiting for button to exit arena")
             while not self.subtask_manager.hri.start_button_clicked:
                 rclpy.spin_once(self, timeout_sec=0.1)
-            Logger.success(self,"Button Clicked")
+            Logger.success(self, "Button Clicked")
             self.current_state = SafetyTaskManager.TaskStates.GO_TO_EXIT
 
         if self.current_state == SafetyTaskManager.TaskStates.GO_TO_EXIT:
-            self.subtask_manager.hri.say(
-                    "I will exit now"
-                    )
+            self.subtask_manager.hri.say("I will exit now")
             self.navigate_to("exit")
             self.current_state = SafetyTaskManager.TaskStates.END
 
         if self.current_state == SafetyTaskManager.TaskStates.END:
             Logger.state(self, "Task Completed")
-            self.subtask_manager.hri.say(
-                    "I Finished my task"
-                    )
+            self.subtask_manager.hri.say("I Finished my task")
             self.running_task = False
-
 
 
 def main(args=None):
@@ -111,6 +106,7 @@ def main(args=None):
     finally:
         node.destroy_node()
         rclpy.shutdown()
+
 
 if __name__ == "__main__":
     main()

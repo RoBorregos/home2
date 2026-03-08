@@ -13,4 +13,3 @@ class Task(Enum):
     RESTAURANT = 8
     SAFETY_CHECK = 9
     DEBUG = 100
-
