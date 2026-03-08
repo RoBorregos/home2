@@ -24,6 +24,7 @@ class WhisperServicer(speech_pb2_grpc.SpeechStreamServicer):
 
             client = ServeClientFasterWhisper(
                 hotwords=first_chunk.hotwords,
+                initial_prompt=first_chunk.initial_prompt,
                 send_last_n_segments=10,
                 clip_audio=False,
                 model=self.model,
