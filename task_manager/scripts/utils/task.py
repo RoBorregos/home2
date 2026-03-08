@@ -11,4 +11,6 @@ class Task(Enum):
     EGPSR = 6
     HAND = 7
     RESTAURANT = 8
+    SAFETY_CHECK = 9
     DEBUG = 100
+

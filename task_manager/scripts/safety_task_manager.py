@@ -1,7 +1,5 @@
 #!/usr/bin/env python3
 import time
-from enum import Enum
-
 import rclpy
 from rclpy.node import Node
 from utils.logger import Logger
@@ -9,34 +7,25 @@ from utils.status import Status
 from utils.subtask_manager import SubtaskManager, Task
 
 
-class ExecutionStates(Enum):
-    START = 0
-    WAIT_DOOR_OPEN = 5
-    GO_TO_SAFE_PLACE = 10
-    SAY_ARRIVED = 20
-    GO_BACK = 30
-    WAIT_FOR_BUTTON = 40
-
-
-class Retries(Enum):
-    NAVIGATION = 5
-
-
-for i in ExecutionStates:
-    for j in ExecutionStates:
-        if i.value == j.value and i.name != j.name:
-            raise ValueError(f"Duplicate value found: {i.value} for {i.name} and {j.name}")
-
-
 class SafetyTaskManager(Node):
+    class TaskStates:
+            WAIT_DOOR_OPEN= "WAIT_DOOR_OPEN"
+            GO_TO_SAFE_PLACE = "GO_TO_SAFE_PLACE"
+            PRESENTATION = "PRESENTATION"
+            WAIT_FOR_BUTTON = "WAIT_FOR_BUTTON"
+            GO_TO_EXIT = "GO_TO_EXIT"
+            END = "END"
+            DEBUG = "DEBUG"
+
     def __init__(self):
         super().__init__("safety_task_node")
         Logger.info(self, "Initiating safety task manager")
-        self.subtask_manager = SubtaskManager(self, task=Task.STORING_GROCERIES, mock_areas=[])
-        self.state = ExecutionStates.START
-        # return self
+        self.subtask_manager = SubtaskManager(self, task=Task.SAFETY_CHECK, mock_areas=["hri","nav","manipulation","vision"])
+        self.current_state = SafetyTaskManager.TaskStates.WAIT_DOOR_OPEN
+        self.running_task = True
+        Logger.info(self, "Safety Task Started")
 
-    def nav_to(self, location: str, sub_location: str = "", say: bool = True) -> Status:
+    def navigate_to(self, location: str, sub_location: str = "", say: bool = True) -> Status:
         Logger.info(self, f"Navigating to {location} {sub_location} ")
         try:
             if say:
@@ -44,7 +33,7 @@ class SafetyTaskManager(Node):
             self.subtask_manager.manipulation.move_to_position("nav_pose")
             result = Status.EXECUTION_ERROR
             retry = 0
-            while result == Status.EXECUTION_ERROR and retry < Retries.NAVIGATION.value:
+            while result == Status.EXECUTION_ERROR and retry < 5:
                 future = self.subtask_manager.nav.move_to_location(location, sub_location)
                 if "navigation" not in self.subtask_manager.get_mocked_areas():
                     rclpy.spin_until_future_complete(self, future)
@@ -61,77 +50,67 @@ class SafetyTaskManager(Node):
             return Status.EXECUTION_ERROR
 
     def run(self):
-        Logger.info(self, "starting safety")
-        Logger.state(self, "Waiting for start button...")
-        # Wait for the start button to be pressed
-        self.state = ExecutionStates.WAIT_FOR_BUTTON
-        while not self.subtask_manager.hri.start_button_clicked:
-            rclpy.spin_once(self, timeout_sec=0.1)
-        Logger.success(self, "Start button pressed, safety task will begin now")
+        if self.current_state == SafetyTaskManager.TaskStates.WAIT_DOOR_OPEN:
+            Logger.state(self, "Waiting for open_door")
+            self.subtask_manager.hri.say("Task started, Open the door to start")
+            res = "closed"
+            while res == "closed":
+                time.sleep(1)
+                status, res = self.subtask_manager.nav.check_door()
+            self.current_state = SafetyTaskManager.TaskStates.GO_TO_SAFE_PLACE
+            
+        if self.current_state == SafetyTaskManager.TaskStates.GO_TO_SAFE_PLACE:
+            Logger.state(self, "Going to safe place")
+            self.subtask_manager.hri.say("Navigating to safe place")
+            self.navigate_to("inspection_area")
+            self.current_state = SafetyTaskManager.TaskStates.PRESENTATION
 
-        Logger.info(self, "Ready for open_door")
-        self.state = ExecutionStates.WAIT_DOOR_OPEN
-        res = "closed"
-        while res == "closed":
-            time.sleep(1)
-            status, res = self.subtask_manager.nav.check_door()
-            if status == Status.EXECUTION_SUCCESS:
-                Logger.info(self, f"Door status: {res}")
-            else:
-                Logger.error(self, "Failed to check door status")
+        if self.current_state == SafetyTaskManager.TaskStates.PRESENTATION:
+            Logger.state(self, "Presenting the robot")
+            self.subtask_manager.hri.say(
+                "Hello, My name is Frida, I'm a Friendly Robotic Interactive Domestic Asisstant. I'm here to help you!"
+            )
+            self.current_state = SafetyTaskManager.TaskStates.WAIT_FOR_BUTTON
 
-        Logger.info(self, "Door OPENED GOING TO NEXT STAT")
-        hres: Status = self.nav_to("inspection_point")
+        if self.current_state == SafetyTaskManager.TaskStates.WAIT_FOR_BUTTON:
+            Logger.state(self, "Waiting for button to continue")
+            self.subtask_manager.hri.say(
+                "Waiting for button to exit arena"
+            )
+            while not self.subtask_manager.hri.start_button_clicked:
+                rclpy.spin_once(self, timeout_sec=0.1)
+            Logger.success(self,"Button Clicked")
+            self.current_state = SafetyTaskManager.TaskStates.GO_TO_EXIT
 
-        Logger.info(self, f"hres: {hres}")
+        if self.current_state == SafetyTaskManager.TaskStates.GO_TO_EXIT:
+            self.subtask_manager.hri.say(
+                    "I will exit now"
+                    )
+            self.navigate_to("exit")
+            self.current_state = SafetyTaskManager.TaskStates.END
 
-        self.state = ExecutionStates.SAY_ARRIVED
+        if self.current_state == SafetyTaskManager.TaskStates.END:
+            Logger.state(self, "Task Completed")
+            self.subtask_manager.hri.say(
+                    "I Finished my task"
+                    )
+            self.running_task = False
 
-        Logger.info(self, "Saying")
-        self.subtask_manager.hri.say(
-            "Hello, My name is Frida, I'm a Friendly Robotic Interactive Domestic Asisstant. I'm here to help you!"
-        )
-
-        # self.subtask_manager.hri.send_display_answer("I couldn't understand you. Can you write your response here? (deus ex machina example)")
-
-        self.subtask_manager.hri.start_button_clicked = False
-
-        Logger.info(self, "Waiting for robot press")
-        while not self.subtask_manager.hri.start_button_clicked:
-            rclpy.spin_once(self, timeout_sec=0.1)
-        Logger.success(self, "Start button pressed, safety task continue begin now")
-        self.subtask_manager.hri.start_button_clicked = False
-
-        self.state = ExecutionStates.GO_TO_SAFE_PLACE
-
-        Logger.info(self, "Going back")
-
-        self.nav_to("exit")
-
-        Logger.info(self, "Arrived")
-
-        self.subtask_manager.hri.say("I've arrived.")
 
 
 def main(args=None):
     """Main function"""
-    # print("Starting Storing Groceries Manager...")
     rclpy.init(args=args)
     node = SafetyTaskManager()
-
     try:
-        node.run()
-        # while rclpy.ok():
-        #     rclpy.spin_once(node, timeout_sec=0.1)
-        #     if node.run() == ExecutionStates.END:
-        #         break
-        node.subtask_manager.hri.say(text="Ending Safety Task...", wait=True)
+        while rclpy.ok() and node.running_task:
+            rclpy.spin_once(node, timeout_sec=0.1)
+            node.run()
     except KeyboardInterrupt:
         pass
     finally:
         node.destroy_node()
         rclpy.shutdown()
-
 
 if __name__ == "__main__":
     main()

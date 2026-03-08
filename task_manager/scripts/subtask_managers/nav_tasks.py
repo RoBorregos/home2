@@ -83,6 +83,9 @@ class NavigationTasks:
             WaitForControllerInput, "wait_for_controller_input"
         )
         self.services = {
+            Task.SAFETY_CHECK: {
+                "goal_client":{"client": self.goal_client, "type":"action"},
+            },
             Task.RECEPTIONIST: {
                 "goal_client": {"client": self.goal_client, "type": "action"},
             },
@@ -169,7 +172,7 @@ class NavigationTasks:
 
         else:
             Logger.info(self.node, "Map Areas dumped Succesfully")
-            return str(future.result().areas)
+            return json.load(future.result().areas)
 
     @mockable(return_value=True, delay=10)
     @service_check("pause_nav", False, timeout=3)
@@ -213,10 +216,7 @@ class NavigationTasks:
         """
         future = Future()
         try:
-            package_share_directory = get_package_share_directory("frida_constants")
-            file_path = os.path.join(package_share_directory, "map_areas/areas.json")
-            with open(file_path, "r") as file:
-                data = json.load(file)
+            data = self.areas_dump()
             if sublocation != "":
                 coordinates = data[location][sublocation]
             else:
@@ -485,7 +485,7 @@ class NavigationTasks:
         return future
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, "open"), delay=3)
-    @service_check("laser_send", False, TIMEOUT)
+    @service_check("laser_send", (Status.EXECUTION_ERROR, "open"), TIMEOUT)
     def check_door(self) -> tuple[int, str]:
         """Check if the door is open or closed"""
 

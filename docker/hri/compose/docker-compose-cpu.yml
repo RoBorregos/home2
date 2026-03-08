@@ -1,5 +1,5 @@
 include:
-  - path: hri-ros.yaml
-  - path: stt.yaml
+  # - path: hri-ros.yaml
+  # - path: stt.yaml
   - path: postgresql.yaml
-  - path: tts.yaml
+  # - path: tts.yaml
