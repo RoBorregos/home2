@@ -428,7 +428,7 @@ class ManipulationTasks:
 
             if result_tilt != Status.EXECUTION_SUCCESS:
                 Logger.warn(self.node, "Path is BLOCKED at tilt")
-                return Status.EXECUTION_ERROR
+                return True
 
             offset = 170.0
             if direction == self.Direction.LEFT:
@@ -443,14 +443,14 @@ class ManipulationTasks:
 
             if result_pan == Status.EXECUTION_SUCCESS:
                 Logger.info(self.node, f"Path to {direction.value} is CLEAR")
-                return Status.EXECUTION_SUCCESS
+                return False
             else:
                 Logger.warn(self.node, f"Path to {direction.value} is BLOCKED")
-                return Status.EXECUTION_ERROR
+                return True
 
         except Exception as e:
             Logger.warning(self.node, f"Error scanning {direction.value}: {e}")
-            return Status.EXECUTION_ERROR
+            return True
 
     def place_on_floor(self) -> int:
         try:
