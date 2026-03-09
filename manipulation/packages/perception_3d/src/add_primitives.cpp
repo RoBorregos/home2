@@ -344,7 +344,11 @@ public:
     box_params.height = extent[2] * 2;
 
     // Set the orientation in the box parameters
-    Eigen::Quaternionf quat(rotation);
+    Eigen::Quaternionf quat_prev(rotation);
+    // Fix the orientation to only keep the yaw component
+    Eigen::Vector3f euler = quat_prev.toRotationMatrix().eulerAngles(2, 1, 0);
+    Eigen::AngleAxisf yaw_only(euler[0], Eigen::Vector3f::UnitZ());
+    Eigen::Quaternionf quat(yaw_only);
     // quat.normalize();
     box_params.orientation.x = quat.x();
     box_params.orientation.y = quat.y();
