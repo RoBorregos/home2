@@ -42,8 +42,14 @@ def generate_launch_description():
             )),
         launch_arguments={'localization': localization, 'rtab_config_file': rtab_params, 'nav2_config_file': nav2_params, 'nav2': nav2_activate, 'map_name': rtabmap_map_name}.items(),
         )
-    
+
+    map_context_node = Node(
+        package='map_context',
+        executable='map_service',
+        parameters=[{'map_name':rtabmap_map_name[:-3]}],
+    )
     return LaunchDescription([
         nav_basics,
         rtabmapnav,
+        map_context_node
     ])
