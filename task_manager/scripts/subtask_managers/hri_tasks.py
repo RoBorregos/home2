@@ -35,11 +35,7 @@ from frida_constants.hri_constants import (
     SPEAK_SERVICE,
     START_BUTTON_CLIENT,
     STT_ACTION_SERVER_NAME,
-    TASK_STATUS_TOPIC,
     WAKEWORD_TOPIC,
-    SKIP_CONFIRMATION_SIMILARITY_THRESHOLD,
-    SKIP_CONFIRMATION_CONFIDENCE_THRESHOLD,
-    TIMEOUT,
 )
 from frida_interfaces.action import SpeechStream
 from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
@@ -100,6 +96,11 @@ InterpreterAvailableCommands = Union[
     PlaceObject,
     SayWithContext,
 ]
+
+SKIP_CONFIRMATION_SIMILARITY_THRESHOLD = 0.5
+SKIP_CONFIRMATION_CONFIDENCE_THRESHOLD = 0.5
+TIMEOUT = 5.0
+TASK_STATUS_TOPIC = "/hri/display/task_status"
 
 
 def confirm_query(interpreted_text, target_info):
