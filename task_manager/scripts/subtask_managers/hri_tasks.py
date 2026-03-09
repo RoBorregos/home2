@@ -983,7 +983,7 @@ class HRITasks(metaclass=SubtaskMeta):
             self.say(f"Our menu today is: {menu_str}. What would you like to order?")
 
             # 3. Listen
-            s, transcript = self.hear()
+            s, transcript, _ = self.hear()
             if s != Status.EXECUTION_SUCCESS or not transcript:
                 Logger.warn(self.node, "take_order: nothing heard, retrying")
                 self.say("Sorry, I didn't catch that. Could you repeat your order?")
