@@ -20,5 +20,5 @@ WORKDIR /workspace
 
 COPY ./ /workspace/src
 RUN sudo apt update && sudo rosdep init && rosdep update
-RUN rosdep install --from-paths ./src/task_manager --ignore-src --skip-keys "frida_constants frida_interfaces" -y
+RUN rosdep install --from-paths ./src/task_manager --ignore-src -y -r
 RUN sudo rm -rf /workspace/src/
