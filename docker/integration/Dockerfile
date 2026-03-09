@@ -19,7 +19,6 @@ RUN baml-cli generate
 WORKDIR /workspace
 
 COPY ./ /workspace/src
-RUN cd /workspace/src && sudo apt update && sudo rosdep init && rosdep update
-RUN rosdep install --from-paths ./task_manager --ignore-src --skip-keys "frida_constants frida_interfaces" -y
+RUN sudo apt update && sudo rosdep init && rosdep update
+RUN rosdep install --from-paths ./src/task_manager --ignore-src --skip-keys "frida_constants frida_interfaces" -y
 RUN sudo rm -rf /workspace/src/
-WORKDIR /workspace
