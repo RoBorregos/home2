@@ -47,7 +47,7 @@ private:
         for (int i = 0; i < count; ++i) {
             float degree = RAD2DEG(scan->angle_min + scan->angle_increment * i);
             for (size_t j = 0; j < ignore_array_.size(); j += 2) {
-                if ((ignore_array_[j] < degree) && (degree <= ignore_array_[j + 1])) {
+                if ((ignore_array_[j] < degree) && (degree <= ignore_array_[j + 1]) ||(  new_scan.ranges[i] < 0.12)) {
                     new_scan.ranges[i] = 0.0;
                     break;
                 }
