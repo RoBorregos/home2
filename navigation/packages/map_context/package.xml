@@ -15,6 +15,7 @@
   <depend>navigation2</depend>
   <depend>nav2_bringup</depend>
   <depend>rviz2</depend>
+  <depend>frida_interfaces</depend>
 
   <test_depend>ament_lint_auto</test_depend>
   <test_depend>ament_lint_common</test_depend>

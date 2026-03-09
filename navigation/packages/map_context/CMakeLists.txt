@@ -12,6 +12,7 @@ find_package(ament_index_cpp REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(rviz2 REQUIRED)
+find_package(frida_interfaces REQUIRED)
 
 #Directory install
 install(DIRECTORY launch config maps
