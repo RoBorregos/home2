@@ -44,17 +44,17 @@ def launch_function(context, *args, **kwargs):
         launch_arguments={'localization': localization, 'rtab_config_file': rtab_params, 'nav2_config_file': nav2_params, 'nav2': nav2_activate, 'map_name': rtabmap_map_name}.items(),
         )
 
+    map_name_str = rtabmap_map_name.perform(context)
     map_context_node = Node(
         package='map_context',
         executable='map_service',
-        parameters=[{'map_name':rtabmap_map_name[:-3]}],
+        parameters=[{'map_name': map_name_str[:-3]}],
     )
 
-
-    return LaunchDescription[
+    return [
         nav_basics,
         rtabmapnav,
-        map_context_node
+        map_context_node,
     ]
 def generate_launch_description():
     return LaunchDescription([OpaqueFunction(function=launch_function)])
