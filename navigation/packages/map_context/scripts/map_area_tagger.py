@@ -46,7 +46,8 @@ POLYGON_VERTEX_COLOR = QColor(255, 200, 50, 200)
 
 class MapCanvas(QWidget):
     """Widget for displaying the map and handling mouse interactions."""
-    point_clicked = pyqtSignal(float, float)  # map coordinates (meters)
+    location_placed = pyqtSignal(float, float, float)  # mx, my, yaw
+    polygon_clicked = pyqtSignal(float, float)
     mouse_moved = pyqtSignal(float, float)
 
     def __init__(self, parent=None):
@@ -64,6 +65,10 @@ class MapCanvas(QWidget):
         self.current_area = None
         self.mode = 'location'  # 'location' or 'polygon'
         self.temp_polygon = []
+        # Drag-to-orient state
+        self.dragging_orientation = False
+        self.drag_start_map = None  # (mx, my) where click started
+        self.drag_yaw = 0.0
         self.setMouseTracking(True)
         self.setMinimumSize(600, 400)
         self.setFocusPolicy(Qt.StrongFocus)
@@ -127,7 +132,7 @@ class MapCanvas(QWidget):
         self.zoom *= factor
         self.zoom = max(0.1, min(50.0, self.zoom))
         # Zoom toward mouse
-        mx, my = event.position().x(), event.position().y()
+        mx, my = event.pos().x(), event.pos().y()
         self.pan_offset.setX(mx - (mx - self.pan_offset.x()) * self.zoom / old_zoom)
         self.pan_offset.setY(my - (my - self.pan_offset.y()) * self.zoom / old_zoom)
         self.update()
@@ -135,27 +140,47 @@ class MapCanvas(QWidget):
     def mousePressEvent(self, event: QMouseEvent):
         if event.button() == Qt.MiddleButton or (event.button() == Qt.LeftButton and event.modifiers() & Qt.ShiftModifier):
             self.panning = True
-            self.last_mouse_pos = event.position()
+            self.last_mouse_pos = event.pos()
             self.setCursor(QCursor(Qt.ClosedHandCursor))
         elif event.button() == Qt.LeftButton and self.pixmap:
-            px, py = self.screen_to_pixel(event.position().x(), event.position().y())
+            px, py = self.screen_to_pixel(event.pos().x(), event.pos().y())
             if 0 <= px < self.pixmap.width() and 0 <= py < self.pixmap.height():
                 mx, my = self.pixel_to_map(px, py)
-                self.point_clicked.emit(mx, my)
+                if self.mode == 'location':
+                    self.dragging_orientation = True
+                    self.drag_start_map = (mx, my)
+                    self.drag_yaw = 0.0
+                elif self.mode == 'polygon':
+                    self.polygon_clicked.emit(mx, my)
 
     def mouseMoveEvent(self, event: QMouseEvent):
         if self.panning and self.last_mouse_pos:
-            delta = event.position() - self.last_mouse_pos
+            delta = event.pos() - self.last_mouse_pos
             self.pan_offset += delta
-            self.last_mouse_pos = event.position()
+            self.last_mouse_pos = event.pos()
+            self.update()
+        elif self.dragging_orientation and self.drag_start_map and self.pixmap:
+            px, py = self.screen_to_pixel(event.pos().x(), event.pos().y())
+            mx, my = self.pixel_to_map(px, py)
+            dx = mx - self.drag_start_map[0]
+            dy = my - self.drag_start_map[1]
+            if abs(dx) > 0.01 or abs(dy) > 0.01:
+                self.drag_yaw = math.atan2(dy, dx)
             self.update()
         if self.pixmap:
-            px, py = self.screen_to_pixel(event.position().x(), event.position().y())
+            px, py = self.screen_to_pixel(event.pos().x(), event.pos().y())
             if 0 <= px < self.pixmap.width() and 0 <= py < self.pixmap.height():
                 mx, my = self.pixel_to_map(px, py)
                 self.mouse_moved.emit(mx, my)
 
     def mouseReleaseEvent(self, event: QMouseEvent):
+        if self.dragging_orientation and self.drag_start_map:
+            mx, my = self.drag_start_map
+            self.location_placed.emit(mx, my, self.drag_yaw)
+            self.dragging_orientation = False
+            self.drag_start_map = None
+            self.update()
+            return
         if event.button() == Qt.MiddleButton or event.button() == Qt.LeftButton:
             self.panning = False
             self.setCursor(QCursor(Qt.ArrowCursor))
@@ -217,7 +242,7 @@ class MapCanvas(QWidget):
                 yaw = math.atan2(2.0 * qw * qz, 1.0 - 2.0 * qz * qz)
 
                 px, py = self.map_to_pixel(x, y)
-                r = max(4, 6 / self.zoom)
+                r = max(3, 5 / self.zoom)
 
                 # Location dot
                 painter.setPen(QPen(border_color, 1.5 / self.zoom))
@@ -231,11 +256,36 @@ class MapCanvas(QWidget):
                 painter.setPen(QPen(border_color, 2.0 / self.zoom))
                 painter.drawLine(QPointF(px, py), QPointF(ax, ay))
 
-                # Label
-                font = QFont("Segoe UI", max(6, int(9 / self.zoom)))
+                # Label with background
+                font = QFont("Segoe UI", max(5, int(7 / self.zoom)))
                 painter.setFont(font)
-                painter.setPen(QPen(Qt.white))
-                painter.drawText(QPointF(px + r + 2 / self.zoom, py - r), loc_name)
+                label_x = px + r + 2 / self.zoom
+                label_y = py - r
+                # Draw text shadow/background for readability
+                painter.setPen(QPen(QColor(0, 0, 0, 180)))
+                painter.drawText(QPointF(label_x + 0.5 / self.zoom, label_y + 0.5 / self.zoom), loc_name)
+                # Colored label matching area
+                label_color = QColor(color.red(), color.green(), color.blue(), 255)
+                label_color = label_color.lighter(180)
+                painter.setPen(QPen(label_color))
+                painter.drawText(QPointF(label_x, label_y), loc_name)
+
+        # Draw drag-to-orient preview
+        if self.dragging_orientation and self.drag_start_map:
+            smx, smy = self.drag_start_map
+            spx, spy = self.map_to_pixel(smx, smy)
+            r = max(4, 6 / self.zoom)
+            # Preview dot
+            painter.setPen(QPen(QColor(0, 200, 255, 200), 2.0 / self.zoom))
+            painter.setBrush(QBrush(QColor(0, 200, 255, 100)))
+            painter.drawEllipse(QPointF(spx, spy), r, r)
+            # Preview arrow
+            arrow_len = r * 4
+            yaw = self.drag_yaw
+            arx = spx + arrow_len * math.cos(-yaw)
+            ary = spy + arrow_len * math.sin(-yaw)
+            painter.setPen(QPen(QColor(0, 200, 255, 220), 2.5 / self.zoom))
+            painter.drawLine(QPointF(spx, spy), QPointF(arx, ary))
 
         # Draw temp polygon vertices
         if self.temp_polygon:
@@ -251,30 +301,6 @@ class MapCanvas(QWidget):
                 painter.drawPolyline(poly)
 
         painter.restore()
-
-
-class OrientationDialog(QDialog):
-    """Dialog for setting location orientation (yaw angle)."""
-    def __init__(self, parent=None, default_yaw=0.0):
-        super().__init__(parent)
-        self.setWindowTitle("Set Orientation")
-        self.setMinimumWidth(280)
-        layout = QFormLayout(self)
-
-        self.yaw_spin = QDoubleSpinBox()
-        self.yaw_spin.setRange(-180.0, 180.0)
-        self.yaw_spin.setDecimals(1)
-        self.yaw_spin.setSuffix("°")
-        self.yaw_spin.setValue(math.degrees(default_yaw))
-        layout.addRow("Yaw (degrees):", self.yaw_spin)
-
-        buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        buttons.accepted.connect(self.accept)
-        buttons.rejected.connect(self.reject)
-        layout.addRow(buttons)
-
-    def get_yaw(self):
-        return math.radians(self.yaw_spin.value())
 
 
 class MapAreaTagger(QMainWindow):
@@ -321,6 +347,11 @@ class MapAreaTagger(QMainWindow):
 
         toolbar.addSeparator()
 
+        new_action = QAction("New", self)
+        new_action.setShortcut("Ctrl+N")
+        new_action.triggered.connect(self.new_project)
+        toolbar.addAction(new_action)
+
         fit_action = QAction("Fit View", self)
         fit_action.setShortcut("F")
         fit_action.triggered.connect(self.fit_view)
@@ -332,7 +363,8 @@ class MapAreaTagger(QMainWindow):
 
         # Map canvas
         self.canvas = MapCanvas()
-        self.canvas.point_clicked.connect(self.on_map_click)
+        self.canvas.location_placed.connect(self.on_location_placed)
+        self.canvas.polygon_clicked.connect(self.on_polygon_click)
         self.canvas.mouse_moved.connect(self.on_mouse_move)
         splitter.addWidget(self.canvas)
 
@@ -463,6 +495,23 @@ class MapAreaTagger(QMainWindow):
         else:
             self.status.showMessage("Click vertices to define polygon boundary. Click 'Finish Polygon' when done.")
 
+    def new_project(self):
+        reply = QMessageBox.question(
+            self, "New Project",
+            "Clear all areas and start from scratch?",
+            QMessageBox.Yes | QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            self.areas = {}
+            self.current_area = None
+            self.temp_polygon = []
+            self.canvas.areas = {}
+            self.canvas.temp_polygon = []
+            self.canvas.current_area = None
+            self.refresh_area_list()
+            self.refresh_tree()
+            self.canvas.update()
+            self.status.showMessage("Started new project")
+
     def open_map(self):
         path, _ = QFileDialog.getOpenFileName(
             self, "Open Map YAML", "", "Map files (*.yaml *.yml)")
@@ -553,38 +602,33 @@ class MapAreaTagger(QMainWindow):
             self.canvas.current_area = None
         self.refresh_tree()
 
-    def on_map_click(self, mx, my):
+    def on_location_placed(self, mx, my, yaw):
         if not self.current_area:
             self.status.showMessage("Select or create an area first!")
             return
+        name, ok = QInputDialog.getText(self, "Location Name", "Name for this location:")
+        if not ok or not name:
+            return
+        name = name.strip().lower().replace(' ', '_')
 
-        if self.mode == 'location':
-            name, ok = QInputDialog.getText(self, "Location Name", "Name for this location:")
-            if not ok or not name:
-                return
-            name = name.strip().lower().replace(' ', '_')
+        # Convert yaw to quaternion (z-axis rotation only)
+        qz = math.sin(yaw / 2.0)
+        qw = math.cos(yaw / 2.0)
 
-            # Ask orientation
-            dlg = OrientationDialog(self)
-            if dlg.exec_() != QDialog.Accepted:
-                return
-            yaw = dlg.get_yaw()
+        self.areas[self.current_area][name] = [mx, my, 0.0, 0.0, 0.0, qz, qw]
+        self.canvas.areas = self.areas
+        self.refresh_tree()
+        self.canvas.update()
+        self.status.showMessage(f"Added '{name}' at ({mx:.2f}, {my:.2f}) yaw={math.degrees(yaw):.0f}")
 
-            # Convert yaw to quaternion (z-axis rotation only)
-            qz = math.sin(yaw / 2.0)
-            qw = math.cos(yaw / 2.0)
-
-            self.areas[self.current_area][name] = [mx, my, 0.0, 0.0, 0.0, qz, qw]
-            self.canvas.areas = self.areas
-            self.refresh_tree()
-            self.canvas.update()
-            self.status.showMessage(f"Added location '{name}' at ({mx:.2f}, {my:.2f})")
-
-        elif self.mode == 'polygon':
-            self.temp_polygon.append([mx, my])
-            self.canvas.temp_polygon = self.temp_polygon
-            self.canvas.update()
-            self.status.showMessage(f"Polygon vertex {len(self.temp_polygon)} at ({mx:.2f}, {my:.2f}). Click 'Finish Polygon' when done.")
+    def on_polygon_click(self, mx, my):
+        if not self.current_area:
+            self.status.showMessage("Select or create an area first!")
+            return
+        self.temp_polygon.append([mx, my])
+        self.canvas.temp_polygon = self.temp_polygon
+        self.canvas.update()
+        self.status.showMessage(f"Polygon vertex {len(self.temp_polygon)} at ({mx:.2f}, {my:.2f})")
 
     def finish_polygon(self):
         if not self.current_area:
