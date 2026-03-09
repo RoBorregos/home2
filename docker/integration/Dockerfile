@@ -9,7 +9,7 @@ WORKDIR /workspace/requirements
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
-COPY ../../hri/requirements/postgres.txt /workspace/requirements/postgres.txt
+COPY hri/requirements/postgres.txt /workspace/requirements/postgres.txt
 RUN pip install -r postgres.txt
 
 COPY task_manager/scripts/utils /workspace/utils
@@ -18,6 +18,8 @@ RUN baml-cli generate
 
 WORKDIR /workspace
 
-# CV-bridge
-RUN apt update
-RUN apt install -y ros-humble-nav2-msgs
+COPY ./ /workspace/src
+RUN cd /workspace/src && sudo apt update && sudo rosdep init && rosdep update
+RUN rosdep install --from-paths ./task_manager --ignore-src --skip-keys "frida_constants frida_interfaces" -y
+RUN sudo rm -rf /workspace/src/
+WORKDIR /workspace
