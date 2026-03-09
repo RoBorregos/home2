@@ -33,6 +33,7 @@ from frida_constants.vision_constants import (
     SET_TARGET_BY_TOPIC,
     SET_TARGET_TOPIC,
     SHELF_DETECTION_TOPIC,
+    DETECT_HAND_SERVICE,
 )
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.msg import ObjectDetection, PersonList
@@ -51,6 +52,7 @@ from frida_interfaces.srv import (
     SaveName,
     ShelfDetectionHandler,
     TrackBy,
+    DetectHand,
 )
 from geometry_msgs.msg import Point, PointStamped
 from rclpy.action import ActionClient
@@ -106,6 +108,7 @@ class VisionTasks:
             ShelfDetectionHandler, SHELF_DETECTION_TOPIC
         )
         self.beverage_location_client = self.node.create_client(BeverageLocation, BEVERAGE_TOPIC)
+        self.detect_hand_client = self.node.create_client(DetectHand, DETECT_HAND_SERVICE)
 
         self.object_detector_client = self.node.create_client(
             DetectionHandler, DETECTION_HANDLER_TOPIC_SRV
@@ -138,6 +141,7 @@ class VisionTasks:
                 "moondream_query": {"client": self.moondream_query_client, "type": "service"},
                 "beverage_location": {"client": self.beverage_location_client, "type": "service"},
                 "follow_by_name": {"client": self.follow_by_name_client, "type": "service"},
+                "detect_hand": {"client": self.detect_hand_client, "type": "service"},
             },
             Task.HELP_ME_CARRY: {
                 "track_person": {"client": self.track_person_client, "type": "service"},
@@ -794,6 +798,28 @@ class VisionTasks:
 
         Logger.success(self.node, f"The person is: {result.result}")
         return Status.EXECUTION_SUCCESS, result.result
+
+    @mockable(return_value=(Status.EXECUTION_ERROR, None))
+    @service_check("detect_hand_client", [Status.EXECUTION_ERROR, None], TIMEOUT)
+    def detect_hand(self) -> tuple[int, PointStamped]:
+        """Detect the hand and return its 3D position."""
+        Logger.info(self.node, "Detecting hand")
+        request = DetectHand.Request()
+        try:
+            future = self.detect_hand_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+            result = future.result()
+            if not result.success:
+                Logger.warn(self.node, "No hand detected")
+                return Status.TARGET_NOT_FOUND, None
+        except Exception as e:
+            Logger.error(self.node, f"Error detecting hand: {e}")
+            return Status.EXECUTION_ERROR, None
+        Logger.success(
+            self.node,
+            f"Hand detected at ({result.point.point.x:.3f}, {result.point.point.y:.3f}, {result.point.point.z:.3f})",
+        )
+        return Status.EXECUTION_SUCCESS, result.point
 
     def visual_info(self, description, object="object"):
         """Return the object matching the description"""
