@@ -7,8 +7,9 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
 from launch.conditions import UnlessCondition, IfCondition
+from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument,OpaqueFunction
 
-def generate_launch_description():
+def launch_function(context, *args, **kwargs):
     pkg_file_route = get_package_share_directory('nav_main')
     rtab_params_file = os.path.join(pkg_file_route,'config', 'rtabmap', 'rtabmap_default_config.yaml')
     nav2_params_file = os.path.join(pkg_file_route,'config', 'nav2_standard.yaml')
@@ -48,8 +49,12 @@ def generate_launch_description():
         executable='map_service',
         parameters=[{'map_name':rtabmap_map_name[:-3]}],
     )
-    return LaunchDescription([
+
+
+    return LaunchDescription[
         nav_basics,
         rtabmapnav,
         map_context_node
-    ])
+    ]
+def generate_launch_description():
+    return LaunchDescription([OpaqueFunction(function=launch_function)])
