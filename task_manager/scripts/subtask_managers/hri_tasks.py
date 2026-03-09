@@ -953,6 +953,101 @@ class HRITasks(metaclass=SubtaskMeta):
             Logger.warn(self.node, f"RAG service failed: {result.response}")
             return Status.EXECUTION_ERROR, result.response, result.score
 
+    # Restaurant
+    def take_order(
+        self,
+        menu_items: List[str],
+        retries: int = 3,
+    ) -> tuple:
+        """Ask the customer for their order and return the matched menu items.
+
+        Sets STT hotwords, announces the menu, listens, extracts items with the
+        LLM, maps them to the closest menu entry via embeddings, and confirms
+        with the customer. Retries up to *retries* times on failure.
+        Returns:
+            (Status.EXECUTION_SUCCESS, list[str]) on success, or
+            (Status.TIMEOUT, []) if the customer never confirms.
+        """
+        Logger.info(self.node, "take_order called with menu")
+
+        # 1. Bias STT toward menu vocabulary
+        self.set_hotwords(menu_items)
+
+        menu_str = ", ".join(menu_items)
+
+        for attempt in range(1, retries + 1):
+            Logger.info(self.node, f"take_order attempt {attempt}/{retries}")
+
+            # 2. Announce available items
+            self.say(f"Our menu today is: {menu_str}. What would you like to order?")
+
+            # 3. Listen
+            s, transcript = self.hear()
+            if s != Status.EXECUTION_SUCCESS or not transcript:
+                Logger.warn(self.node, "take_order: nothing heard, retrying")
+                self.say("Sorry, I didn't catch that. Could you repeat your order?")
+                continue
+
+            Logger.info(self.node, f"take_order transcript: {transcript}")
+
+            # 4. Extract ordered items from the transcript
+            #    We ask the LLM to return a comma-separated list of items.
+            context = f"Available menu items: {menu_str}"
+            s, raw_items_str = self.extract_data(
+                query="list of food or drink items ordered by the customer",
+                complete_text=transcript,
+                context=context,
+            )
+
+            if s != Status.EXECUTION_SUCCESS or not raw_items_str:
+                Logger.warn(self.node, "take_order: could not extract items, retrying")
+                self.say("I'm not sure what you'd like. Could you tell me your order again?")
+                continue
+
+            # Split on common delimiters: comma, "and", semicolons
+            raw_items = [
+                item.strip()
+                for item in re.split(r",|\band\b|;", raw_items_str, flags=re.IGNORECASE)
+                if item.strip()
+            ]
+            Logger.info(self.node, f"take_order raw items extracted: {raw_items}")
+
+            # 5. Map each extracted item to the closest menu entry via embeddings
+            matched_items = []
+            for raw_item in raw_items:
+                s_match, closest = self.find_closest(menu_items, raw_item, top_k=1)
+                if s_match == Status.EXECUTION_SUCCESS and closest:
+                    # find_closest returns a list via get_name() → original_name key.
+                    # Fall back to the raw string if mapping yields nothing usable.
+                    matched = closest[0] if closest[0] else raw_item
+                else:
+                    matched = raw_item
+                matched_items.append(matched)
+
+            Logger.info(self.node, f"take_order matched items: {matched_items}")
+
+            if not matched_items:
+                self.say("I couldn't identify any items from the menu. Please try again.")
+                continue
+
+            # 6. Confirm full order with the customer
+            order_summary = ", ".join(matched_items)
+            s_confirm, answer = self.confirm(
+                f"You ordered: {order_summary}. Is that correct?",
+                use_hotwords=True,
+                retries=2,
+            )
+
+            if s_confirm == Status.EXECUTION_SUCCESS and answer == "yes":
+                Logger.info(self.node, f"take_order confirmed: {matched_items}")
+                return Status.EXECUTION_SUCCESS, matched_items
+
+            # Customer said no or didn't respond → retry
+            self.say("No problem, let me take your order again.")
+
+        Logger.warn(self.node, "take_order: max retries reached, giving up")
+        return Status.TIMEOUT, []
+
     # Embeddings services
     def add_command_history(self, command: InterpreterAvailableCommands, result, status):
         self.pg.add_command(
