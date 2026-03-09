@@ -158,6 +158,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a4074a19e89e915451bd71d1d624cace7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaf9af33acead67f77338c436be1f8c41"><td class="memItemLeft" align="right" valign="top">tuple[int, str]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#aaf9af33acead67f77338c436be1f8c41">find_person_info</a> (self, str type_requested)</td></tr>
 <tr class="separator:aaf9af33acead67f77338c436be1f8c41"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a14e22d8b22709885c928b7e0573672ce"><td class="memItemLeft" align="right" valign="top">tuple[int, PointStamped]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a14e22d8b22709885c928b7e0573672ce">detect_hand</a> (self)</td></tr>
+<tr class="separator:a14e22d8b22709885c928b7e0573672ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae73150ff3b6527d8e44508697c050975"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#ae73150ff3b6527d8e44508697c050975">visual_info</a> (self, description, object=&quot;object&quot;)</td></tr>
 <tr class="separator:ae73150ff3b6527d8e44508697c050975"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae4749739a2b68b94a9f46c0a80818228"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#ae4749739a2b68b94a9f46c0a80818228">detect_trash</a> (self)</td></tr>
@@ -227,6 +229,8 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a71448462ca13783f3d256df37abc6b11"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a040c274fad01e7373f18b11345a74556"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a040c274fad01e7373f18b11345a74556">beverage_location_client</a></td></tr>
 <tr class="separator:a040c274fad01e7373f18b11345a74556"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abd6bf580075440cc440f213549930a08"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#abd6bf580075440cc440f213549930a08">detect_hand_client</a></td></tr>
+<tr class="separator:abd6bf580075440cc440f213549930a08"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae67ce036a7c1ec2887327a652cd2bbee"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#ae67ce036a7c1ec2887327a652cd2bbee">object_detector_client</a></td></tr>
 <tr class="separator:ae67ce036a7c1ec2887327a652cd2bbee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a15a4390ced8eabcb78933d69d77d6e55"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#a15a4390ced8eabcb78933d69d77d6e55">customer_client</a></td></tr>
@@ -591,6 +595,24 @@ Protected Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <pre class="fragment">Returns true when the guest is detected</pre> 
+</div>
+</div>
+<a id="a14e22d8b22709885c928b7e0573672ce" name="a14e22d8b22709885c928b7e0573672ce"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a14e22d8b22709885c928b7e0573672ce">&#9670;&#160;</a></span>detect_hand()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> tuple[int, PointStamped] subtask_managers.vision_tasks.VisionTasks.detect_hand </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Detect the hand and return its 3D position.</pre> 
 </div>
 </div>
 <a id="a6c0578b994c2142f43ddad3364d906a2" name="a6c0578b994c2142f43ddad3364d906a2"></a>
@@ -1498,6 +1520,20 @@ Protected Member Functions</h2></td></tr>
 <span class="mlabels"><span class="mlabel">static</span></span>  </td>
   </tr>
 </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="abd6bf580075440cc440f213549930a08" name="abd6bf580075440cc440f213549930a08"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abd6bf580075440cc440f213549930a08">&#9670;&#160;</a></span>detect_hand_client</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">subtask_managers.vision_tasks.VisionTasks.detect_hand_client</td>
+        </tr>
+      </table>
 </div><div class="memdoc">
 
 </div>

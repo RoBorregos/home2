@@ -1,5 +1,9 @@
 var NAVTREEINDEX24 =
 {
+"namespaceYoloV8ObjectDetector.html#a748ee18619dc839bce1303772f9703ce":[22,0,164,1],
+"namespaceZeroShotObjectDetector.html":[22,0,167],
+"namespaceZeroShotObjectDetector.html#a2fd61cf39984ae05ac381a86150f2411":[22,0,167,1],
+"namespace__storing__groceries.html":[22,0,0],
 "namespace__storing__groceries.html#a155d3198243f1cb233bf4caf81e7cf93":[22,0,0,2],
 "namespace__storing__groceries.html#adc3b841dce9790c83b15a88ef9fb4340":[22,0,0,1],
 "namespaceadd__collision__object.html":[22,0,1],
@@ -245,9 +249,5 @@ var NAVTREEINDEX24 =
 "namespacefrida__constants_1_1manipulation__constants.html#a05480f19a8f62082d5be5c02acc98f72":[22,0,50,2,0],
 "namespacefrida__constants_1_1manipulation__constants.html#a0b7108a7f04682d83eb47aacc396c94b":[22,0,50,2,5],
 "namespacefrida__constants_1_1manipulation__constants.html#a0dc8f7fb16d410b4a27d8c1aac4cc769":[22,0,50,2,47],
-"namespacefrida__constants_1_1manipulation__constants.html#a0f799b9d97b5f75930b04e935623961f":[22,0,50,2,49],
-"namespacefrida__constants_1_1manipulation__constants.html#a1bd51b80a924a289d9d7836620eca1f6":[22,0,50,2,46],
-"namespacefrida__constants_1_1manipulation__constants.html#a21af79d5b4fabb9ddd588da869e67c4b":[22,0,50,2,29],
-"namespacefrida__constants_1_1manipulation__constants.html#a2504c3f7f4f62c97f91d95bc5191e7c0":[22,0,50,2,8],
-"namespacefrida__constants_1_1manipulation__constants.html#a2885d522797d86e74fc04768cf3b50a6":[22,0,50,2,4]
+"namespacefrida__constants_1_1manipulation__constants.html#a0f799b9d97b5f75930b04e935623961f":[22,0,50,2,49]
 };

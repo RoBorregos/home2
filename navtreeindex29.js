@@ -1,5 +1,9 @@
 var NAVTREEINDEX29 =
 {
+"structHandlerParams.html#aa74d14584ba8ab139e00af59addb0a2f":[23,0,110,3],
+"structHandlerParams.html#ae55c1514f69035e575ce4e6592b0bb50":[23,0,110,2],
+"subtask__manager_8py.html":[24,0,6,1,5,6],
+"subtask__meta_8py.html":[24,0,6,1,2,9],
 "task_8py.html":[24,0,6,1,5,7],
 "task__manager_2scripts_2subtask__managers_2____init_____8py.html":[24,0,6,1,2,0],
 "task__manager_2scripts_2utils_2____init_____8py.html":[24,0,6,1,5,0],
