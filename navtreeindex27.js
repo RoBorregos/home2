@@ -1,5 +1,6 @@
 var NAVTREEINDEX27 =
 {
+"namespacerun__while__hearing.html#aebdd0761631fc7404d7fddc38cde38a6":[22,0,128,1],
 "namespaces.html":[22,0],
 "namespacesafety__task__manager.html":[22,0,129],
 "namespacesafety__task__manager.html#a207642360aafef76971e5142db35e75c":[22,0,129,3],
@@ -248,6 +249,5 @@ var NAVTREEINDEX27 =
 "nav__tasks_8py.html#a01583190a3f2f808b89450592a6263b9":[24,0,6,1,2,8,5],
 "nav__tasks_8py.html#a35bf842183e21b6c6070cc6d2219644e":[24,0,6,1,2,8,6],
 "nav__tasks_8py.html#a5b4d09d800913ff80b44923281185579":[24,0,6,1,2,8,8],
-"nav__tasks_8py.html#a6f0a3307d2c3d8bc3c5fcd2f15a84c08":[24,0,6,1,2,8,9],
-"nav__tasks_8py.html#a736666918ed4f70d5cf2d995c1e7351e":[24,0,6,1,2,8,14]
+"nav__tasks_8py.html#a6f0a3307d2c3d8bc3c5fcd2f15a84c08":[24,0,6,1,2,8,9]
 };

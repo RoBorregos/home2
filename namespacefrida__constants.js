@@ -72,6 +72,7 @@ var namespacefrida__constants =
       [ "ZED_POINT_CLOUD_TOPIC", "namespacefrida__constants_1_1manipulation__constants.html#a60fec6dff1f21269d68429db6ce6c56d", null ]
     ] ],
     [ "navigation_constants", "namespacefrida__constants_1_1navigation__constants.html", [
+      [ "AREAS_SERVICE", "namespacefrida__constants_1_1navigation__constants.html#a419bb0cf24a0821a4a6004a9eba48301", null ],
       [ "FOLLOWING_SERVICE", "namespacefrida__constants_1_1navigation__constants.html#a0a685432fbf60ba5093c6e18c65e4867", null ],
       [ "GOAL_TOPIC", "namespacefrida__constants_1_1navigation__constants.html#a19da80c20445976caecaecc96e78881f", null ]
     ] ],
