@@ -106,6 +106,7 @@ FOLLOW_BY_TOPIC = "/vision/follow_by_name"
 CHECK_PERSON_TOPIC = "/vision/receptionist/detect_person"
 FIND_SEAT_TOPIC = "/vision/receptionist/find_seat"
 IMAGE_TOPIC_RECEPTIONIST = "/vision/receptionist/img_person_detecion"
+DETECT_HAND_SERVICE = "/vision/receptionist/detect_hand"
 
 # GPSR commands node
 COUNT_BY_COLOR_TOPIC = "/vision/gpsr/count_by_color"

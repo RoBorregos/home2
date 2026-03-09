@@ -6,6 +6,8 @@ HOTWORD_SERVICE_NAME = "/hri/speech/hotword_service"
 KEYWORD_TOPIC = "/hri/speech/kws"
 WAKEWORD_TOPIC = "/hri/speech/oww"
 USEFUL_AUDIO_TOPIC = "/hri/speech/useful_audio"
+RAW_AUDIO_TOPIC = "/hri/rawAudioChunk"
+PROCESSED_AUDIO_TOPIC = "/hri/processedAudioChunk"
 COMMAND_INTERPRETER_SERVICE = "/hri/nlp/command_interpreter"
 LLM_WRAPPER_SERVICE = "/hri/nlp/llm"
 EXTRACT_DATA_SERVICE = "/hri/nlp/data_extractor"
@@ -67,6 +69,9 @@ class KNOWLEDGE_TYPE(Enum):
 USE_OWW = True
 SENSITIVITY_THRESHOLD = 0.2
 threshold = 0.6
+
+# Nlp
+CATEGORIZE_IDK_THRESHOLD = 0.01
 
 # STT
 USEFUL_AUDIO_NODE_NAME = "useful_audio_node"

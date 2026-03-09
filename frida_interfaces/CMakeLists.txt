@@ -59,6 +59,7 @@ set(action_files
   "manipulation/action/ManipulationAction.action"
   "manipulation/action/MoveJoints.action"
   "manipulation/action/MoveToPose.action"
+  "manipulation/action/GoToHand.action"
   "manipulation/action/PickMotion.action"
   "manipulation/action/PickTask.action"
   "manipulation/action/PlaceMotion.action"
@@ -143,6 +144,7 @@ set(srv_files
   "vision/srv/CropQuery.srv"
   "vision/srv/DetectionHandler.srv"
   "vision/srv/DishwasherDetection.srv"
+  "vision/srv/DetectHand.srv"
   "vision/srv/DetectPointingObject.srv"
   "vision/srv/FindSeat.srv"
   "vision/srv/PersonPoseGesture.srv"
@@ -157,6 +159,7 @@ set(srv_files
   "vision/srv/ShowDetection.srv"
   "vision/srv/Customer.srv"
   "vision/srv/YoloDetect.srv"
+  "navigation/srv/MapAreas.srv"
 )
 
 # Generate interfaces only keep the necessary runtimes (python, c++)

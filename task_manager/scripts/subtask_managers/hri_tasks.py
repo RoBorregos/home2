@@ -451,7 +451,11 @@ class HRITasks(metaclass=SubtaskMeta):
             Status.EXECUTION_SUCCESS if len(result.transcription) > 0 else Status.TARGET_NOT_FOUND
         )
 
-        word_confidences = dict(zip(result.words, result.confidences)) if result.words else {}
+        word_confidences = (
+            {w.strip(".,!?;:\"'()-"): c for w, c in zip(result.words, result.confidences)}
+            if result.words
+            else {}
+        )
 
         if execution_status == Status.EXECUTION_SUCCESS:
             Logger.info(
@@ -638,7 +642,7 @@ class HRITasks(metaclass=SubtaskMeta):
         remap: dict = None,
     ):
         """
-        Method to confirm a specific question.
+        Method to confirm a specific question. It includes auto-retry.
 
         Args:
             question: the inquiry to ask
@@ -664,11 +668,17 @@ class HRITasks(metaclass=SubtaskMeta):
 
             if hear_status == Status.EXECUTION_SUCCESS:
                 target_info = interpreted_text
+                target_found = False
                 similarity = 1
-                if not skip_extract_data and not options:
-                    _, target_info = self.extract_data(query, interpreted_text, context)
-
                 try:
+                    # If no options provided, directly extract the data without looking for matches
+                    if not skip_extract_data and not options:
+                        s, target_info = self.extract_data(query, interpreted_text, context)
+                        if s != Status.EXECUTION_SUCCESS:
+                            self.say("Sorry, I coudn't understand.")
+                            continue
+                        target_found = True
+
                     # If extracted data options provided look for exact or closest match
                     if options is not None:
                         foundExact = False
@@ -676,26 +686,39 @@ class HRITasks(metaclass=SubtaskMeta):
                             if option.lower() in target_info.lower():
                                 target_info = option
                                 foundExact = True
+                                target_found = True
                                 skip_confirmation = (
                                     True  # Skip confirmation if an exact match is found
                                 )
                                 break
+
                         if not foundExact:
-                            s, closest = self.find_closest(options, target_info)
+                            s, similarity_list = self.find_closest(options, target_info)
                             if s == Status.EXECUTION_SUCCESS:
-                                target_info = closest.results[0]
-                                similarity = closest.similarities[0]
+                                target_found = True
+                                target_info = similarity_list.results[0]
+                                similarity = similarity_list.similarities[0]
 
                     # Skip confirmation depending on the similarity to an option if options are provided and/or on transcription confidence
+                    target_words = target_info.lower().split()
+                    matched_confidences = [
+                        word_confidences[w] for w in target_words if w in word_confidences
+                    ]
+                    avg_confidence = (
+                        sum(matched_confidences) / len(matched_confidences)
+                        if matched_confidences
+                        else 0
+                    )
                     if (
                         similarity > SKIP_CONFIRMATION_SIMILARITY_THRESHOLD
-                        and word_confidences.get(target_info, 0)
-                        > SKIP_CONFIRMATION_CONFIDENCE_THRESHOLD
+                        and avg_confidence > SKIP_CONFIRMATION_CONFIDENCE_THRESHOLD
                     ):
                         skip_confirmation = True
 
+                    # Remap the target_info if a remap dictionary is provided
                     if remap is not None and target_info in remap:
                         target_info = remap[target_info]
+
                 except Exception as e:
                     print("Failed matching result:", e)
 
@@ -708,10 +731,11 @@ class HRITasks(metaclass=SubtaskMeta):
                 else:
                     confirmation_text = confirm_question
 
-                s, confirmation = self.confirm(confirmation_text, use_hotwords, 3)
-
-                if confirmation == "yes":
-                    return Status.EXECUTION_SUCCESS, target_info
+                # Ask for confirmation
+                if target_info != "" and target_found:
+                    s, confirmation = self.confirm(confirmation_text, use_hotwords, 3)
+                    if s == Status.EXECUTION_SUCCESS and confirmation == "yes":
+                        return Status.EXECUTION_SUCCESS, target_info
 
             # Wait for the minimum time between retries
             while (
@@ -723,7 +747,7 @@ class HRITasks(metaclass=SubtaskMeta):
             self.node,
             "Ask and confirm timed out for question: " + question,
         )
-        return Status.TIMEOUT, ""
+        return Status.TIMEOUT, None
 
     def interpret_keyword(self, keywords: list[str], timeout: float) -> str:
         self.cancel_hear_action()
