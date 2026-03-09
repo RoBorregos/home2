@@ -32,6 +32,7 @@ var namespacefrida__constants_1_1hri__constants =
     [ "START_BUTTON_CLIENT", "namespacefrida__constants_1_1hri__constants.html#ab1a983b5885fb90a459dc54c41cf94d0", null ],
     [ "STT_ACTION_SERVER_NAME", "namespacefrida__constants_1_1hri__constants.html#a5a3605a4415d25cb9c77f3f904c2da29", null ],
     [ "STT_SERVICE_NAME", "namespacefrida__constants_1_1hri__constants.html#a05d8fa1eccd50686fbaff0e84170dcb9", null ],
+    [ "TASK_STATUS_TOPIC", "namespacefrida__constants_1_1hri__constants.html#ae715c3040df8a138bc6ae9712daa9a93", null ],
     [ "threshold", "namespacefrida__constants_1_1hri__constants.html#a57a8000db92c380cf72a62b5afca2ba8", null ],
     [ "TIMEOUT", "namespacefrida__constants_1_1hri__constants.html#aad077d27cdc2dc3fd88f06206a86437d", null ],
     [ "USE_OWW", "namespacefrida__constants_1_1hri__constants.html#a21cf28c03858cd41c9c109e65272477e", null ],

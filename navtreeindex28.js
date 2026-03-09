@@ -1,5 +1,11 @@
 var NAVTREEINDEX28 =
 {
+"nav__basics_8launch_8py.html#ac5d23aeb26e79af148252a849c2905ca":[24,0,4,0,2,0,4,1],
+"nav__tasks_8py.html":[24,0,6,1,2,8],
+"nav__tasks_8py.html#a01583190a3f2f808b89450592a6263b9":[24,0,6,1,2,8,5],
+"nav__tasks_8py.html#a35bf842183e21b6c6070cc6d2219644e":[24,0,6,1,2,8,6],
+"nav__tasks_8py.html#a5b4d09d800913ff80b44923281185579":[24,0,6,1,2,8,8],
+"nav__tasks_8py.html#a6f0a3307d2c3d8bc3c5fcd2f15a84c08":[24,0,6,1,2,8,9],
 "nav__tasks_8py.html#a736666918ed4f70d5cf2d995c1e7351e":[24,0,6,1,2,8,14],
 "nav__tasks_8py.html#a9bc4c8ca04bec963a671843a28955aa1":[24,0,6,1,2,8,3],
 "nav__tasks_8py.html#aa7b04782b5901be32c84688667a26486":[24,0,6,1,2,8,1],
@@ -243,11 +249,5 @@ var NAVTREEINDEX28 =
 "structHandlerParams.html#aa74d14584ba8ab139e00af59addb0a2f":[23,0,110,3],
 "structHandlerParams.html#ae55c1514f69035e575ce4e6592b0bb50":[23,0,110,2],
 "subtask__manager_8py.html":[24,0,6,1,5,6],
-"subtask__meta_8py.html":[24,0,6,1,2,9],
-"task_8py.html":[24,0,6,1,5,7],
-"task__manager_2scripts_2subtask__managers_2____init_____8py.html":[24,0,6,1,2,0],
-"task__manager_2scripts_2utils_2____init_____8py.html":[24,0,6,1,5,0],
-"task__manager_2task__manager_2____init_____8py.html":[24,0,6,2,0],
-"temp__follow_8py.html":[24,0,6,1,1,12],
-"temp__follow_8py.html#a027d977acaf4012fe97da3b05f6a746d":[24,0,6,1,1,12,7]
+"subtask__meta_8py.html":[24,0,6,1,2,9]
 };

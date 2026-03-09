@@ -30,6 +30,7 @@ var classsubtask__managers_1_1hri__tasks_1_1HRITasks =
     [ "query_command_history", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a9750fb862f443efeb9f19dcb7cd8a7cd", null ],
     [ "query_location", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a7b849cdde8d552d65603a2e85ec4698f", null ],
     [ "refactor_text", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#ad48852436cbe57577f5d4563cd9a5301", null ],
+    [ "reset_task_status", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a7eb4c26adddb7ac0586cedbe0d594db9", null ],
     [ "say", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#aaf93c33753ea74b978ef22aa2c8c715b", null ],
     [ "send_display_answer", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a52cb3012480abfb3334cc9bf5992067c", null ],
     [ "set_light_state", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a810510a94099b0741625971f3a74ad39", null ],
@@ -69,5 +70,6 @@ var classsubtask__managers_1_1hri__tasks_1_1HRITasks =
     [ "services", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a45352598c15b4a22e99ea4de2c658090", null ],
     [ "speak_service", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#aa4f65fb1d82e4af8d832947bdee4549e", null ],
     [ "start_button_clicked", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a87ae75bd4b662636a1a19de44a401733", null ],
-    [ "task", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a311b15428aebfe56a7a77f060ac75b3d", null ]
+    [ "task", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a311b15428aebfe56a7a77f060ac75b3d", null ],
+    [ "task_status_publisher", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a9c8c80cb1879d42f2a6f9adb6e911dd8", null ]
 ];

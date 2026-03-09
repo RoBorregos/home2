@@ -1,5 +1,10 @@
 var NAVTREEINDEX23 =
 {
+"manipulation__constants_8py.html#afc80b7dd3c844ae6873add3579898cb9":[24,0,1,1,3,18],
+"manipulation__constants__cpp_8hpp.html":[24,0,1,2,0,0],
+"manipulation__constants__cpp_8hpp.html#a0bd4bf498b5ec4d683867edc6dd6a643":[24,0,1,2,0,0,23],
+"manipulation__constants__cpp_8hpp.html#a0d42f28ddfcabce4357aee3dcc7db153":[24,0,1,2,0,0,1],
+"manipulation__constants__cpp_8hpp.html#a182079f451a91bb8e104a4288e1d3b17":[24,0,1,2,0,0,36],
 "manipulation__constants__cpp_8hpp.html#a1e5b6b77d00d3a904e6ec37f3cfd1a8d":[24,0,1,2,0,0,29],
 "manipulation__constants__cpp_8hpp.html#a1e9896561781e04f03a15b7d38e32d80":[24,0,1,2,0,0,14],
 "manipulation__constants__cpp_8hpp.html#a23980a0fd626cbc57e5491c24b47a90a":[24,0,1,2,0,0,21],
@@ -244,10 +249,5 @@ var NAVTREEINDEX23 =
 "namespaceYoloV8ObjectDetector.html#a748ee18619dc839bce1303772f9703ce":[22,0,164,1],
 "namespaceZeroShotObjectDetector.html":[22,0,167],
 "namespaceZeroShotObjectDetector.html#a2fd61cf39984ae05ac381a86150f2411":[22,0,167,1],
-"namespace__storing__groceries.html":[22,0,0],
-"namespace__storing__groceries.html#a155d3198243f1cb233bf4caf81e7cf93":[22,0,0,2],
-"namespace__storing__groceries.html#adc3b841dce9790c83b15a88ef9fb4340":[22,0,0,1],
-"namespaceadd__collision__object.html":[22,0,1],
-"namespaceadd__collision__object.html#a4d453f8d2e963ce0e4c23e30c0f9b0bd":[22,0,1,0],
-"namespacearm__pkg.html":[22,0,2]
+"namespace__storing__groceries.html":[22,0,0]
 };
