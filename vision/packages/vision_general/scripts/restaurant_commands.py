@@ -4,6 +4,7 @@
 Node to handle RESTAURANT commands.
 """
 
+import cv2
 import rclpy
 from rclpy.node import Node
 from cv_bridge import CvBridge
@@ -17,7 +18,7 @@ from frida_interfaces.srv import (
     CustomerTables,
     Customer,
 )
-from frida_interfaces.msg import CustomerTable
+from frida_interfaces.msg import CustomerTable, PersonList
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
     IMAGE_TOPIC,
@@ -44,6 +45,10 @@ class RESTAURANTCommands(Node):
 
         self.image_subscriber = self.create_subscription(
             Image, CAMERA_TOPIC, self.image_callback, 10
+        )
+
+        self.client_debug_publisher = self.create_publisher(
+            Image, "yolo_debug_image", 10
         )
 
         self.depth_subscriber = self.create_subscription(
@@ -93,32 +98,29 @@ class RESTAURANTCommands(Node):
 
         # Get tables from YOLO.
         tables = self.get_detections([60])
-        customer_points = self.get_customer_points()
+        customer_people = self.get_customers()
 
-        if not customer_points or not tables:
+        if not customer_people or not tables:
             self.get_logger().error("No detections found")
-            response.customerTables = []
+            response.customer_tables = []
             response.success = False
             return response
-
-        reference_header = customer_points[0].header if customer_points else None
 
         # Prepare one output CustomerTable per detected table.
         table_groups = []
         for table in tables:
             table_msg = CustomerTable()
-            table_msg.table_point = self.build_point_stamped_from_xyz(
-                table["point3d"], reference_header
-            )
-            table_msg.people_points = []
+            table_msg.table_point = self.build_point_stamped_from_xyz(table["point3d"])
+            table_msg.people = PersonList()
+            table_msg.people.list = []
             table_groups.append(table_msg)
 
         assigned_customers = 0
-        for customer in customer_points:
+        for person in customer_people:
             customer_xyz = (
-                float(customer.point.x),
-                float(customer.point.y),
-                float(customer.point.z),
+                float(person.point3d.point.x),
+                float(person.point3d.point.y),
+                float(person.point3d.point.z),
             )
 
             closest_table_idx = -1
@@ -134,24 +136,40 @@ class RESTAURANTCommands(Node):
                 closest_table_idx >= 0
                 and closest_distance <= TABLE_CUSTOMER_DISTANCE_THRESHOLD
             ):
-                table_groups[closest_table_idx].people_points.append(customer)
+                table_groups[closest_table_idx].people.list.append(person)
                 assigned_customers += 1
 
-        response.customerTables = table_groups
-
+        response.customer_tables = table_groups
         response.success = True
 
+        self.publish_table_customer_image(response.customer_tables)
         self.get_logger().info(
-            f"Associated {assigned_customers}/{len(customer_points)} customers to tables"
+            f"Associated {assigned_customers}/{len(customer_people)} customers to tables"
         )
         return response
 
-    def build_point_stamped_from_xyz(self, xyz, reference_header=None):
+    def publish_table_customer_image(self, table_groups):
+        if self.image is None:
+            return
+
+        debug_image = self.image.copy()
+
+        for table in table_groups:
+            for person in table.people.list:
+                cv2.circle(
+                    debug_image,
+                    (int(person.x), int(person.y)),
+                    10,
+                    (255, 0, 0),
+                    -1,
+                )
+
+        self.client_debug_publisher.publish(
+            self.bridge.cv2_to_imgmsg(debug_image, "bgr8")
+        )
+
+    def build_point_stamped_from_xyz(self, xyz):
         point_stamped = PointStamped()
-
-        if reference_header is not None:
-            point_stamped.header = reference_header
-
         point_stamped.point.x = float(xyz[0])
         point_stamped.point.y = float(xyz[1])
         point_stamped.point.z = float(xyz[2])
@@ -164,8 +182,8 @@ class RESTAURANTCommands(Node):
             + (float(p1[2]) - float(p2[2])) ** 2
         )
 
-    def get_customer_points(self):
-        """Get customers using the customer service."""
+    def get_customers(self):
+        """Get customers using the customer service, returns list of Person."""
         req = Customer.Request()
         future = self.customer_client.call_async(req)
         future = wait_for_future(future, 15)
@@ -175,7 +193,7 @@ class RESTAURANTCommands(Node):
             self.get_logger().error("Customer detection failed")
             return []
 
-        return result.points
+        return result.people.list
 
     def image_callback(self, data):
         """Callback to receive the image from the camera."""

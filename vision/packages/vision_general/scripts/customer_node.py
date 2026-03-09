@@ -22,6 +22,7 @@ from geometry_msgs.msg import Point, PointStamped
 import copy
 
 from frida_interfaces.srv import CropQuery, Customer
+from frida_interfaces.msg import PersonList, Person
 from pose_detection import PoseDetection
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
@@ -150,7 +151,8 @@ class CustomerNode(Node):
     def get_customer_callback(self, req, res):
         """Set the target to track (Default: Largest person in frame)"""
         res.found = False
-        res.points = []
+        res.people = PersonList()
+        res.people.list = []
         print("running")
         if self.image is None:
             self.get_logger().warn("No image available")
@@ -215,14 +217,12 @@ class CustomerNode(Node):
                         point2Dpoint.x = float(point2D_x_coord_normalized)
                         point2Dpoint.y = 0.0
                         point2Dpoint.z = 0.0
-                        # self.get_logger().info(f"frame_shape: {self.frame.shape[1]} Point2D: {point2D[1]} normalized_point2D: {point2D_x_coord_normalized}")
                         self.centroid_publisher.publish(point2Dpoint)
                         depth = get_depth(self.depth_image, point2D)
                         point_2d_temp = (point2D[1], point2D[0])
                         point3D = deproject_pixel_to_point(
                             self.imageInfo, point_2d_temp, depth
                         )
-                        # print(point3D)
                         point3D = (
                             float(point3D[0]),
                             float(point3D[1]),
@@ -231,13 +231,17 @@ class CustomerNode(Node):
                         coords.point.x = point3D[0]
                         coords.point.y = point3D[1]
                         coords.point.z = point3D[2]
-                        # self.point_pub.publish(coords)
                         self.results_publisher.publish(coords)
-                        res.points.append(coords)
+
+                        person = Person()
+                        person.x = (x1 + x2) // 2
+                        person.y = (y1 + y2) // 2
+                        person.point3d = coords
+                        res.people.list.append(person)
                     res.found = True
                     self.success("Customer found")
 
-        self.get_logger().warn(f"Customers detected: {len(res.points)}")
+        self.get_logger().warn(f"Customers detected: {len(res.people.list)}")
         return res
 
     def is_sitting_moondream(self, bbox):
