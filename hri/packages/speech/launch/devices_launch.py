@@ -16,6 +16,13 @@ def generate_launch_description():
         [ModuleNames.HRI.value],
     )["audio_capturer"]["ros__parameters"]
 
+    noise_cancellation_config = parse_ros_config(
+        os.path.join(
+            get_package_share_directory("speech"), "config", "noise_cancellation.yaml"
+        ),
+        [ModuleNames.HRI.value],
+    )["noise_cancellation"]["ros__parameters"]
+
     hear_streaming_config = parse_ros_config(
         os.path.join(
             get_package_share_directory("speech"), "config", "hear_streaming.yaml"
@@ -49,6 +56,14 @@ def generate_launch_description():
         ),
         Node(
             package="speech",
+            executable="noise_cancellation.py",
+            name="noise_cancellation",
+            output="screen",
+            emulate_tty=True,
+            parameters=[noise_cancellation_config],
+        ),
+        Node(
+            package="speech",
             executable="hear_streaming.py",
             name="hear",
             output="screen",
@@ -70,6 +85,11 @@ def generate_launch_description():
             output="screen",
             emulate_tty=True,
             parameters=[oww_config],
+        ),
+        Node(
+            package="speech",
+            executable="audio_feedback.py",
+            name="audio_feedback",
         ),
     ]
 

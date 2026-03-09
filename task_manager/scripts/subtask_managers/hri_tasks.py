@@ -20,13 +20,12 @@ from embeddings.postgres_adapter import PostgresAdapter
 from frida_constants.hri_constants import (
     CATEGORIZE_SERVICE,
     COMMAND_INTERPRETER_SERVICE,
-    COMMON_INTEREST_SERVICE,
     DISPLAY_IMAGE_TOPIC,
     DISPLAY_MAP_TOPIC,
     EXTRACT_DATA_SERVICE,
     GRAMMAR_SERVICE,
-    IS_NEGATIVE_SERVICE,
     IS_COHERENT_SERVICE,
+    IS_NEGATIVE_SERVICE,
     IS_POSITIVE_SERVICE,
     LLM_WRAPPER_SERVICE,
     RAG_SERVICE,
@@ -42,15 +41,14 @@ from frida_constants.hri_constants import (
 from frida_interfaces.action import SpeechStream
 from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
 from frida_interfaces.srv import (
-    CategorizeShelves,  # AddEntry,
+    CategorizeShelves,
     CommandInterpreter,
-    CommonInterest,
     ExtractInfo,
     Grammar,
     HearMultiThread,
+    IsCoherent,
     IsNegative,
     IsPositive,
-    IsCoherent,
     LLMWrapper,
     Speak,
 )
@@ -184,9 +182,7 @@ class HRITasks(metaclass=SubtaskMeta):
         self.extract_data_service = self.node.create_client(ExtractInfo, EXTRACT_DATA_SERVICE)
         self.task = task
         self.grammar_service = self.node.create_client(Grammar, GRAMMAR_SERVICE)
-        self.common_interest_service = self.node.create_client(
-            CommonInterest, COMMON_INTEREST_SERVICE
-        )
+
         self.is_positive_service = self.node.create_client(IsPositive, IS_POSITIVE_SERVICE)
         self.is_negative_service = self.node.create_client(IsNegative, IS_NEGATIVE_SERVICE)
         self.is_coherent_service = self.node.create_client(IsCoherent, IS_COHERENT_SERVICE)
@@ -237,10 +233,6 @@ class HRITasks(metaclass=SubtaskMeta):
             },
             "extract_data_service": {
                 "client": self.extract_data_service,
-                "type": "service",
-            },
-            "common_interest_service": {
-                "client": self.common_interest_service,
                 "type": "service",
             },
         }
@@ -459,7 +451,11 @@ class HRITasks(metaclass=SubtaskMeta):
             Status.EXECUTION_SUCCESS if len(result.transcription) > 0 else Status.TARGET_NOT_FOUND
         )
 
-        word_confidences = dict(zip(result.words, result.confidences)) if result.words else {}
+        word_confidences = (
+            {w.strip(".,!?;:\"'()-"): c for w, c in zip(result.words, result.confidences)}
+            if result.words
+            else {}
+        )
 
         if execution_status == Status.EXECUTION_SUCCESS:
             Logger.info(
@@ -646,7 +642,7 @@ class HRITasks(metaclass=SubtaskMeta):
         remap: dict = None,
     ):
         """
-        Method to confirm a specific question.
+        Method to confirm a specific question. It includes auto-retry.
 
         Args:
             question: the inquiry to ask
@@ -672,11 +668,17 @@ class HRITasks(metaclass=SubtaskMeta):
 
             if hear_status == Status.EXECUTION_SUCCESS:
                 target_info = interpreted_text
+                target_found = False
                 similarity = 1
-                if not skip_extract_data and not options:
-                    _, target_info = self.extract_data(query, interpreted_text, context)
-
                 try:
+                    # If no options provided, directly extract the data without looking for matches
+                    if not skip_extract_data and not options:
+                        s, target_info = self.extract_data(query, interpreted_text, context)
+                        if s != Status.EXECUTION_SUCCESS:
+                            self.say("Sorry, I coudn't understand.")
+                            continue
+                        target_found = True
+
                     # If extracted data options provided look for exact or closest match
                     if options is not None:
                         foundExact = False
@@ -684,26 +686,39 @@ class HRITasks(metaclass=SubtaskMeta):
                             if option.lower() in target_info.lower():
                                 target_info = option
                                 foundExact = True
+                                target_found = True
                                 skip_confirmation = (
                                     True  # Skip confirmation if an exact match is found
                                 )
                                 break
+
                         if not foundExact:
-                            s, closest = self.find_closest(options, target_info)
+                            s, similarity_list = self.find_closest(options, target_info)
                             if s == Status.EXECUTION_SUCCESS:
-                                target_info = closest.results[0]
-                                similarity = closest.similarities[0]
+                                target_found = True
+                                target_info = similarity_list.results[0]
+                                similarity = similarity_list.similarities[0]
 
                     # Skip confirmation depending on the similarity to an option if options are provided and/or on transcription confidence
+                    target_words = target_info.lower().split()
+                    matched_confidences = [
+                        word_confidences[w] for w in target_words if w in word_confidences
+                    ]
+                    avg_confidence = (
+                        sum(matched_confidences) / len(matched_confidences)
+                        if matched_confidences
+                        else 0
+                    )
                     if (
                         similarity > SKIP_CONFIRMATION_SIMILARITY_THRESHOLD
-                        and word_confidences.get(target_info, 0)
-                        > SKIP_CONFIRMATION_CONFIDENCE_THRESHOLD
+                        and avg_confidence > SKIP_CONFIRMATION_CONFIDENCE_THRESHOLD
                     ):
                         skip_confirmation = True
 
+                    # Remap the target_info if a remap dictionary is provided
                     if remap is not None and target_info in remap:
                         target_info = remap[target_info]
+
                 except Exception as e:
                     print("Failed matching result:", e)
 
@@ -716,10 +731,11 @@ class HRITasks(metaclass=SubtaskMeta):
                 else:
                     confirmation_text = confirm_question
 
-                s, confirmation = self.confirm(confirmation_text, use_hotwords, 3)
-
-                if confirmation == "yes":
-                    return Status.EXECUTION_SUCCESS, target_info
+                # Ask for confirmation
+                if target_info != "" and target_found:
+                    s, confirmation = self.confirm(confirmation_text, use_hotwords, 3)
+                    if s == Status.EXECUTION_SUCCESS and confirmation == "yes":
+                        return Status.EXECUTION_SUCCESS, target_info
 
             # Wait for the minimum time between retries
             while (
@@ -731,7 +747,7 @@ class HRITasks(metaclass=SubtaskMeta):
             self.node,
             "Ask and confirm timed out for question: " + question,
         )
-        return Status.TIMEOUT, ""
+        return Status.TIMEOUT, None
 
     def interpret_keyword(self, keywords: list[str], timeout: float) -> str:
         self.cancel_hear_action()
@@ -850,56 +866,6 @@ class HRITasks(metaclass=SubtaskMeta):
         )
 
         return Status.EXECUTION_SUCCESS, command_list.commands
-
-    @service_check("common_interest_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
-    def common_interest(
-        self,
-        person1,
-        interest1,
-        person2,
-        interest2,
-        remove_thinking=True,
-        is_async=False,
-    ):
-        try:
-            future = Future()
-            Logger.info(
-                self.node,
-                f"Finding common interest between {person1}({interest1}) and {person2}({interest2})",
-            )
-            request = CommonInterest.Request(
-                person1=person1,
-                interests1=interest1,
-                person2=person2,
-                interests2=interest2,
-            )
-            common_interest_future = self.common_interest_service.call_async(request)
-
-            def callback(f):
-                result = f.result().common_interest
-                if remove_thinking:
-                    result = re.sub(r"<think>.*?</think>", "", result, flags=re.DOTALL)
-
-                Logger.info(
-                    self.node,
-                    f"Common interest computed between {person1} and {person2}: {result}",
-                )
-
-                future.set_result(
-                    (
-                        Status.TARGET_NOT_FOUND if "don't" in result else Status.EXECUTION_SUCCESS,
-                        result,
-                    )
-                )
-
-            common_interest_future.add_done_callback(callback)
-            if not is_async:
-                rclpy.spin_until_future_complete(self.node, future, timeout_sec=15)
-                return future.result()
-            return future
-        except Exception as e:
-            Logger.error(self.node, f"Error in common interest service: {e}")
-            return Status.EXECUTION_ERROR, ""
 
     @service_check("is_positive_service", (Status.SERVICE_CHECK, False), TIMEOUT)
     def is_positive(self, text, async_call=False):

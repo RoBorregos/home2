@@ -1,4 +1,4 @@
 pretrainedmodels
 mediapipe
-ultralytics
+ultralytics==8.4.19
 lap

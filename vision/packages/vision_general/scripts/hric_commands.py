@@ -6,8 +6,7 @@ available seats. Tasks for HRIC commands.
 """
 
 import cv2
-from ultralytics import YOLO
-import pathlib
+import mediapipe as mp
 import numpy as np
 import queue
 import time
@@ -16,14 +15,20 @@ import rclpy
 from rclpy.node import Node
 from rclpy.action import ActionServer
 from cv_bridge import CvBridge
-from sensor_msgs.msg import Image
+from sensor_msgs.msg import Image, CameraInfo
+from geometry_msgs.msg import PointStamped
 from rclpy.task import Future
 
 from frida_interfaces.action import DetectPerson
-from frida_interfaces.srv import FindSeat
+from frida_interfaces.srv import DetectHand, FindSeat, YoloDetect
+from vision_general.utils.calculations import get_depth, deproject_pixel_to_point
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
+    CAMERA_FRAME,
+    CAMERA_INFO_TOPIC,
     CHECK_PERSON_TOPIC,
+    DEPTH_IMAGE_TOPIC,
+    DETECT_HAND_SERVICE,
     FIND_SEAT_TOPIC,
     IMAGE_TOPIC_HRIC,
 )
@@ -31,8 +36,6 @@ from frida_constants.vision_constants import (
 from ament_index_python.packages import get_package_share_directory
 
 package_share_dir = get_package_share_directory("vision_general")
-
-YOLO_LOCATION = str(pathlib.Path(__file__).parent) + "/Utils/yolov8n.pt"
 
 PERCENTAGE = 0.3
 MAX_DEGREE = 50
@@ -45,24 +48,68 @@ class HRICCommands(Node):
     def __init__(self):
         super().__init__("HRIC_commands")
         self.bridge = CvBridge()
+        self.callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
 
         self.image_subscriber = self.create_subscription(
             Image, CAMERA_TOPIC, self.image_callback, 10
         )
 
         self.find_seat_service = self.create_service(
-            FindSeat, FIND_SEAT_TOPIC, self.find_seat_callback
+            FindSeat,
+            FIND_SEAT_TOPIC,
+            self.find_seat_callback,
+            callback_group=self.callback_group,
         )
-        self.image_publisher = self.create_publisher(Image, IMAGE_TOPIC_HRIC, 10)
+        self.image_publisher = self.create_publisher(
+            Image, IMAGE_TOPIC_HRIC, 10, callback_group=self.callback_group
+        )
         self.person_detection_action_server = ActionServer(
-            self, DetectPerson, CHECK_PERSON_TOPIC, self.detect_person_callback
+            self,
+            DetectPerson,
+            CHECK_PERSON_TOPIC,
+            self.detect_person_callback,
+            callback_group=self.callback_group,
         )
 
+        self.yolo_client = self.create_client(
+            YoloDetect, "yolo_detect", callback_group=self.callback_group
+        )
+
+        while not self.yolo_client.wait_for_service(timeout_sec=1.0):
+            self.get_logger().info("YOLO service not available, waiting...")
+
         self.image = None
-        self.yolo_model = YOLO(YOLO_LOCATION)
+        self.depth_image = None
+        self.camera_info = None
         self.output_image = []
         self.check = False
-        # self.id = None
+
+        self.mp_hands = mp.solutions.hands
+        self.hands = self.mp_hands.Hands(
+            model_complexity=0,
+            min_detection_confidence=0.5,
+            min_tracking_confidence=0.5,
+        )
+
+        qos = rclpy.qos.QoSProfile(
+            depth=5,
+            reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
+            durability=rclpy.qos.DurabilityPolicy.VOLATILE,
+        )
+
+        self.depth_sub = self.create_subscription(
+            Image, DEPTH_IMAGE_TOPIC, self.depth_callback, qos
+        )
+        self.camera_info_sub = self.create_subscription(
+            CameraInfo, CAMERA_INFO_TOPIC, self.camera_info_callback, qos
+        )
+
+        self.detect_hand_service = self.create_service(
+            DetectHand,
+            DETECT_HAND_SERVICE,
+            self.detect_hand_callback,
+            callback_group=self.callback_group,
+        )
 
         self.get_logger().info("HRIC Commands Ready.")
 
@@ -70,8 +117,68 @@ class HRICCommands(Node):
 
     def image_callback(self, data):
         """Callback to receive the image from the camera."""
-        # self.id = self.data
         self.image = self.bridge.imgmsg_to_cv2(data, "bgr8")
+
+    def depth_callback(self, msg):
+        try:
+            self.depth_image = self.bridge.imgmsg_to_cv2(msg, "32FC1")
+        except Exception as e:
+            self.get_logger().error(f"Depth conversion error: {e}")
+
+    def camera_info_callback(self, msg):
+        self.camera_info = msg
+
+    def run_hand_inference(self):
+        if self.image is None:
+            return
+
+        image_rgb = cv2.cvtColor(self.image, cv2.COLOR_BGR2RGB)
+        image_rgb.flags.writeable = False
+        results = self.hands.process(image_rgb)
+
+        if not results.multi_hand_landmarks:
+            self.get_logger().info("No hand detected")
+            return None
+
+        hand_landmarks = results.multi_hand_landmarks[0]
+        lm = hand_landmarks.landmark[self.mp_hands.HandLandmark.MIDDLE_FINGER_TIP]
+
+        h, w, _ = self.image.shape
+        px, py = int(lm.x * w), int(lm.y * h)
+
+        if self.depth_image is not None and self.camera_info is not None:
+            dh, dw = self.depth_image.shape[:2]
+            dpx = int(px * dw / w)
+            dpy = int(py * dh / h)
+            dpx = max(0, min(dpx, dw - 1))
+            dpy = max(0, min(dpy, dh - 1))
+            depth = get_depth(self.depth_image, (dpx, dpy))
+            point3d = deproject_pixel_to_point(self.camera_info, (px, py), depth)
+
+            stamped = PointStamped()
+            stamped.header.frame_id = CAMERA_FRAME
+            stamped.header.stamp = self.get_clock().now().to_msg()
+            stamped.point.x = float(point3d[0])
+            stamped.point.y = float(point3d[1])
+            stamped.point.z = float(point3d[2])
+            return stamped
+        else:
+            self.get_logger().warn("Depth image or camera info not available")
+            return None
+
+    def detect_hand_callback(self, request, response):
+        hand_point = self.run_hand_inference()
+        if hand_point is not None:
+            response.point = hand_point
+            response.success = True
+            self.get_logger().info(
+                f"Hand detected at ({hand_point.point.x:.3f}, "
+                f"{hand_point.point.y:.3f}, {hand_point.point.z:.3f})"
+            )
+        else:
+            response.success = False
+            self.get_logger().info("No hand detected")
+        return response
 
     def find_seat_callback(self, request, response):
         """Callback to find an available seat."""
@@ -151,8 +258,7 @@ class HRICCommands(Node):
         return move
 
     def detect_person(self):
-        """Check if there is a person in the frame and
-        resolve the future promise."""
+        """Check if there is a person in the frame and resolve the future promise using YOLO service."""
         if self.image is None:
             self.get_logger().warn("No image received yet.")
             return
@@ -161,88 +267,101 @@ class HRICCommands(Node):
         self.output_image = frame.copy()
         width = frame.shape[1]
 
-        results = self.yolo_model(frame, verbose=False, classes=0)
+        # Call YOLO service for person detection (class 0)
+        req = YoloDetect.Request()
+        req.classes = [0]
+        future = self.yolo_client.call_async(req)
+        rclpy.spin_until_future_complete(self, future, timeout_sec=5.0)
 
-        for out in results:
-            for box in out.boxes:
-                x, y, w, h = [round(i) for i in box.xywh[0].tolist()]
-                confidence = box.conf.item()
+        if not future.done() or not future.result().success:
+            self.get_logger().error("YOLO detection failed")
+            return
 
-                if (
-                    confidence > CONF_THRESHOLD
-                    and x >= int(width * PERCENTAGE)
-                    and x <= int(width * (1 - PERCENTAGE))
-                ):
-                    self.person_found = True
-                    cv2.rectangle(
-                        self.output_image,
-                        (int(x - w / 2), int(y - h / 2)),
-                        (int(x + w / 2), int(y + h / 2)),
-                        (0, 255, 0),
-                        2,
-                    )
-                    break
+        for det in future.result().detections:
+            x1, y1, x2, y2 = det.x1, det.y1, det.x2, det.y2
+            confidence = det.confidence
+            x = int((x1 + x2) / 2)
 
+            if (
+                confidence > CONF_THRESHOLD
+                and x >= int(width * PERCENTAGE)
+                and x <= int(width * (1 - PERCENTAGE))
+            ):
+                self.person_found = True
                 cv2.rectangle(
                     self.output_image,
-                    (int(x - w / 2), int(y - h / 2)),
-                    (int(x + w / 2), int(y + h / 2)),
-                    (255, 0, 0),
+                    (x1, y1),
+                    (x2, y2),
+                    (0, 255, 0),
                     2,
                 )
+                break
+            cv2.rectangle(
+                self.output_image,
+                (x1, y1),
+                (x2, y2),
+                (255, 0, 0),
+                2,
+            )
 
         if self.person_found or (time.time() - self.start_time) > CHECK_TIMEOUT:
             self.timer.cancel()
             self.detection_future.set_result(self.person_found)
 
     def get_detections(self, frame) -> None:
-        """Obtain yolo detections for people, chairs and couches."""
-        results = self.yolo_model(frame, verbose=False, classes=[0, 56, 57])
+        """Obtain YOLO detections for people, chairs, and couches using YOLO service."""
+        req = YoloDetect.Request()
+        req.classes = [0, 56, 57]
+        future = self.yolo_client.call_async(req)
+        rclpy.spin_until_future_complete(self, future, timeout_sec=5.0)
 
-        for out in results:
-            for box in out.boxes:
-                x1, y1, x2, y2 = [round(x) for x in box.xyxy[0].tolist()]
-                class_id = box.cls[0].item()
-                label = self.yolo_model.names[class_id]
-                bbox = (x1, y1, x2, y2)
-                confidence = box.conf.item()
-                area = (x2 - x1) * (y2 - y1)
-                area_percentage = area / (frame.shape[0] * frame.shape[1])
-                color = (255, 0, 0)
+        if not future.done() or not future.result().success:
+            self.get_logger().error("YOLO detection failed")
+            return
 
-                if (
-                    confidence < CONF_THRESHOLD
-                    or area_percentage < AREA_PERCENTAGE_THRESHOLD
-                ):
-                    continue
+        self.get_logger().info(
+            f"YOLO service response: success={getattr(future.result(), 'success', None)}, detections={getattr(future.result(), 'detections', None)}"
+        )
 
-                if class_id == 0:
-                    self.people.append(
-                        {"bbox": bbox, "label": label, "class": class_id}
-                    )
-                    color = (0, 0, 255)
+        if future.result() is None or not future.result().success:
+            self.get_logger().error("YOLO detection failed")
+            return
 
-                elif class_id == 56:
-                    self.chairs.append(
-                        {"bbox": bbox, "label": label, "class": class_id}
-                    )
+        for det in future.result().detections:
+            x1, y1, x2, y2 = det.x1, det.y1, det.x2, det.y2
+            class_id = det.class_id
+            label = det.class_id
+            bbox = (x1, y1, x2, y2)
+            confidence = det.confidence
+            area = (x2 - x1) * (y2 - y1)
+            area_percentage = area / (frame.shape[0] * frame.shape[1])
+            color = (255, 0, 0)
 
-                elif class_id == 57:
-                    self.couches.append(
-                        {"bbox": bbox, "label": label, "class": class_id}
-                    )
+            if (
+                confidence < CONF_THRESHOLD
+                or area_percentage < AREA_PERCENTAGE_THRESHOLD
+            ):
+                continue
 
-                cv2.rectangle(self.output_image, (x1, y1), (x2, y2), color, 2)
-                cv2.putText(
-                    self.output_image,
-                    label,
-                    (x1, y1),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    1,
-                    color,
-                    2,
-                    cv2.LINE_AA,
-                )
+            if class_id == 0:
+                self.people.append({"bbox": bbox, "label": label, "class": class_id})
+                color = (0, 0, 255)
+            elif class_id == 56:
+                self.chairs.append({"bbox": bbox, "label": label, "class": class_id})
+            elif class_id == 57:
+                self.couches.append({"bbox": bbox, "label": label, "class": class_id})
+
+            cv2.rectangle(self.output_image, (x1, y1), (x2, y2), color, 2)
+            cv2.putText(
+                self.output_image,
+                str(label),
+                (x1, y1),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                1,
+                color,
+                2,
+                cv2.LINE_AA,
+            )
 
     def check_chairs(self, frame) -> tuple[bool, float]:
         """Check if there is an available chair with
