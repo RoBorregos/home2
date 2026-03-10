@@ -49,11 +49,20 @@ controller_server:
       TrajectoryVisualizer:
         trajectory_step: 5
         time_step: 3
-      critics: ["ConstraintCritic", "CostCritic", "GoalCritic", "GoalAngleCritic", "PathAlignCritic", "PathFollowCritic", "PathAngleCritic", "PreferForwardCritic"]
+      critics: ["ConstraintCritic", "ObstaclesCritic", "CostCritic", "GoalCritic", "GoalAngleCritic", "PathAlignCritic", "PathFollowCritic", "PathAngleCritic", "PreferForwardCritic"]
       ConstraintCritic:
         enabled: true
         cost_power: 1
         cost_weight: 4.0
+      ObstaclesCritic:
+        enabled: true
+        cost_power: 1
+        repulsion_weight: 1.5
+        critical_weight: 20.0
+        consider_footprint: true
+        collision_cost: 10000.0
+        collision_margin_distance: 0.15
+        near_goal_distance: 0.5
       GoalCritic:
         enabled: true
         cost_power: 1
@@ -72,11 +81,11 @@ controller_server:
       CostCritic:
         enabled: true
         cost_power: 1
-        cost_weight: 3.81
+        cost_weight: 5.0
         critical_cost: 300.0
         consider_footprint: true
         collision_cost: 1000000.0
-        near_goal_distance: 1.0
+        near_goal_distance: 0.5
         trajectory_point_step: 2
       PathAlignCritic:
         enabled: true
@@ -118,8 +127,8 @@ local_costmap:
       plugins: ["voxel_layer", "rgbd_obstacle_layer", "inflation_layer"]
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 2.5
-        inflation_radius: 0.75
+        cost_scaling_factor: 2.0
+        inflation_radius: 0.85
       voxel_layer:
         plugin: "nav2_costmap_2d::VoxelLayer"
         enabled: True
@@ -143,7 +152,7 @@ local_costmap:
       rgbd_obstacle_layer:
         plugin: "spatio_temporal_voxel_layer/SpatioTemporalVoxelLayer"
         enabled: true
-        voxel_decay: 3.0
+        voxel_decay: 8.0
         decay_model: 0
         voxel_size: 0.05
         track_unknown_space: true
@@ -164,7 +173,7 @@ local_costmap:
           topic: /point_cloud_nav
           marking: true
           clearing: false
-          min_obstacle_height: 0.25
+          min_obstacle_height: 0.15
           max_obstacle_height: 2.0
           expected_update_rate: 0.0
           observation_persistence: 0.0
@@ -261,8 +270,8 @@ global_costmap:
           model_type: 0
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 2.5
-        inflation_radius: 0.75
+        cost_scaling_factor: 2.0
+        inflation_radius: 0.85
       always_send_full_costmap: True
 
 planner_server:
