@@ -1,0 +1,174 @@
+#!/bin/bash
+# Setup or revert CycloneDDS for ROS 2 with ZED-optimized settings
+#
+# Usage:
+#   sudo bash setup_cyclonedds.sh [INTERFACE]        - Full setup (host machine)
+#   sudo bash setup_cyclonedds.sh --docker [IFACE]   - Setup inside Docker (skips sysctl)
+#   sudo bash setup_cyclonedds.sh --host-only         - Only apply sysctl on host
+#   sudo bash setup_cyclonedds.sh --revert            - Revert to FastDDS
+#
+# Examples:
+#   sudo bash setup_cyclonedds.sh eno1          # On Orin / bare metal
+#   sudo bash setup_cyclonedds.sh --docker eno1 # Inside Docker container
+#   sudo bash setup_cyclonedds.sh --host-only   # On PC host (run once)
+#   sudo bash setup_cyclonedds.sh --revert      # Go back to FastDDS
+
+set -e
+
+CYCLONE_XML="/etc/cyclonedds.xml"
+SYSCTL_CONF="/etc/sysctl.d/60-cyclonedds-buffers.conf"
+BASHRC_FILE="/home/${SUDO_USER:-$USER}/.bashrc"
+ENV_MARKER="# CycloneDDS setup"
+DOCKER_MODE=false
+HOST_ONLY=false
+
+# ── Parse flags ──
+case "${1:-}" in
+    --revert)
+        echo "=== Reverting to FastDDS ==="
+
+        if [ -f "$CYCLONE_XML" ]; then
+            rm "$CYCLONE_XML"
+            echo "[1/3] Removed $CYCLONE_XML"
+        else
+            echo "[1/3] $CYCLONE_XML not found, skipping"
+        fi
+
+        if [ -f "$SYSCTL_CONF" ]; then
+            rm "$SYSCTL_CONF"
+            sysctl --system > /dev/null 2>&1
+            echo "[2/3] Removed $SYSCTL_CONF and reloaded sysctl"
+        else
+            echo "[2/3] $SYSCTL_CONF not found, skipping"
+        fi
+
+        if grep -q "$ENV_MARKER" "$BASHRC_FILE" 2>/dev/null; then
+            sed -i "/$ENV_MARKER/d" "$BASHRC_FILE"
+            sed -i '/export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp/d' "$BASHRC_FILE"
+            sed -i '/export CYCLONEDDS_URI=file:\/\//d' "$BASHRC_FILE"
+            echo "[3/3] Removed CycloneDDS env vars from $BASHRC_FILE"
+        else
+            echo "[3/3] No CycloneDDS env vars in $BASHRC_FILE, skipping"
+        fi
+
+        echo ""
+        echo "=== Reverted to FastDDS ==="
+        echo "To activate in current shell:"
+        echo "  source ~/.bashrc"
+        echo "  unset RMW_IMPLEMENTATION CYCLONEDDS_URI"
+        exit 0
+        ;;
+    --docker)
+        DOCKER_MODE=true
+        INTERFACE="${2:-}"
+        ;;
+    --host-only)
+        HOST_ONLY=true
+        ;;
+    *)
+        INTERFACE="${1:-}"
+        ;;
+esac
+
+# ── Host-only: just apply sysctl ──
+if [ "$HOST_ONLY" = true ]; then
+    echo "=== Host-only: Applying kernel buffer settings ==="
+    cat > "$SYSCTL_CONF" <<EOF
+# CycloneDDS / ZED camera optimized buffers
+net.core.rmem_max=2147483647
+net.ipv4.ipfrag_time=3
+net.ipv4.ipfrag_high_thresh=134217728
+EOF
+    sysctl -p "$SYSCTL_CONF"
+    echo ""
+    echo "=== Done ==="
+    echo "Kernel settings applied. Now run the script inside Docker with --docker"
+    exit 0
+fi
+
+# ── Setup CycloneDDS ──
+if [ "$DOCKER_MODE" = true ]; then
+    echo "=== CycloneDDS Setup (Docker mode - skipping sysctl) ==="
+    echo "[NOTE] Make sure you ran 'sudo bash setup_cyclonedds.sh --host-only' on the host first!"
+else
+    echo "=== CycloneDDS Setup ==="
+fi
+
+# Detect network interface
+if [ -z "$INTERFACE" ]; then
+    echo "[INFO] No interface specified, using autodetermine"
+    IFACE_LINE='        <NetworkInterface autodetermine="true" priority="default" multicast="default" />'
+else
+    if ! ip link show "$INTERFACE" &>/dev/null; then
+        echo "[ERROR] Interface '$INTERFACE' not found. Available interfaces:"
+        ip -br link show
+        exit 1
+    fi
+    echo "[INFO] Using interface: $INTERFACE"
+    IFACE_LINE="        <NetworkInterface name=\"$INTERFACE\" priority=\"default\" multicast=\"true\" autodetermine=\"false\"/>"
+fi
+
+# Write CycloneDDS XML config
+echo "[1/3] Writing CycloneDDS config to $CYCLONE_XML"
+cat > "$CYCLONE_XML" <<EOF
+<?xml version="1.0" encoding="UTF-8" ?>
+<CycloneDDS xmlns="https://cdds.io/config" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://cdds.io/config https://raw.githubusercontent.com/eclipse-cyclonedds/cyclonedds/master/etc/cyclonedds.xsd">
+  <Domain>
+    <General>
+      <Interfaces>
+$IFACE_LINE
+      </Interfaces>
+      <AllowMulticast>true</AllowMulticast>
+      <EnableMulticastLoopback>true</EnableMulticastLoopback>
+      <MaxMessageSize>65500B</MaxMessageSize>
+    </General>
+    <Internal>
+      <SocketReceiveBufferSize min="10MB"/>
+      <Watermarks>
+        <WhcHigh>500kB</WhcHigh>
+      </Watermarks>
+    </Internal>
+    <Tracing>
+      <Verbosity>warning</Verbosity>
+    </Tracing>
+  </Domain>
+</CycloneDDS>
+EOF
+
+# Apply kernel sysctl tuning (skip in Docker)
+if [ "$DOCKER_MODE" = true ]; then
+    echo "[2/3] Skipping sysctl (Docker mode - must be set on host)"
+else
+    echo "[2/3] Applying kernel buffer settings"
+    cat > "$SYSCTL_CONF" <<EOF
+# CycloneDDS / ZED camera optimized buffers
+net.core.rmem_max=2147483647
+net.ipv4.ipfrag_time=3
+net.ipv4.ipfrag_high_thresh=134217728
+EOF
+    sysctl -p "$SYSCTL_CONF"
+fi
+
+# Add environment variables to bashrc
+echo "[3/3] Setting up environment variables"
+if ! grep -q "$ENV_MARKER" "$BASHRC_FILE" 2>/dev/null; then
+    cat >> "$BASHRC_FILE" <<EOF
+
+$ENV_MARKER
+export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+export CYCLONEDDS_URI=file://$CYCLONE_XML
+EOF
+    echo "[INFO] Added environment variables to $BASHRC_FILE"
+else
+    echo "[INFO] Environment variables already in $BASHRC_FILE, skipping"
+fi
+
+echo ""
+echo "=== Setup Complete ==="
+echo "CycloneDDS config: $CYCLONE_XML"
+if [ "$DOCKER_MODE" = false ]; then
+    echo "Kernel tuning:     $SYSCTL_CONF"
+fi
+echo ""
+echo "To activate in current shell:"
+echo "  source ~/.bashrc"
