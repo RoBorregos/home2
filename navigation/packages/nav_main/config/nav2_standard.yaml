@@ -28,7 +28,7 @@ controller_server:
       batch_size: 800
       vx_std: 0.2
       vy_std: 0.0
-      wz_std: 0.4
+      wz_std: 0.3
       vx_max: 0.4
       vx_min: -0.15
       vy_max: 0.0
@@ -91,7 +91,7 @@ controller_server:
       PathAlignCritic:
         enabled: true
         cost_power: 1
-        cost_weight: 10.0
+        cost_weight: 6.0
         max_path_occupancy_ratio: 0.05
         trajectory_point_step: 4
         threshold_to_consider: 0.5
@@ -100,13 +100,13 @@ controller_server:
       PathFollowCritic:
         enabled: true
         cost_power: 1
-        cost_weight: 5.0
+        cost_weight: 3.0
         offset_from_furthest: 5
         threshold_to_consider: 1.4
       PathAngleCritic:
         enabled: true
         cost_power: 1
-        cost_weight: 2.0
+        cost_weight: 1.5
         offset_from_furthest: 4
         threshold_to_consider: 0.5
         max_angle_to_furthest: 1.0
@@ -128,8 +128,8 @@ local_costmap:
       plugins: ["voxel_layer", "rgbd_obstacle_layer", "inflation_layer"]
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 4.0
-        inflation_radius: 0.45
+        cost_scaling_factor: 5.0
+        inflation_radius: 0.40
       voxel_layer:
         plugin: "nav2_costmap_2d::VoxelLayer"
         enabled: True
@@ -271,8 +271,8 @@ global_costmap:
           model_type: 0
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 4.0
-        inflation_radius: 0.45
+        cost_scaling_factor: 5.0
+        inflation_radius: 0.40
       always_send_full_costmap: True
 
 planner_server:
