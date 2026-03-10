@@ -20,20 +20,20 @@ bt_navigator_navigate_to_pose_rclcpp_node:
 
 controller_server:
   ros__parameters:
-    controller_frequency: 20.0
+    controller_frequency: 15.0
     FollowPath:
       plugin: "nav2_mppi_controller::MPPIController"
       time_steps: 44
       model_dt: 0.07
-      batch_size: 1500
+      batch_size: 1000
       vx_std: 0.2
       vy_std: 0.0
       wz_std: 0.4
-      vx_max: 0.26
+      vx_max: 0.4
       vx_min: -0.15
       vy_max: 0.0
-      wz_max: 1.0
-      ax_max: 1.5
+      wz_max: 1.2
+      ax_max: 1.8
       ax_min: -1.5
       ay_min: 0.0
       ay_max: 0.0
@@ -321,10 +321,10 @@ velocity_smoother:
     smoothing_frequency: 20.0
     scale_velocities: False
     feedback: "OPEN_LOOP"
-    max_velocity: [0.26, 0.0, 1.0]
-    min_velocity: [-0.26, 0.0, -1.0]
-    max_accel: [1.5, 0.0, 2.5]
-    max_decel: [-1.5, 0.0, -2.5]
+    max_velocity: [0.4, 0.0, 1.2]
+    min_velocity: [-0.4, 0.0, -1.2]
+    max_accel: [1.8, 0.0, 2.5]
+    max_decel: [-1.8, 0.0, -2.5]
     odom_topic: "odom"
     odom_duration: 0.1
     deadband_velocity: [0.05, 0.0, 0.1]
