@@ -57,11 +57,11 @@ controller_server:
       ObstaclesCritic:
         enabled: true
         cost_power: 1
-        repulsion_weight: 1.5
+        repulsion_weight: 1.2
         critical_weight: 20.0
-        consider_footprint: true
+        consider_footprint: false
         collision_cost: 10000.0
-        collision_margin_distance: 0.15
+        collision_margin_distance: 0.12
         near_goal_distance: 0.5
       GoalCritic:
         enabled: true
@@ -81,7 +81,7 @@ controller_server:
       CostCritic:
         enabled: true
         cost_power: 1
-        cost_weight: 5.0
+        cost_weight: 4.0
         critical_cost: 300.0
         consider_footprint: true
         collision_cost: 1000000.0
@@ -127,8 +127,8 @@ local_costmap:
       plugins: ["voxel_layer", "rgbd_obstacle_layer", "inflation_layer"]
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 2.0
-        inflation_radius: 0.85
+        cost_scaling_factor: 2.5
+        inflation_radius: 0.75
       voxel_layer:
         plugin: "nav2_costmap_2d::VoxelLayer"
         enabled: True
@@ -270,8 +270,8 @@ global_costmap:
           model_type: 0
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 2.0
-        inflation_radius: 0.85
+        cost_scaling_factor: 2.5
+        inflation_radius: 0.75
       always_send_full_costmap: True
 
 planner_server:
