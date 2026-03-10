@@ -7,6 +7,7 @@ HRI Subtask manager
 import json
 import os
 import re
+import time
 from dataclasses import dataclass
 from enum import Enum
 
@@ -972,7 +973,6 @@ class HRITasks(metaclass=SubtaskMeta):
         Logger.info(self.node, "take_order called with menu")
 
         # 1. Bias STT toward menu vocabulary
-        self.set_hotwords(menu_items)
 
         menu_str = ", ".join(menu_items)
 
@@ -981,6 +981,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
             # 2. Announce available items
             self.say(f"Our menu today is: {menu_str}. What would you like to order?")
+            time.sleep(0.5)  # Wait for TTS audio to finish before STT starts
 
             # 3. Listen
             s, transcript, _ = self.hear()
@@ -991,11 +992,12 @@ class HRITasks(metaclass=SubtaskMeta):
 
             Logger.info(self.node, f"take_order transcript: {transcript}")
 
-            # 4. Extract ordered items from the transcript
-            #    We ask the LLM to return a comma-separated list of items.
-            context = f"Available menu items: {menu_str}"
+            # 4. Extract ordered items from the transcript.
+            #    extract_data only routes to the LLM when the query starts with "LLM_".
+            #    The description goes in `context` as the <explanation> field.
+            context = f"Return a comma-separated list of food or drink items mentioned. Available menu items: {menu_str}"
             s, raw_items_str = self.extract_data(
-                query="list of food or drink items ordered by the customer",
+                query="LLM_ordered items",
                 complete_text=transcript,
                 context=context,
             )
@@ -1017,10 +1019,9 @@ class HRITasks(metaclass=SubtaskMeta):
             matched_items = []
             for raw_item in raw_items:
                 s_match, closest = self.find_closest(menu_items, raw_item, top_k=1)
-                if s_match == Status.EXECUTION_SUCCESS and closest:
-                    # find_closest returns a list via get_name() → original_name key.
-                    # Fall back to the raw string if mapping yields nothing usable.
-                    matched = closest[0] if closest[0] else raw_item
+                if s_match == Status.EXECUTION_SUCCESS and closest and closest.results:
+                    # find_closest returns a FindClosestResult with a .results list.
+                    matched = closest.results[0] if closest.results[0] else raw_item
                 else:
                     matched = raw_item
                 matched_items.append(matched)

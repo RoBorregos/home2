@@ -25,13 +25,6 @@ MENU_ITEMS = [
     "water",
     "orange juice",
     "coffee",
-    "tea",
-    "soda",
-    "sandwich",
-    "burger",
-    "salad",
-    "pizza",
-    "fries",
 ]
 
 # How many times take_order is allowed to retry before giving up
