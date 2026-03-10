@@ -31,6 +31,7 @@ services:
         - *speech-devices
       DISPLAY: ${DISPLAY:-:0}
       TERM: xterm-256color
+      XDG_CACHE_HOME: /workspace/src/hri/packages/speech/assets/downloads/.cache
     env_file:
       - .env
     tty: true
