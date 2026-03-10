@@ -128,8 +128,8 @@ local_costmap:
       plugins: ["voxel_layer", "rgbd_obstacle_layer", "inflation_layer"]
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 3.0
-        inflation_radius: 0.55
+        cost_scaling_factor: 4.0
+        inflation_radius: 0.45
       voxel_layer:
         plugin: "nav2_costmap_2d::VoxelLayer"
         enabled: True
@@ -271,8 +271,8 @@ global_costmap:
           model_type: 0
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 3.0
-        inflation_radius: 0.55
+        cost_scaling_factor: 4.0
+        inflation_radius: 0.45
       always_send_full_costmap: True
 
 planner_server:
