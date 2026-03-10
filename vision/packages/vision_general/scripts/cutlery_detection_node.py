@@ -39,9 +39,7 @@ class CutleryDetectionNode(Node):
             response = future.result()
             if response.success:
                 for det in response.detections:
-                    class_name = self.get_class_name(det.class_id)
                     self.get_logger().info(
-                        f"  - {class_name}: conf={det.confidence:.2f}, "
                         f"bbox=({det.x1}, {det.y1}, {det.x2}, {det.y2})"
                     )
             else:
