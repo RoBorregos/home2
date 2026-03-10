@@ -288,8 +288,7 @@ public:
     center_offset[2] = (min_pt.z + max_pt.z) / 2.0f;
 
     // Transform the center offset back to the original coordinate system
-    // Eigen::Vector3f ident =
-    // center += rotation * center_offset;
+    center += rotation * center_offset;
 
     // Calculate the four corners of the box in the transformed space
     pcl::PointXYZ xy1, xy2, xy3, xy4;
