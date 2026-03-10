@@ -18,7 +18,7 @@ find_package(yaml-cpp REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 
 
-install(DIRECTORY launch config maps bt
+install(DIRECTORY launch config bt
   DESTINATION share/${PROJECT_NAME})
 
 add_executable(ignore_laser src/ignore_laser.cpp)

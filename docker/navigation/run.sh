@@ -60,6 +60,9 @@ case $ENV_TYPE in
     "gpu")
         COMPOSE_FILE="docker-compose-gpu.yaml"
         ;;
+    "l4t")
+        COMPOSE_FILE="docker-compose-l4t.yaml"
+        ;;
     *)
         add_or_update_variable .env "DOCKER_RUNTIME" "nvidia"
         ;;
@@ -72,13 +75,14 @@ mkdir -p install build log
 
 COLCON="colcon build --symlink-install --packages-up-to nav_main --packages-ignore frida_interfaces frida_constants"
 SOURCE_ROS="source /opt/ros/humble/setup.bash"
+SOURCE_RTABMAP="if [ -f /home/ros/ros_packages3/install/setup.bash ]; then source /home/ros/ros_packages3/install/setup.bash; fi"
 SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
 SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
 
 if [ "$BUILD" == "true" ]; then
-    SETUP="$SOURCE_ROS && $SOURCE_INTERFACES && $SOURCE && $COLCON"
+    SETUP="$SOURCE_ROS && $SOURCE_RTABMAP && $SOURCE_INTERFACES && $SOURCE && $COLCON"
 else
-    SETUP="$SOURCE_ROS && $SOURCE_INTERFACES && $SOURCE"
+    SETUP="$SOURCE_ROS && $SOURCE_RTABMAP && $SOURCE_INTERFACES && $SOURCE"
 fi
 
 case $TASK in

@@ -27,7 +27,7 @@ class AreasServices : public rclcpp::Node
           std::string package_share_directory = ament_index_cpp::get_package_share_directory("map_context");
           std::string map_areas = this->get_parameter("map_name").as_string();
           // Construct the path string first
-          std::string file_path = package_share_directory + "/maps/areas/area_" + map_areas + ".json";
+          std::string file_path = package_share_directory + "/maps/areas/areas_" + map_areas + ".json";
           // Pass that single string to ifstream
           std::ifstream f(file_path);
           nlohmann::json data = nlohmann::json::parse(f);
