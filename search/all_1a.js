@@ -20,5 +20,6 @@ var searchData=
   ['zero_5fshot_5fobject_5fdetector_5fnode_2epy_17',['zero_shot_object_detector_node.py',['../zero__shot__object__detector__node_8py.html',1,'']]],
   ['zero_5fshot_5foda_5fcallback_18',['zero_shot_oda_callback',['../classDetectionsHandlerNode.html#a4d4e6f685b460e377b560af876310525',1,'DetectionsHandlerNode']]],
   ['zeroshotobjectdetector_19',['ZeroShotObjectDetector',['../namespaceZeroShotObjectDetector.html',1,'ZeroShotObjectDetector'],['../classZeroShotObjectDetector_1_1ZeroShotObjectDetector.html',1,'ZeroShotObjectDetector.ZeroShotObjectDetector']]],
-  ['zeroshotobjectdetector_2epy_20',['ZeroShotObjectDetector.py',['../ZeroShotObjectDetector_8py.html',1,'']]]
+  ['zeroshotobjectdetector_2epy_20',['ZeroShotObjectDetector.py',['../ZeroShotObjectDetector_8py.html',1,'']]],
+  ['zoom_21',['zoom',['../classnav__ui_1_1NavCanvas.html#a12bd8e56e2a54de00b0decb94cef599f',1,'nav_ui.NavCanvas.zoom()'],['../classmap__area__tagger_1_1MapCanvas.html#ab25de2a225e4091587897d3be589290b',1,'map_area_tagger.MapCanvas.zoom()']]]
 ];

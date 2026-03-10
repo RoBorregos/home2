@@ -21,9 +21,6 @@ var namespaces_dup =
     [ "carry", "namespacecarry.html", [
       [ "generate_launch_description", "namespacecarry.html#a13d8f63b1ec69c76e488d9b0960dc65c", null ]
     ] ],
-    [ "carry_my", "namespacecarry__my.html", [
-      [ "generate_launch_description", "namespacecarry__my.html#a44586ac38fc8f4089bcb5c467200a1c5", null ]
-    ] ],
     [ "carry_my_lougage", "namespacecarry__my__lougage.html", [
       [ "generate_launch_description", "namespacecarry__my__lougage.html#ab8f6aac2d5abfdc388398a5170e8577f", null ],
       [ "launch_setup", "namespacecarry__my__lougage.html#ab4d71836dd74a1528d9b2d8f750c9491", null ]
@@ -157,6 +154,7 @@ var namespaces_dup =
     [ "is_person_inside", "namespaceis__person__inside.html", "namespaceis__person__inside" ],
     [ "local_camera", "namespacelocal__camera.html", "namespacelocal__camera" ],
     [ "look_at_example", "namespacelook__at__example.html", "namespacelook__at__example" ],
+    [ "map_area_tagger", "namespacemap__area__tagger.html", "namespacemap__area__tagger" ],
     [ "map_cleaner", "namespacemap__cleaner.html", "namespacemap__cleaner" ],
     [ "map_publisher", "namespacemap__publisher.html", "namespacemap__publisher" ],
     [ "mapping", "namespacemapping.html", [
@@ -190,19 +188,15 @@ var namespaces_dup =
     ] ],
     [ "MoveItPlanner", "namespaceMoveItPlanner.html", "namespaceMoveItPlanner" ],
     [ "MoveItServo", "namespaceMoveItServo.html", "namespaceMoveItServo" ],
-    [ "nav2_composition", "namespacenav2__composition.html", [
-      [ "generate_launch_description", "namespacenav2__composition.html#ad30570718c8232014b617c773478edfb", null ]
-    ] ],
     [ "nav_basics", "namespacenav__basics.html", [
       [ "generate_launch_description", "namespacenav__basics.html#a0ad8a434cdfa5b959bd6a1d5df652146", null ],
       [ "launch_setup", "namespacenav__basics.html#ac5d23aeb26e79af148252a849c2905ca", null ]
     ] ],
     [ "nav_test", "namespacenav__test.html", "namespacenav__test" ],
+    [ "nav_ui", "namespacenav__ui.html", "namespacenav__ui" ],
     [ "navigation_composition", "namespacenavigation__composition.html", [
-      [ "generate_launch_description", "namespacenavigation__composition.html#a80cc34be81f4980454e52c3045744557", null ]
-    ] ],
-    [ "navigation_multi", "namespacenavigation__multi.html", [
-      [ "generate_launch_description", "namespacenavigation__multi.html#a8f0e3fb276f78b91f6c6d87f9e583409", null ]
+      [ "generate_launch_description", "namespacenavigation__composition.html#a80cc34be81f4980454e52c3045744557", null ],
+      [ "launch_function", "namespacenavigation__composition.html#aac63296331bdd59683a72fbb12db486b", null ]
     ] ],
     [ "new_tracker", "namespacenew__tracker.html", "namespacenew__tracker" ],
     [ "object_detector_combined", "namespaceobject__detector__combined.html", [
@@ -213,10 +207,6 @@ var namespaces_dup =
       [ "generate_launch_description", "namespaceobjectDetectionHandler.html#a57f57849cc3ad33855b1ebfb1fa9f347", null ]
     ] ],
     [ "ObjectDetector", "namespaceObjectDetector.html", "namespaceObjectDetector" ],
-    [ "odom", "namespaceodom.html", [
-      [ "generate_launch_description", "namespaceodom.html#aa26c0bdbe2854c1af8ca387baef12481", null ],
-      [ "launch_setup", "namespaceodom.html#ac09c5ec4c99564f32180527930da2849", null ]
-    ] ],
     [ "old_tracker", "namespaceold__tracker.html", "namespaceold__tracker" ],
     [ "perception_3d", "namespaceperception__3d.html", [
       [ "generate_launch_description", "namespaceperception__3d.html#a0e9c55f0d673d8e39208565acad51d8d", null ]
@@ -236,7 +226,7 @@ var namespaces_dup =
     [ "pose_detection", "namespacepose__detection.html", "namespacepose__detection" ],
     [ "PourManager", "namespacePourManager.html", "namespacePourManager" ],
     [ "receptionist", "namespacereceptionist.html", [
-      [ "generate_launch_description", "namespacereceptionist.html#aff8a76b94a8d8c1b2665d82bfafa608b", null ]
+      [ "generate_launch_description", "namespacereceptionist.html#aaead6d431decb57c53f9d7c189fbb0f8", null ]
     ] ],
     [ "receptionist_commands", "namespacereceptionist__commands.html", "namespacereceptionist__commands" ],
     [ "receptionist_launch", "namespacereceptionist__launch.html", [
@@ -298,20 +288,8 @@ var namespaces_dup =
     [ "rplidar_fixed", "namespacerplidar__fixed.html", [
       [ "generate_launch_description", "namespacerplidar__fixed.html#a34c12a29f8ab4229ce3f1118c9f1c3c2", null ]
     ] ],
-    [ "rtabmap", "namespacertabmap.html", [
-      [ "generate_launch_description", "namespacertabmap.html#a3f49f7dd6c62dbef074437baae77ace8", null ],
-      [ "launch_setup", "namespacertabmap.html#a31a89438859fa170112ba301bb992e1e", null ]
-    ] ],
-    [ "rtabmap_process", "namespacertabmap__process.html", [
-      [ "generate_launch_description", "namespacertabmap__process.html#ab2688c6e78e5a6e2d8c024826219ac82", null ],
-      [ "launch_setup", "namespacertabmap__process.html#a35c5f3b41fc14b95197cb2c7813ba5b6", null ]
-    ] ],
     [ "rtabnav2", "namespacertabnav2.html", [
       [ "generate_launch_description", "namespacertabnav2.html#a0b5741c31c1cac08c5b3158c043374e7", null ]
-    ] ],
-    [ "rtabtest_checker", "namespacertabtest__checker.html", [
-      [ "generate_launch_description", "namespacertabtest__checker.html#a65021bcc676ba39a42af83f501adbdd0", null ],
-      [ "launch_setup", "namespacertabtest__checker.html#a7436c506b12bff6390f6d9393bc3bfaa", null ]
     ] ],
     [ "run_while_hearing", "namespacerun__while__hearing.html", "namespacerun__while__hearing" ],
     [ "safety_task_manager", "namespacesafety__task__manager.html", "namespacesafety__task__manager" ],

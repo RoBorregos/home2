@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['_7etablesegmentationnode_0',['~TableSegmentationNode',['../classTableSegmentationNode.html#a6bd1d19daad7018004c59aff6c7a8fcb',1,'TableSegmentationNode']]]
+  ['zero_5fshot_5foda_5fcallback_0',['zero_shot_oda_callback',['../classDetectionsHandlerNode.html#a4d4e6f685b460e377b560af876310525',1,'DetectionsHandlerNode']]]
 ];

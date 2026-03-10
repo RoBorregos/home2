@@ -148,6 +148,10 @@ var annotated_dup =
     [ "look_at_example", "namespacelook__at__example.html", [
       [ "LookAt", "classlook__at__example_1_1LookAt.html", "classlook__at__example_1_1LookAt" ]
     ] ],
+    [ "map_area_tagger", "namespacemap__area__tagger.html", [
+      [ "MapAreaTagger", "classmap__area__tagger_1_1MapAreaTagger.html", "classmap__area__tagger_1_1MapAreaTagger" ],
+      [ "MapCanvas", "classmap__area__tagger_1_1MapCanvas.html", "classmap__area__tagger_1_1MapCanvas" ]
+    ] ],
     [ "map_cleaner", "namespacemap__cleaner.html", [
       [ "MapCleaner", "classmap__cleaner_1_1MapCleaner.html", "classmap__cleaner_1_1MapCleaner" ]
     ] ],
@@ -191,6 +195,12 @@ var annotated_dup =
     ] ],
     [ "nav_test", "namespacenav__test.html", [
       [ "TestTaskManager", "classnav__test_1_1TestTaskManager.html", "classnav__test_1_1TestTaskManager" ]
+    ] ],
+    [ "nav_ui", "namespacenav__ui.html", [
+      [ "NavCanvas", "classnav__ui_1_1NavCanvas.html", "classnav__ui_1_1NavCanvas" ],
+      [ "NavRosNode", "classnav__ui_1_1NavRosNode.html", "classnav__ui_1_1NavRosNode" ],
+      [ "NavUI", "classnav__ui_1_1NavUI.html", "classnav__ui_1_1NavUI" ],
+      [ "RosSignals", "classnav__ui_1_1RosSignals.html", null ]
     ] ],
     [ "new_tracker", "namespacenew__tracker.html", [
       [ "SingleTracker", "classnew__tracker_1_1SingleTracker.html", "classnew__tracker_1_1SingleTracker" ]

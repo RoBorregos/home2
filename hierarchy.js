@@ -171,6 +171,7 @@ var hierarchy =
       [ "moondream_node.MoondreamNode", "classmoondream__node_1_1MoondreamNode.html", null ],
       [ "move_to_location.MoveActionServer", "classmove__to__location_1_1MoveActionServer.html", null ],
       [ "nav_test.TestTaskManager", "classnav__test_1_1TestTaskManager.html", null ],
+      [ "nav_ui.NavRosNode", "classnav__ui_1_1NavRosNode.html", null ],
       [ "new_tracker.SingleTracker", "classnew__tracker_1_1SingleTracker.html", null ],
       [ "old_tracker.SingleTracker", "classold__tracker_1_1SingleTracker.html", null ],
       [ "person_in_map.PersonLocation", "classperson__in__map_1_1PersonLocation.html", null ],
@@ -225,6 +226,17 @@ var hierarchy =
     ] ],
     [ "Planner", null, [
       [ "MoveItPlanner.MoveItPlanner", "classMoveItPlanner_1_1MoveItPlanner.html", null ]
+    ] ],
+    [ "QMainWindow", null, [
+      [ "map_area_tagger.MapAreaTagger", "classmap__area__tagger_1_1MapAreaTagger.html", null ],
+      [ "nav_ui.NavUI", "classnav__ui_1_1NavUI.html", null ]
+    ] ],
+    [ "QObject", null, [
+      [ "nav_ui.RosSignals", "classnav__ui_1_1RosSignals.html", null ]
+    ] ],
+    [ "QWidget", null, [
+      [ "map_area_tagger.MapCanvas", "classmap__area__tagger_1_1MapCanvas.html", null ],
+      [ "nav_ui.NavCanvas", "classnav__ui_1_1NavCanvas.html", null ]
     ] ],
     [ "Servo", null, [
       [ "MoveItServo.MoveItServo", "classMoveItServo_1_1MoveItServo.html", null ]
