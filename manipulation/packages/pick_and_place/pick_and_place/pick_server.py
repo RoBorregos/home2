@@ -44,6 +44,8 @@ from frida_motion_planning.utils.service_utils import (
 )
 import time
 
+from std_srvs.srv import SetBool, Empty
+
 
 class PickMotionServer(Node):
     def __init__(self):
@@ -106,6 +108,11 @@ class PickMotionServer(Node):
             GRIPPER_SET_STATE_SERVICE,
         )
 
+        self._clear_octomap_client = self.create_client(
+            Empty,
+            '/clear_octomap',
+        )
+        
         self._move_to_pose_action_client.wait_for_server()
         self.get_logger().info("Pick Action Server has been started")
 
@@ -118,7 +125,6 @@ class PickMotionServer(Node):
         result = PickMotion.Result()
         try:
             result.success, result.pick_result = self.pick(goal_handle, feedback)
-
             goal_handle.succeed()
             return result
         except Exception as e:
@@ -222,27 +228,25 @@ class PickMotionServer(Node):
         grasping_poses = goal_handle.request.grasping_poses
 
         # Apparently GPD always sends me somewhat at the same distance to the object, so lets try different distances
-        num_grasping_alternatives = (
-            2  # for each grasping pose, try 4 alternatives from closest to farthest
-        )
+        num_grasping_alternatives = 2 
         grasping_alternative_distance = -0.025  # 5mm distance
 
         self.save_collision_objects()
         self.find_plane()
-        if self.plane is None:
+        
+        is_flat = goal_handle.request.object_name.lower() in ['spoon', 'fork', 'knife']
+
+        if self.plane is None and not is_flat:
             self.get_logger().error("No plane found, cannot pick object")
             return False, pick_result
+        elif self.plane is None and is_flat:
+            self.get_logger().warn("No plane found, but object is flat. Bypassing safety check.")
 
         for i, pose in enumerate(grasping_poses):
             # Move to pre-grasp pose
-
             for j in range(num_grasping_alternatives):
                 ee_link_pose = copy.deepcopy(pose)
-
-                offset_distance = (
-                    self.ee_link_offset
-                )  # Desired distance in meters along the local z-axis
-
+                offset_distance = self.ee_link_offset
                 offset_distance += j * grasping_alternative_distance
 
                 # Compute the offset along the local z-axis
@@ -271,13 +275,32 @@ class PickMotionServer(Node):
                 ee_link_pose.pose.position.y = new_position[1]
                 ee_link_pose.pose.position.z = new_position[2]
 
-                if not self.check_feasibility(ee_link_pose):
-                    self.get_logger().warn(
-                        f"Grasping alternative {j} is not feasible, skipping"
-                    )
+                if not self.check_feasibility(ee_link_pose, is_flat=is_flat):
+                    self.get_logger().warn(f"Grasping alternative {j} is not feasible, skipping")
                     continue
 
-                grasp_pose_handler, grasp_pose_result = self.move_to_pose(ee_link_pose)
+                if is_flat:
+                    self.get_logger().info("Flat object: Moving to Pre-Grasp (15cm above)...")
+                    pre_grasp_pose = copy.deepcopy(ee_link_pose)
+                    pre_grasp_pose.pose.position.z += 0.15 
+                    self.move_to_pose(pre_grasp_pose, velocity=0.3)
+                    
+                
+                    self.get_logger().info("Clearing Octomap to avoid phantom collisions...")
+                    if self._clear_octomap_client.wait_for_service(timeout_sec=1.0):
+                        req = Empty.Request()
+                        self._clear_octomap_client.call_async(req)
+                
+                    
+                    self.get_logger().info("Flat object: Descending vertically slowly to cutlery...")
+                    grasp_pose_handler, grasp_pose_result = self.move_to_pose(
+                        ee_link_pose, 
+                        tolerance_position=0.015, 
+                        tolerance_orientation=0.01,
+                        velocity=0.1
+                    )
+                else:
+                    grasp_pose_handler, grasp_pose_result = self.move_to_pose(ee_link_pose)
 
                 print(f"Grasp Pose {i} result: {grasp_pose_result}")
                 if grasp_pose_result.result.success:
@@ -295,12 +318,18 @@ class PickMotionServer(Node):
                         # Save object details
                         pick_result.pick_pose = ee_link_pose
                         pick_result.grasp_score = goal_handle.request.grasping_scores[i]
-                        pick_result.object_pick_height = (
-                            self.calculate_object_pick_height(lowest_obj, ee_link_pose)
-                        )
-                        pick_result.object_height = self.calculate_object_height(
-                            lowest_obj, highest_obj
-                        )
+                        
+                       
+                        if lowest_obj is not None:
+                            pick_result.object_pick_height = self.calculate_object_pick_height(lowest_obj, ee_link_pose)
+                        else:
+                            pick_result.object_pick_height = 0.0
+                            
+                        if lowest_obj is not None and highest_obj is not None:
+                            pick_result.object_height = self.calculate_object_height(lowest_obj, highest_obj)
+                        else:
+                            pick_result.object_height = 0.0
+                        
 
                     else:
                         self.get_logger().error("Failed to attach object")
@@ -310,18 +339,16 @@ class PickMotionServer(Node):
         self.get_logger().error("Failed to reach any grasp pose")
         return False, pick_result
 
-    def move_to_pose(self, pose, tolerance_position=0.005, tolerance_orientation=0.02):
+    def move_to_pose(self, pose, tolerance_position=0.005, tolerance_orientation=0.02, velocity=PICK_VELOCITY):
         """Move the robot to the given pose."""
         request = MoveToPose.Goal()
         request.pose = pose
-        request.velocity = PICK_VELOCITY
-        request.acceleration = PICK_ACCELERATION
+        request.velocity = float(velocity)
+        request.acceleration = float(PICK_ACCELERATION)
         request.planner_id = PICK_PLANNER
         request.target_link = GRASP_LINK_FRAME
-        request.tolerance_position = tolerance_position  # Set the position tolerance
-        request.tolerance_orientation = (
-            tolerance_orientation  # Set the orientation tolerance
-        )
+        request.tolerance_position = tolerance_position 
+        request.tolerance_orientation = tolerance_orientation  
         future = self._move_to_pose_action_client.send_goal_async(request)
         self.wait_for_future(future)
         action_result = future.result().get_result()
@@ -333,14 +360,13 @@ class PickMotionServer(Node):
             return False
         while not future.done():
             pass
-        # self.get_logger().info("Execution done with status: " + str(future.result()))
-        return future  # 4 is the status for success
+        return future
 
     def save_collision_objects(self):
         self.collision_objects = self.get_collision_objects()
 
     def find_plane(self):
-        # find plane object
+        """Find the plane in the collision objects."""
         self.plane = None
         for obj in self.collision_objects:
             if PLANE_NAMESPACE in obj.id:
@@ -432,10 +458,14 @@ class PickMotionServer(Node):
         self.get_logger().info(f"Object height: {height}")
         return height
 
-    def check_feasibility(self, pose):
+    def check_feasibility(self, pose, is_flat=False):
         """Check if the pose is feasible."""
+        if is_flat or self.plane is None:
+            return True
+            
         pick_height = pose.pose.position.z
         plane_height = self.plane.pose.pose.position.z + self.plane.dimensions.z / 2
+        
         if pick_height < plane_height + PICK_MIN_HEIGHT:
             self.get_logger().warn(
                 f"Pick height {pick_height} is below acceptable height, plane height is {plane_height}"
