@@ -99,9 +99,9 @@ if [ -z "$INTERFACE" ]; then
     echo "[INFO] No interface specified, using autodetermine"
     IFACE_LINE='        <NetworkInterface autodetermine="true" priority="default" multicast="default" />'
 else
-    if ! ip link show "$INTERFACE" &>/dev/null; then
+    if [ ! -d "/sys/class/net/$INTERFACE" ]; then
         echo "[ERROR] Interface '$INTERFACE' not found. Available interfaces:"
-        ip -br link show
+        ls /sys/class/net/
         exit 1
     fi
     echo "[INFO] Using interface: $INTERFACE"
