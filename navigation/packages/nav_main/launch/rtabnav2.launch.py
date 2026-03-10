@@ -10,8 +10,8 @@ import os
 
 def generate_launch_description():
     pkg_file_route = get_package_share_directory('nav_main')
-    rtab_params_file = os.path.join(pkg_file_route,'config', 'rtabmap', 'rtabmap_follow_config.yaml')
-    nav2_params_file = os.path.join(pkg_file_route,'config', 'nav2_following.yaml')
+    rtab_params_file = os.path.join(pkg_file_route,'config', 'rtabmap', 'rtabmap_default_config.yaml')
+    nav2_params_file = os.path.join(pkg_file_route,'config', 'nav2_standard.yaml')
 
     rtab_params_ = LaunchConfiguration('rtab_config_file', default=rtab_params_file)
     nav2_params_ = LaunchConfiguration('nav2_config_file', default=nav2_params_file)
@@ -53,19 +53,21 @@ def generate_launch_description():
                 package='rtabmap_slam',
                 plugin='rtabmap_slam::CoreWrapper',
                 name='rtabmap',
-                parameters=[rtab_params, 
+                parameters=[rtab_params,
                 {'Mem/IncrementalMemory':'False',
                'Mem/InitWMWithAllNodes':'True'}],
-                
             ),
             ComposableNode(
                 condition=UnlessCondition(localization),
                 package='rtabmap_slam',
                 plugin='rtabmap_slam::CoreWrapper',
                 name='rtabmap',
-                parameters=[rtab_params, 
-                {'delete_db_on_start': True}]
-                # remappings=[('/map', 'map_input'),]
+                parameters=[rtab_params,
+                {'delete_db_on_start': True,
+                 'RGBD/LinearUpdate': '0.1',
+                 'RGBD/AngularUpdate': '0.1',
+                 'Rtabmap/TimeThr': '0',
+                 'Mem/NotLinkedNodesKept': 'true'}]
             ),
             ComposableNode(
                 package='rtabmap_sync',
