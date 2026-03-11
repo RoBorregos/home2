@@ -194,6 +194,7 @@ class HRITasks(metaclass=SubtaskMeta):
             String, "/hri/display/frida_questions", 10
         )
         self.pg = PostgresAdapter()
+        self.items = self.get_items_embeddings()
         self.llm_wrapper_service = self.node.create_client(LLMWrapper, LLM_WRAPPER_SERVICE)
         self.categorize_service = self.node.create_client(CategorizeShelves, CATEGORIZE_SERVICE)
         self.keyword_client = self.node.create_subscription(
@@ -958,7 +959,6 @@ class HRITasks(metaclass=SubtaskMeta):
     # Restaurant
     def take_order(
         self,
-        menu_items: List[str],
         retries: int = 3,
     ) -> tuple:
         """Ask the customer for their order and return the matched menu items.
@@ -972,18 +972,11 @@ class HRITasks(metaclass=SubtaskMeta):
         """
         Logger.info(self.node, "take_order called with menu")
 
-        # 1. Bias STT toward menu vocabulary
-
-        menu_str = ", ".join(menu_items)
-
         for attempt in range(1, retries + 1):
             Logger.info(self.node, f"take_order attempt {attempt}/{retries}")
 
-            # 2. Announce available items
-            self.say(f"Our menu today is: {menu_str}. What would you like to order?")
-            time.sleep(0.5)  # Wait for TTS audio to finish before STT starts
+            self.say(f"What would you like to order?")
 
-            # 3. Listen
             s, transcript, _ = self.hear()
             if s != Status.EXECUTION_SUCCESS or not transcript:
                 Logger.warn(self.node, "take_order: nothing heard, retrying")
@@ -992,10 +985,13 @@ class HRITasks(metaclass=SubtaskMeta):
 
             Logger.info(self.node, f"take_order transcript: {transcript}")
 
-            # 4. Extract ordered items from the transcript.
-            #    extract_data only routes to the LLM when the query starts with "LLM_".
-            #    The description goes in `context` as the <explanation> field.
-            context = f"Return a comma-separated list of food or drink items mentioned. Available menu items: {menu_str}"
+            # Extract ordered items from the transcript.
+            context = (
+                "The customer is placing an order with two products. "
+                "Return only the two ordered products from the transcript in this format: item1, item2. "
+                "Do not return any extra words or explanations. "
+                f"Available menu items: {[text for text, _ in self.items]}"
+            )
             s, raw_items_str = self.extract_data(
                 query="LLM_ordered items",
                 complete_text=transcript,
@@ -1007,35 +1003,59 @@ class HRITasks(metaclass=SubtaskMeta):
                 self.say("I'm not sure what you'd like. Could you tell me your order again?")
                 continue
 
-            # Split on common delimiters: comma, "and", semicolons
-            raw_items = [
-                item.strip()
-                for item in re.split(r",|\band\b|;", raw_items_str, flags=re.IGNORECASE)
-                if item.strip()
-            ]
+            # Parse with a strict target of exactly 2 items.
+            cleaned = raw_items_str.strip()
+            raw_items: list[str] = []
+
+            try:
+                parsed = json.loads(cleaned)
+                if isinstance(parsed, dict) and isinstance(parsed.get("items"), list):
+                    raw_items = [str(item).strip() for item in parsed["items"] if str(item).strip()]
+                elif isinstance(parsed, list):
+                    raw_items = [str(item).strip() for item in parsed if str(item).strip()]
+                elif isinstance(parsed, str):
+                    cleaned = parsed
+            except Exception:
+                pass
+
+            if not raw_items:
+                raw_items = [
+                    item.strip()
+                    for item in re.split(r",|\band\b|;", cleaned, flags=re.IGNORECASE)
+                    if item.strip()
+                ]
+
+            if len(raw_items) != 2:
+                Logger.warn(
+                    self.node,
+                    f"take_order: expected exactly 2 items, got {len(raw_items)} ({raw_items})",
+                )
+                self.say("Sorry, I missed part of the order. Could you repeat your order?")
+                continue
+
             Logger.info(self.node, f"take_order raw items extracted: {raw_items}")
 
-            # 5. Map each extracted item to the closest menu entry via embeddings
+            # Map each extracted item to the closest menu entry via embeddings
             matched_items = []
             for raw_item in raw_items:
-                s_match, closest = self.find_closest(menu_items, raw_item, top_k=1)
-                if s_match == Status.EXECUTION_SUCCESS and closest and closest.results:
+                s_match, closest = self.find_closest_with_embeddings(self.items, raw_item, top_k=1)
+                if s_match == Status.EXECUTION_SUCCESS and closest.results:
                     # find_closest returns a FindClosestResult with a .results list.
-                    matched = closest.results[0] if closest.results[0] else raw_item
+                    matched = closest.results[0]
                 else:
                     matched = raw_item
                 matched_items.append(matched)
 
             Logger.info(self.node, f"take_order matched items: {matched_items}")
 
-            if not matched_items:
-                self.say("I couldn't identify any items from the menu. Please try again.")
+            if len(matched_items) != 2:
+                self.say("I could not identify your full order. Please repeat it.")
                 continue
 
             # 6. Confirm full order with the customer
-            order_summary = ", ".join(matched_items)
+            item_1, item_2 = matched_items[0], matched_items[1]
             s_confirm, answer = self.confirm(
-                f"You ordered: {order_summary}. Is that correct?",
+                f"Your order is {item_1}, and {item_2}. Is that correct?",
                 use_hotwords=True,
                 retries=2,
             )
@@ -1135,6 +1155,58 @@ class HRITasks(metaclass=SubtaskMeta):
         Logger.info(self.node, f"FIND CLOSEST RAW RESULTS: {Results}")
 
         return Results
+
+    def find_closest_with_embeddings(
+        self,
+        documents: list[tuple[str, list[float]]],
+        query: str,
+        top_k: int = 1,
+        threshold: float = 0.0,
+    ) -> tuple[Status, FindClosestResult]:
+        """
+        Method to find the closest item to the query using precomputed embeddings.
+
+        Args:
+            documents: list of (text, embedding)
+            query: the query to search for
+            top_k: number of results to return
+            threshold: minimum similarity score
+
+        Returns:
+            Status
+            FindClosestResult
+        """
+
+        emb = self.pg.embedding_model.encode(query)
+
+        def cos_sim(x, y):
+            return np.dot(x, y) / (np.linalg.norm(x) * np.linalg.norm(y))
+
+        docs = [
+            (text, cos_sim(embedding, emb))
+            for text, embedding in documents
+            if cos_sim(embedding, emb) >= threshold
+        ]
+
+        sorted_docs = sorted(docs, key=lambda x: x[1], reverse=True)[:top_k]
+
+        result = FindClosestResult(
+            results=[doc[0] for doc in sorted_docs],
+            similarities=[doc[1] for doc in sorted_docs],
+        )
+
+        status = (
+            Status.EXECUTION_SUCCESS
+            if len(result.results) > 0
+            else Status.TARGET_NOT_FOUND
+        )
+
+        return status, result
+    
+    def get_items_embeddings(self):
+        items = self.pg.get_all_items()
+        documents = [(item.text, item.embedding) for item in items]
+        return documents
 
     # TODO: Make async
     @service_check("llm_wrapper_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
