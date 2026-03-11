@@ -16,7 +16,7 @@ export default function MjpegStream({ streamUrl }: MjpegStreamProps) {
   }, [streamUrl]);
 
   return (
-    <div className="w-full max-w-3xl">
+    <div className="w-full max-w-[min(48rem,80vw)]">
       <img
         ref={imgRef}
         alt="MJPEG Stream"

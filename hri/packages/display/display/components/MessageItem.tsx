@@ -45,13 +45,12 @@ export function MessageItem({ message, isLatest }: MessageItemProps) {
 
   return (
     <div
-      className={`p-4 rounded-lg border transition-all ${
-        isLatest
+      className={`p-2.5 md:p-4 rounded-lg border transition-all ${isLatest
           ? "bg-(--bg-darker) border-(--border-light) shadow-lg"
           : "bg-(--bg-dark) border-(--border-light)"
-      }`}
+        }`}
     >
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-2 md:gap-3">
         <div className={`mt-1 ${getTypeColor()}`}>{getIcon()}</div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">

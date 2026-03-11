@@ -29,8 +29,8 @@ export function VideoFeed() {
   }, []);
 
   return (
-    <div className="h-full flex flex-col items-center justify-center p-4">
-      <p className="text-xl mb-4 text-(--text-light)">
+    <div className="h-full flex flex-col items-center justify-center p-[1vmin]">
+      <p className="text-[clamp(0.625rem,1.5vw,1.25rem)] mb-[0.5vh] md:mb-[1vh] text-(--text-light)">
         Video feed at {videoTopic}
       </p>
       <MjpegStream

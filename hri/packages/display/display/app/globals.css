@@ -21,3 +21,14 @@
   --purple-bg: oklch(0.627 0.265 303.9 / 20%);
   --pulse: oklch(0.5 0.25 260);
 }
+
+
+html {
+  font-size: clamp(12px, 1.5625vw, 20px);
+}
+
+html, body {
+  overflow: hidden;
+  height: 100%;
+  height: 100dvh;
+}

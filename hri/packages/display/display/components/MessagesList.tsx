@@ -164,7 +164,7 @@ export function MessagesList() {
       {audioState === "listening" && currentMessage && (
         <CurrentMessageOverlay message={currentMessage} />
       )}
-      <div className="flex flex-col p-4 space-y-3 overflow-y-auto">
+      <div className="flex flex-col p-3 md:p-4 space-y-2 md:space-y-3 overflow-y-auto max-h-[50vh] md:max-h-none">
         <div ref={messagesStartRef} />
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full text-(--text-gray)">

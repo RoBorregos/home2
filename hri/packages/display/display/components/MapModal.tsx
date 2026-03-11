@@ -41,17 +41,17 @@ export function MapModal() {
   if (!isOpen || !mapData) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
-      <div className="relative bg-(--bg-dark) rounded-xl shadow-2xl max-w-4xl max-h-[90vh] overflow-auto p-6">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+      <div className="relative bg-(--bg-dark) rounded-xl shadow-2xl max-w-[95vw] md:max-w-4xl max-h-[90vh] overflow-auto p-4 md:p-6">
         <button
           onClick={() => setIsOpen(false)}
-          className="absolute top-4 right-4 p-2 rounded-full bg-(--bg-darker) hover:bg-(--blue-bg) transition-colors"
+          className="absolute top-3 right-3 md:top-4 md:right-4 p-1.5 md:p-2 rounded-full bg-(--bg-darker) hover:bg-(--blue-bg) transition-colors"
           aria-label="Close modal"
         >
-          <X className="h-5 w-5 text-(--text-light)" />
+          <X className="h-4 w-4 md:h-5 md:w-5 text-(--text-light)" />
         </button>
 
-        <h2 className="text-2xl font-bold text-(--text-light) mb-4">
+        <h2 className="text-xl md:text-2xl font-bold text-(--text-light) mb-3 md:mb-4">
           Map View
         </h2>
 
@@ -76,11 +76,11 @@ export function MapModal() {
           ))}
         </div>
 
-        <div className="mt-4">
-          <h3 className="text-lg font-semibold text-(--text-light) mb-2">
+        <div className="mt-3 md:mt-4">
+          <h3 className="text-base md:text-lg font-semibold text-(--text-light) mb-1.5 md:mb-2">
             Markers
           </h3>
-          <div className="space-y-2">
+          <div className="space-y-1.5 md:space-y-2">
             {mapData.markers.map((marker, index) => (
               <div
                 key={index}

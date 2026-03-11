@@ -80,15 +80,15 @@ export function AudioStateIndicator() {
   if (state === "thinking") {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 pointer-events-none">
-        <div className="relative flex flex-col items-center gap-4">
+        <div className="relative flex flex-col items-center gap-2 md:gap-4">
           <div className="relative">
             <div className="absolute inset-0 rounded-full bg-(--purple) opacity-20 animate-ping" />
-            <div className="relative z-10 h-32 w-32 rounded-full bg-(--bg-dark) border-4 border-(--purple) flex items-center justify-center shadow-lg">
-              <Brain className="h-16 w-16 text-(--purple) animate-pulse" />
+            <div className="relative z-10 h-20 w-20 md:h-32 md:w-32 rounded-full bg-(--bg-dark) border-4 border-(--purple) flex items-center justify-center shadow-lg">
+              <Brain className="h-10 w-10 md:h-16 md:w-16 text-(--purple) animate-pulse" />
             </div>
           </div>
-          <div className="bg-(--bg-dark) px-6 py-2 rounded-full border border-(--border-light) shadow-lg">
-            <span className="text-lg font-medium text-(--text-light) animate-pulse">
+          <div className="bg-(--bg-dark) px-4 md:px-6 py-1.5 md:py-2 rounded-full border border-(--border-light) shadow-lg">
+            <span className="text-sm md:text-lg font-medium text-(--text-light) animate-pulse">
               Thinking...
             </span>
           </div>
@@ -100,12 +100,12 @@ export function AudioStateIndicator() {
   if (state === "loading") {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/10 pointer-events-none">
-        <div className="relative flex flex-col items-center gap-4">
-          <div className="relative z-10 h-32 w-32 rounded-full bg-(--bg-dark) border-4 border-(--text-gray) flex items-center justify-center shadow-lg">
-            <Loader className="h-16 w-16 text-(--text-gray) animate-spin" />
+        <div className="relative flex flex-col items-center gap-2 md:gap-4">
+          <div className="relative z-10 h-20 w-20 md:h-32 md:w-32 rounded-full bg-(--bg-dark) border-4 border-(--text-gray) flex items-center justify-center shadow-lg">
+            <Loader className="h-10 w-10 md:h-16 md:w-16 text-(--text-gray) animate-spin" />
           </div>
-          <div className="bg-(--bg-dark) px-6 py-2 rounded-full border border-(--border-light) shadow-lg">
-            <span className="text-lg font-medium text-(--text-light)">
+          <div className="bg-(--bg-dark) px-4 md:px-6 py-1.5 md:py-2 rounded-full border border-(--border-light) shadow-lg">
+            <span className="text-sm md:text-lg font-medium text-(--text-light)">
               Loading...
             </span>
           </div>
@@ -116,14 +116,14 @@ export function AudioStateIndicator() {
 
   // For listening state, show the mic centered
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/5 pointer-events-none -translate-y-24">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/5 pointer-events-none -translate-y-12 md:-translate-y-24">
       <div className="relative">
         <div className="absolute inset-0 rounded-full bg-(--pulse) opacity-10 animate-[pulse_3s_infinite] scale-110" />
         <div className="absolute inset-0 rounded-full bg-(--pulse) opacity-15 animate-[pulse_3s_infinite_1s] scale-125" />
         <div className="absolute inset-0 rounded-full bg-(--pulse) opacity-20 animate-[pulse_3s_infinite_2s] scale-150" />
 
-        <div className="relative z-10 h-48 w-48 rounded-full bg-(--pulse) shadow-lg flex items-center justify-center">
-          <Mic className="h-24 w-24 text-white/90 drop-shadow-md" />
+        <div className="relative z-10 h-28 w-28 md:h-48 md:w-48 rounded-full bg-(--pulse) shadow-lg flex items-center justify-center">
+          <Mic className="h-14 w-14 md:h-24 md:w-24 text-white/90 drop-shadow-md" />
         </div>
 
         <div
