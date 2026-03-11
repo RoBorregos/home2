@@ -188,9 +188,9 @@ EOF
 
 # Save interface env for Docker containers
 IFACE_ENV="/etc/cyclonedds.env"
-if [ -n "${2:-}" ]; then
-    echo "CYCLONE_INTERFACE=${2}" > "$IFACE_ENV"
-    echo "[INFO] Saved interface '${2}' to $IFACE_ENV"
+if [ -n "$INTERFACE" ]; then
+    echo "CYCLONE_INTERFACE=$INTERFACE" > "$IFACE_ENV"
+    echo "[INFO] Saved interface '$INTERFACE' to $IFACE_ENV"
     echo "       Use with: docker run --env-file $IFACE_ENV ..."
 else
     echo "CYCLONE_INTERFACE=" > "$IFACE_ENV"
