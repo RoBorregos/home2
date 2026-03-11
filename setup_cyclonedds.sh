@@ -184,6 +184,19 @@ net.ipv4.ipfrag_time=3
 net.ipv4.ipfrag_high_thresh=134217728
 EOF
     sysctl -p "$SYSCTL_CONF"
+
+
+# Save interface env for Docker containers
+IFACE_ENV="/etc/cyclonedds.env"
+if [ -n "${2:-}" ]; then
+    echo "CYCLONE_INTERFACE=${2}" > "$IFACE_ENV"
+    echo "[INFO] Saved interface '${2}' to $IFACE_ENV"
+    echo "       Use with: docker run --env-file $IFACE_ENV ..."
+else
+    echo "CYCLONE_INTERFACE=" > "$IFACE_ENV"
+    echo "[INFO] No interface specified, saved autodetermine to $IFACE_ENV"
+fi
+
 fi
 
 # Add environment variables to shell rc files
