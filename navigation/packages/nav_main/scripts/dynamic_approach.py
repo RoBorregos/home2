@@ -15,9 +15,9 @@ Key behaviors:
 - Shelf/solid furniture: lidar detects front surface → stops before collision
 - Combines lidar (precise 2D at scan height) with depth camera (3D volume)
 
-SAFETY: The robot will NOT move forward unless at least one sensor provides
-valid distance readings. If depth TF fails and lidar sees nothing, the robot
-stops immediately.
+SAFETY: The robot will NOT start moving until depth camera is confirmed
+working (TF transform succeeds at least once). This prevents the lidar-only
+scenario where lidar sees through/under floating tables and the arm collides.
 """
 
 import math
@@ -103,7 +103,6 @@ class DynamicApproachNode(Node):
 
         # State
         self.is_approaching = False
-        self.depth_tf_ok = False
 
         self.get_logger().info('DynamicApproach action server ready on /navigation/approach')
 
@@ -136,7 +135,7 @@ class DynamicApproachNode(Node):
     def get_depth_min_distance(self, cone_angle, min_height, max_height):
         """Get minimum distance from depth point cloud in a forward cone,
         filtered by height range. Points are transformed to base_link frame.
-        Returns (distance, success) where success indicates if depth processing worked."""
+        Returns (distance, tf_ok) where tf_ok indicates if depth processing worked."""
         cloud = self.latest_cloud
         if cloud is None:
             return float('inf'), False
@@ -150,12 +149,15 @@ class DynamicApproachNode(Node):
                 cloud = do_transform_cloud(cloud, transform)
             except (tf2_ros.LookupException, tf2_ros.ConnectivityException,
                     tf2_ros.ExtrapolationException) as e:
-                self.get_logger().warn(f'Depth TF transform failed: {e}')
+                self.get_logger().warn(f'Depth TF failed ({cloud.header.frame_id} -> base_link): {e}')
+                return float('inf'), False
+            except Exception as e:
+                self.get_logger().warn(f'Depth transform error: {e}')
                 return float('inf'), False
 
         points = read_points_from_cloud(cloud, ('x', 'y', 'z'))
         if len(points) == 0:
-            return float('inf'), True  # TF worked but no points in cloud
+            return float('inf'), True  # TF worked but no points
 
         x, y, z = points[:, 0], points[:, 1], points[:, 2]
 
@@ -194,44 +196,59 @@ class DynamicApproachNode(Node):
             f'depth_h=[{depth_min_h:.2f}, {depth_max_h:.2f}]m')
 
         self.is_approaching = True
-        self.depth_tf_ok = False
         feedback = Approach.Feedback()
         result = Approach.Result()
 
-        # Control loop at 10Hz
-        rate_period = 0.1
-        slowdown_distance = min_dist * 3.0  # Start slowing at 3x min distance
-        no_detection_count = 0
-        max_no_detection = 10  # 1 second of no valid detection → stop (was 3s, now much safer)
-        stall_count = 0
-        max_stall = 30  # 3 seconds of no progress
-        depth_fail_count = 0
-
-        prev_distance = float('inf')
-
-        # Wait for sensor data before starting
-        self.get_logger().info('Waiting for sensor data...')
+        # ---- PHASE 1: Wait for depth to be confirmed working ----
+        # Lidar alone is UNSAFE (goes under floating tables and sees walls behind).
+        # We require depth to be working before any movement.
+        self.get_logger().info('Phase 1: Verifying depth camera TF...')
+        depth_confirmed = False
         wait_start = time.time()
-        while time.time() - wait_start < 3.0:
-            if self.latest_scan is not None or self.latest_cloud is not None:
-                break
-            time.sleep(0.1)
+        while time.time() - wait_start < 5.0:
+            if goal_handle.is_cancel_requested:
+                goal_handle.canceled()
+                result.success = False
+                result.message = 'Cancelled during sensor check'
+                self.is_approaching = False
+                return result
 
-        if self.latest_scan is None and self.latest_cloud is None:
-            self.get_logger().error('No sensor data received after 3s, aborting')
+            depth_dist, tf_ok = self.get_depth_min_distance(cone_angle, depth_min_h, depth_max_h)
+            if tf_ok:
+                depth_confirmed = True
+                self.get_logger().info(
+                    f'\033[92mDepth OK!\033[0m frame={self.latest_cloud.header.frame_id}, '
+                    f'depth_dist={depth_dist:.3f}m')
+                break
+            time.sleep(0.2)
+
+        if not depth_confirmed:
+            self.get_logger().error(
+                'Depth camera TF not available after 5s - REFUSING to move. '
+                f'Cloud frame: {self.latest_cloud.header.frame_id if self.latest_cloud else "NO CLOUD RECEIVED"}. '
+                'Check that TF tree connects this frame to base_link.')
             result.success = False
-            result.message = 'No sensor data available'
+            result.message = 'Depth camera TF not working - unsafe to approach'
             goal_handle.succeed()
             self.is_approaching = False
             return result
 
-        self.get_logger().info(
-            f'Sensors: lidar={"OK" if self.latest_scan else "NONE"}, '
-            f'depth={"OK" if self.latest_cloud else "NONE"} '
-            f'(frame: {self.latest_cloud.header.frame_id if self.latest_cloud else "N/A"})')
+        # ---- PHASE 2: Approach loop ----
+        self.get_logger().info('Phase 2: Starting approach...')
+        rate_period = 0.1
+        slowdown_distance = min_dist * 3.0
+        stall_count = 0
+        max_stall = 30  # 3 seconds
+        depth_consecutive_fails = 0
+        max_depth_fails = 10  # 1 second of depth failure → emergency stop
+
+        prev_distance = float('inf')
+        loop_count = 0
 
         try:
             while rclpy.ok() and self.is_approaching:
+                loop_count += 1
+
                 # Check if cancelled
                 if goal_handle.is_cancel_requested:
                     self.stop_robot()
@@ -246,41 +263,54 @@ class DynamicApproachNode(Node):
                 depth_dist, depth_ok = self.get_depth_min_distance(
                     cone_angle, depth_min_h, depth_max_h)
 
+                # SAFETY: Track depth health - if depth dies mid-approach, stop
                 if not depth_ok:
-                    depth_fail_count += 1
-                    if depth_fail_count <= 3 or depth_fail_count % 50 == 0:
-                        self.get_logger().warn(
-                            f'Depth sensor unavailable (TF fail count: {depth_fail_count})')
-                else:
-                    if not self.depth_tf_ok:
-                        self.get_logger().info('Depth TF transform working')
-                    self.depth_tf_ok = True
-                    depth_fail_count = 0
-
-                # Use the minimum of both sensors
-                current_dist = min(lidar_dist, depth_dist)
-
-                # Determine which sensor is dominant for logging
-                sensor = 'lidar' if lidar_dist <= depth_dist else 'depth'
-
-                # Log every iteration at info level for debugging
-                self.get_logger().info(
-                    f'lidar={lidar_dist:.3f}m, depth={depth_dist:.3f}m '
-                    f'(tf_ok={depth_ok}), min={current_dist:.3f}m ({sensor})')
-
-                # SAFETY: If neither sensor detects anything, do NOT move
-                if current_dist == float('inf'):
-                    no_detection_count += 1
-                    self.stop_robot()  # Always stop when blind
-
-                    if no_detection_count > max_no_detection:
+                    depth_consecutive_fails += 1
+                    if depth_consecutive_fails >= max_depth_fails:
+                        self.stop_robot()
+                        self.get_logger().error(
+                            f'Depth TF failed {depth_consecutive_fails}x consecutively - emergency stop')
                         result.success = False
                         result.final_distance = -1.0
-                        result.message = (
-                            f'No obstacles detected - stopped for safety '
-                            f'(depth_tf_ok={self.depth_tf_ok}, '
-                            f'lidar={"ok" if self.latest_scan else "none"}, '
-                            f'depth={"ok" if self.latest_cloud else "none"})')
+                        result.message = 'Depth camera lost during approach - emergency stop'
+                        goal_handle.succeed()
+                        self.is_approaching = False
+                        return result
+                else:
+                    depth_consecutive_fails = 0
+
+                # Use minimum of both sensors (only if depth is working)
+                if depth_ok:
+                    current_dist = min(lidar_dist, depth_dist)
+                else:
+                    # Depth broken - use lidar but stop moving (handled below)
+                    current_dist = lidar_dist
+
+                sensor = 'lidar' if lidar_dist <= depth_dist else 'depth'
+
+                # Log every 5th iteration (2Hz) to avoid spam
+                if loop_count % 5 == 1:
+                    self.get_logger().info(
+                        f'L={lidar_dist:.3f}m D={depth_dist:.3f}m '
+                        f'(tf={depth_ok}) → {current_dist:.3f}m ({sensor})')
+
+                # If depth is failing, stop immediately
+                if not depth_ok:
+                    self.stop_robot()
+                    feedback.current_distance = lidar_dist if lidar_dist != float('inf') else -1.0
+                    feedback.status = 'depth_lost'
+                    goal_handle.publish_feedback(feedback)
+                    time.sleep(rate_period)
+                    continue
+
+                # No detection from either sensor
+                if current_dist == float('inf'):
+                    self.stop_robot()
+                    stall_count += 1
+                    if stall_count > max_stall:
+                        result.success = False
+                        result.final_distance = -1.0
+                        result.message = 'No obstacles detected in approach cone'
                         self.get_logger().warn(result.message)
                         goal_handle.succeed()
                         self.is_approaching = False
@@ -292,19 +322,19 @@ class DynamicApproachNode(Node):
                     time.sleep(rate_period)
                     continue
 
-                no_detection_count = 0
+                stall_count = 0
 
-                # Check if too far to approach
+                # Too far
                 if current_dist > max_distance:
                     self.stop_robot()
                     result.success = False
                     result.final_distance = current_dist
-                    result.message = f'Too far from obstacle ({current_dist:.2f}m > {max_distance:.2f}m)'
+                    result.message = f'Too far ({current_dist:.2f}m > {max_distance:.2f}m)'
                     goal_handle.succeed()
                     self.is_approaching = False
                     return result
 
-                # Check if we've reached the target
+                # Reached target
                 if current_dist <= min_dist:
                     self.stop_robot()
                     self.get_logger().info(
@@ -312,39 +342,32 @@ class DynamicApproachNode(Node):
                         f'Distance: {current_dist:.3f}m ({sensor})')
                     result.success = True
                     result.final_distance = current_dist
-                    result.message = f'Reached target distance ({sensor}: {current_dist:.3f}m)'
+                    result.message = f'Reached target ({sensor}: {current_dist:.3f}m)'
                     goal_handle.succeed()
                     self.is_approaching = False
                     return result
 
-                # Calculate approach velocity with proportional slowdown
+                # Calculate speed with proportional slowdown
                 if current_dist < slowdown_distance:
-                    # Proportional: full speed at slowdown_distance, near-zero at min_dist
                     t = (current_dist - min_dist) / (slowdown_distance - min_dist)
-                    t = max(0.1, min(1.0, t))  # Clamp between 0.1 and 1.0
+                    t = max(0.1, min(1.0, t))
                     speed = approach_speed * t
                 else:
                     speed = approach_speed
 
-                # Ensure minimum creep speed
-                speed = max(speed, 0.02)
+                speed = max(speed, 0.02)  # Minimum creep speed
 
                 # Publish velocity
                 twist = Twist()
                 twist.linear.x = speed
                 self.cmd_vel_pub.publish(twist)
 
-                # Determine status
-                if current_dist < slowdown_distance:
-                    status = 'slowing'
-                else:
-                    status = 'approaching'
-
+                status = 'slowing' if current_dist < slowdown_distance else 'approaching'
                 feedback.current_distance = current_dist
                 feedback.status = status
                 goal_handle.publish_feedback(feedback)
 
-                # Check for stall (robot not getting closer)
+                # Check for stall
                 if abs(current_dist - prev_distance) < 0.002:
                     stall_count += 1
                     if stall_count > max_stall:
