@@ -32,8 +32,7 @@ class NodeMonitor(Node):
         self.nodes_to_monitor = self.get_parameter('nodes_to_monitor').value
         self.update_period = self.get_parameter('update_period').value
         
-        # PID cache
-        self.node_pids = {} # node_name -> pid
+        self.node_pids = {} 
         
         # GPU Initialization
         self.gpu_initialized = False
@@ -45,35 +44,25 @@ class NodeMonitor(Node):
             except Exception as e:
                 self.get_logger().warning(f"Failed to initialize NVML: {e}")
         
-        # Publisher
         self.publisher = self.create_publisher(MonitorReport, 'system/node_monitor', 10)
         
-        # Timer
         self.timer = self.create_timer(self.update_period, self.timer_callback)
         
         self.get_logger().info(f"Node Monitor started. Monitoring: {self.nodes_to_monitor}")
 
     def find_pid(self, node_name):
-        """Tries to find the PID for a given ROS2 node name."""
-        # Try finding in current processes
         for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
             try:
-                # 1. Check if node name is explicitly set in ROS2 args
                 cmdline = proc.info['cmdline']
                 if cmdline:
                     cmd_str = ' '.join(cmdline)
                     if f"__node:={node_name}" in cmd_str:
                         return proc.info['pid']
                 
-                # 2. Check if process name matches exactly (heuristic for simple nodes)
                 if proc.info['name'] == node_name:
                     return proc.info['pid']
                 
-                # 3. Check if node name is in the path/executable (heuristic)
-                # This could be risky if multiple nodes have similar names
-                # but good for uniquely named executables
                 if node_name in proc.info['name']:
-                    # Double check it looks like a ROS node or matches well
                     return proc.info['pid']
 
             except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
@@ -90,13 +79,10 @@ class NodeMonitor(Node):
             total_gpu_mem_pct = 0.0
             for i in range(device_count):
                 handle = pynvml.nvmlDeviceGetHandleByIndex(i)
-                # Get processes using this GPU
                 procs = pynvml.nvmlDeviceGetComputeRunningProcesses(handle)
                 for p in procs:
                     if p.pid == pid:
-                        # Memory used by process in bytes
                         mem = p.usedGpuMemory
-                        # Total device memory
                         info = pynvml.nvmlDeviceGetMemoryInfo(handle)
                         total_gpu_mem_pct += (mem / info.total) * 100.0
             return total_gpu_mem_pct
@@ -113,7 +99,7 @@ class NodeMonitor(Node):
             status = NodeStatus()
             status.name = name
             
-            # Find or refresh PID
+ 
             pid = self.node_pids.get(name)
             if pid is None or not psutil.pid_exists(pid):
                 pid = self.find_pid(name)
@@ -123,9 +109,9 @@ class NodeMonitor(Node):
             if pid:
                 try:
                     p = psutil.Process(pid)
-                    # CPU percentage (interval=None means since last call)
+                    # CPU percentage 
                     status.cpu_usage = p.cpu_percent()
-                    # Memory percentage (RSS)
+                    # Memory percentage 
                     status.memory_usage = p.memory_percent()
                     # GPU percentage
                     status.gpu_usage = self.get_gpu_process_info(pid)
