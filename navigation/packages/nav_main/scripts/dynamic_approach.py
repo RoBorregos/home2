@@ -85,17 +85,22 @@ class DynamicApproachNode(Node):
             callback_group=self.sensor_cb_group
         )
 
-        # Depth point cloud subscriber
+        # Depth point cloud subscriber (configurable topic)
+        self.declare_parameter('point_cloud_topic', '/point_cloud')
+        cloud_topic = self.get_parameter('point_cloud_topic').get_parameter_value().string_value
+
         self.latest_cloud = None
+        # Try both BEST_EFFORT and RELIABLE via compatible QoS
         sensor_qos = QoSProfile(
             reliability=ReliabilityPolicy.BEST_EFFORT,
             durability=DurabilityPolicy.VOLATILE,
-            depth=1
+            depth=5
         )
         self.cloud_sub = self.create_subscription(
-            PointCloud2, '/point_cloud_nav', self.cloud_callback, sensor_qos,
+            PointCloud2, cloud_topic, self.cloud_callback, sensor_qos,
             callback_group=self.sensor_cb_group
         )
+        self.get_logger().info(f'Subscribing to point cloud: {cloud_topic}')
 
         # TF for transforming point cloud to base_link
         self.tf_buffer = tf2_ros.Buffer()
@@ -225,7 +230,7 @@ class DynamicApproachNode(Node):
         if not depth_confirmed:
             self.get_logger().error(
                 'Depth camera TF not available after 5s - REFUSING to move. '
-                f'Cloud frame: {self.latest_cloud.header.frame_id if self.latest_cloud else "NO CLOUD RECEIVED"}. '
+                f'Cloud frame: {self.latest_cloud.header.frame_id if self.latest_cloud is not None else "NO CLOUD RECEIVED"}. '
                 'Check that TF tree connects this frame to base_link.')
             result.success = False
             result.message = 'Depth camera TF not working - unsafe to approach'
