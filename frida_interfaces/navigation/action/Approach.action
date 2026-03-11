@@ -8,6 +8,7 @@ float32 max_distance 1.5       # Max distance to attempt approach from (abort if
 float32 depth_min_height 0.10  # Min height for depth obstacles (filters ground)
 float32 depth_max_height 1.2   # Max height for depth obstacles
 float32 cone_angle 0.35        # Half-angle of forward detection cone (radians, ~20 deg)
+float32 ignore_distance 0.0    # Ignore depth points closer than this (filters robot body/arm)
 ---
 # Result
 bool success

@@ -137,9 +137,10 @@ class DynamicApproachNode(Node):
 
         return float(np.min(ranges[mask]))
 
-    def get_depth_min_distance(self, cone_angle, min_height, max_height):
+    def get_depth_min_distance(self, cone_angle, min_height, max_height, ignore_distance=0.0):
         """Get minimum distance from depth point cloud in a forward cone,
         filtered by height range. Points are transformed to base_link frame.
+        ignore_distance: skip points closer than this (filters robot body/arm).
         Returns (distance, tf_ok) where tf_ok indicates if depth processing worked."""
         cloud = self.latest_cloud
         if cloud is None:
@@ -166,19 +167,22 @@ class DynamicApproachNode(Node):
 
         x, y, z = points[:, 0], points[:, 1], points[:, 2]
 
-        # Filter: forward only (x > 0), within height range
-        # and within the cone angle (|atan2(y, x)| < cone_angle)
+        # Compute distances first (needed for ignore_distance filter)
+        distances = np.sqrt(x ** 2 + y ** 2)
+
+        # Filter: forward only (x > 0), within height range,
+        # within cone angle, and beyond ignore_distance (filters arm/robot body)
         forward = x > 0.05  # At least 5cm forward
         height_ok = (z >= min_height) & (z <= max_height)
         angles = np.abs(np.arctan2(y, x))
         in_cone = angles < cone_angle
+        far_enough = distances > ignore_distance
 
-        mask = forward & height_ok & in_cone
+        mask = forward & height_ok & in_cone & far_enough
         if not mask.any():
             return float('inf'), True  # TF worked but nothing in cone
 
-        distances = np.sqrt(x[mask] ** 2 + y[mask] ** 2)
-        return float(np.min(distances)), True
+        return float(np.min(distances[mask])), True
 
     def stop_robot(self):
         """Send zero velocity."""
@@ -194,11 +198,13 @@ class DynamicApproachNode(Node):
         depth_min_h = goal.depth_min_height
         depth_max_h = goal.depth_max_height
         cone_angle = goal.cone_angle
+        ignore_dist = goal.ignore_distance
 
         self.get_logger().info(
             f'Approach started: min_dist={min_dist:.2f}m, '
             f'speed={approach_speed:.2f}m/s, cone={math.degrees(cone_angle):.0f}deg, '
-            f'depth_h=[{depth_min_h:.2f}, {depth_max_h:.2f}]m')
+            f'depth_h=[{depth_min_h:.2f}, {depth_max_h:.2f}]m, '
+            f'ignore={ignore_dist:.2f}m')
 
         self.is_approaching = True
         feedback = Approach.Feedback()
@@ -218,7 +224,7 @@ class DynamicApproachNode(Node):
                 self.is_approaching = False
                 return result
 
-            depth_dist, tf_ok = self.get_depth_min_distance(cone_angle, depth_min_h, depth_max_h)
+            depth_dist, tf_ok = self.get_depth_min_distance(cone_angle, depth_min_h, depth_max_h, ignore_dist)
             if tf_ok:
                 depth_confirmed = True
                 self.get_logger().info(
@@ -266,7 +272,7 @@ class DynamicApproachNode(Node):
                 # Get distances from both sensors
                 lidar_dist = self.get_lidar_min_distance(cone_angle)
                 depth_dist, depth_ok = self.get_depth_min_distance(
-                    cone_angle, depth_min_h, depth_max_h)
+                    cone_angle, depth_min_h, depth_max_h, ignore_dist)
 
                 # SAFETY: Track depth health - if depth dies mid-approach, stop
                 if not depth_ok:
