@@ -17,10 +17,17 @@ set -e
 
 CYCLONE_XML="/etc/cyclonedds.xml"
 SYSCTL_CONF="/etc/sysctl.d/60-cyclonedds-buffers.conf"
-BASHRC_FILE="/home/${SUDO_USER:-$USER}/.bashrc"
 ENV_MARKER="# CycloneDDS setup"
 DOCKER_MODE=false
 HOST_ONLY=false
+
+# Detect shell rc files
+USER_HOME="/home/${SUDO_USER:-$USER}"
+RC_FILES=()
+[ -f "$USER_HOME/.bashrc" ] && RC_FILES+=("$USER_HOME/.bashrc")
+[ -f "$USER_HOME/.zshrc" ] && RC_FILES+=("$USER_HOME/.zshrc")
+# Fallback to bashrc if neither exists
+[ ${#RC_FILES[@]} -eq 0 ] && RC_FILES=("$USER_HOME/.bashrc")
 
 # ── Parse flags ──
 case "${1:-}" in
@@ -42,19 +49,24 @@ case "${1:-}" in
             echo "[2/3] $SYSCTL_CONF not found, skipping"
         fi
 
-        if grep -q "$ENV_MARKER" "$BASHRC_FILE" 2>/dev/null; then
-            sed -i "/$ENV_MARKER/d" "$BASHRC_FILE"
-            sed -i '/export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp/d' "$BASHRC_FILE"
-            sed -i '/export CYCLONEDDS_URI=file:\/\//d' "$BASHRC_FILE"
-            echo "[3/3] Removed CycloneDDS env vars from $BASHRC_FILE"
-        else
-            echo "[3/3] No CycloneDDS env vars in $BASHRC_FILE, skipping"
+        CLEANED=false
+        for rc in "${RC_FILES[@]}"; do
+            if grep -q "$ENV_MARKER" "$rc" 2>/dev/null; then
+                sed -i "/$ENV_MARKER/d" "$rc"
+                sed -i '/export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp/d' "$rc"
+                sed -i '/export CYCLONEDDS_URI=file:\/\//d' "$rc"
+                echo "[3/3] Removed CycloneDDS env vars from $rc"
+                CLEANED=true
+            fi
+        done
+        if [ "$CLEANED" = false ]; then
+            echo "[3/3] No CycloneDDS env vars found in rc files, skipping"
         fi
 
         echo ""
         echo "=== Reverted to FastDDS ==="
         echo "To activate in current shell:"
-        echo "  source ~/.bashrc"
+        echo "  source ~/$(basename "${RC_FILES[0]}")"
         echo "  unset RMW_IMPLEMENTATION CYCLONEDDS_URI"
         exit 0
         ;;
@@ -174,19 +186,21 @@ EOF
     sysctl -p "$SYSCTL_CONF"
 fi
 
-# Add environment variables to bashrc
+# Add environment variables to shell rc files
 echo "[3/3] Setting up environment variables"
-if ! grep -q "$ENV_MARKER" "$BASHRC_FILE" 2>/dev/null; then
-    cat >> "$BASHRC_FILE" <<EOF
+for rc in "${RC_FILES[@]}"; do
+    if ! grep -q "$ENV_MARKER" "$rc" 2>/dev/null; then
+        cat >> "$rc" <<EOF
 
 $ENV_MARKER
 export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 export CYCLONEDDS_URI=file://$CYCLONE_XML
 EOF
-    echo "[INFO] Added environment variables to $BASHRC_FILE"
-else
-    echo "[INFO] Environment variables already in $BASHRC_FILE, skipping"
-fi
+        echo "[INFO] Added environment variables to $rc"
+    else
+        echo "[INFO] Environment variables already in $rc, skipping"
+    fi
+done
 
 echo ""
 echo "=== Setup Complete ==="
@@ -196,4 +210,4 @@ if [ "$DOCKER_MODE" = false ]; then
 fi
 echo ""
 echo "To activate in current shell:"
-echo "  source ~/.bashrc"
+echo "  source ~/$(basename "${RC_FILES[0]}")"
