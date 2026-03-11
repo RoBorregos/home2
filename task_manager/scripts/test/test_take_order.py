@@ -20,12 +20,6 @@ from utils.logger import Logger
 # Configuration – edit these values before running the test
 # ---------------------------------------------------------------------------
 
-# Menu items to offer the customer
-MENU_ITEMS = [
-    "water",
-    "orange juice",
-    "coffee",
-]
 
 # How many times take_order is allowed to retry before giving up
 RETRIES = 3
@@ -47,11 +41,9 @@ class TakeOrderTestNode(Node):
         self.run()
 
     def run(self):
-        Logger.info(self, f"Menu: {', '.join(MENU_ITEMS)}")
         Logger.info(self, f"Max retries: {RETRIES}")
 
         status, ordered_items = self.hri.take_order(
-            menu_items=MENU_ITEMS,
             retries=RETRIES,
         )
 

@@ -7,7 +7,6 @@ HRI Subtask manager
 import json
 import os
 import re
-import time
 from dataclasses import dataclass
 from enum import Enum
 
@@ -975,7 +974,7 @@ class HRITasks(metaclass=SubtaskMeta):
         for attempt in range(1, retries + 1):
             Logger.info(self.node, f"take_order attempt {attempt}/{retries}")
 
-            self.say(f"What would you like to order?")
+            self.say("What would you like to order?")
 
             s, transcript, _ = self.hear()
             if s != Status.EXECUTION_SUCCESS or not transcript:
@@ -1038,7 +1037,7 @@ class HRITasks(metaclass=SubtaskMeta):
             # Map each extracted item to the closest menu entry via embeddings
             matched_items = []
             for raw_item in raw_items:
-                s_match, closest = self.find_closest_with_embeddings(self.items, raw_item, top_k=1)
+                s_match, closest = self.find_closest(self.items, raw_item, top_k=1)
                 if s_match == Status.EXECUTION_SUCCESS and closest.results:
                     # find_closest returns a FindClosestResult with a .results list.
                     matched = closest.results[0]
@@ -1101,35 +1100,47 @@ class HRITasks(metaclass=SubtaskMeta):
         return self.pg.query_location(query, top_k=top_k, use_context=use_context)
 
     def find_closest(
-        self, documents: list, query: str, top_k: int = 1, threshold: float = 0.0
+        self,
+        documents: list,
+        query: str,
+        top_k: int = 1,
+        threshold: float = 0.0,
     ) -> tuple[Status, FindClosestResult]:
         """
         Method to find the closest item to the query.
-        Args:
-            documents: the documents to search among
-            query: the query to search for
-            top_k: the number of results to return
-            threshold: the minimum similarity score to include
-        Returns:
-            Status: the status of the execution
-            FindClosestResult: the results and similarity scores of the query
+        documents can be:
+            - list[str]
+            - list[tuple[str, embedding]]
         """
+
         emb = self.pg.embedding_model.encode(query)
 
         def cos_sim(x, y):
             return np.dot(x, y) / (np.linalg.norm(x) * np.linalg.norm(y))
 
-        docs = [(doc, cos_sim(self.pg.embedding_model.encode(doc), emb)) for doc in documents]
-        docs = [doc for doc in docs if doc[1] >= threshold]
+        # Case 1: documents already have embeddings
+        if len(documents) > 0 and isinstance(documents[0], tuple):
+            docs = [
+                (text, cos_sim(embedding, emb))
+                for text, embedding in documents
+                if cos_sim(embedding, emb) >= threshold
+            ]
+
+        # Case 2: documents are just text
+        else:
+            docs = [(doc, cos_sim(self.pg.embedding_model.encode(doc), emb)) for doc in documents]
+            docs = [doc for doc in docs if doc[1] >= threshold]
+
         sorted_docs = sorted(docs, key=lambda x: x[1], reverse=True)[:top_k]
 
         result = FindClosestResult(
             results=[doc[0] for doc in sorted_docs],
             similarities=[doc[1] for doc in sorted_docs],
         )
-        s = Status.EXECUTION_SUCCESS if len(result.results) > 0 else Status.TARGET_NOT_FOUND
 
-        return s, result
+        status = Status.EXECUTION_SUCCESS if len(result.results) > 0 else Status.TARGET_NOT_FOUND
+
+        return status, result
 
     def find_closest_raw(self, documents: list, query: str, top_k: int = 4) -> list[str]:
         """
@@ -1156,53 +1167,6 @@ class HRITasks(metaclass=SubtaskMeta):
 
         return Results
 
-    def find_closest_with_embeddings(
-        self,
-        documents: list[tuple[str, list[float]]],
-        query: str,
-        top_k: int = 1,
-        threshold: float = 0.0,
-    ) -> tuple[Status, FindClosestResult]:
-        """
-        Method to find the closest item to the query using precomputed embeddings.
-
-        Args:
-            documents: list of (text, embedding)
-            query: the query to search for
-            top_k: number of results to return
-            threshold: minimum similarity score
-
-        Returns:
-            Status
-            FindClosestResult
-        """
-
-        emb = self.pg.embedding_model.encode(query)
-
-        def cos_sim(x, y):
-            return np.dot(x, y) / (np.linalg.norm(x) * np.linalg.norm(y))
-
-        docs = [
-            (text, cos_sim(embedding, emb))
-            for text, embedding in documents
-            if cos_sim(embedding, emb) >= threshold
-        ]
-
-        sorted_docs = sorted(docs, key=lambda x: x[1], reverse=True)[:top_k]
-
-        result = FindClosestResult(
-            results=[doc[0] for doc in sorted_docs],
-            similarities=[doc[1] for doc in sorted_docs],
-        )
-
-        status = (
-            Status.EXECUTION_SUCCESS
-            if len(result.results) > 0
-            else Status.TARGET_NOT_FOUND
-        )
-
-        return status, result
-    
     def get_items_embeddings(self):
         items = self.pg.get_all_items()
         documents = [(item.text, item.embedding) for item in items]
