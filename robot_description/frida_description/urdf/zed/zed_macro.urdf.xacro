@@ -165,7 +165,7 @@
           <mass value="0.001"/>
           <inertia ixx="0.000001" ixy="0" ixz="0" iyy="0.000001" iyz="0" izz="0.000001"/>
         </inertial>
-        <xacro:if value="${model == 'virtual'}">
+        <xacro:if value="${model == 'virtual' and not simulation}">
           <visual>
             <origin xyz="0 0 0" rpy="0 0 0"/>
             <geometry>
@@ -219,7 +219,7 @@
           <mass value="0.001"/>
           <inertia ixx="0.000001" ixy="0" ixz="0" iyy="0.000001" iyz="0" izz="0.000001"/>
         </inertial>
-        <xacro:if value="${model == 'virtual'}">
+        <xacro:if value="${model == 'virtual' and not simulation}">
           <visual>
             <origin xyz="0 0 0" rpy="0 0 0"/>
             <geometry>

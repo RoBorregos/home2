@@ -168,15 +168,15 @@ private:
   {
     trajectory_msgs::msg::JointTrajectory trajectory_msg;
     
-    trajectory_msg.header.stamp = this->now();
-    trajectory_msg.header.frame_id = "gripper";
+    trajectory_msg.header.stamp = rclcpp::Time(0); 
     trajectory_msg.joint_names.push_back(joint_name_);
-    std::cout<<target_position<<std::endl;
+
     trajectory_msgs::msg::JointTrajectoryPoint point;
     point.positions.push_back(target_position);
-    point.velocities.push_back(0);
-    point.accelerations.push_back(0);
-    point.time_from_start = rclcpp::Duration::from_seconds(0.5);
+    point.velocities.push_back(0.0);
+    point.accelerations.push_back(0.0);
+
+    point.time_from_start = rclcpp::Duration::from_seconds(0.1);
 
     trajectory_msg.points.push_back(point);
 
