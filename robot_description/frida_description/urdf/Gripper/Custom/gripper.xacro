@@ -107,8 +107,8 @@
         <joint name="gripper_mimic_joint" joint1= "leftfinger" joint2="rightfinger" polycoef="0 1 0 0"/>
       </equality>
       <actuator>
-        <position name="finger_actuator_position" joint="rightfinger" ctrlrange="0 0.056" forcerange= "-50 50" kp ="50"/>
-        <velocity name="finger_actuator_velocity" joint="rightfinger" ctrlrange="0 0.056" forcerange= "-50 50" kv ="10"/>
+        <position name="finger_actuator_position" joint="rightfinger" ctrlrange="0 0.056" forcerange= "-1 1" kp ="50"/>
+        <!-- <velocity name="finger_actuator_velocity" joint="rightfinger" ctrlrange="0 0.056" forcerange= "-1 1" kv ="8"/> -->
       </actuator>
     </mujoco>
     <xacro:include filename="$(find frida_description)/urdf/Gripper/Custom/gripper_mujoco_ros2_control.xacro" />

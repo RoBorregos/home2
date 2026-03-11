@@ -8,6 +8,7 @@
 #include "controller_manager_msgs/srv/list_controllers.hpp"
 #include <memory>
 #include <string>
+#include <iostream>
 
 ///Node that is in charge of transforming the topic /xarm/set_tgpio_digital - /xarm/set_cgpio_digital into movement in mujoco by ros2_control
 
@@ -75,8 +76,7 @@ private:
   void setup_trajectory_control()
   {
     trajectory_publisher_ = this->create_publisher<trajectory_msgs::msg::JointTrajectory>(
-      controller_manager_ns_ + "/" + trajectory_controller_name_ ,
-      rclcpp::QoS(10));
+      controller_manager_ns_ + "/" + trajectory_controller_name_ ,10);
 
 
     RCLCPP_INFO(this->get_logger(), 
@@ -148,7 +148,7 @@ private:
         target_position,
         delay_sec);
 
-      auto trajectory_msg = create_joint_trajectory(target_position, delay_sec);
+      auto trajectory_msg = create_joint_trajectory(target_position);
       trajectory_publisher_->publish(trajectory_msg);
 
       RCLCPP_DEBUG(this->get_logger(),
@@ -164,19 +164,19 @@ private:
  
 
   trajectory_msgs::msg::JointTrajectory create_joint_trajectory(
-    double target_position, 
-    double duration_sec)
+    double target_position)
   {
     trajectory_msgs::msg::JointTrajectory trajectory_msg;
     
     trajectory_msg.header.stamp = this->now();
+    trajectory_msg.header.frame_id = "gripper";
     trajectory_msg.joint_names.push_back(joint_name_);
-
+    std::cout<<target_position<<std::endl;
     trajectory_msgs::msg::JointTrajectoryPoint point;
     point.positions.push_back(target_position);
-    point.velocities.push_back(0.0);
-    point.accelerations.push_back(0.0);
-    point.time_from_start = rclcpp::Duration::from_seconds(duration_sec);
+    point.velocities.push_back(0);
+    point.accelerations.push_back(0);
+    point.time_from_start = rclcpp::Duration::from_seconds(0.5);
 
     trajectory_msg.points.push_back(point);
 
