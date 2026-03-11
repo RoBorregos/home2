@@ -1,52 +1,77 @@
 # CycloneDDS Setup
 
-Script to configure CycloneDDS as the ROS 2 DDS middleware with optimized settings for ZED camera and large data topics (point clouds, images).
+Optimized CycloneDDS configuration for ROS 2 with ZED camera and large data topics.
 
-## Why CycloneDDS?
-
-- Better performance with large messages (point clouds, images)
-- Lower latency for real-time navigation
-- More predictable behavior under high throughput
-
-## Script Location
+## Architecture
 
 ```
-home2/setup_cyclonedds.sh
+Host PC                              Docker Container
+┌─────────────────────┐              ┌──────────────────────────┐
+│ setup_cyclonedds.sh  │              │ Dockerfile (per area)    │
+│  --host-only eno1    │              │  installs rmw-cyclonedds │
+│                      │              │  COPY cyclonedds_setup.sh│
+│ Saves:               │              │  ENV RMW_IMPLEMENTATION  │
+│  /etc/cyclonedds.env │              │  ENV CYCLONEDDS_URI      │
+│  (CYCLONE_INTERFACE) │              └──────────────────────────┘
+│  sysctl buffers      │                          │
+└──────────┬───────────┘              ┌───────────▼──────────────┐
+           │                          │ run.sh                   │
+           │  reads env               │  reads /etc/cyclonedds.env│
+           └─────────────────────────►│  writes to .env          │
+                                      │  CYCLONE_INTERFACE=eno1  │
+                                      └───────────┬─────────────┘
+                                                  │
+                                      ┌───────────▼─────────────┐
+                                      │ docker-compose.yaml      │
+                                      │  environment:            │
+                                      │   CYCLONE_INTERFACE: ... │
+                                      └───────────┬─────────────┘
+                                                  │
+                                      ┌───────────▼─────────────┐
+                                      │ Container startup        │
+                                      │  .bashrc sources         │
+                                      │  cyclonedds_setup.sh     │
+                                      │  → generates XML with    │
+                                      │    correct interface      │
+                                      └──────────────────────────┘
 ```
+
+## Files
+
+| File | Purpose |
+|---|---|
+| `setup_cyclonedds.sh` | Host setup script (sysctl + env file) |
+| `docker/cyclonedds_setup.sh` | Container script (generates XML at startup) |
+| `docker/<area>/Dockerfile.*` | Each area installs CycloneDDS |
+| `docker/<area>/docker-compose*.yaml` | Passes `CYCLONE_INTERFACE` to container |
+| `docker/<area>/run.sh` | Reads `/etc/cyclonedds.env` from host |
 
 ## Usage
 
 ### Bare Metal (Orin, direct install)
-
-Single command does everything — XML config, kernel tuning, and env vars:
 
 ```bash
 sudo bash setup_cyclonedds.sh eno1
 source ~/.bashrc
 ```
 
-Replace `eno1` with your network interface. Omit it to auto-detect:
+### Docker Setup (PC)
+
+**Step 1 — Host (run once):**
 
 ```bash
-sudo bash setup_cyclonedds.sh
+sudo bash setup_cyclonedds.sh --host-only eno1
 ```
 
-### Docker Setup
+This applies kernel sysctl buffers and saves `CYCLONE_INTERFACE=eno1` to `/etc/cyclonedds.env`.
 
-Docker containers share the host kernel, so kernel buffer settings must be applied on the **host** first.
-
-**Step 1 — On the host PC (run once):**
+**Step 2 — Just run your area normally:**
 
 ```bash
-sudo bash setup_cyclonedds.sh --host-only
+bash run.sh navigation cpu
 ```
 
-**Step 2 — Inside the Docker container:**
-
-```bash
-sudo bash setup_cyclonedds.sh --docker eno1
-source ~/.bashrc
-```
+The `run.sh` automatically reads `/etc/cyclonedds.env`, passes `CYCLONE_INTERFACE` through docker-compose, and the container generates the correct XML at startup.
 
 ### Revert to FastDDS
 
@@ -56,7 +81,12 @@ source ~/.bashrc
 unset RMW_IMPLEMENTATION CYCLONEDDS_URI
 ```
 
-This removes the XML config, kernel tuning, and env vars from `~/.bashrc`.
+### Override Interface at Runtime
+
+```bash
+# Via environment variable (overrides /etc/cyclonedds.env)
+CYCLONE_INTERFACE=wlan0 bash run.sh navigation cpu
+```
 
 ## What It Configures
 
@@ -78,24 +108,18 @@ This removes the XML config, kernel tuning, and env vars from `~/.bashrc`.
 | `net.ipv4.ipfrag_time` | 3s | 30s | Faster stale fragment cleanup |
 | `net.ipv4.ipfrag_high_thresh` | 128 MB | 4 MB | Fragment reassembly memory |
 
-### Environment Variables (added to `~/.bashrc`)
-
-```bash
-export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
-export CYCLONEDDS_URI=file:///etc/cyclonedds.xml
-```
-
 ## Finding Your Network Interface
 
 ```bash
+# On host
 ip -br link show
+
+# Inside Docker
+ls /sys/class/net/
 ```
 
-Common interfaces:
-- `eno1`, `eth0` — Wired ethernet
-- `wlan0`, `wlp2s0` — WiFi
-- `lo` — Loopback (same machine only)
+Common interfaces: `eno1`, `eth0` (wired), `wlan0` (wifi), `lo` (loopback)
 
 ## Reference
 
-Based on [Stereolabs DDS and Network Tuning](https://www.stereolabs.com/docs/ros2/dds-and-network-tuning) recommendations.
+Based on [Stereolabs DDS and Network Tuning](https://www.stereolabs.com/docs/ros2/dds-and-network-tuning).

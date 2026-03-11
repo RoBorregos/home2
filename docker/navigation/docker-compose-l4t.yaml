@@ -31,6 +31,7 @@ services:
       QT_DEBUG_PLUGINS: 1
       NVIDIA_VISIBLE_DEVICES: all
       NVIDIA_DRIVER_CAPABILITIES: all
+      CYCLONE_INTERFACE: ${CYCLONE_INTERFACE:-}
     tty: true
     stdin_open: true
     working_dir: /workspace

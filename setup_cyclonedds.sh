@@ -70,7 +70,7 @@ case "${1:-}" in
         ;;
 esac
 
-# ── Host-only: just apply sysctl ──
+# ── Host-only: apply sysctl + save interface for Docker containers ──
 if [ "$HOST_ONLY" = true ]; then
     echo "=== Host-only: Applying kernel buffer settings ==="
     cat > "$SYSCTL_CONF" <<EOF
@@ -80,9 +80,25 @@ net.ipv4.ipfrag_time=3
 net.ipv4.ipfrag_high_thresh=134217728
 EOF
     sysctl -p "$SYSCTL_CONF"
+
+    # Save interface env for Docker containers
+    IFACE_ENV="/etc/cyclonedds.env"
+    if [ -n "${2:-}" ]; then
+        echo "CYCLONE_INTERFACE=${2}" > "$IFACE_ENV"
+        echo "[INFO] Saved interface '${2}' to $IFACE_ENV"
+        echo "       Use with: docker run --env-file $IFACE_ENV ..."
+    else
+        echo "CYCLONE_INTERFACE=" > "$IFACE_ENV"
+        echo "[INFO] No interface specified, saved autodetermine to $IFACE_ENV"
+    fi
+
     echo ""
     echo "=== Done ==="
-    echo "Kernel settings applied. Now run the script inside Docker with --docker"
+    echo "Kernel settings applied."
+    echo ""
+    echo "For Docker containers, pass the interface with either:"
+    echo "  docker run --env-file /etc/cyclonedds.env ..."
+    echo "  docker run -e CYCLONE_INTERFACE=eno1 ..."
     exit 0
 fi
 
