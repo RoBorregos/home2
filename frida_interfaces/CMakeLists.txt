@@ -65,6 +65,7 @@ set(action_files
   "manipulation/action/PlaceMotion.action"
   "manipulation/action/PourMotion.action"
   "navigation/action/Move.action"
+  "navigation/action/Approach.action"
   "vision/action/DetectPerson.action"
   "vision/action/Xarmmove.action"
 )

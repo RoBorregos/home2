@@ -1,0 +1,19 @@
+# Dynamic approach to furniture/objects using lidar + depth camera
+# The robot moves forward slowly until it reaches a safe minimum distance
+
+# Goal
+float32 min_distance 0.15      # Minimum distance to stop (meters)
+float32 approach_speed 0.08    # Forward speed during approach (m/s)
+float32 max_distance 1.5       # Max distance to attempt approach from (abort if further)
+float32 depth_min_height 0.10  # Min height for depth obstacles (filters ground)
+float32 depth_max_height 1.2   # Max height for depth obstacles
+float32 cone_angle 0.35        # Half-angle of forward detection cone (radians, ~20 deg)
+---
+# Result
+bool success
+float32 final_distance         # Distance to obstacle when stopped
+string message
+---
+# Feedback
+float32 current_distance       # Current distance to nearest obstacle
+string status                  # "approaching", "slowing", "reached", "blocked"

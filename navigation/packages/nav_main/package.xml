@@ -21,6 +21,7 @@
   <depend>sllidar_ros2</depend>
   <depend>tf2_ros</depend>
   <depend>tf2_geometry_msgs</depend>
+  <depend>tf2_sensor_msgs</depend>
   <depend>rtabmap_slam</depend>
   <depend>rtabmap_sync</depend>
   <depend>spatio_temporal_voxel_layer</depend>
