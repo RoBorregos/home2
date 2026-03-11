@@ -17,7 +17,7 @@ Key behaviors:
 """
 
 import math
-import asyncio
+import time
 import numpy as np
 
 import rclpy
@@ -172,7 +172,7 @@ class DynamicApproachNode(Node):
         twist = Twist()
         self.cmd_vel_pub.publish(twist)
 
-    async def approach_callback(self, goal_handle):
+    def approach_callback(self, goal_handle):
         """Execute the dynamic approach."""
         goal = goal_handle.request
         min_dist = goal.min_distance
@@ -241,7 +241,7 @@ class DynamicApproachNode(Node):
                     feedback.current_distance = -1.0
                     feedback.status = 'searching'
                     goal_handle.publish_feedback(feedback)
-                    await self.sleep(rate_period)
+                    time.sleep(rate_period)
                     continue
 
                 stall_count = 0
@@ -315,7 +315,7 @@ class DynamicApproachNode(Node):
                     stall_count = 0
                 prev_distance = current_dist
 
-                await self.sleep(rate_period)
+                time.sleep(rate_period)
 
         except Exception as e:
             self.stop_robot()
@@ -332,10 +332,6 @@ class DynamicApproachNode(Node):
         goal_handle.succeed()
         self.is_approaching = False
         return result
-
-    async def sleep(self, duration):
-        """Async sleep."""
-        await asyncio.sleep(duration)
 
 
 def main(args=None):
