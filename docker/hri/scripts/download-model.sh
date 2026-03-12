@@ -28,3 +28,40 @@ docker exec "$CONTAINER_ID" ollama pull nomic-embed-text
 docker exec "$CONTAINER_ID" ollama create -f /ollama/Modelfile rbrgs
 
 docker stop "$CONTAINER_ID"
+
+# ── DeepFilterNet (noise cancellation) package ───────────────────────────────
+# Install the Python package files into a local folder so `import df` works
+DF_TARGET="../../hri/packages/speech/assets/downloads/DeepFilterNet"
+mkdir -p "$DF_TARGET"
+
+if [ -z "$(ls -A "$DF_TARGET" 2>/dev/null)" ]; then
+    echo "Installing DeepFilterNet package into $DF_TARGET..."
+    DF_TARGET_ABS=$(cd "$DF_TARGET" && pwd)
+
+    # Try to use HRI image (if it exists) to perform the installation locally
+    HRI_IMAGE=$(docker images --format "{{.Repository}}:{{.Tag}}" \
+        | grep "roborregos/home2:hri-" | grep -v "<none>" | head -1)
+
+    if [ -n "$HRI_IMAGE" ]; then
+        echo "Using HRI image to install DeepFilterNet files: $HRI_IMAGE"
+        docker run --rm \
+            -v "$DF_TARGET_ABS":/df_target \
+            "$HRI_IMAGE" \
+            bash -lc "python3 -m pip install --no-deps --target /df_target deepfilternet"
+    else
+        echo "HRI image not found. Falling back to python:3.10-slim (will install package files)..."
+        docker run --rm \
+            -v "$DF_TARGET_ABS":/df_target \
+            python:3.10-slim \
+            bash -lc "pip install --no-deps --target /df_target deepfilternet torch --index-url https://download.pytorch.org/whl/cpu"
+    fi
+
+    # Verify `df` package is present
+    if [ -d "$DF_TARGET/df" ] || [ -f "$DF_TARGET/df/__init__.py" ]; then
+        echo "DeepFilterNet package installed at $DF_TARGET"
+    else
+        echo "Warning: 'df' package not found in $DF_TARGET. Installation may have failed."
+    fi
+else
+    echo "DeepFilterNet package already present at $DF_TARGET. Skipping installation."
+fi
