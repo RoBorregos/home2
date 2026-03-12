@@ -134,7 +134,7 @@ def generate_nodes_for_spawn(context: LaunchContext):
     
     additional_files = []
     additional_files.append(os.path.join(get_package_share_directory("mujoco_ros2_control"), "mjcf", "scene.xml"))
-    #additional_files.append(os.path.join(get_package_share_directory("task_table_mujoco"), "urdf", "task_table.urdf.xacro"))
+    additional_files.append(os.path.join(get_package_share_directory("frida_description"), "urdf","TMR2025", "house.xacro"))
     
     # as this node require a string array
     robot_description_string = robot_description['robot_description'].perform(context)
@@ -147,9 +147,7 @@ def generate_nodes_for_spawn(context: LaunchContext):
             {"robot_descriptions": [robot_description_string]}, # Robot descriptions of actuated robots
             {"input_files": additional_files},        # Files that are added to mujoco but not to ros2_control
             {"output_file": save_xml_file},       # Mujoco output file
-            {"mujoco_files_path": save_xml_folder}, # Mujoco project folder
-            # Floating base related params:
-        
+            {"mujoco_files_path": save_xml_folder} # Mujoco project folder
         ]
     )
     
