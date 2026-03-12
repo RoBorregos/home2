@@ -1073,7 +1073,8 @@ class HRITasks(metaclass=SubtaskMeta):
     def query_location(self, query: str, top_k: int = 1, use_context: bool = False):
         return self.pg.query_location(query, top_k=top_k, use_context=use_context)
 
-    def find_closest(self, documents: list, query: str, top_k: int = 1, threshold: float = 0.0,
+    def find_closest(
+        self, documents: list, query: str, top_k: int = 1, threshold: float = 0.0
     ) -> tuple[Status, FindClosestResult]:
         """
         Method to find the closest item to the query.
@@ -1089,7 +1090,6 @@ class HRITasks(metaclass=SubtaskMeta):
             - list[str]
             - list[tuple[str, embedding]]
         """
-
         emb = self.pg.embedding_model.encode(query)
 
         def cos_sim(x, y):
@@ -1114,7 +1114,6 @@ class HRITasks(metaclass=SubtaskMeta):
             results=[doc[0] for doc in sorted_docs],
             similarities=[doc[1] for doc in sorted_docs],
         )
-
         s = Status.EXECUTION_SUCCESS if len(result.results) > 0 else Status.TARGET_NOT_FOUND
 
         return s, result
