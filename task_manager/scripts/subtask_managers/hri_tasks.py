@@ -970,6 +970,7 @@ class HRITasks(metaclass=SubtaskMeta):
             (Status.EXECUTION_SUCCESS, list[str]) on success, or
             (Status.TIMEOUT, []) if the customer never confirms.
         """
+
         def hear_error(error_message):
             Logger.warn(self.node, error_message)
             self.say("Sorry, I didn't catch that. Could you repeat your order?")
@@ -1008,7 +1009,9 @@ class HRITasks(metaclass=SubtaskMeta):
             raw_items = [item.strip() for item in raw_items_str.split(",") if item.strip()]
 
             if len(raw_items) != 2:
-                hear_error(f"take_order: expected exactly 2 items, got {len(raw_items)} ({raw_items})")
+                hear_error(
+                    f"take_order: expected exactly 2 items, got {len(raw_items)} ({raw_items})"
+                )
                 continue
 
             Logger.info(self.node, f"take_order raw items extracted: {raw_items}")
