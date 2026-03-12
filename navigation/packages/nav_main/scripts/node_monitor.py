@@ -32,7 +32,7 @@ class NodeMonitor(Node):
         self.nodes_to_monitor = self.get_parameter('nodes_to_monitor').value
         self.update_period = self.get_parameter('update_period').value
         
-        self.node_pids = {} 
+        self.node_procs = {} 
         
         # GPU Initialization
         self.gpu_initialized = False
@@ -58,11 +58,13 @@ class NodeMonitor(Node):
                     cmd_str = ' '.join(cmdline)
                     if f"__node:={node_name}" in cmd_str:
                         return proc.info['pid']
+                    if node_name in cmd_str:
+                        return proc.info['pid']
                 
-                if proc.info['name'] == node_name:
+                if proc.info['name'] and proc.info['name'] == node_name:
                     return proc.info['pid']
                 
-                if node_name in proc.info['name']:
+                if proc.info['name'] and node_name in proc.info['name']:
                     return proc.info['pid']
 
             except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
@@ -100,27 +102,32 @@ class NodeMonitor(Node):
             status.name = name
             
  
-            pid = self.node_pids.get(name)
-            if pid is None or not psutil.pid_exists(pid):
+            proc = self.node_procs.get(name)
+            if proc is None or not proc.is_running():
                 pid = self.find_pid(name)
                 if pid:
-                    self.node_pids[name] = pid
+                    try:
+                        proc = psutil.Process(pid)
+                        proc.cpu_percent() # Initialize cpu_percent computation
+                        self.node_procs[name] = proc
+                        self.get_logger().info(f'Monitor attached to {name} (PID: {pid})')
+                    except (psutil.NoSuchProcess, psutil.AccessDenied):
+                        proc = None
             
-            if pid:
+            if proc:
                 try:
-                    p = psutil.Process(pid)
                     # CPU percentage 
-                    status.cpu_usage = p.cpu_percent()
+                    status.cpu_usage = proc.cpu_percent()
                     # Memory percentage 
-                    status.memory_usage = p.memory_percent()
+                    status.memory_usage = proc.memory_percent()
                     # GPU percentage
-                    status.gpu_usage = self.get_gpu_process_info(pid)
+                    status.gpu_usage = self.get_gpu_process_info(proc.pid)
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
                     status.cpu_usage = 0.0
                     status.memory_usage = 0.0
                     status.gpu_usage = 0.0
-                    if name in self.node_pids:
-                        del self.node_pids[name]
+                    if name in self.node_procs:
+                        del self.node_procs[name]
             else:
                 status.cpu_usage = 0.0
                 status.memory_usage = 0.0
