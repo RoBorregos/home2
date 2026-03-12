@@ -6,7 +6,7 @@ services:
       context: ../../..
       dockerfile: docker/hri/dockerfiles/Dockerfile.tts
       args:
-        BASE_IMAGE: roborregos/home2:${ENV_TYPE:-cpu}_base
+        BASE_IMAGE: ${TTS_BASE_IMAGE:-python:3.9-bookworm}
     volumes:
       - ../../../hri/packages/speech/scripts/tts/:/app
       - ../../../hri/packages/speech/assets/downloads/offline_voice/audios/:/app/audios
