@@ -971,9 +971,10 @@ class HRITasks(metaclass=SubtaskMeta):
             (Status.TIMEOUT, []) if the customer never confirms.
         """
 
-        def hear_error(error_message):
+        def hear_error(error_message, attempt):
             Logger.warn(self.node, error_message)
-            self.say("Sorry, I didn't catch that. Could you repeat your order?")
+            if attempt < retries:
+                self.say("Sorry, I didn't catch that. Could you repeat your order?")
 
         for attempt in range(1, retries + 1):
             Logger.info(self.node, f"take_order attempt {attempt}/{retries}")
@@ -982,7 +983,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
             s, transcript, _ = self.hear()
             if s != Status.EXECUTION_SUCCESS or not transcript:
-                hear_error("take_order: nothing heard, retrying")
+                hear_error("take_order: nothing heard, retrying", attempt)
                 continue
 
             Logger.info(self.node, f"take_order transcript: {transcript}")
@@ -1002,7 +1003,7 @@ class HRITasks(metaclass=SubtaskMeta):
             )
 
             if s != Status.EXECUTION_SUCCESS or not raw_items_str:
-                hear_error("take_order: could not extract items, retrying")
+                hear_error("take_order: could not extract items, retrying", attempt)
                 continue
 
             # Parse with a strict target of exactly 2 items.
@@ -1041,7 +1042,8 @@ class HRITasks(metaclass=SubtaskMeta):
                 return Status.EXECUTION_SUCCESS, matched_items
 
             # Customer said no or didn't respond → retry
-            self.say("No problem, let me take your order again.")
+            if attempt < retries:
+                self.say("No problem, let me take your order again.")
 
         Logger.warn(self.node, "take_order: max retries reached, giving up")
         return Status.TIMEOUT, []
