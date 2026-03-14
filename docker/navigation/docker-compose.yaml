@@ -22,6 +22,7 @@ services:
     network_mode: host
     user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
     privileged: true
+    pid: host
     runtime : ${DOCKER_RUNTIME:-runc}
     group_add: 
       - video

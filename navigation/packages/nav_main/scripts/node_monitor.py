@@ -126,7 +126,7 @@ class NodeMonitor(Node):
                     status.memory_usage = 0.0
                     status.gpu_usage = 0.0
                     if name in self.node_procs:
-                        del self.node_procs[name]
+                        self.node_procs.pop(name, None)
             else:
                 status.cpu_usage = 0.0
                 status.memory_usage = 0.0
