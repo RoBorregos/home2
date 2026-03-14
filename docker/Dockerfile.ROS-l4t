@@ -66,6 +66,15 @@ RUN apt-get update -qq && apt-get install -y  build-essential \
     libcanberra-gtk-module libcanberra-gtk3-module \
     python3-pip
 
+# CycloneDDS
+RUN sudo apt-get update -qq && sudo apt-get install -y -qq ros-humble-rmw-cyclonedds-cpp \
+    && sudo rm -rf /var/lib/apt/lists/*
+COPY docker/cyclonedds_setup.sh /usr/local/bin/cyclonedds_setup.sh
+RUN sudo chmod +x /usr/local/bin/cyclonedds_setup.sh && sudo /usr/local/bin/cyclonedds_setup.sh
+ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+ENV CYCLONEDDS_URI=file:///etc/cyclonedds.xml
+RUN echo "source /usr/local/bin/cyclonedds_setup.sh" >> /home/ros/.bashrc
+
 ENV PIP_INDEX_URL=https://pypi.jetson-ai-lab.io/jp6/cu126 \
     PIP_EXTRA_INDEX_URL=https://pypi.org/simple \
     PIP_TRUSTED_HOST=pypi.jetson-ai-lab.io
