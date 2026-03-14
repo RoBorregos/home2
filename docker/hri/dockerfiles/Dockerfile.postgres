@@ -13,3 +13,4 @@ RUN cp /tmp/sql_dumps/*.sql /docker-entrypoint-initdb.d/ 2>/dev/null || true && 
 
 CMD ["postgres"]
 RUN ls
+RUN ls
