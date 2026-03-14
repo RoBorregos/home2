@@ -87,22 +87,6 @@ def launch_setup(context, *args, **kwargs):
         condition=IfCondition(use_dualshock),
         )
 
-    monitor_node = Node(
-        package='nav_main',
-        executable='node_monitor.py',
-        name='node_monitor',
-        parameters=[{
-            'nodes_to_monitor': [
-                'amcl', 
-                'bt_navigator', 
-                'controller_server', 
-                'planner_server', 
-                'map_server',
-                'dashgo_driver',
-                'rplidar_node'
-            ]
-        }]
-    )
 
     if(publish_urdf.perform(context) == 'true' and use_sim.perform(context) == 'false'):
         return_launch = [
@@ -112,7 +96,6 @@ def launch_setup(context, *args, **kwargs):
         joint_state,
         laser_launch,
         dualshock_launch,
-        monitor_node,
         
     ]
     else:
@@ -121,7 +104,6 @@ def launch_setup(context, *args, **kwargs):
         ekf_launch,
         laser_launch,
         dualshock_launch,
-        monitor_node,
         
     ]
     return return_launch
