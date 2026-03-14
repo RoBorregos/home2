@@ -13,6 +13,12 @@ try:
 except ImportError:
     HAS_PYNVML = False
 
+try:
+    from jtop import jtop
+    HAS_JTOP = True
+except ImportError:
+    HAS_JTOP = False
+
 class NodeMonitor(Node):
     def __init__(self):
         super().__init__('node_monitor')
@@ -36,71 +42,97 @@ class NodeMonitor(Node):
         
         # GPU Initialization
         self.gpu_initialized = False
+        self.is_jetson = os.path.exists('/sys/module/tegra_fuse') or os.path.exists('/proc/device-tree/model')
+        
         if HAS_PYNVML:
             try:
                 nvmlInit()
                 self.gpu_initialized = True
-            except NVMLError as e:
-                self.get_logger().warning(f"Failed to initialize NVML: {e}")
+            except: pass
+
+        self.jtop_controller = None
+        if self.is_jetson and HAS_JTOP:
+            try:
+                self.jtop_controller = jtop()
+                self.jtop_controller.start()
+                self.get_logger().info("jtop (jetson-stats) initialized for GPU monitoring")
             except Exception as e:
-                self.get_logger().warning(f"Unexpected error initializing NVML: {e}")
+                self.get_logger().warning(f"Failed to start jtop: {e}")
         
         self.publisher = self.create_publisher(MonitorReport, 'system/node_monitor', 10)
-        
         self.timer = self.create_timer(self.update_period, self.timer_callback)
-        
-        self.get_logger().info(f"Node Monitor started. Monitoring: {self.nodes_to_monitor}")
+        self.get_logger().info(f"Node Monitor started (Platform: {'Jetson' if self.is_jetson else 'PC'}). Monitoring: {self.nodes_to_monitor}")
 
     def find_pid(self, node_name):
+        is_namespaced = node_name.startswith('/')
+        if is_namespaced:
+            parts = node_name.rsplit('/', 1)
+            ns = parts[0] if parts[0] else '/'
+            base_name = parts[1]
+
         for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
             try:
                 cmdline = proc.info['cmdline']
                 if cmdline:
                     cmd_str = ' '.join(cmdline)
-                    if f"__node:={node_name}" in cmd_str:
-                        return proc.info['pid']
-                    if node_name in cmd_str:
-                        return proc.info['pid']
+                    if is_namespaced:
+                        if f"__node:={base_name}" in cmd_str and f"__ns:={ns}" in cmd_str:
+                            return proc.info['pid']
+                    else:
+                        if f"__node:={node_name}" in cmd_str:
+                            return proc.info['pid']
+                        if node_name in cmd_str:
+                            return proc.info['pid']
                 
-                if proc.info['name'] and proc.info['name'] == node_name:
+                if proc.info['name'] and (proc.info['name'] == node_name or node_name in proc.info['name']):
                     return proc.info['pid']
-                
-                if proc.info['name'] and node_name in proc.info['name']:
-                    return proc.info['pid']
-
             except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                 continue
         return None
 
     def get_gpu_process_info(self, pid):
-        if not self.gpu_initialized:
-            return 0.0
-        
-        try:
-            device_count = nvmlDeviceGetCount()
-            total_gpu_mem_pct = 0.0
-            for i in range(device_count):
-                handle = nvmlDeviceGetHandleByIndex(i)
-                procs = nvmlDeviceGetComputeRunningProcesses(handle)
-                for p in procs:
-                    if p.pid == pid:
-                        mem = p.usedGpuMemory
-                        info = nvmlDeviceGetMemoryInfo(handle)
-                        total_gpu_mem_pct += (mem / info.total) * 100.0
-            return total_gpu_mem_pct
-        except Exception:
-            return 0.0
+        if self.jtop_controller and self.jtop_controller.ok():
+            try:
+                for p in self.jtop_controller.processes:
+                    if p[0] == pid: 
+                        return float(self.jtop_controller.gpu['val']) if self.jtop_controller.gpu['val'] else 0.0
+            except: pass
+
+        if self.gpu_initialized:
+            try:
+                device_count = nvmlDeviceGetCount()
+                for i in range(device_count):
+                    handle = nvmlDeviceGetHandleByIndex(i)
+                    all_procs = []
+                    try: all_procs.extend(nvmlDeviceGetComputeRunningProcesses(handle))
+                    except: pass
+                    try: all_procs.extend(nvmlDeviceGetGraphicsRunningProcesses(handle))
+                    except: pass
+                    for p in all_procs:
+                        if hasattr(p, 'pid') and p.pid == pid:
+                            mem_used = getattr(p, 'usedGpuMemory', 0)
+                            if mem_used > 0:
+                                info = nvmlDeviceGetMemoryInfo(handle)
+                                return (mem_used / info.total) * 100.0
+            except: pass
+
+        if self.is_jetson:
+            try:
+                with open('/sys/devices/gpu.0/load', 'r') as f:
+                    return float(f.read().strip()) / 10.0
+            except: pass
+            
+        return 0.0
 
     def timer_callback(self):
         self.nodes_to_monitor = self.get_parameter('nodes_to_monitor').value
-        
         report = MonitorReport()
+        active_node_found = False
         
         for name in self.nodes_to_monitor:
             status = NodeStatus()
             status.name = name
             
- 
             proc = self.node_procs.get(name)
             if proc is None or not proc.is_running():
                 pid = self.find_pid(name)
@@ -114,8 +146,8 @@ class NodeMonitor(Node):
                         proc = None
             
             if proc:
+                active_node_found = True
                 try:
-
                     status.cpu_usage = proc.cpu_percent()
                     status.memory_usage = proc.memory_percent()
                     status.gpu_usage = self.get_gpu_process_info(proc.pid)
@@ -123,8 +155,7 @@ class NodeMonitor(Node):
                     status.cpu_usage = 0.0
                     status.memory_usage = 0.0
                     status.gpu_usage = 0.0
-                    if name in self.node_procs:
-                        del self.node_procs[name]
+                    self.node_procs.pop(name, None)
             else:
                 status.cpu_usage = 0.0
                 status.memory_usage = 0.0
@@ -132,7 +163,8 @@ class NodeMonitor(Node):
             
             report.nodes.append(status)
             
-        self.publisher.publish(report)
+        if active_node_found:
+            self.publisher.publish(report)
 
 def main(args=None):
     rclpy.init(args=args)
@@ -143,10 +175,11 @@ def main(args=None):
         pass
     finally:
         if node.gpu_initialized:
-            try:
-                nvmlShutdown()
-            except:
-                pass
+            try: nvmlShutdown()
+            except: pass
+        if node.jtop_controller:
+            try: node.jtop_controller.close()
+            except: pass
         node.destroy_node()
         rclpy.shutdown()
 
