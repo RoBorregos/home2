@@ -194,6 +194,7 @@ class HRITasks(metaclass=SubtaskMeta):
         self.answers_publisher = self.node.create_publisher(String, ANSWER_PUBLISHER, 10)
         self.questions_publisher = self.node.create_publisher(String, DISPLAY_PUBLISHER, 10)
         self.pg = PostgresAdapter()
+        self.items = self.get_items_embeddings()
         self.llm_wrapper_service = self.node.create_client(LLMWrapper, LLM_WRAPPER_SERVICE)
         self.categorize_service = self.node.create_client(CategorizeShelves, CATEGORIZE_SERVICE)
         self.keyword_client = self.node.create_subscription(
@@ -252,6 +253,7 @@ class HRITasks(metaclass=SubtaskMeta):
             Task.HELP_ME_CARRY: all_services,
             Task.STORING_GROCERIES: all_services,
             Task.DEMO: all_services,
+            Task.RESTAURANT: all_services,
         }
 
         self.hand = HRIHand(self)
@@ -955,6 +957,99 @@ class HRITasks(metaclass=SubtaskMeta):
             Logger.warn(self.node, f"RAG service failed: {result.response}")
             return Status.EXECUTION_ERROR, result.response, result.score
 
+    # Restaurant
+    def take_order(
+        self,
+        retries: int = 3,
+    ) -> tuple[Status, list[str]]:
+        """Ask the customer for their order and return the matched menu items.
+        Flow per attempt:
+        1. Ask and listen to the customer.
+        2. Extract exactly two ordered items from the transcript.
+        3. Match each extracted item to the closest menu entry.
+        4. Confirm the full order with the customer.
+        Returns:
+            (Status.EXECUTION_SUCCESS, list[str]) on success, or
+            (Status.TIMEOUT, []) if the customer never confirms.
+        """
+
+        def hear_error(error_message, attempt):
+            Logger.warn(self.node, error_message)
+            if attempt < retries:
+                self.say("Sorry, I didn't catch that. Could you repeat your order?")
+
+        for attempt in range(1, retries + 1):
+            Logger.info(self.node, f"take_order attempt {attempt}/{retries}")
+
+            self.say("What would you like to order?")
+
+            s, transcript, _ = self.hear()
+            if s != Status.EXECUTION_SUCCESS or not transcript:
+                hear_error("take_order: nothing heard, retrying", attempt)
+                continue
+
+            Logger.info(self.node, f"take_order transcript: {transcript}")
+
+            # Extract ordered items from the transcript.
+            context = (
+                "From the transcript, extract exactly two ordered menu items.\n"
+                "Only choose items from the menu list.\n"
+                "Return them in this format: item1, item2\n"
+                "Do not output anything else.\n"
+                f"Menu items: {', '.join(text for text, _ in self.items)}"
+            )
+            s, raw_items_str = self.extract_data(
+                query="LLM_ordered_items",
+                complete_text=transcript,
+                context=context,
+            )
+
+            if s != Status.EXECUTION_SUCCESS or not raw_items_str:
+                hear_error("take_order: could not extract items, retrying", attempt)
+                continue
+
+            # Parse with a strict target of exactly 2 items.
+            raw_items = [item.strip() for item in raw_items_str.split(",") if item.strip()]
+
+            if len(raw_items) != 2:
+                hear_error(
+                    f"take_order: expected exactly 2 items, got {len(raw_items)} ({raw_items})"
+                )
+                continue
+
+            Logger.info(self.node, f"take_order raw items extracted: {raw_items}")
+
+            # Map each extracted item to the closest menu entry via embeddings
+            matched_items = []
+            for raw_item in raw_items:
+                s_match, closest = self.find_closest(self.items, raw_item, top_k=1)
+                if s_match == Status.EXECUTION_SUCCESS and closest.results:
+                    matched = closest.results[0]
+                else:
+                    matched = raw_item
+                matched_items.append(matched)
+
+            Logger.info(self.node, f"take_order matched items: {matched_items}")
+
+            # 6. Confirm full order with the customer
+            item_1, item_2 = matched_items[0], matched_items[1]
+            s_confirm, answer = self.confirm(
+                f"Your order is {item_1}, and {item_2}. Is that correct?",
+                use_hotwords=False,
+                retries=2,
+            )
+
+            if s_confirm == Status.EXECUTION_SUCCESS and answer == "yes":
+                Logger.info(self.node, f"take_order confirmed: {matched_items}")
+                return Status.EXECUTION_SUCCESS, matched_items
+
+            # Customer said no or didn't respond → retry
+            if attempt < retries:
+                self.say("No problem, let me take your order again.")
+
+        Logger.warn(self.node, "take_order: max retries reached, giving up")
+        return Status.TIMEOUT, []
+
     # Embeddings services
     def add_command_history(self, command: InterpreterAvailableCommands, result, status):
         self.pg.add_command(
@@ -998,14 +1093,28 @@ class HRITasks(metaclass=SubtaskMeta):
         Returns:
             Status: the status of the execution
             FindClosestResult: the results and similarity scores of the query
+        documents can be:
+            - list[str]
+            - list[tuple[str, embedding]]
         """
         emb = self.pg.embedding_model.encode(query)
 
         def cos_sim(x, y):
             return np.dot(x, y) / (np.linalg.norm(x) * np.linalg.norm(y))
 
-        docs = [(doc, cos_sim(self.pg.embedding_model.encode(doc), emb)) for doc in documents]
-        docs = [doc for doc in docs if doc[1] >= threshold]
+        # Case 1: documents already have embeddings
+        if len(documents) > 0 and isinstance(documents[0], tuple):
+            docs = [
+                (text, cos_sim(embedding, emb))
+                for text, embedding in documents
+                if cos_sim(embedding, emb) >= threshold
+            ]
+
+        # Case 2: documents are just text
+        else:
+            docs = [(doc, cos_sim(self.pg.embedding_model.encode(doc), emb)) for doc in documents]
+            docs = [doc for doc in docs if doc[1] >= threshold]
+
         sorted_docs = sorted(docs, key=lambda x: x[1], reverse=True)[:top_k]
 
         result = FindClosestResult(
@@ -1040,6 +1149,16 @@ class HRITasks(metaclass=SubtaskMeta):
         Logger.info(self.node, f"FIND CLOSEST RAW RESULTS: {Results}")
 
         return Results
+
+    def get_items_embeddings(self):
+        """
+        Method to get all items with their embeddings from the database.
+        Returns:
+            list[tuple[str, np.ndarray]]: List of tuples containing item text and their embeddings.
+        """
+        items = self.pg.get_all_items()
+        documents = [(item.text, item.embedding) for item in items]
+        return documents
 
     # TODO: Make async
     @service_check("llm_wrapper_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
