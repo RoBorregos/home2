@@ -16,6 +16,7 @@ OPEN_DISPLAY=""
 DOWNLOAD_MODEL=""
 REGENERATE_DB=""
 UPLOAD_IMAGE=""
+CLEAN=""
 
 COMPOSE="compose/docker-compose-${ENV_TYPE}.yml"
 
@@ -57,6 +58,9 @@ for arg in "${ARGS[@]}"; do
     "--upload-image")
         UPLOAD_IMAGE="true"
         ;;
+    "--clean")
+        CLEAN="true"
+        ;;
   esac
 done
 
@@ -80,6 +84,12 @@ else
 fi
 
 [ "$DOWNLOAD_MODEL" == "true" ] && bash ./scripts/download-model.sh
+
+# Clean build artifacts if requested
+if [ "$CLEAN" == "true" ]; then
+  echo "Cleaning build/log/install directories..."
+  rm -rf build log install
+fi
 
 # Create dirs with current user to avoid permission problems
 mkdir -p install build log \

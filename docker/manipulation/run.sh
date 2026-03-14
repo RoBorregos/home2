@@ -12,6 +12,7 @@ DETACHED=""
 BUILD=""
 BUILD_IMAGE=""
 UPLOAD_IMAGE=""
+CLEAN=""
 
 COMPOSE="docker-compose-${ENV_TYPE}.yaml"
 
@@ -41,6 +42,9 @@ for arg in "${ARGS[@]}"; do
     "--upload-image")
         UPLOAD_IMAGE="true"
         ;;
+    "--clean")
+        CLEAN="true"
+        ;;
     esac
 done
 
@@ -58,6 +62,12 @@ add_or_update_variable .env "CYCLONE_INTERFACE" "${CYCLONE_INTERFACE:-}"
 # Export user
 add_or_update_variable .env "LOCAL_USER_ID" "$(id -u)"
 add_or_update_variable .env "LOCAL_GROUP_ID" "$(id -g)"
+
+# Clean build artifacts if requested
+if [ "$CLEAN" == "true" ]; then
+  echo "Cleaning build/log/install directories..."
+  rm -rf build log install
+fi
 
 # Create dirs with current user to avoid permission problems
 mkdir -p install build log

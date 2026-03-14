@@ -12,6 +12,7 @@ DETACHED=""
 BUILD=""
 BUILD_IMAGE=""
 UPLOAD_IMAGE=""
+CLEAN=""
 
 # Parse arguments
 for arg in "${ARGS[@]}"; do
@@ -38,6 +39,9 @@ for arg in "${ARGS[@]}"; do
         ;;
     "--upload-image")
         UPLOAD_IMAGE="true"
+        ;;
+    "--clean")
+        CLEAN="true"
         ;;
     esac
 done
@@ -69,6 +73,12 @@ case $ENV_TYPE in
       add_or_update_variable .env "DISPLAY" ":0"
       ;;
 esac
+
+# Clean build artifacts if requested
+if [ "$CLEAN" == "true" ]; then
+  echo "Cleaning build/log/install directories..."
+  rm -rf build log install
+fi
 
 # Create dirs with current user to avoid permission problems
 mkdir -p install build log
