@@ -93,12 +93,14 @@ class NodeMonitor(Node):
     def get_gpu_process_info(self, pid):
         if self.jtop_controller and self.jtop_controller.ok():
             try:
-                for p in self.jtop_controller.processes:
+                process_list = self.jtop_controller.processes
+                for p in process_list:
                     if p[0] == pid: 
-                        return float(self.jtop_controller.gpu['val']) if self.jtop_controller.gpu['val'] else 0.0
-            except: pass
+                        load = self.jtop_controller.gpu.get('val', 0.0)
+                        return float(load) if load else 0.0
+            except Exception as e:
+                pass
 
-        if self.gpu_initialized:
             try:
                 device_count = nvmlDeviceGetCount()
                 for i in range(device_count):
