@@ -36,19 +36,14 @@ class NodeMonitor(Node):
         
         # GPU Initialization
         self.gpu_initialized = False
-        self.is_jetson = os.path.exists('/sys/module/tegra_fuse') or os.path.exists('/proc/device-tree/model')
-        
         if HAS_PYNVML:
             try:
                 nvmlInit()
                 self.gpu_initialized = True
-                self.get_logger().info(f"NVML Initialized (Platform: {'Jetson' if self.is_jetson else 'PC/Generic'})")
             except NVMLError as e:
-                self.get_logger().warning(f"Failed to initialize NVML: {e}. GPU monitoring will be disabled.")
+                self.get_logger().warning(f"Failed to initialize NVML: {e}")
             except Exception as e:
                 self.get_logger().warning(f"Unexpected error initializing NVML: {e}")
-        else:
-            self.get_logger().warning("pynvml not installed. Run 'pip3 install nvidia-ml-py' to enable GPU monitoring.")
         
         self.publisher = self.create_publisher(MonitorReport, 'system/node_monitor', 10)
         
@@ -57,26 +52,15 @@ class NodeMonitor(Node):
         self.get_logger().info(f"Node Monitor started. Monitoring: {self.nodes_to_monitor}")
 
     def find_pid(self, node_name):
-        is_namespaced = node_name.startswith('/')
-        if is_namespaced:
-            parts = node_name.rsplit('/', 1)
-            ns = parts[0] if parts[0] else '/'
-            base_name = parts[1]
-
         for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
             try:
                 cmdline = proc.info['cmdline']
                 if cmdline:
                     cmd_str = ' '.join(cmdline)
-                    
-                    if is_namespaced:
-                        if f"__node:={base_name}" in cmd_str and f"__ns:={ns}" in cmd_str:
-                            return proc.info['pid']
-                    else:
-                        if f"__node:={node_name}" in cmd_str:
-                            return proc.info['pid']
-                        if node_name in cmd_str:
-                            return proc.info['pid']
+                    if f"__node:={node_name}" in cmd_str:
+                        return proc.info['pid']
+                    if node_name in cmd_str:
+                        return proc.info['pid']
                 
                 if proc.info['name'] and proc.info['name'] == node_name:
                     return proc.info['pid']
@@ -97,29 +81,14 @@ class NodeMonitor(Node):
             total_gpu_mem_pct = 0.0
             for i in range(device_count):
                 handle = nvmlDeviceGetHandleByIndex(i)
-                all_procs = []
-                try:
-                    procs = nvmlDeviceGetComputeRunningProcesses(handle)
-                    if procs:
-                        all_procs.extend(procs)
-                except Exception: pass
-                
-                try:
-                    gprocs = nvmlDeviceGetGraphicsRunningProcesses(handle)
-                    if gprocs:
-                        all_procs.extend(gprocs)
-                except Exception: pass
-                
-                for p in all_procs:
-                    if hasattr(p, 'pid') and p.pid == pid:
-                        mem_used = getattr(p, 'usedGpuMemory', 0)
-                        if mem_used > 0:
-                            info = nvmlDeviceGetMemoryInfo(handle)
-                            total_gpu_mem_pct += (mem_used / info.total) * 100.0
-                        
+                procs = nvmlDeviceGetComputeRunningProcesses(handle)
+                for p in procs:
+                    if p.pid == pid:
+                        mem = p.usedGpuMemory
+                        info = nvmlDeviceGetMemoryInfo(handle)
+                        total_gpu_mem_pct += (mem / info.total) * 100.0
             return total_gpu_mem_pct
-        except Exception as e:
-            self.get_logger().debug(f"GPU Info Error: {e}") 
+        except Exception:
             return 0.0
 
     def timer_callback(self):
@@ -127,7 +96,6 @@ class NodeMonitor(Node):
         
         report = MonitorReport()
         
-        active_node_found = False
         for name in self.nodes_to_monitor:
             status = NodeStatus()
             status.name = name
@@ -146,7 +114,6 @@ class NodeMonitor(Node):
                         proc = None
             
             if proc:
-                active_node_found = True
                 try:
 
                     status.cpu_usage = proc.cpu_percent()
@@ -157,7 +124,7 @@ class NodeMonitor(Node):
                     status.memory_usage = 0.0
                     status.gpu_usage = 0.0
                     if name in self.node_procs:
-                        self.node_procs.pop(name, None)
+                        del self.node_procs[name]
             else:
                 status.cpu_usage = 0.0
                 status.memory_usage = 0.0
@@ -165,8 +132,7 @@ class NodeMonitor(Node):
             
             report.nodes.append(status)
             
-        if active_node_found:
-            self.publisher.publish(report)
+        self.publisher.publish(report)
 
 def main(args=None):
     rclpy.init(args=args)
