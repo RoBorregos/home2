@@ -8,7 +8,7 @@ import os
 import subprocess
 
 try:
-    import pynvml
+    from pynvml import *
     HAS_PYNVML = True
 except ImportError:
     HAS_PYNVML = False
@@ -38,10 +38,12 @@ class NodeMonitor(Node):
         self.gpu_initialized = False
         if HAS_PYNVML:
             try:
-                pynvml.nvmlInit()
+                nvmlInit()
                 self.gpu_initialized = True
-            except Exception as e:
+            except NVMLError as e:
                 self.get_logger().warning(f"Failed to initialize NVML: {e}")
+            except Exception as e:
+                self.get_logger().warning(f"Unexpected error initializing NVML: {e}")
         
         self.publisher = self.create_publisher(MonitorReport, 'system/node_monitor', 10)
         
@@ -75,15 +77,15 @@ class NodeMonitor(Node):
             return 0.0
         
         try:
-            device_count = pynvml.nvmlDeviceGetCount()
+            device_count = nvmlDeviceGetCount()
             total_gpu_mem_pct = 0.0
             for i in range(device_count):
-                handle = pynvml.nvmlDeviceGetHandleByIndex(i)
-                procs = pynvml.nvmlDeviceGetComputeRunningProcesses(handle)
+                handle = nvmlDeviceGetHandleByIndex(i)
+                procs = nvmlDeviceGetComputeRunningProcesses(handle)
                 for p in procs:
                     if p.pid == pid:
                         mem = p.usedGpuMemory
-                        info = pynvml.nvmlDeviceGetMemoryInfo(handle)
+                        info = nvmlDeviceGetMemoryInfo(handle)
                         total_gpu_mem_pct += (mem / info.total) * 100.0
             return total_gpu_mem_pct
         except Exception:
@@ -142,7 +144,7 @@ def main(args=None):
     finally:
         if node.gpu_initialized:
             try:
-                pynvml.nvmlShutdown()
+                nvmlShutdown()
             except:
                 pass
         node.destroy_node()
