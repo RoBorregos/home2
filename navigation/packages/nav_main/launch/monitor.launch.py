@@ -9,9 +9,8 @@ def generate_launch_description():
             name='node_monitor',
             parameters=[{
                 'nodes_to_monitor': [
-                    'amcl', 
-                    'bt_navigator', 
-                    'controller_server', 
+                    'flat_grasp_estimator', 
+                    '/zed/zed_container', 
                     'planner_server', 
                     'map_server',
                     'dashgo_driver',
