@@ -63,7 +63,7 @@ class HearStreaming(Node):
         )
 
         self.default_initial_prompt = (
-            self.declare_parameter("DEFAULT_HOTWORDS", "")
+            self.declare_parameter("DEFAULT_INITIAL_PROMPT", "")
             .get_parameter_value()
             .string_value
         )
