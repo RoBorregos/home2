@@ -89,6 +89,12 @@ mkdir -p install build log \
 # Reset .env
 echo "" > compose/.env
 
+# CycloneDDS interface from host
+if [ -f /etc/cyclonedds.env ]; then
+    source /etc/cyclonedds.env
+fi
+add_or_update_variable compose/.env "CYCLONE_INTERFACE" "${CYCLONE_INTERFACE:-}"
+
 # Export user
 add_or_update_variable compose/.env "LOCAL_USER_ID" "$(id -u)"
 add_or_update_variable compose/.env "LOCAL_GROUP_ID" "$(id -g)"
