@@ -52,15 +52,26 @@ class NodeMonitor(Node):
         self.get_logger().info(f"Node Monitor started. Monitoring: {self.nodes_to_monitor}")
 
     def find_pid(self, node_name):
+        is_namespaced = node_name.startswith('/')
+        if is_namespaced:
+            parts = node_name.rsplit('/', 1)
+            ns = parts[0] if parts[0] else '/'
+            base_name = parts[1]
+
         for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
             try:
                 cmdline = proc.info['cmdline']
                 if cmdline:
                     cmd_str = ' '.join(cmdline)
-                    if f"__node:={node_name}" in cmd_str:
-                        return proc.info['pid']
-                    if node_name in cmd_str:
-                        return proc.info['pid']
+                    
+                    if is_namespaced:
+                        if f"__node:={base_name}" in cmd_str and f"__ns:={ns}" in cmd_str:
+                            return proc.info['pid']
+                    else:
+                        if f"__node:={node_name}" in cmd_str:
+                            return proc.info['pid']
+                        if node_name in cmd_str:
+                            return proc.info['pid']
                 
                 if proc.info['name'] and proc.info['name'] == node_name:
                     return proc.info['pid']
