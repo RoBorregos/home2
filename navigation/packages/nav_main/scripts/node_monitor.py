@@ -95,10 +95,23 @@ class NodeMonitor(Node):
             try:
                 process_list = self.jtop_controller.processes
                 for p in process_list:
-                    if p[0] == pid: 
-                        load = self.jtop_controller.gpu.get('val', 0.0)
-                        return float(load) if load else 0.0
-            except Exception as e:
+                    if p[0] == pid:
+                        if len(p) >= 8:
+                            gpu_val = p[7]
+                            if isinstance(gpu_val, (int, float)):
+                                return float(gpu_val)
+                
+                gpu_data = self.jtop_controller.gpu
+                if isinstance(gpu_data, dict):
+                    if 'val' in gpu_data:
+                        return float(gpu_data['val'])
+                    if 'load' in gpu_data:
+                        return float(gpu_data['load'])
+                    for key in ['GR3D', 'ga10b', 'gv11b']:
+                        if key in gpu_data and isinstance(gpu_data[key], dict):
+                            if 'load' in gpu_data[key]:
+                                return float(gpu_data[key]['load'])
+            except Exception:
                 pass
 
             try:
