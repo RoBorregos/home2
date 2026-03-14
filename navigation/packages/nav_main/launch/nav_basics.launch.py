@@ -87,7 +87,6 @@ def launch_setup(context, *args, **kwargs):
         condition=IfCondition(use_dualshock),
         )
 
-
     if(publish_urdf.perform(context) == 'true' and use_sim.perform(context) == 'false'):
         return_launch = [
         dashgo_driver,
