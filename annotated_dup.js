@@ -205,6 +205,9 @@ var annotated_dup =
     [ "new_tracker", "namespacenew__tracker.html", [
       [ "SingleTracker", "classnew__tracker_1_1SingleTracker.html", "classnew__tracker_1_1SingleTracker" ]
     ] ],
+    [ "node_monitor", "namespacenode__monitor.html", [
+      [ "NodeMonitor", "classnode__monitor_1_1NodeMonitor.html", "classnode__monitor_1_1NodeMonitor" ]
+    ] ],
     [ "object_detector_node", "namespaceobject__detector__node.html", [
       [ "NodeParams", "classobject__detector__node_1_1NodeParams.html", null ],
       [ "object_detector_node", "classobject__detector__node_1_1object__detector__node.html", "classobject__detector__node_1_1object__detector__node" ]

@@ -173,6 +173,7 @@ var hierarchy =
       [ "nav_test.TestTaskManager", "classnav__test_1_1TestTaskManager.html", null ],
       [ "nav_ui.NavRosNode", "classnav__ui_1_1NavRosNode.html", null ],
       [ "new_tracker.SingleTracker", "classnew__tracker_1_1SingleTracker.html", null ],
+      [ "node_monitor.NodeMonitor", "classnode__monitor_1_1NodeMonitor.html", null ],
       [ "old_tracker.SingleTracker", "classold__tracker_1_1SingleTracker.html", null ],
       [ "person_in_map.PersonLocation", "classperson__in__map_1_1PersonLocation.html", null ],
       [ "pick_and_place.fix_position_to_plane.FixPositionToPlane", "classpick__and__place_1_1fix__position__to__plane_1_1FixPositionToPlane.html", null ],

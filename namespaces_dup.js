@@ -166,6 +166,9 @@ var namespaces_dup =
       [ "config", "namespacemocked.html#a8518ed6ea6c53ce63671b70b1acd18a9", null ]
     ] ],
     [ "model", "namespacemodel.html", "namespacemodel" ],
+    [ "monitor", "namespacemonitor.html", [
+      [ "generate_launch_description", "namespacemonitor.html#a89ffacc2739b9bf0e8a294482eeff9a1", null ]
+    ] ],
     [ "moondream_launch", "namespacemoondream__launch.html", null ],
     [ "moondream_lib", "namespacemoondream__lib.html", "namespacemoondream__lib" ],
     [ "moondream_node", "namespacemoondream__node.html", "namespacemoondream__node" ],
@@ -199,6 +202,7 @@ var namespaces_dup =
       [ "launch_function", "namespacenavigation__composition.html#aac63296331bdd59683a72fbb12db486b", null ]
     ] ],
     [ "new_tracker", "namespacenew__tracker.html", "namespacenew__tracker" ],
+    [ "node_monitor", "namespacenode__monitor.html", "namespacenode__monitor" ],
     [ "object_detector_combined", "namespaceobject__detector__combined.html", [
       [ "generate_launch_description", "namespaceobject__detector__combined.html#a89d204316b51e6caf017cd1f6253e538", null ]
     ] ],
