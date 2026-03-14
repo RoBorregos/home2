@@ -1,37 +1,41 @@
 services:
-  vision:
-    container_name: home2-vision
+  navigation:
+    container_name: home2-navigation
     build:
       context: ../..
-      dockerfile: ${DOCKERFILE:-docker/vision/Dockerfile.cpu}
+      dockerfile: ${DOCKERFILE:-docker/navigation/Dockerfile.l4t}
       args:
-        BASE_IMAGE: ${BASE_IMAGE:-roborregos/home2:cpu_base} 
-    image: ${IMAGE_NAME:-roborregos/home2:vision-cpu}
-    profiles: ["vision"]
+        BASE_IMAGE: ${BASE_IMAGE:-roborregos/home2:l4t_base}
+    image: ${IMAGE_NAME:-roborregos/home2:navigation-l4t}
     volumes:
-      - ../../:/workspace
+      - ../../:/workspace/src
       - /dev:/dev
       - /dev/video0:/dev/video0
       - /tmp:/tmp
       - /tmp/.X11-unix:/tmp/.X11-unix
       - ./build:/workspace/build
       - ./install:/workspace/install
-      - ./log:/workspace/log
       - ../frida_interfaces_cache:/workspace/frida_interfaces_cache
+      - ./log:/workspace/log
+      - $HOME/.Xauthority:/home/ros/.Xauthority:rw
+      - /run/jtop.sock:/run/jtop.sock
     network_mode: host
-    user: 1000:1000
+    user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
     privileged: true
-    runtime: ${DOCKER_RUNTIME:-}
-    group_add: 
+    pid: host
+    runtime: nvidia
+    group_add:
       - video
     environment:
-      DISPLAY: ${DISPLAY}
+      DISPLAY: ${DISPLAY:-:0}
       TERM: xterm-256color
       QT_X11_NO_MITSHM: 1
       QT_DEBUG_PLUGINS: 1
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: all
       CYCLONE_INTERFACE: ${CYCLONE_INTERFACE:-}
     tty: true
-    stdin_open: true    
+    stdin_open: true
     working_dir: /workspace
     command: >
       bash -c "${COMMAND:-/bin/bash}"
