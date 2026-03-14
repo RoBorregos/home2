@@ -11,12 +11,3 @@ RUN apt-get update && apt-get install -y \
 
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install requests==2.32.5
-
-# CycloneDDS
-RUN sudo apt-get update -qq && sudo apt-get install -y -qq ros-humble-rmw-cyclonedds-cpp \
-    && sudo rm -rf /var/lib/apt/lists/*
-COPY docker/cyclonedds_setup.sh /usr/local/bin/cyclonedds_setup.sh
-RUN sudo chmod +x /usr/local/bin/cyclonedds_setup.sh && sudo /usr/local/bin/cyclonedds_setup.sh
-ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
-ENV CYCLONEDDS_URI=file:///etc/cyclonedds.xml
-RUN echo "source /usr/local/bin/cyclonedds_setup.sh" >> /home/ros/.bashrc
