@@ -7,10 +7,9 @@ Node to move to a place.
 import json
 import os
 
-from frida_constants.frida_constants.navigation_constants import AREAS_SERVICE
 import rclpy
 from ament_index_python.packages import get_package_share_directory
-from frida_constants.navigation_constants import FOLLOWING_SERVICE, GOAL_TOPIC
+from frida_constants.navigation_constants import FOLLOWING_SERVICE, GOAL_TOPIC, AREAS_SERVICE
 from frida_interfaces.srv import (
     LaserGet,
     PointTransformation,
@@ -173,7 +172,7 @@ class NavigationTasks:
 
         else:
             Logger.info(self.node, "Map Areas dumped Succesfully")
-            return json.load(future.result().areas)
+            return json.loads(str(future.result().areas))
 
     @mockable(return_value=True, delay=10)
     @service_check("pause_nav", False, timeout=3)
@@ -217,7 +216,9 @@ class NavigationTasks:
         """
         future = Future()
         try:
+            Logger.info(self.node, "CALLING FUNCTION")
             data = self.areas_dump()
+            Logger.info(self.node, "END FUNCTION")
             if sublocation != "":
                 coordinates = data[location][sublocation]
             else:

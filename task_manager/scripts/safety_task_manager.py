@@ -21,7 +21,7 @@ class SafetyTaskManager(Node):
         super().__init__("safety_task_node")
         Logger.info(self, "Initiating safety task manager")
         self.subtask_manager = SubtaskManager(
-            self, task=Task.SAFETY_CHECK, mock_areas=["hri", "nav", "manipulation", "vision"]
+            self, task=Task.SAFETY_CHECK,
         )
         self.current_state = SafetyTaskManager.TaskStates.WAIT_DOOR_OPEN
         self.running_task = True
@@ -84,7 +84,7 @@ class SafetyTaskManager(Node):
 
         if self.current_state == SafetyTaskManager.TaskStates.GO_TO_EXIT:
             self.subtask_manager.hri.say("I will exit now")
-            self.navigate_to("exit")
+            self.navigate_to("end_area")
             self.current_state = SafetyTaskManager.TaskStates.END
 
         if self.current_state == SafetyTaskManager.TaskStates.END:
