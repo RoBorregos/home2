@@ -96,6 +96,7 @@ class NodeMonitor(Node):
         
         report = MonitorReport()
         
+        active_node_found = False
         for name in self.nodes_to_monitor:
             status = NodeStatus()
             status.name = name
@@ -114,6 +115,7 @@ class NodeMonitor(Node):
                         proc = None
             
             if proc:
+                active_node_found = True
                 try:
 
                     status.cpu_usage = proc.cpu_percent()
@@ -132,7 +134,8 @@ class NodeMonitor(Node):
             
             report.nodes.append(status)
             
-        self.publisher.publish(report)
+        if active_node_found:
+            self.publisher.publish(report)
 
 def main(args=None):
     rclpy.init(args=args)
