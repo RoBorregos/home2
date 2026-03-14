@@ -40,7 +40,6 @@ class NodeMonitor(Node):
             try:
                 pynvml.nvmlInit()
                 self.gpu_initialized = True
-                self.get_logger().info("NVML initialized successfully for GPU monitoring.")
             except Exception as e:
                 self.get_logger().warning(f"Failed to initialize NVML: {e}")
         
@@ -72,7 +71,6 @@ class NodeMonitor(Node):
         return None
 
     def get_gpu_process_info(self, pid):
-        """Gets GPU memory usage or utilization for a specific PID."""
         if not self.gpu_initialized:
             return 0.0
         
@@ -92,7 +90,6 @@ class NodeMonitor(Node):
             return 0.0
 
     def timer_callback(self):
-        # Refresh nodes list from param in case it changed
         self.nodes_to_monitor = self.get_parameter('nodes_to_monitor').value
         
         report = MonitorReport()
@@ -108,7 +105,7 @@ class NodeMonitor(Node):
                 if pid:
                     try:
                         proc = psutil.Process(pid)
-                        proc.cpu_percent() # Initialize cpu_percent computation
+                        proc.cpu_percent()
                         self.node_procs[name] = proc
                         self.get_logger().info(f'Monitor attached to {name} (PID: {pid})')
                     except (psutil.NoSuchProcess, psutil.AccessDenied):
@@ -116,11 +113,9 @@ class NodeMonitor(Node):
             
             if proc:
                 try:
-                    # CPU percentage 
+
                     status.cpu_usage = proc.cpu_percent()
-                    # Memory percentage 
                     status.memory_usage = proc.memory_percent()
-                    # GPU percentage
                     status.gpu_usage = self.get_gpu_process_info(proc.pid)
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
                     status.cpu_usage = 0.0
