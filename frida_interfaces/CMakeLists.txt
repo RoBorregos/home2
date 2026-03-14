@@ -90,8 +90,8 @@ set(msg_files
   "vision/msg/ShelfArray.msg"
   "vision/msg/ShelfDetection.msg"
   "vision/msg/Detection.msg"
-  "navigation/monitoring/msg/NodeStatus.msg"
-  "navigation/monitoring/msg/MonitorReport.msg"
+  "navigation/msg/NodeStatus.msg"
+  "navigation/msg/MonitorReport.msg"
   )
 
 set(srv_files
