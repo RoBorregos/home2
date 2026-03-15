@@ -1,9 +1,48 @@
 #!/usr/bin/env python3
 
+#!/usr/bin/env python3
+
 """
-Node to track a single person and
-re-id them if necessary
+Node to track a single person and re-id them if necessary.
+Requires 2 terminals minimum (3 if using pose/color detection via moondream).
+
+--- Terminal 1: Run the tracker node ---
+    ros2 run vision_general tracker_node
+
+--- Terminal 2: Call a tracking service ---
+
+    Option 1) Track the largest person (default):
+        ros2 service call /vision/set_tracking_target std_srvs/srv/SetBool "{data: true}"
+
+    Option 2) Track by gesture (e.g. waving):
+        ros2 service call /vision/set_tracking_target_by frida_interfaces/srv/TrackBy \
+            "{track_enabled: true, track_by: 'gestures', value: 'waving'}"
+
+    Option 3) Track by gesture (waving customer):
+        ros2 service call /vision/set_tracking_target_by frida_interfaces/srv/TrackBy \
+            "{track_enabled: true, track_by: 'gestures', value: 'wavingCustomer'}"
+
+    Option 4) Track by pose (standing, sitting, lying down):
+        ros2 service call /vision/set_tracking_target_by frida_interfaces/srv/TrackBy \
+            "{track_enabled: true, track_by: 'poses', value: 'standing'}"
+
+    Option 5) Track by clothing color:
+        ros2 service call /vision/set_tracking_target_by frida_interfaces/srv/TrackBy \
+            "{track_enabled: true, track_by: 'color', value: 'red shirt'}"
+
+    Disable tracking:
+        ros2 service call /vision/set_tracking_target std_srvs/srv/SetBool "{data: false}"
+
+    Check if tracking is active:
+        ros2 service call /vision/is_tracking std_srvs/srv/Trigger
+
+--- Terminal 3 (Orin only): Run the zed initialziation 
+    zed
+
+--- Terminal 3 (optional): Moondream vision model (required for poses/color) ---
+    ros2 run vision_general moondream_node
 """
+
 
 import cv2
 import time
