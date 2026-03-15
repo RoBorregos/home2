@@ -1019,7 +1019,7 @@ class HRITasks(metaclass=SubtaskMeta):
             )
 
             if s_confirm == Status.EXECUTION_SUCCESS and answer == "yes":
-                Logger.info(self.node, f"take_order confirmed: {raw_items}")
+                Logger.success(self.node, f"take_order confirmed: {raw_items}")
                 return Status.EXECUTION_SUCCESS, raw_items
 
             # Customer said no or didn't respond → retry
