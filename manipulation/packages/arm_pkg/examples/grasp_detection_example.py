@@ -14,8 +14,8 @@ class GraspDetectionClient(Node):
 
         self.request = GraspDetection.Request()
 
-    def send_request(self, cfg_path, pcd_path=None, cloud=None):
-        self.request.cfg_path = cfg_path
+    def send_request(self, pcd_path=None, cloud=None):
+        self.request.cfg_path = ""  # Not used by GraspNet
 
         if pcd_path:
             self.request.pcd_path = pcd_path
@@ -38,10 +38,9 @@ def main(args=None):
     client = GraspDetectionClient()
 
     # Configure paths
-    config_path = "/home/dominguez/roborregos/home_ws/src/manipulation/packages/gpd/cfg/eigen_params.cfg"
-    pcd_path = "/home/dominguez/roborregos/home_ws/src/manipulation/packages/gpd/tutorials/krylon.pcd"
+    pcd_path = "/workspace/src/manipulation/packages/gpd/tutorials/krylon.pcd"
 
-    response = client.send_request(config_path, pcd_path=pcd_path)
+    response = client.send_request(pcd_path=pcd_path)
 
     if response is not None:
         if response.success:
