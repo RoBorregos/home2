@@ -1009,31 +1009,18 @@ class HRITasks(metaclass=SubtaskMeta):
                 )
                 continue
 
-            Logger.info(self.node, f"take_order raw items extracted: {raw_items}")
+            Logger.info(self.node, f"take_order items extracted: {raw_items}")
 
-            # Map each extracted item to the closest menu entry via embeddings
-            matched_items = []
-            for raw_item in raw_items:
-                s_match, closest = self.find_closest(self.items, raw_item, top_k=1)
-                if s_match == Status.EXECUTION_SUCCESS and closest.results:
-                    matched = closest.results[0]
-                else:
-                    matched = raw_item
-                matched_items.append(matched)
-
-            Logger.info(self.node, f"take_order matched items: {matched_items}")
-
-            # 6. Confirm full order with the customer
-            item_1, item_2 = matched_items[0], matched_items[1]
+            # Confirm full order with the customer
             s_confirm, answer = self.confirm(
-                f"Your order is {item_1}, and {item_2}. Is that correct?",
+                f"Your order is {raw_items[0]}, and {raw_items[1]}. Is that correct?",
                 use_hotwords=False,
                 retries=2,
             )
 
             if s_confirm == Status.EXECUTION_SUCCESS and answer == "yes":
-                Logger.info(self.node, f"take_order confirmed: {matched_items}")
-                return Status.EXECUTION_SUCCESS, matched_items
+                Logger.info(self.node, f"take_order confirmed: {raw_items}")
+                return Status.EXECUTION_SUCCESS, raw_items
 
             # Customer said no or didn't respond → retry
             if attempt < retries:
