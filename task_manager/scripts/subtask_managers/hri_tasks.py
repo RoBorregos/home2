@@ -77,6 +77,7 @@ from utils.decorators import service_check
 from utils.logger import Logger
 from utils.status import Status
 from utils.task import Task
+from nlp.assets.dialogs import get_ordered_items_extract_context
 
 from subtask_managers.hri_hand import HRIHand
 from subtask_managers.subtask_meta import SubtaskMeta
@@ -986,16 +987,8 @@ class HRITasks(metaclass=SubtaskMeta):
                 hear_error("take_order: nothing heard, retrying", attempt)
                 continue
 
-            Logger.info(self.node, f"take_order transcript: {transcript}")
-
             # Extract ordered items from the transcript.
-            context = (
-                "From the transcript, extract exactly two ordered menu items.\n"
-                "Only choose items from the menu list.\n"
-                "Return them in this format: item1, item2\n"
-                "Do not output anything else.\n"
-                f"Menu items: {', '.join(text for text, _ in self.items)}"
-            )
+            context = get_ordered_items_extract_context([text for text, _ in self.items])
             s, raw_items_str = self.extract_data(
                 query="LLM_ordered_items",
                 complete_text=transcript,
@@ -1011,7 +1004,8 @@ class HRITasks(metaclass=SubtaskMeta):
 
             if len(raw_items) != 2:
                 hear_error(
-                    f"take_order: expected exactly 2 items, got {len(raw_items)} ({raw_items})"
+                    f"take_order: expected exactly 2 items, got {len(raw_items)} ({raw_items})",
+                    attempt,
                 )
                 continue
 

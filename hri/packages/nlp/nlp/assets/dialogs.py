@@ -297,6 +297,17 @@ def clean_question_rag(question):
     ]
 
 
+def get_ordered_items_extract_context(menu_items, expected_items: int = 2) -> str:
+    menu_string = ", ".join(menu_items)
+    return (
+        f"From the transcript, extract exactly {expected_items} ordered menu items.\n"
+        "Only choose items from the menu list.\n"
+        f"Return them in this format: {', '.join(f'item{i+1}' for i in range(expected_items))}\n"
+        "Do not output anything else.\n"
+        f"Menu items: {menu_string}"
+    )
+
+
 def get_answer_question_dialog(contexts, question):
     if contexts:
         context_text = "\n".join(contexts)
