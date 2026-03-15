@@ -1,110 +1,107 @@
-# ROBORREGOS @HOME
+# RoBorregos @Home
 
-[![Ros Build](https://github.com/RoBorregos/home2/actions/workflows/ros2-build.yml/badge.svg)](https://github.com/RoBorregos/home2/actions/workflows/ros2-build.yml)
+[![ROS Build](https://github.com/RoBorregos/home2/actions/workflows/ros2-build.yml/badge.svg)](https://github.com/RoBorregos/home2/actions/workflows/ros2-build.yml)
 [![Pre-commit](https://github.com/RoBorregos/home2/actions/workflows/pre-commit.yml/badge.svg)](https://github.com/RoBorregos/home2/actions/workflows/pre-commit.yml)
 
-# Steps to Run the Repository
+ROS 2 repository by [RoBorregos](https://github.com/RoBorregos), the Robotics Representative Team of Tecnologico de Monterrey. This project focuses on developing a modular software architecture for an autonomous service robot competing in the [RoboCup @Home](https://athome.robocup.org/) league — the largest annual competition for autonomous service robots. The system enables robots to perform everyday domestic tasks through integrated vision, navigation, manipulation, and human-robot interaction modules, designed to be adaptable to affordable hardware.
 
-## Prerequisites
+## Table of Contents
 
-Ensure the following are installed on your system:
+- [Getting Started](#getting-started)
+- [Usage](#usage)
+- [Documentation](#documentation)
+- [Video Demonstrations](#video-demonstrations)
+- [Team Members](#team-members)
+- [Past Contributors](#past-contributors)
 
-- **ROS 2 Humble**  
-  Refer to the [installation guide](https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debs.html).
-- **ROSDEP**
-- **COLCON**
-- **CMAKE**
-- **MAKE**
-- **GIT**
+## Getting Started
 
-## Steps to Run the Repository
+### Prerequisites
 
-### Ubuntu 22.04
+- [Docker](https://docs.docker.com/engine/install/)
+- [Docker Compose](https://docs.docker.com/compose/install/)
+- Git
+- [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) (optional, for GPU support)
 
-## ⚠️ Prebuild Warning
-
-It only runs once, to ensure the repository compiles correctly, **run `prebuild.sh` first**.
-
-Make sure to execute the script in the **workspace (`ws`) directory** where you plan to run `colcon build` afterward.
-
-#### 1 Create a Workspace
-
-If you don’t already have a target workspace, create one:
+### Installation
 
 ```bash
-# Skip this step if you already have a target workspace
-$ cd ~
-$ mkdir -p home_ws/src
+git clone https://github.com/RoBorregos/home2.git --recursive
+cd home2
+
+# If you already cloned without --recursive
+git submodule update --init --recursive
 ```
 
-#### 2 Obtain src and run prebuild of repository
+## Usage
+
+The `run.sh` script automatically detects your environment (CPU, CUDA, or L4T) and manages the Docker containers.
 
 ```bash
-#Remember to source ros2 environment settings first
-$ cd ~/home_ws/
-#DO NOT omit "--recursive"，or the source code of dependent submodule will not be downloaded.
-$ git clone https://github.com/RoBorregos/home2.git --recursive src/
-# or if you have already cloned the repository
-$ cd ~/home_ws/src/home2
-$ git submodule update --init --recursive
-#Pay attention where are you executing prebuild, it has to be on the home_ws directory.
-$ ./src/prebuild.sh
-#AFTER RUNNING PREBUILD IMPORTANT TO SOURCE .BASHRC
-$ source ~/.bashrc
+# Show available commands and options
+./run.sh --help
+
+# Run a specific area
+./run.sh vision
+./run.sh hri
+./run.sh navigation
+./run.sh manipulation
+./run.sh integration
+
+# Run a competition task
+./run.sh --gpsr
+./run.sh --restaurant
 ```
 
-#### 3 Compile and source project
+### Available Flags
 
-```bash
-#AFTER RUNNING PREBUILD IMPORTANT TO SOURCE .BASHRC
-$ source ~/.bashrc
-#Remember to source ros2 environment settings first
-$ cd ~/home_ws/
-#You can add the --executor sequential for only one compiling thread
-$ colcon build --symlink-install
-$ source install/setup.bash
-```
+| Flag | Description |
+| --- | --- |
+| `--build` | Builds the ROS 2 packages inside the container |
+| `--build-image` | Builds the Docker image for the specified area or task |
+| `--recreate` | Forces the recreation of containers |
+| `--open-display` | Opens the graphical interface for HRI or Vision |
+| `--stop` | Stops the running containers |
+| `--down` | Stops and removes all containers, networks, and volumes |
 
-# Rule Book
+## Documentation
 
-[Rule book](https://robocupathome.github.io/RuleBook/rulebook/master.pdf)
-
-# Team Members
-
-| Name               | Github                                               | Role                            |
-| ------------------ | ---------------------------------------------------- | ------------------------------- |
-| Oscar Arreola      | [@Oscar-gg](https://github.com/Oscar-gg)             | HRI, Integration                |
-| Gerardo Fregoso    | [@GerardoFJ](https://github.com/GerardoFJ)           | Navigation, Integration         |
-| Alejandra Coeto    | [@Ale-Coeto](https://github.com/Ale-Coeto)           | Vision, Integration             |
-| Danaé Sánchez      | [@DanaeSG](https://github.com/DanaeSG)               | Vision, Navigation, Integration |
-| Alejandro González | [@AleGonzcamilla](https://github.com/AleGonzcamilla) | Mechanics, Manipulation         |
-| Emil Winkler       | [@emilwinkp](https://github.com/emilwinkp)           | Manipulation                    |
-| Fernando Hernandez | [@Fernando94654](https://github.com/Fernando94654)   | Vision, Manipulation            |
-| Camila Tite        | [@CamilaTite26](https://github.com/CamilaTite26)     | HRI                             |
-| Daniela Herrera    | [@DanHeGa](https://github.com/DanHeGa)               | Vision                          |
-| Gilberto Malagamba | [@GilMM27](https://github.com/GilMM27)               | HRI, Integration                |
-| José Domínguez     | [@JLDominguezM](https://github.com/JLDominguezM)     | Manipulation, Integration       |
-
-# Legacy
-
-| Name                | Github                                                 | Role                                   |
-| ------------------- | ------------------------------------------------------ | -------------------------------------- |
-| Adán Flores-Ramírez | [@afr2903](https://github.com/afr2903)                 | Research                               |
-| David Vázquez       | [@deivideich](https://github.com/Deivideich)           | Manipulation                           |
-| Emiliano Flores     | [@EmilianoHFlores](https://github.com/EmilianoHFlores) | Manipulation, Vision, Integration      |
-| Iván Romero         | [@IvanRomero03](https://github.com/IvanRomero03)       | Integration, HRI, Manipulation, Vision |
-| Diego Hernández     | [@Diego-HC](https://github.com/Diego-HC)               | Integration, HRI, Navigation           |
-
-# Documentation
-
-[Docs](https://athome.roborregos.com/)
-
-[API documentation](https://roborregos.github.io/home2/)
+- [Project Docs](https://athome.roborregos.com/)
+- [API Reference](https://roborregos.github.io/home2/)
+- [RoboCup @Home Rule Book](https://robocupathome.github.io/RuleBook/rulebook/master.pdf)
 
 [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/RoBorregos/home2)
 
-## Video demonstrations
+## Video Demonstrations
 
 [![Explanatory video demonstration of task planning test using the command interpreter with the robot](https://img.youtube.com/vi/do1S1zfmMsA/0.jpg)](https://www.youtube.com/watch?v=do1S1zfmMsA)
 
 [![Video demonstration of the GPSR task during the Mexican Robotics Tournament 2025](https://img.youtube.com/vi/0bMz6ESv6B8/0.jpg)](https://www.youtube.com/watch?v=0bMz6ESv6B8)
+
+[![Video demonstration](https://img.youtube.com/vi/qUQNTDRBEKw/0.jpg)](https://www.youtube.com/watch?v=qUQNTDRBEKw)
+
+## Team Members
+
+| Name | GitHub | Role |
+| --- | --- | --- |
+| Oscar Arreola | [@Oscar-gg](https://github.com/Oscar-gg) | HRI, Integration |
+| Gerardo Fregoso | [@GerardoFJ](https://github.com/GerardoFJ) | Navigation, Integration |
+| Alejandra Coeto | [@Ale-Coeto](https://github.com/Ale-Coeto) | Vision, Integration |
+| Danae Sanchez | [@DanaeSG](https://github.com/DanaeSG) | Vision, Navigation, Integration |
+| Alejandro Gonzalez | [@AleGonzcamilla](https://github.com/AleGonzcamilla) | Mechanics, Manipulation |
+| Emil Winkler | [@emilwinkp](https://github.com/emilwinkp) | Manipulation |
+| Fernando Hernandez | [@Fernando94654](https://github.com/Fernando94654) | Vision, Manipulation |
+| Camila Tite | [@CamilaTite26](https://github.com/CamilaTite26) | HRI |
+| Daniela Herrera | [@DanHeGa](https://github.com/DanHeGa) | Vision |
+| Gilberto Malagamba | [@GilMM27](https://github.com/GilMM27) | HRI, Integration |
+| Jose Dominguez | [@JLDominguezM](https://github.com/JLDominguezM) | Manipulation, Integration |
+
+## Past Contributors
+
+| Name | GitHub | Role |
+| --- | --- | --- |
+| Adan Flores-Ramirez | [@afr2903](https://github.com/afr2903) | Research |
+| David Vazquez | [@deivideich](https://github.com/Deivideich) | Manipulation |
+| Emiliano Flores | [@EmilianoHFlores](https://github.com/EmilianoHFlores) | Manipulation, Vision, Integration |
+| Ivan Romero | [@IvanRomero03](https://github.com/IvanRomero03) | Integration, HRI, Manipulation, Vision |
+| Diego Hernandez | [@Diego-HC](https://github.com/Diego-HC) | Integration, HRI, Navigation |
