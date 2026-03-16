@@ -39,12 +39,21 @@ class NoiseCancellation(Node):
         self.declare_parameter("ENABLE_ANC", True)
         self.declare_parameter("GAIN", 1.0)
         self.declare_parameter("DEBUG", False)
+        self.declare_parameter("DF_MODEL_PATH", "../assets/downloads")
 
         input_topic = self.get_parameter("RAW_AUDIO_TOPIC").value
         output_topic = self.get_parameter("PROCESSED_AUDIO_TOPIC").value
         self.enable_anc = self.get_parameter("ENABLE_ANC").value
         self.gain = self.get_parameter("GAIN").value
         self.debug = self.get_parameter("DEBUG").value
+
+        # Resolve model path relative to this script's package root
+        script_dir = os.path.dirname(os.path.realpath(__file__))
+        # Path from script is ../../assets/downloads
+        base_path = os.path.abspath(os.path.join(script_dir, "..", ".."))
+        self.df_model_path = os.path.join(
+            base_path, self.get_parameter("DF_MODEL_PATH").value
+        )
 
         self.df_model = None
         self.df_state = None
@@ -77,7 +86,20 @@ class NoiseCancellation(Node):
 
     def _init_df_async(self):
         try:
-            self.df_model, self.df_state, _ = DF_MODULE.init_df()
+            model_dir = os.path.join(self.df_model_path, "DeepFilterNet3")
+            if not os.path.isdir(model_dir):
+                self.get_logger().error(
+                    f"DeepFilterNet model not found at {model_dir}. "
+                    "Run docker/hri/scripts/download-model.sh on a machine with "
+                    "internet access and copy the 'assets' folder to hri/packages/speech/."
+                )
+                self.use_df = False
+                return
+
+            self.get_logger().info(f"Loading DeepFilterNet model from {model_dir}")
+            self.df_model, self.df_state, _ = DF_MODULE.init_df(
+                model_base_dir=model_dir
+            )
             if torch.cuda.is_available():
                 self.df_model = self.df_model.to("cuda")
                 self.get_logger().info("CUDA enabled for noise suppression.")
