@@ -316,7 +316,7 @@ jobs:
               mkdir -p /tmp/pkg/embeddings &&
               cp /workspace/src/hri/packages/embeddings/embeddings/__init__.py /tmp/pkg/embeddings/ &&
               cp /workspace/src/hri/packages/embeddings/scripts/*.py /tmp/pkg/embeddings/ &&
-              PYTHONPATH=/tmp/pkg:/workspace/src/frida_constants:\$PYTHONPATH python3 /workspace/src/hri/packages/embeddings/scripts/create_sql_dump.py
+              PYTHONPATH=/tmp/pkg:/workspace/src/frida_constants:/workspace/src/frida_interfaces:\$PYTHONPATH python3 /workspace/src/hri/packages/embeddings/scripts/create_sql_dump.py
             "
           echo "Generated SQL dumps:"
           ls -la docker/hri/sql_dumps/
