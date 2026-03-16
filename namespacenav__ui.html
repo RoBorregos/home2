@@ -111,6 +111,8 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
+<tr class="memitem:af78c57aff04ad7e1b00a22c3f4ab2a7e"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenav__ui.html#af78c57aff04ad7e1b00a22c3f4ab2a7e">build_costmap_lut</a> ()</td></tr>
+<tr class="separator:af78c57aff04ad7e1b00a22c3f4ab2a7e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a07ac368ca7be7cdc5199c492cec9ae47"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenav__ui.html#a07ac368ca7be7cdc5199c492cec9ae47">main</a> ()</td></tr>
 <tr class="separator:a07ac368ca7be7cdc5199c492cec9ae47"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -126,22 +128,39 @@ Variables</h2></td></tr>
 <tr class="separator:ae36f22f5cc0a33d7711f93973b541bfe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a64ce8c70de6ed85629d910d470d1ec88"><td class="memItemLeft" align="right" valign="top">QColor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenav__ui.html#a64ce8c70de6ed85629d910d470d1ec88">COLOR_PATH</a> = QColor(50, 255, 100, 200)</td></tr>
 <tr class="separator:a64ce8c70de6ed85629d910d470d1ec88"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae2474e31477c8bbb47f5148f9fe56106"><td class="memItemLeft" align="right" valign="top">QColor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenav__ui.html#ae2474e31477c8bbb47f5148f9fe56106">COLOR_LOCAL_COSTMAP</a> = QColor(255, 100, 0, 60)</td></tr>
-<tr class="separator:ae2474e31477c8bbb47f5148f9fe56106"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a915c76947b5f12a67604b5d728de7e28"><td class="memItemLeft" align="right" valign="top">QColor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenav__ui.html#a915c76947b5f12a67604b5d728de7e28">COLOR_GLOBAL_COSTMAP</a> = QColor(150, 0, 255, 30)</td></tr>
-<tr class="separator:a915c76947b5f12a67604b5d728de7e28"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a96c0451b2505bdf41e332ed08eefeb45"><td class="memItemLeft" align="right" valign="top">QColor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenav__ui.html#a96c0451b2505bdf41e332ed08eefeb45">COLOR_MAP_FREE</a> = QColor(255, 255, 255)</td></tr>
 <tr class="separator:a96c0451b2505bdf41e332ed08eefeb45"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9f04dd826a5a9a56582830cc49df5efb"><td class="memItemLeft" align="right" valign="top">QColor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenav__ui.html#a9f04dd826a5a9a56582830cc49df5efb">COLOR_MAP_OCCUPIED</a> = QColor(0, 0, 0)</td></tr>
 <tr class="separator:a9f04dd826a5a9a56582830cc49df5efb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afe7f41c05d51ef045f70fb3faac8d90e"><td class="memItemLeft" align="right" valign="top">QColor&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenav__ui.html#afe7f41c05d51ef045f70fb3faac8d90e">COLOR_MAP_UNKNOWN</a> = QColor(128, 128, 128)</td></tr>
 <tr class="separator:afe7f41c05d51ef045f70fb3faac8d90e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a689ea44630e0cf55e5c9ffe9d4306e86"><td class="memItemLeft" align="right" valign="top">list&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenav__ui.html#a689ea44630e0cf55e5c9ffe9d4306e86">ROBOT_FOOTPRINT</a></td></tr>
+<tr class="separator:a689ea44630e0cf55e5c9ffe9d4306e86"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9c46380b372dee62877d099b65c01599"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacenav__ui.html#a9c46380b372dee62877d099b65c01599">COSTMAP_LUT</a> = <a class="el" href="namespacenav__ui.html#af78c57aff04ad7e1b00a22c3f4ab2a7e">build_costmap_lut</a>()</td></tr>
+<tr class="separator:a9c46380b372dee62877d099b65c01599"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><pre class="fragment">Navigation UI - Real-time navigation monitor and control panel.
 Displays map, robot position, costmaps, and trajectories.
 Provides controls for sending goals, changing maps, and monitoring nav2.
 </pre> </div><h2 class="groupheader">Function Documentation</h2>
+<a id="af78c57aff04ad7e1b00a22c3f4ab2a7e" name="af78c57aff04ad7e1b00a22c3f4ab2a7e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af78c57aff04ad7e1b00a22c3f4ab2a7e">&#9670;&#160;</a></span>build_costmap_lut()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def nav_ui.build_costmap_lut </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Build RViz-style costmap color lookup table (0-100 + special values).</pre> 
+</div>
+</div>
 <a id="a07ac368ca7be7cdc5199c492cec9ae47" name="a07ac368ca7be7cdc5199c492cec9ae47"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a07ac368ca7be7cdc5199c492cec9ae47">&#9670;&#160;</a></span>main()</h2>
 
@@ -160,20 +179,6 @@ Provides controls for sending goals, changing maps, and monitoring nav2.
 </div>
 </div>
 <h2 class="groupheader">Variable Documentation</h2>
-<a id="a915c76947b5f12a67604b5d728de7e28" name="a915c76947b5f12a67604b5d728de7e28"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a915c76947b5f12a67604b5d728de7e28">&#9670;&#160;</a></span>COLOR_GLOBAL_COSTMAP</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">QColor nav_ui.COLOR_GLOBAL_COSTMAP = QColor(150, 0, 255, 30)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
 <a id="a4bad219f9283ca1fb19836b49aaf3a42" name="a4bad219f9283ca1fb19836b49aaf3a42"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a4bad219f9283ca1fb19836b49aaf3a42">&#9670;&#160;</a></span>COLOR_GOAL</h2>
 
@@ -196,20 +201,6 @@ Provides controls for sending goals, changing maps, and monitoring nav2.
       <table class="memname">
         <tr>
           <td class="memname">QColor nav_ui.COLOR_GOAL_FILL = QColor(255, 50, 50, 80)</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="ae2474e31477c8bbb47f5148f9fe56106" name="ae2474e31477c8bbb47f5148f9fe56106"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae2474e31477c8bbb47f5148f9fe56106">&#9670;&#160;</a></span>COLOR_LOCAL_COSTMAP</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">QColor nav_ui.COLOR_LOCAL_COSTMAP = QColor(255, 100, 0, 60)</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -298,6 +289,37 @@ Provides controls for sending goals, changing maps, and monitoring nav2.
       </table>
 </div><div class="memdoc">
 
+</div>
+</div>
+<a id="a9c46380b372dee62877d099b65c01599" name="a9c46380b372dee62877d099b65c01599"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9c46380b372dee62877d099b65c01599">&#9670;&#160;</a></span>COSTMAP_LUT</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def nav_ui.COSTMAP_LUT = <a class="el" href="namespacenav__ui.html#af78c57aff04ad7e1b00a22c3f4ab2a7e">build_costmap_lut</a>()</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a689ea44630e0cf55e5c9ffe9d4306e86" name="a689ea44630e0cf55e5c9ffe9d4306e86"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a689ea44630e0cf55e5c9ffe9d4306e86">&#9670;&#160;</a></span>ROBOT_FOOTPRINT</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">list nav_ui.ROBOT_FOOTPRINT</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line"><span class="lineno">    1</span>=  [</div>
+<div class="line"><span class="lineno">    2</span>    (0.32, 0.21), (0.32, -0.21), (-0.17, -0.21), (-0.17, 0.21)</div>
+<div class="line"><span class="lineno">    3</span>]</div>
+</div><!-- fragment -->
 </div>
 </div>
 </div><!-- contents -->
