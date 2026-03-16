@@ -31,6 +31,8 @@
   <depend>map_context</depend>
   <!-- Action server move -->
   <depend>action_msgs</depend>
+  <depend>nav2_msgs</depend>
+  <depend>geometry_msgs</depend>
 
 
   <test_depend>ament_lint_auto</test_depend>
