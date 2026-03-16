@@ -1,7 +1,7 @@
 "use client";
 
 import { MessageCircle } from "lucide-react";
-import { AudioStateIndicator } from "../../components/AudioStateIndicator";
+import { AudioStateIndicator } from "../../components/InteractionIndicator";
 import { ConnectionStatus } from "../../components/ConnectionStatus";
 import { VideoFeed } from "../../components/VideoFeed";
 import { StartButton } from "../../components/StartButton";

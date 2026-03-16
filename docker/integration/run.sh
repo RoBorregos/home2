@@ -11,6 +11,7 @@ ENV_TYPE="${*: -1}"
 DETACHED=""
 BUILD=""
 BUILD_IMAGE=""
+UPLOAD_IMAGE=""
 
 # Parse arguments
 for arg in "${ARGS[@]}"; do
@@ -35,6 +36,9 @@ for arg in "${ARGS[@]}"; do
     "--build-image")
         BUILD_IMAGE="--build"
         ;;
+    "--upload-image")
+        UPLOAD_IMAGE="true"
+        ;;
     esac
 done
 
@@ -42,6 +46,12 @@ done
 
 # Reset .env
 echo "" > .env
+
+# CycloneDDS interface from host
+if [ -f /etc/cyclonedds.env ]; then
+    source /etc/cyclonedds.env
+fi
+add_or_update_variable .env "CYCLONE_INTERFACE" "${CYCLONE_INTERFACE:-}"
 
 # Export user
 add_or_update_variable .env "LOCAL_USER_ID" "$(id -u)"
@@ -97,6 +107,11 @@ case $TASK in
 esac
 
 COMMAND="$SETUP && $RUN"
+
+if [ "$UPLOAD_IMAGE" == "true" ]; then
+  echo "Uploading integration image to DockerHub (env: ${ENV_TYPE})..."
+  ensure_and_upload_image "roborregos/home2:integration-${ENV_TYPE}" "docker-compose.yml"
+fi
 
 if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
     ALREADY_RUNNING=$(docker ps -q -f name="integration")

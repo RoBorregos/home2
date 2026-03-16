@@ -18,6 +18,8 @@ cmake --build .
 WORKDIR /workspace/dlib-19.21
 RUN python3 setup.py install --set DLIB_USE_CUDA=1
 
+RUN pip install --upgrade pip
+
 # Requirements
 WORKDIR /workspace/requirements
 
@@ -33,3 +35,12 @@ RUN git clone https://github.com/ultralytics/yolov5.git
 # CV-bridge
 RUN apt update && apt install -y ros-humble-cv-bridge
 RUN apt install -y ros-humble-laser-geometry
+
+# CycloneDDS
+RUN sudo apt-get update -qq && sudo apt-get install -y -qq ros-humble-rmw-cyclonedds-cpp \
+    && sudo rm -rf /var/lib/apt/lists/*
+COPY docker/cyclonedds_setup.sh /usr/local/bin/cyclonedds_setup.sh
+RUN sudo chmod +x /usr/local/bin/cyclonedds_setup.sh && sudo /usr/local/bin/cyclonedds_setup.sh
+ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+ENV CYCLONEDDS_URI=file:///etc/cyclonedds.xml
+RUN echo "source /usr/local/bin/cyclonedds_setup.sh" >> /home/ros/.bashrc

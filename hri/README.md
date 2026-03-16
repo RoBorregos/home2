@@ -102,6 +102,10 @@ pulseaudio -k && pulseaudio --start
 
 Captures raw audio in chunks and publishes it.
 
+### noise_cancellation.py
+
+Handles real-time neural noise suppression (DeepFilterNet).
+
 ### kws_oww.py
 
 Uses Open Wake Word to detect keywords such as "Frida".
@@ -116,7 +120,7 @@ Serves gRPC server and defines Transcribe function which performs STT using fast
 
 ```mermaid
 flowchart TD
-    ad[audio_capturer] -->|publish| rac(/rawAudioChunk)
+    ad[audio_capturer] -->|publish| rac(/hri/rawAudioChunk)
     rac -->|subscribe| kws[kws_oww]
     kws -->|publish| oww(/speech/oww)
     rac -->|subscribe| hs[hear_streaming]
@@ -255,6 +259,14 @@ If the speaker isn't loud, make sure to increase the volume level in the device 
 
 ```bash
 amixer -D pulse sset Master 100%
+```
+
+### Database
+
+Truncate each table that has a corresponding JSON file (where the filename matches the table name) in /workspace/src/hri/packages/embeddings/embeddings/dataframes/ and frida_constants/data/. Then, generate new embeddings/SQL dumps and insert them to restore or upgrade the DB.
+
+```bash
+./run.sh hri --regenerate-db
 ```
 
 ## Download openwakeword base model

@@ -14,6 +14,8 @@ BUILD_IMAGE=""
 BUILD_DISPLAY=""
 OPEN_DISPLAY=""
 DOWNLOAD_MODEL=""
+REGENERATE_DB=""
+UPLOAD_IMAGE=""
 
 COMPOSE="compose/docker-compose-${ENV_TYPE}.yml"
 
@@ -49,6 +51,12 @@ for arg in "${ARGS[@]}"; do
     "--download-model")
         DOWNLOAD_MODEL="true"
         ;;
+    "--regenerate-db")
+        REGENERATE_DB="true"
+        ;;
+    "--upload-image")
+        UPLOAD_IMAGE="true"
+        ;;
   esac
 done
 
@@ -81,6 +89,12 @@ mkdir -p install build log \
 # Reset .env
 echo "" > compose/.env
 
+# CycloneDDS interface from host
+if [ -f /etc/cyclonedds.env ]; then
+    source /etc/cyclonedds.env
+fi
+add_or_update_variable compose/.env "CYCLONE_INTERFACE" "${CYCLONE_INTERFACE:-}"
+
 # Export user
 add_or_update_variable compose/.env "LOCAL_USER_ID" "$(id -u)"
 add_or_update_variable compose/.env "LOCAL_GROUP_ID" "$(id -g)"
@@ -101,6 +115,12 @@ DISPLAY_DIR="../../hri/packages/display/display"
 if [ ! -d "$DISPLAY_DIR/node_modules" ] || [ ! -d "$DISPLAY_DIR/.next" ] || [ "$BUILD_DISPLAY" == "true" ]; then
   echo "Installing dependencies and building project inside temporary container..."
   docker compose -f compose/hri-ros.yaml run $BUILD_IMAGE --rm --entrypoint "" hri-ros bash -c "cd /workspace/src/hri/packages/display/display && npm i && npm run build"
+fi
+
+# Regenerate database if requested
+if [ "$REGENERATE_DB" == "true" ]; then
+  echo "Regenerating database..."
+  bash scripts/regenerate_db.sh "$ENV_TYPE"
 fi
 
 #_________________________RUN_________________________
@@ -161,6 +181,23 @@ wait_and_launch_display() {
 if [ -n "$OPEN_DISPLAY" ]; then
   wait_and_launch_display &
   wait_for_display_pid=$!
+fi
+
+if [ "$UPLOAD_IMAGE" == "true" ]; then
+  echo "Uploading HRI images to DockerHub (env: ${ENV_TYPE})..."
+  HRI_IMAGES=(
+    "roborregos/home2:hri-${ENV_TYPE}"
+    "roborregos/home2:hri-stt-${ENV_TYPE}"
+    "roborregos/home2:hri-tts-${ENV_TYPE}"
+    "roborregos/home2:hri-postgres-${ENV_TYPE}"
+  )
+  # ollama is only built for cuda and l4t envs
+  if [ "$ENV_TYPE" = "cuda" ] || [ "$ENV_TYPE" = "l4t" ]; then
+    HRI_IMAGES+=("roborregos/home2:hri-ollama-${ENV_TYPE}")
+  fi
+  for img in "${HRI_IMAGES[@]}"; do
+    ensure_and_upload_image "$img" "$COMPOSE"
+  done
 fi
 
 if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then

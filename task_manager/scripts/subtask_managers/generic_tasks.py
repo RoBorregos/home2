@@ -45,7 +45,7 @@ class GenericTask:
                 self.subtask_manager.manipulation._send_joint_velocity(joint_velocity)
             else:
                 self.subtask_manager.manipulation._send_joint_velocity(joint_velocity)
-            _, result = self.subtask_manager.hri.hear()
+            _, result, _ = self.subtask_manager.hri.hear()
             if "stop" in result.lower():
                 self.subtask_manager.nav.follow_person(False)
                 break

@@ -106,6 +106,7 @@ FOLLOW_BY_TOPIC = "/vision/follow_by_name"
 CHECK_PERSON_TOPIC = "/vision/receptionist/detect_person"
 FIND_SEAT_TOPIC = "/vision/receptionist/find_seat"
 IMAGE_TOPIC_RECEPTIONIST = "/vision/receptionist/img_person_detecion"
+DETECT_HAND_SERVICE = "/vision/receptionist/detect_hand"
 
 # GPSR commands node
 COUNT_BY_COLOR_TOPIC = "/vision/gpsr/count_by_color"
@@ -126,3 +127,7 @@ PERSON_POINT_TOPIC = "/vision/person_inside_point"
 
 # Show detection topic
 SHOW_DETECTION_TOPIC = "/vision/show_detection"
+
+# Dishwasher model
+DISHWASHER_LAYOUT_DETECTION_TOPIC = "/vision/dishwasher/layout_detection"
+DISHWASHER_RACK_DETECTION_TOPIC = "/vision/dishwasher/rack_detection"

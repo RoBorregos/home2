@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+AREAS="vision manipulation navigation integration hri"
+
 # --- guard against multiple sourcing ---
 if [[ -n "${__HOME2_LIB_SOURCED:-}" ]]; then
   return 0
@@ -17,6 +19,60 @@ check_image_exists() {
     echo "Image $image_name already exists. Skipping build."
     return 0
   fi
+}
+
+# Upload a docker image to DockerHub.
+upload_image() {
+  local image="$1"
+  echo "Pushing image: $image"
+  if docker push "$image"; then
+    echo "Successfully pushed: $image"
+  else
+    echo "Error: Failed to push $image" >&2
+    return 1
+  fi
+}
+
+# Ensure logged in to DockerHub as roborregos.
+docker_login() {
+  local current_user
+  current_user=$(docker system info 2>/dev/null | grep "Username:" | awk '{print $2}')
+
+  if [ "$current_user" = "roborregos" ]; then
+    echo "Already logged in as roborregos."
+    return 0
+  fi
+
+  if [ -n "$current_user" ]; then
+    echo "Error: logged in as '$current_user', must be 'roborregos'. Run: docker logout && docker login" >&2
+    return 1
+  fi
+
+  echo "Not logged in to DockerHub. Please log in as roborregos:"
+  docker login || return 1
+}
+
+# Ensure an image exists locally (build if missing) then push it.
+ensure_and_upload_image() {
+  local image="$1"
+  local compose_file="$2"
+  shift 2
+  local extra_args=("$@")
+
+  docker_login || return 1
+
+  if docker image inspect "$image" > /dev/null 2>&1; then
+    echo "Image $image found locally, skipping build."
+  else
+    if [ -z "$compose_file" ]; then
+      echo "Error: image $image not found locally and no compose file provided to build it." >&2
+      return 1
+    fi
+    echo "Image $image not found locally. Building with: docker compose -f $compose_file build ${extra_args[*]}"
+    docker compose -f "$compose_file" build "${extra_args[@]}" || { echo "Build failed for $image" >&2; return 1; }
+  fi
+
+  upload_image "$image"
 }
 
 add_or_update_variable() {
@@ -43,7 +99,8 @@ run_frida_interfaces() {
   fi
 
   echo "Running frida_interfaces_cache to build frida_interfaces (using $compose_yaml)"
-  docker compose -f "$compose_yaml" run --rm frida_interfaces_cache
+  mkdir -p "docker/frida_interfaces_cache/build" "docker/frida_interfaces_cache/install" "docker/frida_interfaces_cache/log"
+  export GID=$(id -g) && docker compose -f "$compose_yaml" run --rm frida_interfaces_cache
 }
 
 run_area() {
@@ -107,4 +164,13 @@ control() {
 
   echo "All ${msg}s attempted."
   return $rc
+}
+
+run_task() {
+  local task=$1
+  for area in ${AREAS}; do
+    SESSION_NAME=$area
+    tmux new-session -d -s "$SESSION_NAME"
+    tmux send-keys -t "$SESSION_NAME" "bash run.sh $area $task" C-m
+  done
 }

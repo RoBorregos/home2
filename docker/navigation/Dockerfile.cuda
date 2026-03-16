@@ -1,3 +1,26 @@
-ARG BASE_IMAGE=nvidia/cuda:11.4.1-cudnn8-devel-ubuntu20.04
+ARG BASE_IMAGE=nvidia/cuda:11.8.0-devel-ubuntu22.04 
 FROM ${BASE_IMAGE}
 
+USER ros
+SHELL ["/bin/bash", "-c"]
+
+RUN pip install --upgrade pip
+RUN pip install pyserial 
+RUN sudo apt update
+RUN mkdir -p /workspace
+WORKDIR /workspace 
+COPY ./navigation /workspace/src
+RUN cd /workspace/src && sudo apt update && sudo rosdep init && rosdep update
+RUN rosdep install --from-paths . --ignore-src --skip-keys "frida_constants frida_interfaces" -y
+RUN sudo rm -rf /workspace/src/
+
+# CycloneDDS
+RUN sudo apt-get update -qq && sudo apt-get install -y -qq ros-humble-rmw-cyclonedds-cpp \
+    && sudo rm -rf /var/lib/apt/lists/*
+COPY docker/cyclonedds_setup.sh /usr/local/bin/cyclonedds_setup.sh
+RUN sudo chmod +x /usr/local/bin/cyclonedds_setup.sh && sudo /usr/local/bin/cyclonedds_setup.sh
+ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+ENV CYCLONEDDS_URI=file:///etc/cyclonedds.xml
+RUN echo "source /usr/local/bin/cyclonedds_setup.sh" >> /home/ros/.bashrc
+
+WORKDIR /workspace

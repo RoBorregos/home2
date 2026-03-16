@@ -3,14 +3,14 @@ FROM ${BASE_IMAGE}
 
 WORKDIR /app
 
-COPY ../../hri/packages/speech/scripts/tts/requirements.txt .
+COPY ../../hri/requirements/tts.txt requirements.txt
 RUN python3 -m pip install --upgrade pip
 RUN pip install --no-cache-dir -r /app/requirements.txt
 RUN pip install --upgrade protobuf
 RUN python3 -m spacy download en_core_web_sm
 
-RUN sudo apt update && \
-    sudo apt install -y \
+RUN apt update && \
+    apt install -y \
     libopenmpi-dev \
     libportaudio2 \
     libportaudiocpp0 \

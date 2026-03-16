@@ -6,13 +6,13 @@ _run_sh_autocomplete() {
 
     local areas="manipulation navigation hri vision integration frida_interfaces"
     local inputs="--stop --down"
-    local tasks="--carry --receptionist --storing-groceries --gpsr --moondream --egpsr --clean-table --hand --restaurant"
-    local flags="--build --build-image --recreate --down --stop --help -h -d"
+    local tasks="--hric --ppc --gpsr --dlc --restaurant --finals"
+    local flags="--build --build-image --recreate --down --stop --help -h -d --upload-image"
     
     # Add area specific flags
     case "${words[1]}" in
         hri)
-            flags="$flags --build-display --open-display --download-model"
+            flags="$flags --build-display --open-display --download-model --regenerate-db"
             ;;
         integration)
             # TODO: add other important scripts
@@ -22,7 +22,7 @@ _run_sh_autocomplete() {
     local options
     case ${COMP_CWORD} in
         1)
-            options="$areas $inputs"
+            options="$areas $inputs $tasks"
             ;;
         2)
             options="$tasks"

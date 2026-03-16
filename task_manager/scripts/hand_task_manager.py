@@ -146,6 +146,7 @@ class HandTM(Node):
 
         if self.current_state == HandTM.TaskStates.END:
             Logger.state(self, "Task finished")
+            self.subtask_manager.hri.reset_task_status()
 
 
 def main(args=None):

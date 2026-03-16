@@ -4,16 +4,18 @@
 Task Manager for testing the subtask managers
 """
 
-import os
-import json
-import time
 import csv
+import json
+import os
+import subprocess
+import time
 from datetime import datetime
 from typing import Union
+
 import rclpy
-from sklearn.metrics.pairwise import cosine_similarity
 from config.hri.debug import config as test_hri_config
 from rclpy.node import Node
+from sklearn.metrics.pairwise import cosine_similarity
 from subtask_managers.hri_tasks import HRITasks
 
 # from subtask_managers.subtask_meta import SubtaskMeta
@@ -75,6 +77,8 @@ TEST_IS_POSITIVE = False
 TEST_IS_NEGATIVE = False
 TEST_DATA_EXTRACTOR = False
 TEST_COMMAND_INTERPRETER = False
+TEST_COMMAND_INTERPRETER_BAML = False
+TEST_WORD_CONFIDENCES = False
 
 
 class TestHriManager(Node):
@@ -120,6 +124,12 @@ class TestHriManager(Node):
         if TEST_COMMAND_INTERPRETER:
             self.test_command_interpreter()
 
+        if TEST_COMMAND_INTERPRETER_BAML:
+            self.test_command_interpreter_baml()
+
+        if TEST_WORD_CONFIDENCES:
+            self.test_word_confidences()
+
         exit(0)
 
     def individual_functions(self):
@@ -128,7 +138,7 @@ class TestHriManager(Node):
         self.get_logger().info("Hearing from the user...")
 
         # Test hear
-        s, user_request = self.hri_manager.hear()
+        s, user_request, _ = self.hri_manager.hear()
         self.get_logger().info(f"Heard: {user_request}")
 
         # Test extract_data
@@ -139,7 +149,7 @@ class TestHriManager(Node):
         self.get_logger().info("Hearing from the user...")
 
         # Test hear
-        s, user_request = self.hri_manager.hear()
+        s, user_request, _ = self.hri_manager.hear()
         self.get_logger().info(f"Heard: {user_request}")
 
         # Test extract_data
@@ -159,11 +169,28 @@ class TestHriManager(Node):
         self.get_logger().info(f"categorized_shelves: {str(categorized_shelves)}")
 
     def test_streaming(self):
-        s, user_request = self.hri_manager.hear()
+        s, user_request, _ = self.hri_manager.hear()
         self.get_logger().info(f"Heard: {user_request}")
 
         s, keyword = self.hri_manager.interpret_keyword(["yes", "no", "maybe"], timeout=5.0)
         self.get_logger().info(f"Interpreted keyword: {keyword}")
+
+    def test_word_confidences(self):
+        self.hri_manager.say("Please say something.", wait=True)
+        s, transcription, word_confidences = self.hri_manager.hear()
+
+        if s != Status.EXECUTION_SUCCESS:
+            self.get_logger().warn("No speech detected.")
+            return
+
+        self.get_logger().info(f"Transcription: {transcription}")
+        self.get_logger().info("Word confidences:")
+        for word, confidence in word_confidences.items():
+            self.get_logger().info(f"  {word:20s} -> {confidence:.4f}")
+
+        if word_confidences:
+            avg_confidence = sum(word_confidences.values()) / len(word_confidences)
+            self.get_logger().info(f"Average confidence: {avg_confidence:.4f}")
 
     def compound_functions(self):
         s, loc, orientation = self.hri_manager.get_location_orientation("kitchen")
@@ -201,12 +228,6 @@ class TestHriManager(Node):
         #     3,
         #     5,
         # )
-
-        # s, common_interest = self.hri_manager.common_interest(
-        #     "mike", interest1, "rodrigo", interest2
-        # )
-
-        # self.hri_manager.say(common_interest)
 
     def test_categorize_shelves(self):
         test_cases_file = os.path.join(DATA_DIR, "categorize_objects.json")
@@ -302,19 +323,6 @@ class TestHriManager(Node):
         # Test original functionality
         test = self.hri_manager.extract_data("LLM_name", "My name is John Doe")
         self.get_logger().info(f"Extract data result: {test}")
-
-        s, res = self.hri_manager.common_interest("John", "Football", "Gilbert", "Basketball")
-
-        self.get_logger().info(f"Common interest result: {res}")
-
-        # Test async LLM with a timeout
-        f = self.hri_manager.common_interest(
-            "John", "Football", "Gilbert", "Basketball", is_async=True
-        )
-        rclpy.spin_until_future_complete(self, f)
-
-        self.get_logger().info(f"Common interest future: {f}")
-        self.get_logger().info(f"Common interest future status: {f.done()}, {f.result()}")
 
     def test_map(self):
         """
@@ -607,6 +615,36 @@ class TestHriManager(Node):
 
         self.get_logger().info(f"Results saved to {output_file}")
         self.get_logger().info(f"{passed_tests} out of {len(test_cases)} passed")
+
+    def test_command_interpreter_baml(self):
+        # Prepare output file
+        date_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        output_file = os.path.join(OUTPUT_DIR, f"command_interpreter_baml_{date_str}.txt")
+
+        self.get_logger().info("Running baml-cli test for command interpreter")
+        self.get_logger().info("This may take a minute...")
+        result = subprocess.run(
+            ["baml-cli", "test"],
+            cwd="/workspace/src/task_manager/scripts/utils/",
+            capture_output=True,
+            text=True,
+        )
+
+        # Print to terminal
+        if result.stdout:
+            print(result.stdout)
+        if result.stderr:
+            print(result.stderr)
+
+        # Save to file
+        with open(output_file, "w") as f:
+            f.write("=== STDOUT ===\n")
+            f.write(result.stdout or "")
+            f.write("\n=== STDERR ===\n")
+            f.write(result.stderr or "")
+            f.write(f"\n=== RETURN CODE: {result.returncode} ===\n")
+
+        self.get_logger().info(f"Results saved to {output_file}")
 
 
 def main(args=None):
