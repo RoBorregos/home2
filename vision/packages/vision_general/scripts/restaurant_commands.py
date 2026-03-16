@@ -17,6 +17,7 @@ from frida_interfaces.srv import (
     CropQuery,
     CustomerTables,
     Customer,
+    ObjectPoints,
 )
 from frida_interfaces.msg import CustomerTable, PersonList
 from frida_constants.vision_constants import (
@@ -27,6 +28,7 @@ from frida_constants.vision_constants import (
     CAMERA_INFO_TOPIC,
     DEPTH_IMAGE_TOPIC,
     CUSTOMER_TABLES_TOPIC,
+    OBJECT_POINTS_TOPIC,
 )
 from vision_general.utils.calculations import (
     get_depth,
@@ -65,6 +67,10 @@ class RESTAURANTCommands(Node):
             YoloDetect, "yolo_detect", callback_group=self.callback_group
         )
 
+        self.moondream_point_client = self.create_client(
+            ObjectPoints, OBJECT_POINTS_TOPIC, callback_group=self.callback_group
+        )
+
         self.customer_client = self.create_client(
             Customer, GET_CUSTOMER_TOPIC, callback_group=self.callback_group
         )
@@ -97,10 +103,10 @@ class RESTAURANTCommands(Node):
         self.get_logger().info("Received customer table request")
 
         # Get tables from YOLO.
-        tables = self.get_detections([60])
+        tables_points2d = self.get_moondream_points("table")
         customer_people = self.get_customers()
 
-        if not customer_people or not tables:
+        if not customer_people or not tables_points2d:
             self.get_logger().error("No detections found")
             response.customer_tables = []
             response.success = False
@@ -108,9 +114,12 @@ class RESTAURANTCommands(Node):
 
         # Prepare one output CustomerTable per detected table.
         table_groups = []
-        for table in tables:
+        for table in tables_points2d:
             table_msg = CustomerTable()
-            table_msg.table_point = self.build_point_stamped_from_xyz(table["point3d"])
+            point3d = deproject_pixel_to_point(
+                self.imageInfo, table, get_depth(self.depth_image, (table[1], table[0]))
+            )
+            table_msg.table_point = self.build_point_stamped_from_xyz(point3d)
             table_msg.people = PersonList()
             table_msg.people.list = []
             table_groups.append(table_msg)
@@ -126,8 +135,8 @@ class RESTAURANTCommands(Node):
             closest_table_idx = -1
             closest_distance = float("inf")
 
-            for idx, table in enumerate(tables):
-                distance = self.euclidean_distance(table["point3d"], customer_xyz)
+            for idx, table in enumerate(table_groups):
+                distance = self.euclidean_distance(table.table_point, customer_xyz)
                 if distance < closest_distance:
                     closest_distance = distance
                     closest_table_idx = idx
@@ -226,6 +235,25 @@ class RESTAURANTCommands(Node):
             self.image_publisher.publish(
                 self.bridge.cv2_to_imgmsg(self.output_image, "bgr8")
             )
+
+    def get_moondream_points(self, subject) -> list[tuple[float, float]]:
+        """Get object points from the MoonDream service."""
+        req = ObjectPoints.Request()
+        req.subject = subject
+
+        future = self.moondream_client.call_async(req)
+        future = wait_for_future(future, 15)
+        result = future.result()
+
+        if result is None or not result.found:
+            self.get_logger().error("MoonDream table point detection failed")
+            return []
+
+        points = []
+        for p in result.points:
+            points.append((p.x, p.y))
+
+        return points
 
     def get_detections(self, comp_class=None, timeout=5.0):
         """
