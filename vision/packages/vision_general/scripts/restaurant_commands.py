@@ -14,7 +14,6 @@ from vision_general.utils.ros_utils import wait_for_future
 import math
 
 from frida_interfaces.srv import (
-    CropQuery,
     CustomerTables,
     Customer,
     ObjectPoints,
@@ -23,7 +22,6 @@ from frida_interfaces.msg import CustomerTable, PersonList
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
     IMAGE_TOPIC,
-    CROP_QUERY_TOPIC,
     GET_CUSTOMER_TOPIC,
     CAMERA_INFO_TOPIC,
     DEPTH_IMAGE_TOPIC,
@@ -34,7 +32,6 @@ from vision_general.utils.calculations import (
     get_depth,
     deproject_pixel_to_point,
 )
-from frida_interfaces.srv import YoloDetect
 
 TABLE_CUSTOMER_DISTANCE_THRESHOLD = 1.5  # meters
 
@@ -63,10 +60,6 @@ class RESTAURANTCommands(Node):
 
         self.image_publisher = self.create_publisher(Image, IMAGE_TOPIC, 10)
 
-        self.yolo_client = self.create_client(
-            YoloDetect, "yolo_detect", callback_group=self.callback_group
-        )
-
         self.moondream_point_client = self.create_client(
             ObjectPoints, OBJECT_POINTS_TOPIC, callback_group=self.callback_group
         )
@@ -82,9 +75,6 @@ class RESTAURANTCommands(Node):
             callback_group=self.callback_group,
         )
 
-        while not self.yolo_client.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info("YOLO service not available, waiting...")
-
         self.image = None
         self.output_image = []
         self.people = []
@@ -95,14 +85,10 @@ class RESTAURANTCommands(Node):
         self.get_logger().info("RESTAURANT Commands Ready.")
         # self.create_timer(0.1, self.publish_image)
 
-        self.moondream_client = self.create_client(
-            CropQuery, CROP_QUERY_TOPIC, callback_group=self.callback_group
-        )
-
     def customer_table_callback(self, request, response):
         self.get_logger().info("Received customer table request")
 
-        # Get tables from YOLO.
+        # Get tables from moondream.
         tables_points2d = self.get_moondream_points("table")
         customer_people = self.get_customers()
 
@@ -199,7 +185,7 @@ class RESTAURANTCommands(Node):
         result = future.result()
 
         if result is None or not result.found:
-            self.get_logger().error("Customer detection failed")
+            self.get_logger().warm("Customer not detected")
             return []
 
         return result.people.list
@@ -241,11 +227,11 @@ class RESTAURANTCommands(Node):
         req = ObjectPoints.Request()
         req.subject = subject
 
-        future = self.moondream_client.call_async(req)
+        future = self.moondream_point_client.call_async(req)
         future = wait_for_future(future, 15)
         result = future.result()
 
-        if result is None or not result.found:
+        if result is None or not result.success:
             self.get_logger().error("MoonDream table point detection failed")
             return []
 
@@ -254,47 +240,6 @@ class RESTAURANTCommands(Node):
             points.append((p.x, p.y))
 
         return points
-
-    def get_detections(self, comp_class=None, timeout=5.0):
-        """
-        Obtain YOLO detections via the YOLO service.
-        comp_class: int[] or None (None = detect all classes)
-        """
-
-        # Create request
-        req = YoloDetect.Request()
-        req.classes = comp_class if comp_class is not None else []
-
-        # Call YOLO service
-        future = self.yolo_client.call_async(req)
-
-        # Wait for the future while spinning the node
-        future = wait_for_future(future, 15)
-        result = future.result()
-
-        if result is None or not result.success:
-            self.get_logger().error("YOLO detection failed")
-            return []
-
-        # Parse detections
-        detections = []
-        for det in result.detections:
-            x1, y1, x2, y2 = det.x1, det.y1, det.x2, det.y2
-            conf, cls_id = det.confidence, det.class_id
-            centroid = ((y1 + y2) / 2, (x1 + x2) / 2)
-            depth = get_depth(self.depth_image, centroid)
-            point3d = deproject_pixel_to_point(self.imageInfo, centroid, depth)
-            detections.append(
-                {
-                    "bbox": (x1, y1, x2, y2),
-                    "confidence": conf,
-                    "class_id": cls_id,
-                    "area": (x2 - x1) * (y2 - y1),
-                    "point3d": point3d,
-                }
-            )
-
-        return detections
 
 
 def main(args=None):
