@@ -309,14 +309,14 @@ jobs:
           docker run --rm \
             --network host \
             --user root \
-            -v ${{ github.workspace }}:/workspace/src \
+            -v ${{ github.workspace }}:/ws/src \
             roborregos/home2:hri-cpu \
             bash -c "
+              cd /ws &&
               source /opt/ros/humble/setup.bash &&
-              mkdir -p /tmp/pkg/embeddings &&
-              cp /workspace/src/hri/packages/embeddings/embeddings/__init__.py /tmp/pkg/embeddings/ &&
-              cp /workspace/src/hri/packages/embeddings/scripts/*.py /tmp/pkg/embeddings/ &&
-              PYTHONPATH=/tmp/pkg:/workspace/src/frida_constants:/workspace/src/frida_interfaces:\$PYTHONPATH python3 /workspace/src/hri/packages/embeddings/scripts/create_sql_dump.py
+              colcon build --packages-select frida_interfaces frida_constants embeddings &&
+              source install/setup.bash &&
+              python3 src/hri/packages/embeddings/scripts/create_sql_dump.py
             "
           echo "Generated SQL dumps:"
           ls -la docker/hri/sql_dumps/
