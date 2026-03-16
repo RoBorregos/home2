@@ -37,7 +37,7 @@ from xarm_msgs.srv import SetDigitalIO
 from frida_constants.manipulation_constants import (
     MANIPULATION_ACTION_SERVER,
 )
-# import time as t
+import time as t
 
 from enum import Enum
 
@@ -405,7 +405,7 @@ class ManipulationTasks:
             else:
                 Logger.error(self.node, "Failed to open gripper")
 
-            self.move_joint_positions(named_position="front_low_stare", velocity=0.3)
+            self.move_joint_positions(named_position="pick_stare_at_table", velocity=0.3)
             return Status.EXECUTION_SUCCESS
 
         Logger.warn(self.node, f"Movement to {side_name} failed")
@@ -420,7 +420,17 @@ class ManipulationTasks:
             current_joints = self.get_joint_positions(degrees=True)
             test_joints = current_joints.copy()
 
-            offset = 90.0
+            lower_offset = -10.0
+            test_joints["joint5"] += lower_offset
+            result_tilt = self.move_joint_positions(
+                joint_positions=test_joints, velocity=0.2, degrees=True
+            )
+
+            if result_tilt != Status.EXECUTION_SUCCESS:
+                Logger.warn(self.node, "Path is BLOCKED at tilt")
+                return True
+
+            offset = 170.0
             if direction == self.Direction.LEFT:
                 test_joints["joint1"] += offset
             elif direction == self.Direction.RIGHT:
@@ -430,17 +440,8 @@ class ManipulationTasks:
             result_pan = self.move_joint_positions(
                 joint_positions=test_joints, velocity=0.2, degrees=True
             )
-            if result_pan != Status.EXECUTION_SUCCESS:
-                Logger.warn(self.node, "Path is BLOCKED at pan")
-                return True
 
-            lower_offset = 20.0
-            test_joints["joint5"] += lower_offset
-            result_tilt = self.move_joint_positions(
-                joint_positions=test_joints, velocity=0.2, degrees=True
-            )
-
-            if result_tilt == Status.EXECUTION_SUCCESS:
+            if result_pan == Status.EXECUTION_SUCCESS:
                 Logger.info(self.node, f"Path to {direction.value} is CLEAR")
                 return False
             else:
@@ -453,8 +454,8 @@ class ManipulationTasks:
 
     def place_on_floor(self) -> int:
         try:
-            Logger.info(self.node, "Moving to front_low_stare...")
-            result = self.move_joint_positions(named_position="front_low_stare", velocity=0.2)
+            Logger.info(self.node, "Moving to pick_stare_at_table...")
+            result = self.move_joint_positions(named_position="pick_stare_at_table", velocity=0.2)
 
             if result != Status.EXECUTION_SUCCESS:
                 Logger.error(self.node, "Failed to reach start position")
@@ -462,22 +463,32 @@ class ManipulationTasks:
 
             has_collision_left = self._check_side_blocked(self.Direction.LEFT)
 
-            self.move_joint_positions(named_position="front_low_stare", velocity=0.3)
+            self.move_joint_positions(named_position="pick_stare_at_table", velocity=0.3)
 
             if not has_collision_left:
-                result = self._attempt_place_on_side(self.Direction.LEFT)
-                if result == Status.EXECUTION_SUCCESS:
-                    return Status.EXECUTION_SUCCESS
+                for i in range(3):
+                    Logger.info(self.node, f"Attempt {i+1} to place on left side...")
+                    result = self._attempt_place_on_side(self.Direction.LEFT)
+                    if result == Status.EXECUTION_SUCCESS:
+                        return Status.EXECUTION_SUCCESS
+                    if i < 2:
+                        Logger.warn(self.node, "Retrying left side...")
+                        t.sleep(1)
                 Logger.warn(self.node, "Movement to left failed, trying right side...")
 
             has_collision_right = self._check_side_blocked(self.Direction.RIGHT)
 
-            self.move_joint_positions(named_position="front_low_stare", velocity=0.3)
+            self.move_joint_positions(named_position="pick_stare_at_table", velocity=0.3)
 
             if not has_collision_right:
-                result = self._attempt_place_on_side(self.Direction.RIGHT)
-                if result == Status.EXECUTION_SUCCESS:
-                    return Status.EXECUTION_SUCCESS
+                for i in range(3):
+                    Logger.info(self.node, f"Attempt {i+1} to place on right side...")
+                    result = self._attempt_place_on_side(self.Direction.RIGHT)
+                    if result == Status.EXECUTION_SUCCESS:
+                        return Status.EXECUTION_SUCCESS
+                    if i < 2:
+                        Logger.warn(self.node, "Retrying right side...")
+                        t.sleep(1)
                 Logger.error(self.node, "Movement to right also failed")
 
             Logger.error(self.node, "CRITICAL: Both sides are blocked or planning failed")

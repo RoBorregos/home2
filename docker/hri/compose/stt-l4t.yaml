@@ -1,6 +1,6 @@
 services:
   stt:
-    profiles: [receptionist, carry, gpsr, storing]
+    profiles: [hric, carry, gpsr, storing]
     container_name: home2-hri-stt-l4t
     image: roborregos/home2:hri-stt-l4t
     runtime: nvidia
