@@ -8,10 +8,6 @@ bt_navigator:
     bt_loop_duration: 50
     default_server_timeout: 20
     wait_for_service_timeout: 10000
-    # 'default_nav_through_poses_bt_xml' and 'default_nav_to_pose_bt_xml' are use defaults:
-    # nav2_bt_navigator/navigate_to_pose_w_replanning_and_recovery.xml
-    # nav2_bt_navigator/navigate_through_poses_w_replanning_and_recovery.xml
-    # They can be set here or via a RewrittenYaml remap from a parent launch file to Nav2.
     default_nav_to_pose_bt_xml: "$(find-pkg-share nav_main)/bt/follow_dynamic_point.xml"
 
 bt_navigator_navigate_through_poses_rclcpp_node:
@@ -27,14 +23,14 @@ controller_server:
     controller_frequency: 20.0
     FollowPath:
       plugin: "nav2_mppi_controller::MPPIController"
-      time_steps: 56
-      model_dt: 0.05
-      batch_size: 2000
+      time_steps: 44
+      model_dt: 0.07
+      batch_size: 1500
       vx_std: 0.2
       vy_std: 0.0
       wz_std: 0.4
       vx_max: 0.26
-      vx_min: -0.2
+      vx_min: -0.15
       vy_max: 0.0
       wz_max: 1.0
       ax_max: 1.5
@@ -42,20 +38,17 @@ controller_server:
       ay_min: 0.0
       ay_max: 0.0
       az_max: 2.5
-      iteration_count: 1
+      iteration_count: 2
       prune_distance: 1.7
       transform_tolerance: 0.1
       temperature: 0.3
       gamma: 0.015
       motion_model: "DiffDrive"
       visualize: false
-      reset_period: 1.0 # (only in Humble)
       regenerate_noises: false
       TrajectoryVisualizer:
         trajectory_step: 5
         time_step: 3
-      AckermannConstraints:
-        min_turning_r: 0.2
       critics: ["ConstraintCritic", "CostCritic", "GoalCritic", "GoalAngleCritic", "PathAlignCritic", "PathFollowCritic", "PathAngleCritic", "PreferForwardCritic"]
       ConstraintCritic:
         enabled: true
@@ -76,17 +69,6 @@ controller_server:
         cost_power: 1
         cost_weight: 5.0
         threshold_to_consider: 0.5
-      # ObstaclesCritic:
-      #   enabled: true
-      #   cost_power: 1
-      #   repulsion_weight: 1.5
-      #   critical_weight: 20.0
-      #   consider_footprint: false
-      #   collision_cost: 10000.0
-      #   collision_margin_distance: 0.1
-      #   near_goal_distance: 0.5
-      #   inflation_radius: 0.55 # (only in Humble)
-      #   cost_scaling_factor: 10.0 # (only in Humble)
       CostCritic:
         enabled: true
         cost_power: 1
@@ -99,7 +81,7 @@ controller_server:
       PathAlignCritic:
         enabled: true
         cost_power: 1
-        cost_weight: 14.0
+        cost_weight: 10.0
         max_path_occupancy_ratio: 0.05
         trajectory_point_step: 4
         threshold_to_consider: 0.5
@@ -119,38 +101,29 @@ controller_server:
         threshold_to_consider: 0.5
         max_angle_to_furthest: 1.0
         mode: 0
-      # VelocityDeadbandCritic:
-      #   enabled: true
-      #   cost_power: 1
-      #   cost_weight: 35.0
-      #   deadband_velocities: [0.05, 0.05, 0.05]
-      # TwirlingCritic:
-      #   enabled: true
-      #   twirling_cost_power: 1
-      #   twirling_cost_weight: 10.0
 
 local_costmap:
   local_costmap:
     ros__parameters:
       update_frequency: 5.0
       publish_frequency: 2.0
-      global_frame: map
+      global_frame: odom
       robot_base_frame: base_link
       use_sim_time: False
       rolling_window: true
       width: 3
-      height: 1
+      height: 3
       resolution: 0.05
       footprint: "[ [0.32, 0.21], [0.32, -0.21], [-0.17, -0.21], [-0.17, 0.21] ]"
-      plugins: ["voxel_layer", "inflation_layer", "rgbd_obstacle_layer"]
+      plugins: ["voxel_layer", "rgbd_obstacle_layer", "inflation_layer"]
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 3.0
-        inflation_radius: 0.55
+        cost_scaling_factor: 2.5
+        inflation_radius: 0.75
       voxel_layer:
         plugin: "nav2_costmap_2d::VoxelLayer"
         enabled: True
-        publish_voxel_map: True
+        publish_voxel_map: False
         origin_z: 0.0
         z_resolution: 0.05
         z_voxels: 16
@@ -164,62 +137,59 @@ local_costmap:
           marking: True
           data_type: "LaserScan"
           raytrace_max_range: 3.0
-          raytrace_min_range: 0.0
+          raytrace_min_range: 0.08
           obstacle_max_range: 2.5
-          obstacle_min_range: 0.0
-      static_layer:
-        plugin: "nav2_costmap_2d::StaticLayer"
-        map_subscribe_transient_local: True
+          obstacle_min_range: 0.08
       rgbd_obstacle_layer:
         plugin: "spatio_temporal_voxel_layer/SpatioTemporalVoxelLayer"
-        enabled:               true
-        voxel_decay:           2.0     #seconds if linear, e^n if exponential
-        decay_model:           0      #0=linear, 1=exponential, -1=persistent
-        voxel_size:            0.05   #meters
-        track_unknown_space:   true   #default space is unknown
-        observation_persistence: 0.0  #seconds
-        max_obstacle_height:   2.0    #meters
-        mark_threshold:        0      #voxel height
+        enabled: true
+        voxel_decay: 2.0
+        decay_model: 0
+        voxel_size: 0.05
+        track_unknown_space: true
+        observation_persistence: 0.0
+        max_obstacle_height: 2.0
+        mark_threshold: 0
         update_footprint_enabled: true
-        combination_method:    1      #1=max, 0=override
-        obstacle_range:        2.0    #meters
-        origin_z:              0.0    #meters
-        publish_voxel_map:     false   # default off
-        transform_tolerance:   0.2    # seconds
-        mapping_mode:          false  # default off, saves map not for navigation
-        map_save_duration:     10.0     #default 60s, how often to autosave
-        observation_sources:   rgbd1_clear rgbd1_mark
+        combination_method: 1
+        obstacle_range: 2.0
+        origin_z: 0.0
+        publish_voxel_map: false
+        transform_tolerance: 0.2
+        mapping_mode: false
+        map_save_duration: 10.0
+        observation_sources: rgbd1_clear rgbd1_mark
         rgbd1_mark:
           data_type: PointCloud2
           topic: /point_cloud_nav
           marking: true
           clearing: false
-          min_obstacle_height: 0.3     #default 0, meters
-          max_obstacle_height: 2.0     #defaule 3, meters
-          expected_update_rate: 0.0    #default 0, if not updating at this rate at least, remove from buffer
-          observation_persistence: 0.0 #default 0, use all measurements taken during now-value, 0=latest 
-          inf_is_valid: false          #default false, for laser scans
-          clear_after_reading: true    #default false, clear the buffer after the layer gets readings from it
-          filter: "voxel"              #default passthrough, apply "voxel", "passthrough", or no filter to sensor data, recommended to have at one filter on
-          voxel_min_points: 0          #default 0, minimum points per voxel for voxel filter
+          min_obstacle_height: 0.25
+          max_obstacle_height: 2.0
+          expected_update_rate: 0.0
+          observation_persistence: 0.0
+          inf_is_valid: false
+          clear_after_reading: true
+          filter: "voxel"
+          voxel_min_points: 0
         rgbd1_clear:
-          enabled: true                #default true, can be toggled on/off with associated service call
+          enabled: true
           data_type: PointCloud2
           topic: /point_cloud_nav
           marking: false
           clearing: true
-          min_z: 0.1                   #default 0, meters
-          max_z: 7.0                   #default 10, meters
-          vertical_fov_angle: 0.7      #default 0.7, radians
-          horizontal_fov_angle: 1.04   #default 1.04, radians
-          decay_acceleration: 1.       #default 0, 1/s^2. If laser scanner MUST be 0
-          model_type: 0                #default 0 (depth camera). Use 1 for 3D Lidar
+          min_z: 0.1
+          max_z: 7.0
+          vertical_fov_angle: 0.7
+          horizontal_fov_angle: 1.04
+          decay_acceleration: 1.0
+          model_type: 0
       always_send_full_costmap: false
 
 global_costmap:
   global_costmap:
     ros__parameters:
-      update_frequency: 1.0
+      update_frequency: 2.0
       publish_frequency: 1.0
       global_frame: map
       robot_base_frame: base_link
@@ -227,7 +197,7 @@ global_costmap:
       footprint: "[ [0.32, 0.21], [0.32, -0.21], [-0.17, -0.21], [-0.17, 0.21] ]"
       resolution: 0.05
       track_unknown_space: true
-      plugins: ["static_layer", "obstacle_layer", "inflation_layer"]
+      plugins: ["static_layer", "obstacle_layer", "rgbd_obstacle_layer", "inflation_layer"]
       obstacle_layer:
         plugin: "nav2_costmap_2d::ObstacleLayer"
         enabled: True
@@ -239,16 +209,60 @@ global_costmap:
           marking: True
           data_type: "LaserScan"
           raytrace_max_range: 3.0
-          raytrace_min_range: 0.0
+          raytrace_min_range: 0.08
           obstacle_max_range: 2.5
-          obstacle_min_range: 0.0
+          obstacle_min_range: 0.08
       static_layer:
         plugin: "nav2_costmap_2d::StaticLayer"
         map_subscribe_transient_local: True
+      rgbd_obstacle_layer:
+        plugin: "spatio_temporal_voxel_layer/SpatioTemporalVoxelLayer"
+        enabled: true
+        voxel_decay: 5.0
+        decay_model: 0
+        voxel_size: 0.05
+        track_unknown_space: true
+        observation_persistence: 0.0
+        max_obstacle_height: 2.0
+        mark_threshold: 0
+        update_footprint_enabled: true
+        combination_method: 1
+        obstacle_range: 3.0
+        origin_z: 0.0
+        publish_voxel_map: false
+        transform_tolerance: 0.2
+        mapping_mode: false
+        map_save_duration: 10.0
+        observation_sources: rgbd1_clear rgbd1_mark
+        rgbd1_mark:
+          data_type: PointCloud2
+          topic: /point_cloud_nav
+          marking: true
+          clearing: false
+          min_obstacle_height: 0.25
+          max_obstacle_height: 2.0
+          expected_update_rate: 0.0
+          observation_persistence: 0.0
+          inf_is_valid: false
+          clear_after_reading: true
+          filter: "voxel"
+          voxel_min_points: 0
+        rgbd1_clear:
+          enabled: true
+          data_type: PointCloud2
+          topic: /point_cloud_nav
+          marking: false
+          clearing: true
+          min_z: 0.1
+          max_z: 7.0
+          vertical_fov_angle: 0.7
+          horizontal_fov_angle: 1.04
+          decay_acceleration: 0.0
+          model_type: 0
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 3.0
-        inflation_radius: 0.55
+        cost_scaling_factor: 2.5
+        inflation_radius: 0.75
       always_send_full_costmap: false
 
 planner_server:
@@ -259,7 +273,7 @@ planner_server:
       GridBased:
         plugin: "nav2_navfn_planner/NavfnPlanner"
         tolerance: 0.5
-        use_astar: false
+        use_astar: true
         allow_unknown: true
 
 smoother_server:
@@ -276,7 +290,28 @@ behavior_server:
   ros__parameters:
     selected_controller: "FollowPath"
     selected_planner: "GridBased"
-
+    costmap_topic: local_costmap/costmap_raw
+    footprint_topic: local_costmap/published_footprint
+    cycle_frequency: 10.0
+    behavior_plugins: ["spin", "backup", "drive_on_heading", "assisted_teleop", "wait"]
+    spin:
+      plugin: "nav2_behaviors/Spin"
+    backup:
+      plugin: "nav2_behaviors/BackUp"
+    drive_on_heading:
+      plugin: "nav2_behaviors/DriveOnHeading"
+    wait:
+      plugin: "nav2_behaviors/Wait"
+    assisted_teleop:
+      plugin: "nav2_behaviors/AssistedTeleop"
+    global_frame: odom
+    robot_base_frame: base_link
+    transform_tolerance: 0.2
+    use_sim_time: false
+    simulate_ahead_time: 2.0
+    max_rotational_vel: 1.0
+    min_rotational_vel: 0.4
+    rotational_acc_lim: 3.2
 
 robot_state_publisher:
   ros__parameters:
@@ -290,9 +325,9 @@ velocity_smoother:
     feedback: "OPEN_LOOP"
     max_velocity: [0.26, 0.0, 1.0]
     min_velocity: [-0.26, 0.0, -1.0]
-    max_accel: [2.5, 0.0, 3.2]
-    max_decel: [-2.5, 0.0, -3.2]
+    max_accel: [1.5, 0.0, 2.5]
+    max_decel: [-1.5, 0.0, -2.5]
     odom_topic: "odom"
     odom_duration: 0.1
-    deadband_velocity: [0.0, 0.0, 0.0]
+    deadband_velocity: [0.05, 0.0, 0.1]
     velocity_timeout: 1.0

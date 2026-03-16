@@ -47,6 +47,12 @@ done
 # Reset .env
 echo "" > .env
 
+# CycloneDDS interface from host
+if [ -f /etc/cyclonedds.env ]; then
+    source /etc/cyclonedds.env
+fi
+add_or_update_variable .env "CYCLONE_INTERFACE" "${CYCLONE_INTERFACE:-}"
+
 # Export user
 add_or_update_variable .env "LOCAL_USER_ID" "$(id -u)"
 add_or_update_variable .env "LOCAL_GROUP_ID" "$(id -g)"
@@ -83,8 +89,8 @@ else
 fi
 
 case $TASK in
-    "--receptionist")
-        RUN="ros2 run task_manager receptionist_task_manager.py"
+    "--hric")
+        RUN="ros2 run task_manager hric_task_manager.py"
         ;;
     "--help-me-carry")
         RUN="ros2 run task_manager help_me_carry.py"
