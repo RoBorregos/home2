@@ -26,6 +26,18 @@ class MoonDreamServicer(moondream_proto_pb2_grpc.MoonDreamServiceServicer):
         position = self.model.find_beverage(request.encoded_image, request.subject)
         return moondream_proto_pb2.BeveragePositionResponse(position=position)
 
+    def FindObjectPoints(self, request, context):
+        points = self.model.find_object_points(request.encoded_image, request.subject)
+
+        proto_points = [
+            moondream_proto_pb2.ObjectPoint(x=float(point["x"]), y=float(point["y"]))
+            for point in points
+        ]
+
+        return moondream_proto_pb2.FindObjectPointsResponse(
+            points=proto_points, found=True
+        )
+
     def Query(self, request, context):
         print("Querying image...")
         answer = self.model.query(request.encoded_image, request.query)
