@@ -39,7 +39,7 @@ class NoiseCancellation(Node):
         self.declare_parameter("ENABLE_ANC", True)
         self.declare_parameter("GAIN", 1.0)
         self.declare_parameter("DEBUG", False)
-        self.declare_parameter("DF_MODEL_PATH", "../assets/downloads")
+        self.declare_parameter("DF_MODEL_PATH", "assets/downloads")
 
         input_topic = self.get_parameter("RAW_AUDIO_TOPIC").value
         output_topic = self.get_parameter("PROCESSED_AUDIO_TOPIC").value
@@ -50,7 +50,7 @@ class NoiseCancellation(Node):
         # Resolve model path relative to this script's package root
         script_dir = os.path.dirname(os.path.realpath(__file__))
         # Path from script is ../../assets/downloads
-        base_path = os.path.abspath(os.path.join(script_dir, "..", ".."))
+        base_path = os.path.abspath(os.path.join(script_dir, ".."))
         self.df_model_path = os.path.join(
             base_path, self.get_parameter("DF_MODEL_PATH").value
         )
