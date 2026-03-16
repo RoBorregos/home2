@@ -151,6 +151,14 @@ var namespaces_dup =
     [ "help_me_carry_launch", "namespacehelp__me__carry__launch.html", [
       [ "generate_launch_description", "namespacehelp__me__carry__launch.html#a127c9132b150657886963992c6269da4", null ]
     ] ],
+    [ "hric", "namespacehric.html", [
+      [ "generate_launch_description", "namespacehric.html#a6ba4e2587b8b923faea3b8b23fdb037d", null ]
+    ] ],
+    [ "hric_commands", "namespacehric__commands.html", "namespacehric__commands" ],
+    [ "hric_launch", "namespacehric__launch.html", [
+      [ "generate_launch_description", "namespacehric__launch.html#a5dcfeb834a4cf01df9f2c377d4893dce", null ]
+    ] ],
+    [ "hric_task_manager", "namespacehric__task__manager.html", "namespacehric__task__manager" ],
     [ "is_person_inside", "namespaceis__person__inside.html", "namespaceis__person__inside" ],
     [ "local_camera", "namespacelocal__camera.html", "namespacelocal__camera" ],
     [ "look_at_example", "namespacelook__at__example.html", "namespacelook__at__example" ],
@@ -231,10 +239,6 @@ var namespaces_dup =
     [ "PourManager", "namespacePourManager.html", "namespacePourManager" ],
     [ "receptionist", "namespacereceptionist.html", [
       [ "generate_launch_description", "namespacereceptionist.html#aaead6d431decb57c53f9d7c189fbb0f8", null ]
-    ] ],
-    [ "receptionist_commands", "namespacereceptionist__commands.html", "namespacereceptionist__commands" ],
-    [ "receptionist_launch", "namespacereceptionist__launch.html", [
-      [ "generate_launch_description", "namespacereceptionist__launch.html#a1d8b268d07aad010deb06846832876f6", null ]
     ] ],
     [ "receptionist_task_manager", "namespacereceptionist__task__manager.html", "namespacereceptionist__task__manager" ],
     [ "record_joints_node", "namespacerecord__joints__node.html", "namespacerecord__joints__node" ],

@@ -10,5 +10,9 @@ var searchData=
   ['hri_2emd_7',['hri.md',['../hri_8md.html',1,'']]],
   ['hri_5fconstants_2epy_8',['hri_constants.py',['../hri__constants_8py.html',1,'']]],
   ['hri_5fhand_2epy_9',['hri_hand.py',['../hri__hand_8py.html',1,'']]],
-  ['hri_5ftasks_2epy_10',['hri_tasks.py',['../hri__tasks_8py.html',1,'']]]
+  ['hri_5ftasks_2epy_10',['hri_tasks.py',['../hri__tasks_8py.html',1,'']]],
+  ['hric_2elaunch_2epy_11',['hric.launch.py',['../hric_8launch_8py.html',1,'']]],
+  ['hric_5fcommands_2epy_12',['hric_commands.py',['../hric__commands_8py.html',1,'']]],
+  ['hric_5flaunch_2epy_13',['hric_launch.py',['../hric__launch_8py.html',1,'']]],
+  ['hric_5ftask_5fmanager_2epy_14',['hric_task_manager.py',['../hric__task__manager_8py.html',1,'']]]
 ];

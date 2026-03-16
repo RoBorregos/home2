@@ -8,9 +8,10 @@ var dir_796ddb26d3f951020bd008472cdfdae1 =
     [ "utils", "dir_3cba7ceaa24a0d84fe4d7a0a609ccd6c.html", "dir_3cba7ceaa24a0d84fe4d7a0a609ccd6c" ],
     [ "clean_table_task_manager.py", "clean__table__task__manager_8py.html", "clean__table__task__manager_8py" ],
     [ "egpsr_task_manager.py", "egpsr__task__manager_8py.html", "egpsr__task__manager_8py" ],
+    [ "follow_face_node.py", "follow__face__node_8py.html", "follow__face__node_8py" ],
     [ "gpsr_task_manager.py", "gpsr__task__manager_8py.html", "gpsr__task__manager_8py" ],
     [ "hand_task_manager.py", "hand__task__manager_8py.html", "hand__task__manager_8py" ],
-    [ "receptionist_task_manager.py", "receptionist__task__manager_8py.html", "receptionist__task__manager_8py" ],
+    [ "hric_task_manager.py", "hric__task__manager_8py.html", "hric__task__manager_8py" ],
     [ "restaurant_task_manager.py", "restaurant__task__manager_8py.html", "restaurant__task__manager_8py" ],
     [ "safety_task_manager.py", "safety__task__manager_8py.html", "safety__task__manager_8py" ],
     [ "storing_groceries_manager.py", "storing__groceries__manager_8py.html", "storing__groceries__manager_8py" ]

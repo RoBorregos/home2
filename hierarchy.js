@@ -14,6 +14,7 @@ var hierarchy =
       [ "subtask_managers.gpsr_single_tasks.GPSRSingleTask", "classsubtask__managers_1_1gpsr__single__tasks_1_1GPSRSingleTask.html", null ],
       [ "subtask_managers.gpsr_tasks.GPSRTask", "classsubtask__managers_1_1gpsr__tasks_1_1GPSRTask.html", null ]
     ] ],
+    [ "hric_task_manager.Guest", "classhric__task__manager_1_1Guest.html", null ],
     [ "receptionist_task_manager.Guest", "classreceptionist__task__manager_1_1Guest.html", null ],
     [ "HandlerParams", "structHandlerParams.html", null ],
     [ "subtask_managers.hri_hand.HRIHand", "classsubtask__managers_1_1hri__hand_1_1HRIHand.html", null ],
@@ -91,6 +92,7 @@ var hierarchy =
     [ "utils.subtask_manager.SubtaskManager", "classutils_1_1subtask__manager_1_1SubtaskManager.html", null ],
     [ "clean_table_task_manager.CleanTableTM.TaskStates", "classclean__table__task__manager_1_1CleanTableTM_1_1TaskStates.html", null ],
     [ "hand_task_manager.HandTM.TaskStates", "classhand__task__manager_1_1HandTM_1_1TaskStates.html", null ],
+    [ "hric_task_manager.HRIC_TM.TaskStates", "classhric__task__manager_1_1HRIC__TM_1_1TaskStates.html", null ],
     [ "receptionist_task_manager.ReceptionistTM.TaskStates", "classreceptionist__task__manager_1_1ReceptionistTM_1_1TaskStates.html", null ],
     [ "restaurant_task_manager.RestaurantTaskManager.TaskStates", "classrestaurant__task__manager_1_1RestaurantTaskManager_1_1TaskStates.html", null ],
     [ "type", null, [
@@ -163,6 +165,8 @@ var hierarchy =
       [ "hand_task_manager.HandTM", "classhand__task__manager_1_1HandTM.html", null ],
       [ "heatmapPlace_Server.HeatmapServer", "classheatmapPlace__Server_1_1HeatmapServer.html", null ],
       [ "help_me_carry.HelpMeCarryTM", "classhelp__me__carry_1_1HelpMeCarryTM.html", null ],
+      [ "hric_commands.HRICCommands", "classhric__commands_1_1HRICCommands.html", null ],
+      [ "hric_task_manager.HRIC_TM", "classhric__task__manager_1_1HRIC__TM.html", null ],
       [ "is_person_inside.IsPersonInside", "classis__person__inside_1_1IsPersonInside.html", null ],
       [ "local_camera.Camera", "classlocal__camera_1_1Camera.html", null ],
       [ "look_at_example.LookAt", "classlook__at__example_1_1LookAt.html", null ],
@@ -185,7 +189,6 @@ var hierarchy =
       [ "pick_and_place.pour_server.PourMotionServer", "classpick__and__place_1_1pour__server_1_1PourMotionServer.html", null ],
       [ "point_transformer.PointTransformer", "classpoint__transformer_1_1PointTransformer.html", null ],
       [ "pointing_detection.DetectPointingObjectServer", "classpointing__detection_1_1DetectPointingObjectServer.html", null ],
-      [ "receptionist_commands.ReceptionistCommands", "classreceptionist__commands_1_1ReceptionistCommands.html", null ],
       [ "receptionist_task_manager.ReceptionistTM", "classreceptionist__task__manager_1_1ReceptionistTM.html", null ],
       [ "record_joints_node.JointRecorder", "classrecord__joints__node_1_1JointRecorder.html", null ],
       [ "record_relative_pose.DockingPoseRecorder", "classrecord__relative__pose_1_1DockingPoseRecorder.html", null ],

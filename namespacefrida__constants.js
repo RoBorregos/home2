@@ -116,7 +116,7 @@ var namespacefrida__constants =
       [ "FOLLOW_TOPIC", "namespacefrida__constants_1_1vision__constants.html#a72bf909055f1c93f101ff3cbb8bfab66", null ],
       [ "GET_CUSTOMER_TOPIC", "namespacefrida__constants_1_1vision__constants.html#a696719d32a071aba044c161643784046", null ],
       [ "IMAGE_TOPIC", "namespacefrida__constants_1_1vision__constants.html#ab4b18084c519c161cfd3f33a71c34be4", null ],
-      [ "IMAGE_TOPIC_RECEPTIONIST", "namespacefrida__constants_1_1vision__constants.html#a01c241fd8b186931d88e0fa908e79082", null ],
+      [ "IMAGE_TOPIC_HRIC", "namespacefrida__constants_1_1vision__constants.html#a255b2b0fb358a3fa07177abf65415c99", null ],
       [ "IS_TRACKING_TOPIC", "namespacefrida__constants_1_1vision__constants.html#acceb0d31e9392751549f943e983af41f", null ],
       [ "LOCAL_CAMERA_TOPIC", "namespacefrida__constants_1_1vision__constants.html#a36dd44d3155495112c9e8ccff83938c9", null ],
       [ "PERSON_LIST_TOPIC", "namespacefrida__constants_1_1vision__constants.html#a5535fa1e092a0095142e3dd8abb8d5bc", null ],

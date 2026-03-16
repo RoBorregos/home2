@@ -138,6 +138,13 @@ var annotated_dup =
     [ "help_me_carry", "namespacehelp__me__carry.html", [
       [ "HelpMeCarryTM", "classhelp__me__carry_1_1HelpMeCarryTM.html", "classhelp__me__carry_1_1HelpMeCarryTM" ]
     ] ],
+    [ "hric_commands", "namespacehric__commands.html", [
+      [ "HRICCommands", "classhric__commands_1_1HRICCommands.html", "classhric__commands_1_1HRICCommands" ]
+    ] ],
+    [ "hric_task_manager", "namespacehric__task__manager.html", [
+      [ "Guest", "classhric__task__manager_1_1Guest.html", "classhric__task__manager_1_1Guest" ],
+      [ "HRIC_TM", "classhric__task__manager_1_1HRIC__TM.html", "classhric__task__manager_1_1HRIC__TM" ]
+    ] ],
     [ "is_person_inside", "namespaceis__person__inside.html", [
       [ "IsPersonInside", "classis__person__inside_1_1IsPersonInside.html", "classis__person__inside_1_1IsPersonInside" ]
     ] ],
@@ -268,9 +275,6 @@ var annotated_dup =
     ] ],
     [ "PourManager", "namespacePourManager.html", [
       [ "PourManager", "classPourManager_1_1PourManager.html", "classPourManager_1_1PourManager" ]
-    ] ],
-    [ "receptionist_commands", "namespacereceptionist__commands.html", [
-      [ "ReceptionistCommands", "classreceptionist__commands_1_1ReceptionistCommands.html", "classreceptionist__commands_1_1ReceptionistCommands" ]
     ] ],
     [ "receptionist_task_manager", "namespacereceptionist__task__manager.html", [
       [ "Guest", "classreceptionist__task__manager_1_1Guest.html", "classreceptionist__task__manager_1_1Guest" ],

@@ -8,7 +8,7 @@ var searchData=
   ['handle_5fmisplaced_5fobject_5',['HANDLE_MISPLACED_OBJECT',['../classegpsr__task__manager_1_1EGPSRTM_1_1States.html#a3cc19d55ec99e1d4c3f88a9e864b7f41',1,'egpsr_task_manager.EGPSRTM.States.HANDLE_MISPLACED_OBJECT()'],['../classegsr__cut_1_1EGPSRTM_1_1States.html#af3083c2e98238bb8461e558c98107ca5',1,'egsr_cut.EGPSRTM.States.HANDLE_MISPLACED_OBJECT()']]],
   ['handle_5ftrash_6',['HANDLE_TRASH',['../classegpsr__task__manager_1_1EGPSRTM_1_1States.html#acfb85c0e6e92fec0b86a016f4f3b35c2',1,'egpsr_task_manager.EGPSRTM.States.HANDLE_TRASH()'],['../classegsr__cut_1_1EGPSRTM_1_1States.html#a44895e46200c824bfdbbad5731c3931b',1,'egsr_cut.EGPSRTM.States.HANDLE_TRASH()']]],
   ['handler_5fclient_7',['handler_client',['../classshow__object__detection_1_1ShowDetectionNode.html#a7be549a60c7183b19c62fcf9412883ec',1,'show_object_detection::ShowDetectionNode']]],
-  ['hands_8',['hands',['../classreceptionist__commands_1_1ReceptionistCommands.html#abc7e1a5a704a4bda93ff2a2a1451f92c',1,'receptionist_commands::ReceptionistCommands']]],
+  ['hands_8',['hands',['../classhric__commands_1_1HRICCommands.html#a716d4ae401e4fb891836dfed09c4672f',1,'hric_commands::HRICCommands']]],
   ['has_5fjtop_9',['HAS_JTOP',['../namespacenode__monitor.html#a2bb38b40561dcd37c996dd2ed10eaa03',1,'node_monitor']]],
   ['has_5fpynvml_10',['HAS_PYNVML',['../namespacenode__monitor.html#a93e6479c92c3fb367e3769e802f06383',1,'node_monitor']]],
   ['header0_11',['HEADER0',['../classdashgo__driver_1_1dashgo__stm32_1_1Stm32.html#ac5d24a378d77c3e2233b5f254325b6b9',1,'dashgo_driver::dashgo_stm32::Stm32']]],
@@ -22,6 +22,7 @@ var searchData=
   ['hotword_5fservice_5fname_19',['HOTWORD_SERVICE_NAME',['../namespacefrida__constants_1_1hri__constants.html#a56cb7bea1e6304de74676a11d4effdf9',1,'frida_constants::hri_constants']]],
   ['hri_20',['hri',['../classutils_1_1subtask__manager_1_1SubtaskManager.html#a0a2b5ff79896271b6bc24c0253b617f2',1,'utils::subtask_manager::SubtaskManager']]],
   ['hri_21',['HRI',['../classfrida__constants_1_1ModuleNames.html#a26bf7d8ace6b622f93e4c9f9dfe97f41',1,'frida_constants::ModuleNames']]],
-  ['hri_5fmanager_22',['hri_manager',['../classsubtask__managers_1_1hri__hand_1_1HRIHand.html#aef0d0569d094ba0a9b63279c9cc981e3',1,'subtask_managers.hri_hand.HRIHand.hri_manager()'],['../classtest__hri__manager_1_1TestHriManager.html#a24fdd546d6ff1fd85f6802baac27733b',1,'test_hri_manager.TestHriManager.hri_manager()'],['../classtest__start__button_1_1TestHriManager.html#a63d76f601c1b4d87cd20c51058adf2e3',1,'test_start_button.TestHriManager.hri_manager()']]],
-  ['hz_23',['HZ',['../classlocal__camera_1_1NodeParams.html#ae2914b29f06d811ab1d84056097899a6',1,'local_camera::NodeParams']]]
+  ['hri_5fmanager_22',['hri_manager',['../classtest__hri__manager_1_1TestHriManager.html#a24fdd546d6ff1fd85f6802baac27733b',1,'test_hri_manager.TestHriManager.hri_manager()'],['../classtest__start__button_1_1TestHriManager.html#a63d76f601c1b4d87cd20c51058adf2e3',1,'test_start_button.TestHriManager.hri_manager()'],['../classsubtask__managers_1_1hri__hand_1_1HRIHand.html#aef0d0569d094ba0a9b63279c9cc981e3',1,'subtask_managers.hri_hand.HRIHand.hri_manager()']]],
+  ['hric_23',['HRIC',['../classutils_1_1task_1_1Task.html#af3a20c95b70351a3e95537eaacd2d71c',1,'utils::task::Task']]],
+  ['hz_24',['HZ',['../classlocal__camera_1_1NodeParams.html#ae2914b29f06d811ab1d84056097899a6',1,'local_camera::NodeParams']]]
 ];
