@@ -4,3 +4,4 @@ include:
   - path: ollama-l4t.yaml
   - path: postgresql.yaml
   - path: tts.yaml
+  - path: events.yaml

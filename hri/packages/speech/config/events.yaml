@@ -1,0 +1,5 @@
+events:
+  ros__parameters:
+    EVENTS_SERVER_IP: "127.0.0.1:50053"
+    AUDIO_TOPIC: "/rawAudioChunk"
+    DETECT_EVENT_SERVICE: REPLACE

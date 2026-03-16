@@ -111,6 +111,7 @@ set(srv_files
   "hri/srv/LLMWrapper.srv"
   "hri/srv/QueryEntry.srv"
   "hri/srv/Speak.srv"
+  "hri/srv/DetectEvent.srv"
   "hri/srv/STT.srv"
   "hri/srv/UpdateHotwords.srv"
   "manipulation/srv/AddCollisionObjects.srv"

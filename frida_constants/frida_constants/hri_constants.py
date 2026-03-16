@@ -25,6 +25,7 @@ ANSWER_PUBLISHER = "/hri/display/answers"
 RESPEAKER_LIGHT_TOPIC = "/hri/speech/respeaker/light"
 RESPEAKER_DOA_TOPIC = "/hri/speech/respeaker/doa"
 STT_ACTION_SERVER_NAME = "/hri/speech/STT_action_server"
+DETECT_EVENT_SERVICE = "/hri/detect_event"
 START_BUTTON_CLIENT = "/hri/display/button_press"
 TASK_STATUS_TOPIC = "/hri/display/task_status"
 
