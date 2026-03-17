@@ -11,7 +11,6 @@ find_package(ament_cmake_python REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(frida_interfaces REQUIRED)
-find_package(proto_interfaces REQUIRED)
 
 install(DIRECTORY launch config
  DESTINATION share/${PROJECT_NAME})
