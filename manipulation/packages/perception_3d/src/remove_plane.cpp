@@ -508,7 +508,8 @@ public:
 
   STATUS_RESPONSE vertical_plane(
       _IN_ const std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud,
-      _OUT_ const std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud_out) {
+      _OUT_ const std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud_out,
+    _OUT_ const std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> plane_cloud_out) {
 
     pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
     pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
@@ -531,6 +532,14 @@ public:
     }
     RCLCPP_INFO(this->get_logger(), "Vertical plane found with %zu inliers",
                 inliers->indices.size());
+
+    pcl::PointCloud<pcl::PointXYZ>::Ptr plane_out(new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::ExtractIndices<pcl::PointXYZ> extract_plane;
+    extract_plane.setInputCloud(cloud);
+    extract_plane.setIndices(inliers);
+    extract_plane.setNegative(false); 
+    extract_plane.filter(*plane_out);
+
     pcl::ExtractIndices<pcl::PointXYZ> extract;
     extract.setInputCloud(cloud);
     extract.setIndices(inliers);
@@ -683,8 +692,10 @@ public:
 
     pcl::PointCloud<pcl::PointXYZ>::Ptr vertical_plane_removed(
         new pcl::PointCloud<pcl::PointXYZ>);
+    pcl::PointCloud<pcl::PointXYZ>::Ptr plane_cloud_out(
+      new pcl::PointCloud<pcl::PointXYZ>);
     response->health_response =
-        vertical_plane(cloud_out, vertical_plane_removed);
+        vertical_plane(cloud_out, vertical_plane_removed, plane_cloud_out);
     ASSERT_AND_RETURN_CODE(response->health_response, OK,
                            "Error extracting vertical plane with code %d",
                            response->health_response);
@@ -700,6 +711,13 @@ public:
     response->cloud.header.frame_id = "base_link";
     response->cloud.header.stamp = this->now();
     response->health_response = OK;
+
+    sensor_msgs::msg::PointCloud2 plane_cloud_msg;
+    pcl::toROSMsg(*plane_cloud_out, plane_cloud_msg);
+    plane_cloud_msg.header.frame_id = "base_link";
+    plane_cloud_msg.header.stamp = this->now();
+    response->plane_cloud = plane_cloud_msg;
+
     RCLCPP_INFO(this->get_logger(),
                 "Publishing point cloud without vertical "
                 "plane with %zu points",

@@ -1,0 +1,7 @@
+geometry_msgs/PointStamped close_point
+---
+#result definition
+int32 success
+---
+#feedback
+string execution_state

@@ -24,15 +24,21 @@ from frida_constants.manipulation_constants import (
     GRASP_LINK_FRAME,
     GRIPPER_SET_STATE_SERVICE,
     GO_TO_HAND_ACTION_SERVER,
+    OPEN_CONTAINER_ACTION_SERVER,
+    REMOVE_VERTICAL_PLANE_SERVICE,
+    ADD_PICK_PRIMITIVES_SERVICE,
 )
 from frida_interfaces.srv import (
     AttachCollisionObject,
     GetCollisionObjects,
     RemoveCollisionObject,
+    RemoveVerticalPlane,
+    AddPickPrimitives,
 )
-from frida_interfaces.action import PickMotion, MoveToPose, GoToHand
+from frida_interfaces.action import PickMotion, MoveToPose, GoToHand, OpenContainer
 from frida_interfaces.msg import PickResult
 from geometry_msgs.msg import PoseStamped
+from sensor_msgs_py import point_cloud2
 import copy
 import numpy as np
 from tf_transformations import quaternion_from_euler
@@ -75,10 +81,26 @@ class PickMotionServer(Node):
             callback_group=self.callback_group,
         )
 
+        self._open_container_server = ActionServer(
+            self,
+            OpenContainer,
+            OPEN_CONTAINER_ACTION_SERVER,
+            self.execute_open_container_callback,
+            callback_group=self.callback_group,
+        )
+
         self._move_to_pose_action_client = ActionClient(
             self,
             MoveToPose,
             MOVE_TO_POSE_ACTION_SERVER,
+        )
+
+        self.remove_vertical_plane_client = self.create_client(
+            RemoveVerticalPlane, REMOVE_VERTICAL_PLANE_SERVICE
+        )
+
+        self._add_pick_primitives_client = self.create_client(
+            AddPickPrimitives, ADD_PICK_PRIMITIVES_SERVICE
         )
 
         self._attach_collision_object_client = self.create_client(
@@ -188,6 +210,87 @@ class PickMotionServer(Node):
             result.success = False
             return result
 
+    async def execute_open_container_callback(self, goal_handle):
+        pregrasp_offset = 0.3
+
+        # Get handle cloud
+        remove_plane_request = RemoveVerticalPlane.Request()
+        remove_plane_request.close_point = goal_handle.request.close_point
+        future = self.remove_vertical_plane_client.call_async(remove_plane_request)
+        self.wait_for_future(future)
+        result = OpenContainer.Result()
+        result.success = False
+
+        if future.result() is None or future.result().health_response != 0:
+            self.get_logger().error("Failed to remove vertical plane")
+            goal_handle.succeed()
+            return result
+
+        cloud = future.result().cloud
+        plane_cloud = future.result().plane_cloud
+
+        add_req = AddPickPrimitives.Request()
+        add_req.cloud = plane_cloud
+        add_req.is_vertical_plane = True
+        future_add = self._add_pick_primitives_client.call_async(add_req)
+        self.wait_for_future(future_add)
+        self.get_logger().info("Vertical plane collision object added")
+
+        # Get centroid
+        pts = list(
+            point_cloud2.read_points(cloud, field_names=("x", "y", "z"), skip_nans=True)
+        )
+        if not pts:
+            self.node.get_logger().error("Empty cluster for handle")
+            return False, None
+
+        pts_np = np.array([[p[0], p[1], p[2]] for p in pts])
+        centroid = np.mean(pts_np, axis=0)
+
+        # quaternion position
+        qx, qy, qz, qw = quaternion_from_euler(0, 0, 0)
+        quat = [qx, qy, qz, qw]
+
+        # Move to pregrasp position
+        handle_pose = PoseStamped()
+        handle_pose.header.frame_id = "link_base"
+        handle_pose.header.stamp = self.node.get_clock().now().to_msg()
+        handle_pose.pose.position.x = float(centroid[0]) - pregrasp_offset
+        handle_pose.pose.position.y = float(centroid[1])
+        handle_pose.pose.position.z = float(centroid[2])
+        handle_pose.pose.orientation.x = quat[0]
+        handle_pose.pose.orientation.y = quat[1]
+        handle_pose.pose.orientation.z = quat[2]
+        handle_pose.pose.orientation.w = quat[3]
+
+        move_result, action_result = self.move_to_pose(
+            pose=handle_pose,
+            tolerance_position=0.01,
+            tolerance_orientation=0.1,
+        )
+
+        if not action_result.result.success:
+            self.get_logger().info("Go pregrasp position failed")
+            result.success = False
+
+        # Move to grasp position
+        handle_pose.pose.position.x = float(centroid[0])
+        move_result, action_result = self.move_to_pose(
+            pose=handle_pose,
+            tolerance_position=0.01,
+            tolerance_orientation=0.1,
+            pick_velocity=PICK_VELOCITY / 2,
+        )
+
+        if not action_result.result.success:
+            self.get_logger().info("Go grasp position failed")
+            result.success = False
+        else:
+            self.get_logger().info("Go grasp position reached")
+            result.success = True
+        goal_handle.succeed()
+        return result
+
     def pick(self, goal_handle, feedback):
         """Perform the pick operation."""
         self.get_logger().info(
@@ -285,11 +388,17 @@ class PickMotionServer(Node):
         self.get_logger().error("Failed to reach any grasp pose")
         return False, pick_result
 
-    def move_to_pose(self, pose, tolerance_position=0.005, tolerance_orientation=0.02):
+    def move_to_pose(
+        self,
+        pose,
+        tolerance_position=0.005,
+        tolerance_orientation=0.02,
+        pick_velocity=PICK_VELOCITY,
+    ):
         """Move the robot to the given pose."""
         request = MoveToPose.Goal()
         request.pose = pose
-        request.velocity = PICK_VELOCITY
+        request.velocity = pick_velocity
         request.acceleration = PICK_ACCELERATION
         request.planner_id = PICK_PLANNER
         request.target_link = GRASP_LINK_FRAME

@@ -1,4 +1,5 @@
 geometry_msgs/PointStamped close_point
 ---
 sensor_msgs/PointCloud2 cloud
+sensor_msgs/PointCloud2 plane_cloud
 int32 health_response

@@ -153,7 +153,7 @@ public:
     // this->remove_plane_client =
     //     this->create_client<frida_interfaces::srv::RemovePlane>(
     //         REMOVE_PLANE_SERVICE);
-
+          
     RCLCPP_INFO(this->get_logger(), "Service created");
   }
 
@@ -586,7 +586,7 @@ public:
       return;
     }
 
-    if (request->is_plane) {
+    if (request->is_plane || request.is_vertical_plane) {
       RCLCPP_INFO(this->get_logger(), "Adding plane primitive");
 
       BoxPrimitiveParams box_params;
@@ -601,22 +601,29 @@ public:
               frida_interfaces::srv::AddCollisionObjects::Request>();
 
       req2->collision_objects.resize(1);
-      req2->collision_objects[0].id = "plane";
       req2->collision_objects[0].type = "box";
-
+      
       req2->collision_objects[0].pose.header.frame_id = "base_link";
-
+      
       req2->collision_objects[0].pose.header.stamp = this->now();
-
+      
       req2->collision_objects[0].pose.pose.position.x = box_params.centroid.x;
       req2->collision_objects[0].pose.pose.position.y = box_params.centroid.y;
       req2->collision_objects[0].pose.pose.position.z = box_params.centroid.z;
-
+      
       req2->collision_objects[0].pose.pose.orientation = box_params.orientation;
-
-      req2->collision_objects[0].dimensions.x = box_params.width;
-      req2->collision_objects[0].dimensions.y = box_params.depth;
-      req2->collision_objects[0].dimensions.z = 0.025;
+      
+      if (request->is_plane) {
+        req2->collision_objects[0].id = "plane";
+        req2->collision_objects[0].dimensions.x = box_params.width;
+        req2->collision_objects[0].dimensions.y = box_params.depth;
+        req2->collision_objects[0].dimensions.z = 0.025;  // thickness in Z (horizontal)
+      } else {
+          req2->collision_objects[0].id = "vertical_plane";
+          req2->collision_objects[0].dimensions.x = 0.025;          // thickness in X (vertical)
+          req2->collision_objects[0].dimensions.y = box_params.width;
+          req2->collision_objects[0].dimensions.z = box_params.depth;
+      }
 
       auto res = this->add_collision_object_client->async_send_request(
           req2,

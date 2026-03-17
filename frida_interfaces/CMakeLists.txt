@@ -64,6 +64,7 @@ set(action_files
   "manipulation/action/PickTask.action"
   "manipulation/action/PlaceMotion.action"
   "manipulation/action/PourMotion.action"
+  "manipulation/action/OpenContainer.action"
   "navigation/action/Move.action"
   "vision/action/DetectPerson.action"
   "vision/action/Xarmmove.action"
