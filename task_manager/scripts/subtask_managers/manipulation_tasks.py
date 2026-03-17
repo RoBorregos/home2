@@ -27,15 +27,16 @@ from rclpy.action import ActionClient
 from typing import List, Union
 from utils.decorators import mockable, service_check
 from utils.status import Status
-from frida_interfaces.action import ManipulationAction
+from frida_interfaces.action import ManipulationAction, GoToHand
 from frida_interfaces.msg import ManipulationTask
-from geometry_msgs.msg import PointStamped, PoseStamped
+from geometry_msgs.msg import PointStamped, PoseStamped, Point
 
 # from utils.decorators import service_check
 from xarm_msgs.srv import SetDigitalIO
 
 from frida_constants.manipulation_constants import (
     MANIPULATION_ACTION_SERVER,
+    GO_TO_HAND_ACTION_SERVER,
 )
 import time as t
 
@@ -102,6 +103,9 @@ class ManipulationTasks:
         self._get_optimal_pose_for_plane_client = self.node.create_client(
             GetOptimalPoseForPlane,
             "/manipulation/get_optimal_pose_for_plane",
+        )
+        self._go_to_hand_action_client = ActionClient(
+            self.node, GoToHand, GO_TO_HAND_ACTION_SERVER
         )
 
     def open_gripper(self):
@@ -576,6 +580,44 @@ class ManipulationTasks:
 
     def move_to_position(self, named_position: str, velocity: float = 0.75):
         self.move_joint_positions(named_position=named_position, velocity=velocity, degrees=True)
+        
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
+    @service_check(
+        client="_go_to_hand_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT
+    )
+    def go_to_hand(self, point: PointStamped, hand_offset: float = 0.3) -> int:
+        """Move the arm to a position suitable for handing over an object.
+
+        Args:
+            point: 3D point in space to approach (PointStamped)
+            hand_offset: radial distance from the point to position the EEF (meters)
+
+        Returns:
+            Status code indicating success or failure
+        """
+        goal_msg = GoToHand.Goal()
+        goal_msg.point = point
+        goal_msg.hand_offset = hand_offset
+
+        self._go_to_hand_action_client.wait_for_server()
+        future = self._go_to_hand_action_client.send_goal_async(goal_msg)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+
+        if future.result() is None or not future.result().accepted:
+            Logger.error(self.node, "GoToHand goal was rejected")
+            return Status.EXECUTION_ERROR
+
+        Logger.info(self.node, f"GoToHand goal accepted, waiting for result...")
+        result_future = future.result().get_result_async()
+        rclpy.spin_until_future_complete(self.node, result_future)
+
+        result = result_future.result().result
+        if result.success:
+            Logger.success(self.node, "GoToHand completed successfully")
+            return Status.EXECUTION_SUCCESS
+
+        Logger.error(self.node, "GoToHand failed to reach target pose")
+        return Status.EXECUTION_ERROR
 
     @mockable(return_value=Status.EXECUTION_SUCCESS)
     @service_check(
