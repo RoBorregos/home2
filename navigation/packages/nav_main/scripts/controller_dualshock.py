@@ -7,6 +7,8 @@ from rclpy.action import ActionClient
 from nav2_msgs.action import NavigateToPose
 
 
+
+
 class ControllerDualShock(Node):
     def __init__(self):
         super().__init__('controller_dualshock')
@@ -15,13 +17,19 @@ class ControllerDualShock(Node):
         self.subscription
         self.nav2_client = ActionClient(self, NavigateToPose, '/navigate_to_pose/_action/cancel_goal')
         self.rotation_speed = 0.1
-        self.linear_speed = 0.2 
+        self.linear_speed = 0.2
+        self.deadzone = 0.8
+    
+    def apply_deadzone(self, value): #Applying deadzone
+        if abs(value) < self.deadzone:
+            return 0.0
+        return value
     
     def joy_callback(self, msg):    
 
         twist = Twist()
-        twist.linear.x = msg.axes[1] * self.linear_speed
-        twist.angular.z = msg.axes[3] * self.rotation_speed
+        twist.linear.x = (msg.axes[1]) * self.linear_speed
+        twist.angular.z = self.apply_deadzone(msg.axes[2]) * self.rotation_speed
         self.publisher.publish(twist)
 
         if msg.buttons[3] == 1:  # Square pressed
