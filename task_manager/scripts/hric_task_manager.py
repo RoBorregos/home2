@@ -230,8 +230,28 @@ class HRIC_TM(Node):
                 self.subtask_manager.hri.say(
                     "I see you brought a bag for the host. Please let me take care of it for you.",
                 )
-            # TODO: Implement autonomous bag taking functionality here
-            self.subtask_manager.hri.say("Go ahead and place it on my gripper.")
+
+            self.subtask_manager.hri.say(
+                "Please extend your hand holding the bag so I can reach it."
+            )
+            
+            status, hand_point = self.subtask_manager.vision.detect_hand()
+            
+            if status == Status.EXECUTION_SUCCESS:
+                self.subtask_manager.hri.say("I can see your hand, moving towards it.", wait=False)
+                go_result = self.subtask_manager.manipulation.go_to_hand(
+                    point=hand_point,
+                    hand_offset=0.3,
+                )
+                if go_result != Status.EXECUTION_SUCCESS:
+                    self.subtask_manager.hri.say(
+                        "I could not reach your hand. Please place the bag directly on my gripper."
+                    )
+            else:
+                self.subtask_manager.hri.say(
+                    "I could not detect your hand. Please place the bag on my gripper."
+                )
+                
             self.timeout(5)
             s, res = self.subtask_manager.hri.confirm(
                 "Have you placed the bag on my gripper?", use_hotwords=False
