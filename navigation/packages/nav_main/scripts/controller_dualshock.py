@@ -7,6 +7,12 @@ from rclpy.action import ActionClient
 from nav2_msgs.action import NavigateToPose
 
 
+DEADZONE = 0.08
+
+def apply_deadzone(value, threshold=DEADZONE):
+    return 0.0 if abs(value) < threshold else value
+
+
 class ControllerDualShock(Node):
     def __init__(self):
         super().__init__('controller_dualshock')
@@ -20,8 +26,8 @@ class ControllerDualShock(Node):
     def joy_callback(self, msg):    
 
         twist = Twist()
-        twist.linear.x = msg.axes[1] * self.linear_speed
-        twist.angular.z = msg.axes[3] * self.rotation_speed
+        twist.linear.x = apply_deadzone(msg.axes[1]) * self.linear_speed
+        twist.angular.z = apply_deadzone(msg.axes[2]) * self.rotation_speed
         self.publisher.publish(twist)
 
         if msg.buttons[3] == 1:  # Square pressed
@@ -34,12 +40,12 @@ class ControllerDualShock(Node):
 
         # D-pad right decrease linear speed
         if msg.axes[6] < -0.5:
-            self.linear_speed = min(self.linear_speed - 0.05, 1.0)
+            self.linear_speed = max(self.linear_speed - 0.05, 0.05)
             self.get_logger().info(f'Linear speed: {self.linear_speed:.2f}')
 
         # D-pad Up: increase rotation speed
         if msg.axes[7] > 0.5:
-            self.rotation_speed = min(self.rotation_speed + 0.05, 1.0)
+            self.rotation_speed = min(self.rotation_speed + 0.05, 2.0)
             self.get_logger().info(f'Rotation speed: {self.rotation_speed:.2f}')
 
         # D-pad Down: decrease rotation speed
