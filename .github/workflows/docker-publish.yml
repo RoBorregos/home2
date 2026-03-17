@@ -314,7 +314,7 @@ jobs:
             bash -c "
               cd /ws &&
               source /opt/ros/humble/setup.bash &&
-              colcon build --packages-select frida_interfaces frida_constants embeddings &&
+              colcon build --packages-select frida_interfaces frida_constants nlp embeddings &&
               source install/setup.bash &&
               python3 src/hri/packages/embeddings/scripts/create_sql_dump.py
             "
