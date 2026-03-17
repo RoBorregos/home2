@@ -2,7 +2,7 @@ name: Docker Publish
 
 on:
   push:
-    branches: [postgres-publish]
+    branches: [amin]
     paths:
       # Shared files that affect all areas
       - "docker/Dockerfile.ROS"

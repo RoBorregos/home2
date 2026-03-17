@@ -12,11 +12,3 @@ COPY sql_dumps/ /tmp/sql_dumps/
 RUN cp /tmp/sql_dumps/*.sql /docker-entrypoint-initdb.d/ 2>/dev/null || true && rm -rf /tmp/sql_dumps
 
 CMD ["postgres"]
-
-RUN ls
-RUN ls
-RUN ls
-RUN ls
-RUN ls
-RUN ls
-RUN ls
