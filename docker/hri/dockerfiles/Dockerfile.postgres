@@ -16,3 +16,4 @@ CMD ["postgres"]
 RUN ls
 RUN ls
 RUN ls
+RUN ls
