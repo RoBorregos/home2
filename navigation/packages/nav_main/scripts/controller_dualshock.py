@@ -15,10 +15,27 @@ class ControllerDualShock(Node):
         self.subscription
         self.nav2_client = ActionClient(self, NavigateToPose, '/navigate_to_pose/_action/cancel_goal')
         self.rotation_speed = 0.1
+        self.linear_speed = 0.2 
     
     def joy_callback(self, msg):    
+
+        twist = Twist()
+        twist.linear.x = msg.axes[1] * self.linear_speed
+        twist.angular.z = msg.axes[3] * self.rotation_speed
+        self.publisher.publish(twist)
+
         if msg.buttons[3] == 1:  # Square pressed
             self.nav2_client.cancel_goal_async()
+
+        # D-pad left increase linear speed
+        if msg.axes[6] > 0.5:
+            self.linear_speed() = min(self.linear_speed + 0.05, 1.0)
+            self.get_logger().info(f'Linear speed: {self.linear_speed:.2f}')
+
+        # D-pad right decrease linear speed
+        if msg.axes[6] < -0.5:
+            self.linear_speed() = min(self.linear_speed - 0.05, 1.0)
+            self.get_logger().info(f'Linear speed: {self.linear_speed:.2f}')
 
         # D-pad Up: increase rotation speed
         if msg.axes[7] > 0.5:
