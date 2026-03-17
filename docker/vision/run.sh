@@ -34,7 +34,7 @@ for arg in "${ARGS[@]}"; do
         exit 0
         ;;
     "--build-image")
-        BUILD_IMAGE="--build"
+        BUILD_IMAGE="--build "
         ;;
     "--upload-image")
         UPLOAD_IMAGE="true"
@@ -140,7 +140,7 @@ fi
 if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
     ALREADY_RUNNING=$(docker ps -q -f name="vision")
     if [ -z "$ALREADY_RUNNING" ] || [ -n "$BUILD_IMAGE" ]; then
-        docker compose up -d $BUILD_IMAGE
+      docker build --no-cache && docker compose up -d $BUILD_IMAGE
     fi
     docker compose exec vision bash -c "$COMMAND"
 else

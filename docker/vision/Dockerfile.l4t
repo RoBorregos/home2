@@ -8,21 +8,32 @@ RUN apt-get update -qq && apt-get install -y  build-essential \
     libx11-xcb1 libxkbcommon-x11-0 \
     libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 \
     libxcb-render-util0 libxcb-shape0 libxcb-xfixes0 libxcb-xinerama0 \
-    libxcb-cursor0 libxcb-xkb1
+    libxcb-cursor0 libxcb-xkb1 libjpeg-dev
 
 # Download and extract dlib
-RUN wget http://dlib.net/files/dlib-19.24.tar.bz2 && \
-tar jxvf dlib-19.24.tar.bz2
+RUN wget http://dlib.net/files/dlib-20.0.tar.bz2 && \
+tar jxvf dlib-20.0.tar.bz2
 
-WORKDIR /workspace/dlib-19.24
+WORKDIR /workspace/dlib-20.0
 RUN mkdir build
-WORKDIR /workspace/dlib-19.24/build
+WORKDIR /workspace/dlib-20.0/build
 
-RUN cmake .. && \
-    cmake --build .
+RUN cmake .. \
+  -DDLIB_USE_CUDA=1 \
+  -DUSE_AVX_INSTRUCTIONS=0 \
+  -DUSE_NEON=1 \
+  -DCUDA_HOST_COMPILER=/usr/bin/gcc \
+  -DCMAKE_PREFIX_PATH=/usr/local/cuda \
+  -DCUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda \
+  -DCUDAToolkit_ROOT=/usr/local/cuda \
+  -DCMAKE_BUILD_TYPE=Release \
+  -DCUDA_ARCHITECTURES="87" \
+  -DCMAKE_CUDA_ARCHITECTURES="87" 
 
-WORKDIR /workspace/dlib-19.24
-RUN python3 setup.py install --set DLIB_USE_CUDA=1
+RUN cmake --build . --config Release -- -j12
+
+WORKDIR /workspace/dlib-20.0
+RUN python3 setup.py install --set DLIB_USE_CUDA=1 --set USE_NEON=1 --set CUDA_ARCHITECTURES=87
 
 RUN pip install --upgrade pip
 
@@ -31,6 +42,14 @@ WORKDIR /workspace/requirements
 
 RUN mkdir -p /workspace/requirements
 COPY vision/requirements /workspace/requirements
+
+
+#Installed = 
+#numpy correct
+#Opencv correct
+#
+#
+
 
 # RUN pip install -r opencv.txt
 # RUN apt update && apt install cmake -y
