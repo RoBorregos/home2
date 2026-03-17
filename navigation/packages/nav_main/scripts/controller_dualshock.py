@@ -29,12 +29,12 @@ class ControllerDualShock(Node):
 
         # D-pad left increase linear speed
         if msg.axes[6] > 0.5:
-            self.linear_speed() = min(self.linear_speed + 0.05, 1.0)
+            self.linear_speed = min(self.linear_speed + 0.05, 1.0)
             self.get_logger().info(f'Linear speed: {self.linear_speed:.2f}')
 
         # D-pad right decrease linear speed
         if msg.axes[6] < -0.5:
-            self.linear_speed() = min(self.linear_speed - 0.05, 1.0)
+            self.linear_speed = min(self.linear_speed - 0.05, 1.0)
             self.get_logger().info(f'Linear speed: {self.linear_speed:.2f}')
 
         # D-pad Up: increase rotation speed
