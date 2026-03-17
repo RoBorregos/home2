@@ -145,6 +145,7 @@ if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
     docker compose exec vision bash -c "$COMMAND"
 else
     add_or_update_variable .env "COMMAND" "$COMMAND"
+    echo "COmmand = $COMMAND"
     echo "Running docker compose up $DETACHED $BUILD_IMAGE"
     docker compose up $DETACHED $BUILD_IMAGE
 fi
