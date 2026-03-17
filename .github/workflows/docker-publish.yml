@@ -310,6 +310,7 @@ jobs:
             --network host \
             --user root \
             -v ${{ github.workspace }}:/workspace/src \
+            -e SKIP_ROS_CONNECTION=true \
             roborregos/home2:hri-cpu \
             bash -c "
               cd /workspace &&
