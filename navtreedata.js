@@ -78,97 +78,95 @@ var NAVTREE =
       ] ]
     ] ],
     [ "HRI", "md_docs_Run_Areas_hri.html", [
-      [ "Docker setup", "md_docs_Run_Areas_hri.html#autotoc_md54", [
-        [ "Quick start using run.sh", "md_docs_Run_Areas_hri.html#autotoc_md55", null ]
-      ] ],
-      [ "Additional Information", "md_docs_Run_Areas_hri.html#autotoc_md56", null ]
+      [ "Flags", "md_docs_Run_Areas_hri.html#autotoc_md54", null ],
+      [ "Running specific containers", "md_docs_Run_Areas_hri.html#autotoc_md55", null ]
     ] ],
     [ "Manipulation", "md_docs_Run_Areas_Manipulation_manipulation.html", [
-      [ "Docker setup", "md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md58", null ],
-      [ "Running the vision module", "md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md59", [
-        [ "Additional Information", "md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md66", null ]
+      [ "Docker setup", "md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md57", null ],
+      [ "Running the vision module", "md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md58", [
+        [ "Additional Information", "md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md65", null ]
       ] ]
     ] ],
     [ "Running Pick and Place", "md_docs_Run_Areas_Manipulation_pick_and_place.html", [
-      [ "Launching the Robot", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md68", [
-        [ "Simulation", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md69", null ],
-        [ "Real RObot", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md70", [
-          [ "Robot interface", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md71", null ],
-          [ "3D Camera", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md72", null ]
+      [ "Launching the Robot", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md67", [
+        [ "Simulation", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md68", null ],
+        [ "Real RObot", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md69", [
+          [ "Robot interface", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md70", null ],
+          [ "3D Camera", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md71", null ]
         ] ]
       ] ],
-      [ "Launching utilities", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md73", [
-        [ "Object detector", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md74", null ]
+      [ "Launching utilities", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md72", [
+        [ "Object detector", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md73", null ]
       ] ],
-      [ "Launch Pick and Place main code", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md75", [
-        [ "Pick and Place pipeline", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md76", null ]
+      [ "Launch Pick and Place main code", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md74", [
+        [ "Pick and Place pipeline", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md75", null ]
       ] ],
-      [ "Usage", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md77", null ]
+      [ "Usage", "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md76", null ]
     ] ],
     [ "Navigation Docs", "md_docs_Run_Areas_nav.html", [
-      [ "How to Run", "md_docs_Run_Areas_nav.html#autotoc_md79", null ],
-      [ "Running Nav Basics", "md_docs_Run_Areas_nav.html#autotoc_md81", [
-        [ "Arguments", "md_docs_Run_Areas_nav.html#autotoc_md82", null ],
-        [ "Run Command", "md_docs_Run_Areas_nav.html#autotoc_md83", null ]
+      [ "How to Run", "md_docs_Run_Areas_nav.html#autotoc_md78", null ],
+      [ "Running Nav Basics", "md_docs_Run_Areas_nav.html#autotoc_md80", [
+        [ "Arguments", "md_docs_Run_Areas_nav.html#autotoc_md81", null ],
+        [ "Run Command", "md_docs_Run_Areas_nav.html#autotoc_md82", null ]
       ] ],
-      [ "Running AMCL Localization", "md_docs_Run_Areas_nav.html#autotoc_md85", [
-        [ "Arguments", "md_docs_Run_Areas_nav.html#autotoc_md86", null ],
-        [ "Run Command", "md_docs_Run_Areas_nav.html#autotoc_md87", null ]
+      [ "Running AMCL Localization", "md_docs_Run_Areas_nav.html#autotoc_md84", [
+        [ "Arguments", "md_docs_Run_Areas_nav.html#autotoc_md85", null ],
+        [ "Run Command", "md_docs_Run_Areas_nav.html#autotoc_md86", null ]
       ] ],
-      [ "Running Navigation Node", "md_docs_Run_Areas_nav.html#autotoc_md89", [
-        [ "Arguments", "md_docs_Run_Areas_nav.html#autotoc_md90", null ],
-        [ "Run Command", "md_docs_Run_Areas_nav.html#autotoc_md91", null ]
+      [ "Running Navigation Node", "md_docs_Run_Areas_nav.html#autotoc_md88", [
+        [ "Arguments", "md_docs_Run_Areas_nav.html#autotoc_md89", null ],
+        [ "Run Command", "md_docs_Run_Areas_nav.html#autotoc_md90", null ]
       ] ]
     ] ],
     [ "Vision", "md_docs_Run_Areas_vision.html", [
-      [ "Docker setup", "md_docs_Run_Areas_vision.html#autotoc_md93", null ],
-      [ "Running the vision module", "md_docs_Run_Areas_vision.html#autotoc_md94", null ],
-      [ "Structure", "md_docs_Run_Areas_vision.html#autotoc_md97", null ],
-      [ "Camera", "md_docs_Run_Areas_vision.html#autotoc_md98", null ]
+      [ "Docker setup", "md_docs_Run_Areas_vision.html#autotoc_md92", null ],
+      [ "Running the vision module", "md_docs_Run_Areas_vision.html#autotoc_md93", null ],
+      [ "Structure", "md_docs_Run_Areas_vision.html#autotoc_md96", null ],
+      [ "Camera", "md_docs_Run_Areas_vision.html#autotoc_md97", null ]
     ] ],
     [ "Help me carry", "md_docs_Run_Tasks_help_me_carry.html", [
-      [ "Integration", "md_docs_Run_Tasks_help_me_carry.html#autotoc_md100", null ],
-      [ "Vision", "md_docs_Run_Tasks_help_me_carry.html#autotoc_md101", null ]
+      [ "Integration", "md_docs_Run_Tasks_help_me_carry.html#autotoc_md99", null ],
+      [ "Vision", "md_docs_Run_Tasks_help_me_carry.html#autotoc_md100", null ]
     ] ],
     [ "Receptionist", "md_docs_Run_Tasks_receptionist.html", [
-      [ "ZED", "md_docs_Run_Tasks_receptionist.html#autotoc_md103", null ],
-      [ "Integration", "md_docs_Run_Tasks_receptionist.html#autotoc_md104", null ],
-      [ "Vision", "md_docs_Run_Tasks_receptionist.html#autotoc_md105", null ],
-      [ "HRI", "md_docs_Run_Tasks_receptionist.html#autotoc_md106", null ],
-      [ "Navigation", "md_docs_Run_Tasks_receptionist.html#autotoc_md107", null ],
-      [ "Manipulation", "md_docs_Run_Tasks_receptionist.html#autotoc_md108", [
-        [ "Launch", "md_docs_Run_Tasks_receptionist.html#autotoc_md109", null ],
-        [ "Arm bringup", "md_docs_Run_Tasks_receptionist.html#autotoc_md110", null ],
-        [ "Motion Planning", "md_docs_Run_Tasks_receptionist.html#autotoc_md111", null ],
-        [ "Follow face", "md_docs_Run_Tasks_receptionist.html#autotoc_md112", null ]
+      [ "ZED", "md_docs_Run_Tasks_receptionist.html#autotoc_md102", null ],
+      [ "Integration", "md_docs_Run_Tasks_receptionist.html#autotoc_md103", null ],
+      [ "Vision", "md_docs_Run_Tasks_receptionist.html#autotoc_md104", null ],
+      [ "HRI", "md_docs_Run_Tasks_receptionist.html#autotoc_md105", null ],
+      [ "Navigation", "md_docs_Run_Tasks_receptionist.html#autotoc_md106", null ],
+      [ "Manipulation", "md_docs_Run_Tasks_receptionist.html#autotoc_md107", [
+        [ "Launch", "md_docs_Run_Tasks_receptionist.html#autotoc_md108", null ],
+        [ "Arm bringup", "md_docs_Run_Tasks_receptionist.html#autotoc_md109", null ],
+        [ "Motion Planning", "md_docs_Run_Tasks_receptionist.html#autotoc_md110", null ],
+        [ "Follow face", "md_docs_Run_Tasks_receptionist.html#autotoc_md111", null ]
       ] ]
     ] ],
     [ "Storing Groceries", "md_docs_Run_Tasks_storing_groceries.html", [
-      [ "Integration", "md_docs_Run_Tasks_storing_groceries.html#autotoc_md114", null ],
-      [ "Vision", "md_docs_Run_Tasks_storing_groceries.html#autotoc_md115", null ]
+      [ "Integration", "md_docs_Run_Tasks_storing_groceries.html#autotoc_md113", null ],
+      [ "Vision", "md_docs_Run_Tasks_storing_groceries.html#autotoc_md114", null ]
     ] ],
     [ "Improving your ROS2 workflow with vscode", "md_docs_setup_vscode.html", [
-      [ "Prerequisites", "md_docs_setup_vscode.html#autotoc_md117", null ],
-      [ "Setup", "md_docs_setup_vscode.html#autotoc_md118", null ],
-      [ "Troubleshooting", "md_docs_setup_vscode.html#autotoc_md119", null ]
+      [ "Prerequisites", "md_docs_setup_vscode.html#autotoc_md116", null ],
+      [ "Setup", "md_docs_setup_vscode.html#autotoc_md117", null ],
+      [ "Troubleshooting", "md_docs_setup_vscode.html#autotoc_md118", null ]
     ] ],
     [ "Project setup", "md_docs_Setup.html", [
-      [ "Pre-commit", "md_docs_Setup.html#autotoc_md121", null ],
-      [ "Ruff", "md_docs_Setup.html#autotoc_md122", [
-        [ "Vscode integration", "md_docs_Setup.html#autotoc_md123", null ],
-        [ "Other integrations", "md_docs_Setup.html#autotoc_md124", null ]
+      [ "Pre-commit", "md_docs_Setup.html#autotoc_md120", null ],
+      [ "Ruff", "md_docs_Setup.html#autotoc_md121", [
+        [ "Vscode integration", "md_docs_Setup.html#autotoc_md122", null ],
+        [ "Other integrations", "md_docs_Setup.html#autotoc_md123", null ]
       ] ]
     ] ],
     [ "Decorators", "md_docs_task_manager_decorators.html", [
-      [ "Mockable", "md_docs_task_manager_decorators.html#autotoc_md126", [
-        [ "Parameters", "md_docs_task_manager_decorators.html#autotoc_md127", null ],
-        [ "Implementation", "md_docs_task_manager_decorators.html#autotoc_md128", null ]
+      [ "Mockable", "md_docs_task_manager_decorators.html#autotoc_md125", [
+        [ "Parameters", "md_docs_task_manager_decorators.html#autotoc_md126", null ],
+        [ "Implementation", "md_docs_task_manager_decorators.html#autotoc_md127", null ]
       ] ],
-      [ "Service Check", "md_docs_task_manager_decorators.html#autotoc_md129", [
-        [ "Parameters", "md_docs_task_manager_decorators.html#autotoc_md130", null ],
-        [ "Implementation", "md_docs_task_manager_decorators.html#autotoc_md131", null ]
+      [ "Service Check", "md_docs_task_manager_decorators.html#autotoc_md128", [
+        [ "Parameters", "md_docs_task_manager_decorators.html#autotoc_md129", null ],
+        [ "Implementation", "md_docs_task_manager_decorators.html#autotoc_md130", null ]
       ] ],
-      [ "Example", "md_docs_task_manager_decorators.html#autotoc_md132", null ]
+      [ "Example", "md_docs_task_manager_decorators.html#autotoc_md131", null ]
     ] ],
     [ "Namespaces", "namespaces.html", [
       [ "Namespace List", "namespaces.html", "namespaces_dup" ],
@@ -231,13 +229,13 @@ var NAVTREEINDEX =
 "display__real__tmr2025_8launch_8py.html",
 "gpsr__commands_8py.html#a5783abd6bc09633fca3b65604586f3cb",
 "manipulation__constants_8py.html#adecbda30561acaec55c0cdff163163b0",
-"move__to__location_8py.html#aa7c2aabe691dd46e78770b48b69f0926",
-"namespacefrida__constants_1_1hri__constants.html#a57a8000db92c380cf72a62b5afca2ba8",
-"namespaceis__person__inside.html",
-"namespacereid__model.html#a09e0afec43f563971591076d0a91a556",
-"namespaceutils_1_1task.html",
-"service__utils_8py.html#a479ef9705921d2c4e6c2549e4731ef57",
-"xarm__configurations_8py.html#a2f3850b75849b6bc32e08235fe99d81c"
+"move__to__location_8py.html#ace2d6b2e4431ff8df299383920b903cc",
+"namespacefrida__constants_1_1hri__constants.html#a5a3605a4415d25cb9c77f3f904c2da29",
+"namespaceis__person__inside.html#a79f30c58d09282b6365883311dae895c",
+"namespacereid__model.html#a0edad6891176ff69f75984e2090786c6",
+"namespacevirtual__stop__button.html",
+"service__utils_8py.html#a71accfcb34b0efa3659b647054fb840b",
+"xarm__configurations_8py.html#a3f9c52b155ebdeebba61a6e7b5c195fd"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';

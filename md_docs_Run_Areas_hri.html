@@ -93,21 +93,21 @@ $(document).ready(function(){initNavTree('md_docs_Run_Areas_hri.html',''); initR
   <div class="headertitle"><div class="title">HRI </div></div>
 </div><!--header-->
 <div class="contents">
-<div class="textblock"><p>To run or test the modules it is necessary to have Ubuntu 22.04. Alternatively, you can use the docker setup provided in this repository.</p>
+<div class="textblock"><p>In order to run and setup this area specific flags were added which abstract the complexity of performing both simple and complex tasks.</p>
 <h1><a class="anchor" id="autotoc_md54"></a>
-Docker setup</h1>
-<h2><a class="anchor" id="autotoc_md55"></a>
-Quick start using run.sh</h2>
-<p>In root directory (home2), run: </p><div class="fragment"><div class="line">./run.sh hri</div>
-</div><!-- fragment --><p>This will:</p><ul>
-<li>Build the base image according to your system (cpu, cuda or jetson) as well as the image for the hri module.</li>
-<li>Run the device setup script.</li>
-<li>Download the needed LLM models.</li>
-</ul>
-<p>To run a specific task, specify it with the flag <code>--task</code>: </p><div class="fragment"><div class="line">./run.sh hri --receptionist</div>
-</div><!-- fragment --><h1><a class="anchor" id="autotoc_md56"></a>
-Additional Information</h1>
-<p>You may want to only launch some of the services. For example, running the module without the LLM, etc. To do so, please check the docker-compose files in the <code>hri</code> folder, and disable the services you do not want to run.</p>
+Flags</h1>
+<p>Adding multiple flags in the same command is supported. Remember that to run a specific task the task's flag must be the first one.</p>
+<div class="fragment"><div class="line">./run.sh hri --build-display</div>
+</div><!-- fragment --><p>Downloads node-modules (dependencies) and builds the next.js web page inside a temporary <code>hri-ros</code> container.</p>
+<div class="fragment"><div class="line">./run.sh hri --open-display</div>
+</div><!-- fragment --><p>Opens a new Firefox window in kiosk mode (fullscreen). If running with a task it will open the task's specific URL. See <code>docker/hri/scripts/open-display.bash</code>.</p>
+<div class="fragment"><div class="line">./run.sh hri --download-model</div>
+</div><!-- fragment --><p>Pulls RoBorregos' command interpreter LLM from hugging face and other ollama models. See <code>docker/hri/scripts/download-model.sh</code>.</p>
+<div class="fragment"><div class="line">./run.sh hri --regenerate-db</div>
+</div><!-- fragment --><p>Uses current json files from <code>hri/packages/embeddings/embeddings/dataframes/</code> and a navigation service to retrive information and generate SQL files which are saved in <code>/docker/hri/sql_dumps/</code>. Then it replaces the information in the postgres database with these scripts. See <code>docker/hri/scripts/regenerate_db.sh</code>.</p>
+<h1><a class="anchor" id="autotoc_md55"></a>
+Running specific containers</h1>
+<p>You may want to only launch some of the services. For example, running the module without the LLM, etc. To do so, please check the docker-compose yaml files in the <code>docker/hri/compose/</code> folder and comment out the services you do not want to run.</p>
 <p>For more detailed information, see HRI's README.md. </p>
 </div></div><!-- contents -->
 </div><!-- PageDoc -->

@@ -1,6 +1,5 @@
 var NAVTREEINDEX29 =
 {
-"namespacereid__model.html#a09e0afec43f563971591076d0a91a556":[23,0,120,0],
 "namespacereid__model.html#a0edad6891176ff69f75984e2090786c6":[23,0,120,31],
 "namespacereid__model.html#a116c89b650065d26026a027f0f2225ce":[23,0,120,11],
 "namespacereid__model.html#a1394a721868a4409d9c82dd84949f2a6":[23,0,120,35],
@@ -249,5 +248,6 @@ var NAVTREEINDEX29 =
 "namespaceutils_1_1exploration__planner.html":[23,0,152,2],
 "namespaceutils_1_1logger.html":[23,0,152,3],
 "namespaceutils_1_1status.html":[23,0,152,4],
-"namespaceutils_1_1subtask__manager.html":[23,0,152,5]
+"namespaceutils_1_1subtask__manager.html":[23,0,152,5],
+"namespaceutils_1_1task.html":[23,0,152,6]
 };
