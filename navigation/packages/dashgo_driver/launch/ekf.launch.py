@@ -34,11 +34,11 @@ def generate_launch_description():
                                     False,  False,  True, 
                                     False,  False,  False],
                     'imu0_config': [False, False, False,
-                                     False,  False,  True, 
-                                     False, False, False, 
-                                     False,  False,  True, 
-                                     #True,  False,  False],
-                                     False,  False,  False],
+                                     False,  False,  True,
+                                     False, False, False,
+                                     False,  False,  True,
+                                     True,  False,  False],
+                    'imu0_differential': False,
 
                  },
                 

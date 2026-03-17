@@ -26,6 +26,7 @@ RESPEAKER_LIGHT_TOPIC = "/hri/speech/respeaker/light"
 RESPEAKER_DOA_TOPIC = "/hri/speech/respeaker/doa"
 STT_ACTION_SERVER_NAME = "/hri/speech/STT_action_server"
 START_BUTTON_CLIENT = "/hri/display/button_press"
+TASK_STATUS_TOPIC = "/hri/display/task_status"
 
 GPSR_COMMANDS = {
     "go_to",

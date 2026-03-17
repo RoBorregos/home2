@@ -2,8 +2,7 @@
 
 """
 Node to detect people and find
-available seats. Tasks for receptionist
-commands.
+available seats. Tasks for HRIC commands.
 """
 
 import cv2
@@ -31,7 +30,7 @@ from frida_constants.vision_constants import (
     DEPTH_IMAGE_TOPIC,
     DETECT_HAND_SERVICE,
     FIND_SEAT_TOPIC,
-    IMAGE_TOPIC_RECEPTIONIST,
+    IMAGE_TOPIC_HRIC,
 )
 
 from ament_index_python.packages import get_package_share_directory
@@ -45,9 +44,9 @@ CONF_THRESHOLD = 0.4
 CHECK_TIMEOUT = 5
 
 
-class ReceptionistCommands(Node):
+class HRICCommands(Node):
     def __init__(self):
-        super().__init__("receptionist_commands")
+        super().__init__("HRIC_commands")
         self.bridge = CvBridge()
         self.callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
 
@@ -62,7 +61,7 @@ class ReceptionistCommands(Node):
             callback_group=self.callback_group,
         )
         self.image_publisher = self.create_publisher(
-            Image, IMAGE_TOPIC_RECEPTIONIST, 10, callback_group=self.callback_group
+            Image, IMAGE_TOPIC_HRIC, 10, callback_group=self.callback_group
         )
         self.person_detection_action_server = ActionServer(
             self,
@@ -112,7 +111,7 @@ class ReceptionistCommands(Node):
             callback_group=self.callback_group,
         )
 
-        self.get_logger().info("ReceptionistCommands Ready.")
+        self.get_logger().info("HRIC Commands Ready.")
 
         self.create_timer(0.1, self.publish_image)
 
@@ -142,20 +141,47 @@ class ReceptionistCommands(Node):
             return None
 
         hand_landmarks = results.multi_hand_landmarks[0]
-        lm = hand_landmarks.landmark[self.mp_hands.HandLandmark.MIDDLE_FINGER_TIP]
-
         h, w, _ = self.image.shape
-        px, py = int(lm.x * w), int(lm.y * h)
+
+        # Filter landmarks within the image
+        xs = []
+        ys = []
+        for lm in hand_landmarks.landmark:
+            px = int(lm.x * w)
+            py = int(lm.y * h)
+            if 0 <= px < w and 0 <= py < h:
+                xs.append(px)
+                ys.append(py)
+
+        # Centroid of the hand
+        if len(xs) == 0 or len(ys) == 0:
+            self.get_logger().warn("No valid landmarks found for hand.")
+            return None
+        cx = int(np.mean(xs))
+        cy = int(np.mean(ys))
+
+        # Validate centroid is within RGB image bounds
+        if not (0 <= cx < w and 0 <= cy < h):
+            self.get_logger().warn(f"Centroid outside RGB image: ({cx}, {cy})")
+            return None
 
         if self.depth_image is not None and self.camera_info is not None:
             dh, dw = self.depth_image.shape[:2]
-            dpx = int(px * dw / w)
-            dpy = int(py * dh / h)
-            dpx = max(0, min(dpx, dw - 1))
-            dpy = max(0, min(dpy, dh - 1))
-            depth = get_depth(self.depth_image, (dpx, dpy))
-            point3d = deproject_pixel_to_point(self.camera_info, (px, py), depth)
+            dpx = int(cx * dw / w)
+            dpy = int(cy * dh / h)
 
+            if not (0 <= dpx < dw and 0 <= dpy < dh):
+                self.get_logger().warn(f"Centroid outside depth image: ({dpx}, {dpy})")
+                return None
+            try:
+                depth = get_depth(self.depth_image, (dpx, dpy))
+            except IndexError as e:
+                self.get_logger().warn(
+                    f"Depth index out of bounds ({dpx}, {dpy}): {e}. No hand detected."
+                )
+                return None
+
+            point3d = deproject_pixel_to_point(self.camera_info, (cx, cy), depth)
             stamped = PointStamped()
             stamped.header.frame_id = CAMERA_FRAME
             stamped.header.stamp = self.get_clock().now().to_msg()
@@ -248,8 +274,6 @@ class ReceptionistCommands(Node):
     def publish_image(self):
         """Publish the image with the detections if available."""
         if len(self.output_image) != 0:
-            # cv2.imshow("Receptionist Commands", self.output_image)
-            # cv2.waitKey(1)
             self.image_publisher.publish(
                 self.bridge.cv2_to_imgmsg(self.output_image, "bgr8")
             )
@@ -478,7 +502,7 @@ class ReceptionistCommands(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = ReceptionistCommands()
+    node = HRICCommands()
 
     try:
         rclpy.spin(node)
