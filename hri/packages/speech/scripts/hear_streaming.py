@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 
 import collections
-import os
-import sys
 import threading
 import time
 

@@ -2,7 +2,6 @@
 
 import json
 import os
-import sys
 from collections import OrderedDict
 
 import grpc
