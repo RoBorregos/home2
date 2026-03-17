@@ -311,6 +311,7 @@ jobs:
             --user root \
             -v ${{ github.workspace }}:/workspace/src \
             -e SKIP_ROS_CONNECTION=true \
+            -e CYCLONEDDS_URI='<CycloneDDS><Domain><General><NetworkInterfaceAddress>lo</NetworkInterfaceAddress><AllowMulticast>false</AllowMulticast></General></Domain></CycloneDDS>' \
             roborregos/home2:hri-cpu \
             bash -c "
               cd /workspace &&
