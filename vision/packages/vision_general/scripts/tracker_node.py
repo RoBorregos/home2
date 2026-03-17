@@ -18,15 +18,11 @@ Requires 2 terminals minimum (3 if using pose/color detection via moondream).
         ros2 service call /vision/set_tracking_target_by frida_interfaces/srv/TrackBy \
             "{track_enabled: true, track_by: 'gestures', value: 'waving'}"
 
-    Option 3) Track by gesture (waving customer):
-        ros2 service call /vision/set_tracking_target_by frida_interfaces/srv/TrackBy \
-            "{track_enabled: true, track_by: 'gestures', value: 'wavingCustomer'}"
-
-    Option 4) Track by pose (standing, sitting, lying down):
+    Option 3) Track by pose (standing, sitting, lying down):
         ros2 service call /vision/set_tracking_target_by frida_interfaces/srv/TrackBy \
             "{track_enabled: true, track_by: 'poses', value: 'standing'}"
 
-    Option 5) Track by clothing color:
+    Option 4) Track by clothing color:
         ros2 service call /vision/set_tracking_target_by frida_interfaces/srv/TrackBy \
             "{track_enabled: true, track_by: 'color', value: 'red shirt'}"
 
@@ -93,7 +89,6 @@ from frida_constants.vision_constants import (
     CENTROID_TOIC,
     CROP_QUERY_TOPIC,
     IS_TRACKING_TOPIC,
-    CUSTOMER,
 )
 from frida_constants.vision_enums import DetectBy
 
@@ -149,8 +144,6 @@ class SingleTracker(Node):
         self.results_publisher = self.create_publisher(PointStamped, RESULTS_TOPIC, 10)
 
         self.image_publisher = self.create_publisher(Image, TRACKER_IMAGE_TOPIC, 10)
-
-        self.customer_publisher = self.create_publisher(Image, CUSTOMER, 10)
 
         self.centroid_publisher = self.create_publisher(Point, CENTROID_TOIC, 10)
 
@@ -208,7 +201,6 @@ class SingleTracker(Node):
 
         self.output_image = []
         self.depth_image = []
-        self.customer_image = []
 
         pbar.close()
         self.get_logger().info("Single Tracker Ready (DeepSORT)")
@@ -271,21 +263,6 @@ class SingleTracker(Node):
                 self.bridge.cv2_to_imgmsg(self.output_image, "bgr8")
             )
 
-        if len(self.customer_image) != 0:
-            h, w = self.customer_image.shape[:2]
-            square_size = max(h, w)
-            square_img = cv2.copyMakeBorder(
-                self.customer_image,
-                top=(square_size - h) // 2,
-                bottom=(square_size - h + 1) // 2,
-                left=(square_size - w) // 2,
-                right=(square_size - w + 1) // 2,
-                borderType=cv2.BORDER_CONSTANT,
-                value=(0, 0, 0),
-            )
-            self.customer_publisher.publish(
-                self.bridge.cv2_to_imgmsg(square_img, "bgr8")
-            )
 
     def success(self, message) -> None:
         """Print success message"""
@@ -411,17 +388,11 @@ class SingleTracker(Node):
                     if status:
                         response_clean = response_q.strip()
 
-                if value == "wavingCustomer":
-                    raising = self.pose_detection.is_waving_customer(cropped_image)
-                    if raising:
-                        response_clean = value
-
                 if response_clean == value or response_clean == "1":
                     self.success(f"Target found by {track_by}: {response_clean}")
                     largest_person["id"] = track_id
                     largest_person["area"] = area
                     largest_person["bbox"] = (x1, y1, x2, y2)
-                    self.customer_image = copy.deepcopy(cropped_image)
                 else:
                     self.get_logger().warn(
                         f"Person detected with {track_by}: {response_clean} but not {value}"
@@ -451,16 +422,6 @@ class SingleTracker(Node):
         else:
             self.get_logger().warn("No person found")
             return False
-
-    def wait_for_future(self, future, timeout=5):
-        start_time = time.time()
-        while future is None and (time.time() - start_time) < timeout:
-            pass
-        if future is None:
-            return False
-        while not future.done() and (time.time() - start_time) < timeout:
-            pass
-        return future
 
     def moondream_crop_query(self, prompt: str, bbox: list[float]) -> tuple[int, str]:
         """Makes a query of the current image using moondream."""
