@@ -34,6 +34,7 @@ class ControllerDualShock(Node):
 
         if msg.buttons[3] == 1:  # Square pressed
             self.nav2_client.cancel_goal_async()
+            self.get_logger().info('Navigation goal cancelled.')
 
         # D-pad left increase linear speed
         if msg.axes[6] > 0.5:
