@@ -51,6 +51,18 @@ Simulation:
 ros2 run perception_3d down_sample_pc --ros-args -p input_topic:="/depth/color/points" -p leaf_size:=0.01
 ```
 
+#### Mujoco Simulation
+In orther to launch the mujoco simulation the next command is used:
+```
+colcon build 
+source install/setup.bash
+ros2 launch mujoco_spawn mujoco_sim_init.launch.py 
+```
+As for now, this simulations launches a simmulated version of frida. 
+Including the ros2_control
+####
+
+
 Perception service (Cluster and plane remove/extraction)
 ```bash
 ros2 launch perception_3d test.launch.py
