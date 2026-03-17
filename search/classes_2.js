@@ -7,5 +7,6 @@ var searchData=
   ['clientnode_4',['ClientNode',['../classClientNode.html',1,'']]],
   ['config_5',['Config',['../classutils_1_1config_1_1MockConfig_1_1Config.html',1,'utils.config.MockConfig.Config'],['../classutils_1_1config_1_1SubtaskConfig_1_1Config.html',1,'utils.config.SubtaskConfig.Config'],['../classutils_1_1config_1_1TopicConfig_1_1Config.html',1,'utils.config.TopicConfig.Config']]],
   ['crossentropylabelsmooth_6',['CrossEntropyLabelSmooth',['../classutils_1_1CrossEntropyLabelSmooth.html',1,'utils']]],
-  ['customernode_7',['CustomerNode',['../classcustomer__node_1_1CustomerNode.html',1,'customer_node']]]
+  ['customernode_7',['CustomerNode',['../classcustomer__node_1_1CustomerNode.html',1,'customer_node']]],
+  ['cutlerydetectionnode_8',['CutleryDetectionNode',['../classcutlery__detection__node_1_1CutleryDetectionNode.html',1,'cutlery_detection_node']]]
 ];

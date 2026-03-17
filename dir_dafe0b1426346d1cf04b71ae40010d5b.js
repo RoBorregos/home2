@@ -1,6 +1,7 @@
 var dir_dafe0b1426346d1cf04b71ae40010d5b =
 [
     [ "customer_node.py", "customer__node_8py.html", "customer__node_8py" ],
+    [ "cutlery_detection_node.py", "cutlery__detection__node_8py.html", "cutlery__detection__node_8py" ],
     [ "dishwasher_node.py", "dishwasher__node_8py.html", "dishwasher__node_8py" ],
     [ "example_node.py", "example__node_8py.html", "example__node_8py" ],
     [ "face_recognition_node.py", "face__recognition__node_8py.html", "face__recognition__node_8py" ],

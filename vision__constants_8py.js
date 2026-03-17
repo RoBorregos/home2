@@ -53,6 +53,8 @@ var vision__constants_8py =
     [ "SHOW_DETECTION_TOPIC", "vision__constants_8py.html#a88a70827ccfcbe95b1d791638bc4fc1c", null ],
     [ "TRACKER_IMAGE_TOPIC", "vision__constants_8py.html#a8f74338abc4820939f0ea2c55782f55c", null ],
     [ "TRASH_DETECTION_SERVICE", "vision__constants_8py.html#ab11f1c731c6dd0e3f3c6e08246abbd3c", null ],
+    [ "YOLO_DETECTION_TOPIC", "vision__constants_8py.html#aca9a72dbc37b982ce33667a08adaec14", null ],
+    [ "YOLO_DETECTIONS_PUBLISHER_TOPIC", "vision__constants_8py.html#a7de5488b3061c6029e51ae3732b3e1d1", null ],
     [ "ZERO_SHOT_DEFAULT_CLASSES", "vision__constants_8py.html#a4211ec5821d72ea37c79ae48043809ee", null ],
     [ "ZERO_SHOT_DETECTIONS_3D_TOPIC", "vision__constants_8py.html#a7316a8a42cc71661c5ca4eb92817b704", null ],
     [ "ZERO_SHOT_DETECTIONS_ACTIVE_TOPIC", "vision__constants_8py.html#a6f90a10daccfc0110d2f85790bc5f970", null ],

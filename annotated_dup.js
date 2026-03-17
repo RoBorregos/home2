@@ -39,6 +39,9 @@ var annotated_dup =
     [ "customer_node", "namespacecustomer__node.html", [
       [ "CustomerNode", "classcustomer__node_1_1CustomerNode.html", "classcustomer__node_1_1CustomerNode" ]
     ] ],
+    [ "cutlery_detection_node", "namespacecutlery__detection__node.html", [
+      [ "CutleryDetectionNode", "classcutlery__detection__node_1_1CutleryDetectionNode.html", "classcutlery__detection__node_1_1CutleryDetectionNode" ]
+    ] ],
     [ "dashgo_driver", "namespacedashgo__driver.html", [
       [ "dashgo_stm32", "namespacedashgo__driver_1_1dashgo__stm32.html", [
         [ "Stm32", "classdashgo__driver_1_1dashgo__stm32_1_1Stm32.html", "classdashgo__driver_1_1dashgo__stm32_1_1Stm32" ]
