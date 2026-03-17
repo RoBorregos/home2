@@ -12,7 +12,11 @@ from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 
-from frida_constants.vision_constants import CAMERA_TOPIC
+from frida_constants.vision_constants import (
+    CAMERA_TOPIC,
+    YOLO_DETECTION_TOPIC,
+    YOLO_DETECTIONS_PUBLISHER_TOPIC,
+)
 from frida_interfaces.srv import YoloDetect
 from frida_interfaces.msg import Detection
 
@@ -34,7 +38,7 @@ class YoloNode(Node):
         self.get_logger().info("YOLO model loaded successfully")
 
         self.detect_service = self.create_service(
-            YoloDetect, "yolo_detect", self.detect_callback
+            YoloDetect, YOLO_DETECTION_TOPIC, self.detect_callback
         )
 
         # Subscribe to camera
@@ -44,7 +48,7 @@ class YoloNode(Node):
 
         # Publisher for annotated image
         self.detections_image_publisher = self.create_publisher(
-            Image, "yolo_detections_image", 5
+            Image, YOLO_DETECTIONS_PUBLISHER_TOPIC, 5
         )
 
     def image_callback(self, msg: Image):
