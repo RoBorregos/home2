@@ -13,30 +13,21 @@ class ControllerDualShock(Node):
         self.publisher = self.create_publisher(Twist, 'cmd_vel', 10)
         self.subscription
         self.nav2_client = ActionClient(self, NavigateToPose, '/navigate_to_pose/_action/cancel_goal')
+        self.rotation_speed = 0.1
     
     def joy_callback(self, msg):    
-        if msg.buttons[3] == 1: # Square pressed
+        if msg.buttons[3] == 1:  # Square pressed
             self.nav2_client.cancel_goal_async()
-        
-        if msg.buttons[7] > 0.5: # D-pad Vertical Up
-            twist = Twist()
-            twist.angular.z += 0.1
-            self.publisher.publish(twist)
 
-        if msg.buttons[7] > -0.5: 
-            twist = Twist()
-            twist.angular.z -= 0.1
-            self.publisher.publish(twist)
-        
-        if msg.buttons[6] > 0.5: # D-pad Horizontal Right
-            twist = Twist()
-            twist.angular.z -= 0.1
-            self.publisher.publish(twist)
+        # D-pad Up: increase rotation speed
+        if msg.axes[7] > 0.5:
+            self.rotation_speed = min(self.rotation_speed + 0.05, 1.0)
+            self.get_logger().info(f'Rotation speed: {self.rotation_speed:.2f}')
 
-        if msg.buttons[6] > -0.5:
-            twist = Twist()
-            twist.angular.z -= 0.1
-            self.publisher.publish(twist)
+        # D-pad Down: decrease rotation speed
+        if msg.axes[7] < -0.5:
+            self.rotation_speed = max(self.rotation_speed - 0.05, 0.05)
+            self.get_logger().info(f'Rotation speed: {self.rotation_speed:.2f}')
 
 def main(args=None):
     rclpy.init(args=args)
