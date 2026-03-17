@@ -309,10 +309,10 @@ jobs:
           docker run --rm \
             --network host \
             --user root \
-            -v ${{ github.workspace }}:/ws/src \
+            -v ${{ github.workspace }}:/workspace/src \
             roborregos/home2:hri-cpu \
             bash -c "
-              cd /ws &&
+              cd /workspace &&
               source /opt/ros/humble/setup.bash &&
               colcon build --packages-select frida_interfaces frida_constants nlp embeddings &&
               source install/setup.bash &&
