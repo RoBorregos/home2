@@ -128,6 +128,10 @@ PERSON_POINT_TOPIC = "/vision/person_inside_point"
 # Show detection topic
 SHOW_DETECTION_TOPIC = "/vision/show_detection"
 
+# Yolo detection node
+YOLO_DETECTION_TOPIC = "/vision/yolo_detect"
+YOLO_DETECTIONS_PUBLISHER_TOPIC = "/vision/yolo_detections_image"
+
 # Dishwasher model
 DISHWASHER_LAYOUT_DETECTION_TOPIC = "/vision/dishwasher/layout_detection"
 DISHWASHER_RACK_DETECTION_TOPIC = "/vision/dishwasher/rack_detection"

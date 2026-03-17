@@ -8,16 +8,12 @@ import rclpy
 import cv2
 from sensor_msgs.msg import Image
 from frida_interfaces.msg import Detection
-from frida_interfaces.srv import YoloDetect
 from rclpy.node import Node
 from cv_bridge import CvBridge
 from ultralytics import YOLO
 from frida_constants.vision_constants import CAMERA_TOPIC
 from ament_index_python.packages import get_package_share_directory
 
-FORK_CLASS = 42
-KNIFE_CLASS = 43
-SPOON_CLASS = 44
 CONF_THRESHOLD = 0.2
 
 
@@ -43,10 +39,6 @@ class CutleryDetectionNode(Node):
 
         self.cutlery_detections_publisher = self.create_publisher(
             Image, "cutlery_detections", 5
-        )
-
-        self.detect_service = self.create_service(
-            YoloDetect, "cutlery_detector", self.detect_callback
         )
 
     def image_callback(self, data):
