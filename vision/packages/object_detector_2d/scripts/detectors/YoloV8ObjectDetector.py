@@ -2,6 +2,7 @@
 from detectors.ObjectDetector import ObjectDectector, Detection, ObjectDectectorParams
 from ultralytics import YOLO
 import os
+import shutil
 import warnings
 
 
@@ -26,7 +27,7 @@ def _load_yolo_trt(model_path: str) -> YOLO:
         model.export(format="engine", half=True, device=0, imgsz=640)
         local_engine = model_path.replace(".pt", ".engine")
         if local_engine != engine_path and os.path.exists(local_engine):
-            os.rename(local_engine, engine_path)
+            shutil.move(local_engine, engine_path)
         print(f"[TRT] Engine saved: {engine_path}")
         return YOLO(engine_path, task="detect")
     except Exception as e:

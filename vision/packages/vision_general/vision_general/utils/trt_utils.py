@@ -9,6 +9,7 @@ which should be a mounted volume for persistence across container restarts.
 """
 
 import os
+import shutil
 from ultralytics import YOLO
 
 
@@ -47,7 +48,7 @@ def load_yolo_trt(model_path: str, task: str = "detect", imgsz: int = 640) -> YO
         # ultralytics saves engine next to .pt — move it to cache dir
         local_engine = model_path.replace(".pt", ".engine")
         if local_engine != engine_path and os.path.exists(local_engine):
-            os.rename(local_engine, engine_path)
+            shutil.move(local_engine, engine_path)
         print(f"[TRT] Engine saved: {engine_path}")
         return YOLO(engine_path, task=task)
     except Exception as e:
