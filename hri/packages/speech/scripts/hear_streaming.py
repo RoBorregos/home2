@@ -62,7 +62,14 @@ class HearStreaming(Node):
             .string_value
         )
 
+        self.default_initial_prompt = (
+            self.declare_parameter("DEFAULT_INITIAL_PROMPT", "")
+            .get_parameter_value()
+            .string_value
+        )
+
         self.hotwords = self.default_hotwords
+        self.initial_prompt = self.default_initial_prompt
         self.current_transcription = ""
         self.current_words = []
         self.stop_flag = threading.Event()
@@ -112,7 +119,7 @@ class HearStreaming(Node):
         audio_data = np.frombuffer(msg.data, dtype=np.int16)
         self.audio_buffer.append(audio_data)
 
-    def record_subscribed(self, hotwords):
+    def record_subscribed(self, hotwords, initial_prompt=""):
         self.get_logger().info("HearStreaming node recording.")
         # TODO: unsure if this is the best way to cancel the stream request
         call = None
@@ -121,7 +128,7 @@ class HearStreaming(Node):
             # Buffer length is in chunks, not frames. Use the module-level
             min_buffer_chunks = MIN_BUFFER_CHUNKS
             buffer_ready = False
-
+            first_chunk = True
             while not self.stop_flag.is_set() and rclpy.ok():
                 try:
                     # Wait for minimum buffer before sending
@@ -140,15 +147,17 @@ class HearStreaming(Node):
                         time.sleep(0.02)
                         continue
                     local_audio = self.audio_buffer.popleft()
-
                     # Validate audio length
                     if len(local_audio) < 10:
                         continue
 
                     grpc_audio = local_audio.tobytes()
                     yield speech_pb2.AudioRequest(
-                        audio_data=grpc_audio, hotwords=hotwords
+                        audio_data=grpc_audio,
+                        hotwords=hotwords,
+                        initial_prompt=initial_prompt if first_chunk else "",
                     )
+                    first_chunk = False
 
                 except IOError as e:
                     self.get_logger().error(f"I/O error({e.errno}): {e.strerror}")
@@ -187,7 +196,6 @@ class HearStreaming(Node):
         self.current_words = []
         self.prev_transcription = ""
         self.cancel_requested = False
-
         start_time = time.time()
         last_word_time = start_time
 
@@ -197,7 +205,13 @@ class HearStreaming(Node):
         else:
             self.hotwords = self.default_hotwords
 
-        self.record_subscribed(self.hotwords)
+        if goal_handle.request.initial_prompt:
+            self.initial_prompt = goal_handle.request.initial_prompt
+            self.get_logger().info(f"Updated initial prompt: {self.initial_prompt}")
+        else:
+            self.initial_prompt = self.default_initial_prompt
+
+        self.record_subscribed(self.hotwords, self.initial_prompt)
 
         try:
             while (

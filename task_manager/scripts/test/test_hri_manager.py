@@ -70,7 +70,7 @@ TEST_COMPOUND = False
 TEST_INDIVIDUAL_FUNCTIONS = False
 TEST_CATEGORIZE_SHELVES = False
 TEST_ASYNC_LLM = False
-TEST_STREAMING = False
+TEST_STREAMING = True
 TEST_MAP = False
 TEST_OBJECT_LOCATION = False
 TEST_IS_POSITIVE = False
@@ -169,7 +169,7 @@ class TestHriManager(Node):
         self.get_logger().info(f"categorized_shelves: {str(categorized_shelves)}")
 
     def test_streaming(self):
-        s, user_request, _ = self.hri_manager.hear()
+        s, user_request, _ = self.hri_manager.hear(initial_prompt="Maria Jose Carlos")
         self.get_logger().info(f"Heard: {user_request}")
 
         s, keyword = self.hri_manager.interpret_keyword(["yes", "no", "maybe"], timeout=5.0)

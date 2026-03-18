@@ -421,6 +421,7 @@ class HRITasks(metaclass=SubtaskMeta):
     def hear(
         self,
         hotwords="",
+        initial_prompt="",
         silence_time=2.0,
         start_silence_time=4.0,
         max_audio_length=13.0,
@@ -432,6 +433,7 @@ class HRITasks(metaclass=SubtaskMeta):
 
         accepted_future = self.hear_streaming(
             hotwords=hotwords,
+            initial_prompt=initial_prompt,
             silence_time=silence_time,
             start_silence_time=start_silence_time,
             timeout=max_audio_length,
@@ -478,6 +480,7 @@ class HRITasks(metaclass=SubtaskMeta):
         self,
         timeout: float = 13.0,
         hotwords: str = "",
+        initial_prompt: str = "",
         silence_time: float = 2.0,
         start_silence_time: float = 4.0,
     ):
@@ -488,6 +491,7 @@ class HRITasks(metaclass=SubtaskMeta):
         Args:
             timeout (float): The maximum time to stop the transcription.
             hotwords (str): Hotwords to improve the transcription accuracy.
+            initial_prompt (str): Optional initial text/prompt provided to the speech recognizer to guide or bias the transcription (e.g., expected context or phrases).
             silence_time (float): The time to wait after the last interpreted word to stop the transcription. i.e. if no words are heard for this time, the transcription will stop.
             start_silence_time (float): The minimum duration of the transcription before hearing any words. Useful to handle initial silence in audio.
         """
@@ -500,6 +504,7 @@ class HRITasks(metaclass=SubtaskMeta):
         goal_msg = SpeechStream.Goal()
         goal_msg.timeout = float(timeout)
         goal_msg.hotwords = hotwords
+        goal_msg.initial_prompt = initial_prompt
         self.last_hotwords = hotwords
         goal_msg.silence_time = float(silence_time)
         goal_msg.start_silence_time = float(start_silence_time)
