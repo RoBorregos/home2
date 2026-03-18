@@ -228,28 +228,44 @@ class HRIC_TM(Node):
             self._track_state_change(HRIC_TM.TaskStates.TAKE_BAG)
             if self.current_attempts == 0:
                 self.subtask_manager.hri.say(
-                    "I see you brought a bag for the host. Please let me take care of it for you.",
+                    "I see you brought a bag for the host. Let me take care of it for you.",
                 )
 
             self.subtask_manager.hri.say(
                 "Please extend your hand holding the bag so I can reach it."
             )
 
-            status, hand_point = self.subtask_manager.vision.detect_hand()
+            hand_reached = False
+            for attempt in range(ATTEMPT_LIMIT):
+                status, hand_point = self.subtask_manager.vision.detect_hand()
 
-            if status == Status.EXECUTION_SUCCESS:
+                if status != Status.EXECUTION_SUCCESS:
+                    Logger.warn(self, f"Hand detection attempt {attempt + 1} failed")
+                    if attempt < ATTEMPT_LIMIT - 1:
+                        self.subtask_manager.hri.say(
+                            "I could not detect your hand. Please extend it again."
+                        )
+                    continue
+
                 self.subtask_manager.hri.say("I can see your hand, moving towards it.", wait=False)
                 go_result = self.subtask_manager.manipulation.go_to_hand(
                     point=hand_point,
                     hand_offset=0.3,
                 )
-                if go_result != Status.EXECUTION_SUCCESS:
-                    self.subtask_manager.hri.say(
-                        "I could not reach your hand. Please place the bag directly on my gripper."
-                    )
-            else:
+
+                if go_result == Status.EXECUTION_SUCCESS:
+                    hand_reached = True
+                    break
+                else:
+                    Logger.warn(self, f"go_to_hand attempt {attempt + 1} failed")
+                    if attempt < ATTEMPT_LIMIT - 1:
+                        self.subtask_manager.hri.say(
+                            "I could not reach your hand. Reposition it and try again."
+                        )
+
+            if not hand_reached:
                 self.subtask_manager.hri.say(
-                    "I could not detect your hand. Please place the bag on my gripper."
+                    "I could not reach your hand. Place the bag directly on my gripper."
                 )
 
             self.timeout(5)
