@@ -4,8 +4,7 @@ from concurrent import futures
 
 import grpc
 import numpy as np
-import speech_pb2
-import speech_pb2_grpc
+from proto_interfaces import speech_pb2, speech_pb2_grpc
 from faster_whisper_backend import ServeClientFasterWhisper
 from transcriber_faster_whisper import WhisperModel
 
