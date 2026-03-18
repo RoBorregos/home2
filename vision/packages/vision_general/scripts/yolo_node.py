@@ -4,10 +4,13 @@
 Node to initialize and provide a YOLO instance for reuse across other files.
 """
 
+import os
 import pathlib
 from ultralytics import YOLO
+from vision_general.utils.trt_utils import load_yolo_trt
 
 import rclpy
+import rclpy.qos
 from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
@@ -32,18 +35,22 @@ class YoloNode(Node):
         self.bridge = CvBridge()
         self.latest_frame = None
 
-        # Load YOLO once
-        self.get_logger().info(f"Loading YOLO model from {YOLO_LOCATION}...")
-        self.model = YOLO(YOLO_LOCATION)
+        # Load YOLO with TensorRT acceleration for Orin AGX
+        self.model = load_yolo_trt(YOLO_LOCATION)
         self.get_logger().info("YOLO model loaded successfully")
 
         self.detect_service = self.create_service(
             YoloDetect, YOLO_DETECTION_TOPIC, self.detect_callback
         )
 
-        # Subscribe to camera
+        # Subscribe to camera — depth=1 BEST_EFFORT to always process latest frame
+        qos = rclpy.qos.QoSProfile(
+            depth=1,
+            reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
+            durability=rclpy.qos.DurabilityPolicy.VOLATILE,
+        )
         self.image_subscriber = self.create_subscription(
-            Image, CAMERA_TOPIC, self.image_callback, 10
+            Image, CAMERA_TOPIC, self.image_callback, qos
         )
 
         # Publisher for annotated image
@@ -52,43 +59,11 @@ class YoloNode(Node):
         )
 
     def image_callback(self, msg: Image):
-        """Cache the latest image from the camera and call detection/publish function."""
+        """Cache the latest image from the camera (inference only on service calls)."""
         try:
             self.latest_frame = self.bridge.imgmsg_to_cv2(msg, "bgr8")
         except Exception as e:
             self.get_logger().error(f"Failed to convert image: {e}")
-            return
-
-        self.publish_annotated_image()
-
-    def publish_annotated_image(self):
-        """Run YOLO detection and publish annotated image."""
-        if self.latest_frame is None:
-            return
-        classes = None
-        results = self.model(self.latest_frame, verbose=False, classes=classes)
-        annotated = self.latest_frame.copy()
-        for out in results:
-            for box in out.boxes:
-                conf = box.conf.item()
-                if conf < CONF_THRESHOLD:
-                    continue
-                x1, y1, x2, y2 = [round(x) for x in box.xyxy[0].tolist()]
-                cls_id = int(box.cls.item())
-                label = f"{self.model.names[cls_id]}: {conf:.2f}"
-                color = (0, 255, 0)
-                cv2.rectangle(annotated, (x1, y1), (x2, y2), color, 2)
-                cv2.putText(
-                    annotated,
-                    label,
-                    (x1, y1 - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.6,
-                    color,
-                    2,
-                )
-        annotated_msg = self.bridge.cv2_to_imgmsg(annotated, encoding="bgr8")
-        self.detections_image_publisher.publish(annotated_msg)
 
     def detect_callback(self, request, response):
         """Run YOLO on the latest cached frame."""

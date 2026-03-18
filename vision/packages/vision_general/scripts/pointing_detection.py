@@ -6,12 +6,13 @@ from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 from visualization_msgs.msg import Marker
 
-# You'll need to create these custom interfaces in your ROS2 package
 from frida_interfaces.srv import DetectPointingObject, SetPointingObjectClasses
 from frida_interfaces.msg import ObjectDetectionArray
 import cv2
 import numpy as np
-import mediapipe as mp
+import os
+from ultralytics import YOLO
+from vision_general.utils.trt_utils import load_yolo_trt
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
     ZERO_SHOT_DETECTIONS_TOPIC,
@@ -33,6 +34,18 @@ DEFAULT_CLASSES = [
     "tote_bag",
 ]
 
+# YOLO COCO keypoint indices
+RIGHT_SHOULDER = 6
+RIGHT_WRIST = 10  # closest to mediapipe's RIGHT_HAND (index 20)
+LEFT_SHOULDER = 5
+LEFT_WRIST = 9    # closest to mediapipe's LEFT_HAND (index 19)
+KP_CONF = 0.3
+
+
+def load_yolo_pose(model_name="yolo11m-pose.pt"):
+    """Load YOLO pose model with automatic TensorRT export for Orin AGX."""
+    return load_yolo_trt(model_name, task="pose")
+
 
 class DetectPointingObjectServer(Node):
     def __init__(self):
@@ -40,14 +53,9 @@ class DetectPointingObjectServer(Node):
 
         self.get_logger().info("Initializing Detect Pointing Object Server")
 
-        self.mp_pose = mp.solutions.pose
+        self.pose_model = load_yolo_pose("yolo11m-pose.pt")
 
-        self.pose = self.mp_pose.Pose()
         self.VISUALIZE = True
-        self.RIGHT_SHOULDER = 12
-        self.RIGHT_HAND = 20
-        self.LEFT_SHOULDER = 11
-        self.LEFT_HAND = 19
 
         self.objects = []
         self.closest_object = None
@@ -124,14 +132,6 @@ class DetectPointingObjectServer(Node):
         return response
 
     def set_classes_callback(self, request, response):
-        """Set the classes for the object detector.
-
-        Args:
-            request (SetDetectorClasses.Request): Request object containing the classes.
-
-        Returns:
-            SetDetectorClasses.Response: Response object.
-        """
         response = SetPointingObjectClasses.Response()
         self.class_names = request.classes
         response.success = True
@@ -139,7 +139,6 @@ class DetectPointingObjectServer(Node):
 
     def detections_callback(self, data):
         self.last_inference_time = self.get_clock().now()
-        # get the detections
         if (
             len(data.detections) == 0
             and ((self.get_clock().now() - self.last_inference_time).nanoseconds / 1e9)
@@ -175,100 +174,66 @@ class DetectPointingObjectServer(Node):
     def run_inference(self):
         self.objects = copy.deepcopy(self.detected_objects)
         visualize_img = self.bgr_img.copy()
-        self.bgr_img.flags.writeable = False
-        results = self.pose.process(self.bgr_img)
-
         img = self.bgr_img
 
-        # draw points
-        ONLY_SHOULDER_AND_HANDS = True
-        if results.pose_landmarks:
-            for i, point in enumerate(results.pose_landmarks.landmark):
-                if self.VISUALIZE and (
-                    not ONLY_SHOULDER_AND_HANDS
-                    or i == self.RIGHT_SHOULDER
-                    or i == self.RIGHT_HAND
-                    or i == self.LEFT_SHOULDER
-                    or i == self.LEFT_HAND
-                ):
-                    visualize_img = cv2.circle(
-                        visualize_img,
-                        (int(point.x * img.shape[1]), int(point.y * img.shape[0])),
-                        5,
-                        (0, 255, 0),
-                        -1,
-                    )
-                    cv2.putText(
-                        visualize_img,
-                        str(i),
-                        (int(point.x * img.shape[1]), int(point.y * img.shape[0])),
-                        cv2.FONT_HERSHEY_SIMPLEX,
-                        0.5,
-                        (255, 0, 0),
-                        2,
-                    )
+        # Run YOLO pose instead of mediapipe
+        results = self.pose_model(img, verbose=False)
+        has_person = (results and results[0].keypoints is not None and
+                      results[0].keypoints.xyn is not None and
+                      len(results[0].keypoints.xyn) > 0)
+
+        if has_person:
+            points = results[0].keypoints.xyn[0].cpu().numpy()  # normalized (0-1)
+            conf = (results[0].keypoints.conf[0].cpu().numpy()
+                    if results[0].keypoints.conf is not None
+                    else np.ones(17, dtype=np.float32))
+
+            # Draw keypoints
+            if self.VISUALIZE:
+                for idx in [RIGHT_SHOULDER, RIGHT_WRIST, LEFT_SHOULDER, LEFT_WRIST]:
+                    if conf[idx] > KP_CONF:
+                        px = int(points[idx][0] * img.shape[1])
+                        py = int(points[idx][1] * img.shape[0])
+                        cv2.circle(visualize_img, (px, py), 5, (0, 255, 0), -1)
+                        cv2.putText(visualize_img, str(idx),
+                                    (px, py), cv2.FONT_HERSHEY_SIMPLEX,
+                                    0.5, (255, 0, 0), 2)
 
         closest_object = None
         closest_distance = 100000
 
-        # get angle between finger tip and hand base
-        if results.pose_landmarks:
-            finger_tip_left = None
-            hand_base_left = None
-            finger_tip_right = None
-            hand_base_right = None
-
-            for i, point in enumerate(results.pose_landmarks.landmark):
-                if i == self.RIGHT_HAND and self.check_visible(point, img):
-                    finger_tip_right = point
-                if i == self.RIGHT_SHOULDER and self.check_visible(point, img):
-                    hand_base_right = point
-                if i == self.LEFT_HAND and self.check_visible(point, img):
-                    finger_tip_left = point
-                if i == self.LEFT_SHOULDER and self.check_visible(point, img):
-                    hand_base_left = point
-
-            if (
-                finger_tip_right is not None and hand_base_right is not None
-            ) and USE_RIGHT_HAND:
-                # print(f"Right Hand: {finger_tip_right.x}, {finger_tip_right.y}")
-                # print(f"Right Shoulder: {hand_base_right.x}, {hand_base_right.y}")
-                right_m = (finger_tip_right.y - hand_base_right.y) / (
-                    finger_tip_right.x - hand_base_right.x
-                )
-                right_intercept = finger_tip_right.y - right_m * finger_tip_right.x
+        if has_person:
+            # Right hand pointing
+            if (USE_RIGHT_HAND and
+                    conf[RIGHT_WRIST] > KP_CONF and conf[RIGHT_SHOULDER] > KP_CONF and
+                    self._check_in_bounds(points[RIGHT_WRIST]) and
+                    self._check_in_bounds(points[RIGHT_SHOULDER])):
+                right_m = ((points[RIGHT_WRIST][1] - points[RIGHT_SHOULDER][1]) /
+                           (points[RIGHT_WRIST][0] - points[RIGHT_SHOULDER][0] + 1e-6))
+                right_intercept = points[RIGHT_WRIST][1] - right_m * points[RIGHT_WRIST][0]
                 right_line_start = (0, int(right_intercept * img.shape[0]))
-                right_line_end = (
-                    img.shape[1],
-                    int((right_m * 1 + right_intercept) * img.shape[0]),
-                )
-                cv2.line(
-                    visualize_img, right_line_start, right_line_end, (0, 255, 0), 2
-                )
+                right_line_end = (img.shape[1],
+                                  int((right_m * 1 + right_intercept) * img.shape[0]))
+                cv2.line(visualize_img, right_line_start, right_line_end, (0, 255, 0), 2)
                 closest_object, closest_distance, visualize_img = (
-                    self.check_closest_object(right_m, right_intercept, visualize_img)
-                )
-            if (
-                finger_tip_left is not None and hand_base_left is not None
-            ) and USE_LEFT_HAND:
-                left_m = (finger_tip_left.y - hand_base_left.y) / (
-                    finger_tip_left.x - hand_base_left.x
-                )
-                # print(f"Left Hand: {finger_tip_left.x}, {finger_tip_left.y}")
-                # print(f"Left Shoulder: {hand_base_left.x}, {hand_base_left.y}")
-                left_intercept = finger_tip_left.y - left_m * finger_tip_left.x
+                    self.check_closest_object(right_m, right_intercept, visualize_img))
+
+            # Left hand pointing
+            if (USE_LEFT_HAND and
+                    conf[LEFT_WRIST] > KP_CONF and conf[LEFT_SHOULDER] > KP_CONF and
+                    self._check_in_bounds(points[LEFT_WRIST]) and
+                    self._check_in_bounds(points[LEFT_SHOULDER])):
+                left_m = ((points[LEFT_WRIST][1] - points[LEFT_SHOULDER][1]) /
+                          (points[LEFT_WRIST][0] - points[LEFT_SHOULDER][0] + 1e-6))
+                left_intercept = points[LEFT_WRIST][1] - left_m * points[LEFT_WRIST][0]
                 left_line_start = (0, int(left_intercept * img.shape[0]))
-                left_line_end = (
-                    img.shape[1],
-                    int((left_m * 1 + left_intercept) * img.shape[0]),
-                )
+                left_line_end = (img.shape[1],
+                                 int((left_m * 1 + left_intercept) * img.shape[0]))
                 cv2.line(visualize_img, left_line_start, left_line_end, (0, 255, 0), 2)
                 closest_object, closest_distance, visualize_img = (
-                    self.check_closest_object(left_m, left_intercept, visualize_img)
-                )
+                    self.check_closest_object(left_m, left_intercept, visualize_img))
 
             if closest_object is not None:
-                # publish marker
                 marker = Marker()
                 marker.header.frame_id = CAMERA_FRAME
                 marker.header.stamp = self.get_clock().now().to_msg()
@@ -290,7 +255,6 @@ class DetectPointingObjectServer(Node):
                 marker.color.r = 0.0
                 marker.color.g = 1.0
                 marker.color.b = 0.0
-                # self.pointed_object_marker.publish(marker)
 
                 self.closest_object = self.objects[closest_object]["detection"]
 
@@ -304,7 +268,7 @@ class DetectPointingObjectServer(Node):
             ):
                 self.closest_object = None
 
-        # visualize points
+        # visualize detected objects
         for i, point in enumerate(self.objects):
             color = (0, 255, 0) if i == closest_object else (0, 0, 255)
             if i == closest_object:
@@ -350,37 +314,21 @@ class DetectPointingObjectServer(Node):
         img_msg = self.bridge.cv2_to_imgmsg(visualize_img, encoding="bgr8")
         self.visualizer_pub.publish(img_msg)
 
-    def check_visible(self, point, img):
-        if point.x < 0 or point.x > 1 or point.y < 0 or point.y > 1:
-            return False
-        return True
+    def _check_in_bounds(self, point):
+        return 0 <= point[0] <= 1 and 0 <= point[1] <= 1
 
     def check_closest_object(self, m, intercept, visualize_img):
         closest_object = None
         closest_distance = 100000
         for i, object in enumerate(self.objects):
             centroid = object["centroid"]
-            # visualize_img = self.draw_orthogonal_distance(m, intercept, centroid, visualize_img)
             distance = abs(centroid[1] - m * centroid[0] - intercept) / np.sqrt(
                 m**2 + 1
             )
             if distance < closest_distance:
                 closest_distance = distance
                 closest_object = i
-        # print(f"Closest Object: {closest_object}, Distance: {closest_distance}")
         return closest_object, closest_distance, visualize_img
-
-    def draw_orthogonal_distance(self, m, intercept, centroid, img):
-        # draw orthogonal line
-        orthogonal_m = -1 / m
-        orthogonal_intercept = centroid[1] - orthogonal_m * centroid[0]
-        orthogonal_line_start = (0, int(orthogonal_intercept * img.shape[0]))
-        orthogonal_line_end = (
-            img.shape[1],
-            int((orthogonal_m * 1 + orthogonal_intercept) * img.shape[0]),
-        )
-        cv2.line(img, orthogonal_line_start, orthogonal_line_end, (0, 0, 255), 2)
-        return img
 
 
 def main():

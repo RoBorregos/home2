@@ -108,6 +108,11 @@ class object_detector_node(rclpy.node.Node):
         self.handleSubcriptions()
         self.handlePublishers()
         self.runThread = None
+        self._frame_count = 0
+        self._skip_frames = 2  # process every 3rd frame to reduce GPU load
+
+        # Global vision pause/resume — pauses inference when manipulation needs GPU
+        self.create_subscription(Bool, "/vision/object_detector/active", self._vision_active_cb, 10)
 
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer, self)
@@ -260,7 +265,10 @@ class object_detector_node(rclpy.node.Node):
 
     # Callback for active flag
     def activeFlagCallback(self, msg):
-        self.activeFlag = msg.data
+        self.active_flag = msg.data
+
+    def _vision_active_cb(self, msg):
+        self.active_flag = msg.data
 
     # Function to handle a ROS depthPublishers have been created input.
     def depthImageCallback(self, data):
@@ -283,10 +291,13 @@ class object_detector_node(rclpy.node.Node):
     def rgbImageCallback(self, data):
         self.rgb_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
         self.curr_clock = data.header.stamp
+        self._frame_count += 1
         if not self.active_flag:
             self.detections_frame = self.rgb_image
         elif (
-            self.active_flag and self.runThread is None or not self.runThread.is_alive()
+            self._frame_count % (self._skip_frames + 1) == 0
+            and self.active_flag
+            and (self.runThread is None or not self.runThread.is_alive())
         ):
             self.runThread = threading.Thread(
                 target=self.run, args=(self.rgb_image,), daemon=True

@@ -1,279 +1,144 @@
 #!/usr/bin/env python3
 
 import cv2
-import mediapipe as mp
 import numpy as np
+import os
 from frida_constants.vision_enums import Gestures
 from math import degrees, acos
+from ultralytics import YOLO
+from vision_general.utils.trt_utils import load_yolo_trt
+
+# ── YOLO COCO keypoint indices ──
+NOSE = 0
+LEFT_SHOULDER = 5
+RIGHT_SHOULDER = 6
+LEFT_ELBOW = 7
+RIGHT_ELBOW = 8
+LEFT_WRIST = 9
+RIGHT_WRIST = 10
+LEFT_HIP = 11
+RIGHT_HIP = 12
+
+KP_CONF = 0.3
+
+
+def load_yolo_pose(model_name="yolo11m-pose.pt"):
+    """Load YOLO pose model with automatic TensorRT export for Orin AGX."""
+    return load_yolo_trt(model_name, task="pose")
 
 
 class PoseDetection:
     def __init__(self):
-        print("Pose Detection Ready")
-        self.mp_pose = mp.solutions.pose
-        self.pose = self.mp_pose.Pose()
-        self.mp_drawing = mp.solutions.drawing_utils
+        print("Pose Detection Ready (YOLO TensorRT)")
+        self.yolo_pose = load_yolo_pose("yolo11m-pose.pt")
 
-    def draw_landmarks(self, image, results, mp_pose):
-        image_height, image_width, _ = image.shape
-        landmarks_to_draw = [
-            self.mp_pose.PoseLandmark.LEFT_SHOULDER,
-            self.mp_pose.PoseLandmark.LEFT_ELBOW,
-            self.mp_pose.PoseLandmark.LEFT_WRIST,
-            self.mp_pose.PoseLandmark.RIGHT_SHOULDER,
-            self.mp_pose.PoseLandmark.RIGHT_ELBOW,
-            self.mp_pose.PoseLandmark.RIGHT_WRIST,
-            self.mp_pose.PoseLandmark.LEFT_HIP,
-            self.mp_pose.PoseLandmark.RIGHT_HIP,
-        ]
-
-        for landmark in landmarks_to_draw:
-            if results.pose_landmarks is not None:
-                landmark_data = results.pose_landmarks.landmark[landmark]
-                if landmark_data.visibility > 0.5:
-                    x, y = (
-                        int(landmark_data.x * image_width),
-                        int(landmark_data.y * image_height),
-                    )
-                    cv2.circle(image, (x, y), 5, (0, 255, 0), -1)
-            self.draw_connections(image, results, mp_pose)
-
-    def draw_connections(self, image, results, mp_pose):
-        # Define relevant connections (Shoulders -> Elbows -> Wrists and Hips -> Knees -> Ankles)
-        connections = [
-            (
-                mp_pose.PoseLandmark.LEFT_SHOULDER,
-                mp_pose.PoseLandmark.LEFT_ELBOW,
-                mp_pose.PoseLandmark.LEFT_WRIST,
-            ),
-            (
-                mp_pose.PoseLandmark.RIGHT_SHOULDER,
-                mp_pose.PoseLandmark.RIGHT_ELBOW,
-                mp_pose.PoseLandmark.RIGHT_WRIST,
-            ),
-        ]
-        for start_idx, mid_idx, end_idx in connections:
-            self.draw_line_and_angle(image, results, start_idx, mid_idx, end_idx)
-
-    def draw_line_and_angle(self, image, results, start_idx, mid_idx, end_idx):
-        if results.pose_landmarks:
-            start, mid, end = (
-                results.pose_landmarks.landmark[start_idx],
-                results.pose_landmarks.landmark[mid_idx],
-                results.pose_landmarks.landmark[end_idx],
-            )
-            if start.visibility > 0.5 and mid.visibility > 0.5 and end.visibility > 0.5:
-                start_point = (
-                    int(start.x * image.shape[1]),
-                    int(start.y * image.shape[0]),
-                )
-                mid_point = (int(mid.x * image.shape[1]), int(mid.y * image.shape[0]))
-                end_point = (int(end.x * image.shape[1]), int(end.y * image.shape[0]))
-                cv2.line(image, start_point, mid_point, (0, 0, 255), 2)
-                cv2.line(image, mid_point, end_point, (0, 0, 255), 2)
-                angle = self.get_angle(start, mid, end)
-                cv2.putText(
-                    image,
-                    f"{int(angle)} - {start_idx} {end_idx}",
-                    (mid_point[0] - 20, mid_point[1] - 20),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.5,
-                    (255, 255, 0),
-                    2,
-                )
+    def _get_keypoints(self, image):
+        """Run YOLO pose, return (points, conf) for first detected person.
+        points: (17, 2) normalized, conf: (17,)."""
+        results = self.yolo_pose(image, verbose=False)
+        if (not results or results[0].keypoints is None or
+                results[0].keypoints.xy is None or len(results[0].keypoints.xy) == 0):
+            return None, None
+        points = results[0].keypoints.xyn[0].cpu().numpy()
+        conf = (results[0].keypoints.conf[0].cpu().numpy()
+                if results[0].keypoints.conf is not None
+                else np.ones(17, dtype=np.float32))
+        return points, conf
 
     def get_angle(self, p1, p2, p3):
-        p1, p2, p3 = (
-            np.array([p1.x, p1.y]),
-            np.array([p2.x, p2.y]),
-            np.array([p3.x, p3.y]),
-        )
-        l1, l2, l3 = (
-            np.linalg.norm(p2 - p3),
-            np.linalg.norm(p1 - p3),
-            np.linalg.norm(p1 - p2),
-        )
-        return abs(degrees(acos((l1**2 + l2**2 - l3**2) / (2 * l1 * l2))))
-
-    def is_visible(self, landmarks, indices):
-        return all(landmarks.landmark[idx].visibility > 0.5 for idx in indices)
+        p1, p2, p3 = np.array(p1[:2]), np.array(p2[:2]), np.array(p3[:2])
+        l1, l2, l3 = np.linalg.norm(p2 - p3), np.linalg.norm(p1 - p3), np.linalg.norm(p1 - p2)
+        denom = 2 * l1 * l2
+        if denom == 0:
+            return 180.0
+        return abs(degrees(acos(np.clip((l1**2 + l2**2 - l3**2) / denom, -1.0, 1.0))))
 
     def is_chest_visible(self, image):
-        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        results = self.pose.process(image_rgb)
-        if not results.pose_landmarks:
+        points, conf = self._get_keypoints(image)
+        if points is None:
             return False
+        return conf[LEFT_SHOULDER] > 0.5 and conf[RIGHT_SHOULDER] > 0.5
 
-        landmarks = results.pose_landmarks.landmark
-
-        # Extract required landmarks using the preferred format
-        required = [
-            landmarks[self.mp_pose.PoseLandmark.LEFT_SHOULDER],
-            landmarks[self.mp_pose.PoseLandmark.RIGHT_SHOULDER],
-        ]
-
-        # Check if all landmarks are confidently visible (threshold: 0.5)
-        return all(lm.visibility > 0.5 for lm in required)
-
-    def are_arms_down(self, pose_landmarks):
-        left_wrist = pose_landmarks.landmark[self.mp_pose.PoseLandmark.LEFT_WRIST]
-        right_wrist = pose_landmarks.landmark[self.mp_pose.PoseLandmark.RIGHT_WRIST]
-        left_shoulder = pose_landmarks.landmark[self.mp_pose.PoseLandmark.LEFT_SHOULDER]
-        right_shoulder = pose_landmarks.landmark[
-            self.mp_pose.PoseLandmark.RIGHT_SHOULDER
-        ]
-
-        # If both wrists are below their respective shoulders by a significant margin, arms are considered down
-        left_arm_down = left_wrist.y > left_shoulder.y + 0.1
-        right_arm_down = right_wrist.y > right_shoulder.y + 0.1
-
+    def are_arms_down(self, points, conf):
+        if (conf[LEFT_WRIST] < KP_CONF or conf[RIGHT_WRIST] < KP_CONF or
+                conf[LEFT_SHOULDER] < KP_CONF or conf[RIGHT_SHOULDER] < KP_CONF):
+            return True
+        left_arm_down = points[LEFT_WRIST][1] > points[LEFT_SHOULDER][1] + 0.1
+        right_arm_down = points[RIGHT_WRIST][1] > points[RIGHT_SHOULDER][1] + 0.1
         return left_arm_down and right_arm_down
 
     def detectGesture(self, image):
-        # Detect hand gestures using mediapipe hands
-        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-        results_p = self.pose.process(image_rgb)
-
+        points, conf = self._get_keypoints(image)
         gestures = Gestures.UNKNOWN
 
-        if results_p.pose_landmarks:
-            mid_x = self.get_midpoint_x(results_p)
+        if points is None:
+            return gestures
+        if conf[LEFT_SHOULDER] < 0.5 or conf[RIGHT_SHOULDER] < 0.5:
+            return gestures
 
-            if not self.is_chest_visible(image) or self.are_arms_down(
-                results_p.pose_landmarks
-            ):
-                return gestures
+        mid_x = (points[LEFT_SHOULDER][0] + points[RIGHT_SHOULDER][0]) / 2
 
-            # Left hand
-            elif self.is_raising_left_arm(mid_x, results_p):
-                gestures = Gestures.RAISING_LEFT_ARM
-
-            elif self.is_pointing_left(mid_x, results_p):
-                gestures = Gestures.POINTING_LEFT
-
-            # Right hand
-            elif self.is_raising_right_arm(mid_x, results_p):
-                gestures = Gestures.RAISING_RIGHT_ARM
-
-            elif self.is_pointing_right(mid_x, results_p):
-                gestures = Gestures.POINTING_RIGHT
-
-            elif self.is_waving(results_p):
-                gestures = Gestures.WAVING
+        if self.are_arms_down(points, conf):
+            return gestures
+        elif self._is_raising_left_arm(mid_x, points, conf):
+            gestures = Gestures.RAISING_LEFT_ARM
+        elif self._is_pointing_left(mid_x, points, conf):
+            gestures = Gestures.POINTING_LEFT
+        elif self._is_raising_right_arm(mid_x, points, conf):
+            gestures = Gestures.RAISING_RIGHT_ARM
+        elif self._is_pointing_right(mid_x, points, conf):
+            gestures = Gestures.POINTING_RIGHT
+        elif self._is_waving(points, conf):
+            gestures = Gestures.WAVING
 
         return gestures
 
-    def is_closer_to_left_shoulder(self, wrist, left_shoulder, right_shoulder):
-        return abs(wrist.x - left_shoulder.x) < abs(wrist.x - right_shoulder.x)
+    def _is_waving(self, points, conf):
+        left_angle = 0
+        if (conf[LEFT_SHOULDER] >= KP_CONF and conf[LEFT_ELBOW] >= KP_CONF and
+                conf[LEFT_WRIST] >= KP_CONF):
+            left_angle = self.get_angle(points[LEFT_SHOULDER], points[LEFT_ELBOW], points[LEFT_WRIST])
+        right_angle = 0
+        if (conf[RIGHT_SHOULDER] >= KP_CONF and conf[RIGHT_ELBOW] >= KP_CONF and
+                conf[RIGHT_WRIST] >= KP_CONF):
+            right_angle = self.get_angle(points[RIGHT_SHOULDER], points[RIGHT_ELBOW], points[RIGHT_WRIST])
+        return left_angle > 27 or right_angle > 27
 
-    def is_waving(self, results):
-        landmarks = results.pose_landmarks.landmark
+    def _is_pointing_left(self, mid_x, points, conf):
+        if (conf[RIGHT_WRIST] < KP_CONF or conf[LEFT_WRIST] < KP_CONF or
+                conf[LEFT_SHOULDER] < KP_CONF):
+            return False
+        distance_left = points[LEFT_WRIST][0] - points[LEFT_SHOULDER][0]
+        return points[RIGHT_WRIST][0] > mid_x or 0.28 < distance_left < 0.6
 
-        left_shoulder = landmarks[11]  # mp_pose.PoseLandmark.LEFT_SHOULDER
-        left_elbow = landmarks[13]  # mp_pose.PoseLandmark.LEFT_ELBOW
-        left_wrist = landmarks[15]  # mp_pose.PoseLandmark.LEFT_WRIST
+    def _is_pointing_right(self, mid_x, points, conf):
+        if (conf[RIGHT_WRIST] < KP_CONF or conf[LEFT_WRIST] < KP_CONF or
+                conf[RIGHT_SHOULDER] < KP_CONF):
+            return False
+        distance_right = points[RIGHT_SHOULDER][0] - points[RIGHT_WRIST][0]
+        return points[LEFT_WRIST][0] < mid_x or 0.28 < distance_right < 0.6
 
-        right_shoulder = landmarks[12]  # mp_pose.PoseLandmark.RIGHT_SHOULDER
-        right_elbow = landmarks[14]  # mp_pose.PoseLandmark.RIGHT_ELBOW
-        right_wrist = landmarks[16]  # mp_pose.PoseLandmark.RIGHT_WRIST
+    def _is_raising_left_arm(self, mid_x, points, conf):
+        if (conf[LEFT_SHOULDER] < KP_CONF or conf[LEFT_ELBOW] < KP_CONF or
+                conf[LEFT_WRIST] < KP_CONF):
+            return False
+        angle = self.get_angle(points[LEFT_SHOULDER], points[LEFT_ELBOW], points[LEFT_WRIST])
+        distance_left = points[LEFT_SHOULDER][1] - points[LEFT_WRIST][1]
+        return (angle < 27 and
+                points[LEFT_WRIST][1] < points[LEFT_SHOULDER][1] and
+                points[LEFT_ELBOW][1] < points[LEFT_SHOULDER][1] and
+                distance_left > 0.25)
 
-        angle_r = self.get_angle(right_shoulder, right_elbow, right_wrist)
-
-        angle_l = self.get_angle(left_shoulder, left_elbow, left_wrist)
-
-        if (
-            angle_l > 27
-            # and left_wrist.y < left_shoulder.y
-        ):
-            return True
-
-        elif (
-            angle_r > 27
-            # and right_wrist.y < right_shoulder.y
-        ):
-            return True
-
-    def get_midpoint_x(self, results):
-        landmarks = results.pose_landmarks.landmark
-
-        left_shoulder = landmarks[11]  # mp_pose.PoseLandmark.LEFT_SHOULDER
-        right_shoulder = landmarks[12]  # mp_pose.PoseLandmark.RIGHT_SHOULDER
-
-        mid = (left_shoulder.x + right_shoulder.x) / 2
-
-        return mid
-
-    def is_pointing_left(self, mid_x, results):
-        """Detects if the hand is pointing left across the chest."""
-        landmarks = results.pose_landmarks.landmark
-
-        right_index = landmarks[20]
-
-        left_shoulder = landmarks[11]
-        left_index = landmarks[19]
-
-        distance_left = left_index.x - left_shoulder.x
-
-        if right_index.x > mid_x or 0.28 < distance_left < 0.6:
-            return True
-
-    def is_pointing_right(self, mid_x, results):
-        """Detects if the hand is pointing right across the chest."""
-        landmarks = results.pose_landmarks.landmark
-
-        right_shoulder = landmarks[12]
-        right_index = landmarks[20]
-
-        left_index = landmarks[19]
-
-        distance_right = right_shoulder.x - right_index.x
-
-        if left_index.x < mid_x or 0.28 < distance_right < 0.6:
-            return True
-
-    def is_raising_left_arm(self, mid_x, results):
-        landmarks = results.pose_landmarks.landmark
-
-        left_shoulder = landmarks[11]  # mp_pose.PoseLandmark.LEFT_SHOULDER
-        left_elbow = landmarks[13]  # mp_pose.PoseLandmark.LEFT_ELBOW
-        left_wrist = landmarks[15]  # mp_pose.PoseLandmark.LEFT_WRIST
-        left_index = landmarks[19]
-
-        angle = self.get_angle(left_shoulder, left_elbow, left_wrist)
-        distance_left = left_shoulder.y - left_index.y
-
-        if (
-            angle < 27
-            and left_wrist.y < left_shoulder.y
-            and left_elbow.y < left_shoulder.y
-            and left_index.x > mid_x
-            and distance_left > 0.25
-        ):
-            return True
-
-        return False
-
-    def is_raising_right_arm(self, mid_x, results):
-        landmarks = results.pose_landmarks.landmark
-
-        right_shoulder = landmarks[12]  # mp_pose.PoseLandmark.RIGHT_SHOULDER
-        right_elbow = landmarks[14]  # mp_pose.PoseLandmark.RIGHT_ELBOW
-        right_wrist = landmarks[16]  # mp_pose.PoseLandmark.RIGHT_WRIST
-        right_index = landmarks[20]
-
-        angle = self.get_angle(right_shoulder, right_elbow, right_wrist)
-        distance_right = right_shoulder.y - right_index.y
-
-        if (
-            angle < 27
-            and right_wrist.y < right_shoulder.y
-            and right_elbow.y < right_shoulder.y
-            and right_index.x < mid_x
-            and distance_right > 0.25
-        ):
-            return True
-
-        return False
+    def _is_raising_right_arm(self, mid_x, points, conf):
+        if (conf[RIGHT_SHOULDER] < KP_CONF or conf[RIGHT_ELBOW] < KP_CONF or
+                conf[RIGHT_WRIST] < KP_CONF):
+            return False
+        angle = self.get_angle(points[RIGHT_SHOULDER], points[RIGHT_ELBOW], points[RIGHT_WRIST])
+        distance_right = points[RIGHT_SHOULDER][1] - points[RIGHT_WRIST][1]
+        return (angle < 27 and
+                points[RIGHT_WRIST][1] < points[RIGHT_SHOULDER][1] and
+                points[RIGHT_ELBOW][1] < points[RIGHT_SHOULDER][1] and
+                distance_right > 0.25)
 
 
 def main():
@@ -287,25 +152,12 @@ def main():
     while True:
         ret, frame = cap.read()
         if not ret:
-            print("Error: Could not read frame.")
             break
 
         gesture = pose_detection.detectGesture(frame)
-
-        # pose_detection.draw_landmarks(frame, results, pose_detection.mp_pose)
-
-        cv2.putText(
-            frame,
-            f"Gesture: {gesture.value}",
-            (10, 60),
-            cv2.FONT_HERSHEY_SIMPLEX,
-            0.8,
-            (0, 255, 0),
-            2,
-        )
-
+        cv2.putText(frame, f"Gesture: {gesture.value}", (10, 60),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
         cv2.imshow("Pose and Gesture Detection", frame)
-
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break
 

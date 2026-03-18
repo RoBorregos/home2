@@ -6,7 +6,9 @@ re-id them if necessary
 """
 
 import cv2
+import os
 from ultralytics import YOLO
+from vision_general.utils.trt_utils import load_yolo_trt
 import tqdm
 from vision_general.utils.calculations import (
     get2DCentroid,
@@ -45,16 +47,22 @@ class CustomerNode(Node):
         self.bridge = CvBridge()
         self.callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
 
+        qos = rclpy.qos.QoSProfile(
+            depth=1,
+            reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
+            durability=rclpy.qos.DurabilityPolicy.VOLATILE,
+        )
+
         self.image_subscriber = self.create_subscription(
-            Image, CAMERA_TOPIC, self.image_callback, 10
+            Image, CAMERA_TOPIC, self.image_callback, qos
         )
 
         self.depth_subscriber = self.create_subscription(
-            Image, DEPTH_IMAGE_TOPIC, self.depth_callback, 10
+            Image, DEPTH_IMAGE_TOPIC, self.depth_callback, qos
         )
 
         self.image_info_subscriber = self.create_subscription(
-            CameraInfo, CAMERA_INFO_TOPIC, self.image_info_callback, 10
+            CameraInfo, CAMERA_INFO_TOPIC, self.image_info_callback, qos
         )
 
         self.get_customer_service = self.create_service(
@@ -78,7 +86,7 @@ class CustomerNode(Node):
         self.verbose = self.declare_parameter("verbose", True)
         self.setup()
         self.create_timer(0.1, self.run)
-        self.create_timer(0.01, self.publish_image)
+        self.create_timer(0.1, self.publish_image)
 
     def setup(self):
         """Load models and initial variables"""
@@ -90,7 +98,8 @@ class CustomerNode(Node):
         self.depth_image_time = None
         pbar = tqdm.tqdm(total=1, desc="Loading models")
 
-        self.model = YOLO("yolov8n.pt")
+        # Load YOLO with TensorRT for Orin AGX
+        self.model = load_yolo_trt("yolov8n.pt")
         self.pose_detection = PoseDetection()
 
         self.output_image = []

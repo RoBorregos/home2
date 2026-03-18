@@ -58,6 +58,7 @@ from geometry_msgs.msg import Point, PointStamped
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from std_msgs.msg import String
+from std_msgs.msg import Bool as BoolMsg
 from std_srvs.srv import SetBool, Trigger
 from utils.decorators import mockable, service_check
 from utils.logger import Logger
@@ -80,6 +81,12 @@ class VisionTasks:
         self.mock_data = mock_data
         self.task = task
         self.follow_face = {"x": None, "y": None}
+
+        # Per-node publishers to pause/resume heavy vision inference
+        self._face_rec_pub = self.node.create_publisher(BoolMsg, "/vision/face_recognition/active", 10)
+        self._obj_det_pub = self.node.create_publisher(BoolMsg, "/vision/object_detector/active", 10)
+        self._face_rec_active = True
+        self._obj_det_active = True
         self.flag_active_face = False
         self.person_list = []
         self.person_name = ""
@@ -218,6 +225,50 @@ class VisionTasks:
             elif service["type"] == "action":
                 if not service["client"].wait_for_server(timeout_sec=TIMEOUT_WAIT_FOR_SERVICE):
                     Logger.warn(self.node, f"{key} action server not initialized. ({self.task})")
+
+    def _set_node_active(self, publisher, active: bool):
+        """Publish active/inactive signal to a vision node."""
+        msg = BoolMsg()
+        msg.data = active
+        publisher.publish(msg)
+
+    def activate_face_recognition(self):
+        """Activate face recognition node."""
+        if not self._face_rec_active:
+            self._set_node_active(self._face_rec_pub, True)
+            self._face_rec_active = True
+            Logger.info(self.node, "Face recognition activated")
+
+    def deactivate_face_recognition(self):
+        """Deactivate face recognition node."""
+        if self._face_rec_active:
+            self._set_node_active(self._face_rec_pub, False)
+            self._face_rec_active = False
+            Logger.info(self.node, "Face recognition deactivated")
+
+    def activate_object_detector(self):
+        """Activate object detector node."""
+        if not self._obj_det_active:
+            self._set_node_active(self._obj_det_pub, True)
+            self._obj_det_active = True
+            Logger.info(self.node, "Object detector activated")
+
+    def deactivate_object_detector(self):
+        """Deactivate object detector node."""
+        if self._obj_det_active:
+            self._set_node_active(self._obj_det_pub, False)
+            self._obj_det_active = False
+            Logger.info(self.node, "Object detector deactivated")
+
+    def pause_vision(self):
+        """Pause all heavy vision inference to free GPU."""
+        self.deactivate_face_recognition()
+        self.deactivate_object_detector()
+
+    def resume_vision(self):
+        """Resume all vision inference."""
+        self.activate_face_recognition()
+        self.activate_object_detector()
 
     def follow_callback(self, msg: Point):
         """Callback for the face following subscriber"""
@@ -848,9 +899,13 @@ class VisionTasks:
 
     def describe_person(self, callback):
         """Describe the person in the image"""
-        Logger.info(self.node, "Describing person")
-        prompt = "Briefly describe 4 attributes of the the person in the image and only say the description: They are .... (Make sure to mention 4 attributes). For example: shirt color, clothes details, hair color, hair style, if the person has glasses"
-        self.moondream_query_async(prompt, query_person=True, callback=callback)
+        # TODO: Remove mock when moondream is ready
+        Logger.info(self.node, "Describing person (MOCKED)")
+        callback(Status.EXECUTION_SUCCESS, "They have dark hair, are wearing a casual shirt, appear to be of average height, and are not wearing glasses.")
+        return
+        # Logger.info(self.node, "Describing person")
+        # prompt = "Briefly describe 4 attributes of the the person in the image and only say the description: They are .... (Make sure to mention 4 attributes). For example: shirt color, clothes details, hair color, hair style, if the person has glasses"
+        # self.moondream_query_async(prompt, query_person=True, callback=callback)
 
     def get_pointing_bag(self, timeout: float = TIMEOUT) -> tuple[int, ObjectDetection]:
         time.sleep(TIMEOUT)

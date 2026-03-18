@@ -1,7 +1,7 @@
 ARG BASE_IMAGE=ubuntu:22.04
 FROM ${BASE_IMAGE}
 
-RUN echo "${BASE_IMAGE}"
+RUN echo "${BASE_IMAGE}" 
 # RUN if [ "${BASE_IMAGE}" = "docker.io/roborregos/home2:cuda_base" ]; then \
 #     echo "Installing PyTorch with CUDA support"; \
 #     pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118; \

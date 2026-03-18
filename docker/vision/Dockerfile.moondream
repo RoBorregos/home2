@@ -8,16 +8,19 @@ RUN apt update && apt install -y ros-humble-cv-bridge
 COPY vision/requirements /workspace/requirements
 WORKDIR /workspace/requirements
 
+RUN apt update
+RUN apt install libvips-dev --no-install-recommends -y
+
 RUN pip install -r moondream.txt
 
-WORKDIR /workspace
-# CV-bridge
+# WORKDIR /workspace
+# # CV-bridge
 
-# CycloneDDS
-RUN sudo apt-get update -qq && sudo apt-get install -y -qq ros-humble-rmw-cyclonedds-cpp \
-    && sudo rm -rf /var/lib/apt/lists/*
-COPY docker/cyclonedds_setup.sh /usr/local/bin/cyclonedds_setup.sh
-RUN sudo chmod +x /usr/local/bin/cyclonedds_setup.sh && sudo /usr/local/bin/cyclonedds_setup.sh
-ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
-ENV CYCLONEDDS_URI=file:///etc/cyclonedds.xml
-RUN echo "source /usr/local/bin/cyclonedds_setup.sh" >> /home/ros/.bashrc
+# # CycloneDDS
+# RUN sudo apt-get update -qq && sudo apt-get install -y -qq ros-humble-rmw-cyclonedds-cpp \
+#     && sudo rm -rf /var/lib/apt/lists/*
+# COPY docker/cyclonedds_setup.sh /usr/local/bin/cyclonedds_setup.sh
+# RUN sudo chmod +x /usr/local/bin/cyclonedds_setup.sh && sudo /usr/local/bin/cyclonedds_setup.sh
+# ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+# ENV CYCLONEDDS_URI=file:///etc/cyclonedds.xml
+# RUN echo "source /usr/local/bin/cyclonedds_setup.sh" >> /home/ros/.bashrc
