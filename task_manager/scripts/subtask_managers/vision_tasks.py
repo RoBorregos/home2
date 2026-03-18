@@ -899,9 +899,13 @@ class VisionTasks:
 
     def describe_person(self, callback):
         """Describe the person in the image"""
-        Logger.info(self.node, "Describing person")
-        prompt = "Briefly describe 4 attributes of the the person in the image and only say the description: They are .... (Make sure to mention 4 attributes). For example: shirt color, clothes details, hair color, hair style, if the person has glasses"
-        self.moondream_query_async(prompt, query_person=True, callback=callback)
+        # TODO: Remove mock when moondream is ready
+        Logger.info(self.node, "Describing person (MOCKED)")
+        callback(Status.EXECUTION_SUCCESS, "They have dark hair, are wearing a casual shirt, appear to be of average height, and are not wearing glasses.")
+        return
+        # Logger.info(self.node, "Describing person")
+        # prompt = "Briefly describe 4 attributes of the the person in the image and only say the description: They are .... (Make sure to mention 4 attributes). For example: shirt color, clothes details, hair color, hair style, if the person has glasses"
+        # self.moondream_query_async(prompt, query_person=True, callback=callback)
 
     def get_pointing_bag(self, timeout: float = TIMEOUT) -> tuple[int, ObjectDetection]:
         time.sleep(TIMEOUT)
