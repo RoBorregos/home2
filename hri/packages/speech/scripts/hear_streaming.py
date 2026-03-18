@@ -128,7 +128,7 @@ class HearStreaming(Node):
             # Buffer length is in chunks, not frames. Use the module-level
             min_buffer_chunks = MIN_BUFFER_CHUNKS
             buffer_ready = False
-
+            first_chunk = True
             while not self.stop_flag.is_set() and rclpy.ok():
                 try:
                     # Wait for minimum buffer before sending
@@ -155,8 +155,9 @@ class HearStreaming(Node):
                     yield speech_pb2.AudioRequest(
                         audio_data=grpc_audio,
                         hotwords=hotwords,
-                        initial_prompt=initial_prompt,
+                        initial_prompt=initial_prompt if first_chunk else "",
                     )
+                    first_chunk = False
 
                 except IOError as e:
                     self.get_logger().error(f"I/O error({e.errno}): {e.strerror}")

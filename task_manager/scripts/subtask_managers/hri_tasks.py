@@ -492,6 +492,7 @@ class HRITasks(metaclass=SubtaskMeta):
         Args:
             timeout (float): The maximum time to stop the transcription.
             hotwords (str): Hotwords to improve the transcription accuracy.
+            initial_prompt (str): Optional initial text/prompt provided to the speech recognizer to guide or bias the transcription (e.g., expected context or phrases).
             silence_time (float): The time to wait after the last interpreted word to stop the transcription. i.e. if no words are heard for this time, the transcription will stop.
             start_silence_time (float): The minimum duration of the transcription before hearing any words. Useful to handle initial silence in audio.
         """
