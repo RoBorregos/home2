@@ -6,6 +6,7 @@ re-id them if necessary
 """
 
 import cv2
+import os
 from ultralytics import YOLO
 import tqdm
 from vision_general.utils.calculations import (
@@ -90,7 +91,17 @@ class CustomerNode(Node):
         self.depth_image_time = None
         pbar = tqdm.tqdm(total=1, desc="Loading models")
 
-        self.model = YOLO("yolov8n.pt")
+        # Load YOLO with TensorRT for Orin AGX
+        yolo_engine = "yolov8n.engine"
+        if os.path.exists(yolo_engine):
+            self.model = YOLO(yolo_engine, task="detect")
+        else:
+            self.model = YOLO("yolov8n.pt")
+            try:
+                self.model.export(format="engine", half=True, device=0, imgsz=640)
+                self.model = YOLO(yolo_engine, task="detect")
+            except Exception:
+                pass  # fallback to PyTorch
         self.pose_detection = PoseDetection()
 
         self.output_image = []

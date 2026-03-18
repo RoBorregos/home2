@@ -3,6 +3,7 @@
 Node to detect cutlery objects (knife, spoons and forks).
 """
 
+import os
 import pathlib
 import rclpy
 import cv2
@@ -30,7 +31,19 @@ class CutleryDetectionNode(Node):
             / "models"
         )
 
-        self.cutlery_model = YOLO(str(MODELS_PATH / "cutlery.pt"))
+        cutlery_pt = str(MODELS_PATH / "cutlery.pt")
+        cutlery_engine = cutlery_pt.replace(".pt", ".engine")
+        if os.path.exists(cutlery_engine):
+            self.cutlery_model = YOLO(cutlery_engine, task="detect")
+            self.get_logger().info(f"[TRT] Loaded cached cutlery engine")
+        else:
+            self.cutlery_model = YOLO(cutlery_pt)
+            try:
+                self.cutlery_model.export(format="engine", half=True, device=0, imgsz=640)
+                self.cutlery_model = YOLO(cutlery_engine, task="detect")
+                self.get_logger().info("[TRT] Cutlery model exported to TensorRT")
+            except Exception as e:
+                self.get_logger().warn(f"[TRT] Export failed ({e}), using PyTorch")
         self.get_logger().info("Cutlery model loaded")
 
         self.image_subscriber = self.create_subscription(

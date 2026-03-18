@@ -6,6 +6,7 @@ re-id them if necessary
 """
 
 import cv2
+import os
 from ultralytics import YOLO
 from PIL import Image as PILImage
 import tqdm
@@ -122,7 +123,19 @@ class SingleTracker(Node):
         self.depth_image_time = None
         pbar = tqdm.tqdm(total=1, desc="Loading models")
 
-        self.model = YOLO("yolov8n.pt")
+        # Load YOLO with TensorRT acceleration for Orin AGX
+        yolo_engine = "yolov8n.engine"
+        if os.path.exists(yolo_engine):
+            self.model = YOLO(yolo_engine, task="detect")
+            print("[TRT] Loaded cached YOLO engine")
+        else:
+            self.model = YOLO("yolov8n.pt")
+            try:
+                self.model.export(format="engine", half=True, device=0, imgsz=640)
+                self.model = YOLO(yolo_engine, task="detect")
+                print("[TRT] YOLO exported and loaded as TensorRT engine")
+            except Exception as e:
+                print(f"[TRT] Export failed ({e}), using PyTorch model")
         self.pose_detection = PoseDetection()
 
         # Load the ReID model

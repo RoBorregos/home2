@@ -1,10 +1,28 @@
 #! /usr/bin/env python3
 from detectors.ObjectDetector import ObjectDectector, Detection, ObjectDectectorParams
 from ultralytics import YOLO
+import os
 import warnings
 
 
 warnings.filterwarnings("ignore", category=FutureWarning)
+
+
+def _load_yolo_trt(model_path: str) -> YOLO:
+    """Load YOLO with automatic TensorRT export for Orin AGX."""
+    engine_path = model_path.replace(".pt", ".engine")
+    if os.path.exists(engine_path):
+        print(f"[TRT] Loading cached engine: {engine_path}")
+        return YOLO(engine_path, task="detect")
+    model = YOLO(model_path)
+    try:
+        print(f"[TRT] Exporting {model_path} to TensorRT (first run only)...")
+        model.export(format="engine", half=True, device=0, imgsz=640)
+        print(f"[TRT] Engine saved: {engine_path}")
+        return YOLO(engine_path, task="detect")
+    except Exception as e:
+        print(f"[TRT] Export failed ({e}), using PyTorch model")
+        return model
 
 
 class YoloV8ObjectDetector(ObjectDectector):
@@ -13,7 +31,7 @@ class YoloV8ObjectDetector(ObjectDectector):
         self.loadModel()
 
     def loadModel(self):
-        self.model = YOLO(self.model_path_)
+        self.model = _load_yolo_trt(self.model_path_)
         print("Model loaded: ", self.model_path_)
 
     def _inference(self, frame):
