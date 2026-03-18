@@ -59,43 +59,11 @@ class YoloNode(Node):
         )
 
     def image_callback(self, msg: Image):
-        """Cache the latest image from the camera and call detection/publish function."""
+        """Cache the latest image from the camera (inference only on service calls)."""
         try:
             self.latest_frame = self.bridge.imgmsg_to_cv2(msg, "bgr8")
         except Exception as e:
             self.get_logger().error(f"Failed to convert image: {e}")
-            return
-
-        self.publish_annotated_image()
-
-    def publish_annotated_image(self):
-        """Run YOLO detection and publish annotated image."""
-        if self.latest_frame is None:
-            return
-        classes = None
-        results = self.model(self.latest_frame, verbose=False, classes=classes)
-        annotated = self.latest_frame.copy()
-        for out in results:
-            for box in out.boxes:
-                conf = box.conf.item()
-                if conf < CONF_THRESHOLD:
-                    continue
-                x1, y1, x2, y2 = [round(x) for x in box.xyxy[0].tolist()]
-                cls_id = int(box.cls.item())
-                label = f"{self.model.names[cls_id]}: {conf:.2f}"
-                color = (0, 255, 0)
-                cv2.rectangle(annotated, (x1, y1), (x2, y2), color, 2)
-                cv2.putText(
-                    annotated,
-                    label,
-                    (x1, y1 - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.6,
-                    color,
-                    2,
-                )
-        annotated_msg = self.bridge.cv2_to_imgmsg(annotated, encoding="bgr8")
-        self.detections_image_publisher.publish(annotated_msg)
 
     def detect_callback(self, request, response):
         """Run YOLO on the latest cached frame."""
