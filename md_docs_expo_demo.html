@@ -98,7 +98,7 @@ $(document).ready(function(){initNavTree('md_docs_expo_demo.html',''); initResiz
 Running HRI</h1>
 <p>This runs a basic Q&amp;A (llm wrapper), with keyword spotting.</p>
 <p>Note: requires wifi connection for llm (local option could be set up in <code>hri/packages/nlp/config/command_interpreter.yaml</code>, but ollama setup is currently not available in this repo)</p>
-<p>For the question answering, you can add more context in <code>hri/packages/nlp/nlp/assets/prompts.py</code>. For better word recognition, you can add hotwords in <code>hri/packages/speech/scripts/stt/Faster-whisper.py</code> (line 43)</p>
+<p>For the question answering, you can add more context in <code>hri/packages/nlp/nlp/assets/prompts.py</code>. For better word recognition, you can add hotwords in <code>hri/microservices/stt/faster-whisper-streaming.py</code></p>
 <p>In laptop (doesn't need gpu)</p>
 <p>Edit <code>home2/hri/packages/speech/config/hear.yaml</code> by adding your laptop's IP address in the <code>STT_SERVER_IP</code> field.</p>
 <div class="fragment"><div class="line"># pwd -&gt; home2/docker/hri</div>
