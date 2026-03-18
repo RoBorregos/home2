@@ -106,6 +106,7 @@ class ManipulationTasks:
         )
         self._go_to_hand_action_client = ActionClient(self.node, GoToHand, GO_TO_HAND_ACTION_SERVER)
 
+
     def open_gripper(self):
         """Opens the gripper"""
         return self._set_gripper_state("open")
@@ -700,6 +701,10 @@ class ManipulationTasks:
         goal_msg.place_params.forced_pose.pose.position.x = point.point.x
         goal_msg.place_params.forced_pose.pose.position.y = point.point.y
         goal_msg.place_params.forced_pose.pose.position.z = point.point.z
+        goal_msg.place_params.forced_pose.header.frame_id = point.header.frame_id
+        goal_msg.place_params.forced_pose.pose.position.x = point.point.x
+        goal_msg.place_params.forced_pose.pose.position.y = point.point.y
+        goal_msg.place_params.forced_pose.pose.position.z = point.point.z
 
         future = self._manipulation_action_client.send_goal_async(goal_msg)
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
@@ -715,6 +720,47 @@ class ManipulationTasks:
             return Status.EXECUTION_SUCCESS
         Logger.error(self.node, "Place in point failed")
         return Status.EXECUTION_ERROR
+        future = self._manipulation_action_client.send_goal_async(goal_msg)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+        if future.result() is None:
+            Logger.error(self.node, "Failed to send place_in_point request")
+            return Status.EXECUTION_ERROR
+        Logger.info(self.node, "Place in point request sent")
+        result_future = future.result().get_result_async()
+        rclpy.spin_until_future_complete(self.node, result_future)
+        result = result_future.result().result
+        if result.success:
+            Logger.success(self.node, "Place in point request successful")
+        else:
+            Logger.error(self.node, "Place in point request failed")
+            return Status.EXECUTION_ERROR
+        return Status.EXECUTION_SUCCESS
+
+
+    def place_in_dishwasher(self) -> int:
+        """Place the currently held object in the dishwasher.
+
+        Detection (layout → rack fallback) is handled inside PlaceManager/ManipulationCore.
+        """
+        goal_msg = ManipulationAction.Goal()
+        goal_msg.task_type = ManipulationTask.PLACE
+        goal_msg.place_params.is_dishwasher = True
+
+        future = self._manipulation_action_client.send_goal_async(goal_msg)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+        if future.result() is None:
+            Logger.error(self.node, "Failed to send place_in_dishwasher request")
+            return Status.EXECUTION_ERROR
+
+        result_future = future.result().get_result_async()
+        rclpy.spin_until_future_complete(self.node, result_future)
+        result = result_future.result().result
+        if result.success:
+            Logger.success(self.node, "Place in dishwasher successful")
+        else:
+            Logger.error(self.node, "Place in dishwasher failed")
+            return Status.EXECUTION_ERROR
+        return Status.EXECUTION_SUCCESS
 
 
 if __name__ == "__main__":

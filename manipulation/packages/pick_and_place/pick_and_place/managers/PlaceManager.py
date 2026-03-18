@@ -3,6 +3,7 @@ from frida_motion_planning.utils.tf_utils import transform_pose, transform_point
 from frida_interfaces.srv import (
     PlacePerceptionService,
     HeatmapPlace,
+    DishwasherDetection,
 )
 from geometry_msgs.msg import PoseStamped
 from frida_interfaces.msg import PlaceParams
@@ -41,6 +42,43 @@ class PlaceManager:
             "/manipulator/place_ee_link_pose",
             10,
         )
+
+    def _get_dishwasher_point(self):
+        """Query dishwasher detection services and return the best 3D placement point.
+
+        Tries layout detection (empty slots) first, then rack detection as fallback.
+        Returns a PointStamped in camera frame, or None if nothing is detected.
+        """
+        for client, label in [
+            (self.node.dishwasher_layout_client, "layout"),
+            (self.node.dishwasher_rack_client, "rack"),
+        ]:
+            if not client.wait_for_service(timeout_sec=3.0):
+                self.node.get_logger().warn(f"Dishwasher {label} service not available")
+                continue
+            future = client.call_async(DishwasherDetection.Request())
+            wait_for_future(future, timeout=10.0)
+            result = future.result()
+            if result is None or not result.success or not result.detection_array.detections:
+                self.node.get_logger().warn(f"No detections from dishwasher {label} service")
+                continue
+            best = max(result.detection_array.detections, key=lambda d: d.score)
+            self.node.get_logger().info(
+                f"Dishwasher {label}: '{best.label_text}' score={best.score:.2f} "
+                f"at ({best.point3d.point.x:.3f}, {best.point3d.point.y:.3f}, {best.point3d.point.z:.3f})"
+            )
+            return best.point3d
+        return None
+
+    def _point_to_pose(self, point):
+        """Wrap a PointStamped into a PoseStamped with identity orientation."""
+        pose = PoseStamped()
+        pose.header = point.header
+        pose.pose.position.x = point.point.x
+        pose.pose.position.y = point.point.y
+        pose.pose.position.z = point.point.z
+        pose.pose.orientation.w = 1.0
+        return pose
 
     def execute(self, place_params: PlaceParams, pick_result: PickResult) -> bool:
         self.node.get_logger().info("Executing Place Task")
@@ -102,7 +140,22 @@ class PlaceManager:
     ) -> PoseStamped:
         result_pose = PoseStamped()
 
-        if place_params.forced_pose.header.frame_id != "":
+        if place_params.is_dishwasher:
+            self.node.get_logger().info("Dishwasher place: querying detection services")
+            point = self._get_dishwasher_point()
+            if point is not None:
+                transform_frame = "base_link"
+                success, result_pose = transform_pose(
+                    self._point_to_pose(point), transform_frame, self.node.tf_buffer
+                )
+                if not success:
+                    self.node.get_logger().error("Failed to transform dishwasher point")
+                    return None
+            else:
+                self.node.get_logger().error("No dishwasher target detected")
+                return None
+
+        elif place_params.forced_pose.header.frame_id != "":
             self.node.get_logger().info("Using forced place pose")
             result_pose = place_params.forced_pose
             # transform forced pose to the correct frame, mainly so we can alter orientation correctly

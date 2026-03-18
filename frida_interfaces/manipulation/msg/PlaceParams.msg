@@ -2,6 +2,7 @@ float32 table_height
 float32 table_height_tolerance
 
 bool is_shelf
+bool is_dishwasher
 
 string close_to
 string special_request

@@ -182,6 +182,22 @@ class KeyboardInput(Node):
         )
         self.get_logger().info("Place request sent")
 
+    def send_place_in_dishwasher_request(self):
+        self.get_logger().warning("Sending place in dishwasher request")
+
+        if not self._action_client.wait_for_server(timeout_sec=5.0):
+            self.get_logger().error("Action server not available!")
+            return
+
+        goal_msg = ManipulationAction.Goal()
+        goal_msg.task_type = ManipulationTask.PLACE
+        goal_msg.place_params.is_dishwasher = True
+
+        self._action_client.send_goal_async(
+            goal_msg, feedback_callback=self.feedback_callback
+        )
+        self.get_logger().info("Place in dishwasher request sent")
+
     def feedback_callback(self, feedback_msg):
         self.get_logger().info(f"Feedback received: {feedback_msg.feedback}")
 
@@ -223,6 +239,7 @@ def main(args=None):
             print("-7. Place on clicked point")
             print("-8. Place closeto")
             print("-9. Special Request Place")
+            print("-10. Place in dishwasher (uses rack detection, falls back to /clicked_point)")
             print("q. Quit")
 
             choice = input("\nEnter your choice: ")
@@ -309,6 +326,9 @@ def main(args=None):
                     special_request_position=special_request_position,
                     special_request_object=special_request_object,
                 )
+
+            elif choice == "-10":
+                node.send_place_in_dishwasher_request()
 
             elif choice.isdigit():
                 try:

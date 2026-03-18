@@ -251,8 +251,7 @@ class CleanTableTM(Node):
                 # self.subtask_manager.manipulation.move_joint_positions("trash")
                 self.subtask_manager.manipulation.open_gripper()
             else:
-                # self.subtask_manager.manipulation.place()
-                self.subtask_manager.manipulation.place_in_point(self.dish_washer)
+                self.subtask_manager.manipulation.place_in_dishwasher()
                 self.subtask_manager.manipulation.open_gripper()
 
             self.object_index += 1

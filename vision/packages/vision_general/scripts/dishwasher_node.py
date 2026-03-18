@@ -75,6 +75,8 @@ class DishwasherNode(Node):
         )
 
         self.image = None
+        self.depth_image = None
+        self.image_info = None
 
     def image_callback(self, msg):
         self.image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
@@ -86,7 +88,7 @@ class DishwasherNode(Node):
         self.depth_image = self.bridge.imgmsg_to_cv2(msg, "32FC1")
 
     def dishwasher_layout_callback(self, request, response):
-        if self.image is None:
+        if self.image is None or self.depth_image is None or self.image_info is None:
             response.detection_array = ObjectDetectionArray()
             response.detection_array.detections = []
             response.success = False
@@ -108,6 +110,22 @@ class DishwasherNode(Node):
                 x1, y1, x2, y2 = box.xyxy[0].tolist()
                 confidence = float(box.conf[0].item())
 
+                point_2D = get2DCentroid(
+                    [x1, y1, x2, y2],
+                    self.image,
+                )
+
+                depth = get_depth(self.depth_image, point_2D)
+                point_3D_ = deproject_pixel_to_point(self.image_info, point_2D, depth)
+
+                point_3D = PointStamped()
+                point_3D.header.frame_id = CAMERA_FRAME
+                point_3D.header.stamp = self.get_clock().now().to_msg()
+
+                point_3D.point.x = float(point_3D_[0])
+                point_3D.point.y = float(point_3D_[1])
+                point_3D.point.z = float(point_3D_[2])
+
                 object_detection = ObjectDetection(
                     label=class_id,
                     label_text=class_name,
@@ -116,6 +134,7 @@ class DishwasherNode(Node):
                     ymin=y1,
                     xmax=x2,
                     ymax=y2,
+                    point3d=point_3D,
                 )
                 response.detection_array.detections.append(object_detection)
 

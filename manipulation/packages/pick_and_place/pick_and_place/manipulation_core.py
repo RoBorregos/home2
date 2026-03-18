@@ -47,7 +47,10 @@ from frida_constants.manipulation_constants import (
 )
 from frida_constants.vision_constants import (
     DETECTION_HANDLER_TOPIC_SRV,
+    DISHWASHER_LAYOUT_DETECTION_TOPIC,
+    DISHWASHER_RACK_DETECTION_TOPIC,
 )
+from frida_interfaces.srv import DishwasherDetection
 from pick_and_place.managers.PickManager import PickManager
 from pick_and_place.managers.PlaceManager import PlaceManager
 from pick_and_place.managers.PourManager import PourManager
@@ -131,6 +134,15 @@ class ManipulationCore(Node):
         self._get_collision_objects_client = self.create_client(
             GetCollisionObjects,
             GET_COLLISION_OBJECTS_SERVICE,
+        )
+
+        self.dishwasher_layout_client = self.create_client(
+            DishwasherDetection,
+            DISHWASHER_LAYOUT_DETECTION_TOPIC,
+        )
+        self.dishwasher_rack_client = self.create_client(
+            DishwasherDetection,
+            DISHWASHER_RACK_DETECTION_TOPIC,
         )
 
         qos = rclpy.qos.QoSProfile(
