@@ -59,6 +59,7 @@ Additional Flags:
   --build-image      Builds the Docker image for the specified area or task.
   --recreate         Forces the recreation of containers (useful for network or .env changes).
   --open-display     Opens the graphical interface (UI/Display) required for HRI or Vision.
+  --clean            Deletes the build/, log/, and install/ folders and frida_interfaces_cache/.
 
 Examples:
   ./run.sh hri --receptionist --open-display
@@ -75,6 +76,9 @@ case $INPUT in
     ;;
   --stop|--down)
     control "$INPUT"
+    ;;
+  --clean)
+    clean_frida_interfaces
     ;;
   --hric|--ppc|--gpsr|--dlc|--restaurant|--finals)
     run_task "$@"
