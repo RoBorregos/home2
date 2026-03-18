@@ -7,10 +7,10 @@ RULES_FILE="/etc/udev/rules.d/99-usb-lidar-stm32.rules"
 
 sudo bash -c "cat > $RULES_FILE" << 'EOF'
 # Regla para LiDAR (CP210x con serial específico)
-SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", ATTRS{serial}=="ee4398021564ef11bc11daa9c169b110", SYMLINK+="ttyUSBlidar", MODE="0777"
+SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", ATTRS{serial}=="ee4398021564ef11bc11daa9c169b110", SYMLINK+="ttyUSBlidar2", MODE="0777"
 
 # Regla para STM32 / DashGo Driver (CP210x con serial 0001)
-SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", ATTRS{serial}=="0001", SYMLINK+="ttyUSBstm32", MODE="0777"
+SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", ATTRS{serial}=="0001", SYMLINK+="ttyUSBStm32", MODE="0777"
 EOF
 
 if [ $? -ne 0 ]; then
@@ -25,13 +25,13 @@ sudo udevadm control --reload-rules
 sudo udevadm trigger
 
 if [ -L /dev/ttyUSBlidar ]; then
-    echo = "/dev/ttyUSBlidar -> $(readlink /dev/ttyUSBlidar)"
+    echo = "/dev/ttyUSBlidar -> $(readlink /dev/ttyUSBlidar2)"
 else
     echo = "/dev/ttyUSBlidar not found"
 fi
 
 if [ -L /dev/ttyUSBstm32 ]; then
-    echo = "/dev/ttyUSBstm32 -> $(readlink /dev/ttyUSBstm32)"
+    echo = "/dev/ttyUSBstm32 -> $(readlink /dev/ttyUSBStm32)"
 else
     echo = "/dev/ttyUSBstm32 not found"
 fi
