@@ -30,12 +30,13 @@ install(TARGETS
   ignore_laser
   DESTINATION lib/${PROJECT_NAME})
   
-  ament_python_install_package(${PROJECT_NAME})
+#  ament_python_install_package(${PROJECT_NAME})
 
   file(GLOB PYTHON_SCRIPTS scripts/*.py)
 
   #Install python scripts
   install(PROGRAMS
+    scripts/nav_lifecycle_manager.py
     ${PYTHON_SCRIPTS}
     DESTINATION lib/${PROJECT_NAME}
   )
