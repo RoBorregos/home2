@@ -27,7 +27,6 @@ def launch_function(context, *args, **kwargs):
         output='screen',
     )
 
-    # 2. Trigger de Configuración inicial (con retraso para evitar race conditions)
     configure_manager = ExecuteProcess(
         cmd=['bash', '-c', 'sleep 5 && ros2 lifecycle set /nav_lifecycle_manager configure'],
         output='screen'
