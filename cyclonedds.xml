@@ -10,6 +10,10 @@
       <EnableMulticastLoopback>true</EnableMulticastLoopback>
       <MaxMessageSize>65500B</MaxMessageSize>
     </General>
+    <SharedMemory>
+      <Enable>true</Enable>
+      <LogLevel>warning</LogLevel>
+    </SharedMemory>
     <Internal>
       <SocketReceiveBufferSize min="10MB"/>
       <Watermarks>

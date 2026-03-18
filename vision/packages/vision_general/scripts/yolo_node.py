@@ -4,9 +4,7 @@
 Node to initialize and provide a YOLO instance for reuse across other files.
 """
 
-import os
 import pathlib
-from ultralytics import YOLO
 from vision_general.utils.trt_utils import load_yolo_trt
 
 import rclpy
@@ -43,14 +41,14 @@ class YoloNode(Node):
             YoloDetect, YOLO_DETECTION_TOPIC, self.detect_callback
         )
 
-        # Subscribe to camera — depth=1 BEST_EFFORT to always process latest frame
-        qos = rclpy.qos.QoSProfile(
+        self._img_qos = rclpy.qos.QoSProfile(
             depth=1,
             reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
             durability=rclpy.qos.DurabilityPolicy.VOLATILE,
         )
-        self.image_subscriber = self.create_subscription(
-            Image, CAMERA_TOPIC, self.image_callback, qos
+
+        self.create_subscription(
+            Image, CAMERA_TOPIC, self._image_callback, self._img_qos
         )
 
         # Publisher for annotated image
@@ -58,8 +56,8 @@ class YoloNode(Node):
             Image, YOLO_DETECTIONS_PUBLISHER_TOPIC, 5
         )
 
-    def image_callback(self, msg: Image):
-        """Cache the latest image from the camera (inference only on service calls)."""
+    def _image_callback(self, msg: Image):
+        """Cache the latest frame."""
         try:
             self.latest_frame = self.bridge.imgmsg_to_cv2(msg, "bgr8")
         except Exception as e:
@@ -67,6 +65,7 @@ class YoloNode(Node):
 
     def detect_callback(self, request, response):
         """Run YOLO on the latest cached frame."""
+
         if self.latest_frame is None:
             self.get_logger().warn("No image received yet from camera.")
             response.success = False

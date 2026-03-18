@@ -28,6 +28,10 @@ $IFACE_LINE
       <EnableMulticastLoopback>true</EnableMulticastLoopback>
       <MaxMessageSize>65500B</MaxMessageSize>
     </General>
+    <SharedMemory>
+      <Enable>true</Enable>
+      <LogLevel>warning</LogLevel>
+    </SharedMemory>
     <Internal>
       <SocketReceiveBufferSize min="10MB"/>
       <Watermarks>
@@ -40,3 +44,11 @@ $IFACE_LINE
   </Domain>
 </CycloneDDS>
 EOF
+
+# Start RouDi if not already running (required for CycloneDDS SHM)
+if command -v iox-roudi > /dev/null 2>&1; then
+    if ! pgrep -x iox-roudi > /dev/null 2>&1; then
+        echo "[CycloneDDS] Starting iceoryx RouDi daemon for SHM..."
+        iox-roudi &
+    fi
+fi

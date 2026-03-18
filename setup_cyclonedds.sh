@@ -125,11 +125,34 @@ fi
 # Install CycloneDDS RMW if not present
 ROS_DISTRO="${ROS_DISTRO:-humble}"
 if ! dpkg -s "ros-${ROS_DISTRO}-rmw-cyclonedds-cpp" &>/dev/null; then
-    echo "[0/3] Installing ros-${ROS_DISTRO}-rmw-cyclonedds-cpp..."
+    echo "[0/4] Installing ros-${ROS_DISTRO}-rmw-cyclonedds-cpp..."
     apt-get update -qq && apt-get install -y -qq "ros-${ROS_DISTRO}-rmw-cyclonedds-cpp"
 else
-    echo "[0/3] ros-${ROS_DISTRO}-rmw-cyclonedds-cpp already installed"
+    echo "[0/4] ros-${ROS_DISTRO}-rmw-cyclonedds-cpp already installed"
 fi
+
+# Install iceoryx for SHM support
+echo "[0.5/4] Installing iceoryx for CycloneDDS SHM..."
+apt-get update -qq && apt-get install -y -qq \
+    "ros-${ROS_DISTRO}-iceoryx-posh" \
+    "ros-${ROS_DISTRO}-iceoryx-hoofs" \
+    "ros-${ROS_DISTRO}-iceoryx-binding-c" \
+    && rm -rf /var/lib/apt/lists/*
+
+# Rebuild CycloneDDS with SHM support (overrides apt version)
+echo "[0.7/4] Building CycloneDDS with SHM support..."
+cd /tmp && \
+    git clone --depth 1 -b releases/0.10.x https://github.com/eclipse-cyclonedds/cyclonedds.git && \
+    cd cyclonedds && mkdir build && cd build && \
+    source /opt/ros/${ROS_DISTRO}/setup.bash && \
+    cmake .. \
+        -DCMAKE_INSTALL_PREFIX=/opt/ros/${ROS_DISTRO} \
+        -DCMAKE_PREFIX_PATH=/opt/ros/${ROS_DISTRO} \
+        -DENABLE_SHM=ON \
+        -DCMAKE_BUILD_TYPE=Release && \
+    make -j$(nproc) && make install && \
+    cd / && rm -rf /tmp/cyclonedds
+echo "[0.7/4] CycloneDDS SHM build complete"
 
 # Detect network interface
 if [ -z "$INTERFACE" ]; then
@@ -159,6 +182,10 @@ $IFACE_LINE
       <EnableMulticastLoopback>true</EnableMulticastLoopback>
       <MaxMessageSize>65500B</MaxMessageSize>
     </General>
+    <SharedMemory>
+      <Enable>true</Enable>
+      <LogLevel>warning</LogLevel>
+    </SharedMemory>
     <Internal>
       <SocketReceiveBufferSize min="10MB"/>
       <Watermarks>

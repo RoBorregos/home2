@@ -7,7 +7,6 @@ available seats. Tasks for HRIC commands.
 
 import cv2
 import numpy as np
-import os
 import queue
 import time
 
@@ -18,7 +17,6 @@ from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import PointStamped
 from rclpy.task import Future
-from ultralytics import YOLO
 from vision_general.utils.trt_utils import load_yolo_trt
 
 from frida_interfaces.action import DetectPerson
@@ -62,13 +60,22 @@ class HRICCommands(Node):
         self.bridge = CvBridge()
         self.callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
 
-        img_qos = rclpy.qos.QoSProfile(
+        self._img_qos = rclpy.qos.QoSProfile(
             depth=1,
             reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
             durability=rclpy.qos.DurabilityPolicy.VOLATILE,
         )
-        self.image_subscriber = self.create_subscription(
-            Image, CAMERA_TOPIC, self.image_callback, img_qos
+        self.create_subscription(
+            Image, CAMERA_TOPIC, self.image_callback, self._img_qos,
+            callback_group=self.callback_group,
+        )
+        self.create_subscription(
+            Image, DEPTH_IMAGE_TOPIC, self.depth_callback, self._img_qos,
+            callback_group=self.callback_group,
+        )
+        self.create_subscription(
+            CameraInfo, CAMERA_INFO_TOPIC, self.camera_info_callback, self._img_qos,
+            callback_group=self.callback_group,
         )
 
         self.find_seat_service = self.create_service(
@@ -104,19 +111,6 @@ class HRICCommands(Node):
         # YOLO pose replaces mediapipe Hands — wrist keypoints as hand proxy
         self.pose_model = _load_yolo_pose("yolo11m-pose.pt")
 
-        qos = rclpy.qos.QoSProfile(
-            depth=5,
-            reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
-            durability=rclpy.qos.DurabilityPolicy.VOLATILE,
-        )
-
-        self.depth_sub = self.create_subscription(
-            Image, DEPTH_IMAGE_TOPIC, self.depth_callback, qos
-        )
-        self.camera_info_sub = self.create_subscription(
-            CameraInfo, CAMERA_INFO_TOPIC, self.camera_info_callback, qos
-        )
-
         self.detect_hand_service = self.create_service(
             DetectHand,
             DETECT_HAND_SERVICE,
@@ -126,7 +120,7 @@ class HRICCommands(Node):
 
         self.get_logger().info("HRIC Commands Ready.")
 
-        self.create_timer(0.1, self.publish_image)
+        self.create_timer(0.1, self.publish_image, callback_group=self.callback_group)
 
     def image_callback(self, data):
         """Callback to receive the image from the camera."""
