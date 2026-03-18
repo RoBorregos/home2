@@ -32,12 +32,19 @@ if [ -L /dev/ttyUSBlidar2 ]; then
     echo = "/dev/ttyUSBlidar2 -> $(readlink /dev/ttyUSBlidar2)"
 else
     echo = "/dev/ttyUSBlidar2 not found"
+    LIDAR_MISSING=1
 fi
 
 if [ -L /dev/ttyUSBStm32 ]; then
     echo = "/dev/ttyUSBStm32 -> $(readlink /dev/ttyUSBStm32)"
 else
     echo = "/dev/ttyUSBStm32 not found"
+    STM32_MISSING=1
+fi
+
+if [ "$LIDAR_MISSING" = "1" ] || [ "$STM32_MISSING" = "1" ]; then
+    echo = "Error: required USB devices (Lidar and/or STM32 Dashgo driver) were not recognized."
+    exit 1
 fi
 
 
