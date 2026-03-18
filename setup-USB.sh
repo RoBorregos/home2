@@ -24,6 +24,10 @@ sudo udevadm control --reload-rules
 #Applying rules for the connected devices
 sudo udevadm trigger
 
+# Wait for udev to process events and create symlinks
+sudo udevadm settle
+sleep 1
+
 if [ -L /dev/ttyUSBlidar2 ]; then
     echo = "/dev/ttyUSBlidar2 -> $(readlink /dev/ttyUSBlidar2)"
 else
