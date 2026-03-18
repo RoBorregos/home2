@@ -24,16 +24,16 @@ sudo udevadm control --reload-rules
 #Applying rules for the connected devices
 sudo udevadm trigger
 
-if [ -L /dev/ttyUSBlidar ]; then
-    echo = "/dev/ttyUSBlidar -> $(readlink /dev/ttyUSBlidar2)"
+if [ -L /dev/ttyUSBlidar2 ]; then
+    echo = "/dev/ttyUSBlidar2 -> $(readlink /dev/ttyUSBlidar2)"
 else
-    echo = "/dev/ttyUSBlidar not found"
+    echo = "/dev/ttyUSBlidar2 not found"
 fi
 
-if [ -L /dev/ttyUSBstm32 ]; then
-    echo = "/dev/ttyUSBstm32 -> $(readlink /dev/ttyUSBStm32)"
+if [ -L /dev/ttyUSBStm32 ]; then
+    echo = "/dev/ttyUSBStm32 -> $(readlink /dev/ttyUSBStm32)"
 else
-    echo = "/dev/ttyUSBstm32 not found"
+    echo = "/dev/ttyUSBStm32 not found"
 fi
 
 
