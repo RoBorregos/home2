@@ -94,7 +94,7 @@ class FaceRecognition(Node):
         self.verbose = self.declare_parameter("verbose", True)
         self.annotated_frame = []
         self.setup()
-        self.create_timer(0.05, self.run)
+        self.create_timer(0.2, self.run)
         # self.create_timer(0.05, self.publish_image)
 
     def setup(self):
