@@ -4,6 +4,23 @@
 SCRIPT_DIR="../../hri/packages/nlp/assets" 
 [ ! -f "$SCRIPT_DIR/rbrgs.F16.gguf" ] && curl -L https://huggingface.co/diegohc/rbrgs-finetuning/resolve/paraphrased-dataset/q4/unsloth.Q4_K_M.gguf -o "$SCRIPT_DIR/rbrgs.F16.gguf"
 
+# Download and unzip DeepFilterNet model
+DF_MODEL_DIR="../../hri/packages/speech/assets/downloads"
+DF_MODEL_URL="https://github.com/Rikorose/DeepFilterNet/raw/main/models/DeepFilterNet3.zip"
+ZIP_FILE="$DF_MODEL_DIR/DeepFilterNet3.zip"
+
+if [ ! -d "$DF_MODEL_DIR/DeepFilterNet3" ]; then
+    echo "Downloading DeepFilterNet3 model..."
+    mkdir -p "$DF_MODEL_DIR"
+    curl -L "$DF_MODEL_URL" -o "$ZIP_FILE"
+    echo "Unzipping the model..."
+    unzip "$ZIP_FILE" -d "$DF_MODEL_DIR"
+    rm "$ZIP_FILE"
+    echo "DeepFilterNet3 model downloaded successfully."
+else
+    echo "DeepFilterNet3 model already exists. Skipping download."
+fi
+
 # Detect available image
 if docker images | grep -q "dustynv/ollama"; then
     IMAGE="dustynv/ollama:0.6.8-r36.4"
