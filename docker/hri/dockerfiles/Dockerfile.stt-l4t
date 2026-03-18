@@ -51,3 +51,6 @@ RUN chmod +x /usr/local/bin/cyclonedds_setup.sh && /usr/local/bin/cyclonedds_set
 ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 ENV CYCLONEDDS_URI=file:///etc/cyclonedds.xml
 RUN echo "source /usr/local/bin/cyclonedds_setup.sh" >> /home/ros/.bashrc
+
+COPY ../../hri/proto_interfaces /tmp/proto_interfaces
+RUN pip install --no-cache-dir /tmp/proto_interfaces

@@ -3,9 +3,6 @@ FROM ${BASE_IMAGE}
 
 WORKDIR /app
 
-COPY hri/proto_interfaces /tmp/proto_interfaces
-RUN pip install --no-cache-dir /tmp/proto_interfaces
-
 COPY hri/requirements/tts.txt requirements.txt
 RUN python3 -m pip install --upgrade pip
 RUN pip install --no-cache-dir -r /app/requirements.txt
@@ -20,3 +17,6 @@ RUN apt update && \
     portaudio19-dev
 
 RUN apt-get -qq -y install espeak-ng > /dev/null 2>&1
+
+COPY hri/proto_interfaces /tmp/proto_interfaces
+RUN pip install --no-cache-dir /tmp/proto_interfaces
