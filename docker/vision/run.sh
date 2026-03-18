@@ -12,6 +12,7 @@ DETACHED=""
 BUILD=""
 BUILD_IMAGE=""
 UPLOAD_IMAGE=""
+CLEAN=""
 
 # check if one of the arguments is --detached
 for arg in "${ARGS[@]}"; do
@@ -38,6 +39,9 @@ for arg in "${ARGS[@]}"; do
         ;;
     "--upload-image")
         UPLOAD_IMAGE="true"
+        ;;
+    "--clean")
+        CLEAN="true"
         ;;
     esac
 done
@@ -75,6 +79,9 @@ case $ENV_TYPE in
     exit 1
     ;;
 esac
+
+# Clean build artifacts if requested
+clean_workspace_directories
 
 mkdir -p install build log moondream/install moondream/build moondream/log
 

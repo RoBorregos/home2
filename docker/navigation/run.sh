@@ -11,6 +11,7 @@ DETACHED=""
 BUILD=""
 BUILD_IMAGE=""
 UPLOAD_IMAGE=""
+CLEAN=""
 COMPOSE_FILE="docker-compose.yaml"
 for arg in "${ARGS[@]}"; do
     case $arg in
@@ -36,6 +37,9 @@ for arg in "${ARGS[@]}"; do
         ;;
     "--upload-image")
         UPLOAD_IMAGE="true"
+        ;;
+    "--clean")
+        CLEAN="true"
         ;;
     esac
 done
@@ -73,6 +77,9 @@ case $ENV_TYPE in
         add_or_update_variable .env "DOCKER_RUNTIME" "nvidia"
         ;;
 esac
+
+# Clean build artifacts if requested
+clean_workspace_directories
 
 # Create dirs with current user to avoid permission problems
 mkdir -p install build log
