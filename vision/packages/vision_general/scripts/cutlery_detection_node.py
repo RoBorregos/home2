@@ -6,6 +6,7 @@ Node to detect cutlery objects (knife, spoons and forks).
 import os
 import pathlib
 import rclpy
+import rclpy.qos
 import cv2
 from sensor_msgs.msg import Image
 from frida_interfaces.msg import Detection
@@ -36,8 +37,13 @@ class CutleryDetectionNode(Node):
         self.cutlery_model = load_yolo_trt(cutlery_pt)
         self.get_logger().info("Cutlery model loaded")
 
+        qos = rclpy.qos.QoSProfile(
+            depth=1,
+            reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
+            durability=rclpy.qos.DurabilityPolicy.VOLATILE,
+        )
         self.image_subscriber = self.create_subscription(
-            Image, CAMERA_TOPIC, self.image_callback, 10
+            Image, CAMERA_TOPIC, self.image_callback, qos
         )
 
         self.cutlery_detections_publisher = self.create_publisher(
