@@ -42,6 +42,9 @@ done
 
 #_________________________SETUP_________________________
 
+echo "Configuring USB devices for Navigation..."
+bash ../../setup-USB.sh
+
 # Reset .env
 echo "" > .env
 
