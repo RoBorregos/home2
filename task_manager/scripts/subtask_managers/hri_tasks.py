@@ -252,6 +252,7 @@ class HRITasks(metaclass=SubtaskMeta):
             Task.HELP_ME_CARRY: all_services,
             Task.STORING_GROCERIES: all_services,
             Task.DEMO: all_services,
+            Task.DEBUG: all_services,
         }
 
         self.hand = HRIHand(self)
