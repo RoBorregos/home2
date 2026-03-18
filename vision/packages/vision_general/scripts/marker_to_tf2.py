@@ -2,13 +2,13 @@
 
 import rclpy
 from rclpy.node import Node
-from cv_bridge import CvBridge
 from geometry_msgs.msg import PointStamped, PoseArray
-from rclpy.callback_groups import ReentrantCallbackGroup
 from frida_constants.vision_constants import DETECTIONS_POSES_TOPIC, TRASH_DEPTH_TOPIC
 import tf2_ros
 from tf2_ros import Buffer
 from tf2_geometry_msgs import do_transform_point
+
+DEFAULT_CLASSES = ["black_trashcan", "trashcan"]
 
 
 class TrashDetectionNodeDemo(Node):
@@ -21,10 +21,9 @@ class TrashDetectionNodeDemo(Node):
     def __init__(self):
         super().__init__("trash_detection_demo")
 
-        self.callback_group = ReentrantCallbackGroup()
-        self.bridge = CvBridge()
         self.tf_buffer = Buffer()
         self.listener = tf2_ros.TransformListener(self.tf_buffer, self)
+        self.class_names = DEFAULT_CLASSES
 
         self.latest_poses = PoseArray()
         self.image = None
