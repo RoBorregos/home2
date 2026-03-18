@@ -509,7 +509,7 @@ public:
   STATUS_RESPONSE vertical_plane(
       _IN_ const std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud,
       _OUT_ const std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> cloud_out,
-    _OUT_ const std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> plane_cloud_out) {
+      _OUT_ std::shared_ptr<pcl::PointCloud<pcl::PointXYZ>> plane_cloud_out) {
 
     pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
     pcl::PointIndices::Ptr inliers(new pcl::PointIndices);

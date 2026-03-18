@@ -4,7 +4,9 @@
 #include <cstdint>
 
 #include <exception>
+#include <future>
 #include <memory>
+#include <thread>
 #include <pcl/common/centroid.h>
 #include <pcl/common/common.h>
 #include <pcl/common/eigen.h>
@@ -554,8 +556,8 @@ public:
           response) {
     RCLCPP_INFO(this->get_logger(), "add_pick_primitives");
     response->status = OK;
-
-    ASSERT_AND_RETURN_CODE(request->is_object != request->is_plane, true,
+    int flags_set = (int)request->is_object + (int)request->is_plane + (int)request->is_vertical_plane;
+    ASSERT_AND_RETURN_CODE(flags_set == 1, true,
                            "Object and plane cannot be true at the same time, "
                            "returning with code %d",
                            INVALID_INPUT);
@@ -586,7 +588,7 @@ public:
       return;
     }
 
-    if (request->is_plane || request.is_vertical_plane) {
+  if (request->is_plane || request->is_vertical_plane) {
       RCLCPP_INFO(this->get_logger(), "Adding plane primitive");
 
       BoxPrimitiveParams box_params;

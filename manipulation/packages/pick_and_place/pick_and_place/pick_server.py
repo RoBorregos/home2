@@ -25,8 +25,6 @@ from frida_constants.manipulation_constants import (
     GRIPPER_SET_STATE_SERVICE,
     GO_TO_HAND_ACTION_SERVER,
     OPEN_CONTAINER_ACTION_SERVER,
-    REMOVE_VERTICAL_PLANE_SERVICE,
-    ADD_PICK_PRIMITIVES_SERVICE,
 )
 from frida_interfaces.srv import (
     AttachCollisionObject,
@@ -96,11 +94,11 @@ class PickMotionServer(Node):
         )
 
         self.remove_vertical_plane_client = self.create_client(
-            RemoveVerticalPlane, REMOVE_VERTICAL_PLANE_SERVICE
+            RemoveVerticalPlane, "/manipulation/remove_vertical_plane"
         )
 
         self._add_pick_primitives_client = self.create_client(
-            AddPickPrimitives, ADD_PICK_PRIMITIVES_SERVICE
+            AddPickPrimitives, "/manipulation/add_pick_primitives"
         )
 
         self._attach_collision_object_client = self.create_client(
@@ -211,7 +209,7 @@ class PickMotionServer(Node):
             return result
 
     async def execute_open_container_callback(self, goal_handle):
-        pregrasp_offset = 0.3
+        pregrasp_offset = 0.10
 
         # Get handle cloud
         remove_plane_request = RemoveVerticalPlane.Request()
@@ -241,32 +239,44 @@ class PickMotionServer(Node):
             point_cloud2.read_points(cloud, field_names=("x", "y", "z"), skip_nans=True)
         )
         if not pts:
-            self.node.get_logger().error("Empty cluster for handle")
+            self.get_logger().error("Empty cluster for handle")
             return False, None
 
         pts_np = np.array([[p[0], p[1], p[2]] for p in pts])
         centroid = np.mean(pts_np, axis=0)
 
         # quaternion position
-        qx, qy, qz, qw = quaternion_from_euler(0, 0, 0)
+        qx, qy, qz, qw = quaternion_from_euler(np.pi / 2, -np.pi / 2, 0)
         quat = [qx, qy, qz, qw]
+
+        rotation_matrix = quat2mat([qw, qx, qy, qz])
+        z_axis = rotation_matrix[:, 1]
+        base_point = copy.deepcopy(goal_handle.request.close_point)
+        centroid_with_offset = (
+            np.array([base_point.point.x, base_point.point.y, base_point.point.z])
+            + z_axis * self.ee_tip_offset
+        )
 
         # Move to pregrasp position
         handle_pose = PoseStamped()
-        handle_pose.header.frame_id = "link_base"
-        handle_pose.header.stamp = self.node.get_clock().now().to_msg()
-        handle_pose.pose.position.x = float(centroid[0]) - pregrasp_offset
-        handle_pose.pose.position.y = float(centroid[1])
-        handle_pose.pose.position.z = float(centroid[2])
+        handle_pose.header.frame_id = goal_handle.request.close_point.header.frame_id
+        handle_pose.header.stamp = self.get_clock().now().to_msg()
+        handle_pose.pose.position.x = float(centroid_with_offset[0]) - pregrasp_offset
+        handle_pose.pose.position.y = float(centroid_with_offset[1])
+        handle_pose.pose.position.z = float(centroid_with_offset[2])
         handle_pose.pose.orientation.x = quat[0]
         handle_pose.pose.orientation.y = quat[1]
         handle_pose.pose.orientation.z = quat[2]
         handle_pose.pose.orientation.w = quat[3]
 
+        self.get_logger().info(
+            f"Moving to pregrasp position: {handle_pose.pose.position}"
+        )
+
         move_result, action_result = self.move_to_pose(
             pose=handle_pose,
-            tolerance_position=0.01,
-            tolerance_orientation=0.1,
+            tolerance_position=0.1,
+            tolerance_orientation=0.2,
         )
 
         if not action_result.result.success:
@@ -275,12 +285,12 @@ class PickMotionServer(Node):
 
         # Move to grasp position
         handle_pose.pose.position.x = float(centroid[0])
-        move_result, action_result = self.move_to_pose(
+        """move_result, action_result = self.move_to_pose(
             pose=handle_pose,
             tolerance_position=0.01,
             tolerance_orientation=0.1,
             pick_velocity=PICK_VELOCITY / 2,
-        )
+        )"""
 
         if not action_result.result.success:
             self.get_logger().info("Go grasp position failed")

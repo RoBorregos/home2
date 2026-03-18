@@ -43,9 +43,7 @@ class OpenContainerDebugClient(Node):
         self.get_logger().info("OpenContainer action server is ready")
 
         self._subscription = self.create_subscription(
-            PointStamped,
-            point_topic,
-            self._point_callback,
+            PointStamped, point_topic, self._point_callback, 10
         )
 
         self.get_logger().info(f"Listening for debug points on topic '{point_topic}'")
