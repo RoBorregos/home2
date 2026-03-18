@@ -46,9 +46,14 @@ $IFACE_LINE
 EOF
 
 # Start RouDi if not already running (required for CycloneDDS SHM)
+ROUDI_CONFIG="/etc/iceoryx/roudi_config.toml"
 if command -v iox-roudi > /dev/null 2>&1; then
     if ! pgrep -x iox-roudi > /dev/null 2>&1; then
         echo "[CycloneDDS] Starting iceoryx RouDi daemon for SHM..."
-        iox-roudi &
+        if [ -f "$ROUDI_CONFIG" ]; then
+            iox-roudi -c "$ROUDI_CONFIG" &
+        else
+            iox-roudi &
+        fi
     fi
 fi
