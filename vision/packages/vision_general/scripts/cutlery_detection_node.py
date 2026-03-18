@@ -12,6 +12,7 @@ from frida_interfaces.msg import Detection
 from rclpy.node import Node
 from cv_bridge import CvBridge
 from ultralytics import YOLO
+from vision_general.utils.trt_utils import load_yolo_trt
 from frida_constants.vision_constants import CAMERA_TOPIC
 from ament_index_python.packages import get_package_share_directory
 
@@ -32,18 +33,7 @@ class CutleryDetectionNode(Node):
         )
 
         cutlery_pt = str(MODELS_PATH / "cutlery.pt")
-        cutlery_engine = cutlery_pt.replace(".pt", ".engine")
-        if os.path.exists(cutlery_engine):
-            self.cutlery_model = YOLO(cutlery_engine, task="detect")
-            self.get_logger().info(f"[TRT] Loaded cached cutlery engine")
-        else:
-            self.cutlery_model = YOLO(cutlery_pt)
-            try:
-                self.cutlery_model.export(format="engine", half=True, device=0, imgsz=640)
-                self.cutlery_model = YOLO(cutlery_engine, task="detect")
-                self.get_logger().info("[TRT] Cutlery model exported to TensorRT")
-            except Exception as e:
-                self.get_logger().warn(f"[TRT] Export failed ({e}), using PyTorch")
+        self.cutlery_model = load_yolo_trt(cutlery_pt)
         self.get_logger().info("Cutlery model loaded")
 
         self.image_subscriber = self.create_subscription(

@@ -19,6 +19,7 @@ from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import PointStamped
 from rclpy.task import Future
 from ultralytics import YOLO
+from vision_general.utils.trt_utils import load_yolo_trt
 
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.srv import DetectHand, FindSeat, YoloDetect
@@ -45,15 +46,7 @@ KP_CONF = 0.3
 
 
 def _load_yolo_pose(model_name="yolo11m-pose.pt"):
-    engine_path = model_name.replace(".pt", ".engine")
-    if os.path.exists(engine_path):
-        return YOLO(engine_path, task="pose")
-    model = YOLO(model_name)
-    try:
-        model.export(format="engine", half=True, device=0, imgsz=640)
-        return YOLO(engine_path, task="pose")
-    except Exception:
-        return model
+    return load_yolo_trt(model_name, task="pose")
 
 PERCENTAGE = 0.3
 MAX_DEGREE = 50

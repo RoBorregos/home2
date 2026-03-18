@@ -10,7 +10,13 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 
 def _load_yolo_trt(model_path: str) -> YOLO:
     """Load YOLO with automatic TensorRT export for Orin AGX."""
-    engine_path = model_path.replace(".pt", ".engine")
+    cache_dir = os.environ.get("TENSORRT_CACHE_DIR")
+    engine_name = os.path.basename(model_path).replace(".pt", ".engine")
+    if cache_dir:
+        os.makedirs(cache_dir, exist_ok=True)
+        engine_path = os.path.join(cache_dir, engine_name)
+    else:
+        engine_path = model_path.replace(".pt", ".engine")
     if os.path.exists(engine_path):
         print(f"[TRT] Loading cached engine: {engine_path}")
         return YOLO(engine_path, task="detect")
@@ -18,6 +24,9 @@ def _load_yolo_trt(model_path: str) -> YOLO:
     try:
         print(f"[TRT] Exporting {model_path} to TensorRT (first run only)...")
         model.export(format="engine", half=True, device=0, imgsz=640)
+        local_engine = model_path.replace(".pt", ".engine")
+        if local_engine != engine_path and os.path.exists(local_engine):
+            os.rename(local_engine, engine_path)
         print(f"[TRT] Engine saved: {engine_path}")
         return YOLO(engine_path, task="detect")
     except Exception as e:

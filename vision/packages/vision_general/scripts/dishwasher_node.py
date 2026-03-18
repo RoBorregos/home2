@@ -4,6 +4,7 @@ import os
 import pathlib
 import rclpy
 from ultralytics import YOLO
+from vision_general.utils.trt_utils import load_yolo_trt
 from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo
@@ -36,25 +37,11 @@ class DishwasherNode(Node):
             pathlib.Path(__file__).resolve().parent.parent / "Utils" / "models"
         )
 
-        self.layout_model = self._load_trt(str(MODELS_PATH / "dishwasher_layout.pt"))
+        self.layout_model = load_yolo_trt(str(MODELS_PATH / "dishwasher_layout.pt"))
         self.get_logger().info("Dishwasher layout model loaded")
 
-        self.rack_model = self._load_trt(str(MODELS_PATH / "dishwasher_rack.pt"))
+        self.rack_model = load_yolo_trt(str(MODELS_PATH / "dishwasher_rack.pt"))
         self.get_logger().info("Rack model loaded")
-
-    def _load_trt(self, model_path):
-        engine_path = model_path.replace(".pt", ".engine")
-        if os.path.exists(engine_path):
-            self.get_logger().info(f"[TRT] Loading cached engine: {engine_path}")
-            return YOLO(engine_path, task="detect")
-        model = YOLO(model_path)
-        try:
-            model.export(format="engine", half=True, device=0, imgsz=640)
-            self.get_logger().info(f"[TRT] Engine saved: {engine_path}")
-            return YOLO(engine_path, task="detect")
-        except Exception as e:
-            self.get_logger().warn(f"[TRT] Export failed ({e}), using PyTorch")
-            return model
 
         self.image_subscriber = self.create_subscription(
             Image, CAMERA_TOPIC, self.image_callback, 10

@@ -6,6 +6,7 @@ import os
 from frida_constants.vision_enums import Gestures
 from math import degrees, acos
 from ultralytics import YOLO
+from vision_general.utils.trt_utils import load_yolo_trt
 
 # ── YOLO COCO keypoint indices ──
 NOSE = 0
@@ -23,18 +24,7 @@ KP_CONF = 0.3
 
 def load_yolo_pose(model_name="yolo11m-pose.pt"):
     """Load YOLO pose model with automatic TensorRT export for Orin AGX."""
-    engine_path = model_name.replace(".pt", ".engine")
-    if os.path.exists(engine_path):
-        return YOLO(engine_path, task="pose")
-
-    model = YOLO(model_name)
-    try:
-        print("[PoseDetection] Exporting to TensorRT (first run only)...")
-        model.export(format="engine", half=True, device=0, imgsz=640)
-        return YOLO(engine_path, task="pose")
-    except Exception as e:
-        print(f"[PoseDetection] TensorRT export failed ({e}), using PyTorch model")
-        return model
+    return load_yolo_trt(model_name, task="pose")
 
 
 class PoseDetection:

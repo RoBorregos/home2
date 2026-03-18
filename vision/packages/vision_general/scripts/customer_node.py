@@ -8,6 +8,7 @@ re-id them if necessary
 import cv2
 import os
 from ultralytics import YOLO
+from vision_general.utils.trt_utils import load_yolo_trt
 import tqdm
 from vision_general.utils.calculations import (
     get2DCentroid,
@@ -92,16 +93,7 @@ class CustomerNode(Node):
         pbar = tqdm.tqdm(total=1, desc="Loading models")
 
         # Load YOLO with TensorRT for Orin AGX
-        yolo_engine = "yolov8n.engine"
-        if os.path.exists(yolo_engine):
-            self.model = YOLO(yolo_engine, task="detect")
-        else:
-            self.model = YOLO("yolov8n.pt")
-            try:
-                self.model.export(format="engine", half=True, device=0, imgsz=640)
-                self.model = YOLO(yolo_engine, task="detect")
-            except Exception:
-                pass  # fallback to PyTorch
+        self.model = load_yolo_trt("yolov8n.pt")
         self.pose_detection = PoseDetection()
 
         self.output_image = []

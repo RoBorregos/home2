@@ -7,6 +7,7 @@ Node to initialize and provide a YOLO instance for reuse across other files.
 import os
 import pathlib
 from ultralytics import YOLO
+from vision_general.utils.trt_utils import load_yolo_trt
 
 import rclpy
 from rclpy.node import Node
@@ -34,20 +35,7 @@ class YoloNode(Node):
         self.latest_frame = None
 
         # Load YOLO with TensorRT acceleration for Orin AGX
-        engine_path = YOLO_LOCATION.replace(".pt", ".engine")
-        if os.path.exists(engine_path):
-            self.get_logger().info(f"[TRT] Loading cached engine: {engine_path}")
-            self.model = YOLO(engine_path, task="detect")
-        else:
-            self.get_logger().info(f"Loading YOLO model from {YOLO_LOCATION}...")
-            self.model = YOLO(YOLO_LOCATION)
-            try:
-                self.get_logger().info("[TRT] Exporting to TensorRT (first run only)...")
-                self.model.export(format="engine", half=True, device=0, imgsz=640)
-                self.model = YOLO(engine_path, task="detect")
-                self.get_logger().info(f"[TRT] Engine saved: {engine_path}")
-            except Exception as e:
-                self.get_logger().warn(f"[TRT] Export failed ({e}), using PyTorch")
+        self.model = load_yolo_trt(YOLO_LOCATION)
         self.get_logger().info("YOLO model loaded successfully")
 
         self.detect_service = self.create_service(

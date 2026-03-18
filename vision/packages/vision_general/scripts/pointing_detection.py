@@ -12,6 +12,7 @@ import cv2
 import numpy as np
 import os
 from ultralytics import YOLO
+from vision_general.utils.trt_utils import load_yolo_trt
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
     ZERO_SHOT_DETECTIONS_TOPIC,
@@ -43,15 +44,7 @@ KP_CONF = 0.3
 
 def load_yolo_pose(model_name="yolo11m-pose.pt"):
     """Load YOLO pose model with automatic TensorRT export for Orin AGX."""
-    engine_path = model_name.replace(".pt", ".engine")
-    if os.path.exists(engine_path):
-        return YOLO(engine_path, task="pose")
-    model = YOLO(model_name)
-    try:
-        model.export(format="engine", half=True, device=0, imgsz=640)
-        return YOLO(engine_path, task="pose")
-    except Exception:
-        return model
+    return load_yolo_trt(model_name, task="pose")
 
 
 class DetectPointingObjectServer(Node):
