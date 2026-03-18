@@ -32,14 +32,14 @@ from frida_constants.hri_constants import (
     LLM_WRAPPER_SERVICE,
     RAG_SERVICE,
     RESPEAKER_LIGHT_TOPIC,
+    SKIP_CONFIRMATION_CONFIDENCE_THRESHOLD,
+    SKIP_CONFIRMATION_SIMILARITY_THRESHOLD,
     SPEAK_SERVICE,
     START_BUTTON_CLIENT,
     STT_ACTION_SERVER_NAME,
     TASK_STATUS_TOPIC,
-    WAKEWORD_TOPIC,
-    SKIP_CONFIRMATION_SIMILARITY_THRESHOLD,
-    SKIP_CONFIRMATION_CONFIDENCE_THRESHOLD,
     TIMEOUT,
+    WAKEWORD_TOPIC,
 )
 from frida_interfaces.action import SpeechStream
 from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
@@ -59,6 +59,8 @@ from rclpy.action import ActionClient
 from rclpy.node import Node
 from rclpy.task import Future
 from std_msgs.msg import Empty, String
+from subtask_managers.hri_hand import HRIHand
+from subtask_managers.subtask_meta import SubtaskMeta
 from utils.baml_client.sync_client import b
 from utils.baml_client.types import (
     AnswerQuestion,
@@ -80,9 +82,6 @@ from utils.decorators import service_check
 from utils.logger import Logger
 from utils.status import Status
 from utils.task import Task
-
-from subtask_managers.hri_hand import HRIHand
-from subtask_managers.subtask_meta import SubtaskMeta
 
 InterpreterAvailableCommands = Union[
     CommandListLLM,
@@ -193,7 +192,7 @@ class HRITasks(metaclass=SubtaskMeta):
         self.display_map_publisher = self.node.create_publisher(String, DISPLAY_MAP_TOPIC, 10)
         self.answers_publisher = self.node.create_publisher(String, ANSWER_PUBLISHER, 10)
         self.questions_publisher = self.node.create_publisher(String, DISPLAY_PUBLISHER, 10)
-        self.pg = PostgresAdapter()
+        self.pg = PostgresAdapter(config.mock_db)
         self.llm_wrapper_service = self.node.create_client(LLMWrapper, LLM_WRAPPER_SERVICE)
         self.categorize_service = self.node.create_client(CategorizeShelves, CATEGORIZE_SERVICE)
         self.keyword_client = self.node.create_subscription(
