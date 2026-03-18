@@ -27,7 +27,8 @@ if [ -d "$VAMP_DIR" ]; then
         mkdir -p "$VAMP_DIR/build"
         cd "$VAMP_DIR/build" && cmake .. && make -j$(nproc) && sudo make install
     else
-        echo "VAMP is already compiled."
+        echo "VAMP is already compiled. Re-installing for Docker ephemeral layer..."
+        cd "$VAMP_DIR/build" && sudo make install
     fi
 else
     echo "Error: Submodule VAMP not found in $VAMP_DIR"
