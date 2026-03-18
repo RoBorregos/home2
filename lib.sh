@@ -89,6 +89,21 @@ add_or_update_variable() {
   fi
 }
 
+clean_workspace_directories() {
+  if [ "$CLEAN" == "true" ]; then
+    echo "Cleaning build/log/install directories..."
+    rm -rf build log install
+  fi
+}
+
+clean_frida_interfaces() {
+  echo "Cleaning frida_interfaces_cache build/log/install..."
+  rm -rf "docker/frida_interfaces_cache/build" \
+         "docker/frida_interfaces_cache/log" \
+         "docker/frida_interfaces_cache/install"
+  echo "frida_interfaces_cache cleaned."
+}
+
 run_frida_interfaces() {
   local compose_yaml
   if [ -f "docker/frida_interfaces_cache/docker-compose-${ENV_TYPE}.yaml" ]; then
