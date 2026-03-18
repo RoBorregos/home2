@@ -14,7 +14,7 @@ SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", ATTRS{seria
 EOF
 
 if [ $? -ne 0 ]; then
-    echo "Could not write udev rules."
+    echo = "Could not write udev rules."
     exit 1
 fi
 
@@ -25,15 +25,15 @@ sudo udevadm control --reload-rules
 sudo udevadm trigger
 
 if [ -L /dev/ttyUSBlidar ]; then
-    echo "/dev/ttyUSBlidar -> $(readlink /dev/ttyUSBlidar)"
+    echo = "/dev/ttyUSBlidar -> $(readlink /dev/ttyUSBlidar)"
 else
-    echo "/dev/ttyUSBlidar not found"
+    echo = "/dev/ttyUSBlidar not found"
 fi
 
 if [ -L /dev/ttyUSBstm32 ]; then
-    echo "/dev/ttyUSBstm32 -> $(readlink /dev/ttyUSBstm32)"
+    echo = "/dev/ttyUSBstm32 -> $(readlink /dev/ttyUSBstm32)"
 else
-    echo "/dev/ttyUSBstm32 not found"
+    echo = "/dev/ttyUSBstm32 not found"
 fi
 
 
