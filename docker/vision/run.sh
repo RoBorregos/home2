@@ -81,10 +81,7 @@ case $ENV_TYPE in
 esac
 
 # Clean build artifacts if requested
-if [ "$CLEAN" == "true" ]; then
-  echo "Cleaning build/log/install directories..."
-  rm -rf build log install moondream/build moondream/log moondream/install
-fi
+clean_workspace_directories
 
 mkdir -p install build log moondream/install moondream/build moondream/log
 
