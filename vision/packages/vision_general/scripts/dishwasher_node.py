@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
+import os
 import pathlib
 import rclpy
 from ultralytics import YOLO
+from vision_general.utils.trt_utils import load_yolo_trt
 from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo
@@ -35,10 +37,10 @@ class DishwasherNode(Node):
             pathlib.Path(__file__).resolve().parent.parent / "Utils" / "models"
         )
 
-        self.layout_model = YOLO(str(MODELS_PATH / "dishwasher_layout.pt"))
+        self.layout_model = load_yolo_trt(str(MODELS_PATH / "dishwasher_layout.pt"))
         self.get_logger().info("Dishwasher layout model loaded")
 
-        self.rack_model = YOLO(str(MODELS_PATH / "dishwasher_rack.pt"))
+        self.rack_model = load_yolo_trt(str(MODELS_PATH / "dishwasher_rack.pt"))
         self.get_logger().info("Rack model loaded")
 
         self.image_subscriber = self.create_subscription(

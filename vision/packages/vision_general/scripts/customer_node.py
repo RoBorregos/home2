@@ -6,7 +6,9 @@ re-id them if necessary
 """
 
 import cv2
+import os
 from ultralytics import YOLO
+from vision_general.utils.trt_utils import load_yolo_trt
 import tqdm
 from vision_general.utils.calculations import (
     get2DCentroid,
@@ -90,7 +92,8 @@ class CustomerNode(Node):
         self.depth_image_time = None
         pbar = tqdm.tqdm(total=1, desc="Loading models")
 
-        self.model = YOLO("yolov8n.pt")
+        # Load YOLO with TensorRT for Orin AGX
+        self.model = load_yolo_trt("yolov8n.pt")
         self.pose_detection = PoseDetection()
 
         self.output_image = []

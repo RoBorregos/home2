@@ -3,6 +3,7 @@
 Node to detect cutlery objects (knife, spoons and forks).
 """
 
+import os
 import pathlib
 import rclpy
 import cv2
@@ -11,6 +12,7 @@ from frida_interfaces.msg import Detection
 from rclpy.node import Node
 from cv_bridge import CvBridge
 from ultralytics import YOLO
+from vision_general.utils.trt_utils import load_yolo_trt
 from frida_constants.vision_constants import CAMERA_TOPIC
 from ament_index_python.packages import get_package_share_directory
 
@@ -30,7 +32,8 @@ class CutleryDetectionNode(Node):
             / "models"
         )
 
-        self.cutlery_model = YOLO(str(MODELS_PATH / "cutlery.pt"))
+        cutlery_pt = str(MODELS_PATH / "cutlery.pt")
+        self.cutlery_model = load_yolo_trt(cutlery_pt)
         self.get_logger().info("Cutlery model loaded")
 
         self.image_subscriber = self.create_subscription(

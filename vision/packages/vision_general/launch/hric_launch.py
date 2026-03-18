@@ -30,6 +30,13 @@ def generate_launch_description():
                 emulate_tty=True,
                 # parameters=[config],
             ),
+            Node(
+                package="vision_general",
+                executable="yolo_node.py",
+                name="yolo_node",
+                output="screen",
+                emulate_tty=True,
+            ),
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(detector_launch_file),
                 launch_arguments={"yolo_model_path": "tmr_30classes_v2.pt"}.items(),

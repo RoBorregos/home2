@@ -4,8 +4,10 @@
 Node to initialize and provide a YOLO instance for reuse across other files.
 """
 
+import os
 import pathlib
 from ultralytics import YOLO
+from vision_general.utils.trt_utils import load_yolo_trt
 
 import rclpy
 from rclpy.node import Node
@@ -32,9 +34,8 @@ class YoloNode(Node):
         self.bridge = CvBridge()
         self.latest_frame = None
 
-        # Load YOLO once
-        self.get_logger().info(f"Loading YOLO model from {YOLO_LOCATION}...")
-        self.model = YOLO(YOLO_LOCATION)
+        # Load YOLO with TensorRT acceleration for Orin AGX
+        self.model = load_yolo_trt(YOLO_LOCATION)
         self.get_logger().info("YOLO model loaded successfully")
 
         self.detect_service = self.create_service(

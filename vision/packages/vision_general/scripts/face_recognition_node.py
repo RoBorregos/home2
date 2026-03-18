@@ -299,8 +299,9 @@ class FaceRecognition(Node):
             self.frame, (0, 0), fx=RESIZE_FACTOR, fy=RESIZE_FACTOR
         )
 
-        # Find all the faces and face encodings in the current frame of video
-        face_locations = face_recognition.face_locations(resized_frame)
+        # Find all faces using dlib's CUDA-accelerated CNN model (built with CUDA sm_87)
+        # "cnn" uses GPU via dlib CUDA, "hog" would be CPU-only
+        face_locations = face_recognition.face_locations(resized_frame, model="cnn")
         # print("running")
         # return
 

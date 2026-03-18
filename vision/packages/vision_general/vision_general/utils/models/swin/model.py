@@ -3,7 +3,6 @@ import torch.nn as nn
 from torch.nn import init
 from torchvision import models
 from torch.autograd import Variable
-import pretrainedmodels
 import timm
 # from .utils import load_state_dict_mute
 
@@ -316,7 +315,7 @@ class ft_net_NAS(nn.Module):
     def __init__(self, class_num, droprate=0.5, linear_num=512):
         super().__init__()
         model_name = "nasnetalarge"
-        # pip install pretrainedmodels
+        import pretrainedmodels  # lazy import — only needed if ft_net_NAS is used
         model_ft = pretrainedmodels.__dict__[model_name](
             num_classes=1000, pretrained="imagenet"
         )
