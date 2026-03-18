@@ -29,7 +29,7 @@ from utils.decorators import mockable, service_check
 from utils.status import Status
 from frida_interfaces.action import ManipulationAction, GoToHand
 from frida_interfaces.msg import ManipulationTask
-from geometry_msgs.msg import PointStamped, PoseStamped, Point
+from geometry_msgs.msg import PointStamped, PoseStamped
 
 # from utils.decorators import service_check
 from xarm_msgs.srv import SetDigitalIO
@@ -104,9 +104,7 @@ class ManipulationTasks:
             GetOptimalPoseForPlane,
             "/manipulation/get_optimal_pose_for_plane",
         )
-        self._go_to_hand_action_client = ActionClient(
-            self.node, GoToHand, GO_TO_HAND_ACTION_SERVER
-        )
+        self._go_to_hand_action_client = ActionClient(self.node, GoToHand, GO_TO_HAND_ACTION_SERVER)
 
     def open_gripper(self):
         """Opens the gripper"""
@@ -580,7 +578,7 @@ class ManipulationTasks:
 
     def move_to_position(self, named_position: str, velocity: float = 0.75):
         self.move_joint_positions(named_position=named_position, velocity=velocity, degrees=True)
-        
+
     @mockable(return_value=Status.EXECUTION_SUCCESS)
     @service_check(
         client="_go_to_hand_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT
@@ -607,7 +605,7 @@ class ManipulationTasks:
             Logger.error(self.node, "GoToHand goal was rejected")
             return Status.EXECUTION_ERROR
 
-        Logger.info(self.node, f"GoToHand goal accepted, waiting for result...")
+        Logger.info(self.node, "GoToHand goal accepted, waiting for result...")
         result_future = future.result().get_result_async()
         rclpy.spin_until_future_complete(self.node, result_future)
 
