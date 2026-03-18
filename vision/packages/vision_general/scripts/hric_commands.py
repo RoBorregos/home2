@@ -33,6 +33,7 @@ from frida_constants.vision_constants import (
     DETECT_HAND_SERVICE,
     FIND_SEAT_TOPIC,
     IMAGE_TOPIC_HRIC,
+    YOLO_DETECTION_TOPIC,
 )
 
 from ament_index_python.packages import get_package_share_directory
@@ -83,7 +84,7 @@ class HRICCommands(Node):
         )
 
         self.yolo_client = self.create_client(
-            YoloDetect, "yolo_detect", callback_group=self.callback_group
+            YoloDetect, YOLO_DETECTION_TOPIC, callback_group=self.callback_group
         )
 
         while not self.yolo_client.wait_for_service(timeout_sec=1.0):
