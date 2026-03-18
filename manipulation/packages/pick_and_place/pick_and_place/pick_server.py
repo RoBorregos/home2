@@ -23,6 +23,7 @@ from frida_constants.manipulation_constants import (
     PICK_MIN_HEIGHT,
     CUTLERY_PICK_MIN_HEIGHT,
     CUTLERY_NAMES,
+    BASKETS
     GRASP_LINK_FRAME,
     GRIPPER_SET_STATE_SERVICE,
     GO_TO_HAND_ACTION_SERVER,
@@ -238,10 +239,16 @@ class PickMotionServer(Node):
         grasping_poses = goal_handle.request.grasping_poses
 
         is_flat = goal_handle.request.object_name.lower() in CUTLERY_NAMES
+        is_basket = goal_handle.request.object_name.lower() in BASKETS
+
+        bypass_safety = is_flat or is_basket
 
         if is_flat:
             num_grasping_alternatives = 6
             grasping_alternative_distance = -0.005
+        elif is_basket:
+            num_grasping_alternatives = 2
+            grasping_alternative_distance = -0.010
         else:
             num_grasping_alternatives = 2
             grasping_alternative_distance = -0.025
@@ -249,10 +256,10 @@ class PickMotionServer(Node):
         self.save_collision_objects()
         self.find_plane()
 
-        if self.plane is None and not is_flat:
+        if self.plane is None and not bypass_safety:
             self.get_logger().error("No plane found, cannot pick object")
             return False, pick_result
-        elif self.plane is None and is_flat:
+        elif self.plane is None and bypass_safety:
             self.get_logger().warn("No plane found, but object is flat. Bypassing safety check.")
 
         for i, pose in enumerate(grasping_poses):
@@ -284,7 +291,7 @@ class PickMotionServer(Node):
                 ee_link_pose.pose.position.y = new_position[1]
                 ee_link_pose.pose.position.z = new_position[2]
 
-                if not self.check_feasibility(ee_link_pose, is_flat=is_flat):
+                if not self.check_feasibility(ee_link_pose, is_flat=bypass_safety):
                     self.get_logger().warn(f"Grasping alternative {j} is not feasible, skipping")
                     continue
 
@@ -355,12 +362,28 @@ class PickMotionServer(Node):
                             f"[Cutlery] No contact for alternative {j}, trying next"
                         )
                         continue
+                elif is_basket:
+                    self.get_logger().info(f"[Basket] Approach sequence for alternative {j}")
+                    # Approximation to final grasp pose
+                    pre_grasp_pose = copy.deepcopy(ee_link_pose)
+                    pre_grasp_pose.pose.position.z += 0.15 
+                    
+                    self.get_logger().info(f"[Basket] Moving to Pre-grasp Z={pre_grasp_pose.pose.position.z:.4f}")
+                    pre_handler, pre_result = self.move_to_pose(pre_grasp_pose, velocity=0.3)
+                    if not pre_result.result.success:
+                        self.get_logger().warn(f"[Basket] Failed Pre-Grasp for alternative {j}.")
+                        continue
+
+                    self.get_logger().info("[Basket] Pre-Grasp reached. Started descent...")
+                    grasp_pose_handler, grasp_pose_result = self.move_to_pose(ee_link_pose, velocity=0.1) 
+
 
                 else:
+                    self.get_logger().info(f"[Standard] Moving directly to grasp pose {j}")
                     grasp_pose_handler, grasp_pose_result = self.move_to_pose(ee_link_pose)
 
                 print(f"Grasp Pose {i} result: {grasp_pose_result}")
-                if grasp_pose_result.result.success:
+                if grasp_pose_result and grasp_pose_result.result.success:
                     self.get_logger().info("Grasp pose reached")
                     result, lowest_obj, highest_obj = self.attach_pick_object()
 

@@ -2,20 +2,11 @@
 """
 Simple basket-handle grasp estimator.
 
-Publishes two PoseStamped topics when a basket (or similar) is detected:
-- /manipulation/basket_grasp_pose : pose to perform the grasp (end-effector pointing down and parallel to handle)
-- /manipulation/basket_lift_pose  : safe lift pose after grasp (raise in world Z to avoid spilling)
-
-Approach: take depth ROI from detection bbox, transform points to base frame,
-compute PCA to find principal axis (handle direction), build a rotation where
-Z points downward and X is aligned with the handle. The node avoids adding
-collision objects itself (leave collision management to pick flow).
-
-This is intentionally lightweight and mirrors the style of `flat_grasp_estimator.py`.
+Publishes PoseStamped topics when a basket (or similar) is detected:
+- /manipulation/basket_grasp_pose : poses to perform the grasp (end-effector pointing down). 
+  *Now publishes multiple alternatives (center, rotated, offset)*
+- /manipulation/basket_lift_pose  : safe lift pose after grasp
 """
-
-import time
-from collections import deque
 
 import numpy as np
 import rclpy
@@ -33,15 +24,19 @@ from frida_constants.vision_constants import (
     DEPTH_IMAGE_TOPIC,
     CAMERA_INFO_TOPIC,
 )
-
 from frida_interfaces.msg import ObjectDetectionArray 
 
 
-# Tunable parameters
-GRASP_SURFACE_OFFSET = 0.02  # meters: how far above the detected handle surface to place the gripper contact
+# Fixed offset above table surface for grasp contact point (meters)
+GRASP_SURFACE_OFFSET = 0.02  
+
 MIN_POINTS_FOR_PCA = 20
+
+
 LIFT_HEIGHT = 0.20  # meters to lift after grasp to avoid spilling
-APPROACH_DISTANCE = 0.12  # meters offset from grasp along approach axis
+
+
+HANDLE_OFFSET_DIST = 0.03 # meters: distance to shift left/right for alternatives
 
 
 class BasketHandleGraspEstimator(Node):
@@ -80,13 +75,11 @@ class BasketHandleGraspEstimator(Node):
             self.intrinsics = {'fx': msg.k[0], 'fy': msg.k[4], 'cx': msg.k[2], 'cy': msg.k[5]}
 
     def detections_callback(self, msg: ObjectDetectionArray):
-        # Guard clauses
         if self.latest_depth is None or self.intrinsics is None:
             return
 
         for det in msg.detections:
             label = det.label_text.lower() if hasattr(det, 'label_text') else ''
-            # Consider common labels for baskets/containers; adjust as needed
             if 'basket' in label or 'casket' in label or 'basket_handle' in label:
                 try:
                     self.process_basket_detection(det)
@@ -94,7 +87,6 @@ class BasketHandleGraspEstimator(Node):
                     self.get_logger().error(f'Error processing detection: {e}')
 
     def process_basket_detection(self, detection):
-        # Convert bbox to pixel coordinates
         h_img, w_img = self.latest_depth.shape
 
         if detection.xmax <= 1.0 and detection.ymax <= 1.0:
@@ -128,7 +120,6 @@ class BasketHandleGraspEstimator(Node):
         y = (v_global - cy) * z_vals / fy
         points_3d_cam = np.vstack((x, y, z_vals)).T
 
-        # Transform to base frame
         try:
             trans = self.tf_buffer.lookup_transform(
                 self.target_frame,
@@ -140,17 +131,9 @@ class BasketHandleGraspEstimator(Node):
             self.get_logger().warn(f'Waiting for TF: {e}')
             return
 
-        q = [
-            trans.transform.rotation.x,
-            trans.transform.rotation.y,
-            trans.transform.rotation.z,
-            trans.transform.rotation.w,
-        ]
-        t = [
-            trans.transform.translation.x,
-            trans.transform.translation.y,
-            trans.transform.translation.z,
-        ]
+        q = [trans.transform.rotation.x, trans.transform.rotation.y,
+             trans.transform.rotation.z, trans.transform.rotation.w]
+        t = [trans.transform.translation.x, trans.transform.translation.y, trans.transform.translation.z]
         rot_mat = Rotation.from_quat(q).as_matrix()
 
         T_mat = np.eye(4)
@@ -164,73 +147,75 @@ class BasketHandleGraspEstimator(Node):
             self.get_logger().warn('Not enough points for PCA on basket handle')
             return
 
-        # Compute centroid (use median for robustness)
         centroid = np.median(points_base, axis=0)
 
-        # PCA to find principal axis (handle direction)
         pts2 = points_base - centroid
         cov = np.cov(pts2.T)
         eigvals, eigvecs = np.linalg.eig(cov)
         principal = eigvecs[:, np.argmax(eigvals)]
 
-        # Project principal to XY plane (we want handle direction in XY)
         handle_dir = np.array([principal[0], principal[1], 0.0])
         if np.linalg.norm(handle_dir) < 1e-6:
-            self.get_logger().warn('Degenerate principal direction')
             return
         handle_dir = handle_dir / np.linalg.norm(handle_dir)
 
-        # Desired end-effector axes: Z downwards, X along handle_dir, Y = Z x X
+        # ---------------------------------------------------------
+        # GENERACIÓN DE ALTERNATIVAS DE AGARRE
+        # ---------------------------------------------------------
         Z_grasp = np.array([0.0, 0.0, -1.0])
         X_grasp = np.array([handle_dir[0], handle_dir[1], 0.0])
         X_grasp = X_grasp / np.linalg.norm(X_grasp)
         Y_grasp = np.cross(Z_grasp, X_grasp)
         Y_grasp = Y_grasp / np.linalg.norm(Y_grasp)
 
-        rot = np.column_stack((X_grasp, Y_grasp, Z_grasp))
-        quat = Rotation.from_matrix(rot).as_quat()  # [x, y, z, w]
+        # Rotación normal
+        rot_normal = np.column_stack((X_grasp, Y_grasp, Z_grasp))
+        quat_normal = Rotation.from_matrix(rot_normal).as_quat()
 
-        # Build grasp pose (slightly above handle surface)
-        grasp_pose = PoseStamped()
-        grasp_pose.header.frame_id = self.target_frame
-        grasp_pose.header.stamp = self.get_clock().now().to_msg()
-        grasp_pose.pose.position.x = float(centroid[0])
-        grasp_pose.pose.position.y = float(centroid[1])
-        grasp_pose.pose.position.z = float(centroid[2] + GRASP_SURFACE_OFFSET)
-        grasp_pose.pose.orientation.x = float(quat[0])
-        grasp_pose.pose.orientation.y = float(quat[1])
-        grasp_pose.pose.orientation.z = float(quat[2])
-        grasp_pose.pose.orientation.w = float(quat[3])
+        # Rotación invertida (180 grados en Z)
+        rot_reversed = np.column_stack((-X_grasp, -Y_grasp, Z_grasp))
+        quat_reversed = Rotation.from_matrix(rot_reversed).as_quat()
 
-        # Build an approach pose offset along -Y_grasp (so gripper comes in from outside)
-        approach_pose = PoseStamped()
-        approach_pose.header = grasp_pose.header
-        approach_pos = np.array([grasp_pose.pose.position.x, grasp_pose.pose.position.y, grasp_pose.pose.position.z])
-        approach_pos = approach_pos - Y_grasp * APPROACH_DISTANCE
-        approach_pose.pose.position.x = float(approach_pos[0])
-        approach_pose.pose.position.y = float(approach_pos[1])
-        approach_pose.pose.position.z = float(approach_pos[2])
-        approach_pose.pose.orientation = grasp_pose.pose.orientation
+        # Helper para crear poses rápidamente
+        def create_pose(position_offset, quat):
+            p = PoseStamped()
+            p.header.frame_id = self.target_frame
+            p.header.stamp = self.get_clock().now().to_msg()
+            p.pose.position.x = float(centroid[0] + position_offset[0])
+            p.pose.position.y = float(centroid[1] + position_offset[1])
+            p.pose.position.z = float(centroid[2] + GRASP_SURFACE_OFFSET)
+            p.pose.orientation.x = float(quat[0])
+            p.pose.orientation.y = float(quat[1])
+            p.pose.orientation.z = float(quat[2])
+            p.pose.orientation.w = float(quat[3])
+            return p
 
-        # Lift pose after grasp (raise in world Z to avoid contents spilling)
+        # 1. Agarre Central Normal
+        pose_center = create_pose([0.0, 0.0], quat_normal)
+        # 2. Agarre Central Invertido
+        pose_center_rev = create_pose([0.0, 0.0], quat_reversed)
+        # 3. Agarre desplazado a lo largo del asa (+X local)
+        pose_offset_pos = create_pose(X_grasp * HANDLE_OFFSET_DIST, quat_normal)
+        # 4. Agarre desplazado a lo largo del asa (-X local)
+        pose_offset_neg = create_pose(-X_grasp * HANDLE_OFFSET_DIST, quat_normal)
+
+        # Publicar alternativas (El PickManager debe suscribirse y recolectarlas)
+        self.get_logger().info('Publishing basket grasp alternatives...')
+        self.pose_pub.publish(pose_center)
+        self.pose_pub.publish(pose_center_rev)
+        self.pose_pub.publish(pose_offset_pos)
+        self.pose_pub.publish(pose_offset_neg)
+
+        # ---------------------------------------------------------
+        # LIFT POSE (Se mantiene igual)
+        # ---------------------------------------------------------
         lift_pose = PoseStamped()
-        lift_pose.header = grasp_pose.header
-        lift_pose.pose.position.x = grasp_pose.pose.position.x
-        lift_pose.pose.position.y = grasp_pose.pose.position.y
-        lift_pose.pose.position.z = grasp_pose.pose.position.z + LIFT_HEIGHT
-        lift_pose.pose.orientation = grasp_pose.pose.orientation
+        lift_pose.header = pose_center.header
+        lift_pose.pose.position.x = pose_center.pose.position.x
+        lift_pose.pose.position.y = pose_center.pose.position.y
+        lift_pose.pose.position.z = pose_center.pose.position.z + LIFT_HEIGHT
+        lift_pose.pose.orientation = pose_center.pose.orientation
 
-        # Publish approach (as grasp_pose we publish the approach pose first so pick server can move to pregrasp)
-        # We publish both: the approach/pregrasp and the actual grasp contact pose on the same topic in sequence
-        self.get_logger().info(f'Publishing basket grasp pose at ({grasp_pose.pose.position.x:.3f}, {grasp_pose.pose.position.y:.3f}, {grasp_pose.pose.position.z:.3f})')
-        # First publish approach (pre-grasp)
-        self.pose_pub.publish(approach_pose)
-        # Small delay to ensure subscriber receives in order
-        time.sleep(0.05)
-        # Then publish the contact grasp pose
-        self.pose_pub.publish(grasp_pose)
-
-        # And publish the lift pose separately
         self.lift_pub.publish(lift_pose)
 
 
@@ -243,7 +228,6 @@ def main(args=None):
         pass
     node.destroy_node()
     rclpy.shutdown()
-
 
 if __name__ == '__main__':
     main()

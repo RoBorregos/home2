@@ -1,6 +1,6 @@
 from frida_motion_planning.utils.ros_utils import wait_for_future
 from frida_interfaces.srv import PickPerceptionService, DetectionHandler
-from geometry_msgs.msg import PointStamped
+from geometry_msgs.msg import PointStamped, PoseStamped
 from std_srvs.srv import SetBool
 from pick_and_place.utils.grasp_utils import get_grasps
 from pick_and_place.utils.perception_utils import get_object_cluster, point_in_range
@@ -13,6 +13,7 @@ from frida_constants.manipulation_constants import PICK_MAX_DISTANCE
 from typing import Tuple
 import time
 import copy
+import rclpy
 from scipy.spatial.transform import Rotation as R
 from sensor_msgs_py import point_cloud2
 import numpy as np
@@ -35,6 +36,26 @@ class PickManager:
 
     def __init__(self, node):
         self.node = node
+        # Basket grasp estimator state
+        self.latest_basket_grasp = None
+        self.latest_basket_lift = None
+        # subscribe to poses published by basket_handle_grasp_estimator
+        try:
+            self.node.create_subscription(
+                PoseStamped,
+                '/manipulation/basket_grasp_pose',
+                self.basket_grasp_callback,
+                10,
+            )
+            self.node.create_subscription(
+                PoseStamped,
+                '/manipulation/basket_lift_pose',
+                self.basket_lift_callback,
+                10,
+            )
+        except Exception:
+            # Safe fallback if subscriptions are created before node fully configured
+            pass
 
     def execute(
         self, object_name: str, point: PointStamped, pick_params
@@ -118,6 +139,48 @@ class PickManager:
         self.node.get_logger().info(f"2 Gripper Result: {str(gripper_request.data)}")
         pick_result_success = False
         print("Gripper Result:", result)
+        # If the target is a basket/casket/laundry container, try to use the basket estimator
+        is_basket = False
+        if object_name is not None:
+            on = object_name.lower()
+            if 'basket' in on or 'casket' in on: # ANalize if it can be just 'basket'
+                is_basket = True
+
+        if is_basket:
+            self.node.get_logger().info("Basket detected: waiting for grasp pose from estimator")
+            BASKET_GRASP_TIMEOUT = 6.0
+            waited = 0.0
+            step = 0.1
+            while self.latest_basket_grasp is None and waited < BASKET_GRASP_TIMEOUT:
+                # allow callbacks to be processed while waiting
+                rclpy.spin_once(self.node, timeout_sec=step)
+                waited += step
+
+            if self.latest_basket_grasp is None:
+                self.node.get_logger().error("Timeout waiting for basket grasp pose")
+                return False, None
+
+            # Build and send PickMotion goal using estimator pose
+            grasp_pose = copy.deepcopy(self.latest_basket_grasp)
+            goal_msg = PickMotion.Goal()
+            goal_msg.grasping_poses = [grasp_pose]
+            goal_msg.grasping_scores = [1.0]
+            goal_msg.object_name = object_name
+
+            self.node.get_logger().info("Sending Pick Motion goal (basket grasp estimator)...")
+            future = self.node._pick_motion_action_client.send_goal_async(goal_msg)
+            future = wait_for_future(future, timeout=30)
+            if not future:
+                self.node.get_logger().error("Failed to send pick goal for basket")
+                return False, None
+            pick_result = future.result().get_result().result
+            self.node.get_logger().info(f"Pick Motion Result: {pick_result}")
+            if pick_result.success != 0:
+                pick_result_success = True
+            else:
+                self.node.get_logger().error("Pick motion failed for basket")
+                return False, None
+
         for CFG_PATH in CFG_PATHS:
             cfg_path = CFG_PATH[0]
             is_reversible = CFG_PATH[1]
@@ -314,3 +377,12 @@ class PickManager:
             f"Object cluster detected: {len(pcl_result.data)} points"
         )
         return pcl_result
+
+    # -------------------- Basket estimator callbacks --------------------
+    def basket_grasp_callback(self, msg: PoseStamped):
+        """Callback to receive grasp pose (approach then contact) from estimator."""
+        self.latest_basket_grasp = msg
+
+    def basket_lift_callback(self, msg: PoseStamped):
+        """Callback to receive lift pose published by estimator."""
+        self.latest_basket_lift = msg
