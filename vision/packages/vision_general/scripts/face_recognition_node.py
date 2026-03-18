@@ -22,7 +22,7 @@ from cv_bridge import CvBridge
 from geometry_msgs.msg import Point
 from rclpy.node import Node
 from sensor_msgs.msg import CameraInfo, Image
-from std_msgs.msg import String
+from std_msgs.msg import Bool, String
 
 from frida_constants.vision_constants import (
     CAMERA_INFO_TOPIC,
@@ -93,6 +93,8 @@ class FaceRecognition(Node):
 
         self.verbose = self.declare_parameter("verbose", True)
         self.annotated_frame = []
+        self.vision_active = True
+        self.create_subscription(Bool, "/vision/face_recognition/active", self._active_callback, 10)
         self.setup()
         self.create_timer(0.2, self.run)
         # self.create_timer(0.05, self.publish_image)
@@ -277,8 +279,14 @@ class FaceRecognition(Node):
         self.name_publisher.publish(person_seen)
         self.person_list_publisher.publish(self.face_list)
 
+    def _active_callback(self, msg):
+        self.vision_active = msg.data
+
     def run(self) -> None:
         """Run face recognition algorithm"""
+
+        if not self.vision_active:
+            return
 
         if self.image is None:
             self.get_logger().info("No image")
