@@ -124,9 +124,7 @@ class DataExtractor(Node):
         data_to_extract = request.data
         if data_to_extract.startswith("LLM_"):
             data_to_extract = data_to_extract[4:]
-        self.get_logger().info(
-            f"Using LLM to extract {data_to_extract} from text"
-        )
+        self.get_logger().info(f"Using LLM to extract {data_to_extract} from text")
         response.result = self.extract_via_llm(
             request.full_text, data_to_extract, request.context
         )
