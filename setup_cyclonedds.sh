@@ -206,14 +206,15 @@ version = 1
 [[segment]]
 
 # Small messages (parameter events, tf, small services)
+# ZED advertises 30+ topics at startup, each generating parameter events
 [[segment.mempool]]
 size = 128
-count = 10000
+count = 50000
 
 # Medium messages (sensor data, joint states, detections)
 [[segment.mempool]]
 size = 1024
-count = 5000
+count = 10000
 
 # Larger messages (camera info, compressed data)
 [[segment.mempool]]
