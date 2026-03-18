@@ -87,48 +87,53 @@ def launch_setup(context, *args, **kwargs):
         robot_type=robot_type.perform(context),
     )
 
-    moveit_config = MoveItConfigsBuilder(
-        context=context,
-        controllers_name=controllers_name,
-        dof=dof,
-        robot_type=robot_type,
-        prefix=prefix,
-        hw_ns=hw_ns,
-        limited=limited,
-        effort_control=effort_control,
-        velocity_control=velocity_control,
-        model1300=model1300,
-        robot_sn=robot_sn,
-        attach_to=attach_to,
-        attach_xyz=attach_xyz,
-        attach_rpy=attach_rpy,
-        mesh_suffix=mesh_suffix,
-        kinematics_suffix=kinematics_suffix,
-        ros2_control_plugin=ros2_control_plugin,
-        ros2_control_params=ros2_control_params,
-        add_gripper=add_gripper,
-        add_vacuum_gripper=add_vacuum_gripper,
-        add_bio_gripper=add_bio_gripper,
-        add_realsense_d435i=add_realsense_d435i,
-        add_d435i_links=add_d435i_links,
-        add_other_geometry=add_other_geometry,
-        geometry_type=geometry_type,
-        geometry_mass=geometry_mass,
-        geometry_height=geometry_height,
-        geometry_radius=geometry_radius,
-        geometry_length=geometry_length,
-        geometry_width=geometry_width,
-        geometry_mesh_filename=geometry_mesh_filename,
-        geometry_mesh_origin_xyz=geometry_mesh_origin_xyz,
-        geometry_mesh_origin_rpy=geometry_mesh_origin_rpy,
-        geometry_mesh_tcp_xyz=geometry_mesh_tcp_xyz,
-        geometry_mesh_tcp_rpy=geometry_mesh_tcp_rpy,
-    ).planning_pipelines(
-        pipelines=["vamp", "ompl"],
-        default_planning_pipeline="vamp"
-    ).to_moveit_configs()
-    
-    moveit_config.planning_pipelines["vamp"]["planning_plugin"] = "vamp_moveit_plugin/VampPlannerManager"
+    moveit_config = (
+        MoveItConfigsBuilder(
+            context=context,
+            controllers_name=controllers_name,
+            dof=dof,
+            robot_type=robot_type,
+            prefix=prefix,
+            hw_ns=hw_ns,
+            limited=limited,
+            effort_control=effort_control,
+            velocity_control=velocity_control,
+            model1300=model1300,
+            robot_sn=robot_sn,
+            attach_to=attach_to,
+            attach_xyz=attach_xyz,
+            attach_rpy=attach_rpy,
+            mesh_suffix=mesh_suffix,
+            kinematics_suffix=kinematics_suffix,
+            ros2_control_plugin=ros2_control_plugin,
+            ros2_control_params=ros2_control_params,
+            add_gripper=add_gripper,
+            add_vacuum_gripper=add_vacuum_gripper,
+            add_bio_gripper=add_bio_gripper,
+            add_realsense_d435i=add_realsense_d435i,
+            add_d435i_links=add_d435i_links,
+            add_other_geometry=add_other_geometry,
+            geometry_type=geometry_type,
+            geometry_mass=geometry_mass,
+            geometry_height=geometry_height,
+            geometry_radius=geometry_radius,
+            geometry_length=geometry_length,
+            geometry_width=geometry_width,
+            geometry_mesh_filename=geometry_mesh_filename,
+            geometry_mesh_origin_xyz=geometry_mesh_origin_xyz,
+            geometry_mesh_origin_rpy=geometry_mesh_origin_rpy,
+            geometry_mesh_tcp_xyz=geometry_mesh_tcp_xyz,
+            geometry_mesh_tcp_rpy=geometry_mesh_tcp_rpy,
+        )
+        .planning_pipelines(
+            pipelines=["vamp", "ompl"], default_planning_pipeline="vamp"
+        )
+        .to_moveit_configs()
+    )
+
+    moveit_config.planning_pipelines["vamp"]["planning_plugin"] = (
+        "vamp_moveit_plugin/VampPlannerManager"
+    )
 
     # robot description launch
     # xarm_description/launch/_robot_description.launch.py
