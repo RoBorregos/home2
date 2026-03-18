@@ -7,10 +7,9 @@ Node to move to a place.
 import json
 import os
 
-from frida_constants.frida_constants.navigation_constants import AREAS_SERVICE
 import rclpy
 from ament_index_python.packages import get_package_share_directory
-from frida_constants.navigation_constants import FOLLOWING_SERVICE, GOAL_TOPIC
+from frida_constants.navigation_constants import FOLLOWING_SERVICE, GOAL_TOPIC, AREAS_SERVICE
 from frida_interfaces.srv import (
     LaserGet,
     PointTransformation,
@@ -84,25 +83,8 @@ class NavigationTasks:
             WaitForControllerInput, "wait_for_controller_input"
         )
         self.services = {
-            Task.HRIC: {
-                "goal_client": {"client": self.goal_client, "type": "action"},
-            },
-            Task.HELP_ME_CARRY: {
-                "activate_follow": {"client": self.activate_follow, "type": "service"},
-                "bt_params": {"client": self.bt_params, "type": "service"},
-                "bt_lifecycle": {"client": self.bt_lifecycle, "type": "service"},
-            },
-            Task.GPSR: {
-                "goal_client": {"client": self.goal_client, "type": "action"},
-                "activate_follow": {"client": self.activate_follow, "type": "service"},
-                "laser_send": {"client": self.laser_send, "type": "service"},
-            },
-            Task.STORING_GROCERIES: {
-                "goal_client": {"client": self.goal_client, "type": "action"},
-                "laser_send": {"client": self.laser_send, "type": "service"},
-                "pause_rtab": {"client": self.rtabmap_pause, "type": "service"},
-                "resume_rtab": {"client": self.rtabmap_continue, "type": "service"},
-            },
+      
+     
             Task.DEBUG: {
                 # "laser_send": {"client": self.laser_send, "type": "service"},
                 "areas_wrapper": {"client": self.areas_wrapper, "type": "service"}
@@ -170,7 +152,7 @@ class NavigationTasks:
 
         else:
             Logger.info(self.node, "Map Areas dumped Succesfully")
-            return str(future.result().areas)
+            return json.loads(str(future.result().areas))
 
     @mockable(return_value=True, delay=10)
     @service_check("pause_nav", False, timeout=3)
@@ -214,10 +196,9 @@ class NavigationTasks:
         """
         future = Future()
         try:
-            package_share_directory = get_package_share_directory("frida_constants")
-            file_path = os.path.join(package_share_directory, "map_areas/areas.json")
-            with open(file_path, "r") as file:
-                data = json.load(file)
+            Logger.info(self.node, "CALLING FUNCTION")
+            data = self.areas_dump()
+            Logger.info(self.node, "END FUNCTION")
             if sublocation != "":
                 coordinates = data[location][sublocation]
             else:
@@ -486,7 +467,7 @@ class NavigationTasks:
         return future
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, "open"), delay=3)
-    @service_check("laser_send", False, TIMEOUT)
+    @service_check("laser_send", (Status.EXECUTION_ERROR, "open"), TIMEOUT)
     def check_door(self) -> tuple[int, str]:
         """Check if the door is open or closed"""
 

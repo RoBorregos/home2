@@ -140,7 +140,7 @@ fi
 if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
     ALREADY_RUNNING=$(docker ps -q -f name="vision")
     if [ -z "$ALREADY_RUNNING" ] || [ -n "$BUILD_IMAGE" ]; then
-      docker build --no-cache && docker compose up -d $BUILD_IMAGE
+	docker compose up -d $BUILD_IMAGE
     fi
     docker compose exec vision bash -c "$COMMAND"
 else
