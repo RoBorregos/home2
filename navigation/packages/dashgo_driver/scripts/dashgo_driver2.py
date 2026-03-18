@@ -49,7 +49,7 @@ class DashgoDriver(Node):
     def __init__(self):
         super().__init__('dashgo_driver')
         ##PARAMETER DECLARATION
-        self.port = self.declare_parameter('port', '/dev/ttyUSB0').value
+        self.port = self.declare_parameter('port', '/dev/ttyUSBStm32').value
         self.baud = self.declare_parameter('baud', 115200).value
         self.timeout = self.declare_parameter('timeout', 0.5).value
         self.base_frame = self.declare_parameter('base_frame', 'base_footprint').value  
