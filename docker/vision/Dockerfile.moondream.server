@@ -1,38 +1,34 @@
 ARG BASE_IMAGE=ubuntu:22.04
 FROM ${BASE_IMAGE}
 
-# Build arguments to control dev/server features
-ARG EXTRA_PACKAGES=false
-ARG INSTALL_CVBRIDGE=false
-ARG INSTALL_REQUIREMENTS=false
+RUN echo "${BASE_IMAGE}" 
+# RUN if [ "${BASE_IMAGE}" = "docker.io/roborregos/home2:cuda_base" ]; then \
+#     echo "Installing PyTorch with CUDA support"; \
+#     pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118; \
+#     fi
+# RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118 
 
-RUN echo "${BASE_IMAGE}"
-# Optionally install cv-bridge
-RUN if [ "$INSTALL_CVBRIDGE" = "true" ]; then \
-    apt update && apt install -y ros-humble-cv-bridge; \
-    fi
-
-# Optionally copy and install requirements
-COPY vision/requirements /workspace/requirements
-WORKDIR /workspace/requirements
-RUN if [ "$INSTALL_REQUIREMENTS" = "true" ] && [ -f moondream.txt ]; then \
-    pip install -r moondream.txt; \
-    fi
+RUN pip install transformers
+RUN pip install numpy==1.24
+RUN pip install opencv-python
+RUN pip install Pillow
+RUN apt update
+RUN apt install libvips-dev --no-install-recommends -y
+RUN pip install pyvips
+RUN pip install einops
+RUN pip install accelerate
+# grpcio==1.71.0
+# protobuf==5.29.1
+RUN pip install grpcio==1.71.0
+RUN pip install protobuf==5.29.1
+RUN pip uninstall -y numpy
+RUN pip install --no-cache-dir numpy==1.24
+RUN python3 -c "import numpy as np; print(np.__version__)"
 
 WORKDIR /workspace
+# CV-bridge
 
-# Install common Python packages
-RUN pip install transformers numpy==1.24 opencv-python Pillow pyvips einops accelerate
-
-# Optionally install extra packages for server
-RUN if [ "$EXTRA_PACKAGES" = "true" ]; then \
-    pip install grpcio==1.71.0 protobuf==5.29.1; \
-    pip uninstall -y numpy; \
-    pip install --no-cache-dir numpy==1.24; \
-    python3 -c "import numpy as np; print(np.__version__)"; \
-    fi
-
-# CycloneDDS setup
+# CycloneDDS
 RUN sudo apt-get update -qq && sudo apt-get install -y -qq ros-humble-rmw-cyclonedds-cpp \
     && sudo rm -rf /var/lib/apt/lists/*
 COPY docker/cyclonedds_setup.sh /usr/local/bin/cyclonedds_setup.sh
