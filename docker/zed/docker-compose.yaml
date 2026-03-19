@@ -40,4 +40,8 @@ services:
       source /usr/local/bin/cyclonedds_setup.sh &&
       sleep 2 &&
       source /opt/zed_ws/install/setup.bash &&
-      python3 /opt/zed_ws/zed_shm_launch.py"
+      sudo python3 /opt/zed_ws/zed_shm_launch.py &&
+      ros2 launch zed_wrapper zed_camera.launch.py
+      camera_model:=${ZED_CAMERA_MODEL:-zed2}
+      publish_tf:=false
+      ros_params_override_path:=/opt/zed_ws/zed_shm_override.yaml"

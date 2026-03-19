@@ -1,41 +1,45 @@
-"""Wrapper launch that disables parameter_events for ALL nodes (including
-robot_state_publisher) before loading the ZED camera launch file.
+"""Patch the ZED launch file to disable parameter_events for ALL nodes.
 
-This prevents iceoryx TOO_MANY_CHUNKS_HELD_IN_PARALLEL errors that block
-TF delivery when SHM is enabled.
+Prevents iceoryx TOO_MANY_CHUNKS_HELD_IN_PARALLEL errors that block
+TF delivery when CycloneDDS SHM is enabled.
+
+Run this BEFORE `ros2 launch zed_wrapper zed_camera.launch.py`.
 """
-import os
-from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription
-from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch_ros.actions import SetParameter
 
 
-def generate_launch_description():
-    zed_launch = os.path.join(
-        '/opt/zed_ws/install/zed_wrapper/share/zed_wrapper/launch',
-        'zed_camera.launch.py',
+def patch_zed_launch():
+    launch_path = (
+        '/opt/zed_ws/install/zed_wrapper/share/zed_wrapper/launch'
+        '/zed_camera.launch.py'
     )
 
-    camera_model = os.environ.get('ZED_CAMERA_MODEL', 'zed2')
+    with open(launch_path) as f:
+        content = f.read()
 
-    return LaunchDescription([
-        # Globally disable parameter_events publisher for every node
-        SetParameter(name='start_parameter_event_publisher', value=False),
+    # Already patched?
+    if 'start_parameter_event_publisher' in content:
+        return
 
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(zed_launch),
-            launch_arguments={
-                'camera_model': camera_model,
-                'publish_tf': 'false',
-                'ros_params_override_path': '/opt/zed_ws/zed_shm_override.yaml',
-            }.items(),
-        ),
-    ])
+    # 1) Patch robot_state_publisher Node: add parameter
+    content = content.replace(
+        "'robot_description': Command(xacro_command)\n        }]",
+        "'robot_description': Command(xacro_command),\n"
+        "            'start_parameter_event_publisher': False\n"
+        "        }]",
+    )
+
+    # 2) Patch ComposableNodeContainer: add parameters
+    content = content.replace(
+        "composable_node_descriptions=[]",
+        "composable_node_descriptions=[],\n"
+        "            parameters=[{'start_parameter_event_publisher': False}]",
+    )
+
+    with open(launch_path, 'w') as f:
+        f.write(content)
+
+    print('[SHM] Patched ZED launch: disabled parameter_events for all nodes')
 
 
 if __name__ == '__main__':
-    from launch import LaunchService
-    ls = LaunchService()
-    ls.include_launch_description(generate_launch_description())
-    ls.run()
+    patch_zed_launch()
