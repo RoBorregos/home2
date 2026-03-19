@@ -43,7 +43,7 @@ done
 #_________________________SETUP_________________________
 
 echo "Configuring USB devices for Navigation..."
-if ! bash ../../setup-USB.sh; then
+if ! bash ./setup-USB.sh; then
     echo "Error: USB devices setup failed. Cancelling container run."
     exit 1
 fi
