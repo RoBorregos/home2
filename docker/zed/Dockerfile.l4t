@@ -8,7 +8,15 @@ RUN sudo apt-get update -qq && sudo apt-get install -y -qq \
     ros-humble-diagnostic-updater \
     ros-humble-xacro \
     ros-humble-robot-state-publisher \
+    zstd \
     && sudo rm -rf /var/lib/apt/lists/*
+
+# Install ZED SDK (silent, skip drivers for container use)
+RUN wget -q -O /tmp/ZED_SDK.run \
+    https://download.stereolabs.com/zedsdk/5.0/l4t36.4/jetsons && \
+    chmod +x /tmp/ZED_SDK.run && \
+    sudo /tmp/ZED_SDK.run silent skip_drivers && \
+    sudo rm -rf /tmp/ZED_SDK.run /usr/local/zed/resources/*
 
 # Symlink for v4l2 (required by ZED SDK in containers)
 RUN sudo ln -sf /usr/lib/$(uname -m)-linux-gnu/tegra/libv4l2.so.0 \
