@@ -53,6 +53,6 @@ services:
       sleep 3 &&
       ros2 launch zed_wrapper zed_camera.launch.py
       camera_model:=$$ZED_MODEL
-      publish_tf:=true
+      publish_tf:=false
       publish_urdf:=false
       ros_params_override_path:=/opt/zed_ws/zed_shm_override.yaml"
