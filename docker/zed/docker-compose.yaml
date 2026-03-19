@@ -31,6 +31,7 @@ services:
     command: >
       bash -c "
       rm -f /tmp/roudi.lock 2>/dev/null;
+      sudo sed -i 's|<LogLevel>warning</LogLevel>|<LogLevel>warn</LogLevel>|' /etc/cyclonedds.xml 2>/dev/null || true;
       source /opt/ros/humble/setup.bash &&
       source /usr/local/bin/cyclonedds_setup.sh &&
       sleep 2 &&
