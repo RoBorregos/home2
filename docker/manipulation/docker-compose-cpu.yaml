@@ -19,6 +19,7 @@ services:
       - ./.bash_aliases:/home/ros/.bash_aliases
       - ./setup_gpd.sh:/home/ros/setup_gpd.sh
     network_mode: host
+    ipc: host
     user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
     privileged: true
     devices:
