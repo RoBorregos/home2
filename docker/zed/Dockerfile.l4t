@@ -30,6 +30,9 @@ RUN cd /opt/zed_ws && \
         -DCMAKE_BUILD_TYPE=Release && \
     sudo chown -R ros:ros /opt/zed_ws
 
+# Fix CycloneDDS SHM LogLevel ('warn' not 'warning') in case base image has old config
+RUN sudo sed -i 's|<LogLevel>warning</LogLevel>|<LogLevel>warn</LogLevel>|' /etc/cyclonedds.xml 2>/dev/null || true
+
 # Copy SHM override
 COPY zed_shm_override.yaml /opt/zed_ws/zed_shm_override.yaml
 
