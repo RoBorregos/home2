@@ -3,10 +3,20 @@ version = 1
 
 [[segment]]
 
-# No small pools (128, 1024, 16384 bytes) — forces CycloneDDS to use
-# network DDS for small messages like parameter_events and TF.
-# This avoids iceoryx TOO_MANY_CHUNKS_HELD_IN_PARALLEL during startup.
-# Only large messages (camera images, depth maps) use SHM zero-copy.
+# Small messages (parameter events, tf, small services)
+[[segment.mempool]]
+size = 128
+count = 50000
+
+# Medium messages (sensor data, joint states, detections)
+[[segment.mempool]]
+size = 1024
+count = 10000
+
+# Larger messages (camera info, compressed data)
+[[segment.mempool]]
+size = 16384
+count = 500
 
 # Medium images (depth maps, smaller frames)
 [[segment.mempool]]
