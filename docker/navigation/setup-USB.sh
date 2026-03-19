@@ -3,9 +3,9 @@
 echo = "Setting up USB config of Lidar and STM32"
 
 
-RULES_FILE="/etc/udev/rules.d/99-usb-lidar-stm32.rules"
+RulesFile="/etc/udev/rules.d/99-usb-lidar-stm32.rules"
 
-sudo bash -c "cat > $RULES_FILE" << 'EOF'
+sudo bash -c "cat > $RulesFile" << 'EOF'
 # Regla para LiDAR (CP210x con serial específico)
 SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", ATTRS{serial}=="ee4398021564ef11bc11daa9c169b110", SYMLINK+="ttyUSBlidar2", MODE="0777"
 
@@ -32,17 +32,17 @@ if [ -L /dev/ttyUSBlidar2 ]; then
     echo = "/dev/ttyUSBlidar2 -> $(readlink /dev/ttyUSBlidar2)"
 else
     echo = "/dev/ttyUSBlidar2 not found"
-    LIDAR_MISSING=1
+    LidarMissing=1
 fi
 
 if [ -L /dev/ttyUSBStm32 ]; then
     echo = "/dev/ttyUSBStm32 -> $(readlink /dev/ttyUSBStm32)"
 else
     echo = "/dev/ttyUSBStm32 not found"
-    STM32_MISSING=1
+    STM32Missing=1
 fi
 
-if [ "$LIDAR_MISSING" = "1" ] || [ "$STM32_MISSING" = "1" ]; then
+if [ "$LidarDownMissing" = "1" ] || [ "$STM32Missing" = "1" ]; then
     echo = "Error: required USB devices (Lidar and/or STM32 Dashgo driver) were not recognized."
     exit 1
 fi
