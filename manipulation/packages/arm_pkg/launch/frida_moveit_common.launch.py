@@ -69,6 +69,11 @@ def launch_setup(context, *args, **kwargs):
 
     moveit_config_dump = moveit_config_dump.perform(context)
     moveit_config_dict = yaml.load(moveit_config_dump, Loader=yaml.FullLoader)
+
+    # Override VAMP response adapters — remove ValidateSolution
+    if "planning_pipelines" in moveit_config_dict and "vamp" in moveit_config_dict.get("planning_pipelines", {}):
+        moveit_config_dict["planning_pipelines"]["vamp"]["response_adapters"] = \
+            "default_planner_response_adapters/AddTimeOptimalParameterization"
     moveit_config_package_name = "xarm_moveit_config"
 
     octomap_config = {
@@ -88,6 +93,8 @@ def launch_setup(context, *args, **kwargs):
         parameters=[
             moveit_config_dict,
             {"use_sim_time": use_sim_time},
+            {"planning_scene_monitor_options": {"publish_planning_scene": True}},
+            {"check_solution_paths": False},
             octomap_config,
             octomap_updater_config,
         ],

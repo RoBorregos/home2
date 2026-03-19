@@ -53,6 +53,20 @@ install(TARGETS vamp_moveit_plugin_lib
   RUNTIME DESTINATION bin
 )
 
+install(PROGRAMS
+  scripts/vamp_server.py
+  DESTINATION lib/${PROJECT_NAME}
+)
+
+install(DIRECTORY launch/
+  DESTINATION share/${PROJECT_NAME}/launch
+)
+
+
+install(DIRECTORY config/
+  DESTINATION share/${PROJECT_NAME}/config
+)
+
 install(DIRECTORY include/ DESTINATION include)
 
 ament_export_targets(export_vamp_moveit_plugin_lib HAS_LIBRARY_TARGET)

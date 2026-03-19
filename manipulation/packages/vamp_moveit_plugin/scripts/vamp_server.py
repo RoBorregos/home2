@@ -1,12 +1,13 @@
-
+#!/usr/bin/env python3
 """
 VAMP Planning Server — Optimized for FRIDA (xArm 6)
 ====================================================
 Key design decisions:
   - frida_real is a 6-DOF model (6 revolute arm joints only)
-  - VAMP expects numpy float32 arrays of shape (6,)
+  - VAMP expects numpy float64 arrays (C++ doubles) to prevent Segfaults.
   - Gripper joints are NOT part of the VAMP collision model
-  - The service receives 6-DOF states from MoveIt and returns 6-DOF waypoints
+  - Path processing INVERTED for extreme speed: Prune -> Smooth -> Validate
+  - C++ Shortcutting is COMPLETELY REMOVED to guarantee geometric stability.
 """
 
 import sys
@@ -19,12 +20,10 @@ from rclpy.node import Node
 from vamp_moveit_plugin.srv import VampPlan
 import numpy as np
 
-
 actual_dir = os.path.dirname(os.path.abspath(__file__))
 ruta_vamp = os.path.abspath(os.path.join(actual_dir, "../../vamp/src"))
 sys.path.append(ruta_vamp)
 import vamp
-
 
 ARM_DOF = 6
 
@@ -33,7 +32,7 @@ class VampServer(Node):
     def __init__(self):
         super().__init__("vamp_server")
 
-        
+        # ── Declare ROS parameters ──────────────────────────────────────
         self.declare_parameter("max_iterations", 50000)
         self.declare_parameter("range", 0.05)
         self.declare_parameter("security_margin", 0.08)
@@ -44,9 +43,8 @@ class VampServer(Node):
         self.declare_parameter("max_retries", 3)
         self.declare_parameter("retry_range_multiplier", 1.5)
         self.declare_parameter("retry_iterations_multiplier", 2.0)
-        self.declare_parameter("use_shortcut_simplify", True)
 
-        
+        # ── Read parameters ─────────────────────────────────────────────
         self.security_margin = self.get_parameter("security_margin").value
         self.validation_step = self.get_parameter("validation_step_size").value
         self.min_wp_dist = self.get_parameter("min_waypoint_distance").value
@@ -56,14 +54,12 @@ class VampServer(Node):
         self.retry_range_mult = self.get_parameter("retry_range_multiplier").value
         self.rng = vamp.frida_real.xorshift()
         self.retry_iter_mult = self.get_parameter("retry_iterations_multiplier").value
-        self.use_shortcut = self.get_parameter("use_shortcut_simplify").value
 
-        
+        # ── Base planner settings ───────────────────────────────────────
         self.base_settings = vamp.RRTCSettings()
         self.base_settings.max_iterations = self.get_parameter("max_iterations").value
         self.base_settings.range = self.get_parameter("range").value
 
-        
         self.srv = self.create_service(
             VampPlan, "plan_vamp_path", self.plan_callback
         )
@@ -72,10 +68,6 @@ class VampServer(Node):
             f"VAMP server ready | max_iter={self.base_settings.max_iterations} "
             f"range={self.base_settings.range} margin={self.security_margin}"
         )
-
-    
-    
-    
 
     class Timer:
         def __init__(self, name, logger):
@@ -93,23 +85,13 @@ class VampServer(Node):
 
     @staticmethod
     def to_vamp(joint_values):
-        """Convert joint values to VAMP format: float32, shape (6,).
-        
-        Accepts any length >= 6, takes only the first 6 (arm joints).
-        """
-        arr = np.array(joint_values[:ARM_DOF], dtype=np.float32)
-        return arr
-
-    
-    
-    
+        return np.array(joint_values[:ARM_DOF], dtype=np.float64)
 
     def build_environment(self, request):
         env = vamp.Environment()
         n_spheres = 0
         n_boxes = 0
 
-        
         centers = np.array(request.sphere_centers_flat, dtype=np.float64)
         radii = np.array(request.sphere_radii, dtype=np.float64)
 
@@ -120,7 +102,6 @@ class VampServer(Node):
             env.add_sphere(vamp.Sphere(pos, r))
             n_spheres += 1
 
-        
         box_centers = np.array(request.box_centers_flat, dtype=np.float64)
         box_sizes = np.array(request.box_sizes_flat, dtype=np.float64)
         num_boxes = len(box_sizes) // 3
@@ -140,7 +121,6 @@ class VampServer(Node):
 
             try:
                 env.add_cuboid(vamp.Cuboid(center, rotation, half_extents))
-                self.get_logger().info(f"  Cuboid: center={center}, half={half_extents}, rot={rotation}")
                 n_boxes += 1
             except Exception as e:
                 self.get_logger().warn(f"add_cuboid failed: {e}, using sphere fallback")
@@ -153,10 +133,8 @@ class VampServer(Node):
         return env, n_spheres, n_boxes
 
     def _approximate_box_with_spheres(self, env, cx, cy, cz, lx, ly, lz):
-        """Approximate box with surface spheres only (6 faces)."""
         step = 0.04
         radius = 0.025 + self.security_margin
-
         for axis in range(3):
             dims = [lx, ly, lz]
             center = [cx, cy, cz]
@@ -164,7 +142,6 @@ class VampServer(Node):
             other = [a for a in range(3) if a != axis]
             n1 = max(2, int(dims[other[0]] / step))
             n2 = max(2, int(dims[other[1]] / step))
-
             for sign in [-1, 1]:
                 for u in np.linspace(-dims[other[0]] / 2, dims[other[0]] / 2, n1):
                     for v in np.linspace(-dims[other[1]] / 2, dims[other[1]] / 2, n2):
@@ -174,15 +151,9 @@ class VampServer(Node):
                         pos[other[1]] = center[other[1]] + v
                         env.add_sphere(vamp.Sphere(pos, radius))
 
-    
-    
-    
-
     def validate_states(self, start, goal, env):
-        """Validate start and goal (6-DOF float32). Returns diagnostic or None."""
         is_start_valid = vamp.frida_real.validate(start, env)
         is_goal_valid = vamp.frida_real.validate(goal, env)
-
         if is_start_valid and is_goal_valid:
             return None
 
@@ -199,10 +170,6 @@ class VampServer(Node):
             msgs.append(f"Goal INVALID ({cause})")
         return " | ".join(msgs)
 
-    
-    
-    
-
     def init_rng(self):
         try:
             return vamp.frida_real.halton()
@@ -214,43 +181,29 @@ class VampServer(Node):
             self.get_logger().error(f"RNG init failed: {e}")
             return None
 
-    
-    
-    
-
-    def validate_and_densify_path(self, raw_path, env):
-        """Interpolate and collision-check. All arrays stay float32 shape (6,)."""
-        n_points = len(raw_path)
-        path_nodes = []
-        for i in range(n_points):
-            wp = np.array(list(raw_path[int(i)]), dtype=np.float32)
-            path_nodes.append(wp)
-
+    def validate_and_densify_path(self, path_nodes, env):
+        n_points = len(path_nodes)
         dense_path = []
         for i in range(n_points - 1):
             p1, p2 = path_nodes[i], path_nodes[i + 1]
             dist = np.linalg.norm(p1 - p2)
             n_steps = max(2, int(dist / self.validation_step))
-
             for t in np.linspace(0, 1, n_steps, endpoint=False):
-                interp = np.array(p1 + (p2 - p1) * t, dtype=np.float32)
+                interp = np.array(p1 + (p2 - p1) * t, dtype=np.float64)
                 if not vamp.frida_real.validate(interp, env):
                     self.get_logger().error(f"Collision at segment {i}, t={t:.3f}")
                     return dense_path, False
                 dense_path.append(interp)
-
         dense_path.append(path_nodes[-1])
         return dense_path, True
 
     def downsample_path(self, dense_path):
         if len(dense_path) < 2:
             return dense_path
-
         clean = [dense_path[0]]
         for wp in dense_path[1:]:
             if np.linalg.norm(wp - clean[-1]) >= self.min_wp_dist:
                 clean.append(wp)
-
         if np.linalg.norm(dense_path[-1] - clean[-1]) > 0.01:
             clean.append(dense_path[-1])
         return clean
@@ -258,11 +211,9 @@ class VampServer(Node):
     def apply_smoothing_filter(self, path_nodes):
         if len(path_nodes) < 3:
             return path_nodes
-
-        smoothed = np.array(path_nodes, dtype=np.float32).copy()
+        smoothed = np.array(path_nodes, dtype=np.float64).copy()
         n = len(smoothed)
         w = self.smooth_window
-
         for _ in range(self.smooth_passes):
             new = smoothed.copy()
             for i in range(1, n - 1):
@@ -270,36 +221,23 @@ class VampServer(Node):
                 hi = min(n, i + w // 2 + 1)
                 new[i] = np.mean(smoothed[lo:hi], axis=0)
             smoothed = new
-
         return list(smoothed)
 
-    
-    
-    
-
+    # ═══════════════════════════════════════════════════════════════════
+    # MAIN CALLBACK
+    # ═══════════════════════════════════════════════════════════════════
     def plan_callback(self, request, response):
         total_start = time.perf_counter()
         self.get_logger().info("=" * 60)
         self.get_logger().info("NEW PLANNING REQUEST")
 
         try:
-            
             with self.Timer("Environment build", self.get_logger()):
                 env, n_sph, n_box = self.build_environment(request)
-            self.get_logger().info(f"  Scene: {n_sph} spheres, {n_box} boxes")
-
             
             start = self.to_vamp(request.start_state)
             goal = self.to_vamp(request.goal_state)
 
-            self.get_logger().info(
-                f"  Start: [{', '.join(f'{v:.3f}' for v in start)}]"
-            )
-            self.get_logger().info(
-                f"  Goal:  [{', '.join(f'{v:.3f}' for v in goal)}]"
-            )
-
-            
             with self.Timer("State validation", self.get_logger()):
                 diag = self.validate_states(start, goal, env)
             if diag:
@@ -307,13 +245,11 @@ class VampServer(Node):
                 response.success = False
                 return response
 
-            
             rng = self.init_rng()
             if rng is None:
                 response.success = False
                 return response
 
-            
             result = None
             settings = vamp.RRTCSettings()
             settings.max_iterations = self.base_settings.max_iterations
@@ -333,57 +269,50 @@ class VampServer(Node):
 
                 settings.max_iterations = int(settings.max_iterations * self.retry_iter_mult)
                 settings.range *= self.retry_range_mult
-                self.get_logger().warn(
-                    f"  Attempt {attempt + 1} failed, retrying with "
-                    f"iter={settings.max_iterations} range={settings.range:.3f}"
-                )
+                self.get_logger().warn(f"  Attempt {attempt + 1} failed, retrying...")
 
             if not result or not result.solved:
                 self.get_logger().warn("All planning attempts failed.")
                 response.success = False
                 return response
 
+            # =========================================================
+            # PROCESAMIENTO RÁPIDO Y SEGURO (SIN C++)
+            # =========================================================
             raw_path = result.path
-
+            n_points = len(raw_path)
             
-            if self.use_shortcut:
-                with self.Timer("Path simplification", self.get_logger()):
-                    try:
-                        ss = vamp.SimplifySettings()
-                        ss.max_iterations = 30
-                        ss.reduce.max_steps = 50
-                        ss.reduce.max_empty_steps = 20
-                        ss.bspline.max_steps = 5
-                        ss.bspline.min_change = 0.01
-                        ss.operations = [
-                            vamp.SimplifyRoutine.REDUCE,
-                            vamp.SimplifyRoutine.SHORTCUT,
-                            vamp.SimplifyRoutine.REDUCE,
-                            vamp.SimplifyRoutine.BSPLINE,
-                        ]
-                        simplify_result = vamp.frida_real.simplify(raw_path, env, ss, self.rng)
-                        raw_path = simplify_result.path
-                        self.get_logger().info(f"  Simplified to {len(raw_path)} waypoints")
-                    except Exception as e:
-                        self.get_logger().warn(f"Simplify failed: {e}")
+            # 1. Extracción con modo pánico
+            with self.Timer("Path extraction", self.get_logger()):
+                step = max(1, n_points // 500) 
+                path_nodes = []
+                for i in range(0, n_points, step):
+                    wp = np.array(list(raw_path[int(i)]), dtype=np.float64)
+                    path_nodes.append(wp)
+                
+                if (n_points - 1) % step != 0:
+                    path_nodes.append(np.array(list(raw_path[-1]), dtype=np.float64))
 
-            
-            with self.Timer("Path validation", self.get_logger()):
-                dense_path, is_safe = self.validate_and_densify_path(raw_path, env)
+            # 2. Poda Inmediata (Downsample)
+            with self.Timer("Path pruning", self.get_logger()):
+                pruned_path = self.downsample_path(path_nodes)
+
+            # 3. Suavizado en Python
+            with self.Timer("Path smoothing", self.get_logger()):
+                smooth_path = self.apply_smoothing_filter(pruned_path)
+
+            # 4. Validación Final
+            with self.Timer("Final validation & Densify", self.get_logger()):
+                final_dense_path, is_safe = self.validate_and_densify_path(smooth_path, env)
 
             if not is_safe:
-                self.get_logger().warn("Path has internal collision.")
+                self.get_logger().error("Path has internal collision after smoothing.")
                 response.success = False
                 return response
 
-            
-            with self.Timer("Downsample + smooth", self.get_logger()):
-                clean = self.downsample_path(dense_path)
-
-
-            
+            # 5. Empaquetado
             flat = []
-            for wp in clean:
+            for wp in final_dense_path:
                 for j in range(ARM_DOF):
                     flat.append(float(wp[j]))
 
@@ -392,7 +321,7 @@ class VampServer(Node):
 
             total_ms = (time.perf_counter() - total_start) * 1000.0
             self.get_logger().info(
-                f"SUCCESS | {len(clean)} waypoints | total={total_ms:.1f} ms"
+                f"SUCCESS | {len(final_dense_path)} waypoints | total={total_ms:.1f} ms"
             )
             self.get_logger().info("=" * 60)
 
@@ -414,7 +343,6 @@ def main(args=None):
     finally:
         node.destroy_node()
         rclpy.shutdown()
-
 
 if __name__ == "__main__":
     main()
