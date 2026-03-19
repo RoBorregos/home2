@@ -6,6 +6,8 @@ HOTWORD_SERVICE_NAME = "/hri/speech/hotword_service"
 KEYWORD_TOPIC = "/hri/speech/kws"
 WAKEWORD_TOPIC = "/hri/speech/oww"
 USEFUL_AUDIO_TOPIC = "/hri/speech/useful_audio"
+RAW_AUDIO_TOPIC = "/hri/rawAudioChunk"
+PROCESSED_AUDIO_TOPIC = "/hri/processedAudioChunk"
 COMMAND_INTERPRETER_SERVICE = "/hri/nlp/command_interpreter"
 LLM_WRAPPER_SERVICE = "/hri/nlp/llm"
 EXTRACT_DATA_SERVICE = "/hri/nlp/data_extractor"
@@ -24,6 +26,7 @@ RESPEAKER_LIGHT_TOPIC = "/hri/speech/respeaker/light"
 RESPEAKER_DOA_TOPIC = "/hri/speech/respeaker/doa"
 STT_ACTION_SERVER_NAME = "/hri/speech/STT_action_server"
 START_BUTTON_CLIENT = "/hri/display/button_press"
+TASK_STATUS_TOPIC = "/hri/display/task_status"
 
 GPSR_COMMANDS = {
     "go_to",

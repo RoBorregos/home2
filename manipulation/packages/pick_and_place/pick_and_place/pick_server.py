@@ -23,16 +23,19 @@ from frida_constants.manipulation_constants import (
     PICK_MIN_HEIGHT,
     GRASP_LINK_FRAME,
     GRIPPER_SET_STATE_SERVICE,
+    GO_TO_HAND_ACTION_SERVER,
 )
 from frida_interfaces.srv import (
     AttachCollisionObject,
     GetCollisionObjects,
     RemoveCollisionObject,
 )
-from frida_interfaces.action import PickMotion, MoveToPose
+from frida_interfaces.action import PickMotion, MoveToPose, GoToHand
 from frida_interfaces.msg import PickResult
+from geometry_msgs.msg import PoseStamped
 import copy
 import numpy as np
+from tf_transformations import quaternion_from_euler
 from transforms3d.quaternions import quat2mat
 from frida_motion_planning.utils.service_utils import (
     close_gripper,
@@ -49,6 +52,11 @@ class PickMotionServer(Node):
         self.declare_parameter("ee_link_offset", -0.125)
         self.ee_link_offset = self.get_parameter("ee_link_offset").value
         self.get_logger().info(f"End-effector link offset: {self.ee_link_offset} m")
+
+        self.declare_parameter("ee_tip_offset", -0.17)
+        self.ee_tip_offset = self.get_parameter("ee_tip_offset").value
+        self.get_logger().info(f"End-effector tip offset: {self.ee_tip_offset} m")
+
         self.get_logger().info(f"Pick Velocity: {PICK_VELOCITY} m/s")
 
         self._action_server = ActionServer(
@@ -56,6 +64,14 @@ class PickMotionServer(Node):
             PickMotion,
             PICK_MOTION_ACTION_SERVER,
             self.execute_callback,
+            callback_group=self.callback_group,
+        )
+
+        self._go_to_hand_server = ActionServer(
+            self,
+            GoToHand,
+            GO_TO_HAND_ACTION_SERVER,
+            self.execute_go_to_hand_callback,
             callback_group=self.callback_group,
         )
 
@@ -86,7 +102,6 @@ class PickMotionServer(Node):
         )
 
         self._move_to_pose_action_client.wait_for_server()
-
         self.get_logger().info("Pick Action Server has been started")
 
     async def execute_callback(self, goal_handle):
@@ -103,6 +118,72 @@ class PickMotionServer(Node):
             return result
         except Exception as e:
             self.get_logger().error(f"Pick failed: {str(e)}")
+            goal_handle.succeed()
+            result.success = False
+            return result
+
+    async def execute_go_to_hand_callback(self, goal_handle):
+        self.get_logger().info("Executing go to hand goal...")
+
+        base_point = copy.deepcopy(goal_handle.request.point)
+
+        # quaternion position
+        qx, qy, qz, qw = quaternion_from_euler(-np.pi / 2, 0, 0)
+        quat = [qx, qy, qz, qw]
+
+        # tip offset
+        rotation_matrix = quat2mat(quat)
+        z_axis = rotation_matrix[:, 1]
+
+        base_position = (
+            np.array([base_point.point.x, base_point.point.y, base_point.point.z])
+            + z_axis * self.ee_tip_offset
+        )
+
+        hand_offset = goal_handle.request.hand_offset
+        test_angles = [0, 180, 200, 220, 240, 270]
+
+        result = GoToHand.Result()
+
+        try:
+            for angle in test_angles:
+                pose = PoseStamped()
+                pose.header.frame_id = base_point.header.frame_id
+
+                pose.pose.position.x = base_position[0] + hand_offset * np.cos(
+                    np.radians(angle)
+                )
+                pose.pose.position.y = base_position[1] + hand_offset * np.sin(
+                    np.radians(angle)
+                )
+                pose.pose.position.z = base_position[2]
+
+                pose.pose.orientation.x = quat[0]
+                pose.pose.orientation.y = quat[1]
+                pose.pose.orientation.z = quat[2]
+                pose.pose.orientation.w = quat[3]
+
+                move_result, action_result = self.move_to_pose(
+                    pose=pose,
+                    tolerance_position=0.01,
+                    tolerance_orientation=0.1,
+                )
+
+                if action_result.result.success:
+                    break
+
+            if action_result.result.success:
+                self.get_logger().info("Go to hand pose reached")
+                result.success = True
+            else:
+                self.get_logger().error("Failed to reach go to hand pose")
+                result.success = False
+
+            goal_handle.succeed()
+            return result
+
+        except Exception as e:
+            self.get_logger().error(f"Go to hand failed: {str(e)}")
             goal_handle.succeed()
             result.success = False
             return result
@@ -204,7 +285,7 @@ class PickMotionServer(Node):
         self.get_logger().error("Failed to reach any grasp pose")
         return False, pick_result
 
-    def move_to_pose(self, pose):
+    def move_to_pose(self, pose, tolerance_position=0.005, tolerance_orientation=0.02):
         """Move the robot to the given pose."""
         request = MoveToPose.Goal()
         request.pose = pose
@@ -212,8 +293,10 @@ class PickMotionServer(Node):
         request.acceleration = PICK_ACCELERATION
         request.planner_id = PICK_PLANNER
         request.target_link = GRASP_LINK_FRAME
-        request.tolerance_position = 0.005  # Set the position tolerance
-        request.tolerance_orientation = 0.02  # Set the orientation tolerance
+        request.tolerance_position = tolerance_position  # Set the position tolerance
+        request.tolerance_orientation = (
+            tolerance_orientation  # Set the orientation tolerance
+        )
         future = self._move_to_pose_action_client.send_goal_async(request)
         self.wait_for_future(future)
         action_result = future.result().get_result()
@@ -295,7 +378,8 @@ class PickMotionServer(Node):
     def calculate_object_pick_height(self, obj, pose):
         """Calculate the height of the object, measured from where it was picked
         e.g. if a 30cm tall object is picked at 10cm, the height is 10cm
-        -> Reason for this is to know how high we should be to place the object, basically repeat same height"""
+        -> Reason for this is to know how high we should be to place the object, basically repeat same height
+        """
         if obj.pose.header.frame_id != pose.header.frame_id:
             self.get_logger().error(
                 "Object and pose frames do not match, cannot calculate height"

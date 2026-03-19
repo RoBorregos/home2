@@ -18,10 +18,12 @@ import rclpy
 from ament_index_python.packages import get_package_share_directory
 from embeddings.postgres_adapter import PostgresAdapter
 from frida_constants.hri_constants import (
+    ANSWER_PUBLISHER,
     CATEGORIZE_SERVICE,
     COMMAND_INTERPRETER_SERVICE,
     DISPLAY_IMAGE_TOPIC,
     DISPLAY_MAP_TOPIC,
+    DISPLAY_PUBLISHER,
     EXTRACT_DATA_SERVICE,
     GRAMMAR_SERVICE,
     IS_COHERENT_SERVICE,
@@ -30,13 +32,14 @@ from frida_constants.hri_constants import (
     LLM_WRAPPER_SERVICE,
     RAG_SERVICE,
     RESPEAKER_LIGHT_TOPIC,
+    SKIP_CONFIRMATION_CONFIDENCE_THRESHOLD,
+    SKIP_CONFIRMATION_SIMILARITY_THRESHOLD,
     SPEAK_SERVICE,
     START_BUTTON_CLIENT,
     STT_ACTION_SERVER_NAME,
-    WAKEWORD_TOPIC,
-    SKIP_CONFIRMATION_SIMILARITY_THRESHOLD,
-    SKIP_CONFIRMATION_CONFIDENCE_THRESHOLD,
+    TASK_STATUS_TOPIC,
     TIMEOUT,
+    WAKEWORD_TOPIC,
 )
 from frida_interfaces.action import SpeechStream
 from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
@@ -56,6 +59,8 @@ from rclpy.action import ActionClient
 from rclpy.node import Node
 from rclpy.task import Future
 from std_msgs.msg import Empty, String
+from subtask_managers.hri_hand import HRIHand
+from subtask_managers.subtask_meta import SubtaskMeta
 from utils.baml_client.sync_client import b
 from utils.baml_client.types import (
     AnswerQuestion,
@@ -77,9 +82,6 @@ from utils.decorators import service_check
 from utils.logger import Logger
 from utils.status import Status
 from utils.task import Task
-
-from subtask_managers.hri_hand import HRIHand
-from subtask_managers.subtask_meta import SubtaskMeta
 
 InterpreterAvailableCommands = Union[
     CommandListLLM,
@@ -174,7 +176,7 @@ class AudioStates(Enum):
 class HRITasks(metaclass=SubtaskMeta):
     """Class to manage the HRI tasks"""
 
-    def __init__(self, task_manager: Node, config=None, task=Task.RECEPTIONIST) -> None:
+    def __init__(self, task_manager: Node, config=None, task=Task.HRIC) -> None:
         self.node = task_manager
         self.start_button_clicked = False
         self.keyword = ""
@@ -188,11 +190,9 @@ class HRITasks(metaclass=SubtaskMeta):
         self.is_coherent_service = self.node.create_client(IsCoherent, IS_COHERENT_SERVICE)
         self.display_publisher = self.node.create_publisher(String, DISPLAY_IMAGE_TOPIC, 10)
         self.display_map_publisher = self.node.create_publisher(String, DISPLAY_MAP_TOPIC, 10)
-        self.answers_publisher = self.node.create_publisher(String, "/hri/display/answers", 10)
-        self.questions_publisher = self.node.create_publisher(
-            String, "/hri/display/frida_questions", 10
-        )
-        self.pg = PostgresAdapter()
+        self.answers_publisher = self.node.create_publisher(String, ANSWER_PUBLISHER, 10)
+        self.questions_publisher = self.node.create_publisher(String, DISPLAY_PUBLISHER, 10)
+        self.pg = PostgresAdapter(config.mock_db)
         self.llm_wrapper_service = self.node.create_client(LLMWrapper, LLM_WRAPPER_SERVICE)
         self.categorize_service = self.node.create_client(CategorizeShelves, CATEGORIZE_SERVICE)
         self.keyword_client = self.node.create_subscription(
@@ -215,6 +215,7 @@ class HRITasks(metaclass=SubtaskMeta):
         self.respeaker_light_publisher = self.node.create_publisher(
             String, RESPEAKER_LIGHT_TOPIC, 10
         )
+        self.task_status_publisher = self.node.create_publisher(String, TASK_STATUS_TOPIC, 10)
 
         self._action_client = ActionClient(self.node, SpeechStream, STT_ACTION_SERVER_NAME)
 
@@ -245,7 +246,7 @@ class HRITasks(metaclass=SubtaskMeta):
         }
 
         self.services = {
-            Task.RECEPTIONIST: all_services,
+            Task.HRIC: all_services,
             Task.GPSR: all_services | gpsr_services,
             Task.HELP_ME_CARRY: all_services,
             Task.STORING_GROCERIES: all_services,
@@ -451,7 +452,11 @@ class HRITasks(metaclass=SubtaskMeta):
             Status.EXECUTION_SUCCESS if len(result.transcription) > 0 else Status.TARGET_NOT_FOUND
         )
 
-        word_confidences = dict(zip(result.words, result.confidences)) if result.words else {}
+        word_confidences = (
+            {w.strip(".,!?;:\"'()-"): c for w, c in zip(result.words, result.confidences)}
+            if result.words
+            else {}
+        )
 
         if execution_status == Status.EXECUTION_SUCCESS:
             Logger.info(
@@ -638,7 +643,7 @@ class HRITasks(metaclass=SubtaskMeta):
         remap: dict = None,
     ):
         """
-        Method to confirm a specific question.
+        Method to confirm a specific question. It includes auto-retry.
 
         Args:
             question: the inquiry to ask
@@ -664,11 +669,17 @@ class HRITasks(metaclass=SubtaskMeta):
 
             if hear_status == Status.EXECUTION_SUCCESS:
                 target_info = interpreted_text
+                target_found = False
                 similarity = 1
-                if not skip_extract_data and not options:
-                    _, target_info = self.extract_data(query, interpreted_text, context)
-
                 try:
+                    # If no options provided, directly extract the data without looking for matches
+                    if not skip_extract_data and not options:
+                        s, target_info = self.extract_data(query, interpreted_text, context)
+                        if s != Status.EXECUTION_SUCCESS:
+                            self.say("Sorry, I coudn't understand.")
+                            continue
+                        target_found = True
+
                     # If extracted data options provided look for exact or closest match
                     if options is not None:
                         foundExact = False
@@ -676,26 +687,39 @@ class HRITasks(metaclass=SubtaskMeta):
                             if option.lower() in target_info.lower():
                                 target_info = option
                                 foundExact = True
+                                target_found = True
                                 skip_confirmation = (
                                     True  # Skip confirmation if an exact match is found
                                 )
                                 break
+
                         if not foundExact:
-                            s, closest = self.find_closest(options, target_info)
+                            s, similarity_list = self.find_closest(options, target_info)
                             if s == Status.EXECUTION_SUCCESS:
-                                target_info = closest.results[0]
-                                similarity = closest.similarities[0]
+                                target_found = True
+                                target_info = similarity_list.results[0]
+                                similarity = similarity_list.similarities[0]
 
                     # Skip confirmation depending on the similarity to an option if options are provided and/or on transcription confidence
+                    target_words = target_info.lower().split()
+                    matched_confidences = [
+                        word_confidences[w] for w in target_words if w in word_confidences
+                    ]
+                    avg_confidence = (
+                        sum(matched_confidences) / len(matched_confidences)
+                        if matched_confidences
+                        else 0
+                    )
                     if (
                         similarity > SKIP_CONFIRMATION_SIMILARITY_THRESHOLD
-                        and word_confidences.get(target_info, 0)
-                        > SKIP_CONFIRMATION_CONFIDENCE_THRESHOLD
+                        and avg_confidence > SKIP_CONFIRMATION_CONFIDENCE_THRESHOLD
                     ):
                         skip_confirmation = True
 
+                    # Remap the target_info if a remap dictionary is provided
                     if remap is not None and target_info in remap:
                         target_info = remap[target_info]
+
                 except Exception as e:
                     print("Failed matching result:", e)
 
@@ -708,10 +732,11 @@ class HRITasks(metaclass=SubtaskMeta):
                 else:
                     confirmation_text = confirm_question
 
-                s, confirmation = self.confirm(confirmation_text, use_hotwords, 3)
-
-                if confirmation == "yes":
-                    return Status.EXECUTION_SUCCESS, target_info
+                # Ask for confirmation
+                if target_info != "" and target_found:
+                    s, confirmation = self.confirm(confirmation_text, use_hotwords, 3)
+                    if s == Status.EXECUTION_SUCCESS and confirmation == "yes":
+                        return Status.EXECUTION_SUCCESS, target_info
 
             # Wait for the minimum time between retries
             while (
@@ -723,7 +748,7 @@ class HRITasks(metaclass=SubtaskMeta):
             self.node,
             "Ask and confirm timed out for question: " + question,
         )
-        return Status.TIMEOUT, ""
+        return Status.TIMEOUT, None
 
     def interpret_keyword(self, keywords: list[str], timeout: float) -> str:
         self.cancel_hear_action()
@@ -1178,6 +1203,14 @@ class HRITasks(metaclass=SubtaskMeta):
         This method is called when the start button is pressed.
         """
         self.start_button_clicked = True
+        self.task_status_publisher.publish(String(data="active"))
+
+    def reset_task_status(self):
+        """
+        Reset the task status to idle and the start button clicked flag.
+        """
+        self.start_button_clicked = False
+        self.task_status_publisher.publish(String(data="idle"))
 
 
 if __name__ == "__main__":
