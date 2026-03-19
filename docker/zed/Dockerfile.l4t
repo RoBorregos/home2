@@ -15,7 +15,7 @@ RUN sudo ln -sf /usr/lib/$(uname -m)-linux-gnu/tegra/libv4l2.so.0 \
 
 # Clone ZED ROS2 wrapper and install all dependencies via rosdep
 RUN mkdir -p /opt/zed_ws/src && cd /opt/zed_ws/src && \
-    git clone --depth 1 https://github.com/stereolabs/zed-ros2-wrapper.git && \
+    git clone --depth 1 -b humble-v5.0.0 https://github.com/stereolabs/zed-ros2-wrapper.git && \
     cd /opt/zed_ws && \
     sudo apt-get update -qq && \
     sudo rosdep init 2>/dev/null || true && \
