@@ -52,7 +52,7 @@ else
     STM32Missing=1
 fi
 
-if [ "$LidarMissing = "1" ] || [ "$STM32Missing" = "1" ]; then
+if [ -L"$LidarMissing" = "1" ] || [ "$STM32Missing" = "1" ]; then
     echo = "Error: required USB devices (Lidar and/or STM32 Dashgo driver) were not recognized."
     exit 1
 fi
