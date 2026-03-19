@@ -3,225 +3,292 @@ import os
 import yaml
 from ament_index_python import get_package_share_directory
 from launch.launch_description_sources import load_python_launch_file_as_module
-from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument, RegisterEventHandler
-from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.actions import Node
-from launch.conditions import IfCondition
 from launch_ros.substitutions import FindPackageShare
 from launch.event_handlers import OnProcessExit, OnProcessStart
 from launch.actions import OpaqueFunction, RegisterEventHandler, LogInfo
 
+
 def generate_nodes_for_spawn(context: LaunchContext):
     ##Arguments for xacro:
-    prefix = LaunchConfiguration('prefix', default='')
-    hw_ns = LaunchConfiguration('hw_ns', default='xarm')
-    limited = LaunchConfiguration('limited', default=False)
-    effort_control = LaunchConfiguration('effort_control', default=False)
-    velocity_control = LaunchConfiguration('velocity_control', default=False)
-    add_gripper = LaunchConfiguration('add_gripper', default=False)
-    load_zed = LaunchConfiguration('load_zed', default=True)
-    add_vacuum_gripper = LaunchConfiguration('add_vacuum_gripper', default=False)
-    add_bio_gripper = LaunchConfiguration('add_bio_gripper', default=False)
-    dof = LaunchConfiguration('dof', default=6)
-    robot_type = LaunchConfiguration('robot_type', default='xarm')
-    ros2_control_plugin = LaunchConfiguration('ros2_control_plugin', default='mujoco_ros2_control/MujocoSystem')
-    gripper_yaml = LaunchConfiguration('gripper_yaml',     default=os.path.join(get_package_share_directory('frida_description'), 'config', 'custom_gripper_controllers.yaml'))
-    
-    add_realsense_d435i = LaunchConfiguration('add_realsense_d435i', default=False)
-    add_d435i_links = LaunchConfiguration('add_d435i_links', default=False)
-    model1300 = LaunchConfiguration('model1300', default=False)
-    robot_sn = LaunchConfiguration('robot_sn', default='')
-    attach_xyz = LaunchConfiguration('attach_xyz', default='"0 0 0"')
-    attach_rpy = LaunchConfiguration('attach_rpy', default='"0 0 0"')
-    mujoco_plugin = LaunchConfiguration('mujoco_plugin', default=True)
+    prefix = LaunchConfiguration("prefix", default="")
+    hw_ns = LaunchConfiguration("hw_ns", default="xarm")
+    limited = LaunchConfiguration("limited", default=False)
+    effort_control = LaunchConfiguration("effort_control", default=False)
+    velocity_control = LaunchConfiguration("velocity_control", default=False)
+    add_gripper = LaunchConfiguration("add_gripper", default=False)
+    load_zed = LaunchConfiguration("load_zed", default=True)
+    add_vacuum_gripper = LaunchConfiguration("add_vacuum_gripper", default=False)
+    add_bio_gripper = LaunchConfiguration("add_bio_gripper", default=False)
+    dof = LaunchConfiguration("dof", default=6)
+    robot_type = LaunchConfiguration("robot_type", default="xarm")
+    ros2_control_plugin = LaunchConfiguration(
+        "ros2_control_plugin", default="mujoco_ros2_control/MujocoSystem"
+    )
+    gripper_yaml = LaunchConfiguration(
+        "gripper_yaml",
+        default=os.path.join(
+            get_package_share_directory("frida_description"),
+            "config",
+            "custom_gripper_controllers.yaml",
+        ),
+    )
 
-    add_other_geometry = LaunchConfiguration('add_other_geometry', default=False)
-    geometry_type = LaunchConfiguration('geometry_type', default='box')
-    geometry_mass = LaunchConfiguration('geometry_mass', default=0.1)
-    geometry_height = LaunchConfiguration('geometry_height', default=0.1)
-    geometry_radius = LaunchConfiguration('geometry_radius', default=0.1)
-    geometry_length = LaunchConfiguration('geometry_length', default=0.1)
-    geometry_width = LaunchConfiguration('geometry_width', default=0.1)
-    geometry_mesh_filename = LaunchConfiguration('geometry_mesh_filename', default='')
-    geometry_mesh_origin_xyz = LaunchConfiguration('geometry_mesh_origin_xyz', default='"0 0 0"')
-    geometry_mesh_origin_rpy = LaunchConfiguration('geometry_mesh_origin_rpy', default='"0 0 0"')
-    geometry_mesh_tcp_xyz = LaunchConfiguration('geometry_mesh_tcp_xyz', default='"0 0 0"')
-    geometry_mesh_tcp_rpy = LaunchConfiguration('geometry_mesh_tcp_rpy', default='"0 0 0"')
-    kinematics_suffix = LaunchConfiguration('kinematics_suffix', default='')
-    
-    load_controller = LaunchConfiguration('load_controller', default=True)
-    show_rviz = LaunchConfiguration('show_rviz', default=False)
-    no_gui_ctrl = LaunchConfiguration('no_gui_ctrl', default=False)
-    
-    xarm_type = '{}{}'.format(robot_type.perform(context), dof.perform(context) if robot_type.perform(context) in ('xarm', 'lite') else '')
-    
-    ros_namespace = LaunchConfiguration('ros_namespace', default='').perform(context)
-    
-    
+    add_realsense_d435i = LaunchConfiguration("add_realsense_d435i", default=False)
+    add_d435i_links = LaunchConfiguration("add_d435i_links", default=False)
+    model1300 = LaunchConfiguration("model1300", default=False)
+    robot_sn = LaunchConfiguration("robot_sn", default="")
+    attach_xyz = LaunchConfiguration("attach_xyz", default='"0 0 0"')
+    attach_rpy = LaunchConfiguration("attach_rpy", default='"0 0 0"')
+    mujoco_plugin = LaunchConfiguration("mujoco_plugin", default=True)
+
+    add_other_geometry = LaunchConfiguration("add_other_geometry", default=False)
+    geometry_type = LaunchConfiguration("geometry_type", default="box")
+    geometry_mass = LaunchConfiguration("geometry_mass", default=0.1)
+    geometry_height = LaunchConfiguration("geometry_height", default=0.1)
+    geometry_radius = LaunchConfiguration("geometry_radius", default=0.1)
+    geometry_length = LaunchConfiguration("geometry_length", default=0.1)
+    geometry_width = LaunchConfiguration("geometry_width", default=0.1)
+    geometry_mesh_filename = LaunchConfiguration("geometry_mesh_filename", default="")
+    geometry_mesh_origin_xyz = LaunchConfiguration(
+        "geometry_mesh_origin_xyz", default='"0 0 0"'
+    )
+    geometry_mesh_origin_rpy = LaunchConfiguration(
+        "geometry_mesh_origin_rpy", default='"0 0 0"'
+    )
+    geometry_mesh_tcp_xyz = LaunchConfiguration(
+        "geometry_mesh_tcp_xyz", default='"0 0 0"'
+    )
+    geometry_mesh_tcp_rpy = LaunchConfiguration(
+        "geometry_mesh_tcp_rpy", default='"0 0 0"'
+    )
+    kinematics_suffix = LaunchConfiguration("kinematics_suffix", default="")
+
+    load_controller = LaunchConfiguration("load_controller", default=True)
+    # show_rviz = LaunchConfiguration("show_rviz", default=False)
+    # no_gui_ctrl = LaunchConfiguration("no_gui_ctrl", default=False)
+
+    xarm_type = "{}{}".format(
+        robot_type.perform(context),
+        dof.perform(context) if robot_type.perform(context) in ("xarm", "lite") else "",
+    )
+
+    ros_namespace = LaunchConfiguration("ros_namespace", default="").perform(context)
+
     ##place to save the xml generated file:
-    save_xml_folder = "/tmp/mujoco"                               # Must be absolute path
-    save_xml_file = os.path.join(save_xml_folder, "main.xml") 
-    
-    #creation of the robot description string 
+    save_xml_folder = "/tmp/mujoco"  # Must be absolute path
+    save_xml_file = os.path.join(save_xml_folder, "main.xml")
+
+    # creation of the robot description string
     # ros2 control params
     # xarm_controller/launch/lib/robot_controller_lib.py
-    mod = load_python_launch_file_as_module(os.path.join(get_package_share_directory('xarm_controller'), 'launch', 'lib', 'robot_controller_lib.py'))
-    generate_ros2_control_params_temp_file = getattr(mod, 'generate_ros2_control_params_temp_file')
+    mod = load_python_launch_file_as_module(
+        os.path.join(
+            get_package_share_directory("xarm_controller"),
+            "launch",
+            "lib",
+            "robot_controller_lib.py",
+        )
+    )
+    generate_ros2_control_params_temp_file = getattr(
+        mod, "generate_ros2_control_params_temp_file"
+    )
     ros2_xarm_params_file = generate_ros2_control_params_temp_file(
-        os.path.join(get_package_share_directory('xarm_controller'), 'config', '{}_controllers.yaml'.format(xarm_type)),
-        prefix=prefix.perform(context), 
-        add_gripper=add_gripper.perform(context) in ('True', 'true'),
-        add_bio_gripper=add_bio_gripper.perform(context) in ('True', 'true'),
+        os.path.join(
+            get_package_share_directory("xarm_controller"),
+            "config",
+            "{}_controllers.yaml".format(xarm_type),
+        ),
+        prefix=prefix.perform(context),
+        add_gripper=add_gripper.perform(context) in ("True", "true"),
+        add_bio_gripper=add_bio_gripper.perform(context) in ("True", "true"),
         ros_namespace=ros_namespace,
         update_rate=500,
-        robot_type=robot_type.perform(context)
+        robot_type=robot_type.perform(context),
     )
 
     ##Union of the yaml files for less problems
     xarm_params = yaml_loader(ros2_xarm_params_file)
     gripper_params = yaml_loader(gripper_yaml.perform(context))
     ros2_control_raw_params = deep_update(xarm_params, gripper_params)
-    yaml_dump('/tmp/final_frida.yaml', ros2_control_raw_params)
-    
-    
-    
+    yaml_dump("/tmp/final_frida.yaml", ros2_control_raw_params)
+
     # robot_description
     # xarm_description/launch/lib/robot_description_lib.py
-    mod = load_python_launch_file_as_module(os.path.join(get_package_share_directory('xarm_description'), 'launch', 'lib', 'robot_description_lib.py'))
-    get_xacro_file_content = getattr(mod, 'get_xacro_file_content')
+    mod = load_python_launch_file_as_module(
+        os.path.join(
+            get_package_share_directory("xarm_description"),
+            "launch",
+            "lib",
+            "robot_description_lib.py",
+        )
+    )
+    get_xacro_file_content = getattr(mod, "get_xacro_file_content")
     robot_description = {
-        'robot_description': get_xacro_file_content(
-            xacro_file=PathJoinSubstitution([FindPackageShare('frida_description'), 'urdf', 'TMR2025','FRIDA.urdf.xacro']), 
+        "robot_description": get_xacro_file_content(
+            xacro_file=PathJoinSubstitution(
+                [
+                    FindPackageShare("frida_description"),
+                    "urdf",
+                    "TMR2025",
+                    "FRIDA.urdf.xacro",
+                ]
+            ),
             arguments={
-                'prefix': prefix,
-                'dof': dof,
-                'robot_type': robot_type,
-                'add_gripper': add_gripper,
-                'load_zed':load_zed,
-                'mujoco_plugin':mujoco_plugin,
-                'add_vacuum_gripper': add_vacuum_gripper,
-                'add_bio_gripper': add_bio_gripper,
-                'hw_ns': hw_ns.perform(context).strip('/'),
-                'limited': limited,
-                'effort_control': effort_control,
-                'velocity_control': velocity_control,
-                'ros2_control_plugin': ros2_control_plugin,
-                'ros2_control_params': '/tmp/final_frida.yaml',
-                'add_realsense_d435i': add_realsense_d435i,
-                'add_d435i_links': add_d435i_links,
-                'model1300': model1300,
-                'robot_sn': robot_sn,
-                'attach_xyz': attach_xyz,
-                'attach_rpy': attach_rpy,
-                'add_other_geometry': add_other_geometry,
-                'geometry_type': geometry_type,
-                'geometry_mass': geometry_mass,
-                'geometry_height': geometry_height,
-                'geometry_radius': geometry_radius,
-                'geometry_length': geometry_length,
-                'geometry_width': geometry_width,
-                'geometry_mesh_filename': geometry_mesh_filename,
-                'geometry_mesh_origin_xyz': geometry_mesh_origin_xyz,
-                'geometry_mesh_origin_rpy': geometry_mesh_origin_rpy,
-                'geometry_mesh_tcp_xyz': geometry_mesh_tcp_xyz,
-                'geometry_mesh_tcp_rpy': geometry_mesh_tcp_rpy,
-                'kinematics_suffix': kinematics_suffix,
-            }
+                "prefix": prefix,
+                "dof": dof,
+                "robot_type": robot_type,
+                "add_gripper": add_gripper,
+                "load_zed": load_zed,
+                "mujoco_plugin": mujoco_plugin,
+                "add_vacuum_gripper": add_vacuum_gripper,
+                "add_bio_gripper": add_bio_gripper,
+                "hw_ns": hw_ns.perform(context).strip("/"),
+                "limited": limited,
+                "effort_control": effort_control,
+                "velocity_control": velocity_control,
+                "ros2_control_plugin": ros2_control_plugin,
+                "ros2_control_params": "/tmp/final_frida.yaml",
+                "add_realsense_d435i": add_realsense_d435i,
+                "add_d435i_links": add_d435i_links,
+                "model1300": model1300,
+                "robot_sn": robot_sn,
+                "attach_xyz": attach_xyz,
+                "attach_rpy": attach_rpy,
+                "add_other_geometry": add_other_geometry,
+                "geometry_type": geometry_type,
+                "geometry_mass": geometry_mass,
+                "geometry_height": geometry_height,
+                "geometry_radius": geometry_radius,
+                "geometry_length": geometry_length,
+                "geometry_width": geometry_width,
+                "geometry_mesh_filename": geometry_mesh_filename,
+                "geometry_mesh_origin_xyz": geometry_mesh_origin_xyz,
+                "geometry_mesh_origin_rpy": geometry_mesh_origin_rpy,
+                "geometry_mesh_tcp_xyz": geometry_mesh_tcp_xyz,
+                "geometry_mesh_tcp_rpy": geometry_mesh_tcp_rpy,
+                "kinematics_suffix": kinematics_suffix,
+            },
         ),
     }
-    
+
     additional_files = []
-    additional_files.append(os.path.join(get_package_share_directory("mujoco_ros2_control"), "mjcf", "scene.xml"))
-    additional_files.append(os.path.join(get_package_share_directory("frida_description"), "urdf","TMR2025", "house.xacro"))
-    
+    additional_files.append(
+        os.path.join(
+            get_package_share_directory("mujoco_ros2_control"), "mjcf", "scene.xml"
+        )
+    )
+    additional_files.append(
+        os.path.join(
+            get_package_share_directory("frida_description"),
+            "urdf",
+            "TMR2025",
+            "house.xacro",
+        )
+    )
+
     # as this node require a string array
-    robot_description_string = robot_description['robot_description'].perform(context)
-    
+    robot_description_string = robot_description["robot_description"].perform(context)
+
     # Define the xacro2mjcf node, this translates the xacro urdf into MJFL
     xacro2mjcf = Node(
-    package="mujoco_ros2_control",
-    executable="xacro2mjcf.py",
-    parameters=[
-            {"robot_descriptions": [robot_description_string]}, # Robot descriptions of actuated robots
-            {"input_files": additional_files},        # Files that are added to mujoco but not to ros2_control
-            {"output_file": save_xml_file},       # Mujoco output file
-            {"mujoco_files_path": save_xml_folder} # Mujoco project folder
-        ]
+        package="mujoco_ros2_control",
+        executable="xacro2mjcf.py",
+        parameters=[
+            {
+                "robot_descriptions": [robot_description_string]
+            },  # Robot descriptions of actuated robots
+            {
+                "input_files": additional_files
+            },  # Files that are added to mujoco but not to ros2_control
+            {"output_file": save_xml_file},  # Mujoco output file
+            {"mujoco_files_path": save_xml_folder},  # Mujoco project folder
+        ],
     )
-    
-    
+
     robot_state_publisher = Node(
         package="robot_state_publisher",
         executable="robot_state_publisher",
-        output='screen',
-        parameters=[{'use_sim_time': True}, robot_description],
+        output="screen",
+        parameters=[{"use_sim_time": True}, robot_description],
         remappings=[
-            ('/tf', 'tf'),
-            ('/tf_static', 'tf_static'),
-        ]
+            ("/tf", "tf"),
+            ("/tf_static", "tf_static"),
+        ],
     )
-    
+
     mujoco = Node(
         package="mujoco_ros2_control",
         executable="mujoco_ros2_control",
         parameters=[
             robot_description,
-            '/tmp/final_frida.yaml',
+            "/tmp/final_frida.yaml",
             {"simulation_frequency": 500.0},
             {"realtime_factor": 1.0},
             {"robot_model_path": save_xml_file},
             {"show_gui": True},
         ],
         remappings=[
-            ('/controller_manager/robot_description', '/robot_description'),
-        ]
+            ("/controller_manager/robot_description", "/robot_description"),
+        ],
     )
-    
+
     ##Start simulation only after the creation of the xacrofile
     start_mujoco = RegisterEventHandler(
         OnProcessExit(
             target_action=xacro2mjcf,
             on_exit=[
                 LogInfo(msg="Created mujoco xml, starting mujoco node..."),
-                mujoco
+                mujoco,
             ],
         )
     )
 
     # Load controllers
     controllers = [
-        'joint_state_broadcaster',
-        'xarm_gripper_traj_controller',
-        '{}{}_traj_controller'.format(prefix.perform(context), xarm_type),
+        "joint_state_broadcaster",
+        "xarm_gripper_traj_controller",
+        "{}{}_traj_controller".format(prefix.perform(context), xarm_type),
     ]
-    if robot_type.perform(context) != 'lite' and add_gripper.perform(context) in ('True', 'true'):
-        controllers.append('{}{}_gripper_traj_controller'.format(prefix.perform(context), robot_type.perform(context)))
-    elif robot_type.perform(context) != 'lite' and add_bio_gripper.perform(context) in ('True', 'true'):
-        controllers.append('{}bio_gripper_traj_controller'.format(prefix.perform(context)))
-    
+    if robot_type.perform(context) != "lite" and add_gripper.perform(context) in (
+        "True",
+        "true",
+    ):
+        controllers.append(
+            "{}{}_gripper_traj_controller".format(
+                prefix.perform(context), robot_type.perform(context)
+            )
+        )
+    elif robot_type.perform(context) != "lite" and add_bio_gripper.perform(context) in (
+        "True",
+        "true",
+    ):
+        controllers.append(
+            "{}bio_gripper_traj_controller".format(prefix.perform(context))
+        )
+
     controller_nodes = []
-    if load_controller.perform(context) in ('True', 'true'):
+    if load_controller.perform(context) in ("True", "true"):
         for controller in controllers:
-            controller_nodes.append(Node(
-                package='controller_manager',
-                executable='spawner',
-                output='screen',
-                arguments=[
-                    controller,
-                    '--controller-manager', '{}/controller_manager'.format(ros_namespace)
-                ],
-                parameters=[{'use_sim_time': True}],
-            ))
-                
+            controller_nodes.append(
+                Node(
+                    package="controller_manager",
+                    executable="spawner",
+                    output="screen",
+                    arguments=[
+                        controller,
+                        "--controller-manager",
+                        "{}/controller_manager".format(ros_namespace),
+                    ],
+                    parameters=[{"use_sim_time": True}],
+                )
+            )
+
     load_gripper_bridge = Node(
-        package="mujoco_spawn",
-        executable="Xarm_gripper_mujoco_bridge",
-        output='screen'
+        package="mujoco_spawn", executable="Xarm_gripper_mujoco_bridge", output="screen"
     )
-    
-    
+
     ##load after mujoco start
     load_controllers = RegisterEventHandler(
         OnProcessStart(
@@ -229,38 +296,36 @@ def generate_nodes_for_spawn(context: LaunchContext):
             on_start=[
                 LogInfo(msg="Starting controllers..."),
                 *controller_nodes,
-                load_gripper_bridge
+                load_gripper_bridge,
             ],
         )
     )
 
-    return [
-        robot_state_publisher,
-        xacro2mjcf,
-        start_mujoco,
-        load_controllers
-    ]
-    
+    return [robot_state_publisher, xacro2mjcf, start_mujoco, load_controllers]
+
 
 def generate_launch_description():
-
-    return LaunchDescription([
-        OpaqueFunction(function=generate_nodes_for_spawn)  # Use OpaqueFunction for node creation. For more information refere to the mujoco_ros2_controll package
-    ])
-
+    return LaunchDescription(
+        [
+            OpaqueFunction(
+                function=generate_nodes_for_spawn
+            )  # Use OpaqueFunction for node creation. For more information refere to the mujoco_ros2_controll package
+        ]
+    )
 
 
 def yaml_loader(filepath):
-    #Loads a yaml file
-    with open(filepath,'r')as file_descriptor:
+    # Loads a yaml file
+    with open(filepath, "r") as file_descriptor:
         data = yaml.load(file_descriptor, Loader=yaml.SafeLoader)
     return data
 
 
-def yaml_dump(filepath,data):
-    #writtes a yaml file
-    with open(filepath,"w") as file_descriptor:
+def yaml_dump(filepath, data):
+    # writtes a yaml file
+    with open(filepath, "w") as file_descriptor:
         yaml.dump(data, file_descriptor)
+
 
 ##Joints all their values into a single yaml file
 def deep_update(source, overrides):
