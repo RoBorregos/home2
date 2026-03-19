@@ -38,8 +38,9 @@ RUN sudo cp /tmp/cyclonedds_setup.sh /usr/local/bin/cyclonedds_setup.sh && \
     sudo mkdir -p /etc/iceoryx && sudo cp /tmp/roudi_config.toml /etc/iceoryx/roudi_config.toml && \
     sudo /usr/local/bin/cyclonedds_setup.sh
 
-# Copy SHM override
+# Copy SHM override and wrapper launch
 COPY zed_shm_override.yaml /opt/zed_ws/zed_shm_override.yaml
+COPY zed_shm_launch.py /opt/zed_ws/zed_shm_launch.py
 
 # ZED SDK library path
 ENV LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:/usr/local/zed/lib"

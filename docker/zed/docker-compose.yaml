@@ -26,6 +26,7 @@ services:
       TERM: xterm-256color
       QT_X11_NO_MITSHM: 1
       CYCLONE_INTERFACE: ${CYCLONE_INTERFACE:-}
+      ZED_CAMERA_MODEL: ${ZED_CAMERA_MODEL:-zed2}
     tty: true
     stdin_open: true
     working_dir: /opt/zed_ws
@@ -39,7 +40,4 @@ services:
       source /usr/local/bin/cyclonedds_setup.sh &&
       sleep 2 &&
       source /opt/zed_ws/install/setup.bash &&
-      ros2 launch zed_wrapper zed_camera.launch.py
-      camera_model:=${ZED_CAMERA_MODEL:-zed2}
-      publish_tf:=true
-      ros_params_override_path:=/opt/zed_ws/zed_shm_override.yaml"
+      python3 /opt/zed_ws/zed_shm_launch.py"
