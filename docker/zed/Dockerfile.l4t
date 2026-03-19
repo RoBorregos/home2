@@ -1,0 +1,30 @@
+ARG BASE_IMAGE=roborregos/home2:l4t_base
+FROM ${BASE_IMAGE}
+
+# Install ZED ROS2 wrapper dependencies
+RUN sudo apt-get update -qq && sudo apt-get install -y -qq \
+    ros-humble-nmea-msgs \
+    ros-humble-zed-msgs \
+    ros-humble-diagnostic-updater \
+    ros-humble-xacro \
+    ros-humble-robot-state-publisher \
+    && sudo rm -rf /var/lib/apt/lists/*
+
+# Symlink for v4l2 (required by ZED SDK in containers)
+RUN sudo ln -sf /usr/lib/$(uname -m)-linux-gnu/tegra/libv4l2.so.0 \
+    /usr/lib/$(uname -m)-linux-gnu/libv4l2.so 2>/dev/null || true
+
+# Clone and build ZED ROS2 wrapper
+RUN mkdir -p /opt/zed_ws/src && cd /opt/zed_ws/src && \
+    git clone --depth 1 https://github.com/stereolabs/zed-ros2-wrapper.git && \
+    cd /opt/zed_ws && \
+    . /opt/ros/humble/setup.sh && \
+    colcon build --cmake-args -Wno-dev \
+        -DCMAKE_BUILD_TYPE=Release && \
+    sudo chown -R ros:ros /opt/zed_ws
+
+# Copy SHM override
+COPY zed_shm_override.yaml /opt/zed_ws/zed_shm_override.yaml
+
+# Source ZED workspace on shell login
+RUN echo "source /opt/zed_ws/install/setup.bash" >> ~/.bashrc

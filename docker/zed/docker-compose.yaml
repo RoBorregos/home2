@@ -1,22 +1,20 @@
 services:
   zed:
     container_name: home2-zed
-    image: ${IMAGE_NAME:-roborregos/home2:l4t_base}
+    build:
+      context: ../..
+      dockerfile: docker/zed/Dockerfile.l4t
+      args:
+        BASE_IMAGE: ${BASE_IMAGE:-roborregos/home2:l4t_base}
+    image: ${IMAGE_NAME:-roborregos/home2:zed-l4t}
     volumes:
       - /dev:/dev
       - /tmp:/tmp
       - /tmp/.X11-unix:/tmp/.X11-unix
       - $HOME/.Xauthority:/home/ros/.Xauthority:rw
       - /run/jtop.sock:/run/jtop.sock
-      # ZED SDK from host
+      # ZED SDK from host (avoids installing 2GB+ SDK in image)
       - /usr/local/zed:/usr/local/zed:ro
-      # ZED source from host
-      - ${ZED_WORKSPACE:-/home/orin/zed}/src:/workspace/zed_src:ro
-      # Persistent build/install dirs (avoid rebuilding every time)
-      - ./build:/workspace/zed_build
-      - ./install:/workspace/zed_install
-      # SHM override to disable parameter_events publisher
-      - ../../zed_shm_override.yaml:/workspace/zed_shm_override.yaml:ro
     network_mode: host
     ipc: host
     user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
@@ -31,17 +29,11 @@ services:
       CYCLONE_INTERFACE: ${CYCLONE_INTERFACE:-}
     tty: true
     stdin_open: true
-    working_dir: /workspace
+    working_dir: /opt/zed_ws
     command: >
       bash -c "source /opt/ros/humble/setup.bash &&
-      if [ ! -d zed_install/zed_wrapper ]; then
-        echo '[ZED] Installing dependencies...' &&
-        sudo apt-get update -qq && sudo apt-get install -y -qq ros-humble-nmea-msgs ros-humble-zed-msgs ros-humble-diagnostic-updater ros-humble-xacro &&
-        echo '[ZED] Building ZED ROS2 wrapper (first time only)...' &&
-        colcon build --build-base zed_build --install-base zed_install --cmake-args -Wno-dev --paths zed_src/zed-ros2-wrapper/zed_wrapper zed_src/zed-ros2-wrapper/zed_components zed_src/zed-ros2-wrapper/zed_ros2;
-      fi &&
-      source zed_install/setup.bash &&
+      source /opt/zed_ws/install/setup.bash &&
       ros2 launch zed_wrapper zed_camera.launch.py
       camera_model:=${ZED_CAMERA_MODEL:-zed2}
       publish_tf:=false
-      ros_params_override_path:=/workspace/zed_shm_override.yaml"
+      ros_params_override_path:=/opt/zed_ws/zed_shm_override.yaml"

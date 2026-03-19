@@ -45,30 +45,24 @@ add_or_update_variable .env "LOCAL_GROUP_ID" "$(id -g)"
 case $ENV_TYPE in
   "l4t")
     add_or_update_variable .env "BASE_IMAGE" "roborregos/home2:l4t_base"
-    add_or_update_variable .env "IMAGE_NAME" "roborregos/home2:l4t_base"
-    add_or_update_variable .env "DOCKERFILE" "docker/Dockerfile.ROS-l4t"
+    add_or_update_variable .env "IMAGE_NAME" "roborregos/home2:zed-l4t"
     add_or_update_variable .env "DOCKER_RUNTIME" "nvidia"
     add_or_update_variable .env "DISPLAY" ":0"
-    add_or_update_variable .env "ZED_WORKSPACE" "/home/orin/zed"
-    add_or_update_variable .env "ZED_CAMERA_MODEL" "zed2"
-    ;;
-  "cuda")
-    add_or_update_variable .env "BASE_IMAGE" "roborregos/home2:cuda_base"
-    add_or_update_variable .env "IMAGE_NAME" "roborregos/home2:cuda_base"
-    add_or_update_variable .env "DOCKERFILE" "docker/Dockerfile.ROS"
-    add_or_update_variable .env "DOCKER_RUNTIME" "nvidia"
-    add_or_update_variable .env "ZED_WORKSPACE" "${HOME}/zed"
     add_or_update_variable .env "ZED_CAMERA_MODEL" "zed2"
     ;;
   *)
-    echo "ZED requires GPU. Use: ./run.sh zed l4t  or  ./run.sh zed cuda"
+    echo "ZED container currently supports l4t only. Use: ./run.sh zed l4t"
     exit 1
     ;;
 esac
 
 #_________________________RUN_________________________
 
-mkdir -p build install
+# Build image if it doesn't exist
+check_image_exists "roborregos/home2:zed-l4t"
+if [ $? -eq 1 ]; then
+    BUILD_IMAGE="--build "
+fi
 
 echo "Starting ZED camera container (env: ${ENV_TYPE})..."
 docker compose up $DETACHED $BUILD_IMAGE
