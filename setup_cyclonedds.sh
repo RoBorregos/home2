@@ -92,6 +92,21 @@ case "${1:-}" in
         find /dev/shm -maxdepth 1 -name 'iceoryx*' -delete 2>/dev/null || true
         echo "[5.5/6] Cleaned stale iceoryx artifacts"
 
+        # Remove SHM override YAML
+        SHM_OVERRIDE="${USER_HOME}/zed_shm_override.yaml"
+        if [ -f "$SHM_OVERRIDE" ]; then
+            rm "$SHM_OVERRIDE"
+            echo "[5.7/6] Removed $SHM_OVERRIDE"
+        fi
+
+        # Remove SHM override from ZED alias
+        for rc in "${RC_FILES[@]}"; do
+            if grep "alias zed=" "$rc" | grep -q "zed_shm_override" 2>/dev/null; then
+                sed -i 's| ros_params_override_path:=[^ ]*zed_shm_override.yaml||' "$rc"
+                echo "[5.8/6] Removed SHM override from ZED alias in $rc"
+            fi
+        done
+
         CLEANED=false
         for rc in "${RC_FILES[@]}"; do
             if grep -q "$ENV_MARKER" "$rc" 2>/dev/null; then
@@ -279,6 +294,14 @@ SVCEOF
     fi
 fi
 
+# SHM: enabled inside Docker containers (where it benefits inter-node zero-copy),
+# disabled on host (ZED's component_container_isolated hits iceoryx per-subscriber limits)
+if [ "$DOCKER_MODE" = true ]; then
+    SHM_ENABLE="true"
+else
+    SHM_ENABLE="false"
+fi
+
 # Detect network interface
 if [ -z "$INTERFACE" ]; then
     echo "[INFO] No interface specified, using autodetermine"
@@ -308,7 +331,7 @@ $IFACE_LINE
       <MaxMessageSize>65500B</MaxMessageSize>
     </General>
     <SharedMemory>
-      <Enable>true</Enable>
+      <Enable>${SHM_ENABLE}</Enable>
       <LogLevel>warn</LogLevel>
     </SharedMemory>
     <Internal>
@@ -349,6 +372,34 @@ else
     echo "[INFO] No interface specified, saved autodetermine to $IFACE_ENV"
 fi
 
+fi
+
+# ── Create SHM parameter override YAML (disables parameter_events publisher) ──
+# Prevents iceoryx TOO_MANY_CHUNKS_HELD_IN_PARALLEL during ZED startup burst
+SHM_OVERRIDE="${USER_HOME}/zed_shm_override.yaml"
+echo "[2.5/3] Creating SHM override YAML at $SHM_OVERRIDE"
+cat > "$SHM_OVERRIDE" <<'YAMLEOF'
+# Disable parameter event publisher to avoid iceoryx TOO_MANY_CHUNKS_HELD_IN_PARALLEL
+# during ZED startup burst (30+ topics advertised in milliseconds)
+/**:
+  ros__parameters:
+    start_parameter_event_publisher: false
+YAMLEOF
+chown "${SUDO_USER:-$USER}:${SUDO_USER:-$USER}" "$SHM_OVERRIDE" 2>/dev/null || true
+
+# ── Update ZED alias to include SHM override ──
+if [ "$DOCKER_MODE" = false ]; then
+    for rc in "${RC_FILES[@]}"; do
+        if grep -q "alias zed=" "$rc" 2>/dev/null; then
+            # Check if alias already has ros_params_override_path
+            if ! grep "alias zed=" "$rc" | grep -q "zed_shm_override"; then
+                sed -i "s|alias zed='\(.*\)'|alias zed='\1 ros_params_override_path:=${SHM_OVERRIDE}'|" "$rc"
+                echo "[INFO] Updated ZED alias in $rc with SHM override"
+            else
+                echo "[INFO] ZED alias in $rc already has SHM override, skipping"
+            fi
+        fi
+    done
 fi
 
 # Add environment variables to shell rc files
