@@ -38,11 +38,11 @@ services:
       echo '=== ZED SDK check ===' && ls /usr/local/zed/lib/libsl_zed.so* 2>/dev/null || echo 'WARNING: libsl_zed.so NOT found in /usr/local/zed/lib/';
       export LD_LIBRARY_PATH=/usr/local/zed/lib:$${LD_LIBRARY_PATH};
       sudo sed -i 's|<LogLevel>warning</LogLevel>|<LogLevel>warn</LogLevel>|' /etc/cyclonedds.xml 2>/dev/null || true;
-      source /opt/ros/humble/setup.bash &&
-      source /usr/local/bin/cyclonedds_setup.sh &&
-      sleep 2 &&
-      source /opt/zed_ws/install/setup.bash &&
-      export ZED_MODEL=$${ZED_CAMERA_MODEL:-zed2} &&
+      source /opt/ros/humble/setup.bash;
+      source /usr/local/bin/cyclonedds_setup.sh;
+      sleep 2;
+      source /opt/zed_ws/install/setup.bash;
+      export ZED_MODEL=$${ZED_CAMERA_MODEL:-zed2};
       CYCLONEDDS_URI=file:///opt/zed_ws/cyclonedds_noshm.xml
       ros2 run robot_state_publisher robot_state_publisher
       --ros-args
