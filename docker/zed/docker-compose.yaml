@@ -43,8 +43,7 @@ services:
       sleep 2 &&
       source /opt/zed_ws/install/setup.bash &&
       export ZED_MODEL=$${ZED_CAMERA_MODEL:-zed2} &&
-      echo '<?xml version=\"1.0\"?><CycloneDDS><Domain><SharedMemory><Enable>false</Enable><LogLevel>warn</LogLevel></SharedMemory></Domain></CycloneDDS>' > /tmp/cyclonedds_noshm.xml &&
-      CYCLONEDDS_URI=file:///tmp/cyclonedds_noshm.xml
+      CYCLONEDDS_URI=file:///opt/zed_ws/cyclonedds_noshm.xml
       ros2 run robot_state_publisher robot_state_publisher
       --ros-args
       -p start_parameter_event_publisher:=false

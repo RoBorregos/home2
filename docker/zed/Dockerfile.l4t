@@ -38,6 +38,9 @@ RUN sudo cp /tmp/cyclonedds_setup.sh /usr/local/bin/cyclonedds_setup.sh && \
     sudo mkdir -p /etc/iceoryx && sudo cp /tmp/roudi_config.toml /etc/iceoryx/roudi_config.toml && \
     sudo /usr/local/bin/cyclonedds_setup.sh
 
+# CycloneDDS config without SHM (for robot_state_publisher)
+RUN echo '<?xml version="1.0"?><CycloneDDS><Domain><SharedMemory><Enable>false</Enable><LogLevel>warn</LogLevel></SharedMemory></Domain></CycloneDDS>' > /opt/zed_ws/cyclonedds_noshm.xml
+
 # Copy SHM override and wrapper launch
 COPY zed_shm_override.yaml /opt/zed_ws/zed_shm_override.yaml
 COPY zed_shm_launch.py /opt/zed_ws/zed_shm_launch.py
