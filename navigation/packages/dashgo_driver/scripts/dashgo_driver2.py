@@ -11,6 +11,7 @@ from nav_msgs.msg import Odometry
 from geometry_msgs.msg import TransformStamped
 from tf2_ros import TransformBroadcaster
 from rclpy.duration import Duration
+import sys
 
 ODOM_POSE_COVARIANCE = [float(1e-3), 0.0, 0.0, 0.0, 0.0, 0.0, 
                         0.0, float(1e-3), 0.0, 0.0, 0.0, 0.0,
@@ -43,6 +44,8 @@ ODOM_TWIST_COVARIANCE2 = [float(1e-9), 0.0, 0.0, 0.0, 0.0, 0.0,
 SERVO_MAX = 180
 SERVO_MIN = 0
 
+MAX_CONSECUTIVE_ERRORS = 10
+
 
 class DashgoDriver(Node):
 
@@ -73,6 +76,7 @@ class DashgoDriver(Node):
         self.ticks_per_meter = self.encoder_resolution * self.gear_reduction  / (self.wheel_diameter * PI)
         self.max_accel = self.accel_limit * self.ticks_per_meter / self.rate
         self.bad_encoder_count = 0
+        self.consecutive_errors = 0
         self.l_wheel_mult = 0
         self.r_wheel_mult = 0
         self.now = self.get_clock().now()
@@ -102,16 +106,21 @@ class DashgoDriver(Node):
         self.imuAnglePub = self.create_publisher(Float32, 'imu_angle', 5)
         self.odomPub = self.create_publisher(Odometry, 'dashgo_odom', 5)
 
-        self.controller = Stm32(self.port, self.baud, self.timeout)
-        self.controller.connect()
-        self.get_logger().info("Connected to Stm32 on port " + self.port + " at " + str(self.baud) + " baud")
-        self.controller.reset_encoders()
-        self.controller.reset_IMU()
-        _,stm32_hardware1,stm32_hardware0,stm32_software1,stm32_software0=self.controller.get_hardware_version()
-        self.get_logger().info("*************************************************")
-        self.get_logger().info("stm32 hardware_version is "+str(stm32_hardware0)+str(".")+str(stm32_hardware1))
-        self.get_logger().info("stm32 software_version is "+str(stm32_software0)+str(".")+str(stm32_software1))
-        self.get_logger().info("*************************************************")
+        try:
+            self.controller = Stm32(self.port, self.baud, self.timeout)
+            self.controller.connect()
+            self.get_logger().info("Connected to Stm32 on port " + self.port + " at " + str(self.baud) + " baud")
+            self.controller.reset_encoders()
+            self.controller.reset_IMU()
+            _,stm32_hardware1,stm32_hardware0,stm32_software1,stm32_software0=self.controller.get_hardware_version()
+            self.get_logger().info("*************************************************")
+            self.get_logger().info("stm32 hardware_version is "+str(stm32_hardware0)+str(".")+str(stm32_hardware1))
+            self.get_logger().info("stm32 software_version is "+str(stm32_software0)+str(".")+str(stm32_software1))
+            self.get_logger().info("*************************************************")
+        except Exception as e:
+            self.get_logger().fatal("FAILED to connect to Dashgo STM32: " + str(e))
+            self.get_logger().fatal("Shutting down dashgo_driver node.")
+            raise SystemExit(1)
 
         
         timer_period = 1 / self.rate  # seconds
@@ -121,9 +130,17 @@ class DashgoDriver(Node):
         self.now = self.get_clock().now()
         try:
             stat_, left_enc,right_enc = self.controller.get_encoder_counts()
+            self.consecutive_errors = 0  # Reset on success
         except:
             self.bad_encoder_count += 1
+            self.consecutive_errors += 1
             self.get_logger().info("Encoder exception count: " + str(self.bad_encoder_count))
+            if self.consecutive_errors >= MAX_CONSECUTIVE_ERRORS:
+                self.get_logger().fatal(
+                    f"Dashgo STM32 has failed {MAX_CONSECUTIVE_ERRORS} consecutive times. "
+                    "Device may be disconnected or unresponsive. Shutting down."
+                )
+                raise SystemExit(1)
             return
         if (self.useImu == True) :
             try:
