@@ -3,6 +3,11 @@
 Prevents iceoryx TOO_MANY_CHUNKS_HELD_IN_PARALLEL errors that block
 TF delivery when CycloneDDS SHM is enabled.
 
+For composable nodes, parameters set via YAML are applied AFTER node
+construction, so start_parameter_event_publisher has no effect. Instead,
+we inject it into the container's --ros-args which ARE processed during
+node initialization.
+
 Run this BEFORE `ros2 launch zed_wrapper zed_camera.launch.py`.
 """
 
@@ -28,11 +33,12 @@ def patch_zed_launch():
         "        }]",
     )
 
-    # 2) Patch ComposableNodeContainer: add parameters
+    # 2) Patch ComposableNodeContainer arguments: inject --ros-args -p
+    #    This is processed during node construction, BEFORE parameters are loaded
     content = content.replace(
-        "composable_node_descriptions=[]",
-        "composable_node_descriptions=[],\n"
-        "            parameters=[{'start_parameter_event_publisher': False}]",
+        "arguments=['--use_multi_threaded_executor','--ros-args', '--log-level', 'info']",
+        "arguments=['--use_multi_threaded_executor','--ros-args', '--log-level', 'info', "
+        "'-p', 'start_parameter_event_publisher:=false']",
     )
 
     with open(launch_path, 'w') as f:
