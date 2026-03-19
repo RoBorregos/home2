@@ -5,6 +5,7 @@ echo = "Setting up USB config of Lidar and STM32"
 
 RulesFile="/etc/udev/rules.d/99-usb-lidar-stm32.rules"
 
+
 sudo bash -c "cat > $RulesFile" << 'EOF'
 # Regla para LiDAR (CP210x con serial específico)
 SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", ATTRS{serial}=="ee4398021564ef11bc11daa9c169b110", SYMLINK+="ttyUSBlidar2", MODE="0777"
@@ -12,6 +13,15 @@ SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", ATTRS{seria
 # Regla para STM32 / DashGo Driver (CP210x con serial 0001)
 SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", ATTRS{serial}=="0001", SYMLINK+="ttyUSBStm32", MODE="0777"
 EOF
+
+# Allow navigation setup without password
+Cmnd_Alias NAV_USB = /bin/bash -c cat\ \>\ /etc/udev/rules.d/99-usb-lidar-stm32.rules, \
+                     /sbin/udevadm control --reload-rules, \
+                     /sbin/udevadm trigger, \
+                     /sbin/udevadm settle
+%sudo ALL=(ALL) NOPASSWD: NAV_USB
+
+
 
 if [ $? -ne 0 ]; then
     echo = "Could not write udev rules."
@@ -42,15 +52,10 @@ else
     STM32Missing=1
 fi
 
-if [ "$LidarDownMissing" = "1" ] || [ "$STM32Missing" = "1" ]; then
+if [ "$LidarMissing = "1" ] || [ "$STM32Missing" = "1" ]; then
     echo = "Error: required USB devices (Lidar and/or STM32 Dashgo driver) were not recognized."
     exit 1
 fi
 
 
-# Allow navigation setup without password
-Cmnd_Alias NAV_USB = /bin/bash -c cat\ \>\ /etc/udev/rules.d/99-usb-lidar-stm32.rules, \
-                     /sbin/udevadm control --reload-rules, \
-                     /sbin/udevadm trigger, \
-                     /sbin/udevadm settle
-%sudo ALL=(ALL) NOPASSWD: NAV_USB
+
