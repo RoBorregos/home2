@@ -16,7 +16,7 @@ from frida_interfaces.msg import PickResult
 from sensor_msgs_py import point_cloud2
 import numpy as np
 import json
-    
+
 
 def get_object_cloud_params(object_cluster):
     # 8. Compute Centroid/Height and Set Pour Pose
@@ -161,7 +161,9 @@ class PlaceManager:
                             )
                             self.node.remove_all_collision_object(attached=False)
                             # get centroid and use that as the close by point instead
-                            object_centroid, max_z = get_object_cloud_params(object_cluster)
+                            object_centroid, max_z = get_object_cloud_params(
+                                object_cluster
+                            )
                             close_by_point.point.x = float(object_centroid[0])
                             close_by_point.point.y = float(object_centroid[1])
                             close_by_point.point.z = float(object_centroid[2])
@@ -268,34 +270,40 @@ class PlaceManager:
                         return None
 
                     if special_position == "top":
-                        # Place object on top of object centroid 
+                        # Place object on top of object centroid
                         result_pose.header.frame_id = close_by_point.header.frame_id
                         result_pose.pose.position.x = close_by_point.point.x
                         result_pose.pose.position.y = close_by_point.point.y
                         top_z = close_by_point.point.z
                         try:
                             # Query for object_cluster if not defined in this scope
-                            if "object_cluster" not in locals() or object_cluster is None:
+                            if (
+                                "object_cluster" not in locals()
+                                or object_cluster is None
+                            ):
                                 object_cluster = get_object_cluster(
                                     close_by_point,
                                     self.node.pick_perception_3d_client,
-                                    add_collision_object = False
+                                    add_collision_object=False,
                                 )
-                            
-                            # Set maximun point of pointcloud 
+
+                            # Set maximun point of pointcloud
                             if object_cluster is not None:
                                 cluster_params = get_object_cloud_params(object_cluster)
                                 if cluster_params is not None:
                                     _, max_z = cluster_params
                                     top_z = float(max_z)
-                                    self.node.get_logger().info(f"Computed object top z from cluster: {top_z}")
+                                    self.node.get_logger().info(
+                                        f"Computed object top z from cluster: {top_z}"
+                                    )
                         except Exception as e:
-                            self.node.get_logger().warn(f"Could not compute top z from cluster: {e}")
-                        
+                            self.node.get_logger().warn(
+                                f"Could not compute top z from cluster: {e}"
+                            )
+
                         # Set z to the object top and add safety margin
                         result_pose.pose.position.z = top_z + TOP_SAFETY_MARGIN
                         place_on_top = True
-                            
 
                     elif (
                         close_by_point is not None
