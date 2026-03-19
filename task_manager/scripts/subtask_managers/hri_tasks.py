@@ -77,7 +77,6 @@ from utils.decorators import service_check
 from utils.logger import Logger
 from utils.status import Status
 from utils.task import Task
-from nlp.assets.dialogs import get_ordered_items_extract_context
 
 from subtask_managers.hri_hand import HRIHand
 from subtask_managers.subtask_meta import SubtaskMeta
@@ -963,67 +962,45 @@ class HRITasks(metaclass=SubtaskMeta):
     ) -> tuple[Status, list[str]]:
         """Ask the customer for their order and return the matched menu items.
         Flow per attempt:
-        1. Ask and listen to the customer.
-        2. Extract exactly two ordered items from the transcript.
-        3. Match each extracted item to the closest menu entry.
-        4. Confirm the full order with the customer.
+        1. Ask for the first item and confirm it.
+        2. Ask for the second item and confirm it.
         Returns:
             (Status.EXECUTION_SUCCESS, list[str]) on success, or
             (Status.TIMEOUT, []) if the customer never confirms.
         """
 
-        def hear_error(error_message, attempt):
-            Logger.warn(self.node, error_message)
-            if attempt < retries:
-                self.say("Sorry, I didn't catch that. Could you repeat your order?")
+        items = [text for text, _ in self.items]
+        context = f"Extract one of these items: {items}"
 
-        context = get_ordered_items_extract_context([text for text, _ in self.items])
+        s_first, first_item = self.ask_and_confirm(
+            question="What would you like to order first?",
+            query="LLM_ordered_items",
+            context=context,
+            use_hotwords=False,
+            options=items,
+            retries=retries,
+        )
 
-        for attempt in range(1, retries + 1):
-            Logger.info(self.node, f"take_order attempt {attempt}/{retries}")
+        if s_first != Status.EXECUTION_SUCCESS or not first_item:
+            Logger.warn(self.node, "take_order: max retries reached, giving up")
+            return Status.TIMEOUT, []
 
-            s, raw_items_str = self.ask_and_confirm(
-                question="What would you like to order?",
-                query="LLM_ordered_items",
-                context=context,
-                use_hotwords=False,
-                skip_confirmation=True,
-                retries=3,
-            )
+        s_second, second_item = self.ask_and_confirm(
+            question="And what would you like as your second item?",
+            query="LLM_ordered_items",
+            context=context,
+            use_hotwords=False,
+            options=items,
+            retries=retries,
+        )
 
-            if s != Status.EXECUTION_SUCCESS or not raw_items_str:
-                hear_error("take_order: could not extract items, retrying", attempt)
-                continue
+        if s_second != Status.EXECUTION_SUCCESS or not second_item:
+            Logger.warn(self.node, "take_order: max retries reached, giving up")
+            return Status.TIMEOUT, []
 
-            # Parse with a strict target of exactly 2 items.
-            raw_items = [item.strip() for item in raw_items_str.split(",") if item.strip()]
-
-            if len(raw_items) != 2:
-                hear_error(
-                    f"take_order: expected exactly 2 items, got {len(raw_items)} ({raw_items})",
-                    attempt,
-                )
-                continue
-
-            Logger.info(self.node, f"take_order items extracted: {raw_items}")
-
-            # Confirm full order with the customer
-            s_confirm, answer = self.confirm(
-                f"Your order is {raw_items[0]}, and {raw_items[1]}. Is that correct?",
-                use_hotwords=False,
-                retries=2,
-            )
-
-            if s_confirm == Status.EXECUTION_SUCCESS and answer == "yes":
-                Logger.success(self.node, f"take_order confirmed: {raw_items}")
-                return Status.EXECUTION_SUCCESS, raw_items
-
-            # Customer said no or didn't respond → retry
-            if attempt < retries:
-                self.say("No problem, let me take your order again.")
-
-        Logger.warn(self.node, "take_order: max retries reached, giving up")
-        return Status.TIMEOUT, []
+        raw_items = [first_item, second_item]
+        Logger.success(self.node, f"take_order confirmed: {raw_items}")
+        return Status.EXECUTION_SUCCESS, raw_items
 
     # Embeddings services
     def add_command_history(self, command: InterpreterAvailableCommands, result, status):
