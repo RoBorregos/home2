@@ -41,5 +41,5 @@ services:
       source /opt/zed_ws/install/setup.bash &&
       ros2 launch zed_wrapper zed_camera.launch.py
       camera_model:=${ZED_CAMERA_MODEL:-zed2}
-      publish_tf:=false
+      publish_tf:=true
       ros_params_override_path:=/opt/zed_ws/zed_shm_override.yaml"
