@@ -30,6 +30,7 @@ services:
     working_dir: /opt/zed_ws
     command: >
       bash -c "source /opt/ros/humble/setup.bash &&
+      source /usr/local/bin/cyclonedds_setup.sh &&
       source /opt/zed_ws/install/setup.bash &&
       ros2 launch zed_wrapper zed_camera.launch.py
       camera_model:=${ZED_CAMERA_MODEL:-zed2}
