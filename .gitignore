@@ -31,3 +31,5 @@ datasets/
 onnxruntime_gpu-1.17.0-cp38-cp38-linux_aarch64.whl
 navigation/packages/map_context/config/rosbag/*
 docker/hri/sql_dumps
+*_pb2.py
+*_pb2_grpc.py

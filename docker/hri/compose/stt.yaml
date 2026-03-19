@@ -15,5 +15,5 @@ services:
         "-c",
         # If transcription is too slow try tiny.en or if it's too imprecise try small.en
         # Larger models than these aren't recommended for CPU inference
-        "python3 -u faster-whisper-streaming.py --port 50051 --model base.en --log_transcriptions",
+        "python3 -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. speech.proto && python3 -u faster-whisper-streaming.py --port 50051 --model base.en --log_transcriptions",
       ]
