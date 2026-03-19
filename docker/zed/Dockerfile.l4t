@@ -41,5 +41,8 @@ RUN sudo cp /tmp/cyclonedds_setup.sh /usr/local/bin/cyclonedds_setup.sh && \
 # Copy SHM override
 COPY zed_shm_override.yaml /opt/zed_ws/zed_shm_override.yaml
 
+# ZED SDK library path
+ENV LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:/usr/local/zed/lib"
+
 # Source ZED workspace on shell login
 RUN echo "source /opt/zed_ws/install/setup.bash" >> ~/.bashrc
