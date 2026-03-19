@@ -48,4 +48,9 @@ if [ "$LIDAR_MISSING" = "1" ] || [ "$STM32_MISSING" = "1" ]; then
 fi
 
 
-
+# Allow navigation setup without password
+Cmnd_Alias NAV_USB = /bin/bash -c cat\ \>\ /etc/udev/rules.d/99-usb-lidar-stm32.rules, \
+                     /sbin/udevadm control --reload-rules, \
+                     /sbin/udevadm trigger, \
+                     /sbin/udevadm settle
+%sudo ALL=(ALL) NOPASSWD: NAV_USB
