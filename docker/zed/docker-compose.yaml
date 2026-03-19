@@ -35,8 +35,10 @@ services:
     command: >
       bash -c "source /opt/ros/humble/setup.bash &&
       if [ ! -d zed_install/zed_wrapper ]; then
+        echo '[ZED] Installing dependencies...' &&
+        sudo apt-get update -qq && sudo apt-get install -y -qq ros-humble-nmea-msgs ros-humble-zed-msgs ros-humble-diagnostic-updater ros-humble-xacro &&
         echo '[ZED] Building ZED ROS2 wrapper (first time only)...' &&
-        colcon build --build-base zed_build --install-base zed_install --paths zed_src/zed-ros2-wrapper/zed_wrapper zed_src/zed-ros2-wrapper/zed_components zed_src/zed-ros2-wrapper/zed_ros2;
+        colcon build --build-base zed_build --install-base zed_install --cmake-args -Wno-dev --paths zed_src/zed-ros2-wrapper/zed_wrapper zed_src/zed-ros2-wrapper/zed_components zed_src/zed-ros2-wrapper/zed_ros2;
       fi &&
       source zed_install/setup.bash &&
       ros2 launch zed_wrapper zed_camera.launch.py
