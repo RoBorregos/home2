@@ -68,5 +68,7 @@ esac
 
 #_________________________RUN_________________________
 
+mkdir -p build install
+
 echo "Starting ZED camera container (env: ${ENV_TYPE})..."
 docker compose up $DETACHED $BUILD_IMAGE
