@@ -24,6 +24,16 @@ install(DIRECTORY launch config
 #  ignore_laser
 #  DESTINATION lib/${PROJECT_NAME})
 
+# Generate protobuf files from .proto definitions
+execute_process(
+  COMMAND python3 -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. speech.proto
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/scripts/stt
+)
+execute_process(
+  COMMAND python3 -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. tts.proto
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/scripts/tts
+)
+
 ament_python_install_package(${PROJECT_NAME})
 
 # Install the Python module
