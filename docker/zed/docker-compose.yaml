@@ -25,12 +25,15 @@ services:
       TERM: xterm-256color
       QT_X11_NO_MITSHM: 1
       CYCLONE_INTERFACE: ${CYCLONE_INTERFACE:-}
+      LD_LIBRARY_PATH: /usr/local/zed/lib:/usr/local/lib:/usr/lib
     tty: true
     stdin_open: true
     working_dir: /opt/zed_ws
     command: >
       bash -c "
       rm -f /tmp/roudi.lock 2>/dev/null;
+      echo '=== ZED SDK check ===' && ls /usr/local/zed/lib/libsl_zed.so* 2>/dev/null || echo 'WARNING: libsl_zed.so NOT found in /usr/local/zed/lib/';
+      export LD_LIBRARY_PATH=/usr/local/zed/lib:$${LD_LIBRARY_PATH};
       sudo sed -i 's|<LogLevel>warning</LogLevel>|<LogLevel>warn</LogLevel>|' /etc/cyclonedds.xml 2>/dev/null || true;
       source /opt/ros/humble/setup.bash &&
       source /usr/local/bin/cyclonedds_setup.sh &&
