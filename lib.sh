@@ -89,6 +89,46 @@ add_or_update_variable() {
   fi
 }
 
+# Parse flags shared by all area run.sh scripts.
+parse_common_flags() {
+  DETACHED=""
+  BUILD=""
+  BUILD_IMAGE=""
+  UPLOAD_IMAGE=""
+
+  local compose="${COMPOSE_CMD:-docker compose}"
+
+  for arg in "$@"; do
+    case $arg in
+      "-d")             DETACHED="-d" ;;
+      "--build")        BUILD="true" ;;
+      "--build-image")  BUILD_IMAGE="--build" ;;
+      "--upload-image") UPLOAD_IMAGE="true" ;;
+      "--recreate")     $compose down ;;
+      "--down")         $compose down; exit 0 ;;
+      "--stop")         $compose stop; exit 0 ;;
+    esac
+  done
+}
+
+# Write .env variables shared by all areas.
+setup_common_env() {
+  local area="$1"
+
+  echo "" > .env
+
+  if [ -f /etc/cyclonedds.env ]; then
+    source /etc/cyclonedds.env
+  fi
+  add_or_update_variable .env "CYCLONE_INTERFACE" "${CYCLONE_INTERFACE:-}"
+  add_or_update_variable .env "LOCAL_USER_ID"     "$(id -u)"
+  add_or_update_variable .env "LOCAL_GROUP_ID"    "$(id -g)"
+  add_or_update_variable .env "BASE_IMAGE"        "roborregos/home2:${ENV_TYPE}_base"
+  add_or_update_variable .env "IMAGE_NAME"        "roborregos/home2:${area}-${ENV_TYPE}"
+
+  mkdir -p install build log
+}
+
 clean_workspace_directories() {
   if [ "$CLEAN" == "true" ]; then
     echo "Cleaning build/log/install directories..."
@@ -151,7 +191,8 @@ control() {
   local pids=()
   local areas_launched=()
 
-  # Launch each area's run.sh in parallel up to $PARALLEL children. Each area is started in its directory and passed the control flag + environment type.
+  # Launch each area's run.sh in parallel up to $PARALLEL children.
+  # Each area is started in its directory and passed the control flag + environment type.
   for area in ${AREAS:-}; do
     AREA_RUN="docker/${area}/run.sh"
     if [ -f "$AREA_RUN" ]; then

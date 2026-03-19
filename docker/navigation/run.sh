@@ -7,82 +7,34 @@ ARGS=("$@")
 TASK=${ARGS[0]}
 ENV_TYPE="${*: -1}"
 
-DETACHED=""
-BUILD=""
-BUILD_IMAGE=""
-UPLOAD_IMAGE=""
-CLEAN=""
+# Resolve compose file before parsing flags so --down/--stop/--recreate use the correct file
 COMPOSE_FILE="docker-compose.yaml"
-for arg in "${ARGS[@]}"; do
-    case $arg in
-    "-d")
-        DETACHED="-d"
-        ;;
-    "--build")
-        BUILD="true"
-        ;;
-    "--recreate")
-        docker compose down
-        ;;
-    "--down")
-        docker compose down
-        exit 0
-        ;;
-    "--stop")
-        docker compose stop
-        exit 0
-        ;;
-    "--build-image")
-        BUILD_IMAGE="--build"
-        ;;
-    "--upload-image")
-        UPLOAD_IMAGE="true"
-        ;;
-    "--clean")
-        CLEAN="true"
-        ;;
-    esac
-done
+case $ENV_TYPE in
+    "gpu") COMPOSE_FILE="docker-compose-gpu.yaml" ;;
+    "l4t") COMPOSE_FILE="docker-compose-l4t.yaml" ;;
+esac
+
+COMPOSE_CMD="docker compose -f $COMPOSE_FILE"
+parse_common_flags "${ARGS[@]}"
 
 #_________________________SETUP_________________________
 
-# Reset .env
-echo "" > .env
+setup_common_env "navigation"
 
-# CycloneDDS interface from host
-if [ -f /etc/cyclonedds.env ]; then
-    source /etc/cyclonedds.env
-fi
-add_or_update_variable .env "CYCLONE_INTERFACE" "${CYCLONE_INTERFACE:-}"
-
-# Export user
-add_or_update_variable .env "LOCAL_USER_ID" "$(id -u)"
-add_or_update_variable .env "LOCAL_GROUP_ID" "$(id -g)"
-
-add_or_update_variable .env "BASE_IMAGE" "roborregos/home2:${ENV_TYPE}_base"
-add_or_update_variable .env "IMAGE_NAME" "roborregos/home2:navigation-${ENV_TYPE}"
+# Navigation-specific env vars
 add_or_update_variable .env "DOCKERFILE" "docker/navigation/Dockerfile.${ENV_TYPE}"
 
 case $ENV_TYPE in
     "cpu")
         add_or_update_variable .env "DOCKER_RUNTIME" "runc"
         ;;
-    "gpu")
-        COMPOSE_FILE="docker-compose-gpu.yaml"
-        ;;
-    "l4t")
-        COMPOSE_FILE="docker-compose-l4t.yaml"
+    "gpu"|"l4t")
+        # compose file already switched above
         ;;
     *)
         add_or_update_variable .env "DOCKER_RUNTIME" "nvidia"
         ;;
 esac
-
-# Clean build artifacts if requested
-clean_workspace_directories
-
-# Create dirs with current user to avoid permission problems
-mkdir -p install build log
 
 #_________________________RUN_________________________
 
@@ -123,7 +75,7 @@ fi
 if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
     ALREADY_RUNNING=$(docker ps -q -f name="navigation")
     if [ -z "$ALREADY_RUNNING" ] || [ -n "$BUILD_IMAGE" ]; then
-        docker compose -f $COMPOSE_FILE up -d $BUILD_IMAGE 
+        docker compose -f $COMPOSE_FILE up -d $BUILD_IMAGE
     fi
     docker compose -f $COMPOSE_FILE exec navigation bash -c "$COMMAND"
 else
