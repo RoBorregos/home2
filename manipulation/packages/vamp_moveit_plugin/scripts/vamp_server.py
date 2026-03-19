@@ -276,40 +276,47 @@ class VampServer(Node):
                 response.success = False
                 return response
 
-            
-            
-            
             raw_path = result.path
-            n_points = len(raw_path)
-            
-            
-            with self.Timer("Path extraction", self.get_logger()):
-                step = max(1, n_points // 500) 
-                path_nodes = []
-                for i in range(0, n_points, step):
-                    wp = np.array(list(raw_path[int(i)]), dtype=np.float64)
-                    path_nodes.append(wp)
-                
+
+            path_nodes = None
+            with self.Timer("Path simplify (SHORTCUT+BSPLINE)", self.get_logger()):
+                try:
+                    ss = vamp.SimplifySettings()
+                    simplified = vamp.frida_real.simplify(raw_path, env, ss, rng)
+                    if simplified.solved and len(simplified.path) > 0:
+                        path_nodes = [
+                            np.array(list(simplified.path[i]), dtype=np.float64)
+                            for i in range(len(simplified.path))
+                        ]
+                        self.get_logger().info(f"  Native simplify: {len(path_nodes)} waypoints")
+                except Exception as e:
+                    self.get_logger().warn(f"Native simplify failed: {e}")
+
+            if path_nodes is None:
+                self.get_logger().warn("Falling back to Python smoothing pipeline.")
+                n_points = len(raw_path)
+                step = max(1, n_points // 500)
+                path_nodes = [np.array(list(raw_path[int(i)]), dtype=np.float64)
+                              for i in range(0, n_points, step)]
                 if (n_points - 1) % step != 0:
                     path_nodes.append(np.array(list(raw_path[-1]), dtype=np.float64))
+                path_nodes = self.downsample_path(path_nodes)
+                path_nodes = self.apply_smoothing_filter(path_nodes)
 
-            
-            with self.Timer("Path pruning", self.get_logger()):
-                pruned_path = self.downsample_path(path_nodes)
-
-            
-            with self.Timer("Path smoothing", self.get_logger()):
-                smooth_path = self.apply_smoothing_filter(pruned_path)
-
-            
             with self.Timer("Final validation & Densify", self.get_logger()):
-                final_dense_path, is_safe = self.validate_and_densify_path(smooth_path, env)
-
+                final_dense_path, is_safe = self.validate_and_densify_path(path_nodes, env)
             if not is_safe:
-                self.get_logger().error("Path has internal collision after smoothing.")
+                self.get_logger().warn("Path has collision, retrying without smoothing.")
+                n_points = len(raw_path)
+                step = max(1, n_points // 500)
+                path_nodes = [np.array(list(raw_path[int(i)]), dtype=np.float64)
+                              for i in range(0, n_points, step)]
+                path_nodes = self.downsample_path(path_nodes)
+                final_dense_path, is_safe = self.validate_and_densify_path(path_nodes, env)
+            if not is_safe:
+                self.get_logger().error("Path has internal collision. Planning failed.")
                 response.success = False
                 return response
-
             
             flat = []
             for wp in final_dense_path:
