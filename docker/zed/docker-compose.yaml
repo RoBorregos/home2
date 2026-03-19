@@ -28,6 +28,7 @@ services:
       TERM: xterm-256color
       QT_X11_NO_MITSHM: 1
       CYCLONE_INTERFACE: ${CYCLONE_INTERFACE:-}
+      CYCLONE_SHM: "1"
       ZED_CAMERA_MODEL: ${ZED_CAMERA_MODEL:-zed2}
     tty: true
     stdin_open: true

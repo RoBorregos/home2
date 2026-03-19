@@ -30,13 +30,30 @@ RUN cd /opt/zed_ws && \
         -DCMAKE_BUILD_TYPE=Release && \
     sudo chown -R ros:ros /opt/zed_ws
 
-# Update cyclonedds_setup.sh and roudi_config (base image may have old versions)
+# CycloneDDS with SHM (iceoryx zero-copy for camera frames)
+RUN sudo apt-get update -qq && sudo apt-get install -y -qq \
+    ros-humble-iceoryx-posh ros-humble-iceoryx-hoofs ros-humble-iceoryx-binding-c \
+    && sudo rm -rf /var/lib/apt/lists/*
+
+RUN cd /tmp && \
+    git clone --depth 1 -b releases/0.10.x https://github.com/eclipse-cyclonedds/cyclonedds.git && \
+    cd cyclonedds && mkdir build && cd build && \
+    . /opt/ros/humble/setup.sh && \
+    cmake .. \
+        -DCMAKE_INSTALL_PREFIX=/opt/ros/humble \
+        -DCMAKE_PREFIX_PATH=/opt/ros/humble \
+        -DENABLE_SHM=ON \
+        -DCMAKE_BUILD_TYPE=Release && \
+    make -j$(nproc) && sudo make install && \
+    cd / && rm -rf /tmp/cyclonedds
+
 COPY docker/cyclonedds_setup.sh /tmp/cyclonedds_setup.sh
 COPY roudi_config.toml /tmp/roudi_config.toml
 RUN sudo cp /tmp/cyclonedds_setup.sh /usr/local/bin/cyclonedds_setup.sh && \
     sudo chmod +x /usr/local/bin/cyclonedds_setup.sh && \
-    sudo mkdir -p /etc/iceoryx && sudo cp /tmp/roudi_config.toml /etc/iceoryx/roudi_config.toml && \
-    sudo /usr/local/bin/cyclonedds_setup.sh
+    sudo mkdir -p /etc/iceoryx && sudo cp /tmp/roudi_config.toml /etc/iceoryx/roudi_config.toml
+ENV CYCLONE_SHM=1
+RUN sudo /usr/local/bin/cyclonedds_setup.sh
 
 # CycloneDDS config without SHM (for robot_state_publisher)
 RUN echo '<?xml version="1.0"?><CycloneDDS><Domain><SharedMemory><Enable>false</Enable><LogLevel>warn</LogLevel></SharedMemory></Domain></CycloneDDS>' > /opt/zed_ws/cyclonedds_noshm.xml

@@ -79,6 +79,7 @@ RUN cd /tmp && \
 
 COPY docker/cyclonedds_setup.sh /usr/local/bin/cyclonedds_setup.sh
 COPY roudi_config.toml /etc/iceoryx/roudi_config.toml
+ENV CYCLONE_SHM=1
 RUN chmod +x /usr/local/bin/cyclonedds_setup.sh && /usr/local/bin/cyclonedds_setup.sh
 ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 ENV CYCLONEDDS_URI=file:///etc/cyclonedds.xml
