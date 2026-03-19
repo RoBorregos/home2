@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+
 """
 VAMP Planning Server — Optimized for FRIDA (xArm 6)
 ====================================================
@@ -32,7 +32,7 @@ class VampServer(Node):
     def __init__(self):
         super().__init__("vamp_server")
 
-        # ── Declare ROS parameters ──────────────────────────────────────
+        
         self.declare_parameter("max_iterations", 50000)
         self.declare_parameter("range", 0.05)
         self.declare_parameter("security_margin", 0.08)
@@ -44,7 +44,7 @@ class VampServer(Node):
         self.declare_parameter("retry_range_multiplier", 1.5)
         self.declare_parameter("retry_iterations_multiplier", 2.0)
 
-        # ── Read parameters ─────────────────────────────────────────────
+        
         self.security_margin = self.get_parameter("security_margin").value
         self.validation_step = self.get_parameter("validation_step_size").value
         self.min_wp_dist = self.get_parameter("min_waypoint_distance").value
@@ -55,7 +55,7 @@ class VampServer(Node):
         self.rng = vamp.frida_real.xorshift()
         self.retry_iter_mult = self.get_parameter("retry_iterations_multiplier").value
 
-        # ── Base planner settings ───────────────────────────────────────
+        
         self.base_settings = vamp.RRTCSettings()
         self.base_settings.max_iterations = self.get_parameter("max_iterations").value
         self.base_settings.range = self.get_parameter("range").value
@@ -223,9 +223,9 @@ class VampServer(Node):
             smoothed = new
         return list(smoothed)
 
-    # ═══════════════════════════════════════════════════════════════════
-    # MAIN CALLBACK
-    # ═══════════════════════════════════════════════════════════════════
+    
+    
+    
     def plan_callback(self, request, response):
         total_start = time.perf_counter()
         self.get_logger().info("=" * 60)
@@ -276,13 +276,13 @@ class VampServer(Node):
                 response.success = False
                 return response
 
-            # =========================================================
-            # PROCESAMIENTO RÁPIDO Y SEGURO (SIN C++)
-            # =========================================================
+            
+            
+            
             raw_path = result.path
             n_points = len(raw_path)
             
-            # 1. Extracción con modo pánico
+            
             with self.Timer("Path extraction", self.get_logger()):
                 step = max(1, n_points // 500) 
                 path_nodes = []
@@ -293,15 +293,15 @@ class VampServer(Node):
                 if (n_points - 1) % step != 0:
                     path_nodes.append(np.array(list(raw_path[-1]), dtype=np.float64))
 
-            # 2. Poda Inmediata (Downsample)
+            
             with self.Timer("Path pruning", self.get_logger()):
                 pruned_path = self.downsample_path(path_nodes)
 
-            # 3. Suavizado en Python
+            
             with self.Timer("Path smoothing", self.get_logger()):
                 smooth_path = self.apply_smoothing_filter(pruned_path)
 
-            # 4. Validación Final
+            
             with self.Timer("Final validation & Densify", self.get_logger()):
                 final_dense_path, is_safe = self.validate_and_densify_path(smooth_path, env)
 
@@ -310,7 +310,7 @@ class VampServer(Node):
                 response.success = False
                 return response
 
-            # 5. Empaquetado
+            
             flat = []
             for wp in final_dense_path:
                 for j in range(ARM_DOF):

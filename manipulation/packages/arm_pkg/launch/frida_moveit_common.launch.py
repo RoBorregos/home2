@@ -70,7 +70,6 @@ def launch_setup(context, *args, **kwargs):
     moveit_config_dump = moveit_config_dump.perform(context)
     moveit_config_dict = yaml.load(moveit_config_dump, Loader=yaml.FullLoader)
 
-    # Override VAMP response adapters — remove ValidateSolution
     if "planning_pipelines" in moveit_config_dict and "vamp" in moveit_config_dict.get("planning_pipelines", {}):
         moveit_config_dict["planning_pipelines"]["vamp"]["response_adapters"] = \
             "default_planner_response_adapters/AddTimeOptimalParameterization"
