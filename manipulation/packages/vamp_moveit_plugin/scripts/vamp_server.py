@@ -1,4 +1,4 @@
-
+#!/usr/bin/env python3
 """
 VAMP Planning Server — Optimized for FRIDA (xArm 6)
 ====================================================
