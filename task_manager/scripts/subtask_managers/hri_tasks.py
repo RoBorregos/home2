@@ -977,22 +977,18 @@ class HRITasks(metaclass=SubtaskMeta):
             if attempt < retries:
                 self.say("Sorry, I didn't catch that. Could you repeat your order?")
 
+        context = get_ordered_items_extract_context([text for text, _ in self.items])
+
         for attempt in range(1, retries + 1):
             Logger.info(self.node, f"take_order attempt {attempt}/{retries}")
 
-            self.say("What would you like to order?")
-
-            s, transcript, _ = self.hear()
-            if s != Status.EXECUTION_SUCCESS or not transcript:
-                hear_error("take_order: nothing heard, retrying", attempt)
-                continue
-
-            # Extract ordered items from the transcript.
-            context = get_ordered_items_extract_context([text for text, _ in self.items])
-            s, raw_items_str = self.extract_data(
+            s, raw_items_str = self.ask_and_confirm(
+                question="What would you like to order?",
                 query="LLM_ordered_items",
-                complete_text=transcript,
                 context=context,
+                use_hotwords=False,
+                skip_confirmation=True,
+                retries=3,
             )
 
             if s != Status.EXECUTION_SUCCESS or not raw_items_str:
