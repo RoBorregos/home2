@@ -7,68 +7,18 @@ ARGS=("$@")  # Save all arguments in an array
 TASK=${ARGS[0]}
 ENV_TYPE="${*: -1}"
 
-# IMPORTANT: Also edit auto-complete.sh to add new arguments
-DETACHED=""
-BUILD=""
-BUILD_IMAGE=""
-UPLOAD_IMAGE=""
-CLEAN=""
-
-# check if one of the arguments is --detached
-for arg in "${ARGS[@]}"; do
-    case $arg in
-    "-d")
-        DETACHED="-d"
-        ;;
-    "--build")
-        BUILD="true"
-        ;;
-    "--recreate")
-        docker compose down
-        ;;
-    "--down")
-        docker compose down
-        exit 0
-        ;;
-    "--stop")
-        docker compose stop
-        exit 0
-        ;;
-    "--build-image")
-        BUILD_IMAGE="--build"
-        ;;
-    "--upload-image")
-        UPLOAD_IMAGE="true"
-        ;;
-    "--clean")
-        CLEAN="true"
-        ;;
-    esac
-done
+parse_common_flags "${ARGS[@]}"
 
 #_________________________SETUP_________________________
 
-# Reset .env
-echo "" > .env
+setup_common_env "vision"
 
-# CycloneDDS interface from host
-if [ -f /etc/cyclonedds.env ]; then
-    source /etc/cyclonedds.env
-fi
-add_or_update_variable .env "CYCLONE_INTERFACE" "${CYCLONE_INTERFACE:-}"
-
-# Export user
-add_or_update_variable .env "LOCAL_USER_ID" "$(id -u)"
-add_or_update_variable .env "LOCAL_GROUP_ID" "$(id -g)"
-
-# Write environment variables to .env file for Docker Compose and build base images
-add_or_update_variable .env "BASE_IMAGE" "roborregos/home2:${ENV_TYPE}_base"
-add_or_update_variable .env "IMAGE_NAME" "roborregos/home2:vision-${ENV_TYPE}"
+# Vision-specific env vars
 add_or_update_variable .env "DOCKERFILE" "docker/vision/Dockerfile.${ENV_TYPE}"
 
 case $ENV_TYPE in
   "cuda")
-  add_or_update_variable .env "DOCKER_RUNTIME" "nvidia"
+    add_or_update_variable .env "DOCKER_RUNTIME" "nvidia"
     ;;
   "l4t")
     add_or_update_variable .env "DOCKER_RUNTIME" "nvidia"
@@ -80,10 +30,7 @@ case $ENV_TYPE in
     ;;
 esac
 
-# Clean build artifacts if requested
-clean_workspace_directories
-
-mkdir -p install build log moondream/install moondream/build moondream/log
+mkdir -p moondream/install moondream/build moondream/log
 
 #_________________________RUN_________________________
 

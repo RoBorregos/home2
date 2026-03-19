@@ -7,70 +7,15 @@ ARGS=("$@")  # Save all arguments in an array
 TASK=${ARGS[0]}
 ENV_TYPE="${*: -1}"
 
-# IMPORTANT: Also edit auto-complete.sh to add new arguments
-DETACHED=""
-BUILD=""
-BUILD_IMAGE=""
-UPLOAD_IMAGE=""
-CLEAN=""
-
 COMPOSE="docker-compose-${ENV_TYPE}.yaml"
-
-# Parse arguments
-for arg in "${ARGS[@]}"; do
-    case $arg in
-    "-d")
-        DETACHED="-d"
-        ;;
-    "--build")
-        BUILD="true"
-        ;;
-    "--recreate")
-        docker compose -f "$COMPOSE" down
-        ;;
-    "--down")
-        docker compose -f "$COMPOSE" down
-        exit 0
-        ;;
-    "--stop")
-        docker compose -f "$COMPOSE" stop
-        exit 0
-        ;;
-    "--build-image")
-        BUILD_IMAGE="--build"
-        ;;
-    "--upload-image")
-        UPLOAD_IMAGE="true"
-        ;;
-    "--clean")
-        CLEAN="true"
-        ;;
-    esac
-done
+COMPOSE_CMD="docker compose -f $COMPOSE"
+parse_common_flags "${ARGS[@]}"
 
 #_________________________SETUP_________________________
 
-# Reset .env
-echo "" > .env
-
-# CycloneDDS interface from host
-if [ -f /etc/cyclonedds.env ]; then
-    source /etc/cyclonedds.env
-fi
-add_or_update_variable .env "CYCLONE_INTERFACE" "${CYCLONE_INTERFACE:-}"
-
-# Export user
-add_or_update_variable .env "LOCAL_USER_ID" "$(id -u)"
-add_or_update_variable .env "LOCAL_GROUP_ID" "$(id -g)"
-
-# Clean build artifacts if requested
-clean_workspace_directories
-
-# Create dirs with current user to avoid permission problems
-mkdir -p install build log
+setup_common_env "manipulation"
 
 #_________________________RUN_________________________
-
 
 SOURCE_ROS="source /opt/ros/humble/setup.bash"
 SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
