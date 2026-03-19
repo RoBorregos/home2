@@ -18,6 +18,7 @@ RUN mkdir -p /opt/zed_ws/src && cd /opt/zed_ws/src && \
     git clone --depth 1 https://github.com/stereolabs/zed-ros2-wrapper.git && \
     cd /opt/zed_ws && \
     sudo apt-get update -qq && \
+    sudo rosdep init 2>/dev/null || true && \
     rosdep update && \
     rosdep install --from-paths src -y --ignore-src && \
     sudo rm -rf /var/lib/apt/lists/*
