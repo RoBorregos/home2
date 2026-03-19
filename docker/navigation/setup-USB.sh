@@ -7,28 +7,26 @@ RulesFile="/etc/udev/rules.d/99-usb-lidar-stm32.rules"
 
 
 sudo bash -c "cat > $RulesFile" << 'EOF'
-# Rule for Lidar with Specific Serial Number 
+#Rule for Lidar with Specific Serial Number 
 SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", ATTRS{serial}=="ee4398021564ef11bc11daa9c169b110", SYMLINK+="ttyUSBlidar2", MODE="0777"
 
-# Rule for DashGo driver with Specific Serial Number 
+#Rule for DashGo driver with Specific Serial Number 
 SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", ATTRS{serial}=="0001", SYMLINK+="ttyUSBStm32", MODE="0777"
 EOF
 
-
-if [ $? -ne 0 ]; then
-    echo = "Could not write udev rules."
-    exit 1
+if [ -f "$RulesFile" ] && [ "$(cat "$RulesFile")" = $DESIRED_RULES ]; then
+    echo = "Udev rules are already set up."
+else
+    echo "$DESIRED_RULES" | sudo tee "$RulesFile" > /dev/null
+    if [ $? -ne 0 ]; then
+        echo = "Could not write udev rules."
+        exit 1
+    fi
+    sudo udevadm control --reload-rules
+    sudo udevadm trigger
+    sudo udevadm settle
+    sleep 1
 fi
-
-#Reload udev rules 
-sudo udevadm control --reload-rules
-
-#Applying rules for the connected devices
-sudo udevadm trigger
-
-# Wait for udev to process events and create symlinks
-sudo udevadm settle
-sleep 1
 
 if [ -L /dev/ttyUSBlidar2 ]; then
     echo = "/dev/ttyUSBlidar2 -> $(readlink /dev/ttyUSBlidar2)"
