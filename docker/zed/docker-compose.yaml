@@ -8,6 +8,8 @@ services:
       - /tmp/.X11-unix:/tmp/.X11-unix
       - $HOME/.Xauthority:/home/ros/.Xauthority:rw
       - /run/jtop.sock:/run/jtop.sock
+      # ZED SDK from host
+      - /usr/local/zed:/usr/local/zed:ro
       # ZED source from host
       - ${ZED_WORKSPACE:-/home/orin/zed}/src:/workspace/zed_src:ro
       # Persistent build/install dirs (avoid rebuilding every time)
@@ -34,8 +36,7 @@ services:
       bash -c "source /opt/ros/humble/setup.bash &&
       if [ ! -f zed_install/setup.bash ]; then
         echo '[ZED] Building ZED ROS2 wrapper (first time only)...' &&
-        colcon build --build-base zed_build --install-base zed_install
-        --paths zed_src/zed-ros2-wrapper/zed_wrapper zed_src/zed-ros2-wrapper/zed_components zed_src/zed-ros2-wrapper/zed_ros2;
+        colcon build --build-base zed_build --install-base zed_install --paths zed_src/zed-ros2-wrapper/zed_wrapper zed_src/zed-ros2-wrapper/zed_components zed_src/zed-ros2-wrapper/zed_ros2;
       fi &&
       source zed_install/setup.bash &&
       ros2 launch zed_wrapper zed_camera.launch.py
