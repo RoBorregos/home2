@@ -7,10 +7,10 @@ RulesFile="/etc/udev/rules.d/99-usb-lidar-stm32.rules"
 
 
 sudo bash -c "cat > $RulesFile" << 'EOF'
-# Regla para LiDAR (CP210x con serial específico)
+# Rule for Lidar with Specific Serial Number 
 SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", ATTRS{serial}=="ee4398021564ef11bc11daa9c169b110", SYMLINK+="ttyUSBlidar2", MODE="0777"
 
-# Regla para STM32 / DashGo Driver (CP210x con serial 0001)
+# Rule for DashGo driver with Specific Serial Number 
 SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", ATTRS{serial}=="0001", SYMLINK+="ttyUSBStm32", MODE="0777"
 EOF
 
