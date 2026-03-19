@@ -14,14 +14,6 @@ SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", ATTRS{seria
 SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", ATTRS{serial}=="0001", SYMLINK+="ttyUSBStm32", MODE="0777"
 EOF
 
-# Allow navigation setup without password
-Cmnd_Alias NAV_USB = /bin/bash -c cat\ \>\ /etc/udev/rules.d/99-usb-lidar-stm32.rules, \
-                     /sbin/udevadm control --reload-rules, \
-                     /sbin/udevadm trigger, \
-                     /sbin/udevadm settle
-%sudo ALL=(ALL) NOPASSWD: NAV_USB
-
-
 
 if [ $? -ne 0 ]; then
     echo = "Could not write udev rules."
@@ -52,7 +44,7 @@ else
     STM32Missing=1
 fi
 
-if [ -L"$LidarMissing" = "1" ] || [ "$STM32Missing" = "1" ]; then
+if [ "$LidarMissing" = "1" ] || [ "$STM32Missing" = "1" ]; then
     echo = "Error: required USB devices (Lidar and/or STM32 Dashgo driver) were not recognized."
     exit 1
 fi
