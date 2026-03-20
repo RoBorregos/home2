@@ -203,7 +203,7 @@ fi
 if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
     ALREADY_RUNNING=$(docker ps -q -f name="hri-ros")
     if [ -z "$ALREADY_RUNNING" ] || [ -n "$BUILD_IMAGE" ]; then
-        docker compose -f "$COMPOSE" up -d $BUILD_IMAGE
+      docker compose -f "$COMPOSE" up -d $BUILD_IMAGE 
     fi
     docker compose -f "$COMPOSE" exec hri-ros bash -c "$COMMAND"
 else

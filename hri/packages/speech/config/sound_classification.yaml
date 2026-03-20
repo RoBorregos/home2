@@ -1,0 +1,5 @@
+sound_classification:
+  ros__parameters:
+    model_path: "/workspace/src/hri/packages/speech/assets/edge_impulse/hric_inits_model.eim"
+    PROCESSED_AUDIO_TOPIC: REPLACE
+    SOUND_EVENTS_TOPIC: REPLACE
