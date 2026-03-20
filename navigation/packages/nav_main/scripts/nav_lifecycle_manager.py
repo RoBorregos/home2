@@ -57,11 +57,11 @@ class NavDependencyLifecycleManager(LifecycleNode):
             active_topics = {t[0] for t in topic_names_and_types}
             topics_ready = self.required_topics.issubset(active_topics)
             
-                try:
+            try:
                 frames_dict = self.tf_buffer.all_frames_as_yaml()
                 tf_ready = all(frame in frames_dict for frame in self.required_frames)
-                except Exception:
-                    tf_ready = False
+            except Exception:
+                tf_ready = False
             
             if topics_ready and tf_ready:
                 self.get_logger().info("Dependencias encontradas")
