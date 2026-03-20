@@ -36,7 +36,9 @@ from geometry_msgs.msg import PoseStamped
 import copy
 import numpy as np
 from tf_transformations import quaternion_from_euler
+import tf2_ros
 from transforms3d.quaternions import quat2mat
+from frida_motion_planning.utils.tf_utils import transform_point
 from frida_motion_planning.utils.service_utils import (
     close_gripper,
 )
@@ -58,6 +60,9 @@ class PickMotionServer(Node):
         self.get_logger().info(f"End-effector tip offset: {self.ee_tip_offset} m")
 
         self.get_logger().info(f"Pick Velocity: {PICK_VELOCITY} m/s")
+
+        self.tf_buffer = tf2_ros.Buffer()
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
         self._action_server = ActionServer(
             self,
@@ -126,7 +131,9 @@ class PickMotionServer(Node):
         self.get_logger().info("Executing go to hand goal...")
 
         base_point = copy.deepcopy(goal_handle.request.point)
-
+        # Transform to base frame if necessary
+        if base_point.header.frame_id != "base_link":
+            _, base_point = transform_point(base_point, "base_link", self.tf_buffer)
         # quaternion position
         qx, qy, qz, qw = quaternion_from_euler(-np.pi / 2, 0, 0)
         quat = [qx, qy, qz, qw]
