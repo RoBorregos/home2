@@ -52,7 +52,7 @@ ros2 run perception_3d down_sample_pc --ros-args -p input_topic:="/depth/color/p
 ```
 
 #### Mujoco Simulation
-In orther to launch the mujoco simulation the next command is used:
+In order to launch the mujoco simulation the next command is used:
 ```
 colcon build 
 source install/setup.bash
