@@ -99,7 +99,7 @@ private:
       return;
     }
 
-    bool success = execute_gripper_movement(request->value, request->delay_sec);
+    bool success = execute_gripper_movement(request->value);
 
     if (success) {
       response->ret = 0;
@@ -124,7 +124,7 @@ private:
       return;
     }
 
-    bool success = execute_gripper_movement(request->value, request->delay_sec);
+    bool success = execute_gripper_movement(request->value);
 
     if (success) {
       response->ret = 0;
@@ -135,24 +135,23 @@ private:
     }
   }
 
-  bool execute_gripper_movement(int direction, float delay_sec)
+  bool execute_gripper_movement(int direction)
   {
     try {
-      double target_position = (direction == 0) ? open_position_ : close_position_;
+      double target_position = (direction == 0) ? close_position_: open_position_;
       std::string state = (direction == 0) ? "OPEN" : "CLOSE";
       
       RCLCPP_INFO(this->get_logger(),
-        "Moving gripper '%s' to %s (%.4f) - Duration: %.2f sec",
+        "Moving gripper '%s' to %s (%.4f)",
         joint_name_.c_str(),
         state.c_str(),
-        target_position,
-        delay_sec);
+        target_position);
 
       auto trajectory_msg = create_joint_trajectory(target_position);
       trajectory_publisher_->publish(trajectory_msg);
 
       RCLCPP_DEBUG(this->get_logger(),
-        "Trajectory published - Duration: %.2f sec", delay_sec);
+        "Trajectory published");
       return true;
 
     } catch (const std::exception& e) {
