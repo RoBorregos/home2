@@ -33,12 +33,13 @@ install(
   FILES_MATCHING PATTERN "*.py"
 )
 
-# Install ONNX and WAV files
+# Install ONNX, WAV and EIM files
 install(DIRECTORY assets
   DESTINATION share/${PROJECT_NAME}/
   FILES_MATCHING
   PATTERN "*.onnx"
   PATTERN "*.wav"
+  PATTERN "*.eim"
 )
 
 # Install JSON files

@@ -75,6 +75,7 @@ set(msg_files
   "hri/msg/AudioInfo.msg"
   "hri/msg/CommandList.msg"
   "hri/msg/Command.msg"
+  "hri/msg/SoundEvent.msg"
   "manipulation/msg/CollisionObject.msg"
   "manipulation/msg/ManipulationTask.msg"
   "manipulation/msg/Constraint.msg"
