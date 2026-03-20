@@ -73,10 +73,8 @@ class DoorOpener(Node):
         self.axis_pos = None
         self.axis_seen = False
 
-        # Grasp orientation
-        self.base_roll = math.pi / 2
-        self.base_pitch = -math.pi / 4
-        self.base_yaw = math.pi / 2
+        # J6 wrist rotation for handle grasp (degrees)
+        self.grasp_j6 = 135.0
 
     def _joint_states_cb(self, msg):
         if 'drive_joint' in msg.name:
@@ -162,7 +160,7 @@ class DoorOpener(Node):
     # ── Arm movement ──────────────────────────────────────────────────
 
     def send_pose_goal(self, pose: Pose, phase_name: str, is_cartesian: bool = False,
-                       velocity: float = 0.3) -> bool:
+                       velocity: float = 0.3, tolerance_orientation: float = 0.0) -> bool:
         self.get_logger().info(f'--- {phase_name} ---')
         self.get_logger().info(
             f'  Target: ({pose.position.x:.3f}, {pose.position.y:.3f}, {pose.position.z:.3f})'
@@ -181,6 +179,9 @@ class DoorOpener(Node):
         goal_msg.planning_time = 2.0
         goal_msg.planning_attempts = 5
 
+        if tolerance_orientation > 0.0:
+            goal_msg.tolerance_orientation = tolerance_orientation
+
         if is_cartesian:
             goal_msg.planner_id = 'cartesian'
 
@@ -194,6 +195,10 @@ class DoorOpener(Node):
 
         result_future = goal_handle.get_result_async()
         rclpy.spin_until_future_complete(self, result_future)
+        result = result_future.result()
+        if result is None or not result.result.success:
+            self.get_logger().error(f'{phase_name} FAILED (planning or execution error)')
+            return False
         self.get_logger().info(f'{phase_name} DONE')
         return True
 
@@ -214,23 +219,34 @@ class DoorOpener(Node):
         joint_vals = list(config["joints"].values())
         if config.get("degrees", False):
             joint_vals = [v * math.pi / 180.0 for v in joint_vals]
+        return self._send_joint_goal(joint_names, joint_vals, f'named:{name}', velocity)
 
+    def move_joints_raw(self, joint_values_deg: list, velocity: float = 0.3, label: str = '') -> bool:
+        joint_names = [f'joint{i+1}' for i in range(len(joint_values_deg))]
+        joint_vals = [v * math.pi / 180.0 for v in joint_values_deg]
+        return self._send_joint_goal(joint_names, joint_vals, label or 'joints_raw', velocity)
+
+    def _send_joint_goal(self, joint_names, joint_vals, label, velocity) -> bool:
         goal = MoveJoints.Goal()
         goal.joint_names = joint_names
         goal.joint_positions = joint_vals
         goal.velocity = velocity
 
-        self.get_logger().info(f'Moving to named position: {name}')
+        self.get_logger().info(f'Moving joints: {label}')
         self.move_joints_client.wait_for_server(timeout_sec=5.0)
         future = self.move_joints_client.send_goal_async(goal)
         rclpy.spin_until_future_complete(self, future, timeout_sec=10.0)
         goal_handle = future.result()
         if not goal_handle or not goal_handle.accepted:
-            self.get_logger().error(f'Named position {name} goal rejected')
+            self.get_logger().error(f'Joint goal {label} rejected')
             return False
         result_future = goal_handle.get_result_async()
         rclpy.spin_until_future_complete(self, result_future, timeout_sec=30.0)
-        self.get_logger().info(f'Reached named position: {name}')
+        result = result_future.result()
+        if result is None or not result.result.success:
+            self.get_logger().error(f'Joint goal {label} FAILED')
+            return False
+        self.get_logger().info(f'Joint goal {label} DONE')
         return True
 
     def verify_grasp(self) -> bool:
@@ -255,14 +271,21 @@ class DoorOpener(Node):
             self.set_gripper(True)
             time.sleep(0.3)
 
-            # Pre-grasp: 15cm behind handle
+            # Pre-grasp: 15cm behind handle (generous orientation tolerance for reachability)
             pose_pre = Pose()
             pose_pre.position = Point(x=h.x - 0.15, y=h.y, z=h.z)
             pose_pre.orientation = orientation
-            if not self.send_pose_goal(pose_pre, 'PRE-GRASP (approach)'):
+            if not self.send_pose_goal(pose_pre, 'PRE-GRASP (approach)',
+                                       tolerance_orientation=1.0):
                 continue
 
-            # Grasp: move to handle
+            # Set J6 to grasp angle before inserting
+            if not self.move_joints_raw(
+                [self.grasp_j6], velocity=0.2, label='SET J6 FOR GRASP'
+            ):
+                self.get_logger().warn('J6 adjustment failed, continuing anyway')
+
+            # Grasp: move to handle (cartesian, tight tolerance)
             pose_grasp = Pose()
             pose_grasp.position = Point(x=h.x, y=h.y, z=h.z)
             pose_grasp.orientation = orientation
@@ -289,6 +312,19 @@ class DoorOpener(Node):
         self.get_logger().error('All grasp attempts failed!')
         return False
 
+    def compute_approach_orientation(self):
+        """Compute EEF orientation to approach the handle horizontally.
+
+        The orientation is derived from the handle position so the gripper
+        points toward the handle with the wrist (J6) rotated for a proper grip.
+        roll=-π/2 gives a horizontal forward EEF on the xarm6.
+        yaw aligns the approach direction toward the handle in the XY plane.
+        """
+        h = self.handle_pos
+        yaw = math.atan2(h.y, h.x)
+        roll = -math.pi / 2
+        return quaternion_from_euler(roll, 0.0, yaw)
+
     # ── Main sequence ─────────────────────────────────────────────────
 
     def execute_sequence(self):
@@ -308,7 +344,7 @@ class DoorOpener(Node):
 
         self.publish_markers()
 
-        orientation = quaternion_from_euler(self.base_roll, self.base_pitch, self.base_yaw)
+        orientation = self.compute_approach_orientation()
 
         # 2. Grasp handle with retry logic
         if not self.attempt_grasp(orientation):
