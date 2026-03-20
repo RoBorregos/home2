@@ -145,6 +145,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a3ce8718fcef67cd74c9b762a036f4749"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac37541155195a7957fa0a3612f59be7a"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#ac37541155195a7957fa0a3612f59be7a">move_to_position</a> (self, str named_position, float velocity=0.75)</td></tr>
 <tr class="separator:ac37541155195a7957fa0a3612f59be7a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6e0becc96435676b3d1ea781018d4284"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a6e0becc96435676b3d1ea781018d4284">go_to_hand</a> (self, PointStamped <a class="el" href="classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#ac416677f6a25ac021c5ea945519e35a5">point</a>, float hand_offset=0.3)</td></tr>
+<tr class="separator:a6e0becc96435676b3d1ea781018d4284"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab0e4428fb07604c725b7b10e21621ad2"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#ab0e4428fb07604c725b7b10e21621ad2">get_optimal_position_for_plane</a> (self, float est_heigth, float tolerance=0.2, bool table_or_shelf=True, approach_plane=True)</td></tr>
 <tr class="separator:ab0e4428fb07604c725b7b10e21621ad2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abcc7b4ed9a4727a3aecedb7817a13cca"><td class="memItemLeft" align="right" valign="top">PoseStamped&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#abcc7b4ed9a4727a3aecedb7817a13cca">get_optimal_pose_for_plane</a> (self, float est_heigth, float tolerance=0.2, float projected_distance=0.5)</td></tr>
@@ -197,6 +199,8 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:a3a75637ff840423cd4b8715967313c5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af6be048a84dd65befd61704171933313"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#af6be048a84dd65befd61704171933313">_get_optimal_pose_for_plane_client</a></td></tr>
 <tr class="separator:af6be048a84dd65befd61704171933313"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6966b6c981db831ea755308dca929e65"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html#a6966b6c981db831ea755308dca929e65">_go_to_hand_action_client</a></td></tr>
+<tr class="separator:a6966b6c981db831ea755308dca929e65"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><pre class="fragment">Class to manage the vision tasks</pre> </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
@@ -731,6 +735,48 @@ table_or_shelf: True for table, False for shelf
 </pre> 
 </div>
 </div>
+<a id="a6e0becc96435676b3d1ea781018d4284" name="a6e0becc96435676b3d1ea781018d4284"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6e0becc96435676b3d1ea781018d4284">&#9670;&#160;</a></span>go_to_hand()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> int subtask_managers.manipulation_tasks.ManipulationTasks.go_to_hand </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">PointStamped&#160;</td>
+          <td class="paramname"><em>point</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">float &#160;</td>
+          <td class="paramname"><em>hand_offset</em> = <code>0.3</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Move the arm to a position suitable for handing over an object.
+
+Args:
+    point: 3D point in space to approach (PointStamped)
+    hand_offset: radial distance from the point to position the EEF (meters)
+
+Returns:
+    Status code indicating success or failure
+</pre> 
+</div>
+</div>
 <a id="ab8b25f741e79db393d17bf1091aee1b0" name="ab8b25f741e79db393d17bf1091aee1b0"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab8b25f741e79db393d17bf1091aee1b0">&#9670;&#160;</a></span>move_joint_positions()</h2>
 
@@ -1113,6 +1159,28 @@ in_configuration: True if the object is in the configuration</pre>
       <table class="memname">
         <tr>
           <td class="memname">subtask_managers.manipulation_tasks.ManipulationTasks._get_optimal_pose_for_plane_client</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a6966b6c981db831ea755308dca929e65" name="a6966b6c981db831ea755308dca929e65"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6966b6c981db831ea755308dca929e65">&#9670;&#160;</a></span>_go_to_hand_action_client</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">subtask_managers.manipulation_tasks.ManipulationTasks._go_to_hand_action_client</td>
         </tr>
       </table>
   </td>

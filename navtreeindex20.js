@@ -1,5 +1,9 @@
 var NAVTREEINDEX20 =
 {
+"classtest__hri__manager_1_1TestHriManager.html#a71aa05a56df14e610a5a43647e27180c":[23,0,141,0,3],
+"classtest__hri__manager_1_1TestHriManager.html#a9f50023c7e1734e13e81c2030137adb2":[23,0,141,0,14],
+"classtest__hri__manager_1_1TestHriManager.html#a9f50023c7e1734e13e81c2030137adb2":[24,0,84,0,14],
+"classtest__hri__manager_1_1TestHriManager.html#aa699b42d8a441cfe496bfcf51549495e":[24,0,84,0,7],
 "classtest__hri__manager_1_1TestHriManager.html#aa699b42d8a441cfe496bfcf51549495e":[23,0,141,0,7],
 "classtest__hri__manager_1_1TestHriManager.html#abc972947f62b9ac49382f61b0e245d6e":[23,0,141,0,12],
 "classtest__hri__manager_1_1TestHriManager.html#abc972947f62b9ac49382f61b0e245d6e":[24,0,84,0,12],
@@ -245,9 +249,5 @@ var NAVTREEINDEX20 =
 "classtransform__target_1_1PointTransformer.html#a37e33ed9a0446e6ae4ddd20f885962d6":[23,0,150,0,0],
 "classtransform__target_1_1PointTransformer.html#a3cc494ae7a03169537f955cce2cc7c46":[24,0,92,0,2],
 "classtransform__target_1_1PointTransformer.html#a3cc494ae7a03169537f955cce2cc7c46":[23,0,150,0,2],
-"classtransform__target_1_1PointTransformer.html#a4a2db52cf5c0a24ea6a7a8aceb1381c7":[23,0,150,0,16],
-"classtransform__target_1_1PointTransformer.html#a4a2db52cf5c0a24ea6a7a8aceb1381c7":[24,0,92,0,16],
-"classtransform__target_1_1PointTransformer.html#a4cf28f6facd249eb46741fb388bf9589":[24,0,92,0,14],
-"classtransform__target_1_1PointTransformer.html#a4cf28f6facd249eb46741fb388bf9589":[23,0,150,0,14],
-"classtransform__target_1_1PointTransformer.html#a51f9aad54e3cb7989c9af3bc34df87a2":[24,0,92,0,5]
+"classtransform__target_1_1PointTransformer.html#a4a2db52cf5c0a24ea6a7a8aceb1381c7":[23,0,150,0,16]
 };

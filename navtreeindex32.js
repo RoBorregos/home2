@@ -1,5 +1,9 @@
 var NAVTREEINDEX32 =
 {
+"xarm6_8py.html#aef39f200226800ed9c34ac06cd7557c5":[25,0,3,0,2,1,0,0,8],
+"xarm__configurations_8py.html":[25,0,1,1,9],
+"xarm__configurations_8py.html#a1ebb73dff17d4fb86c8530a2eda2fe58":[25,0,1,1,9,7],
+"xarm__configurations_8py.html#a2f3850b75849b6bc32e08235fe99d81c":[25,0,1,1,9,1],
 "xarm__configurations_8py.html#a3f9c52b155ebdeebba61a6e7b5c195fd":[25,0,1,1,9,2],
 "xarm__configurations_8py.html#a40724ca8949bf6768bc309e32f3b284f":[25,0,1,1,9,0],
 "xarm__configurations_8py.html#a749105a6a0190f46d91824dc4ba5aad8":[25,0,1,1,9,5],
