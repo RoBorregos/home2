@@ -6,6 +6,7 @@ from rclpy.lifecycle import State
 import tf2_ros
 from lifecycle_msgs.srv import ChangeState
 from lifecycle_msgs.msg import Transition as MsgTransition
+from rcl_interfaces.msg import ParameterDescriptor, ParameterType
 
 class NavDependencyLifecycleManager(LifecycleNode):
     def __init__(self, node_name):
@@ -20,8 +21,10 @@ class NavDependencyLifecycleManager(LifecycleNode):
         self.timer = None
         
         self.declare_parameter('autostart', True)
-        self.declare_parameter('managed_nodes', [])
+        self.declare_parameter('managed_nodes', [''])
         self.managed_nodes = self.get_parameter('managed_nodes').get_parameter_value().string_array_value
+        if self.managed_nodes == ['']:
+            self.managed_nodes = []
 
     def on_configure(self, state: State) -> TransitionCallbackReturn:
         self.get_logger().info("Configurando: Iniciando monitoreo autónomo de dependencias")
