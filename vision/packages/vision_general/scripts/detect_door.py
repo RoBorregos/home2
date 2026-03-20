@@ -22,6 +22,8 @@ import tf2_ros
 from tf2_geometry_msgs import do_transform_point
 from geometry_msgs.msg import PointStamped
 from ultralytics import YOLO
+import cv2
+import numpy as np
 import os
 
 
@@ -79,6 +81,10 @@ class DoorDetectionService(Node):
         self.srv = self.create_service(
             DetectDoor, '/vision/detect_door', self.detect_door_callback
         )
+
+        # Debug image publisher
+        self.debug_pub = self.create_publisher(Image, '/vision/door_detections', 10)
+        self.create_timer(0.5, self._publish_debug_image)
 
         self.get_logger().info('Door detection service ready at /vision/detect_door')
 
@@ -163,6 +169,37 @@ class DoorDetectionService(Node):
             axis_point = self._pixel_to_base_point(cx, cy)
 
         return handle_point, axis_point
+
+    # ── Debug visualization ─────────────────────────────────────────
+
+    def _publish_debug_image(self):
+        if self.rgb_image is None:
+            return
+
+        debug_img = self.rgb_image.copy()
+        results = self.model.predict(debug_img, verbose=False, conf=0.3)
+
+        for result in results:
+            if result.boxes is None:
+                continue
+            for box in result.boxes:
+                x1, y1, x2, y2 = box.xyxy[0].cpu().numpy().astype(int)
+                conf = box.conf[0].item()
+                cls_id = int(box.cls[0].item())
+                label = self.model.names[cls_id]
+
+                if 'handle' in label.lower() or 'handler' in label.lower():
+                    color = (0, 255, 0)  # green
+                elif 'axis' in label.lower() or 'hinge' in label.lower():
+                    color = (255, 0, 0)  # blue
+                else:
+                    color = (0, 255, 255)  # yellow
+
+                cv2.rectangle(debug_img, (x1, y1), (x2, y2), color, 2)
+                cv2.putText(debug_img, f'{label} {conf:.2f}', (x1, y1 - 10),
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
+
+        self.debug_pub.publish(self.bridge.cv2_to_imgmsg(debug_img, 'bgr8'))
 
     # ── Service callback ──────────────────────────────────────────────
 
