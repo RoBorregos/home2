@@ -78,6 +78,7 @@ def generate_nodes_for_spawn(context: LaunchContext):
 
     ##place to save the xml generated file:
     save_xml_folder = "/tmp/mujoco"  # Must be absolute path
+    os.makedirs(save_xml_folder, exist_ok=True)
     save_xml_file = os.path.join(save_xml_folder, "main.xml")
 
     # creation of the robot description string
