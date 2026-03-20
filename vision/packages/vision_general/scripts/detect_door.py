@@ -108,7 +108,7 @@ class DoorDetectionService(Node):
         depth_h, depth_w = self.depth_image.shape[:2]
         depth_cx = int(cx * depth_w / rgb_w)
         depth_cy = int(cy * depth_h / rgb_h)
-        depth = get_depth(self.depth_image, (depth_cx, depth_cy))
+        depth = get_depth(self.depth_image, (depth_cy, depth_cx))
         if math.isnan(depth):
             return None
 
