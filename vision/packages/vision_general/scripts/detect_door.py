@@ -103,7 +103,12 @@ class DoorDetectionService(Node):
 
     def _pixel_to_base_point(self, cx, cy):
         """Convert pixel coords to 3D point in base frame."""
-        depth = get_depth(self.depth_image, (cx, cy))
+        # Scale pixel coords from RGB resolution to depth resolution
+        rgb_h, rgb_w = self.rgb_image.shape[:2]
+        depth_h, depth_w = self.depth_image.shape[:2]
+        depth_cx = int(cx * depth_w / rgb_w)
+        depth_cy = int(cy * depth_h / rgb_h)
+        depth = get_depth(self.depth_image, (depth_cy, depth_cx))
         if math.isnan(depth):
             return None
 
@@ -112,9 +117,9 @@ class DoorDetectionService(Node):
         point_stamped = PointStamped()
         point_stamped.header.frame_id = CAMERA_FRAME
         point_stamped.header.stamp = self.get_clock().now().to_msg()
-        point_stamped.point.x = point_3d[0]
-        point_stamped.point.y = point_3d[1]
-        point_stamped.point.z = point_3d[2]
+        point_stamped.point.x = float(point_3d[0])
+        point_stamped.point.y = float(point_3d[1])
+        point_stamped.point.z = float(point_3d[2])
 
         try:
             transform = self.tf_buffer.lookup_transform(
