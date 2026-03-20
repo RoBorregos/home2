@@ -294,6 +294,12 @@ class DoorOpener(Node):
     def execute_sequence(self):
         time.sleep(1.0)
 
+        # 0. Move to FRONT_STARE position before detection
+        self.get_logger().info('=== MOVING TO FRONT_STARE ===')
+        if not self.move_to_named_position('front_stare'):
+            self.get_logger().error('Failed to move to front_stare position')
+            return
+
         # 1. Detect handle + axis via vision service
         self.get_logger().info('=== DETECTING DOOR HANDLE & AXIS ===')
         if not self.detect_door():

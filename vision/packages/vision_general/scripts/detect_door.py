@@ -101,8 +101,8 @@ class DoorDetectionService(Node):
 
     # ── Helpers ───────────────────────────────────────────────────────
 
-    def _pixel_to_base_point(self, cx, cy):
-        """Convert pixel coords to 3D point in base frame."""
+    def _pixel_to_camera_point(self, cx, cy):
+        """Convert pixel coords to 3D point in camera frame."""
         # Scale pixel coords from RGB resolution to depth resolution
         rgb_h, rgb_w = self.rgb_image.shape[:2]
         depth_h, depth_w = self.depth_image.shape[:2]
@@ -114,23 +114,11 @@ class DoorDetectionService(Node):
 
         point_3d = deproject_pixel_to_point(self.camera_info, (cx, cy), depth)
 
-        point_stamped = PointStamped()
-        point_stamped.header.frame_id = CAMERA_FRAME
-        point_stamped.header.stamp = self.get_clock().now().to_msg()
-        point_stamped.point.x = float(point_3d[0])
-        point_stamped.point.y = float(point_3d[1])
-        point_stamped.point.z = float(point_3d[2])
-
-        try:
-            transform = self.tf_buffer.lookup_transform(
-                'link_base', CAMERA_FRAME, rclpy.time.Time(),
-                timeout=rclpy.duration.Duration(seconds=3.0)
-            )
-            point_base = do_transform_point(point_stamped, transform)
-            return point_base.point
-        except Exception as e:
-            self.get_logger().error(f'TF transform failed: {e}')
-            return None
+        point = Point()
+        point.x = float(point_3d[0])
+        point.y = float(point_3d[1])
+        point.z = float(point_3d[2])
+        return point
 
     def _run_single_detection(self):
         """Run one YOLO inference. Returns (handle_point, axis_point) in base frame."""
