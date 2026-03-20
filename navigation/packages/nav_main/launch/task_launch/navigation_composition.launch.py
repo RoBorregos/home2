@@ -51,10 +51,17 @@ def launch_function(context, *args, **kwargs):
         parameters=[{'map_name': map_name_str[:-3]}],
     )
 
+    nav_ui_node = Node(
+        package='map_context',
+        executable='nav_ui.py',
+        output='screen',
+    )
+
     return [
         nav_basics,
         rtabmapnav,
         map_context_node,
+        nav_ui_node,
     ]
 def generate_launch_description():
     return LaunchDescription([OpaqueFunction(function=launch_function)])
