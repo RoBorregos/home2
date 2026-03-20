@@ -166,7 +166,7 @@ def transform_pose(
 
             print("successfully transformed pose")
             success = True
-            break
+            # Please not break
         except TransformException as e:
             print(
                 f"Transform from {pose.header.frame_id} to {target_frame} not available: {e}"
@@ -201,7 +201,6 @@ def transform_point(
             transformed_point = do_transform_point(point, t)
             transformed_point.header.frame_id = target_frame
             success = True
-            break
         except TransformException as e:
             print(
                 f"Transform from {point.header.frame_id} to {target_frame} not available: {e}"
