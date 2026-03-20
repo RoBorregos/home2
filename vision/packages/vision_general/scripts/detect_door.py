@@ -103,7 +103,12 @@ class DoorDetectionService(Node):
 
     def _pixel_to_base_point(self, cx, cy):
         """Convert pixel coords to 3D point in base frame."""
-        depth = get_depth(self.depth_image, (cx, cy))
+        # Scale pixel coords from RGB resolution to depth resolution
+        rgb_h, rgb_w = self.rgb_image.shape[:2]
+        depth_h, depth_w = self.depth_image.shape[:2]
+        depth_cx = int(cx * depth_w / rgb_w)
+        depth_cy = int(cy * depth_h / rgb_h)
+        depth = get_depth(self.depth_image, (depth_cx, depth_cy))
         if math.isnan(depth):
             return None
 
