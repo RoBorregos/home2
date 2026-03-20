@@ -93,7 +93,6 @@ class DoorOpener(Node):
             return False
 
         request = DetectDoor.Request()
-        request.detect = True
 
         self.get_logger().info('Calling door detection service...')
         future = self.detect_door_client.call_async(request)
