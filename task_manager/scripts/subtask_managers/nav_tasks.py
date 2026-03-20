@@ -160,13 +160,12 @@ class NavigationTasks:
         req = Empty.Request()
         future = self.rtabmap_pause.call_async(req)
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
-        if future.result() is not None:
-            Logger.error(self.node, "Service call failed")
+        if future.result() is None:
+            Logger.error(self.node, "pause_nav service call failed (no response)")
             return Status.EXECUTION_ERROR
 
-        else:
-            Logger.info(self.node, "Service call successfull")
-            return Status.EXECUTION_SUCCESS
+        Logger.info(self.node, "pause_nav successful")
+        return Status.EXECUTION_SUCCESS
 
     @mockable(return_value=True, delay=10)
     @service_check("resume_nav", False, timeout=3)
@@ -174,13 +173,12 @@ class NavigationTasks:
         req = Empty.Request()
         future = self.rtabmap_continue.call_async(req)
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
-        if future.result() is not None:
-            Logger.error(self.node, "Service call failed")
+        if future.result() is None:
+            Logger.error(self.node, "resume_nav service call failed (no response)")
             return Status.EXECUTION_ERROR
 
-        else:
-            Logger.info(self.node, "Service call successfull")
-            return Status.EXECUTION_SUCCESS
+        Logger.info(self.node, "resume_nav successful")
+        return Status.EXECUTION_SUCCESS
 
     @mockable(_mock_callback=mock_to_location_controller)
     @service_check("goal_client", False, timeout=3)

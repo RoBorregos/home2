@@ -1,19 +1,19 @@
 ARG BASE_IMAGE=ubuntu:22.04
 FROM ${BASE_IMAGE}
 
-RUN mkdir -p /workspace/requirements
-RUN apt update && apt install -y ros-humble-cv-bridge
+# RUN mkdir -p /workspace/requirements
+# RUN apt update && apt install -y ros-humble-cv-bridge
 
-# Requirements
-COPY vision/requirements /workspace/requirements
-WORKDIR /workspace/requirements
+# # Requirements
+# COPY vision/requirements /workspace/requirements
+# WORKDIR /workspace/requirements
 
-RUN apt update
-RUN apt install libvips-dev --no-install-recommends -y
+# RUN apt update
+# RUN apt install libvips-dev --no-install-recommends -y
 
-RUN pip install -r moondream.txt
-
-# WORKDIR /workspace
+# RUN pip install -r moondream.txt
+USER ros
+WORKDIR /workspace
 # # CV-bridge
 
 # # CycloneDDS
