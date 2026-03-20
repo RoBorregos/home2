@@ -2,7 +2,7 @@ import os
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch_ros.actions import Node
-from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument
+from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument, TimerAction
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
@@ -57,11 +57,15 @@ def launch_function(context, *args, **kwargs):
         output='screen',
     )
 
+    delayed_map = TimerAction(
+        period=3.0,# seconds to wait for nav_ui_node
+        actions=[rtabmapnav, map_context_node],
+    )
+
     return [
         nav_basics,
-        rtabmapnav,
-        map_context_node,
         nav_ui_node,
+        delayed_map,
     ]
 def generate_launch_description():
     return LaunchDescription([OpaqueFunction(function=launch_function)])
