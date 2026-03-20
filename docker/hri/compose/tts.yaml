@@ -8,7 +8,7 @@ services:
       args:
         BASE_IMAGE: python:3.10-bookworm
     volumes:
-      - ../../../hri/microservices/tts/:/app
+      - ../../../hri/packages/speech/scripts/tts/:/app
       - ../../../hri/packages/speech/assets/downloads/offline_voice/audios/:/app/audios
       - ../../../hri/packages/speech/assets/downloads/offline_voice/model/:/home/ros/.cache/huggingface/hub
       - ~/.config/pulse:/tmp/pulse

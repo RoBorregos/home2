@@ -11,7 +11,7 @@ docker pull tacolon27/faster-whisper-l4t-cuda
 Next, build a container by running:
 
 ```bash
-# pwd -> /hri/microservices/stt
+# pwd -> /speech/scripts/stt
 docker run -it -p 8888:8888 --name fast-whisper -v .:/workspace tacolon27/faster-whisper-l4t-cuda
 ```
 
@@ -38,6 +38,6 @@ The scripts in this implementation import speech_pb2_grpc.py and speech_pb2.py w
 ```bash
 pip install grpcio
 pip install grpcio-tools
-# pwd -> /hri/microservices/stt
+# pwd -> /speech/scripts/stt
 python3 -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. speech.proto
 ```

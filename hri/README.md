@@ -17,31 +17,6 @@ home2/
 │   └──srv/
 │
 │hri/
-├──proto_interfaces/ # Protocol Buffer interfaces (gRPC services)
-│   ├──proto_interfaces/ 
-│   │   ├──__init__.py
-│   │   ├──speech_pb2.py # Generated Speech messages
-│   │   ├──speech_pb2_grpc.py # Generated Speech service stubs
-│   │   ├──tts_pb2.py # Generated TTS messages
-│   │   ├──tts_pb2_grpc.py # Generated TTS service stubs
-│   │   ├──speech.proto # Speech service definition
-│   │   └──tts.proto # TTS service definition
-│   ├──setup.py 
-│   ├──pyproject.toml 
-│   └──README.md 
-│
-├──microservices/ # Independent gRPC microservices
-│   ├──stt/ # Speech-To-Text microservice
-│   │   ├──faster-whisper-streaming.py # STT server (gRPC, port 50051)
-│   │   ├──faster_whisper_backend.py 
-│   │   ├──transcriber_faster_whisper.py 
-│   │   ├──base.py 
-│   │   ├──models/ # Cached ML models
-│   │   └──speech/ # Shared utilities
-│   ├──tts/ # Text-To-Speech microservice
-│   │   ├──kokoro-tts.py # TTS server (gRPC, port 50050)
-│   │   └──audios/ # Generated audio cache
-│
 ├──display/
 │   ├──index.ts # ROS to websockets backend
 │   └──web-ui/
@@ -89,17 +64,17 @@ home2/
 │       ├──launch/ # ROS launch files
 │       │   ├──devices_launch.py # Launches speech nodes
 │       │   └──hri_launch.py # Launches both NLP and Speech nodes
-│       ├──scripts/ # ROS nodes (hear_streaming, say, etc.)
+│       ├──scripts/ # ROS nodes
+│       │   ├──stt/ # gRPC microservice for Speech To Text
+│       │   └──tts/ # gRPC microservice for Text To Speech
 │       ├──speech/ # Static util functions
 │       ├──CMakeLists.txt # Description of compilation of the package
 │       └──package.xml # Declare dependencies of the package
 │
 └──requirements/ # Python dependencies for the project
-    ├──speech.txt 
-    ├──stt.txt 
-    ├──tts.txt 
     ├──nlp.txt
-    └──postgres.txt
+    ├──postgres.txt
+    └──speech.txt
 ```
 
 ## Setup speech default sink and source

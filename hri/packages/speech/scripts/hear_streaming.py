@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import collections
+import os
+import sys
 import threading
 import time
 
@@ -15,7 +17,10 @@ from std_msgs.msg import String
 
 from frida_interfaces.action import SpeechStream
 from frida_interfaces.msg import AudioData
-from proto_interfaces import speech_pb2, speech_pb2_grpc
+
+sys.path.append(os.path.join(os.path.dirname(__file__), "stt"))
+import speech_pb2
+import speech_pb2_grpc
 
 # Minimum buffer length (in chunks) before starting gRPC streaming.
 # With CHUNK_SIZE=512 at 16kHz, 10 chunks ≈ 320ms. Keep small so streaming starts promptly.

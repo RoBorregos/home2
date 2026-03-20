@@ -7,7 +7,7 @@ services:
       context: ../../..
       dockerfile: docker/hri/dockerfiles/Dockerfile.stt
     volumes:
-      - ../../../hri/microservices/stt/:/app
+      - ../../../hri/packages/speech/scripts/stt/:/app
       - ../../../hri/packages/speech/speech/:/app/speech
     network_mode: host
     command: [
