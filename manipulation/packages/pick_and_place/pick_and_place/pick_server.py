@@ -131,9 +131,25 @@ class PickMotionServer(Node):
         self.get_logger().info("Executing go to hand goal...")
 
         base_point = copy.deepcopy(goal_handle.request.point)
+        self.get_logger().info(
+            f"Hand point received in frame '{base_point.header.frame_id}': "
+            f"({base_point.point.x:.3f}, {base_point.point.y:.3f}, {base_point.point.z:.3f})"
+        )
         # Transform to base frame if necessary
         if base_point.header.frame_id != "base_link":
-            _, base_point = transform_point(base_point, "base_link", self.tf_buffer)
+            success, base_point = transform_point(base_point, "base_link", self.tf_buffer)
+            if not success:
+                self.get_logger().error(
+                    f"Failed to transform hand point from '{goal_handle.request.point.header.frame_id}' to 'base_link'. "
+                    "Check that TF is available between these frames."
+                )
+                result = GoToHand.Result()
+                result.success = False
+                goal_handle.succeed()
+                return result
+            self.get_logger().info(
+                f"Transformed to base_link: ({base_point.point.x:.3f}, {base_point.point.y:.3f}, {base_point.point.z:.3f})"
+            )
         # quaternion position
         qx, qy, qz, qw = quaternion_from_euler(-np.pi / 2, 0, 0)
         quat = [qx, qy, qz, qw]

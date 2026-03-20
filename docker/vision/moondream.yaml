@@ -32,43 +32,86 @@ services:
   #   working_dir: /workspace/moondream_server
   #   command: ["bash", "-c", "python3 -u server.py"]
 
-  moondream-cpu:
-    container_name: home2-moondream-cpu
-    build:
-      context: ../..
-      dockerfile: docker/vision/Dockerfile.moondream
-      args:
-        BASE_IMAGE: ${BASE_IMAGE:-roborregos/home2:cpu_base}
-    image: roborregos/home2:moondream-cpu
-    profiles: ["moondream"]
-    volumes:
-      - ../../:/workspace/src
-      - /dev:/dev
-      - /dev/video0:/dev/video0
-      - /tmp:/tmp
-      - /tmp/.X11-unix:/tmp/.X11-unix
-      - ./build_moondream:/workspace/build
-      - ./install_moondream:/workspace/install
-      - ../frida_interfaces_cache:/workspace/frida_interfaces_cache
-      - ./log_moondream:/workspace/log
-      - $HOME/.Xauthority:/home/ros/.Xauthority:rw
-      - /run/jtop.sock:/run/jtop.sock
-    network_mode: host
-    ipc: host
-    user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
-    privileged: true
-    runtime: ${DOCKER_RUNTIME:-runc}
-    group_add:
-      - video
-    environment:
-      DISPLAY: ${DISPLAY}
-      TERM: xterm-256color
-      QT_X11_NO_MITSHM: 1
-      QT_DEBUG_PLUGINS: 1
-      CYCLONE_INTERFACE: wlp3s0 #${CYCLONE_INTERFACE:-}
-      HF_TOKEN: ${HF_TOKEN}
-    tty: true
-    stdin_open: true
-    working_dir: /workspace
-    command: >
-      bash -c "${COMMAND_MOONDREAM:-source /opt/ros/humble/setup.bash && colcon build --packages-up-to moondream_run && source install/setup.bash && ros2 run moondream_run moondream_node.py}"
+  # moondream-cpu:
+  #   container_name: home2-moondream-cpu
+  #   build:
+  #     context: ../..
+  #     dockerfile: docker/vision/Dockerfile.moondream
+  #     args:
+  #       BASE_IMAGE: ${BASE_IMAGE:-roborregos/home2:cpu_base}
+  #   image: roborregos/home2:moondream-cpu
+  #   profiles: ["moondream"]
+  #   volumes:
+  #     - ../../:/workspace/src
+  #     - /dev:/dev
+  #     - /dev/video0:/dev/video0
+  #     - /tmp:/tmp
+  #     - /tmp/.X11-unix:/tmp/.X11-unix
+  #     - ./build_moondream:/workspace/build
+  #     - ./install_moondream:/workspace/install
+  #     - ../frida_interfaces_cache:/workspace/frida_interfaces_cache
+  #     - ./log_moondream:/workspace/log
+  #     - $HOME/.Xauthority:/home/ros/.Xauthority:rw
+  #     - /run/jtop.sock:/run/jtop.sock
+  #   network_mode: host
+  #   ipc: host
+  #   user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
+  #   privileged: true
+  #   runtime: ${DOCKER_RUNTIME:-runc}
+  #   group_add:
+  #     - video
+  #   environment:
+  #     DISPLAY: ${DISPLAY}
+  #     TERM: xterm-256color
+  #     QT_X11_NO_MITSHM: 1
+  #     QT_DEBUG_PLUGINS: 1
+  #     CYCLONE_INTERFACE: wlp3s0 #${CYCLONE_INTERFACE:-}
+  #     HF_TOKEN: ${HF_TOKEN}
+  #   tty: true
+  #   stdin_open: true
+  #   working_dir: /workspace
+  #   command: >
+  #     bash -c "${COMMAND_MOONDREAM:-source /opt/ros/humble/setup.bash && colcon build --packages-up-to moondream_run && source install/setup.bash && ros2 run moondream_run moondream_node.py}"
+
+
+    moondream-l4t:
+      container_name: home2-moondream-l4t
+      build:
+        context: ../..
+        dockerfile: docker/vision/Dockerfile.moondream
+        args:
+          BASE_IMAGE: ${BASE_IMAGE:-roborregos/home2:cpu_base}
+      image: ${IMAGE_NAME:-roborregos/home2:vision-cpu}
+      profiles: ["moondream"]
+      volumes:
+        - ../../:/workspace/src
+        - /dev:/dev
+        - /dev/video0:/dev/video0
+        - /tmp:/tmp
+        - /tmp/.X11-unix:/tmp/.X11-unix
+        - ./build_moondream:/workspace/build
+        - ./install_moondream:/workspace/install
+        - ../frida_interfaces_cache:/workspace/frida_interfaces_cache
+        - ./log_moondream:/workspace/log
+        - $HOME/.Xauthority:/home/ros/.Xauthority:rw
+        - /run/jtop.sock:/run/jtop.sock
+
+      network_mode: host
+      ipc: host
+      user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
+      privileged: true
+      runtime: ${DOCKER_RUNTIME:-runc}
+      group_add:
+        - video
+      environment:
+        DISPLAY: ${DISPLAY}
+        TERM: xterm-256color
+        QT_X11_NO_MITSHM: 1
+        QT_DEBUG_PLUGINS: 1
+        CYCLONE_INTERFACE: ${CYCLONE_INTERFACE:-}
+        HF_TOKEN: ${HF_TOKEN}
+      tty: true
+      stdin_open: true
+      working_dir: /workspace
+      command: >
+        bash -c "${COMMAND_MOONDREAM:-bash}"
