@@ -25,11 +25,7 @@ from ultralytics import YOLO
 import os
 
 
-DOOR_MODEL_PATH = os.path.join(
-    os.path.dirname(__file__),
-    '..', '..', '..', '..', '..',
-    'vision', 'packages', 'vision_general', 'vision_general', 'utils', 'models', 'door.pt',
-)
+DOOR_MODEL_PATH = 'vision/packages/vision_general/vision_general/utils/models/door.pt'
 
 # Detection parameters
 HANDLE_HISTORY_SIZE = 5
