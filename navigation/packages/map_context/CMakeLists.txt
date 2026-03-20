@@ -10,6 +10,7 @@ find_package(ament_cmake REQUIRED)
 find_package(ament_cmake_python REQUIRED)
 find_package(ament_index_cpp REQUIRED)
 find_package(rclcpp REQUIRED)
+find_package(rclcpp_lifecycle REQUIRED)
 find_package(rclpy REQUIRED)
 find_package(rviz2 REQUIRED)
 find_package(nlohmann_json REQUIRED)
@@ -23,7 +24,7 @@ install(DIRECTORY launch config maps
  add_executable(map_service
    src/map_service.cpp)
 target_link_libraries(map_service  nlohmann_json::nlohmann_json)
- ament_target_dependencies(map_service rclcpp frida_interfaces)
+ ament_target_dependencies(map_service rclcpp rclcpp_lifecycle frida_interfaces)
 
 #Added nodes
  install(TARGETS

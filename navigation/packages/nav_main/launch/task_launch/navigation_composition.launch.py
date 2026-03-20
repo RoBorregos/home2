@@ -25,12 +25,9 @@ def launch_function(context, *args, **kwargs):
         name='nav_lifecycle_manager',
         namespace='',
         output='screen',
+        parameters=[{'managed_nodes': ['map_service']}],
     )
 
-    configure_manager = ExecuteProcess(
-        cmd=['bash', '-c', 'sleep 5 && ros2 lifecycle set /nav_lifecycle_manager configure'],
-        output='screen'
-    )
 
     nav_basics = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -47,10 +44,13 @@ def launch_function(context, *args, **kwargs):
     )
 
     map_name_str = rtabmap_map_name.perform(context)
-    map_context_node = Node(
+    map_context_node = LifecycleNode(
         package='map_context',
         executable='map_service',
+        name='map_service',
+        namespace='',
         parameters=[{'map_name': map_name_str[:-3]}],
+        output='screen',
     )
 
     from launch_ros.event_handlers import OnStateTransition
@@ -63,15 +63,25 @@ def launch_function(context, *args, **kwargs):
                 LogInfo(msg="[NavComposition] Dependencias externas listas"),
                 nav_basics,
                 rtabmapnav,
-                map_context_node
+            ]
+        )
+    )
+
+    on_deactivation = RegisterEventHandler(
+        OnStateTransition(
+            target_lifecycle_node=nav_manager_node,
+            goal_state='deactivating',
+            entities=[
+                LogInfo(msg="[NavComposition] Manager desactivándose - Perdiendo dependencias"),
             ]
         )
     )
 
     return [
         nav_manager_node,
-        configure_manager,
-        wait_for_activation
+        map_context_node,
+        wait_for_activation,
+        on_deactivation
     ]
 def generate_launch_description():
     return LaunchDescription([OpaqueFunction(function=launch_function)])

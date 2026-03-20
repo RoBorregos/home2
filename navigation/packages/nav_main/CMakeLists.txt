@@ -30,7 +30,7 @@ install(TARGETS
   ignore_laser
   DESTINATION lib/${PROJECT_NAME})
   
-#  ament_python_install_package(${PROJECT_NAME})
+  ament_python_install_package(${PROJECT_NAME})
 
   file(GLOB PYTHON_SCRIPTS scripts/*.py)
 
