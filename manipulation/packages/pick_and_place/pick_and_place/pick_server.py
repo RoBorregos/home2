@@ -23,11 +23,12 @@ from frida_constants.manipulation_constants import (
     PICK_MIN_HEIGHT,
     CUTLERY_PICK_MIN_HEIGHT,
     CUTLERY_NAMES,
-    BASKETS
+    BASKETS,
     GRASP_LINK_FRAME,
     GRIPPER_SET_STATE_SERVICE,
     GO_TO_HAND_ACTION_SERVER,
 )
+
 from frida_interfaces.srv import (
     AttachCollisionObject,
     GetCollisionObjects,
@@ -55,16 +56,16 @@ from xarm_msgs.srv import MoveVelocity, SetInt16
 # Force-guarded descent constants
 # Units: speeds in mm/s (xArm SDK convention)
 # =============================================================================
-CUTLERY_DESCENT_SPEED = 20.0       # mm/s downward (= 2 cm/s)
-CUTLERY_EFFORT_THRESHOLD = 6.5     # N - effort delta to detect contact (raised from 3.0 to avoid false positives)
-CUTLERY_DESCENT_TIMEOUT = 10.0     # s - max descent before giving up
-CUTLERY_PRE_GRASP_HEIGHT = 0.15    # m - pre-grasp height above target (MoveIt uses meters)
+CUTLERY_DESCENT_SPEED = 20.0  # mm/s downward (= 2 cm/s)
+CUTLERY_EFFORT_THRESHOLD = 6.5  # N - effort delta to detect contact (raised from 3.0 to avoid false positives)
+CUTLERY_DESCENT_TIMEOUT = 10.0  # s - max descent before giving up
+CUTLERY_PRE_GRASP_HEIGHT = 0.15  # m - pre-grasp height above target (MoveIt uses meters)
 CUTLERY_EFFORT_GRACE_PERIOD = 0.5  # s - ignore effort readings for this long after velocity starts (transient spike from mode switch)
 
 # Mode switching timing
-MODE_SWITCH_SETTLE_TIME = 1.0      # s - wait after entering mode 5
-MODE1_RECOVERY_TIME = 3.0          # s - wait after restoring mode 1 for traj controller
-MODE1_RETRY_ATTEMPTS = 3           # retries for restoring mode 1
+MODE_SWITCH_SETTLE_TIME = 1.0  # s - wait after entering mode 5
+MODE1_RECOVERY_TIME = 3.0  # s - wait after restoring mode 1 for traj controller
+MODE1_RETRY_ATTEMPTS = 3  # retries for restoring mode 1
 
 
 class PickMotionServer(Node):
@@ -126,12 +127,12 @@ class PickMotionServer(Node):
 
         self._clear_octomap_client = self.create_client(
             Empty,
-            '/clear_octomap',
+            "/clear_octomap",
         )
 
         # --- Force-guarded descent service clients ---
         self._vc_set_cartesian_velocity_client = self.create_client(
-            MoveVelocity, '/xarm/vc_set_cartesian_velocity'
+            MoveVelocity, "/xarm/vc_set_cartesian_velocity"
         )
         self._set_mode_client = self.create_client(
             SetInt16, '/xarm/set_mode'
@@ -260,7 +261,9 @@ class PickMotionServer(Node):
             self.get_logger().error("No plane found, cannot pick object")
             return False, pick_result
         elif self.plane is None and bypass_safety:
-            self.get_logger().warn("No plane found, but object is flat. Bypassing safety check.")
+            self.get_logger().warn(
+                "No plane found, but object is flat. Bypassing safety check."
+            )
 
         for i, pose in enumerate(grasping_poses):
             for j in range(num_grasping_alternatives):
@@ -371,7 +374,9 @@ class PickMotionServer(Node):
                     self.get_logger().info(f"[Basket] Moving to Pre-grasp Z={pre_grasp_pose.pose.position.z:.4f}")
                     pre_handler, pre_result = self.move_to_pose(pre_grasp_pose, velocity=0.3)
                     if not pre_result.result.success:
-                        self.get_logger().warn(f"[Basket] Failed Pre-Grasp for alternative {j}.")
+                        self.get_logger().warn(
+                            f"[Basket] Failed Pre-Grasp for alternative {j}."
+                        )
                         continue
 
                     self.get_logger().info("[Basket] Pre-Grasp reached. Started descent...")
@@ -398,12 +403,18 @@ class PickMotionServer(Node):
                         pick_result.grasp_score = goal_handle.request.grasping_scores[i]
 
                         if lowest_obj is not None:
-                            pick_result.object_pick_height = self.calculate_object_pick_height(lowest_obj, ee_link_pose)
+                            pick_result.object_pick_height = (
+                                self.calculate_object_pick_height(
+                                    lowest_obj, ee_link_pose
+                                )
+                            )
                         else:
                             pick_result.object_pick_height = 0.0
 
                         if lowest_obj is not None and highest_obj is not None:
-                            pick_result.object_height = self.calculate_object_height(lowest_obj, highest_obj)
+                            pick_result.object_height = self.calculate_object_height(
+                                lowest_obj, highest_obj
+                            )
                         else:
                             pick_result.object_height = 0.0
                     else:
@@ -593,7 +604,9 @@ class PickMotionServer(Node):
             stop_req.is_tool_coord = False
             stop_req.duration = 0.0
             if self._vc_set_cartesian_velocity_client.wait_for_service(timeout_sec=1.0):
-                stop_future = self._vc_set_cartesian_velocity_client.call_async(stop_req)
+                stop_future = self._vc_set_cartesian_velocity_client.call_async(
+                    stop_req
+                )
                 self.wait_for_future(stop_future)
             self.get_logger().info("[ForceGuard] Velocity zeroed")
         except Exception as e:

@@ -36,26 +36,34 @@ class PickManager:
 
     def __init__(self, node):
         self.node = node
-        # Basket grasp estimator state
-        self.latest_basket_grasp = None
+        # Basket grasp estimator state: store multiple alternatives
+        self.basket_grasp_poses = []  # Grasping alternatives for basket
         self.latest_basket_lift = None
-        # subscribe to poses published by basket_handle_grasp_estimator
-        try:
-            self.node.create_subscription(
-                PoseStamped,
-                '/manipulation/basket_grasp_pose',
-                self.basket_grasp_callback,
-                10,
-            )
-            self.node.create_subscription(
-                PoseStamped,
-                '/manipulation/basket_lift_pose',
-                self.basket_lift_callback,
-                10,
-            )
-        except Exception:
-            # Safe fallback if subscriptions are created before node fully configured
-            pass
+
+        self.node.create_subscription(
+            PoseStamped,
+            "/manipulation/basket_grasp_pose",
+            self.basket_grasp_callback,
+            10,
+        )
+
+        self.node.create_subscription(
+            PoseStamped,
+            "/manipulation/basket_lift_pose",
+            self.basket_lift_callback,
+            10,
+        )
+
+    def basket_grasp_callback(self, msg: PoseStamped):
+        """Callback to accumulate grasp pose alternatives from estimator."""
+        self.basket_grasp_poses.append(msg)
+        self.node.get_logger().debug(
+            f"Received basket grasp pose #{len(self.basket_grasp_poses)}"
+        )
+
+    def basket_lift_callback(self, msg: PoseStamped):
+        """Callback to receive lift pose published by estimator."""
+        self.latest_basket_lift = msg
 
     def execute(
         self, object_name: str, point: PointStamped, pick_params
@@ -129,6 +137,7 @@ class PickManager:
         min_z = np.min(points_np[:, 2])
         height = max_z - min_z
         self.node.get_logger().info(f"Object cluster height: {height:.2f} m")
+
         # open gripper
         gripper_request = SetBool.Request()
         gripper_request.data = True
@@ -137,42 +146,72 @@ class PickManager:
         future = wait_for_future(future)
         result = future.result()
         self.node.get_logger().info(f"2 Gripper Result: {str(gripper_request.data)}")
+
         pick_result_success = False
         print("Gripper Result:", result)
+
         # If the target is a basket/casket/laundry container, try to use the basket estimator
         is_basket = False
         if object_name is not None:
             on = object_name.lower()
-            if 'basket' in on or 'casket' in on: # ANalize if it can be just 'basket'
+            if "basket" in on or "casket" in on:
                 is_basket = True
 
         if is_basket:
-            self.node.get_logger().info("Basket detected: waiting for grasp pose from estimator")
+            self.node.get_logger().info(
+                "Basket detected: waiting for grasp pose alternatives from estimator"
+            )
+            # Reset the list to collect fresh poses for this pick attempt
+            self.basket_grasp_poses.clear()
+            self.latest_basket_lift = None
+
             BASKET_GRASP_TIMEOUT = 6.0
             waited = 0.0
             step = 0.1
-            while self.latest_basket_grasp is None and waited < BASKET_GRASP_TIMEOUT:
-                # allow callbacks to be processed while waiting
-                rclpy.spin_once(self.node, timeout_sec=step)
+
+            # Wait and accumulate all poses published during the timeout window
+            while waited < BASKET_GRASP_TIMEOUT:
+                time.sleep(step)
                 waited += step
 
-            if self.latest_basket_grasp is None:
-                self.node.get_logger().error("Timeout waiting for basket grasp pose")
-                return False, None
+                # Stop early if enough alternatives
+                if len(self.basket_grasp_poses) >= 4:
+                    self.node.get_logger().info(
+                        f"Collected {len(self.basket_grasp_poses)} grasp alternatives, proceeding"
+                    )
+                    break
 
-            # Build and send PickMotion goal using estimator pose
-            grasp_pose = copy.deepcopy(self.latest_basket_grasp)
+            if len(self.basket_grasp_poses) == 0:
+                self.node.get_logger().error(
+                    "Timeout: no basket grasp poses received from estimator"
+                )
+                is_basket = False  # return False, None
+
+            self.node.get_logger().info(
+                f"Collected {len(self.basket_grasp_poses)} grasp pose alternatives from estimator"
+            )
+
+            self.node.clear_octomap()
+            # Build and send PickMotion goal with ALL alternatives (pick_server will try them in order)
             goal_msg = PickMotion.Goal()
-            goal_msg.grasping_poses = [grasp_pose]
-            goal_msg.grasping_scores = [1.0]
+            goal_msg.grasping_poses = [
+                copy.deepcopy(p) for p in self.basket_grasp_poses
+            ]
+            goal_msg.grasping_scores = [
+                1.0 - (i * 0.1) for i in range(len(self.basket_grasp_poses))
+            ]  # Slight score decay for order preference
             goal_msg.object_name = object_name
 
-            self.node.get_logger().info("Sending Pick Motion goal (basket grasp estimator)...")
+            self.node.get_logger().info(
+                f"Sending Pick Motion goal with {len(goal_msg.grasping_poses)} alternatives (basket estimator)..."
+            )
             future = self.node._pick_motion_action_client.send_goal_async(goal_msg)
             future = wait_for_future(future, timeout=30)
+
             if not future:
                 self.node.get_logger().error("Failed to send pick goal for basket")
                 return False, None
+
             pick_result = future.result().get_result().result
             self.node.get_logger().info(f"Pick Motion Result: {pick_result}")
             if pick_result.success != 0:
@@ -181,109 +220,114 @@ class PickManager:
                 self.node.get_logger().error("Pick motion failed for basket")
                 return False, None
 
-        for CFG_PATH in CFG_PATHS:
-            cfg_path = CFG_PATH[0]
-            is_reversible = CFG_PATH[1]
-            if is_reversible and height < 0.06:
-                self.node.get_logger().warn(
-                    "Object is too small for reversible grasping, skipping reversible grasps"
+        else:
+            for CFG_PATH in CFG_PATHS:
+                cfg_path = CFG_PATH[0]
+                is_reversible = CFG_PATH[1]
+                if is_reversible and height < 0.06:
+                    self.node.get_logger().warn(
+                        "Object is too small for reversible grasping, skipping reversible grasps"
+                    )
+                    continue
+                self.node.get_logger().info(f"CFG_PATH: {CFG_PATH}")
+                # Call Grasp Pose Detection
+                grasp_poses, grasp_scores = get_grasps(
+                    self.node.grasp_detection_client, object_cluster, cfg_path
                 )
-                continue
-            self.node.get_logger().info(f"CFG_PATH: {CFG_PATH}")
-            # Call Grasp Pose Detection
-            grasp_poses, grasp_scores = get_grasps(
-                self.node.grasp_detection_client, object_cluster, cfg_path
-            )
-            if len(grasp_poses) == 0:
-                self.node.get_logger().error(
-                    f"No grasp poses detected with cfg {cfg_path}"
+                if len(grasp_poses) == 0:
+                    self.node.get_logger().error(
+                        f"No grasp poses detected with cfg {cfg_path}"
+                    )
+                    continue
+
+                self.node.get_logger().info(
+                    f"Detected grasps with scores: {grasp_scores}"
                 )
-                continue
 
-            self.node.get_logger().info(f"Detected grasps with scores: {grasp_scores}")
+                # Sort grasp poses by score in descending order (highest scores first)
+                # grasp_poses, grasp_scores = zip(
+                #     *sorted(
+                #         zip(grasp_poses, grasp_scores),
+                #         key=lambda x: x[1],
+                #         reverse=True,
+                #     )
+                # )
+                # grasp_poses, grasp_scores = grasp_poses[:5], grasp_scores[:5]
 
-            # Sort grasp poses by score in descending order (highest scores first)
-            # grasp_poses, grasp_scores = zip(
-            #     *sorted(
-            #         zip(grasp_poses, grasp_scores),
-            #         key=lambda x: x[1],
-            #         reverse=True,
-            #     )
-            # )
-            # grasp_poses, grasp_scores = grasp_poses[:5], grasp_scores[:5]
+                # randomly pick 5 grasps
+                if len(grasp_poses) > 5:
+                    indices = np.random.choice(len(grasp_poses), size=5, replace=False)
+                    grasp_poses = [grasp_poses[i] for i in indices]
+                    grasp_scores = [grasp_scores[i] for i in indices]
+                else:
+                    # if less than 5 grasps, just take them all
+                    grasp_poses = grasp_poses[:5]
+                    grasp_scores = grasp_scores[:5]
 
-            # randomly pick 5 grasps
-            if len(grasp_poses) > 5:
-                indices = np.random.choice(len(grasp_poses), size=5, replace=False)
-                grasp_poses = [grasp_poses[i] for i in indices]
-                grasp_scores = [grasp_scores[i] for i in indices]
-            else:
-                # if less than 5 grasps, just take them all
-                grasp_poses = grasp_poses[:5]
-                grasp_scores = grasp_scores[:5]
+                self.node.get_logger().info(
+                    f"Top 5 grasp poses detected with scores: {grasp_scores}"
+                )
 
-            self.node.get_logger().info(
-                f"Top 5 grasp poses detected with scores: {grasp_scores}"
-            )
+                # reverse grasps (turn 180 degrees in z)
+                new_grasp_poses = []
+                new_grasp_scores = []
+                if is_reversible:
+                    for pose, grasp_score in zip(grasp_poses, grasp_scores):
+                        new_grasp_poses.append(pose)
+                        new_grasp_scores.append(grasp_score)
+                        # Reverse the pose (turn 180 degrees in z)
+                        reversed_pose = copy.deepcopy(pose)
+                        # 180 degrees rotation around Z axis
+                        # Rotate 180 degrees around the local Z axis (end-effector frame)
+                        q_orig = [
+                            pose.pose.orientation.x,
+                            pose.pose.orientation.y,
+                            pose.pose.orientation.z,
+                            pose.pose.orientation.w,
+                        ]
+                        q_orig_rot = R.from_quat(q_orig)
+                        q_z_180_local = R.from_euler("z", 180, degrees=True)
+                        q_result = (
+                            q_orig_rot * q_z_180_local
+                        ).as_quat()  # [x, y, z, w]
+                        reversed_pose.pose.orientation.x = q_result[0]
+                        reversed_pose.pose.orientation.y = q_result[1]
+                        reversed_pose.pose.orientation.z = q_result[2]
+                        reversed_pose.pose.orientation.w = q_result[3]
+                        new_grasp_poses.append(reversed_pose)
+                        new_grasp_scores.append(grasp_score)
+                    new_grasp_scores = new_grasp_scores[:5]
+                    new_grasp_poses = new_grasp_poses[:5]
+                else:
+                    new_grasp_poses = grasp_poses
+                    new_grasp_scores = grasp_scores
 
-            # reverse grasps (turn 180 degrees in z)
-            new_grasp_poses = []
-            new_grasp_scores = []
-            if is_reversible:
-                for pose, grasp_score in zip(grasp_poses, grasp_scores):
-                    new_grasp_poses.append(pose)
-                    new_grasp_scores.append(grasp_score)
-                    # Reverse the pose (turn 180 degrees in z)
-                    reversed_pose = copy.deepcopy(pose)
-                    # 180 degrees rotation around Z axis
-                    # Rotate 180 degrees around the local Z axis (end-effector frame)
-                    q_orig = [
-                        pose.pose.orientation.x,
-                        pose.pose.orientation.y,
-                        pose.pose.orientation.z,
-                        pose.pose.orientation.w,
-                    ]
-                    q_orig_rot = R.from_quat(q_orig)
-                    q_z_180_local = R.from_euler("z", 180, degrees=True)
-                    q_result = (q_orig_rot * q_z_180_local).as_quat()  # [x, y, z, w]
-                    reversed_pose.pose.orientation.x = q_result[0]
-                    reversed_pose.pose.orientation.y = q_result[1]
-                    reversed_pose.pose.orientation.z = q_result[2]
-                    reversed_pose.pose.orientation.w = q_result[3]
-                    new_grasp_poses.append(reversed_pose)
-                    new_grasp_scores.append(grasp_score)
-                new_grasp_scores = new_grasp_scores[:5]
-                new_grasp_poses = new_grasp_poses[:5]
-            else:
-                new_grasp_poses = grasp_poses
-                new_grasp_scores = grasp_scores
+                if len(new_grasp_poses) == 0:
+                    self.node.get_logger().error("No grasp poses detected")
+                    continue
 
-            if len(new_grasp_poses) == 0:
-                self.node.get_logger().error("No grasp poses detected")
-                continue
+                # Call Pick Motion Action
 
-            # Call Pick Motion Action
+                # Create goal
+                goal_msg = PickMotion.Goal()
+                goal_msg.grasping_poses = new_grasp_poses
+                goal_msg.grasping_scores = new_grasp_scores
 
-            # Create goal
-            goal_msg = PickMotion.Goal()
-            goal_msg.grasping_poses = new_grasp_poses
-            goal_msg.grasping_scores = new_grasp_scores
-
-            # Send goal
-            self.node.get_logger().info("Sending pick motion goal...")
-            future = self.node._pick_motion_action_client.send_goal_async(goal_msg)
-            future = wait_for_future(future, timeout=30)
-            if not future:
-                break
-            # Check result
-            pick_result = future.result().get_result().result
-            self.node.get_logger().info(f"Pick Motion Result: {pick_result}")
-            if pick_result.success != 0:
-                pick_result_success = True
-                break
-            else:
-                # give time for new gpd
-                time.sleep(1.0)
+                # Send goal
+                self.node.get_logger().info("Sending pick motion goal...")
+                future = self.node._pick_motion_action_client.send_goal_async(goal_msg)
+                future = wait_for_future(future, timeout=30)
+                if not future:
+                    break
+                # Check result
+                pick_result = future.result().get_result().result
+                self.node.get_logger().info(f"Pick Motion Result: {pick_result}")
+                if pick_result.success != 0:
+                    pick_result_success = True
+                    break
+                else:
+                    # give time for new gpd
+                    time.sleep(1.0)
 
         if not pick_result_success:
             self.node.get_logger().error("Pick motion failed")
@@ -377,12 +421,3 @@ class PickManager:
             f"Object cluster detected: {len(pcl_result.data)} points"
         )
         return pcl_result
-
-    # -------------------- Basket estimator callbacks --------------------
-    def basket_grasp_callback(self, msg: PoseStamped):
-        """Callback to receive grasp pose (approach then contact) from estimator."""
-        self.latest_basket_grasp = msg
-
-    def basket_lift_callback(self, msg: PoseStamped):
-        """Callback to receive lift pose published by estimator."""
-        self.latest_basket_lift = msg
