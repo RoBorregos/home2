@@ -112,9 +112,9 @@ class DoorDetectionService(Node):
         point_stamped = PointStamped()
         point_stamped.header.frame_id = CAMERA_FRAME
         point_stamped.header.stamp = self.get_clock().now().to_msg()
-        point_stamped.point.x = point_3d[0]
-        point_stamped.point.y = point_3d[1]
-        point_stamped.point.z = point_3d[2]
+        point_stamped.point.x = float(point_3d[0])
+        point_stamped.point.y = float(point_3d[1])
+        point_stamped.point.z = float(point_3d[2])
 
         try:
             transform = self.tf_buffer.lookup_transform(
