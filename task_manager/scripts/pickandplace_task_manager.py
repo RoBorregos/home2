@@ -19,21 +19,15 @@ ATTEMPT_LIMIT = 3
 
 class ObjectCategory(Enum):
     """Object categories for placement decisions"""
-
-    # Goes into dishwasher
     CUTLERY = "cutlery"
     TABLEWARE = "tableware"
-    # Goes into trash bin
     TRASH = "trash"
-    # Goes into cabinet
     OTHER = "other"
-    # Goes into common area (side table)
     COMMON = "common"
 
 
 class Location(Enum):
     """Known furniture locations in the arena"""
-
     DINING_TABLE = "dining_table"
     SIDE_TABLE = "side_table"
     DISHWASHER = "dishwasher"
@@ -50,13 +44,11 @@ class ObjectInfo:
         self,
         name: str = None,
         category: ObjectCategory = None,
-        position: dict = None,
-        detection_data: dict = None,
+        bbox=None,
     ):
         self.name = name
         self.category = category
-        self.position = position or {}
-        self.detection_data = detection_data or {}
+        self.bbox = bbox
         self.is_picked = False
         self.is_placed = False
         self.placement_location: Location = None
@@ -99,7 +91,7 @@ class PickAndPlaceTM(Node):
         self.subtask_manager = SubtaskManager(self, task=Task.PICK_AND_PLACE, mock_areas=[])
 
         # ACTION REQUIRED: Adjust before competition
-        self.use_side_table = False  # True = use side table objects (−20 penalty per object)
+        self.use_side_table = False  # True = use side table objects (penalty per object)
         self.trash_category = "napkin"  # Announced during Setup Days
 
         # Object tracking
@@ -108,22 +100,12 @@ class PickAndPlaceTM(Node):
         self.grasped_object: ObjectInfo = None
         self.first_pick = True
 
-        # Breakfast items — ordered for a typical meal setting (bowl + spoon first, then milk + cereal)
+        # Breakfast items — bowl+spoon first (breakfast_surface), then milk+cereal (cabinet)
         self.breakfast_items = [
-            {
-                "name": "bowl",
-                "location": Location.BREAKFAST_SURFACE,
-                "picked": False,
-                "placed": False,
-            },
-            {
-                "name": "spoon",
-                "location": Location.BREAKFAST_SURFACE,
-                "picked": False,
-                "placed": False,
-            },
-            {"name": "milk", "location": Location.CABINET, "picked": False, "placed": False},
-            {"name": "cereal", "location": Location.CABINET, "picked": False, "placed": False},
+            {"name": "bowl",   "location": Location.BREAKFAST_SURFACE, "picked": False, "placed": False},
+            {"name": "spoon",  "location": Location.BREAKFAST_SURFACE, "picked": False, "placed": False},
+            {"name": "milk",   "location": Location.CABINET,           "picked": False, "placed": False},
+            {"name": "cereal", "location": Location.CABINET,           "picked": False, "placed": False},
         ]
         self.current_breakfast_item: dict = None
 
@@ -131,9 +113,8 @@ class PickAndPlaceTM(Node):
         self.dishwasher_open = False
 
         # Cabinet shelf categories — populated after perception
+        # Format: { shelf_level_int: "category_string", ... }  (same as hri.categorize_objects output)
         self.shelf_categories: dict = {}
-        # Maps object name → shelf level, populated by hri.categorize_objects()
-        self.cabinet_object_to_shelf: dict = {}
 
         # Attempt counter — reset on state change
         self.current_attempts = 0
@@ -149,6 +130,7 @@ class PickAndPlaceTM(Node):
         self.subtask_manager.manipulation.move_to_position("nav_pose")
         Logger.info(self, "PickAndPlaceTaskManager has started.")
 
+
     def _track_state_change(self, new_state: str):
         """Track time spent in each state and reset attempt counter"""
         current_time = datetime.now()
@@ -158,9 +140,10 @@ class PickAndPlaceTM(Node):
             if self.previous_state in self.state_times:
                 self.state_times[self.previous_state] += time_spent
             else:
-                self.current_attempts = 0
                 self.state_times[self.previous_state] = time_spent
             Logger.info(self, f"State '{self.previous_state}' took {time_spent:.2f} seconds")
+
+        self.current_attempts = 0  # always reset on state change
 
         self.previous_state = new_state
         self.state_start_time = current_time
@@ -222,11 +205,10 @@ class PickAndPlaceTM(Node):
         elif obj.category == ObjectCategory.TRASH:
             return Location.TRASH_BIN
         else:
-            # ObjectCategory.OTHER and ObjectCategory.COMMON → cabinet
             return Location.CABINET
 
     def run(self):
-        """Finite State Machine — uses cascading if-blocks (same as HRIC_TM)"""
+        """Finite State Machine"""
 
         # ==================== WAIT FOR START ====================
         if self.current_state == PickAndPlaceTM.TaskStates.WAIT_FOR_BUTTON:
@@ -236,7 +218,7 @@ class PickAndPlaceTM(Node):
             while not self.subtask_manager.hri.start_button_clicked:
                 rclpy.spin_once(self, timeout_sec=0.1)
 
-            Logger.success(self, "Start button pressed, Pick and Place Challenge will begin now.")
+            Logger.success(self, "Start button pressed. Pick and Place Challenge begins.")
             self.current_state = PickAndPlaceTM.TaskStates.START
 
         # ==================== START ====================
@@ -246,7 +228,7 @@ class PickAndPlaceTM(Node):
             self.navigate_to("kitchen", say=False)
 
             if self.use_side_table:
-                Logger.info(self, "Using side table (common objects) — penalty will be applied.")
+                Logger.info(self, "Using side table (common objects).")
                 self.subtask_manager.hri.say("I will clean the side table.", wait=False)
             else:
                 self.subtask_manager.hri.say("I will clean the dining table.", wait=False)
@@ -260,12 +242,14 @@ class PickAndPlaceTM(Node):
             self.navigate_to(table_location, say=False)
             self.subtask_manager.manipulation.move_to_position("table_stare")
 
+            # detect_objects returns (Status, list[BBOX])
+            # Each BBOX has: .classname, .point3d, .x, .y, .distance, etc.
             status, detections = self.subtask_manager.vision.detect_objects(timeout=5)
 
             if status == Status.EXECUTION_SUCCESS and detections:
                 self.detected_objects = []
-                for det in detections:
-                    obj_name = det.get("label", "unknown")
+                for bbox in detections:
+                    obj_name = bbox.classname if bbox.classname else "unknown"
                     category = (
                         ObjectCategory.COMMON
                         if self.use_side_table
@@ -275,8 +259,7 @@ class PickAndPlaceTM(Node):
                         ObjectInfo(
                             name=obj_name,
                             category=category,
-                            position=det.get("position", {}),
-                            detection_data=det,
+                            bbox=bbox,
                         )
                     )
                 Logger.info(self, f"Detected {len(self.detected_objects)} objects on the table.")
@@ -291,21 +274,12 @@ class PickAndPlaceTM(Node):
             self.subtask_manager.hri.say(
                 f"I have detected {len(self.detected_objects)} objects on the table."
             )
-            # Per rules §5.2.13: robot must clearly indicate its perception to the referee.
-            # Announce each object's name, category, and intended destination.
+
+            # Per rules: robot must communicate perception to the referee.
+            # Saying the name is sufficient; pointing is ideal but not required to score.
             for obj in self.detected_objects:
-                placement = self.determine_placement_location(obj)
-                Logger.info(
-                    self,
-                    f"Object: {obj.name}, Category: {obj.category.value}, "
-                    f"Destination: {placement.value}",
-                )
-                self.subtask_manager.hri.say(
-                    f"I see a {obj.name}. It is {obj.category.value}. "
-                    f"I will place it in the {placement.value.replace('_', ' ')}.",
-                    wait=True,
-                )
-                # TODO: Point to the object or visualize its bounding box for the referee
+                Logger.info(self, f"Object: {obj.name}, Category: {obj.category.value}")
+                self.subtask_manager.hri.say(f"I see a {obj.name}.")
                 self.timeout(0.5)
 
             self.current_object_index = 0
@@ -314,7 +288,8 @@ class PickAndPlaceTM(Node):
         # ==================== CLEANUP LOOP ====================
         if self.current_state == PickAndPlaceTM.TaskStates.CLEANUP_LOOP:
             self._track_state_change(PickAndPlaceTM.TaskStates.CLEANUP_LOOP)
-            # Advance past already-handled objects
+
+            # Skip already handled objects
             while (
                 self.current_object_index < len(self.detected_objects)
                 and self.detected_objects[self.current_object_index].is_picked
@@ -331,20 +306,26 @@ class PickAndPlaceTM(Node):
         # ==================== PICK OBJECT ====================
         if self.current_state == PickAndPlaceTM.TaskStates.PICK_OBJECT:
             self._track_state_change(PickAndPlaceTM.TaskStates.PICK_OBJECT)
-            # Always navigate back to the table before picking
+
             table_location = "side_table" if self.use_side_table else "dining_table"
             self.navigate_to(table_location, say=False)
             self.subtask_manager.manipulation.move_to_position("table_stare")
 
-            self.subtask_manager.hri.say(f"I will pick the {self.grasped_object.name}.", wait=False)
-            # TODO: status = self.subtask_manager.manipulation.pick_object(self.grasped_object.detection_data)
-            status = Status.EXECUTION_SUCCESS  # Mock
+            self.subtask_manager.hri.say(
+                f"I will pick the {self.grasped_object.name}.", wait=False
+            )
+
+            # pick_object expects the object name; manipulation server uses active vision
+            status = self.subtask_manager.manipulation.pick_object(
+                self.grasped_object.name
+            )
 
             if status == Status.EXECUTION_SUCCESS:
                 self.grasped_object.is_picked = True
                 if self.first_pick:
-                    Logger.success(self, "FIRST PICK BONUS ACHIEVED!")
+                    Logger.success(self, "FIRST PICK BONUS achieved!")
                     self.first_pick = False
+                self.current_attempts = 0
                 self.current_state = PickAndPlaceTM.TaskStates.DETERMINE_PLACEMENT
             else:
                 Logger.error(self, f"Failed to pick {self.grasped_object.name}.")
@@ -352,8 +333,10 @@ class PickAndPlaceTM(Node):
                 if self.current_attempts >= ATTEMPT_LIMIT:
                     Logger.warning(self, f"Skipping {self.grasped_object.name} after max attempts.")
                     self.current_attempts = 0
+                    self.grasped_object.is_picked = True   # mark as handled to advance loop
                     self.current_object_index += 1
                     self.current_state = PickAndPlaceTM.TaskStates.CLEANUP_LOOP
+                # else stay in PICK_OBJECT to retry
 
         # ==================== DETERMINE PLACEMENT ====================
         if self.current_state == PickAndPlaceTM.TaskStates.DETERMINE_PLACEMENT:
@@ -377,19 +360,22 @@ class PickAndPlaceTM(Node):
         # ==================== CHECK DISHWASHER ====================
         if self.current_state == PickAndPlaceTM.TaskStates.CHECK_DISHWASHER:
             self._track_state_change(PickAndPlaceTM.TaskStates.CHECK_DISHWASHER)
-            # TODO: self.dishwasher_open = self.subtask_manager.vision.is_dishwasher_open()
-            if not self.dishwasher_open:
-                self.current_state = PickAndPlaceTM.TaskStates.REQUEST_DISHWASHER_HELP
-            else:
+            self.navigate_to(Location.DISHWASHER.value, say=False)
+            status, answer = self.subtask_manager.vision.moondream_query(
+                "Is the dishwasher door open? Reply only with yes or no."
+            )
+            if status == Status.EXECUTION_SUCCESS and "yes" in answer.lower():
+                self.dishwasher_open = True
                 self.current_state = PickAndPlaceTM.TaskStates.NAVIGATE_TO_PLACEMENT
+            else:
+                self.current_state = PickAndPlaceTM.TaskStates.REQUEST_DISHWASHER_HELP
 
         # ==================== REQUEST DISHWASHER HELP ====================
         if self.current_state == PickAndPlaceTM.TaskStates.REQUEST_DISHWASHER_HELP:
             self._track_state_change(PickAndPlaceTM.TaskStates.REQUEST_DISHWASHER_HELP)
-            # Per rules §5.2.4: requesting help with dishwasher door/rack incurs NO score penalty.
-            # Robot must clearly state it cannot open/close the door and request the referee to do so.
+            # Per rules: requesting help with dishwasher door/rack has NO score penalty
             self.subtask_manager.hri.say(
-                "I cannot open the dishwasher door. " "Could you please open it for me?",
+                "I cannot open the dishwasher door. Could you please open it for me?",
                 wait=True,
             )
             _, answer = self.subtask_manager.hri.confirm(
@@ -402,7 +388,6 @@ class PickAndPlaceTM(Node):
                 Logger.success(self, "Referee confirmed dishwasher is open.")
                 self.subtask_manager.hri.say("Thank you! I will now place the items.", wait=False)
             else:
-                # Timed out — assume the door was opened and continue
                 Logger.warning(self, "No confirmation received; assuming dishwasher is open.")
                 self.subtask_manager.hri.say(
                     "I did not hear a confirmation, but I will proceed.", wait=False
@@ -417,13 +402,14 @@ class PickAndPlaceTM(Node):
             result = self.navigate_to(placement_loc.value)
 
             if result == Status.EXECUTION_SUCCESS:
-                # Perceive cabinet shelves only on the first cabinet visit
+                # Only perceive cabinet shelves on first cabinet visit
                 if placement_loc == Location.CABINET and not self.shelf_categories:
                     self.current_state = PickAndPlaceTM.TaskStates.PERCEIVE_CABINET_SHELVES
                 else:
                     self.current_state = PickAndPlaceTM.TaskStates.PLACE_OBJECT
             else:
-                Logger.error(self, "Navigation to placement location failed, skipping object.")
+                Logger.error(self, "Navigation to placement failed, skipping object.")
+                self.grasped_object.is_picked = True    # avoid re-trying this object
                 self.current_object_index += 1
                 self.current_state = PickAndPlaceTM.TaskStates.CLEANUP_LOOP
 
@@ -432,86 +418,73 @@ class PickAndPlaceTM(Node):
             self._track_state_change(PickAndPlaceTM.TaskStates.PERCEIVE_CABINET_SHELVES)
             self.subtask_manager.manipulation.move_to_position("cabinet_stare")
 
-            # TODO: replace raw_shelves with actual vision output once available:
-            # status, raw_shelves = self.subtask_manager.vision.analyze_cabinet_shelves()
-            # raw_shelves is expected as {shelf_level: [object_names_already_there]}
-            raw_shelves = {
-                0: ["cup", "mug"],
-                1: ["plate", "bowl"],
-                2: ["container", "bottle"],
-            }
+            # detect_shelf returns (Status, list[ShelfDetection])
+            # Each ShelfDetection has .level, .x1, .x2, .y1, .y2
+            shelf_status, shelf_detections = self.subtask_manager.vision.detect_shelf()
 
-            # Collect only the objects that are destined for the cabinet
-            cabinet_objects = [
-                obj.name
-                for obj in self.detected_objects
-                if self.determine_placement_location(obj) == Location.CABINET
-            ]
+            if shelf_status == Status.EXECUTION_SUCCESS and shelf_detections:
+                # Build a dict { level: [object_names...] } from moondream queries per shelf
+                raw_shelves: dict[int, list[str]] = {}
+                for shelf in shelf_detections:
+                    level = shelf.level
+                    status_q, description = self.subtask_manager.vision.moondream_query(
+                        "List the objects on this shelf, separated by commas."
+                    )
+                    objects_on_shelf = []
+                    if status_q == Status.EXECUTION_SUCCESS and description:
+                        objects_on_shelf = [o.strip() for o in description.split(",") if o.strip()]
+                    raw_shelves[level] = objects_on_shelf
 
-            if cabinet_objects:
-                # Use HRI semantic categorization to match objects to the right shelf
-                cat_status, shelf_categories_str, objects_to_add, shelf_categories_full = (
-                    self.subtask_manager.hri.categorize_objects(cabinet_objects, raw_shelves)
+                # Use hri.categorize_objects to get semantic grouping
+                # It returns (Status, {level: "category_str"}, {level: [objects_to_add]}, {level: [cats]})
+                table_object_names = [obj.name for obj in self.detected_objects if not obj.is_placed]
+                cat_status, shelf_cat_str, _, _ = self.subtask_manager.hri.categorize_objects(
+                    table_objects=table_object_names,
+                    shelves=raw_shelves,
                 )
-
                 if cat_status == Status.EXECUTION_SUCCESS:
-                    self.shelf_categories = shelf_categories_str  # {level: "cat1 cat2"}
-                    # Build a reverse map: object name → shelf level
-                    for level, objs in objects_to_add.items():
-                        for obj_name in objs:
-                            self.cabinet_object_to_shelf[obj_name] = level
-                    Logger.info(self, f"Cabinet placement map: {self.cabinet_object_to_shelf}")
+                    self.shelf_categories = shelf_cat_str   # {level: "category string"}
+                    Logger.info(self, f"Cabinet shelf categories: {self.shelf_categories}")
+                    # Per rules: must announce shelf perception to the referee
+                    for level, cat in self.shelf_categories.items():
+                        self.subtask_manager.hri.say(
+                            f"Shelf {level} contains {cat}.", wait=False
+                        )
+                        self.timeout(0.5)
                 else:
-                    Logger.warning(self, "HRI categorization failed; using default shelf layout.")
-                    self.shelf_categories = {
-                        0: "cups and mugs",
-                        1: "plates and bowls",
-                        2: "containers",
-                    }
+                    Logger.warning(self, "Categorization failed, using empty shelf map.")
+                    self.shelf_categories = {}
             else:
-                self.shelf_categories = {
-                    0: "cups and mugs",
-                    1: "plates and bowls",
-                    2: "containers",
-                }
+                Logger.warning(self, "Shelf detection failed, proceeding without shelf map.")
+                self.shelf_categories = {}
 
-            # Per rules §5.2.13: announce perceived shelf categories to the referee
-            self.subtask_manager.hri.say("I have analyzed the cabinet shelves.", wait=True)
-            for level, cats in self.shelf_categories.items():
-                cat_str = cats if isinstance(cats, str) else ", ".join(cats)
-                self.subtask_manager.hri.say(f"Shelf {level} contains {cat_str}.", wait=False)
-                self.timeout(0.8)
-            self.subtask_manager.hri.say("I will place each object with similar items.", wait=False)
-
-            Logger.info(self, f"Cabinet shelf categories: {self.shelf_categories}")
             self.current_state = PickAndPlaceTM.TaskStates.PLACE_OBJECT
 
         # ==================== PLACE OBJECT ====================
         if self.current_state == PickAndPlaceTM.TaskStates.PLACE_OBJECT:
             self._track_state_change(PickAndPlaceTM.TaskStates.PLACE_OBJECT)
             placement_loc = self.grasped_object.placement_location
+            self.subtask_manager.hri.say(
+                f"Placing the {self.grasped_object.name} at the {placement_loc.value}.",
+                wait=False,
+            )
 
-            # For cabinet objects, announce the target shelf so the referee can verify grouping
-            if placement_loc == Location.CABINET:
-                target_shelf = self.cabinet_object_to_shelf.get(self.grasped_object.name)
-                shelf_cats = self.shelf_categories.get(target_shelf, "appropriate shelf")
-                self.subtask_manager.hri.say(
-                    f"Placing the {self.grasped_object.name} on shelf {target_shelf}, "
-                    f"which contains {shelf_cats}.",
-                    wait=False,
+            if placement_loc == Location.DISHWASHER:
+                # place() lets the manipulation server decide exact position in the rack
+                status = self.subtask_manager.manipulation.place()
+
+            elif placement_loc == Location.TRASH_BIN:
+                status = self.subtask_manager.manipulation.place()
+
+            elif placement_loc == Location.CABINET:
+                # place_on_shelf needs an estimated height; use a generic mid-cabinet height.
+                # A refinement would be to look up the height from shelf_categories.
+                status = self.subtask_manager.manipulation.place_on_shelf(
+                    plane_height=1.0,   # metres — adjust to arena cabinet height
+                    tolerance=0.3,
                 )
             else:
-                self.subtask_manager.hri.say(
-                    f"Placing the {self.grasped_object.name} at the "
-                    f"{placement_loc.value.replace('_', ' ')}.",
-                    wait=False,
-                )
-
-            # TODO: status = self.subtask_manager.manipulation.place_object(
-            #     placement_loc, self.grasped_object, self.shelf_categories,
-            #     target_shelf=self.cabinet_object_to_shelf.get(self.grasped_object.name)
-            # )
-            status = Status.EXECUTION_SUCCESS  # Mock
+                status = self.subtask_manager.manipulation.place()
 
             if status == Status.EXECUTION_SUCCESS:
                 self.grasped_object.is_placed = True
@@ -560,9 +533,10 @@ class PickAndPlaceTM(Node):
             else:
                 Logger.error(
                     self,
-                    f"Failed to reach {item_location.value}, skipping {self.current_breakfast_item['name']}.",
+                    f"Failed to reach {item_location.value}, "
+                    f"skipping {self.current_breakfast_item['name']}.",
                 )
-                self.current_breakfast_item["picked"] = True  # Skip to avoid infinite loop
+                self.current_breakfast_item["picked"] = True   # avoid infinite loop
                 self.current_state = PickAndPlaceTM.TaskStates.GET_BREAKFAST_ITEMS
 
         # ==================== PICK BREAKFAST ITEM ====================
@@ -571,14 +545,16 @@ class PickAndPlaceTM(Node):
             item_name = self.current_breakfast_item["name"]
             self.subtask_manager.manipulation.move_to_position("table_stare")
             self.subtask_manager.hri.say(f"I will pick the {item_name}.", wait=False)
-            # TODO: status = self.subtask_manager.manipulation.pick_object(...)
-            status = Status.EXECUTION_SUCCESS  # Mock
+
+            status = self.subtask_manager.manipulation.pick_object(item_name)
 
             if status == Status.EXECUTION_SUCCESS:
                 self.current_breakfast_item["picked"] = True
                 self.current_state = PickAndPlaceTM.TaskStates.NAVIGATE_TO_DINING
             else:
                 Logger.error(self, f"Failed to pick {item_name}.")
+                # Mark as picked anyway to avoid being stuck; breakfast item is skipped
+                self.current_breakfast_item["picked"] = True
                 self.current_state = PickAndPlaceTM.TaskStates.GET_BREAKFAST_ITEMS
 
         # ==================== NAVIGATE TO DINING ====================
@@ -597,9 +573,10 @@ class PickAndPlaceTM(Node):
             self._track_state_change(PickAndPlaceTM.TaskStates.PLACE_BREAKFAST_ITEM)
             item_name = self.current_breakfast_item["name"]
             self.subtask_manager.hri.say(f"Placing the {item_name}.", wait=False)
-            # Per rules: spoon next to bowl; cereal and milk next to each other; 5 cm clearance
-            # TODO: status = self.subtask_manager.manipulation.place_at_position(item_name, ...)
-            status = Status.EXECUTION_SUCCESS  # Mock
+
+            # Per rules: spoon next to bowl; cereal and milk next to each other; 5 cm clearance.
+            # place() lets the manipulation server handle exact positioning on the table.
+            status = self.subtask_manager.manipulation.place()
 
             if status == Status.EXECUTION_SUCCESS:
                 self.current_breakfast_item["placed"] = True
@@ -612,21 +589,31 @@ class PickAndPlaceTM(Node):
         # ==================== VERIFY BREAKFAST AREA ====================
         if self.current_state == PickAndPlaceTM.TaskStates.VERIFY_BREAKFAST_AREA:
             self._track_state_change(PickAndPlaceTM.TaskStates.VERIFY_BREAKFAST_AREA)
-            # Per rules §5.2.8: spoon must be next to the bowl; cereal and milk next to each other.
-            # Per rules §5.2.9: objects within 5 cm of breakfast items incur a score penalty.
-            # TODO: Use vision to detect nearby objects that violate the 5 cm clearance rule
-            #       and move them away with manipulation before announcing completion.
+            # Per rules: objects within 5 cm of breakfast items incur a penalty.
+            # Use moondream to check if the area around the breakfast items is clear.
+            status, answer = self.subtask_manager.vision.moondream_query(
+                "Is there any object within 5 centimetres of the bowl, spoon, milk, or cereal? "
+                "Reply only with yes or no."
+            )
+            if status == Status.EXECUTION_SUCCESS and "yes" in answer.lower():
+                Logger.warning(self, "Breakfast area not clear — objects too close.")
+                self.subtask_manager.hri.say(
+                    "There are objects too close to the breakfast items. "
+                    "I will try to move them.",
+                    wait=False,
+                )
+                # Best-effort: detect and remove nearby objects
+                det_status, nearby = self.subtask_manager.vision.detect_objects(timeout=5)
+                if det_status == Status.EXECUTION_SUCCESS and nearby:
+                    # Pick the closest object to the breakfast area and drop it elsewhere
+                    nearest = min(nearby, key=lambda b: b.distance)
+                    pick_st = self.subtask_manager.manipulation.pick_object(nearest.classname)
+                    if pick_st == Status.EXECUTION_SUCCESS:
+                        self.subtask_manager.manipulation.place_on_floor()
+            else:
+                Logger.success(self, "Breakfast area is clear.")
 
-            # Announce the breakfast setup to the referee so they can verify rule compliance
-            self.subtask_manager.hri.say(
-                "Breakfast is ready. I have placed the spoon next to the bowl, "
-                "and the cereal next to the milk.",
-                wait=True,
-            )
-            self.subtask_manager.hri.say(
-                "The breakfast area has enough clear space around all items.",
-                wait=False,
-            )
+            self.subtask_manager.hri.say("Breakfast is ready!")
             self.current_state = PickAndPlaceTM.TaskStates.END
 
         # ==================== END ====================
@@ -640,7 +627,7 @@ class PickAndPlaceTM(Node):
 
             sorted_states = sorted(self.state_times.items(), key=lambda x: x[1], reverse=True)
             for state, time_spent in sorted_states:
-                percentage = (time_spent / total_task_time) * 100
+                percentage = (time_spent / total_task_time) * 100 if total_task_time > 0 else 0
                 Logger.info(self, f"{state}: {time_spent:.2f}s ({percentage:.1f}%)")
 
             Logger.info(self, "=== END TIMING REPORT ===")
