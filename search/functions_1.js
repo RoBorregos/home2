@@ -24,7 +24,7 @@ var searchData=
   ['apply_5fstyle_21',['apply_style',['../classmap__area__tagger_1_1MapAreaTagger.html#a43545652430f848a3573bc2f2afab1e7',1,'map_area_tagger.MapAreaTagger.apply_style()'],['../classnav__ui_1_1NavUI.html#ae4a11b8fc154e4b8545545812def5dd8',1,'nav_ui.NavUI.apply_style()']]],
   ['are_5farms_5fdown_22',['are_arms_down',['../classpose__detection_1_1PoseDetection.html#ae951330caf9fd3dd003344de3d7d7895',1,'pose_detection.PoseDetection.are_arms_down()'],['../classvision__general_1_1pose__detection_1_1PoseDetection.html#a6dfe1aeb1699f956d7d85a63fb51fc3a',1,'vision_general.pose_detection.PoseDetection.are_arms_down()']]],
   ['areas_5fdump_23',['areas_dump',['../classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#af1dd370c01da509aae92727d2bcc871f',1,'subtask_managers::nav_tasks::NavigationTasks']]],
-  ['areasservices_24',['AreasServices',['../classAreasServices.html#a8b25b15485a72e823d2db2b2d923f0d3',1,'AreasServices']]],
+  ['areasservices_24',['AreasServices',['../classAreasServices.html#af485297a0f73498464f0a72fa580048b',1,'AreasServices']]],
   ['ask_5fand_5fconfirm_25',['ask_and_confirm',['../classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a7624b0a2f7eb3ebbd68e9324e9279598',1,'subtask_managers::hri_tasks::HRITasks']]],
   ['assign_5fname_26',['assign_name',['../classface__recognition__node_1_1FaceRecognition.html#a99480313eff42a75e45bd944be6b9eee',1,'face_recognition_node::FaceRecognition']]],
   ['async_5fllm_5ftest_27',['async_llm_test',['../classtest__hri__manager_1_1TestHriManager.html#ad188c69408dc075c7061d390b14699a1',1,'test_hri_manager::TestHriManager']]],

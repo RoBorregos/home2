@@ -203,6 +203,9 @@ var annotated_dup =
     [ "MoveItServo", "namespaceMoveItServo.html", [
       [ "MoveItServo", "classMoveItServo_1_1MoveItServo.html", "classMoveItServo_1_1MoveItServo" ]
     ] ],
+    [ "nav_lifecycle_manager", "namespacenav__lifecycle__manager.html", [
+      [ "NavDependencyLifecycleManager", "classnav__lifecycle__manager_1_1NavDependencyLifecycleManager.html", "classnav__lifecycle__manager_1_1NavDependencyLifecycleManager" ]
+    ] ],
     [ "nav_test", "namespacenav__test.html", [
       [ "TestTaskManager", "classnav__test_1_1TestTaskManager.html", "classnav__test_1_1TestTaskManager" ]
     ] ],

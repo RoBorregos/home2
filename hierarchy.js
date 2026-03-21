@@ -18,6 +18,9 @@ var hierarchy =
     [ "receptionist_task_manager.Guest", "classreceptionist__task__manager_1_1Guest.html", null ],
     [ "HandlerParams", "structHandlerParams.html", null ],
     [ "subtask_managers.hri_hand.HRIHand", "classsubtask__managers_1_1hri__hand_1_1HRIHand.html", null ],
+    [ "rclcpp_lifecycle::LifecycleNode", null, [
+      [ "AreasServices", "classAreasServices.html", null ]
+    ] ],
     [ "utils.logger.Logger", "classutils_1_1logger_1_1Logger.html", null ],
     [ "subtask_managers.manipulation_tasks.ManipulationTasks", "classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html", null ],
     [ "metaclass", null, [
@@ -45,7 +48,6 @@ var hierarchy =
     [ "subtask_managers.nav_tasks.NavigationTasks", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html", null ],
     [ "rclcpp::Node", null, [
       [ "AddPrimitivesNode", "classAddPrimitivesNode.html", null ],
-      [ "AreasServices", "classAreasServices.html", null ],
       [ "CallServicesNode", "classCallServicesNode.html", null ],
       [ "ClientNode", "classClientNode.html", null ],
       [ "DetectionsHandlerNode", "classDetectionsHandlerNode.html", null ],
@@ -131,6 +133,9 @@ var hierarchy =
       [ "utils.config.TypeEnum", "classutils_1_1config_1_1TypeEnum.html", null ],
       [ "utils.status.Status", "classutils_1_1status_1_1Status.html", null ],
       [ "utils.task.Task", "classutils_1_1task_1_1Task.html", null ]
+    ] ],
+    [ "LifecycleNode", null, [
+      [ "nav_lifecycle_manager.NavDependencyLifecycleManager", "classnav__lifecycle__manager_1_1NavDependencyLifecycleManager.html", null ]
     ] ],
     [ "Node", null, [
       [ "_storing_groceries.StoringGroceriesTM", "class__storing__groceries_1_1StoringGroceriesTM.html", null ],

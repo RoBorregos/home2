@@ -5,6 +5,7 @@ var dir_85b230a49c06b8444080184d1aa3a1fe =
     [ "map_cleaner.py", "map__cleaner_8py.html", "map__cleaner_8py" ],
     [ "map_publisher.py", "map__publisher_8py.html", "map__publisher_8py" ],
     [ "move_to_location.py", "move__to__location_8py.html", "move__to__location_8py" ],
+    [ "nav_lifecycle_manager.py", "nav__lifecycle__manager_8py.html", "nav__lifecycle__manager_8py" ],
     [ "node_monitor.py", "node__monitor_8py.html", "node__monitor_8py" ],
     [ "remove_person.py", "remove__person_8py.html", "remove__person_8py" ],
     [ "transform_target.py", "transform__target_8py.html", "transform__target_8py" ],

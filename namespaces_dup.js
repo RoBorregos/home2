@@ -204,6 +204,7 @@ var namespaces_dup =
       [ "generate_launch_description", "namespacenav__basics.html#a0ad8a434cdfa5b959bd6a1d5df652146", null ],
       [ "launch_setup", "namespacenav__basics.html#ac5d23aeb26e79af148252a849c2905ca", null ]
     ] ],
+    [ "nav_lifecycle_manager", "namespacenav__lifecycle__manager.html", "namespacenav__lifecycle__manager" ],
     [ "nav_test", "namespacenav__test.html", "namespacenav__test" ],
     [ "nav_ui", "namespacenav__ui.html", "namespacenav__ui" ],
     [ "navigation_composition", "namespacenavigation__composition.html", [
