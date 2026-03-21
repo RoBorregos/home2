@@ -246,10 +246,8 @@ class EGPSRTM(Node):
             return []
 
         self.people_to_ask_command.sort(
-            key=lambda person: (
-                self.exploration_planner.get_distance_between_area_subarea(
-                    self.curr_location, self.curr_sublocation, person["location"], "safe_place"
-                )
+            key=lambda person: self.exploration_planner.get_distance_between_area_subarea(
+                self.curr_location, self.curr_sublocation, person["location"], "safe_place"
             )
         )
 
