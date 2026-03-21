@@ -12,7 +12,6 @@ from utils.status import Status
 from utils.task import Task
 from subtask_managers.manipulation_tasks import ManipulationTasks
 from subtask_managers.vision_tasks import VisionTasks
-from utils.logger import Logger
 
 ATTEMPT_LIMIT = 5
 
@@ -39,11 +38,14 @@ class TestGoToHand(Node):
         self.get_logger().info("Please extend your hand towards the robot.")
         self.get_logger().info("Waiting 3 seconds before detection...")
         import time
+
         time.sleep(3)
 
         # Step 3: Detect hand
         for attempt in range(ATTEMPT_LIMIT):
-            self.get_logger().info(f"Step 3: Detecting hand (attempt {attempt + 1}/{ATTEMPT_LIMIT})...")
+            self.get_logger().info(
+                f"Step 3: Detecting hand (attempt {attempt + 1}/{ATTEMPT_LIMIT})..."
+            )
             status, hand_point = self.vision.detect_hand()
 
             if status != Status.EXECUTION_SUCCESS or hand_point is None:
@@ -54,7 +56,9 @@ class TestGoToHand(Node):
             # Log detailed info about the detected point
             self.get_logger().info("=== HAND POINT DETAILS ===")
             self.get_logger().info(f"  frame_id: '{hand_point.header.frame_id}'")
-            self.get_logger().info(f"  stamp: {hand_point.header.stamp.sec}.{hand_point.header.stamp.nanosec}")
+            self.get_logger().info(
+                f"  stamp: {hand_point.header.stamp.sec}.{hand_point.header.stamp.nanosec}"
+            )
             self.get_logger().info(f"  x: {hand_point.point.x:.4f}")
             self.get_logger().info(f"  y: {hand_point.point.y:.4f}")
             self.get_logger().info(f"  z: {hand_point.point.z:.4f}")

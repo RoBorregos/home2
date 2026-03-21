@@ -2,10 +2,8 @@
 
 import cv2
 import numpy as np
-import os
 from frida_constants.vision_enums import Gestures
 from math import degrees, acos
-from ultralytics import YOLO
 from vision_general.utils.trt_utils import load_yolo_trt
 
 # ── YOLO COCO keypoint indices ──
@@ -36,18 +34,28 @@ class PoseDetection:
         """Run YOLO pose, return (points, conf) for first detected person.
         points: (17, 2) normalized, conf: (17,)."""
         results = self.yolo_pose(image, verbose=False)
-        if (not results or results[0].keypoints is None or
-                results[0].keypoints.xy is None or len(results[0].keypoints.xy) == 0):
+        if (
+            not results
+            or results[0].keypoints is None
+            or results[0].keypoints.xy is None
+            or len(results[0].keypoints.xy) == 0
+        ):
             return None, None
         points = results[0].keypoints.xyn[0].cpu().numpy()
-        conf = (results[0].keypoints.conf[0].cpu().numpy()
-                if results[0].keypoints.conf is not None
-                else np.ones(17, dtype=np.float32))
+        conf = (
+            results[0].keypoints.conf[0].cpu().numpy()
+            if results[0].keypoints.conf is not None
+            else np.ones(17, dtype=np.float32)
+        )
         return points, conf
 
     def get_angle(self, p1, p2, p3):
         p1, p2, p3 = np.array(p1[:2]), np.array(p2[:2]), np.array(p3[:2])
-        l1, l2, l3 = np.linalg.norm(p2 - p3), np.linalg.norm(p1 - p3), np.linalg.norm(p1 - p2)
+        l1, l2, l3 = (
+            np.linalg.norm(p2 - p3),
+            np.linalg.norm(p1 - p3),
+            np.linalg.norm(p1 - p2),
+        )
         denom = 2 * l1 * l2
         if denom == 0:
             return 180.0
@@ -60,8 +68,12 @@ class PoseDetection:
         return conf[LEFT_SHOULDER] > 0.5 and conf[RIGHT_SHOULDER] > 0.5
 
     def are_arms_down(self, points, conf):
-        if (conf[LEFT_WRIST] < KP_CONF or conf[RIGHT_WRIST] < KP_CONF or
-                conf[LEFT_SHOULDER] < KP_CONF or conf[RIGHT_SHOULDER] < KP_CONF):
+        if (
+            conf[LEFT_WRIST] < KP_CONF
+            or conf[RIGHT_WRIST] < KP_CONF
+            or conf[LEFT_SHOULDER] < KP_CONF
+            or conf[RIGHT_SHOULDER] < KP_CONF
+        ):
             return True
         left_arm_down = points[LEFT_WRIST][1] > points[LEFT_SHOULDER][1] + 0.1
         right_arm_down = points[RIGHT_WRIST][1] > points[RIGHT_SHOULDER][1] + 0.1
@@ -95,50 +107,80 @@ class PoseDetection:
 
     def _is_waving(self, points, conf):
         left_angle = 0
-        if (conf[LEFT_SHOULDER] >= KP_CONF and conf[LEFT_ELBOW] >= KP_CONF and
-                conf[LEFT_WRIST] >= KP_CONF):
-            left_angle = self.get_angle(points[LEFT_SHOULDER], points[LEFT_ELBOW], points[LEFT_WRIST])
+        if (
+            conf[LEFT_SHOULDER] >= KP_CONF
+            and conf[LEFT_ELBOW] >= KP_CONF
+            and conf[LEFT_WRIST] >= KP_CONF
+        ):
+            left_angle = self.get_angle(
+                points[LEFT_SHOULDER], points[LEFT_ELBOW], points[LEFT_WRIST]
+            )
         right_angle = 0
-        if (conf[RIGHT_SHOULDER] >= KP_CONF and conf[RIGHT_ELBOW] >= KP_CONF and
-                conf[RIGHT_WRIST] >= KP_CONF):
-            right_angle = self.get_angle(points[RIGHT_SHOULDER], points[RIGHT_ELBOW], points[RIGHT_WRIST])
+        if (
+            conf[RIGHT_SHOULDER] >= KP_CONF
+            and conf[RIGHT_ELBOW] >= KP_CONF
+            and conf[RIGHT_WRIST] >= KP_CONF
+        ):
+            right_angle = self.get_angle(
+                points[RIGHT_SHOULDER], points[RIGHT_ELBOW], points[RIGHT_WRIST]
+            )
         return left_angle > 27 or right_angle > 27
 
     def _is_pointing_left(self, mid_x, points, conf):
-        if (conf[RIGHT_WRIST] < KP_CONF or conf[LEFT_WRIST] < KP_CONF or
-                conf[LEFT_SHOULDER] < KP_CONF):
+        if (
+            conf[RIGHT_WRIST] < KP_CONF
+            or conf[LEFT_WRIST] < KP_CONF
+            or conf[LEFT_SHOULDER] < KP_CONF
+        ):
             return False
         distance_left = points[LEFT_WRIST][0] - points[LEFT_SHOULDER][0]
         return points[RIGHT_WRIST][0] > mid_x or 0.28 < distance_left < 0.6
 
     def _is_pointing_right(self, mid_x, points, conf):
-        if (conf[RIGHT_WRIST] < KP_CONF or conf[LEFT_WRIST] < KP_CONF or
-                conf[RIGHT_SHOULDER] < KP_CONF):
+        if (
+            conf[RIGHT_WRIST] < KP_CONF
+            or conf[LEFT_WRIST] < KP_CONF
+            or conf[RIGHT_SHOULDER] < KP_CONF
+        ):
             return False
         distance_right = points[RIGHT_SHOULDER][0] - points[RIGHT_WRIST][0]
         return points[LEFT_WRIST][0] < mid_x or 0.28 < distance_right < 0.6
 
     def _is_raising_left_arm(self, mid_x, points, conf):
-        if (conf[LEFT_SHOULDER] < KP_CONF or conf[LEFT_ELBOW] < KP_CONF or
-                conf[LEFT_WRIST] < KP_CONF):
+        if (
+            conf[LEFT_SHOULDER] < KP_CONF
+            or conf[LEFT_ELBOW] < KP_CONF
+            or conf[LEFT_WRIST] < KP_CONF
+        ):
             return False
-        angle = self.get_angle(points[LEFT_SHOULDER], points[LEFT_ELBOW], points[LEFT_WRIST])
+        angle = self.get_angle(
+            points[LEFT_SHOULDER], points[LEFT_ELBOW], points[LEFT_WRIST]
+        )
         distance_left = points[LEFT_SHOULDER][1] - points[LEFT_WRIST][1]
-        return (angle < 27 and
-                points[LEFT_WRIST][1] < points[LEFT_SHOULDER][1] and
-                points[LEFT_ELBOW][1] < points[LEFT_SHOULDER][1] and
-                distance_left > 0.25)
+        return (
+            angle < 27
+            and points[LEFT_WRIST][1] < points[LEFT_SHOULDER][1]
+            and points[LEFT_ELBOW][1] < points[LEFT_SHOULDER][1]
+            and distance_left > 0.25
+        )
 
     def _is_raising_right_arm(self, mid_x, points, conf):
-        if (conf[RIGHT_SHOULDER] < KP_CONF or conf[RIGHT_ELBOW] < KP_CONF or
-                conf[RIGHT_WRIST] < KP_CONF):
+        if (
+            conf[RIGHT_SHOULDER] < KP_CONF
+            or conf[RIGHT_ELBOW] < KP_CONF
+            or conf[RIGHT_WRIST] < KP_CONF
+        ):
             return False
-        angle = self.get_angle(points[RIGHT_SHOULDER], points[RIGHT_ELBOW], points[RIGHT_WRIST])
+        angle = self.get_angle(
+            points[RIGHT_SHOULDER], points[RIGHT_ELBOW], points[RIGHT_WRIST]
+        )
         distance_right = points[RIGHT_SHOULDER][1] - points[RIGHT_WRIST][1]
-        return (angle < 27 and
-                points[RIGHT_WRIST][1] < points[RIGHT_SHOULDER][1] and
-                points[RIGHT_ELBOW][1] < points[RIGHT_SHOULDER][1] and
-                distance_right > 0.25)
+        return (
+            angle < 27
+            and points[RIGHT_WRIST][1] < points[RIGHT_SHOULDER][1]
+            and points[RIGHT_ELBOW][1] < points[RIGHT_SHOULDER][1]
+            and distance_right > 0.25
+        )
 
 
 def main():
@@ -155,8 +197,15 @@ def main():
             break
 
         gesture = pose_detection.detectGesture(frame)
-        cv2.putText(frame, f"Gesture: {gesture.value}", (10, 60),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+        cv2.putText(
+            frame,
+            f"Gesture: {gesture.value}",
+            (10, 60),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.8,
+            (0, 255, 0),
+            2,
+        )
         cv2.imshow("Pose and Gesture Detection", frame)
         if cv2.waitKey(1) & 0xFF == ord("q"):
             break

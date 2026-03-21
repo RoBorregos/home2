@@ -6,8 +6,6 @@ re-id them if necessary
 """
 
 import cv2
-import os
-from ultralytics import YOLO
 from vision_general.utils.trt_utils import load_yolo_trt
 import tqdm
 from vision_general.utils.calculations import (

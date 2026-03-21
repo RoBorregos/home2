@@ -1,10 +1,8 @@
 #!/usr/bin/env python3
 
-import os
 import pathlib
 import rclpy
 import rclpy.qos
-from ultralytics import YOLO
 from vision_general.utils.trt_utils import load_yolo_trt
 from rclpy.node import Node
 from cv_bridge import CvBridge

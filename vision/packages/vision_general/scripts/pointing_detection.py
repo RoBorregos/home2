@@ -10,8 +10,6 @@ from frida_interfaces.srv import DetectPointingObject, SetPointingObjectClasses
 from frida_interfaces.msg import ObjectDetectionArray
 import cv2
 import numpy as np
-import os
-from ultralytics import YOLO
 from vision_general.utils.trt_utils import load_yolo_trt
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
@@ -38,7 +36,7 @@ DEFAULT_CLASSES = [
 RIGHT_SHOULDER = 6
 RIGHT_WRIST = 10  # closest to mediapipe's RIGHT_HAND (index 20)
 LEFT_SHOULDER = 5
-LEFT_WRIST = 9    # closest to mediapipe's LEFT_HAND (index 19)
+LEFT_WRIST = 9  # closest to mediapipe's LEFT_HAND (index 19)
 KP_CONF = 0.3
 
 
@@ -178,15 +176,20 @@ class DetectPointingObjectServer(Node):
 
         # Run YOLO pose instead of mediapipe
         results = self.pose_model(img, verbose=False)
-        has_person = (results and results[0].keypoints is not None and
-                      results[0].keypoints.xyn is not None and
-                      len(results[0].keypoints.xyn) > 0)
+        has_person = (
+            results
+            and results[0].keypoints is not None
+            and results[0].keypoints.xyn is not None
+            and len(results[0].keypoints.xyn) > 0
+        )
 
         if has_person:
             points = results[0].keypoints.xyn[0].cpu().numpy()  # normalized (0-1)
-            conf = (results[0].keypoints.conf[0].cpu().numpy()
-                    if results[0].keypoints.conf is not None
-                    else np.ones(17, dtype=np.float32))
+            conf = (
+                results[0].keypoints.conf[0].cpu().numpy()
+                if results[0].keypoints.conf is not None
+                else np.ones(17, dtype=np.float32)
+            )
 
             # Draw keypoints
             if self.VISUALIZE:
@@ -195,43 +198,67 @@ class DetectPointingObjectServer(Node):
                         px = int(points[idx][0] * img.shape[1])
                         py = int(points[idx][1] * img.shape[0])
                         cv2.circle(visualize_img, (px, py), 5, (0, 255, 0), -1)
-                        cv2.putText(visualize_img, str(idx),
-                                    (px, py), cv2.FONT_HERSHEY_SIMPLEX,
-                                    0.5, (255, 0, 0), 2)
+                        cv2.putText(
+                            visualize_img,
+                            str(idx),
+                            (px, py),
+                            cv2.FONT_HERSHEY_SIMPLEX,
+                            0.5,
+                            (255, 0, 0),
+                            2,
+                        )
 
         closest_object = None
         closest_distance = 100000
 
         if has_person:
             # Right hand pointing
-            if (USE_RIGHT_HAND and
-                    conf[RIGHT_WRIST] > KP_CONF and conf[RIGHT_SHOULDER] > KP_CONF and
-                    self._check_in_bounds(points[RIGHT_WRIST]) and
-                    self._check_in_bounds(points[RIGHT_SHOULDER])):
-                right_m = ((points[RIGHT_WRIST][1] - points[RIGHT_SHOULDER][1]) /
-                           (points[RIGHT_WRIST][0] - points[RIGHT_SHOULDER][0] + 1e-6))
-                right_intercept = points[RIGHT_WRIST][1] - right_m * points[RIGHT_WRIST][0]
+            if (
+                USE_RIGHT_HAND
+                and conf[RIGHT_WRIST] > KP_CONF
+                and conf[RIGHT_SHOULDER] > KP_CONF
+                and self._check_in_bounds(points[RIGHT_WRIST])
+                and self._check_in_bounds(points[RIGHT_SHOULDER])
+            ):
+                right_m = (points[RIGHT_WRIST][1] - points[RIGHT_SHOULDER][1]) / (
+                    points[RIGHT_WRIST][0] - points[RIGHT_SHOULDER][0] + 1e-6
+                )
+                right_intercept = (
+                    points[RIGHT_WRIST][1] - right_m * points[RIGHT_WRIST][0]
+                )
                 right_line_start = (0, int(right_intercept * img.shape[0]))
-                right_line_end = (img.shape[1],
-                                  int((right_m * 1 + right_intercept) * img.shape[0]))
-                cv2.line(visualize_img, right_line_start, right_line_end, (0, 255, 0), 2)
+                right_line_end = (
+                    img.shape[1],
+                    int((right_m * 1 + right_intercept) * img.shape[0]),
+                )
+                cv2.line(
+                    visualize_img, right_line_start, right_line_end, (0, 255, 0), 2
+                )
                 closest_object, closest_distance, visualize_img = (
-                    self.check_closest_object(right_m, right_intercept, visualize_img))
+                    self.check_closest_object(right_m, right_intercept, visualize_img)
+                )
 
             # Left hand pointing
-            if (USE_LEFT_HAND and
-                    conf[LEFT_WRIST] > KP_CONF and conf[LEFT_SHOULDER] > KP_CONF and
-                    self._check_in_bounds(points[LEFT_WRIST]) and
-                    self._check_in_bounds(points[LEFT_SHOULDER])):
-                left_m = ((points[LEFT_WRIST][1] - points[LEFT_SHOULDER][1]) /
-                          (points[LEFT_WRIST][0] - points[LEFT_SHOULDER][0] + 1e-6))
+            if (
+                USE_LEFT_HAND
+                and conf[LEFT_WRIST] > KP_CONF
+                and conf[LEFT_SHOULDER] > KP_CONF
+                and self._check_in_bounds(points[LEFT_WRIST])
+                and self._check_in_bounds(points[LEFT_SHOULDER])
+            ):
+                left_m = (points[LEFT_WRIST][1] - points[LEFT_SHOULDER][1]) / (
+                    points[LEFT_WRIST][0] - points[LEFT_SHOULDER][0] + 1e-6
+                )
                 left_intercept = points[LEFT_WRIST][1] - left_m * points[LEFT_WRIST][0]
                 left_line_start = (0, int(left_intercept * img.shape[0]))
-                left_line_end = (img.shape[1],
-                                 int((left_m * 1 + left_intercept) * img.shape[0]))
+                left_line_end = (
+                    img.shape[1],
+                    int((left_m * 1 + left_intercept) * img.shape[0]),
+                )
                 cv2.line(visualize_img, left_line_start, left_line_end, (0, 255, 0), 2)
                 closest_object, closest_distance, visualize_img = (
-                    self.check_closest_object(left_m, left_intercept, visualize_img))
+                    self.check_closest_object(left_m, left_intercept, visualize_img)
+                )
 
             if closest_object is not None:
                 marker = Marker()
