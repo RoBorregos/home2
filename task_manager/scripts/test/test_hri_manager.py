@@ -13,14 +13,7 @@ from datetime import datetime
 from typing import Union
 
 import rclpy
-
-try:
-    from config.hri.debug import config as test_hri_config
-except ModuleNotFoundError:
-    try:
-        from task_manager.config.hri.debug import config as test_hri_config
-    except ModuleNotFoundError:
-        from task_manager.scripts.config.hri.debug import config as test_hri_config
+from config.hri.debug import config as test_hri_config
 from rclpy.node import Node
 from sklearn.metrics.pairwise import cosine_similarity
 from subtask_managers.hri_tasks import HRITasks
