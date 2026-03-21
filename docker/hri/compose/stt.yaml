@@ -6,6 +6,7 @@ services:
     build:
       context: ../../..
       dockerfile: docker/hri/dockerfiles/Dockerfile.stt
+    runtime: ${RUNTIME:-runc}
     volumes:
       - ../../../hri/microservices/stt/:/app
       - ../../../hri/packages/speech/speech/:/app/speech
