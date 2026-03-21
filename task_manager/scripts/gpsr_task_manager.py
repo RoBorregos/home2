@@ -19,8 +19,6 @@ from utils.subtask_manager import SubtaskManager, Task
 
 ATTEMPT_LIMIT = 3
 MAX_COMMANDS = 3
-USE_QR = True  # Set to False if you want to use speech recognition instead of QR code reading
-QR_CODE_ATTEMPTS = 20
 
 
 def confirm_command(interpreted_text, target_info):
@@ -159,50 +157,20 @@ class GPSRTM(Node):
                 named_position="front_stare", velocity=0.5, degrees=True
             )
 
-            global USE_QR
-            if not USE_QR and self.current_hear_attempt >= 3:
-                self.subtask_manager.hri.say(
-                    "I couldn't understand the command via speech. I want to default to a qr code instead.",
-                    wait=True,
-                    speed=1,
-                )
-                USE_QR = True
-
-            if USE_QR:
-                self.subtask_manager.hri.say(
-                    "Please show me the QR code with your command. Point it to my face, please make sure it looks clear and complete in my screen below.",
-                    wait=False,
-                    speed=1,
-                )
-                for _ in range(QR_CODE_ATTEMPTS):
-                    s, result = self.subtask_manager.vision.read_qr()
-                    if s == Status.EXECUTION_SUCCESS and len(result) > 0:
-                        self.subtask_manager.hri.say(
-                            f"I have read the QR code. It says: {result}.", wait=False
-                        )
-                        user_command = result
-                        break
-                    self.timeout(0.3)
-            else:
-                s, user_command = self.subtask_manager.hri.ask_and_confirm(
-                    "What is your command?",
-                    "LLM_command",
-                    context="The user was asked to say a command. We want to infer his complete instruction from the response",
-                    confirm_question=confirm_command,
-                    use_hotwords=False,
-                    retries=ATTEMPT_LIMIT,
-                    min_wait_between_retries=5.0,
-                    skip_extract_data=True,
-                )
+            s, user_command = self.subtask_manager.hri.ask_and_confirm(
+                "What is your command?",
+                "LLM_command",
+                context="The user was asked to say a command. We want to infer his complete instruction from the response",
+                confirm_question=confirm_command,
+                use_hotwords=False,
+                retries=ATTEMPT_LIMIT,
+                min_wait_between_retries=5.0,
+                skip_extract_data=True,
+            )
 
             if s != Status.EXECUTION_SUCCESS:
-                if USE_QR:
-                    self.subtask_manager.hri.say(
-                        "I am sorry, I could not read the QR code. Please try again."
-                    )
-                else:
-                    self.subtask_manager.hri.say("I am sorry, I could not understand you.")
-                    self.current_hear_attempt += 1
+                self.subtask_manager.hri.say("I am sorry, I could not understand you.")
+                self.current_hear_attempt += 1
             elif not self.subtask_manager.hri.check_coherence(user_command):
                 self.subtask_manager.hri.say(
                     "I didn't catch that correctly or the command was incomplete. Please tell me again.",
