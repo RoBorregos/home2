@@ -1,6 +1,6 @@
 services:
   stt:
-    profiles: [hric, carry, gpsr, storing]
+    profiles: [hric, carry, gpsr, storing, pick_and_place]
     container_name: home2-hri-stt-${ENV_TYPE:-cpu}
     image: roborregos/home2:hri-stt-${ENV_TYPE:-cpu}
     build:

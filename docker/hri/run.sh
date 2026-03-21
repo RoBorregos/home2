@@ -167,6 +167,10 @@ case $TASK in
     PROFILES=("gpsr")
     RUN="ros2 launch speech hri_launch.py"
     ;;
+  "--pick-and-place")
+    PROFILES=("pick_and_place")
+    RUN="ros2 launch speech hri_launch.py"
+    ;;
   *)
     PROFILES=("*")
     RUN="bash"
