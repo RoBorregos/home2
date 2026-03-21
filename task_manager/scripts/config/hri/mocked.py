@@ -20,6 +20,7 @@ def mock_interpret_keyword(keywords: list[str], timeout: float):
 
 __config = {
     "topic_config": [],
+    "mock_db": True,
     "mock_config": [
         {
             "function_name": "extract_data",

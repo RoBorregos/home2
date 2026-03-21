@@ -26,4 +26,13 @@ RUN echo ". /home/ros/setup_gpd.sh" >> /home/ros/.bashrc
 RUN echo "export GPD_INSTALL_DIR=/workspace/install/gpd" >> /home/ros/.bashrc
 RUN echo "source /workspace/frida_interfaces_cache/install/setup.bash" >> /home/ros/.bashrc
 
+# CycloneDDS
+RUN sudo apt-get update -qq && sudo apt-get install -y -qq ros-humble-rmw-cyclonedds-cpp \
+    && sudo rm -rf /var/lib/apt/lists/*
+COPY docker/cyclonedds_setup.sh /usr/local/bin/cyclonedds_setup.sh
+RUN sudo chmod +x /usr/local/bin/cyclonedds_setup.sh && sudo /usr/local/bin/cyclonedds_setup.sh
+ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+ENV CYCLONEDDS_URI=file:///etc/cyclonedds.xml
+RUN echo "source /usr/local/bin/cyclonedds_setup.sh" >> /home/ros/.bashrc
+
 WORKDIR /workspace

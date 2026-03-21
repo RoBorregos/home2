@@ -7,12 +7,13 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import LaunchConfiguration, PathJoinSubstitution
 from launch_ros.substitutions import FindPackageShare
 from launch.conditions import UnlessCondition, IfCondition
+from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument,OpaqueFunction
 
-def generate_launch_description():
+def launch_function(context, *args, **kwargs):
     pkg_file_route = get_package_share_directory('nav_main')
     rtab_params_file = os.path.join(pkg_file_route,'config', 'rtabmap', 'rtabmap_default_config.yaml')
     nav2_params_file = os.path.join(pkg_file_route,'config', 'nav2_standard.yaml')
-    rtabmap_map_name = LaunchConfiguration('map_name', default='rtab_lab_6march.db')
+    rtabmap_map_name = LaunchConfiguration('map_name', default='lab_09_march.db')
     rtab_params = LaunchConfiguration('rtab_config_file', default=rtab_params_file)
     nav2_params = LaunchConfiguration('nav2_config_file', default=nav2_params_file)
     localization = LaunchConfiguration('localization', default='true')
@@ -42,9 +43,18 @@ def generate_launch_description():
             )),
         launch_arguments={'localization': localization, 'rtab_config_file': rtab_params, 'nav2_config_file': nav2_params, 'nav2': nav2_activate, 'map_name': rtabmap_map_name}.items(),
         )
-    
-    return LaunchDescription([
+
+    map_name_str = rtabmap_map_name.perform(context)
+    map_context_node = Node(
+        package='map_context',
+        executable='map_service',
+        parameters=[{'map_name': map_name_str[:-3]}],
+    )
+
+    return [
         nav_basics,
         rtabmapnav,
-        
-    ])
+        map_context_node,
+    ]
+def generate_launch_description():
+    return LaunchDescription([OpaqueFunction(function=launch_function)])
