@@ -12,7 +12,7 @@ from rclpy.executors import ExternalShutdownException
 
 from frida_interfaces.msg import AudioData, SoundEvent
 
-from edge_impulse_linux.audio import AudioImpulseRunner
+from edge_impulse_linux.runner import ImpulseRunner
 
 SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 MODEL_PATH = os.path.abspath(
@@ -45,16 +45,14 @@ class SoundClassificationNode(Node):
         events_topic = (
             self.get_parameter("SOUND_EVENTS_TOPIC").get_parameter_value().string_value
         )
-        model_path = (
-            self.get_parameter("model_path").get_parameter_value().string_value
-        )
+        model_path = self.get_parameter("model_path").get_parameter_value().string_value
 
         self.model_path = model_path
         self.load_model()
 
         self.audio_buffer = np.array([], dtype=np.float32)
-        self._audio_queue = queue.Queue(maxlen=10)
-        self.executor = ThreadPoolExecutor(max_workers=1)
+        self._audio_queue = queue.Queue(maxsize=10)
+        self.inference_executor = ThreadPoolExecutor(max_workers=1)
 
         self.audio_publisher = self.create_publisher(SoundEvent, events_topic, 10)
         self.create_subscription(AudioData, audio_topic, self._audio_callback, 10)
@@ -71,9 +69,9 @@ class SoundClassificationNode(Node):
                 self.get_logger().error(f"Model not found at {self.model_path}")
                 raise FileNotFoundError(f"Model file not found: {self.model_path}")
 
-            self.runner = AudioImpulseRunner(self.model_path)
+            self.runner = ImpulseRunner(self.model_path)
             self.model_info = self.runner.init()
-            labels = self.model_info['model_parameters']['labels']
+            labels = self.model_info["model_parameters"]["labels"]
             self.get_logger().info(f"Edge Impulse model loaded. Labels: {labels}")
         except Exception as e:
             self.get_logger().error(f"Failed to load Edge Impulse model: {e}")
@@ -99,18 +97,17 @@ class SoundClassificationNode(Node):
 
             while len(self.audio_buffer) >= WINDOW_SIZE_SAMPLES:
                 window = self.audio_buffer[:WINDOW_SIZE_SAMPLES].copy()
-                self.executor.submit(self._classify_window, window)
+                self.inference_executor.submit(self._classify_window, window)
                 self.audio_buffer = self.audio_buffer[WINDOW_STRIDE_SAMPLES:]
 
     def _classify_window(self, audio_window):
         try:
-            audio_int16 = (audio_window * 32768.0).astype(np.int16)
-            audio_bytes = audio_int16.tobytes()
+            # The model requires float casting
+            audio_list = audio_window.astype(np.float32).tolist()
+            result = self.runner.classify(audio_list)
 
-            result = self.runner.classify(audio_bytes)
-
-            if result and 'result' in result and 'classification' in result['result']:
-                classifications = result['result']['classification']
+            if result and "result" in result and "classification" in result["result"]:
+                classifications = result["result"]["classification"]
 
                 timestamp_ms = int(time.time() * 1000)
 
