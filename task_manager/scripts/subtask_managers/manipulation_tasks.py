@@ -301,7 +301,7 @@ class ManipulationTasks:
         try:
             future = self.follow_face_client.call_async(request)
             # Mode switching in follow_face_node takes time, use longer timeout
-            rclpy.spin_until_future_complete(self.node, future, timeout_sec=20.0)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
             result = future.result()
 
             if result is None:
