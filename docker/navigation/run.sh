@@ -108,6 +108,9 @@ case $TASK in
     "--hric")
         RUN="ros2 launch nav_main navigation_composition.launch.py"
         ;;
+    "--gpsr")
+        RUN="ros2 launch nav_main navigation_composition.launch.py"
+        ;;
     *)
         RUN="bash"
         ;;
