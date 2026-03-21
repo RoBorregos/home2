@@ -20,6 +20,13 @@ def get2DCentroid(box, frame):
     return (int(xmin + width / 2), int(ymin + height / 2))
 
 
+def getAngle(x, width, max_degree):
+    """Get the angle for the robot to point at the available seat."""
+    diff = x - (width / 2)
+    move = diff * max_degree / (width / 2)
+    return move
+
+
 def get2DCentroidNormalized(box, frame):
     ymin = float(box[0]) * frame.shape[0]
     xmin = float(box[1]) * frame.shape[1]

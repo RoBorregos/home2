@@ -1,2 +1,0 @@
-geometry_msgs/PointStamped table_point
-geometry_msgs/PointStamped[] people_points

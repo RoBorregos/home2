@@ -14,10 +14,9 @@ import math
 
 from frida_interfaces.srv import (
     CropQuery,
-    CustomerTables,
     Customer,
 )
-from frida_interfaces.msg import CustomerTable
+
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
     IMAGE_TOPIC,
@@ -25,15 +24,14 @@ from frida_constants.vision_constants import (
     GET_CUSTOMER_TOPIC,
     CAMERA_INFO_TOPIC,
     DEPTH_IMAGE_TOPIC,
-    CUSTOMER_TABLES_TOPIC,
+    YOLO_DETECTION_TOPIC,
 )
+
 from vision_general.utils.calculations import (
     get_depth,
     deproject_pixel_to_point,
 )
 from frida_interfaces.srv import YoloDetect
-
-TABLE_CUSTOMER_DISTANCE_THRESHOLD = 1.5  # meters
 
 
 class RestaurantCommands(Node):
@@ -57,18 +55,11 @@ class RestaurantCommands(Node):
         self.image_publisher = self.create_publisher(Image, IMAGE_TOPIC, 10)
 
         self.yolo_client = self.create_client(
-            YoloDetect, "yolo_detect", callback_group=self.callback_group
+            YoloDetect, YOLO_DETECTION_TOPIC, callback_group=self.callback_group
         )
 
         self.customer_client = self.create_client(
             Customer, GET_CUSTOMER_TOPIC, callback_group=self.callback_group
-        )
-
-        self.customer_table_client = self.create_service(
-            CustomerTables,
-            CUSTOMER_TABLES_TOPIC,
-            self.customer_table_callback,
-            callback_group=self.callback_group,
         )
 
         while not self.yolo_client.wait_for_service(timeout_sec=1.0):
@@ -87,64 +78,6 @@ class RestaurantCommands(Node):
         self.moondream_client = self.create_client(
             CropQuery, CROP_QUERY_TOPIC, callback_group=self.callback_group
         )
-
-    def customer_table_callback(self, request, response):
-        self.get_logger().info("Received customer table request")
-
-        # Get tables from YOLO.
-        tables = self.get_detections([60])
-        customer_points = self.get_customer_points()
-
-        if not customer_points or not tables:
-            self.get_logger().error("No detections found")
-            response.customerTables = []
-            response.success = False
-            return response
-
-        reference_header = customer_points[0].header if customer_points else None
-
-        # Prepare one output CustomerTable per detected table.
-        table_groups = []
-        for table in tables:
-            table_msg = CustomerTable()
-            table_msg.table_point = self.build_point_stamped_from_xyz(
-                table["point3d"], reference_header
-            )
-            table_msg.people_points = []
-            table_groups.append(table_msg)
-
-        assigned_customers = 0
-        for customer in customer_points:
-            customer_xyz = (
-                float(customer.point.x),
-                float(customer.point.y),
-                float(customer.point.z),
-            )
-
-            closest_table_idx = -1
-            closest_distance = float("inf")
-
-            for idx, table in enumerate(tables):
-                distance = self.euclidean_distance(table["point3d"], customer_xyz)
-                if distance < closest_distance:
-                    closest_distance = distance
-                    closest_table_idx = idx
-
-            if (
-                closest_table_idx >= 0
-                and closest_distance <= TABLE_CUSTOMER_DISTANCE_THRESHOLD
-            ):
-                table_groups[closest_table_idx].people_points.append(customer)
-                assigned_customers += 1
-
-        response.customerTables = table_groups
-
-        response.success = True
-
-        self.get_logger().info(
-            f"Associated {assigned_customers}/{len(customer_points)} customers to tables"
-        )
-        return response
 
     def build_point_stamped_from_xyz(self, xyz, reference_header=None):
         point_stamped = PointStamped()

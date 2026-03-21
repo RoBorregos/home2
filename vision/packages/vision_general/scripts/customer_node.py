@@ -12,6 +12,7 @@ from vision_general.utils.calculations import (
     get2DCentroid,
     get_depth,
     deproject_pixel_to_point,
+    getAngle,
 )
 
 import rclpy
@@ -158,39 +159,31 @@ class CustomerNode(Node):
         """Set the target to track (Default: Largest person in frame)"""
         res.found = False
         res.points = []
+        res.angles = []  # Add angles to response
         print("running")
         if self.image is None:
             self.get_logger().warn("No image available")
-
             return res
 
         self.frame = copy.deepcopy(self.image)
-
         self.output_image = self.frame.copy()
         results = copy.deepcopy(self.results)
 
         for out in results:
             for box in out.boxes:
                 x1, y1, x2, y2 = [round(x) for x in box.xyxy[0].tolist()]
-
-                # Get confidence
                 prob = round(box.conf[0].item(), 2)
-
                 if prob < CONF_THRESHOLD:
                     continue
-
                 cv2.rectangle(self.output_image, (x1, y1), (x2, y2), (0, 0, 255), 2)
                 bbox = box.xyxy[0].tolist()
-
                 cropped_image = self.frame[y1:y2, x1:x2]
                 self.customer_image = copy.deepcopy(cropped_image)
                 raising = self.pose_detection.is_waving_customer(cropped_image)
                 sitting = self.pose_detection.is_sitting_yolo(cropped_image)
-
                 if not sitting:
                     self.get_logger().info("Checking sitting with moondream")
                     sitting = self.is_sitting_moondream(bbox)
-
                 if raising and sitting:
                     self.get_logger().info("Customer raising hand and sitting detected")
                     cv2.rectangle(
@@ -222,14 +215,12 @@ class CustomerNode(Node):
                         point2Dpoint.x = float(point2D_x_coord_normalized)
                         point2Dpoint.y = 0.0
                         point2Dpoint.z = 0.0
-                        # self.get_logger().info(f"frame_shape: {self.frame.shape[1]} Point2D: {point2D[1]} normalized_point2D: {point2D_x_coord_normalized}")
                         self.centroid_publisher.publish(point2Dpoint)
                         depth = get_depth(self.depth_image, point2D)
                         point_2d_temp = (point2D[1], point2D[0])
                         point3D = deproject_pixel_to_point(
                             self.imageInfo, point_2d_temp, depth
                         )
-                        # print(point3D)
                         point3D = (
                             float(point3D[0]),
                             float(point3D[1]),
@@ -238,9 +229,14 @@ class CustomerNode(Node):
                         coords.point.x = point3D[0]
                         coords.point.y = point3D[1]
                         coords.point.z = point3D[2]
-                        # self.point_pub.publish(coords)
                         self.results_publisher.publish(coords)
                         res.points.append(coords)
+                        # Calculate angle for the customer (center x of bbox)
+                        center_x = (x1 + x2) / 2
+                        angle = getAngle(
+                            center_x, self.frame.shape[1], 50
+                        )  # MAX_DEGREE=50 as in seat
+                        res.angles.append(angle)
                     res.found = True
                     self.success("Customer found")
 

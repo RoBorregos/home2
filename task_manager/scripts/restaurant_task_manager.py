@@ -20,7 +20,6 @@ MOCK_HRI = False
 MOCK_VISION = False
 
 ATTEMPT_LIMIT = 3
-TRAY_THRESHOLD = 2  # Use tray if table has more than 2 customers
 
 
 class RestaurantTaskManager(Node):
@@ -45,7 +44,7 @@ class RestaurantTaskManager(Node):
 
         self.running_task = True
 
-        # Table data structure: {table_id: {'customer_points': [PointStamped], 'orders': [str], 'coordinates': PointStamped, 'num_customers': int}}
+        # Table data structure: {table_id: {'customer_points': [PointStamped], 'customer_angles': [float], 'orders': [str], 'coordinates': PointStamped, 'num_customers': int}}
         self.tables = {}
         self.table_counter = 0
         self.current_table_id = None
@@ -57,8 +56,8 @@ class RestaurantTaskManager(Node):
         self.current_delivery_item_index = 0
         self.pick_attempts = 0
 
-        # TODO: check correct angles
-        self.pan_angles = [-40, -20, 0, 20, 40]
+        # Pan angles per-customer (from vision)
+        self.pan_angles = []
 
         self.current_state = RestaurantTaskManager.TaskStates.WAIT_FOR_BUTTON
 
@@ -164,17 +163,19 @@ class RestaurantTaskManager(Node):
 
                 Logger.info(self, f"Detected {len(customer_tables)} table(s) with customers")
 
-                # Create table entries
-                for idx, table_msg in enumerate(customer_tables):
+                # Create table entries (customer_tables is now a list of dicts or similar, not message objects)
+                for idx, table_data in enumerate(customer_tables):
                     table_id = self.table_counter
                     self.table_counter += 1
-                    position = table_msg.table_point
-                    customer_points = table_msg.people_points
+                    # Only use 'people_points' and 'people_angles' now
+                    customer_points = table_data.get("people_points", [])
+                    customer_angles = table_data.get("people_angles", [])
                     num_customers = len(customer_points)
                     self.tables[table_id] = {
                         "customer_points": customer_points,
+                        "customer_angles": customer_angles,
                         "orders": [],
-                        "coordinates": position,
+                        "coordinates": None,  # No table_point anymore
                         "num_customers": num_customers,
                     }
 
@@ -208,20 +209,14 @@ class RestaurantTaskManager(Node):
                 )
                 self.subtask_manager.hri.say(f"I will now go to table {self.current_table_id + 1}.")
 
-                target_point = table["coordinates"] if table["coordinates"] else None
-
-                self.subtask_manager.manipulation.move_joint_positions(
-                    named_position="nav_pose", velocity=0.5, degrees=True
-                )
-                self.subtask_manager.nav.resume_nav()
-                status = self.subtask_manager.nav.move_to_point(target_point)
-                self.subtask_manager.nav.pause_nav()
-
-                # Overwrite table coordinates with actual position
-                if table["coordinates"] is None:
-                    # TODO: save current robot position as table coordinates
-                    table["coordinates"] = target_point
-                    Logger.info(self, f"Saved coordinates for table {self.current_table_id}")
+                # No table point to navigate to; optionally, could use first customer point if needed
+                # If you want to move to a customer, you could do:
+                # if table["customer_points"]:
+                #     target_point = table["customer_points"][0]
+                #     self.subtask_manager.nav.move_to_point(target_point)
+                # else:
+                #     target_point = None
+                # For now, skip navigation to table point
 
                 self.current_customer_index = 0
                 self.current_state = RestaurantTaskManager.TaskStates.TAKE_TABLE_ORDERS
@@ -236,12 +231,19 @@ class RestaurantTaskManager(Node):
                     f"Taking order from customer {self.current_customer_index + 1}/{table['num_customers']} at table {self.current_table_id}",
                 )
 
-                # Look at the current customer using their PointStamped
-                customer_point = table["customer_points"][self.current_customer_index]
-                # TODO: MANIP. Check correct angles for looking at customer
-                self.subtask_manager.manipulation.look_at_point(customer_point)
-                self.timeout(1)
+                # Get angle for the current customer
+                customer_angle = None
+                if (
+                    "customer_angles" in table
+                    and len(table["customer_angles"]) > self.current_customer_index
+                ):
+                    customer_angle = table["customer_angles"][self.current_customer_index]
+                else:
+                    customer_angle = 0  # fallback if not available
 
+                # Face the customer using the angle
+                self.subtask_manager.manipulation.pan_to(customer_angle)
+                self.timeout(1)
                 self.subtask_manager.manipulation.move_joint_positions(
                     named_position="front_stare", velocity=0.5, degrees=True
                 )
@@ -254,7 +256,14 @@ class RestaurantTaskManager(Node):
                 )
 
                 if status == Status.EXECUTION_SUCCESS and order:
-                    table["orders"].append(order)
+                    # Save order with customer coordinates
+                    customer_point = None
+                    if (
+                        "customer_points" in table
+                        and len(table["customer_points"]) > self.current_customer_index
+                    ):
+                        customer_point = table["customer_points"][self.current_customer_index]
+                    table["orders"].append({"order": order, "customer_point": customer_point})
                     self.subtask_manager.hri.say(f"Thank you! I have noted your order: {order}.")
                     Logger.success(
                         self,
@@ -269,7 +278,13 @@ class RestaurantTaskManager(Node):
                         question="What is your order?", use_hotwords=False
                     )
                     if status2 == Status.EXECUTION_SUCCESS and order2:
-                        table["orders"].append(order2)
+                        customer_point = None
+                        if (
+                            "customer_points" in table
+                            and len(table["customer_points"]) > self.current_customer_index
+                        ):
+                            customer_point = table["customer_points"][self.current_customer_index]
+                        table["orders"].append({"order": order2, "customer_point": customer_point})
                         self.subtask_manager.hri.say(
                             f"Thank you! I have noted your order: {order2}."
                         )
@@ -305,7 +320,8 @@ class RestaurantTaskManager(Node):
                         question="What is your additional order?", use_hotwords=False
                     )
                     if status == Status.EXECUTION_SUCCESS and order:
-                        table["orders"].append(order)
+                        # Save with no specific customer_point (could be improved by asking)
+                        table["orders"].append({"order": order, "customer_point": None})
                         self.subtask_manager.hri.say(f"I have added {order} to your table's order.")
 
                 # Move to next table
@@ -342,143 +358,87 @@ class RestaurantTaskManager(Node):
                     f"Preparing delivery for table {self.current_table_id} ({len(table['orders'])} items)...",
                 )
 
-                # Decide: tray or individual items
-                if table["num_customers"] > TRAY_THRESHOLD:
-                    # Use tray
-                    Logger.info(
-                        self,
-                        f"Table {self.current_table_id} has {table['num_customers']} customers. Using tray.",
-                    )
-                    self.subtask_manager.hri.say(
-                        f"Please place all items on my tray: {', '.join(table['orders'])}"
-                    )
-
-                    # Wait for confirmation that items are on tray
-                    status, confirmation = self.subtask_manager.hri.confirm(
-                        "Are all items on the tray? Say yes when ready.",
-                        False,
-                        retries=5,
-                        wait_between_retries=3,
-                    )
-
-                    if confirmation == "yes":
-                        self.subtask_manager.hri.say(
-                            f"Thank you. I will now deliver to table {self.current_table_id + 1}."
-                        )
-                        table["using_tray"] = True
-                        self.current_delivery_item_index = 0
-                        self.current_state = RestaurantTaskManager.TaskStates.DELIVER_TO_TABLE
-                    else:
-                        Logger.warning(self, "Tray not confirmed ready. Retrying...")
-                        self.timeout(2)
-                else:
-                    # Pick items one by one
-                    Logger.info(
-                        self,
-                        f"Table {self.current_table_id} has {table['num_customers']} customers. Picking items individually.",
-                    )
-                    table["using_tray"] = False
-                    self.current_delivery_item_index = 0
-                    self.current_state = RestaurantTaskManager.TaskStates.DELIVER_TO_TABLE
+                # Pick items one by one
+                Logger.info(
+                    self,
+                    f"Table {self.current_table_id} has {table['num_customers']} customers. Picking items individually.",
+                )
+                table["using_tray"] = False
+                self.current_delivery_item_index = 0
+                self.current_state = RestaurantTaskManager.TaskStates.DELIVER_TO_TABLE
 
         if self.current_state == RestaurantTaskManager.TaskStates.DELIVER_TO_TABLE:
             table = self.tables[self.current_table_id]
 
-            if table["using_tray"]:
-                # Deliver tray to table
-                Logger.state(self, f"Delivering tray to table {self.current_table_id}...")
+            # Deliver items one by one
 
-                # Navigate to table
+            if self.current_delivery_item_index < len(table["orders"]):
+                order_entry = table["orders"][self.current_delivery_item_index]
+                item = order_entry["order"] if isinstance(order_entry, dict) else order_entry
+                customer_point = (
+                    order_entry["customer_point"] if isinstance(order_entry, dict) else None
+                )
+
+                Logger.state(
+                    self,
+                    f"Picking item {self.current_delivery_item_index + 1}/{len(table['orders'])}: {item}",
+                )
+
+                # At bar, pick the item
                 self.subtask_manager.manipulation.move_joint_positions(
-                    named_position="nav_pose", velocity=0.5, degrees=True
-                )
-                self.subtask_manager.nav.resume_nav()
-                status = self.subtask_manager.nav.move_to_point(table["coordinates"])
-                self.subtask_manager.nav.pause_nav()
-
-                # Ask customers to take items
-                self.subtask_manager.hri.say(
-                    f"I have arrived at table {self.current_table_id + 1} with your order. Please take the items from the tray."
+                    named_position="front_stare", velocity=0.5, degrees=True
                 )
 
-                status, confirmation = self.subtask_manager.hri.confirm(
-                    "Have you taken all items? Say yes when done.",
-                    False,
-                    retries=5,
-                    wait_between_retries=3,
-                )
+                status = self.pick_object(item)
 
-                if confirmation == "yes":
-                    self.subtask_manager.hri.say("Enjoy your meal!")
-                    # Move to next table
-                    self.current_table_index += 1
-                    self.current_state = RestaurantTaskManager.TaskStates.NAVIGATE_TO_BAR
-
-            else:
-                # Deliver items one by one
-                if self.current_delivery_item_index < len(table["orders"]):
-                    item = table["orders"][self.current_delivery_item_index]
-
-                    Logger.state(
-                        self,
-                        f"Picking item {self.current_delivery_item_index + 1}/{len(table['orders'])}: {item}",
+                if status == Status.EXECUTION_SUCCESS:
+                    Logger.success(
+                        self, f"Picked {item}. Delivering to table {self.current_table_id}..."
                     )
 
-                    # At bar, pick the item
+                    # Navigate to the saved customer_point if available, else fallback
                     self.subtask_manager.manipulation.move_joint_positions(
-                        named_position="front_stare", velocity=0.5, degrees=True
+                        named_position="nav_pose", velocity=0.5, degrees=True
+                    )
+                    self.subtask_manager.nav.resume_nav()
+                    if customer_point is not None:
+                        self.subtask_manager.nav.move_to_point(customer_point)
+                    else:
+                        # fallback: move to table (could be None)
+                        self.subtask_manager.nav.move_to_point(table["coordinates"])
+                    self.subtask_manager.nav.pause_nav()
+
+                    # Place item on table
+                    self.subtask_manager.hri.say(f"Here is your {item}.")
+                    self.subtask_manager.manipulation.move_joint_positions(
+                        named_position="table_stare", velocity=0.5, degrees=True
                     )
 
-                    status = self.pick_object(item)
+                    status = self.place_object_with_retries()
 
                     if status == Status.EXECUTION_SUCCESS:
-                        Logger.success(
-                            self, f"Picked {item}. Delivering to table {self.current_table_id}..."
-                        )
-
-                        # Navigate to table
-                        self.subtask_manager.manipulation.move_joint_positions(
-                            named_position="nav_pose", velocity=0.5, degrees=True
-                        )
-                        self.subtask_manager.nav.resume_nav()
-                        self.subtask_manager.nav.move_to_point(table["coordinates"])
-                        self.subtask_manager.nav.pause_nav()
-
-                        # Place item on table
-                        self.subtask_manager.hri.say(f"Here is your {item}.")
-                        self.subtask_manager.manipulation.move_joint_positions(
-                            named_position="table_stare", velocity=0.5, degrees=True
-                        )
-
-                        status = self.place_object_with_retries()
-
-                        if status == Status.EXECUTION_SUCCESS:
-                            Logger.success(
-                                self, f"Delivered {item} to table {self.current_table_id}"
-                            )
-                            self.current_delivery_item_index += 1
-
-                            # Return to bar for next item
-                            if self.current_delivery_item_index < len(table["orders"]):
-                                self.subtask_manager.hri.say("I will get your next item.")
-                                self.subtask_manager.nav.resume_nav()
-                                future = self.subtask_manager.nav.move_to_zero()
-                                rclpy.spin_until_future_complete(
-                                    self.subtask_manager.nav.node, future
-                                )
-                                self.subtask_manager.nav.pause_nav()
-                        else:
-                            Logger.error(self, f"Failed to place {item}")
-                            self.current_delivery_item_index += 1
-                    else:
-                        Logger.error(self, f"Failed to pick {item}")
+                        Logger.success(self, f"Delivered {item} to table {self.current_table_id}")
                         self.current_delivery_item_index += 1
 
+                        # Return to bar for next item
+                        if self.current_delivery_item_index < len(table["orders"]):
+                            self.subtask_manager.hri.say("I will get your next item.")
+                            self.subtask_manager.nav.resume_nav()
+                            future = self.subtask_manager.nav.move_to_zero()
+                            rclpy.spin_until_future_complete(self.subtask_manager.nav.node, future)
+                            self.subtask_manager.nav.pause_nav()
+                    else:
+                        Logger.error(self, f"Failed to place {item}")
+                        self.current_delivery_item_index += 1
                 else:
-                    # Finished delivering all items to this table
-                    self.subtask_manager.hri.say("Enjoy your meal!")
-                    self.current_table_index += 1
-                    self.current_state = RestaurantTaskManager.TaskStates.NAVIGATE_TO_BAR
+                    Logger.error(self, f"Failed to pick {item}")
+                    self.current_delivery_item_index += 1
+
+            else:
+                # Finished delivering all items to this table
+                self.subtask_manager.hri.say("Enjoy your meal!")
+                self.current_table_index += 1
+                self.current_state = RestaurantTaskManager.TaskStates.NAVIGATE_TO_BAR
 
         if self.current_state == RestaurantTaskManager.TaskStates.END:
             Logger.state(self, "Restaurant task complete!")

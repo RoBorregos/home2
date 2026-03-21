@@ -21,7 +21,11 @@ from vision_general.utils.trt_utils import load_yolo_trt
 
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.srv import DetectHand, FindSeat, YoloDetect
-from vision_general.utils.calculations import get_depth, deproject_pixel_to_point
+from vision_general.utils.calculations import (
+    get_depth,
+    deproject_pixel_to_point,
+    getAngle,
+)
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
     CAMERA_FRAME,
@@ -301,12 +305,6 @@ class HRICCommands(Node):
                 self.bridge.cv2_to_imgmsg(self.output_image, "bgr8")
             )
 
-    def getAngle(self, x, width):
-        """Get the angle for the robot to point at the available seat."""
-        diff = x - (width / 2)
-        move = diff * MAX_DEGREE / (width / 2)
-        return move
-
     def detect_person(self):
         """Check if there is a person in the frame and resolve the future promise using YOLO service."""
         if self.image is None:
@@ -473,7 +471,7 @@ class HRICCommands(Node):
             _, output, a, b, c, d = chair_queue.get()
             cv2.rectangle(self.output_image, (a, b), (c, d), (0, 255, 0), 2)
             self.get_logger().info(f"Chair found: {output}")
-            return True, self.getAngle(output, frame.shape[1])
+            return True, getAngle(output, frame.shape[1], MAX_DEGREE)
 
         return False, 0
 
@@ -518,7 +516,7 @@ class HRICCommands(Node):
                 self.output_image, (left, 0), (right, frame.shape[0]), (0, 255, 0), 2
             )
             self.get_logger().info(f"Space found: {output}")
-            return True, self.getAngle(output, frame.shape[1])
+            return True, getAngle(output, frame.shape[1], MAX_DEGREE)
 
         return False, 0
 
