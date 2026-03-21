@@ -73,8 +73,12 @@ class HRIC_TM(Node):
         self.total_start_time = datetime.now()
         self.previous_state = None
 
+        self.carrying_bag = False
+
         self.current_state = HRIC_TM.TaskStates.WAIT_FOR_BUTTON
         self.subtask_manager.manipulation.move_to_position("nav_pose")
+        # Face recognition starts off, activated only when needed
+        self.subtask_manager.vision.deactivate_face_recognition()
         Logger.info(self, "HRICTaskManager has started.")
 
     def get_current_guest(self) -> Guest:
@@ -110,6 +114,7 @@ class HRIC_TM(Node):
 
     def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
         """Navigate to the location"""
+        self.subtask_manager.vision.deactivate_face_recognition()
         self.subtask_manager.manipulation.follow_face(False)
         self.subtask_manager.manipulation.move_to_position("nav_pose")
         self.subtask_manager.nav.resume_nav()
@@ -131,9 +136,7 @@ class HRIC_TM(Node):
         self.subtask_manager.nav.pause_nav()
 
     def timeout(self, timeout: int = 2):
-        start_time = time.time()
-        while (time.time() - start_time) < timeout:
-            pass
+        time.sleep(timeout)
 
     def set_description(self, status, description: str):
         self.get_current_guest().description = description
@@ -153,14 +156,15 @@ class HRIC_TM(Node):
             )
             self.current_state = HRIC_TM.TaskStates.START
 
-        if self.current_state == HRIC_TM.TaskStates.START:
+        elif self.current_state == HRIC_TM.TaskStates.START:
             self._track_state_change(HRIC_TM.TaskStates.START)
             self.navigate_to("entrance", say=False)
             self.subtask_manager.hri.say("I am ready.", wait=False)
             self.current_state = HRIC_TM.TaskStates.WAIT_FOR_GUEST
 
-        if self.current_state == HRIC_TM.TaskStates.WAIT_FOR_GUEST:
+        elif self.current_state == HRIC_TM.TaskStates.WAIT_FOR_GUEST:
             self._track_state_change(HRIC_TM.TaskStates.WAIT_FOR_GUEST)
+            self.subtask_manager.vision.deactivate_face_recognition()
             self.subtask_manager.manipulation.move_to_position("front_stare")
             self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_HRIC)
             result = self.subtask_manager.vision.detect_person(timeout=10)
@@ -170,8 +174,9 @@ class HRIC_TM(Node):
             else:
                 self.subtask_manager.hri.say("I am waiting for a guest.")
 
-        if self.current_state == HRIC_TM.TaskStates.GREETING:
+        elif self.current_state == HRIC_TM.TaskStates.GREETING:
             self._track_state_change(HRIC_TM.TaskStates.GREETING)
+            self.subtask_manager.vision.activate_face_recognition()
             self.subtask_manager.vision.follow_by_name("area")
             self.subtask_manager.manipulation.follow_face(True)
             self.subtask_manager.hri.publish_display_topic(FACE_RECOGNITION_IMAGE)
@@ -203,7 +208,7 @@ class HRIC_TM(Node):
             self.subtask_manager.hri.say(f"Nice to meet you, {current_guest.name}.")
             self.current_state = HRIC_TM.TaskStates.SAVE_FACE
 
-        if self.current_state == HRIC_TM.TaskStates.SAVE_FACE:
+        elif self.current_state == HRIC_TM.TaskStates.SAVE_FACE:
             self._track_state_change(HRIC_TM.TaskStates.SAVE_FACE)
             self.subtask_manager.hri.say(
                 "Please stand in front of me so I can save your face."
@@ -224,13 +229,15 @@ class HRIC_TM(Node):
                 self.current_attempts += 1
                 Logger.error(self, "Error saving face")
 
-        if self.current_state == HRIC_TM.TaskStates.TAKE_BAG:
+        elif self.current_state == HRIC_TM.TaskStates.TAKE_BAG:
             self._track_state_change(HRIC_TM.TaskStates.TAKE_BAG)
+            self.subtask_manager.vision.deactivate_face_recognition()
             if self.current_attempts == 0:
                 self.subtask_manager.hri.say(
                     "I see you brought a bag for the host. Let me take care of it for you.",
                 )
 
+            self.subtask_manager.manipulation.move_to_position("carry_pose")
             self.subtask_manager.hri.say(
                 "Please extend your hand holding the bag so I can reach it."
             )
@@ -268,6 +275,7 @@ class HRIC_TM(Node):
                     "I could not reach your hand. Place the bag directly on my gripper."
                 )
 
+            self.subtask_manager.manipulation.open_gripper()
             self.timeout(5)
             s, res = self.subtask_manager.hri.confirm(
                 "Have you placed the bag on my gripper?", use_hotwords=False
@@ -277,6 +285,8 @@ class HRIC_TM(Node):
                     "Thank you, I will close my gripper now. Please be careful with your hand."
                 )
                 self.subtask_manager.manipulation.close_gripper()
+                self.carrying_bag = True
+                self.timeout(3)
                 guest_1 = self.guests[FIRST_GUEST_IDX]
                 self.subtask_manager.hri.say(
                     f"Please follow me to the living room. By the way, another guest named {guest_1.name} is already in the living room. {guest_1.description}.",
@@ -287,15 +297,16 @@ class HRIC_TM(Node):
                 self.current_attempts += 1
                 Logger.info(self, "Error confirming bag placement")
 
-        if self.current_state == HRIC_TM.TaskStates.NAVIGATE_TO_LIVING_ROOM:
+        elif self.current_state == HRIC_TM.TaskStates.NAVIGATE_TO_LIVING_ROOM:
             self._track_state_change(HRIC_TM.TaskStates.NAVIGATE_TO_LIVING_ROOM)
             self.navigate_to(
                 "living_room", "couches", say=self.current_guest_idx == FIRST_GUEST_IDX
             )
             self.current_state = HRIC_TM.TaskStates.FIND_SEAT
 
-        if self.current_state == HRIC_TM.TaskStates.FIND_SEAT:
+        elif self.current_state == HRIC_TM.TaskStates.FIND_SEAT:
             self._track_state_change(HRIC_TM.TaskStates.FIND_SEAT)
+            self.subtask_manager.vision.deactivate_face_recognition()
             self.subtask_manager.hri.publish_display_topic(IMAGE_TOPIC_HRIC)
             self.subtask_manager.manipulation.move_joint_positions(
                 named_position="front_low_stare", velocity=0.5, degrees=True
@@ -317,60 +328,70 @@ class HRIC_TM(Node):
             else:
                 self.current_state = HRIC_TM.TaskStates.INTRODUCTION
 
-        if self.current_state == HRIC_TM.TaskStates.INTRODUCTION:
+        elif self.current_state == HRIC_TM.TaskStates.INTRODUCTION:
             self._track_state_change(HRIC_TM.TaskStates.INTRODUCTION)
+            self.subtask_manager.vision.activate_face_recognition()
             guest_1 = self.guests[FIRST_GUEST_IDX]
             guest_2 = self.guests[SECOND_GUEST_IDX]
             self.subtask_manager.hri.publish_display_topic(FACE_RECOGNITION_IMAGE)
+
+            # First: look at guest 2 (just seated) and introduce guest 1
+            self.subtask_manager.manipulation.move_to_position("front_stare")
             self.subtask_manager.vision.follow_by_name(guest_2.name)
             self.subtask_manager.manipulation.follow_face(True)
             self.subtask_manager.hri.say(
-                f"Thanks for taking a seat {guest_2.name}. Allow me to introduce you to {guest_1.name}, they're favorite drink is {guest_1.drink}.",
+                f"Thanks for taking a seat {guest_2.name}. Allow me to introduce you to {guest_1.name}, their favorite drink is {guest_1.drink}.",
                 wait=True,
             )
             self.subtask_manager.manipulation.follow_face(False)
 
-            # Check possible angles to find guest 1
+            # Search for guest 1 by panning in 90 degree steps covering full range
+            # Returns to front_stare before each pan so positioning is absolute
+            self.subtask_manager.vision.follow_by_name(guest_1.name)
+            search_offsets = [0, -90, 90, 180]
             guest_1_found = False
-            for seat_angle in self.seat_angles:
+            for offset in search_offsets:
                 if guest_1_found:
                     break
 
-                find_guest_1_attempts = 0
-                self.subtask_manager.manipulation.pan_to(seat_angle)
-                while find_guest_1_attempts < ATTEMPT_LIMIT:
+                self.subtask_manager.manipulation.move_to_position("front_stare")
+                if offset != 0:
+                    self.subtask_manager.manipulation.pan_to(offset)
+                for _ in range(ATTEMPT_LIMIT):
+                    self.timeout(1)
                     if self.subtask_manager.vision.isPerson(guest_1.name):
                         guest_1_found = True
                         break
 
-                    self.timeout(1)
-                    find_guest_1_attempts += 1
-
-            self.subtask_manager.vision.follow_by_name(guest_1.name)
+            # Lock onto guest 1 and introduce guest 2
             self.subtask_manager.manipulation.follow_face(True)
+            self.timeout(2)
             self.subtask_manager.hri.say(
-                f"Hello {guest_1.name}. This is {guest_2.name} and they're favorite drink is {guest_2.drink}"
+                f"Hello {guest_1.name}. This is {guest_2.name} and their favorite drink is {guest_2.drink}"
             )
             self.subtask_manager.manipulation.follow_face(False)
 
             self.current_state = HRIC_TM.TaskStates.LEAVE_BAG
 
-        if self.current_state == HRIC_TM.TaskStates.NAVIGATE_TO_ENTRANCE:
+        elif self.current_state == HRIC_TM.TaskStates.NAVIGATE_TO_ENTRANCE:
             self._track_state_change(HRIC_TM.TaskStates.NAVIGATE_TO_ENTRANCE)
             self.current_guest_idx = SECOND_GUEST_IDX
             self.navigate_to("entrance", say=False)
             self.current_state = HRIC_TM.TaskStates.WAIT_FOR_GUEST
 
-        if self.current_state == HRIC_TM.TaskStates.LEAVE_BAG:
+        elif self.current_state == HRIC_TM.TaskStates.LEAVE_BAG:
             self._track_state_change(HRIC_TM.TaskStates.LEAVE_BAG)
-            # TODO: Follow host
+            self.subtask_manager.vision.deactivate_face_recognition()
             self.subtask_manager.hri.say("I will now place your bag on the floor.")
+            self.carrying_bag = False
             self.subtask_manager.manipulation.place_on_floor()
+            self.subtask_manager.manipulation.move_to_position("nav_pose")
             self.current_state = HRIC_TM.TaskStates.END
 
-        if self.current_state == HRIC_TM.TaskStates.END:
+        elif self.current_state == HRIC_TM.TaskStates.END:
             Logger.state(self, "Ending task")
             self._track_state_change(HRIC_TM.TaskStates.END)
+            self.subtask_manager.vision.deactivate_face_recognition()
 
             # Generate final timing report
             total_task_time = (datetime.now() - self.total_start_time).total_seconds()
@@ -390,7 +411,7 @@ class HRIC_TM(Node):
             self.subtask_manager.manipulation.follow_face(False)
             self.running_task = False
 
-        if self.current_state == HRIC_TM.TaskStates.DEBUG:
+        elif self.current_state == HRIC_TM.TaskStates.DEBUG:
             Logger.state(self, "Debugging task")
             self._track_state_change(HRIC_TM.TaskStates.DEBUG)
             self.subtask_manager.hri.say("Debugging task.")
