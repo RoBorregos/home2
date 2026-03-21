@@ -33,11 +33,6 @@ export default function LaundryPage() {
                     <VideoFeed />
                 </div>
             </div>
-
-            {/* FOOTER */}
-            <div className="p-3 border-t border-(--border-light) bg-(--bg-darker) text-center text-xs opacity-50">
-                Laundry Mode Active
-            </div>
         </div>
     );
 }
