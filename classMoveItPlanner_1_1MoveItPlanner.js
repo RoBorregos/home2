@@ -24,6 +24,7 @@ var classMoveItPlanner_1_1MoveItPlanner =
     [ "plan_pose_goal", "classMoveItPlanner_1_1MoveItPlanner.html#ac1c81b0be7e6b68826c012c69e651250", null ],
     [ "remove_all_collision_objects", "classMoveItPlanner_1_1MoveItPlanner.html#a233452bcc3aa3b306dd723be78a4324a", null ],
     [ "remove_collision_object", "classMoveItPlanner_1_1MoveItPlanner.html#acf0f24b8672180670ae56b15e758d644", null ],
+    [ "reset_controller", "classMoveItPlanner_1_1MoveItPlanner.html#a21b8178d73aa57c202d3441babdde521", null ],
     [ "set_acceleration", "classMoveItPlanner_1_1MoveItPlanner.html#ad3afc41a64cd148af8247671cc295d15", null ],
     [ "set_joint_constraints", "classMoveItPlanner_1_1MoveItPlanner.html#a62a77462f6765c782da0f696f7d90991", null ],
     [ "set_orientation_constraints", "classMoveItPlanner_1_1MoveItPlanner.html#a6de8ae08c303ea15feb266216fb17221", null ],

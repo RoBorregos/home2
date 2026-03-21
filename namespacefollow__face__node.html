@@ -116,11 +116,23 @@ Variables</h2></td></tr>
 <tr class="separator:a9721ce1e889391107e1514c7caf74e12"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a56a76975c39e725f67110043eb0d9eb2"><td class="memItemLeft" align="right" valign="top">str&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacefollow__face__node.html#a56a76975c39e725f67110043eb0d9eb2">XARM_SETSTATE_SERVICE</a> = &quot;/xarm/set_state&quot;</td></tr>
 <tr class="separator:a56a76975c39e725f67110043eb0d9eb2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aead4196be760657b51dabd986849fb47"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacefollow__face__node.html#aead4196be760657b51dabd986849fb47">TIMEOUT</a> = 5.0</td></tr>
-<tr class="separator:aead4196be760657b51dabd986849fb47"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a50c999802649f4c9a8747772066676f6"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacefollow__face__node.html#a50c999802649f4c9a8747772066676f6">VELOCITY_MODE</a> = 4</td></tr>
+<tr class="separator:a50c999802649f4c9a8747772066676f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aac5ccee7733c95f54930668bc4095bcf"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacefollow__face__node.html#aac5ccee7733c95f54930668bc4095bcf">MAX_VELOCITY</a> = 0.1</td></tr>
+<tr class="separator:aac5ccee7733c95f54930668bc4095bcf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af1f613f6ef2f614313146a587fdb9c5d"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacefollow__face__node.html#af1f613f6ef2f614313146a587fdb9c5d">STOP_TIMEOUT</a> = 1.0</td></tr>
+<tr class="separator:af1f613f6ef2f614313146a587fdb9c5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a244007f84354c3e962ccd089b5301c4b"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacefollow__face__node.html#a244007f84354c3e962ccd089b5301c4b">SERVICE_TIMEOUT</a> = 5.0</td></tr>
+<tr class="separator:a244007f84354c3e962ccd089b5301c4b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a694b596985e6d3dbc9cbcaff0e9435b0"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacefollow__face__node.html#a694b596985e6d3dbc9cbcaff0e9435b0">SET_MODE_RETRIES</a> = 2</td></tr>
+<tr class="separator:a694b596985e6d3dbc9cbcaff0e9435b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7733c03e88de1a0244d704a792e7dc99"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacefollow__face__node.html#a7733c03e88de1a0244d704a792e7dc99">RUN_LOOP_PERIOD</a> = 0.1</td></tr>
+<tr class="separator:a7733c03e88de1a0244d704a792e7dc99"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><pre class="fragment">Task Manager for Demo follow face
+<div class="textblock"><pre class="fragment">Follow Face Node - Controls xArm to track a detected face using joint velocity commands.
+Provides a /follow_face service to activate/deactivate face tracking,
+and switches the arm between velocity mode (4) and MoveIt mode (1) accordingly.
 </pre> </div><h2 class="groupheader">Function Documentation</h2>
 <a id="ac17092750c91f12ce61b4f9557ecfe24" name="ac17092750c91f12ce61b4f9557ecfe24"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ac17092750c91f12ce61b4f9557ecfe24">&#9670;&#160;</a></span>main()</h2>
@@ -137,18 +149,88 @@ Variables</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<pre class="fragment">Main function</pre> 
+
 </div>
 </div>
 <h2 class="groupheader">Variable Documentation</h2>
-<a id="aead4196be760657b51dabd986849fb47" name="aead4196be760657b51dabd986849fb47"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aead4196be760657b51dabd986849fb47">&#9670;&#160;</a></span>TIMEOUT</h2>
+<a id="aac5ccee7733c95f54930668bc4095bcf" name="aac5ccee7733c95f54930668bc4095bcf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aac5ccee7733c95f54930668bc4095bcf">&#9670;&#160;</a></span>MAX_VELOCITY</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">float follow_face_node.TIMEOUT = 5.0</td>
+          <td class="memname">float follow_face_node.MAX_VELOCITY = 0.1</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a7733c03e88de1a0244d704a792e7dc99" name="a7733c03e88de1a0244d704a792e7dc99"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7733c03e88de1a0244d704a792e7dc99">&#9670;&#160;</a></span>RUN_LOOP_PERIOD</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">float follow_face_node.RUN_LOOP_PERIOD = 0.1</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a244007f84354c3e962ccd089b5301c4b" name="a244007f84354c3e962ccd089b5301c4b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a244007f84354c3e962ccd089b5301c4b">&#9670;&#160;</a></span>SERVICE_TIMEOUT</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">float follow_face_node.SERVICE_TIMEOUT = 5.0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a694b596985e6d3dbc9cbcaff0e9435b0" name="a694b596985e6d3dbc9cbcaff0e9435b0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a694b596985e6d3dbc9cbcaff0e9435b0">&#9670;&#160;</a></span>SET_MODE_RETRIES</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int follow_face_node.SET_MODE_RETRIES = 2</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="af1f613f6ef2f614313146a587fdb9c5d" name="af1f613f6ef2f614313146a587fdb9c5d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af1f613f6ef2f614313146a587fdb9c5d">&#9670;&#160;</a></span>STOP_TIMEOUT</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">float follow_face_node.STOP_TIMEOUT = 1.0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a50c999802649f4c9a8747772066676f6" name="a50c999802649f4c9a8747772066676f6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a50c999802649f4c9a8747772066676f6">&#9670;&#160;</a></span>VELOCITY_MODE</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int follow_face_node.VELOCITY_MODE = 4</td>
         </tr>
       </table>
 </div><div class="memdoc">

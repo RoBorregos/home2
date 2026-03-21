@@ -40,6 +40,7 @@ var classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningSe
     [ "reset_controller_client", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#affc6b0285a02cd7886ad966a7dac46f8", null ],
     [ "servo", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#a26b556cdcc04bb701a5c22030c6c6086", null ],
     [ "servo_speed_subscriber", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#ab07319e63038701cc839ae43e6c75a44", null ],
+    [ "switch_controller_client", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#aa1af25712c7ed1a317543b9e24bec8d9", null ],
     [ "toggle_servo_service", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#a293c827cbd10d59343161cdceac3b804", null ],
     [ "traj_pub", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#a931c15e8173c5fc2fe503eb78d97a390", null ],
     [ "xarm_services", "classfrida__motion__planning_1_1motion__planning__server_1_1MotionPlanningServer.html#a72528b58d5d5c670e50b5db49356cc8c", null ]

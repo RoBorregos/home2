@@ -32,6 +32,7 @@ var reid__model_8py =
     [ "nclasses", "reid__model_8py.html#a89d8ea6aeef570700d95e69bd62b3614", null ],
     [ "stride", "reid__model_8py.html#a563124f8add6fe9787b1f9d9b7865479", null ],
     [ "use_dense", "reid__model_8py.html#a0edad6891176ff69f75984e2090786c6", null ],
+    [ "use_fp16", "reid__model_8py.html#a445dafe498912f06097f6c1d72c6665d", null ],
     [ "use_gpu", "reid__model_8py.html#a3ee43bcfc3791b1ad7ee22fb1c7e7447", null ],
     [ "use_swin", "reid__model_8py.html#afd0c502aecc7fb1b4bdc4ebf9acda11f", null ],
     [ "version", "reid__model_8py.html#a1b20919b2f580c0d5e9cb7184391778b", null ],

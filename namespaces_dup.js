@@ -277,6 +277,7 @@ var namespaces_dup =
       [ "nclasses", "namespacereid__model.html#a89d8ea6aeef570700d95e69bd62b3614", null ],
       [ "stride", "namespacereid__model.html#a563124f8add6fe9787b1f9d9b7865479", null ],
       [ "use_dense", "namespacereid__model.html#a0edad6891176ff69f75984e2090786c6", null ],
+      [ "use_fp16", "namespacereid__model.html#a445dafe498912f06097f6c1d72c6665d", null ],
       [ "use_gpu", "namespacereid__model.html#a3ee43bcfc3791b1ad7ee22fb1c7e7447", null ],
       [ "use_swin", "namespacereid__model.html#afd0c502aecc7fb1b4bdc4ebf9acda11f", null ],
       [ "version", "namespacereid__model.html#a1b20919b2f580c0d5e9cb7184391778b", null ],
@@ -322,6 +323,7 @@ var namespaces_dup =
     [ "subtask_managers", "namespacesubtask__managers.html", "namespacesubtask__managers" ],
     [ "temp_follow", "namespacetemp__follow.html", "namespacetemp__follow" ],
     [ "test_env", "namespacetest__env.html", "namespacetest__env" ],
+    [ "test_go_to_hand", "namespacetest__go__to__hand.html", "namespacetest__go__to__hand" ],
     [ "test_hri_manager", "namespacetest__hri__manager.html", "namespacetest__hri__manager" ],
     [ "test_manager", "namespacetest__manager.html", "namespacetest__manager" ],
     [ "test_manipulation_manager", "namespacetest__manipulation__manager.html", "namespacetest__manipulation__manager" ],
@@ -338,6 +340,10 @@ var namespaces_dup =
     [ "tracker_node_fregoso", "namespacetracker__node__fregoso.html", "namespacetracker__node__fregoso" ],
     [ "transform_target", "namespacetransform__target.html", "namespacetransform__target" ],
     [ "trash_detection_node", "namespacetrash__detection__node.html", "namespacetrash__detection__node" ],
+    [ "trt_utils", "namespacetrt__utils.html", [
+      [ "_get_engine_path", "namespacetrt__utils.html#ae28972e2bd9e6ec6460827b6380c7b9a", null ],
+      [ "load_yolo_trt", "namespacetrt__utils.html#a60b6f5e8a22c056723d7c0a0ecd88ca3", null ]
+    ] ],
     [ "utils", "namespaceutils.html", "namespaceutils" ],
     [ "virtual_stop_button", "namespacevirtual__stop__button.html", "namespacevirtual__stop__button" ],
     [ "vision_3D_utils", "namespacevision__3D__utils.html", [

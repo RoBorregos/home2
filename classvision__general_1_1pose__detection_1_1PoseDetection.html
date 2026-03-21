@@ -93,6 +93,7 @@ $(document).ready(function(){initNavTree('classvision__general_1_1pose__detectio
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
+<a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="classvision__general_1_1pose__detection_1_1PoseDetection-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">vision_general.pose_detection.PoseDetection Class Reference</div></div>
 </div><!--header-->
@@ -102,45 +103,34 @@ $(document).ready(function(){initNavTree('classvision__general_1_1pose__detectio
 Public Member Functions</h2></td></tr>
 <tr class="memitem:aef4b2fdfda46ac214537f0dd11841ecf"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvision__general_1_1pose__detection_1_1PoseDetection.html#aef4b2fdfda46ac214537f0dd11841ecf">__init__</a> (self)</td></tr>
 <tr class="separator:aef4b2fdfda46ac214537f0dd11841ecf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa59f0a6832e0e30a531af32689368f29"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvision__general_1_1pose__detection_1_1PoseDetection.html#aa59f0a6832e0e30a531af32689368f29">draw_landmarks</a> (self, image, results, <a class="el" href="classvision__general_1_1pose__detection_1_1PoseDetection.html#aa29e97f7ec8375676324b155161dc974">mp_pose</a>)</td></tr>
-<tr class="separator:aa59f0a6832e0e30a531af32689368f29"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afb140da349d9e0520fa15072d0bab002"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvision__general_1_1pose__detection_1_1PoseDetection.html#afb140da349d9e0520fa15072d0bab002">draw_connections</a> (self, image, results, <a class="el" href="classvision__general_1_1pose__detection_1_1PoseDetection.html#aa29e97f7ec8375676324b155161dc974">mp_pose</a>)</td></tr>
-<tr class="separator:afb140da349d9e0520fa15072d0bab002"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8722a446c9523e0c6787abe63887a449"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvision__general_1_1pose__detection_1_1PoseDetection.html#a8722a446c9523e0c6787abe63887a449">draw_line_and_angle</a> (self, image, results, start_idx, mid_idx, end_idx)</td></tr>
-<tr class="separator:a8722a446c9523e0c6787abe63887a449"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a47829a88a370530c35c9a154cc7d5e1e"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvision__general_1_1pose__detection_1_1PoseDetection.html#a47829a88a370530c35c9a154cc7d5e1e">get_angle</a> (self, p1, p2, p3)</td></tr>
 <tr class="separator:a47829a88a370530c35c9a154cc7d5e1e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6c8a93bee7dc8418e212b346411acf2b"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvision__general_1_1pose__detection_1_1PoseDetection.html#a6c8a93bee7dc8418e212b346411acf2b">is_visible</a> (self, landmarks, indices)</td></tr>
-<tr class="separator:a6c8a93bee7dc8418e212b346411acf2b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a30ecbdf5236e9d1ae007445c5318e49a"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvision__general_1_1pose__detection_1_1PoseDetection.html#a30ecbdf5236e9d1ae007445c5318e49a">is_chest_visible</a> (self, image)</td></tr>
 <tr class="separator:a30ecbdf5236e9d1ae007445c5318e49a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a94294a503036cc4333fb5f4d248c7377"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvision__general_1_1pose__detection_1_1PoseDetection.html#a94294a503036cc4333fb5f4d248c7377">are_arms_down</a> (self, pose_landmarks)</td></tr>
-<tr class="separator:a94294a503036cc4333fb5f4d248c7377"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6dfe1aeb1699f956d7d85a63fb51fc3a"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvision__general_1_1pose__detection_1_1PoseDetection.html#a6dfe1aeb1699f956d7d85a63fb51fc3a">are_arms_down</a> (self, points, conf)</td></tr>
+<tr class="separator:a6dfe1aeb1699f956d7d85a63fb51fc3a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a38528af7230315d5877f9fc95a94918f"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvision__general_1_1pose__detection_1_1PoseDetection.html#a38528af7230315d5877f9fc95a94918f">detectGesture</a> (self, image)</td></tr>
 <tr class="separator:a38528af7230315d5877f9fc95a94918f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab9264b8570e463ab22feb9959c2ae0e8"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvision__general_1_1pose__detection_1_1PoseDetection.html#ab9264b8570e463ab22feb9959c2ae0e8">is_closer_to_left_shoulder</a> (self, wrist, left_shoulder, right_shoulder)</td></tr>
-<tr class="separator:ab9264b8570e463ab22feb9959c2ae0e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6b50a9a13e3e33242f5e26a731d5ba3d"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvision__general_1_1pose__detection_1_1PoseDetection.html#a6b50a9a13e3e33242f5e26a731d5ba3d">is_waving</a> (self, results)</td></tr>
-<tr class="separator:a6b50a9a13e3e33242f5e26a731d5ba3d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a37adc8979b727b99571e399f6b24230d"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvision__general_1_1pose__detection_1_1PoseDetection.html#a37adc8979b727b99571e399f6b24230d">get_midpoint_x</a> (self, results)</td></tr>
-<tr class="separator:a37adc8979b727b99571e399f6b24230d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a745f33e20007dc845693bdf5d1a2ef8f"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvision__general_1_1pose__detection_1_1PoseDetection.html#a745f33e20007dc845693bdf5d1a2ef8f">is_pointing_left</a> (self, mid_x, results)</td></tr>
-<tr class="separator:a745f33e20007dc845693bdf5d1a2ef8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6ed85dc1ade0c8f50269dd0ffd2283aa"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvision__general_1_1pose__detection_1_1PoseDetection.html#a6ed85dc1ade0c8f50269dd0ffd2283aa">is_pointing_right</a> (self, mid_x, results)</td></tr>
-<tr class="separator:a6ed85dc1ade0c8f50269dd0ffd2283aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9efaeff259518c817106a304f06a6b16"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvision__general_1_1pose__detection_1_1PoseDetection.html#a9efaeff259518c817106a304f06a6b16">is_raising_left_arm</a> (self, mid_x, results)</td></tr>
-<tr class="separator:a9efaeff259518c817106a304f06a6b16"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a00a49a9d6f6b46f52329bb333e20d156"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvision__general_1_1pose__detection_1_1PoseDetection.html#a00a49a9d6f6b46f52329bb333e20d156">is_raising_right_arm</a> (self, mid_x, results)</td></tr>
-<tr class="separator:a00a49a9d6f6b46f52329bb333e20d156"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:aa29e97f7ec8375676324b155161dc974"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvision__general_1_1pose__detection_1_1PoseDetection.html#aa29e97f7ec8375676324b155161dc974">mp_pose</a></td></tr>
-<tr class="separator:aa29e97f7ec8375676324b155161dc974"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a24b6e9a119f5df6e2f5a2a8f35deb22f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvision__general_1_1pose__detection_1_1PoseDetection.html#a24b6e9a119f5df6e2f5a2a8f35deb22f">pose</a></td></tr>
-<tr class="separator:a24b6e9a119f5df6e2f5a2a8f35deb22f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a409d034b6d343fcf9df29464114c4e2d"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvision__general_1_1pose__detection_1_1PoseDetection.html#a409d034b6d343fcf9df29464114c4e2d">mp_drawing</a></td></tr>
-<tr class="separator:a409d034b6d343fcf9df29464114c4e2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa99b252353b421df86bb53565ec4a9a7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvision__general_1_1pose__detection_1_1PoseDetection.html#aa99b252353b421df86bb53565ec4a9a7">yolo_pose</a></td></tr>
+<tr class="separator:aa99b252353b421df86bb53565ec4a9a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
+Protected Member Functions</h2></td></tr>
+<tr class="memitem:a90c54a7060191cc3737f7c098ceda72a"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvision__general_1_1pose__detection_1_1PoseDetection.html#a90c54a7060191cc3737f7c098ceda72a">_get_keypoints</a> (self, image)</td></tr>
+<tr class="separator:a90c54a7060191cc3737f7c098ceda72a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a12361e67faddaa46ec870c30fcea9548"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvision__general_1_1pose__detection_1_1PoseDetection.html#a12361e67faddaa46ec870c30fcea9548">_is_waving</a> (self, points, conf)</td></tr>
+<tr class="separator:a12361e67faddaa46ec870c30fcea9548"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0ad4189e70c9d8637aac3ce40699751e"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvision__general_1_1pose__detection_1_1PoseDetection.html#a0ad4189e70c9d8637aac3ce40699751e">_is_pointing_left</a> (self, mid_x, points, conf)</td></tr>
+<tr class="separator:a0ad4189e70c9d8637aac3ce40699751e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a83e8b85abff054b11a2b06763daa4c2e"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvision__general_1_1pose__detection_1_1PoseDetection.html#a83e8b85abff054b11a2b06763daa4c2e">_is_pointing_right</a> (self, mid_x, points, conf)</td></tr>
+<tr class="separator:a83e8b85abff054b11a2b06763daa4c2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2b415bc29c5912ce258ab796ed51cc12"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvision__general_1_1pose__detection_1_1PoseDetection.html#a2b415bc29c5912ce258ab796ed51cc12">_is_raising_left_arm</a> (self, mid_x, points, conf)</td></tr>
+<tr class="separator:a2b415bc29c5912ce258ab796ed51cc12"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac4e828fcd5e8b0f2c8bc5a1c784f9de1"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classvision__general_1_1pose__detection_1_1PoseDetection.html#ac4e828fcd5e8b0f2c8bc5a1c784f9de1">_is_raising_right_arm</a> (self, mid_x, points, conf)</td></tr>
+<tr class="separator:ac4e828fcd5e8b0f2c8bc5a1c784f9de1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="aef4b2fdfda46ac214537f0dd11841ecf" name="aef4b2fdfda46ac214537f0dd11841ecf"></a>
@@ -162,8 +152,279 @@ Public Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a94294a503036cc4333fb5f4d248c7377" name="a94294a503036cc4333fb5f4d248c7377"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a94294a503036cc4333fb5f4d248c7377">&#9670;&#160;</a></span>are_arms_down()</h2>
+<a id="a90c54a7060191cc3737f7c098ceda72a" name="a90c54a7060191cc3737f7c098ceda72a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a90c54a7060191cc3737f7c098ceda72a">&#9670;&#160;</a></span>_get_keypoints()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def vision_general.pose_detection.PoseDetection._get_keypoints </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>image</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Run YOLO pose, return (points, conf) for first detected person.
+points: (17, 2) normalized, conf: (17,).</pre> 
+</div>
+</div>
+<a id="a0ad4189e70c9d8637aac3ce40699751e" name="a0ad4189e70c9d8637aac3ce40699751e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0ad4189e70c9d8637aac3ce40699751e">&#9670;&#160;</a></span>_is_pointing_left()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def vision_general.pose_detection.PoseDetection._is_pointing_left </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>mid_x</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>points</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>conf</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a83e8b85abff054b11a2b06763daa4c2e" name="a83e8b85abff054b11a2b06763daa4c2e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a83e8b85abff054b11a2b06763daa4c2e">&#9670;&#160;</a></span>_is_pointing_right()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def vision_general.pose_detection.PoseDetection._is_pointing_right </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>mid_x</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>points</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>conf</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a2b415bc29c5912ce258ab796ed51cc12" name="a2b415bc29c5912ce258ab796ed51cc12"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2b415bc29c5912ce258ab796ed51cc12">&#9670;&#160;</a></span>_is_raising_left_arm()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def vision_general.pose_detection.PoseDetection._is_raising_left_arm </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>mid_x</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>points</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>conf</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ac4e828fcd5e8b0f2c8bc5a1c784f9de1" name="ac4e828fcd5e8b0f2c8bc5a1c784f9de1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac4e828fcd5e8b0f2c8bc5a1c784f9de1">&#9670;&#160;</a></span>_is_raising_right_arm()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def vision_general.pose_detection.PoseDetection._is_raising_right_arm </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>mid_x</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>points</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>conf</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a12361e67faddaa46ec870c30fcea9548" name="a12361e67faddaa46ec870c30fcea9548"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a12361e67faddaa46ec870c30fcea9548">&#9670;&#160;</a></span>_is_waving()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def vision_general.pose_detection.PoseDetection._is_waving </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>points</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>conf</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a6dfe1aeb1699f956d7d85a63fb51fc3a" name="a6dfe1aeb1699f956d7d85a63fb51fc3a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6dfe1aeb1699f956d7d85a63fb51fc3a">&#9670;&#160;</a></span>are_arms_down()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -178,7 +439,13 @@ Public Attributes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>pose_landmarks</em>&#160;</td>
+          <td class="paramname"><em>points</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>conf</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -207,138 +474,6 @@ Public Attributes</h2></td></tr>
           <td></td>
           <td class="paramtype">&#160;</td>
           <td class="paramname"><em>image</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="afb140da349d9e0520fa15072d0bab002" name="afb140da349d9e0520fa15072d0bab002"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afb140da349d9e0520fa15072d0bab002">&#9670;&#160;</a></span>draw_connections()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">def vision_general.pose_detection.PoseDetection.draw_connections </td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>image</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>results</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>mp_pose</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="aa59f0a6832e0e30a531af32689368f29" name="aa59f0a6832e0e30a531af32689368f29"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa59f0a6832e0e30a531af32689368f29">&#9670;&#160;</a></span>draw_landmarks()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">def vision_general.pose_detection.PoseDetection.draw_landmarks </td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>image</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>results</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>mp_pose</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a8722a446c9523e0c6787abe63887a449" name="a8722a446c9523e0c6787abe63887a449"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8722a446c9523e0c6787abe63887a449">&#9670;&#160;</a></span>draw_line_and_angle()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">def vision_general.pose_detection.PoseDetection.draw_line_and_angle </td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>image</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>results</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>start_idx</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>mid_idx</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>end_idx</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -390,34 +525,6 @@ Public Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a37adc8979b727b99571e399f6b24230d" name="a37adc8979b727b99571e399f6b24230d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a37adc8979b727b99571e399f6b24230d">&#9670;&#160;</a></span>get_midpoint_x()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">def vision_general.pose_detection.PoseDetection.get_midpoint_x </td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>results</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
 <a id="a30ecbdf5236e9d1ae007445c5318e49a" name="a30ecbdf5236e9d1ae007445c5318e49a"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a30ecbdf5236e9d1ae007445c5318e49a">&#9670;&#160;</a></span>is_chest_visible()</h2>
 
@@ -446,281 +553,15 @@ Public Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="ab9264b8570e463ab22feb9959c2ae0e8" name="ab9264b8570e463ab22feb9959c2ae0e8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab9264b8570e463ab22feb9959c2ae0e8">&#9670;&#160;</a></span>is_closer_to_left_shoulder()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">def vision_general.pose_detection.PoseDetection.is_closer_to_left_shoulder </td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>wrist</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>left_shoulder</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>right_shoulder</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a745f33e20007dc845693bdf5d1a2ef8f" name="a745f33e20007dc845693bdf5d1a2ef8f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a745f33e20007dc845693bdf5d1a2ef8f">&#9670;&#160;</a></span>is_pointing_left()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">def vision_general.pose_detection.PoseDetection.is_pointing_left </td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>mid_x</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>results</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<pre class="fragment">Detects if the hand is pointing left across the chest.</pre> 
-</div>
-</div>
-<a id="a6ed85dc1ade0c8f50269dd0ffd2283aa" name="a6ed85dc1ade0c8f50269dd0ffd2283aa"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6ed85dc1ade0c8f50269dd0ffd2283aa">&#9670;&#160;</a></span>is_pointing_right()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">def vision_general.pose_detection.PoseDetection.is_pointing_right </td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>mid_x</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>results</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<pre class="fragment">Detects if the hand is pointing right across the chest.</pre> 
-</div>
-</div>
-<a id="a9efaeff259518c817106a304f06a6b16" name="a9efaeff259518c817106a304f06a6b16"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9efaeff259518c817106a304f06a6b16">&#9670;&#160;</a></span>is_raising_left_arm()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">def vision_general.pose_detection.PoseDetection.is_raising_left_arm </td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>mid_x</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>results</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a00a49a9d6f6b46f52329bb333e20d156" name="a00a49a9d6f6b46f52329bb333e20d156"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a00a49a9d6f6b46f52329bb333e20d156">&#9670;&#160;</a></span>is_raising_right_arm()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">def vision_general.pose_detection.PoseDetection.is_raising_right_arm </td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>mid_x</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>results</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a6c8a93bee7dc8418e212b346411acf2b" name="a6c8a93bee7dc8418e212b346411acf2b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6c8a93bee7dc8418e212b346411acf2b">&#9670;&#160;</a></span>is_visible()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">def vision_general.pose_detection.PoseDetection.is_visible </td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>landmarks</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>indices</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a6b50a9a13e3e33242f5e26a731d5ba3d" name="a6b50a9a13e3e33242f5e26a731d5ba3d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6b50a9a13e3e33242f5e26a731d5ba3d">&#9670;&#160;</a></span>is_waving()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">def vision_general.pose_detection.PoseDetection.is_waving </td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>results</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="a409d034b6d343fcf9df29464114c4e2d" name="a409d034b6d343fcf9df29464114c4e2d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a409d034b6d343fcf9df29464114c4e2d">&#9670;&#160;</a></span>mp_drawing</h2>
+<a id="aa99b252353b421df86bb53565ec4a9a7" name="aa99b252353b421df86bb53565ec4a9a7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa99b252353b421df86bb53565ec4a9a7">&#9670;&#160;</a></span>yolo_pose</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">vision_general.pose_detection.PoseDetection.mp_drawing</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="aa29e97f7ec8375676324b155161dc974" name="aa29e97f7ec8375676324b155161dc974"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa29e97f7ec8375676324b155161dc974">&#9670;&#160;</a></span>mp_pose</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">vision_general.pose_detection.PoseDetection.mp_pose</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a24b6e9a119f5df6e2f5a2a8f35deb22f" name="a24b6e9a119f5df6e2f5a2a8f35deb22f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a24b6e9a119f5df6e2f5a2a8f35deb22f">&#9670;&#160;</a></span>pose</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">vision_general.pose_detection.PoseDetection.pose</td>
+          <td class="memname">vision_general.pose_detection.PoseDetection.yolo_pose</td>
         </tr>
       </table>
 </div><div class="memdoc">

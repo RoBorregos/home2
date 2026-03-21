@@ -202,6 +202,7 @@ var hierarchy =
       [ "storing_groceries_manager.StoringGroceriesManager", "classstoring__groceries__manager_1_1StoringGroceriesManager.html", null ],
       [ "temp_follow.FollowPersonNode", "classtemp__follow_1_1FollowPersonNode.html", null ],
       [ "test_env.TestNode", "classtest__env_1_1TestNode.html", null ],
+      [ "test_go_to_hand.TestGoToHand", "classtest__go__to__hand_1_1TestGoToHand.html", null ],
       [ "test_hri_manager.TestHriManager", "classtest__hri__manager_1_1TestHriManager.html", null ],
       [ "test_manager.TestTaskManager", "classtest__manager_1_1TestTaskManager.html", null ],
       [ "test_manipulation_manager.TestManipulationManager", "classtest__manipulation__manager_1_1TestManipulationManager.html", null ],

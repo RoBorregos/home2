@@ -93,6 +93,8 @@ $(document).ready(function(){initNavTree('classobject__detector__node_1_1object_
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
+<a href="#pro-methods">Protected Member Functions</a> &#124;
+<a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="classobject__detector__node_1_1object__detector__node-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">object_detector_node.object_detector_node Class Reference</div></div>
 </div><!--header-->
@@ -178,8 +180,18 @@ Public Attributes</h2></td></tr>
 <tr class="separator:ad9c999dc6a3e8f517fd8a33c01103ad8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a351b978e0a109f59c76799e598b66a99"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classobject__detector__node_1_1object__detector__node.html#a351b978e0a109f59c76799e598b66a99">camera_info_subscriber</a></td></tr>
 <tr class="separator:a351b978e0a109f59c76799e598b66a99"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a708dc8e28781381428a130429c727e3f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classobject__detector__node_1_1object__detector__node.html#a708dc8e28781381428a130429c727e3f">activeFlag</a></td></tr>
-<tr class="separator:a708dc8e28781381428a130429c727e3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
+Protected Member Functions</h2></td></tr>
+<tr class="memitem:adbc0f534d24830fb7eea84f8d846ba9c"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classobject__detector__node_1_1object__detector__node.html#adbc0f534d24830fb7eea84f8d846ba9c">_vision_active_cb</a> (self, msg)</td></tr>
+<tr class="separator:adbc0f534d24830fb7eea84f8d846ba9c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
+Protected Attributes</h2></td></tr>
+<tr class="memitem:aebc5aa35acc613ac0c9c6fafb7e8acd5"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classobject__detector__node_1_1object__detector__node.html#aebc5aa35acc613ac0c9c6fafb7e8acd5">_frame_count</a></td></tr>
+<tr class="separator:aebc5aa35acc613ac0c9c6fafb7e8acd5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a81dab3a018229776171de3dbed2643cf"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classobject__detector__node_1_1object__detector__node.html#a81dab3a018229776171de3dbed2643cf">_skip_frames</a></td></tr>
+<tr class="separator:a81dab3a018229776171de3dbed2643cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="ab3646ec3f0f655765e49e1f8caf58ec0" name="ab3646ec3f0f655765e49e1f8caf58ec0"></a>
@@ -213,6 +225,42 @@ Public Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="adbc0f534d24830fb7eea84f8d846ba9c" name="adbc0f534d24830fb7eea84f8d846ba9c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adbc0f534d24830fb7eea84f8d846ba9c">&#9670;&#160;</a></span>_vision_active_cb()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def object_detector_node.object_detector_node._vision_active_cb </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>msg</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a7b3cfb1eeb107c77d6592d0957dfe12c" name="a7b3cfb1eeb107c77d6592d0957dfe12c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a7b3cfb1eeb107c77d6592d0957dfe12c">&#9670;&#160;</a></span>activeFlagCallback()</h2>
 
@@ -492,6 +540,50 @@ Public Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="aebc5aa35acc613ac0c9c6fafb7e8acd5" name="aebc5aa35acc613ac0c9c6fafb7e8acd5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aebc5aa35acc613ac0c9c6fafb7e8acd5">&#9670;&#160;</a></span>_frame_count</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">object_detector_node.object_detector_node._frame_count</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a81dab3a018229776171de3dbed2643cf" name="a81dab3a018229776171de3dbed2643cf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a81dab3a018229776171de3dbed2643cf">&#9670;&#160;</a></span>_skip_frames</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">object_detector_node.object_detector_node._skip_frames</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="ae0d00dfb267a60a9223804fcdaf611e0" name="ae0d00dfb267a60a9223804fcdaf611e0"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae0d00dfb267a60a9223804fcdaf611e0">&#9670;&#160;</a></span>active_flag</h2>
 
@@ -500,20 +592,6 @@ Public Attributes</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">object_detector_node.object_detector_node.active_flag</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a708dc8e28781381428a130429c727e3f" name="a708dc8e28781381428a130429c727e3f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a708dc8e28781381428a130429c727e3f">&#9670;&#160;</a></span>activeFlag</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">object_detector_node.object_detector_node.activeFlag</td>
         </tr>
       </table>
 </div><div class="memdoc">

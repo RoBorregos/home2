@@ -1,6 +1,7 @@
 var classobject__detector__node_1_1object__detector__node =
 [
     [ "__init__", "classobject__detector__node_1_1object__detector__node.html#ab3646ec3f0f655765e49e1f8caf58ec0", null ],
+    [ "_vision_active_cb", "classobject__detector__node_1_1object__detector__node.html#adbc0f534d24830fb7eea84f8d846ba9c", null ],
     [ "activeFlagCallback", "classobject__detector__node_1_1object__detector__node.html#a7b3cfb1eeb107c77d6592d0957dfe12c", null ],
     [ "cameraInfoCallback", "classobject__detector__node_1_1object__detector__node.html#a945f1d4a79edccde809724aa96e654b2", null ],
     [ "depthImageCallback", "classobject__detector__node_1_1object__detector__node.html#a34b5af89b3f43e805c61c8c123c84f1a", null ],
@@ -11,8 +12,9 @@ var classobject__detector__node_1_1object__detector__node =
     [ "set_parameters", "classobject__detector__node_1_1object__detector__node.html#a94379d5beaf6d663287330a991d956dd", null ],
     [ "visualize_3d_detections", "classobject__detector__node_1_1object__detector__node.html#ac26731677e02c0a1e3b2b043b7452a86", null ],
     [ "visualize_detections", "classobject__detector__node_1_1object__detector__node.html#a1412385c48a267014d883ac12bb9387f", null ],
+    [ "_frame_count", "classobject__detector__node_1_1object__detector__node.html#aebc5aa35acc613ac0c9c6fafb7e8acd5", null ],
+    [ "_skip_frames", "classobject__detector__node_1_1object__detector__node.html#a81dab3a018229776171de3dbed2643cf", null ],
     [ "active_flag", "classobject__detector__node_1_1object__detector__node.html#ae0d00dfb267a60a9223804fcdaf611e0", null ],
-    [ "activeFlag", "classobject__detector__node_1_1object__detector__node.html#a708dc8e28781381428a130429c727e3f", null ],
     [ "bridge", "classobject__detector__node_1_1object__detector__node.html#ac449c700a2f8a471785776e1b0352c4c", null ],
     [ "camera_info", "classobject__detector__node_1_1object__detector__node.html#a5b0326f8a41d88951d404bb733a4af0a", null ],
     [ "camera_info_subscriber", "classobject__detector__node_1_1object__detector__node.html#a351b978e0a109f59c76799e598b66a99", null ],

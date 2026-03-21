@@ -1,11 +1,10 @@
 var classpointing__detection_1_1DetectPointingObjectServer =
 [
     [ "__init__", "classpointing__detection_1_1DetectPointingObjectServer.html#addcb524c5ee74f2dd871542532a05c95", null ],
+    [ "_check_in_bounds", "classpointing__detection_1_1DetectPointingObjectServer.html#a13ec379bae770d618f86a67d304ead13", null ],
     [ "check_closest_object", "classpointing__detection_1_1DetectPointingObjectServer.html#afe69f46088356e40eae53bf2b6aad57b", null ],
-    [ "check_visible", "classpointing__detection_1_1DetectPointingObjectServer.html#a5e05d68ceb4a85e9eaf742f910ccf5c9", null ],
     [ "cleanup_detections", "classpointing__detection_1_1DetectPointingObjectServer.html#a7f2528da28bcd8dfa5910c76e57da69b", null ],
     [ "detections_callback", "classpointing__detection_1_1DetectPointingObjectServer.html#aa7153f319b89db5cde3a1cc1bcceaa3b", null ],
-    [ "draw_orthogonal_distance", "classpointing__detection_1_1DetectPointingObjectServer.html#af489065d2fcf02ab8d8442f9529658ca", null ],
     [ "execute_callback", "classpointing__detection_1_1DetectPointingObjectServer.html#abed9a62e7faa0f9ea61e3c9be29b140f", null ],
     [ "image_callback", "classpointing__detection_1_1DetectPointingObjectServer.html#a2621476e13062b30e2841adae043b74a", null ],
     [ "run_inference", "classpointing__detection_1_1DetectPointingObjectServer.html#aee795bbd30b20d56b21b229fe00d8e8c", null ],
@@ -23,13 +22,8 @@ var classpointing__detection_1_1DetectPointingObjectServer =
     [ "detections_sub", "classpointing__detection_1_1DetectPointingObjectServer.html#a00687386243d13fb0aa3c29380b56f57", null ],
     [ "image_sub", "classpointing__detection_1_1DetectPointingObjectServer.html#aad58563ba9190cd853568ccbca0486ba", null ],
     [ "last_inference_time", "classpointing__detection_1_1DetectPointingObjectServer.html#a913d9a70dabebbb46cf79e42593989e4", null ],
-    [ "LEFT_HAND", "classpointing__detection_1_1DetectPointingObjectServer.html#a1b06bc53ae8fa25c37c9a3bc89335b47", null ],
-    [ "LEFT_SHOULDER", "classpointing__detection_1_1DetectPointingObjectServer.html#afa7c0645fef708339e1118db4befa0cd", null ],
-    [ "mp_pose", "classpointing__detection_1_1DetectPointingObjectServer.html#a64f660709bee27a75ef9b934522e6f23", null ],
     [ "objects", "classpointing__detection_1_1DetectPointingObjectServer.html#a4c49497a680f801110eb92195bc080e9", null ],
-    [ "pose", "classpointing__detection_1_1DetectPointingObjectServer.html#a9c3e166627c5a824e16e0b05eeb222b1", null ],
-    [ "RIGHT_HAND", "classpointing__detection_1_1DetectPointingObjectServer.html#a6b07daa5f75ed425e67f3aaf8a5c6ac6", null ],
-    [ "RIGHT_SHOULDER", "classpointing__detection_1_1DetectPointingObjectServer.html#adebf5627f533a03aeffcde7b0649b2b2", null ],
+    [ "pose_model", "classpointing__detection_1_1DetectPointingObjectServer.html#af3f70b9a214f92afed8749ac33603b09", null ],
     [ "runThread", "classpointing__detection_1_1DetectPointingObjectServer.html#a7cd44e04977a97c75a7d121a9cd3d7f2", null ],
     [ "VISUALIZE", "classpointing__detection_1_1DetectPointingObjectServer.html#a9a2d6aa34e568d3b8acfe56c1be9b836", null ],
     [ "visualizer_pub", "classpointing__detection_1_1DetectPointingObjectServer.html#ade5a75bb3d159e28d1fe4b2520337bcb", null ]

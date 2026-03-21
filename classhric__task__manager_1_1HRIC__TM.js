@@ -8,6 +8,7 @@ var classhric__task__manager_1_1HRIC__TM =
     [ "run", "classhric__task__manager_1_1HRIC__TM.html#a008070806c2be658882f393c3afdb201", null ],
     [ "set_description", "classhric__task__manager_1_1HRIC__TM.html#a6eb2761ca8a14f916df76d25081f35e5", null ],
     [ "timeout", "classhric__task__manager_1_1HRIC__TM.html#a698d617edaf67bc83830c166409b0bf1", null ],
+    [ "carrying_bag", "classhric__task__manager_1_1HRIC__TM.html#ae1827aa532653190b4421650c8870855", null ],
     [ "check_angles", "classhric__task__manager_1_1HRIC__TM.html#ab5efe9c4a119535ce72932d49e3b9f2e", null ],
     [ "current_attempts", "classhric__task__manager_1_1HRIC__TM.html#a10ddc68e37117d067d97d3506824136e", null ],
     [ "current_guest_idx", "classhric__task__manager_1_1HRIC__TM.html#a5109aa3e9ab2ccf722765e0bbf028203", null ],

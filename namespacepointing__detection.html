@@ -105,6 +105,8 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
 Functions</h2></td></tr>
+<tr class="memitem:a297108ef0414c32dbff12ad5a4774199"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepointing__detection.html#a297108ef0414c32dbff12ad5a4774199">load_yolo_pose</a> (model_name=&quot;yolo11m-pose.pt&quot;)</td></tr>
+<tr class="separator:a297108ef0414c32dbff12ad5a4774199"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9db6ce1f51fbb1400f9c27f9fa04df6d"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepointing__detection.html#a9db6ce1f51fbb1400f9c27f9fa04df6d">main</a> ()</td></tr>
 <tr class="separator:a9db6ce1f51fbb1400f9c27f9fa04df6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -118,8 +120,36 @@ Variables</h2></td></tr>
 <tr class="separator:af403d88fbae3e2b0891a658ccb3d4054"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a21dd50ff81edba13f099c5b8fb3f927e"><td class="memItemLeft" align="right" valign="top">list&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepointing__detection.html#a21dd50ff81edba13f099c5b8fb3f927e">DEFAULT_CLASSES</a></td></tr>
 <tr class="separator:a21dd50ff81edba13f099c5b8fb3f927e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aecdfe9b610d5fd6382dd55d2679ce09b"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepointing__detection.html#aecdfe9b610d5fd6382dd55d2679ce09b">RIGHT_SHOULDER</a> = 6</td></tr>
+<tr class="separator:aecdfe9b610d5fd6382dd55d2679ce09b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae5a5ea3ffce7705feea4d4250f9fb2ad"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepointing__detection.html#ae5a5ea3ffce7705feea4d4250f9fb2ad">RIGHT_WRIST</a> = 10</td></tr>
+<tr class="separator:ae5a5ea3ffce7705feea4d4250f9fb2ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a81b763268db81cdf41aed3e9d35a4c71"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepointing__detection.html#a81b763268db81cdf41aed3e9d35a4c71">LEFT_SHOULDER</a> = 5</td></tr>
+<tr class="separator:a81b763268db81cdf41aed3e9d35a4c71"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a47c3a80029239887a5bca0e33d3cc442"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepointing__detection.html#a47c3a80029239887a5bca0e33d3cc442">LEFT_WRIST</a> = 9</td></tr>
+<tr class="separator:a47c3a80029239887a5bca0e33d3cc442"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a633acf443f90a05cc1ffb29a58d8266a"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacepointing__detection.html#a633acf443f90a05cc1ffb29a58d8266a">KP_CONF</a> = 0.3</td></tr>
+<tr class="separator:a633acf443f90a05cc1ffb29a58d8266a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Function Documentation</h2>
+<a id="a297108ef0414c32dbff12ad5a4774199" name="a297108ef0414c32dbff12ad5a4774199"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a297108ef0414c32dbff12ad5a4774199">&#9670;&#160;</a></span>load_yolo_pose()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def pointing_detection.load_yolo_pose </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>model_name</em> = <code>&quot;yolo11m-pose.pt&quot;</code></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Load YOLO pose model with automatic TensorRT export for Orin AGX.</pre> 
+</div>
+</div>
 <a id="a9db6ce1f51fbb1400f9c27f9fa04df6d" name="a9db6ce1f51fbb1400f9c27f9fa04df6d"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9db6ce1f51fbb1400f9c27f9fa04df6d">&#9670;&#160;</a></span>main()</h2>
 
@@ -166,6 +196,76 @@ Variables</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">float pointing_detection.INFERENCE_TIMEOUT = 2.0</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a633acf443f90a05cc1ffb29a58d8266a" name="a633acf443f90a05cc1ffb29a58d8266a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a633acf443f90a05cc1ffb29a58d8266a">&#9670;&#160;</a></span>KP_CONF</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">float pointing_detection.KP_CONF = 0.3</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a81b763268db81cdf41aed3e9d35a4c71" name="a81b763268db81cdf41aed3e9d35a4c71"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a81b763268db81cdf41aed3e9d35a4c71">&#9670;&#160;</a></span>LEFT_SHOULDER</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int pointing_detection.LEFT_SHOULDER = 5</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a47c3a80029239887a5bca0e33d3cc442" name="a47c3a80029239887a5bca0e33d3cc442"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a47c3a80029239887a5bca0e33d3cc442">&#9670;&#160;</a></span>LEFT_WRIST</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int pointing_detection.LEFT_WRIST = 9</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aecdfe9b610d5fd6382dd55d2679ce09b" name="aecdfe9b610d5fd6382dd55d2679ce09b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aecdfe9b610d5fd6382dd55d2679ce09b">&#9670;&#160;</a></span>RIGHT_SHOULDER</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int pointing_detection.RIGHT_SHOULDER = 6</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ae5a5ea3ffce7705feea4d4250f9fb2ad" name="ae5a5ea3ffce7705feea4d4250f9fb2ad"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae5a5ea3ffce7705feea4d4250f9fb2ad">&#9670;&#160;</a></span>RIGHT_WRIST</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int pointing_detection.RIGHT_WRIST = 10</td>
         </tr>
       </table>
 </div><div class="memdoc">

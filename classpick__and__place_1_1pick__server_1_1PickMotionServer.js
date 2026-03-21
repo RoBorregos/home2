@@ -26,5 +26,7 @@ var classpick__and__place_1_1pick__server_1_1PickMotionServer =
     [ "collision_objects", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a0ee3e4f5cd7c8acb4ddc48cf1c8ebaac", null ],
     [ "ee_link_offset", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a73261575260ca74ddf9ed56972d8f582", null ],
     [ "ee_tip_offset", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a1d39e082c36cbebccfa97d40e856a9b0", null ],
-    [ "plane", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#aab7727547bae26e2a95d557e4bec2108", null ]
+    [ "plane", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#aab7727547bae26e2a95d557e4bec2108", null ],
+    [ "tf_buffer", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a7c6bcf8de90f9317cbcefde17a39a79a", null ],
+    [ "tf_listener", "classpick__and__place_1_1pick__server_1_1PickMotionServer.html#ad6b6e3181057befe40cf4154d4f64ddd", null ]
 ];

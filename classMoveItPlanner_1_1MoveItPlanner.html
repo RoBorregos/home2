@@ -125,6 +125,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a15a0739b7c05572eed120cc4e845ad22"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac1c81b0be7e6b68826c012c69e651250"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classMoveItPlanner_1_1MoveItPlanner.html#ac1c81b0be7e6b68826c012c69e651250">plan_pose_goal</a> (self, PoseStamped pose, str target_link=<a class="el" href="namespacexarm6.html#a98e484bb41a72ad13138043f3728bf2c">xarm6.end_effector_name</a>(), bool cartesian=False, float tolerance_position=0.015, float tolerance_orientation=0.02)</td></tr>
 <tr class="separator:ac1c81b0be7e6b68826c012c69e651250"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a21b8178d73aa57c202d3441babdde521"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classMoveItPlanner_1_1MoveItPlanner.html#a21b8178d73aa57c202d3441babdde521">reset_controller</a> (self)</td></tr>
+<tr class="separator:a21b8178d73aa57c202d3441babdde521"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad3111a445cab8660718d6a9b5f147417"><td class="memItemLeft" align="right" valign="top">MoveIt2State&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classMoveItPlanner_1_1MoveItPlanner.html#ad3111a445cab8660718d6a9b5f147417">get_current_operation_state</a> (self)</td></tr>
 <tr class="separator:ad3111a445cab8660718d6a9b5f147417"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3378bd32ccc5bf571b1d7d10cfeaaa14"><td class="memItemLeft" align="right" valign="top">dict[float]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classMoveItPlanner_1_1MoveItPlanner.html#a3378bd32ccc5bf571b1d7d10cfeaaa14">get_joint_positions</a> (self, timeout=1)</td></tr>
@@ -1055,6 +1057,24 @@ Monitors the execution and returns True if completed successfully.
       </table>
 </div><div class="memdoc">
 
+</div>
+</div>
+<a id="a21b8178d73aa57c202d3441babdde521" name="a21b8178d73aa57c202d3441babdde521"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a21b8178d73aa57c202d3441babdde521">&#9670;&#160;</a></span>reset_controller()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> None MoveItPlanner.MoveItPlanner.reset_controller </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Reset the trajectory controller by sending a dummy trajectory from current joint state.</pre> 
 </div>
 </div>
 <a id="ad3afc41a64cd148af8247671cc295d15" name="ad3afc41a64cd148af8247671cc295d15"></a>

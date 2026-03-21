@@ -358,6 +358,9 @@ var annotated_dup =
     [ "test_env", "namespacetest__env.html", [
       [ "TestNode", "classtest__env_1_1TestNode.html", "classtest__env_1_1TestNode" ]
     ] ],
+    [ "test_go_to_hand", "namespacetest__go__to__hand.html", [
+      [ "TestGoToHand", "classtest__go__to__hand_1_1TestGoToHand.html", "classtest__go__to__hand_1_1TestGoToHand" ]
+    ] ],
     [ "test_hri_manager", "namespacetest__hri__manager.html", [
       [ "TestHriManager", "classtest__hri__manager_1_1TestHriManager.html", "classtest__hri__manager_1_1TestHriManager" ]
     ] ],
