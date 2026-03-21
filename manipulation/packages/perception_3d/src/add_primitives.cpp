@@ -288,7 +288,8 @@ public:
     center_offset[2] = (min_pt.z + max_pt.z) / 2.0f;
 
     // Transform the center offset back to the original coordinate system
-    center += rotation * center_offset;
+    // Eigen::Vector3f ident =
+    // center += rotation * center_offset;
 
     // Calculate the four corners of the box in the transformed space
     pcl::PointXYZ xy1, xy2, xy3, xy4;
@@ -343,11 +344,7 @@ public:
     box_params.height = extent[2] * 2;
 
     // Set the orientation in the box parameters
-    Eigen::Quaternionf quat_prev(rotation);
-    // Fix the orientation to only keep the yaw component
-    Eigen::Vector3f euler = quat_prev.toRotationMatrix().eulerAngles(2, 1, 0);
-    Eigen::AngleAxisf yaw_only(euler[0], Eigen::Vector3f::UnitZ());
-    Eigen::Quaternionf quat(yaw_only);
+    Eigen::Quaternionf quat(rotation);
     // quat.normalize();
     box_params.orientation.x = quat.x();
     box_params.orientation.y = quat.y();
@@ -594,7 +591,16 @@ public:
 
       BoxPrimitiveParams box_params;
 
-      STATUS_RESPONSE status = RansacNormals(cloud, box_params);
+      // Uniform downsample before PCA: density non-uniformity (closer = denser)
+      // skews the principal axes in XY causing yaw error in the OBB
+      pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_uniform(
+          new pcl::PointCloud<pcl::PointXYZ>);
+      DownSampleObject(cloud, cloud_uniform, 0.01);
+      if (cloud_uniform->points.empty()) {
+        cloud_uniform = cloud;
+      }
+
+      STATUS_RESPONSE status = RansacNormals(cloud_uniform, box_params);
 
       ASSERT_AND_RETURN_CODE(
           status, OK, "Error computing box primitive with code %d", status);
@@ -757,10 +763,19 @@ public:
     RCLCPP_INFO(this->get_logger(), "Computing box primitive");
     RCLCPP_INFO(this->get_logger(), "Cloud size: %zu",
                 cloud_out->points.size());
+    // Uniform downsample before PCA: density non-uniformity (closer = denser)
+    // skews the principal axes in XY causing yaw error in the OBB
+    pcl::PointCloud<pcl::PointXYZ>::Ptr cloud_uniform(
+        new pcl::PointCloud<pcl::PointXYZ>);
+    DownSampleObject(cloud_out, cloud_uniform, 0.1);
+    if (cloud_uniform->points.empty()) {
+      cloud_uniform = cloud_out;
+    }
+
     BoxPrimitiveParams box_params;
     try {
       RCLCPP_INFO(this->get_logger(), "Computing box primitive");
-      response->health_response = RansacNormals(cloud_out, box_params);
+      response->health_response = RansacNormals(cloud_uniform, box_params);
     } catch (const std::exception &exeption) {
       RCLCPP_ERROR(this->get_logger(), "Exception: %s", exeption.what());
       response->health_response = INVALID_INPUT_FILTER;
