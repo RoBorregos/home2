@@ -12,6 +12,7 @@ DETACHED=""
 BUILD=""
 BUILD_IMAGE=""
 UPLOAD_IMAGE=""
+CLEAN=""
 
 # check if one of the arguments is --detached
 for arg in "${ARGS[@]}"; do
@@ -39,6 +40,9 @@ for arg in "${ARGS[@]}"; do
     "--upload-image")
         UPLOAD_IMAGE="true"
         ;;
+    "--clean")
+        CLEAN="true"
+        ;;
     esac
 done
 
@@ -46,6 +50,12 @@ done
 
 # Reset .env
 echo "" > .env
+
+# CycloneDDS interface from host
+if [ -f /etc/cyclonedds.env ]; then
+    source /etc/cyclonedds.env
+fi
+add_or_update_variable .env "CYCLONE_INTERFACE" "${CYCLONE_INTERFACE:-}"
 
 # Export user
 add_or_update_variable .env "LOCAL_USER_ID" "$(id -u)"
@@ -70,6 +80,9 @@ case $ENV_TYPE in
     ;;
 esac
 
+# Clean build artifacts if requested
+clean_workspace_directories
+
 mkdir -p install build log moondream/install moondream/build moondream/log
 
 #_________________________RUN_________________________
@@ -83,9 +96,9 @@ SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
 PROFILES=()
 
 case $TASK in
-    "--receptionist")
+    "--hric")
         PACKAGES="vision_general object_detector_2d object_detection_handler"
-        RUN="ros2 launch object_detector_2d object_detector_combined.launch.py"
+        RUN="ros2 launch vision_general hric_launch.py"
         PROFILES=("vision" "moondream")
         ;;
     "--carry")

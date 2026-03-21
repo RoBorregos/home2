@@ -295,7 +295,7 @@ class EGPSRTM(Node):
     def run(self):
         if self.current_state == EGPSRTM.States.WAITING_FOR_BUTTON:
             Logger.state(self, "Waiting for start button...")
-            self.subtask_manager.hri.start_button_clicked = False
+            self.subtask_manager.hri.reset_task_status()
             self.subtask_manager.hri.publish_display_topic("/vision/detections_image")
             self.subtask_manager.hri.say("Waiting for start button to be pressed to start the task")
             while not self.subtask_manager.hri.start_button_clicked:
@@ -539,6 +539,7 @@ class EGPSRTM(Node):
                 "I am done with the task. I will now return to my home position.",
                 wait=False,
             )
+            self.subtask_manager.hri.reset_task_status()
             self.running_task = False
 
 

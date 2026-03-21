@@ -11,6 +11,7 @@ DETACHED=""
 BUILD=""
 BUILD_IMAGE=""
 UPLOAD_IMAGE=""
+CLEAN=""
 COMPOSE_FILE="docker-compose.yaml"
 for arg in "${ARGS[@]}"; do
     case $arg in
@@ -37,6 +38,9 @@ for arg in "${ARGS[@]}"; do
     "--upload-image")
         UPLOAD_IMAGE="true"
         ;;
+    "--clean")
+        CLEAN="true"
+        ;;
     esac
 done
 
@@ -44,6 +48,12 @@ done
 
 # Reset .env
 echo "" > .env
+
+# CycloneDDS interface from host
+if [ -f /etc/cyclonedds.env ]; then
+    source /etc/cyclonedds.env
+fi
+add_or_update_variable .env "CYCLONE_INTERFACE" "${CYCLONE_INTERFACE:-}"
 
 # Export user
 add_or_update_variable .env "LOCAL_USER_ID" "$(id -u)"
@@ -60,10 +70,16 @@ case $ENV_TYPE in
     "gpu")
         COMPOSE_FILE="docker-compose-gpu.yaml"
         ;;
+    "l4t")
+        COMPOSE_FILE="docker-compose-l4t.yaml"
+        ;;
     *)
         add_or_update_variable .env "DOCKER_RUNTIME" "nvidia"
         ;;
 esac
+
+# Clean build artifacts if requested
+clean_workspace_directories
 
 # Create dirs with current user to avoid permission problems
 mkdir -p install build log
@@ -72,13 +88,14 @@ mkdir -p install build log
 
 COLCON="colcon build --symlink-install --packages-up-to nav_main --packages-ignore frida_interfaces frida_constants"
 SOURCE_ROS="source /opt/ros/humble/setup.bash"
+SOURCE_RTABMAP="if [ -f /home/ros/ros_packages3/install/setup.bash ]; then source /home/ros/ros_packages3/install/setup.bash; fi"
 SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
 SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
 
 if [ "$BUILD" == "true" ]; then
-    SETUP="$SOURCE_ROS && $SOURCE_INTERFACES && $SOURCE && $COLCON"
+    SETUP="$SOURCE_ROS && $SOURCE_RTABMAP && $SOURCE_INTERFACES && $SOURCE && $COLCON"
 else
-    SETUP="$SOURCE_ROS && $SOURCE_INTERFACES && $SOURCE"
+    SETUP="$SOURCE_ROS && $SOURCE_RTABMAP && $SOURCE_INTERFACES && $SOURCE"
 fi
 
 case $TASK in

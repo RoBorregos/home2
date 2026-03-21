@@ -1,25 +1,37 @@
 # HRI
-To run or test the modules it is necessary to have Ubuntu 22.04. Alternatively, you can use the docker setup provided in this repository.
 
-## Docker setup
-### Quick start using run.sh
-In root directory (home2), run:
+In order to run and setup this area specific flags were added which abstract the complexity of performing both simple and complex tasks.
+
+## Flags
+
+Adding multiple flags in the same command is supported. Remember that to run a specific task the task's flag must be the first one.
+
 ```bash
-./run.sh hri
+./run.sh hri --build-display
 ```
 
-This will:
-- Build the base image according to your system (cpu, cuda or jetson) as well as the image for the hri module.
-- Run the device setup script.
-- Download the needed LLM models.
+Downloads node-modules (dependencies) and builds the next.js web page inside a temporary `hri-ros` container.
 
-To run a specific task, specify it with the flag `--task`:
 ```bash
-./run.sh hri --receptionist
+./run.sh hri --open-display
 ```
 
-# Additional Information
+Opens a new Firefox window in kiosk mode (fullscreen). If running with a task it will open the task's specific URL. See `docker/hri/scripts/open-display.bash`.
 
-You may want to only launch some of the services. For example, running the module without the LLM, etc. To do so, please check the docker-compose files in the `hri` folder, and disable the services you do not want to run.
+```bash
+./run.sh hri --download-model
+```
+
+Pulls RoBorregos' command interpreter LLM from hugging face and other ollama models. See `docker/hri/scripts/download-model.sh`.
+
+```bash
+./run.sh hri --regenerate-db
+```
+
+Uses current json files from `hri/packages/embeddings/embeddings/dataframes/` and a navigation service to retrive information and generate SQL files which are saved in `/docker/hri/sql_dumps/`. Then it replaces the information in the postgres database with these scripts. See `docker/hri/scripts/regenerate_db.sh`.
+
+## Running specific containers
+
+You may want to only launch some of the services. For example, running the module without the LLM, etc. To do so, please check the docker-compose yaml files in the `docker/hri/compose/` folder and comment out the services you do not want to run.
 
 For more detailed information, see HRI's [README.md](../../../hri/README.md).

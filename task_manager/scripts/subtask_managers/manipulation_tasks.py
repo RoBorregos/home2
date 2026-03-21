@@ -27,7 +27,7 @@ from rclpy.action import ActionClient
 from typing import List, Union
 from utils.decorators import mockable, service_check
 from utils.status import Status
-from frida_interfaces.action import ManipulationAction
+from frida_interfaces.action import ManipulationAction, GoToHand
 from frida_interfaces.msg import ManipulationTask
 from geometry_msgs.msg import PointStamped, PoseStamped
 
@@ -36,8 +36,9 @@ from xarm_msgs.srv import SetDigitalIO
 
 from frida_constants.manipulation_constants import (
     MANIPULATION_ACTION_SERVER,
+    GO_TO_HAND_ACTION_SERVER,
 )
-# import time as t
+import time as t
 
 from enum import Enum
 
@@ -103,6 +104,7 @@ class ManipulationTasks:
             GetOptimalPoseForPlane,
             "/manipulation/get_optimal_pose_for_plane",
         )
+        self._go_to_hand_action_client = ActionClient(self.node, GoToHand, GO_TO_HAND_ACTION_SERVER)
 
     def open_gripper(self):
         """Opens the gripper"""
@@ -405,7 +407,7 @@ class ManipulationTasks:
             else:
                 Logger.error(self.node, "Failed to open gripper")
 
-            self.move_joint_positions(named_position="front_low_stare", velocity=0.3)
+            self.move_joint_positions(named_position="pick_stare_at_table", velocity=0.3)
             return Status.EXECUTION_SUCCESS
 
         Logger.warn(self.node, f"Movement to {side_name} failed")
@@ -420,7 +422,17 @@ class ManipulationTasks:
             current_joints = self.get_joint_positions(degrees=True)
             test_joints = current_joints.copy()
 
-            offset = 90.0
+            lower_offset = -10.0
+            test_joints["joint5"] += lower_offset
+            result_tilt = self.move_joint_positions(
+                joint_positions=test_joints, velocity=0.2, degrees=True
+            )
+
+            if result_tilt != Status.EXECUTION_SUCCESS:
+                Logger.warn(self.node, "Path is BLOCKED at tilt")
+                return True
+
+            offset = 170.0
             if direction == self.Direction.LEFT:
                 test_joints["joint1"] += offset
             elif direction == self.Direction.RIGHT:
@@ -430,17 +442,8 @@ class ManipulationTasks:
             result_pan = self.move_joint_positions(
                 joint_positions=test_joints, velocity=0.2, degrees=True
             )
-            if result_pan != Status.EXECUTION_SUCCESS:
-                Logger.warn(self.node, "Path is BLOCKED at pan")
-                return True
 
-            lower_offset = 20.0
-            test_joints["joint5"] += lower_offset
-            result_tilt = self.move_joint_positions(
-                joint_positions=test_joints, velocity=0.2, degrees=True
-            )
-
-            if result_tilt == Status.EXECUTION_SUCCESS:
+            if result_pan == Status.EXECUTION_SUCCESS:
                 Logger.info(self.node, f"Path to {direction.value} is CLEAR")
                 return False
             else:
@@ -453,8 +456,8 @@ class ManipulationTasks:
 
     def place_on_floor(self) -> int:
         try:
-            Logger.info(self.node, "Moving to front_low_stare...")
-            result = self.move_joint_positions(named_position="front_low_stare", velocity=0.2)
+            Logger.info(self.node, "Moving to pick_stare_at_table...")
+            result = self.move_joint_positions(named_position="pick_stare_at_table", velocity=0.2)
 
             if result != Status.EXECUTION_SUCCESS:
                 Logger.error(self.node, "Failed to reach start position")
@@ -462,22 +465,32 @@ class ManipulationTasks:
 
             has_collision_left = self._check_side_blocked(self.Direction.LEFT)
 
-            self.move_joint_positions(named_position="front_low_stare", velocity=0.3)
+            self.move_joint_positions(named_position="pick_stare_at_table", velocity=0.3)
 
             if not has_collision_left:
-                result = self._attempt_place_on_side(self.Direction.LEFT)
-                if result == Status.EXECUTION_SUCCESS:
-                    return Status.EXECUTION_SUCCESS
+                for i in range(3):
+                    Logger.info(self.node, f"Attempt {i+1} to place on left side...")
+                    result = self._attempt_place_on_side(self.Direction.LEFT)
+                    if result == Status.EXECUTION_SUCCESS:
+                        return Status.EXECUTION_SUCCESS
+                    if i < 2:
+                        Logger.warn(self.node, "Retrying left side...")
+                        t.sleep(1)
                 Logger.warn(self.node, "Movement to left failed, trying right side...")
 
             has_collision_right = self._check_side_blocked(self.Direction.RIGHT)
 
-            self.move_joint_positions(named_position="front_low_stare", velocity=0.3)
+            self.move_joint_positions(named_position="pick_stare_at_table", velocity=0.3)
 
             if not has_collision_right:
-                result = self._attempt_place_on_side(self.Direction.RIGHT)
-                if result == Status.EXECUTION_SUCCESS:
-                    return Status.EXECUTION_SUCCESS
+                for i in range(3):
+                    Logger.info(self.node, f"Attempt {i+1} to place on right side...")
+                    result = self._attempt_place_on_side(self.Direction.RIGHT)
+                    if result == Status.EXECUTION_SUCCESS:
+                        return Status.EXECUTION_SUCCESS
+                    if i < 2:
+                        Logger.warn(self.node, "Retrying right side...")
+                        t.sleep(1)
                 Logger.error(self.node, "Movement to right also failed")
 
             Logger.error(self.node, "CRITICAL: Both sides are blocked or planning failed")
@@ -565,6 +578,44 @@ class ManipulationTasks:
 
     def move_to_position(self, named_position: str, velocity: float = 0.75):
         self.move_joint_positions(named_position=named_position, velocity=velocity, degrees=True)
+
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
+    @service_check(
+        client="_go_to_hand_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT
+    )
+    def go_to_hand(self, point: PointStamped, hand_offset: float = 0.3) -> int:
+        """Move the arm to a position suitable for handing over an object.
+
+        Args:
+            point: 3D point in space to approach (PointStamped)
+            hand_offset: radial distance from the point to position the EEF (meters)
+
+        Returns:
+            Status code indicating success or failure
+        """
+        goal_msg = GoToHand.Goal()
+        goal_msg.point = point
+        goal_msg.hand_offset = hand_offset
+
+        self._go_to_hand_action_client.wait_for_server()
+        future = self._go_to_hand_action_client.send_goal_async(goal_msg)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+
+        if future.result() is None or not future.result().accepted:
+            Logger.error(self.node, "GoToHand goal was rejected")
+            return Status.EXECUTION_ERROR
+
+        Logger.info(self.node, "GoToHand goal accepted, waiting for result...")
+        result_future = future.result().get_result_async()
+        rclpy.spin_until_future_complete(self.node, result_future)
+
+        result = result_future.result().result
+        if result.success:
+            Logger.success(self.node, "GoToHand completed successfully")
+            return Status.EXECUTION_SUCCESS
+
+        Logger.error(self.node, "GoToHand failed to reach target pose")
+        return Status.EXECUTION_ERROR
 
     @mockable(return_value=Status.EXECUTION_SUCCESS)
     @service_check(

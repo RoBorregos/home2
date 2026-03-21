@@ -2,8 +2,8 @@ ARG BASE_IMAGE
 FROM ${BASE_IMAGE}
 
 ARG USERNAME=ros
-ARG USER_UID
-ARG USER_GID
+ARG USER_UID=1000
+ARG USER_GID=1000
 
 ENV ROS_DISTRO=humble
 ENV DEBIAN_FRONTEND=noninteractive
@@ -14,7 +14,7 @@ RUN apt-get update && apt-get install -y \
     && locale-gen en_US.UTF-8 \
     && update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 \
     && rm -rf /var/lib/apt/lists/*
-ENV LANG en_US.UTF-8
+ENV LANG=en_US.UTF-8
 
 # Install timezone
 RUN ln -fs /usr/share/zoneinfo/UTC /etc/localtime \
@@ -65,3 +65,12 @@ RUN apt-get update -qq && apt-get install -y  build-essential \
     terminator nano git wget iputils-ping \
     libcanberra-gtk-module libcanberra-gtk3-module \
     python3-pip
+
+# CycloneDDS
+RUN sudo apt-get update -qq && sudo apt-get install -y -qq ros-humble-rmw-cyclonedds-cpp \
+    && sudo rm -rf /var/lib/apt/lists/*
+COPY cyclonedds_setup.sh /usr/local/bin/cyclonedds_setup.sh
+RUN sudo chmod +x /usr/local/bin/cyclonedds_setup.sh && sudo /usr/local/bin/cyclonedds_setup.sh
+ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+ENV CYCLONEDDS_URI=file:///etc/cyclonedds.xml
+RUN echo "source /usr/local/bin/cyclonedds_setup.sh" >> /home/ros/.bashrc

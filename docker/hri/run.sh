@@ -16,6 +16,7 @@ OPEN_DISPLAY=""
 DOWNLOAD_MODEL=""
 REGENERATE_DB=""
 UPLOAD_IMAGE=""
+CLEAN=""
 
 COMPOSE="compose/docker-compose-${ENV_TYPE}.yml"
 
@@ -57,6 +58,9 @@ for arg in "${ARGS[@]}"; do
     "--upload-image")
         UPLOAD_IMAGE="true"
         ;;
+    "--clean")
+        CLEAN="true"
+        ;;
   esac
 done
 
@@ -81,6 +85,9 @@ fi
 
 [ "$DOWNLOAD_MODEL" == "true" ] && bash ./scripts/download-model.sh
 
+# Clean build artifacts if requested
+clean_workspace_directories
+
 # Create dirs with current user to avoid permission problems
 mkdir -p install build log \
   ../../hri/packages/speech/assets/downloads/offline_voice/model/ \
@@ -88,6 +95,12 @@ mkdir -p install build log \
 
 # Reset .env
 echo "" > compose/.env
+
+# CycloneDDS interface from host
+if [ -f /etc/cyclonedds.env ]; then
+    source /etc/cyclonedds.env
+fi
+add_or_update_variable compose/.env "CYCLONE_INTERFACE" "${CYCLONE_INTERFACE:-}"
 
 # Export user
 add_or_update_variable compose/.env "LOCAL_USER_ID" "$(id -u)"
@@ -128,9 +141,9 @@ PROFILES=()
 RUN=""
 
 case $TASK in
-  "--receptionist")
+  "--hric")
     RUN="ros2 launch speech hri_launch.py"
-    PROFILES=("receptionist")
+    PROFILES=("hric")
     ;;
   "--storing-groceries")
     PROFILES=("storing")
