@@ -1,0 +1,69 @@
+ARG BASE_IMAGE=roborregos/home2:l4t_base
+FROM ${BASE_IMAGE}
+
+# Install ZED SDK (silent, skip drivers for container use)
+RUN sudo apt-get update -qq && sudo apt-get install -y -qq zstd && \
+    wget -q -O /tmp/ZED_SDK.run \
+    https://download.stereolabs.com/zedsdk/5.0/l4t36.4/jetsons && \
+    chmod +x /tmp/ZED_SDK.run && \
+    sudo /tmp/ZED_SDK.run silent skip_drivers && \
+    sudo rm -rf /tmp/ZED_SDK.run /usr/local/zed/resources/*
+
+# Symlink for v4l2 (required by ZED SDK in containers)
+RUN sudo ln -sf /usr/lib/$(uname -m)-linux-gnu/tegra/libv4l2.so.0 \
+    /usr/lib/$(uname -m)-linux-gnu/libv4l2.so 2>/dev/null || true
+
+# Clone ZED ROS2 wrapper and install all dependencies via rosdep
+RUN mkdir -p /opt/zed_ws/src && cd /opt/zed_ws/src && \
+    git clone --depth 1 -b humble-v5.0.0 https://github.com/stereolabs/zed-ros2-wrapper.git && \
+    cd /opt/zed_ws && \
+    sudo apt-get update -qq && \
+    sudo rosdep init 2>/dev/null || true && \
+    rosdep update && \
+    rosdep install --from-paths src -y --ignore-src && \
+    sudo rm -rf /var/lib/apt/lists/*
+
+# Build ZED ROS2 wrapper
+RUN cd /opt/zed_ws && \
+    . /opt/ros/humble/setup.sh && \
+    colcon build --cmake-args -Wno-dev \
+        -DCMAKE_BUILD_TYPE=Release && \
+    sudo chown -R ros:ros /opt/zed_ws
+
+# CycloneDDS with SHM (iceoryx zero-copy for camera frames)
+RUN sudo apt-get update -qq && sudo apt-get install -y -qq \
+    ros-humble-iceoryx-posh ros-humble-iceoryx-hoofs ros-humble-iceoryx-binding-c \
+    && sudo rm -rf /var/lib/apt/lists/*
+
+RUN cd /tmp && \
+    git clone --depth 1 -b releases/0.10.x https://github.com/eclipse-cyclonedds/cyclonedds.git && \
+    cd cyclonedds && mkdir build && cd build && \
+    . /opt/ros/humble/setup.sh && \
+    cmake .. \
+        -DCMAKE_INSTALL_PREFIX=/opt/ros/humble \
+        -DCMAKE_PREFIX_PATH=/opt/ros/humble \
+        -DENABLE_SHM=ON \
+        -DCMAKE_BUILD_TYPE=Release && \
+    make -j$(nproc) && sudo make install && \
+    cd / && rm -rf /tmp/cyclonedds
+
+COPY docker/cyclonedds_setup.sh /tmp/cyclonedds_setup.sh
+COPY roudi_config.toml /tmp/roudi_config.toml
+RUN sudo cp /tmp/cyclonedds_setup.sh /usr/local/bin/cyclonedds_setup.sh && \
+    sudo chmod +x /usr/local/bin/cyclonedds_setup.sh && \
+    sudo mkdir -p /etc/iceoryx && sudo cp /tmp/roudi_config.toml /etc/iceoryx/roudi_config.toml
+ENV CYCLONE_SHM=1
+RUN sudo /usr/local/bin/cyclonedds_setup.sh
+
+# CycloneDDS config without SHM (for robot_state_publisher)
+RUN echo '<?xml version="1.0"?><CycloneDDS><Domain><SharedMemory><Enable>false</Enable><LogLevel>warn</LogLevel></SharedMemory></Domain></CycloneDDS>' > /opt/zed_ws/cyclonedds_noshm.xml
+
+# Copy SHM override and wrapper launch
+COPY zed_shm_override.yaml /opt/zed_ws/zed_shm_override.yaml
+COPY zed_shm_launch.py /opt/zed_ws/zed_shm_launch.py
+
+# ZED SDK library path
+ENV LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:/usr/local/zed/lib"
+
+# Source ZED workspace on shell login
+RUN echo "source /opt/zed_ws/install/setup.bash" >> ~/.bashrc
