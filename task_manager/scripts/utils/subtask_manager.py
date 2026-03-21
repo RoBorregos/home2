@@ -1,5 +1,13 @@
-from config.hri.debug import config as test_hri_config
-from config.hri.mocked import config as mocked_hri_config
+try:
+    from config.hri.debug import config as test_hri_config
+    from config.hri.mocked import config as mocked_hri_config
+except ModuleNotFoundError:
+    try:
+        from task_manager.config.hri.debug import config as test_hri_config
+        from task_manager.config.hri.mocked import config as mocked_hri_config
+    except ModuleNotFoundError:
+        from task_manager.scripts.config.hri.debug import config as test_hri_config
+        from task_manager.scripts.config.hri.mocked import config as mocked_hri_config
 from subtask_managers.hri_tasks import HRITasks
 from subtask_managers.manipulation_tasks import ManipulationTasks
 from subtask_managers.nav_tasks import NavigationTasks
