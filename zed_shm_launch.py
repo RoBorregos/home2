@@ -14,8 +14,7 @@ Run this BEFORE `ros2 launch zed_wrapper zed_camera.launch.py`.
 
 def patch_zed_launch():
     launch_path = (
-        "/opt/zed_ws/install/zed_wrapper/share/zed_wrapper/launch"
-        "/zed_camera.launch.py"
+        "/opt/zed_ws/install/zed_wrapper/share/zed_wrapper/launch/zed_camera.launch.py"
     )
 
     with open(launch_path) as f:

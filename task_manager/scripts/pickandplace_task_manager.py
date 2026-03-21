@@ -19,6 +19,7 @@ ATTEMPT_LIMIT = 3
 
 class ObjectCategory(Enum):
     """Object categories for placement decisions"""
+
     CUTLERY = "cutlery"
     TABLEWARE = "tableware"
     TRASH = "trash"
@@ -28,6 +29,7 @@ class ObjectCategory(Enum):
 
 class Location(Enum):
     """Known furniture locations in the arena"""
+
     DINING_TABLE = "dining_table"
     SIDE_TABLE = "side_table"
     DISHWASHER = "dishwasher"
@@ -102,10 +104,20 @@ class PickAndPlaceTM(Node):
 
         # Breakfast items — bowl+spoon first (breakfast_surface), then milk+cereal (cabinet)
         self.breakfast_items = [
-            {"name": "bowl",   "location": Location.BREAKFAST_SURFACE, "picked": False, "placed": False},
-            {"name": "spoon",  "location": Location.BREAKFAST_SURFACE, "picked": False, "placed": False},
-            {"name": "milk",   "location": Location.CABINET,           "picked": False, "placed": False},
-            {"name": "cereal", "location": Location.CABINET,           "picked": False, "placed": False},
+            {
+                "name": "bowl",
+                "location": Location.BREAKFAST_SURFACE,
+                "picked": False,
+                "placed": False,
+            },
+            {
+                "name": "spoon",
+                "location": Location.BREAKFAST_SURFACE,
+                "picked": False,
+                "placed": False,
+            },
+            {"name": "milk", "location": Location.CABINET, "picked": False, "placed": False},
+            {"name": "cereal", "location": Location.CABINET, "picked": False, "placed": False},
         ]
         self.current_breakfast_item: dict = None
 
@@ -129,7 +141,6 @@ class PickAndPlaceTM(Node):
         self.current_state = PickAndPlaceTM.TaskStates.WAIT_FOR_BUTTON
         self.subtask_manager.manipulation.move_to_position("nav_pose")
         Logger.info(self, "PickAndPlaceTaskManager has started.")
-
 
     def _track_state_change(self, new_state: str):
         """Track time spent in each state and reset attempt counter"""
@@ -311,14 +322,10 @@ class PickAndPlaceTM(Node):
             self.navigate_to(table_location, say=False)
             self.subtask_manager.manipulation.move_to_position("table_stare")
 
-            self.subtask_manager.hri.say(
-                f"I will pick the {self.grasped_object.name}.", wait=False
-            )
+            self.subtask_manager.hri.say(f"I will pick the {self.grasped_object.name}.", wait=False)
 
             # pick_object expects the object name; manipulation server uses active vision
-            status = self.subtask_manager.manipulation.pick_object(
-                self.grasped_object.name
-            )
+            status = self.subtask_manager.manipulation.pick_object(self.grasped_object.name)
 
             if status == Status.EXECUTION_SUCCESS:
                 self.grasped_object.is_picked = True
@@ -333,7 +340,7 @@ class PickAndPlaceTM(Node):
                 if self.current_attempts >= ATTEMPT_LIMIT:
                     Logger.warning(self, f"Skipping {self.grasped_object.name} after max attempts.")
                     self.current_attempts = 0
-                    self.grasped_object.is_picked = True   # mark as handled to advance loop
+                    self.grasped_object.is_picked = True  # mark as handled to advance loop
                     self.current_object_index += 1
                     self.current_state = PickAndPlaceTM.TaskStates.CLEANUP_LOOP
                 # else stay in PICK_OBJECT to retry
@@ -409,7 +416,7 @@ class PickAndPlaceTM(Node):
                     self.current_state = PickAndPlaceTM.TaskStates.PLACE_OBJECT
             else:
                 Logger.error(self, "Navigation to placement failed, skipping object.")
-                self.grasped_object.is_picked = True    # avoid re-trying this object
+                self.grasped_object.is_picked = True  # avoid re-trying this object
                 self.current_object_index += 1
                 self.current_state = PickAndPlaceTM.TaskStates.CLEANUP_LOOP
 
@@ -437,19 +444,19 @@ class PickAndPlaceTM(Node):
 
                 # Use hri.categorize_objects to get semantic grouping
                 # It returns (Status, {level: "category_str"}, {level: [objects_to_add]}, {level: [cats]})
-                table_object_names = [obj.name for obj in self.detected_objects if not obj.is_placed]
+                table_object_names = [
+                    obj.name for obj in self.detected_objects if not obj.is_placed
+                ]
                 cat_status, shelf_cat_str, _, _ = self.subtask_manager.hri.categorize_objects(
                     table_objects=table_object_names,
                     shelves=raw_shelves,
                 )
                 if cat_status == Status.EXECUTION_SUCCESS:
-                    self.shelf_categories = shelf_cat_str   # {level: "category string"}
+                    self.shelf_categories = shelf_cat_str  # {level: "category string"}
                     Logger.info(self, f"Cabinet shelf categories: {self.shelf_categories}")
                     # Per rules: must announce shelf perception to the referee
                     for level, cat in self.shelf_categories.items():
-                        self.subtask_manager.hri.say(
-                            f"Shelf {level} contains {cat}.", wait=False
-                        )
+                        self.subtask_manager.hri.say(f"Shelf {level} contains {cat}.", wait=False)
                         self.timeout(0.5)
                 else:
                     Logger.warning(self, "Categorization failed, using empty shelf map.")
@@ -480,7 +487,7 @@ class PickAndPlaceTM(Node):
                 # place_on_shelf needs an estimated height; use a generic mid-cabinet height.
                 # A refinement would be to look up the height from shelf_categories.
                 status = self.subtask_manager.manipulation.place_on_shelf(
-                    plane_height=1.0,   # metres — adjust to arena cabinet height
+                    plane_height=1.0,  # metres — adjust to arena cabinet height
                     tolerance=0.3,
                 )
             else:
@@ -536,7 +543,7 @@ class PickAndPlaceTM(Node):
                     f"Failed to reach {item_location.value}, "
                     f"skipping {self.current_breakfast_item['name']}.",
                 )
-                self.current_breakfast_item["picked"] = True   # avoid infinite loop
+                self.current_breakfast_item["picked"] = True  # avoid infinite loop
                 self.current_state = PickAndPlaceTM.TaskStates.GET_BREAKFAST_ITEMS
 
         # ==================== PICK BREAKFAST ITEM ====================
@@ -598,8 +605,7 @@ class PickAndPlaceTM(Node):
             if status == Status.EXECUTION_SUCCESS and "yes" in answer.lower():
                 Logger.warning(self, "Breakfast area not clear — objects too close.")
                 self.subtask_manager.hri.say(
-                    "There are objects too close to the breakfast items. "
-                    "I will try to move them.",
+                    "There are objects too close to the breakfast items. I will try to move them.",
                     wait=False,
                 )
                 # Best-effort: detect and remove nearby objects

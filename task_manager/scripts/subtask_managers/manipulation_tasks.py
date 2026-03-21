@@ -479,7 +479,7 @@ class ManipulationTasks:
 
             if not has_collision_left:
                 for i in range(3):
-                    Logger.info(self.node, f"Attempt {i+1} to place on left side...")
+                    Logger.info(self.node, f"Attempt {i + 1} to place on left side...")
                     result = self._attempt_place_on_side(self.Direction.LEFT)
                     if result == Status.EXECUTION_SUCCESS:
                         return Status.EXECUTION_SUCCESS
@@ -494,7 +494,7 @@ class ManipulationTasks:
 
             if not has_collision_right:
                 for i in range(3):
-                    Logger.info(self.node, f"Attempt {i+1} to place on right side...")
+                    Logger.info(self.node, f"Attempt {i + 1} to place on right side...")
                     result = self._attempt_place_on_side(self.Direction.RIGHT)
                     if result == Status.EXECUTION_SUCCESS:
                         return Status.EXECUTION_SUCCESS
