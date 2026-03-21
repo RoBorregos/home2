@@ -1,5 +1,7 @@
 #include "rclcpp/rclcpp.hpp"
 #include "rclcpp_lifecycle/lifecycle_node.hpp"
+#include "lifecycle_msgs/msg/state.hpp"
+#include "lifecycle_msgs/msg/transition.hpp"
 #include <ament_index_cpp/get_package_share_directory.hpp>
 #include "frida_interfaces/srv/map_areas.hpp"
 #include <memory>
