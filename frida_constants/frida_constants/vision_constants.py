@@ -60,8 +60,7 @@ ZERO_SHOT_DEFAULT_CLASSES = [
     # "orange",
     # "cup",
 ]
-TRASH_CLASS_SETTER_SERVICE = "/vision/set_trash_classes"
-TRASH_DEPTH_TOPIC = "/vision/trash_depth"
+TRASH_SERVICE = "/vision/filter_trash"
 
 CUSTOMER = "/vision/customer"
 GET_CUSTOMER_TOPIC = "/vision/get_customer"
