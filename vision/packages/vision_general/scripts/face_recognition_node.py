@@ -68,24 +68,37 @@ class FaceRecognition(Node):
         )
 
         self.image_subscriber = self.create_subscription(
-            Image, CAMERA_TOPIC, self.image_callback, self._img_qos,
+            Image,
+            CAMERA_TOPIC,
+            self.image_callback,
+            self._img_qos,
             callback_group=self.callback_group,
         )
         self.depth_subscriber = self.create_subscription(
-            Image, DEPTH_IMAGE_TOPIC, self.depth_callback, self._img_qos,
+            Image,
+            DEPTH_IMAGE_TOPIC,
+            self.depth_callback,
+            self._img_qos,
             callback_group=self.callback_group,
         )
         self.image_info_subscriber = self.create_subscription(
-            CameraInfo, CAMERA_INFO_TOPIC, self.image_info_callback, self._img_qos,
+            CameraInfo,
+            CAMERA_INFO_TOPIC,
+            self.image_info_callback,
+            self._img_qos,
             callback_group=self.callback_group,
         )
 
         self.new_name_service = self.create_service(
-            SaveName, SAVE_NAME_TOPIC, self.new_name_callback,
+            SaveName,
+            SAVE_NAME_TOPIC,
+            self.new_name_callback,
             callback_group=self.callback_group,
         )
         self.follow_by_service = self.create_service(
-            SaveName, FOLLOW_BY_TOPIC, self.follow_by_name_callback,
+            SaveName,
+            FOLLOW_BY_TOPIC,
+            self.follow_by_name_callback,
             callback_group=self.callback_group,
         )
         self.follow_publisher = self.create_publisher(Point, FOLLOW_TOPIC, 10)
@@ -100,7 +113,10 @@ class FaceRecognition(Node):
         self.vision_active = False
         self.is_processing = False
         self.create_subscription(
-            Bool, "/vision/face_recognition/active", self._active_callback, 10,
+            Bool,
+            "/vision/face_recognition/active",
+            self._active_callback,
+            10,
             callback_group=self.callback_group,
         )
         self.setup()

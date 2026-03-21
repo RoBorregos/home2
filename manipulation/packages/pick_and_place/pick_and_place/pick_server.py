@@ -137,7 +137,9 @@ class PickMotionServer(Node):
         )
         # Transform to base frame if necessary
         if base_point.header.frame_id != "base_link":
-            success, base_point = transform_point(base_point, "base_link", self.tf_buffer)
+            success, base_point = transform_point(
+                base_point, "base_link", self.tf_buffer
+            )
             if not success:
                 self.get_logger().error(
                     f"Failed to transform hand point from '{goal_handle.request.point.header.frame_id}' to 'base_link'. "

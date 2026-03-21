@@ -83,8 +83,6 @@ class NavigationTasks:
             WaitForControllerInput, "wait_for_controller_input"
         )
         self.services = {
-      
-     
             Task.DEBUG: {
                 # "laser_send": {"client": self.laser_send, "type": "service"},
                 "areas_wrapper": {"client": self.areas_wrapper, "type": "service"}

@@ -316,6 +316,7 @@ class ft_net_NAS(nn.Module):
         super().__init__()
         model_name = "nasnetalarge"
         import pretrainedmodels  # lazy import — only needed if ft_net_NAS is used
+
         model_ft = pretrainedmodels.__dict__[model_name](
             num_classes=1000, pretrained="imagenet"
         )

@@ -45,7 +45,10 @@ class FollowFaceNode(Node):
 
         # Face detection subscription
         self.create_subscription(
-            Point, "/vision/follow_face", self._face_detection_callback, 2,
+            Point,
+            "/vision/follow_face",
+            self._face_detection_callback,
+            2,
             callback_group=callback_group,
         )
 
@@ -80,7 +83,9 @@ class FollowFaceNode(Node):
 
         # Follow face service
         self.service = self.create_service(
-            FollowFace, "/follow_face", self._follow_face_service_callback,
+            FollowFace,
+            "/follow_face",
+            self._follow_face_service_callback,
             callback_group=callback_group,
         )
 
@@ -180,7 +185,9 @@ class FollowFaceNode(Node):
 
     # -- Service callback --
 
-    def _follow_face_service_callback(self, request: FollowFace.Request, response: FollowFace.Response):
+    def _follow_face_service_callback(
+        self, request: FollowFace.Request, response: FollowFace.Response
+    ):
         """Handle follow face service requests."""
         if request.follow_face:
             if self.is_following_face_active:
@@ -283,8 +290,9 @@ class FollowFaceNode(Node):
 
         if x is None or y is None:
             # No fresh face data — stop arm if it was previously moving
-            if (self.prev_x != 0.0 or self.prev_y != 0.0) and \
-               (time.time() - self.last_move_time) >= STOP_TIMEOUT:
+            if (self.prev_x != 0.0 or self.prev_y != 0.0) and (
+                time.time() - self.last_move_time
+            ) >= STOP_TIMEOUT:
                 self._send_velocity(0.0, 0.0)
                 self.prev_x = 0.0
                 self.prev_y = 0.0

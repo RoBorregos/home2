@@ -130,7 +130,10 @@ def extract_feature_from_img(image, model):
             for scale in ms:
                 if scale != 1:
                     input_img = torch.nn.functional.interpolate(
-                        input_img, scale_factor=scale, mode="bicubic", align_corners=False,
+                        input_img,
+                        scale_factor=scale,
+                        mode="bicubic",
+                        align_corners=False,
                     )
                 features += model(input_img)
             features /= torch.norm(features, p=2, dim=1, keepdim=True)
@@ -146,7 +149,10 @@ def extract_feature_from_img(image, model):
                 for scale in ms:
                     if scale != 1:
                         input_img = torch.nn.functional.interpolate(
-                            input_img, scale_factor=scale, mode="bicubic", align_corners=False,
+                            input_img,
+                            scale_factor=scale,
+                            mode="bicubic",
+                            align_corners=False,
                         )
                     features += model(input_img).squeeze()
             features /= torch.norm(features, p=2, dim=0)
@@ -193,7 +199,10 @@ def extract_feature_from_img_batch(images, model, batch_size=64):
             for scale in ms:
                 if scale != 1:
                     input_img = torch.nn.functional.interpolate(
-                        input_img, scale_factor=scale, mode="bicubic", align_corners=False,
+                        input_img,
+                        scale_factor=scale,
+                        mode="bicubic",
+                        align_corners=False,
                     )
                 features += model(input_img)
 

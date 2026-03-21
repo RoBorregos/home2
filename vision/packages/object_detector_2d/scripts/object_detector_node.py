@@ -112,7 +112,9 @@ class object_detector_node(rclpy.node.Node):
         self._skip_frames = 2  # process every 3rd frame to reduce GPU load
 
         # Global vision pause/resume — pauses inference when manipulation needs GPU
-        self.create_subscription(Bool, "/vision/object_detector/active", self._vision_active_cb, 10)
+        self.create_subscription(
+            Bool, "/vision/object_detector/active", self._vision_active_cb, 10
+        )
 
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer, self)

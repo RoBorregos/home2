@@ -14,15 +14,15 @@ Run this BEFORE `ros2 launch zed_wrapper zed_camera.launch.py`.
 
 def patch_zed_launch():
     launch_path = (
-        '/opt/zed_ws/install/zed_wrapper/share/zed_wrapper/launch'
-        '/zed_camera.launch.py'
+        "/opt/zed_ws/install/zed_wrapper/share/zed_wrapper/launch"
+        "/zed_camera.launch.py"
     )
 
     with open(launch_path) as f:
         content = f.read()
 
     # Already patched?
-    if 'start_parameter_event_publisher' in content:
+    if "start_parameter_event_publisher" in content:
         return
 
     # 1) Patch robot_state_publisher Node: add parameter
@@ -41,11 +41,11 @@ def patch_zed_launch():
         "'-p', 'start_parameter_event_publisher:=false']",
     )
 
-    with open(launch_path, 'w') as f:
+    with open(launch_path, "w") as f:
         f.write(content)
 
-    print('[SHM] Patched ZED launch: disabled parameter_events for all nodes')
+    print("[SHM] Patched ZED launch: disabled parameter_events for all nodes")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     patch_zed_launch()

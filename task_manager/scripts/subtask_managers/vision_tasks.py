@@ -83,8 +83,12 @@ class VisionTasks:
         self.follow_face = {"x": None, "y": None}
 
         # Per-node publishers to pause/resume heavy vision inference
-        self._face_rec_pub = self.node.create_publisher(BoolMsg, "/vision/face_recognition/active", 10)
-        self._obj_det_pub = self.node.create_publisher(BoolMsg, "/vision/object_detector/active", 10)
+        self._face_rec_pub = self.node.create_publisher(
+            BoolMsg, "/vision/face_recognition/active", 10
+        )
+        self._obj_det_pub = self.node.create_publisher(
+            BoolMsg, "/vision/object_detector/active", 10
+        )
         self._face_rec_active = True
         self._obj_det_active = True
         self.flag_active_face = False
@@ -901,7 +905,10 @@ class VisionTasks:
         """Describe the person in the image"""
         # TODO: Remove mock when moondream is ready
         Logger.info(self.node, "Describing person (MOCKED)")
-        callback(Status.EXECUTION_SUCCESS, "They have dark hair, are wearing a casual shirt, appear to be of average height, and are not wearing glasses.")
+        callback(
+            Status.EXECUTION_SUCCESS,
+            "They have dark hair, are wearing a casual shirt, appear to be of average height, and are not wearing glasses.",
+        )
         return
         # Logger.info(self.node, "Describing person")
         # prompt = "Briefly describe 4 attributes of the the person in the image and only say the description: They are .... (Make sure to mention 4 attributes). For example: shirt color, clothes details, hair color, hair style, if the person has glasses"

@@ -226,7 +226,9 @@ class MoveItPlanner(Planner):
     def reset_controller(self) -> None:
         """Reset the trajectory controller by sending a dummy trajectory from current joint state."""
         if self.joint_states is None:
-            self.node.get_logger().warn("No joint states available, cannot reset controller.")
+            self.node.get_logger().warn(
+                "No joint states available, cannot reset controller."
+            )
             return
         joint_positions = list(self.joint_states.position)
         self.moveit2.reset_controller(joint_state=joint_positions, sync=True)

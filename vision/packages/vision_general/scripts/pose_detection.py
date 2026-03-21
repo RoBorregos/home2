@@ -35,7 +35,9 @@ def load_yolo_pose(model_name="yolo11m-pose.pt"):
     print(f"[PoseDetection] Loading YOLO pose model: {model_name}")
     model = YOLO(model_name)
     try:
-        print("[PoseDetection] Exporting to TensorRT (first run only, may take a few minutes)...")
+        print(
+            "[PoseDetection] Exporting to TensorRT (first run only, may take a few minutes)..."
+        )
         model.export(format="engine", half=True, device=0, imgsz=640)
         print(f"[PoseDetection] TensorRT engine saved: {engine_path}")
         return YOLO(engine_path, task="pose")
@@ -56,14 +58,20 @@ class PoseDetection:
         points: (17, 2) normalized coords, conf: (17,) confidence scores.
         Returns (None, None) if no person detected."""
         results = self.yolo_pose(image, verbose=False)
-        if (not results or results[0].keypoints is None or
-                results[0].keypoints.xy is None or len(results[0].keypoints.xy) == 0):
+        if (
+            not results
+            or results[0].keypoints is None
+            or results[0].keypoints.xy is None
+            or len(results[0].keypoints.xy) == 0
+        ):
             return None, None
 
         points = results[0].keypoints.xyn[0].cpu().numpy()
-        conf = (results[0].keypoints.conf[0].cpu().numpy()
-                if results[0].keypoints.conf is not None
-                else np.ones(17, dtype=np.float32))
+        conf = (
+            results[0].keypoints.conf[0].cpu().numpy()
+            if results[0].keypoints.conf is not None
+            else np.ones(17, dtype=np.float32)
+        )
         return points, conf
 
     def detect(self, frame):
@@ -75,7 +83,11 @@ class PoseDetection:
     def get_angle(self, p1, p2, p3):
         """Angle at p2 in the triangle p1-p2-p3 (degrees)."""
         p1, p2, p3 = np.array(p1[:2]), np.array(p2[:2]), np.array(p3[:2])
-        l1, l2, l3 = np.linalg.norm(p2 - p3), np.linalg.norm(p1 - p3), np.linalg.norm(p1 - p2)
+        l1, l2, l3 = (
+            np.linalg.norm(p2 - p3),
+            np.linalg.norm(p1 - p3),
+            np.linalg.norm(p1 - p2),
+        )
         denom = 2 * l1 * l2
         if denom == 0:
             return 180.0
@@ -90,8 +102,12 @@ class PoseDetection:
         return conf[LEFT_SHOULDER] > 0.5 and conf[RIGHT_SHOULDER] > 0.5
 
     def are_arms_down(self, points, conf):
-        if (conf[LEFT_WRIST] < KP_CONF or conf[RIGHT_WRIST] < KP_CONF or
-                conf[LEFT_SHOULDER] < KP_CONF or conf[RIGHT_SHOULDER] < KP_CONF):
+        if (
+            conf[LEFT_WRIST] < KP_CONF
+            or conf[RIGHT_WRIST] < KP_CONF
+            or conf[LEFT_SHOULDER] < KP_CONF
+            or conf[RIGHT_SHOULDER] < KP_CONF
+        ):
             return True
         left_arm_down = points[LEFT_WRIST][1] > points[LEFT_SHOULDER][1] + 0.1
         right_arm_down = points[RIGHT_WRIST][1] > points[RIGHT_SHOULDER][1] + 0.1
@@ -134,14 +150,22 @@ class PoseDetection:
         if points is None:
             return False
         try:
-            if (conf[LEFT_SHOULDER] < KP_CONF or conf[RIGHT_SHOULDER] < KP_CONF or
-                    conf[LEFT_WRIST] < KP_CONF or conf[RIGHT_WRIST] < KP_CONF):
+            if (
+                conf[LEFT_SHOULDER] < KP_CONF
+                or conf[RIGHT_SHOULDER] < KP_CONF
+                or conf[LEFT_WRIST] < KP_CONF
+                or conf[RIGHT_WRIST] < KP_CONF
+            ):
                 return False
-            if (points[RIGHT_WRIST][1] < points[RIGHT_SHOULDER][1] and
-                    points[LEFT_WRIST][1] > points[LEFT_SHOULDER][1]):
+            if (
+                points[RIGHT_WRIST][1] < points[RIGHT_SHOULDER][1]
+                and points[LEFT_WRIST][1] > points[LEFT_SHOULDER][1]
+            ):
                 return True
-            if (points[LEFT_WRIST][1] < points[LEFT_SHOULDER][1] and
-                    points[RIGHT_WRIST][1] > points[RIGHT_SHOULDER][1]):
+            if (
+                points[LEFT_WRIST][1] < points[LEFT_SHOULDER][1]
+                and points[RIGHT_WRIST][1] > points[RIGHT_SHOULDER][1]
+            ):
                 return True
             return False
         except Exception:
@@ -151,49 +175,79 @@ class PoseDetection:
 
     def _is_waving(self, points, conf):
         left_angle = 0
-        if (conf[LEFT_SHOULDER] >= KP_CONF and conf[LEFT_ELBOW] >= KP_CONF and
-                conf[LEFT_WRIST] >= KP_CONF):
-            left_angle = self.get_angle(points[LEFT_SHOULDER], points[LEFT_ELBOW], points[LEFT_WRIST])
+        if (
+            conf[LEFT_SHOULDER] >= KP_CONF
+            and conf[LEFT_ELBOW] >= KP_CONF
+            and conf[LEFT_WRIST] >= KP_CONF
+        ):
+            left_angle = self.get_angle(
+                points[LEFT_SHOULDER], points[LEFT_ELBOW], points[LEFT_WRIST]
+            )
 
         right_angle = 0
-        if (conf[RIGHT_SHOULDER] >= KP_CONF and conf[RIGHT_ELBOW] >= KP_CONF and
-                conf[RIGHT_WRIST] >= KP_CONF):
-            right_angle = self.get_angle(points[RIGHT_SHOULDER], points[RIGHT_ELBOW], points[RIGHT_WRIST])
+        if (
+            conf[RIGHT_SHOULDER] >= KP_CONF
+            and conf[RIGHT_ELBOW] >= KP_CONF
+            and conf[RIGHT_WRIST] >= KP_CONF
+        ):
+            right_angle = self.get_angle(
+                points[RIGHT_SHOULDER], points[RIGHT_ELBOW], points[RIGHT_WRIST]
+            )
 
         return left_angle > 27 or right_angle > 27
 
     def _is_pointing_left(self, mid_x, points, conf):
         # YOLO has no fingertip keypoints — wrist is the closest proxy
-        if (conf[RIGHT_WRIST] < KP_CONF or conf[LEFT_WRIST] < KP_CONF or
-                conf[LEFT_SHOULDER] < KP_CONF):
+        if (
+            conf[RIGHT_WRIST] < KP_CONF
+            or conf[LEFT_WRIST] < KP_CONF
+            or conf[LEFT_SHOULDER] < KP_CONF
+        ):
             return False
         distance_left = points[LEFT_WRIST][0] - points[LEFT_SHOULDER][0]
         return points[RIGHT_WRIST][0] > mid_x or 0.28 < distance_left < 0.6
 
     def _is_pointing_right(self, mid_x, points, conf):
-        if (conf[RIGHT_WRIST] < KP_CONF or conf[LEFT_WRIST] < KP_CONF or
-                conf[RIGHT_SHOULDER] < KP_CONF):
+        if (
+            conf[RIGHT_WRIST] < KP_CONF
+            or conf[LEFT_WRIST] < KP_CONF
+            or conf[RIGHT_SHOULDER] < KP_CONF
+        ):
             return False
         distance_right = points[RIGHT_SHOULDER][0] - points[RIGHT_WRIST][0]
         return points[LEFT_WRIST][0] < mid_x or 0.28 < distance_right < 0.6
 
     def _is_raising_left_arm(self, mid_x, points, conf):
-        if (conf[LEFT_SHOULDER] < KP_CONF or conf[LEFT_ELBOW] < KP_CONF or
-                conf[LEFT_WRIST] < KP_CONF):
+        if (
+            conf[LEFT_SHOULDER] < KP_CONF
+            or conf[LEFT_ELBOW] < KP_CONF
+            or conf[LEFT_WRIST] < KP_CONF
+        ):
             return False
-        angle = self.get_angle(points[LEFT_SHOULDER], points[LEFT_ELBOW], points[LEFT_WRIST])
-        return (angle < 35 and
-                points[LEFT_WRIST][1] < points[LEFT_SHOULDER][1] and
-                points[LEFT_ELBOW][1] < points[LEFT_SHOULDER][1])
+        angle = self.get_angle(
+            points[LEFT_SHOULDER], points[LEFT_ELBOW], points[LEFT_WRIST]
+        )
+        return (
+            angle < 35
+            and points[LEFT_WRIST][1] < points[LEFT_SHOULDER][1]
+            and points[LEFT_ELBOW][1] < points[LEFT_SHOULDER][1]
+        )
 
     def _is_raising_right_arm(self, mid_x, points, conf):
-        if (conf[RIGHT_SHOULDER] < KP_CONF or conf[RIGHT_ELBOW] < KP_CONF or
-                conf[RIGHT_WRIST] < KP_CONF):
+        if (
+            conf[RIGHT_SHOULDER] < KP_CONF
+            or conf[RIGHT_ELBOW] < KP_CONF
+            or conf[RIGHT_WRIST] < KP_CONF
+        ):
             return False
-        angle = self.get_angle(points[RIGHT_SHOULDER], points[RIGHT_ELBOW], points[RIGHT_WRIST])
-        return (angle < 35 and
-                points[RIGHT_WRIST][1] < points[RIGHT_SHOULDER][1] and
-                points[RIGHT_ELBOW][1] < points[RIGHT_SHOULDER][1])
+        angle = self.get_angle(
+            points[RIGHT_SHOULDER], points[RIGHT_ELBOW], points[RIGHT_WRIST]
+        )
+        return (
+            angle < 35
+            and points[RIGHT_WRIST][1] < points[RIGHT_SHOULDER][1]
+            and points[RIGHT_ELBOW][1] < points[RIGHT_SHOULDER][1]
+        )
 
     # ── Sitting detection (YOLO pose, pixel coords) ──
 
@@ -204,8 +258,16 @@ class PoseDetection:
         cosine = np.clip(np.dot(vec_a, vec_b) / (norm_a * norm_b), -1.0, 1.0)
         return float(np.degrees(np.arccos(cosine)))
 
-    def _is_sitting_side(self, points, scores, side, keypoints, keypoint_score,
-                         knee_max_angle, hip_max_angle):
+    def _is_sitting_side(
+        self,
+        points,
+        scores,
+        side,
+        keypoints,
+        keypoint_score,
+        knee_max_angle,
+        hip_max_angle,
+    ):
         shoulder_idx = keypoints[f"shoulder_{side}"]
         hip_idx = keypoints[f"hip_{side}"]
         knee_idx = keypoints[f"knee_{side}"]
@@ -227,8 +289,11 @@ class PoseDetection:
 
     def _get_pose_points_scores(self, image):
         results = self.yolo_pose(image, verbose=False)
-        if (not results or results[0].keypoints is None or
-                results[0].keypoints.xy is None):
+        if (
+            not results
+            or results[0].keypoints is None
+            or results[0].keypoints.xy is None
+        ):
             return None, None
         points_batch = results[0].keypoints.xy.cpu().numpy()
         scores_batch = (
@@ -244,10 +309,14 @@ class PoseDetection:
         knee_max_angle = 120.0
         hip_max_angle = 150.0
         keypoints = {
-            "shoulder_l": 5, "shoulder_r": 6,
-            "hip_l": 11, "hip_r": 12,
-            "knee_l": 13, "knee_r": 14,
-            "ankle_l": 15, "ankle_r": 16,
+            "shoulder_l": 5,
+            "shoulder_r": 6,
+            "hip_l": 11,
+            "hip_r": 12,
+            "knee_l": 13,
+            "knee_r": 14,
+            "ankle_l": 15,
+            "ankle_r": 16,
         }
 
         points_batch, scores_batch = self._get_pose_points_scores(image)
@@ -256,8 +325,15 @@ class PoseDetection:
 
         for points, scores in zip(points_batch, scores_batch):
             for side in ("l", "r"):
-                if self._is_sitting_side(points, scores, side, keypoints,
-                                         keypoint_score, knee_max_angle, hip_max_angle):
+                if self._is_sitting_side(
+                    points,
+                    scores,
+                    side,
+                    keypoints,
+                    keypoint_score,
+                    knee_max_angle,
+                    hip_max_angle,
+                ):
                     return True
         return False
 
@@ -270,17 +346,21 @@ class PoseDetection:
         if points is None:
             return None
 
-        if (conf[LEFT_SHOULDER] < 0.5 or conf[RIGHT_SHOULDER] < 0.5 or
-                conf[LEFT_HIP] < 0.5 or conf[RIGHT_HIP] < 0.5):
+        if (
+            conf[LEFT_SHOULDER] < 0.5
+            or conf[RIGHT_SHOULDER] < 0.5
+            or conf[LEFT_HIP] < 0.5
+            or conf[RIGHT_HIP] < 0.5
+        ):
             return None
 
         shoulder_width = np.sqrt(
-            (points[LEFT_SHOULDER][0] - points[RIGHT_SHOULDER][0]) ** 2 +
-            (points[LEFT_SHOULDER][1] - points[RIGHT_SHOULDER][1]) ** 2
+            (points[LEFT_SHOULDER][0] - points[RIGHT_SHOULDER][0]) ** 2
+            + (points[LEFT_SHOULDER][1] - points[RIGHT_SHOULDER][1]) ** 2
         )
         torso_height = np.sqrt(
-            (points[LEFT_SHOULDER][0] - points[LEFT_HIP][0]) ** 2 +
-            (points[LEFT_SHOULDER][1] - points[LEFT_HIP][1]) ** 2
+            (points[LEFT_SHOULDER][0] - points[LEFT_HIP][0]) ** 2
+            + (points[LEFT_SHOULDER][1] - points[LEFT_HIP][1]) ** 2
         )
 
         if torso_height == 0:
@@ -293,7 +373,9 @@ class PoseDetection:
             orientation = "forward" if conf[NOSE] > 0.5 else "backward"
         else:
             # Side view — higher-confidence shoulder faces the camera
-            orientation = "left" if conf[LEFT_SHOULDER] > conf[RIGHT_SHOULDER] else "right"
+            orientation = (
+                "left" if conf[LEFT_SHOULDER] > conf[RIGHT_SHOULDER] else "right"
+            )
 
         return orientation
 
@@ -304,9 +386,16 @@ class PoseDetection:
         if points is None:
             return
         h, w = image.shape[:2]
-        draw_indices = [LEFT_SHOULDER, LEFT_ELBOW, LEFT_WRIST,
-                        RIGHT_SHOULDER, RIGHT_ELBOW, RIGHT_WRIST,
-                        LEFT_HIP, RIGHT_HIP]
+        draw_indices = [
+            LEFT_SHOULDER,
+            LEFT_ELBOW,
+            LEFT_WRIST,
+            RIGHT_SHOULDER,
+            RIGHT_ELBOW,
+            RIGHT_WRIST,
+            LEFT_HIP,
+            RIGHT_HIP,
+        ]
 
         for idx in draw_indices:
             if conf[idx] > 0.5:
@@ -314,8 +403,10 @@ class PoseDetection:
                 cv2.circle(image, (x, y), 5, (0, 255, 0), -1)
 
         # Draw arm connections
-        arms = [(LEFT_SHOULDER, LEFT_ELBOW, LEFT_WRIST),
-                (RIGHT_SHOULDER, RIGHT_ELBOW, RIGHT_WRIST)]
+        arms = [
+            (LEFT_SHOULDER, LEFT_ELBOW, LEFT_WRIST),
+            (RIGHT_SHOULDER, RIGHT_ELBOW, RIGHT_WRIST),
+        ]
         for s, e, wr in arms:
             if conf[s] > 0.5 and conf[e] > 0.5 and conf[wr] > 0.5:
                 sp = (int(points[s][0] * w), int(points[s][1] * h))
@@ -324,8 +415,15 @@ class PoseDetection:
                 cv2.line(image, sp, ep, (0, 0, 255), 2)
                 cv2.line(image, ep, wp, (0, 0, 255), 2)
                 angle = self.get_angle(points[s], points[e], points[wr])
-                cv2.putText(image, f"{int(angle)}", (ep[0] - 20, ep[1] - 20),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 0), 2)
+                cv2.putText(
+                    image,
+                    f"{int(angle)}",
+                    (ep[0] - 20, ep[1] - 20),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.5,
+                    (255, 255, 0),
+                    2,
+                )
 
 
 def main():
@@ -346,8 +444,15 @@ def main():
         points, conf = pose_detection._get_keypoints(frame)
         pose_detection.draw_landmarks(frame, points, conf)
 
-        cv2.putText(frame, f"Gesture: {gesture.value}", (10, 60),
-                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+        cv2.putText(
+            frame,
+            f"Gesture: {gesture.value}",
+            (10, 60),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.8,
+            (0, 255, 0),
+            2,
+        )
 
         cv2.imshow("Pose and Gesture Detection", frame)
         if cv2.waitKey(1) & 0xFF == ord("q"):

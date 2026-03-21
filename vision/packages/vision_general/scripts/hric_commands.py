@@ -47,6 +47,7 @@ KP_CONF = 0.3
 def _load_yolo_pose(model_name="yolo11m-pose.pt"):
     return load_yolo_trt(model_name, task="pose")
 
+
 PERCENTAGE = 0.3
 MAX_DEGREE = 50
 AREA_PERCENTAGE_THRESHOLD = 0.01
@@ -66,15 +67,24 @@ class HRICCommands(Node):
             durability=rclpy.qos.DurabilityPolicy.VOLATILE,
         )
         self.create_subscription(
-            Image, CAMERA_TOPIC, self.image_callback, self._img_qos,
+            Image,
+            CAMERA_TOPIC,
+            self.image_callback,
+            self._img_qos,
             callback_group=self.callback_group,
         )
         self.create_subscription(
-            Image, DEPTH_IMAGE_TOPIC, self.depth_callback, self._img_qos,
+            Image,
+            DEPTH_IMAGE_TOPIC,
+            self.depth_callback,
+            self._img_qos,
             callback_group=self.callback_group,
         )
         self.create_subscription(
-            CameraInfo, CAMERA_INFO_TOPIC, self.camera_info_callback, self._img_qos,
+            CameraInfo,
+            CAMERA_INFO_TOPIC,
+            self.camera_info_callback,
+            self._img_qos,
             callback_group=self.callback_group,
         )
 
@@ -143,15 +153,21 @@ class HRICCommands(Node):
         h, w = self.image.shape[:2]
         results = self.pose_model(self.image, verbose=False)
 
-        if (not results or results[0].keypoints is None or
-                results[0].keypoints.xy is None or len(results[0].keypoints.xy) == 0):
+        if (
+            not results
+            or results[0].keypoints is None
+            or results[0].keypoints.xy is None
+            or len(results[0].keypoints.xy) == 0
+        ):
             self.get_logger().info("No hand detected")
             return None
 
         points = results[0].keypoints.xy[0].cpu().numpy()  # pixel coords
-        conf = (results[0].keypoints.conf[0].cpu().numpy()
-                if results[0].keypoints.conf is not None
-                else np.ones(17, dtype=np.float32))
+        conf = (
+            results[0].keypoints.conf[0].cpu().numpy()
+            if results[0].keypoints.conf is not None
+            else np.ones(17, dtype=np.float32)
+        )
 
         # Pick the most confident wrist as the hand position
         best_wrist = None
