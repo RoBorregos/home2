@@ -93,7 +93,7 @@ SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; th
 SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
 
 if [ "$BUILD" == "true" ]; then
-    SETUP="$SOURCE_ROS && $SOURCE_RTABMAP && $SOURCE_INTERFACES && $SOURCE && $COLCON"
+    SETUP="$SOURCE_ROS && $SOURCE_RTABMAP && $SOURCE_INTERFACES && $COLCON && $SOURCE"
 else
     SETUP="$SOURCE_ROS && $SOURCE_RTABMAP && $SOURCE_INTERFACES && $SOURCE"
 fi
@@ -106,7 +106,7 @@ case $TASK in
         RUN="echo 'WORKING IN PROGRESS'"
         ;;
     "--hric")
-        RUN="ros2 launch nav_main navigation_launch.py"
+        RUN="ros2 launch nav_main navigation_composition.launch.py"
         ;;
     *)
         RUN="bash"
