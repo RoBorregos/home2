@@ -58,6 +58,7 @@ services:
       - ./moondream/log:/workspace/log
 
     network_mode: host
+    ipc: host
     user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
     privileged: true
     runtime: ${DOCKER_RUNTIME:-nvidia}
