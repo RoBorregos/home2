@@ -121,16 +121,12 @@ class DataExtractor(Node):
                 response.result = self.fallback_extract(request, "location")
             return response
 
-        # Check if the data extraction must be performed using the LLM
-        if "LLM_" not in request.data:
-            self.get_logger().error(
-                "Invalid data type requested. Prepend with LLM_ to use a generic LLM for data extraction."
-            )
-            response.result = ""
-            return response
-        request.data = request.data.replace("LLM_", "")
+        data_to_extract = request.data
+        if data_to_extract.startswith("LLM_"):
+            data_to_extract = data_to_extract[4:]
+        self.get_logger().info(f"Using LLM to extract {data_to_extract} from text")
         response.result = self.extract_via_llm(
-            request.full_text, request.data, request.context
+            request.full_text, data_to_extract, request.context
         )
         return response
 

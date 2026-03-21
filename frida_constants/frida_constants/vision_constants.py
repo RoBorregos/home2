@@ -103,10 +103,11 @@ PERSON_NAME_TOPIC = "/vision/person_detected_name"
 FACE_RECOGNITION_IMAGE = "/vision/face_recognition_image"
 FOLLOW_BY_TOPIC = "/vision/follow_by_name"
 
-# Receptionist commands node
-CHECK_PERSON_TOPIC = "/vision/receptionist/detect_person"
-FIND_SEAT_TOPIC = "/vision/receptionist/find_seat"
-IMAGE_TOPIC_RECEPTIONIST = "/vision/receptionist/img_person_detecion"
+# HRIC commands node
+CHECK_PERSON_TOPIC = "/vision/hric/detect_person"
+FIND_SEAT_TOPIC = "/vision/hric/find_seat"
+IMAGE_TOPIC_HRIC = "/vision/hric/img_person_detecion"
+DETECT_HAND_SERVICE = "/vision/hric/detect_hand"
 
 # GPSR commands node
 COUNT_BY_COLOR_TOPIC = "/vision/gpsr/count_by_color"
@@ -127,6 +128,10 @@ PERSON_POINT_TOPIC = "/vision/person_inside_point"
 
 # Show detection topic
 SHOW_DETECTION_TOPIC = "/vision/show_detection"
+
+# Yolo detection node
+YOLO_DETECTION_TOPIC = "/vision/yolo_detect"
+YOLO_DETECTIONS_PUBLISHER_TOPIC = "/vision/yolo_detections_image"
 
 # Dishwasher model
 DISHWASHER_LAYOUT_DETECTION_TOPIC = "/vision/dishwasher/layout_detection"

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-AREAS="vision manipulation navigation integration hri"
+AREAS="vision manipulation navigation integration hri zed"
 
 # --- guard against multiple sourcing ---
 if [[ -n "${__HOME2_LIB_SOURCED:-}" ]]; then
@@ -21,6 +21,60 @@ check_image_exists() {
   fi
 }
 
+# Upload a docker image to DockerHub.
+upload_image() {
+  local image="$1"
+  echo "Pushing image: $image"
+  if docker push "$image"; then
+    echo "Successfully pushed: $image"
+  else
+    echo "Error: Failed to push $image" >&2
+    return 1
+  fi
+}
+
+# Ensure logged in to DockerHub as roborregos.
+docker_login() {
+  local current_user
+  current_user=$(docker system info 2>/dev/null | grep "Username:" | awk '{print $2}')
+
+  if [ "$current_user" = "roborregos" ]; then
+    echo "Already logged in as roborregos."
+    return 0
+  fi
+
+  if [ -n "$current_user" ]; then
+    echo "Error: logged in as '$current_user', must be 'roborregos'. Run: docker logout && docker login" >&2
+    return 1
+  fi
+
+  echo "Not logged in to DockerHub. Please log in as roborregos:"
+  docker login || return 1
+}
+
+# Ensure an image exists locally (build if missing) then push it.
+ensure_and_upload_image() {
+  local image="$1"
+  local compose_file="$2"
+  shift 2
+  local extra_args=("$@")
+
+  docker_login || return 1
+
+  if docker image inspect "$image" > /dev/null 2>&1; then
+    echo "Image $image found locally, skipping build."
+  else
+    if [ -z "$compose_file" ]; then
+      echo "Error: image $image not found locally and no compose file provided to build it." >&2
+      return 1
+    fi
+    echo "Image $image not found locally. Building with: docker compose -f $compose_file build ${extra_args[*]}"
+    docker compose -f "$compose_file" build "${extra_args[@]}" || { echo "Build failed for $image" >&2; return 1; }
+  fi
+
+  upload_image "$image"
+}
+
 add_or_update_variable() {
   local file=$1 variable=$2 value=$3
 
@@ -33,6 +87,21 @@ add_or_update_variable() {
   else
     printf '%s=%s\n' "$variable" "$value" >> "$file"
   fi
+}
+
+clean_workspace_directories() {
+  if [ "$CLEAN" == "true" ]; then
+    echo "Cleaning build/log/install directories..."
+    rm -rf build log install
+  fi
+}
+
+clean_frida_interfaces() {
+  echo "Cleaning frida_interfaces_cache build/log/install..."
+  rm -rf "docker/frida_interfaces_cache/build" \
+         "docker/frida_interfaces_cache/log" \
+         "docker/frida_interfaces_cache/install"
+  echo "frida_interfaces_cache cleaned."
 }
 
 run_frida_interfaces() {
@@ -50,7 +119,7 @@ run_frida_interfaces() {
 }
 
 run_area() {
-  if [ ! -d "docker/frida_interfaces_cache/build" ]; then
+  if [ "$INPUT" != "zed" ] && [ ! -d "docker/frida_interfaces_cache/build" ]; then
     echo "Cache directory missing. Building frida_interfaces_cache first..."
     run_frida_interfaces || { echo "frida_interfaces cache build failed" >&2; return 1; }
   fi

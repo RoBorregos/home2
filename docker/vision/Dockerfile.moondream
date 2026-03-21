@@ -4,6 +4,18 @@ FROM ${BASE_IMAGE}
 RUN mkdir -p /workspace/requirements
 RUN apt update && apt install -y ros-humble-cv-bridge
 
+# ── System dependencies (single consolidated layer) ──
+RUN apt-get update -qq && apt-get install -y --no-install-recommends \
+    build-essential ffmpeg libsm6 libxext6 autoconf libtool mesa-utils \
+    terminator nano git wget iputils-ping cmake \
+    libcanberra-gtk-module libcanberra-gtk3-module \
+    libx11-xcb1 libxkbcommon-x11-0 \
+    libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 \
+    libxcb-render-util0 libxcb-shape0 libxcb-xfixes0 libxcb-xinerama0 \
+    libxcb-cursor0 libxcb-xkb1 libjpeg-dev \
+    ros-humble-cv-bridge ros-humble-rmw-cyclonedds-cpp \
+    ros-humble-iceoryx-posh ros-humble-iceoryx-hoofs ros-humble-iceoryx-binding-c \
+    && rm -rf /var/lib/apt/lists/*
 # Requirements
 COPY vision/requirements /workspace/requirements
 WORKDIR /workspace/requirements
@@ -11,5 +23,24 @@ WORKDIR /workspace/requirements
 RUN pip install -r moondream.txt
 
 WORKDIR /workspace
-# CV-bridge
+# ── CycloneDDS with SHM (iceoryx zero-copy) ──
+RUN cd /tmp && \
+    git clone --depth 1 -b releases/0.10.x https://github.com/eclipse-cyclonedds/cyclonedds.git && \
+    cd cyclonedds && mkdir build && cd build && \
+    . /opt/ros/humble/setup.sh && \
+    cmake .. \
+        -DCMAKE_INSTALL_PREFIX=/opt/ros/humble \
+        -DCMAKE_PREFIX_PATH=/opt/ros/humble \
+        -DENABLE_SHM=ON \
+        -DCMAKE_BUILD_TYPE=Release && \
+    make -j$(nproc) && make install && \
+    cd / && rm -rf /tmp/cyclonedds
 
+COPY docker/cyclonedds_setup.sh /usr/local/bin/cyclonedds_setup.sh
+COPY roudi_config.toml /etc/iceoryx/roudi_config.toml
+ENV CYCLONE_SHM=1
+RUN chmod +x /usr/local/bin/cyclonedds_setup.sh && /usr/local/bin/cyclonedds_setup.sh
+ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+ENV CYCLONEDDS_URI=file:///etc/cyclonedds.xml
+RUN echo "source /usr/local/bin/cyclonedds_setup.sh" >> /home/ros/.bashrc
+# CV-bridge
