@@ -1,3 +1,8 @@
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
+
 from config.hri.debug import config as test_hri_config
 from config.hri.mocked import config as mocked_hri_config
 from subtask_managers.hri_tasks import HRITasks

@@ -8,9 +8,13 @@ import csv
 import json
 import os
 import subprocess
+import sys
 import time
 from datetime import datetime
 from typing import Union
+
+# Resolve symlink so imports work from the scripts/ source directory
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 import rclpy
 from config.hri.debug import config as test_hri_config
