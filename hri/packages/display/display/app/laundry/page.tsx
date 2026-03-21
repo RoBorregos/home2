@@ -24,7 +24,7 @@ export default function LaundryPage() {
 
             {/* CENTRADO */}
             <div className="flex flex-1 flex-col items-center justify-center p-6 text-center">
-                <div className="mb-6">
+                <div className="mb-6 w-full max-w-lg">
                     <StartButton />
                 </div>
 
