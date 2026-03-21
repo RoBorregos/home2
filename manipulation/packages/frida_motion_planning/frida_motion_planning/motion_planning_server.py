@@ -46,6 +46,7 @@ from frida_motion_planning.utils.XArmServices import XArmServices
 from trajectory_msgs.msg import JointTrajectory
 from sensor_msgs.msg import JointState
 from rclpy.qos import QoSProfile
+from controller_manager_msgs.srv import SwitchController
 
 
 class MotionPlanningServer(Node):
@@ -179,6 +180,12 @@ class MotionPlanningServer(Node):
             Empty,
             "/manipulation/reset_xarm_controller",
             self.reset_xarm_controller,
+            callback_group=self.callback_group,
+        )
+
+        self.switch_controller_client = self.create_client(
+            SwitchController,
+            "/controller_manager/switch_controller",
             callback_group=self.callback_group,
         )
 
@@ -643,9 +650,33 @@ class MotionPlanningServer(Node):
         return response
 
     def reset_xarm_controller(self, request, response):
-        self.get_logger().info("Resetting controller")
-        self.planner.reset_controller()
-        self.get_logger().info("Reset controller")
+        """Reactivate the xarm6_traj_controller via controller_manager."""
+        self.get_logger().info("Reactivating xarm6_traj_controller...")
+
+        if not self.switch_controller_client.wait_for_service(timeout_sec=5.0):
+            self.get_logger().error("switch_controller service not available")
+            return response
+
+        switch_req = SwitchController.Request()
+        switch_req.activate_controllers = ["xarm6_traj_controller"]
+        switch_req.deactivate_controllers = []
+        switch_req.strictness = SwitchController.Request.BEST_EFFORT
+
+        future = self.switch_controller_client.call_async(switch_req)
+
+        # Wait for the result
+        start = self.get_clock().now()
+        while not future.done():
+            if (self.get_clock().now() - start).nanoseconds > 5e9:
+                self.get_logger().error("Timeout waiting for switch_controller")
+                return response
+
+        result = future.result()
+        if result and result.ok:
+            self.get_logger().info("xarm6_traj_controller reactivated successfully")
+        else:
+            self.get_logger().error("Failed to reactivate xarm6_traj_controller")
+
         return response
 
     def joint_states_callback(self, msg: JointState):

@@ -35,5 +35,12 @@ def generate_launch_description():
                 output="screen",
                 emulate_tty=True,
             ),
+            Node(
+                package="pick_and_place",
+                executable="pick_server.py",
+                name="pick_server",
+                output="screen",
+                emulate_tty=True,
+            ),
         ]
     )

@@ -1,32 +1,25 @@
 #!/bin/bash
-# Setup or revert CycloneDDS for ROS 2 with ZED-optimized settings
+# Setup or revert CycloneDDS for ROS 2
+#
+# SHM (iceoryx zero-copy) is handled inside Docker containers only.
+# The host just needs CycloneDDS network config and kernel buffer tuning.
 #
 # Usage:
 #   sudo bash setup_cyclonedds.sh [INTERFACE]        - Full setup (host machine)
-#   sudo bash setup_cyclonedds.sh --docker [IFACE]   - Setup inside Docker (skips sysctl)
-#   sudo bash setup_cyclonedds.sh --host-only         - Only apply sysctl on host
+#   sudo bash setup_cyclonedds.sh --host-only [IFACE] - Only apply sysctl + save interface
 #   sudo bash setup_cyclonedds.sh --revert            - Revert to FastDDS
-#
-# Examples:
-#   sudo bash setup_cyclonedds.sh eno1          # On Orin / bare metal
-#   sudo bash setup_cyclonedds.sh --docker eno1 # Inside Docker container
-#   sudo bash setup_cyclonedds.sh --host-only   # On PC host (run once)
-#   sudo bash setup_cyclonedds.sh --revert      # Go back to FastDDS
 
 set -e
 
 CYCLONE_XML="/etc/cyclonedds.xml"
 SYSCTL_CONF="/etc/sysctl.d/60-cyclonedds-buffers.conf"
 ENV_MARKER="# CycloneDDS setup"
-DOCKER_MODE=false
-HOST_ONLY=false
 
 # Detect shell rc files
 USER_HOME="/home/${SUDO_USER:-$USER}"
 RC_FILES=()
 [ -f "$USER_HOME/.bashrc" ] && RC_FILES+=("$USER_HOME/.bashrc")
 [ -f "$USER_HOME/.zshrc" ] && RC_FILES+=("$USER_HOME/.zshrc")
-# Fallback to bashrc if neither exists
 [ ${#RC_FILES[@]} -eq 0 ] && RC_FILES=("$USER_HOME/.bashrc")
 
 # ── Parse flags ──
@@ -36,18 +29,38 @@ case "${1:-}" in
 
         if [ -f "$CYCLONE_XML" ]; then
             rm "$CYCLONE_XML"
-            echo "[1/3] Removed $CYCLONE_XML"
+            echo "[1/4] Removed $CYCLONE_XML"
         else
-            echo "[1/3] $CYCLONE_XML not found, skipping"
+            echo "[1/4] $CYCLONE_XML not found, skipping"
         fi
 
         if [ -f "$SYSCTL_CONF" ]; then
             rm "$SYSCTL_CONF"
             sysctl --system > /dev/null 2>&1
-            echo "[2/3] Removed $SYSCTL_CONF and reloaded sysctl"
+            echo "[2/4] Removed $SYSCTL_CONF and reloaded sysctl"
         else
-            echo "[2/3] $SYSCTL_CONF not found, skipping"
+            echo "[2/4] $SYSCTL_CONF not found, skipping"
         fi
+
+        # Stop and remove RouDi systemd service (legacy cleanup)
+        if systemctl is-active --quiet iceoryx-roudi 2>/dev/null; then
+            systemctl stop iceoryx-roudi
+        fi
+        if [ -f "/etc/systemd/system/iceoryx-roudi.service" ]; then
+            systemctl disable iceoryx-roudi 2>/dev/null
+            rm "/etc/systemd/system/iceoryx-roudi.service"
+            systemctl daemon-reload
+            echo "[3/4] Removed legacy RouDi systemd service"
+        else
+            echo "[3/4] No legacy RouDi service, skipping"
+        fi
+
+        # Clean stale iceoryx artifacts and legacy files
+        rm -f /tmp/roudi.lock 2>/dev/null
+        find /dev/shm -maxdepth 1 -name 'iceoryx*' -delete 2>/dev/null || true
+        rm -f /dev/shm/iceoryx_mgmt 2>/dev/null
+        rm -f /etc/iceoryx/roudi_config.toml 2>/dev/null
+        rm -f "${USER_HOME}/zed_shm_override.yaml" 2>/dev/null
 
         CLEANED=false
         for rc in "${RC_FILES[@]}"; do
@@ -55,12 +68,12 @@ case "${1:-}" in
                 sed -i "/$ENV_MARKER/d" "$rc"
                 sed -i '/export RMW_IMPLEMENTATION=rmw_cyclonedds_cpp/d' "$rc"
                 sed -i '/export CYCLONEDDS_URI=file:\/\//d' "$rc"
-                echo "[3/3] Removed CycloneDDS env vars from $rc"
+                echo "[4/4] Removed CycloneDDS env vars from $rc"
                 CLEANED=true
             fi
         done
         if [ "$CLEANED" = false ]; then
-            echo "[3/3] No CycloneDDS env vars found in rc files, skipping"
+            echo "[4/4] No CycloneDDS env vars found in rc files, skipping"
         fi
 
         echo ""
@@ -70,57 +83,38 @@ case "${1:-}" in
         echo "  unset RMW_IMPLEMENTATION CYCLONEDDS_URI"
         exit 0
         ;;
-    --docker)
-        DOCKER_MODE=true
-        INTERFACE="${2:-}"
-        ;;
     --host-only)
-        HOST_ONLY=true
+        echo "=== Host-only: Applying kernel buffer settings ==="
+        cat > "$SYSCTL_CONF" <<EOF
+# CycloneDDS optimized buffers
+net.core.rmem_max=2147483647
+net.ipv4.ipfrag_time=3
+net.ipv4.ipfrag_high_thresh=134217728
+EOF
+        sysctl -p "$SYSCTL_CONF"
+
+        # Save interface env for Docker containers
+        IFACE_ENV="/etc/cyclonedds.env"
+        if [ -n "${2:-}" ]; then
+            echo "CYCLONE_INTERFACE=${2}" > "$IFACE_ENV"
+            echo "[INFO] Saved interface '${2}' to $IFACE_ENV"
+        else
+            echo "CYCLONE_INTERFACE=" > "$IFACE_ENV"
+            echo "[INFO] No interface specified, saved autodetermine to $IFACE_ENV"
+        fi
+
+        echo ""
+        echo "=== Done ==="
+        echo "Kernel settings applied."
+        exit 0
         ;;
     *)
         INTERFACE="${1:-}"
         ;;
 esac
 
-# ── Host-only: apply sysctl + save interface for Docker containers ──
-if [ "$HOST_ONLY" = true ]; then
-    echo "=== Host-only: Applying kernel buffer settings ==="
-    cat > "$SYSCTL_CONF" <<EOF
-# CycloneDDS / ZED camera optimized buffers
-net.core.rmem_max=2147483647
-net.ipv4.ipfrag_time=3
-net.ipv4.ipfrag_high_thresh=134217728
-EOF
-    sysctl -p "$SYSCTL_CONF"
-
-    # Save interface env for Docker containers
-    IFACE_ENV="/etc/cyclonedds.env"
-    if [ -n "${2:-}" ]; then
-        echo "CYCLONE_INTERFACE=${2}" > "$IFACE_ENV"
-        echo "[INFO] Saved interface '${2}' to $IFACE_ENV"
-        echo "       Use with: docker run --env-file $IFACE_ENV ..."
-    else
-        echo "CYCLONE_INTERFACE=" > "$IFACE_ENV"
-        echo "[INFO] No interface specified, saved autodetermine to $IFACE_ENV"
-    fi
-
-    echo ""
-    echo "=== Done ==="
-    echo "Kernel settings applied."
-    echo ""
-    echo "For Docker containers, pass the interface with either:"
-    echo "  docker run --env-file /etc/cyclonedds.env ..."
-    echo "  docker run -e CYCLONE_INTERFACE=eno1 ..."
-    exit 0
-fi
-
-# ── Setup CycloneDDS ──
-if [ "$DOCKER_MODE" = true ]; then
-    echo "=== CycloneDDS Setup (Docker mode - skipping sysctl) ==="
-    echo "[NOTE] Make sure you ran 'sudo bash setup_cyclonedds.sh --host-only' on the host first!"
-else
-    echo "=== CycloneDDS Setup ==="
-fi
+# ── Setup CycloneDDS (host — no SHM, SHM is Docker-only) ──
+echo "=== CycloneDDS Setup (host) ==="
 
 # Install CycloneDDS RMW if not present
 ROS_DISTRO="${ROS_DISTRO:-humble}"
@@ -145,7 +139,7 @@ else
     IFACE_LINE="        <NetworkInterface name=\"$INTERFACE\" priority=\"default\" multicast=\"true\" autodetermine=\"false\"/>"
 fi
 
-# Write CycloneDDS XML config
+# Write CycloneDDS XML config (no SHM on host — SHM runs inside Docker containers)
 echo "[1/3] Writing CycloneDDS config to $CYCLONE_XML"
 cat > "$CYCLONE_XML" <<EOF
 <?xml version="1.0" encoding="UTF-8" ?>
@@ -172,31 +166,24 @@ $IFACE_LINE
 </CycloneDDS>
 EOF
 
-# Apply kernel sysctl tuning (skip in Docker)
-if [ "$DOCKER_MODE" = true ]; then
-    echo "[2/3] Skipping sysctl (Docker mode - must be set on host)"
-else
-    echo "[2/3] Applying kernel buffer settings"
-    cat > "$SYSCTL_CONF" <<EOF
-# CycloneDDS / ZED camera optimized buffers
+# Apply kernel sysctl tuning
+echo "[2/3] Applying kernel buffer settings"
+cat > "$SYSCTL_CONF" <<EOF
+# CycloneDDS optimized buffers
 net.core.rmem_max=2147483647
 net.ipv4.ipfrag_time=3
 net.ipv4.ipfrag_high_thresh=134217728
 EOF
-    sysctl -p "$SYSCTL_CONF"
-
+sysctl -p "$SYSCTL_CONF"
 
 # Save interface env for Docker containers
 IFACE_ENV="/etc/cyclonedds.env"
 if [ -n "$INTERFACE" ]; then
     echo "CYCLONE_INTERFACE=$INTERFACE" > "$IFACE_ENV"
     echo "[INFO] Saved interface '$INTERFACE' to $IFACE_ENV"
-    echo "       Use with: docker run --env-file $IFACE_ENV ..."
 else
     echo "CYCLONE_INTERFACE=" > "$IFACE_ENV"
     echo "[INFO] No interface specified, saved autodetermine to $IFACE_ENV"
-fi
-
 fi
 
 # Add environment variables to shell rc files
@@ -217,10 +204,9 @@ done
 
 echo ""
 echo "=== Setup Complete ==="
-echo "CycloneDDS config: $CYCLONE_XML"
-if [ "$DOCKER_MODE" = false ]; then
-    echo "Kernel tuning:     $SYSCTL_CONF"
-fi
+echo "CycloneDDS config: $CYCLONE_XML (network only, no SHM)"
+echo "Kernel tuning:     $SYSCTL_CONF"
 echo ""
+echo "SHM (iceoryx zero-copy) is enabled inside Docker containers automatically."
 echo "To activate in current shell:"
 echo "  source ~/$(basename "${RC_FILES[0]}")"

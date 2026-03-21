@@ -99,14 +99,14 @@ else
 fi
 
 case $TASK in
-    "--receptionist")
-        RUN="echo 'WORKING IN PROGRESS'"
-        ;;
     "--mapping")
         RUN="echo 'WORKING IN PROGRESS'"
         ;;
     "--storing-groceries")
         RUN="echo 'WORKING IN PROGRESS'"
+        ;;
+    "--hric")
+        RUN="ros2 launch nav_main navigation_launch.py"
         ;;
     *)
         RUN="bash"
