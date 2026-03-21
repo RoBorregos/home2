@@ -19,5 +19,6 @@ var test__hri__manager_8py =
     [ "TEST_MAP", "test__hri__manager_8py.html#a6dab12c78ddfca13d1fd313af30f27bf", null ],
     [ "TEST_OBJECT_LOCATION", "test__hri__manager_8py.html#afab82146d21339556bbeec1207843778", null ],
     [ "TEST_STREAMING", "test__hri__manager_8py.html#a6f21b71aab324a85f5de81194460a195", null ],
+    [ "TEST_TAKE_ORDER", "test__hri__manager_8py.html#a9e861d4b310d661b375be460581a088f", null ],
     [ "TEST_WORD_CONFIDENCES", "test__hri__manager_8py.html#a7b7c0ae72e11593bfca6a7c3665c6351", null ]
 ];
