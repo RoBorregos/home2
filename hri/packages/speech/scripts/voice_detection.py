@@ -33,7 +33,7 @@ class VoiceDetection(Node):
         self.declare_parameter("PROCESSED_AUDIO_TOPIC", "/hri/processedAudioChunk")
         self.declare_parameter("VAD_AUDIO_TOPIC", "/hri/vadAudioChunk")
         self.declare_parameter("VOICE_ACTIVITY_TOPIC", "/speech/voice_activity")
-        self.declare_parameter("ENERGY_THRESHOLD", 1000.0)
+        self.declare_parameter("ENERGY_THRESHOLD", 1500.0)
         self.declare_parameter("CORRELATION_THRESHOLD", 0.5)
         self.declare_parameter("SILENCE_LIMIT", 1.5)
         self.declare_parameter("SAMPLE_RATE", 16000)
@@ -86,7 +86,7 @@ class VoiceDetection(Node):
         """Return True if the chunk contains human speech.
 
         Uses two cascaded tests:
-          1. RMS energy gate – cheap, rejects background noise and silence.
+          1. RMS energy gate-cheap, rejects background noise and silence.
           2. Normalised autocorrelation peak in the voiced-frequency band –
              detects the periodic pitch structure of voiced speech.
         """
