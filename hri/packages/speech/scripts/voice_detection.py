@@ -11,7 +11,7 @@ tail to let the STT finalize the last utterance).
 Topics:
   Subscribes : PROCESSED_AUDIO_TOPIC  (/hri/processedAudioChunk)
   Publishes  : VAD_AUDIO_TOPIC        (/hri/vadAudioChunk)
-               VOICE_ACTIVITY_TOPIC   (/speech/voice_activity)  Bool
+               VOICE_ACTIVITY_TOPIC   (/hri/voice_activity)  Bool
 """
 
 import numpy as np
@@ -32,7 +32,7 @@ class VoiceDetection(Node):
 
         self.declare_parameter("PROCESSED_AUDIO_TOPIC", "/hri/processedAudioChunk")
         self.declare_parameter("VAD_AUDIO_TOPIC", "/hri/vadAudioChunk")
-        self.declare_parameter("VOICE_ACTIVITY_TOPIC", "/speech/voice_activity")
+        self.declare_parameter("VOICE_ACTIVITY_TOPIC", "/hri/voice_activity")
         self.declare_parameter("ENERGY_THRESHOLD", 1500.0)
         self.declare_parameter("CORRELATION_THRESHOLD", 0.5)
         self.declare_parameter("SILENCE_LIMIT", 1.5)
