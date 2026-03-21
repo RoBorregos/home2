@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-AREAS="vision manipulation navigation integration hri"
+AREAS="vision manipulation navigation integration hri zed"
 
 # --- guard against multiple sourcing ---
 if [[ -n "${__HOME2_LIB_SOURCED:-}" ]]; then
@@ -89,6 +89,21 @@ add_or_update_variable() {
   fi
 }
 
+clean_workspace_directories() {
+  if [ "$CLEAN" == "true" ]; then
+    echo "Cleaning build/log/install directories..."
+    rm -rf build log install
+  fi
+}
+
+clean_frida_interfaces() {
+  echo "Cleaning frida_interfaces_cache build/log/install..."
+  rm -rf "docker/frida_interfaces_cache/build" \
+         "docker/frida_interfaces_cache/log" \
+         "docker/frida_interfaces_cache/install"
+  echo "frida_interfaces_cache cleaned."
+}
+
 run_frida_interfaces() {
   local compose_yaml
   if [ -f "docker/frida_interfaces_cache/docker-compose-${ENV_TYPE}.yaml" ]; then
@@ -104,7 +119,7 @@ run_frida_interfaces() {
 }
 
 run_area() {
-  if [ ! -d "docker/frida_interfaces_cache/build" ]; then
+  if [ "$INPUT" != "zed" ] && [ ! -d "docker/frida_interfaces_cache/build" ]; then
     echo "Cache directory missing. Building frida_interfaces_cache first..."
     run_frida_interfaces || { echo "frida_interfaces cache build failed" >&2; return 1; }
   fi

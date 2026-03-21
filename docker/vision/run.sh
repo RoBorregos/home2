@@ -12,6 +12,7 @@ DETACHED=""
 BUILD=""
 BUILD_IMAGE=""
 UPLOAD_IMAGE=""
+CLEAN=""
 
 # check if one of the arguments is --detached
 for arg in "${ARGS[@]}"; do
@@ -34,10 +35,13 @@ for arg in "${ARGS[@]}"; do
         exit 0
         ;;
     "--build-image")
-        BUILD_IMAGE="--build"
+        BUILD_IMAGE="--build "
         ;;
     "--upload-image")
         UPLOAD_IMAGE="true"
+        ;;
+    "--clean")
+        CLEAN="true"
         ;;
     esac
 done
@@ -75,6 +79,9 @@ case $ENV_TYPE in
     exit 1
     ;;
 esac
+
+# Clean build artifacts if requested
+clean_workspace_directories
 
 mkdir -p install build log moondream/install moondream/build moondream/log
 
@@ -140,10 +147,12 @@ fi
 if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
     ALREADY_RUNNING=$(docker ps -q -f name="vision")
     if [ -z "$ALREADY_RUNNING" ] || [ -n "$BUILD_IMAGE" ]; then
-        docker compose up -d $BUILD_IMAGE
+	docker compose up -d $BUILD_IMAGE
     fi
     docker compose exec vision bash -c "$COMMAND"
 else
     add_or_update_variable .env "COMMAND" "$COMMAND"
+    echo "COmmand = $COMMAND"
+    echo "Running docker compose up $DETACHED $BUILD_IMAGE"
     docker compose up $DETACHED $BUILD_IMAGE
 fi

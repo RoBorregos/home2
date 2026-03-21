@@ -27,7 +27,7 @@ from rclpy.action import ActionClient
 from typing import List, Union
 from utils.decorators import mockable, service_check
 from utils.status import Status
-from frida_interfaces.action import ManipulationAction
+from frida_interfaces.action import ManipulationAction, GoToHand
 from frida_interfaces.msg import ManipulationTask
 from geometry_msgs.msg import PointStamped, PoseStamped
 
@@ -36,6 +36,7 @@ from xarm_msgs.srv import SetDigitalIO
 
 from frida_constants.manipulation_constants import (
     MANIPULATION_ACTION_SERVER,
+    GO_TO_HAND_ACTION_SERVER,
 )
 import time as t
 
@@ -103,6 +104,7 @@ class ManipulationTasks:
             GetOptimalPoseForPlane,
             "/manipulation/get_optimal_pose_for_plane",
         )
+        self._go_to_hand_action_client = ActionClient(self.node, GoToHand, GO_TO_HAND_ACTION_SERVER)
 
     def open_gripper(self):
         """Opens the gripper"""
@@ -155,7 +157,7 @@ class ManipulationTasks:
             req.value = 0 if state == "open" else 1  # 0=Open, 1=close
 
             future = self.gripper_client.call_async(req)
-            rclpy.spin_until_future_complete(self.node, future, TIMEOUT)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
 
             if future.result() is not None:
                 Logger.info(self.node, f"Gripper {state} successfully")
@@ -212,6 +214,11 @@ class ManipulationTasks:
             joint_names=joint_names, joint_positions=joint_vals, velocity=velocity
         )
 
+        # _send_joint_goal returns -1 (int) if service_check fails
+        if future is None or isinstance(future, int):
+            Logger.error(self.node, "Failed to send joint goal")
+            return Status.EXECUTION_ERROR
+
         # Wait for goal to be accepted.
         if not self._wait_for_future(future):
             return Status.EXECUTION_ERROR
@@ -267,7 +274,8 @@ class ManipulationTasks:
         goal_handle = future.result()
 
         if not goal_handle.accepted:
-            True
+            Logger.error(self.node, "Joint goal was rejected")
+            return False
 
         # Get result
         result_future = goal_handle.get_result_async()
@@ -281,7 +289,7 @@ class ManipulationTasks:
     @mockable(return_value=Status.EXECUTION_SUCCESS, mock=False)
     @service_check(client="follow_face_client", return_value=Status.TERMINAL_ERROR, timeout=TIMEOUT)
     def follow_face(self, follow) -> int:
-        """Save the name of the person detected"""
+        """Activate or deactivate face following on the arm."""
 
         if follow:
             Logger.info(self.node, "Following face")
@@ -292,8 +300,12 @@ class ManipulationTasks:
 
         try:
             future = self.follow_face_client.call_async(request)
+            # Mode switching in follow_face_node takes time, use longer timeout
             rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
             result = future.result()
+
+            if result is None:
+                raise Exception("Service call timed out")
 
             if not result.success:
                 raise Exception("Service call failed")
@@ -579,6 +591,44 @@ class ManipulationTasks:
 
     @mockable(return_value=Status.EXECUTION_SUCCESS)
     @service_check(
+        client="_go_to_hand_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT
+    )
+    def go_to_hand(self, point: PointStamped, hand_offset: float = 0.3) -> int:
+        """Move the arm to a position suitable for handing over an object.
+
+        Args:
+            point: 3D point in space to approach (PointStamped)
+            hand_offset: radial distance from the point to position the EEF (meters)
+
+        Returns:
+            Status code indicating success or failure
+        """
+        goal_msg = GoToHand.Goal()
+        goal_msg.point = point
+        goal_msg.hand_offset = hand_offset
+
+        self._go_to_hand_action_client.wait_for_server()
+        future = self._go_to_hand_action_client.send_goal_async(goal_msg)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+
+        if future.result() is None or not future.result().accepted:
+            Logger.error(self.node, "GoToHand goal was rejected")
+            return Status.EXECUTION_ERROR
+
+        Logger.info(self.node, "GoToHand goal accepted, waiting for result...")
+        result_future = future.result().get_result_async()
+        rclpy.spin_until_future_complete(self.node, result_future)
+
+        result = result_future.result().result
+        if result.success:
+            Logger.success(self.node, "GoToHand completed successfully")
+            return Status.EXECUTION_SUCCESS
+
+        Logger.error(self.node, "GoToHand failed to reach target pose")
+        return Status.EXECUTION_ERROR
+
+    @mockable(return_value=Status.EXECUTION_SUCCESS)
+    @service_check(
         client="_fix_position_to_plane_client", return_value=Status.TERMINAL_ERROR, timeout=TIMEOUT
     )
     def get_optimal_position_for_plane(
@@ -641,19 +691,30 @@ class ManipulationTasks:
         client="_manipulation_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT
     )
     def place_in_point(self, point: PointStamped):
-        # self.get_logger().warning("Sending place on point request")
-        # TODO: fix @EmilianoHFlores
+        """Place object at a specific point in space."""
         goal_msg = ManipulationAction.Goal()
         goal_msg.task_type = ManipulationTask.PLACE
         goal_msg.place_params.forced_pose = PoseStamped()
 
-        goal_msg.place_params.forced_pose.header.frame_id = self.clicked_point.header.frame_id
-        goal_msg.place_params.forced_pose.pose.position.x = self.clicked_point.point.x
-        goal_msg.place_params.forced_pose.pose.position.y = self.clicked_point.point.y
-        goal_msg.place_params.forced_pose.pose.position.z = self.clicked_point.point.z
+        goal_msg.place_params.forced_pose.header.frame_id = point.header.frame_id
+        goal_msg.place_params.forced_pose.pose.position.x = point.point.x
+        goal_msg.place_params.forced_pose.pose.position.y = point.point.y
+        goal_msg.place_params.forced_pose.pose.position.z = point.point.z
 
-        self._action_client.send_goal_async(goal_msg, feedback_callback=self.feedback_callback)
-        self.get_logger().info("Place request sent")
+        future = self._manipulation_action_client.send_goal_async(goal_msg)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+        if future.result() is None:
+            Logger.error(self.node, "Failed to send place_in_point request")
+            return Status.EXECUTION_ERROR
+
+        result_future = future.result().get_result_async()
+        rclpy.spin_until_future_complete(self.node, result_future)
+        result = result_future.result().result
+        if result.success:
+            Logger.success(self.node, "Place in point successful")
+            return Status.EXECUTION_SUCCESS
+        Logger.error(self.node, "Place in point failed")
+        return Status.EXECUTION_ERROR
 
 
 if __name__ == "__main__":

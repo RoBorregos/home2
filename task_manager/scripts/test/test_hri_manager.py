@@ -79,6 +79,7 @@ TEST_DATA_EXTRACTOR = False
 TEST_COMMAND_INTERPRETER = False
 TEST_COMMAND_INTERPRETER_BAML = False
 TEST_WORD_CONFIDENCES = False
+TEST_TAKE_ORDER = False
 
 
 class TestHriManager(Node):
@@ -129,6 +130,9 @@ class TestHriManager(Node):
 
         if TEST_WORD_CONFIDENCES:
             self.test_word_confidences()
+
+        if TEST_TAKE_ORDER:
+            self.test_take_order()
 
         exit(0)
 
@@ -191,6 +195,10 @@ class TestHriManager(Node):
         if word_confidences:
             avg_confidence = sum(word_confidences.values()) / len(word_confidences)
             self.get_logger().info(f"Average confidence: {avg_confidence:.4f}")
+
+    def test_take_order(self):
+        self.get_logger().info("Running take_order test")
+        self.hri_manager.take_order(retries=3)
 
     def compound_functions(self):
         s, loc, orientation = self.hri_manager.get_location_orientation("kitchen")

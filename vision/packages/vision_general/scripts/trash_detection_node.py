@@ -2,6 +2,7 @@
 
 import time
 import rclpy
+import rclpy.qos
 from rclpy.node import Node
 from sensor_msgs.msg import Image
 from vision_general.utils.ros_utils import wait_for_future
@@ -27,15 +28,20 @@ class TrashDetectionNode(Node):
         self.current_image = None
         self.latest_detections = ObjectDetectionArray()
 
+        qos = rclpy.qos.QoSProfile(
+            depth=1,
+            reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
+            durability=rclpy.qos.DurabilityPolicy.VOLATILE,
+        )
         self.image_sub = self.create_subscription(
-            Image, CAMERA_TOPIC, self.image_callback, 10
+            Image, CAMERA_TOPIC, self.image_callback, qos
         )
 
         self.detections_sub = self.create_subscription(
             ObjectDetectionArray,
             ZERO_SHOT_DETECTIONS_TOPIC,
             self.detections_callback,
-            10,
+            qos,
         )
 
         self.detection_service = self.create_service(
