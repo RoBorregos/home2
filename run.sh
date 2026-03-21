@@ -78,7 +78,13 @@ case $INPUT in
     control "$INPUT"
     ;;
   --clean)
+    control "--clean"
+    ;;
+  --clean-interfaces)
     clean_frida_interfaces
+    ;;
+  --build)
+    control "--build"
     ;;
   --hric|--ppc|--gpsr|--dlc|--restaurant|--finals)
     run_task "$@"
