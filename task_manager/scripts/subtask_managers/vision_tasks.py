@@ -2,7 +2,7 @@
 
 """
 Node to detect people and find
-available seats. Tasks for receptionist
+available seats. Tasks for HRIC
 commands.
 """
 
@@ -33,6 +33,7 @@ from frida_constants.vision_constants import (
     SET_TARGET_BY_TOPIC,
     SET_TARGET_TOPIC,
     SHELF_DETECTION_TOPIC,
+    DETECT_HAND_SERVICE,
 )
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.msg import ObjectDetection, PersonList
@@ -51,11 +52,13 @@ from frida_interfaces.srv import (
     SaveName,
     ShelfDetectionHandler,
     TrackBy,
+    DetectHand,
 )
 from geometry_msgs.msg import Point, PointStamped
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from std_msgs.msg import String
+from std_msgs.msg import Bool as BoolMsg
 from std_srvs.srv import SetBool, Trigger
 from utils.decorators import mockable, service_check
 from utils.logger import Logger
@@ -78,6 +81,16 @@ class VisionTasks:
         self.mock_data = mock_data
         self.task = task
         self.follow_face = {"x": None, "y": None}
+
+        # Per-node publishers to pause/resume heavy vision inference
+        self._face_rec_pub = self.node.create_publisher(
+            BoolMsg, "/vision/face_recognition/active", 10
+        )
+        self._obj_det_pub = self.node.create_publisher(
+            BoolMsg, "/vision/object_detector/active", 10
+        )
+        self._face_rec_active = True
+        self._obj_det_active = True
         self.flag_active_face = False
         self.person_list = []
         self.person_name = ""
@@ -106,6 +119,7 @@ class VisionTasks:
             ShelfDetectionHandler, SHELF_DETECTION_TOPIC
         )
         self.beverage_location_client = self.node.create_client(BeverageLocation, BEVERAGE_TOPIC)
+        self.detect_hand_client = self.node.create_client(DetectHand, DETECT_HAND_SERVICE)
 
         self.object_detector_client = self.node.create_client(
             DetectionHandler, DETECTION_HANDLER_TOPIC_SRV
@@ -128,7 +142,7 @@ class VisionTasks:
         self.count_by_color_client = self.node.create_client(CountByColor, COUNT_BY_COLOR_TOPIC)
 
         self.services = {
-            Task.RECEPTIONIST: {
+            Task.HRIC: {
                 "detect_person": {"client": self.detect_person_action_client, "type": "action"},
                 "find_seat": {"client": self.find_seat_client, "type": "service"},
                 "save_face_name": {
@@ -138,6 +152,7 @@ class VisionTasks:
                 "moondream_query": {"client": self.moondream_query_client, "type": "service"},
                 "beverage_location": {"client": self.beverage_location_client, "type": "service"},
                 "follow_by_name": {"client": self.follow_by_name_client, "type": "service"},
+                "detect_hand": {"client": self.detect_hand_client, "type": "service"},
             },
             Task.HELP_ME_CARRY: {
                 "track_person": {"client": self.track_person_client, "type": "service"},
@@ -214,6 +229,50 @@ class VisionTasks:
             elif service["type"] == "action":
                 if not service["client"].wait_for_server(timeout_sec=TIMEOUT_WAIT_FOR_SERVICE):
                     Logger.warn(self.node, f"{key} action server not initialized. ({self.task})")
+
+    def _set_node_active(self, publisher, active: bool):
+        """Publish active/inactive signal to a vision node."""
+        msg = BoolMsg()
+        msg.data = active
+        publisher.publish(msg)
+
+    def activate_face_recognition(self):
+        """Activate face recognition node."""
+        if not self._face_rec_active:
+            self._set_node_active(self._face_rec_pub, True)
+            self._face_rec_active = True
+            Logger.info(self.node, "Face recognition activated")
+
+    def deactivate_face_recognition(self):
+        """Deactivate face recognition node."""
+        if self._face_rec_active:
+            self._set_node_active(self._face_rec_pub, False)
+            self._face_rec_active = False
+            Logger.info(self.node, "Face recognition deactivated")
+
+    def activate_object_detector(self):
+        """Activate object detector node."""
+        if not self._obj_det_active:
+            self._set_node_active(self._obj_det_pub, True)
+            self._obj_det_active = True
+            Logger.info(self.node, "Object detector activated")
+
+    def deactivate_object_detector(self):
+        """Deactivate object detector node."""
+        if self._obj_det_active:
+            self._set_node_active(self._obj_det_pub, False)
+            self._obj_det_active = False
+            Logger.info(self.node, "Object detector deactivated")
+
+    def pause_vision(self):
+        """Pause all heavy vision inference to free GPU."""
+        self.deactivate_face_recognition()
+        self.deactivate_object_detector()
+
+    def resume_vision(self):
+        """Resume all vision inference."""
+        self.activate_face_recognition()
+        self.activate_object_detector()
 
     def follow_callback(self, msg: Point):
         """Callback for the face following subscriber"""
@@ -795,6 +854,28 @@ class VisionTasks:
         Logger.success(self.node, f"The person is: {result.result}")
         return Status.EXECUTION_SUCCESS, result.result
 
+    @mockable(return_value=(Status.EXECUTION_ERROR, None))
+    @service_check("detect_hand_client", [Status.EXECUTION_ERROR, None], TIMEOUT)
+    def detect_hand(self) -> tuple[int, PointStamped]:
+        """Detect the hand and return its 3D position."""
+        Logger.info(self.node, "Detecting hand")
+        request = DetectHand.Request()
+        try:
+            future = self.detect_hand_client.call_async(request)
+            rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+            result = future.result()
+            if not result.success:
+                Logger.warn(self.node, "No hand detected")
+                return Status.TARGET_NOT_FOUND, None
+        except Exception as e:
+            Logger.error(self.node, f"Error detecting hand: {e}")
+            return Status.EXECUTION_ERROR, None
+        Logger.success(
+            self.node,
+            f"Hand detected at ({result.point.point.x:.3f}, {result.point.point.y:.3f}, {result.point.point.z:.3f})",
+        )
+        return Status.EXECUTION_SUCCESS, result.point
+
     def visual_info(self, description, object="object"):
         """Return the object matching the description"""
         Logger.info(self.node, "Detecting object matching description")
@@ -822,9 +903,16 @@ class VisionTasks:
 
     def describe_person(self, callback):
         """Describe the person in the image"""
-        Logger.info(self.node, "Describing person")
-        prompt = "Briefly describe 4 attributes of the the person in the image and only say the description: They are .... (Make sure to mention 4 attributes). For example: shirt color, clothes details, hair color, hair style, if the person has glasses"
-        self.moondream_query_async(prompt, query_person=True, callback=callback)
+        # TODO: Remove mock when moondream is ready
+        Logger.info(self.node, "Describing person (MOCKED)")
+        callback(
+            Status.EXECUTION_SUCCESS,
+            "They have dark hair, are wearing a casual shirt, appear to be of average height, and are not wearing glasses.",
+        )
+        return
+        # Logger.info(self.node, "Describing person")
+        # prompt = "Briefly describe 4 attributes of the the person in the image and only say the description: They are .... (Make sure to mention 4 attributes). For example: shirt color, clothes details, hair color, hair style, if the person has glasses"
+        # self.moondream_query_async(prompt, query_person=True, callback=callback)
 
     def get_pointing_bag(self, timeout: float = TIMEOUT) -> tuple[int, ObjectDetection]:
         time.sleep(TIMEOUT)
@@ -960,7 +1048,7 @@ class VisionTasks:
 if __name__ == "__main__":
     rclpy.init()
     node = Node("vision_tasks")
-    vision_tasks = VisionTasks(node, task="RECEPTIONIST")
+    vision_tasks = VisionTasks(node, task="HRIC")
 
     try:
         rclpy.spin(node)

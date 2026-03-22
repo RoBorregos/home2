@@ -183,6 +183,7 @@ class RestaurantTaskManager(Node):
             Logger.state(self, "Finishing task...")
             self.subtask_manager.hri.say("I have served all customers. I will rest now.")
             self.get_logger().info("Task completed.")
+            self.subtask_manager.hri.reset_task_status()
             self.running_task = False
 
 

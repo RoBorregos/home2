@@ -1,13 +1,13 @@
 services:
   stt:
-    profiles: [receptionist, carry, gpsr, storing]
+    profiles: [hric, carry, gpsr, storing]
     container_name: home2-hri-stt-${ENV_TYPE:-cpu}
     image: roborregos/home2:hri-stt-${ENV_TYPE:-cpu}
     build:
       context: ../../..
       dockerfile: docker/hri/dockerfiles/Dockerfile.stt
     volumes:
-      - ../../../hri/packages/speech/scripts/stt/:/app
+      - ../../../hri/microservices/stt/:/app
       - ../../../hri/packages/speech/speech/:/app/speech
     network_mode: host
     command: [

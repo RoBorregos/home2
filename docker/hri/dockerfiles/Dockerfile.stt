@@ -1,8 +1,8 @@
-FROM python:3.9-slim
+FROM python:3.10-bookworm
 
 WORKDIR /app
 
-COPY ../../hri/requirements/stt.txt requirements.txt
+COPY hri/requirements/stt.txt requirements.txt
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
@@ -11,3 +11,6 @@ RUN apt-get update && apt-get install -y \
 
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip install requests==2.32.5
+
+COPY hri/proto_interfaces /tmp/proto_interfaces
+RUN pip install --no-cache-dir /tmp/proto_interfaces

@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 
 import collections
-import os
-import sys
+import threading
 import time
 
 import grpc
@@ -16,12 +15,11 @@ from std_msgs.msg import String
 
 from frida_interfaces.action import SpeechStream
 from frida_interfaces.msg import AudioData
+from proto_interfaces import speech_pb2, speech_pb2_grpc
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "stt"))
-import threading
-
-import speech_pb2
-import speech_pb2_grpc
+# Minimum buffer length (in chunks) before starting gRPC streaming.
+# With CHUNK_SIZE=512 at 16kHz, 10 chunks ≈ 320ms. Keep small so streaming starts promptly.
+MIN_BUFFER_CHUNKS = 10
 
 
 class HearStreaming(Node):
@@ -36,9 +34,15 @@ class HearStreaming(Node):
         )
 
         audio_topic = (
-            self.declare_parameter("AUDIO_TOPIC", "/rawAudioChunk")
+            self.declare_parameter("PROCESSED_AUDIO_TOPIC", "/hri/processedAudioChunk")
             .get_parameter_value()
             .string_value
+        )
+
+        # Control verbose audio/buffer logging
+        self.declare_parameter("DEBUG_AUDIO_LOGS", False)
+        self.debug_audio_logs = (
+            self.get_parameter("DEBUG_AUDIO_LOGS").get_parameter_value().bool_value
         )
 
         self.action_server_name = (
@@ -65,7 +69,8 @@ class HearStreaming(Node):
         channel = grpc.insecure_channel(server_ip)
         self.stub = speech_pb2_grpc.SpeechStreamStub(channel)
 
-        self.audio_buffer = collections.deque(maxlen=10000)
+        self.audio_buffer = collections.deque(maxlen=50000)  # ~3 seconds at 16kHz
+        self.audio_chunk_count = 0
 
         subscription_group = MutuallyExclusiveCallbackGroup()
         action_group = MutuallyExclusiveCallbackGroup()
@@ -108,10 +113,26 @@ class HearStreaming(Node):
         call = None
 
         def request_generator():
+            # Buffer length is in chunks, not frames. Use the module-level
+            min_buffer_chunks = MIN_BUFFER_CHUNKS
+            buffer_ready = False
+
             while not self.stop_flag.is_set() and rclpy.ok():
                 try:
+                    # Wait for minimum buffer before sending
+                    if not buffer_ready:
+                        if len(self.audio_buffer) < min_buffer_chunks:
+                            time.sleep(0.05)
+                            continue
+                        else:
+                            buffer_ready = True
+                            if self.debug_audio_logs:
+                                self.get_logger().info(
+                                    f"Buffer ready with {len(self.audio_buffer)} chunks, starting stream..."
+                                )
+
                     if not self.audio_buffer:
-                        time.sleep(0.1)
+                        time.sleep(0.02)
                         continue
                     local_audio = self.audio_buffer.popleft()
 

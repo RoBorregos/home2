@@ -1073,6 +1073,7 @@ def main(args=None):
             rclpy.spin_once(node, timeout_sec=0.1)
             if node.run() == ExecutionStates.END:
                 break
+        node.subtask_manager.hri.reset_task_status()
         node.subtask_manager.hri.say(text="Ending Storing Groceries Manager...", wait=True)
     except KeyboardInterrupt:
         pass

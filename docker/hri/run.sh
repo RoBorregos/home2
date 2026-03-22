@@ -15,6 +15,8 @@ BUILD_DISPLAY=""
 OPEN_DISPLAY=""
 DOWNLOAD_MODEL=""
 REGENERATE_DB=""
+UPLOAD_IMAGE=""
+CLEAN=""
 
 COMPOSE="compose/docker-compose-${ENV_TYPE}.yml"
 
@@ -52,6 +54,13 @@ for arg in "${ARGS[@]}"; do
         ;;
     "--regenerate-db")
         REGENERATE_DB="true"
+        ;;
+    "--upload-image")
+        UPLOAD_IMAGE="true"
+        ;;
+    "--clean")
+        CLEAN="true"
+        ;;
   esac
 done
 
@@ -76,6 +85,9 @@ fi
 
 [ "$DOWNLOAD_MODEL" == "true" ] && bash ./scripts/download-model.sh
 
+# Clean build artifacts if requested
+clean_workspace_directories
+
 # Create dirs with current user to avoid permission problems
 mkdir -p install build log \
   ../../hri/packages/speech/assets/downloads/offline_voice/model/ \
@@ -83,6 +95,12 @@ mkdir -p install build log \
 
 # Reset .env
 echo "" > compose/.env
+
+# CycloneDDS interface from host
+if [ -f /etc/cyclonedds.env ]; then
+    source /etc/cyclonedds.env
+fi
+add_or_update_variable compose/.env "CYCLONE_INTERFACE" "${CYCLONE_INTERFACE:-}"
 
 # Export user
 add_or_update_variable compose/.env "LOCAL_USER_ID" "$(id -u)"
@@ -123,9 +141,9 @@ PROFILES=()
 RUN=""
 
 case $TASK in
-  "--receptionist")
+  "--hric")
     RUN="ros2 launch speech hri_launch.py"
-    PROFILES=("receptionist")
+    PROFILES=("hric")
     ;;
   "--storing-groceries")
     PROFILES=("storing")
@@ -170,6 +188,23 @@ wait_and_launch_display() {
 if [ -n "$OPEN_DISPLAY" ]; then
   wait_and_launch_display &
   wait_for_display_pid=$!
+fi
+
+if [ "$UPLOAD_IMAGE" == "true" ]; then
+  echo "Uploading HRI images to DockerHub (env: ${ENV_TYPE})..."
+  HRI_IMAGES=(
+    "roborregos/home2:hri-${ENV_TYPE}"
+    "roborregos/home2:hri-stt-${ENV_TYPE}"
+    "roborregos/home2:hri-tts-${ENV_TYPE}"
+    "roborregos/home2:hri-postgres-${ENV_TYPE}"
+  )
+  # ollama is only built for cuda and l4t envs
+  if [ "$ENV_TYPE" = "cuda" ] || [ "$ENV_TYPE" = "l4t" ]; then
+    HRI_IMAGES+=("roborregos/home2:hri-ollama-${ENV_TYPE}")
+  fi
+  for img in "${HRI_IMAGES[@]}"; do
+    ensure_and_upload_image "$img" "$COMPOSE"
+  done
 fi
 
 if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
