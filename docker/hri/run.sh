@@ -148,13 +148,13 @@ case $TASK in
     ;;
   "--storing-groceries")
     PROFILES=("storing")
-    RUN="ros2 launch speech hri_launch.py"
     OPEN_DISPLAY="true"
+    RUN="ros2 launch speech hri_launch.py"
     ;;
   "--gpsr")
     PROFILES=("gpsr")
-    RUN="ros2 launch speech hri_launch.py"
     OPEN_DISPLAY="true"
+    RUN="ros2 launch speech hri_launch.py"
     ;;
   *)
     PROFILES=("*")
