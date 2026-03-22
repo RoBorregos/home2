@@ -28,8 +28,8 @@ order_labels = [
 class MoonDreamModel:
     def __init__(
         self,
-        model_name="moondream/moondream3-preview",
-        revision=None,
+        model_name="vikhyatk/moondream2",
+        revision="2025-01-09",
         device_map={"": 0},
         **kwargs,
     ):
@@ -162,13 +162,13 @@ if __name__ == "__main__":
     parser.add_argument(
         "--model_name",
         type=str,
-        default="moondream/moondream3-preview",
+        default="vikhyatk/moondream2",
         help="Name of the MoonDream model to load from Hugging Face Hub",
     )
     parser.add_argument(
         "--revision",
         type=str,
-        default=None,
+        default="2025-01-09",
         help="Revision of the MoonDream model to load from Hugging Face Hub",
     )
 
