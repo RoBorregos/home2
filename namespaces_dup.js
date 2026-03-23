@@ -239,6 +239,9 @@ var namespaces_dup =
     [ "pointing_detection", "namespacepointing__detection.html", "namespacepointing__detection" ],
     [ "pose_detection", "namespacepose__detection.html", "namespacepose__detection" ],
     [ "PourManager", "namespacePourManager.html", "namespacePourManager" ],
+    [ "ppc_launch", "namespaceppc__launch.html", [
+      [ "generate_launch_description", "namespaceppc__launch.html#aacd047cb473dc687d72cb32e87ff33fe", null ]
+    ] ],
     [ "receptionist", "namespacereceptionist.html", [
       [ "generate_launch_description", "namespacereceptionist.html#aaead6d431decb57c53f9d7c189fbb0f8", null ]
     ] ],

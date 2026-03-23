@@ -17,5 +17,6 @@ var searchData=
   ['pointing_5fdetection_14',['pointing_detection',['../namespacepointing__detection.html',1,'']]],
   ['pose_5fdetection_15',['pose_detection',['../namespacepose__detection.html',1,'']]],
   ['pour_5fserver_16',['pour_server',['../namespacepick__and__place_1_1pour__server.html',1,'pick_and_place']]],
-  ['pourmanager_17',['PourManager',['../namespacePourManager.html',1,'']]]
+  ['pourmanager_17',['PourManager',['../namespacePourManager.html',1,'']]],
+  ['ppc_5flaunch_18',['ppc_launch',['../namespaceppc__launch.html',1,'']]]
 ];

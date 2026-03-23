@@ -35,6 +35,7 @@ var searchData=
   ['pourmanager_2epy_32',['PourManager.py',['../PourManager_8py.html',1,'']]],
   ['pourmotion_2eaction_33',['PourMotion.action',['../PourMotion_8action.html',1,'']]],
   ['pourparams_2emsg_34',['PourParams.msg',['../PourParams_8msg.html',1,'']]],
-  ['publish_5fhandle_2ecpp_35',['publish_handle.cpp',['../publish__handle_8cpp.html',1,'']]],
-  ['publish_5fpcl_2ecpp_36',['publish_pcl.cpp',['../publish__pcl_8cpp.html',1,'']]]
+  ['ppc_5flaunch_2epy_35',['ppc_launch.py',['../ppc__launch_8py.html',1,'']]],
+  ['publish_5fhandle_2ecpp_36',['publish_handle.cpp',['../publish__handle_8cpp.html',1,'']]],
+  ['publish_5fpcl_2ecpp_37',['publish_pcl.cpp',['../publish__pcl_8cpp.html',1,'']]]
 ];

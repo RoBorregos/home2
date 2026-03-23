@@ -233,9 +233,9 @@ var NAVTREEINDEX =
 "namespacefollow__person__node.html#a3094696c3de17bc4d279ba3bf1c2684f",
 "namespaceget__positon__3d.html#a6ad20450ab6872c25d1c6f224047e8e6",
 "namespaceobjectDetectionHandler.html",
-"namespacesubtask__managers_1_1vision__tasks.html#af8b434b2944d2e99338e040a7bb1d7c5",
-"pointing__detection_8py.html#a47c3a80029239887a5bca0e33d3cc442",
-"trt__utils_8py.html"
+"namespacesubtask__managers_1_1vision__tasks.html#ae7683efea5f76a87a8709bf0dc062fd4",
+"pointing__detection_8py.html#a21dd50ff81edba13f099c5b8fb3f927e",
+"transform__target_8py.html"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';
