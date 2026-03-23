@@ -12,6 +12,7 @@ DETACHED=""
 BUILD=""
 BUILD_IMAGE=""
 UPLOAD_IMAGE=""
+DOWNLOAD_SIMULATION=""
 
 COMPOSE="docker-compose-${ENV_TYPE}.yaml"
 
@@ -41,6 +42,8 @@ for arg in "${ARGS[@]}"; do
     "--upload-image")
         UPLOAD_IMAGE="true"
         ;;
+    "--simulation-compile")
+        DOWNLOAD_SIMULATION="true"
     esac
 done
 
@@ -71,11 +74,17 @@ GPD_SETUP=". /home/ros/setup_gpd.sh"
 GPD_EXPORT="export GPD_INSTALL_DIR=/workspace/install/gpd"
 SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
 COLCON="colcon build --symlink-install --packages-up-to manipulation_general --packages-ignore realsense_gazebo_plugin xarm_gazebo frida_interfaces"
+SIMULATION_BUILD="colcon build --packages-select mujoco_spawn mujoco_ros2_control"
+
 
 if [ "$BUILD" == "true" ]; then
     SETUP="$GPD_SETUP && $GPD_EXPORT && $SOURCE_ROS && $SOURCE_INTERFACES && $COLCON && $SOURCE"
 else
     SETUP="$GPD_SETUP && $GPD_EXPORT && $SOURCE_ROS && $SOURCE_INTERFACES && $SOURCE"
+fi
+
+if [[ "$DOWNLOAD_SIMULATION" == "true" ]]; then
+    SETUP+=" && $SIMULATION_BUILD"
 fi
 
 case $TASK in

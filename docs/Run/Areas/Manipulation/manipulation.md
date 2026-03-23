@@ -52,9 +52,9 @@ ros2 run perception_3d down_sample_pc --ros-args -p input_topic:="/depth/color/p
 ```
 
 #### Mujoco Simulation
-In order to launch the mujoco simulation the next command is used:
+In order to launch the mujoco simulation from the manipulation container, the next command is used:
 ```
-colcon build 
+colcon build --packages-select mujoco_spawn mujoco_ros2_launch
 source install/setup.bash
 ros2 launch mujoco_spawn mujoco_sim_init.launch.py 
 ```

@@ -21,5 +21,5 @@
 	branch = xarm_servicios_estable
 [submodule "manipulation/packages/mujoco_ros2_control"]
 	path = manipulation/packages/mujoco_ros2_control
-	url = https://github.com/EfrainH2O/mujoco_ros2_control.git
+	url = https://github.com/RoBorregos/mujoco_ros2_control
 
