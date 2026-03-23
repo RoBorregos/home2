@@ -231,9 +231,9 @@ class CustomerNode(Node):
                             self.imageInfo, point_2d_temp, depth
                         )
                         point3D = (
+                            float(point3D[2]),
                             float(point3D[0]),
                             float(point3D[1]),
-                            float(point3D[2]),
                         )
                         coords.point.x = point3D[0]
                         coords.point.y = point3D[1]
@@ -247,6 +247,9 @@ class CustomerNode(Node):
                         res.people.list.append(person)
                     res.found = True
                     self.success("Customer found")
+                    self.get_logger().info(
+                        f"Customer position (3D): x={coords.point.x:.3f}  y={coords.point.y:.3f}  z={coords.point.z:.3f}"
+                    )
 
         self.get_logger().warn(f"Customers detected: {len(res.people.list)}")
         return res

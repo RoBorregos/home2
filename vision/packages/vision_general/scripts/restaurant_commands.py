@@ -100,11 +100,20 @@ class RESTAURANTCommands(Node):
 
         # Prepare one output CustomerTable per detected table.
         table_groups = []
+        table_pixels = []
         for table in tables_points2d:
             table_msg = CustomerTable()
+
+            pixel_x = int(table[0] * self.imageInfo.width)
+            pixel_y = int(table[1] * self.imageInfo.height)
+            table_pixels.append((pixel_x, pixel_y))
+
             point3d = deproject_pixel_to_point(
-                self.imageInfo, table, get_depth(self.depth_image, (table[1], table[0]))
+                self.imageInfo,
+                (pixel_x, pixel_y),
+                get_depth(self.depth_image, (pixel_y, pixel_x)),
             )
+
             table_msg.table_point = self.build_point_stamped_from_xyz(point3d)
             table_msg.people = PersonList()
             table_msg.people.list = []
@@ -122,7 +131,12 @@ class RESTAURANTCommands(Node):
             closest_distance = float("inf")
 
             for idx, table in enumerate(table_groups):
-                distance = self.euclidean_distance(table.table_point, customer_xyz)
+                table_xyz = (
+                    table.table_point.point.x,
+                    table.table_point.point.y,
+                    table.table_point.point.z,
+                )
+                distance = self.euclidean_distance(table_xyz, customer_xyz)
                 if distance < closest_distance:
                     closest_distance = distance
                     closest_table_idx = idx
@@ -137,27 +151,55 @@ class RESTAURANTCommands(Node):
         response.customer_tables = table_groups
         response.success = True
 
-        self.publish_table_customer_image(response.customer_tables)
+        self.publish_table_customer_image(response.customer_tables, table_pixels)
         self.get_logger().info(
             f"Associated {assigned_customers}/{len(customer_people)} customers to tables"
         )
         return response
 
-    def publish_table_customer_image(self, table_groups):
-        if self.image is None:
+    def publish_table_customer_image(self, table_groups, table_pixels):
+        if self.image is None or self.imageInfo is None:
             return
 
         debug_image = self.image.copy()
 
-        for table in table_groups:
+        table_color = (0, 255, 0)  # green for tables
+        person_color = (0, 0, 255)  # red for people
+
+        for i, table in enumerate(table_groups):
+            table_name = f"Table {i+1}"
+            u, v = table_pixels[i]
+
+            # Draw table center
+            cv2.circle(debug_image, (u, v), 15, table_color, -1)
+            cv2.putText(
+                debug_image,
+                table_name,
+                (u - 20, v - 20),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.8,
+                table_color,
+                2,
+            )
+
             for person in table.people.list:
-                cv2.circle(
-                    debug_image,
-                    (int(person.x), int(person.y)),
-                    10,
-                    (255, 0, 0),
-                    -1,
-                )
+                try:
+                    px, py = int(person.x), int(person.y)
+                    # Draw person
+                    cv2.circle(debug_image, (px, py), 10, person_color, -1)
+
+                    # Indicate table number next to the person
+                    cv2.putText(
+                        debug_image,
+                        table_name,
+                        (px - 20, py - 20),
+                        cv2.FONT_HERSHEY_SIMPLEX,
+                        0.8,
+                        person_color,
+                        2,
+                    )
+                except Exception:
+                    pass
 
         self.client_debug_publisher.publish(
             self.bridge.cv2_to_imgmsg(debug_image, "bgr8")
@@ -165,9 +207,11 @@ class RESTAURANTCommands(Node):
 
     def build_point_stamped_from_xyz(self, xyz):
         point_stamped = PointStamped()
-        point_stamped.point.x = float(xyz[0])
-        point_stamped.point.y = float(xyz[1])
-        point_stamped.point.z = float(xyz[2])
+        point_stamped.header.stamp = self.get_clock().now().to_msg()
+        point_stamped.header.frame_id = "zed_left_camera_optical_frame"
+        point_stamped.point.x = float(xyz[2])
+        point_stamped.point.y = float(xyz[0])
+        point_stamped.point.z = float(xyz[1])
         return point_stamped
 
     def euclidean_distance(self, p1, p2):
@@ -185,7 +229,7 @@ class RESTAURANTCommands(Node):
         result = future.result()
 
         if result is None or not result.found:
-            self.get_logger().warm("Customer not detected")
+            self.get_logger().warn("Customer not detected")
             return []
 
         return result.people.list
