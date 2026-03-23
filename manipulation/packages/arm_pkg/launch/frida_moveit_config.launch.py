@@ -155,11 +155,6 @@ def launch_setup(context, *args, **kwargs):
         "vamp_moveit_plugin/VampPlannerManager"
     )
 
-    # Remove ValidateSolution so MoveIt trusts VAMP internal collision checking
-    moveit_config.planning_pipelines["vamp"]["response_adapters"] = [
-        "default_planner_response_adapters/AddTimeOptimalParameterization",
-    ]
-
 
     # robot description launch
     robot_description_launch = IncludeLaunchDescription(
@@ -273,6 +268,7 @@ def launch_setup(context, *args, **kwargs):
         control_node,
         downsample_pcd,
     ]
+
 
 
 def generate_launch_description():
