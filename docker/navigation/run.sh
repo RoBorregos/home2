@@ -44,8 +44,7 @@ done
 
 echo "Configuring USB devices for Navigation..."
 if ! bash ./setup-USB.sh; then
-    echo "Error: USB devices setup failed. Cancelling container run."
-    exit 1
+    echo "Error: USB devices setup failed."
 fi
 
 # Reset .env
