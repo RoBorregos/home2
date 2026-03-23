@@ -288,7 +288,7 @@ class NavCanvas(QWidget):
         self.mode = 'goal'
 
         self.setMouseTracking(True)
-        self.setMinimumSize(600, 400)
+        self.setMinimumSize(320, 240)
         self.setFocusPolicy(Qt.StrongFocus)
 
     def map_to_pixel(self, mx, my):
@@ -595,7 +595,7 @@ class NavUI(QMainWindow):
         super().__init__()
         self.ros_node = ros_node
         self.setWindowTitle("Navigation UI")
-        self.setMinimumSize(1200, 750)
+        self.setMinimumSize(640, 400)
         self.setup_ui()
         self.apply_style()
         self.connect_ros_signals()
@@ -629,8 +629,8 @@ class NavUI(QMainWindow):
 
         # Side panel
         panel = QWidget()
-        panel.setMaximumWidth(300)
-        panel.setMinimumWidth(260)
+        panel.setMaximumWidth(260)
+        panel.setMinimumWidth(200)
         panel_layout = QVBoxLayout(panel)
         panel_layout.setContentsMargins(8, 8, 8, 8)
         panel_layout.setSpacing(6)
@@ -717,7 +717,7 @@ class NavUI(QMainWindow):
         panel_layout.addWidget(self.lbl_connection)
 
         splitter.addWidget(panel)
-        splitter.setSizes([900, 300])
+        splitter.setSizes([500, 240])
 
         # Status bar
         self.status = QStatusBar()

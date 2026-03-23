@@ -1,7 +1,7 @@
 # RTAB-Map Configuration File
 rgbd_sync:
   ros__parameters:
-    approx_sync: false
+    approx_sync: true
     use_sim_time: false
     qos: 1
     qos_camera_info: 1
@@ -28,6 +28,8 @@ rtabmap:
     "Rtabmap/TimeThr": "0"
     "Rtabmap/LoopThr": "0.11"
     "Rtabmap/MaxLoopClosureDistance": "5.0"
+    "Mem/IncrementalMemory": "false"
+    "Mem/InitWMWithAllNodes": "true"
     "Mem/NotLinkedNodesKept": "false"
     "Mem/ReduceGraph": "false"
     "Kp/NNStrategy": "4"

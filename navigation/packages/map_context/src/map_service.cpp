@@ -17,7 +17,7 @@ public:
   : rclcpp_lifecycle::LifecycleNode("areas_wrapper", options)
   {
     this->declare_parameter("map_name", "default_map");
-    this->declare_parameter("autostart", true);
+    this->declare_parameter("autostart", false);
     RCLCPP_INFO(this->get_logger(), "AreasWrapper Node created, waiting for configuration...");
   }
 
@@ -98,11 +98,11 @@ int main(int argc, char **argv)
   rclcpp::init(argc, argv);
   auto node = std::make_shared<AreasServices>(rclcpp::NodeOptions());
   
-  bool autostart = node->get_parameter("autostart").as_bool();
+  /*bool autostart = node->get_parameter("autostart").as_bool();
   if (autostart) {
     node->trigger_transition(rclcpp_lifecycle::Transition(lifecycle_msgs::msg::Transition::TRANSITION_CONFIGURE));
     node->trigger_transition(rclcpp_lifecycle::Transition(lifecycle_msgs::msg::Transition::TRANSITION_ACTIVATE));
-  }
+  }*/
 
   rclcpp::spin(node->get_node_base_interface());
   rclcpp::shutdown();

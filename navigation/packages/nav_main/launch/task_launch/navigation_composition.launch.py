@@ -12,7 +12,7 @@ def launch_function(context, *args, **kwargs):
     pkg_file_route = get_package_share_directory('nav_main')
     rtab_params_file = os.path.join(pkg_file_route,'config', 'rtabmap', 'rtabmap_default_config.yaml')
     nav2_params_file = os.path.join(pkg_file_route,'config', 'nav2_standard.yaml')
-    rtabmap_map_name = LaunchConfiguration('map_name', default='lab_09_march.db')
+    rtabmap_map_name = LaunchConfiguration('map_name', default='lab_22_march.db')
     rtab_params = LaunchConfiguration('rtab_config_file', default=rtab_params_file)
     nav2_params = LaunchConfiguration('nav2_config_file', default=nav2_params_file)
     localization = LaunchConfiguration('localization', default='true')
@@ -49,7 +49,7 @@ def launch_function(context, *args, **kwargs):
         executable='map_service',
         name='map_service',
         namespace='',
-        parameters=[{'map_name': map_name_str[:-3]}],
+        parameters=[{'map_name': map_name_str[:-3], 'autostart': False}],
         output='screen',
     )
 

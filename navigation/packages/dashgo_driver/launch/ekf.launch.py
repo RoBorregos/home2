@@ -33,12 +33,15 @@ def generate_launch_description():
                                     True, False, False,
                                     False,  False,  True, 
                                     False,  False,  False],
+                    'odom0_relative': True,
+
                     'imu0_config': [False, False, False,
                                      False,  False,  True,
                                      False, False, False,
                                      False,  False,  True,
-                                     True,  False,  False],
+                                     False,  False,  False],
                     'imu0_differential': False,
+                    'imu0_remove_gravitational_acceleration': True
 
                  },
                 
