@@ -42,13 +42,5 @@ def generate_launch_description():
             remappings=[
             ('/scan', '/scan_input')],
             condition=UnlessCondition(use_sim),
-            ),
-        Node(
-            package='nav_main',
-            executable='lidar_monitor.py',
-            name='lidar_monitor',
-            output='screen',
-            condition=UnlessCondition(use_sim),
-            ),
-
+            )
     ])
