@@ -39,24 +39,20 @@ class RESTAURANTCommands(Node):
         self.bridge = CvBridge()
         self.callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
 
-        # State Variables
         self.image = None
         self.depth_image = []
         self.imageInfo = None
 
-        # Subscribers
         self.create_subscription(Image, CAMERA_TOPIC, self.image_callback, 10)
         self.create_subscription(Image, DEPTH_IMAGE_TOPIC, self.depth_callback, 10)
         self.create_subscription(
             CameraInfo, CAMERA_INFO_TOPIC, self.image_info_callback, 10
         )
 
-        # Publishers
         self.client_debug_publisher = self.create_publisher(
             Image, RESTAURANT_TABLES_TOPIC, 10
         )
 
-        # Clients
         self.moondream_point_client = self.create_client(
             ObjectPoints, OBJECT_POINTS_TOPIC, callback_group=self.callback_group
         )
@@ -64,7 +60,6 @@ class RESTAURANTCommands(Node):
             Customer, GET_CUSTOMER_TOPIC, callback_group=self.callback_group
         )
 
-        # Services
         self.customer_table_client = self.create_service(
             CustomerTables,
             CUSTOMER_TABLES_TOPIC,
