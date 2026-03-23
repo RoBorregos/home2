@@ -35,7 +35,7 @@ class VampServer(Node):
         
         self.declare_parameter("max_iterations", 50000)
         self.declare_parameter("range", 0.05)
-        self.declare_parameter("security_margin", 0.08)
+        self.declare_parameter("security_margin", 0.02)
         self.declare_parameter("validation_step_size", 0.05)
         self.declare_parameter("min_waypoint_distance", 0.08)
         self.declare_parameter("smoothing_window", 5)
@@ -52,7 +52,7 @@ class VampServer(Node):
         self.smooth_passes = self.get_parameter("smoothing_passes").value
         self.max_retries = self.get_parameter("max_retries").value
         self.retry_range_mult = self.get_parameter("retry_range_multiplier").value
-        self.rng = vamp.frida_real.xorshift()
+        self.rng = vamp.frida_real.halton()
         self.retry_iter_mult = self.get_parameter("retry_iterations_multiplier").value
 
         
@@ -85,25 +85,50 @@ class VampServer(Node):
 
     @staticmethod
     def to_vamp(joint_values):
-        return np.array(joint_values[:ARM_DOF], dtype=np.float64)
+        return np.array(list(joint_values[:ARM_DOF]) + [0.8, 0.8], dtype=np.float32)
 
-    def build_environment(self, request):
+    def build_environment(self, request, robot_config=None):
         env = vamp.Environment()
         n_spheres = 0
         n_boxes = 0
+        centers = np.array(request.sphere_centers_flat, dtype=np.float32)
+        radii = np.array(request.sphere_radii, dtype=np.float32)
 
-        centers = np.array(request.sphere_centers_flat, dtype=np.float64)
-        radii = np.array(request.sphere_radii, dtype=np.float64)
+        if len(radii) > 0:
+            pc = []
+            for i in range(len(radii)):
+                idx = i * 3
+                pc.append(centers[idx: idx + 3].tolist())
 
-        for i in range(len(radii)):
-            idx = i * 3
-            pos = centers[idx: idx + 3].tolist()
-            r = float(radii[i]) + self.security_margin
-            env.add_sphere(vamp.Sphere(pos, r))
+            avg_radius = float(np.mean(radii)) if len(radii) > 0 else 0.03
+
+            # Filter self-collision points if we have robot config
+            if robot_config is not None:
+                try:
+                    pc = vamp.frida_real.filter_self_from_pointcloud(
+                        pc, 0.20, robot_config, env)
+                    self.get_logger().info(
+                        f"  Self-filter: {len(centers)//3} -> {len(pc)} points")
+                except Exception as e:
+                    self.get_logger().warn(f"  Self-filter failed: {e}")
+
+            # Use CAPT pointcloud (much faster than individual spheres)
+            if len(pc) > 0:
+                try:
+                    n_nodes = env.add_pointcloud(
+                        pc, avg_radius, 0.01, 2.0)
+                    n_spheres = len(pc)
+                    self.get_logger().info(
+                        f"  CAPT pointcloud: {len(pc)} points, {n_nodes} nodes")
+                except Exception as e:
+                    self.get_logger().warn(f"  CAPT failed: {e}, falling back to spheres")
+                    for pt in pc:
+                        env.add_sphere(vamp.Sphere(pt, avg_radius + self.security_margin))
+                        n_spheres += 1
             n_spheres += 1
 
-        box_centers = np.array(request.box_centers_flat, dtype=np.float64)
-        box_sizes = np.array(request.box_sizes_flat, dtype=np.float64)
+        box_centers = np.array(request.box_centers_flat, dtype=np.float32)
+        box_sizes = np.array(request.box_sizes_flat, dtype=np.float32)
         num_boxes = len(box_sizes) // 3
 
         for i in range(num_boxes):
@@ -120,6 +145,7 @@ class VampServer(Node):
             rotation = [0.0, 0.0, 0.0]
 
             try:
+                self.get_logger().info(f"  Cuboid: center={center}, half={half_extents}")
                 env.add_cuboid(vamp.Cuboid(center, rotation, half_extents))
                 n_boxes += 1
             except Exception as e:
@@ -152,6 +178,9 @@ class VampServer(Node):
                         env.add_sphere(vamp.Sphere(pos, radius))
 
     def validate_states(self, start, goal, env):
+        # Debug: test with fresh env
+        fresh_env = vamp.Environment()
+        self.get_logger().info(f"  Debug fresh_env: start={vamp.frida_real.validate(start, fresh_env)}, goal={vamp.frida_real.validate(goal, fresh_env)}")
         is_start_valid = vamp.frida_real.validate(start, env)
         is_goal_valid = vamp.frida_real.validate(goal, env)
         if is_start_valid and is_goal_valid:
@@ -189,7 +218,7 @@ class VampServer(Node):
             dist = np.linalg.norm(p1 - p2)
             n_steps = max(2, int(dist / self.validation_step))
             for t in np.linspace(0, 1, n_steps, endpoint=False):
-                interp = np.array(p1 + (p2 - p1) * t, dtype=np.float64)
+                interp = np.array(p1 + (p2 - p1) * t, dtype=np.float32)
                 if not vamp.frida_real.validate(interp, env):
                     self.get_logger().error(f"Collision at segment {i}, t={t:.3f}")
                     return dense_path, False
@@ -211,7 +240,7 @@ class VampServer(Node):
     def apply_smoothing_filter(self, path_nodes):
         if len(path_nodes) < 3:
             return path_nodes
-        smoothed = np.array(path_nodes, dtype=np.float64).copy()
+        smoothed = np.array(path_nodes, dtype=np.float32).copy()
         n = len(smoothed)
         w = self.smooth_window
         for _ in range(self.smooth_passes):
@@ -232,13 +261,17 @@ class VampServer(Node):
         self.get_logger().info("NEW PLANNING REQUEST")
 
         try:
-            with self.Timer("Environment build", self.get_logger()):
-                env, n_sph, n_box = self.build_environment(request)
-            
             start = self.to_vamp(request.start_state)
             goal = self.to_vamp(request.goal_state)
-
+            with self.Timer("Environment build", self.get_logger()):
+                env, n_sph, n_box = self.build_environment(request, start)
+            self.get_logger().info(f"  Radii: {len(request.sphere_radii)}, Boxes: {len(request.box_sizes_flat)//3}")
             with self.Timer("State validation", self.get_logger()):
+                self.get_logger().info(f"  Start: {start.tolist()}")
+                self.get_logger().info(f"  Goal: {goal.tolist()}")
+                diag = self.validate_states(start, goal, env)
+                self.get_logger().info(f"  Goal: {goal.tolist()}")
+                diag = self.validate_states(start, goal, env)
                 diag = self.validate_states(start, goal, env)
             if diag:
                 self.get_logger().error(diag)
@@ -285,7 +318,7 @@ class VampServer(Node):
                     simplified = vamp.frida_real.simplify(raw_path, env, ss, rng)
                     if simplified.solved and len(simplified.path) > 0:
                         path_nodes = [
-                            np.array(list(simplified.path[i]), dtype=np.float64)
+                            np.array(list(simplified.path[i]), dtype=np.float32)
                             for i in range(len(simplified.path))
                         ]
                         self.get_logger().info(f"  Native simplify: {len(path_nodes)} waypoints")
@@ -296,10 +329,10 @@ class VampServer(Node):
                 self.get_logger().warn("Falling back to Python smoothing pipeline.")
                 n_points = len(raw_path)
                 step = max(1, n_points // 500)
-                path_nodes = [np.array(list(raw_path[int(i)]), dtype=np.float64)
+                path_nodes = [np.array(list(raw_path[int(i)]), dtype=np.float32)
                               for i in range(0, n_points, step)]
                 if (n_points - 1) % step != 0:
-                    path_nodes.append(np.array(list(raw_path[-1]), dtype=np.float64))
+                    path_nodes.append(np.array(list(raw_path[-1]), dtype=np.float32))
                 path_nodes = self.downsample_path(path_nodes)
                 path_nodes = self.apply_smoothing_filter(path_nodes)
 
@@ -309,7 +342,7 @@ class VampServer(Node):
                 self.get_logger().warn("Path has collision, retrying without smoothing.")
                 n_points = len(raw_path)
                 step = max(1, n_points // 500)
-                path_nodes = [np.array(list(raw_path[int(i)]), dtype=np.float64)
+                path_nodes = [np.array(list(raw_path[int(i)]), dtype=np.float32)
                               for i in range(0, n_points, step)]
                 path_nodes = self.downsample_path(path_nodes)
                 final_dense_path, is_safe = self.validate_and_densify_path(path_nodes, env)
