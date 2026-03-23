@@ -19,7 +19,6 @@ from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import Point, PointStamped
-import copy
 
 from frida_interfaces.srv import CropQuery, Customer
 from frida_interfaces.msg import PersonList, Person
@@ -166,92 +165,71 @@ class CustomerNode(Node):
 
             return res
 
-        self.frame = copy.deepcopy(self.image)
-
+        self.frame = self.image.copy()
         self.output_image = self.frame.copy()
-        results = copy.deepcopy(self.results)
 
-        for out in results:
+        # Check temporal synchronization between depth and rgb
+        dt = abs(self.depth_image_time.nanosec - self.image_time.nanosec)
+        if dt > DEPTH_THRESHOLD:
+            self.get_logger().warn("Depth and RGB images are not synchronized")
+            pass
+
+        for out in self.results:
             for box in out.boxes:
-                x1, y1, x2, y2 = [round(x) for x in box.xyxy[0].tolist()]
-
-                # Get confidence
-                prob = round(box.conf[0].item(), 2)
-
-                if prob < CONF_THRESHOLD:
+                if box.conf[0].item() < CONF_THRESHOLD:
                     continue
 
+                x1, y1, x2, y2 = [round(x) for x in box.xyxy[0].tolist()]
                 cv2.rectangle(self.output_image, (x1, y1), (x2, y2), (0, 0, 255), 2)
-                bbox = box.xyxy[0].tolist()
 
                 cropped_image = self.frame[y1:y2, x1:x2]
-                self.customer_image = copy.deepcopy(cropped_image)
+                self.customer_image = cropped_image.copy()
+
                 raising = self.pose_detection.is_waving_customer(cropped_image)
                 sitting = self.pose_detection.is_sitting_yolo(cropped_image)
 
                 if not sitting:
                     self.get_logger().info("Checking sitting with moondream")
-                    sitting = self.is_sitting_moondream(bbox)
+                    sitting = self.is_sitting_moondream([x1, y1, x2, y2])
 
                 if raising and sitting:
                     self.get_logger().info("Customer raising hand and sitting detected")
-                    cv2.rectangle(
-                        self.output_image,
-                        (x1, y1),
-                        (x2, y2),
-                        (0, 255, 0),
-                        2,
-                    )
-                    if len(self.depth_image) > 0 and (
-                        (
-                            self.depth_image_time.nanosec - self.image_time.nanosec
-                            > -DEPTH_THRESHOLD
-                        )
-                        and (
-                            self.depth_image_time.nanosec - self.image_time.nanosec
-                            < DEPTH_THRESHOLD
-                        )
-                    ):
-                        coords = PointStamped()
-                        coords.header.frame_id = self.frame_id
-                        coords.header.stamp = self.depth_image_time
-                        point2D = get2DCentroid(bbox, self.depth_image)
-                        point2D_x_coord = float(point2D[1])
-                        point2D_x_coord_normalized = (
-                            point2D_x_coord / (self.frame.shape[1] / 2)
-                        ) - 1
-                        point2Dpoint = Point()
-                        point2Dpoint.x = float(point2D_x_coord_normalized)
-                        point2Dpoint.y = 0.0
-                        point2Dpoint.z = 0.0
-                        self.centroid_publisher.publish(point2Dpoint)
-                        depth = get_depth(self.depth_image, point2D)
-                        point_2d_temp = (point2D[1], point2D[0])
-                        point3D = deproject_pixel_to_point(
-                            self.imageInfo, point_2d_temp, depth
-                        )
-                        point3D = (
-                            float(point3D[2]),
-                            float(point3D[0]),
-                            float(point3D[1]),
-                        )
-                        coords.point.x = point3D[0]
-                        coords.point.y = point3D[1]
-                        coords.point.z = point3D[2]
-                        self.results_publisher.publish(coords)
+                    cv2.rectangle(self.output_image, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
-                        person = Person()
-                        person.x = (x1 + x2) // 2
-                        person.y = (y1 + y2) // 2
-                        person.point3d = coords
-                        res.people.list.append(person)
+                    # 2D Centroid and Depth
+                    point2D = get2DCentroid((x1, y1, x2, y2), self.depth_image)
+                    depth = get_depth(self.depth_image, point2D)
+                    point3D_raw = deproject_pixel_to_point(
+                        self.imageInfo, point2D, depth
+                    )
+
+                    # Transform to ROS frame
+                    coords = PointStamped()
+                    coords.header.frame_id = self.frame_id
+                    coords.header.stamp = self.depth_image_time
+                    coords.point.x = float(point3D_raw[0])
+                    coords.point.y = float(point3D_raw[1])
+                    coords.point.z = float(point3D_raw[2])
+                    self.results_publisher.publish(coords)
+
+                    # Normalize X coordinate for basic tracking
+                    pt_x_norm = float(point2D[1]) / (self.frame.shape[1] / 2) - 1.0
+                    self.centroid_publisher.publish(Point(x=pt_x_norm, y=0.0, z=0.0))
+
+                    # Append to results
+                    person = Person()
+                    person.x = (x1 + x2) // 2
+                    person.y = (y1 + y2) // 2
+                    person.point3d = coords
+                    res.people.list.append(person)
+
                     res.found = True
                     self.success("Customer found")
                     self.get_logger().info(
                         f"Customer position (3D): x={coords.point.x:.3f}  y={coords.point.y:.3f}  z={coords.point.z:.3f}"
                     )
 
-        self.get_logger().warn(f"Customers detected: {len(res.people.list)}")
+        self.get_logger().info(f"Customers detected: {len(res.people.list)}")
         return res
 
     def is_sitting_moondream(self, bbox):

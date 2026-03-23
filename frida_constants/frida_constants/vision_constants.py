@@ -65,7 +65,7 @@ TRASH_DETECTION_SERVICE = "/vision/zero_shot_trash_detection"
 CUSTOMER = "/vision/customer"
 GET_CUSTOMER_TOPIC = "/vision/get_customer"
 CUSTOMER_TABLES_TOPIC = "/vision/customer_tables"
-
+RESTAURANT_TABLES_TOPIC = "/vision/restaurant_tables"
 ZERO_SHOT_MODEL = "yoloe-11l-seg.pt"
 
 # LOCAL CAMERA TOPICS
