@@ -19,7 +19,7 @@ from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
 from tf2_ros import TransformException
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
-from std_srvs.srv import Empty
+from action_msgs.srv import CancelGoal
 
 from PyQt5.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
@@ -39,11 +39,49 @@ COLOR_ROBOT_FILL = QColor(0, 200, 255, 80)
 COLOR_GOAL = QColor(255, 50, 50, 255)
 COLOR_GOAL_FILL = QColor(255, 50, 50, 80)
 COLOR_PATH = QColor(50, 255, 100, 200)
-COLOR_LOCAL_COSTMAP = QColor(255, 100, 0, 60)
-COLOR_GLOBAL_COSTMAP = QColor(150, 0, 255, 30)
 COLOR_MAP_FREE = QColor(255, 255, 255)
 COLOR_MAP_OCCUPIED = QColor(0, 0, 0)
 COLOR_MAP_UNKNOWN = QColor(128, 128, 128)
+
+# Robot footprint in meters (front-heavy rectangle, wheels in back)
+ROBOT_FOOTPRINT = [
+    (0.32, 0.21), (0.32, -0.21), (-0.17, -0.21), (-0.17, 0.21)
+]
+
+def build_costmap_lut():
+    """Build RViz-style costmap color lookup table (0-100 + special values)."""
+    lut = np.zeros((256, 4), dtype=np.uint8)  # RGBA
+    # 0 = free -> transparent
+    lut[0] = [0, 0, 0, 0]
+    # 1-98: soft gradient blue -> cyan -> green -> yellow -> red
+    for i in range(1, 99):
+        t = i / 98.0
+        if t < 0.25:
+            s = t / 0.25
+            r, g, b = 60, int(120 + 80 * s), 200
+        elif t < 0.5:
+            s = (t - 0.25) / 0.25
+            r, g, b = 60, 200, int(200 * (1 - s))
+        elif t < 0.75:
+            s = (t - 0.5) / 0.25
+            r, g, b = int(60 + 180 * s), 200, 0
+        else:
+            s = (t - 0.75) / 0.25
+            r, g, b = 240, int(200 * (1 - s)), 0
+        alpha = int(40 + 120 * t)
+        lut[i] = [r, g, b, alpha]
+    # 99 = inscribed obstacle
+    lut[99] = [220, 50, 100, 180]
+    # 100 = lethal
+    lut[100] = [160, 0, 200, 200]
+    # -1 (255 in uint8) = unknown -> transparent
+    lut[255] = [0, 0, 0, 0]
+    # Fill 101-254 as lethal
+    for i in range(101, 255):
+        lut[i] = [160, 0, 200, 200]
+    return lut
+
+COSTMAP_LUT = build_costmap_lut()
 
 
 class RosSignals(QObject):
@@ -95,10 +133,19 @@ class NavRosNode(Node):
         self.initialpose_pub = self.create_publisher(
             PoseWithCovarianceStamped, '/initialpose', 10)
 
+        # Service client for cancelling navigation goals
+        self.cancel_nav_client = self.create_client(
+            CancelGoal, '/navigate_to_pose/_action/cancel_goal')
+
         # Robot pose
         self.robot_x = 0.0
         self.robot_y = 0.0
         self.robot_yaw = 0.0
+
+        # odom->map transform (for local costmap positioning)
+        self.odom_to_map_x = 0.0
+        self.odom_to_map_y = 0.0
+        self.odom_to_map_yaw = 0.0
 
         # TF timer
         self.create_timer(0.1, self.update_robot_pose)
@@ -132,6 +179,17 @@ class NavRosNode(Node):
                 self.robot_x, self.robot_y, self.robot_yaw)
         except TransformException:
             pass
+        # Lookup odom->map transform for local costmap positioning
+        try:
+            t2 = self.tf_buffer.lookup_transform('map', 'odom', rclpy.time.Time())
+            self.odom_to_map_x = t2.transform.translation.x
+            self.odom_to_map_y = t2.transform.translation.y
+            q2 = t2.transform.rotation
+            self.odom_to_map_yaw = math.atan2(
+                2.0 * (q2.w * q2.z + q2.x * q2.y),
+                1.0 - 2.0 * (q2.y * q2.y + q2.z * q2.z))
+        except TransformException:
+            pass
 
     def send_goal(self, x, y, yaw):
         msg = PoseStamped()
@@ -142,6 +200,15 @@ class NavRosNode(Node):
         msg.pose.orientation.z = math.sin(yaw / 2.0)
         msg.pose.orientation.w = math.cos(yaw / 2.0)
         self.goal_pub.publish(msg)
+
+    def cancel_nav(self):
+        """Cancel all navigation goals."""
+        if not self.cancel_nav_client.service_is_ready():
+            self.get_logger().warn('Cancel service not available')
+            return
+        req = CancelGoal.Request()
+        self.cancel_nav_client.call_async(req)
+        self.get_logger().info('Cancelling all navigation goals')
 
     def send_initialpose(self, x, y, yaw):
         msg = PoseWithCovarianceStamped()
@@ -181,6 +248,11 @@ class NavCanvas(QWidget):
         self.gc_width = 0
         self.gc_height = 0
         self.gc_resolution = 0.05
+
+        # odom->map transform (for local costmap frame correction)
+        self.odom_to_map_x = 0.0
+        self.odom_to_map_y = 0.0
+        self.odom_to_map_yaw = 0.0
 
         # View
         self.zoom = 1.0
@@ -253,21 +325,23 @@ class NavCanvas(QWidget):
         self.map_width = w
         self.map_height = h
 
-        img = QImage(w, h, QImage.Format_RGB32)
         data = np.array(grid_msg.data, dtype=np.int8).reshape((h, w))
-        for y in range(h):
-            for x in range(w):
-                v = data[y][x]
-                if v == -1:
-                    c = COLOR_MAP_UNKNOWN
-                elif v == 0:
-                    c = COLOR_MAP_FREE
-                else:
-                    intensity = max(0, 255 - int(v * 2.55))
-                    c = QColor(intensity, intensity, intensity)
-                img.setPixel(x, h - 1 - y, c.rgb())
+        # Flip Y axis for display
+        data = data[::-1]
+        # Build RGB image using numpy
+        rgb = np.zeros((h, w, 3), dtype=np.uint8)
+        unknown = data == -1
+        free = data == 0
+        occupied = data > 0
+        rgb[unknown] = [128, 128, 128]
+        rgb[free] = [255, 255, 255]
+        intensity = np.clip(255 - (data.astype(np.int16) * 255 // 100), 0, 255).astype(np.uint8)
+        rgb[occupied, 0] = intensity[occupied]
+        rgb[occupied, 1] = intensity[occupied]
+        rgb[occupied, 2] = intensity[occupied]
 
-        self.map_pixmap = QPixmap.fromImage(img)
+        img = QImage(rgb.data, w, h, 3 * w, QImage.Format_RGB888)
+        self.map_pixmap = QPixmap.fromImage(img.copy())
         if self.zoom == 1.0 and self.pan_offset == QPointF(0, 0):
             self.fit_to_view()
         self.update()
@@ -278,24 +352,14 @@ class NavCanvas(QWidget):
         ox = grid_msg.info.origin.position.x
         oy = grid_msg.info.origin.position.y
 
-        img = QImage(w, h, QImage.Format_ARGB32)
-        img.fill(Qt.transparent)
-        data = np.array(grid_msg.data, dtype=np.int8).reshape((h, w))
+        data = np.array(grid_msg.data, dtype=np.uint8).reshape((h, w))
+        # Flip Y axis
+        data = data[::-1]
+        # Apply RViz-style LUT
+        rgba = COSTMAP_LUT[data]
+        img = QImage(rgba.data, w, h, 4 * w, QImage.Format_RGBA8888)
+        pixmap = QPixmap.fromImage(img.copy())
 
-        if is_local:
-            color = COLOR_LOCAL_COSTMAP
-        else:
-            color = COLOR_GLOBAL_COSTMAP
-
-        for y in range(h):
-            for x in range(w):
-                v = data[y][x]
-                if v > 0 and v != -1:
-                    alpha = min(255, int(v * 2))
-                    c = QColor(color.red(), color.green(), color.blue(), alpha)
-                    img.setPixel(x, h - 1 - y, c.rgba())
-
-        pixmap = QPixmap.fromImage(img)
         if is_local:
             self.local_costmap_pixmap = pixmap
             self.lc_origin_x = ox
@@ -417,15 +481,19 @@ class NavCanvas(QWidget):
             painter.drawPixmap(0, 0, self.global_costmap_pixmap)
             painter.restore()
 
-        # Local costmap
+        # Local costmap (rolling window centered on robot, rotated by odom->map yaw)
         if self.show_local_costmap and self.local_costmap_pixmap:
-            lc_px = (self.lc_origin_x - self.map_origin_x) / self.map_resolution
-            lc_py = self.map_height - (self.lc_origin_y - self.map_origin_y) / self.map_resolution - self.lc_height * (self.lc_resolution / self.map_resolution)
+            rpx_map, rpy_map = self.map_to_pixel(self.robot_x, self.robot_y)
             scale_factor = self.lc_resolution / self.map_resolution
+            half_w_px = self.lc_width * scale_factor / 2.0
+            half_h_px = self.lc_height * scale_factor / 2.0
             painter.save()
-            painter.translate(lc_px, lc_py)
+            painter.translate(rpx_map, rpy_map)
+            painter.rotate(-math.degrees(self.odom_to_map_yaw))
             painter.scale(scale_factor, scale_factor)
-            painter.drawPixmap(0, 0, self.local_costmap_pixmap)
+            painter.drawPixmap(
+                int(-self.lc_width / 2), int(-self.lc_height / 2),
+                self.local_costmap_pixmap)
             painter.restore()
 
         # Path
@@ -479,18 +547,31 @@ class NavCanvas(QWidget):
             ay = ipy + arrow_len * math.sin(-self.initpose_yaw)
             painter.drawLine(QPointF(ipx, ipy), QPointF(ax, ay))
 
-        # Robot
+        # Robot (rectangle footprint)
         rpx, rpy = self.map_to_pixel(self.robot_x, self.robot_y)
-        r = max(5, 8 / self.zoom)
+        painter.save()
+        painter.translate(rpx, rpy)
+        painter.rotate(-math.degrees(self.robot_yaw))
+        # Draw footprint polygon in pixel coords
+        footprint_poly = QPolygonF()
+        for fx, fy in ROBOT_FOOTPRINT:
+            px = fx / self.map_resolution
+            py = -fy / self.map_resolution
+            footprint_poly.append(QPointF(px, py))
         painter.setPen(QPen(COLOR_ROBOT, 2.0 / self.zoom))
         painter.setBrush(QBrush(COLOR_ROBOT_FILL))
-        painter.drawEllipse(QPointF(rpx, rpy), r, r)
-        # Robot direction
-        arrow_len = r * 3
-        ax = rpx + arrow_len * math.cos(-self.robot_yaw)
-        ay = rpy + arrow_len * math.sin(-self.robot_yaw)
+        painter.drawPolygon(footprint_poly)
+        # Center dot
+        painter.setBrush(QBrush(COLOR_ROBOT))
+        painter.drawEllipse(QPointF(0, 0), 2.0 / self.zoom, 2.0 / self.zoom)
+        # Direction arrow
+        arrow_len = 0.35 / self.map_resolution
         painter.setPen(QPen(COLOR_ROBOT, 2.5 / self.zoom))
-        painter.drawLine(QPointF(rpx, rpy), QPointF(ax, ay))
+        painter.drawLine(QPointF(0, 0), QPointF(arrow_len, 0))
+        # Arrowhead
+        painter.drawLine(QPointF(arrow_len, 0), QPointF(arrow_len - 4/self.zoom, -3/self.zoom))
+        painter.drawLine(QPointF(arrow_len, 0), QPointF(arrow_len - 4/self.zoom, 3/self.zoom))
+        painter.restore()
 
         painter.restore()
 
@@ -701,6 +782,10 @@ class NavUI(QMainWindow):
         self.canvas.robot_x = x
         self.canvas.robot_y = y
         self.canvas.robot_yaw = yaw
+        # Pass odom->map transform for local costmap positioning
+        self.canvas.odom_to_map_x = self.ros_node.odom_to_map_x
+        self.canvas.odom_to_map_y = self.ros_node.odom_to_map_y
+        self.canvas.odom_to_map_yaw = self.ros_node.odom_to_map_yaw
         self.canvas.update()
         self.lbl_robot_pos.setText(f"Position: {x:.2f}, {y:.2f}")
         self.lbl_robot_yaw.setText(f"Heading: {math.degrees(yaw):.1f}")
@@ -728,11 +813,7 @@ class NavUI(QMainWindow):
         self.status.showMessage(f"Goal sent: ({x:.2f}, {y:.2f}) yaw={math.degrees(yaw):.0f}")
 
     def cancel_navigation(self):
-        # Cancel by publishing empty goal action
-        try:
-            cancel_client = self.ros_node.create_client(Empty, '/lifecycle_manager_navigation/manage_nodes')
-        except Exception:
-            pass
+        self.ros_node.cancel_nav()
         self.canvas.current_goal = None
         self.canvas.path_points = []
         self.canvas.update()

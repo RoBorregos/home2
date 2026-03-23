@@ -32,14 +32,14 @@ from frida_constants.hri_constants import (
     LLM_WRAPPER_SERVICE,
     RAG_SERVICE,
     RESPEAKER_LIGHT_TOPIC,
+    SKIP_CONFIRMATION_CONFIDENCE_THRESHOLD,
+    SKIP_CONFIRMATION_SIMILARITY_THRESHOLD,
     SPEAK_SERVICE,
     START_BUTTON_CLIENT,
     STT_ACTION_SERVER_NAME,
     TASK_STATUS_TOPIC,
-    WAKEWORD_TOPIC,
-    SKIP_CONFIRMATION_SIMILARITY_THRESHOLD,
-    SKIP_CONFIRMATION_CONFIDENCE_THRESHOLD,
     TIMEOUT,
+    WAKEWORD_TOPIC,
 )
 from frida_interfaces.action import SpeechStream
 from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
@@ -59,6 +59,8 @@ from rclpy.action import ActionClient
 from rclpy.node import Node
 from rclpy.task import Future
 from std_msgs.msg import Empty, String
+from subtask_managers.hri_hand import HRIHand
+from subtask_managers.subtask_meta import SubtaskMeta
 from utils.baml_client.sync_client import b
 from utils.baml_client.types import (
     AnswerQuestion,
@@ -80,9 +82,6 @@ from utils.decorators import service_check
 from utils.logger import Logger
 from utils.status import Status
 from utils.task import Task
-
-from subtask_managers.hri_hand import HRIHand
-from subtask_managers.subtask_meta import SubtaskMeta
 
 InterpreterAvailableCommands = Union[
     CommandListLLM,
@@ -177,7 +176,7 @@ class AudioStates(Enum):
 class HRITasks(metaclass=SubtaskMeta):
     """Class to manage the HRI tasks"""
 
-    def __init__(self, task_manager: Node, config=None, task=Task.RECEPTIONIST) -> None:
+    def __init__(self, task_manager: Node, config=None, task=Task.HRIC) -> None:
         self.node = task_manager
         self.start_button_clicked = False
         self.keyword = ""
@@ -193,7 +192,8 @@ class HRITasks(metaclass=SubtaskMeta):
         self.display_map_publisher = self.node.create_publisher(String, DISPLAY_MAP_TOPIC, 10)
         self.answers_publisher = self.node.create_publisher(String, ANSWER_PUBLISHER, 10)
         self.questions_publisher = self.node.create_publisher(String, DISPLAY_PUBLISHER, 10)
-        self.pg = PostgresAdapter()
+        self.pg = PostgresAdapter(config.mock_db)
+        self.items = self.get_items_embeddings()
         self.llm_wrapper_service = self.node.create_client(LLMWrapper, LLM_WRAPPER_SERVICE)
         self.categorize_service = self.node.create_client(CategorizeShelves, CATEGORIZE_SERVICE)
         self.keyword_client = self.node.create_subscription(
@@ -247,11 +247,12 @@ class HRITasks(metaclass=SubtaskMeta):
         }
 
         self.services = {
-            Task.RECEPTIONIST: all_services,
+            Task.HRIC: all_services,
             Task.GPSR: all_services | gpsr_services,
             Task.HELP_ME_CARRY: all_services,
             Task.STORING_GROCERIES: all_services,
             Task.DEMO: all_services,
+            Task.RESTAURANT: all_services,
         }
 
         self.hand = HRIHand(self)
@@ -955,6 +956,53 @@ class HRITasks(metaclass=SubtaskMeta):
             Logger.warn(self.node, f"RAG service failed: {result.response}")
             return Status.EXECUTION_ERROR, result.response, result.score
 
+    # Restaurant
+    def take_order(
+        self,
+        retries: int = 3,
+    ) -> tuple[Status, list[str]]:
+        """Ask the customer for their order and return the matched menu items.
+        Flow per attempt:
+        1. Ask for the first item and confirm it.
+        2. Ask for the second item and confirm it.
+        Returns:
+            (Status.EXECUTION_SUCCESS, list[str]) on success, or
+            (Status.TIMEOUT, []) if the customer never confirms.
+        """
+
+        items = [text for text, _ in self.items]
+        context = f"Extract one of these items: {items}"
+
+        s_first, first_item = self.ask_and_confirm(
+            question="What would you like to order first?",
+            query="LLM_ordered_items",
+            context=context,
+            use_hotwords=False,
+            options=items,
+            retries=retries,
+        )
+
+        if s_first != Status.EXECUTION_SUCCESS or not first_item:
+            Logger.warn(self.node, "take_order: max retries reached, giving up")
+            return Status.TIMEOUT, []
+
+        s_second, second_item = self.ask_and_confirm(
+            question="And what would you like as your second item?",
+            query="LLM_ordered_items",
+            context=context,
+            use_hotwords=False,
+            options=items,
+            retries=retries,
+        )
+
+        if s_second != Status.EXECUTION_SUCCESS or not second_item:
+            Logger.warn(self.node, "take_order: max retries reached, giving up")
+            return Status.TIMEOUT, []
+
+        raw_items = [first_item, second_item]
+        Logger.success(self.node, f"take_order confirmed: {raw_items}")
+        return Status.EXECUTION_SUCCESS, raw_items
+
     # Embeddings services
     def add_command_history(self, command: InterpreterAvailableCommands, result, status):
         self.pg.add_command(
@@ -998,14 +1046,28 @@ class HRITasks(metaclass=SubtaskMeta):
         Returns:
             Status: the status of the execution
             FindClosestResult: the results and similarity scores of the query
+        documents can be:
+            - list[str]
+            - list[tuple[str, embedding]]
         """
         emb = self.pg.embedding_model.encode(query)
 
         def cos_sim(x, y):
             return np.dot(x, y) / (np.linalg.norm(x) * np.linalg.norm(y))
 
-        docs = [(doc, cos_sim(self.pg.embedding_model.encode(doc), emb)) for doc in documents]
-        docs = [doc for doc in docs if doc[1] >= threshold]
+        # Case 1: documents already have embeddings
+        if len(documents) > 0 and isinstance(documents[0], tuple):
+            docs = [
+                (text, cos_sim(embedding, emb))
+                for text, embedding in documents
+                if cos_sim(embedding, emb) >= threshold
+            ]
+
+        # Case 2: documents are just text
+        else:
+            docs = [(doc, cos_sim(self.pg.embedding_model.encode(doc), emb)) for doc in documents]
+            docs = [doc for doc in docs if doc[1] >= threshold]
+
         sorted_docs = sorted(docs, key=lambda x: x[1], reverse=True)[:top_k]
 
         result = FindClosestResult(
@@ -1040,6 +1102,16 @@ class HRITasks(metaclass=SubtaskMeta):
         Logger.info(self.node, f"FIND CLOSEST RAW RESULTS: {Results}")
 
         return Results
+
+    def get_items_embeddings(self):
+        """
+        Method to get all items with their embeddings from the database.
+        Returns:
+            list[tuple[str, np.ndarray]]: List of tuples containing item text and their embeddings.
+        """
+        items = self.pg.get_all_items()
+        documents = [(item.text, item.embedding) for item in items]
+        return documents
 
     # TODO: Make async
     @service_check("llm_wrapper_service", (Status.SERVICE_CHECK, ""), TIMEOUT)

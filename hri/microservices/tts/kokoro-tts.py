@@ -7,8 +7,7 @@ from concurrent import futures
 
 import grpc
 import numpy as np
-import tts_pb2
-import tts_pb2_grpc
+from proto_interfaces import tts_pb2, tts_pb2_grpc
 from kokoro import KPipeline
 from pygame import mixer
 from scipy import signal

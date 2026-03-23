@@ -21,7 +21,7 @@ done
 
 echo "Ollama service is up and running."
 
-if [ "$ROLE" = "receptionist" ]; then
+if [ "$ROLE" = "hric" ]; then
   curl http://localhost:11434/api/generate -d '{"model": "qwen3", "keep_alive": -1}'
 elif [ "$ROLE" = "carry" ]; then
   curl http://localhost:11434/api/embeddings -d '{"model": "nomic-embed-text", "keep_alive": -1}'

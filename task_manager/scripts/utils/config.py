@@ -32,6 +32,7 @@ class SubtaskConfig(BaseModel):
     topic_config: List[TopicConfig]
     mock_config: Optional[List[MockConfig]]
     strict: Optional[bool] = True
+    mock_db: Optional[bool] = False
 
     # Don't allow extra config values
     class Config:

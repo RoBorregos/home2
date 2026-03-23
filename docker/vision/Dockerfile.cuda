@@ -36,10 +36,27 @@ RUN git clone https://github.com/ultralytics/yolov5.git
 RUN apt update && apt install -y ros-humble-cv-bridge
 RUN apt install -y ros-humble-laser-geometry
 
-# CycloneDDS
-RUN sudo apt-get update -qq && sudo apt-get install -y -qq ros-humble-rmw-cyclonedds-cpp \
+# CycloneDDS with SHM (iceoryx zero-copy for camera frames)
+RUN sudo apt-get update -qq && sudo apt-get install -y -qq \
+    ros-humble-rmw-cyclonedds-cpp \
+    ros-humble-iceoryx-posh ros-humble-iceoryx-hoofs ros-humble-iceoryx-binding-c \
     && sudo rm -rf /var/lib/apt/lists/*
+
+RUN cd /tmp && \
+    git clone --depth 1 -b releases/0.10.x https://github.com/eclipse-cyclonedds/cyclonedds.git && \
+    cd cyclonedds && mkdir build && cd build && \
+    . /opt/ros/humble/setup.sh && \
+    cmake .. \
+        -DCMAKE_INSTALL_PREFIX=/opt/ros/humble \
+        -DCMAKE_PREFIX_PATH=/opt/ros/humble \
+        -DENABLE_SHM=ON \
+        -DCMAKE_BUILD_TYPE=Release && \
+    make -j$(nproc) && sudo make install && \
+    cd / && rm -rf /tmp/cyclonedds
+
 COPY docker/cyclonedds_setup.sh /usr/local/bin/cyclonedds_setup.sh
+COPY roudi_config.toml /etc/iceoryx/roudi_config.toml
+ENV CYCLONE_SHM=1
 RUN sudo chmod +x /usr/local/bin/cyclonedds_setup.sh && sudo /usr/local/bin/cyclonedds_setup.sh
 ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 ENV CYCLONEDDS_URI=file:///etc/cyclonedds.xml

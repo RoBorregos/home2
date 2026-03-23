@@ -1,51 +1,100 @@
 ARG BASE_IMAGE=dustynv/l4t-pytorch:r36.4.0
 FROM ${BASE_IMAGE}
 
-# Download and extract dlib
-RUN wget http://dlib.net/files/dlib-19.24.tar.bz2 && \
-tar jxvf dlib-19.24.tar.bz2
+# ── Orin AGX (sm_87) performance environment ──
+ENV CUDA_ARCHITECTURES=87
+ENV CMAKE_CUDA_ARCHITECTURES=87
+ENV TORCH_CUDA_ARCH_LIST="8.7"
+ENV OPENBLAS_CORETYPE=ARMV8
 
-WORKDIR /workspace/dlib-19.24
-RUN mkdir build
-WORKDIR /workspace/dlib-19.24/build
+# ── System dependencies (single consolidated layer) ──
+RUN apt-get update -qq && apt-get install -y --no-install-recommends \
+    build-essential ffmpeg libsm6 libxext6 autoconf libtool mesa-utils \
+    terminator nano git wget iputils-ping cmake \
+    libcanberra-gtk-module libcanberra-gtk3-module \
+    libx11-xcb1 libxkbcommon-x11-0 \
+    libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 \
+    libxcb-render-util0 libxcb-shape0 libxcb-xfixes0 libxcb-xinerama0 \
+    libxcb-cursor0 libxcb-xkb1 libjpeg-dev \
+    ros-humble-cv-bridge ros-humble-rmw-cyclonedds-cpp \
+    ros-humble-iceoryx-posh ros-humble-iceoryx-hoofs ros-humble-iceoryx-binding-c \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN cmake .. && \
-    cmake --build .
-
-WORKDIR /workspace/dlib-19.24
-RUN python3 setup.py install --set DLIB_USE_CUDA=1
-
-RUN pip install --upgrade pip
-
-# Requirements
-WORKDIR /workspace/requirements
-
-RUN mkdir -p /workspace/requirements
-COPY vision/requirements /workspace/requirements
-RUN pip install -r opencv.txt
-RUN apt update && apt install cmake -y
-RUN pip install -r face_recognition.txt
-RUN pip install -r models.txt
-RUN pip install -r utils.txt
-
-# CV-bridge
-RUN apt update && apt install -y ros-humble-cv-bridge
-
+# ── dlib with CUDA for Orin AGX (sm_87) ──
 WORKDIR /workspace
-RUN git clone https://github.com/ultralytics/yolov5.git
+RUN wget -q http://dlib.net/files/dlib-20.0.tar.bz2 && \
+    tar jxf dlib-20.0.tar.bz2 && rm dlib-20.0.tar.bz2 && \
+    cd dlib-20.0 && mkdir build && cd build && \
+    cmake .. \
+      -DDLIB_USE_CUDA=1 \
+      -DUSE_AVX_INSTRUCTIONS=0 \
+      -DUSE_NEON=1 \
+      -DCUDA_HOST_COMPILER=/usr/bin/gcc \
+      -DCMAKE_PREFIX_PATH=/usr/local/cuda \
+      -DCUDA_TOOLKIT_ROOT_DIR=/usr/local/cuda \
+      -DCUDAToolkit_ROOT=/usr/local/cuda \
+      -DCMAKE_BUILD_TYPE=Release \
+      -DCUDA_ARCHITECTURES="87" \
+      -DCMAKE_CUDA_ARCHITECTURES="87" && \
+    cmake --build . --config Release -- -j$(nproc) && \
+    cd /workspace/dlib-20.0 && \
+    python3 setup.py install --set DLIB_USE_CUDA=1 --set USE_NEON=1 --set CUDA_ARCHITECTURES=87 && \
+    cd /workspace && rm -rf dlib-20.0
 
-RUN pip install timm && \
-    python3 -c "import timm; timm.create_model('swin_base_patch4_window7_224', pretrained=True)" 
+# ── Python dependencies ──
+# NOTE: Do NOT install opencv-python — the L4T base image includes
+# OpenCV built with CUDA/TensorRT. Pip opencv-python overwrites it
+# with a CPU-only build, killing GPU acceleration.
+RUN pip install --upgrade pip && \
+    pip install --no-cache-dir \
+    numpy==1.26.4 \
+    cmake==3.25.2 \
+    face_recognition \
+    ultralytics==8.4.19 \
+    lap \
+    tqdm \
+    pillow \
+    timm \
+    pyyaml \
+    scipy \
+    onnxslim>=0.1.71 \
+    onnxruntime-gpu
 
-RUN sudo pip install openai-clip
+# ── YOLOv5 for legacy YoloV5ObjectDetector ──
+WORKDIR /workspace
+RUN git clone --depth 1 https://github.com/ultralytics/yolov5.git
 
-# CycloneDDS
-RUN sudo apt-get update -qq && sudo apt-get install -y -qq ros-humble-rmw-cyclonedds-cpp \
-    && sudo rm -rf /var/lib/apt/lists/*
+# ── CycloneDDS with SHM (iceoryx zero-copy) ──
+RUN cd /tmp && \
+    git clone --depth 1 -b releases/0.10.x https://github.com/eclipse-cyclonedds/cyclonedds.git && \
+    cd cyclonedds && mkdir build && cd build && \
+    . /opt/ros/humble/setup.sh && \
+    cmake .. \
+        -DCMAKE_INSTALL_PREFIX=/opt/ros/humble \
+        -DCMAKE_PREFIX_PATH=/opt/ros/humble \
+        -DENABLE_SHM=ON \
+        -DCMAKE_BUILD_TYPE=Release && \
+    make -j$(nproc) && make install && \
+    cd / && rm -rf /tmp/cyclonedds
+
 COPY docker/cyclonedds_setup.sh /usr/local/bin/cyclonedds_setup.sh
-RUN sudo chmod +x /usr/local/bin/cyclonedds_setup.sh && sudo /usr/local/bin/cyclonedds_setup.sh
+COPY roudi_config.toml /etc/iceoryx/roudi_config.toml
+ENV CYCLONE_SHM=1
+RUN chmod +x /usr/local/bin/cyclonedds_setup.sh && /usr/local/bin/cyclonedds_setup.sh
 ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
 ENV CYCLONEDDS_URI=file:///etc/cyclonedds.xml
 RUN echo "source /usr/local/bin/cyclonedds_setup.sh" >> /home/ros/.bashrc
+
+# ── TensorRT engine cache ──
+# Mount a host volume here to persist TensorRT engines across container restarts.
+# Without this, engines are re-exported on every `docker run` (takes ~2-5 min per model).
+# Usage: docker run -v /path/on/host:/workspace/trt_cache ...
+RUN mkdir -p /workspace/trt_cache && chmod 777 /workspace/trt_cache
+ENV TENSORRT_CACHE_DIR=/workspace/trt_cache
+
+# ── Orin AGX max performance at runtime ──
+# Set MAXN power mode and max clocks before running vision nodes:
+#   sudo nvpmodel -m 0 && sudo jetson_clocks
+# These require host-level access and cannot be set inside the container.
 
 USER ros

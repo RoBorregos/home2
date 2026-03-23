@@ -2,12 +2,10 @@
 
 """
 Node to detect people and find
-available seats. Tasks for receptionist
-commands.
+available seats. Tasks for HRIC commands.
 """
 
 import cv2
-import mediapipe as mp
 import numpy as np
 import queue
 import time
@@ -19,6 +17,7 @@ from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import PointStamped
 from rclpy.task import Future
+from vision_general.utils.trt_utils import load_yolo_trt
 
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.srv import DetectHand, FindSeat, YoloDetect
@@ -31,12 +30,23 @@ from frida_constants.vision_constants import (
     DEPTH_IMAGE_TOPIC,
     DETECT_HAND_SERVICE,
     FIND_SEAT_TOPIC,
-    IMAGE_TOPIC_RECEPTIONIST,
+    IMAGE_TOPIC_HRIC,
+    YOLO_DETECTION_TOPIC,
 )
 
 from ament_index_python.packages import get_package_share_directory
 
 package_share_dir = get_package_share_directory("vision_general")
+
+# YOLO COCO keypoint indices for wrist (hand proxy)
+LEFT_WRIST_IDX = 9
+RIGHT_WRIST_IDX = 10
+KP_CONF = 0.3
+
+
+def _load_yolo_pose(model_name="yolo11m-pose.pt"):
+    return load_yolo_trt(model_name, task="pose")
+
 
 PERCENTAGE = 0.3
 MAX_DEGREE = 50
@@ -45,14 +55,37 @@ CONF_THRESHOLD = 0.4
 CHECK_TIMEOUT = 5
 
 
-class ReceptionistCommands(Node):
+class HRICCommands(Node):
     def __init__(self):
-        super().__init__("receptionist_commands")
+        super().__init__("HRIC_commands")
         self.bridge = CvBridge()
         self.callback_group = rclpy.callback_groups.ReentrantCallbackGroup()
 
-        self.image_subscriber = self.create_subscription(
-            Image, CAMERA_TOPIC, self.image_callback, 10
+        self._img_qos = rclpy.qos.QoSProfile(
+            depth=1,
+            reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
+            durability=rclpy.qos.DurabilityPolicy.VOLATILE,
+        )
+        self.create_subscription(
+            Image,
+            CAMERA_TOPIC,
+            self.image_callback,
+            self._img_qos,
+            callback_group=self.callback_group,
+        )
+        self.create_subscription(
+            Image,
+            DEPTH_IMAGE_TOPIC,
+            self.depth_callback,
+            self._img_qos,
+            callback_group=self.callback_group,
+        )
+        self.create_subscription(
+            CameraInfo,
+            CAMERA_INFO_TOPIC,
+            self.camera_info_callback,
+            self._img_qos,
+            callback_group=self.callback_group,
         )
 
         self.find_seat_service = self.create_service(
@@ -62,7 +95,7 @@ class ReceptionistCommands(Node):
             callback_group=self.callback_group,
         )
         self.image_publisher = self.create_publisher(
-            Image, IMAGE_TOPIC_RECEPTIONIST, 10, callback_group=self.callback_group
+            Image, IMAGE_TOPIC_HRIC, 10, callback_group=self.callback_group
         )
         self.person_detection_action_server = ActionServer(
             self,
@@ -73,7 +106,7 @@ class ReceptionistCommands(Node):
         )
 
         self.yolo_client = self.create_client(
-            YoloDetect, "yolo_detect", callback_group=self.callback_group
+            YoloDetect, YOLO_DETECTION_TOPIC, callback_group=self.callback_group
         )
 
         while not self.yolo_client.wait_for_service(timeout_sec=1.0):
@@ -85,25 +118,8 @@ class ReceptionistCommands(Node):
         self.output_image = []
         self.check = False
 
-        self.mp_hands = mp.solutions.hands
-        self.hands = self.mp_hands.Hands(
-            model_complexity=0,
-            min_detection_confidence=0.5,
-            min_tracking_confidence=0.5,
-        )
-
-        qos = rclpy.qos.QoSProfile(
-            depth=5,
-            reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
-            durability=rclpy.qos.DurabilityPolicy.VOLATILE,
-        )
-
-        self.depth_sub = self.create_subscription(
-            Image, DEPTH_IMAGE_TOPIC, self.depth_callback, qos
-        )
-        self.camera_info_sub = self.create_subscription(
-            CameraInfo, CAMERA_INFO_TOPIC, self.camera_info_callback, qos
-        )
+        # YOLO pose replaces mediapipe Hands — wrist keypoints as hand proxy
+        self.pose_model = _load_yolo_pose("yolo11m-pose.pt")
 
         self.detect_hand_service = self.create_service(
             DetectHand,
@@ -112,9 +128,9 @@ class ReceptionistCommands(Node):
             callback_group=self.callback_group,
         )
 
-        self.get_logger().info("ReceptionistCommands Ready.")
+        self.get_logger().info("HRIC Commands Ready.")
 
-        self.create_timer(0.1, self.publish_image)
+        self.create_timer(0.1, self.publish_image, callback_group=self.callback_group)
 
     def image_callback(self, data):
         """Callback to receive the image from the camera."""
@@ -130,40 +146,46 @@ class ReceptionistCommands(Node):
         self.camera_info = msg
 
     def run_hand_inference(self):
+        """Detect hand position using YOLO pose wrist keypoints (TensorRT accelerated)."""
         if self.image is None:
             return
 
-        image_rgb = cv2.cvtColor(self.image, cv2.COLOR_BGR2RGB)
-        image_rgb.flags.writeable = False
-        results = self.hands.process(image_rgb)
+        h, w = self.image.shape[:2]
+        results = self.pose_model(self.image, verbose=False)
 
-        if not results.multi_hand_landmarks:
+        if (
+            not results
+            or results[0].keypoints is None
+            or results[0].keypoints.xy is None
+            or len(results[0].keypoints.xy) == 0
+        ):
             self.get_logger().info("No hand detected")
             return None
 
-        hand_landmarks = results.multi_hand_landmarks[0]
-        h, w, _ = self.image.shape
+        points = results[0].keypoints.xy[0].cpu().numpy()  # pixel coords
+        conf = (
+            results[0].keypoints.conf[0].cpu().numpy()
+            if results[0].keypoints.conf is not None
+            else np.ones(17, dtype=np.float32)
+        )
 
-        # Filter landmarks within the image
-        xs = []
-        ys = []
-        for lm in hand_landmarks.landmark:
-            px = int(lm.x * w)
-            py = int(lm.y * h)
-            if 0 <= px < w and 0 <= py < h:
-                xs.append(px)
-                ys.append(py)
+        # Pick the most confident wrist as the hand position
+        best_wrist = None
+        best_conf = 0.0
+        for idx in [LEFT_WRIST_IDX, RIGHT_WRIST_IDX]:
+            if conf[idx] > best_conf and conf[idx] > KP_CONF:
+                best_conf = conf[idx]
+                best_wrist = idx
 
-        # Centroid of the hand
-        if len(xs) == 0 or len(ys) == 0:
-            self.get_logger().warn("No valid landmarks found for hand.")
+        if best_wrist is None:
+            self.get_logger().info("No hand detected")
             return None
-        cx = int(np.mean(xs))
-        cy = int(np.mean(ys))
 
-        # Validate centroid is within RGB image bounds
+        cx = int(points[best_wrist][0])
+        cy = int(points[best_wrist][1])
+
         if not (0 <= cx < w and 0 <= cy < h):
-            self.get_logger().warn(f"Centroid outside RGB image: ({cx}, {cy})")
+            self.get_logger().warn(f"Wrist outside image: ({cx}, {cy})")
             return None
 
         if self.depth_image is not None and self.camera_info is not None:
@@ -172,7 +194,7 @@ class ReceptionistCommands(Node):
             dpy = int(cy * dh / h)
 
             if not (0 <= dpx < dw and 0 <= dpy < dh):
-                self.get_logger().warn(f"Centroid outside depth image: ({dpx}, {dpy})")
+                self.get_logger().warn(f"Wrist outside depth image: ({dpx}, {dpy})")
                 return None
             try:
                 depth = get_depth(self.depth_image, (dpx, dpy))
@@ -275,8 +297,6 @@ class ReceptionistCommands(Node):
     def publish_image(self):
         """Publish the image with the detections if available."""
         if len(self.output_image) != 0:
-            # cv2.imshow("Receptionist Commands", self.output_image)
-            # cv2.waitKey(1)
             self.image_publisher.publish(
                 self.bridge.cv2_to_imgmsg(self.output_image, "bgr8")
             )
@@ -505,7 +525,7 @@ class ReceptionistCommands(Node):
 
 def main(args=None):
     rclpy.init(args=args)
-    node = ReceptionistCommands()
+    node = HRICCommands()
 
     try:
         rclpy.spin(node)
