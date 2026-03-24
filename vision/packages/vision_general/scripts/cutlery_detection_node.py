@@ -6,13 +6,12 @@ Node to detect cutlery objects (knife, spoons and forks).
 import pathlib
 import rclpy
 import rclpy.qos
-import cv2
 from sensor_msgs.msg import Image
-from frida_interfaces.msg import Detection
+from frida_interfaces.msg import ObjectDetection, ObjectDetectionArray
 from rclpy.node import Node
 from cv_bridge import CvBridge
 from vision_general.utils.trt_utils import load_yolo_trt
-from frida_constants.vision_constants import CAMERA_TOPIC
+from frida_constants.vision_constants import CAMERA_TOPIC, CUTLERY_DETECTIONS_TOPIC
 from ament_index_python.packages import get_package_share_directory
 
 CONF_THRESHOLD = 0.2
@@ -44,8 +43,9 @@ class CutleryDetectionNode(Node):
             Image, CAMERA_TOPIC, self.image_callback, qos
         )
 
+        # Publisher for ObjectDetectionArray on the same topic as object detector node
         self.cutlery_detections_publisher = self.create_publisher(
-            Image, "cutlery_detections", 5
+            ObjectDetectionArray, CUTLERY_DETECTIONS_TOPIC, 5
         )
 
     def image_callback(self, data):
@@ -53,11 +53,11 @@ class CutleryDetectionNode(Node):
         self.publish_cutlery_annotations()
 
     def detect_callback(self, req, res):
-        """Run YOLO on the latest cached frame."""
+        """Run YOLO on the latest cached frame and publish ObjectDetectionArray."""
         if self.image is None:
             self.get_logger().warn("No image received yet from camera.")
             res.success = False
-            res.detections = "[]"
+            res.detections = []
             self.get_logger().info(
                 f"YOLO res: success={res.success}, detections={res.detections}"
             )
@@ -66,7 +66,6 @@ class CutleryDetectionNode(Node):
         results = self.cutlery_model(self.image, verbose=False, classes=[0, 1, 3])
 
         detections = []
-        annotated = self.image.copy()
         for out in results:
             for box in out.boxes:
                 conf = box.conf.item()
@@ -75,46 +74,41 @@ class CutleryDetectionNode(Node):
                 x1, y1, x2, y2 = [round(x) for x in box.xyxy[0].tolist()]
                 cls_id = int(box.cls.item())
 
-                det = Detection()
-                det.x1 = x1
-                det.y1 = y1
-                det.x2 = x2
-                det.y2 = y2
-                det.confidence = conf
-                det.class_id = cls_id
-
-                detections.append(det)
-                label = f"{self.cutlery_model.names[cls_id]}: {conf:.2f}"
-                color = (0, 255, 0)
-                cv2.rectangle(annotated, (x1, y1), (x2, y2), color, 2)
-                cv2.putText(
-                    annotated,
-                    label,
-                    (x1, y1 - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.6,
-                    color,
-                    2,
+                det = ObjectDetection()
+                det.label = cls_id
+                det.label_text = (
+                    self.cutlery_model.names[cls_id]
+                    if hasattr(self.cutlery_model, "names")
+                    else str(cls_id)
                 )
+                det.score = conf
+                det.ymin = float(y1)
+                det.xmin = float(x1)
+                det.ymax = float(y2)
+                det.xmax = float(x2)
+                # det.point3d left empty (no 3D info from 2D cutlery)
+                detections.append(det)
 
-        # Publish annotated image to topic
-        annotated_msg = self.bridge.cv2_to_imgmsg(annotated, encoding="bgr8")
-        self.cutlery_detections_publisher.publish(annotated_msg)
+        # Try to merge with existing detections if any (subscribe, append, and publish merged)
+        # For simplicity, just publish cutlery detections (merging logic can be expanded if needed)
+        msg = ObjectDetectionArray()
+        msg.detections = detections
+        self.cutlery_detections_publisher.publish(msg)
 
         res.success = True
         res.detections = detections
         self.get_logger().info(
-            f"YOLO res: success={res.success}, detections={[(d.class_id, d.confidence) for d in detections]}"
+            f"YOLO res: success={res.success}, detections={[(d.label, d.score) for d in detections]}"
         )
         return res
 
     def publish_cutlery_annotations(self):
-        """Detect cutlery and publish annotated image"""
+        """Detect cutlery and publish ObjectDetectionArray to /vision/cutlery_detections"""
         if self.image is None:
             return
 
         results = self.cutlery_model(self.image, verbose=False, classes=[0, 1, 3])
-        annotated = self.image.copy()
+        detections = []
         for res in results:
             for box in res.boxes:
                 conf = box.conf.item()
@@ -124,20 +118,23 @@ class CutleryDetectionNode(Node):
                 cls_id = int(box.cls.item())
                 label = f"{self.cutlery_model.names[cls_id]}: {conf:.2f}"
                 self.get_logger().info(f"{label} at ({x1}, {y1}), ({x2}, {y2})")
-                color = (0, 255, 0)
-                cv2.rectangle(annotated, (x1, y1), (x2, y2), color, 2)
-                cv2.putText(
-                    annotated,
-                    label,
-                    (x1, y1 - 10),
-                    cv2.FONT_HERSHEY_SIMPLEX,
-                    0.6,
-                    color,
-                    2,
+                det = ObjectDetection()
+                det.label = cls_id
+                det.label_text = (
+                    self.cutlery_model.names[cls_id]
+                    if hasattr(self.cutlery_model, "names")
+                    else str(cls_id)
                 )
+                det.score = conf
+                det.ymin = float(y1)
+                det.xmin = float(x1)
+                det.ymax = float(y2)
+                det.xmax = float(x2)
+                detections.append(det)
 
-        annotated_msg = self.bridge.cv2_to_imgmsg(annotated, encoding="bgr8")
-        self.cutlery_detections_publisher.publish(annotated_msg)
+        msg = ObjectDetectionArray()
+        msg.detections = detections
+        self.cutlery_detections_publisher.publish(msg)
 
 
 def main(args=None):

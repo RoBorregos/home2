@@ -30,6 +30,7 @@ from frida_constants.vision_constants import (
     DETECTIONS_ACTIVE_TOPIC,
     DEBUG_IMAGE_TOPIC,
     CAMERA_FRAME,
+    CUTLERY_DETECTIONS_TOPIC,
 )
 
 MODELS_PATH = str(pathlib.Path(__file__).parent) + "/models/"
@@ -93,6 +94,9 @@ class object_detector_node(rclpy.node.Node):
         self.camera_info = CameraInfo()
         self.detections_frame = []
 
+        # Store latest cutlery detections
+        self.latest_cutlery_detections = []
+
         self.set_parameters()
         self.active_flag = not self.node_params.USE_ACTIVE_FLAG
 
@@ -116,8 +120,20 @@ class object_detector_node(rclpy.node.Node):
             Bool, "/vision/object_detector/active", self._vision_active_cb, 10
         )
 
+        # Subscribe to cutlery detections (published as ObjectDetectionArray on DETECTIONS_TOPIC)
+        self.create_subscription(
+            ObjectDetectionArray,
+            CUTLERY_DETECTIONS_TOPIC,
+            self.cutlery_detections_callback,
+            10,
+        )
+
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer, self)
+
+    def cutlery_detections_callback(self, msg):
+        # Store latest cutlery detections (ignore self-published ones by checking for cutlery label range if needed)
+        self.latest_cutlery_detections = msg.detections
 
         # Frames per second throughput estimator
         self.curr_clock = 0
@@ -438,10 +454,13 @@ class object_detector_node(rclpy.node.Node):
         # update time
         for detection in self.object_detector_2d.getFridaDetections(detected_objects):
             detection.point3d.header.stamp = self.curr_clock
+        # Merge with cutlery detections if available
+        own_detections = self.object_detector_2d.getFridaDetections(detected_objects)
+        merged_detections = own_detections.copy()
+        if self.latest_cutlery_detections:
+            merged_detections.extend(self.latest_cutlery_detections)
         self.detections_publisher.publish(
-            ObjectDetectionArray(
-                detections=self.object_detector_2d.getFridaDetections(detected_objects)
-            )
+            ObjectDetectionArray(detections=merged_detections)
         )
 
 
