@@ -74,14 +74,11 @@ case $INPUT in
   frida_interfaces)
     run_frida_interfaces
     ;;
-  --stop|--down)
+  --stop|--down|--clean)
     control "$INPUT"
     ;;
-  --clean)
-    control "--clean"
-    ;;
   --clean-interfaces)
-    clean_frida_interfaces
+    clean_directories frida_interfaces
     ;;
   --build)
     control "--build"

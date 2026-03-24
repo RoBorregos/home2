@@ -75,7 +75,10 @@ case $ENV_TYPE in
 esac
 
 # Clean build artifacts if requested
-clean_workspace_directories
+if [ "$CLEAN" == "true" ]; then
+  echo "Cleaning build/ log/ install/"
+  clean_directories workspace
+fi
 
 # Create dirs with current user to avoid permission problems
 mkdir -p install build log
