@@ -3,7 +3,7 @@
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-import imutils
+import cv2
 import sys
 import copy
 import pathlib
@@ -106,7 +106,7 @@ class ObjectDectector(ABC):
 
     def inference(self, frame, depth_image=[], tfBuffer: tf2_ros = None):
         if self.object_detector_params_.flip_image:
-            frame = imutils.rotate(frame, 180)
+            frame = cv2.rotate(frame, cv2.ROTATE_180)
 
         visual_frame = copy.deepcopy(frame)
         self.detections_: List[Detection] = []

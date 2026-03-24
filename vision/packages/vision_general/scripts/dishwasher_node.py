@@ -2,7 +2,8 @@
 
 import pathlib
 import rclpy
-from ultralytics import YOLO
+import rclpy.qos
+from vision_general.utils.trt_utils import load_yolo_trt
 from rclpy.node import Node
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo
@@ -35,22 +36,28 @@ class DishwasherNode(Node):
             pathlib.Path(__file__).resolve().parent.parent / "Utils" / "models"
         )
 
-        self.layout_model = YOLO(str(MODELS_PATH / "dishwasher_layout.pt"))
+        self.layout_model = load_yolo_trt(str(MODELS_PATH / "dishwasher_layout.pt"))
         self.get_logger().info("Dishwasher layout model loaded")
 
-        self.rack_model = YOLO(str(MODELS_PATH / "dishwasher_rack.pt"))
+        self.rack_model = load_yolo_trt(str(MODELS_PATH / "dishwasher_rack.pt"))
         self.get_logger().info("Rack model loaded")
 
+        qos = rclpy.qos.QoSProfile(
+            depth=1,
+            reliability=rclpy.qos.ReliabilityPolicy.BEST_EFFORT,
+            durability=rclpy.qos.DurabilityPolicy.VOLATILE,
+        )
+
         self.image_subscriber = self.create_subscription(
-            Image, CAMERA_TOPIC, self.image_callback, 10
+            Image, CAMERA_TOPIC, self.image_callback, qos
         )
 
         self.image_info_subscriber = self.create_subscription(
-            CameraInfo, CAMERA_INFO_TOPIC, self.image_info_callback, 10
+            CameraInfo, CAMERA_INFO_TOPIC, self.image_info_callback, qos
         )
 
         self.image_depth_subscriber = self.create_subscription(
-            Image, DEPTH_IMAGE_TOPIC, self.image_depth_callback, 10
+            Image, DEPTH_IMAGE_TOPIC, self.image_depth_callback, qos
         )
 
         self.dishwasher_detection_service = self.create_service(

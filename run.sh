@@ -40,6 +40,7 @@ Available Areas:
   navigation         Spins up the containers for navigation.
   hri                Spins up the containers for human-robot interaction.
   integration        Spins up the complete integration environment.
+  zed                Starts the ZED camera in a container (with CycloneDDS SHM).
   frida_interfaces   Builds and configures FRIDA's custom interfaces/messages.
 
 Competition Tasks:
@@ -83,7 +84,7 @@ case $INPUT in
   --hric|--ppc|--gpsr|--dlc|--restaurant|--finals)
     run_task "$@"
     ;;
-  vision|manipulation|navigation|integration|hri)
+  vision|manipulation|navigation|integration|hri|zed)
     run_area "$@"
     ;;
   *)
