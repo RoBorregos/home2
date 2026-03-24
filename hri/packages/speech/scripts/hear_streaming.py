@@ -34,7 +34,7 @@ class HearStreaming(Node):
         )
 
         audio_topic = (
-            self.declare_parameter("PROCESSED_AUDIO_TOPIC", "/hri/processedAudioChunk")
+            self.declare_parameter("VAD_AUDIO_TOPIC", "/hri/vadAudioChunk")
             .get_parameter_value()
             .string_value
         )

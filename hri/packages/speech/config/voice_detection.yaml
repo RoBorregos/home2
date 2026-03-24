@@ -1,8 +1,8 @@
 voice_detection:
   ros__parameters:
-    PROCESSED_AUDIO_TOPIC: "/hri/processedAudioChunk"
-    VAD_AUDIO_TOPIC: "/hri/vadAudioChunk"
-    VOICE_ACTIVITY_TOPIC: "/hri/voice_activity"
+    PROCESSED_AUDIO_TOPIC: REPLACE
+    VAD_AUDIO_TOPIC: REPLACE
+    VOICE_ACTIVITY_TOPIC: REPLACE
     ENERGY_THRESHOLD: 600.0
     CORRELATION_THRESHOLD: 0.5
     SIMILARITY_THRESHOLD: 0.70

@@ -1,20 +1,5 @@
 #!/usr/bin/env python3
 
-"""
-Voice Activity Detection (VAD) node.
-
-Sits between noise_cancellation and hear_streaming in the audio pipeline.
-Subscribes to processed audio, applies energy + autocorrelation VAD with
-adaptive speaker identity locking (MFCC cosine similarity), and forwards
-audio chunks only while the locked speaker is active (plus a silence tail
-to let the STT finalize the last utterance).
-
-Topics:
-  Subscribes : PROCESSED_AUDIO_TOPIC  (/hri/processedAudioChunk)
-  Publishes  : VAD_AUDIO_TOPIC        (/hri/vadAudioChunk)
-               VOICE_ACTIVITY_TOPIC   (/hri/voice_activity)  Bool
-"""
-
 import numpy as np
 import scipy.fft
 from scipy.spatial.distance import cosine as cosine_distance
