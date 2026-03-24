@@ -4,9 +4,10 @@
 Voice Activity Detection (VAD) node.
 
 Sits between noise_cancellation and hear_streaming in the audio pipeline.
-Subscribes to processed audio, applies energy + autocorrelation VAD, and
-forwards audio chunks only while the speaker is active (plus a silence
-tail to let the STT finalize the last utterance).
+Subscribes to processed audio, applies energy + autocorrelation VAD with
+adaptive speaker identity locking (MFCC cosine similarity), and forwards
+audio chunks only while the locked speaker is active (plus a silence tail
+to let the STT finalize the last utterance).
 
 Topics:
   Subscribes : PROCESSED_AUDIO_TOPIC  (/hri/processedAudioChunk)
@@ -14,7 +15,9 @@ Topics:
                VOICE_ACTIVITY_TOPIC   (/hri/voice_activity)  Bool
 """
 
+import librosa
 import numpy as np
+from scipy.spatial.distance import cosine as cosine_distance
 import rclpy
 from frida_interfaces.msg import AudioData
 from rclpy.executors import ExternalShutdownException
@@ -35,6 +38,7 @@ class VoiceDetection(Node):
         self.declare_parameter("VOICE_ACTIVITY_TOPIC", "/hri/voice_activity")
         self.declare_parameter("ENERGY_THRESHOLD", 1500.0)
         self.declare_parameter("CORRELATION_THRESHOLD", 0.5)
+        self.declare_parameter("SIMILARITY_THRESHOLD", 0.80)
         self.declare_parameter("SILENCE_LIMIT", 1.5)
         self.declare_parameter("SAMPLE_RATE", 16000)
 
@@ -59,6 +63,11 @@ class VoiceDetection(Node):
             .get_parameter_value()
             .double_value
         )
+        self.similarity_threshold = (
+            self.get_parameter("SIMILARITY_THRESHOLD")
+            .get_parameter_value()
+            .double_value
+        )
         self.silence_limit = (
             self.get_parameter("SILENCE_LIMIT").get_parameter_value().double_value
         )
@@ -73,6 +82,10 @@ class VoiceDetection(Node):
         self._silence_counter = 0.0
         self._speech_active = False
 
+        # Adaptive speaker identity lock (from AdaptiveSpeakerVAD)
+        self._target_mfcc = None
+        self._is_locked = False
+
         self._audio_pub = self.create_publisher(AudioData, vad_topic, 10)
         self._activity_pub = self.create_publisher(Bool, activity_topic, 10)
         self.create_subscription(AudioData, processed_topic, self._audio_cb, 10)
@@ -82,13 +95,29 @@ class VoiceDetection(Node):
         )
 
     # ------------------------------------------------------------------
-    def _is_speech(self, audio: np.ndarray) -> bool:
-        """Return True if the chunk contains human speech.
+    def _get_mfcc(self, audio_f: np.ndarray) -> np.ndarray:
+        """Extract mean MFCCs — timbre fingerprint of the speaker."""
+        mfccs = librosa.feature.mfcc(y=audio_f, sr=self.sample_rate, n_mfcc=13)
+        return np.mean(mfccs, axis=1)
 
-        Uses two cascaded tests:
-          1. RMS energy gate-cheap, rejects background noise and silence.
-          2. Normalised autocorrelation peak in the voiced-frequency band –
-             detects the periodic pitch structure of voiced speech.
+    def _is_periodic(self, audio_f: np.ndarray) -> bool:
+        """Return True if audio has periodic pitch structure (voiced speech)."""
+        corr = np.correlate(audio_f, audio_f, mode="full")
+        corr = corr[len(corr) // 2 :]  # keep non-negative lags
+
+        if len(corr) <= self._high_lag or corr[0] == 0:
+            return False
+
+        peak = np.max(corr[self._low_lag : self._high_lag])
+        return (peak / corr[0]) > self.correlation_threshold
+
+    def _is_speech(self, audio: np.ndarray) -> bool:
+        """Return True if the chunk contains speech from the locked speaker.
+
+        Three cascaded tests (mirrors AdaptiveSpeakerVAD.process_frame):
+          1. RMS energy gate — rejects silence and background noise.
+          2. Autocorrelation pitch check — rejects non-vocal noise.
+          3. MFCC cosine similarity — locks onto and tracks the primary speaker.
         """
         audio_f = audio.astype(np.float32)
 
@@ -98,14 +127,33 @@ class VoiceDetection(Node):
             return False
 
         # 2. Autocorrelation pitch check
-        corr = np.correlate(audio_f, audio_f, mode="full")
-        corr = corr[len(corr) // 2 :]  # keep non-negative lags
-
-        if len(corr) <= self._high_lag or corr[0] == 0:
+        if not self._is_periodic(audio_f):
             return False
 
-        peak = np.max(corr[self._low_lag : self._high_lag])
-        return (peak / corr[0]) > self.correlation_threshold
+        # 3. Speaker identity (MFCC lock-on)
+        current_mfcc = self._get_mfcc(audio_f)
+
+        if not self._is_locked:
+            # Lock onto the first strong speaker (same as AdaptiveSpeakerVAD)
+            self._target_mfcc = current_mfcc
+            self._is_locked = True
+            self.get_logger().info("Speaker lock-on: primary speaker acquired")
+            return True
+        else:
+            similarity = 1.0 - cosine_distance(current_mfcc, self._target_mfcc)
+            if similarity > self.similarity_threshold:
+                return True
+            else:
+                self.get_logger().debug(
+                    f"Foreign voice rejected (similarity={similarity:.2f})"
+                )
+                return False
+
+    def _reset_speaker_lock(self) -> None:
+        """Release the speaker identity lock (mirrors AdaptiveSpeakerVAD.reset)."""
+        self._target_mfcc = None
+        self._is_locked = False
+        self.get_logger().info("Speaker lock released")
 
     # ------------------------------------------------------------------
     def _audio_cb(self, msg: AudioData) -> None:
@@ -132,6 +180,7 @@ class VoiceDetection(Node):
                     self._silence_counter = 0.0
                     self._activity_pub.publish(Bool(data=False))
                     self.get_logger().info("Voice activity: speaker ended talking")
+                    self._reset_speaker_lock()
 
 
 # ---------------------------------------------------------------------------
