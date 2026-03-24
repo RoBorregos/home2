@@ -120,10 +120,13 @@ class HearStreaming(Node):
     def _voice_activity_cb(self, msg: Bool) -> None:
         """React to VAD voice-activity events.
 
+        When the speaker starts talking (msg.data=True) log it.
         When the speaker stops talking (msg.data=False) during an active
         transcription, flag it so execute_callback can exit cleanly.
         """
-        if not msg.data and not self.stop_flag.is_set():
+        if msg.data:
+            self.get_logger().info("Voice activity: speaker started talking")
+        elif not self.stop_flag.is_set():
             self.get_logger().info(
                 "Voice activity: speaker stopped — stopping transcription"
             )

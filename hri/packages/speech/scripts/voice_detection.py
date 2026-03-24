@@ -15,8 +15,8 @@ Topics:
                VOICE_ACTIVITY_TOPIC   (/hri/voice_activity)  Bool
 """
 
-import librosa
 import numpy as np
+import scipy.fft
 from scipy.spatial.distance import cosine as cosine_distance
 import rclpy
 from frida_interfaces.msg import AudioData
@@ -96,9 +96,53 @@ class VoiceDetection(Node):
 
     # ------------------------------------------------------------------
     def _get_mfcc(self, audio_f: np.ndarray) -> np.ndarray:
-        """Extract mean MFCCs — timbre fingerprint of the speaker."""
-        mfccs = librosa.feature.mfcc(y=audio_f, sr=self.sample_rate, n_mfcc=13)
-        return np.mean(mfccs, axis=1)
+        """Extract mean MFCCs using numpy/scipy — no librosa/numba needed."""
+        n_mfcc = 13
+        n_fft = 512
+        n_mels = 40
+        hop = 160
+
+        # Frame + Hann window
+        num_frames = max(1, (len(audio_f) - n_fft) // hop + 1)
+        frames = (
+            np.stack(
+                [
+                    audio_f[i * hop : i * hop + n_fft] * np.hanning(n_fft)
+                    for i in range(num_frames)
+                    if i * hop + n_fft <= len(audio_f)
+                ]
+            )
+            if num_frames > 0
+            else np.zeros((1, n_fft))
+        )
+
+        # Power spectrum
+        power = np.abs(np.fft.rfft(frames, n=n_fft)) ** 2  # (frames, n_fft//2+1)
+
+        # Mel filterbank
+        fmin, fmax = 0.0, self.sample_rate / 2.0
+        mel_pts = np.linspace(
+            2595 * np.log10(1 + fmin / 700),
+            2595 * np.log10(1 + fmax / 700),
+            n_mels + 2,
+        )
+        hz_pts = 700 * (10 ** (mel_pts / 2595) - 1)
+        bins = np.floor((n_fft + 1) * hz_pts / self.sample_rate).astype(int)
+        fb = np.zeros((n_mels, n_fft // 2 + 1))
+        for m in range(1, n_mels + 1):
+            lo, mid, hi = bins[m - 1], bins[m], bins[m + 1]
+            if mid > lo:
+                fb[m - 1, lo:mid] = (np.arange(lo, mid) - lo) / (mid - lo)
+            if hi > mid:
+                fb[m - 1, mid:hi] = (hi - np.arange(mid, hi)) / (hi - mid)
+
+        mel_e = np.dot(power, fb.T)
+        mel_e = np.where(mel_e == 0, np.finfo(float).eps, mel_e)
+        log_mel = np.log(mel_e)
+
+        # DCT → MFCCs
+        mfccs = scipy.fft.dct(log_mel, type=2, norm="ortho", axis=-1)[:, :n_mfcc]
+        return np.mean(mfccs, axis=0)
 
     def _is_periodic(self, audio_f: np.ndarray) -> bool:
         """Return True if audio has periodic pitch structure (voiced speech)."""
