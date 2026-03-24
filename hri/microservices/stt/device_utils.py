@@ -19,7 +19,6 @@ def detect_device_and_compute_type(preferred_device=None):
             return "cuda", "default"
     except Exception as exc:
         print(f"CUDA detection via ctranslate2 failed: {exc}")
-        return "cpu", "int8"
 
     # Fallback for environments where torch is present but ctranslate2 probing fails.
     # try:
@@ -30,3 +29,6 @@ def detect_device_and_compute_type(preferred_device=None):
     #         return "cuda", "float16" if major >= 7 else "float32"
     # except Exception:
     #     pass
+
+    # No CUDA device detected or probing unavailable.
+    return "cpu", "int8"
