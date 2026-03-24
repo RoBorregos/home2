@@ -7,13 +7,13 @@ Task Manager for testing the subtask managers
 import rclpy
 # import json
 
-# from config.hri.debug import config as test_hri_config
+# from task_manager.config.hri.debug import config as test_hri_config
 from rclpy.node import Node
 
-# from subtask_managers.hri_tasks import HRITasks
+# from task_manager.subtask_managers.hri_tasks import HRITasks
 
-from subtask_managers.manipulation_tasks import ManipulationTasks
-from subtask_managers.nav_tasks import NavigationTasks
+from task_manager.subtask_managers.manipulation_tasks import ManipulationTasks
+from task_manager.subtask_managers.nav_tasks import NavigationTasks
 # import time as t
 
 

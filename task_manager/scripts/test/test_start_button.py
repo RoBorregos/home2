@@ -7,12 +7,12 @@ Task Manager for testing the subtask managers
 from typing import Union
 
 import rclpy
-from config.hri.debug import config as test_hri_config
+from task_manager.config.hri.debug import config as test_hri_config
 from rclpy.node import Node
-from subtask_managers.hri_tasks import HRITasks
+from task_manager.subtask_managers.hri_tasks import HRITasks
 
-# from subtask_managers.subtask_meta import SubtaskMeta
-from utils.baml_client.types import (
+# from task_manager.subtask_managers.subtask_meta import SubtaskMeta
+from task_manager.utils.baml_client.types import (
     AnswerQuestion,
     CommandListLLM,
     Count,
@@ -28,7 +28,7 @@ from utils.baml_client.types import (
     PlaceObject,
     SayWithContext,
 )
-from utils.task import Task
+from task_manager.utils.task import Task
 
 InterpreterAvailableCommands = Union[
     CommandListLLM,

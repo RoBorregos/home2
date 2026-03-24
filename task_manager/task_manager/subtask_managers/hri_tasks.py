@@ -59,10 +59,10 @@ from rclpy.action import ActionClient
 from rclpy.node import Node
 from rclpy.task import Future
 from std_msgs.msg import Empty, String
-from subtask_managers.hri_hand import HRIHand
-from subtask_managers.subtask_meta import SubtaskMeta
-from utils.baml_client.sync_client import b
-from utils.baml_client.types import (
+from task_manager.subtask_managers.hri_hand import HRIHand
+from task_manager.subtask_managers.subtask_meta import SubtaskMeta
+from task_manager.utils.baml_client.sync_client import b
+from task_manager.utils.baml_client.types import (
     AnswerQuestion,
     CommandListLLM,
     Count,
@@ -78,10 +78,10 @@ from utils.baml_client.types import (
     PlaceObject,
     SayWithContext,
 )
-from utils.decorators import service_check
-from utils.logger import Logger
-from utils.status import Status
-from utils.task import Task
+from task_manager.utils.decorators import service_check
+from task_manager.utils.logger import Logger
+from task_manager.utils.status import Status
+from task_manager.utils.task import Task
 
 InterpreterAvailableCommands = Union[
     CommandListLLM,

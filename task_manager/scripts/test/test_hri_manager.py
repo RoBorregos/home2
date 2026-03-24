@@ -8,21 +8,18 @@ import csv
 import json
 import os
 import subprocess
-import sys
 import time
 from datetime import datetime
 from typing import Union
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
-
 import rclpy
-from config.hri.debug import config as test_hri_config
+from task_manager.config.hri.debug import config as test_hri_config
 from rclpy.node import Node
 from sklearn.metrics.pairwise import cosine_similarity
-from subtask_managers.hri_tasks import HRITasks
+from task_manager.subtask_managers.hri_tasks import HRITasks
 
-# from subtask_managers.subtask_meta import SubtaskMeta
-from utils.baml_client.types import (
+# from task_manager.subtask_managers.subtask_meta import SubtaskMeta
+from task_manager.utils.baml_client.types import (
     AnswerQuestion,
     CommandListLLM,
     Count,
@@ -38,8 +35,8 @@ from utils.baml_client.types import (
     PlaceObject,
     SayWithContext,
 )
-from utils.status import Status
-from utils.task import Task
+from task_manager.utils.status import Status
+from task_manager.utils.task import Task
 
 InterpreterAvailableCommands = Union[
     CommandListLLM,

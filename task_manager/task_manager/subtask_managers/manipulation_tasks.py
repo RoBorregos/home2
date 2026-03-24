@@ -12,7 +12,7 @@ control and provides a simple interface for the task manager to use.
 
 import rclpy
 from rclpy.node import Node
-from utils.logger import Logger
+from task_manager.utils.logger import Logger
 
 # from geometry_msgs.msg import PoseStamped
 from frida_interfaces.action import MoveJoints
@@ -25,13 +25,13 @@ from frida_interfaces.srv import (
 from frida_constants.xarm_configurations import XARM_CONFIGURATIONS
 from rclpy.action import ActionClient
 from typing import List, Union
-from utils.decorators import mockable, service_check
-from utils.status import Status
+from task_manager.utils.decorators import mockable, service_check
+from task_manager.utils.status import Status
 from frida_interfaces.action import ManipulationAction, GoToHand
 from frida_interfaces.msg import ManipulationTask
 from geometry_msgs.msg import PointStamped, PoseStamped
 
-# from utils.decorators import service_check
+# from task_manager.utils.decorators import service_check
 from xarm_msgs.srv import SetDigitalIO
 
 from frida_constants.manipulation_constants import (

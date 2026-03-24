@@ -5,10 +5,10 @@ Task Manager for testing the nav subtask manager
 
 import rclpy
 from rclpy.node import Node
-from utils.subtask_manager import SubtaskManager, Task
+from task_manager.utils.subtask_manager import SubtaskManager, Task
 
-# from utils.task import Task
-from utils.logger import Logger
+# from task_manager.utils.task import Task
+from task_manager.utils.logger import Logger
 
 
 class TestTaskManager(Node):
