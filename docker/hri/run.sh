@@ -111,7 +111,9 @@ add_or_update_variable compose/.env "ENV_TYPE" "$ENV_TYPE"
 if [ "$ENV_TYPE" != "cpu" ]; then
   add_or_update_variable compose/.env "RUNTIME" "nvidia"
 fi
-
+if [ "$ENV_TYPE" = "cuda" ]; then
+  add_or_update_variable compose/.env "STT_BASE_IMAGE" "pytorch/pytorch:2.11.0-cuda12.6-cudnn9-runtime"
+fi
 # If setup was done before persist it again now that .env has been reset
 if [ "${SETUP_DONE:-}" = "true" ]; then
   add_or_update_variable .env "SETUP_DONE" "true"
