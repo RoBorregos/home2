@@ -77,7 +77,10 @@ SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; th
 GPD_SETUP=". /home/ros/setup_gpd.sh"
 GPD_EXPORT="export GPD_INSTALL_DIR=/workspace/install/gpd"
 SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
-COLCON="colcon build --symlink-install --packages-up-to manipulation_general --packages-ignore realsense_gazebo_plugin xarm_gazebo frida_interfaces"
+COLCON="colcon build --symlink-install --packages-up-to manipulation_general --packages-ignore realsense_gazebo_plugin xarm_gazebo
+  frida_interfaces nlp embeddings object_detection_handler            
+  object_detector_2d
+"
 
 if [ "$BUILD" == "true" ]; then
     SETUP="$GPD_SETUP && $GPD_EXPORT && $SOURCE_ROS && $SOURCE_INTERFACES && $COLCON && $SOURCE"
