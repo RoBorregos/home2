@@ -14,7 +14,15 @@ from vision_general.utils.trt_utils import load_yolo_trt
 from frida_constants.vision_constants import CAMERA_TOPIC, CUTLERY_DETECTIONS_TOPIC
 from ament_index_python.packages import get_package_share_directory
 
+
 CONF_THRESHOLD = 0.2
+
+# Map Spanish class names to English
+SPANISH_TO_ENGLISH = {
+    "cuchara": "spoon",
+    "tenedor": "fork",
+    "cuchillo": "knife",
+}
 
 
 class CutleryDetectionNode(Node):
@@ -76,11 +84,13 @@ class CutleryDetectionNode(Node):
 
                 det = ObjectDetection()
                 det.label = cls_id
-                det.label_text = (
+                label_text = (
                     self.cutlery_model.names[cls_id]
                     if hasattr(self.cutlery_model, "names")
                     else str(cls_id)
                 )
+                # Convert to English if in mapping
+                det.label_text = SPANISH_TO_ENGLISH.get(label_text.lower(), label_text)
                 det.score = conf
                 det.ymin = float(y1)
                 det.xmin = float(x1)
@@ -89,8 +99,6 @@ class CutleryDetectionNode(Node):
                 # det.point3d left empty (no 3D info from 2D cutlery)
                 detections.append(det)
 
-        # Try to merge with existing detections if any (subscribe, append, and publish merged)
-        # For simplicity, just publish cutlery detections (merging logic can be expanded if needed)
         msg = ObjectDetectionArray()
         msg.detections = detections
         self.cutlery_detections_publisher.publish(msg)
@@ -120,11 +128,12 @@ class CutleryDetectionNode(Node):
                 self.get_logger().info(f"{label} at ({x1}, {y1}), ({x2}, {y2})")
                 det = ObjectDetection()
                 det.label = cls_id
-                det.label_text = (
+                label_text = (
                     self.cutlery_model.names[cls_id]
                     if hasattr(self.cutlery_model, "names")
                     else str(cls_id)
                 )
+                det.label_text = SPANISH_TO_ENGLISH.get(label_text.lower(), label_text)
                 det.score = conf
                 det.ymin = float(y1)
                 det.xmin = float(x1)

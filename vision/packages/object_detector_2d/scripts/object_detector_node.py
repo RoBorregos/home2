@@ -132,7 +132,6 @@ class object_detector_node(rclpy.node.Node):
         self.listener = tf2_ros.TransformListener(self.tfBuffer, self)
 
     def cutlery_detections_callback(self, msg):
-        # Store latest cutlery detections (ignore self-published ones by checking for cutlery label range if needed)
         self.latest_cutlery_detections = msg.detections
 
         # Frames per second throughput estimator
