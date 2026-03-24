@@ -3,6 +3,7 @@ services:
     profiles: [hric, carry, gpsr, storing]
     container_name: home2-hri-stt-${ENV_TYPE:-cpu}
     image: roborregos/home2:hri-stt-${ENV_TYPE:-cpu}
+    runtime: ${RUNTIME:-runc}
     build:
       context: ../../..
       dockerfile: docker/hri/dockerfiles/Dockerfile.stt
