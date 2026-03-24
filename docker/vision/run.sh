@@ -11,6 +11,8 @@ ENV_TYPE="${*: -1}"
 DETACHED=""
 BUILD=""
 BUILD_IMAGE=""
+UPLOAD_IMAGE=""
+CLEAN=""
 
 # check if one of the arguments is --detached
 for arg in "${ARGS[@]}"; do
@@ -33,7 +35,13 @@ for arg in "${ARGS[@]}"; do
         exit 0
         ;;
     "--build-image")
-        BUILD_IMAGE="--build"
+        BUILD_IMAGE="--build "
+        ;;
+    "--upload-image")
+        UPLOAD_IMAGE="true"
+        ;;
+    "--clean")
+        CLEAN="true"
         ;;
     esac
 done
@@ -42,6 +50,12 @@ done
 
 # Reset .env
 echo "" > .env
+
+# CycloneDDS interface from host
+if [ -f /etc/cyclonedds.env ]; then
+    source /etc/cyclonedds.env
+fi
+add_or_update_variable .env "CYCLONE_INTERFACE" "${CYCLONE_INTERFACE:-}"
 
 # Export user
 add_or_update_variable .env "LOCAL_USER_ID" "$(id -u)"
@@ -66,6 +80,9 @@ case $ENV_TYPE in
     ;;
 esac
 
+# Clean build artifacts if requested
+clean_workspace_directories
+
 mkdir -p install build log moondream/install moondream/build moondream/log
 
 #_________________________RUN_________________________
@@ -79,10 +96,15 @@ SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
 PROFILES=()
 
 case $TASK in
-    "--receptionist")
+    "--hric")
         PACKAGES="vision_general object_detector_2d object_detection_handler"
-        RUN="ros2 launch object_detector_2d object_detector_combined.launch.py"
+        RUN="ros2 launch vision_general hric_launch.py"
         PROFILES=("vision" "moondream")
+        ;;
+    "--ppc")
+        PACKAGES="vision_general object_detector_2d object_detection_handler"
+        RUN="ros2 launch vision_general ppc_launch.py"
+        PROFILES=("vision")
         ;;
     "--carry")
         PACKAGES="vision_general object_detector_2d object_detection_handler"
@@ -122,13 +144,20 @@ add_or_update_variable .env "COMMAND_MOONDREAM" "$COMMAND_MOONDREAM"
 COMPOSE_PROFILES=$(IFS=, ; echo "${PROFILES[*]}")
 add_or_update_variable .env "COMPOSE_PROFILES" "$COMPOSE_PROFILES"
 
+if [ "$UPLOAD_IMAGE" == "true" ]; then
+  echo "Uploading vision image to DockerHub (env: ${ENV_TYPE})..."
+  ensure_and_upload_image "roborregos/home2:vision-${ENV_TYPE}" "docker-compose.yml"
+fi
+
 if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
     ALREADY_RUNNING=$(docker ps -q -f name="vision")
     if [ -z "$ALREADY_RUNNING" ] || [ -n "$BUILD_IMAGE" ]; then
-        docker compose up -d $BUILD_IMAGE
+	docker compose up -d $BUILD_IMAGE
     fi
     docker compose exec vision bash -c "$COMMAND"
 else
     add_or_update_variable .env "COMMAND" "$COMMAND"
+    echo "COmmand = $COMMAND"
+    echo "Running docker compose up $DETACHED $BUILD_IMAGE"
     docker compose up $DETACHED $BUILD_IMAGE
 fi

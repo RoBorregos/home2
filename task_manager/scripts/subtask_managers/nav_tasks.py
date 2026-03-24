@@ -9,12 +9,13 @@ import os
 
 import rclpy
 from ament_index_python.packages import get_package_share_directory
-from frida_constants.navigation_constants import FOLLOWING_SERVICE, GOAL_TOPIC
+from frida_constants.navigation_constants import FOLLOWING_SERVICE, GOAL_TOPIC, AREAS_SERVICE
 from frida_interfaces.srv import (
     LaserGet,
     PointTransformation,
     ReturnLocation,
     WaitForControllerInput,
+    MapAreas,
 )
 from geometry_msgs.msg import PointStamped, PoseStamped
 from lifecycle_msgs.msg import Transition
@@ -73,6 +74,7 @@ class NavigationTasks:
         self.rtabmap_pause = self.node.create_client(Empty, RTAB_PAUSE_SERVICE)
         self.rtabmap_continue = self.node.create_client(Empty, RTAB_RESUME_SERVICE)
         self.ReturnLocation_client = self.node.create_client(ReturnLocation, RETURN_LOCATION)
+        self.areas_wrapper = self.node.create_client(MapAreas, AREAS_SERVICE)
         self.convert_point = (
             self.node.create_client(PointTransformation, "/integration/point_transformer"),
         )
@@ -81,29 +83,28 @@ class NavigationTasks:
             WaitForControllerInput, "wait_for_controller_input"
         )
         self.services = {
-            Task.RECEPTIONIST: {
+            Task.HRIC: {
                 "goal_client": {"client": self.goal_client, "type": "action"},
-            },
-            Task.HELP_ME_CARRY: {
-                "activate_follow": {"client": self.activate_follow, "type": "service"},
-                "bt_params": {"client": self.bt_params, "type": "service"},
-                "bt_lifecycle": {"client": self.bt_lifecycle, "type": "service"},
-            },
-            Task.GPSR: {
-                "goal_client": {"client": self.goal_client, "type": "action"},
-                "activate_follow": {"client": self.activate_follow, "type": "service"},
-                "laser_send": {"client": self.laser_send, "type": "service"},
-            },
-            Task.STORING_GROCERIES: {
-                "goal_client": {"client": self.goal_client, "type": "action"},
-                "laser_send": {"client": self.laser_send, "type": "service"},
-                "pause_rtab": {"client": self.rtabmap_pause, "type": "service"},
-                "resume_rtab": {"client": self.rtabmap_continue, "type": "service"},
             },
             Task.DEBUG: {
-                "laser_send": {"client": self.laser_send, "type": "service"},
+                # "laser_send": {"client": self.laser_send, "type": "service"},
+                "areas_wrapper": {"client": self.areas_wrapper, "type": "service"}
             },
         }
+
+        try:
+            package_share_directory = get_package_share_directory("frida_constants")
+            file_path = os.path.join(package_share_directory, "map_areas/areas.json")
+            with open(file_path, "r") as file:
+                data = json.load(file)
+            if data is not None:
+                self.areas_backup = data
+                Logger.info(self.node, "Areas Json BackUp Loaded")
+            else:
+                raise Exception("Data is empty")
+        except Exception as e:
+            self.areas_backup = Status.EXECUTION_ERROR
+            Logger.warn(self.node, f"Areas Json Backup Failed Error: {e}")
 
         if not self.mock_data:
             self.setup_services()
@@ -140,21 +141,32 @@ class NavigationTasks:
             Logger.error(self.node, f"Error waiting for controller input: {e}")
             return Future().set_result(Status.EXECUTION_ERROR)
 
-    # def get_distance_to_zero(self):
-    #     self.getdist
+    @mockable(return_value=lambda self: self.areas_backup, delay=1)
+    @service_check("areas_wrapper", lambda self: self.areas_backup, timeout=3)
+    def areas_dump(self):
+        req = MapAreas.Request()
+        future = self.areas_wrapper.call_async(req)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+        if (future.result() is None) or (future.result().areas == ""):
+            Logger.error(self.node, "Service return empty data")
+            return self.areas_backup
+
+        else:
+            Logger.info(self.node, "Map Areas dumped Succesfully")
+            return json.loads(str(future.result().areas))
+
     @mockable(return_value=True, delay=10)
     @service_check("pause_nav", False, timeout=3)
     def pause_nav(self):
         req = Empty.Request()
         future = self.rtabmap_pause.call_async(req)
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
-        if future.result() is not None:
-            Logger.error(self.node, "Service call failed")
+        if future.result() is None:
+            Logger.error(self.node, "pause_nav service call failed (no response)")
             return Status.EXECUTION_ERROR
 
-        else:
-            Logger.info(self.node, "Service call successfull")
-            return Status.EXECUTION_SUCCESS
+        Logger.info(self.node, "pause_nav successful")
+        return Status.EXECUTION_SUCCESS
 
     @mockable(return_value=True, delay=10)
     @service_check("resume_nav", False, timeout=3)
@@ -162,13 +174,12 @@ class NavigationTasks:
         req = Empty.Request()
         future = self.rtabmap_continue.call_async(req)
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
-        if future.result() is not None:
-            Logger.error(self.node, "Service call failed")
+        if future.result() is None:
+            Logger.error(self.node, "resume_nav service call failed (no response)")
             return Status.EXECUTION_ERROR
 
-        else:
-            Logger.info(self.node, "Service call successfull")
-            return Status.EXECUTION_SUCCESS
+        Logger.info(self.node, "resume_nav successful")
+        return Status.EXECUTION_SUCCESS
 
     @mockable(_mock_callback=mock_to_location_controller)
     @service_check("goal_client", False, timeout=3)
@@ -184,10 +195,9 @@ class NavigationTasks:
         """
         future = Future()
         try:
-            package_share_directory = get_package_share_directory("frida_constants")
-            file_path = os.path.join(package_share_directory, "map_areas/areas.json")
-            with open(file_path, "r") as file:
-                data = json.load(file)
+            Logger.info(self.node, "CALLING FUNCTION")
+            data = self.areas_dump()
+            Logger.info(self.node, "END FUNCTION")
             if sublocation != "":
                 coordinates = data[location][sublocation]
             else:
@@ -456,7 +466,7 @@ class NavigationTasks:
         return future
 
     @mockable(return_value=(Status.EXECUTION_SUCCESS, "open"), delay=3)
-    @service_check("laser_send", False, TIMEOUT)
+    @service_check("laser_send", (Status.EXECUTION_ERROR, "open"), TIMEOUT)
     def check_door(self) -> tuple[int, str]:
         """Check if the door is open or closed"""
 

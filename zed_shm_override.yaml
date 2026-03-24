@@ -1,0 +1,5 @@
+# Disable parameter event publisher to avoid iceoryx TOO_MANY_CHUNKS_HELD_IN_PARALLEL
+# during ZED startup burst (30+ topics advertised in milliseconds)
+/**:
+  ros__parameters:
+    start_parameter_event_publisher: false

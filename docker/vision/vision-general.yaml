@@ -9,28 +9,36 @@ services:
     image: ${IMAGE_NAME:-roborregos/home2:vision-cpu}
     profiles: ["vision"]
     volumes:
-      - ../../:/workspace
+      - ../../:/workspace/src
       - /dev:/dev
       - /dev/video0:/dev/video0
       - /tmp:/tmp
       - /tmp/.X11-unix:/tmp/.X11-unix
       - ./build:/workspace/build
       - ./install:/workspace/install
-      - ./log:/workspace/log
       - ../frida_interfaces_cache:/workspace/frida_interfaces_cache
+      - ./log:/workspace/log
+      - $HOME/.Xauthority:/home/ros/.Xauthority:rw
+      - /run/jtop.sock:/run/jtop.sock
+      - ./trt_cache:/workspace/trt_cache
+
     network_mode: host
-    user: 1000:1000
+    ipc: host
+    user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
     privileged: true
-    runtime: ${DOCKER_RUNTIME:-}
+    runtime: ${DOCKER_RUNTIME:-runc}
     group_add: 
       - video
     environment:
       DISPLAY: ${DISPLAY}
       TERM: xterm-256color
       QT_X11_NO_MITSHM: 1
-      QT_DEBUG_PLUGINS: 1 
+      QT_DEBUG_PLUGINS: 1
+      CYCLONE_INTERFACE: ${CYCLONE_INTERFACE:-}
+      CYCLONE_SHM: "1"
     tty: true
     stdin_open: true    
     working_dir: /workspace
     command: >
       bash -c "${COMMAND:-/bin/bash}"
+

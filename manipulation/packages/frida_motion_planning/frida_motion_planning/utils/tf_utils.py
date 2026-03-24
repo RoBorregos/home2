@@ -166,6 +166,7 @@ def transform_pose(
 
             print("successfully transformed pose")
             success = True
+            # Please not break
         except TransformException as e:
             print(
                 f"Transform from {pose.header.frame_id} to {target_frame} not available: {e}"

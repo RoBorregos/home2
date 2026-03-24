@@ -72,7 +72,7 @@ class DemoTM(Node):
 
         if self.current_state == DemoTM.States.WAITING_FOR_BUTTON:
             Logger.state(self, "Waiting for start button...")
-            self.subtask_manager.hri.start_button_clicked = False
+            self.subtask_manager.hri.reset_task_status()
             self.subtask_manager.hri.say("Waiting for start button to be pressed to start the task")
 
             while not self.subtask_manager.hri.start_button_clicked:
@@ -142,7 +142,7 @@ class DemoTM(Node):
                 )
 
             self.executed_commands += 1
-
+            self.subtask_manager.hri.reset_task_status()
             self.subtask_manager.hri.say("I've finished executing the command.")
 
 

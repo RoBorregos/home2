@@ -11,16 +11,18 @@ services:
     ports:
       - "50052:50052"
     volumes:
-      - ../../vision/packages/moondream_run/:/workspace
       - /dev:/dev
       - /dev/video0:/dev/video0
       - /tmp:/tmp
       - /tmp/.X11-unix:/tmp/.X11-unix
+      - $HOME/.Xauthority:/home/ros/.Xauthority:rw
+      - /run/jtop.sock:/run/jtop.sock
+      - ../../vision/packages/moondream_run/:/workspace
     working_dir: /workspace/moondream_server
     network_mode: host
-    user: 1000:1000
     privileged: true
-    runtime: nvidia
+    user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
+    runtime: ${DOCKER_RUNTIME:-nvidia}
     group_add:
       - video
     environment:
@@ -47,14 +49,20 @@ services:
       - /dev/video0:/dev/video0
       - /tmp:/tmp
       - /tmp/.X11-unix:/tmp/.X11-unix
+      - ../frida_interfaces_cache:/workspace/frida_interfaces_cache
+      - $HOME/.Xauthority:/home/ros/.Xauthority:rw
+      - /run/jtop.sock:/run/jtop.sock
+      - ./trt_cache:/workspace/trt_cache
       - ./moondream/build:/workspace/build
       - ./moondream/install:/workspace/install
       - ./moondream/log:/workspace/log
       - ../frida_interfaces_cache:/workspace/frida_interfaces_cache
+
     network_mode: host
-    user: 1000:1000
+    ipc: host
+    user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
     privileged: true
-    runtime: ${RUNTIME:-}
+    runtime: ${DOCKER_RUNTIME:-nvidia}
     group_add:
       - video
     environment:
@@ -62,6 +70,9 @@ services:
       TERM: xterm-256color
       QT_X11_NO_MITSHM: 1
       QT_DEBUG_PLUGINS: 1
+      CYCLONE_INTERFACE: ${CYCLONE_INTERFACE:-}
+      CYCLONE_SHM: "1"
+
     tty: true
     stdin_open: true
     working_dir: /workspace

@@ -12,6 +12,7 @@ services:
       args:
         BASE_IMAGE: roborregos/home2:${ENV_TYPE:-cpu}_base
     image: roborregos/home2:hri-${ENV_TYPE:-cpu}
+    runtime: ${RUNTIME:-runc}
     volumes:
       - ../../../:/workspace/src
       - ~/.config/pulse:/tmp/pulse
@@ -30,6 +31,7 @@ services:
         - *speech-devices
       DISPLAY: ${DISPLAY:-:0}
       TERM: xterm-256color
+      CYCLONE_INTERFACE: ${CYCLONE_INTERFACE:-}
     env_file:
       - .env
     tty: true

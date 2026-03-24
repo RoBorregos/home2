@@ -11,6 +11,8 @@ ENV_TYPE="${*: -1}"
 DETACHED=""
 BUILD=""
 BUILD_IMAGE=""
+UPLOAD_IMAGE=""
+CLEAN=""
 
 # Parse arguments
 for arg in "${ARGS[@]}"; do
@@ -35,6 +37,12 @@ for arg in "${ARGS[@]}"; do
     "--build-image")
         BUILD_IMAGE="--build"
         ;;
+    "--upload-image")
+        UPLOAD_IMAGE="true"
+        ;;
+    "--clean")
+        CLEAN="true"
+        ;;
     esac
 done
 
@@ -42,6 +50,12 @@ done
 
 # Reset .env
 echo "" > .env
+
+# CycloneDDS interface from host
+if [ -f /etc/cyclonedds.env ]; then
+    source /etc/cyclonedds.env
+fi
+add_or_update_variable .env "CYCLONE_INTERFACE" "${CYCLONE_INTERFACE:-}"
 
 # Export user
 add_or_update_variable .env "LOCAL_USER_ID" "$(id -u)"
@@ -60,6 +74,9 @@ case $ENV_TYPE in
       ;;
 esac
 
+# Clean build artifacts if requested
+clean_workspace_directories
+
 # Create dirs with current user to avoid permission problems
 mkdir -p install build log
 
@@ -70,7 +87,7 @@ GENERATE_BAML_CLIENT="baml-cli generate --from /workspace/src/task_manager/scrip
 SOURCE_ROS="source /opt/ros/humble/setup.bash"
 SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
 SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
-COLCON="colcon build --packages-ignore frida_interfaces frida_constants --packages-up-to task_manager"
+COLCON="colcon build --symlink-install --packages-ignore frida_interfaces frida_constants --packages-up-to task_manager"
 
 if [ "$BUILD" == "true" ]; then
     SETUP="$GENERATE_BAML_CLIENT && $SOURCE_ROS && $SOURCE_INTERFACES && $COLCON && $SOURCE"
@@ -79,8 +96,8 @@ else
 fi
 
 case $TASK in
-    "--receptionist")
-        RUN="ros2 run task_manager receptionist_task_manager.py"
+    "--hric")
+        RUN="ros2 run task_manager hric_task_manager.py"
         ;;
     "--help-me-carry")
         RUN="ros2 run task_manager help_me_carry.py"
@@ -97,6 +114,11 @@ case $TASK in
 esac
 
 COMMAND="$SETUP && $RUN"
+
+if [ "$UPLOAD_IMAGE" == "true" ]; then
+  echo "Uploading integration image to DockerHub (env: ${ENV_TYPE})..."
+  ensure_and_upload_image "roborregos/home2:integration-${ENV_TYPE}" "docker-compose.yml"
+fi
 
 if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
     ALREADY_RUNNING=$(docker ps -q -f name="integration")
