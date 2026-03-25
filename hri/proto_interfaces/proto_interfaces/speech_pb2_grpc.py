@@ -3,7 +3,7 @@
 import grpc
 import warnings
 
-from . import speech_pb2 as speech__pb2
+import speech_pb2 as speech__pb2
 
 GRPC_GENERATED_VERSION = '1.70.0'
 GRPC_VERSION = grpc.__version__
