@@ -23,6 +23,7 @@ class VoiceDetection(Node):
         self.declare_parameter("SIMILARITY_THRESHOLD", 0.80)
         self.declare_parameter("SILENCE_LIMIT", 1.5)
         self.declare_parameter("SAMPLE_RATE", 16000)
+        self.declare_parameter("DEBUG", False)
 
         processed_topic = (
             self.get_parameter("PROCESSED_AUDIO_TOPIC")
@@ -56,6 +57,7 @@ class VoiceDetection(Node):
         self.sample_rate = (
             self.get_parameter("SAMPLE_RATE").get_parameter_value().integer_value
         )
+        self.debug = self.get_parameter("DEBUG").get_parameter_value().bool_value
 
         # Pre-compute lag bounds for autocorrelation pitch detection
         self._low_lag = int(self.sample_rate / VOWEL_FREQ_HIGH)
@@ -162,7 +164,8 @@ class VoiceDetection(Node):
             # Lock onto the first strong speaker (same as AdaptiveSpeakerVAD)
             self._target_mfcc = current_mfcc
             self._is_locked = True
-            self.get_logger().info("Speaker lock-on: primary speaker acquired")
+            if self.debug:
+                self.get_logger().info("Speaker lock-on: primary speaker acquired")
             return True
         else:
             similarity = 1.0 - cosine_distance(current_mfcc, self._target_mfcc)
@@ -178,7 +181,8 @@ class VoiceDetection(Node):
         """Release the speaker identity lock (mirrors AdaptiveSpeakerVAD.reset)."""
         self._target_mfcc = None
         self._is_locked = False
-        self.get_logger().info("Speaker lock released")
+        if self.debug:
+            self.get_logger().info("Speaker lock released")
 
     def _audio_cb(self, msg: AudioData) -> None:
         audio = np.frombuffer(bytes(msg.data), dtype=np.int16)
@@ -189,7 +193,8 @@ class VoiceDetection(Node):
             if not self._speech_active:
                 self._speech_active = True
                 self._activity_pub.publish(Bool(data=True))
-                self.get_logger().info("Voice activity: speech started")
+                if self.debug:
+                    self.get_logger().info("Voice activity: speech started")
             self._audio_pub.publish(msg)
 
         else:
@@ -203,7 +208,8 @@ class VoiceDetection(Node):
                     self._speech_active = False
                     self._silence_counter = 0.0
                     self._activity_pub.publish(Bool(data=False))
-                    self.get_logger().info("Voice activity: speaker ended talking")
+                    if self.debug:
+                        self.get_logger().info("Voice activity: speaker ended talking")
                     self._reset_speaker_lock()
 
 
