@@ -13,8 +13,7 @@ DOWNLOAD_MODEL=""
 REGENERATE_DB=""
 
 COMPOSE="compose/docker-compose-${ENV_TYPE}.yml"
-COMPOSE_CMD="docker compose -f $COMPOSE"
-parse_common_flags "${ARGS[@]}"
+parse_common_flags "$COMPOSE" "${ARGS[@]}"
 
 # Parse hri-specific flags
 for arg in "${ARGS[@]}"; do
@@ -47,22 +46,10 @@ fi
 
 [ "$DOWNLOAD_MODEL" == "true" ] && bash ./scripts/download-model.sh
 
-# Create dirs with current user to avoid permission problems
-mkdir -p install build log \
-  ../../hri/packages/speech/assets/downloads/offline_voice/model/ \
-  ../../hri/packages/speech/assets/downloads/offline_voice/audios/
-
-# HRI uses a nested compose/.env instead of .env
-setup_common_env_hri() {
-  echo "" > compose/.env
-  if [ -f /etc/cyclonedds.env ]; then source /etc/cyclonedds.env; fi
-  add_or_update_variable compose/.env "CYCLONE_INTERFACE" "${CYCLONE_INTERFACE:-}"
-  add_or_update_variable compose/.env "LOCAL_USER_ID"     "$(id -u)"
-  add_or_update_variable compose/.env "LOCAL_GROUP_ID"    "$(id -g)"
-  add_or_update_variable compose/.env "BASE_IMAGE"        "roborregos/home2:${ENV_TYPE}_base"
-  add_or_update_variable compose/.env "IMAGE_NAME"        "roborregos/home2:hri-${ENV_TYPE}"
-}
-setup_common_env_hri
+# HRI uses compose/.env instead of .env; env file path is passed as argument
+setup_common_env "hri" "compose/.env"
+mkdir -p ../../hri/packages/speech/assets/downloads/offline_voice/model/ \
+         ../../hri/packages/speech/assets/downloads/offline_voice/audios/
 
 # HRI-specific env vars
 add_or_update_variable compose/.env "ENV_TYPE" "$ENV_TYPE"

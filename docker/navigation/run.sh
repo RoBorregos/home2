@@ -10,12 +10,11 @@ ENV_TYPE="${*: -1}"
 # Resolve compose file before parsing flags so --down/--stop/--recreate use the correct file
 COMPOSE_FILE="docker-compose.yaml"
 case $ENV_TYPE in
-    "gpu") COMPOSE_FILE="docker-compose-gpu.yaml" ;;
-    "l4t") COMPOSE_FILE="docker-compose-l4t.yaml" ;;
+    "cuda") COMPOSE_FILE="docker-compose-gpu.yaml" ;;
+    "l4t")  COMPOSE_FILE="docker-compose-l4t.yaml" ;;
 esac
 
-COMPOSE_CMD="docker compose -f $COMPOSE_FILE"
-parse_common_flags "${ARGS[@]}"
+parse_common_flags "$COMPOSE_FILE" "${ARGS[@]}"
 
 #_________________________SETUP_________________________
 
@@ -27,9 +26,6 @@ add_or_update_variable .env "DOCKERFILE" "docker/navigation/Dockerfile.${ENV_TYP
 case $ENV_TYPE in
     "cpu")
         add_or_update_variable .env "DOCKER_RUNTIME" "runc"
-        ;;
-    "gpu"|"l4t")
-        # compose file already switched above
         ;;
     *)
         add_or_update_variable .env "DOCKER_RUNTIME" "nvidia"

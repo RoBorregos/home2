@@ -90,14 +90,18 @@ add_or_update_variable() {
 }
 
 # Parse flags shared by all area run.sh scripts.
+# First arg: compose file path (e.g. "docker-compose.yaml"); remaining args are the script's $@.
 parse_common_flags() {
+  local compose_file="${1:-}"
+  shift
+  local compose="${compose_file:+docker compose -f $compose_file}"
+  compose="${compose:-docker compose}"
+
   DETACHED=""
   BUILD=""
   BUILD_IMAGE=""
   UPLOAD_IMAGE=""
   CLEAN=""
-
-  local compose="${COMPOSE_CMD:-docker compose}"
 
   for arg in "$@"; do
     case $arg in
@@ -114,19 +118,21 @@ parse_common_flags() {
 }
 
 # Write .env variables shared by all areas.
+# First arg: area name. Second arg: env file path (default: .env).
 setup_common_env() {
   local area="$1"
+  local env_file="${2:-.env}"
 
-  echo "" > .env
+  echo "" > "$env_file"
 
   if [ -f /etc/cyclonedds.env ]; then
     source /etc/cyclonedds.env
   fi
-  add_or_update_variable .env "CYCLONE_INTERFACE" "${CYCLONE_INTERFACE:-}"
-  add_or_update_variable .env "LOCAL_USER_ID"     "$(id -u)"
-  add_or_update_variable .env "LOCAL_GROUP_ID"    "$(id -g)"
-  add_or_update_variable .env "BASE_IMAGE"        "roborregos/home2:${ENV_TYPE}_base"
-  add_or_update_variable .env "IMAGE_NAME"        "roborregos/home2:${area}-${ENV_TYPE}"
+  add_or_update_variable "$env_file" "CYCLONE_INTERFACE" "${CYCLONE_INTERFACE:-}"
+  add_or_update_variable "$env_file" "LOCAL_USER_ID"     "$(id -u)"
+  add_or_update_variable "$env_file" "LOCAL_GROUP_ID"    "$(id -g)"
+  add_or_update_variable "$env_file" "BASE_IMAGE"        "roborregos/home2:${ENV_TYPE}_base"
+  add_or_update_variable "$env_file" "IMAGE_NAME"        "roborregos/home2:${area}-${ENV_TYPE}"
 
   clean_workspace_directories
   mkdir -p install build log
