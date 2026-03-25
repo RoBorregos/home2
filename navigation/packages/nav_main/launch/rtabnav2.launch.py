@@ -1,5 +1,5 @@
 from launch import LaunchDescription
-from launch_ros.actions import ComposableNodeContainer
+from launch_ros.actions import ComposableNodeContainer, Node
 from launch_ros.descriptions import ComposableNode, ParameterFile
 from launch.substitutions import LaunchConfiguration
 from nav2_common.launch import RewrittenYaml
@@ -145,10 +145,12 @@ def generate_launch_description():
                 package='realsense2_camera',
                 plugin='realsense2_camera::RealSenseNodeFactory',
                 name='realsense_camera',
+                namespace='camera',
                 parameters=[{
                     'pointcloud.enable': True,
                     'depth_module.profile': '640x480x30',
                     'rgb_module.profile': '640x480x30',
+                    'base_frame_id': 'intel_realsense',
                 }],
             ),
             ComposableNode(
@@ -173,4 +175,14 @@ def generate_launch_description():
         ],
     )
 
-    return LaunchDescription([rtabmap_container, nav2_container])
+    # Static TF: base_link -> intel_realsense (values from URDF TMR2025/realsense.xacro)
+    # Needed so collision_monitor can project RealSense pointcloud into the robot frame
+    # even when nav_basics is launched without publish_tf:=true
+    realsense_tf = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='realsense_tf_publisher',
+        arguments=['0.140953', '0', '0.428947', '0', '0', '0', 'base_link', 'intel_realsense'],
+    )
+
+    return LaunchDescription([rtabmap_container, nav2_container, realsense_tf])
