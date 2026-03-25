@@ -46,7 +46,7 @@ from frida_motion_planning.utils.service_utils import (
 )
 import time
 
-from std_srvs.srv import SetBool, Empty
+from std_srvs.srv import Empty
 
 # Force-guarded descent imports
 from sensor_msgs.msg import JointState
@@ -56,17 +56,21 @@ from xarm_msgs.srv import MoveVelocity, SetInt16
 # Force-guarded descent constants
 # Units: speeds in mm/s (xArm SDK convention)
 # =============================================================================
-CUTLERY_DESCENT_SPEED = 20.0       # mm/s downward (= 2 cm/s)
-CUTLERY_EFFORT_THRESHOLD = 6.5     # N - effort delta to detect contact (raised from 3.0 to avoid false positives)
-CUTLERY_DESCENT_TIMEOUT = 10.0     # s - max descent before giving up
-CUTLERY_PRE_GRASP_HEIGHT = 0.15    # m - pre-grasp height above target (MoveIt uses meters)
+CUTLERY_DESCENT_SPEED = 20.0  # mm/s downward (= 2 cm/s)
+CUTLERY_EFFORT_THRESHOLD = (
+    6.5  # N - effort delta to detect contact (raised from 3.0 to avoid false positives)
+)
+CUTLERY_DESCENT_TIMEOUT = 10.0  # s - max descent before giving up
+CUTLERY_PRE_GRASP_HEIGHT = (
+    0.15  # m - pre-grasp height above target (MoveIt uses meters)
+)
 CUTLERY_EFFORT_GRACE_PERIOD = 0.5  # s - ignore effort readings for this long after velocity starts (transient spike from mode switch)
 CUTLERY_POST_CONTACT_RETRACT = 0.011  # m - retract upward after contact to relieve Z pressure before closing gripper
 
 # Mode switching timing
-MODE_SWITCH_SETTLE_TIME = 1.0      # s - wait after entering mode 5
-MODE1_RECOVERY_TIME = 3.0          # s - wait after restoring mode 1 for traj controller
-MODE1_RETRY_ATTEMPTS = 3           # retries for restoring mode 1
+MODE_SWITCH_SETTLE_TIME = 1.0  # s - wait after entering mode 5
+MODE1_RECOVERY_TIME = 3.0  # s - wait after restoring mode 1 for traj controller
+MODE1_RETRY_ATTEMPTS = 3  # retries for restoring mode 1
 
 
 class PickMotionServer(Node):
@@ -131,24 +135,20 @@ class PickMotionServer(Node):
 
         self._clear_octomap_client = self.create_client(
             Empty,
-            '/clear_octomap',
+            "/clear_octomap",
         )
 
         # --- Force-guarded descent service clients ---
         self._vc_set_cartesian_velocity_client = self.create_client(
-            MoveVelocity, '/xarm/vc_set_cartesian_velocity'
+            MoveVelocity, "/xarm/vc_set_cartesian_velocity"
         )
-        self._set_mode_client = self.create_client(
-            SetInt16, '/xarm/set_mode'
-        )
-        self._set_state_client = self.create_client(
-            SetInt16, '/xarm/set_state'
-        )
+        self._set_mode_client = self.create_client(SetInt16, "/xarm/set_mode")
+        self._set_state_client = self.create_client(SetInt16, "/xarm/set_state")
 
         # Joint effort monitoring
         self._latest_joint_state = None
         self._joint_state_sub = self.create_subscription(
-            JointState, '/joint_states', self._joint_state_cb, 10
+            JointState, "/joint_states", self._joint_state_cb, 10
         )
 
         self._move_to_pose_action_client.wait_for_server()
@@ -280,7 +280,9 @@ class PickMotionServer(Node):
             self.get_logger().error("No plane found, cannot pick object")
             return False, pick_result
         elif self.plane is None and is_flat:
-            self.get_logger().warn("No plane found, but object is flat. Bypassing safety check.")
+            self.get_logger().warn(
+                "No plane found, but object is flat. Bypassing safety check."
+            )
 
         for i, pose in enumerate(grasping_poses):
             for j in range(num_grasping_alternatives):
@@ -312,7 +314,9 @@ class PickMotionServer(Node):
                 ee_link_pose.pose.position.z = new_position[2]
 
                 if not self.check_feasibility(ee_link_pose, is_flat=is_flat):
-                    self.get_logger().warn(f"Grasping alternative {j} is not feasible, skipping")
+                    self.get_logger().warn(
+                        f"Grasping alternative {j} is not feasible, skipping"
+                    )
                     continue
 
                 if is_flat:
@@ -357,7 +361,9 @@ class PickMotionServer(Node):
                     time.sleep(0.3)
 
                     # Force-guarded descent
-                    self.get_logger().info("[Cutlery] Starting force-guarded descent...")
+                    self.get_logger().info(
+                        "[Cutlery] Starting force-guarded descent..."
+                    )
                     contact = self.force_guarded_descent()
 
                     if contact:
@@ -395,7 +401,9 @@ class PickMotionServer(Node):
                         continue
 
                 else:
-                    grasp_pose_handler, grasp_pose_result = self.move_to_pose(ee_link_pose)
+                    grasp_pose_handler, grasp_pose_result = self.move_to_pose(
+                        ee_link_pose
+                    )
 
                 print(f"Grasp Pose {i} result: {grasp_pose_result}")
                 if grasp_pose_result.result.success:
@@ -413,12 +421,18 @@ class PickMotionServer(Node):
                         pick_result.grasp_score = goal_handle.request.grasping_scores[i]
 
                         if lowest_obj is not None:
-                            pick_result.object_pick_height = self.calculate_object_pick_height(lowest_obj, ee_link_pose)
+                            pick_result.object_pick_height = (
+                                self.calculate_object_pick_height(
+                                    lowest_obj, ee_link_pose
+                                )
+                            )
                         else:
                             pick_result.object_pick_height = 0.0
 
                         if lowest_obj is not None and highest_obj is not None:
-                            pick_result.object_height = self.calculate_object_height(lowest_obj, highest_obj)
+                            pick_result.object_height = self.calculate_object_height(
+                                lowest_obj, highest_obj
+                            )
                         else:
                             pick_result.object_height = 0.0
                     else:
@@ -496,8 +510,12 @@ class PickMotionServer(Node):
         start_time = time.time()
 
         try:
-            if not self._vc_set_cartesian_velocity_client.wait_for_service(timeout_sec=2.0):
-                self.get_logger().error("[ForceGuard] vc_set_cartesian_velocity not available")
+            if not self._vc_set_cartesian_velocity_client.wait_for_service(
+                timeout_sec=2.0
+            ):
+                self.get_logger().error(
+                    "[ForceGuard] vc_set_cartesian_velocity not available"
+                )
                 self._restore_mode1()
                 return False
 
@@ -568,7 +586,7 @@ class PickMotionServer(Node):
     def _set_xarm_mode(self, mode: int) -> bool:
         try:
             if not self._set_mode_client.wait_for_service(timeout_sec=2.0):
-                self.get_logger().error(f"[ForceGuard] set_mode service unavailable")
+                self.get_logger().error("[ForceGuard] set_mode service unavailable")
                 return False
 
             mode_req = SetInt16.Request()
@@ -583,7 +601,7 @@ class PickMotionServer(Node):
             time.sleep(0.3)
 
             if not self._set_state_client.wait_for_service(timeout_sec=2.0):
-                self.get_logger().error(f"[ForceGuard] set_state service unavailable")
+                self.get_logger().error("[ForceGuard] set_state service unavailable")
                 return False
 
             state_req = SetInt16.Request()
@@ -591,7 +609,7 @@ class PickMotionServer(Node):
             state_future = self._set_state_client.call_async(state_req)
             self.wait_for_future(state_future)
             if state_future.result() is None:
-                self.get_logger().error(f"[ForceGuard] set_state(0) returned None")
+                self.get_logger().error("[ForceGuard] set_state(0) returned None")
                 return False
 
             self.get_logger().info(f"[ForceGuard] Mode {mode}, State 0 OK")
@@ -608,7 +626,9 @@ class PickMotionServer(Node):
             stop_req.is_tool_coord = False
             stop_req.duration = 0.0
             if self._vc_set_cartesian_velocity_client.wait_for_service(timeout_sec=1.0):
-                stop_future = self._vc_set_cartesian_velocity_client.call_async(stop_req)
+                stop_future = self._vc_set_cartesian_velocity_client.call_async(
+                    stop_req
+                )
                 self.wait_for_future(stop_future)
             self.get_logger().info("[ForceGuard] Velocity zeroed")
         except Exception as e:
@@ -619,14 +639,18 @@ class PickMotionServer(Node):
 
         for attempt in range(MODE1_RETRY_ATTEMPTS):
             if not self._set_xarm_mode(0):
-                self.get_logger().warn(f"[ForceGuard] Mode 0 failed (attempt {attempt + 1})")
+                self.get_logger().warn(
+                    f"[ForceGuard] Mode 0 failed (attempt {attempt + 1})"
+                )
                 time.sleep(1.0)
                 continue
 
             time.sleep(0.5)
 
             if not self._set_xarm_mode(1):
-                self.get_logger().warn(f"[ForceGuard] Mode 1 failed (attempt {attempt + 1})")
+                self.get_logger().warn(
+                    f"[ForceGuard] Mode 1 failed (attempt {attempt + 1})"
+                )
                 time.sleep(1.0)
                 continue
 
@@ -635,7 +659,9 @@ class PickMotionServer(Node):
             )
             time.sleep(MODE1_RECOVERY_TIME)
 
-            self.get_logger().info(f"[ForceGuard] Mode 1 restored (attempt {attempt + 1})")
+            self.get_logger().info(
+                f"[ForceGuard] Mode 1 restored (attempt {attempt + 1})"
+            )
             return
 
         self.get_logger().error("[ForceGuard] CRITICAL: Could not restore mode 1!")
@@ -644,7 +670,13 @@ class PickMotionServer(Node):
     # Existing Methods (unchanged)
     # ==================================================================
 
-    def move_to_pose(self, pose, tolerance_position=0.005, tolerance_orientation=0.02, velocity=PICK_VELOCITY):
+    def move_to_pose(
+        self,
+        pose,
+        tolerance_position=0.005,
+        tolerance_orientation=0.02,
+        velocity=PICK_VELOCITY,
+    ):
         request = MoveToPose.Goal()
         request.pose = pose
         request.velocity = float(velocity)
