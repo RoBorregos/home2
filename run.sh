@@ -75,11 +75,11 @@ case $INPUT in
   frida_interfaces)
     run_frida_interfaces
     ;;
-  --stop|--down)
+  --stop|--down|--clean|--build)
     control "$INPUT"
     ;;
-  --clean)
-    clean_frida_interfaces
+  --clean-interfaces)
+    clean_directories docker/frida_interfaces_cache
     ;;
   --hric|--ppc|--gpsr|--dlc|--restaurant|--finals)
     run_task "$@"
