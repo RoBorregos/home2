@@ -105,6 +105,8 @@ Flags</h1>
 </div><!-- fragment --><p>Pulls RoBorregos' command interpreter LLM from hugging face and other ollama models. See <code>docker/hri/scripts/download-model.sh</code>.</p>
 <div class="fragment"><div class="line">./run.sh hri --regenerate-db</div>
 </div><!-- fragment --><p>Uses current json files from <code>hri/packages/embeddings/embeddings/dataframes/</code> and a navigation service to retrive information and generate SQL files which are saved in <code>/docker/hri/sql_dumps/</code>. Then it replaces the information in the postgres database with these scripts. See <code>docker/hri/scripts/regenerate_db.sh</code>.</p>
+<div class="fragment"><div class="line">./run.sh hri --build-proto</div>
+</div><!-- fragment --><p>Generates gRPC files for the microservices using the .proto files located in <code>hri/proto_interfaces/proto_interfaces/</code>.</p>
 <h1><a class="anchor" id="autotoc_md55"></a>
 Running specific containers</h1>
 <p>You may want to only launch some of the services. For example, running the module without the LLM, etc. To do so, please check the docker-compose yaml files in the <code>docker/hri/compose/</code> folder and comment out the services you do not want to run.</p>
