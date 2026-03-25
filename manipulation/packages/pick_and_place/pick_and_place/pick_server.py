@@ -61,6 +61,7 @@ CUTLERY_EFFORT_THRESHOLD = 6.5     # N - effort delta to detect contact (raised 
 CUTLERY_DESCENT_TIMEOUT = 10.0     # s - max descent before giving up
 CUTLERY_PRE_GRASP_HEIGHT = 0.15    # m - pre-grasp height above target (MoveIt uses meters)
 CUTLERY_EFFORT_GRACE_PERIOD = 0.5  # s - ignore effort readings for this long after velocity starts (transient spike from mode switch)
+CUTLERY_POST_CONTACT_RETRACT = 0.011  # m - retract upward after contact to relieve Z pressure before closing gripper
 
 # Mode switching timing
 MODE_SWITCH_SETTLE_TIME = 1.0      # s - wait after entering mode 5
@@ -360,7 +361,18 @@ class PickMotionServer(Node):
                     contact = self.force_guarded_descent()
 
                     if contact:
-                        self.get_logger().info("[Cutlery] Contact detected! Closing gripper...")
+                        # Retract slightly to relieve Z pressure so gripper can close fully
+                        self.get_logger().info(
+                            f"[Cutlery] Contact detected! Retracting {CUTLERY_POST_CONTACT_RETRACT*1000:.1f}mm before closing gripper..."
+                        )
+                        retract_pose = copy.deepcopy(pre_grasp_pose)
+                        retract_pose.pose.position.z = (
+                            ee_link_pose.pose.position.z + CUTLERY_POST_CONTACT_RETRACT
+                        )
+                        self.move_to_pose(retract_pose, velocity=0.1)
+                        time.sleep(0.5)
+
+                        self.get_logger().info("[Cutlery] Closing gripper...")
                         close_gripper(self._gripper_set_state_client)
                         time.sleep(1.5)
                         self.get_logger().info("[Cutlery] Gripper closed")
