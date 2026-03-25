@@ -55,6 +55,9 @@ for arg in "${ARGS[@]}"; do
     "--regenerate-db")
         REGENERATE_DB="true"
         ;;
+    "--build-proto")
+        BUILD_PROTO="true"
+        ;;
     "--upload-image")
         UPLOAD_IMAGE="true"
         ;;
@@ -130,6 +133,15 @@ fi
 if [ "$REGENERATE_DB" == "true" ]; then
   echo "Regenerating database..."
   bash scripts/regenerate_db.sh "$ENV_TYPE"
+fi
+
+# Build proto files if requested
+if [ "$BUILD_PROTO" == "true" ]; then
+  echo "Building proto files..."
+  docker compose -f "$COMPOSE" run --rm --entrypoint "" hri-ros bash -c \
+    "cd /workspace/src/hri/proto_interfaces && \
+    python3 -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. proto_interfaces/speech.proto && \
+    python3 -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. proto_interfaces/tts.proto"
 fi
 
 #_________________________RUN_________________________
