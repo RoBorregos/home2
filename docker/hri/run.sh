@@ -137,9 +137,9 @@ fi
 if [ "$BUILD_PROTO" == "true" ]; then
   echo "Building proto files..."
   docker compose -f "$COMPOSE" run --rm --entrypoint "" hri-ros bash -c \
-    "cd /workspace/src/hri/proto_interfaces/proto_interfaces && \
-    python3 -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. speech.proto && \
-    python3 -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. tts.proto"
+    "cd /workspace/src/hri/proto_interfaces && \
+    python3 -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. proto_interfaces/speech.proto && \
+    python3 -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. proto_interfaces/tts.proto"
 fi
 
 #_________________________RUN_________________________

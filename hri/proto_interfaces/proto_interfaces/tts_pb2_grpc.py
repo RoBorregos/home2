@@ -3,7 +3,7 @@
 import grpc
 import warnings
 
-import tts_pb2 as tts__pb2
+from proto_interfaces import tts_pb2 as proto__interfaces_dot_tts__pb2
 
 GRPC_GENERATED_VERSION = '1.70.0'
 GRPC_VERSION = grpc.__version__
@@ -18,7 +18,7 @@ except ImportError:
 if _version_not_supported:
     raise RuntimeError(
         f'The grpc package installed is at version {GRPC_VERSION},'
-        + f' but the generated code in tts_pb2_grpc.py depends on'
+        + f' but the generated code in proto_interfaces/tts_pb2_grpc.py depends on'
         + f' grpcio>={GRPC_GENERATED_VERSION}.'
         + f' Please upgrade your grpc module to grpcio>={GRPC_GENERATED_VERSION}'
         + f' or downgrade your generated code using grpcio-tools<={GRPC_VERSION}.'
@@ -36,8 +36,8 @@ class TTSServiceStub(object):
         """
         self.Synthesize = channel.unary_unary(
                 '/tts.TTSService/Synthesize',
-                request_serializer=tts__pb2.SynthesizeRequest.SerializeToString,
-                response_deserializer=tts__pb2.SynthesizeResponse.FromString,
+                request_serializer=proto__interfaces_dot_tts__pb2.SynthesizeRequest.SerializeToString,
+                response_deserializer=proto__interfaces_dot_tts__pb2.SynthesizeResponse.FromString,
                 _registered_method=True)
 
 
@@ -55,8 +55,8 @@ def add_TTSServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
             'Synthesize': grpc.unary_unary_rpc_method_handler(
                     servicer.Synthesize,
-                    request_deserializer=tts__pb2.SynthesizeRequest.FromString,
-                    response_serializer=tts__pb2.SynthesizeResponse.SerializeToString,
+                    request_deserializer=proto__interfaces_dot_tts__pb2.SynthesizeRequest.FromString,
+                    response_serializer=proto__interfaces_dot_tts__pb2.SynthesizeResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -84,8 +84,8 @@ class TTSService(object):
             request,
             target,
             '/tts.TTSService/Synthesize',
-            tts__pb2.SynthesizeRequest.SerializeToString,
-            tts__pb2.SynthesizeResponse.FromString,
+            proto__interfaces_dot_tts__pb2.SynthesizeRequest.SerializeToString,
+            proto__interfaces_dot_tts__pb2.SynthesizeResponse.FromString,
             options,
             channel_credentials,
             insecure,
