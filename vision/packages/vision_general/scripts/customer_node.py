@@ -168,12 +168,6 @@ class CustomerNode(Node):
         self.frame = self.image.copy()
         self.output_image = self.frame.copy()
 
-        # Check temporal synchronization between depth and rgb
-        dt = abs(self.depth_image_time.nanosec - self.image_time.nanosec)
-        if dt > DEPTH_THRESHOLD:
-            self.get_logger().warn("Depth and RGB images are not synchronized")
-            pass
-
         for out in self.results:
             for box in out.boxes:
                 if box.conf[0].item() < CONF_THRESHOLD:
@@ -198,9 +192,10 @@ class CustomerNode(Node):
 
                     # 2D Centroid and Depth
                     point2D = get2DCentroid((x1, y1, x2, y2), self.depth_image)
+                    point_2d_temp = (point2D[1], point2D[0])
                     depth = get_depth(self.depth_image, point2D)
                     point3D_raw = deproject_pixel_to_point(
-                        self.imageInfo, point2D, depth
+                        self.imageInfo, point_2d_temp, depth
                     )
 
                     # Transform to ROS frame

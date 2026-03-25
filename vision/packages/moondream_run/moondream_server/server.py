@@ -29,6 +29,9 @@ class MoonDreamServicer(moondream_proto_pb2_grpc.MoonDreamServiceServicer):
     def FindObjectPoints(self, request, context):
         points = self.model.find_object_points(request.encoded_image, request.subject)
 
+        if not points:
+            return moondream_proto_pb2.FindObjectPointsResponse(points=[], found=False)
+
         proto_points = [
             moondream_proto_pb2.ObjectPoint(x=float(point["x"]), y=float(point["y"]))
             for point in points

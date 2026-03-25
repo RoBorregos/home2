@@ -143,7 +143,7 @@ class MoonDreamModel:
         result = self.model.point(encoded_image, subject)
 
         if not result["points"]:
-            return NOT_FOUND
+            return []
 
         points_out = []
         for pt in result["points"]:
