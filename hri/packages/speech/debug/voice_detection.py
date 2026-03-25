@@ -4,10 +4,10 @@ import librosa
 from scipy.spatial.distance import cosine
 
 # --- Config ---
-CHUNK = 2048
+CHUNK = 1024
 FORMAT = pyaudio.paInt16
 CHANNELS = 1
-RATE = 44100
+RATE = 16000
 SILENCE_LIMIT = 3
 ENERGY_THRESHOLD = 700
 CORR_THRESHOLD = 0.55
@@ -37,23 +37,23 @@ class AdaptiveSpeakerVAD:
         rms = np.sqrt(np.mean(audio_data**2))
 
         if rms < ENERGY_THRESHOLD:
-            return False, "Silencio"
+            return False, "Silence"
 
         if not self.is_periodic(audio_data):
-            return False, "Ruido no vocal"
+            return False, "Non-vocal noise"
 
         current_mfcc = self.get_features(audio_data)
 
         if not self.is_locked:
             self.target_mfcc = current_mfcc
             self.is_locked = True
-            return True, "Lock-on: Hablante Principal"
+            return True, "Lock-on: Main Speaker"
         else:
             similarity = 1 - cosine(current_mfcc, self.target_mfcc)
             if similarity > SIMILARITY_THRESHOLD:
-                return True, f"Siguiendo Voz (Sim: {similarity:.2f})"
+                return True, f"Following Voice (Sim: {similarity:.2f})"
             else:
-                return False, f"Voz Ajena (Sim: {similarity:.2f})"
+                return False, f"Other Voice (Sim: {similarity:.2f})"
 
     def reset(self):
         self.target_mfcc = None
@@ -66,7 +66,7 @@ stream = p.open(
     format=FORMAT, channels=CHANNELS, rate=RATE, input=True, frames_per_buffer=CHUNK
 )
 
-print("* Sistema Adaptativo Listo. Habla de frente para iniciar...")
+print("* Adaptive System Ready. Speak directly to initialize...")
 
 silence_time = 0
 try:
@@ -76,19 +76,19 @@ try:
 
         if speech_detected:
             silence_time = 0
-            print(f"[{status}] - ESCUCHANDO...          ", end="\r")
+            print(f"[{status}] - LISTENING...          ", end="\r")
         else:
             silence_time += CHUNK / RATE
             print(f"[{status}] - PAUSA: {silence_time:.1f}s          ", end="\r")
 
         if silence_time > SILENCE_LIMIT:
             if vad.is_locked:
-                print("\n\n* Frase terminada. Liberando Lock del hablante...")
+                print("\n\n* Phrase ended. Releasing speaker lock...")
                 vad.reset()
             silence_time = 0
 
 except KeyboardInterrupt:
-    print("\nDetenido.")
+    print("\nStopped.")
 
 stream.stop_stream()
 stream.close()
