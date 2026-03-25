@@ -81,6 +81,10 @@ USEFUL_AUDIO_NODE_NAME = "useful_audio_node"
 DEFAULT_HOTWORDS = "Frida RoBorregos"
 
 
+# Fundamental frequency range for human voice (Hz)
+VOWEL_FREQ_LOW = 85
+VOWEL_FREQ_HIGH = 255
+
 # HRI Subtask Manager
 SKIP_CONFIRMATION_SIMILARITY_THRESHOLD = 0.5
 SKIP_CONFIRMATION_CONFIDENCE_THRESHOLD = 0.5

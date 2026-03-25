@@ -4,14 +4,11 @@ import numpy as np
 import scipy.fft
 from scipy.spatial.distance import cosine as cosine_distance
 import rclpy
+from frida_constants.hri_constants import VOWEL_FREQ_LOW, VOWEL_FREQ_HIGH
 from frida_interfaces.msg import AudioData
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
 from std_msgs.msg import Bool
-
-# Fundamental frequency range for human voice (Hz)
-_VOWEL_FREQ_LOW = 85
-_VOWEL_FREQ_HIGH = 255
 
 
 class VoiceDetection(Node):
@@ -61,8 +58,8 @@ class VoiceDetection(Node):
         )
 
         # Pre-compute lag bounds for autocorrelation pitch detection
-        self._low_lag = int(self.sample_rate / _VOWEL_FREQ_HIGH)
-        self._high_lag = int(self.sample_rate / _VOWEL_FREQ_LOW)
+        self._low_lag = int(self.sample_rate / VOWEL_FREQ_HIGH)
+        self._high_lag = int(self.sample_rate / VOWEL_FREQ_LOW)
 
         self._silence_counter = 0.0
         self._speech_active = False
@@ -79,7 +76,6 @@ class VoiceDetection(Node):
             f"VoiceDetection ready  |  in: {processed_topic}  |  out: {vad_topic}"
         )
 
-    # ------------------------------------------------------------------
     def _get_mfcc(self, audio_f: np.ndarray) -> np.ndarray:
         """Extract mean MFCCs using numpy/scipy — no librosa/numba needed."""
         n_mfcc = 13
@@ -184,7 +180,6 @@ class VoiceDetection(Node):
         self._is_locked = False
         self.get_logger().info("Speaker lock released")
 
-    # ------------------------------------------------------------------
     def _audio_cb(self, msg: AudioData) -> None:
         audio = np.frombuffer(bytes(msg.data), dtype=np.int16)
         chunk_duration = len(audio) / self.sample_rate
@@ -212,7 +207,6 @@ class VoiceDetection(Node):
                     self._reset_speaker_lock()
 
 
-# ---------------------------------------------------------------------------
 def main(args=None):
     rclpy.init(args=args)
     try:
