@@ -9,4 +9,4 @@ fi
 
 export DISPLAY=:0
 echo "Opening display at $URL"
-nohup firefox "$URL" --kiosk --new-window > /dev/null 2>&1 &
+nohup firefox "$URL" --kiosk --new-window > /dev/null 2>&1
