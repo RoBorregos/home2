@@ -1,6 +1,7 @@
 
 bt_navigator:
   ros__parameters:
+    start_parameter_event_publisher: false
     use_sim_time: False
     global_frame: map
     robot_base_frame: base_link
@@ -12,14 +13,17 @@ bt_navigator:
 
 bt_navigator_navigate_through_poses_rclcpp_node:
   ros__parameters:
+    start_parameter_event_publisher: false
     use_sim_time: False
 
 bt_navigator_navigate_to_pose_rclcpp_node:
   ros__parameters:
+    start_parameter_event_publisher: false
     use_sim_time: False
 
 controller_server:
   ros__parameters:
+    start_parameter_event_publisher: false
     controller_frequency: 15.0
     FollowPath:
       plugin: "nav2_mppi_controller::MPPIController"
@@ -115,6 +119,7 @@ controller_server:
 local_costmap:
   local_costmap:
     ros__parameters:
+      start_parameter_event_publisher: false
       update_frequency: 5.0
       publish_frequency: 2.0
       global_frame: odom
@@ -199,6 +204,7 @@ local_costmap:
 global_costmap:
   global_costmap:
     ros__parameters:
+      start_parameter_event_publisher: false
       update_frequency: 2.0
       publish_frequency: 1.0
       global_frame: map
@@ -277,6 +283,7 @@ global_costmap:
 
 planner_server:
     ros__parameters:
+      start_parameter_event_publisher: false
       expected_planner_frequency: 20.0
       use_sim_time: False
       planner_plugins: ["GridBased"]
@@ -288,6 +295,7 @@ planner_server:
 
 smoother_server:
   ros__parameters:
+    start_parameter_event_publisher: false
     use_sim_time: False
     smoother_plugins: ["simple_smoother"]
     simple_smoother:
@@ -298,6 +306,7 @@ smoother_server:
 
 behavior_server:
   ros__parameters:
+    start_parameter_event_publisher: false
     costmap_topic: local_costmap/costmap_raw
     footprint_topic: local_costmap/published_footprint
     cycle_frequency: 10.0
@@ -323,10 +332,12 @@ behavior_server:
 
 robot_state_publisher:
   ros__parameters:
+    start_parameter_event_publisher: false
     use_sim_time: False
 
 velocity_smoother:
   ros__parameters:
+    start_parameter_event_publisher: false
     use_sim_time: False
     smoothing_frequency: 20.0
     scale_velocities: False
@@ -342,6 +353,7 @@ velocity_smoother:
 
 docking_server:
   ros__parameters:
+    start_parameter_event_publisher: false
     controller_frequency: 50.0
     initial_perception_timeout: 5.0
     wait_charge_timeout: 5.0

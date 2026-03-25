@@ -14,17 +14,20 @@ def generate_launch_description():
     topic_name_arg = DeclareLaunchArgument(
         'topic_name', default_value=TextSubstitution(text='/cmd_vel'))
 
+    no_param_events = {'start_parameter_event_publisher': False}
     joy_container = ComposableNodeContainer(
         name='joy_container',
         package='rclcpp_components',
         executable='component_container',
         namespace='',
+        parameters=[no_param_events],
         composable_node_descriptions=[
             ComposableNode(
                 package='joy',
                 plugin='joy::Joy',
                 name='joy',
                 namespace='',
+                parameters=[no_param_events],
             ),
             ComposableNode(
                 package='p9n_node',
@@ -32,7 +35,8 @@ def generate_launch_description():
                 name='teleop_twist_joy_node',
                 namespace='',
                 parameters=[{
-                        'hw_type': LaunchConfiguration('hw_type')
+                        'hw_type': LaunchConfiguration('hw_type'),
+                        'start_parameter_event_publisher': False
                 }],
                 remappings=[
                     ('cmd_vel', LaunchConfiguration('topic_name'))

@@ -15,8 +15,11 @@ services:
       - /run/jtop.sock:/run/jtop.sock
       - /usr/local/zed/resources:/usr/local/zed/resources
       - $HOME/.local/share/zed:/home/ros/.local/share/zed
+      - ../../roudi_config.toml:/etc/iceoryx/roudi_config.toml
+      - ../../zed_shm_override.yaml:/opt/zed_ws/zed_shm_override.yaml
     network_mode: host
     ipc: host
+    pid: host
     user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
     privileged: true
     runtime: ${DOCKER_RUNTIME:-runc}
@@ -29,13 +32,13 @@ services:
       QT_X11_NO_MITSHM: 1
       CYCLONE_INTERFACE: ${CYCLONE_INTERFACE:-}
       CYCLONE_SHM: "1"
+      START_ROUDI: "1"
       ZED_CAMERA_MODEL: ${ZED_CAMERA_MODEL:-zed2}
     tty: true
     stdin_open: true
     working_dir: /opt/zed_ws
     command: >
       bash -c "
-      rm -f /tmp/roudi.lock 2>/dev/null;
       echo '=== ZED SDK check ===' && ls /usr/local/zed/lib/libsl_zed.so* 2>/dev/null || echo 'WARNING: libsl_zed.so NOT found in /usr/local/zed/lib/';
       export LD_LIBRARY_PATH=/usr/local/zed/lib:$${LD_LIBRARY_PATH};
       sudo sed -i 's|<LogLevel>warning</LogLevel>|<LogLevel>warn</LogLevel>|' /etc/cyclonedds.xml 2>/dev/null || true;
@@ -52,8 +55,8 @@ services:
       -r __ns:=/zed
       -r __node:=zed_state_publisher &
       sleep 3 &&
-      ros2 launch zed_wrapper zed_camera.launch.py
-      camera_model:=$$ZED_MODEL
-      publish_tf:=false
-      publish_urdf:=false
+      ros2 launch zed_wrapper zed_camera.launch.py \
+      camera_model:=$$ZED_MODEL \
+      publish_tf:=false \
+      publish_urdf:=false \
       ros_params_override_path:=/opt/zed_ws/zed_shm_override.yaml"

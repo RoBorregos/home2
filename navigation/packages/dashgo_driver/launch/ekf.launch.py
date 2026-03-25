@@ -39,7 +39,7 @@ def generate_launch_description():
                                      False,  False,  True,
                                      True,  False,  False],
                     'imu0_differential': False,
-
+                    'start_parameter_event_publisher': False,
                  },
                 
             ],
