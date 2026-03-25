@@ -46,7 +46,7 @@ from frida_motion_planning.utils.service_utils import (
 )
 import time
 
-from std_srvs.srv import SetBool, Empty
+from std_srvs.srv import Empty
 
 # Force-guarded descent imports
 from sensor_msgs.msg import JointState
@@ -586,7 +586,7 @@ class PickMotionServer(Node):
     def _set_xarm_mode(self, mode: int) -> bool:
         try:
             if not self._set_mode_client.wait_for_service(timeout_sec=2.0):
-                self.get_logger().error(f"[ForceGuard] set_mode service unavailable")
+                self.get_logger().error("[ForceGuard] set_mode service unavailable")
                 return False
 
             mode_req = SetInt16.Request()
@@ -601,7 +601,7 @@ class PickMotionServer(Node):
             time.sleep(0.3)
 
             if not self._set_state_client.wait_for_service(timeout_sec=2.0):
-                self.get_logger().error(f"[ForceGuard] set_state service unavailable")
+                self.get_logger().error("[ForceGuard] set_state service unavailable")
                 return False
 
             state_req = SetInt16.Request()
@@ -609,7 +609,7 @@ class PickMotionServer(Node):
             state_future = self._set_state_client.call_async(state_req)
             self.wait_for_future(state_future)
             if state_future.result() is None:
-                self.get_logger().error(f"[ForceGuard] set_state(0) returned None")
+                self.get_logger().error("[ForceGuard] set_state(0) returned None")
                 return False
 
             self.get_logger().info(f"[ForceGuard] Mode {mode}, State 0 OK")

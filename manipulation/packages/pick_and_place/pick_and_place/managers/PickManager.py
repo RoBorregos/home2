@@ -22,7 +22,6 @@ import numpy as np
 from pick_and_place.utils.perception_utils import get_object_point
 from tf2_ros.buffer import Buffer
 from tf2_ros.transform_listener import TransformListener
-import rclpy
 
 
 CFG_PATHS = [
