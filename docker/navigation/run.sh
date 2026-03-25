@@ -106,7 +106,7 @@ case $TASK in
         RUN="echo 'WORKING IN PROGRESS'"
         ;;
     "--hric")
-        RUN="ros2 launch nav_main navigation_launch.py"
+        RUN="ros2 launch nav_main navigation_composition.launch.py"
         ;;
     *)
         RUN="bash"
