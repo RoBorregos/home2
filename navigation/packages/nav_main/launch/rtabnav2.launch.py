@@ -30,6 +30,9 @@ def generate_launch_description():
             convert_types=True),
         allow_substs=True)
 
+    # Disable parameter event publisher to avoid iceoryx TOO_MANY_CHUNKS_HELD_IN_PARALLEL
+    no_param_events = {'start_parameter_event_publisher': False}
+
     sync_remapping = [
         ('rgb/image', '/zed/zed_node/rgb/image_rect_color'),
         ('rgb/camera_info', '/zed/zed_node/rgb/camera_info'),
@@ -41,7 +44,7 @@ def generate_launch_description():
         name='rtabmap_container',
         namespace='',
         package='rclcpp_components',
-        executable='component_container_mt',
+        executable='component_container',
         output='screen',
         composable_node_descriptions=[
             ComposableNode(
@@ -49,7 +52,7 @@ def generate_launch_description():
                 package='rtabmap_slam',
                 plugin='rtabmap_slam::CoreWrapper',
                 name='rtabmap',
-                parameters=[rtab_params,
+                parameters=[rtab_params, no_param_events,
                     {'Mem/IncrementalMemory': 'False',
                      'Mem/InitWMWithAllNodes': 'True'}],
             ),
@@ -58,7 +61,7 @@ def generate_launch_description():
                 package='rtabmap_slam',
                 plugin='rtabmap_slam::CoreWrapper',
                 name='rtabmap',
-                parameters=[rtab_params,
+                parameters=[rtab_params, no_param_events,
                     {'delete_db_on_start': True,
                      'RGBD/LinearUpdate': '0.1',
                      'RGBD/AngularUpdate': '0.1',
@@ -69,7 +72,7 @@ def generate_launch_description():
                 package='rtabmap_sync',
                 plugin='rtabmap_sync::RGBDSync',
                 name='rgbd_sync',
-                parameters=[rtab_params],
+                parameters=[rtab_params, no_param_events],
                 remappings=sync_remapping
             ),
         ],
@@ -82,58 +85,58 @@ def generate_launch_description():
         name='nav2_container',
         namespace='',
         package='rclcpp_components',
-        executable='component_container_mt',
+        executable='component_container',
         output='screen',
-        parameters=[nav2_params],
+        parameters=[nav2_params, no_param_events],
         composable_node_descriptions=[
             ComposableNode(
                 package='nav2_controller',
                 plugin='nav2_controller::ControllerServer',
                 name='controller_server',
-                parameters=[nav2_params],
+                parameters=[nav2_params, no_param_events],
             ),
             ComposableNode(
                 package='nav2_smoother',
                 plugin='nav2_smoother::SmootherServer',
                 name='smoother_server',
-                parameters=[nav2_params],
+                parameters=[nav2_params, no_param_events],
             ),
             ComposableNode(
                 package='nav2_planner',
                 plugin='nav2_planner::PlannerServer',
                 name='planner_server',
-                parameters=[nav2_params],
+                parameters=[nav2_params, no_param_events],
             ),
             ComposableNode(
                 package='nav2_behaviors',
                 plugin='behavior_server::BehaviorServer',
                 name='behavior_server',
-                parameters=[nav2_params],
+                parameters=[nav2_params, no_param_events],
             ),
             ComposableNode(
                 package='nav2_bt_navigator',
                 plugin='nav2_bt_navigator::BtNavigator',
                 name='bt_navigator',
-                parameters=[nav2_params],
+                parameters=[nav2_params, no_param_events],
             ),
             ComposableNode(
                 package='nav2_velocity_smoother',
                 plugin='nav2_velocity_smoother::VelocitySmoother',
                 name='velocity_smoother',
-                parameters=[nav2_params],
+                parameters=[nav2_params, no_param_events],
             ),
             ComposableNode(
                 package='opennav_docking',
                 plugin='opennav_docking::DockingServer',
                 name='docking_server',
-                parameters=[nav2_params],
+                parameters=[nav2_params, no_param_events],
                 condition=IfCondition(docking),
             ),
             ComposableNode(
                 package='nav2_lifecycle_manager',
                 plugin='nav2_lifecycle_manager::LifecycleManager',
                 name='lifecycle_manager_navigation',
-                parameters=[{
+                parameters=[no_param_events, {
                     'use_sim_time': False,
                     'autostart': True,
                     'node_names': [
