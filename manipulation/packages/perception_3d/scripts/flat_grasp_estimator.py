@@ -15,7 +15,7 @@ from tf2_ros.transform_listener import TransformListener
 from frida_constants.vision_constants import (
     ZERO_SHOT_DETECTIONS_TOPIC,
     DEPTH_IMAGE_TOPIC,
-    CAMERA_INFO_TOPIC
+    CAMERA_INFO_TOPIC,
 )
 
 from frida_interfaces.msg import ObjectDetectionArray, ObjectDetection
@@ -35,38 +35,54 @@ TABLE_HEIGHT_OUTLIER_THRESH = 0.015  # 15mm
 
 class FlatGraspEstimator(Node):
     def __init__(self):
-        super().__init__('flat_grasp_estimator')
+        super().__init__("flat_grasp_estimator")
         self.bridge = CvBridge()
 
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
-        self.target_frame = 'link_base'
+        self.target_frame = "link_base"
 
         self.latest_depth = None
         self.intrinsics = None
         self.depth_frame_id = "zed_left_camera_optical_frame"
 
-        self.target_classes = ['spoon', 'fork', 'knife']
+        self.target_classes = ["spoon", "fork", "knife"]
 
         # Rolling buffer for table height stabilization
         self.table_height_buffer = deque(maxlen=TABLE_HEIGHT_BUFFER_SIZE)
 
         self.create_subscription(Image, DEPTH_IMAGE_TOPIC, self.depth_callback, 10)
-        self.create_subscription(CameraInfo, CAMERA_INFO_TOPIC, self.camera_info_callback, 1)
-        self.create_subscription(ObjectDetectionArray, ZERO_SHOT_DETECTIONS_TOPIC, self.detections_callback, 10)
+        self.create_subscription(
+            CameraInfo, CAMERA_INFO_TOPIC, self.camera_info_callback, 1
+        )
+        self.create_subscription(
+            ObjectDetectionArray,
+            ZERO_SHOT_DETECTIONS_TOPIC,
+            self.detections_callback,
+            10,
+        )
 
-        self.pose_pub = self.create_publisher(PoseStamped, '/manipulation/flat_grasp_pose', 10)
+        self.pose_pub = self.create_publisher(
+            PoseStamped, "/manipulation/flat_grasp_pose", 10
+        )
 
-        self.get_logger().info(f"Flat Grasp Estimator initialized. Mapping to: {self.target_frame}")
+        self.get_logger().info(
+            f"Flat Grasp Estimator initialized. Mapping to: {self.target_frame}"
+        )
 
     def depth_callback(self, msg):
-        self.latest_depth = self.bridge.imgmsg_to_cv2(msg, desired_encoding='32FC1')
+        self.latest_depth = self.bridge.imgmsg_to_cv2(msg, desired_encoding="32FC1")
         self.depth_frame_id = msg.header.frame_id
 
     def camera_info_callback(self, msg):
         if self.intrinsics is None:
-            self.intrinsics = {'fx': msg.k[0], 'fy': msg.k[4], 'cx': msg.k[2], 'cy': msg.k[5]}
+            self.intrinsics = {
+                "fx": msg.k[0],
+                "fy": msg.k[4],
+                "cx": msg.k[2],
+                "cy": msg.k[5],
+            }
 
     def detections_callback(self, msg):
         if self.latest_depth is None or self.intrinsics is None:
@@ -115,7 +131,11 @@ class FlatGraspEstimator(Node):
         table_z_cam = np.percentile(valid_roi, 85)
 
         # Object points: anything 1-50mm closer than table
-        object_mask_roi = valid_mask & (roi_depth < table_z_cam - 0.001) & (roi_depth > table_z_cam - 0.05)
+        object_mask_roi = (
+            valid_mask
+            & (roi_depth < table_z_cam - 0.001)
+            & (roi_depth > table_z_cam - 0.05)
+        )
         v_local, u_local = np.where(object_mask_roi)
 
         use_full_roi = len(v_local) < MIN_POINTS_FOR_PCA
@@ -126,8 +146,8 @@ class FlatGraspEstimator(Node):
         v_global = v_local + ymin
         z_vals = roi_depth[v_local, u_local]
 
-        fx, fy = self.intrinsics['fx'], self.intrinsics['fy']
-        cx, cy = self.intrinsics['cx'], self.intrinsics['cy']
+        fx, fy = self.intrinsics["fx"], self.intrinsics["fy"]
+        cx, cy = self.intrinsics["cx"], self.intrinsics["cy"]
         x = (u_global - cx) * z_vals / fx
         y = (v_global - cy) * z_vals / fy
         points_3d_cam = np.vstack((x, y, z_vals)).T
@@ -138,16 +158,23 @@ class FlatGraspEstimator(Node):
                 self.target_frame,
                 self.depth_frame_id,
                 rclpy.time.Time(),
-                timeout=rclpy.duration.Duration(seconds=1.0)
+                timeout=rclpy.duration.Duration(seconds=1.0),
             )
         except Exception as e:
             self.get_logger().warn(f"Waiting for TF tree from camera to base... {e}")
             return
 
-        q = [trans.transform.rotation.x, trans.transform.rotation.y,
-             trans.transform.rotation.z, trans.transform.rotation.w]
-        t = [trans.transform.translation.x, trans.transform.translation.y,
-             trans.transform.translation.z]
+        q = [
+            trans.transform.rotation.x,
+            trans.transform.rotation.y,
+            trans.transform.rotation.z,
+            trans.transform.rotation.w,
+        ]
+        t = [
+            trans.transform.translation.x,
+            trans.transform.translation.y,
+            trans.transform.translation.z,
+        ]
         rot_mat = Rotation.from_quat(q).as_matrix()
 
         T_mat = np.eye(4)
@@ -221,5 +248,6 @@ def main(args=None):
     node.destroy_node()
     rclpy.shutdown()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

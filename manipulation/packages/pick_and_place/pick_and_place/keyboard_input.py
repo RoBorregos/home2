@@ -51,7 +51,7 @@ class KeyboardInput(Node):
             qos,
             callback_group=callback_group,
         )
-        
+
         self.zero_shot_subscription = self.create_subscription(
             ObjectDetectionArray,
             ZERO_SHOT_DETECTIONS_TOPIC,
@@ -187,7 +187,7 @@ class KeyboardInput(Node):
 
     def refresh_objects(self):
         self.get_logger().info("Refreshing objects list...")
-        self.objects = []  
+        self.objects = []
         # Spin for 1 second to receive messages
         start_time = time.time()
         while time.time() - start_time < 1.0:

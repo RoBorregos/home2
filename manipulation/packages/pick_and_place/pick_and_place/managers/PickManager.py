@@ -71,10 +71,7 @@ class PickManager:
         self.tf_listener = TransformListener(self.tf_buffer, self.node)
 
         self.node.create_subscription(
-            PoseStamped,
-            '/manipulation/flat_grasp_pose',
-            self.flat_grasp_callback,
-            10
+            PoseStamped, "/manipulation/flat_grasp_pose", self.flat_grasp_callback, 10
         )
 
     def flat_grasp_callback(self, msg):
@@ -236,12 +233,14 @@ class PickManager:
         if is_flat_object:
             # Send the estimator pose + a 90° rotated alternative
             grasp_pose_alt = copy.deepcopy(grasp_pose)
-            q_orig = R.from_quat([
-                grasp_pose.pose.orientation.x,
-                grasp_pose.pose.orientation.y,
-                grasp_pose.pose.orientation.z,
-                grasp_pose.pose.orientation.w,
-            ])
+            q_orig = R.from_quat(
+                [
+                    grasp_pose.pose.orientation.x,
+                    grasp_pose.pose.orientation.y,
+                    grasp_pose.pose.orientation.z,
+                    grasp_pose.pose.orientation.w,
+                ]
+            )
             q_rotated = (q_orig * R.from_euler("z", 90, degrees=True)).as_quat()
             grasp_pose_alt.pose.orientation.x = q_rotated[0]
             grasp_pose_alt.pose.orientation.y = q_rotated[1]
@@ -253,7 +252,9 @@ class PickManager:
             goal_msg.grasping_scores = [1.0, 0.9]
             goal_msg.object_name = object_name
 
-            self.node.get_logger().info("Sending Pick Motion goal (flat grasp estimator)...")
+            self.node.get_logger().info(
+                "Sending Pick Motion goal (flat grasp estimator)..."
+            )
             future = self.node._pick_motion_action_client.send_goal_async(goal_msg)
             future = wait_for_future(future, timeout=30)
 
