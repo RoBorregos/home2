@@ -90,30 +90,9 @@ add_or_update_variable() {
 }
 
 clean_directories() {
-  local target=${1:-workspace}
-  case "$target" in
-    workspace)
-      echo "Cleaning build/log/install directories..."
-      rm -rf build log install
-      ;;
-    frida_interfaces)
-      echo "Cleaning frida_interfaces_cache build/log/install..."
-      rm -rf "docker/frida_interfaces_cache/build" \
-             "docker/frida_interfaces_cache/log" \
-             "docker/frida_interfaces_cache/install"
-      ;;
-    all)
-      echo "Cleaning all directories..."
-      rm -rf build log install
-      rm -rf "docker/frida_interfaces_cache/build" \
-             "docker/frida_interfaces_cache/log" \
-             "docker/frida_interfaces_cache/install"
-      ;;
-    *)
-      echo "Unknown clean target: $target" >&2
-      return 1
-      ;;
-  esac
+  local target="${1:-.}"
+  echo "Cleaning build/log/install in: $target"
+  rm -rf "$target/build" "$target/log" "$target/install"
 }
 
 run_frida_interfaces() {

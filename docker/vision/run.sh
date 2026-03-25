@@ -82,8 +82,7 @@ esac
 
 # Clean build artifacts if requested
 if [ "$CLEAN" == "true" ]; then
-  echo "Cleaning build/ log/ install/"
-  clean_directories workspace
+  clean_directories .
 fi
 
 mkdir -p install build log moondream/install moondream/build moondream/log
