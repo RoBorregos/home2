@@ -1,5 +1,7 @@
 var NAVTREEINDEX18 =
 {
+"classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a86d1a33e91451f142372129dd280f2b4":[24,0,82,4,2,2],
+"classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a87ae75bd4b662636a1a19de44a401733":[23,0,140,5,2,72],
 "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a87ae75bd4b662636a1a19de44a401733":[24,0,82,4,2,72],
 "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a8bd5d574ac6164b322647f055ec88161":[24,0,82,4,2,19],
 "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html#a8bd5d574ac6164b322647f055ec88161":[23,0,140,5,2,19],
@@ -247,7 +249,5 @@ var NAVTREEINDEX18 =
 "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#aea97b781d538901274bd6ca1375bf616":[24,0,82,6,0,21],
 "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#aeb59ba5bc5b4a0b7246671d3e4017739":[24,0,82,6,0,13],
 "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#aeb59ba5bc5b4a0b7246671d3e4017739":[23,0,140,7,0,13],
-"classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#aec6654b28ae66f05e695adecc454e52a":[23,0,140,7,0,5],
-"classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#aec6654b28ae66f05e695adecc454e52a":[24,0,82,6,0,5],
-"classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#af1dd370c01da509aae92727d2bcc871f":[23,0,140,7,0,1]
+"classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#aec6654b28ae66f05e695adecc454e52a":[23,0,140,7,0,5]
 };

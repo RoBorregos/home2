@@ -1,5 +1,9 @@
 var NAVTREEINDEX30 =
 {
+"namespacesubtask__managers_1_1vision__tasks.html#a1abb56fac59a5fec5b7cdb4f1b3a2ba5":[23,0,140,9,5],
+"namespacesubtask__managers_1_1vision__tasks.html#a35a3ccf19eee1ced86e734c35eb4d16b":[23,0,140,9,3],
+"namespacesubtask__managers_1_1vision__tasks.html#a3a4bd0269cff5c8d45098a6a0baed265":[23,0,140,9,7],
+"namespacesubtask__managers_1_1vision__tasks.html#aa1f67b14ca9b6d1f206441038d9b045e":[23,0,140,9,6],
 "namespacesubtask__managers_1_1vision__tasks.html#ae7683efea5f76a87a8709bf0dc062fd4":[23,0,140,9,4],
 "namespacesubtask__managers_1_1vision__tasks.html#af7131cd2974024262937309e08bd5baf":[23,0,140,9,1],
 "namespacesubtask__managers_1_1vision__tasks.html#af8b434b2944d2e99338e040a7bb1d7c5":[23,0,140,9,2],
@@ -245,9 +249,5 @@ var NAVTREEINDEX30 =
 "pick__server_8py.html":[25,0,3,0,5,1,8],
 "pick__server_8py.html#ade4091c8c73568e8e0b5935f5b669677":[25,0,3,0,5,1,8,1],
 "place__server_8py.html":[25,0,3,0,5,1,9],
-"place__server_8py.html#acbfe0e044d3c95d5f9eae1cad1ecec59":[25,0,3,0,5,1,9,1],
-"point__transformer_8py.html":[25,0,6,1,1,9],
-"point__transformer_8py.html#ad6684cbb74264c3e713e59b88cc50a19":[25,0,6,1,1,9,1],
-"pointing__detection_8py.html":[25,0,7,0,3,1,12],
-"pointing__detection_8py.html#a197c3d9ed96b3db5850117c5d78e684a":[25,0,7,0,3,1,12,11]
+"place__server_8py.html#acbfe0e044d3c95d5f9eae1cad1ecec59":[25,0,3,0,5,1,9,1]
 };

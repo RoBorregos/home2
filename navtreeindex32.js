@@ -1,5 +1,9 @@
 var NAVTREEINDEX32 =
 {
+"tracker__node__fregoso_8py.html":[25,0,7,0,3,1,15],
+"tracker__node__fregoso_8py.html#a06e5ae8c2496d1cf9aeec78c602cb3b9":[25,0,7,0,3,1,15,1],
+"tracker__node__fregoso_8py.html#a518c8c773b91c1160177c9615eb47340":[25,0,7,0,3,1,15,2],
+"tracker__node__fregoso_8py.html#a8c3da4b8f29e53041fcef6bd5413a738":[25,0,7,0,3,1,15,3],
 "transform__target_8py.html":[25,0,4,0,2,2,8],
 "transform__target_8py.html#a989a7ec5742944802744233669fab7cc":[25,0,4,0,2,2,8,1],
 "trash__detection__node_8py.html":[25,0,7,0,3,1,16],

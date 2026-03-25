@@ -8,6 +8,7 @@ var classdashgo__driver2_1_1DashgoDriver =
     [ "base_frame", "classdashgo__driver2_1_1DashgoDriver.html#ab5ba7c82fffb7e91e974da5e9275bfb7", null ],
     [ "baud", "classdashgo__driver2_1_1DashgoDriver.html#a4e8570d977fd49aee1200ef0f5707a52", null ],
     [ "cmd_vel", "classdashgo__driver2_1_1DashgoDriver.html#ad88b81a45cfdd2fa110b9b953faa80ca", null ],
+    [ "consecutive_errors", "classdashgo__driver2_1_1DashgoDriver.html#ab6c2b912f649a05c343c11517674b853", null ],
     [ "controller", "classdashgo__driver2_1_1DashgoDriver.html#a396853861feccdb50c11f0129bcabd07", null ],
     [ "enc_left", "classdashgo__driver2_1_1DashgoDriver.html#a1bf8205e4a55c511f71427afee0207d0", null ],
     [ "enc_right", "classdashgo__driver2_1_1DashgoDriver.html#a23a51b0353c72f32ea0be2ea08eaa72c", null ],
