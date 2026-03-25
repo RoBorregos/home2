@@ -149,7 +149,9 @@ def generate_launch_description():
                 parameters=[{
                     'pointcloud.enable': True,
                     'depth_module.profile': '640x480x30',
-                    'rgb_module.profile': '640x480x30',
+                    'color_width': 640,
+                    'color_height': 480,
+                    'color_fps': 30,
                     'base_frame_id': 'intel_realsense',
                 }],
             ),
@@ -168,7 +170,7 @@ def generate_launch_description():
                         'bt_navigator',
                         'velocity_smoother',
                         'collision_monitor',
-                        'realsense_camera',
+                        'camera/realsense_camera',
                     ]
                 }],
             ),
