@@ -128,10 +128,12 @@ COMMAND="$GENERATE_BAML_CLIENT && $SOURCE_ROS && $SOURCE_INTERFACES && $BUILD_CO
 add_or_update_variable compose/.env "ROLE" "${PROFILES[0]}"
 
 cleanup() {
+  # Ensure the process is not left running
   [ -n "$wait_for_display_pid" ] && kill "$wait_for_display_pid" 2>/dev/null || true
 }
 trap cleanup SIGINT SIGTERM
 
+# Function to wait for service and launch display
 wait_and_launch_display() {
   until curl --output /dev/null --silent --head --fail http://localhost:3000; do
     sleep 1
@@ -146,5 +148,30 @@ if [ -n "$OPEN_DISPLAY" ]; then
   wait_for_display_pid=$!
 fi
 
-add_or_update_variable compose/.env "COMMAND" "$COMMAND"
-docker compose -f "$COMPOSE" up $DETACHED $BUILD_IMAGE
+if [ "$UPLOAD_IMAGE" == "true" ]; then
+  echo "Uploading HRI images to DockerHub (env: ${ENV_TYPE})..."
+  HRI_IMAGES=(
+    "roborregos/home2:hri-${ENV_TYPE}"
+    "roborregos/home2:hri-stt-${ENV_TYPE}"
+    "roborregos/home2:hri-tts-${ENV_TYPE}"
+    "roborregos/home2:hri-postgres-${ENV_TYPE}"
+  )
+  # ollama is only built for cuda and l4t envs
+  if [ "$ENV_TYPE" = "cuda" ] || [ "$ENV_TYPE" = "l4t" ]; then
+    HRI_IMAGES+=("roborregos/home2:hri-ollama-${ENV_TYPE}")
+  fi
+  for img in "${HRI_IMAGES[@]}"; do
+    ensure_and_upload_image "$img" "$COMPOSE"
+  done
+fi
+
+if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
+    ALREADY_RUNNING=$(docker ps -q -f name="hri-ros")
+    if [ -z "$ALREADY_RUNNING" ] || [ -n "$BUILD_IMAGE" ]; then
+        docker compose -f "$COMPOSE" up -d $BUILD_IMAGE
+    fi
+    docker compose -f "$COMPOSE" exec hri-ros bash -c "$COMMAND"
+else
+    add_or_update_variable compose/.env "COMMAND" "$COMMAND"
+    docker compose -f "$COMPOSE" up $DETACHED $BUILD_IMAGE
+fi

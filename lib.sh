@@ -95,6 +95,7 @@ parse_common_flags() {
   BUILD=""
   BUILD_IMAGE=""
   UPLOAD_IMAGE=""
+  CLEAN=""
 
   local compose="${COMPOSE_CMD:-docker compose}"
 
@@ -104,6 +105,7 @@ parse_common_flags() {
       "--build")        BUILD="true" ;;
       "--build-image")  BUILD_IMAGE="--build" ;;
       "--upload-image") UPLOAD_IMAGE="true" ;;
+      "--clean")        CLEAN="true" ;;
       "--recreate")     $compose down ;;
       "--down")         $compose down; exit 0 ;;
       "--stop")         $compose stop; exit 0 ;;
@@ -126,6 +128,7 @@ setup_common_env() {
   add_or_update_variable .env "BASE_IMAGE"        "roborregos/home2:${ENV_TYPE}_base"
   add_or_update_variable .env "IMAGE_NAME"        "roborregos/home2:${area}-${ENV_TYPE}"
 
+  clean_workspace_directories
   mkdir -p install build log
 }
 
