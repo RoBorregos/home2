@@ -10,7 +10,7 @@ import rclpy
 from frida_interfaces.srv import FollowFace
 from geometry_msgs.msg import Point
 from rclpy.node import Node
-from utils.logger import Logger
+from task_manager.utils.logger import Logger
 from xarm_msgs.srv import MoveVelocity, SetInt16
 from frida_constants.manipulation_constants import (
     FACE_RECOGNITION_LIFETIME,

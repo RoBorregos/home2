@@ -13,13 +13,13 @@ from datetime import datetime
 from typing import Union
 
 import rclpy
-from config.hri.debug import config as test_hri_config
+from task_manager.config.hri.debug import config as test_hri_config
 from rclpy.node import Node
 from sklearn.metrics.pairwise import cosine_similarity
-from subtask_managers.hri_tasks import HRITasks
+from task_manager.subtask_managers.hri_tasks import HRITasks
 
 # from subtask_managers.subtask_meta import SubtaskMeta
-from utils.baml_client.types import (
+from task_manager.utils.baml_client.types import (
     AnswerQuestion,
     CommandListLLM,
     Count,
@@ -35,8 +35,8 @@ from utils.baml_client.types import (
     PlaceObject,
     SayWithContext,
 )
-from utils.status import Status
-from utils.task import Task
+from task_manager.utils.status import Status
+from task_manager.utils.task import Task
 
 InterpreterAvailableCommands = Union[
     CommandListLLM,
@@ -133,6 +133,9 @@ class TestHriManager(Node):
 
         if TEST_TAKE_ORDER:
             self.test_take_order()
+
+        s, user_request, _ = self.hri_manager.hear()
+        self.get_logger().info(f"Heard: {user_request}")
 
         exit(0)
 
@@ -633,7 +636,7 @@ class TestHriManager(Node):
         self.get_logger().info("This may take a minute...")
         result = subprocess.run(
             ["baml-cli", "test"],
-            cwd="/workspace/src/task_manager/scripts/utils/",
+            cwd="/workspace/src/task_manager/task_manager/utils/",
             capture_output=True,
             text=True,
         )

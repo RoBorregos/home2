@@ -29,10 +29,10 @@ from rclpy.task import Future
 
 # from sensor_msgs.msg import LaserScan
 from std_srvs.srv import Empty, SetBool
-from utils.decorators import mockable, service_check
-from utils.logger import Logger
-from utils.status import Status
-from utils.task import Task
+from task_manager.utils.decorators import mockable, service_check
+from task_manager.utils.logger import Logger
+from task_manager.utils.status import Status
+from task_manager.utils.task import Task
 
 TIMEOUT_WAIT_FOR_SERVICE = 1.0
 TIMEOUT = 4
