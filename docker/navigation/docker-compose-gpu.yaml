@@ -5,7 +5,7 @@ services:
       context: ../..
       dockerfile: ${DOCKERFILE:-docker/navigation/Dockerfile.gpu}
       args:
-        BASE_IMAGE: ${BASE_IMAGE:-roborregos/home2:gpu_base} 
+        BASE_IMAGE: ${BASE_IMAGE:-roborregos/home2:gpu_base}
     image: ${IMAGE_NAME:-roborregos/home2:navigation-gpu}
     volumes:
       - ../../:/workspace/src
@@ -30,8 +30,12 @@ services:
             - driver: nvidia
               count: all
               capabilities: [gpu]
-    group_add: 
+    group_add:
       - video
+      - dialout
+    devices:
+      - "/dev/ttyUSBlidar2:/dev/ttyUSBlidar2"
+      - "/dev/ttyUSBStm32:/dev/ttyUSBStm32"
     environment:
       DISPLAY: ${DISPLAY:-:0}
       TERM: xterm-256color
@@ -39,7 +43,7 @@ services:
       QT_DEBUG_PLUGINS: 1
       CYCLONE_INTERFACE: ${CYCLONE_INTERFACE:-}
     tty: true
-    stdin_open: true    
+    stdin_open: true
     working_dir: /workspace
     command: >
       bash -c "${COMMAND:-/bin/bash}"
