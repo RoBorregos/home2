@@ -30,6 +30,7 @@ from utils.status import Status
 from frida_interfaces.action import ManipulationAction, GoToHand
 from frida_interfaces.msg import ManipulationTask
 from geometry_msgs.msg import PointStamped, PoseStamped
+from std_srvs.srv import SetBool
 
 # from utils.decorators import service_check
 from xarm_msgs.srv import SetDigitalIO
@@ -38,6 +39,8 @@ from frida_constants.manipulation_constants import (
     MANIPULATION_ACTION_SERVER,
     GO_TO_HAND_ACTION_SERVER,
 )
+
+FLAT_GRASP_ESTIMATOR_ENABLE_SERVICE = "/flat_grasp_estimator/enable"
 import time as t
 
 from enum import Enum
@@ -105,6 +108,9 @@ class ManipulationTasks:
             "/manipulation/get_optimal_pose_for_plane",
         )
         self._go_to_hand_action_client = ActionClient(self.node, GoToHand, GO_TO_HAND_ACTION_SERVER)
+        self._flat_grasp_estimator_client = self.node.create_client(
+            SetBool, FLAT_GRASP_ESTIMATOR_ENABLE_SERVICE
+        )
 
     def open_gripper(self):
         """Opens the gripper"""
@@ -354,6 +360,35 @@ class ManipulationTasks:
             return Status.EXECUTION_ERROR
 
         return Status.EXECUTION_SUCCESS
+
+    def set_flat_grasp_estimator(self, enable: bool) -> int:
+        """Enable or disable the flat grasp estimator node."""
+        if not self._flat_grasp_estimator_client.wait_for_service(timeout_sec=TIMEOUT):
+            Logger.error(self.node, "Flat grasp estimator service not available")
+            return Status.EXECUTION_ERROR
+
+        req = SetBool.Request()
+        req.data = enable
+        future = self._flat_grasp_estimator_client.call_async(req)
+        rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
+
+        if future.result() is not None and future.result().success:
+            state = "enabled" if enable else "disabled"
+            Logger.info(self.node, f"Flat grasp estimator {state}")
+            return Status.EXECUTION_SUCCESS
+
+        Logger.error(self.node, "Failed to set flat grasp estimator state")
+        return Status.EXECUTION_ERROR
+
+    def pick_cutlery(self, object_name: str) -> int:
+        """Pick a cutlery object (fork, knife, spoon).
+        Enables the flat grasp estimator, performs the pick, then disables it."""
+        self.set_flat_grasp_estimator(True)
+        try:
+            result = self.pick_object(object_name)
+        finally:
+            self.set_flat_grasp_estimator(False)
+        return result
 
     @mockable(return_value=Status.EXECUTION_SUCCESS)
     @service_check(

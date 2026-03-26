@@ -324,8 +324,14 @@ class PickAndPlaceTM(Node):
 
             self.subtask_manager.hri.say(f"I will pick the {self.grasped_object.name}.", wait=False)
 
-            # pick_object expects the object name; manipulation server uses active vision
-            status = self.subtask_manager.manipulation.pick_object(self.grasped_object.name)
+            if self.grasped_object.category == ObjectCategory.CUTLERY:
+                status = self.subtask_manager.manipulation.pick_cutlery(
+                    self.grasped_object.name
+                )
+            else:
+                status = self.subtask_manager.manipulation.pick_object(
+                    self.grasped_object.name
+                )
 
             if status == Status.EXECUTION_SUCCESS:
                 self.grasped_object.is_picked = True
@@ -553,7 +559,10 @@ class PickAndPlaceTM(Node):
             self.subtask_manager.manipulation.move_to_position("table_stare")
             self.subtask_manager.hri.say(f"I will pick the {item_name}.", wait=False)
 
-            status = self.subtask_manager.manipulation.pick_object(item_name)
+            if self.categorize_object(item_name) == ObjectCategory.CUTLERY:
+                status = self.subtask_manager.manipulation.pick_cutlery(item_name)
+            else:
+                status = self.subtask_manager.manipulation.pick_object(item_name)
 
             if status == Status.EXECUTION_SUCCESS:
                 self.current_breakfast_item["picked"] = True
