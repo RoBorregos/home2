@@ -145,6 +145,7 @@ class RESTAURANTCommands(Node):
     def publish_table_customer_image(self, table_groups, table_pixels):
         if self.image is None or self.imageInfo is None:
             return
+        self.get_logger().info("Publishing table and customer debug image")
 
         debug_image = self.image.copy()
         for i, (table, (u, v)) in enumerate(zip(table_groups, table_pixels)):
@@ -187,9 +188,9 @@ class RESTAURANTCommands(Node):
         point_stamped = PointStamped()
         point_stamped.header.stamp = self.get_clock().now().to_msg()
         point_stamped.header.frame_id = CAMERA_FRAME
-        point_stamped.point.x = float(xyz[0])
-        point_stamped.point.y = float(xyz[1])
-        point_stamped.point.z = float(xyz[2])
+        point_stamped.point.x = float(xyz[2])
+        point_stamped.point.y = float(-xyz[0])
+        point_stamped.point.z = float(-xyz[1])
         return point_stamped
 
     def get_customers(self):

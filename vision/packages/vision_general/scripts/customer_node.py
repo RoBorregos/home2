@@ -202,9 +202,9 @@ class CustomerNode(Node):
                     coords = PointStamped()
                     coords.header.frame_id = self.frame_id
                     coords.header.stamp = self.depth_image_time
-                    coords.point.x = float(point3D_raw[0])
-                    coords.point.y = float(point3D_raw[1])
-                    coords.point.z = float(point3D_raw[2])
+                    coords.point.x = float(point3D_raw[2])
+                    coords.point.y = float(-point3D_raw[0])
+                    coords.point.z = float(-point3D_raw[1])
                     self.results_publisher.publish(coords)
 
                     # Normalize X coordinate for basic tracking
