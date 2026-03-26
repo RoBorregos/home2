@@ -8,7 +8,7 @@ from rclpy.node import Node
 
 from frida_constants.vision_constants import DETECTIONS_TOPIC, TRASH_SERVICE
 from frida_interfaces.msg import ObjectDetectionArray
-from frida_interfaces.srv import DetectionHandler
+from frida_interfaces.srv import TrashObject
 
 
 class TrashDetectionNode(Node):
@@ -24,7 +24,7 @@ class TrashDetectionNode(Node):
         )
 
         self.create_service(
-            DetectionHandler,
+            TrashObject,
             TRASH_SERVICE,
             self.get_trash,
         )
@@ -37,6 +37,7 @@ class TrashDetectionNode(Node):
     def get_trash(self, req, response):
         if not self.latest_detections.detections:
             response.detection_array = ObjectDetectionArray(detections=[])
+            response.is_trash = False
             response.success = False
             self.get_logger().warn("No detections available yet")
             return response
@@ -67,6 +68,7 @@ class TrashDetectionNode(Node):
             )
 
         response.detection_array = ObjectDetectionArray(detections=filtered)
+        response.is_trash = True
         response.success = len(filtered) > 0
         return response
 
