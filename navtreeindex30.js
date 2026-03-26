@@ -180,6 +180,7 @@ var NAVTREEINDEX30 =
 "namespacetest__manager.html":[23,0,146],
 "namespacetest__manager.html#a493f4e40d62cf85e734ad364fce0608a":[23,0,146,1],
 "namespacetest__manipulation__manager.html":[23,0,147],
+"namespacetest__manipulation__manager.html#a3e8f03055d5b5a167bfa93d062b396b0":[23,0,147,2],
 "namespacetest__manipulation__manager.html#aa1d1240f6e1bf9a1472e8c9e914fcfb4":[23,0,147,1],
 "namespacetest__nav__manager.html":[23,0,148],
 "namespacetest__nav__manager.html#ab0964f7c5e2456a9bbe75f0ea66499e5":[23,0,148,1],
@@ -248,6 +249,5 @@ var NAVTREEINDEX30 =
 "namespacevision__general_1_1pose__detection.html#a5da01077d2eab20ff68bd03ad901f916":[23,0,160,0,8],
 "namespacevision__general_1_1pose__detection.html#a6ab32cb045505378a662c5c4a7a5570a":[23,0,160,0,11],
 "namespacevision__general_1_1pose__detection.html#a724ec7625cfd38b42e38c7c0b987e2b2":[23,0,160,0,3],
-"namespacevision__general_1_1pose__detection.html#aa019c07a9ca5d672c8ae6488c329973e":[23,0,160,0,7],
-"namespacevision__general_1_1pose__detection.html#ab61362ab896a9b4054d44746e91037c6":[23,0,160,0,10]
+"namespacevision__general_1_1pose__detection.html#aa019c07a9ca5d672c8ae6488c329973e":[23,0,160,0,7]
 };

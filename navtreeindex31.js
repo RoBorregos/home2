@@ -1,5 +1,6 @@
 var NAVTREEINDEX31 =
 {
+"namespacevision__general_1_1pose__detection.html#ab61362ab896a9b4054d44746e91037c6":[23,0,160,0,10],
 "namespacevision__general_1_1pose__detection.html#abbd7643dfb904eb7dc9da39ad5542306":[23,0,160,0,5],
 "namespacevision__general_1_1pose__detection.html#abc37ba4faf7754d0deadd15d8b90c1d6":[23,0,160,0,12],
 "namespacevision__general_1_1pose__detection.html#abf7e257963f2588085b4cbeeb262315c":[23,0,160,0,9],
@@ -248,6 +249,5 @@ var NAVTREEINDEX31 =
 "safety__task__manager_8py.html":[25,0,6,1,13],
 "safety__task__manager_8py.html#a207642360aafef76971e5142db35e75c":[25,0,6,1,13,3],
 "scripts_2pose__detection_8py.html":[25,0,7,0,3,1,13],
-"scripts_2pose__detection_8py.html#a0fa4657c7964f252abb37457c48c64b9":[25,0,7,0,3,1,13,3],
-"scripts_2pose__detection_8py.html#a1cf363879219f89b064ecb6b68514ad1":[25,0,7,0,3,1,13,15]
+"scripts_2pose__detection_8py.html#a0fa4657c7964f252abb37457c48c64b9":[25,0,7,0,3,1,13,3]
 };

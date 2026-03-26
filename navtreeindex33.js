@@ -1,5 +1,7 @@
 var NAVTREEINDEX33 =
 {
+"vision__constants__cpp_8hpp.html#acf9adb88cf10aa4cc901964714c1c07b":[25,0,1,2,0,1,2],
+"vision__constants__cpp_8hpp.html#ade21f0c5e6995bdc6920bc14d50c4fef":[25,0,1,2,0,1,8],
 "vision__constants__cpp_8hpp.html#adf8deeb293e8d20413a8fa970fe26261":[25,0,1,2,0,1,9],
 "vision__constants__cpp_8hpp_source.html":[25,0,1,2,0,1],
 "vision__enums_8py.html":[25,0,1,1,8],

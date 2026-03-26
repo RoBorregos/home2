@@ -234,9 +234,9 @@ var NAVTREEINDEX =
 "namespacefrida__constants_1_1manipulation__constants.html#ac3a0e78153e604056eb6b66a73f0f4f7",
 "namespacemembers_vars_a.html",
 "namespacereid__model.html#ae9c13aa962487362309ec0e288114b65",
-"namespacevision__general_1_1pose__detection.html#abbd7643dfb904eb7dc9da39ad5542306",
-"scripts_2pose__detection_8py.html#a2647b4c5982628929c638bc3c6c1f55e",
-"vision__constants__cpp_8hpp.html#adf8deeb293e8d20413a8fa970fe26261"
+"namespacevision__general_1_1pose__detection.html#ab61362ab896a9b4054d44746e91037c6",
+"scripts_2pose__detection_8py.html#a1cf363879219f89b064ecb6b68514ad1",
+"vision__constants__cpp_8hpp.html#acf9adb88cf10aa4cc901964714c1c07b"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';
