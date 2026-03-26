@@ -134,11 +134,6 @@ class object_detector_node(rclpy.node.Node):
     def cutlery_detections_callback(self, msg):
         self.latest_cutlery_detections = msg.detections
 
-        # Frames per second throughput estimator
-        self.curr_clock = 0
-
-        self.get_logger().info("Object Detector 2D Node has been started")
-
     def set_parameters(self):
         self.object_detector_parameters = ObjectDectectorParams()
         self.object_detector_parameters.depth_active = (
