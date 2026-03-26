@@ -134,9 +134,6 @@ class TestHriManager(Node):
         if TEST_TAKE_ORDER:
             self.test_take_order()
 
-        s, user_request, _ = self.hri_manager.hear()
-        self.get_logger().info(f"Heard: {user_request}")
-
         exit(0)
 
     def individual_functions(self):
