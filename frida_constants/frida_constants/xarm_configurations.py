@@ -109,6 +109,18 @@ PLACE_FLOOR_RIGHT = {
     "degrees": True,
 }
 
+BAG_POSE = {
+    "joints": {
+        "joint1": -93.3,
+        "joint2": -55.5,
+        "joint3": -72.9,
+        "joint4": 1.4,
+        "joint5": 122.1,
+        "joint6": 226,
+    },
+    "degrees": True,
+}
+
 XARM_CONFIGURATIONS = {
     "front_stare": FRONT_STARE,
     "front_low_stare": FRONT_LOW_STARE,
