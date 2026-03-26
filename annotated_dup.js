@@ -327,40 +327,65 @@ var annotated_dup =
       [ "Shelf", "classstoring__groceries__manager_1_1Shelf.html", null ],
       [ "StoringGroceriesManager", "classstoring__groceries__manager_1_1StoringGroceriesManager.html", "classstoring__groceries__manager_1_1StoringGroceriesManager" ]
     ] ],
-    [ "subtask_managers", "namespacesubtask__managers.html", [
-      [ "generic_tasks", "namespacesubtask__managers_1_1generic__tasks.html", [
-        [ "GenericTask", "classsubtask__managers_1_1generic__tasks_1_1GenericTask.html", "classsubtask__managers_1_1generic__tasks_1_1GenericTask" ]
+    [ "task_manager", "namespacetask__manager.html", [
+      [ "subtask_managers", "namespacetask__manager_1_1subtask__managers.html", [
+        [ "generic_tasks", "namespacetask__manager_1_1subtask__managers_1_1generic__tasks.html", [
+          [ "GenericTask", "classtask__manager_1_1subtask__managers_1_1generic__tasks_1_1GenericTask.html", "classtask__manager_1_1subtask__managers_1_1generic__tasks_1_1GenericTask" ]
+        ] ],
+        [ "gpsr_single_tasks", "namespacetask__manager_1_1subtask__managers_1_1gpsr__single__tasks.html", [
+          [ "GPSRSingleTask", "classtask__manager_1_1subtask__managers_1_1gpsr__single__tasks_1_1GPSRSingleTask.html", "classtask__manager_1_1subtask__managers_1_1gpsr__single__tasks_1_1GPSRSingleTask" ]
+        ] ],
+        [ "gpsr_tasks", "namespacetask__manager_1_1subtask__managers_1_1gpsr__tasks.html", [
+          [ "GPSRTask", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask" ]
+        ] ],
+        [ "hri_dataclasses", "namespacetask__manager_1_1subtask__managers_1_1hri__dataclasses.html", [
+          [ "AudioStates", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1AudioStates.html", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1AudioStates" ],
+          [ "CommandHistory", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1CommandHistory.html", null ],
+          [ "FindClosestResult", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1FindClosestResult.html", null ],
+          [ "HandItem", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1HandItem.html", null ],
+          [ "Location", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1Location.html", null ]
+        ] ],
+        [ "hri_hand", "namespacetask__manager_1_1subtask__managers_1_1hri__hand.html", [
+          [ "HRIHand", "classtask__manager_1_1subtask__managers_1_1hri__hand_1_1HRIHand.html", "classtask__manager_1_1subtask__managers_1_1hri__hand_1_1HRIHand" ]
+        ] ],
+        [ "hri_tasks", "namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html", [
+          [ "HRITasks", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks" ]
+        ] ],
+        [ "manipulation_tasks", "namespacetask__manager_1_1subtask__managers_1_1manipulation__tasks.html", [
+          [ "ManipulationTasks", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks" ]
+        ] ],
+        [ "nav_tasks", "namespacetask__manager_1_1subtask__managers_1_1nav__tasks.html", [
+          [ "NavigationTasks", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks" ]
+        ] ],
+        [ "subtask_meta", "namespacetask__manager_1_1subtask__managers_1_1subtask__meta.html", [
+          [ "SubtaskMeta", "classtask__manager_1_1subtask__managers_1_1subtask__meta_1_1SubtaskMeta.html", "classtask__manager_1_1subtask__managers_1_1subtask__meta_1_1SubtaskMeta" ]
+        ] ],
+        [ "vision_tasks", "namespacetask__manager_1_1subtask__managers_1_1vision__tasks.html", [
+          [ "VisionTasks", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks" ]
+        ] ]
       ] ],
-      [ "gpsr_single_tasks", "namespacesubtask__managers_1_1gpsr__single__tasks.html", [
-        [ "GPSRSingleTask", "classsubtask__managers_1_1gpsr__single__tasks_1_1GPSRSingleTask.html", "classsubtask__managers_1_1gpsr__single__tasks_1_1GPSRSingleTask" ]
-      ] ],
-      [ "gpsr_tasks", "namespacesubtask__managers_1_1gpsr__tasks.html", [
-        [ "GPSRTask", "classsubtask__managers_1_1gpsr__tasks_1_1GPSRTask.html", "classsubtask__managers_1_1gpsr__tasks_1_1GPSRTask" ]
-      ] ],
-      [ "hri_dataclasses", "namespacesubtask__managers_1_1hri__dataclasses.html", [
-        [ "AudioStates", "classsubtask__managers_1_1hri__dataclasses_1_1AudioStates.html", "classsubtask__managers_1_1hri__dataclasses_1_1AudioStates" ],
-        [ "CommandHistory", "classsubtask__managers_1_1hri__dataclasses_1_1CommandHistory.html", null ],
-        [ "FindClosestResult", "classsubtask__managers_1_1hri__dataclasses_1_1FindClosestResult.html", null ],
-        [ "HandItem", "classsubtask__managers_1_1hri__dataclasses_1_1HandItem.html", null ],
-        [ "Location", "classsubtask__managers_1_1hri__dataclasses_1_1Location.html", null ]
-      ] ],
-      [ "hri_hand", "namespacesubtask__managers_1_1hri__hand.html", [
-        [ "HRIHand", "classsubtask__managers_1_1hri__hand_1_1HRIHand.html", "classsubtask__managers_1_1hri__hand_1_1HRIHand" ]
-      ] ],
-      [ "hri_tasks", "namespacesubtask__managers_1_1hri__tasks.html", [
-        [ "HRITasks", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html", "classsubtask__managers_1_1hri__tasks_1_1HRITasks" ]
-      ] ],
-      [ "manipulation_tasks", "namespacesubtask__managers_1_1manipulation__tasks.html", [
-        [ "ManipulationTasks", "classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html", "classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks" ]
-      ] ],
-      [ "nav_tasks", "namespacesubtask__managers_1_1nav__tasks.html", [
-        [ "NavigationTasks", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks" ]
-      ] ],
-      [ "subtask_meta", "namespacesubtask__managers_1_1subtask__meta.html", [
-        [ "SubtaskMeta", "classsubtask__managers_1_1subtask__meta_1_1SubtaskMeta.html", "classsubtask__managers_1_1subtask__meta_1_1SubtaskMeta" ]
-      ] ],
-      [ "vision_tasks", "namespacesubtask__managers_1_1vision__tasks.html", [
-        [ "VisionTasks", "classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html", "classsubtask__managers_1_1vision__tasks_1_1VisionTasks" ]
+      [ "utils", "namespacetask__manager_1_1utils.html", [
+        [ "config", "namespacetask__manager_1_1utils_1_1config.html", [
+          [ "MockConfig", "classtask__manager_1_1utils_1_1config_1_1MockConfig.html", "classtask__manager_1_1utils_1_1config_1_1MockConfig" ],
+          [ "SubtaskConfig", "classtask__manager_1_1utils_1_1config_1_1SubtaskConfig.html", "classtask__manager_1_1utils_1_1config_1_1SubtaskConfig" ],
+          [ "TopicConfig", "classtask__manager_1_1utils_1_1config_1_1TopicConfig.html", "classtask__manager_1_1utils_1_1config_1_1TopicConfig" ],
+          [ "TypeEnum", "classtask__manager_1_1utils_1_1config_1_1TypeEnum.html", null ]
+        ] ],
+        [ "exploration_planner", "namespacetask__manager_1_1utils_1_1exploration__planner.html", [
+          [ "ExplorationPlanner", "classtask__manager_1_1utils_1_1exploration__planner_1_1ExplorationPlanner.html", "classtask__manager_1_1utils_1_1exploration__planner_1_1ExplorationPlanner" ]
+        ] ],
+        [ "logger", "namespacetask__manager_1_1utils_1_1logger.html", [
+          [ "Logger", "classtask__manager_1_1utils_1_1logger_1_1Logger.html", null ]
+        ] ],
+        [ "status", "namespacetask__manager_1_1utils_1_1status.html", [
+          [ "Status", "classtask__manager_1_1utils_1_1status_1_1Status.html", null ]
+        ] ],
+        [ "subtask_manager", "namespacetask__manager_1_1utils_1_1subtask__manager.html", [
+          [ "SubtaskManager", "classtask__manager_1_1utils_1_1subtask__manager_1_1SubtaskManager.html", "classtask__manager_1_1utils_1_1subtask__manager_1_1SubtaskManager" ]
+        ] ],
+        [ "task", "namespacetask__manager_1_1utils_1_1task.html", [
+          [ "Task", "classtask__manager_1_1utils_1_1task_1_1Task.html", null ]
+        ] ]
       ] ]
     ] ],
     [ "temp_follow", "namespacetemp__follow.html", [
@@ -403,27 +428,6 @@ var annotated_dup =
       [ "TrashDetectionNode", "classtrash__detection__node_1_1TrashDetectionNode.html", "classtrash__detection__node_1_1TrashDetectionNode" ]
     ] ],
     [ "utils", "namespaceutils.html", [
-      [ "config", "namespaceutils_1_1config.html", [
-        [ "MockConfig", "classutils_1_1config_1_1MockConfig.html", "classutils_1_1config_1_1MockConfig" ],
-        [ "SubtaskConfig", "classutils_1_1config_1_1SubtaskConfig.html", "classutils_1_1config_1_1SubtaskConfig" ],
-        [ "TopicConfig", "classutils_1_1config_1_1TopicConfig.html", "classutils_1_1config_1_1TopicConfig" ],
-        [ "TypeEnum", "classutils_1_1config_1_1TypeEnum.html", null ]
-      ] ],
-      [ "exploration_planner", "namespaceutils_1_1exploration__planner.html", [
-        [ "ExplorationPlanner", "classutils_1_1exploration__planner_1_1ExplorationPlanner.html", "classutils_1_1exploration__planner_1_1ExplorationPlanner" ]
-      ] ],
-      [ "logger", "namespaceutils_1_1logger.html", [
-        [ "Logger", "classutils_1_1logger_1_1Logger.html", null ]
-      ] ],
-      [ "status", "namespaceutils_1_1status.html", [
-        [ "Status", "classutils_1_1status_1_1Status.html", null ]
-      ] ],
-      [ "subtask_manager", "namespaceutils_1_1subtask__manager.html", [
-        [ "SubtaskManager", "classutils_1_1subtask__manager_1_1SubtaskManager.html", "classutils_1_1subtask__manager_1_1SubtaskManager" ]
-      ] ],
-      [ "task", "namespaceutils_1_1task.html", [
-        [ "Task", "classutils_1_1task_1_1Task.html", null ]
-      ] ],
       [ "CrossEntropyLabelSmooth", "classutils_1_1CrossEntropyLabelSmooth.html", "classutils_1_1CrossEntropyLabelSmooth" ]
     ] ],
     [ "virtual_stop_button", "namespacevirtual__stop__button.html", [

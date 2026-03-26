@@ -38,10 +38,6 @@ var namespaces_dup =
     [ "cutlery_detection_node", "namespacecutlery__detection__node.html", "namespacecutlery__detection__node" ],
     [ "dashgo_driver", "namespacedashgo__driver.html", "namespacedashgo__driver" ],
     [ "dashgo_driver2", "namespacedashgo__driver2.html", "namespacedashgo__driver2" ],
-    [ "debug", "namespacedebug.html", [
-      [ "mock_extract_data", "namespacedebug.html#aa47889ce4161b7b36eb8c72cc7fcf016", null ],
-      [ "config", "namespacedebug.html#a2a2ea829f61015ff6529ee756ac35d9d", null ]
-    ] ],
     [ "demo_ds4", "namespacedemo__ds4.html", [
       [ "generate_launch_description", "namespacedemo__ds4.html#a3b92a5a114f0a71450f4b47c440d3352", null ]
     ] ],
@@ -169,11 +165,6 @@ var namespaces_dup =
     [ "map_publisher", "namespacemap__publisher.html", "namespacemap__publisher" ],
     [ "mapping", "namespacemapping.html", [
       [ "generate_launch_description", "namespacemapping.html#ac951e3077b2a262f96039858d7fa2b20", null ]
-    ] ],
-    [ "mocked", "namespacemocked.html", [
-      [ "mock_extract_data", "namespacemocked.html#aeff3bb8bbe5365c9e7f330e0fb5cf578", null ],
-      [ "mock_interpret_keyword", "namespacemocked.html#a66f0451a003eb34116afb2f43c5d4f12", null ],
-      [ "config", "namespacemocked.html#a8518ed6ea6c53ce63671b70b1acd18a9", null ]
     ] ],
     [ "model", "namespacemodel.html", "namespacemodel" ],
     [ "monitor", "namespacemonitor.html", [
@@ -325,7 +316,7 @@ var namespaces_dup =
       [ "generate_launch_description", "namespacestoring__groceries__launch.html#a84e56b2514a7f4c75214c14f7b9a38a4", null ]
     ] ],
     [ "storing_groceries_manager", "namespacestoring__groceries__manager.html", "namespacestoring__groceries__manager" ],
-    [ "subtask_managers", "namespacesubtask__managers.html", "namespacesubtask__managers" ],
+    [ "task_manager", "namespacetask__manager.html", "namespacetask__manager" ],
     [ "temp_follow", "namespacetemp__follow.html", "namespacetemp__follow" ],
     [ "test_env", "namespacetest__env.html", "namespacetest__env" ],
     [ "test_go_to_hand", "namespacetest__go__to__hand.html", "namespacetest__go__to__hand" ],

@@ -1,0 +1,38 @@
+var namespacetask__manager_1_1subtask__managers =
+[
+    [ "generic_tasks", "namespacetask__manager_1_1subtask__managers_1_1generic__tasks.html", "namespacetask__manager_1_1subtask__managers_1_1generic__tasks" ],
+    [ "gpsr_single_tasks", "namespacetask__manager_1_1subtask__managers_1_1gpsr__single__tasks.html", "namespacetask__manager_1_1subtask__managers_1_1gpsr__single__tasks" ],
+    [ "gpsr_tasks", "namespacetask__manager_1_1subtask__managers_1_1gpsr__tasks.html", "namespacetask__manager_1_1subtask__managers_1_1gpsr__tasks" ],
+    [ "gpsr_test_commands", "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html", [
+      [ "get_gpsr_comands", "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#a26fc0d654e86e8633cd300845b10d610", null ],
+      [ "AVAILABLE_COMMANDS", "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#a97443d1a7b24253528138833b23e0e0b", null ],
+      [ "cmd_type", "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#adb88aaf7f78e4b7e106a51050b70da9a", null ],
+      [ "color", "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#a6fe40e97a8ff54b64671667b6e26cf95", null ],
+      [ "command_space", "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#a9b9a56e7c7574157b1a411cf05adbd04", null ],
+      [ "command_statistics", "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#ad6084680e73696d85f214bac1ec74789", null ],
+      [ "custom_command", "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#aaab6a244ded3f187cd3d2623d2fd0f18", null ],
+      [ "else", "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#ad1aa144235ceaa598ba03d1f5a343823", null ],
+      [ "GPSR_COMMANDS", "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#afb2081d78235f69ee43ea83db2d954ab", null ],
+      [ "GREEN", "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#afa65779f48b34fbe3d5ee7d4a3646899", null ],
+      [ "implemented", "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#a67e55b9623e911800755e618e231f746", null ],
+      [ "implemented_count", "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#a7698dcc7d327b7e00c3d2fd06cc892cd", null ],
+      [ "key", "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#a006ca904dfde847a2b6aa1ba96d44872", null ],
+      [ "ORANGE", "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#a01503f79a75509efd7bbab6252e2d156", null ],
+      [ "percentage", "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#a36cbf4a74d4908d99fa5f604c69ce211", null ],
+      [ "RED", "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#a63f53589d16057cfeecbf8b8b3a54102", null ],
+      [ "RESET", "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#a2d8567649052915868aa0097fbd6f7fe", null ],
+      [ "structured_cmd", "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#ab459dbc3d7e2da19e0024efbc1b1dbc2", null ],
+      [ "total", "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#a4e869321acb5e28d324465adf4a05f55", null ],
+      [ "total_commands", "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#a3c121f73e0ad4f5793fc7db2ba6ad3d8", null ],
+      [ "total_count", "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#a76dad13b740d5b529ca65631e3e56cf5", null ],
+      [ "total_implemented", "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#ad342ef5904c6588ef5410380f0f95ebb", null ],
+      [ "total_percentage", "namespacetask__manager_1_1subtask__managers_1_1gpsr__test__commands.html#af61153ac2e4af84cfaf1fcc0eca7f0e8", null ]
+    ] ],
+    [ "hri_dataclasses", "namespacetask__manager_1_1subtask__managers_1_1hri__dataclasses.html", "namespacetask__manager_1_1subtask__managers_1_1hri__dataclasses" ],
+    [ "hri_hand", "namespacetask__manager_1_1subtask__managers_1_1hri__hand.html", "namespacetask__manager_1_1subtask__managers_1_1hri__hand" ],
+    [ "hri_tasks", "namespacetask__manager_1_1subtask__managers_1_1hri__tasks.html", "namespacetask__manager_1_1subtask__managers_1_1hri__tasks" ],
+    [ "manipulation_tasks", "namespacetask__manager_1_1subtask__managers_1_1manipulation__tasks.html", "namespacetask__manager_1_1subtask__managers_1_1manipulation__tasks" ],
+    [ "nav_tasks", "namespacetask__manager_1_1subtask__managers_1_1nav__tasks.html", "namespacetask__manager_1_1subtask__managers_1_1nav__tasks" ],
+    [ "subtask_meta", "namespacetask__manager_1_1subtask__managers_1_1subtask__meta.html", "namespacetask__manager_1_1subtask__managers_1_1subtask__meta" ],
+    [ "vision_tasks", "namespacetask__manager_1_1subtask__managers_1_1vision__tasks.html", "namespacetask__manager_1_1subtask__managers_1_1vision__tasks" ]
+];

@@ -1,6 +1,6 @@
 var gpsr__single__tasks_8py =
 [
-    [ "subtask_managers.gpsr_single_tasks.GPSRSingleTask", "classsubtask__managers_1_1gpsr__single__tasks_1_1GPSRSingleTask.html", "classsubtask__managers_1_1gpsr__single__tasks_1_1GPSRSingleTask" ],
-    [ "search_command", "gpsr__single__tasks_8py.html#a1b987e491b2223fe612a9fcaaecd0450", null ],
-    [ "RETRIES", "gpsr__single__tasks_8py.html#a2bcfc7fa30ee4d8f06ec6081c8cf15bc", null ]
+    [ "task_manager.subtask_managers.gpsr_single_tasks.GPSRSingleTask", "classtask__manager_1_1subtask__managers_1_1gpsr__single__tasks_1_1GPSRSingleTask.html", "classtask__manager_1_1subtask__managers_1_1gpsr__single__tasks_1_1GPSRSingleTask" ],
+    [ "search_command", "gpsr__single__tasks_8py.html#a9c9027b6a23f7c6f110fd538b7de0640", null ],
+    [ "RETRIES", "gpsr__single__tasks_8py.html#a342e4af688797931bd908d3bef0200da", null ]
 ];

@@ -1,4 +1,4 @@
 var exploration__planner_8py =
 [
-    [ "utils.exploration_planner.ExplorationPlanner", "classutils_1_1exploration__planner_1_1ExplorationPlanner.html", "classutils_1_1exploration__planner_1_1ExplorationPlanner" ]
+    [ "task_manager.utils.exploration_planner.ExplorationPlanner", "classtask__manager_1_1utils_1_1exploration__planner_1_1ExplorationPlanner.html", "classtask__manager_1_1utils_1_1exploration__planner_1_1ExplorationPlanner" ]
 ];

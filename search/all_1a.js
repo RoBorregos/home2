@@ -7,7 +7,7 @@ var searchData=
   ['zed_5fsimulator_4',['zed_simulator',['../namespacezed__simulator.html',1,'']]],
   ['zed_5fsimulator_2epy_5',['zed_simulator.py',['../zed__simulator_8py.html',1,'']]],
   ['zedsimulator_6',['ZedSimulator',['../classcamera__test_1_1ZedSimulator.html',1,'camera_test.ZedSimulator'],['../classzed__simulator_1_1ZedSimulator.html',1,'zed_simulator.ZedSimulator']]],
-  ['zero_5fpublisher_7',['zero_publisher',['../classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a2ab8c3b69cf0fa9071a7fcfc72c3f93f',1,'subtask_managers::nav_tasks::NavigationTasks']]],
+  ['zero_5fpublisher_7',['zero_publisher',['../classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html#a040ff68ad64af05505ccc830aa837730',1,'task_manager::subtask_managers::nav_tasks::NavigationTasks']]],
   ['zero_5fshot_5fdefault_5fclasses_8',['ZERO_SHOT_DEFAULT_CLASSES',['../namespacefrida__constants_1_1vision__constants.html#a4211ec5821d72ea37c79ae48043809ee',1,'frida_constants::vision_constants']]],
   ['zero_5fshot_5fdetections_5f3d_5ftopic_9',['ZERO_SHOT_DETECTIONS_3D_TOPIC',['../namespacefrida__constants_1_1vision__constants.html#a7316a8a42cc71661c5ca4eb92817b704',1,'frida_constants::vision_constants']]],
   ['zero_5fshot_5fdetections_5factive_5ftopic_10',['ZERO_SHOT_DETECTIONS_ACTIVE_TOPIC',['../namespacefrida__constants_1_1vision__constants.html#a6f90a10daccfc0110d2f85790bc5f970',1,'frida_constants::vision_constants']]],

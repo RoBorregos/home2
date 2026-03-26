@@ -3,31 +3,31 @@ var hierarchy =
     [ "frida_constants.vision_classes.BBOX", "classfrida__constants_1_1vision__classes_1_1BBOX.html", null ],
     [ "ObjectDetector.BBOX", "classObjectDetector_1_1BBOX.html", null ],
     [ "BoxPrimitiveParams", "structBoxPrimitiveParams.html", null ],
-    [ "subtask_managers.hri_dataclasses.CommandHistory", "classsubtask__managers_1_1hri__dataclasses_1_1CommandHistory.html", null ],
-    [ "utils.config.MockConfig.Config", "classutils_1_1config_1_1MockConfig_1_1Config.html", null ],
-    [ "utils.config.SubtaskConfig.Config", "classutils_1_1config_1_1SubtaskConfig_1_1Config.html", null ],
-    [ "utils.config.TopicConfig.Config", "classutils_1_1config_1_1TopicConfig_1_1Config.html", null ],
+    [ "task_manager.subtask_managers.hri_dataclasses.CommandHistory", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1CommandHistory.html", null ],
+    [ "task_manager.utils.config.MockConfig.Config", "classtask__manager_1_1utils_1_1config_1_1MockConfig_1_1Config.html", null ],
+    [ "task_manager.utils.config.SubtaskConfig.Config", "classtask__manager_1_1utils_1_1config_1_1SubtaskConfig_1_1Config.html", null ],
+    [ "task_manager.utils.config.TopicConfig.Config", "classtask__manager_1_1utils_1_1config_1_1TopicConfig_1_1Config.html", null ],
     [ "ObjectDetector.Detection", "classObjectDetector_1_1Detection.html", null ],
     [ "DetectionRecord", "structDetectionRecord.html", null ],
-    [ "utils.exploration_planner.ExplorationPlanner", "classutils_1_1exploration__planner_1_1ExplorationPlanner.html", null ],
-    [ "subtask_managers.hri_dataclasses.FindClosestResult", "classsubtask__managers_1_1hri__dataclasses_1_1FindClosestResult.html", null ],
-    [ "subtask_managers.generic_tasks.GenericTask", "classsubtask__managers_1_1generic__tasks_1_1GenericTask.html", [
-      [ "subtask_managers.gpsr_single_tasks.GPSRSingleTask", "classsubtask__managers_1_1gpsr__single__tasks_1_1GPSRSingleTask.html", null ],
-      [ "subtask_managers.gpsr_tasks.GPSRTask", "classsubtask__managers_1_1gpsr__tasks_1_1GPSRTask.html", null ]
+    [ "task_manager.utils.exploration_planner.ExplorationPlanner", "classtask__manager_1_1utils_1_1exploration__planner_1_1ExplorationPlanner.html", null ],
+    [ "task_manager.subtask_managers.hri_dataclasses.FindClosestResult", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1FindClosestResult.html", null ],
+    [ "task_manager.subtask_managers.generic_tasks.GenericTask", "classtask__manager_1_1subtask__managers_1_1generic__tasks_1_1GenericTask.html", [
+      [ "task_manager.subtask_managers.gpsr_single_tasks.GPSRSingleTask", "classtask__manager_1_1subtask__managers_1_1gpsr__single__tasks_1_1GPSRSingleTask.html", null ],
+      [ "task_manager.subtask_managers.gpsr_tasks.GPSRTask", "classtask__manager_1_1subtask__managers_1_1gpsr__tasks_1_1GPSRTask.html", null ]
     ] ],
     [ "hric_task_manager.Guest", "classhric__task__manager_1_1Guest.html", null ],
     [ "receptionist_task_manager.Guest", "classreceptionist__task__manager_1_1Guest.html", null ],
-    [ "subtask_managers.hri_dataclasses.HandItem", "classsubtask__managers_1_1hri__dataclasses_1_1HandItem.html", null ],
+    [ "task_manager.subtask_managers.hri_dataclasses.HandItem", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1HandItem.html", null ],
     [ "HandlerParams", "structHandlerParams.html", null ],
-    [ "subtask_managers.hri_hand.HRIHand", "classsubtask__managers_1_1hri__hand_1_1HRIHand.html", null ],
+    [ "task_manager.subtask_managers.hri_hand.HRIHand", "classtask__manager_1_1subtask__managers_1_1hri__hand_1_1HRIHand.html", null ],
     [ "rclcpp_lifecycle::LifecycleNode", null, [
       [ "AreasServices", "classAreasServices.html", null ]
     ] ],
-    [ "subtask_managers.hri_dataclasses.Location", "classsubtask__managers_1_1hri__dataclasses_1_1Location.html", null ],
-    [ "utils.logger.Logger", "classutils_1_1logger_1_1Logger.html", null ],
-    [ "subtask_managers.manipulation_tasks.ManipulationTasks", "classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html", null ],
+    [ "task_manager.subtask_managers.hri_dataclasses.Location", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1Location.html", null ],
+    [ "task_manager.utils.logger.Logger", "classtask__manager_1_1utils_1_1logger_1_1Logger.html", null ],
+    [ "task_manager.subtask_managers.manipulation_tasks.ManipulationTasks", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html", null ],
     [ "metaclass", null, [
-      [ "subtask_managers.hri_tasks.HRITasks", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html", null ]
+      [ "task_manager.subtask_managers.hri_tasks.HRITasks", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html", null ]
     ] ],
     [ "nn.Module", null, [
       [ "model.ClassBlock", "classmodel_1_1ClassBlock.html", null ],
@@ -48,7 +48,7 @@ var hierarchy =
     [ "arm_pkg.moveit_configs_builder.MoveItConfigs", "classarm__pkg_1_1moveit__configs__builder_1_1MoveItConfigs.html", null ],
     [ "arm_pkg.moveit_configs_builder_sim.MoveItConfigs", "classarm__pkg_1_1moveit__configs__builder__sim_1_1MoveItConfigs.html", null ],
     [ "pick_and_place.fix_position_to_plane.MyPoint", "classpick__and__place_1_1fix__position__to__plane_1_1MyPoint.html", null ],
-    [ "subtask_managers.nav_tasks.NavigationTasks", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html", null ],
+    [ "task_manager.subtask_managers.nav_tasks.NavigationTasks", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html", null ],
     [ "rclcpp::Node", null, [
       [ "AddPrimitivesNode", "classAddPrimitivesNode.html", null ],
       [ "CallServicesNode", "classCallServicesNode.html", null ],
@@ -92,20 +92,20 @@ var hierarchy =
     [ "gpsr_task_manager.GPSRTM.States", "classgpsr__task__manager_1_1GPSRTM_1_1States.html", null ],
     [ "dashgo_driver.dashgo_stm32.Stm32", "classdashgo__driver_1_1dashgo__stm32_1_1Stm32.html", null ],
     [ "str", null, [
-      [ "utils.config.TypeEnum", "classutils_1_1config_1_1TypeEnum.html", null ]
+      [ "task_manager.utils.config.TypeEnum", "classtask__manager_1_1utils_1_1config_1_1TypeEnum.html", null ]
     ] ],
-    [ "utils.subtask_manager.SubtaskManager", "classutils_1_1subtask__manager_1_1SubtaskManager.html", null ],
+    [ "task_manager.utils.subtask_manager.SubtaskManager", "classtask__manager_1_1utils_1_1subtask__manager_1_1SubtaskManager.html", null ],
     [ "clean_table_task_manager.CleanTableTM.TaskStates", "classclean__table__task__manager_1_1CleanTableTM_1_1TaskStates.html", null ],
     [ "hand_task_manager.HandTM.TaskStates", "classhand__task__manager_1_1HandTM_1_1TaskStates.html", null ],
     [ "hric_task_manager.HRIC_TM.TaskStates", "classhric__task__manager_1_1HRIC__TM_1_1TaskStates.html", null ],
     [ "receptionist_task_manager.ReceptionistTM.TaskStates", "classreceptionist__task__manager_1_1ReceptionistTM_1_1TaskStates.html", null ],
     [ "restaurant_task_manager.RestaurantTaskManager.TaskStates", "classrestaurant__task__manager_1_1RestaurantTaskManager_1_1TaskStates.html", null ],
     [ "type", null, [
-      [ "subtask_managers.subtask_meta.SubtaskMeta", "classsubtask__managers_1_1subtask__meta_1_1SubtaskMeta.html", [
-        [ "subtask_managers.hri_tasks.HRITasks", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html", null ]
+      [ "task_manager.subtask_managers.subtask_meta.SubtaskMeta", "classtask__manager_1_1subtask__managers_1_1subtask__meta_1_1SubtaskMeta.html", [
+        [ "task_manager.subtask_managers.hri_tasks.HRITasks", "classtask__manager_1_1subtask__managers_1_1hri__tasks_1_1HRITasks.html", null ]
       ] ]
     ] ],
-    [ "subtask_managers.vision_tasks.VisionTasks", "classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html", null ],
+    [ "task_manager.subtask_managers.vision_tasks.VisionTasks", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html", null ],
     [ "XArmServices.XArmServices", "classXArmServices_1_1XArmServices.html", null ],
     [ "camera_test.ZedSimulator", "classcamera__test_1_1ZedSimulator.html", null ],
     [ "ABC", null, [
@@ -115,9 +115,9 @@ var hierarchy =
     ] ],
     [ "BaseModel", null, [
       [ "storing_groceries_manager.Shelf", "classstoring__groceries__manager_1_1Shelf.html", null ],
-      [ "utils.config.MockConfig", "classutils_1_1config_1_1MockConfig.html", null ],
-      [ "utils.config.SubtaskConfig", "classutils_1_1config_1_1SubtaskConfig.html", null ],
-      [ "utils.config.TopicConfig", "classutils_1_1config_1_1TopicConfig.html", null ]
+      [ "task_manager.utils.config.MockConfig", "classtask__manager_1_1utils_1_1config_1_1MockConfig.html", null ],
+      [ "task_manager.utils.config.SubtaskConfig", "classtask__manager_1_1utils_1_1config_1_1SubtaskConfig.html", null ],
+      [ "task_manager.utils.config.TopicConfig", "classtask__manager_1_1utils_1_1config_1_1TopicConfig.html", null ]
     ] ],
     [ "Enum", null, [
       [ "frida_constants.ModuleNames", "classfrida__constants_1_1ModuleNames.html", null ],
@@ -131,11 +131,11 @@ var hierarchy =
       [ "safety_task_manager.Retries", "classsafety__task__manager_1_1Retries.html", null ],
       [ "storing_groceries_manager.ExecutionStates", "classstoring__groceries__manager_1_1ExecutionStates.html", null ],
       [ "storing_groceries_manager.Retries", "classstoring__groceries__manager_1_1Retries.html", null ],
-      [ "subtask_managers.hri_dataclasses.AudioStates", "classsubtask__managers_1_1hri__dataclasses_1_1AudioStates.html", null ],
-      [ "subtask_managers.manipulation_tasks.ManipulationTasks.Direction", "classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks_1_1Direction.html", null ],
-      [ "utils.config.TypeEnum", "classutils_1_1config_1_1TypeEnum.html", null ],
-      [ "utils.status.Status", "classutils_1_1status_1_1Status.html", null ],
-      [ "utils.task.Task", "classutils_1_1task_1_1Task.html", null ]
+      [ "task_manager.subtask_managers.hri_dataclasses.AudioStates", "classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1AudioStates.html", null ],
+      [ "task_manager.subtask_managers.manipulation_tasks.ManipulationTasks.Direction", "classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks_1_1Direction.html", null ],
+      [ "task_manager.utils.config.TypeEnum", "classtask__manager_1_1utils_1_1config_1_1TypeEnum.html", null ],
+      [ "task_manager.utils.status.Status", "classtask__manager_1_1utils_1_1status_1_1Status.html", null ],
+      [ "task_manager.utils.task.Task", "classtask__manager_1_1utils_1_1task_1_1Task.html", null ]
     ] ],
     [ "LifecycleNode", null, [
       [ "nav_lifecycle_manager.NavDependencyLifecycleManager", "classnav__lifecycle__manager_1_1NavDependencyLifecycleManager.html", null ]

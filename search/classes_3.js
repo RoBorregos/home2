@@ -7,7 +7,7 @@ var searchData=
   ['detectionrecord_4',['DetectionRecord',['../structDetectionRecord.html',1,'']]],
   ['detectionshandlernode_5',['DetectionsHandlerNode',['../classDetectionsHandlerNode.html',1,'']]],
   ['detectpointingobjectserver_6',['DetectPointingObjectServer',['../classpointing__detection_1_1DetectPointingObjectServer.html',1,'pointing_detection']]],
-  ['direction_7',['Direction',['../classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks_1_1Direction.html',1,'subtask_managers::manipulation_tasks::ManipulationTasks']]],
+  ['direction_7',['Direction',['../classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks_1_1Direction.html',1,'task_manager::subtask_managers::manipulation_tasks::ManipulationTasks']]],
   ['dishwashernode_8',['DishwasherNode',['../classdishwasher__node_1_1DishwasherNode.html',1,'dishwasher_node']]],
   ['dockingposerecorder_9',['DockingPoseRecorder',['../classrecord__relative__pose_1_1DockingPoseRecorder.html',1,'record_relative_pose']]],
   ['docktohandlenode_10',['DockToHandleNode',['../classdock__to__handle_1_1DockToHandleNode.html',1,'dock_to_handle']]],

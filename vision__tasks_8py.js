@@ -1,11 +1,11 @@
 var vision__tasks_8py =
 [
-    [ "subtask_managers.vision_tasks.VisionTasks", "classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html", "classsubtask__managers_1_1vision__tasks_1_1VisionTasks" ],
-    [ "IS_TRACKING_TOPIC", "vision__tasks_8py.html#af7131cd2974024262937309e08bd5baf", null ],
-    [ "node", "vision__tasks_8py.html#af8b434b2944d2e99338e040a7bb1d7c5", null ],
-    [ "order_labels", "vision__tasks_8py.html#a35a3ccf19eee1ced86e734c35eb4d16b", null ],
-    [ "TIMEOUT", "vision__tasks_8py.html#ae7683efea5f76a87a8709bf0dc062fd4", null ],
-    [ "TIMEOUT_WAIT_FOR_SERVICE", "vision__tasks_8py.html#a1abb56fac59a5fec5b7cdb4f1b3a2ba5", null ],
-    [ "try", "vision__tasks_8py.html#aa1f67b14ca9b6d1f206441038d9b045e", null ],
-    [ "vision_tasks", "vision__tasks_8py.html#a3a4bd0269cff5c8d45098a6a0baed265", null ]
+    [ "task_manager.subtask_managers.vision_tasks.VisionTasks", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks.html", "classtask__manager_1_1subtask__managers_1_1vision__tasks_1_1VisionTasks" ],
+    [ "IS_TRACKING_TOPIC", "vision__tasks_8py.html#add8920b2469d6bc25ce6aceb7b0fe0b3", null ],
+    [ "node", "vision__tasks_8py.html#ab304cd6fe5f54fe06d682e757d70edb9", null ],
+    [ "order_labels", "vision__tasks_8py.html#aabac25d44d3bf88f72a6d58600e79b89", null ],
+    [ "TIMEOUT", "vision__tasks_8py.html#a49cfba4f063b64b58df1700773fd7995", null ],
+    [ "TIMEOUT_WAIT_FOR_SERVICE", "vision__tasks_8py.html#acc2ee6161006865e51a5b980585f620b", null ],
+    [ "try", "vision__tasks_8py.html#a487ed937fcdfff5c5bea256543493678", null ],
+    [ "vision_tasks", "vision__tasks_8py.html#a66ff213d20092d5fa520cffdc25d0588", null ]
 ];

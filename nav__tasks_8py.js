@@ -1,18 +1,18 @@
 var nav__tasks_8py =
 [
-    [ "subtask_managers.nav_tasks.NavigationTasks", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks.html", "classsubtask__managers_1_1nav__tasks_1_1NavigationTasks" ],
-    [ "BT_LIFE_CYCLE_SERVICE", "nav__tasks_8py.html#aa7b04782b5901be32c84688667a26486", null ],
-    [ "BT_PARAM_SERVICE", "nav__tasks_8py.html#ab5d12d6aa928c8486939ec6f32d6349f", null ],
-    [ "DEFAULT_BT_PATH", "nav__tasks_8py.html#a9bc4c8ca04bec963a671843a28955aa1", null ],
-    [ "FOLLOW_BT_PATH", "nav__tasks_8py.html#aaa02d00cc5e15e35dc701c256933265d", null ],
-    [ "GOAL_POSE_TOPIC", "nav__tasks_8py.html#a01583190a3f2f808b89450592a6263b9", null ],
-    [ "navigation_tasks", "nav__tasks_8py.html#a35bf842183e21b6c6070cc6d2219644e", null ],
-    [ "node", "nav__tasks_8py.html#add335a5f17a44eb14de8877023fea371", null ],
-    [ "RETURN_LASER_DATA", "nav__tasks_8py.html#a5b4d09d800913ff80b44923281185579", null ],
-    [ "RETURN_LOCATION", "nav__tasks_8py.html#a6f0a3307d2c3d8bc3c5fcd2f15a84c08", null ],
-    [ "RTAB_PAUSE_SERVICE", "nav__tasks_8py.html#aeb62e19e4057171ba188344f69678d4b", null ],
-    [ "RTAB_RESUME_SERVICE", "nav__tasks_8py.html#aad10e56dffc669dc8cb618d129cb81e8", null ],
-    [ "TIMEOUT", "nav__tasks_8py.html#ad3bd539f5cb55fdd51c9fc250cfbc35d", null ],
-    [ "TIMEOUT_WAIT_FOR_SERVICE", "nav__tasks_8py.html#aafc34321ab5320cb34772ce8394217ac", null ],
-    [ "try", "nav__tasks_8py.html#a736666918ed4f70d5cf2d995c1e7351e", null ]
+    [ "task_manager.subtask_managers.nav_tasks.NavigationTasks", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks.html", "classtask__manager_1_1subtask__managers_1_1nav__tasks_1_1NavigationTasks" ],
+    [ "BT_LIFE_CYCLE_SERVICE", "nav__tasks_8py.html#a6881b715d1cceffb32a7a45f5d047035", null ],
+    [ "BT_PARAM_SERVICE", "nav__tasks_8py.html#a8f5b33781bfcefd70a49d5d8cc915126", null ],
+    [ "DEFAULT_BT_PATH", "nav__tasks_8py.html#a7927fb74c7953e99e14a3e31057960e1", null ],
+    [ "FOLLOW_BT_PATH", "nav__tasks_8py.html#aad45ef35d672160f10c14857740f10d4", null ],
+    [ "GOAL_POSE_TOPIC", "nav__tasks_8py.html#ab65cf2bf8bc57a36f21ed56650f7d1ca", null ],
+    [ "navigation_tasks", "nav__tasks_8py.html#a93554e13b08f6283b089be3c24d7bfeb", null ],
+    [ "node", "nav__tasks_8py.html#a564154d84694edae2c6fd15d69727e26", null ],
+    [ "RETURN_LASER_DATA", "nav__tasks_8py.html#a2ae23fc8dc81f649af27bdea14b8a45d", null ],
+    [ "RETURN_LOCATION", "nav__tasks_8py.html#a1afa3f716a9ee1bf2ce216de42088378", null ],
+    [ "RTAB_PAUSE_SERVICE", "nav__tasks_8py.html#a655d478ca19b63822cb5bd270c0675e2", null ],
+    [ "RTAB_RESUME_SERVICE", "nav__tasks_8py.html#a9e01717fba3473bb3e585665117083be", null ],
+    [ "TIMEOUT", "nav__tasks_8py.html#a20efc1c76f7b4163c0da3998c4253e91", null ],
+    [ "TIMEOUT_WAIT_FOR_SERVICE", "nav__tasks_8py.html#a4b629a67c023688162821ef6c4aa0827", null ],
+    [ "try", "nav__tasks_8py.html#ac8dd71a92d881ab3f302428e124e2b6b", null ]
 ];

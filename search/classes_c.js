@@ -2,11 +2,11 @@ var searchData=
 [
   ['manipulationclient_0',['ManipulationClient',['../classpick__and__place_1_1manipulation__client_1_1ManipulationClient.html',1,'pick_and_place::manipulation_client']]],
   ['manipulationcore_1',['ManipulationCore',['../classpick__and__place_1_1manipulation__core_1_1ManipulationCore.html',1,'pick_and_place::manipulation_core']]],
-  ['manipulationtasks_2',['ManipulationTasks',['../classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html',1,'subtask_managers::manipulation_tasks']]],
+  ['manipulationtasks_2',['ManipulationTasks',['../classtask__manager_1_1subtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html',1,'task_manager::subtask_managers::manipulation_tasks']]],
   ['mapareatagger_3',['MapAreaTagger',['../classmap__area__tagger_1_1MapAreaTagger.html',1,'map_area_tagger']]],
   ['mapcanvas_4',['MapCanvas',['../classmap__area__tagger_1_1MapCanvas.html',1,'map_area_tagger']]],
   ['mapcleaner_5',['MapCleaner',['../classmap__cleaner_1_1MapCleaner.html',1,'map_cleaner']]],
-  ['mockconfig_6',['MockConfig',['../classutils_1_1config_1_1MockConfig.html',1,'utils::config']]],
+  ['mockconfig_6',['MockConfig',['../classtask__manager_1_1utils_1_1config_1_1MockConfig.html',1,'task_manager::utils::config']]],
   ['model_7',['MODEL',['../classfrida__constants_1_1hri__constants_1_1MODEL.html',1,'frida_constants::hri_constants']]],
   ['modulenames_8',['ModuleNames',['../classfrida__constants_1_1ModuleNames.html',1,'frida_constants']]],
   ['moondreammodel_9',['MoonDreamModel',['../classmoondream__lib_1_1MoonDreamModel.html',1,'moondream_lib']]],

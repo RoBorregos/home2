@@ -1,7 +1,7 @@
 var searchData=
 [
   ['facerecognition_0',['FaceRecognition',['../classface__recognition__node_1_1FaceRecognition.html',1,'face_recognition_node']]],
-  ['findclosestresult_1',['FindClosestResult',['../classsubtask__managers_1_1hri__dataclasses_1_1FindClosestResult.html',1,'subtask_managers::hri_dataclasses']]],
+  ['findclosestresult_1',['FindClosestResult',['../classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1FindClosestResult.html',1,'task_manager::subtask_managers::hri_dataclasses']]],
   ['fixpositiontoplane_2',['FixPositionToPlane',['../classpick__and__place_1_1fix__position__to__plane_1_1FixPositionToPlane.html',1,'pick_and_place::fix_position_to_plane']]],
   ['flatgraspestimator_3',['FlatGraspEstimator',['../classflat__grasp__estimator_1_1FlatGraspEstimator.html',1,'flat_grasp_estimator']]],
   ['followfacenode_4',['FollowFaceNode',['../classfollow__face__node_1_1FollowFaceNode.html',1,'follow_face_node.FollowFaceNode'],['../classfollow__face__node__copt_1_1FollowFaceNode.html',1,'follow_face_node_copt.FollowFaceNode'],['../classfollow__person__v2_1_1FollowFaceNode.html',1,'follow_person_v2.FollowFaceNode']]],

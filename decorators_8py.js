@@ -1,5 +1,5 @@
 var decorators_8py =
 [
-    [ "mockable", "decorators_8py.html#a941f5ed30d7544d8f102feee2e6a2a72", null ],
-    [ "service_check", "decorators_8py.html#adcfc2d40a4fb55163e4d810f7b980736", null ]
+    [ "mockable", "decorators_8py.html#a026a1029f1cd63d148cea86009000db0", null ],
+    [ "service_check", "decorators_8py.html#a71d32900d7390409fe37451aa09c2cf0", null ]
 ];

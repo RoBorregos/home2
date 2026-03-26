@@ -1,10 +1,10 @@
 var config_8py =
 [
-    [ "utils.config.TypeEnum", "classutils_1_1config_1_1TypeEnum.html", null ],
-    [ "utils.config.TopicConfig", "classutils_1_1config_1_1TopicConfig.html", "classutils_1_1config_1_1TopicConfig" ],
-    [ "utils.config.TopicConfig.Config", "classutils_1_1config_1_1TopicConfig_1_1Config.html", null ],
-    [ "utils.config.MockConfig", "classutils_1_1config_1_1MockConfig.html", "classutils_1_1config_1_1MockConfig" ],
-    [ "utils.config.MockConfig.Config", "classutils_1_1config_1_1MockConfig_1_1Config.html", null ],
-    [ "utils.config.SubtaskConfig", "classutils_1_1config_1_1SubtaskConfig.html", "classutils_1_1config_1_1SubtaskConfig" ],
-    [ "utils.config.SubtaskConfig.Config", "classutils_1_1config_1_1SubtaskConfig_1_1Config.html", null ]
+    [ "task_manager.utils.config.TypeEnum", "classtask__manager_1_1utils_1_1config_1_1TypeEnum.html", null ],
+    [ "task_manager.utils.config.TopicConfig", "classtask__manager_1_1utils_1_1config_1_1TopicConfig.html", "classtask__manager_1_1utils_1_1config_1_1TopicConfig" ],
+    [ "task_manager.utils.config.TopicConfig.Config", "classtask__manager_1_1utils_1_1config_1_1TopicConfig_1_1Config.html", null ],
+    [ "task_manager.utils.config.MockConfig", "classtask__manager_1_1utils_1_1config_1_1MockConfig.html", "classtask__manager_1_1utils_1_1config_1_1MockConfig" ],
+    [ "task_manager.utils.config.MockConfig.Config", "classtask__manager_1_1utils_1_1config_1_1MockConfig_1_1Config.html", null ],
+    [ "task_manager.utils.config.SubtaskConfig", "classtask__manager_1_1utils_1_1config_1_1SubtaskConfig.html", "classtask__manager_1_1utils_1_1config_1_1SubtaskConfig" ],
+    [ "task_manager.utils.config.SubtaskConfig.Config", "classtask__manager_1_1utils_1_1config_1_1SubtaskConfig_1_1Config.html", null ]
 ];

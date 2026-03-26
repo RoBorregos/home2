@@ -1,24 +1,12 @@
 var searchData=
 [
-  ['generic_5ftasks_0',['generic_tasks',['../namespacesubtask__managers_1_1generic__tasks.html',1,'subtask_managers']]],
-  ['gpsr_5fsingle_5ftasks_1',['gpsr_single_tasks',['../namespacesubtask__managers_1_1gpsr__single__tasks.html',1,'subtask_managers']]],
-  ['gpsr_5ftasks_2',['gpsr_tasks',['../namespacesubtask__managers_1_1gpsr__tasks.html',1,'subtask_managers']]],
-  ['gpsr_5ftest_5fcommands_3',['gpsr_test_commands',['../namespacesubtask__managers_1_1gpsr__test__commands.html',1,'subtask_managers']]],
-  ['hri_5fdataclasses_4',['hri_dataclasses',['../namespacesubtask__managers_1_1hri__dataclasses.html',1,'subtask_managers']]],
-  ['hri_5fhand_5',['hri_hand',['../namespacesubtask__managers_1_1hri__hand.html',1,'subtask_managers']]],
-  ['hri_5ftasks_6',['hri_tasks',['../namespacesubtask__managers_1_1hri__tasks.html',1,'subtask_managers']]],
-  ['manipulation_5ftasks_7',['manipulation_tasks',['../namespacesubtask__managers_1_1manipulation__tasks.html',1,'subtask_managers']]],
-  ['nav_5ftasks_8',['nav_tasks',['../namespacesubtask__managers_1_1nav__tasks.html',1,'subtask_managers']]],
-  ['safety_5ftask_5fmanager_9',['safety_task_manager',['../namespacesafety__task__manager.html',1,'']]],
-  ['server_10',['server',['../namespaceserver.html',1,'']]],
-  ['service_5futils_11',['service_utils',['../namespaceservice__utils.html',1,'']]],
-  ['servo_12',['Servo',['../namespaceServo.html',1,'']]],
-  ['show_5fobject_5fdetection_13',['show_object_detection',['../namespaceshow__object__detection.html',1,'']]],
-  ['simulate_5fmap_14',['simulate_map',['../namespacesimulate__map.html',1,'']]],
-  ['simulate_5fposition_15',['simulate_position',['../namespacesimulate__position.html',1,'']]],
-  ['storing_5fgroceries_5flaunch_16',['storing_groceries_launch',['../namespacestoring__groceries__launch.html',1,'']]],
-  ['storing_5fgroceries_5fmanager_17',['storing_groceries_manager',['../namespacestoring__groceries__manager.html',1,'']]],
-  ['subtask_5fmanagers_18',['subtask_managers',['../namespacesubtask__managers.html',1,'']]],
-  ['subtask_5fmeta_19',['subtask_meta',['../namespacesubtask__managers_1_1subtask__meta.html',1,'subtask_managers']]],
-  ['vision_5ftasks_20',['vision_tasks',['../namespacesubtask__managers_1_1vision__tasks.html',1,'subtask_managers']]]
+  ['safety_5ftask_5fmanager_0',['safety_task_manager',['../namespacesafety__task__manager.html',1,'']]],
+  ['server_1',['server',['../namespaceserver.html',1,'']]],
+  ['service_5futils_2',['service_utils',['../namespaceservice__utils.html',1,'']]],
+  ['servo_3',['Servo',['../namespaceServo.html',1,'']]],
+  ['show_5fobject_5fdetection_4',['show_object_detection',['../namespaceshow__object__detection.html',1,'']]],
+  ['simulate_5fmap_5',['simulate_map',['../namespacesimulate__map.html',1,'']]],
+  ['simulate_5fposition_6',['simulate_position',['../namespacesimulate__position.html',1,'']]],
+  ['storing_5fgroceries_5flaunch_7',['storing_groceries_launch',['../namespacestoring__groceries__launch.html',1,'']]],
+  ['storing_5fgroceries_5fmanager_8',['storing_groceries_manager',['../namespacestoring__groceries__manager.html',1,'']]]
 ];
