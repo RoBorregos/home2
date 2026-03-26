@@ -7,6 +7,7 @@ var dir_a89c3d2d3adb8b7698d1aac82a56a6d1 =
     [ "CategorizeShelves.srv", "CategorizeShelves_8srv.html", null ],
     [ "CommandInterpreter.srv", "CommandInterpreter_8srv.html", null ],
     [ "ExtractInfo.srv", "ExtractInfo_8srv.html", null ],
+    [ "FindClosest.srv", "FindClosest_8srv.html", null ],
     [ "Grammar.srv", "Grammar_8srv.html", null ],
     [ "GuestInfo.srv", "GuestInfo_8srv.html", null ],
     [ "IsCoherent.srv", "IsCoherent_8srv.html", null ],

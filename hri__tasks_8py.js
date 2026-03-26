@@ -1,7 +1,5 @@
 var hri__tasks_8py =
 [
-    [ "subtask_managers.hri_tasks.FindClosestResult", "classsubtask__managers_1_1hri__tasks_1_1FindClosestResult.html", null ],
-    [ "subtask_managers.hri_tasks.AudioStates", "classsubtask__managers_1_1hri__tasks_1_1AudioStates.html", "classsubtask__managers_1_1hri__tasks_1_1AudioStates" ],
     [ "subtask_managers.hri_tasks.HRITasks", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html", "classsubtask__managers_1_1hri__tasks_1_1HRITasks" ],
     [ "confirm_query", "hri__tasks_8py.html#a27fbae39dab67579af64d591a20b2534", null ],
     [ "contains_any", "hri__tasks_8py.html#a48a550006ecca4595a4a27701b3b738e", null ],

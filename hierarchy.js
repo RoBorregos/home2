@@ -3,24 +3,27 @@ var hierarchy =
     [ "frida_constants.vision_classes.BBOX", "classfrida__constants_1_1vision__classes_1_1BBOX.html", null ],
     [ "ObjectDetector.BBOX", "classObjectDetector_1_1BBOX.html", null ],
     [ "BoxPrimitiveParams", "structBoxPrimitiveParams.html", null ],
+    [ "subtask_managers.hri_dataclasses.CommandHistory", "classsubtask__managers_1_1hri__dataclasses_1_1CommandHistory.html", null ],
     [ "utils.config.MockConfig.Config", "classutils_1_1config_1_1MockConfig_1_1Config.html", null ],
     [ "utils.config.SubtaskConfig.Config", "classutils_1_1config_1_1SubtaskConfig_1_1Config.html", null ],
     [ "utils.config.TopicConfig.Config", "classutils_1_1config_1_1TopicConfig_1_1Config.html", null ],
     [ "ObjectDetector.Detection", "classObjectDetector_1_1Detection.html", null ],
     [ "DetectionRecord", "structDetectionRecord.html", null ],
     [ "utils.exploration_planner.ExplorationPlanner", "classutils_1_1exploration__planner_1_1ExplorationPlanner.html", null ],
-    [ "subtask_managers.hri_tasks.FindClosestResult", "classsubtask__managers_1_1hri__tasks_1_1FindClosestResult.html", null ],
+    [ "subtask_managers.hri_dataclasses.FindClosestResult", "classsubtask__managers_1_1hri__dataclasses_1_1FindClosestResult.html", null ],
     [ "subtask_managers.generic_tasks.GenericTask", "classsubtask__managers_1_1generic__tasks_1_1GenericTask.html", [
       [ "subtask_managers.gpsr_single_tasks.GPSRSingleTask", "classsubtask__managers_1_1gpsr__single__tasks_1_1GPSRSingleTask.html", null ],
       [ "subtask_managers.gpsr_tasks.GPSRTask", "classsubtask__managers_1_1gpsr__tasks_1_1GPSRTask.html", null ]
     ] ],
     [ "hric_task_manager.Guest", "classhric__task__manager_1_1Guest.html", null ],
     [ "receptionist_task_manager.Guest", "classreceptionist__task__manager_1_1Guest.html", null ],
+    [ "subtask_managers.hri_dataclasses.HandItem", "classsubtask__managers_1_1hri__dataclasses_1_1HandItem.html", null ],
     [ "HandlerParams", "structHandlerParams.html", null ],
     [ "subtask_managers.hri_hand.HRIHand", "classsubtask__managers_1_1hri__hand_1_1HRIHand.html", null ],
     [ "rclcpp_lifecycle::LifecycleNode", null, [
       [ "AreasServices", "classAreasServices.html", null ]
     ] ],
+    [ "subtask_managers.hri_dataclasses.Location", "classsubtask__managers_1_1hri__dataclasses_1_1Location.html", null ],
     [ "utils.logger.Logger", "classutils_1_1logger_1_1Logger.html", null ],
     [ "subtask_managers.manipulation_tasks.ManipulationTasks", "classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks.html", null ],
     [ "metaclass", null, [
@@ -128,7 +131,7 @@ var hierarchy =
       [ "safety_task_manager.Retries", "classsafety__task__manager_1_1Retries.html", null ],
       [ "storing_groceries_manager.ExecutionStates", "classstoring__groceries__manager_1_1ExecutionStates.html", null ],
       [ "storing_groceries_manager.Retries", "classstoring__groceries__manager_1_1Retries.html", null ],
-      [ "subtask_managers.hri_tasks.AudioStates", "classsubtask__managers_1_1hri__tasks_1_1AudioStates.html", null ],
+      [ "subtask_managers.hri_dataclasses.AudioStates", "classsubtask__managers_1_1hri__dataclasses_1_1AudioStates.html", null ],
       [ "subtask_managers.manipulation_tasks.ManipulationTasks.Direction", "classsubtask__managers_1_1manipulation__tasks_1_1ManipulationTasks_1_1Direction.html", null ],
       [ "utils.config.TypeEnum", "classutils_1_1config_1_1TypeEnum.html", null ],
       [ "utils.status.Status", "classutils_1_1status_1_1Status.html", null ],

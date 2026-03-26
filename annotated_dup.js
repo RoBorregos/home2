@@ -337,12 +337,17 @@ var annotated_dup =
       [ "gpsr_tasks", "namespacesubtask__managers_1_1gpsr__tasks.html", [
         [ "GPSRTask", "classsubtask__managers_1_1gpsr__tasks_1_1GPSRTask.html", "classsubtask__managers_1_1gpsr__tasks_1_1GPSRTask" ]
       ] ],
+      [ "hri_dataclasses", "namespacesubtask__managers_1_1hri__dataclasses.html", [
+        [ "AudioStates", "classsubtask__managers_1_1hri__dataclasses_1_1AudioStates.html", "classsubtask__managers_1_1hri__dataclasses_1_1AudioStates" ],
+        [ "CommandHistory", "classsubtask__managers_1_1hri__dataclasses_1_1CommandHistory.html", null ],
+        [ "FindClosestResult", "classsubtask__managers_1_1hri__dataclasses_1_1FindClosestResult.html", null ],
+        [ "HandItem", "classsubtask__managers_1_1hri__dataclasses_1_1HandItem.html", null ],
+        [ "Location", "classsubtask__managers_1_1hri__dataclasses_1_1Location.html", null ]
+      ] ],
       [ "hri_hand", "namespacesubtask__managers_1_1hri__hand.html", [
         [ "HRIHand", "classsubtask__managers_1_1hri__hand_1_1HRIHand.html", "classsubtask__managers_1_1hri__hand_1_1HRIHand" ]
       ] ],
       [ "hri_tasks", "namespacesubtask__managers_1_1hri__tasks.html", [
-        [ "AudioStates", "classsubtask__managers_1_1hri__tasks_1_1AudioStates.html", "classsubtask__managers_1_1hri__tasks_1_1AudioStates" ],
-        [ "FindClosestResult", "classsubtask__managers_1_1hri__tasks_1_1FindClosestResult.html", null ],
         [ "HRITasks", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html", "classsubtask__managers_1_1hri__tasks_1_1HRITasks" ]
       ] ],
       [ "manipulation_tasks", "namespacesubtask__managers_1_1manipulation__tasks.html", [

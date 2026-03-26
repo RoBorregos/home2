@@ -2,6 +2,7 @@ var namespacefrida__constants_1_1hri__constants =
 [
     [ "KNOWLEDGE_TYPE", "classfrida__constants_1_1hri__constants_1_1KNOWLEDGE__TYPE.html", null ],
     [ "MODEL", "classfrida__constants_1_1hri__constants_1_1MODEL.html", null ],
+    [ "ADD_ENTRY_SERVICE", "namespacefrida__constants_1_1hri__constants.html#a1445a0126f5ffb6f0817906046e5a278", null ],
     [ "ANSWER_PUBLISHER", "namespacefrida__constants_1_1hri__constants.html#a04fcaea874b8335fbca4fb97bbbf0bb0", null ],
     [ "CATEGORIZE_IDK_THRESHOLD", "namespacefrida__constants_1_1hri__constants.html#a1390ba9a5cabebe5bec26fd43de484c3", null ],
     [ "CATEGORIZE_SERVICE", "namespacefrida__constants_1_1hri__constants.html#ab2e7b071b2e0f95cd25b59442485423d", null ],
@@ -12,6 +13,7 @@ var namespacefrida__constants_1_1hri__constants =
     [ "DISPLAY_MAP_TOPIC", "namespacefrida__constants_1_1hri__constants.html#a3fdac1c86ed416eee896a77aec9c4043", null ],
     [ "DISPLAY_PUBLISHER", "namespacefrida__constants_1_1hri__constants.html#a6b6228c6ea413ec24c0b26890dac3fb5", null ],
     [ "EXTRACT_DATA_SERVICE", "namespacefrida__constants_1_1hri__constants.html#ae336bc5e472cc38814ce9b4eb0928c31", null ],
+    [ "FIND_CLOSEST_SERVICE", "namespacefrida__constants_1_1hri__constants.html#a0795f01b17671ccc4a7411b5e9faf4c9", null ],
     [ "GPSR_COMMANDS", "namespacefrida__constants_1_1hri__constants.html#aae7202a78fec255321e754d7a99ad996", null ],
     [ "GRAMMAR_SERVICE", "namespacefrida__constants_1_1hri__constants.html#a030ffe3f2fb1fc6cb72b2f14441d6e97", null ],
     [ "HOTWORD_SERVICE_NAME", "namespacefrida__constants_1_1hri__constants.html#a56cb7bea1e6304de74676a11d4effdf9", null ],
@@ -21,6 +23,7 @@ var namespacefrida__constants_1_1hri__constants =
     [ "KEYWORD_TOPIC", "namespacefrida__constants_1_1hri__constants.html#a99a70242344952dd09be65d3260da4a7", null ],
     [ "LLM_WRAPPER_SERVICE", "namespacefrida__constants_1_1hri__constants.html#ab7f90239db45986ae7bbd3da087ec35f", null ],
     [ "PROCESSED_AUDIO_TOPIC", "namespacefrida__constants_1_1hri__constants.html#a65bd8cf37e345f847ad4d999afeba4f8", null ],
+    [ "QUERY_ENTRY_SERVICE", "namespacefrida__constants_1_1hri__constants.html#a8641c72f60bac81a60265b6b494950cd", null ],
     [ "RAG_SERVICE", "namespacefrida__constants_1_1hri__constants.html#a36ae4fa83223f615cf521d31bd5c899e", null ],
     [ "RAW_AUDIO_TOPIC", "namespacefrida__constants_1_1hri__constants.html#a39e864d623eccc650625e054a9236911", null ],
     [ "RESPEAKER_DOA_TOPIC", "namespacefrida__constants_1_1hri__constants.html#a5122d4a93ffda1e706247ba9f13e538c", null ],

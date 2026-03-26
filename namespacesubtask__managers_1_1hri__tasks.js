@@ -1,7 +1,5 @@
 var namespacesubtask__managers_1_1hri__tasks =
 [
-    [ "AudioStates", "classsubtask__managers_1_1hri__tasks_1_1AudioStates.html", "classsubtask__managers_1_1hri__tasks_1_1AudioStates" ],
-    [ "FindClosestResult", "classsubtask__managers_1_1hri__tasks_1_1FindClosestResult.html", null ],
     [ "HRITasks", "classsubtask__managers_1_1hri__tasks_1_1HRITasks.html", "classsubtask__managers_1_1hri__tasks_1_1HRITasks" ],
     [ "confirm_query", "namespacesubtask__managers_1_1hri__tasks.html#a27fbae39dab67579af64d591a20b2534", null ],
     [ "contains_any", "namespacesubtask__managers_1_1hri__tasks.html#a48a550006ecca4595a4a27701b3b738e", null ],
