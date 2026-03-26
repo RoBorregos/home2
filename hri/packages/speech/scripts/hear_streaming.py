@@ -125,11 +125,13 @@ class HearStreaming(Node):
         transcription, flag it so execute_callback can exit cleanly.
         """
         if msg.data:
-            self.get_logger().info("Voice activity: speaker started talking")
+            if self.debug_audio_logs:
+                self.get_logger().info("Voice activity: speaker started talking")
         elif not self.stop_flag.is_set():
-            self.get_logger().info(
-                "Voice activity: speaker stopped — stopping transcription"
-            )
+            if self.debug_audio_logs:
+                self.get_logger().info(
+                    "Voice activity: speaker stopped — stopping transcription"
+                )
             self._speaker_stopped = True
 
     def audio_callback(self, msg):

@@ -170,6 +170,10 @@ class VoiceDetection(Node):
         else:
             similarity = 1.0 - cosine_distance(current_mfcc, self._target_mfcc)
             if similarity > self.similarity_threshold:
+                if self.debug:
+                    self.get_logger().info(
+                        f"Speaker detected (similarity={similarity:.2f})"
+                    )
                 return True
             else:
                 self.get_logger().debug(
