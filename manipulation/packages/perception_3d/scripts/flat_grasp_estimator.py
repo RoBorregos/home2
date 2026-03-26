@@ -7,6 +7,7 @@ from collections import deque
 from cv_bridge import CvBridge
 from sensor_msgs.msg import Image, CameraInfo
 from geometry_msgs.msg import PoseStamped
+from std_srvs.srv import SetBool
 from scipy.spatial.transform import Rotation
 
 from tf2_ros.buffer import Buffer
@@ -49,6 +50,9 @@ class FlatGraspEstimator(Node):
 
         self.target_classes = ["spoon", "fork", "knife"]
 
+        # Disabled by default — enabled via /flat_grasp_estimator/enable service
+        self.enabled = False
+
         # Rolling buffer for table height stabilization
         self.table_height_buffer = deque(maxlen=TABLE_HEIGHT_BUFFER_SIZE)
 
@@ -67,9 +71,24 @@ class FlatGraspEstimator(Node):
             PoseStamped, "/manipulation/flat_grasp_pose", 10
         )
 
-        self.get_logger().info(
-            f"Flat Grasp Estimator initialized. Mapping to: {self.target_frame}"
+        self.enable_service = self.create_service(
+            SetBool, "/flat_grasp_estimator/enable", self.enable_callback
         )
+
+        self.get_logger().info(
+            "Flat Grasp Estimator initialized (disabled). "
+            "Call /flat_grasp_estimator/enable to activate."
+        )
+
+    def enable_callback(self, request, response):
+        self.enabled = request.data
+        if not self.enabled:
+            self.table_height_buffer.clear()
+        state = "enabled" if self.enabled else "disabled"
+        self.get_logger().info(f"Flat Grasp Estimator {state}")
+        response.success = True
+        response.message = state
+        return response
 
     def depth_callback(self, msg):
         self.latest_depth = self.bridge.imgmsg_to_cv2(msg, desired_encoding="32FC1")
@@ -85,6 +104,8 @@ class FlatGraspEstimator(Node):
             }
 
     def detections_callback(self, msg):
+        if not self.enabled:
+            return
         if self.latest_depth is None or self.intrinsics is None:
             return
         for det in msg.detections:
