@@ -203,6 +203,7 @@ var hierarchy =
       [ "record_joints_node.JointRecorder", "classrecord__joints__node_1_1JointRecorder.html", null ],
       [ "record_relative_pose.DockingPoseRecorder", "classrecord__relative__pose_1_1DockingPoseRecorder.html", null ],
       [ "remove_person.RemovePerson", "classremove__person_1_1RemovePerson.html", null ],
+      [ "restaurant_commands.RESTAURANTCommands", "classrestaurant__commands_1_1RESTAURANTCommands.html", null ],
       [ "restaurant_task_manager.RestaurantTaskManager", "classrestaurant__task__manager_1_1RestaurantTaskManager.html", null ],
       [ "run_while_hearing.ServiceClientServerNode", "classrun__while__hearing_1_1ServiceClientServerNode.html", null ],
       [ "safety_task_manager.SafetyTaskManager", "classsafety__task__manager_1_1SafetyTaskManager.html", null ],

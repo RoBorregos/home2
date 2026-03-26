@@ -14,6 +14,7 @@ var dir_dafe0b1426346d1cf04b71ae40010d5b =
     [ "person_in_map.py", "person__in__map_8py.html", "person__in__map_8py" ],
     [ "pointing_detection.py", "pointing__detection_8py.html", "pointing__detection_8py" ],
     [ "pose_detection.py", "scripts_2pose__detection_8py.html", "scripts_2pose__detection_8py" ],
+    [ "restaurant_commands.py", "restaurant__commands_8py.html", "restaurant__commands_8py" ],
     [ "tracker_node.py", "tracker__node_8py.html", "tracker__node_8py" ],
     [ "tracker_node_fregoso.py", "tracker__node__fregoso_8py.html", "tracker__node__fregoso_8py" ],
     [ "trash_detection_node.py", "trash__detection__node_8py.html", "trash__detection__node_8py" ],

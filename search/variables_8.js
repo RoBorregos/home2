@@ -20,8 +20,8 @@ var searchData=
   ['help_17',['help',['../namespacemoondream__lib.html#a96f271e464064797e7edcff4e9851282',1,'moondream_lib.help()'],['../namespaceserver.html#a692f59b384dd93287c366eb7e7c0608b',1,'server.help()']]],
   ['help_5fme_5fcarry_18',['HELP_ME_CARRY',['../classtask__manager_1_1utils_1_1task_1_1Task.html#aa2b793be19afbc6e78024617637d9ef1',1,'task_manager::utils::task::Task']]],
   ['hotword_5fservice_5fname_19',['HOTWORD_SERVICE_NAME',['../namespacefrida__constants_1_1hri__constants.html#a56cb7bea1e6304de74676a11d4effdf9',1,'frida_constants::hri_constants']]],
-  ['hri_20',['HRI',['../classfrida__constants_1_1ModuleNames.html#a26bf7d8ace6b622f93e4c9f9dfe97f41',1,'frida_constants::ModuleNames']]],
-  ['hri_21',['hri',['../classtask__manager_1_1utils_1_1subtask__manager_1_1SubtaskManager.html#a0a1dc120ada78fa8cda9a7d8932893be',1,'task_manager::utils::subtask_manager::SubtaskManager']]],
+  ['hri_20',['hri',['../classtask__manager_1_1utils_1_1subtask__manager_1_1SubtaskManager.html#a0a1dc120ada78fa8cda9a7d8932893be',1,'task_manager::utils::subtask_manager::SubtaskManager']]],
+  ['hri_21',['HRI',['../classfrida__constants_1_1ModuleNames.html#a26bf7d8ace6b622f93e4c9f9dfe97f41',1,'frida_constants::ModuleNames']]],
   ['hri_5fmanager_22',['hri_manager',['../classtest__start__button_1_1TestHriManager.html#a63d76f601c1b4d87cd20c51058adf2e3',1,'test_start_button.TestHriManager.hri_manager()'],['../classtask__manager_1_1subtask__managers_1_1hri__hand_1_1HRIHand.html#aa98a6e6baac7702f8514f9248ef28853',1,'task_manager.subtask_managers.hri_hand.HRIHand.hri_manager()'],['../classtest__hri__manager_1_1TestHriManager.html#a24fdd546d6ff1fd85f6802baac27733b',1,'test_hri_manager.TestHriManager.hri_manager()']]],
   ['hric_23',['HRIC',['../classtask__manager_1_1utils_1_1task_1_1Task.html#aacadcd1654b606c5198995106ffc61d2',1,'task_manager::utils::task::Task']]],
   ['hz_24',['HZ',['../classlocal__camera_1_1NodeParams.html#ae2914b29f06d811ab1d84056097899a6',1,'local_camera::NodeParams']]]

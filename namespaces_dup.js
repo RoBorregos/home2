@@ -283,6 +283,7 @@ var namespaces_dup =
       [ "main", "namespaceremove__collision__object.html#a86366d327b8fa51f26394d0524fdc193", null ]
     ] ],
     [ "remove_person", "namespaceremove__person.html", "namespaceremove__person" ],
+    [ "restaurant_commands", "namespacerestaurant__commands.html", "namespacerestaurant__commands" ],
     [ "restaurant_task_manager", "namespacerestaurant__task__manager.html", "namespacerestaurant__task__manager" ],
     [ "robot_sim", "namespacerobot__sim.html", [
       [ "generate_launch_description", "namespacerobot__sim.html#aa1de369c762aa456d4c9e31388d6f617", null ],

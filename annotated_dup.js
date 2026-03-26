@@ -298,6 +298,9 @@ var annotated_dup =
     [ "remove_person", "namespaceremove__person.html", [
       [ "RemovePerson", "classremove__person_1_1RemovePerson.html", "classremove__person_1_1RemovePerson" ]
     ] ],
+    [ "restaurant_commands", "namespacerestaurant__commands.html", [
+      [ "RESTAURANTCommands", "classrestaurant__commands_1_1RESTAURANTCommands.html", "classrestaurant__commands_1_1RESTAURANTCommands" ]
+    ] ],
     [ "restaurant_task_manager", "namespacerestaurant__task__manager.html", [
       [ "RestaurantTaskManager", "classrestaurant__task__manager_1_1RestaurantTaskManager.html", "classrestaurant__task__manager_1_1RestaurantTaskManager" ]
     ] ],

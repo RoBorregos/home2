@@ -116,6 +116,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a80cf09c185029970205fcc54780773f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa293f5c5670213594434f9320acd7594"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmoondream__node_1_1MoondreamNode.html#aa293f5c5670213594434f9320acd7594">beverage_location_callback</a> (self, request, response)</td></tr>
 <tr class="separator:aa293f5c5670213594434f9320acd7594"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a02f410112d5bb232983773f894b8861d"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmoondream__node_1_1MoondreamNode.html#a02f410112d5bb232983773f894b8861d">object_points_callback</a> (self, request, response)</td></tr>
+<tr class="separator:a02f410112d5bb232983773f894b8861d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a35fbe901f57b9def95c03fd8c5140234"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmoondream__node_1_1MoondreamNode.html#a35fbe901f57b9def95c03fd8c5140234">person_posture_callback</a> (self, request, response)</td></tr>
 <tr class="separator:a35fbe901f57b9def95c03fd8c5140234"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5977e2a798c2e23e3a5f3fcef9daf2d8"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmoondream__node_1_1MoondreamNode.html#a5977e2a798c2e23e3a5f3fcef9daf2d8">success</a> (self, message)</td></tr>
@@ -139,6 +141,8 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a42c7acf94e367e93f2b6041d48cfabc0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a79e9abf8759c34bf459ea162ad473ed9"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmoondream__node_1_1MoondreamNode.html#a79e9abf8759c34bf459ea162ad473ed9">crop_query_service</a></td></tr>
 <tr class="separator:a79e9abf8759c34bf459ea162ad473ed9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab32dc3400c616e39362af94993c9835f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmoondream__node_1_1MoondreamNode.html#ab32dc3400c616e39362af94993c9835f">object_points_service</a></td></tr>
+<tr class="separator:ab32dc3400c616e39362af94993c9835f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9148c6b9f34252b50fd4f9dc6e6c5420"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmoondream__node_1_1MoondreamNode.html#a9148c6b9f34252b50fd4f9dc6e6c5420">yolo_model</a></td></tr>
 <tr class="separator:a9148c6b9f34252b50fd4f9dc6e6c5420"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acf71cc2e789938b5d9940779fc6b05b7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmoondream__node_1_1MoondreamNode.html#acf71cc2e789938b5d9940779fc6b05b7">stub</a></td></tr>
@@ -280,6 +284,40 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 <pre class="fragment">Callback to receive the image from the camera.</pre> 
+</div>
+</div>
+<a id="a02f410112d5bb232983773f894b8861d" name="a02f410112d5bb232983773f894b8861d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a02f410112d5bb232983773f894b8861d">&#9670;&#160;</a></span>object_points_callback()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def moondream_node.MoondreamNode.object_points_callback </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>request</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>response</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Callback to get the points of a subject in the current image.</pre> 
 </div>
 </div>
 <a id="a35fbe901f57b9def95c03fd8c5140234" name="a35fbe901f57b9def95c03fd8c5140234"></a>
@@ -443,6 +481,20 @@ Public Attributes</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">moondream_node.MoondreamNode.image_subscriber</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="ab32dc3400c616e39362af94993c9835f" name="ab32dc3400c616e39362af94993c9835f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab32dc3400c616e39362af94993c9835f">&#9670;&#160;</a></span>object_points_service</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">moondream_node.MoondreamNode.object_points_service</td>
         </tr>
       </table>
 </div><div class="memdoc">
