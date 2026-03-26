@@ -138,6 +138,24 @@ class MoonDreamModel:
         answer = self.model.query(encoded_image, query)["answer"]
         return answer
 
+    def find_object_points(self, encoded_image_data, subject):
+        encoded_image = pickle.loads(encoded_image_data)
+        result = self.model.point(encoded_image, subject)
+
+        if not result["points"]:
+            return []
+
+        points_out = []
+        for pt in result["points"]:
+            points_out.append(
+                {
+                    "x": pt["x"],
+                    "y": pt["y"],
+                }
+            )
+
+        return points_out
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="MoonDream Server")

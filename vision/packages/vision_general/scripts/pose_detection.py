@@ -151,13 +151,6 @@ class PoseDetection:
             return False
         try:
             if (
-                conf[LEFT_SHOULDER] < KP_CONF
-                or conf[RIGHT_SHOULDER] < KP_CONF
-                or conf[LEFT_WRIST] < KP_CONF
-                or conf[RIGHT_WRIST] < KP_CONF
-            ):
-                return False
-            if (
                 points[RIGHT_WRIST][1] < points[RIGHT_SHOULDER][1]
                 and points[LEFT_WRIST][1] > points[LEFT_SHOULDER][1]
             ):
