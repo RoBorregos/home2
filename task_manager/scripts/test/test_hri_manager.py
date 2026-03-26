@@ -66,11 +66,11 @@ OUTPUT_DIR = os.path.join(DATA_DIR, "output")
 COMMAND_INTERPRETER_SUCCESS_THRESHOLD = 0.9  # Higher than 1 for exact match only
 
 # Choose which tests to perform
-TEST_COMPOUND = False
+TEST_COMPOUND = True
 TEST_INDIVIDUAL_FUNCTIONS = False
 TEST_CATEGORIZE_SHELVES = False
 TEST_ASYNC_LLM = False
-TEST_STREAMING = True
+TEST_STREAMING = False
 TEST_MAP = False
 TEST_OBJECT_LOCATION = False
 TEST_IS_POSITIVE = False
@@ -197,17 +197,18 @@ class TestHriManager(Node):
 
         self.get_logger().info(f"Final result: {loc}, {orientation}")
 
-        # s, name = self.hri_manager.ask_and_confirm(
-        #     "What is your name?",
-        #     "LLM_name",
-        #     # "The question 'What is your favorite main interest?' was asked, full_text corresponds to the response.",
-        #     # confirm_preference,
-        #     use_hotwords=False,
-        #     # 3,
-        #     # 5,
-        # )
+        s, name = self.hri_manager.ask_and_confirm(
+            "What is your name?",
+            "LLM_name",
+            # "The question 'What is your favorite main interest?' was asked, full_text corresponds to the response.",
+            # confirm_preference,
+            use_hotwords=False,
+            initial_prompt="Maria Jose Carlos",
+            # 3,
+            # 5,
+        )
 
-        # self.hri_manager.say(f"Hi {name}, nice to meet you!", wait=True)
+        self.hri_manager.say(f"Hi {name}, nice to meet you!", wait=True)
 
         # s, interest1 = self.hri_manager.ask_and_confirm(
         #     "What is your favorite main interest?",
