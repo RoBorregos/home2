@@ -10,6 +10,7 @@ RUN sudo apt-get update -qq && sudo apt-get install -y -qq ros-humble-rmw-cyclon
 
 #Build OPENCV
 WORKDIR /home/ros/
+sudo apt update
 RUN curl -L https://raw.githubusercontent.com/AastaNV/JEP/refs/heads/master/script/install_opencv4.10.0_Jetpack6.1.sh -o install.sh
 RUN chmod 777 install.sh
 RUN yes yes | sudo ./install.sh
