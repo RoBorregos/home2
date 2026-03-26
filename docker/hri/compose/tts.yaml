@@ -13,7 +13,7 @@ services:
       - ../../../hri/packages/speech/assets/downloads/offline_voice/model/:/home/ros/.cache/huggingface/hub
       - ~/.config/pulse:/tmp/pulse
     network_mode: host
-    runtime: ${RUNTIME:-}
+    runtime: ${RUNTIME:-runc}
     user: ${LOCAL_USER_ID:-1000}:${LOCAL_GROUP_ID:-1000}
     privileged: true
     tty: true
