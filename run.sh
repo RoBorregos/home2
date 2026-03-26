@@ -87,6 +87,9 @@ case $INPUT in
   vision|manipulation|navigation|integration|hri|zed)
     run_area "$@"
     ;;
+  --update-map)
+    update_map "$@"
+    ;;
   *)
     ./run.sh --help
     exit 1

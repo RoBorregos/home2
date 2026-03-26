@@ -59,7 +59,7 @@ if [ -f /etc/cyclonedds.env ]; then
     source /etc/cyclonedds.env
 fi
 add_or_update_variable .env "CYCLONE_INTERFACE" "${CYCLONE_INTERFACE:-}"
-
+add_or_update_variable .env "MAP_NAME" "${MAP_NAME:-lab_23_march.db}"
 # Export user
 add_or_update_variable .env "LOCAL_USER_ID" "$(id -u)"
 add_or_update_variable .env "LOCAL_GROUP_ID" "$(id -g)"
