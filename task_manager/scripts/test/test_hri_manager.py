@@ -7,8 +7,11 @@ Task Manager for testing the subtask managers
 import csv
 import json
 import os
+import sys
 import subprocess
 import time
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 from datetime import datetime
 from typing import Union
 
