@@ -16,6 +16,11 @@ def generate_launch_description():
         [ModuleNames.HRI.value],
     )["audio_capturer"]["ros__parameters"]
 
+    aec_config = parse_ros_config(
+        os.path.join(get_package_share_directory("speech"), "config", "aec.yaml"),
+        [ModuleNames.HRI.value],
+    )["acoustic_echo_cancellation"]["ros__parameters"]
+
     noise_cancellation_config = parse_ros_config(
         os.path.join(
             get_package_share_directory("speech"), "config", "noise_cancellation.yaml"
@@ -53,6 +58,14 @@ def generate_launch_description():
             output="screen",
             emulate_tty=True,
             parameters=[mic_config],
+        ),
+        Node(
+            package="speech",
+            executable="aec.py",
+            name="acoustic_echo_cancellation",
+            output="screen",
+            emulate_tty=True,
+            parameters=[aec_config],
         ),
         Node(
             package="speech",

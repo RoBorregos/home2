@@ -1,0 +1,20 @@
+acoustic_echo_cancellation:
+  ros__parameters:
+    SPEAKING_TOPIC: "/saying"
+    RAW_AUDIO_TOPIC: REPLACE  # /hri/rawAudioChunk
+    AEC_AUDIO_TOPIC: REPLACE  # /hri/aecAudioChunk
+    # Gain applied to mic input while robot is speaking.
+    # 0.0 = full mute (safest, no echo), 0.1 ≈ -20 dB (allows faint barge-in cue).
+    ATTENUATION: 0.0
+    # Linear ramp length in samples at gate open/close to prevent audible clicks.
+    # 1024 samples ≈ 64 ms at 16 kHz.
+    FADE_SAMPLES: 1024
+    # Continue suppressing this many ms after robot stops speaking to absorb
+    # room reverb / speaker tail.
+    POST_SPEECH_HOLD_MS: 300
+    # Set to true to allow a human to interrupt the robot mid-speech.
+    # When enabled, if mic energy > BARGE_IN_RATIO * running echo average,
+    # the gate opens and audio passes through.
+    ENABLE_BARGE_IN: false
+    BARGE_IN_RATIO: 3.0
+    DEBUG: false
