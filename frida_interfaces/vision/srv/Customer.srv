@@ -1,4 +1,3 @@
 ---
 bool found
-geometry_msgs/PointStamped[] points
-float32[] angles
+frida_interfaces/PersonList people

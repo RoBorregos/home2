@@ -64,6 +64,8 @@ def get_depth(depthframe_, pixel):
             if startX < 0 and startY < 0 and endX > width and endY > height:
                 return
             # Check first and last row of the square spiral.
+            startX, startY = int(startX), int(startY)
+            endX, endY = int(endX), int(endY)
             for i in range(startX, endX + 1):
                 if i >= width:
                     break
