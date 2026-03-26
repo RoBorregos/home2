@@ -206,7 +206,7 @@ class TestHriManager(Node):
             # "The question 'What is your favorite main interest?' was asked, full_text corresponds to the response.",
             # confirm_preference,
             use_hotwords=False,
-            initial_prompt="Maria Jose Carlos",
+            initial_prompt="My name is",
             # 3,
             # 5,
         )

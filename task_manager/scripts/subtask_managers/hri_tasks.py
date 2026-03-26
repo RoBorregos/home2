@@ -648,6 +648,7 @@ class HRITasks(metaclass=SubtaskMeta):
         skip_confirmation: bool = False,
         options: list[str] = None,
         remap: dict = None,
+        initial_prompt: str = "",
     ):
         """
         Method to confirm a specific question. It includes auto-retry.
@@ -672,7 +673,9 @@ class HRITasks(metaclass=SubtaskMeta):
             start_time = self.node.get_clock().now()
 
             self.say(question)
-            hear_status, interpreted_text, word_confidences = self.hear(hotwords=hotwords)
+            hear_status, interpreted_text, word_confidences = self.hear(
+                hotwords=hotwords, initial_prompt=initial_prompt
+            )
 
             if hear_status == Status.EXECUTION_SUCCESS:
                 target_info = interpreted_text
