@@ -13,7 +13,7 @@ from rclpy.node import Node
 from speech.speech_api_utils import SpeechApiUtils
 from std_msgs.msg import Bool, String
 
-from frida_constants.hri_constants import SPEAK_SERVICE
+from frida_constants.hri_constants import SAYING_TOPIC, SPEAK_SERVICE
 from frida_interfaces.srv import Speak
 from proto_interfaces import tts_pb2, tts_pb2_grpc
 
@@ -46,7 +46,7 @@ class Say(Node):
         self._load_cache()
 
         self.connected = False
-        self.declare_parameter("speaking_topic", "/saying")
+        self.declare_parameter("SAYING_TOPIC", SAYING_TOPIC)
         self.declare_parameter("text_spoken", "/speech/text_spoken")
 
         self.declare_parameter("SPEAK_SERVICE", SPEAK_SERVICE)
@@ -81,7 +81,7 @@ class Say(Node):
         )
 
         speaking_topic = (
-            self.get_parameter("speaking_topic").get_parameter_value().string_value
+            self.get_parameter("SAYING_TOPIC").get_parameter_value().string_value
         )
         text_spoken = (
             self.get_parameter("text_spoken").get_parameter_value().string_value

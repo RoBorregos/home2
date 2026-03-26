@@ -6,7 +6,7 @@ say:
 
     SPEAK_SERVICE: REPLACE
     speak_topic: "/speech/speak_now"
-    speaking_topic: "saying"
+    SAYING_TOPIC: REPLACE
 
     model: "af_heart"
     offline: True

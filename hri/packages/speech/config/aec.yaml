@@ -1,8 +1,8 @@
 acoustic_echo_cancellation:
   ros__parameters:
-    SPEAKING_TOPIC: "/saying"
-    RAW_AUDIO_TOPIC: REPLACE  # /hri/rawAudioChunk
-    AEC_AUDIO_TOPIC: REPLACE  # /hri/aecAudioChunk
+    SAYING_TOPIC: REPLACE
+    RAW_AUDIO_TOPIC: REPLACE
+    AEC_AUDIO_TOPIC: REPLACE
     # Gain applied to mic input while robot is speaking.
     # 0.0 = full mute (safest, no echo), 0.1 ≈ -20 dB (allows faint barge-in cue).
     ATTENUATION: 0.0

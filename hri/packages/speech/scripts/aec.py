@@ -30,7 +30,7 @@ import threading
 
 import numpy as np
 import rclpy
-from frida_constants.hri_constants import AEC_AUDIO_TOPIC, RAW_AUDIO_TOPIC
+from frida_constants.hri_constants import AEC_AUDIO_TOPIC, RAW_AUDIO_TOPIC, SAYING_TOPIC
 from frida_interfaces.msg import AudioData
 from rclpy.executors import ExternalShutdownException
 from rclpy.node import Node
@@ -43,7 +43,7 @@ class AcousticEchoCancellation(Node):
     def __init__(self):
         super().__init__("acoustic_echo_cancellation")
 
-        self.declare_parameter("SPEAKING_TOPIC", "/saying")
+        self.declare_parameter("SAYING_TOPIC", SAYING_TOPIC)
         self.declare_parameter("RAW_AUDIO_TOPIC", RAW_AUDIO_TOPIC)
         self.declare_parameter("AEC_AUDIO_TOPIC", AEC_AUDIO_TOPIC)
         # Gain applied while robot is speaking (0.0 = full mute, 0.1 ≈ -20 dB)
@@ -58,7 +58,7 @@ class AcousticEchoCancellation(Node):
         self.declare_parameter("BARGE_IN_RATIO", 3.0)
         self.declare_parameter("DEBUG", False)
 
-        speaking_topic = self.get_parameter("SPEAKING_TOPIC").value
+        speaking_topic = self.get_parameter("SAYING_TOPIC").value
         raw_topic = self.get_parameter("RAW_AUDIO_TOPIC").value
         aec_topic = self.get_parameter("AEC_AUDIO_TOPIC").value
         self.attenuation = float(self.get_parameter("ATTENUATION").value)

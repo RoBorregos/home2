@@ -1,6 +1,6 @@
 noise_cancellation:
   ros__parameters:
-    RAW_AUDIO_TOPIC: "/hri/aecAudioChunk"  # AEC output (was /hri/rawAudioChunk before AEC)
+    AEC_AUDIO_TOPIC: REPLACE
     PROCESSED_AUDIO_TOPIC: REPLACE
     ENABLE_ANC: true
     GAIN: 1.0
