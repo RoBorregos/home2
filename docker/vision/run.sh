@@ -81,13 +81,15 @@ case $ENV_TYPE in
 esac
 
 # Clean build artifacts if requested
-clean_workspace_directories
+if [ "$CLEAN" == "true" ]; then
+  clean_directories .
+fi
 
 mkdir -p install build log moondream/install moondream/build moondream/log
 
 #_________________________RUN_________________________
 
-SOURCE_ROS="source /opt/ros/humble/setup.bash"
+SOURCE_ROS="source /opt/ros/humble/setup.bash && source /usr/local/bin/cyclonedds_setup.sh"
 SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
 IGNORE_PACKAGES="--packages-ignore frida_interfaces frida_constants"
 MOONDREAM_PACKAGES="moondream_run"

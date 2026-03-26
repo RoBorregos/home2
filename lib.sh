@@ -89,19 +89,10 @@ add_or_update_variable() {
   fi
 }
 
-clean_workspace_directories() {
-  if [ "$CLEAN" == "true" ]; then
-    echo "Cleaning build/log/install directories..."
-    rm -rf build log install
-  fi
-}
-
-clean_frida_interfaces() {
-  echo "Cleaning frida_interfaces_cache build/log/install..."
-  rm -rf "docker/frida_interfaces_cache/build" \
-         "docker/frida_interfaces_cache/log" \
-         "docker/frida_interfaces_cache/install"
-  echo "frida_interfaces_cache cleaned."
+clean_directories() {
+  local target="${1:-.}"
+  echo "Cleaning build/log/install in: $target"
+  rm -rf "$target/build" "$target/log" "$target/install"
 }
 
 run_frida_interfaces() {
@@ -122,6 +113,11 @@ run_area() {
   if [ "$INPUT" != "zed" ] && [ ! -d "docker/frida_interfaces_cache/build" ]; then
     echo "Cache directory missing. Building frida_interfaces_cache first..."
     run_frida_interfaces || { echo "frida_interfaces cache build failed" >&2; return 1; }
+  fi
+
+  # Start RouDi container for SHM-enabled areas (zed, vision)
+  if [ "$INPUT" = "zed" ] || [ "$INPUT" = "vision" ]; then
+    ensure_roudi || { echo "RouDi startup failed" >&2; return 1; }
   fi
 
   echo "Running image from $INPUT"
@@ -177,6 +173,14 @@ control() {
     fi
   done
 
+  # Stop RouDi container on --down
+  if [ "$op_flag" = "--down" ]; then
+    if docker ps -a --format '{{.Names}}' | grep -q '^home2-roudi$'; then
+      echo "Stopping RouDi container..."
+      (cd "docker/roudi" && docker compose down)
+    fi
+  fi
+
   echo "All ${msg}s attempted."
   return $rc
 }
@@ -188,4 +192,27 @@ run_task() {
     tmux new-session -d -s "$SESSION_NAME"
     tmux send-keys -t "$SESSION_NAME" "bash run.sh $area $task" C-m
   done
+}
+
+ensure_roudi() {
+  local roudi_container="home2-roudi"
+  if docker ps --format '{{.Names}}' | grep -q "^${roudi_container}$"; then
+    echo "[RouDi] Already running."
+    return 0
+  fi
+  echo "[RouDi] Starting dedicated RouDi container..."
+  (cd "docker/roudi" && bash ./run.sh)
+  # Wait for RouDi to be healthy
+  local retries=10
+  while [ $retries -gt 0 ]; do
+    if docker ps --format '{{.Names}}' | grep -q "^${roudi_container}$"; then
+      echo "[RouDi] Container is up."
+      sleep 1
+      return 0
+    fi
+    sleep 1
+    retries=$((retries - 1))
+  done
+  echo "[RouDi] WARNING: RouDi container did not start in time." >&2
+  return 1
 }

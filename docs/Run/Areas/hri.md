@@ -30,6 +30,12 @@ Pulls RoBorregos' command interpreter LLM from hugging face and other ollama mod
 
 Uses current json files from `hri/packages/embeddings/embeddings/dataframes/` and a navigation service to retrive information and generate SQL files which are saved in `/docker/hri/sql_dumps/`. Then it replaces the information in the postgres database with these scripts. See `docker/hri/scripts/regenerate_db.sh`.
 
+```bash
+./run.sh hri --build-proto
+```
+
+Generates gRPC files for the microservices using the .proto files located in `hri/proto_interfaces/proto_interfaces/`.
+
 ## Running specific containers
 
 You may want to only launch some of the services. For example, running the module without the LLM, etc. To do so, please check the docker-compose yaml files in the `docker/hri/compose/` folder and comment out the services you do not want to run.

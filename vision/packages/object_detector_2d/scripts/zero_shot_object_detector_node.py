@@ -108,6 +108,8 @@ class zero_shot_object_detector_node(object_detector_node):
 
         # Frames per second throughput estimator
         self.curr_clock = 0
+        self._frame_count = 0
+        self._skip_frames = 2
 
         self.get_logger().info("Object Detector 2D Node has been started")
 

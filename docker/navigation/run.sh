@@ -46,6 +46,11 @@ done
 
 #_________________________SETUP_________________________
 
+echo "Configuring USB devices for Navigation..."
+if ! bash ./setup-USB.sh; then
+    echo "Error: USB devices setup failed."
+fi
+
 # Reset .env
 echo "" > .env
 
@@ -79,7 +84,9 @@ case $ENV_TYPE in
 esac
 
 # Clean build artifacts if requested
-clean_workspace_directories
+if [ "$CLEAN" == "true" ]; then
+  clean_directories .
+fi
 
 # Create dirs with current user to avoid permission problems
 mkdir -p install build log
@@ -106,7 +113,7 @@ case $TASK in
         RUN="echo 'WORKING IN PROGRESS'"
         ;;
     "--hric")
-        RUN="ros2 launch nav_main navigation_launch.py"
+        RUN="ros2 launch nav_main navigation_composition.launch.py"
         ;;
     *)
         RUN="bash"
