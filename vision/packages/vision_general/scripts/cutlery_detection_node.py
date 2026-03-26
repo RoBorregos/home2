@@ -97,6 +97,7 @@ class CutleryDetectionNode(Node):
         msg.detections = detections
         self.cutlery_detections_publisher.publish(msg)
 
+
 def main(args=None):
     rclpy.init(args=args)
     node = CutleryDetectionNode()
