@@ -1,0 +1,7 @@
+image: lab_23_march_map.pgm
+resolution: 0.05
+origin: [-5.34195, -6.51165, 0.0]
+negate: 0
+occupied_thresh: 0.5
+free_thresh: 0.196
+

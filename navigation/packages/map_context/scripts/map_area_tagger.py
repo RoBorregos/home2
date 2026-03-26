@@ -70,7 +70,7 @@ class MapCanvas(QWidget):
         self.drag_start_map = None  # (mx, my) where click started
         self.drag_yaw = 0.0
         self.setMouseTracking(True)
-        self.setMinimumSize(600, 400)
+        self.setMinimumSize(320, 240)
         self.setFocusPolicy(Qt.StrongFocus)
 
     def load_map(self, image_path, yaml_path):
@@ -307,7 +307,7 @@ class MapAreaTagger(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Map Area Tagger")
-        self.setMinimumSize(1100, 700)
+        self.setMinimumSize(640, 400)
         self.areas = {}
         self.current_area = None
         self.mode = 'location'
