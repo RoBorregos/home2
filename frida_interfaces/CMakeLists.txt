@@ -109,6 +109,7 @@ set(srv_files
   "hri/srv/IsPositive.srv"
   "hri/srv/IsCoherent.srv"
   "hri/srv/LLMWrapper.srv"
+  "hri/srv/FindClosest.srv"
   "hri/srv/QueryEntry.srv"
   "hri/srv/Speak.srv"
   "hri/srv/STT.srv"

@@ -7,17 +7,14 @@ HRI Subtask manager
 import json
 import os
 import re
-from dataclasses import dataclass
-from enum import Enum
 
 # from datetime import datetime
 from typing import List, Union
 
-import numpy as np
 import rclpy
 from ament_index_python.packages import get_package_share_directory
-from embeddings.postgres_adapter import PostgresAdapter
 from frida_constants.hri_constants import (
+    ADD_ENTRY_SERVICE,
     ANSWER_PUBLISHER,
     CATEGORIZE_SERVICE,
     COMMAND_INTERPRETER_SERVICE,
@@ -25,11 +22,13 @@ from frida_constants.hri_constants import (
     DISPLAY_MAP_TOPIC,
     DISPLAY_PUBLISHER,
     EXTRACT_DATA_SERVICE,
+    FIND_CLOSEST_SERVICE,
     GRAMMAR_SERVICE,
     IS_COHERENT_SERVICE,
     IS_NEGATIVE_SERVICE,
     IS_POSITIVE_SERVICE,
     LLM_WRAPPER_SERVICE,
+    QUERY_ENTRY_SERVICE,
     RAG_SERVICE,
     RESPEAKER_LIGHT_TOPIC,
     SKIP_CONFIRMATION_CONFIDENCE_THRESHOLD,
@@ -44,21 +43,31 @@ from frida_constants.hri_constants import (
 from frida_interfaces.action import SpeechStream
 from frida_interfaces.srv import AnswerQuestion as AnswerQuestionLLM
 from frida_interfaces.srv import (
+    AddEntry,
     CategorizeShelves,
     CommandInterpreter,
     ExtractInfo,
+    FindClosest,
     Grammar,
     HearMultiThread,
     IsCoherent,
     IsNegative,
     IsPositive,
     LLMWrapper,
+    QueryEntry,
     Speak,
 )
 from rclpy.action import ActionClient
 from rclpy.node import Node
 from rclpy.task import Future
 from std_msgs.msg import Empty, String
+from subtask_managers.hri_dataclasses import (
+    AudioStates,
+    CommandHistory,
+    FindClosestResult,
+    HandItem,
+    Location,
+)
 from subtask_managers.hri_hand import HRIHand
 from subtask_managers.subtask_meta import SubtaskMeta
 from utils.baml_client.sync_client import b
@@ -142,37 +151,6 @@ def format_transcription(text: str) -> str:
     return remove_punctuation(text).split(" ")
 
 
-@dataclass
-class FindClosestResult:
-    """Bundled results and similarity scores from find_closest."""
-
-    results: list[str]
-    similarities: list[float]
-
-
-class AudioStates(Enum):
-    SAYING = "saying"
-    LISTEN = "listening"
-    IDLE = "idle"
-    THINKING = "thinking"
-    LOADING = "loading"
-
-    @classmethod
-    def respeaker_light(cls, state):
-        if state == AudioStates.SAYING:
-            return "speak"
-        elif state == AudioStates.LISTEN:
-            return "listen"
-        elif state == AudioStates.IDLE:
-            return "off"
-        elif state == AudioStates.THINKING:
-            return "think"
-        elif state == AudioStates.LOADING:
-            return "loading"
-        else:
-            raise ValueError(f"Unknown audio state: {state}")
-
-
 class HRITasks(metaclass=SubtaskMeta):
     """Class to manage the HRI tasks"""
 
@@ -192,7 +170,10 @@ class HRITasks(metaclass=SubtaskMeta):
         self.display_map_publisher = self.node.create_publisher(String, DISPLAY_MAP_TOPIC, 10)
         self.answers_publisher = self.node.create_publisher(String, ANSWER_PUBLISHER, 10)
         self.questions_publisher = self.node.create_publisher(String, DISPLAY_PUBLISHER, 10)
-        self.pg = PostgresAdapter(config.mock_db)
+        self.mock_db = config.mock_db if config else False
+        self.add_entry_service = self.node.create_client(AddEntry, ADD_ENTRY_SERVICE)
+        self.query_entry_service = self.node.create_client(QueryEntry, QUERY_ENTRY_SERVICE)
+        self.find_closest_service = self.node.create_client(FindClosest, FIND_CLOSEST_SERVICE)
         self.items = self.get_items_embeddings()
         self.llm_wrapper_service = self.node.create_client(LLMWrapper, LLM_WRAPPER_SERVICE)
         self.categorize_service = self.node.create_client(CategorizeShelves, CATEGORIZE_SERVICE)
@@ -970,7 +951,7 @@ class HRITasks(metaclass=SubtaskMeta):
             (Status.TIMEOUT, []) if the customer never confirms.
         """
 
-        items = [text for text, _ in self.items]
+        items = list(self.items)
         context = f"Extract one of these items: {items}"
 
         s_first, first_item = self.ask_and_confirm(
@@ -1003,115 +984,160 @@ class HRITasks(metaclass=SubtaskMeta):
         Logger.success(self.node, f"take_order confirmed: {raw_items}")
         return Status.EXECUTION_SUCCESS, raw_items
 
-    # Embeddings services
+    # Embeddings services — delegate to HRI postgres_service node via ROS
+
+    def _call_add_entry(self, collection: str, documents: list, metadata: dict = None) -> bool:
+        """Fire-and-forget AddEntry service call."""
+        if self.mock_db:
+            return True
+        req = AddEntry.Request()
+        req.document = documents
+        req.collection = collection
+        req.metadata = json.dumps(metadata) if metadata else ""
+        self.add_entry_service.call_async(req)
+        return True
+
+    def _call_query_entry(
+        self, collection: str, query_texts: list, top_k: int, metadata: dict = None
+    ) -> list[str]:
+        """Synchronous QueryEntry service call. Returns list of JSON strings."""
+        if self.mock_db:
+            return []
+        if not self.query_entry_service.service_is_ready():
+            self.node.get_logger().warn(f"QueryEntry service not ready (collection={collection})")
+            return []
+        req = QueryEntry.Request()
+        req.query = query_texts
+        req.collection = collection
+        req.topk = top_k
+        req.metadata = json.dumps(metadata) if metadata else ""
+        future = self.query_entry_service.call_async(req)
+        rclpy.spin_until_future_complete(self.node, future)
+        result = future.result()
+        if not result or not result.success:
+            return []
+        return list(result.results)
+
     def add_command_history(self, command: InterpreterAvailableCommands, result, status):
-        self.pg.add_command(
-            action=str(command.action),
-            command=str(command),
-            result=result,
-            status=str(status),
-            context=type(command).__name__,
+        self._call_add_entry(
+            collection="command_history",
+            documents=[str(command)],
+            metadata={
+                "action": str(command.action),
+                "result": result,
+                "status": str(status),
+                "context": type(command).__name__,
+            },
         )
         return Status.EXECUTION_SUCCESS
 
-    def add_item(self, document: list, metadata: str) -> list[str]:
+    def add_item(self, document: list, metadata: dict) -> list[str]:
         for doc in document:
-            self.pg.add_item2(
-                document=doc,
-                context=metadata.get("context", ""),
+            self._call_add_entry(
+                collection="items",
+                documents=[doc],
+                metadata={"context": metadata.get("context", "") if metadata else ""},
             )
-        return [doc for doc in document]
+        return list(document)
 
-    def add_location(self, document: list, metadata: str) -> list[str]:
+    def add_location(self, document: list, metadata: dict) -> list[str]:
         for doc in document:
-            self.pg.add_location2(
-                document=doc,
-                context=metadata.get("context", ""),
+            self._call_add_entry(
+                collection="locations",
+                documents=[doc],
+                metadata={"context": metadata.get("context", "") if metadata else ""},
             )
-        return [doc for doc in document]
+        return list(document)
 
-    def query_location(self, query: str, top_k: int = 1, use_context: bool = False):
-        return self.pg.query_location(query, top_k=top_k, use_context=use_context)
+    def query_location(
+        self, query: str, top_k: int = 1, use_context: bool = False
+    ) -> list[Location]:
+        raw = self._call_query_entry(
+            collection="locations",
+            query_texts=[query],
+            top_k=top_k,
+            metadata={"use_context": use_context},
+        )
+        return [Location(**json.loads(r)) for r in raw]
 
     def find_closest(
         self, documents: list, query: str, top_k: int = 1, threshold: float = 0.0
     ) -> tuple[Status, FindClosestResult]:
         """
-        Method to find the closest item to the query.
-        Args:
-            documents: the documents to search among
-            query: the query to search for
-            top_k: the number of results to return
-            threshold: the minimum similarity score to include
-        Returns:
-            Status: the status of the execution
-            FindClosestResult: the results and similarity scores of the query
-        documents can be:
-            - list[str]
-            - list[tuple[str, embedding]]
+        Find the closest item to the query using the HRI FindClosest service.
+        documents can be list[str] or list[tuple[str, embedding]] (embeddings are ignored).
         """
-        emb = self.pg.embedding_model.encode(query)
+        if self.mock_db or not documents:
+            return Status.TARGET_NOT_FOUND, FindClosestResult(results=[], similarities=[])
 
-        def cos_sim(x, y):
-            return np.dot(x, y) / (np.linalg.norm(x) * np.linalg.norm(y))
+        if not self.find_closest_service.service_is_ready():
+            self.node.get_logger().warn("FindClosest service not ready")
+            return Status.SERVICE_CHECK, FindClosestResult(results=[], similarities=[])
 
-        # Case 1: documents already have embeddings
-        if len(documents) > 0 and isinstance(documents[0], tuple):
-            docs = [
-                (text, cos_sim(embedding, emb))
-                for text, embedding in documents
-                if cos_sim(embedding, emb) >= threshold
-            ]
-
-        # Case 2: documents are just text
-        else:
-            docs = [(doc, cos_sim(self.pg.embedding_model.encode(doc), emb)) for doc in documents]
-            docs = [doc for doc in docs if doc[1] >= threshold]
-
-        sorted_docs = sorted(docs, key=lambda x: x[1], reverse=True)[:top_k]
-
-        result = FindClosestResult(
-            results=[doc[0] for doc in sorted_docs],
-            similarities=[doc[1] for doc in sorted_docs],
+        doc_texts = (
+            [text for text, _ in documents] if isinstance(documents[0], tuple) else list(documents)
         )
-        s = Status.EXECUTION_SUCCESS if len(result.results) > 0 else Status.TARGET_NOT_FOUND
 
+        req = FindClosest.Request()
+        req.documents = doc_texts
+        req.query = query
+        req.top_k = top_k
+        req.threshold = threshold
+
+        future = self.find_closest_service.call_async(req)
+        rclpy.spin_until_future_complete(self.node, future)
+        msg = future.result()
+
+        if not msg or not msg.success:
+            return Status.TARGET_NOT_FOUND, FindClosestResult(results=[], similarities=[])
+
+        result = FindClosestResult(results=list(msg.results), similarities=list(msg.similarities))
+        s = Status.EXECUTION_SUCCESS if result.results else Status.TARGET_NOT_FOUND
         return s, result
 
     def find_closest_raw(self, documents: list, query: str, top_k: int = 4) -> list[str]:
+        """Find the closest items to the query, returning (text, similarity) pairs."""
+        if self.mock_db or not documents:
+            return []
+
+        req = FindClosest.Request()
+        req.documents = list(documents)
+        req.query = query
+        req.top_k = top_k
+        req.threshold = 0.0
+
+        future = self.find_closest_service.call_async(req)
+        rclpy.spin_until_future_complete(self.node, future)
+        msg = future.result()
+
+        if not msg or not msg.success:
+            return []
+
+        results = list(zip(msg.results, msg.similarities))
+        Logger.info(self.node, f"FIND CLOSEST RAW RESULTS: {results}")
+        return results
+
+    def get_items_embeddings(self) -> list[str]:
         """
-        Method to find the closest item to the query.
-        Args:
-            documents: the documents to search among
-            query: the query to search for
+        Fetch all item texts from the postgres service.
         Returns:
-            Status: the status of the execution
-            list[str]: the results of the query
+            list[str]: List of item text strings.
         """
-        docs = [(doc, self.pg.embedding_model.encode(doc)) for doc in documents]
-        emb = self.pg.embedding_model.encode(query)
+        raw = self._call_query_entry(collection="items", query_texts=[], top_k=10000)
+        return [json.loads(r)["text"] for r in raw]
 
-        def cos_sim(x, y):
-            return np.dot(x, y) / (np.linalg.norm(x) * np.linalg.norm(y))
-
-        Results = cos_sim(
-            np.array([doc[1] for doc in docs]), emb
-        )  # Calculate cosine similarity for all documents
-        Results = sorted(zip(docs, Results), key=lambda x: x[1], reverse=True)
-        Results = [(doc[0][0], doc[1]) for doc in Results]  # Extract document and similarity score
-        Logger.info(self.node, f"FIND CLOSEST RAW RESULTS: {Results}")
-
-        return Results
-
-    def get_items_embeddings(self):
+    def get_hand_items(self, query: str) -> tuple[list[HandItem], list[HandItem]]:
         """
-        Method to get all items with their embeddings from the database.
+        Query hand_items from postgres service.
         Returns:
-            list[tuple[str, np.ndarray]]: List of tuples containing item text and their embeddings.
+            tuple: (by_name, by_description) lists of HandItem objects.
         """
-        items = self.pg.get_all_items()
-        documents = [(item.text, item.embedding) for item in items]
-        return documents
+        raw = self._call_query_entry(collection="hand_items", query_texts=[query], top_k=10000)
+        if len(raw) < 2:
+            return [], []
+        by_name = [HandItem(**item) for item in json.loads(raw[0])]
+        by_description = [HandItem(**item) for item in json.loads(raw[1])]
+        return by_name, by_description
 
     # TODO: Make async
     @service_check("llm_wrapper_service", (Status.SERVICE_CHECK, ""), TIMEOUT)
@@ -1133,7 +1159,13 @@ class HRITasks(metaclass=SubtaskMeta):
         return Status.EXECUTION_SUCCESS, future.result().answer
 
     def query_command_history(self, query: str, action: str, top_k: int = 1):
-        results = self.pg.query_command_history(command=query, action=action, top_k=top_k)
+        raw = self._call_query_entry(
+            collection="command_history",
+            query_texts=[query],
+            top_k=top_k,
+            metadata={"action": action},
+        )
+        results = [CommandHistory(**json.loads(r)) for r in raw]
         return Status.EXECUTION_SUCCESS, results
 
     def categorize_objects(
