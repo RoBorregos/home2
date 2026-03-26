@@ -1,5 +1,9 @@
 var NAVTREEINDEX25 =
 {
+"hri__constants_8py.html#ae336bc5e472cc38814ce9b4eb0928c31":[25,0,1,1,1,12],
+"hri__constants_8py.html#ae34afe358408d95f63d076478b349b0b":[25,0,1,1,1,8],
+"hri__constants_8py.html#ae715c3040df8a138bc6ae9712daa9a93":[25,0,1,1,1,35],
+"hri__constants_8py.html#afa75347167cbfc3cf035e80d0f56bacf":[25,0,1,1,1,19],
 "hri__dataclasses_8py.html":[25,0,6,1,2,5],
 "hri__hand_8py.html":[25,0,6,1,2,6],
 "hri__tasks_8py.html":[25,0,6,1,2,7],
@@ -245,9 +249,5 @@ var NAVTREEINDEX25 =
 "masive__testin_8cpp.html#a0ddf1224851353fc92bfbff6f499fa97":[25,0,3,0,4,4,2,2],
 "masive__testin_8cpp.html#a403677990f5903485dfa1d2871dd6bc9":[25,0,3,0,4,4,2,3],
 "md_docs_Run_Areas_Manipulation_manipulation.html":[13],
-"md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md57":[13,0],
-"md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md58":[13,1],
-"md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md65":[13,1,0],
-"md_docs_Run_Areas_Manipulation_pick_and_place.html":[14],
-"md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md67":[14,0]
+"md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md57":[13,0]
 };

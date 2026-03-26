@@ -5,6 +5,8 @@ var classzero__shot__object__detector__node_1_1zero__shot__object__detector__nod
     [ "handleServices", "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a0b54d064f29f54185e97f3509d145fbb", null ],
     [ "set_detector_classes_callback", "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a2ca06a585df136b9705d919d4e8fe281", null ],
     [ "set_parameters", "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a8e0d1da9147a783bee361fbc77fda4c3", null ],
+    [ "_frame_count", "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a1e1907b82599e02beda09f0b72896fda", null ],
+    [ "_skip_frames", "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a43dbc5fb9582df5f950509281738c447", null ],
     [ "active_classes", "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a96ccd62786a70880b4ce090739066438", null ],
     [ "active_flag", "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a4ce6cf1243aa6dfbfcc7f3d52d689029", null ],
     [ "bridge", "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#a21508b33a70d52824a1d93fd534fd5ca", null ],

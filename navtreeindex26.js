@@ -1,5 +1,9 @@
 var NAVTREEINDEX26 =
 {
+"md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md58":[13,1],
+"md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md65":[13,1,0],
+"md_docs_Run_Areas_Manipulation_pick_and_place.html":[14],
+"md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md67":[14,0],
 "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md68":[14,0,0],
 "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md69":[14,0,1],
 "md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md70":[14,0,1,0],
@@ -245,9 +249,5 @@ var NAVTREEINDEX26 =
 "namespacecustomer__node.html":[23,0,15],
 "namespacecustomer__node.html#a2ce4ca8d6b955922a67300d09f255376":[23,0,15,3],
 "namespacecustomer__node.html#ab7c1993bdcc545b0ed49c72b6a36f73b":[23,0,15,1],
-"namespacecustomer__node.html#ad8e46526be151f8b9b38ea6b9f91bd1b":[23,0,15,2],
-"namespacecutlery__detection__node.html":[23,0,16],
-"namespacecutlery__detection__node.html#a1fc39be2fc97d7036ace7fd443b05ee7":[23,0,16,2],
-"namespacecutlery__detection__node.html#aebbda9ac83098ead385f7b78a0ada9d1":[23,0,16,1],
-"namespacedashgo__driver.html":[23,0,17]
+"namespacecustomer__node.html#ad8e46526be151f8b9b38ea6b9f91bd1b":[23,0,15,2]
 };

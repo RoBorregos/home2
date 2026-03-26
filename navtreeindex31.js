@@ -1,5 +1,9 @@
 var NAVTREEINDEX31 =
 {
+"namespacevision__general_1_1pose__detection.html#a5da01077d2eab20ff68bd03ad901f916":[23,0,160,0,8],
+"namespacevision__general_1_1pose__detection.html#a6ab32cb045505378a662c5c4a7a5570a":[23,0,160,0,11],
+"namespacevision__general_1_1pose__detection.html#a724ec7625cfd38b42e38c7c0b987e2b2":[23,0,160,0,3],
+"namespacevision__general_1_1pose__detection.html#aa019c07a9ca5d672c8ae6488c329973e":[23,0,160,0,7],
 "namespacevision__general_1_1pose__detection.html#ab61362ab896a9b4054d44746e91037c6":[23,0,160,0,10],
 "namespacevision__general_1_1pose__detection.html#abbd7643dfb904eb7dc9da39ad5542306":[23,0,160,0,5],
 "namespacevision__general_1_1pose__detection.html#abc37ba4faf7754d0deadd15d8b90c1d6":[23,0,160,0,12],
@@ -245,9 +249,5 @@ var NAVTREEINDEX31 =
 "rtabnav2_8launch_8py.html":[25,0,4,0,2,0,5],
 "rtabnav2_8launch_8py.html#a0b5741c31c1cac08c5b3158c043374e7":[25,0,4,0,2,0,5,0],
 "run__while__hearing_8py.html":[25,0,6,1,1,11],
-"run__while__hearing_8py.html#aebdd0761631fc7404d7fddc38cde38a6":[25,0,6,1,1,11,1],
-"safety__task__manager_8py.html":[25,0,6,1,13],
-"safety__task__manager_8py.html#a207642360aafef76971e5142db35e75c":[25,0,6,1,13,3],
-"scripts_2pose__detection_8py.html":[25,0,7,0,3,1,13],
-"scripts_2pose__detection_8py.html#a0fa4657c7964f252abb37457c48c64b9":[25,0,7,0,3,1,13,3]
+"run__while__hearing_8py.html#aebdd0761631fc7404d7fddc38cde38a6":[25,0,6,1,1,11,1]
 };

@@ -226,17 +226,17 @@ var NAVTREEINDEX =
 "classsubtask__managers_1_1vision__tasks_1_1VisionTasks.html#aeb7c27035779ad1c8cc089542b94c92c",
 "classtracker__node_1_1SingleTracker.html#a5eff674854cdf70b08ee66f76c0e52d0",
 "classutils_1_1exploration__planner_1_1ExplorationPlanner.html#a657983a09c43dee6061e356971c3d405",
-"dir_094696d64bf9042e34c4ff3938c71239.html",
-"follow__person__node_8py.html#ab451655c396f8f960bd7200a4c4b04cb",
-"hri__dataclasses_8py.html",
-"md_docs_Run_Areas_Manipulation_pick_and_place.html#autotoc_md68",
-"namespacedashgo__driver.html#ad8472bb2a91193478e4da29fca930bc2",
-"namespacefrida__constants_1_1manipulation__constants.html#ac3a0e78153e604056eb6b66a73f0f4f7",
-"namespacemembers_vars_a.html",
-"namespacereid__model.html#ae9c13aa962487362309ec0e288114b65",
-"namespacevision__general_1_1pose__detection.html#ab61362ab896a9b4054d44746e91037c6",
-"scripts_2pose__detection_8py.html#a1cf363879219f89b064ecb6b68514ad1",
-"vision__constants__cpp_8hpp.html#acf9adb88cf10aa4cc901964714c1c07b"
+"dir_037e89c30d46ebf4ddec5f692ca12e42.html",
+"follow__person__node_8py.html#a44bd9b7dd07ac60865c69767af3940a2",
+"hri__constants_8py.html#ae336bc5e472cc38814ce9b4eb0928c31",
+"md_docs_Run_Areas_Manipulation_manipulation.html#autotoc_md58",
+"namespacecutlery__detection__node.html",
+"namespacefrida__constants_1_1manipulation__constants.html#ab65c663bc0e5f75a060598e9e0c4a01a",
+"namespacemembers_u.html",
+"namespacereid__model.html#ac0854462968e1d652883a22511988c48",
+"namespacevision__general_1_1pose__detection.html#a5da01077d2eab20ff68bd03ad901f916",
+"safety__task__manager_8py.html",
+"vision__constants__cpp_8hpp.html#aa51fae8a4e95cd0d1a96679d6dc61b19"
 ];
 
 var SYNCONMSG = 'click to disable panel synchronisation';
