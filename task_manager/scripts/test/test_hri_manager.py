@@ -196,9 +196,9 @@ class TestHriManager(Node):
             self.get_logger().info(f"Average confidence: {avg_confidence:.4f}")
 
     def compound_functions(self):
-        s, loc, orientation = self.hri_manager.get_location_orientation("kitchen")
+        # s, loc, orientation = self.hri_manager.get_location_orientation("kitchen")
 
-        self.get_logger().info(f"Final result: {loc}, {orientation}")
+        # self.get_logger().info(f"Final result: {loc}, {orientation}")
 
         s, name = self.hri_manager.ask_and_confirm(
             "What is your name?",
