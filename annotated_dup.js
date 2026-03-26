@@ -77,6 +77,9 @@ var annotated_dup =
     [ "face_recognition_node", "namespaceface__recognition__node.html", [
       [ "FaceRecognition", "classface__recognition__node_1_1FaceRecognition.html", "classface__recognition__node_1_1FaceRecognition" ]
     ] ],
+    [ "flat_grasp_estimator", "namespaceflat__grasp__estimator.html", [
+      [ "FlatGraspEstimator", "classflat__grasp__estimator_1_1FlatGraspEstimator.html", "classflat__grasp__estimator_1_1FlatGraspEstimator" ]
+    ] ],
     [ "follow_face_node", "namespacefollow__face__node.html", [
       [ "FollowFaceNode", "classfollow__face__node_1_1FollowFaceNode.html", "classfollow__face__node_1_1FollowFaceNode" ]
     ] ],

@@ -16,8 +16,8 @@ var searchData=
   ['vision_13',['vision',['../classutils_1_1subtask__manager_1_1SubtaskManager.html#aada154c25db19576008f74bba27c66fa',1,'utils.subtask_manager.SubtaskManager.vision()'],['../classtest__go__to__hand_1_1TestGoToHand.html#af1173071eab4538eb4337e85e5a12cba',1,'test_go_to_hand.TestGoToHand.vision()']]],
   ['vision_5factive_14',['vision_active',['../classface__recognition__node_1_1FaceRecognition.html#ac4b6b446e0008904d27b14136be93a91',1,'face_recognition_node::FaceRecognition']]],
   ['vision_5ftasks_15',['vision_tasks',['../namespacesubtask__managers_1_1hri__tasks.html#aafc0136a349382c891b80a38fcf63125',1,'subtask_managers.hri_tasks.vision_tasks()'],['../namespacesubtask__managers_1_1vision__tasks.html#a3a4bd0269cff5c8d45098a6a0baed265',1,'subtask_managers.vision_tasks.vision_tasks()']]],
-  ['visualize_16',['VISUALIZE',['../classpointing__detection_1_1DetectPointingObjectServer.html#a9a2d6aa34e568d3b8acfe56c1be9b836',1,'pointing_detection::DetectPointingObjectServer']]],
-  ['visualize_17',['visualize',['../classzed__simulator_1_1ZedSimulator.html#a04ace0fe9e0fef80137a5f0cf4b5f963',1,'zed_simulator::ZedSimulator']]],
+  ['visualize_16',['visualize',['../classzed__simulator_1_1ZedSimulator.html#a04ace0fe9e0fef80137a5f0cf4b5f963',1,'zed_simulator::ZedSimulator']]],
+  ['visualize_17',['VISUALIZE',['../classpointing__detection_1_1DetectPointingObjectServer.html#a9a2d6aa34e568d3b8acfe56c1be9b836',1,'pointing_detection::DetectPointingObjectServer']]],
   ['visualizer_5fpub_18',['visualizer_pub',['../classpointing__detection_1_1DetectPointingObjectServer.html#ade5a75bb3d159e28d1fe4b2520337bcb',1,'pointing_detection::DetectPointingObjectServer']]],
   ['voltage_5fval_19',['voltage_val',['../classdashgo__driver2_1_1DashgoDriver.html#a39da7423b70a33da7f5babdef848fe3b',1,'dashgo_driver2::DashgoDriver']]]
 ];

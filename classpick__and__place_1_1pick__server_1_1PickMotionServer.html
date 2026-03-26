@@ -93,6 +93,7 @@ $(document).ready(function(){initNavTree('classpick__and__place_1_1pick__server_
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
+<a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="classpick__and__place_1_1pick__server_1_1PickMotionServer-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">pick_and_place.pick_server.PickMotionServer Class Reference</div></div>
@@ -115,8 +116,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a3f761e681791251c87ce039727c38083"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2ce7e4c2411faa589b016caa0bc05150"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a2ce7e4c2411faa589b016caa0bc05150">pick</a> (self, goal_handle, feedback)</td></tr>
 <tr class="separator:a2ce7e4c2411faa589b016caa0bc05150"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afdd96738502c312edf39ce22a2c3bdc7"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pick__server_1_1PickMotionServer.html#afdd96738502c312edf39ce22a2c3bdc7">move_to_pose</a> (self, pose, tolerance_position=0.005, tolerance_orientation=0.02)</td></tr>
-<tr class="separator:afdd96738502c312edf39ce22a2c3bdc7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a445144c0f45236b2784c52fd0e56b7a6"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a445144c0f45236b2784c52fd0e56b7a6">force_guarded_descent</a> (self)</td></tr>
+<tr class="separator:a445144c0f45236b2784c52fd0e56b7a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a74b845e25998b24f69c0842ee7c6ef77"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a74b845e25998b24f69c0842ee7c6ef77">move_to_pose</a> (self, pose, tolerance_position=0.005, tolerance_orientation=0.02, velocity=PICK_VELOCITY)</td></tr>
+<tr class="separator:a74b845e25998b24f69c0842ee7c6ef77"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae359b8f4aed36d0163036770d5089a27"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pick__server_1_1PickMotionServer.html#ae359b8f4aed36d0163036770d5089a27">wait_for_future</a> (self, future)</td></tr>
 <tr class="separator:ae359b8f4aed36d0163036770d5089a27"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acf8ac6c4f7fa2b2fa664de7f878c3f9a"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pick__server_1_1PickMotionServer.html#acf8ac6c4f7fa2b2fa664de7f878c3f9a">save_collision_objects</a> (self)</td></tr>
@@ -135,8 +138,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aae8e37df51f19f4e7a029e630ce9a400"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab2037dcf718ab15649bb40f17cbf2098"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pick__server_1_1PickMotionServer.html#ab2037dcf718ab15649bb40f17cbf2098">calculate_object_height</a> (self, obj_lowest, obj_highest)</td></tr>
 <tr class="separator:ab2037dcf718ab15649bb40f17cbf2098"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6b7cd37b58c9988a912d17a7bcfa1e45"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a6b7cd37b58c9988a912d17a7bcfa1e45">check_feasibility</a> (self, pose)</td></tr>
-<tr class="separator:a6b7cd37b58c9988a912d17a7bcfa1e45"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a39d7f1af971ed57598d7d96a00bd2155"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a39d7f1af971ed57598d7d96a00bd2155">check_feasibility</a> (self, pose, is_flat=False)</td></tr>
+<tr class="separator:a39d7f1af971ed57598d7d96a00bd2155"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -155,6 +158,17 @@ Public Attributes</h2></td></tr>
 <tr class="memitem:aab7727547bae26e2a95d557e4bec2108"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pick__server_1_1PickMotionServer.html#aab7727547bae26e2a95d557e4bec2108">plane</a></td></tr>
 <tr class="separator:aab7727547bae26e2a95d557e4bec2108"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
+Protected Member Functions</h2></td></tr>
+<tr class="memitem:ac6f0fb41488d7730c0373a4a52d49707"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pick__server_1_1PickMotionServer.html#ac6f0fb41488d7730c0373a4a52d49707">_joint_state_cb</a> (self, JointState msg)</td></tr>
+<tr class="separator:ac6f0fb41488d7730c0373a4a52d49707"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a75ff3dd7b3da67a98ea51f3b8851b26d"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a75ff3dd7b3da67a98ea51f3b8851b26d">_set_xarm_mode</a> (self, int mode)</td></tr>
+<tr class="separator:a75ff3dd7b3da67a98ea51f3b8851b26d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2ece4c4e4cbdf7600b57256a0f247e3d"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a2ece4c4e4cbdf7600b57256a0f247e3d">_stop_cartesian_velocity</a> (self)</td></tr>
+<tr class="separator:a2ece4c4e4cbdf7600b57256a0f247e3d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a772f20a1163c1714617028dcfa17df62"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a772f20a1163c1714617028dcfa17df62">_restore_mode1</a> (self)</td></tr>
+<tr class="separator:a772f20a1163c1714617028dcfa17df62"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
 <tr class="memitem:a282f47521b1b994c9e9cff2fdb19c2ca"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a282f47521b1b994c9e9cff2fdb19c2ca">_action_server</a></td></tr>
@@ -171,6 +185,18 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:a3465cd2bb38ca283600cead2612f6626"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa2489955b8586035c570b4e498eacdcf"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pick__server_1_1PickMotionServer.html#aa2489955b8586035c570b4e498eacdcf">_gripper_set_state_client</a></td></tr>
 <tr class="separator:aa2489955b8586035c570b4e498eacdcf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac595a3c6fd000859e88573156976b259"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pick__server_1_1PickMotionServer.html#ac595a3c6fd000859e88573156976b259">_clear_octomap_client</a></td></tr>
+<tr class="separator:ac595a3c6fd000859e88573156976b259"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aca949a492aaa3ddcd50f5fa0b226aa3f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pick__server_1_1PickMotionServer.html#aca949a492aaa3ddcd50f5fa0b226aa3f">_vc_set_cartesian_velocity_client</a></td></tr>
+<tr class="separator:aca949a492aaa3ddcd50f5fa0b226aa3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aae736543f242e1670811a58f784c2ac7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pick__server_1_1PickMotionServer.html#aae736543f242e1670811a58f784c2ac7">_set_mode_client</a></td></tr>
+<tr class="separator:aae736543f242e1670811a58f784c2ac7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aefa4174812126a908bd1d2368d19717b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pick__server_1_1PickMotionServer.html#aefa4174812126a908bd1d2368d19717b">_set_state_client</a></td></tr>
+<tr class="separator:aefa4174812126a908bd1d2368d19717b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a711f10519ab481f40102bd187a9fbba8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a711f10519ab481f40102bd187a9fbba8">_latest_joint_state</a></td></tr>
+<tr class="separator:a711f10519ab481f40102bd187a9fbba8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a600923036b0bcd73c8e8acddc7b5119a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classpick__and__place_1_1pick__server_1_1PickMotionServer.html#a600923036b0bcd73c8e8acddc7b5119a">_joint_state_sub</a></td></tr>
+<tr class="separator:a600923036b0bcd73c8e8acddc7b5119a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="ad85c094307880912181b1cf5ebdd5174" name="ad85c094307880912181b1cf5ebdd5174"></a>
@@ -192,6 +218,130 @@ Protected Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="ac6f0fb41488d7730c0373a4a52d49707" name="ac6f0fb41488d7730c0373a4a52d49707"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac6f0fb41488d7730c0373a4a52d49707">&#9670;&#160;</a></span>_joint_state_cb()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def pick_and_place.pick_server.PickMotionServer._joint_state_cb </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">JointState&#160;</td>
+          <td class="paramname"><em>msg</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a772f20a1163c1714617028dcfa17df62" name="a772f20a1163c1714617028dcfa17df62"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a772f20a1163c1714617028dcfa17df62">&#9670;&#160;</a></span>_restore_mode1()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def pick_and_place.pick_server.PickMotionServer._restore_mode1 </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a75ff3dd7b3da67a98ea51f3b8851b26d" name="a75ff3dd7b3da67a98ea51f3b8851b26d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a75ff3dd7b3da67a98ea51f3b8851b26d">&#9670;&#160;</a></span>_set_xarm_mode()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"> bool pick_and_place.pick_server.PickMotionServer._set_xarm_mode </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>mode</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a2ece4c4e4cbdf7600b57256a0f247e3d" name="a2ece4c4e4cbdf7600b57256a0f247e3d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2ece4c4e4cbdf7600b57256a0f247e3d">&#9670;&#160;</a></span>_stop_cartesian_velocity()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def pick_and_place.pick_server.PickMotionServer._stop_cartesian_velocity </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a142083fd5eb70a3722c97774500d6763" name="a142083fd5eb70a3722c97774500d6763"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a142083fd5eb70a3722c97774500d6763">&#9670;&#160;</a></span>attach_pick_object()</h2>
 
@@ -207,7 +357,7 @@ Protected Attributes</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<pre class="fragment">Attach the pick object to the robot.</pre> 
+
 </div>
 </div>
 <a id="ab2037dcf718ab15649bb40f17cbf2098" name="ab2037dcf718ab15649bb40f17cbf2098"></a>
@@ -241,7 +391,7 @@ Protected Attributes</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<pre class="fragment">Calculate the height of the object, measured from the lowest point to the highest point</pre> 
+
 </div>
 </div>
 <a id="aae8e37df51f19f4e7a029e630ce9a400" name="aae8e37df51f19f4e7a029e630ce9a400"></a>
@@ -275,14 +425,11 @@ Protected Attributes</h2></td></tr>
         </tr>
       </table>
 </div><div class="memdoc">
-<pre class="fragment">Calculate the height of the object, measured from where it was picked
-e.g. if a 30cm tall object is picked at 10cm, the height is 10cm
--&gt; Reason for this is to know how high we should be to place the object, basically repeat same height
-</pre> 
+
 </div>
 </div>
-<a id="a6b7cd37b58c9988a912d17a7bcfa1e45" name="a6b7cd37b58c9988a912d17a7bcfa1e45"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6b7cd37b58c9988a912d17a7bcfa1e45">&#9670;&#160;</a></span>check_feasibility()</h2>
+<a id="a39d7f1af971ed57598d7d96a00bd2155" name="a39d7f1af971ed57598d7d96a00bd2155"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a39d7f1af971ed57598d7d96a00bd2155">&#9670;&#160;</a></span>check_feasibility()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -297,7 +444,13 @@ e.g. if a 30cm tall object is picked at 10cm, the height is 10cm
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>pose</em>&#160;</td>
+          <td class="paramname"><em>pose</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>is_flat</em> = <code>False</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -306,7 +459,7 @@ e.g. if a 30cm tall object is picked at 10cm, the height is 10cm
         </tr>
       </table>
 </div><div class="memdoc">
-<pre class="fragment">Check if the pose is feasible.</pre> 
+
 </div>
 </div>
 <a id="a921c792225a597827ba4fb2f7f394e55" name="a921c792225a597827ba4fb2f7f394e55"></a>
@@ -334,7 +487,7 @@ e.g. if a 30cm tall object is picked at 10cm, the height is 10cm
         </tr>
       </table>
 </div><div class="memdoc">
-<pre class="fragment">Execute the pick action when a goal is received.</pre> 
+
 </div>
 </div>
 <a id="a3f761e681791251c87ce039727c38083" name="a3f761e681791251c87ce039727c38083"></a>
@@ -383,6 +536,27 @@ e.g. if a 30cm tall object is picked at 10cm, the height is 10cm
 
 </div>
 </div>
+<a id="a445144c0f45236b2784c52fd0e56b7a6" name="a445144c0f45236b2784c52fd0e56b7a6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a445144c0f45236b2784c52fd0e56b7a6">&#9670;&#160;</a></span>force_guarded_descent()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"> bool pick_and_place.pick_server.PickMotionServer.force_guarded_descent </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<pre class="fragment">Descend in -Z using xArm mode 5 (cartesian velocity control).
+Single velocity command (persists until zero-vel), monitor effort for contact.
+Grace period ignores transient effort spikes from mode switching.
+</pre> 
+</div>
+</div>
 <a id="ad2f61c52be8d2ddd85f4bd0342b1b11b" name="ad2f61c52be8d2ddd85f4bd0342b1b11b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ad2f61c52be8d2ddd85f4bd0342b1b11b">&#9670;&#160;</a></span>get_collision_objects()</h2>
 
@@ -398,11 +572,11 @@ e.g. if a 30cm tall object is picked at 10cm, the height is 10cm
         </tr>
       </table>
 </div><div class="memdoc">
-<pre class="fragment">Get the collision objects in the scene.</pre> 
+
 </div>
 </div>
-<a id="afdd96738502c312edf39ce22a2c3bdc7" name="afdd96738502c312edf39ce22a2c3bdc7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afdd96738502c312edf39ce22a2c3bdc7">&#9670;&#160;</a></span>move_to_pose()</h2>
+<a id="a74b845e25998b24f69c0842ee7c6ef77" name="a74b845e25998b24f69c0842ee7c6ef77"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a74b845e25998b24f69c0842ee7c6ef77">&#9670;&#160;</a></span>move_to_pose()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -429,7 +603,13 @@ e.g. if a 30cm tall object is picked at 10cm, the height is 10cm
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>tolerance_orientation</em> = <code>0.02</code>&#160;</td>
+          <td class="paramname"><em>tolerance_orientation</em> = <code>0.02</code>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>velocity</em> = <code>PICK_VELOCITY</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -438,7 +618,7 @@ e.g. if a 30cm tall object is picked at 10cm, the height is 10cm
         </tr>
       </table>
 </div><div class="memdoc">
-<pre class="fragment">Move the robot to the given pose.</pre> 
+
 </div>
 </div>
 <a id="a0ebdc32a42f996cd1cffac7595a2dca4" name="a0ebdc32a42f996cd1cffac7595a2dca4"></a>
@@ -472,7 +652,7 @@ e.g. if a 30cm tall object is picked at 10cm, the height is 10cm
         </tr>
       </table>
 </div><div class="memdoc">
-<pre class="fragment">Check if the object is in the plane.</pre> 
+
 </div>
 </div>
 <a id="a2ce7e4c2411faa589b016caa0bc05150" name="a2ce7e4c2411faa589b016caa0bc05150"></a>
@@ -506,7 +686,7 @@ e.g. if a 30cm tall object is picked at 10cm, the height is 10cm
         </tr>
       </table>
 </div><div class="memdoc">
-<pre class="fragment">Perform the pick operation.</pre> 
+
 </div>
 </div>
 <a id="aed937667c14d6f478bc408bf87845d6f" name="aed937667c14d6f478bc408bf87845d6f"></a>
@@ -534,7 +714,7 @@ e.g. if a 30cm tall object is picked at 10cm, the height is 10cm
         </tr>
       </table>
 </div><div class="memdoc">
-<pre class="fragment">Remove the collision object from the scene.</pre> 
+
 </div>
 </div>
 <a id="acf8ac6c4f7fa2b2fa664de7f878c3f9a" name="acf8ac6c4f7fa2b2fa664de7f878c3f9a"></a>
@@ -628,6 +808,28 @@ e.g. if a 30cm tall object is picked at 10cm, the height is 10cm
 
 </div>
 </div>
+<a id="ac595a3c6fd000859e88573156976b259" name="ac595a3c6fd000859e88573156976b259"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac595a3c6fd000859e88573156976b259">&#9670;&#160;</a></span>_clear_octomap_client</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">pick_and_place.pick_server.PickMotionServer._clear_octomap_client</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="ac941cc8330441d5bfefa23078dcacd4c" name="ac941cc8330441d5bfefa23078dcacd4c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ac941cc8330441d5bfefa23078dcacd4c">&#9670;&#160;</a></span>_get_collision_objects_client</h2>
 
@@ -694,6 +896,50 @@ e.g. if a 30cm tall object is picked at 10cm, the height is 10cm
 
 </div>
 </div>
+<a id="a600923036b0bcd73c8e8acddc7b5119a" name="a600923036b0bcd73c8e8acddc7b5119a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a600923036b0bcd73c8e8acddc7b5119a">&#9670;&#160;</a></span>_joint_state_sub</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">pick_and_place.pick_server.PickMotionServer._joint_state_sub</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a711f10519ab481f40102bd187a9fbba8" name="a711f10519ab481f40102bd187a9fbba8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a711f10519ab481f40102bd187a9fbba8">&#9670;&#160;</a></span>_latest_joint_state</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">pick_and_place.pick_server.PickMotionServer._latest_joint_state</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a33b42ac19f6fb7c921c8755372ac3a91" name="a33b42ac19f6fb7c921c8755372ac3a91"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a33b42ac19f6fb7c921c8755372ac3a91">&#9670;&#160;</a></span>_move_to_pose_action_client</h2>
 
@@ -727,6 +973,72 @@ e.g. if a 30cm tall object is picked at 10cm, the height is 10cm
       <table class="memname">
         <tr>
           <td class="memname">pick_and_place.pick_server.PickMotionServer._remove_collision_object_client</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aae736543f242e1670811a58f784c2ac7" name="aae736543f242e1670811a58f784c2ac7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aae736543f242e1670811a58f784c2ac7">&#9670;&#160;</a></span>_set_mode_client</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">pick_and_place.pick_server.PickMotionServer._set_mode_client</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aefa4174812126a908bd1d2368d19717b" name="aefa4174812126a908bd1d2368d19717b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aefa4174812126a908bd1d2368d19717b">&#9670;&#160;</a></span>_set_state_client</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">pick_and_place.pick_server.PickMotionServer._set_state_client</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="aca949a492aaa3ddcd50f5fa0b226aa3f" name="aca949a492aaa3ddcd50f5fa0b226aa3f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aca949a492aaa3ddcd50f5fa0b226aa3f">&#9670;&#160;</a></span>_vc_set_cartesian_velocity_client</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">pick_and_place.pick_server.PickMotionServer._vc_set_cartesian_velocity_client</td>
         </tr>
       </table>
   </td>

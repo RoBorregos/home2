@@ -16,5 +16,6 @@ var classpick__and__place_1_1keyboard__input_1_1KeyboardInput =
     [ "max_distance", "classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#aec58b84038489fbeb837dc5561500862", null ],
     [ "min_distance", "classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a725946b5a12e05e5a49465e2c3e79533", null ],
     [ "objects", "classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a45199d8efd5b1ad858a71d606c98a427", null ],
-    [ "objects_subscription", "classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a802de74404dd23f304dd8611a540932f", null ]
+    [ "objects_subscription", "classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a802de74404dd23f304dd8611a540932f", null ],
+    [ "zero_shot_subscription", "classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a081840d8eb3d3858c21ffceda56c8262", null ]
 ];

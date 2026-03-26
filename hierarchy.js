@@ -157,6 +157,7 @@ var hierarchy =
       [ "ex_orientation_path_constraint.MoveToPoseContraintedClient", "classex__orientation__path__constraint_1_1MoveToPoseContraintedClient.html", null ],
       [ "example_node.ExampleNode", "classexample__node_1_1ExampleNode.html", null ],
       [ "face_recognition_node.FaceRecognition", "classface__recognition__node_1_1FaceRecognition.html", null ],
+      [ "flat_grasp_estimator.FlatGraspEstimator", "classflat__grasp__estimator_1_1FlatGraspEstimator.html", null ],
       [ "follow_face_node.FollowFaceNode", "classfollow__face__node_1_1FollowFaceNode.html", null ],
       [ "follow_face_node_copt.FollowFaceNode", "classfollow__face__node__copt_1_1FollowFaceNode.html", null ],
       [ "follow_person_node copy.FollowPersonNode", "classfollow__person__node_01copy_1_1FollowPersonNode.html", null ],

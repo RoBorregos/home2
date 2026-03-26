@@ -1,6 +1,6 @@
 var searchData=
 [
-  ['z_0',['Z',['../remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a21c2e59531c8710156d34a3c30ac81d5',1,'Z():&#160;remove_plane.cpp'],['../add__primitives_8cpp.html#a6c377378d852c5841ed836dad1071a59a21c2e59531c8710156d34a3c30ac81d5',1,'Z():&#160;add_primitives.cpp'],['../remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a21c2e59531c8710156d34a3c30ac81d5',1,'Z():&#160;remove_plane.cpp'],['../add__primitives_8cpp.html#a6c377378d852c5841ed836dad1071a59a21c2e59531c8710156d34a3c30ac81d5',1,'Z():&#160;add_primitives.cpp']]],
+  ['z_0',['Z',['../add__primitives_8cpp.html#a6c377378d852c5841ed836dad1071a59a21c2e59531c8710156d34a3c30ac81d5',1,'Z():&#160;add_primitives.cpp'],['../remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a21c2e59531c8710156d34a3c30ac81d5',1,'Z():&#160;remove_plane.cpp'],['../add__primitives_8cpp.html#a6c377378d852c5841ed836dad1071a59a21c2e59531c8710156d34a3c30ac81d5',1,'Z():&#160;add_primitives.cpp'],['../remove__plane_8cpp.html#a6c377378d852c5841ed836dad1071a59a21c2e59531c8710156d34a3c30ac81d5',1,'Z():&#160;remove_plane.cpp']]],
   ['z_1',['z',['../classpick__and__place_1_1fix__position__to__plane_1_1MyPoint.html#a0cdf9bb93595ae63dd6c45aa9b786e7c',1,'pick_and_place::fix_position_to_plane::MyPoint']]],
   ['zed_5fcamera_5fframe_2',['ZED_CAMERA_FRAME',['../manipulation__constants__cpp_8hpp.html#a56af7b9da0fb3dfb9f8c337970b4dbd2',1,'manipulation_constants_cpp.hpp']]],
   ['zed_5fpoint_5fcloud_5ftopic_3',['ZED_POINT_CLOUD_TOPIC',['../namespacefrida__constants_1_1manipulation__constants.html#a60fec6dff1f21269d68429db6ce6c56d',1,'frida_constants.manipulation_constants.ZED_POINT_CLOUD_TOPIC()'],['../manipulation__constants__cpp_8hpp.html#ad803a68729673ec3b910aa82774ddeed',1,'ZED_POINT_CLOUD_TOPIC():&#160;manipulation_constants_cpp.hpp']]],
@@ -19,7 +19,8 @@ var searchData=
   ['zero_5fshot_5fobject_5fdetector_5fnode_2elaunch_2epy_16',['zero_shot_object_detector_node.launch.py',['../zero__shot__object__detector__node_8launch_8py.html',1,'']]],
   ['zero_5fshot_5fobject_5fdetector_5fnode_2epy_17',['zero_shot_object_detector_node.py',['../zero__shot__object__detector__node_8py.html',1,'']]],
   ['zero_5fshot_5foda_5fcallback_18',['zero_shot_oda_callback',['../classDetectionsHandlerNode.html#a4d4e6f685b460e377b560af876310525',1,'DetectionsHandlerNode']]],
-  ['zeroshotobjectdetector_19',['ZeroShotObjectDetector',['../namespaceZeroShotObjectDetector.html',1,'ZeroShotObjectDetector'],['../classZeroShotObjectDetector_1_1ZeroShotObjectDetector.html',1,'ZeroShotObjectDetector.ZeroShotObjectDetector']]],
-  ['zeroshotobjectdetector_2epy_20',['ZeroShotObjectDetector.py',['../ZeroShotObjectDetector_8py.html',1,'']]],
-  ['zoom_21',['zoom',['../classnav__ui_1_1NavCanvas.html#a12bd8e56e2a54de00b0decb94cef599f',1,'nav_ui.NavCanvas.zoom()'],['../classmap__area__tagger_1_1MapCanvas.html#ab25de2a225e4091587897d3be589290b',1,'map_area_tagger.MapCanvas.zoom()']]]
+  ['zero_5fshot_5fsubscription_19',['zero_shot_subscription',['../classpick__and__place_1_1keyboard__input_1_1KeyboardInput.html#a081840d8eb3d3858c21ffceda56c8262',1,'pick_and_place::keyboard_input::KeyboardInput']]],
+  ['zeroshotobjectdetector_20',['ZeroShotObjectDetector',['../namespaceZeroShotObjectDetector.html',1,'ZeroShotObjectDetector'],['../classZeroShotObjectDetector_1_1ZeroShotObjectDetector.html',1,'ZeroShotObjectDetector.ZeroShotObjectDetector']]],
+  ['zeroshotobjectdetector_2epy_21',['ZeroShotObjectDetector.py',['../ZeroShotObjectDetector_8py.html',1,'']]],
+  ['zoom_22',['zoom',['../classnav__ui_1_1NavCanvas.html#a12bd8e56e2a54de00b0decb94cef599f',1,'nav_ui.NavCanvas.zoom()'],['../classmap__area__tagger_1_1MapCanvas.html#ab25de2a225e4091587897d3be589290b',1,'map_area_tagger.MapCanvas.zoom()']]]
 ];

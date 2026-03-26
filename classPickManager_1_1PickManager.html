@@ -94,6 +94,7 @@ $(document).ready(function(){initNavTree('classPickManager_1_1PickManager.html',
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
+<a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="classPickManager_1_1PickManager-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">PickManager.PickManager Class Reference</div></div>
 </div><!--header-->
@@ -103,6 +104,8 @@ $(document).ready(function(){initNavTree('classPickManager_1_1PickManager.html',
 Public Member Functions</h2></td></tr>
 <tr class="memitem:af11bed753b23e5394ba41226ae7036b1"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classPickManager_1_1PickManager.html#af11bed753b23e5394ba41226ae7036b1">__init__</a> (self, <a class="el" href="classPickManager_1_1PickManager.html#af8d7c1dcc022e4399b014a89b22ce567">node</a>)</td></tr>
 <tr class="separator:af11bed753b23e5394ba41226ae7036b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a83dbb132d65ed3effd05e127c061dbaa"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classPickManager_1_1PickManager.html#a83dbb132d65ed3effd05e127c061dbaa">flat_grasp_callback</a> (self, msg)</td></tr>
+<tr class="separator:a83dbb132d65ed3effd05e127c061dbaa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac21e4a8c0a97e2c597c1aacbc8aa26c1"><td class="memItemLeft" align="right" valign="top">Tuple[bool, PickResult]&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classPickManager_1_1PickManager.html#ac21e4a8c0a97e2c597c1aacbc8aa26c1">execute</a> (self, str object_name, PointStamped point, pick_params)</td></tr>
 <tr class="separator:ac21e4a8c0a97e2c597c1aacbc8aa26c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af6d93cceb18c8420798b5d67531e66d3"><td class="memItemLeft" align="right" valign="top">PointStamped&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classPickManager_1_1PickManager.html#af6d93cceb18c8420798b5d67531e66d3">get_object_point</a> (self, str object_name)</td></tr>
@@ -114,11 +117,24 @@ Public Member Functions</h2></td></tr>
 Public Attributes</h2></td></tr>
 <tr class="memitem:abf0ce197cca427c13aed49721b05542f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classPickManager_1_1PickManager.html#abf0ce197cca427c13aed49721b05542f">node</a></td></tr>
 <tr class="separator:abf0ce197cca427c13aed49721b05542f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a48bfebc80a081b93b508b8e2920cfde6"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classPickManager_1_1PickManager.html#a48bfebc80a081b93b508b8e2920cfde6">latest_flat_grasp</a></td></tr>
+<tr class="separator:a48bfebc80a081b93b508b8e2920cfde6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a85ad82942e8b2c8366f09ed82017d91e"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classPickManager_1_1PickManager.html#a85ad82942e8b2c8366f09ed82017d91e">tf_buffer</a></td></tr>
+<tr class="separator:a85ad82942e8b2c8366f09ed82017d91e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a06f66f2074ef61edc3bb588b91e344ab"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classPickManager_1_1PickManager.html#a06f66f2074ef61edc3bb588b91e344ab">tf_listener</a></td></tr>
+<tr class="separator:a06f66f2074ef61edc3bb588b91e344ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-attribs" name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>
 <tr class="memitem:af8d7c1dcc022e4399b014a89b22ce567"><td class="memItemLeft" align="right" valign="top">None&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classPickManager_1_1PickManager.html#af8d7c1dcc022e4399b014a89b22ce567">node</a> = None</td></tr>
 <tr class="separator:af8d7c1dcc022e4399b014a89b22ce567"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
+Protected Attributes</h2></td></tr>
+<tr class="memitem:aae33dbc5e4824cd29bfc91c9af5008b9"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classPickManager_1_1PickManager.html#aae33dbc5e4824cd29bfc91c9af5008b9">_collecting_samples</a></td></tr>
+<tr class="separator:aae33dbc5e4824cd29bfc91c9af5008b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7dedcb102c2ab4322443c8deb3dacd09"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classPickManager_1_1PickManager.html#a7dedcb102c2ab4322443c8deb3dacd09">_grasp_samples</a></td></tr>
+<tr class="separator:a7dedcb102c2ab4322443c8deb3dacd09"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="af11bed753b23e5394ba41226ae7036b1" name="af11bed753b23e5394ba41226ae7036b1"></a>
@@ -190,6 +206,34 @@ Static Public Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="a83dbb132d65ed3effd05e127c061dbaa" name="a83dbb132d65ed3effd05e127c061dbaa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a83dbb132d65ed3effd05e127c061dbaa">&#9670;&#160;</a></span>flat_grasp_callback()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">def PickManager.PickManager.flat_grasp_callback </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>msg</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a004bcef224e1767d29136e723050f998" name="a004bcef224e1767d29136e723050f998"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a004bcef224e1767d29136e723050f998">&#9670;&#160;</a></span>get_object_cluster()</h2>
 
@@ -247,6 +291,64 @@ Static Public Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="aae33dbc5e4824cd29bfc91c9af5008b9" name="aae33dbc5e4824cd29bfc91c9af5008b9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aae33dbc5e4824cd29bfc91c9af5008b9">&#9670;&#160;</a></span>_collecting_samples</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">PickManager.PickManager._collecting_samples</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a7dedcb102c2ab4322443c8deb3dacd09" name="a7dedcb102c2ab4322443c8deb3dacd09"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7dedcb102c2ab4322443c8deb3dacd09">&#9670;&#160;</a></span>_grasp_samples</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">PickManager.PickManager._grasp_samples</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a48bfebc80a081b93b508b8e2920cfde6" name="a48bfebc80a081b93b508b8e2920cfde6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a48bfebc80a081b93b508b8e2920cfde6">&#9670;&#160;</a></span>latest_flat_grasp</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">PickManager.PickManager.latest_flat_grasp</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="af8d7c1dcc022e4399b014a89b22ce567" name="af8d7c1dcc022e4399b014a89b22ce567"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af8d7c1dcc022e4399b014a89b22ce567">&#9670;&#160;</a></span>node <span class="overload">[1/2]</span></h2>
 
@@ -277,6 +379,34 @@ Static Public Attributes</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">PickManager.PickManager.node</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a85ad82942e8b2c8366f09ed82017d91e" name="a85ad82942e8b2c8366f09ed82017d91e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a85ad82942e8b2c8366f09ed82017d91e">&#9670;&#160;</a></span>tf_buffer</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">PickManager.PickManager.tf_buffer</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
+<a id="a06f66f2074ef61edc3bb588b91e344ab" name="a06f66f2074ef61edc3bb588b91e344ab"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a06f66f2074ef61edc3bb588b91e344ab">&#9670;&#160;</a></span>tf_listener</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">PickManager.PickManager.tf_listener</td>
         </tr>
       </table>
 </div><div class="memdoc">

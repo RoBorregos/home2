@@ -15,6 +15,8 @@ var namespacefrida__constants =
       [ "ATTACH_COLLISION_OBJECT_SERVICE", "namespacefrida__constants_1_1manipulation__constants.html#a0b7108a7f04682d83eb47aacc396c94b", null ],
       [ "CLOSE_BY_MAX_DISTANCE", "namespacefrida__constants_1_1manipulation__constants.html#aedfd019fa324321726d9d2a5f073adba", null ],
       [ "CLUSTER_OBJECT_SERVICE", "namespacefrida__constants_1_1manipulation__constants.html#a87a763d90fa658149c263ce4da907d89", null ],
+      [ "CUTLERY_NAMES", "namespacefrida__constants_1_1manipulation__constants.html#a940a04cbaccd0019b3906cccbc2d8538", null ],
+      [ "CUTLERY_PICK_MIN_HEIGHT", "namespacefrida__constants_1_1manipulation__constants.html#a831e4349bc4afccacd795cdc09c216d3", null ],
       [ "DEBUG_POSE_GOAL_TOPIC", "namespacefrida__constants_1_1manipulation__constants.html#a2504c3f7f4f62c97f91d95bc5191e7c0", null ],
       [ "DEG2RAD", "namespacefrida__constants_1_1manipulation__constants.html#a7f4c41f43a0aa56a462fa09382edae0e", null ],
       [ "EEF_CONTACT_LINKS", "namespacefrida__constants_1_1manipulation__constants.html#af8b011a4e4212fb9450412d1c99bffc2", null ],
@@ -151,6 +153,7 @@ var namespacefrida__constants =
     [ "vision_enums", "namespacefrida__constants_1_1vision__enums.html", "namespacefrida__constants_1_1vision__enums" ],
     [ "xarm_configurations", "namespacefrida__constants_1_1xarm__configurations.html", [
       [ "CARRY_POSE", "namespacefrida__constants_1_1xarm__configurations.html#a40724ca8949bf6768bc309e32f3b284f", null ],
+      [ "CUTLERY_STARE", "namespacefrida__constants_1_1xarm__configurations.html#a74866c95df18e2f28da7ca969977024f", null ],
       [ "FRONT_LOW_STARE", "namespacefrida__constants_1_1xarm__configurations.html#a2f3850b75849b6bc32e08235fe99d81c", null ],
       [ "FRONT_STARE", "namespacefrida__constants_1_1xarm__configurations.html#a3f9c52b155ebdeebba61a6e7b5c195fd", null ],
       [ "NAV_POSE", "namespacefrida__constants_1_1xarm__configurations.html#acd030439b63a120bde3ac743e5bab1f8", null ],

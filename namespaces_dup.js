@@ -96,6 +96,7 @@ var namespaces_dup =
     ] ],
     [ "example_node", "namespaceexample__node.html", "namespaceexample__node" ],
     [ "face_recognition_node", "namespaceface__recognition__node.html", "namespaceface__recognition__node" ],
+    [ "flat_grasp_estimator", "namespaceflat__grasp__estimator.html", "namespaceflat__grasp__estimator" ],
     [ "follow_face_node", "namespacefollow__face__node.html", "namespacefollow__face__node" ],
     [ "follow_face_node_copt", "namespacefollow__face__node__copt.html", "namespacefollow__face__node__copt" ],
     [ "follow_person_node", "namespacefollow__person__node.html", "namespacefollow__person__node" ],

@@ -8,6 +8,8 @@ var manipulation__constants_8py =
     [ "ATTACH_COLLISION_OBJECT_SERVICE", "manipulation__constants_8py.html#a0b7108a7f04682d83eb47aacc396c94b", null ],
     [ "CLOSE_BY_MAX_DISTANCE", "manipulation__constants_8py.html#aedfd019fa324321726d9d2a5f073adba", null ],
     [ "CLUSTER_OBJECT_SERVICE", "manipulation__constants_8py.html#a87a763d90fa658149c263ce4da907d89", null ],
+    [ "CUTLERY_NAMES", "manipulation__constants_8py.html#a940a04cbaccd0019b3906cccbc2d8538", null ],
+    [ "CUTLERY_PICK_MIN_HEIGHT", "manipulation__constants_8py.html#a831e4349bc4afccacd795cdc09c216d3", null ],
     [ "DEBUG_POSE_GOAL_TOPIC", "manipulation__constants_8py.html#a2504c3f7f4f62c97f91d95bc5191e7c0", null ],
     [ "DEG2RAD", "manipulation__constants_8py.html#a7f4c41f43a0aa56a462fa09382edae0e", null ],
     [ "EEF_CONTACT_LINKS", "manipulation__constants_8py.html#af8b011a4e4212fb9450412d1c99bffc2", null ],
