@@ -1,17 +1,10 @@
 #!/usr/bin/env python3
 
-import os
-import sys
-
-_script_dir = os.path.dirname(os.path.abspath(__file__))
-if _script_dir not in sys.path:
-    sys.path.insert(0, _script_dir)
-
-import rclpy  # noqa: E402
-from rclpy.node import Node  # noqa: E402
-from utils.status import Status  # noqa: E402
-from utils.task import Task  # noqa: E402
-from subtask_managers.manipulation_tasks import ManipulationTasks  # noqa: E402
+import rclpy
+from rclpy.node import Node
+from task_manager.utils.status import Status
+from task_manager.utils.task import Task
+from task_manager.subtask_managers.manipulation_tasks import ManipulationTasks
 
 
 class TestManipulationManager(Node):

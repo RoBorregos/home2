@@ -9,7 +9,7 @@ WORKDIR /workspace/requirements
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
-COPY task_manager/scripts/utils /workspace/utils
+COPY task_manager/task_manager/utils /workspace/utils
 WORKDIR /workspace/utils
 RUN baml-cli generate
 

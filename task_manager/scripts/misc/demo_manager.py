@@ -8,12 +8,12 @@ import time
 
 import rclpy
 from rclpy.node import Node
-from subtask_managers.gpsr_single_tasks import GPSRSingleTask
-from subtask_managers.gpsr_tasks import GPSRTask
+from task_manager.subtask_managers.gpsr_single_tasks import GPSRSingleTask
+from task_manager.subtask_managers.gpsr_tasks import GPSRTask
 
-from utils.baml_client.types import CommandListLLM
-from utils.logger import Logger
-from utils.subtask_manager import SubtaskManager, Task
+from task_manager.utils.baml_client.types import CommandListLLM
+from task_manager.utils.logger import Logger
+from task_manager.utils.subtask_manager import SubtaskManager, Task
 
 ATTEMPT_LIMIT = 3
 MAX_COMMANDS = 3
