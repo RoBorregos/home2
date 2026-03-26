@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 
+import sys
+import os
+
+_script_dir = os.path.dirname(os.path.abspath(__file__))
+if _script_dir not in sys.path:
+    sys.path.insert(0, _script_dir)
+
 import rclpy
 from rclpy.node import Node
 from utils.status import Status
