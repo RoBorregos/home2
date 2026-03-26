@@ -276,7 +276,7 @@ class PickAndPlaceTM(Node):
                 Logger.info(self, f"Detected {len(self.detected_objects)} objects on the table.")
                 self.current_state = PickAndPlaceTM.TaskStates.ANNOUNCE_OBJECTS
             else:
-                Logger.warning(self, "No objects detected, skipping to breakfast phase.")
+                Logger.warn(self, "No objects detected, skipping to breakfast phase.")
                 self.current_state = PickAndPlaceTM.TaskStates.START_BREAKFAST_PREP
 
         # ==================== ANNOUNCE OBJECTS ====================
@@ -344,7 +344,7 @@ class PickAndPlaceTM(Node):
                 Logger.error(self, f"Failed to pick {self.grasped_object.name}.")
                 self.current_attempts += 1
                 if self.current_attempts >= ATTEMPT_LIMIT:
-                    Logger.warning(self, f"Skipping {self.grasped_object.name} after max attempts.")
+                    Logger.warn(self, f"Skipping {self.grasped_object.name} after max attempts.")
                     self.current_attempts = 0
                     self.grasped_object.is_picked = True  # mark as handled to advance loop
                     self.current_object_index += 1
@@ -401,7 +401,7 @@ class PickAndPlaceTM(Node):
                 Logger.success(self, "Referee confirmed dishwasher is open.")
                 self.subtask_manager.hri.say("Thank you! I will now place the items.", wait=False)
             else:
-                Logger.warning(self, "No confirmation received; assuming dishwasher is open.")
+                Logger.warn(self, "No confirmation received; assuming dishwasher is open.")
                 self.subtask_manager.hri.say(
                     "I did not hear a confirmation, but I will proceed.", wait=False
                 )
@@ -465,10 +465,10 @@ class PickAndPlaceTM(Node):
                         self.subtask_manager.hri.say(f"Shelf {level} contains {cat}.", wait=False)
                         self.timeout(0.5)
                 else:
-                    Logger.warning(self, "Categorization failed, using empty shelf map.")
+                    Logger.warn(self, "Categorization failed, using empty shelf map.")
                     self.shelf_categories = {}
             else:
-                Logger.warning(self, "Shelf detection failed, proceeding without shelf map.")
+                Logger.warn(self, "Shelf detection failed, proceeding without shelf map.")
                 self.shelf_categories = {}
 
             self.current_state = PickAndPlaceTM.TaskStates.PLACE_OBJECT
@@ -612,7 +612,7 @@ class PickAndPlaceTM(Node):
                 "Reply only with yes or no."
             )
             if status == Status.EXECUTION_SUCCESS and "yes" in answer.lower():
-                Logger.warning(self, "Breakfast area not clear — objects too close.")
+                Logger.warn(self, "Breakfast area not clear — objects too close.")
                 self.subtask_manager.hri.say(
                     "There are objects too close to the breakfast items. I will try to move them.",
                     wait=False,
