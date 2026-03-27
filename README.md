@@ -3,12 +3,13 @@
 [![ROS Build](https://github.com/RoBorregos/home2/actions/workflows/ros2-build.yml/badge.svg)](https://github.com/RoBorregos/home2/actions/workflows/ros2-build.yml)
 [![Pre-commit](https://github.com/RoBorregos/home2/actions/workflows/pre-commit.yml/badge.svg)](https://github.com/RoBorregos/home2/actions/workflows/pre-commit.yml)
 
-ROS 2 repository by [RoBorregos](https://github.com/RoBorregos), the Robotics Representative Team of Tecnologico de Monterrey. This project focuses on developing a modular software architecture for an autonomous service robot competing in the [RoboCup @Home](https://athome.robocup.org/) league — the largest annual competition for autonomous service robots. The system enables robots to perform everyday domestic tasks through integrated vision, navigation, manipulation, and human-robot interaction modules, designed to be adaptable to affordable hardware.
+ROS 2 repository by [RoBorregos](https://github.com/RoBorregos), the Robotics Representative Team of Tecnologico de Monterrey. This project focuses on developing a modular software architecture for an autonomous service robot competing in the [RoboCup @Home](https://athome.robocup.org/) league, the largest annual competition for autonomous service robots. The system enables robots to perform everyday domestic tasks through integrated vision, navigation, manipulation, and human-robot interaction modules, designed to be adaptable to affordable hardware.
 
 ## Table of Contents
 
 - [Getting Started](#getting-started)
 - [Usage](#usage)
+- [Cyclone DDS Setup](#cyclone-dds-setup)
 - [Documentation](#documentation)
 - [Video Demonstrations](#video-demonstrations)
 - [Team Members](#team-members)
@@ -20,7 +21,7 @@ ROS 2 repository by [RoBorregos](https://github.com/RoBorregos), the Robotics Re
 
 - [Docker](https://docs.docker.com/engine/install/)
 - [Docker Compose](https://docs.docker.com/compose/install/)
-- Git
+- [Git](https://git-scm.com/downloads)
 - [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/install-guide.html) (optional, for GPU support)
 
 ### Installation
@@ -63,6 +64,46 @@ The `run.sh` script automatically detects your environment (CPU, CUDA, or L4T) a
 | `--open-display` | Opens the graphical interface for HRI or Vision |
 | `--stop` | Stops the running containers |
 | `--down` | Stops and removes all containers, networks, and volumes |
+
+## Cyclone DDS Setup
+
+To enable communication between multiple computers (e.g., robot and development machine), set up Cyclone DDS on each host computer.
+
+### Bare Metal (Orin, direct install)
+
+```bash
+sudo bash setup_cyclonedds.sh <INTERFACE>
+source ~/.bashrc
+```
+
+### Docker Setup (PC)
+
+Run the host-only setup once to apply kernel buffer settings:
+
+```bash
+sudo bash setup_cyclonedds.sh --host-only <INTERFACE>
+```
+
+Then run your area normally — `run.sh` reads the configuration automatically:
+
+```bash
+./run.sh navigation
+```
+
+Replace `<INTERFACE>` with your network interface (e.g., `eno1`, `wlp2s0`). Find it with:
+
+```bash
+ip -br link show
+```
+
+### Revert to FastDDS
+
+```bash
+sudo bash setup_cyclonedds.sh --revert
+source ~/.bashrc
+```
+
+For detailed configuration options, see the [CycloneDDS setup docs](docs/cyclonedds-setup.md).
 
 ## Documentation
 
