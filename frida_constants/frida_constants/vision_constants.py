@@ -136,6 +136,7 @@ SHOW_DETECTION_TOPIC = "/vision/show_detection"
 # Yolo detection node
 YOLO_DETECTION_TOPIC = "/vision/yolo_detect"
 YOLO_DETECTIONS_PUBLISHER_TOPIC = "/vision/yolo_detections_image"
+CUTLERY_DETECTIONS_TOPIC = "/vision/cutlery_detections"
 
 # Dishwasher model
 DISHWASHER_LAYOUT_DETECTION_TOPIC = "/vision/dishwasher/layout_detection"
