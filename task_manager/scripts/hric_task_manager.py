@@ -57,7 +57,7 @@ class HRIC_TM(Node):
         super().__init__("hric_task_manager")
         self.subtask_manager = SubtaskManager(self, task=Task.HRIC, mock_areas=[])
 
-        self.seat_angles = [0, -45, -90, -135, 45, 90, 135, 180]
+        self.seat_angles = [0, -45, -45, 135, 45]
         self.guests = [Guest() for _ in range(2)]
         self.current_guest_idx = 0
         self.current_attempts = 0
@@ -153,6 +153,8 @@ class HRIC_TM(Node):
             )
 
             # test
+            self.subtask_manager.manipulation.move_to_position("front_stare")
+            self.timeout(5)
             for seat_angle in self.seat_angles:
                 self.subtask_manager.manipulation.pan_to(seat_angle)
                 self._logger.info(f"Panning to angle {seat_angle}.")
