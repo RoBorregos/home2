@@ -26,6 +26,10 @@ services:
     runtime: nvidia
     group_add:
       - video
+      - dialout
+    devices:
+      - "/dev/ttyUSBlidar2:/dev/ttyUSBlidar2"
+      - "/dev/ttyUSBStm32:/dev/ttyUSBStm32"
     environment:
       DISPLAY: ${DISPLAY:-:0}
       TERM: xterm-256color

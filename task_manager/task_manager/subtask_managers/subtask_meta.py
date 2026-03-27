@@ -1,7 +1,7 @@
 from unittest.mock import Mock
 
-from utils.config import SubtaskConfig
-from utils.logger import Logger
+from task_manager.utils.config import SubtaskConfig
+from task_manager.utils.logger import Logger
 
 
 class SubtaskMeta(type):

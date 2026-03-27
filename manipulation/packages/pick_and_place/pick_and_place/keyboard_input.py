@@ -11,6 +11,7 @@ from frida_interfaces.msg import ObjectDetectionArray
 from pick_and_place.utils.perception_utils import point_in_range
 from frida_constants.vision_constants import (
     DETECTIONS_TOPIC,
+    ZERO_SHOT_DETECTIONS_TOPIC,
 )
 from frida_constants.manipulation_constants import (
     MANIPULATION_ACTION_SERVER,
@@ -51,6 +52,14 @@ class KeyboardInput(Node):
             callback_group=callback_group,
         )
 
+        self.zero_shot_subscription = self.create_subscription(
+            ObjectDetectionArray,
+            ZERO_SHOT_DETECTIONS_TOPIC,
+            self.objects_callback,
+            qos,
+            callback_group=callback_group,
+        )
+
         self.clicked_point = None
         self.clicked_point_subscription = self.create_subscription(
             PointStamped,
@@ -68,7 +77,6 @@ class KeyboardInput(Node):
 
     def objects_callback(self, msg):
         # Assuming msg contains a list of object names
-        self.objects = []
         for detection in msg.detections:
             if detection.label_text not in self.objects and point_in_range(
                 detection.point3d, self.min_distance, self.max_distance
@@ -179,6 +187,7 @@ class KeyboardInput(Node):
 
     def refresh_objects(self):
         self.get_logger().info("Refreshing objects list...")
+        self.objects = []
         # Spin for 1 second to receive messages
         start_time = time.time()
         while time.time() - start_time < 1.0:

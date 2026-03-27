@@ -1,0 +1,2 @@
+geometry_msgs/PointStamped table_point
+frida_interfaces/PersonList people

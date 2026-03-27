@@ -2,9 +2,9 @@
 
 import rclpy
 from rclpy.node import Node
-from utils.status import Status
-from utils.task import Task
-from subtask_managers.nav_tasks import NavigationTasks
+from task_manager.utils.status import Status
+from task_manager.utils.task import Task
+from task_manager.subtask_managers.nav_tasks import NavigationTasks
 
 
 class TestNavigationManager(Node):

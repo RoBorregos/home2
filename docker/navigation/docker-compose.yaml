@@ -5,7 +5,7 @@ services:
       context: ../..
       dockerfile: ${DOCKERFILE:-docker/navigation/Dockerfile.cpu}
       args:
-        BASE_IMAGE: ${BASE_IMAGE:-roborregos/home2:cpu_base} 
+        BASE_IMAGE: ${BASE_IMAGE:-roborregos/home2:cpu_base}
     image: ${IMAGE_NAME:-roborregos/home2:navigation-cpu}
     volumes:
       - ../../:/workspace/src
@@ -24,9 +24,13 @@ services:
     user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
     privileged: true
     pid: host
-    runtime : ${DOCKER_RUNTIME:-runc}
-    group_add: 
+    runtime: ${DOCKER_RUNTIME:-runc}
+    group_add:
       - video
+      - dialout
+    devices:
+      - "/dev/ttyUSBlidar2:/dev/ttyUSBlidar2"
+      - "/dev/ttyUSBStm32:/dev/ttyUSBStm32"
     environment:
       DISPLAY: ${DISPLAY:-:0}
       TERM: xterm-256color
@@ -34,7 +38,7 @@ services:
       QT_DEBUG_PLUGINS: 1
       CYCLONE_INTERFACE: ${CYCLONE_INTERFACE:-}
     tty: true
-    stdin_open: true    
+    stdin_open: true
     working_dir: /workspace
     command: >
       bash -c "${COMMAND:-/bin/bash}"

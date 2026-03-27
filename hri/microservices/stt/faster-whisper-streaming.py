@@ -4,6 +4,7 @@ from concurrent import futures
 
 import grpc
 import numpy as np
+from device_utils import detect_device_and_compute_type
 from proto_interfaces import speech_pb2, speech_pb2_grpc
 from faster_whisper_backend import ServeClientFasterWhisper
 from transcriber_faster_whisper import WhisperModel
@@ -101,15 +102,8 @@ def serve(port, model, log_transcriptions):
     # Create the gRPC server
 
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    try:
-        import torch
-
-        device = "cuda" if torch.cuda.is_available() else "cpu"
-        major, _ = torch.cuda.get_device_capability(device)
-        compute_type = "float16" if major >= 7 else "float32"
-    except ImportError:
-        device = "cpu"
-        compute_type = "int8"
+    device, compute_type = detect_device_and_compute_type()
+    print(f"Using device: {device} with compute type: {compute_type}")
 
     transcriber = WhisperModel(
         model,

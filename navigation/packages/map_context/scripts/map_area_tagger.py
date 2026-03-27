@@ -43,6 +43,37 @@ AREA_COLORS = [
 LOCATION_COLOR = QColor(255, 255, 255, 220)
 POLYGON_VERTEX_COLOR = QColor(255, 200, 50, 200)
 
+ROBOCUP_TASKS = {
+    "General": {
+        "living_room": ["entrance_door", "exit_door"],
+        "kitchen": ["dining_table", "trash_bin"]
+    },
+    "1. Pick and Place": {
+        "start_area": ["safe_place"],
+        "kitchen": ["dining_table", "side_table", "cabinet", "dishwasher", "trash_bin", "breakfast_surface"],
+    },
+    "2. Human Robot Interaction": {
+        "living_room": ["couches"],
+        "entrance": ["safe_area"]
+    },
+    "3. General Purpose Service Robot": {
+        "living_room": ["table"],
+        "kitchen": ["table"],
+        "entrance": ["safe_area"]
+    },
+    "4. Doing Laundry": {
+        "laundry_area": ["washing_machine", "folding_table", "laundry_basket"]
+    },
+    "5. Restaurant": {
+        "restaurant": ["kitchen_bar", "customer_table_1", "customer_table_2", "customer_table_3", "barman"]
+    },
+    "6. Carry My Luggage": {
+        "arena": ["operator", "car"]
+    },
+    "7. Finals": {
+        "apartment": ["entrance_door", "exit_door", "dishwasher", "trash_bin", "waiting_person"]
+    }
+}
 
 class MapCanvas(QWidget):
     """Widget for displaying the map and handling mouse interactions."""
@@ -70,7 +101,7 @@ class MapCanvas(QWidget):
         self.drag_start_map = None  # (mx, my) where click started
         self.drag_yaw = 0.0
         self.setMouseTracking(True)
-        self.setMinimumSize(600, 400)
+        self.setMinimumSize(320, 240)
         self.setFocusPolicy(Qt.StrongFocus)
 
     def load_map(self, image_path, yaml_path):
@@ -307,7 +338,7 @@ class MapAreaTagger(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Map Area Tagger")
-        self.setMinimumSize(1100, 700)
+        self.setMinimumSize(640, 400)
         self.areas = {}
         self.current_area = None
         self.mode = 'location'
@@ -370,11 +401,23 @@ class MapAreaTagger(QMainWindow):
 
         # Side panel
         panel = QWidget()
-        panel.setMaximumWidth(320)
-        panel.setMinimumWidth(280)
+        panel.setMaximumWidth(280)
+        panel.setMinimumWidth(200)
         panel_layout = QVBoxLayout(panel)
         panel_layout.setContentsMargins(8, 8, 8, 8)
         panel_layout.setSpacing(6)
+
+        # Task Presets
+        task_group = QGroupBox("RoboCup Task Setup")
+        task_layout = QVBoxLayout(task_group)
+        self.task_combo = QComboBox()
+        self.task_combo.addItems(list(ROBOCUP_TASKS.keys()))
+        self.task_combo.currentTextChanged.connect(self.on_task_changed)
+        self.btn_load_task = QPushButton("Load Task Areas")
+        self.btn_load_task.clicked.connect(self.load_task_areas)
+        task_layout.addWidget(self.task_combo)
+        task_layout.addWidget(self.btn_load_task)
+        panel_layout.addWidget(task_group)
 
         # Mode selector
         mode_group = QGroupBox("Mode")
@@ -446,7 +489,7 @@ class MapAreaTagger(QMainWindow):
         panel_layout.addWidget(self.coord_label)
 
         splitter.addWidget(panel)
-        splitter.setSizes([780, 320])
+        splitter.setSizes([500, 240])
 
         # Status bar
         self.status = QStatusBar()
@@ -593,6 +636,37 @@ class MapAreaTagger(QMainWindow):
             self.refresh_tree()
             self.canvas.update()
 
+    def on_task_changed(self, text):
+        self.current_task = text
+
+    def load_task_areas(self):
+        if self.current_task not in ROBOCUP_TASKS:
+            return
+            
+        if self.areas:
+            reply = QMessageBox.question(
+                self, "Load Task Preset",
+                "Loading a new task preset will clear all current areas and locations. Continue?",
+                QMessageBox.Yes | QMessageBox.No)
+            if reply != QMessageBox.Yes:
+                return
+                
+        self.areas = {}
+        self.current_area = None
+        self.temp_polygon = []
+        self.canvas.temp_polygon = []
+        self.canvas.current_area = None
+        
+        preset = ROBOCUP_TASKS[self.current_task]
+        for area_name in preset.keys():
+            self.areas[area_name] = {}
+            
+        self.canvas.areas = self.areas
+        self.refresh_area_list()
+        self.refresh_tree()
+        self.canvas.update()
+        self.status.showMessage(f"Loaded strictly the areas for {self.current_task}")
+
     def on_area_selected(self, current, previous):
         if current:
             self.current_area = current.text()
@@ -606,10 +680,28 @@ class MapAreaTagger(QMainWindow):
         if not self.current_area:
             self.status.showMessage("Select or create an area first!")
             return
-        name, ok = QInputDialog.getText(self, "Location Name", "Name for this location:")
-        if not ok or not name:
-            return
-        name = name.strip().lower().replace(' ', '_')
+        
+        if getattr(self, 'relocating_location', None):
+            name = self.relocating_location
+            self.relocating_location = None
+        else:
+            items = []
+            if self.current_task in ROBOCUP_TASKS:
+                task_dict = ROBOCUP_TASKS[self.current_task]
+                if self.current_area in task_dict:
+                    items = task_dict[self.current_area]
+            
+            existing = set(self.areas[self.current_area].keys())
+            suggested = [it for it in items if it not in existing]
+            all_items = suggested + [it for it in items if it in existing]
+            
+            if not all_items:
+                all_items = ["location_1", "location_2"]
+                
+            name, ok = QInputDialog.getItem(self, "Location Name", "Select or type name for this location:", all_items, 0, True)
+            if not ok or not name:
+                return
+            name = name.strip().lower().replace(' ', '_')
 
         # Convert yaw to quaternion (z-axis rotation only)
         qz = math.sin(yaw / 2.0)
@@ -619,7 +711,7 @@ class MapAreaTagger(QMainWindow):
         self.canvas.areas = self.areas
         self.refresh_tree()
         self.canvas.update()
-        self.status.showMessage(f"Added '{name}' at ({mx:.2f}, {my:.2f}) yaw={math.degrees(yaw):.0f}")
+        self.status.showMessage(f"Added/Updated '{name}' at ({mx:.2f}, {my:.2f}) yaw={math.degrees(yaw):.0f}")
 
     def on_polygon_click(self, mx, my):
         if not self.current_area:
@@ -702,11 +794,19 @@ class MapAreaTagger(QMainWindow):
         menu = QMenu(self)
         delete_action = menu.addAction("Delete")
         rename_action = menu.addAction("Rename")
+        relocate_action = None
+        if item.text(0) != 'polygon' and item.parent() is None:
+            relocate_action = menu.addAction("Relocate on Map")
+            
         action = menu.exec_(self.tree.viewport().mapToGlobal(pos))
         if action == delete_action:
             self.delete_tree_item(item)
         elif action == rename_action:
             self.rename_tree_item(item)
+        elif relocate_action and action == relocate_action:
+            self.relocating_location = item.text(0)
+            self.status.showMessage(f"Click on map to relocate '{item.text(0)}'")
+            self.set_mode('location')
 
     def delete_tree_item(self, item):
         name = item.text(0)
