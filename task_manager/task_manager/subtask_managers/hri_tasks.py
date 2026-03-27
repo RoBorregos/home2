@@ -408,6 +408,7 @@ class HRITasks(metaclass=SubtaskMeta):
         silence_time=2.0,
         start_silence_time=4.0,
         max_audio_length=13.0,
+        initial_prompt="",
     ) -> str:
         Logger.info(
             self.node,
@@ -415,7 +416,7 @@ class HRITasks(metaclass=SubtaskMeta):
         )
 
         accepted_future = self.hear_streaming(
-            initial_prompt=self.initial_prompt,
+            initial_prompt=initial_prompt or self.initial_prompt,
             hotwords=hotwords,
             silence_time=silence_time,
             start_silence_time=start_silence_time,
