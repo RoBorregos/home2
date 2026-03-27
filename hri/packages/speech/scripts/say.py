@@ -13,7 +13,7 @@ from rclpy.node import Node
 from speech.speech_api_utils import SpeechApiUtils
 from std_msgs.msg import Bool, String
 
-from frida_constants.hri_constants import SAYING_TOPIC, SPEAK_SERVICE
+from frida_constants.hri_constants import SAYING_TOPIC, SPEAK_SERVICE, WAKEWORD_TOPIC
 from frida_interfaces.srv import Speak
 from proto_interfaces import tts_pb2, tts_pb2_grpc
 
@@ -47,6 +47,7 @@ class Say(Node):
 
         self.connected = False
         self.declare_parameter("SAYING_TOPIC", SAYING_TOPIC)
+        self.declare_parameter("WAKEWORD_TOPIC", WAKEWORD_TOPIC)
         self.declare_parameter("text_spoken", "/speech/text_spoken")
 
         self.declare_parameter("SPEAK_SERVICE", SPEAK_SERVICE)
@@ -83,6 +84,9 @@ class Say(Node):
         speaking_topic = (
             self.get_parameter("SAYING_TOPIC").get_parameter_value().string_value
         )
+        wakeword_topic = (
+            self.get_parameter("WAKEWORD_TOPIC").get_parameter_value().string_value
+        )
         text_spoken = (
             self.get_parameter("text_spoken").get_parameter_value().string_value
         )
@@ -96,9 +100,17 @@ class Say(Node):
         if not self.offline:
             self.connected = SpeechApiUtils.is_connected()
 
+        # Interrupt state — reset before each say() call
+        self.speech_interrupted = False
+
         self.create_service(Speak, speak_service, self.speak_service)
         self.publisher_ = self.create_publisher(Bool, speaking_topic, 10)
         self.text_publisher_ = self.create_publisher(String, text_spoken, 10)
+
+        # Stop speaking when wake word ("frida") is detected
+        self.create_subscription(
+            String, wakeword_topic, self._wakeword_interrupt_callback, 10
+        )
 
         self.get_logger().info("Say node initialized.")
 
@@ -172,6 +184,16 @@ class Say(Node):
         self._audio_cache[cache_key] = filepath
         self._save_cache()
 
+    def _wakeword_interrupt_callback(self, msg: String) -> None:
+        """Stop current speech when wake word is detected on WAKEWORD_TOPIC."""
+        if not self.speech_interrupted:
+            self.get_logger().info(
+                f"Wake word detected while speaking — interrupting: {msg.data}"
+            )
+            self.speech_interrupted = True
+            if mixer.get_init():
+                mixer.music.stop()
+
     def speak_service(self, req, res):
         self.get_logger().info("[Service] text received: " + req.text)
         req.text = req.text.replace("*", "").replace("_", " ")
@@ -193,6 +215,7 @@ class Say(Node):
             return res
 
     def say(self, text, speed):
+        self.speech_interrupted = False
         self.publisher_.publish(Bool(data=True))
         success = False
 
@@ -256,16 +279,20 @@ class Say(Node):
         self.play_audio(save_path)
 
     def play_audio(self, file_path):
+        if self.speech_interrupted:
+            return
         mixer.pre_init(frequency=48000, buffer=2048)
         mixer.init()
         while mixer.music.get_busy():
             pass
         mixer.music.load(file_path)
         mixer.music.play()
-        # Wait for audio to finish playing before returning
+        # Wait for audio to finish playing, or until interrupted (e.g. wake word)
         try:
-            while mixer.music.get_busy():
+            while mixer.music.get_busy() and not self.speech_interrupted:
                 pass
+            if self.speech_interrupted:
+                mixer.music.stop()
         except Exception as e:
             self.get_logger().error(f"Error while waiting for audio: {e}")
 
