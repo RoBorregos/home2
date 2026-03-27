@@ -57,10 +57,7 @@ class HRIC_TM(Node):
         super().__init__("hric_task_manager")
         self.subtask_manager = SubtaskManager(self, task=Task.HRIC, mock_areas=[])
 
-        # ACTION REQUIRED: Adjust the following variables according to the actual context
-        self.seat_angles = [0, -90]
-        self.check_angles = [0, -10, 10]
-
+        self.seat_angles = [0, -45, -90, -135, 45, 90, 135, 180]
         self.guests = [Guest() for _ in range(2)]
         self.current_guest_idx = 0
         self.current_attempts = 0
@@ -154,6 +151,13 @@ class HRIC_TM(Node):
             Logger.success(
                 self, "Start button pressed, Human Robot Interaction Challenge task will begin now"
             )
+
+            # test
+            for seat_angle in self.seat_angles:
+                self.subtask_manager.manipulation.pan_to(seat_angle)
+                self._logger.info(f"Panning to angle {seat_angle}.")
+                self.timeout(1)
+
             self.current_state = HRIC_TM.TaskStates.START
 
         elif self.current_state == HRIC_TM.TaskStates.START:
@@ -322,7 +326,7 @@ class HRIC_TM(Node):
 
             self.subtask_manager.manipulation.pan_to(angle)
             self.subtask_manager.hri.say("Please take a seat where my arm points at.", wait=False)
-            self.subtask_manager.manipulation.point(10)
+            self.subtask_manager.manipulation.point(15)
             if self.current_guest_idx == FIRST_GUEST_IDX:
                 self.current_state = HRIC_TM.TaskStates.NAVIGATE_TO_ENTRANCE
             else:
@@ -348,9 +352,8 @@ class HRIC_TM(Node):
             # Search for guest 1 by panning in 90 degree steps covering full range
             # Returns to front_stare before each pan so positioning is absolute
             self.subtask_manager.vision.follow_by_name(guest_1.name)
-            search_offsets = [0, -90, 90, 180]
             guest_1_found = False
-            for offset in search_offsets:
+            for offset in self.seat_angles:
                 if guest_1_found:
                     break
 
