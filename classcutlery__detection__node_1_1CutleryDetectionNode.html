@@ -110,10 +110,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a1119d6249970860bbe82e4b1bc304a02"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6c74a512a7c076ed96af9aa064331896"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcutlery__detection__node_1_1CutleryDetectionNode.html#a6c74a512a7c076ed96af9aa064331896">image_callback</a> (self, data)</td></tr>
 <tr class="separator:a6c74a512a7c076ed96af9aa064331896"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3d7695eb3eebcec847b9fa0efaef0cd1"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcutlery__detection__node_1_1CutleryDetectionNode.html#a3d7695eb3eebcec847b9fa0efaef0cd1">detect_callback</a> (self, req, res)</td></tr>
-<tr class="separator:a3d7695eb3eebcec847b9fa0efaef0cd1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aefdfde16b8e5687bf06e605729faf604"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcutlery__detection__node_1_1CutleryDetectionNode.html#aefdfde16b8e5687bf06e605729faf604">publish_cutlery_annotations</a> (self)</td></tr>
-<tr class="separator:aefdfde16b8e5687bf06e605729faf604"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3101e0f0074eebc0992ff7ef676f227e"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classcutlery__detection__node_1_1CutleryDetectionNode.html#a3101e0f0074eebc0992ff7ef676f227e">detect_cutlery_callback</a> (self)</td></tr>
+<tr class="separator:a3101e0f0074eebc0992ff7ef676f227e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
@@ -148,38 +146,22 @@ Public Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a3d7695eb3eebcec847b9fa0efaef0cd1" name="a3d7695eb3eebcec847b9fa0efaef0cd1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3d7695eb3eebcec847b9fa0efaef0cd1">&#9670;&#160;</a></span>detect_callback()</h2>
+<a id="a3101e0f0074eebc0992ff7ef676f227e" name="a3101e0f0074eebc0992ff7ef676f227e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3101e0f0074eebc0992ff7ef676f227e">&#9670;&#160;</a></span>detect_cutlery_callback()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">def cutlery_detection_node.CutleryDetectionNode.detect_callback </td>
+          <td class="memname">def cutlery_detection_node.CutleryDetectionNode.detect_cutlery_callback </td>
           <td>(</td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
+          <td class="paramname"><em>self</em></td><td>)</td>
           <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>req</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>res</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
-<pre class="fragment">Run YOLO on the latest cached frame.</pre> 
+<pre class="fragment">Detect cutlery and publish ObjectDetectionArray to /vision/cutlery_detections</pre> 
 </div>
 </div>
 <a id="a6c74a512a7c076ed96af9aa064331896" name="a6c74a512a7c076ed96af9aa064331896"></a>
@@ -208,24 +190,6 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-</div>
-</div>
-<a id="aefdfde16b8e5687bf06e605729faf604" name="aefdfde16b8e5687bf06e605729faf604"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aefdfde16b8e5687bf06e605729faf604">&#9670;&#160;</a></span>publish_cutlery_annotations()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">def cutlery_detection_node.CutleryDetectionNode.publish_cutlery_annotations </td>
-          <td>(</td>
-          <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>self</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-<pre class="fragment">Detect cutlery and publish annotated image</pre> 
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>

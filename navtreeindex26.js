@@ -1,5 +1,8 @@
 var NAVTREEINDEX26 =
 {
+"manipulation__constants__cpp_8hpp.html#a6e0672792d696337a569110dc700735e":[25,0,1,2,0,0,18],
+"manipulation__constants__cpp_8hpp.html#a7333d1769dc72f42e6b2eaf8b9f8ec72":[25,0,1,2,0,0,34],
+"manipulation__constants__cpp_8hpp.html#a74f09d46b8d1cce7645ab1ead0245522":[25,0,1,2,0,0,38],
 "manipulation__constants__cpp_8hpp.html#a7715c4d5e3008fba78b62434fd95ef63":[25,0,1,2,0,0,19],
 "manipulation__constants__cpp_8hpp.html#a7fda70824eeee515a3228fce7ea850f7":[25,0,1,2,0,0,22],
 "manipulation__constants__cpp_8hpp.html#a82634a6daed3d1e8cb1166837194b724":[25,0,1,2,0,0,39],
@@ -246,8 +249,5 @@ var NAVTREEINDEX26 =
 "namespaceYoloEObjectDetector.html":[23,0,166],
 "namespaceYoloV5ObjectDetector.html":[23,0,167],
 "namespaceYoloV5ObjectDetector.html#a6631d9db40bbdbb0c6ab13c256a5f27b":[23,0,167,1],
-"namespaceYoloV8ObjectDetector.html":[23,0,168],
-"namespaceYoloV8ObjectDetector.html#a3ba0a4bade6aaf15d6b5233be9361936":[23,0,168,1],
-"namespaceYoloV8ObjectDetector.html#a748ee18619dc839bce1303772f9703ce":[23,0,168,2],
-"namespaceZeroShotObjectDetector.html":[23,0,171]
+"namespaceYoloV8ObjectDetector.html":[23,0,168]
 };

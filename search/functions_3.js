@@ -66,5 +66,6 @@ var searchData=
   ['create_5fmarker_63',['create_marker',['../namespacearm__pkg_1_1utils.html#a3ae85e33595c84274bc8d8fd016a62c7',1,'arm_pkg::utils']]],
   ['createorientedboundingboxfrompoints_64',['createOrientedBoundingBoxFromPoints',['../classAddPrimitivesNode.html#ab83ac0a9333de7951a429ad20f8abc2a',1,'AddPrimitivesNode']]],
   ['crop_5fquery_5fcallback_65',['crop_query_callback',['../classmoondream__node_1_1MoondreamNode.html#a80cf09c185029970205fcc54780773f6',1,'moondream_node::MoondreamNode']]],
-  ['customer_5ftable_5fcallback_66',['customer_table_callback',['../classrestaurant__commands_1_1RESTAURANTCommands.html#a69848f09f180ebec7afbdd1872756cfd',1,'restaurant_commands::RESTAURANTCommands']]]
+  ['customer_5ftable_5fcallback_66',['customer_table_callback',['../classrestaurant__commands_1_1RESTAURANTCommands.html#a69848f09f180ebec7afbdd1872756cfd',1,'restaurant_commands::RESTAURANTCommands']]],
+  ['cutlery_5fdetections_5fcallback_67',['cutlery_detections_callback',['../classobject__detector__node_1_1object__detector__node.html#a148ca46ed316aded4708b02ef28e9337',1,'object_detector_node::object_detector_node']]]
 ];

@@ -1,8 +1,10 @@
 var NAVTREEINDEX23 =
 {
+"classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#ab2660ef7f1d57db5f7fe6ebcf134fa66":[24,0,109,1,14],
 "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#acf72ea3bacd4232fd222b96bd37bbe8a":[24,0,109,1,23],
-"classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#ae0b79e45defa3b4f7abf69f3c1cd8fdf":[23,0,170,1,22],
+"classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#acf72ea3bacd4232fd222b96bd37bbe8a":[23,0,170,1,23],
 "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#ae0b79e45defa3b4f7abf69f3c1cd8fdf":[24,0,109,1,22],
+"classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#ae0b79e45defa3b4f7abf69f3c1cd8fdf":[23,0,170,1,22],
 "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#ae15bf8710d5c4b818a55509a00b49d51":[23,0,170,1,20],
 "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#ae15bf8710d5c4b818a55509a00b49d51":[24,0,109,1,20],
 "clean__table__task__manager_8py.html":[25,0,6,1,3],
@@ -23,6 +25,7 @@ var NAVTREEINDEX23 =
 "customer__node_8py.html#ad8e46526be151f8b9b38ea6b9f91bd1b":[25,0,7,0,3,1,0,2],
 "cutlery__detection__node_8py.html":[25,0,7,0,3,1,1],
 "cutlery__detection__node_8py.html#a1fc39be2fc97d7036ace7fd443b05ee7":[25,0,7,0,3,1,1,2],
+"cutlery__detection__node_8py.html#ac0059ea9aaf86133a4d4b30fd22269a4":[25,0,7,0,3,1,1,3],
 "cutlery__detection__node_8py.html#aebbda9ac83098ead385f7b78a0ada9d1":[25,0,7,0,3,1,1,1],
 "dashgo__driver2_8py.html":[25,0,4,0,0,2,0],
 "dashgo__driver2_8py.html#a075f0ae4f3ed1d8869bee266d37c5a93":[25,0,4,0,0,2,0,6],
@@ -246,8 +249,5 @@ var NAVTREEINDEX23 =
 "example__node_8py.html#a0830ca6b73f60f3404af93f6221efd83":[25,0,7,0,3,1,3,2],
 "example__node_8py.html#a1a6f92bba0f94518d76beb4e33a039b9":[25,0,7,0,3,1,3,1],
 "example__node_8py.html#a44baeb1e0458c22477d9f58ffadbd9f0":[25,0,7,0,3,1,3,5],
-"example__node_8py.html#a6eae482e85ac51b66ae90ecccdd460d3":[25,0,7,0,3,1,3,3],
-"example__node_8py.html#ae11149e7a1136db5c2ec4e0d11bb199a":[25,0,7,0,3,1,3,4],
-"exploration__planner_8py.html":[25,0,6,2,2,3],
-"face__recognition__node_8py.html":[25,0,7,0,3,1,4]
+"example__node_8py.html#a6eae482e85ac51b66ae90ecccdd460d3":[25,0,7,0,3,1,3,3]
 };

@@ -1,5 +1,8 @@
 var NAVTREEINDEX27 =
 {
+"namespaceYoloV8ObjectDetector.html#a3ba0a4bade6aaf15d6b5233be9361936":[23,0,168,1],
+"namespaceYoloV8ObjectDetector.html#a748ee18619dc839bce1303772f9703ce":[23,0,168,2],
+"namespaceZeroShotObjectDetector.html":[23,0,171],
 "namespaceZeroShotObjectDetector.html#a2fd61cf39984ae05ac381a86150f2411":[23,0,171,1],
 "namespace__storing__groceries.html":[23,0,0],
 "namespace__storing__groceries.html#a155d3198243f1cb233bf4caf81e7cf93":[23,0,0,2],
@@ -56,6 +59,7 @@ var NAVTREEINDEX27 =
 "namespacecustomer__node.html#ad8e46526be151f8b9b38ea6b9f91bd1b":[23,0,15,2],
 "namespacecutlery__detection__node.html":[23,0,16],
 "namespacecutlery__detection__node.html#a1fc39be2fc97d7036ace7fd443b05ee7":[23,0,16,2],
+"namespacecutlery__detection__node.html#ac0059ea9aaf86133a4d4b30fd22269a4":[23,0,16,3],
 "namespacecutlery__detection__node.html#aebbda9ac83098ead385f7b78a0ada9d1":[23,0,16,1],
 "namespacedashgo__driver.html":[23,0,17],
 "namespacedashgo__driver.html#ad8472bb2a91193478e4da29fca930bc2":[23,0,17,1],
@@ -245,9 +249,5 @@ var NAVTREEINDEX27 =
 "namespacefrida__constants_1_1hri__constants.html#aae7202a78fec255321e754d7a99ad996":[23,0,50,0,14],
 "namespacefrida__constants_1_1hri__constants.html#ab1a983b5885fb90a459dc54c41cf94d0":[23,0,50,0,32],
 "namespacefrida__constants_1_1hri__constants.html#ab2e7b071b2e0f95cd25b59442485423d":[23,0,50,0,5],
-"namespacefrida__constants_1_1hri__constants.html#ab6800c1a435eaa0006c92a38068e003a":[23,0,50,0,39],
-"namespacefrida__constants_1_1hri__constants.html#ab7f90239db45986ae7bbd3da087ec35f":[23,0,50,0,21],
-"namespacefrida__constants_1_1hri__constants.html#ad2a4e34cfd6c77f2d8848fe49c7e4a1e":[23,0,50,0,30],
-"namespacefrida__constants_1_1hri__constants.html#ae336bc5e472cc38814ce9b4eb0928c31":[23,0,50,0,12],
-"namespacefrida__constants_1_1hri__constants.html#ae34afe358408d95f63d076478b349b0b":[23,0,50,0,8]
+"namespacefrida__constants_1_1hri__constants.html#ab6800c1a435eaa0006c92a38068e003a":[23,0,50,0,39]
 };

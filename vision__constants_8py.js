@@ -15,6 +15,7 @@ var vision__constants_8py =
     [ "CROP_QUERY_TOPIC", "vision__constants_8py.html#a033a5597e312e4e911732ea94d904b9c", null ],
     [ "CUSTOMER", "vision__constants_8py.html#ab35182c94c1fbaaca0593e028e875669", null ],
     [ "CUSTOMER_TABLES_TOPIC", "vision__constants_8py.html#a6fd036ec5673e8f43b506b54659639a1", null ],
+    [ "CUTLERY_DETECTIONS_TOPIC", "vision__constants_8py.html#aef301c79500fefcf9d9fd4f0f0cf5c01", null ],
     [ "DEBUG_IMAGE_TOPIC", "vision__constants_8py.html#a4b8e111e56a54c09d20b165b64879b20", null ],
     [ "DEPTH_IMAGE_TOPIC", "vision__constants_8py.html#afb389b8319a0ea3880ffcdd8fe70c122", null ],
     [ "DETECT_HAND_SERVICE", "vision__constants_8py.html#ac3cae675675194c971abd743804acef6", null ],
