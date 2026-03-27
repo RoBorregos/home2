@@ -641,13 +641,30 @@ class MapAreaTagger(QMainWindow):
     def load_task_areas(self):
         if self.current_task not in ROBOCUP_TASKS:
             return
+            
+        if self.areas:
+            reply = QMessageBox.question(
+                self, "Load Task Preset",
+                "Loading a new task preset will clear all current areas and locations. Continue?",
+                QMessageBox.Yes | QMessageBox.No)
+            if reply != QMessageBox.Yes:
+                return
+                
+        self.areas = {}
+        self.current_area = None
+        self.temp_polygon = []
+        self.canvas.temp_polygon = []
+        self.canvas.current_area = None
+        
         preset = ROBOCUP_TASKS[self.current_task]
         for area_name in preset.keys():
-            if area_name not in self.areas:
-                self.areas[area_name] = {}
+            self.areas[area_name] = {}
+            
         self.canvas.areas = self.areas
         self.refresh_area_list()
-        self.status.showMessage(f"Loaded areas for {self.current_task}")
+        self.refresh_tree()
+        self.canvas.update()
+        self.status.showMessage(f"Loaded strictly the areas for {self.current_task}")
 
     def on_area_selected(self, current, previous):
         if current:
