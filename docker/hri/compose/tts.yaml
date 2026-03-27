@@ -26,4 +26,4 @@ services:
       HUGGINGFACE_HUB_CACHE: /app/.cache/huggingface/hub
       TRANSFORMERS_CACHE: /app/.cache/huggingface/transformers
       XDG_CACHE_HOME: /app/.cache
-    command: "bash -c 'python3 -m grpc_tools.protoc -I. --python_out=. --grpc_python_out=. tts.proto && python3 kokoro-tts.py --port 50050'"
+    command: "python3 kokoro-tts.py --port 50050"
