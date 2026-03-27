@@ -21,12 +21,18 @@ RUN apt-get install -y nodejs
 
 RUN mkdir -p /workspace/requirements
 
+# Update pip/setuptools/wheel to support modern packages like edge-impulse-linu
+# This instalation format is temporal
+RUN pip3 install --user --no-cache-dir "setuptools==68.2.2" wheel
+
 # Python modules
 COPY ../../hri/requirements/nlp.txt /workspace/requirements/nlp.txt
 RUN pip install -r requirements/nlp.txt
 
 COPY ../../hri/requirements/speech.txt /workspace/requirements/speech.txt
 RUN pip install -r requirements/speech.txt
+
+RUN pip3 install --no-cache-dir --no-build-isolation edge-impulse-linux
 
 COPY ../../hri/requirements/postgres.txt /workspace/requirements/postgres.txt
 RUN pip install -r requirements/postgres.txt

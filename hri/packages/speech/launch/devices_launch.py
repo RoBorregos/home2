@@ -45,6 +45,13 @@ def generate_launch_description():
         [ModuleNames.HRI.value],
     )["kws_oww"]["ros__parameters"]
 
+    sound_classification_config = parse_ros_config(
+        os.path.join(
+            get_package_share_directory("speech"), "config", "sound_classification.yaml"
+        ),
+        [ModuleNames.HRI.value],
+    )["sound_classification"]["ros__parameters"]
+
     nodes = [
         Node(
             package="speech",
@@ -85,6 +92,14 @@ def generate_launch_description():
             output="screen",
             emulate_tty=True,
             parameters=[oww_config],
+        ),
+        Node(
+            package="speech",
+            executable="sound_classification_node.py",
+            name="sound_classification",
+            output="screen",
+            emulate_tty=True,
+            parameters=[sound_classification_config],
         ),
         Node(
             package="speech",
