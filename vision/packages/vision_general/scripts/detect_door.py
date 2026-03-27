@@ -26,10 +26,8 @@ import cv2
 import numpy as np
 import os
 
-
 DOOR_MODEL_PATH = 'src/vision/packages/vision_general/vision_general/utils/models/door.pt'
 
-# Detection parameters
 HANDLE_HISTORY_SIZE = 5
 HANDLE_CONSISTENCY_THRESHOLD = 3
 HANDLE_SPATIAL_TOLERANCE = 0.08
@@ -52,7 +50,6 @@ class DoorDetectionService(Node):
     def __init__(self):
         super().__init__('door_detection_service')
 
-        # Camera subscribers
         self.bridge = CvBridge()
         self.rgb_image = None
         self.depth_image = None
@@ -68,27 +65,21 @@ class DoorDetectionService(Node):
             CameraInfo, CAMERA_INFO_TOPIC, self._info_cb, 10
         )
 
-        # TF for camera->base transform
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
 
-        # Load YOLO door model
         model_path = os.path.realpath(DOOR_MODEL_PATH)
         self.get_logger().info(f'Loading door model from: {model_path}')
         self.model = YOLO(model_path)
 
-        # Service
         self.srv = self.create_service(
             DetectDoor, '/vision/detect_door', self.detect_door_callback
         )
 
-        # Debug image publisher
         self.debug_pub = self.create_publisher(Image, '/vision/door_detections', 10)
         self.create_timer(0.5, self._publish_debug_image)
 
         self.get_logger().info('Door detection service ready at /vision/detect_door')
-
-    # ── Camera callbacks ──────────────────────────────────────────────
 
     def _rgb_cb(self, msg):
         self.rgb_image = self.bridge.imgmsg_to_cv2(msg, 'bgr8')
@@ -99,11 +90,8 @@ class DoorDetectionService(Node):
     def _info_cb(self, msg):
         self.camera_info = msg
 
-    # ── Helpers ───────────────────────────────────────────────────────
-
     def _pixel_to_camera_point(self, cx, cy):
         """Convert pixel coords to 3D point in camera frame."""
-        # Scale pixel coords from RGB resolution to depth resolution
         rgb_h, rgb_w = self.rgb_image.shape[:2]
         depth_h, depth_w = self.depth_image.shape[:2]
         depth_cx = int(cx * depth_w / rgb_w)
@@ -163,8 +151,6 @@ class DoorDetectionService(Node):
 
         return handle_point, axis_point
 
-    # ── Debug visualization ─────────────────────────────────────────
-
     def _publish_debug_image(self):
         if self.rgb_image is None:
             return
@@ -193,8 +179,6 @@ class DoorDetectionService(Node):
                             cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
 
         self.debug_pub.publish(self.bridge.cv2_to_imgmsg(debug_img, 'bgr8'))
-
-    # ── Service callback ──────────────────────────────────────────────
 
     def detect_door_callback(self, request, response):
         self.get_logger().info('Door detection request received')
@@ -226,7 +210,6 @@ class DoorDetectionService(Node):
 
             time.sleep(0.2)
 
-        # Find consistent handle position
         handle_pos = None
 
         if handle_history:
@@ -249,7 +232,6 @@ class DoorDetectionService(Node):
                 handle_pos = average_points(best_cluster)
                 self.get_logger().warn('Handle detected but not fully confirmed — using best estimate.')
 
-        # Build response
         response.success = handle_pos is not None
         response.handle_detected = handle_pos is not None
         response.axis_detected = axis_seen
