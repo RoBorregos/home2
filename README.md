@@ -3,7 +3,7 @@
 [![ROS Build](https://github.com/RoBorregos/home2/actions/workflows/ros2-build.yml/badge.svg)](https://github.com/RoBorregos/home2/actions/workflows/ros2-build.yml)
 [![Pre-commit](https://github.com/RoBorregos/home2/actions/workflows/pre-commit.yml/badge.svg)](https://github.com/RoBorregos/home2/actions/workflows/pre-commit.yml)
 
-ROS 2 repository by [RoBorregos](https://github.com/RoBorregos), the Robotics Representative Team of Tecnologico de Monterrey. This project focuses on developing a modular software architecture for an autonomous service robot competing in the [RoboCup @Home](https://athome.robocup.org/) league, the largest annual competition for autonomous service robots. The system enables robots to perform everyday domestic tasks through integrated vision, navigation, manipulation, and human-robot interaction modules, designed to be adaptable to affordable hardware.
+ROS 2 repository by [RoBorregos](https://github.com/RoBorregos), the Robotics Representative Team of Tecnologico de Monterrey. This project focuses on developing a modular software architecture for FRIDA (Friendly Robotics Interactive Domestic Assistant), an autonomous service robot competing in the [RoboCup @Home](https://athome.robocup.org/) league. The system enables robots to perform everyday domestic tasks through integrated vision, navigation, manipulation, and human-robot interaction modules.
 
 ## Table of Contents
 
