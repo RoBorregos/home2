@@ -234,6 +234,7 @@ class HRITasks(metaclass=SubtaskMeta):
             Task.STORING_GROCERIES: all_services,
             Task.DEMO: all_services,
             Task.RESTAURANT: all_services,
+            Task.DEBUG: all_services,
         }
 
         self.hand = HRIHand(self)
@@ -414,6 +415,7 @@ class HRITasks(metaclass=SubtaskMeta):
         )
 
         accepted_future = self.hear_streaming(
+            initial_prompt=self.initial_prompt,
             hotwords=hotwords,
             silence_time=silence_time,
             start_silence_time=start_silence_time,
@@ -461,6 +463,7 @@ class HRITasks(metaclass=SubtaskMeta):
         self,
         timeout: float = 13.0,
         hotwords: str = "",
+        initial_prompt: str = "",
         silence_time: float = 2.0,
         start_silence_time: float = 4.0,
     ):
@@ -471,6 +474,7 @@ class HRITasks(metaclass=SubtaskMeta):
         Args:
             timeout (float): The maximum time to stop the transcription.
             hotwords (str): Hotwords to improve the transcription accuracy.
+            initial_prompt (str): Initial prompt to improve the transcription accuracy. It could be used to prime the model with the context of the question or the expected answer.
             silence_time (float): The time to wait after the last interpreted word to stop the transcription. i.e. if no words are heard for this time, the transcription will stop.
             start_silence_time (float): The minimum duration of the transcription before hearing any words. Useful to handle initial silence in audio.
         """
@@ -483,6 +487,7 @@ class HRITasks(metaclass=SubtaskMeta):
         goal_msg = SpeechStream.Goal()
         goal_msg.timeout = float(timeout)
         goal_msg.hotwords = hotwords
+        goal_msg.initial_prompt = initial_prompt
         self.last_hotwords = hotwords
         goal_msg.silence_time = float(silence_time)
         goal_msg.start_silence_time = float(start_silence_time)
@@ -624,6 +629,7 @@ class HRITasks(metaclass=SubtaskMeta):
         skip_confirmation: bool = False,
         options: list[str] = None,
         remap: dict = None,
+        initial_prompt: str = "",
     ):
         """
         Method to confirm a specific question. It includes auto-retry.
@@ -648,7 +654,9 @@ class HRITasks(metaclass=SubtaskMeta):
             start_time = self.node.get_clock().now()
 
             self.say(question)
-            hear_status, interpreted_text, word_confidences = self.hear(hotwords=hotwords)
+            hear_status, interpreted_text, word_confidences = self.hear(
+                hotwords=hotwords, initial_prompt=initial_prompt
+            )
 
             if hear_status == Status.EXECUTION_SUCCESS:
                 target_info = interpreted_text

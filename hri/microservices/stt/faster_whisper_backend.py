@@ -205,6 +205,7 @@ class ServeClientFasterWhisper(ServeClientBase):
             ServeClientFasterWhisper.SINGLE_MODEL_LOCK.acquire()
         result, info = self.transcriber.transcribe(
             input_sample,
+            initial_prompt=self.initial_prompt,
             hotwords=self.hotwords,
             language=self.language,
             task=self.task,
