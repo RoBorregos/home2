@@ -17,6 +17,7 @@ service SpeechStream {
 message AudioRequest {
     bytes audio_data = 1;
     string hotwords = 2;
+    string initial_prompt = 3;
 }
 
 // Word-level transcription info with confidence
