@@ -11,6 +11,7 @@ ENV_TYPE="${*: -1}"
 DETACHED=""
 BUILD=""
 BUILD_IMAGE=""
+BUILD_IMAGE_CLEAN=""
 BUILD_DISPLAY=""
 OPEN_DISPLAY=""
 DOWNLOAD_MODEL=""
@@ -42,6 +43,10 @@ for arg in "${ARGS[@]}"; do
         ;;
     "--build-image")
         BUILD_IMAGE="--build"
+        ;;
+    "--build-image-clean")
+        BUILD_IMAGE="--build"
+        BUILD_IMAGE_CLEAN="true"
         ;;
     "--build-display")
         BUILD_DISPLAY="true"
@@ -221,6 +226,11 @@ if [ "$UPLOAD_IMAGE" == "true" ]; then
   for img in "${HRI_IMAGES[@]}"; do
     ensure_and_upload_image "$img" "$COMPOSE"
   done
+fi
+
+if [ "$BUILD_IMAGE_CLEAN" == "true" ]; then
+    echo "Removing Docker build cache and rebuilding images..."
+    docker compose -f "$COMPOSE" build --no-cache
 fi
 
 if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then

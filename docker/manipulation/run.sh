@@ -11,6 +11,7 @@ ENV_TYPE="${*: -1}"
 DETACHED=""
 BUILD=""
 BUILD_IMAGE=""
+BUILD_IMAGE_CLEAN=""
 UPLOAD_IMAGE=""
 CLEAN=""
 
@@ -38,6 +39,10 @@ for arg in "${ARGS[@]}"; do
         ;;
     "--build-image")
         BUILD_IMAGE="--build"
+        ;;
+    "--build-image-clean")
+        BUILD_IMAGE="--build"
+        BUILD_IMAGE_CLEAN="true"
         ;;
     "--upload-image")
         UPLOAD_IMAGE="true"
@@ -110,6 +115,11 @@ COMMAND="$SETUP && $RUN"
 if [ "$UPLOAD_IMAGE" == "true" ]; then
   echo "Uploading manipulation image to DockerHub (env: ${ENV_TYPE})..."
   ensure_and_upload_image "roborregos/home2:manipulation-${ENV_TYPE}" "$COMPOSE"
+fi
+
+if [ "$BUILD_IMAGE_CLEAN" == "true" ]; then
+    echo "Removing Docker build cache and rebuilding images..."
+    docker compose -f "$COMPOSE" build --no-cache
 fi
 
 if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then

@@ -11,6 +11,7 @@ ENV_TYPE="${*: -1}"
 DETACHED=""
 BUILD=""
 BUILD_IMAGE=""
+BUILD_IMAGE_CLEAN=""
 UPLOAD_IMAGE=""
 CLEAN=""
 
@@ -36,6 +37,10 @@ for arg in "${ARGS[@]}"; do
         ;;
     "--build-image")
         BUILD_IMAGE="--build "
+        ;;
+    "--build-image-clean")
+        BUILD_IMAGE="--build"
+        BUILD_IMAGE_CLEAN="true"
         ;;
     "--upload-image")
         UPLOAD_IMAGE="true"
@@ -149,6 +154,11 @@ add_or_update_variable .env "COMPOSE_PROFILES" "$COMPOSE_PROFILES"
 if [ "$UPLOAD_IMAGE" == "true" ]; then
   echo "Uploading vision image to DockerHub (env: ${ENV_TYPE})..."
   ensure_and_upload_image "roborregos/home2:vision-${ENV_TYPE}" "docker-compose.yml"
+fi
+
+if [ "$BUILD_IMAGE_CLEAN" == "true" ]; then
+    echo "Removing Docker build cache and rebuilding images..."
+    docker compose build --no-cache
 fi
 
 if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then

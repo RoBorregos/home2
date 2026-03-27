@@ -10,6 +10,7 @@ ENV_TYPE="${*: -1}"
 DETACHED=""
 BUILD=""
 BUILD_IMAGE=""
+BUILD_IMAGE_CLEAN=""
 UPLOAD_IMAGE=""
 CLEAN=""
 COMPOSE_FILE="docker-compose.yaml"
@@ -34,6 +35,10 @@ for arg in "${ARGS[@]}"; do
         ;;
     "--build-image")
         BUILD_IMAGE="--build"
+        ;;
+    "--build-image-clean")
+        BUILD_IMAGE="--build"
+        BUILD_IMAGE_CLEAN="true"
         ;;
     "--upload-image")
         UPLOAD_IMAGE="true"
@@ -127,10 +132,15 @@ if [ "$UPLOAD_IMAGE" == "true" ]; then
   ensure_and_upload_image "roborregos/home2:navigation-${ENV_TYPE}" "$COMPOSE_FILE"
 fi
 
+if [ "$BUILD_IMAGE_CLEAN" == "true" ]; then
+    echo "Removing Docker build cache and rebuilding images..."
+    docker compose -f $COMPOSE_FILE build --no-cache
+fi
+
 if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
     ALREADY_RUNNING=$(docker ps -q -f name="navigation")
     if [ -z "$ALREADY_RUNNING" ] || [ -n "$BUILD_IMAGE" ]; then
-        docker compose -f $COMPOSE_FILE up -d $BUILD_IMAGE 
+        docker compose -f $COMPOSE_FILE up -d $BUILD_IMAGE
     fi
     docker compose -f $COMPOSE_FILE exec navigation bash -c "$COMMAND"
 else
