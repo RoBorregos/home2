@@ -9,7 +9,6 @@ import json
 import os
 import subprocess
 import time
-import sys
 from datetime import datetime
 from typing import Union
 
@@ -17,8 +16,6 @@ import rclpy
 from rclpy.node import Node
 from sklearn.metrics.pairwise import cosine_similarity
 from task_manager.subtask_managers.hri_tasks import HRITasks
-
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
 # from subtask_managers.subtask_meta import SubtaskMeta
 from task_manager.utils.baml_client.types import (
@@ -136,9 +133,6 @@ class TestHriManager(Node):
         if TEST_TAKE_ORDER:
             self.test_take_order()
 
-        s, user_request, _ = self.hri_manager.hear(
-            initial_prompt="Testing complete. Please say something to finish."
-        )
         exit(0)
 
     def individual_functions(self):
