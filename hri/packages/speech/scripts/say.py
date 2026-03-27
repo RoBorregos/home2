@@ -8,7 +8,8 @@ import grpc
 import rclpy
 from gtts import gTTS
 from pygame import mixer
-from rclpy.executors import ExternalShutdownException
+from rclpy.callback_groups import MutuallyExclusiveCallbackGroup, ReentrantCallbackGroup
+from rclpy.executors import ExternalShutdownException, MultiThreadedExecutor
 from rclpy.node import Node
 from speech.speech_api_utils import SpeechApiUtils
 from std_msgs.msg import Bool, String
@@ -103,13 +104,25 @@ class Say(Node):
         # Interrupt state — reset before each say() call
         self.speech_interrupted = False
 
-        self.create_service(Speak, speak_service, self.speak_service)
+        # Service runs in its own group (blocks during playback).
+        # Subscriptions run in a reentrant group so they are dispatched
+        # even while the service callback is blocked inside play_audio().
+        service_group = MutuallyExclusiveCallbackGroup()
+        subscription_group = ReentrantCallbackGroup()
+
+        self.create_service(
+            Speak, speak_service, self.speak_service, callback_group=service_group
+        )
         self.publisher_ = self.create_publisher(Bool, speaking_topic, 10)
         self.text_publisher_ = self.create_publisher(String, text_spoken, 10)
 
         # Stop speaking when wake word ("frida") is detected
         self.create_subscription(
-            String, wakeword_topic, self._wakeword_interrupt_callback, 10
+            String,
+            wakeword_topic,
+            self._wakeword_interrupt_callback,
+            10,
+            callback_group=subscription_group,
         )
 
         self.get_logger().info("Say node initialized.")
@@ -330,8 +343,11 @@ class Say(Node):
 
 def main(args=None):
     rclpy.init(args=args)
+    executor = MultiThreadedExecutor()
     try:
-        rclpy.spin(Say())
+        node = Say()
+        executor.add_node(node)
+        executor.spin()
     except (ExternalShutdownException, KeyboardInterrupt):
         pass
     finally:
