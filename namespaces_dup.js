@@ -161,7 +161,6 @@ var namespaces_dup =
     [ "local_camera", "namespacelocal__camera.html", "namespacelocal__camera" ],
     [ "look_at_example", "namespacelook__at__example.html", "namespacelook__at__example" ],
     [ "map_area_tagger", "namespacemap__area__tagger.html", "namespacemap__area__tagger" ],
-    [ "map_cleaner", "namespacemap__cleaner.html", "namespacemap__cleaner" ],
     [ "map_publisher", "namespacemap__publisher.html", "namespacemap__publisher" ],
     [ "mapping", "namespacemapping.html", [
       [ "generate_launch_description", "namespacemapping.html#ac951e3077b2a262f96039858d7fa2b20", null ]

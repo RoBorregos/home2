@@ -1,17 +1,5 @@
 var NAVTREEINDEX28 =
 {
-"namespacefrida__constants_1_1hri__constants.html#a57a8000db92c380cf72a62b5afca2ba8":[23,0,50,0,36],
-"namespacefrida__constants_1_1hri__constants.html#a5a3605a4415d25cb9c77f3f904c2da29":[23,0,50,0,33],
-"namespacefrida__constants_1_1hri__constants.html#a65bd8cf37e345f847ad4d999afeba4f8":[23,0,50,0,22],
-"namespacefrida__constants_1_1hri__constants.html#a6b6228c6ea413ec24c0b26890dac3fb5":[23,0,50,0,11],
-"namespacefrida__constants_1_1hri__constants.html#a8641c72f60bac81a60265b6b494950cd":[23,0,50,0,23],
-"namespacefrida__constants_1_1hri__constants.html#a99a70242344952dd09be65d3260da4a7":[23,0,50,0,20],
-"namespacefrida__constants_1_1hri__constants.html#aa04127dd3af14465c6ed0fdea141cd3c":[23,0,50,0,17],
-"namespacefrida__constants_1_1hri__constants.html#aaa486a9f7f79cd7c69c81ff85d8ba336":[23,0,50,0,9],
-"namespacefrida__constants_1_1hri__constants.html#aad077d27cdc2dc3fd88f06206a86437d":[23,0,50,0,37],
-"namespacefrida__constants_1_1hri__constants.html#aae7202a78fec255321e754d7a99ad996":[23,0,50,0,14],
-"namespacefrida__constants_1_1hri__constants.html#ab1a983b5885fb90a459dc54c41cf94d0":[23,0,50,0,32],
-"namespacefrida__constants_1_1hri__constants.html#ab2e7b071b2e0f95cd25b59442485423d":[23,0,50,0,5],
 "namespacefrida__constants_1_1hri__constants.html#ab6800c1a435eaa0006c92a38068e003a":[23,0,50,0,39],
 "namespacefrida__constants_1_1hri__constants.html#ab7f90239db45986ae7bbd3da087ec35f":[23,0,50,0,21],
 "namespacefrida__constants_1_1hri__constants.html#ad2a4e34cfd6c77f2d8848fe49c7e4a1e":[23,0,50,0,30],
@@ -249,5 +237,17 @@ var NAVTREEINDEX28 =
 "namespacehric__commands.html#a295f86308e2091a1cafb49a1abbadfe9":[23,0,71,2],
 "namespacehric__commands.html#a2ff6673c8134c479a43231dd19a5b8f1":[23,0,71,5],
 "namespacehric__commands.html#a3ab9b8e783f16ed1b5159856ba0fc831":[23,0,71,9],
-"namespacehric__commands.html#a3cca12f77741a3bca2925462cc5e244c":[23,0,71,4]
+"namespacehric__commands.html#a3cca12f77741a3bca2925462cc5e244c":[23,0,71,4],
+"namespacehric__commands.html#a41b7b67e4fc7415666f63955d8aa0b86":[23,0,71,3],
+"namespacehric__commands.html#a4fe3cec6de0cba927173fcc33169c973":[23,0,71,10],
+"namespacehric__commands.html#a6b75a858f2327fb2e5fefcd0e3ac0546":[23,0,71,6],
+"namespacehric__commands.html#aa529f9b7149a621d00c8bcd938801105":[23,0,71,11],
+"namespacehric__commands.html#af03db957d9708f5ed4c50c673255fb0f":[23,0,71,7],
+"namespacehric__launch.html":[23,0,72],
+"namespacehric__launch.html#a5dcfeb834a4cf01df9f2c377d4893dce":[23,0,72,0],
+"namespacehric__task__manager.html":[23,0,73],
+"namespacehric__task__manager.html#a47e62ea973b9e0d2952107bd649b1933":[23,0,73,5],
+"namespacehric__task__manager.html#a835645b490c465a8d1c416cc0b79d82c":[23,0,73,4],
+"namespacehric__task__manager.html#ae79a2dacb467182b59ecf29b5eae6a49":[23,0,73,3],
+"namespacehric__task__manager.html#aefbaab6712d1d63b350117da1c4449b5":[23,0,73,2]
 };
