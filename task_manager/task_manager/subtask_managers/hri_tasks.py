@@ -61,7 +61,7 @@ from rclpy.action import ActionClient
 from rclpy.node import Node
 from rclpy.task import Future
 from std_msgs.msg import Empty, String
-from subtask_managers.hri_dataclasses import (
+from task_manager.subtask_managers.hri_dataclasses import (
     AudioStates,
     CommandHistory,
     FindClosestResult,
