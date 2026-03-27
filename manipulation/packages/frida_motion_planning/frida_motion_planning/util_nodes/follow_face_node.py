@@ -17,11 +17,11 @@ from frida_constants.manipulation_constants import (
 )
 from frida_interfaces.srv import FollowFace
 from frida_motion_planning.utils.ros_utils import wait_for_future
+from frida_motion_planning.utils.logger import Logger
 from geometry_msgs.msg import Point
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.node import Node
 from std_srvs.srv import Empty
-from utils.logger import Logger
 from xarm_msgs.srv import GetDigitalIO, MoveVelocity, SetDigitalIO, SetInt16
 
 XARM_MOVEVELOCITY_SERVICE = "/xarm/vc_set_joint_velocity"
@@ -105,7 +105,9 @@ class FollowFaceNode(Node):
         self.prev_y = 0.0
         self.last_move_time = time.time()
 
-        self.create_timer(RUN_LOOP_PERIOD, self._run_loop, callback_group=callback_group)
+        self.create_timer(
+            RUN_LOOP_PERIOD, self._run_loop, callback_group=callback_group
+        )
         self.get_logger().info("FollowFaceNode has started.")
 
     # -- Mode switching --
@@ -169,7 +171,9 @@ class FollowFaceNode(Node):
 
                 if reset_controller:
                     Logger.info(self, "Resetting trajectory controller")
-                    future_ctrl = self.reset_controller_client.call_async(Empty.Request())
+                    future_ctrl = self.reset_controller_client.call_async(
+                        Empty.Request()
+                    )
                     future_ctrl = wait_for_future(future_ctrl)
                     if not future_ctrl:
                         Logger.error(self, "Failed to reset controller")
@@ -180,7 +184,9 @@ class FollowFaceNode(Node):
             except Exception as e:
                 Logger.error(self, f"Error setting arm mode: {e}")
 
-        Logger.error(self, f"Failed to set mode {mode} after {SET_MODE_RETRIES} attempts")
+        Logger.error(
+            self, f"Failed to set mode {mode} after {SET_MODE_RETRIES} attempts"
+        )
         return False
 
     # -- Service callback --
@@ -201,7 +207,9 @@ class FollowFaceNode(Node):
             self.is_following_face_active = True
         else:
             if not self.is_following_face_active:
-                Logger.info(self, "Face following already inactive, skipping mode switch")
+                Logger.info(
+                    self, "Face following already inactive, skipping mode switch"
+                )
                 response.success = True
                 return response
             Logger.info(self, "Deactivating face following")

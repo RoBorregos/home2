@@ -12,7 +12,7 @@ def generate_launch_description():
     return LaunchDescription(
         [
             Node(
-                package="task_manager",
+                package="frida_motion_planning",
                 executable="follow_face_node.py",
                 name="follow_face_node",
                 output="screen",
