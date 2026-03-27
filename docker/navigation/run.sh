@@ -71,17 +71,20 @@ add_or_update_variable .env "DOCKERFILE" "docker/navigation/Dockerfile.${ENV_TYP
 case $ENV_TYPE in
     "cpu")
         add_or_update_variable .env "DOCKER_RUNTIME" "runc"
+        PROFILES=("cpu_l4t")
         ;;
     "gpu")
-        COMPOSE_FILE="docker-compose-gpu.yaml"
-        ;;
-    "l4t")
-        COMPOSE_FILE="docker-compose-l4t.yaml"
+        add_or_update_variable .env "DOCKER_RUNTIME" "runc"
+        PROFILES=("gpu")
         ;;
     *)
         add_or_update_variable .env "DOCKER_RUNTIME" "nvidia"
+        PROFILES=("cpu_l4t")
         ;;
 esac
+
+COMPOSE_PROFILES=$(IFS=, ; echo "${PROFILES[*]}")
+add_or_update_variable .env "COMPOSE_PROFILES" "$COMPOSE_PROFILES"
 
 # Clean build artifacts if requested
 if [ "$CLEAN" == "true" ]; then
@@ -98,19 +101,17 @@ SOURCE_ROS="source /opt/ros/humble/setup.bash"
 SOURCE_RTABMAP="if [ -f /home/ros/ros_packages3/install/setup.bash ]; then source /home/ros/ros_packages3/install/setup.bash; fi"
 SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
 SOURCE="if [ -f install/setup.bash ]; then source install/setup.bash; fi"
+CYCLONE_SOURCE="source /usr/local/bin/cyclonedds_setup.sh"
 
 if [ "$BUILD" == "true" ]; then
-    SETUP="$SOURCE_ROS && $SOURCE_RTABMAP && $SOURCE_INTERFACES && $SOURCE && $COLCON"
+    SETUP="$SOURCE_ROS && $SOURCE_RTABMAP && $SOURCE_INTERFACES && $SOURCE && $CYCLONE_SOURCE && $COLCON"
 else
-    SETUP="$SOURCE_ROS && $SOURCE_RTABMAP && $SOURCE_INTERFACES && $SOURCE"
+    SETUP="$SOURCE_ROS && $SOURCE_RTABMAP && $SOURCE_INTERFACES && $SOURCE && $CYCLONE_SOURCE"
 fi
 
 case $TASK in
     "--mapping")
-        RUN="echo 'WORKING IN PROGRESS'"
-        ;;
-    "--storing-groceries")
-        RUN="echo 'WORKING IN PROGRESS'"
+        RUN="ros2 launch nav_main mapping.launch.py"
         ;;
     "--hric")
         RUN="ros2 launch nav_main navigation_composition.launch.py"
@@ -130,10 +131,10 @@ fi
 if [ "$RUN" = "bash" ] && [ -z "$DETACHED" ]; then
     ALREADY_RUNNING=$(docker ps -q -f name="navigation")
     if [ -z "$ALREADY_RUNNING" ] || [ -n "$BUILD_IMAGE" ]; then
-        docker compose -f $COMPOSE_FILE up -d $BUILD_IMAGE 
+        docker compose up -d $BUILD_IMAGE 
     fi
-    docker compose -f $COMPOSE_FILE exec navigation bash -c "$COMMAND"
+    docker compose exec navigation bash -c "$COMMAND"
 else
     add_or_update_variable .env "COMMAND" "$COMMAND"
-    docker compose -f $COMPOSE_FILE up $DETACHED $BUILD_IMAGE
+    docker compose up $DETACHED $BUILD_IMAGE
 fi
