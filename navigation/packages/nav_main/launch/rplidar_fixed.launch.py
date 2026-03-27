@@ -32,7 +32,7 @@ def generate_launch_description():
             executable='sllidar_node',
             name='sllidar_node',
             parameters=[{'channel_type':'serial',
-                         'serial_port': '/dev/ttyUSB0', 
+                         'serial_port': '/dev/ttyUSBlidar2', 
                          'serial_baudrate': 460800, 
                          'frame_id': 'laser',
                          'inverted': True,
@@ -42,6 +42,5 @@ def generate_launch_description():
             remappings=[
             ('/scan', '/scan_input')],
             condition=UnlessCondition(use_sim),
-            ),
-
+            )
     ])

@@ -17,7 +17,7 @@ from rclpy.node import Node
 from rclpy.qos import QoSProfile
 from sensor_msgs.msg import JointState
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
-from utils.logger import Logger
+from task_manager.utils.logger import Logger
 from xarm_msgs.srv import GetFloat32List, MoveVelocity, SetInt16
 
 XARM_MOVEVELOCITY_SERVICE = "/xarm/vc_set_joint_velocity"

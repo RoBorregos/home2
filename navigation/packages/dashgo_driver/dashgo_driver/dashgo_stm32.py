@@ -77,7 +77,7 @@ class Stm32:
             print("Traceback follows:")
             traceback.print_exc(file=sys.stdout)
             print("Cannot connect to Stm32!")
-            os._exit(1)
+            raise SerialException("Cannot connect to Stm32 on port " + str(self.port))
 
     def open(self): 
         ''' Open the serial port.

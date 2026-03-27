@@ -9,10 +9,10 @@ import time as t
 import rclpy
 from rclpy.duration import Duration
 from rclpy.node import Node
-from subtask_managers.generic_tasks import GenericTask
-from utils.logger import Logger
-from utils.status import Status
-from utils.subtask_manager import SubtaskManager, Task
+from task_manager.subtask_managers.generic_tasks import GenericTask
+from task_manager.utils.logger import Logger
+from task_manager.utils.status import Status
+from task_manager.utils.subtask_manager import SubtaskManager, Task
 
 ATTEMPT_LIMIT = 3
 

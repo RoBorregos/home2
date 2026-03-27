@@ -64,7 +64,9 @@ add_or_update_variable .env "LOCAL_USER_ID" "$(id -u)"
 add_or_update_variable .env "LOCAL_GROUP_ID" "$(id -g)"
 
 # Clean build artifacts if requested
-clean_workspace_directories
+if [ "$CLEAN" == "true" ]; then
+  clean_directories .
+fi
 
 # Create dirs with current user to avoid permission problems
 mkdir -p install build log

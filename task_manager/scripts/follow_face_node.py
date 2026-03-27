@@ -21,7 +21,7 @@ from geometry_msgs.msg import Point
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.node import Node
 from std_srvs.srv import Empty
-from utils.logger import Logger
+from task_manager.utils.logger import Logger
 from xarm_msgs.srv import GetDigitalIO, MoveVelocity, SetDigitalIO, SetInt16
 
 XARM_MOVEVELOCITY_SERVICE = "/xarm/vc_set_joint_velocity"

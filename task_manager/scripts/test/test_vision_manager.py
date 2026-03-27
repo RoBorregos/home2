@@ -7,9 +7,9 @@ Task Manager for testing the subtask managers
 import rclpy
 from rclpy.node import Node
 
-from subtask_managers.vision_tasks import VisionTasks
-from utils.task import Task
-from utils.logger import Logger
+from task_manager.subtask_managers.vision_tasks import VisionTasks
+from task_manager.utils.task import Task
+from task_manager.utils.logger import Logger
 # from frida_constants.vision_enums import DetectBy, Poses
 
 task = Task.HELP_ME_CARRY

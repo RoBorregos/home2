@@ -1,7 +1,8 @@
 # QueryItem.srv
 string[] query  # The search query
-int16 topk #number of results 
+int16 topk #number of results
 string collection #return
+string metadata  # Optional JSON metadata for filters
 ---
 string[] results  # List of results (documents) that match the query, top k
 bool success  # Whether the operation was successful
