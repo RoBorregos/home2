@@ -161,6 +161,7 @@ class HRITasks(metaclass=SubtaskMeta):
         self.speak_service = self.node.create_client(Speak, SPEAK_SERVICE)
         self.extract_data_service = self.node.create_client(ExtractInfo, EXTRACT_DATA_SERVICE)
         self.task = task
+        self.initial_prompt = ""
         self.grammar_service = self.node.create_client(Grammar, GRAMMAR_SERVICE)
 
         self.is_positive_service = self.node.create_client(IsPositive, IS_POSITIVE_SERVICE)
@@ -643,6 +644,7 @@ class HRITasks(metaclass=SubtaskMeta):
             use_hotwords: if True, the robot will only react if 'yes' or 'no' is the confirmations. Otherwise, it will hear any type of answer and interpret it with an llm.
             retries: the amount of times to try before returning false
             min_wait_between_retries: the minimum amount of time to wait between retries
+            initial_prompt: prompt sent to the STT model to prime transcription accuracy with expected context
 
         Returns:
             Status: the status of the execution
