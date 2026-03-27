@@ -51,7 +51,8 @@ def generate_launch_description():
                 name='rtabmap',
                 parameters=[rtab_params,
                     {'Mem/IncrementalMemory': 'False',
-                     'Mem/InitWMWithAllNodes': 'True'}],
+                     'Mem/InitWMWithAllNodes': 'True',
+                     'Mem/LocalizationReadOnly': 'True'}],
             ),
             ComposableNode(
                 condition=UnlessCondition(localization),

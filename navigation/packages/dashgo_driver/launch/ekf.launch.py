@@ -28,16 +28,16 @@ def generate_launch_description():
                     #  vx, vy, vz 
                     # vroll, vpitch, vyaw
                     # ax, ay, az
-                    'odom0_config': [True, True, False,
-                                    False,  False,  True, 
+                    'odom0_config': [False, False, False,
+                                    False, False, False,
                                     True, False, False,
-                                    False,  False,  True, 
-                                    False,  False,  False],
+                                    False, False, True,
+                                    False, False, False],
                     'imu0_config': [False, False, False,
-                                     False,  False,  True,
+                                     False, False, True,
                                      False, False, False,
-                                     False,  False,  True,
-                                     True,  False,  False],
+                                     False, False, True,
+                                     False, False, False],
                     'imu0_differential': False,
 
                  },

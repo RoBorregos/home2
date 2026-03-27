@@ -11,7 +11,7 @@ from nav_msgs.msg import Odometry
 from geometry_msgs.msg import TransformStamped
 from tf2_ros import TransformBroadcaster
 from rclpy.duration import Duration
-import sys
+import sys, traceback, traceback
 
 ODOM_POSE_COVARIANCE = [float(1e-3), 0.0, 0.0, 0.0, 0.0, 0.0, 
                         0.0, float(1e-3), 0.0, 0.0, 0.0, 0.0,
@@ -169,20 +169,28 @@ class DashgoDriver(Node):
                 imu_quaternion.z = sin(-1*self.imu_offset*yaw*3.1416/(180 *2.0))
                 imu_quaternion.w = cos(-1*self.imu_offset*yaw*3.1416/(180 *2.0))
                 imu_data.orientation = imu_quaternion
-                imu_data.linear_acceleration_covariance[0] = -1
-                imu_data.angular_velocity_covariance[0] = -1
+                imu_data.linear_acceleration_covariance[0] = 0.1
+                imu_data.linear_acceleration_covariance[4] = 0.1
+                imu_data.linear_acceleration_covariance[8] = 0.1
+                imu_data.angular_velocity_covariance[0] = 0.01
+                imu_data.angular_velocity_covariance[4] = 0.01
+                imu_data.angular_velocity_covariance[8] = 0.01
 
                 imu_data.angular_velocity.x = 0.0
                 imu_data.angular_velocity.y = 0.0
-                imu_data.angular_velocity.z = (yaw_vel*3.1416/(180*100))
+                imu_data.angular_velocity.z = yaw_vel * PI / 180.0
+                imu_data.linear_acceleration.x = float(acc_x) / 100.0
+                imu_data.linear_acceleration.y = float(acc_y) / 100.0
+                imu_data.linear_acceleration.z = float(acc_z) / 100.0
                 self.imuPub.publish(imu_data)
                 angle = Float32()
                 angle.data = -1.0*self.imu_offset*yaw*3.1416/(180 *2.0)
                 self.imuAnglePub.publish(angle)
 
-            except:
+            except Exception as e:
                 self.bad_encoder_count += 1
-                self.get_logger().info("IMU exception count: " + str(self.bad_encoder_count))
+                self.get_logger().info("IMU exception count: " + str(self.bad_encoder_count) + " error: " + str(e))
+                traceback.print_exc()
                 return
             
         dt = self.now - self.then
@@ -251,7 +259,7 @@ class DashgoDriver(Node):
 
         odom = Odometry()
         #odom.header.frame_id = "odom"
-        odom.header.frame_id = "dashgo_odom"
+        odom.header.frame_id = "odom"
         odom.child_frame_id = self.base_frame
         odom.header.stamp = self.get_clock().now().to_msg()
         odom.pose.pose.position.x = float(self.x)
