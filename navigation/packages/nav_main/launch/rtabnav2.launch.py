@@ -1,5 +1,5 @@
 from launch import LaunchDescription
-from launch_ros.actions import ComposableNodeContainer, Node
+from launch_ros.actions import ComposableNodeContainer
 from launch_ros.descriptions import ComposableNode, ParameterFile
 from launch.substitutions import LaunchConfiguration
 from nav2_common.launch import RewrittenYaml
@@ -12,11 +12,9 @@ def generate_launch_description():
     pkg_file_route = get_package_share_directory('nav_main')
     rtab_params_file = os.path.join(pkg_file_route,'config', 'rtabmap', 'rtabmap_default_config.yaml')
     nav2_params_file = os.path.join(pkg_file_route,'config', 'nav2_standard.yaml')
-    collision_monitor_params_file = os.path.join(pkg_file_route,'config', 'collision_monitor.yaml')
 
     rtab_params_ = LaunchConfiguration('rtab_config_file', default=rtab_params_file)
     nav2_params_ = LaunchConfiguration('nav2_config_file', default=nav2_params_file)
-    collision_monitor_params_ = LaunchConfiguration('collision_monitor_config_file', default=collision_monitor_params_file)
     localization = LaunchConfiguration('localization', default='false')
     nav2_activate = LaunchConfiguration('nav2', default='true')
     docking = LaunchConfiguration('use_docking', default='false')
@@ -32,9 +30,6 @@ def generate_launch_description():
             convert_types=True),
         allow_substs=True)
 
-    # Disable parameter event publisher to avoid iceoryx TOO_MANY_CHUNKS_HELD_IN_PARALLEL
-    no_param_events = {'start_parameter_event_publisher': False}
-
     sync_remapping = [
         ('rgb/image', '/zed/zed_node/rgb/image_rect_color'),
         ('rgb/camera_info', '/zed/zed_node/rgb/camera_info'),
@@ -46,7 +41,7 @@ def generate_launch_description():
         name='rtabmap_container',
         namespace='',
         package='rclcpp_components',
-        executable='component_container',
+        executable='component_container_mt',
         output='screen',
         composable_node_descriptions=[
             ComposableNode(
@@ -54,7 +49,7 @@ def generate_launch_description():
                 package='rtabmap_slam',
                 plugin='rtabmap_slam::CoreWrapper',
                 name='rtabmap',
-                parameters=[rtab_params, no_param_events,
+                parameters=[rtab_params,
                     {'Mem/IncrementalMemory': 'False',
                      'Mem/InitWMWithAllNodes': 'True'}],
             ),
@@ -63,7 +58,7 @@ def generate_launch_description():
                 package='rtabmap_slam',
                 plugin='rtabmap_slam::CoreWrapper',
                 name='rtabmap',
-                parameters=[rtab_params, no_param_events,
+                parameters=[rtab_params,
                     {'delete_db_on_start': True,
                      'RGBD/LinearUpdate': '0.1',
                      'RGBD/AngularUpdate': '0.1',
@@ -74,7 +69,7 @@ def generate_launch_description():
                 package='rtabmap_sync',
                 plugin='rtabmap_sync::RGBDSync',
                 name='rgbd_sync',
-                parameters=[rtab_params, no_param_events],
+                parameters=[rtab_params],
                 remappings=sync_remapping
             ),
         ],
@@ -87,79 +82,58 @@ def generate_launch_description():
         name='nav2_container',
         namespace='',
         package='rclcpp_components',
-        executable='component_container',
+        executable='component_container_mt',
         output='screen',
-        parameters=[nav2_params, no_param_events],
+        parameters=[nav2_params],
         composable_node_descriptions=[
             ComposableNode(
                 package='nav2_controller',
                 plugin='nav2_controller::ControllerServer',
                 name='controller_server',
-                parameters=[nav2_params, no_param_events],
-                remappings=[('cmd_vel', 'cmd_vel_nav')],
-            ),
-            ComposableNode(
-                package='nav2_collision_monitor',
-                plugin='nav2_collision_monitor::CollisionMonitor',
-                name='collision_monitor',
-                parameters=[collision_monitor_params_, no_param_events],
+                parameters=[nav2_params],
             ),
             ComposableNode(
                 package='nav2_smoother',
                 plugin='nav2_smoother::SmootherServer',
                 name='smoother_server',
-                parameters=[nav2_params, no_param_events],
+                parameters=[nav2_params],
             ),
             ComposableNode(
                 package='nav2_planner',
                 plugin='nav2_planner::PlannerServer',
                 name='planner_server',
-                parameters=[nav2_params, no_param_events],
+                parameters=[nav2_params],
             ),
             ComposableNode(
                 package='nav2_behaviors',
                 plugin='behavior_server::BehaviorServer',
                 name='behavior_server',
-                parameters=[nav2_params, no_param_events],
+                parameters=[nav2_params],
             ),
             ComposableNode(
                 package='nav2_bt_navigator',
                 plugin='nav2_bt_navigator::BtNavigator',
                 name='bt_navigator',
-                parameters=[nav2_params, no_param_events],
+                parameters=[nav2_params],
             ),
             ComposableNode(
                 package='nav2_velocity_smoother',
                 plugin='nav2_velocity_smoother::VelocitySmoother',
                 name='velocity_smoother',
-                parameters=[nav2_params, no_param_events],
+                parameters=[nav2_params],
             ),
             ComposableNode(
                 package='opennav_docking',
                 plugin='opennav_docking::DockingServer',
                 name='docking_server',
-                parameters=[nav2_params, no_param_events],
+                parameters=[nav2_params],
                 condition=IfCondition(docking),
-            ),
-            ComposableNode(
-                package='realsense2_camera',
-                plugin='realsense2_camera::RealSenseNodeFactory',
-                name='realsense_camera',
-                namespace='camera',
-                parameters=[{
-                    'pointcloud.enable': True,
-                    'depth_module.profile': '640x480x30',
-                    'color_width': 640,
-                    'color_height': 480,
-                    'color_fps': 30,
-                    'base_frame_id': 'intel_realsense',
-                }],
             ),
             ComposableNode(
                 package='nav2_lifecycle_manager',
                 plugin='nav2_lifecycle_manager::LifecycleManager',
                 name='lifecycle_manager_navigation',
-                parameters=[no_param_events, {
+                parameters=[{
                     'use_sim_time': False,
                     'autostart': True,
                     'node_names': [
@@ -169,22 +143,10 @@ def generate_launch_description():
                         'behavior_server',
                         'bt_navigator',
                         'velocity_smoother',
-                        'collision_monitor',
-                        'camera/realsense_camera',
                     ]
                 }],
             ),
         ],
     )
 
-    # Static TF: base_link -> intel_realsense (values from URDF TMR2025/realsense.xacro)
-    # Needed so collision_monitor can project RealSense pointcloud into the robot frame
-    # even when nav_basics is launched without publish_tf:=true
-    realsense_tf = Node(
-        package='tf2_ros',
-        executable='static_transform_publisher',
-        name='realsense_tf_publisher',
-        arguments=['0.140953', '0', '0.428947', '0', '0', '0', 'base_link', 'intel_realsense'],
-    )
-
-    return LaunchDescription([rtabmap_container, nav2_container, realsense_tf])
+    return LaunchDescription([rtabmap_container, nav2_container])
