@@ -69,7 +69,7 @@ OUTPUT_DIR = os.path.join(DATA_DIR, "output")
 COMMAND_INTERPRETER_SUCCESS_THRESHOLD = 0.9  # Higher than 1 for exact match only
 
 # Choose which tests to perform
-TEST_COMPOUND = True
+TEST_COMPOUND = False
 TEST_INDIVIDUAL_FUNCTIONS = False
 TEST_CATEGORIZE_SHELVES = False
 TEST_ASYNC_LLM = False
@@ -133,6 +133,9 @@ class TestHriManager(Node):
         if TEST_WORD_CONFIDENCES:
             self.test_word_confidences()
 
+        s, user_request, _ = self.hri_manager.hear(
+            initial_prompt="Testing complete. Please say something to finish."
+        )
         exit(0)
 
     def individual_functions(self):
@@ -291,7 +294,6 @@ class TestHriManager(Node):
                         self.get_logger().info("Test passed!")
                     else:
                         self.get_logger().error("Test failed.")
-
                 else:
                     self.get_logger().error(f"FAILED: {s}")
                     actual_output = f"ERROR: {s}"
