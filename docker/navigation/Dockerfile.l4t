@@ -10,10 +10,10 @@ RUN sudo apt-get update -qq && sudo apt-get install -y -qq ros-humble-rmw-cyclon
 
 #Build OPENCV
 WORKDIR /home/ros/
-sudo apt update
+RUN sudo apt update
 RUN curl -L https://raw.githubusercontent.com/AastaNV/JEP/refs/heads/master/script/install_opencv4.10.0_Jetpack6.1.sh -o install.sh
 RUN chmod 777 install.sh
-RUN yes yes | sudo ./install.sh
+RUN sed -i "s/make -j\$(nproc)/make -j4/" install.sh && sed -i '2i export CMAKE_POLICY_VERSION_MINIMUM=3.5' install.sh && yes yes | sudo -E ./install.sh
 
 # Persist paths so subsequent RUN layers find CUDA OpenCV
 ENV LD_LIBRARY_PATH=/usr/local/lib:${LD_LIBRARY_PATH}
@@ -47,7 +47,7 @@ RUN sudo apt update
 RUN mkdir -p /workspace
 WORKDIR /workspace 
 COPY ./navigation /workspace/src
-RUN cd /workspace/src && sudo apt update && sudo rosdep init && rosdep update
+RUN cd /workspace/src && sudo apt update && (sudo rosdep init || true) && rosdep update
 RUN rosdep install --from-paths . --ignore-src --skip-keys "frida_constants frida_interfaces" -y
 RUN sudo rm -rf /workspace/src/
 
