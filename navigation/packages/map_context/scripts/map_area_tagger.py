@@ -49,7 +49,8 @@ ROBOCUP_TASKS = {
         "kitchen": ["dining_table", "trash_bin"]
     },
     "1. Pick and Place": {
-        "kitchen": ["dining_table", "side_table", "cabinet", "dishwasher", "trash_bin", "dishwashing_tab"],
+        "start_area": ["safe_place"],
+        "kitchen": ["dining_table", "side_table", "cabinet", "dishwasher", "trash_bin", "breakfast_surface"],
     },
     "2. Human Robot Interaction": {
         "living_room": ["couches"],
