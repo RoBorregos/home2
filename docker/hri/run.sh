@@ -116,7 +116,9 @@ add_or_update_variable compose/.env "ENV_TYPE" "$ENV_TYPE"
 if [ "$ENV_TYPE" != "cpu" ]; then
   add_or_update_variable compose/.env "RUNTIME" "nvidia"
 fi
-
+if [ "$ENV_TYPE" = "cuda" ]; then
+  add_or_update_variable compose/.env "STT_BASE_IMAGE" "nvidia/cuda:12.6.3-cudnn-runtime-ubuntu22.04"
+fi
 # If setup was done before persist it again now that .env has been reset
 if [ "${SETUP_DONE:-}" = "true" ]; then
   add_or_update_variable .env "SETUP_DONE" "true"
@@ -146,7 +148,7 @@ fi
 
 #_________________________RUN_________________________
 
-GENERATE_BAML_CLIENT="baml-cli generate --from /workspace/src/task_manager/scripts/utils/baml_src/"
+GENERATE_BAML_CLIENT="baml-cli generate --from /workspace/src/task_manager/task_manager/utils/baml_src/"
 SOURCE_INTERFACES="if [ -f frida_interfaces_cache/install/local_setup.bash ]; then source frida_interfaces_cache/install/local_setup.bash; fi"
 IGNORE_PACKAGES="--packages-ignore frida_interfaces frida_constants xarm_msgs"
 SOURCE_ROS="source /opt/ros/humble/setup.bash"
@@ -155,16 +157,8 @@ PROFILES=()
 RUN=""
 
 case $TASK in
-  "--hric")
-    RUN="ros2 launch speech hri_launch.py"
-    PROFILES=("hric")
-    ;;
-  "--storing-groceries")
-    PROFILES=("storing")
-    RUN="ros2 launch speech hri_launch.py"
-    ;;
-  "--gpsr")
-    PROFILES=("gpsr")
+  "--hric"|"--storing-groceries"|"--gpsr"|"--ppc"|"--finals")
+    PROFILES=("${TASK#--}")
     RUN="ros2 launch speech hri_launch.py"
     ;;
   *)

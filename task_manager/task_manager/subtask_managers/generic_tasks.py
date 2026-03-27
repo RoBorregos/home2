@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from utils.subtask_manager import SubtaskManager
+from task_manager.utils.subtask_manager import SubtaskManager
 
 
 class GenericTask:

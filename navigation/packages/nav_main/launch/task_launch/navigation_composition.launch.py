@@ -9,7 +9,6 @@ from launch_ros.substitutions import FindPackageShare
 from launch.conditions import UnlessCondition, IfCondition
 
 def launch_function(context, *args, **kwargs):
-
     pkg_file_route = get_package_share_directory('nav_main')
     rtab_params_file = os.path.join(pkg_file_route,'config', 'rtabmap', 'rtabmap_default_config.yaml')
     nav2_params_file = os.path.join(pkg_file_route,'config', 'nav2_standard.yaml')
@@ -86,4 +85,3 @@ def launch_function(context, *args, **kwargs):
     ]
 def generate_launch_description():
     return LaunchDescription([OpaqueFunction(function=launch_function)])
-Ñ
