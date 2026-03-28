@@ -318,6 +318,16 @@ class SingleTracker(Node):
             )
         return tracks
 
+    def _reset_person_data(self):
+        """Reset the person data"""
+        self.person_data["id"] = None
+        self.person_data["embeddings"] = None
+        self.person_data["num_embeddings"] = 0
+        self.person_data["forward"] = None
+        self.person_data["backward"] = None
+        self.person_data["left"] = None
+        self.person_data["right"] = None
+
     def set_target(self, track_by="largest_person", value=""):
         """Set the target to track (Default: Largest person in frame)"""
         if self.image is None:
@@ -580,6 +590,9 @@ class SingleTracker(Node):
                         if compare_images(
                             embedding, self.person_data[person_angle], threshold=0.7
                         ):
+                            # We need to reset the embeddings and angles because the person was reidentified
+                            self._reset_person_data()
+                            
                             self.person_data["id"] = person["track_id"]
                             self.person_data["coordinates"] = (
                                 person["x1"],
@@ -587,6 +600,8 @@ class SingleTracker(Node):
                                 person["x2"],
                                 person["y2"],
                             )
+
+
                             self.success(
                                 f"Person re-identified: {person['track_id']} with angle {person_angle}"
                             )
@@ -606,7 +621,16 @@ class SingleTracker(Node):
                             self.success(
                                 f"Person re-identified: {person['track_id']} without angle"
                             )
+                            self._reset_person_data()
+                            
                             self.person_data["id"] = person["track_id"]
+                            self.person_data["coordinates"] = (
+                                person["x1"],
+                                person["y1"],
+                                person["x2"],
+                                person["y2"],
+                            )
+                            
                             person_in_frame = True
                             break
 
