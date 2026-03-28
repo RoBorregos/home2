@@ -4,7 +4,7 @@ VAMP Planning Server — Optimized for FRIDA (xArm 6)
 ====================================================
 Key design decisions:
   - frida_real is a 6-DOF model (6 revolute arm joints only)
-  - VAMP expects numpy float64 arrays (C++ doubles) to prevent Segfaults.
+  - VAMP expects numpy float32 arrays (C++ floats) for SIMD compatibility.
   - Gripper joints are NOT part of the VAMP collision model
   - Path processing INVERTED for extreme speed: Prune -> Smooth -> Validate
   - C++ Shortcutting is COMPLETELY REMOVED to guarantee geometric stability.
@@ -116,16 +116,16 @@ class VampServer(Node):
             if len(pc) > 0:
                 try:
                     n_nodes = env.add_pointcloud(
-                        pc, avg_radius, 0.01, 2.0)
+                        pc, 0.01, 0.20, avg_radius + self.security_margin)
                     n_spheres = len(pc)
                     self.get_logger().info(
-                        f"  CAPT pointcloud: {len(pc)} points, {n_nodes} nodes")
+                        f"  CAPT pointcloud: {len(pc)} points, {n_nodes} nodes, "
+                        f"r_point={avg_radius + self.security_margin:.3f}")
                 except Exception as e:
                     self.get_logger().warn(f"  CAPT failed: {e}, falling back to spheres")
                     for pt in pc:
                         env.add_sphere(vamp.Sphere(pt, avg_radius + self.security_margin))
                         n_spheres += 1
-            n_spheres += 1
 
         box_centers = np.array(request.box_centers_flat, dtype=np.float32)
         box_sizes = np.array(request.box_sizes_flat, dtype=np.float32)
@@ -178,9 +178,6 @@ class VampServer(Node):
                         env.add_sphere(vamp.Sphere(pos, radius))
 
     def validate_states(self, start, goal, env):
-        # Debug: test with fresh env
-        fresh_env = vamp.Environment()
-        self.get_logger().info(f"  Debug fresh_env: start={vamp.frida_real.validate(start, fresh_env)}, goal={vamp.frida_real.validate(goal, fresh_env)}")
         is_start_valid = vamp.frida_real.validate(start, env)
         is_goal_valid = vamp.frida_real.validate(goal, env)
         if is_start_valid and is_goal_valid:
@@ -269,9 +266,6 @@ class VampServer(Node):
             with self.Timer("State validation", self.get_logger()):
                 self.get_logger().info(f"  Start: {start.tolist()}")
                 self.get_logger().info(f"  Goal: {goal.tolist()}")
-                diag = self.validate_states(start, goal, env)
-                self.get_logger().info(f"  Goal: {goal.tolist()}")
-                diag = self.validate_states(start, goal, env)
                 diag = self.validate_states(start, goal, env)
             if diag:
                 self.get_logger().error(diag)

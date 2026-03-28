@@ -80,15 +80,15 @@ void VampPlanningContext::extractCollisionScene(
   } catch (const std::exception& e) {
     RCLCPP_WARN(node_->get_logger(), "Could not get link_base transform: %s", e.what());
   }
-  RCLCPP_WARN(node_->get_logger(), "vamp_frame_transform translation: (%.3f, %.3f, %.3f)", vamp_frame_transform.translation().x(), vamp_frame_transform.translation().y(), vamp_frame_transform.translation().z());
+  RCLCPP_DEBUG(node_->get_logger(), "vamp_frame_transform translation: (%.3f, %.3f, %.3f)", vamp_frame_transform.translation().x(), vamp_frame_transform.translation().y(), vamp_frame_transform.translation().z());
   for (const auto& object_id : world->getObjectIds()) {
     auto object = world->getObject(object_id);
     Eigen::Isometry3d global_pose = scene->getFrameTransform(object_id);
 
     for (size_t i = 0; i < object->shapes_.size(); ++i) {
-      Eigen::Isometry3d shape_pose = global_pose * object->shape_poses_[i];
+      Eigen::Isometry3d shape_pose = vamp_frame_transform * global_pose * object->shape_poses_[i];
 
-      RCLCPP_WARN(node_->get_logger(), "Object %s: global=(%.3f,%.3f,%.3f) transformed=(%.3f,%.3f,%.3f)", object_id.c_str(), global_pose.translation().x(), global_pose.translation().y(), global_pose.translation().z(), shape_pose.translation().x(), shape_pose.translation().y(), shape_pose.translation().z());
+      RCLCPP_DEBUG(node_->get_logger(), "Object %s: global=(%.3f,%.3f,%.3f) transformed=(%.3f,%.3f,%.3f)", object_id.c_str(), global_pose.translation().x(), global_pose.translation().y(), global_pose.translation().z(), shape_pose.translation().x(), shape_pose.translation().y(), shape_pose.translation().z());
       switch (object->shapes_[i]->type) {
 
         case shapes::SPHERE: {
@@ -134,24 +134,43 @@ void VampPlanningContext::extractCollisionScene(
           break;
         }
 
-        case shapes::OCTREE: { break; }
-//        case shapes::OCTREE: {
-//          const auto* oc = static_cast<const shapes::OcTree*>(object->shapes_[i].get());
-//          std::shared_ptr<const octomap::OcTree> octree = oc->octree;
-//          for (auto it = octree->begin(octree->getTreeDepth()),
-//               end = octree->end(); it != end; ++it) {
-//            if (octree->isNodeOccupied(*it)) {
-//              Eigen::Vector3d local_pos(it.getX(), it.getY(), it.getZ());
-//              Eigen::Vector3d global_pos = shape_pose * local_pos;
-//              double radius = (it.getSize() * 1.73205) / 2.0;
-//              request->sphere_centers_flat.push_back(global_pos.x());
-//              request->sphere_centers_flat.push_back(global_pos.y());
-//              request->sphere_centers_flat.push_back(global_pos.z());
-//              request->sphere_radii.push_back(radius);
-//            }
-//          }
-//          break;
-//        }
+        case shapes::OCTREE: {
+          const auto* oc = static_cast<const shapes::OcTree*>(object->shapes_[i].get());
+          std::shared_ptr<const octomap::OcTree> octree = oc->octree;
+          if (!octree) {
+            RCLCPP_WARN(node_->get_logger(), "Null octree for '%s'", object_id.c_str());
+            break;
+          }
+
+          size_t voxel_count = 0;
+          const double ws_limit = 1.5;
+
+          for (auto it = octree->begin_leafs(), end = octree->end_leafs();
+               it != end; ++it) {
+            if (octree->isNodeOccupied(*it)) {
+              Eigen::Vector3d local_pos(it.getX(), it.getY(), it.getZ());
+              Eigen::Vector3d pos = shape_pose * local_pos;
+
+              if (std::abs(pos.x()) > ws_limit ||
+                  std::abs(pos.y()) > ws_limit ||
+                  pos.z() < -0.5 || pos.z() > 2.0) {
+                continue;
+              }
+
+              double radius = it.getSize() / 2.0;
+              request->sphere_centers_flat.push_back(pos.x());
+              request->sphere_centers_flat.push_back(pos.y());
+              request->sphere_centers_flat.push_back(pos.z());
+              request->sphere_radii.push_back(radius);
+              ++voxel_count;
+            }
+          }
+
+          RCLCPP_INFO(node_->get_logger(),
+            "Octree '%s': %zu voxels extracted (res=%.3f)",
+            object_id.c_str(), voxel_count, octree->getResolution());
+          break;
+        }
 
         case shapes::MESH: {
           const auto* m = static_cast<const shapes::Mesh*>(object->shapes_[i].get());
