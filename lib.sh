@@ -115,8 +115,8 @@ run_area() {
     run_frida_interfaces || { echo "frida_interfaces cache build failed" >&2; return 1; }
   fi
 
-  # Start RouDi container for SHM-enabled areas (zed, vision)
-  if [ "$INPUT" = "zed" ] || [ "$INPUT" = "vision" ]; then
+  # Start RouDi container for SHM-enabled areas (zed, vision, navigation)
+  if [ "$INPUT" = "zed" ] || [ "$INPUT" = "vision" ] || [ "$INPUT" = "navigation" ]; then
     ensure_roudi || { echo "RouDi startup failed" >&2; return 1; }
   fi
 

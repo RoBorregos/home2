@@ -22,6 +22,7 @@ services:
       - /run/jtop.sock:/run/jtop.sock
 
     network_mode: host
+    ipc: host
     user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
     privileged: true
     pid: host
@@ -40,6 +41,7 @@ services:
       NVIDIA_VISIBLE_DEVICES: all
       NVIDIA_DRIVER_CAPABILITIES: all
       CYCLONE_INTERFACE: ${CYCLONE_INTERFACE:-}
+      CYCLONE_SHM: "1"
       MAP_NAME: ${MAP_NAME:-}
     tty: true
     stdin_open: true
@@ -71,6 +73,7 @@ services:
       - /run/jtop.sock:/run/jtop.sock
 
     network_mode: host
+    ipc: host
     user: ${LOCAL_USER_ID}:${LOCAL_GROUP_ID}
     privileged: true
     pid: host
@@ -96,11 +99,12 @@ services:
       NVIDIA_VISIBLE_DEVICES: all
       NVIDIA_DRIVER_CAPABILITIES: all
       CYCLONE_INTERFACE: ${CYCLONE_INTERFACE:-}
+      CYCLONE_SHM: "1"
       MAP_NAME: ${MAP_NAME:-}
     tty: true
     stdin_open: true
     working_dir: /workspace
     command: >
       bash -c "${COMMAND:-/bin/bash}"
-    
+
 
