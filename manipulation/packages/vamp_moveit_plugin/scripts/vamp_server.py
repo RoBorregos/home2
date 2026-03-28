@@ -274,6 +274,23 @@ class VampServer(Node):
             with self.Timer("Environment build", self.get_logger()):
                 env, n_sph, n_box = self.build_environment(request, start, goal)
             self.get_logger().info(f"  Radii: {len(request.sphere_radii)}, Boxes: {len(request.box_sizes_flat)//3}")
+
+            # DIAGNOSTIC: test if VAMP collision detection works at all
+            test_env = vamp.Environment()
+            test_env.add_sphere(vamp.Sphere([0.0, 0.0, 0.0], 1.0))
+            diag_start = vamp.frida_real.validate(start, test_env)
+            diag_goal = vamp.frida_real.validate(goal, test_env)
+            diag_empty = vamp.frida_real.validate(start, vamp.Environment())
+            self.get_logger().warn(
+                f"  DIAGNOSTIC: 1m sphere at origin: start_valid={diag_start}, "
+                f"goal_valid={diag_goal}, empty_env={diag_empty}")
+            # Also test first few octomap spheres individually
+            if len(request.sphere_radii) > 0:
+                test_env2 = vamp.Environment()
+                test_env2.add_sphere(vamp.Sphere([0.0, 0.0, 0.3], 0.5))
+                d2 = vamp.frida_real.validate(start, test_env2)
+                self.get_logger().warn(f"  DIAGNOSTIC: 0.5m sphere at (0,0,0.3): start_valid={d2}")
+
             with self.Timer("State validation", self.get_logger()):
                 self.get_logger().info(f"  Start: {start.tolist()}")
                 self.get_logger().info(f"  Goal: {goal.tolist()}")
