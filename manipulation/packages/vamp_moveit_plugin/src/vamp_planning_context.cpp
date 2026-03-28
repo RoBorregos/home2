@@ -68,7 +68,8 @@ void VampPlanningContext::clear() {}
 
 void VampPlanningContext::extractCollisionScene(
     const planning_scene::PlanningSceneConstPtr& scene,
-    std::shared_ptr<vamp_moveit_plugin::srv::VampPlan::Request>& request) const
+    std::shared_ptr<vamp_moveit_plugin::srv::VampPlan::Request>& request,
+    const Eigen::Vector3d& goal_ee_position) const
 {
   collision_detection::WorldConstPtr world = scene->getWorld();
 
@@ -143,7 +144,9 @@ void VampPlanningContext::extractCollisionScene(
           }
 
           size_t voxel_count = 0;
+          size_t goal_filtered = 0;
           const double ws_limit = 1.5;
+          const double goal_clearance = 0.12;
 
           for (auto it = octree->begin_leafs(), end = octree->end_leafs();
                it != end; ++it) {
@@ -157,6 +160,11 @@ void VampPlanningContext::extractCollisionScene(
                 continue;
               }
 
+              if ((pos - goal_ee_position).norm() < goal_clearance) {
+                ++goal_filtered;
+                continue;
+              }
+
               double radius = it.getSize() / 2.0;
               request->sphere_centers_flat.push_back(pos.x());
               request->sphere_centers_flat.push_back(pos.y());
@@ -167,8 +175,8 @@ void VampPlanningContext::extractCollisionScene(
           }
 
           RCLCPP_INFO(node_->get_logger(),
-            "Octree '%s': %zu voxels extracted (res=%.3f)",
-            object_id.c_str(), voxel_count, octree->getResolution());
+            "Octree '%s': %zu voxels extracted, %zu filtered near goal (res=%.3f)",
+            object_id.c_str(), voxel_count, goal_filtered, octree->getResolution());
           break;
         }
 
@@ -232,14 +240,26 @@ bool VampPlanningContext::solve(planning_interface::MotionPlanResponse& res)
     return false;
   }
 
-  
+
   auto request = std::make_shared<vamp_moveit_plugin::srv::VampPlan::Request>();
   request->start_state = start_state;
   request->goal_state = goal_state;
 
-  
+
+  moveit::core::RobotState goal_robot_state(robot_model_);
+  goal_robot_state.setJointGroupPositions(jmg, goal_state);
+  goal_robot_state.update();
+  const std::string& ee_link = jmg->getLinkModelNames().back();
+  Eigen::Vector3d goal_ee_position = goal_robot_state.getGlobalLinkTransform(ee_link).translation();
+
   planning_scene::PlanningSceneConstPtr scene = getPlanningScene();
-  extractCollisionScene(scene, request);
+  Eigen::Isometry3d vamp_frame_transform = Eigen::Isometry3d::Identity();
+  try {
+    vamp_frame_transform = scene->getFrameTransform("link_base").inverse();
+  } catch (...) {}
+  goal_ee_position = vamp_frame_transform * goal_ee_position;
+
+  extractCollisionScene(scene, request, goal_ee_position);
 
   RCLCPP_INFO(node_->get_logger(),
     "VAMP request: %zu spheres, %zu boxes",
