@@ -3,6 +3,7 @@
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Point
+from visualization_msgs.msg import Marker, MarkerArray
 from sensor_msgs.msg import Image, CameraInfo
 from frida_interfaces.srv import DetectDoor
 from frida_constants.vision_constants import (
@@ -77,6 +78,7 @@ class DoorDetectionService(Node):
         )
 
         self.debug_pub = self.create_publisher(Image, '/vision/door_detections', 10)
+        self.marker_pub = self.create_publisher(MarkerArray, '/vision/door_markers', 10)
         self.create_timer(0.5, self._publish_debug_image)
 
         self.get_logger().info('Door detection service ready at /vision/detect_door')
@@ -180,6 +182,51 @@ class DoorDetectionService(Node):
 
         self.debug_pub.publish(self.bridge.cv2_to_imgmsg(debug_img, 'bgr8'))
 
+    def _publish_markers(self, handle_pos, axis_pos):
+        markers = MarkerArray()
+        stamp = self.get_clock().now().to_msg()
+
+        if handle_pos is not None:
+            m = Marker()
+            m.header.frame_id = 'link_base'
+            m.header.stamp = stamp
+            m.ns = 'door'
+            m.id = 0
+            m.type = Marker.SPHERE
+            m.action = Marker.ADD
+            m.pose.position = handle_pos
+            m.pose.orientation.w = 1.0
+            m.scale.x = m.scale.y = m.scale.z = 0.05
+            m.color.r = 0.0
+            m.color.g = 1.0
+            m.color.b = 0.0
+            m.color.a = 1.0
+            m.lifetime.sec = 30
+            markers.markers.append(m)
+
+        if axis_pos is not None:
+            m2 = Marker()
+            m2.header.frame_id = 'link_base'
+            m2.header.stamp = stamp
+            m2.ns = 'door'
+            m2.id = 1
+            m2.type = Marker.CYLINDER
+            m2.action = Marker.ADD
+            m2.pose.position = axis_pos
+            m2.pose.orientation.w = 1.0
+            m2.scale.x = m2.scale.y = 0.03
+            m2.scale.z = 0.15
+            m2.color.r = 0.0
+            m2.color.g = 0.0
+            m2.color.b = 1.0
+            m2.color.a = 1.0
+            m2.lifetime.sec = 30
+            markers.markers.append(m2)
+
+        if markers.markers:
+            self.marker_pub.publish(markers)
+            self.get_logger().info('Published door markers to /vision/door_markers')
+
     def detect_door_callback(self, request, response):
         self.get_logger().info('Door detection request received')
 
@@ -240,6 +287,8 @@ class DoorDetectionService(Node):
             response.handle_position = handle_pos
         if axis_seen:
             response.axis_position = axis_pos
+
+        self._publish_markers(handle_pos, axis_pos if axis_seen else None)
 
         return response
 
