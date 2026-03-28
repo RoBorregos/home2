@@ -10,7 +10,6 @@ import cv2
 import rclpy
 from cv_bridge import CvBridge
 
-from geometry_msgs.msg import PointStamped
 from rclpy.node import Node
 from sensor_msgs.msg import CameraInfo, Image
 
@@ -27,7 +26,7 @@ from frida_constants.vision_constants import (
 from frida_interfaces.msg import CustomerTable, PersonList
 from frida_interfaces.srv import Customer, CustomerTables, ObjectPoints
 
-from vision_general.utils.calculations import deproject_pixel_to_point, get_depth
+from vision_general.utils.calculations import point2d_to_ros_point_stamped
 from vision_general.utils.ros_utils import wait_for_future
 
 TABLE_CUSTOMER_DISTANCE_THRESHOLD = 1.5  # meters
@@ -90,16 +89,15 @@ class RESTAURANTCommands(Node):
                 int(raw_point2d[0] * self.imageInfo.width),
                 int(raw_point2d[1] * self.imageInfo.height),
             )
-            depth = get_depth(self.depth_image, point2d)
             table_pixels.append(point2d)
 
-            point3d = deproject_pixel_to_point(
+            table_msg.table_point = point2d_to_ros_point_stamped(
                 self.imageInfo,
+                self.depth_image,
                 point2d,
-                depth,
+                CAMERA_FRAME,
+                self.get_clock().now().to_msg(),
             )
-
-            table_msg.table_point = self.build_point_stamped(point3d)
             table_msg.people = PersonList()
             table_msg.people.list = []
             table_groups.append(table_msg)
@@ -183,15 +181,6 @@ class RESTAURANTCommands(Node):
         self.client_debug_publisher.publish(
             self.bridge.cv2_to_imgmsg(debug_image, "bgr8")
         )
-
-    def build_point_stamped(self, xyz):
-        point_stamped = PointStamped()
-        point_stamped.header.stamp = self.get_clock().now().to_msg()
-        point_stamped.header.frame_id = CAMERA_FRAME
-        point_stamped.point.x = float(xyz[2])
-        point_stamped.point.y = float(-xyz[0])
-        point_stamped.point.z = float(-xyz[1])
-        return point_stamped
 
     def get_customers(self):
         """Get customers using the customer service, returns list of Person."""
