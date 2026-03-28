@@ -73,7 +73,7 @@ def launch_setup(context, *args, **kwargs):
     moveit_config_package_name = "xarm_moveit_config"
 
     octomap_config = {
-        "octomap_frame": "base_link",
+        "octomap_frame": "link_base",
         "octomap_resolution": 0.025,
         "max_range": 2.0,
     }
@@ -92,8 +92,8 @@ def launch_setup(context, *args, **kwargs):
             {"vamp.response_adapters": "default_planner_response_adapters/AddTimeOptimalParameterization"},
             {"planning_scene_monitor_options": {"publish_planning_scene": True}},
             {"check_solution_paths": False},
-#            octomap_config,
-#            octomap_updater_config,
+            octomap_config,
+            octomap_updater_config,
         ],
     )
 
