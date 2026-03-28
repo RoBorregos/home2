@@ -69,7 +69,7 @@
             point_cloud_freq: 10.0 # [DYNAMIC] Frequency of the pointcloud publishing.
             point_cloud_res: 'COMPACT' # 'COMPACT'-Standard resolution, 'REDUCED'-Half resolution
             depth_confidence: 50 # [DYNAMIC]
-            depth_texture_conf: 50 # [DYNAMIC]
+            depth_texture_conf: 100 # [DYNAMIC]
             remove_saturated_areas: true # [DYNAMIC]
 
         pos_tracking:
