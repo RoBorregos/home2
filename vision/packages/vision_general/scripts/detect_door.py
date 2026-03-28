@@ -80,6 +80,7 @@ class DoorDetectionService(Node):
         self.debug_pub = self.create_publisher(Image, '/vision/door_detections', 10)
         self.marker_pub = self.create_publisher(MarkerArray, '/vision/door_markers', 10)
         self.create_timer(0.5, self._publish_debug_image)
+        self.create_timer(1.0, self._republish_markers)
 
         self.get_logger().info('Door detection service ready at /vision/detect_door')
 
@@ -200,50 +201,56 @@ class DoorDetectionService(Node):
 
         self.debug_pub.publish(self.bridge.cv2_to_imgmsg(debug_img, 'bgr8'))
 
-    def _publish_markers(self, handle_pos, axis_pos):
+    def _publish_markers(self, handle_pos, _axis_pos=None):
+        self._last_handle_pos = handle_pos
+        self._build_and_publish_markers()
+
+    def _republish_markers(self):
+        if hasattr(self, '_last_handle_pos') and self._last_handle_pos is not None:
+            self._build_and_publish_markers()
+
+    def _build_and_publish_markers(self):
+        handle_pos = getattr(self, '_last_handle_pos', None)
+        if handle_pos is None:
+            return
+
         markers = MarkerArray()
         stamp = self.get_clock().now().to_msg()
 
-        if handle_pos is not None:
-            m = Marker()
-            m.header.frame_id = 'link_base'
-            m.header.stamp = stamp
-            m.ns = 'door'
-            m.id = 0
-            m.type = Marker.SPHERE
-            m.action = Marker.ADD
-            m.pose.position = handle_pos
-            m.pose.orientation.w = 1.0
-            m.scale.x = m.scale.y = m.scale.z = 0.05
-            m.color.r = 0.0
-            m.color.g = 1.0
-            m.color.b = 0.0
-            m.color.a = 1.0
-            m.lifetime.sec = 30
-            markers.markers.append(m)
+        m = Marker()
+        m.header.frame_id = 'link_base'
+        m.header.stamp = stamp
+        m.ns = 'door'
+        m.id = 0
+        m.type = Marker.SPHERE
+        m.action = Marker.ADD
+        m.pose.position = handle_pos
+        m.pose.orientation.w = 1.0
+        m.scale.x = m.scale.y = m.scale.z = 0.12
+        m.color.r = 1.0
+        m.color.g = 0.2
+        m.color.b = 0.0
+        m.color.a = 0.85
+        markers.markers.append(m)
 
-        if axis_pos is not None:
-            m2 = Marker()
-            m2.header.frame_id = 'link_base'
-            m2.header.stamp = stamp
-            m2.ns = 'door'
-            m2.id = 1
-            m2.type = Marker.CYLINDER
-            m2.action = Marker.ADD
-            m2.pose.position = axis_pos
-            m2.pose.orientation.w = 1.0
-            m2.scale.x = m2.scale.y = 0.03
-            m2.scale.z = 0.15
-            m2.color.r = 0.0
-            m2.color.g = 0.0
-            m2.color.b = 1.0
-            m2.color.a = 1.0
-            m2.lifetime.sec = 30
-            markers.markers.append(m2)
+        t = Marker()
+        t.header.frame_id = 'link_base'
+        t.header.stamp = stamp
+        t.ns = 'door'
+        t.id = 1
+        t.type = Marker.TEXT_VIEW_FACING
+        t.action = Marker.ADD
+        t.pose.position = Point(x=handle_pos.x, y=handle_pos.y, z=handle_pos.z + 0.15)
+        t.pose.orientation.w = 1.0
+        t.scale.z = 0.08
+        t.color.r = 1.0
+        t.color.g = 1.0
+        t.color.b = 1.0
+        t.color.a = 1.0
+        t.text = f'HANDLE ({handle_pos.x:.2f}, {handle_pos.y:.2f}, {handle_pos.z:.2f})'
+        markers.markers.append(t)
 
-        if markers.markers:
-            self.marker_pub.publish(markers)
-            self.get_logger().info('Published door markers to /vision/door_markers')
+        self.marker_pub.publish(markers)
 
     def detect_door_callback(self, request, response):
         self.get_logger().info('Door detection request received')
