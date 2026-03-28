@@ -14,19 +14,24 @@ RUN cd /workspace/src && sudo apt update && sudo rosdep init && rosdep update
 RUN rosdep install --from-paths . --ignore-src --skip-keys "frida_constants frida_interfaces" -y
 RUN sudo rm -rf /workspace/src/
 
-# CycloneDDS
+# CycloneDDS with SHM (iceoryx zero-copy)
 RUN sudo apt-get update -qq && sudo apt-get install -y -qq ros-humble-rmw-cyclonedds-cpp \
     && sudo rm -rf /var/lib/apt/lists/*
-COPY docker/cyclonedds_setup.sh /usr/local/bin/cyclonedds_setup.sh
-RUN sudo chmod +x /usr/local/bin/cyclonedds_setup.sh && sudo /usr/local/bin/cyclonedds_setup.sh
-ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
-ENV CYCLONEDDS_URI=file:///etc/cyclonedds.xml
-RUN echo "source /usr/local/bin/cyclonedds_setup.sh" >> /home/ros/.bashrc
 
-# ── CycloneDDS with SHM (iceoryx zero-copy) ──
-RUN sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends \
-    ros-humble-iceoryx-posh ros-humble-iceoryx-hoofs ros-humble-iceoryx-binding-c \
-    && sudo rm -rf /var/lib/apt/lists/*
+# Iceoryx from source (expanded publisher/subscriber limits)
+RUN cd /tmp && \
+    git clone --depth 1 -b v2.0.6 https://github.com/eclipse-iceoryx/iceoryx.git && \
+    cd iceoryx && \
+    cmake -S iceoryx_meta -B build \
+        -DCMAKE_INSTALL_PREFIX=/opt/ros/humble \
+        -DIOX_MAX_PUBLISHERS=2048 \
+        -DIOX_MAX_SUBSCRIBERS=2048 \
+        -DBUILD_BINDING_C=ON \
+        -DBUILD_SHARED_LIBS=ON \
+        -DCMAKE_BUILD_TYPE=Release && \
+    cmake --build build -j$(nproc) && \
+    sudo cmake --install build && \
+    cd / && rm -rf /tmp/iceoryx
 
 RUN cd /tmp && \
     git clone --depth 1 -b releases/0.10.x https://github.com/eclipse-cyclonedds/cyclonedds.git && \
@@ -40,8 +45,12 @@ RUN cd /tmp && \
     make -j$(nproc) && sudo make install && \
     cd / && rm -rf /tmp/cyclonedds
 
+COPY docker/cyclonedds_setup.sh /usr/local/bin/cyclonedds_setup.sh
 COPY roudi_config.toml /etc/iceoryx/roudi_config.toml
 ENV CYCLONE_SHM=1
-RUN sudo /usr/local/bin/cyclonedds_setup.sh
+RUN sudo chmod +x /usr/local/bin/cyclonedds_setup.sh && sudo /usr/local/bin/cyclonedds_setup.sh
+ENV RMW_IMPLEMENTATION=rmw_cyclonedds_cpp
+ENV CYCLONEDDS_URI=file:///etc/cyclonedds.xml
+RUN echo "source /usr/local/bin/cyclonedds_setup.sh" >> /home/ros/.bashrc
 
 WORKDIR /workspace

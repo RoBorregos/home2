@@ -21,7 +21,6 @@ def generate_launch_description():
             emulate_tty=True,
             parameters=[
                 config,
-                {'start_parameter_event_publisher': False},
             ],
             remappings=[
                 ('/cmd_vel', cmd_topic),

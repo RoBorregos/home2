@@ -25,7 +25,7 @@ def generate_launch_description():
                 plugin='joy::Joy',
                 name='joy',
                 namespace='',
-                parameters=[{'start_parameter_event_publisher': False}],
+                parameters=[],
             ),
             ComposableNode(
                 package='p9n_node',
@@ -34,7 +34,6 @@ def generate_launch_description():
                 namespace='',
                 parameters=[{
                         'hw_type': LaunchConfiguration('hw_type'),
-                        'start_parameter_event_publisher': False,
                 }],
                 remappings=[
                     ('cmd_vel', LaunchConfiguration('topic_name'))
