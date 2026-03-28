@@ -301,7 +301,7 @@ class DoorOpener(Node):
             self.get_logger().warn(f'Grasp failed on attempt {attempt}, re-detecting...')
             self.set_gripper(True)
             time.sleep(0.3)
-            self.move_to_named_position('front_stare')
+            self.move_to_named_position('door_stare')
 
             # Re-detect via vision service
             if self.detect_door():
@@ -330,10 +330,10 @@ class DoorOpener(Node):
     def execute_sequence(self):
         time.sleep(1.0)
 
-        # 0. Move to FRONT_STARE position before detection
-        self.get_logger().info('=== MOVING TO FRONT_STARE ===')
-        if not self.move_to_named_position('front_stare'):
-            self.get_logger().error('Failed to move to front_stare position')
+        # 0. Move to detection position
+        self.get_logger().info('=== MOVING TO FRONT_LOW_STARE ===')
+        if not self.move_to_named_position('front_low_stare'):
+            self.get_logger().error('Failed to move to front_low_stare position')
             return
 
         # 1. Detect handle + axis via vision service

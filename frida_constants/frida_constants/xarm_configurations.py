@@ -70,6 +70,17 @@ CUTLERY_STARE = {
     "degrees": True,
 }
 
+HANDLER_STARE = {
+    "joints": {
+        "joint1": -90.0,
+        "joint2": -60.0,
+        "joint3": -45.0,
+        "joint4": 0.0,
+        "joint5": -15.0,
+        "joint6": 45.0,
+    },
+    "degrees": True,
+}
 # Creditos a dominguez
 
 
@@ -132,4 +143,5 @@ XARM_CONFIGURATIONS = {
     "carry_pose": CARRY_POSE,
     "place_floor_right": PLACE_FLOOR_RIGHT,
     "place_floor_left": PLACE_FLOOR_LEFT,
+    "handler_stare": HANDLER_STARE,
 }
