@@ -34,6 +34,7 @@ RUN cd /opt/zed_ws && \
 # Iceoryx from source (expanded publisher/subscriber limits)
 RUN sudo apt-get update -qq && \
     sudo apt-get remove -y ros-humble-iceoryx-posh ros-humble-iceoryx-hoofs ros-humble-iceoryx-binding-c 2>/dev/null || true && \
+    sudo apt-get install -y --no-install-recommends libacl1-dev && \
     sudo apt-get autoremove -y && sudo rm -rf /var/lib/apt/lists/*
 RUN cd /tmp && \
     git clone --depth 1 -b v2.0.6 https://github.com/eclipse-iceoryx/iceoryx.git && \
