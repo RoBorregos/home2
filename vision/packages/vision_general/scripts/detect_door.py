@@ -103,12 +103,12 @@ class DoorDetectionService(Node):
         if math.isnan(depth):
             return None
 
-        point_3d = deproject_pixel_to_point(self.camera_info, (cx, cy), depth)
+        point_3d = deproject_pixel_to_point(self.camera_info, (depth_cy, depth_cx), depth)
 
         point = Point()
-        point.x = float(point_3d[0])
-        point.y = float(point_3d[1])
-        point.z = float(point_3d[2])
+        point.x = float(point_3d[2])
+        point.y = float(-point_3d[0])
+        point.z = float(-point_3d[1])
         return point
 
     def _pixel_to_base_point(self, cx, cy):
