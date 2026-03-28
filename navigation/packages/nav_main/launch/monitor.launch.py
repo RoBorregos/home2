@@ -9,13 +9,14 @@ def generate_launch_description():
             name='node_monitor',
             parameters=[{
                 'nodes_to_monitor': [
-                    'flat_grasp_estimator', 
-                    '/zed/zed_container', 
-                    'planner_server', 
+                    'flat_grasp_estimator',
+                    '/zed/zed_container',
+                    'planner_server',
                     'map_server',
                     'dashgo_driver',
                     'rplidar_node'
-                ]
+                ],
+                'start_parameter_event_publisher': False,
             }]
         )
     ])
