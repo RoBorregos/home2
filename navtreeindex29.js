@@ -1,5 +1,8 @@
 var NAVTREEINDEX29 =
 {
+"namespacehric__task__manager.html#a835645b490c465a8d1c416cc0b79d82c":[23,0,73,4],
+"namespacehric__task__manager.html#ae79a2dacb467182b59ecf29b5eae6a49":[23,0,73,3],
+"namespacehric__task__manager.html#aefbaab6712d1d63b350117da1c4449b5":[23,0,73,2],
 "namespaceis__person__inside.html":[23,0,74],
 "namespaceis__person__inside.html#a79f30c58d09282b6365883311dae895c":[23,0,74,1],
 "namespacelocal__camera.html":[23,0,75],
@@ -12,6 +15,7 @@ var NAVTREEINDEX29 =
 "namespacemap__area__tagger.html#a33c0e02922d99d9405848a521fad78ab":[23,0,77,2],
 "namespacemap__area__tagger.html#a5ff188d3d9297ca930d16ba3349e0f0d":[23,0,77,5],
 "namespacemap__area__tagger.html#a8b8e125ab7b5ed1f090345e6c568893f":[23,0,77,6],
+"namespacemap__area__tagger.html#a9c0f1fffca59ee4d50efdcc6d8995046":[23,0,77,7],
 "namespacemap__area__tagger.html#aa51966e06f7d42b83f9394fc912a38ab":[23,0,77,4],
 "namespacemap__publisher.html":[23,0,78],
 "namespacemap__publisher.html#a9d18f91950638e3c533f05c59cb83061":[23,0,78,1],
@@ -61,8 +65,8 @@ var NAVTREEINDEX29 =
 "namespacemembers_t.html":[23,1,0,20],
 "namespacemembers_u.html":[23,1,0,21],
 "namespacemembers_v.html":[23,1,0,22],
-"namespacemembers_vars.html":[23,1,2],
 "namespacemembers_vars.html":[23,1,2,0],
+"namespacemembers_vars.html":[23,1,2],
 "namespacemembers_vars_a.html":[23,1,2,1],
 "namespacemembers_vars_b.html":[23,1,2,2],
 "namespacemembers_vars_c.html":[23,1,2,3],
@@ -245,9 +249,5 @@ var NAVTREEINDEX29 =
 "namespacepointing__detection.html#a47c3a80029239887a5bca0e33d3cc442":[23,0,112,7],
 "namespacepointing__detection.html#a633acf443f90a05cc1ffb29a58d8266a":[23,0,112,5],
 "namespacepointing__detection.html#a81b763268db81cdf41aed3e9d35a4c71":[23,0,112,6],
-"namespacepointing__detection.html#a8484a25857896f32674ad44c8297a05d":[23,0,112,10],
-"namespacepointing__detection.html#a9db6ce1f51fbb1400f9c27f9fa04df6d":[23,0,112,2],
-"namespacepointing__detection.html#ae5a5ea3ffce7705feea4d4250f9fb2ad":[23,0,112,9],
-"namespacepointing__detection.html#aecdfe9b610d5fd6382dd55d2679ce09b":[23,0,112,8],
-"namespacepointing__detection.html#af403d88fbae3e2b0891a658ccb3d4054":[23,0,112,4]
+"namespacepointing__detection.html#a8484a25857896f32674ad44c8297a05d":[23,0,112,10]
 };

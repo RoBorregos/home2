@@ -94,6 +94,7 @@ $(document).ready(function(){initNavTree('classmap__area__tagger_1_1MapCanvas.ht
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
+<a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="classmap__area__tagger_1_1MapCanvas-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">map_area_tagger.MapCanvas Class Reference</div></div>
 </div><!--header-->
@@ -175,6 +176,11 @@ Static Public Attributes</h2></td></tr>
 <tr class="separator:acaa2403a6783f61e13e71e2760ff83ed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3ec1c91a4dbd7a33a767ddcd633e674f"><td class="memItemLeft" align="right" valign="top">pyqtSignal&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmap__area__tagger_1_1MapCanvas.html#a3ec1c91a4dbd7a33a767ddcd633e674f">mouse_moved</a> = pyqtSignal(float, float)</td></tr>
 <tr class="separator:a3ec1c91a4dbd7a33a767ddcd633e674f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
+Protected Member Functions</h2></td></tr>
+<tr class="memitem:ab23531fc8e812d84a7f0be341c222d33"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classmap__area__tagger_1_1MapCanvas.html#ab23531fc8e812d84a7f0be341c222d33">_draw_footprint</a> (self, painter, px, py, yaw, pen_color, fill_color)</td></tr>
+<tr class="separator:ab23531fc8e812d84a7f0be341c222d33"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><pre class="fragment">Widget for displaying the map and handling mouse interactions.</pre> </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
@@ -207,6 +213,72 @@ Static Public Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="ab23531fc8e812d84a7f0be341c222d33" name="ab23531fc8e812d84a7f0be341c222d33"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab23531fc8e812d84a7f0be341c222d33">&#9670;&#160;</a></span>_draw_footprint()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">def map_area_tagger.MapCanvas._draw_footprint </td>
+          <td>(</td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>self</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>painter</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>px</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>py</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>yaw</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>pen_color</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>fill_color</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<pre class="fragment">Draw the robot rectangular footprint rotated by yaw at pixel pos (px, py).</pre> 
+</div>
+</div>
 <a id="a03b45d2fb2dfbe0111c3106d95da6992" name="a03b45d2fb2dfbe0111c3106d95da6992"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a03b45d2fb2dfbe0111c3106d95da6992">&#9670;&#160;</a></span>fit_to_view()</h2>
 

@@ -1,5 +1,9 @@
 var NAVTREEINDEX30 =
 {
+"namespacepointing__detection.html#a9db6ce1f51fbb1400f9c27f9fa04df6d":[23,0,112,2],
+"namespacepointing__detection.html#ae5a5ea3ffce7705feea4d4250f9fb2ad":[23,0,112,9],
+"namespacepointing__detection.html#aecdfe9b610d5fd6382dd55d2679ce09b":[23,0,112,8],
+"namespacepointing__detection.html#af403d88fbae3e2b0891a658ccb3d4054":[23,0,112,4],
 "namespacepose__detection.html":[23,0,113],
 "namespacepose__detection.html#a0fa4657c7964f252abb37457c48c64b9":[23,0,113,3],
 "namespacepose__detection.html#a1cf363879219f89b064ecb6b68514ad1":[23,0,113,15],
@@ -245,9 +249,5 @@ var NAVTREEINDEX30 =
 "namespacetest__hri__manager.html#a1d345e1c23e0096c46baaa89be53f927":[23,0,143,2],
 "namespacetest__hri__manager.html#a246a2a82635f931d92365e0a218576a3":[23,0,143,4],
 "namespacetest__hri__manager.html#a413f9c068afedd81078d3f34c44b4ab2":[23,0,143,7],
-"namespacetest__hri__manager.html#a5b93f7cb6e796bceeecdee57dc3c7aac":[23,0,143,12],
-"namespacetest__hri__manager.html#a6126879bbfe70d91a45d5c99e98ac3f9":[23,0,143,9],
-"namespacetest__hri__manager.html#a66dffd1e474ea9bb91b2de082c4e4e42":[23,0,143,1],
-"namespacetest__hri__manager.html#a6dab12c78ddfca13d1fd313af30f27bf":[23,0,143,16],
-"namespacetest__hri__manager.html#a6f21b71aab324a85f5de81194460a195":[23,0,143,18]
+"namespacetest__hri__manager.html#a5b93f7cb6e796bceeecdee57dc3c7aac":[23,0,143,12]
 };

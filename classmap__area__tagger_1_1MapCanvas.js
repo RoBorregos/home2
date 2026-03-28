@@ -1,6 +1,7 @@
 var classmap__area__tagger_1_1MapCanvas =
 [
     [ "__init__", "classmap__area__tagger_1_1MapCanvas.html#af50dac720c4d5173b93c3cb1c8dd53b9", null ],
+    [ "_draw_footprint", "classmap__area__tagger_1_1MapCanvas.html#ab23531fc8e812d84a7f0be341c222d33", null ],
     [ "fit_to_view", "classmap__area__tagger_1_1MapCanvas.html#a03b45d2fb2dfbe0111c3106d95da6992", null ],
     [ "load_map", "classmap__area__tagger_1_1MapCanvas.html#a5c45a6932ad9e39b56a5e34432268fa6", null ],
     [ "map_to_pixel", "classmap__area__tagger_1_1MapCanvas.html#a60409b4f48e7ce4eff0e23ff54265ece", null ],

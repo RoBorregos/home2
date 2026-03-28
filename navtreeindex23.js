@@ -1,6 +1,8 @@
 var NAVTREEINDEX23 =
 {
+"classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#aa22c80a7146ec313b9571bfee73c3df3":[24,0,108,1,17],
 "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#aaff43b6cff93707da035db10db6b6b2a":[24,0,108,1,0],
+"classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#aaff43b6cff93707da035db10db6b6b2a":[23,0,169,1,0],
 "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#ab2660ef7f1d57db5f7fe6ebcf134fa66":[23,0,169,1,14],
 "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#ab2660ef7f1d57db5f7fe6ebcf134fa66":[24,0,108,1,14],
 "classzero__shot__object__detector__node_1_1zero__shot__object__detector__node.html#acf72ea3bacd4232fd222b96bd37bbe8a":[24,0,108,1,23],
@@ -247,7 +249,5 @@ var NAVTREEINDEX23 =
 "ex__pose__goal_8py.html#a3c640a6e9488d4ac49c2a0e8328b589d":[25,0,3,0,2,0,3,0],
 "example__launch_8py.html":[25,0,7,0,3,0,0],
 "example__launch_8py.html#af49d150abaa0c5580b32932333d2f2c8":[25,0,7,0,3,0,0,0],
-"example__node_8py.html":[25,0,7,0,3,1,3],
-"example__node_8py.html#a0830ca6b73f60f3404af93f6221efd83":[25,0,7,0,3,1,3,2],
-"example__node_8py.html#a1a6f92bba0f94518d76beb4e33a039b9":[25,0,7,0,3,1,3,1]
+"example__node_8py.html":[25,0,7,0,3,1,3]
 };

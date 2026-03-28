@@ -1,5 +1,7 @@
 var NAVTREEINDEX26 =
 {
+"manipulation__constants__cpp_8hpp.html#a56af7b9da0fb3dfb9f8c337970b4dbd2":[25,0,1,2,0,0,41],
+"manipulation__constants__cpp_8hpp.html#a57a57e167ef6ee79daa10a6773a7be5e":[25,0,1,2,0,0,3],
 "manipulation__constants__cpp_8hpp.html#a63e24b7b0629e3e1ecf9354882537a15":[25,0,1,2,0,0,0],
 "manipulation__constants__cpp_8hpp.html#a69a23044b6e0021de94086ac88132f47":[25,0,1,2,0,0,20],
 "manipulation__constants__cpp_8hpp.html#a6e0672792d696337a569110dc700735e":[25,0,1,2,0,0,18],
@@ -45,6 +47,7 @@ var NAVTREEINDEX26 =
 "map__area__tagger_8py.html#a33c0e02922d99d9405848a521fad78ab":[25,0,4,0,1,3,0,2],
 "map__area__tagger_8py.html#a5ff188d3d9297ca930d16ba3349e0f0d":[25,0,4,0,1,3,0,5],
 "map__area__tagger_8py.html#a8b8e125ab7b5ed1f090345e6c568893f":[25,0,4,0,1,3,0,6],
+"map__area__tagger_8py.html#a9c0f1fffca59ee4d50efdcc6d8995046":[25,0,4,0,1,3,0,7],
 "map__area__tagger_8py.html#aa51966e06f7d42b83f9394fc912a38ab":[25,0,4,0,1,3,0,4],
 "map__publisher_8py.html":[25,0,4,0,2,2,2],
 "map__publisher_8py.html#a9d18f91950638e3c533f05c59cb83061":[25,0,4,0,2,2,2,1],
@@ -246,8 +249,5 @@ var NAVTREEINDEX26 =
 "namespacePourManager.html":[23,0,114],
 "namespacePourManager.html#a4803853b3c06bb06873e9255f1063a15":[23,0,114,1],
 "namespaceServo.html":[23,0,133],
-"namespaceXArmServices.html":[23,0,163],
-"namespaceYoloEObjectDetector.html":[23,0,165],
-"namespaceYoloV5ObjectDetector.html":[23,0,166],
-"namespaceYoloV5ObjectDetector.html#a6631d9db40bbdbb0c6ab13c256a5f27b":[23,0,166,1]
+"namespaceXArmServices.html":[23,0,163]
 };
