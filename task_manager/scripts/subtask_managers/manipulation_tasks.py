@@ -394,13 +394,17 @@ class ManipulationTasks:
     @service_check(
         client="_manipulation_action_client", return_value=Status.EXECUTION_ERROR, timeout=TIMEOUT
     )
-    def place(self):
-        # if not self._manipulation_action_client.wait_for_server(timeout_sec=TIMEOUT):
-        #     Logger.error(self.node, "Manipulation action server not available")
-        #     return Status.EXECUTION_ERROR
+    def place(self, close_to: str = "", special_request: str = ""):
+        """Place the currently grasped object.
+        close_to: name of an object to place near (e.g. "bowl")
+        special_request: JSON-encoded special placement instructions"""
 
         goal_msg = ManipulationAction.Goal()
         goal_msg.task_type = ManipulationTask.PLACE
+        if close_to:
+            goal_msg.place_params.close_to = close_to
+        if special_request:
+            goal_msg.place_params.special_request = special_request
         future = self._manipulation_action_client.send_goal_async(goal_msg)
         rclpy.spin_until_future_complete(self.node, future, timeout_sec=TIMEOUT)
         if future.result() is None:
