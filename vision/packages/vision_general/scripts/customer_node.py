@@ -10,8 +10,7 @@ from vision_general.utils.trt_utils import load_yolo_trt
 import tqdm
 from vision_general.utils.calculations import (
     get2DCentroid,
-    get_depth,
-    deproject_pixel_to_point,
+    point2d_to_ros_point_stamped,
 )
 
 import rclpy
@@ -192,20 +191,14 @@ class CustomerNode(Node):
                     cv2.rectangle(self.output_image, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
                     # 2D Centroid and Depth
-                    point2D = get2DCentroid((x1, y1, x2, y2), self.depth_image)
-                    point_2d_temp = (point2D[1], point2D[0])
-                    depth = get_depth(self.depth_image, point2D)
-                    point3D_raw = deproject_pixel_to_point(
-                        self.imageInfo, point_2d_temp, depth
+                    point2D = get2DCentroid((y1, x1, y2, x2), self.depth_image)
+                    coords = point2d_to_ros_point_stamped(
+                        self.imageInfo,
+                        self.depth_image,
+                        point2D,
+                        self.frame_id,
+                        self.depth_image_time,
                     )
-
-                    # Transform to ROS frame
-                    coords = PointStamped()
-                    coords.header.frame_id = self.frame_id
-                    coords.header.stamp = self.depth_image_time
-                    coords.point.x = float(point3D_raw[2])
-                    coords.point.y = float(-point3D_raw[0])
-                    coords.point.z = float(-point3D_raw[1])
                     self.results_publisher.publish(coords)
 
                     # Normalize X coordinate for basic tracking
