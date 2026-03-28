@@ -87,7 +87,7 @@ class VampServer(Node):
     def to_vamp(joint_values):
         return np.array(list(joint_values[:ARM_DOF]) + [0.8, 0.8], dtype=np.float32)
 
-    def build_environment(self, request, robot_config=None):
+    def build_environment(self, request, start_config=None, goal_config=None):
         env = vamp.Environment()
         n_spheres = 0
         n_boxes = 0
@@ -105,16 +105,29 @@ class VampServer(Node):
             r_point = max(avg_radius, self.security_margin) + self.security_margin
             n_raw = len(pc)
 
-            # Filter self-collision points if we have robot config
-            if robot_config is not None:
+            # Filter robot body at START config (camera sees the robot itself)
+            if start_config is not None:
                 try:
                     pc = vamp.frida_real.filter_self_from_pointcloud(
-                        pc, 0.12, robot_config, env)
+                        pc, 0.12, start_config, env)
                     self.get_logger().info(
-                        f"  Self-filter: {n_raw} -> {len(pc)} points "
+                        f"  Self-filter (start): {n_raw} -> {len(pc)} points "
                         f"(removed {n_raw - len(pc)})")
                 except Exception as e:
-                    self.get_logger().warn(f"  Self-filter failed: {e}")
+                    self.get_logger().warn(f"  Self-filter (start) failed: {e}")
+
+            # Filter robot body at GOAL config (octomap has surface voxels
+            # where the robot needs to be at the goal)
+            if goal_config is not None:
+                n_before_goal = len(pc)
+                try:
+                    pc = vamp.frida_real.filter_self_from_pointcloud(
+                        pc, 0.12, goal_config, env)
+                    self.get_logger().info(
+                        f"  Self-filter (goal):  {n_before_goal} -> {len(pc)} points "
+                        f"(removed {n_before_goal - len(pc)})")
+                except Exception as e:
+                    self.get_logger().warn(f"  Self-filter (goal) failed: {e}")
 
             # Use CAPT pointcloud (much faster than individual spheres)
             if len(pc) > 0:
@@ -264,7 +277,7 @@ class VampServer(Node):
             start = self.to_vamp(request.start_state)
             goal = self.to_vamp(request.goal_state)
             with self.Timer("Environment build", self.get_logger()):
-                env, n_sph, n_box = self.build_environment(request, start)
+                env, n_sph, n_box = self.build_environment(request, start, goal)
             self.get_logger().info(f"  Radii: {len(request.sphere_radii)}, Boxes: {len(request.box_sizes_flat)//3}")
             with self.Timer("State validation", self.get_logger()):
                 self.get_logger().info(f"  Start: {start.tolist()}")

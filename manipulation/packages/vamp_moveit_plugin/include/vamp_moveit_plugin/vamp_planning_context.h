@@ -31,8 +31,7 @@ public:
 private:
   void extractCollisionScene(
       const planning_scene::PlanningSceneConstPtr& scene,
-      std::shared_ptr<vamp_moveit_plugin::srv::VampPlan::Request>& request,
-      const std::vector<Eigen::Vector3d>& clearance_positions) const;
+      std::shared_ptr<vamp_moveit_plugin::srv::VampPlan::Request>& request) const;
 
   bool extractStartState(std::vector<double>& start_state) const;
   bool extractGoalState(std::vector<double>& goal_state) const;
