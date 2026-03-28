@@ -103,21 +103,37 @@ class PickAndPlaceTM(Node):
         self.first_pick = True
 
         # Breakfast items — bowl+spoon first (breakfast_surface), then milk+cereal (cabinet)
+        # Per rules: spoon next to bowl, cereal and milk next to each other, 5 cm clearance.
+        # Order matters: place bowl first, then spoon close to bowl, then cereal, then milk close to cereal.
         self.breakfast_items = [
             {
                 "name": "bowl",
                 "location": Location.BREAKFAST_SURFACE,
                 "picked": False,
                 "placed": False,
+                "close_to": "",
             },
             {
                 "name": "spoon",
                 "location": Location.BREAKFAST_SURFACE,
                 "picked": False,
                 "placed": False,
+                "close_to": "bowl",
             },
-            {"name": "milk", "location": Location.CABINET, "picked": False, "placed": False},
-            {"name": "cereal", "location": Location.CABINET, "picked": False, "placed": False},
+            {
+                "name": "cereal",
+                "location": Location.CABINET,
+                "picked": False,
+                "placed": False,
+                "close_to": "",
+            },
+            {
+                "name": "milk",
+                "location": Location.CABINET,
+                "picked": False,
+                "placed": False,
+                "close_to": "cereal",
+            },
         ]
         self.current_breakfast_item: dict = None
 
@@ -591,8 +607,8 @@ class PickAndPlaceTM(Node):
             self.subtask_manager.hri.say(f"Placing the {item_name}.", wait=False)
 
             # Per rules: spoon next to bowl; cereal and milk next to each other; 5 cm clearance.
-            # place() lets the manipulation server handle exact positioning on the table.
-            status = self.subtask_manager.manipulation.place()
+            close_to = self.current_breakfast_item.get("close_to", "")
+            status = self.subtask_manager.manipulation.place(close_to=close_to)
 
             if status == Status.EXECUTION_SUCCESS:
                 self.current_breakfast_item["placed"] = True
