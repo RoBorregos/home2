@@ -69,7 +69,7 @@ void VampPlanningContext::clear() {}
 void VampPlanningContext::extractCollisionScene(
     const planning_scene::PlanningSceneConstPtr& scene,
     std::shared_ptr<vamp_moveit_plugin::srv::VampPlan::Request>& request,
-    const Eigen::Vector3d& goal_ee_position) const
+    const std::vector<Eigen::Vector3d>& clearance_positions) const
 {
   collision_detection::WorldConstPtr world = scene->getWorld();
 
@@ -146,7 +146,7 @@ void VampPlanningContext::extractCollisionScene(
           size_t voxel_count = 0;
           size_t goal_filtered = 0;
           const double ws_limit = 1.5;
-          const double goal_clearance = 0.12;
+          const double goal_clearance = 0.15;
 
           for (auto it = octree->begin_leafs(), end = octree->end_leafs();
                it != end; ++it) {
@@ -160,7 +160,14 @@ void VampPlanningContext::extractCollisionScene(
                 continue;
               }
 
-              if ((pos - goal_ee_position).norm() < goal_clearance) {
+              bool near_robot = false;
+              for (const auto& link_pos : clearance_positions) {
+                if ((pos - link_pos).norm() < goal_clearance) {
+                  near_robot = true;
+                  break;
+                }
+              }
+              if (near_robot) {
                 ++goal_filtered;
                 continue;
               }
@@ -245,21 +252,33 @@ bool VampPlanningContext::solve(planning_interface::MotionPlanResponse& res)
   request->start_state = start_state;
   request->goal_state = goal_state;
 
-
-  moveit::core::RobotState goal_robot_state(robot_model_);
-  goal_robot_state.setJointGroupPositions(jmg, goal_state);
-  goal_robot_state.update();
-  const std::string& ee_link = jmg->getLinkModelNames().back();
-  Eigen::Vector3d goal_ee_position = goal_robot_state.getGlobalLinkTransform(ee_link).translation();
-
   planning_scene::PlanningSceneConstPtr scene = getPlanningScene();
   Eigen::Isometry3d vamp_frame_transform = Eigen::Isometry3d::Identity();
   try {
     vamp_frame_transform = scene->getFrameTransform("link_base").inverse();
   } catch (...) {}
-  goal_ee_position = vamp_frame_transform * goal_ee_position;
 
-  extractCollisionScene(scene, request, goal_ee_position);
+  // Compute all link positions for goal config to clear octomap around them
+  std::vector<Eigen::Vector3d> clearance_positions;
+  moveit::core::RobotState goal_robot_state(robot_model_);
+  goal_robot_state.setJointGroupPositions(jmg, goal_state);
+  goal_robot_state.update();
+  for (const auto& link_name : jmg->getLinkModelNames()) {
+    Eigen::Vector3d pos = goal_robot_state.getGlobalLinkTransform(link_name).translation();
+    clearance_positions.push_back(vamp_frame_transform * pos);
+  }
+
+  // Also clear around start config links (camera sees the robot body)
+  start_robot_state.update();
+  for (const auto& link_name : jmg->getLinkModelNames()) {
+    Eigen::Vector3d pos = start_robot_state.getGlobalLinkTransform(link_name).translation();
+    clearance_positions.push_back(vamp_frame_transform * pos);
+  }
+
+  RCLCPP_INFO(node_->get_logger(),
+    "Clearing octomap near %zu link positions (start+goal)", clearance_positions.size());
+
+  extractCollisionScene(scene, request, clearance_positions);
 
   RCLCPP_INFO(node_->get_logger(),
     "VAMP request: %zu spheres, %zu boxes",
