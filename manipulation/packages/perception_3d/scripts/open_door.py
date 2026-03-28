@@ -301,7 +301,7 @@ class DoorOpener(Node):
             self.get_logger().warn(f'Grasp failed on attempt {attempt}, re-detecting...')
             self.set_gripper(True)
             time.sleep(0.3)
-            self.move_to_named_position('door_stare')
+            self.move_to_named_position('handler_stare')
 
             # Re-detect via vision service
             if self.detect_door():
