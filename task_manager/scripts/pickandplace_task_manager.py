@@ -96,6 +96,18 @@ class PickAndPlaceTM(Node):
         self.use_side_table = False  # True = use side table objects (penalty per object)
         self.trash_category = "napkin"  # Announced during Setup Days
 
+        # Navigation mapping: Location -> (room, sublocation) matching areas.json structure.
+        # ACTION REQUIRED: Adjust sublocation names to match the arena's areas.json.
+        self.nav_locations = {
+            Location.KITCHEN: ("kitchen", ""),
+            Location.DINING_TABLE: ("kitchen", "dining_table"),
+            Location.SIDE_TABLE: ("kitchen", "side_table"),
+            Location.DISHWASHER: ("kitchen", "dishwasher"),
+            Location.CABINET: ("kitchen", "cabinet"),
+            Location.TRASH_BIN: ("kitchen", "trash_bin"),
+            Location.BREAKFAST_SURFACE: ("kitchen", "breakfast_surface"),
+        }
+
         # Object tracking
         self.detected_objects: list[ObjectInfo] = []
         self.current_object_index = 0
@@ -170,7 +182,9 @@ class PickAndPlaceTM(Node):
                 self.state_times[self.previous_state] = time_spent
             Logger.info(self, f"State '{self.previous_state}' took {time_spent:.2f} seconds")
 
-        self.current_attempts = 0  # always reset on state change
+        # Only reset attempts when actually changing to a different state
+        if self.previous_state != new_state:
+            self.current_attempts = 0
 
         self.previous_state = new_state
         self.state_start_time = current_time
@@ -180,6 +194,11 @@ class PickAndPlaceTM(Node):
             Logger.info(self, f"Total time elapsed: {total_time:.2f} seconds")
 
         Logger.state(self, self.current_state)
+
+    def navigate_to_location(self, location: Location, say: bool = True):
+        """Navigate to a PPC location using the nav_locations mapping"""
+        room, sublocation = self.nav_locations[location]
+        return self.navigate_to(room, sublocation, say=say)
 
     def navigate_to(self, location: str, sublocation: str = "", say: bool = True):
         """Navigate to a location with retry logic"""
@@ -195,6 +214,10 @@ class PickAndPlaceTM(Node):
         while result == Status.EXECUTION_ERROR and retry < ATTEMPT_LIMIT:
             future = self.subtask_manager.nav.move_to_location(location, sublocation)
             if "navigation" not in self.subtask_manager.get_mocked_areas():
+                if not hasattr(future, "add_done_callback"):
+                    Logger.error(self, "Navigation action server not available.")
+                    retry += 1
+                    continue
                 rclpy.spin_until_future_complete(self, future)
                 result = future.result()
             else:
@@ -249,10 +272,10 @@ class PickAndPlaceTM(Node):
             self.current_state = PickAndPlaceTM.TaskStates.START
 
         # ==================== START ====================
-        if self.current_state == PickAndPlaceTM.TaskStates.START:
+        elif self.current_state == PickAndPlaceTM.TaskStates.START:
             self._track_state_change(PickAndPlaceTM.TaskStates.START)
             self.subtask_manager.hri.say("I am ready.", wait=False)
-            self.navigate_to("kitchen", say=False)
+            self.navigate_to_location(Location.KITCHEN, say=False)
 
             if self.use_side_table:
                 Logger.info(self, "Using side table (common objects).")
@@ -263,10 +286,10 @@ class PickAndPlaceTM(Node):
             self.current_state = PickAndPlaceTM.TaskStates.PERCEIVE_TABLE
 
         # ==================== PERCEIVE TABLE ====================
-        if self.current_state == PickAndPlaceTM.TaskStates.PERCEIVE_TABLE:
+        elif self.current_state == PickAndPlaceTM.TaskStates.PERCEIVE_TABLE:
             self._track_state_change(PickAndPlaceTM.TaskStates.PERCEIVE_TABLE)
-            table_location = "side_table" if self.use_side_table else "dining_table"
-            self.navigate_to(table_location, say=False)
+            table_location = Location.SIDE_TABLE if self.use_side_table else Location.DINING_TABLE
+            self.navigate_to_location(table_location, say=False)
             self.subtask_manager.manipulation.move_to_position("table_stare")
 
             # detect_objects returns (Status, list[BBOX])
@@ -296,7 +319,7 @@ class PickAndPlaceTM(Node):
                 self.current_state = PickAndPlaceTM.TaskStates.START_BREAKFAST_PREP
 
         # ==================== ANNOUNCE OBJECTS ====================
-        if self.current_state == PickAndPlaceTM.TaskStates.ANNOUNCE_OBJECTS:
+        elif self.current_state == PickAndPlaceTM.TaskStates.ANNOUNCE_OBJECTS:
             self._track_state_change(PickAndPlaceTM.TaskStates.ANNOUNCE_OBJECTS)
             self.subtask_manager.hri.say(
                 f"I have detected {len(self.detected_objects)} objects on the table."
@@ -313,7 +336,7 @@ class PickAndPlaceTM(Node):
             self.current_state = PickAndPlaceTM.TaskStates.CLEANUP_LOOP
 
         # ==================== CLEANUP LOOP ====================
-        if self.current_state == PickAndPlaceTM.TaskStates.CLEANUP_LOOP:
+        elif self.current_state == PickAndPlaceTM.TaskStates.CLEANUP_LOOP:
             self._track_state_change(PickAndPlaceTM.TaskStates.CLEANUP_LOOP)
 
             # Skip already handled objects
@@ -331,11 +354,11 @@ class PickAndPlaceTM(Node):
                 self.current_state = PickAndPlaceTM.TaskStates.START_BREAKFAST_PREP
 
         # ==================== PICK OBJECT ====================
-        if self.current_state == PickAndPlaceTM.TaskStates.PICK_OBJECT:
+        elif self.current_state == PickAndPlaceTM.TaskStates.PICK_OBJECT:
             self._track_state_change(PickAndPlaceTM.TaskStates.PICK_OBJECT)
 
-            table_location = "side_table" if self.use_side_table else "dining_table"
-            self.navigate_to(table_location, say=False)
+            table_location = Location.SIDE_TABLE if self.use_side_table else Location.DINING_TABLE
+            self.navigate_to_location(table_location, say=False)
             self.subtask_manager.manipulation.move_to_position("table_stare")
 
             self.subtask_manager.hri.say(f"I will pick the {self.grasped_object.name}.", wait=False)
@@ -368,7 +391,7 @@ class PickAndPlaceTM(Node):
                 # else stay in PICK_OBJECT to retry
 
         # ==================== DETERMINE PLACEMENT ====================
-        if self.current_state == PickAndPlaceTM.TaskStates.DETERMINE_PLACEMENT:
+        elif self.current_state == PickAndPlaceTM.TaskStates.DETERMINE_PLACEMENT:
             self._track_state_change(PickAndPlaceTM.TaskStates.DETERMINE_PLACEMENT)
             self.grasped_object.placement_location = self.determine_placement_location(
                 self.grasped_object
@@ -387,9 +410,9 @@ class PickAndPlaceTM(Node):
                 self.current_state = PickAndPlaceTM.TaskStates.NAVIGATE_TO_PLACEMENT
 
         # ==================== CHECK DISHWASHER ====================
-        if self.current_state == PickAndPlaceTM.TaskStates.CHECK_DISHWASHER:
+        elif self.current_state == PickAndPlaceTM.TaskStates.CHECK_DISHWASHER:
             self._track_state_change(PickAndPlaceTM.TaskStates.CHECK_DISHWASHER)
-            self.navigate_to(Location.DISHWASHER.value, say=False)
+            self.navigate_to_location(Location.DISHWASHER, say=False)
             status, answer = self.subtask_manager.vision.moondream_query(
                 "Is the dishwasher door open? Reply only with yes or no."
             )
@@ -400,7 +423,7 @@ class PickAndPlaceTM(Node):
                 self.current_state = PickAndPlaceTM.TaskStates.REQUEST_DISHWASHER_HELP
 
         # ==================== REQUEST DISHWASHER HELP ====================
-        if self.current_state == PickAndPlaceTM.TaskStates.REQUEST_DISHWASHER_HELP:
+        elif self.current_state == PickAndPlaceTM.TaskStates.REQUEST_DISHWASHER_HELP:
             self._track_state_change(PickAndPlaceTM.TaskStates.REQUEST_DISHWASHER_HELP)
             # Per rules: requesting help with dishwasher door/rack has NO score penalty
             self.subtask_manager.hri.say(
@@ -425,10 +448,10 @@ class PickAndPlaceTM(Node):
             self.current_state = PickAndPlaceTM.TaskStates.NAVIGATE_TO_PLACEMENT
 
         # ==================== NAVIGATE TO PLACEMENT ====================
-        if self.current_state == PickAndPlaceTM.TaskStates.NAVIGATE_TO_PLACEMENT:
+        elif self.current_state == PickAndPlaceTM.TaskStates.NAVIGATE_TO_PLACEMENT:
             self._track_state_change(PickAndPlaceTM.TaskStates.NAVIGATE_TO_PLACEMENT)
             placement_loc = self.grasped_object.placement_location
-            result = self.navigate_to(placement_loc.value)
+            result = self.navigate_to_location(placement_loc)
 
             if result == Status.EXECUTION_SUCCESS:
                 # Only perceive cabinet shelves on first cabinet visit
@@ -443,7 +466,7 @@ class PickAndPlaceTM(Node):
                 self.current_state = PickAndPlaceTM.TaskStates.CLEANUP_LOOP
 
         # ==================== PERCEIVE CABINET SHELVES ====================
-        if self.current_state == PickAndPlaceTM.TaskStates.PERCEIVE_CABINET_SHELVES:
+        elif self.current_state == PickAndPlaceTM.TaskStates.PERCEIVE_CABINET_SHELVES:
             self._track_state_change(PickAndPlaceTM.TaskStates.PERCEIVE_CABINET_SHELVES)
             self.subtask_manager.manipulation.move_to_position("cabinet_stare")
 
@@ -490,7 +513,7 @@ class PickAndPlaceTM(Node):
             self.current_state = PickAndPlaceTM.TaskStates.PLACE_OBJECT
 
         # ==================== PLACE OBJECT ====================
-        if self.current_state == PickAndPlaceTM.TaskStates.PLACE_OBJECT:
+        elif self.current_state == PickAndPlaceTM.TaskStates.PLACE_OBJECT:
             self._track_state_change(PickAndPlaceTM.TaskStates.PLACE_OBJECT)
             placement_loc = self.grasped_object.placement_location
             self.subtask_manager.hri.say(
@@ -526,13 +549,13 @@ class PickAndPlaceTM(Node):
             self.current_state = PickAndPlaceTM.TaskStates.CLEANUP_LOOP
 
         # ==================== START BREAKFAST PREP ====================
-        if self.current_state == PickAndPlaceTM.TaskStates.START_BREAKFAST_PREP:
+        elif self.current_state == PickAndPlaceTM.TaskStates.START_BREAKFAST_PREP:
             self._track_state_change(PickAndPlaceTM.TaskStates.START_BREAKFAST_PREP)
             self.subtask_manager.hri.say("Now I will prepare breakfast.", wait=False)
             self.current_state = PickAndPlaceTM.TaskStates.GET_BREAKFAST_ITEMS
 
         # ==================== GET BREAKFAST ITEMS ====================
-        if self.current_state == PickAndPlaceTM.TaskStates.GET_BREAKFAST_ITEMS:
+        elif self.current_state == PickAndPlaceTM.TaskStates.GET_BREAKFAST_ITEMS:
             self._track_state_change(PickAndPlaceTM.TaskStates.GET_BREAKFAST_ITEMS)
             self.current_breakfast_item = None
             for item in self.breakfast_items:
@@ -552,10 +575,10 @@ class PickAndPlaceTM(Node):
                 self.current_state = PickAndPlaceTM.TaskStates.VERIFY_BREAKFAST_AREA
 
         # ==================== NAVIGATE TO ITEM SOURCE ====================
-        if self.current_state == PickAndPlaceTM.TaskStates.NAVIGATE_TO_ITEM_SOURCE:
+        elif self.current_state == PickAndPlaceTM.TaskStates.NAVIGATE_TO_ITEM_SOURCE:
             self._track_state_change(PickAndPlaceTM.TaskStates.NAVIGATE_TO_ITEM_SOURCE)
             item_location = self.current_breakfast_item["location"]
-            result = self.navigate_to(item_location.value)
+            result = self.navigate_to_location(item_location)
 
             if result == Status.EXECUTION_SUCCESS:
                 self.current_state = PickAndPlaceTM.TaskStates.PICK_BREAKFAST_ITEM
@@ -569,7 +592,7 @@ class PickAndPlaceTM(Node):
                 self.current_state = PickAndPlaceTM.TaskStates.GET_BREAKFAST_ITEMS
 
         # ==================== PICK BREAKFAST ITEM ====================
-        if self.current_state == PickAndPlaceTM.TaskStates.PICK_BREAKFAST_ITEM:
+        elif self.current_state == PickAndPlaceTM.TaskStates.PICK_BREAKFAST_ITEM:
             self._track_state_change(PickAndPlaceTM.TaskStates.PICK_BREAKFAST_ITEM)
             item_name = self.current_breakfast_item["name"]
             self.subtask_manager.manipulation.move_to_position("table_stare")
@@ -590,9 +613,9 @@ class PickAndPlaceTM(Node):
                 self.current_state = PickAndPlaceTM.TaskStates.GET_BREAKFAST_ITEMS
 
         # ==================== NAVIGATE TO DINING ====================
-        if self.current_state == PickAndPlaceTM.TaskStates.NAVIGATE_TO_DINING:
+        elif self.current_state == PickAndPlaceTM.TaskStates.NAVIGATE_TO_DINING:
             self._track_state_change(PickAndPlaceTM.TaskStates.NAVIGATE_TO_DINING)
-            result = self.navigate_to("dining_table")
+            result = self.navigate_to_location(Location.DINING_TABLE)
 
             if result == Status.EXECUTION_SUCCESS:
                 self.current_state = PickAndPlaceTM.TaskStates.PLACE_BREAKFAST_ITEM
@@ -601,7 +624,7 @@ class PickAndPlaceTM(Node):
                 self.current_state = PickAndPlaceTM.TaskStates.GET_BREAKFAST_ITEMS
 
         # ==================== PLACE BREAKFAST ITEM ====================
-        if self.current_state == PickAndPlaceTM.TaskStates.PLACE_BREAKFAST_ITEM:
+        elif self.current_state == PickAndPlaceTM.TaskStates.PLACE_BREAKFAST_ITEM:
             self._track_state_change(PickAndPlaceTM.TaskStates.PLACE_BREAKFAST_ITEM)
             item_name = self.current_breakfast_item["name"]
             self.subtask_manager.hri.say(f"Placing the {item_name}.", wait=False)
@@ -619,7 +642,7 @@ class PickAndPlaceTM(Node):
             self.current_state = PickAndPlaceTM.TaskStates.GET_BREAKFAST_ITEMS
 
         # ==================== VERIFY BREAKFAST AREA ====================
-        if self.current_state == PickAndPlaceTM.TaskStates.VERIFY_BREAKFAST_AREA:
+        elif self.current_state == PickAndPlaceTM.TaskStates.VERIFY_BREAKFAST_AREA:
             self._track_state_change(PickAndPlaceTM.TaskStates.VERIFY_BREAKFAST_AREA)
             # Per rules: objects within 5 cm of breakfast items incur a penalty.
             # Use moondream to check if the area around the breakfast items is clear.
@@ -648,7 +671,7 @@ class PickAndPlaceTM(Node):
             self.current_state = PickAndPlaceTM.TaskStates.END
 
         # ==================== END ====================
-        if self.current_state == PickAndPlaceTM.TaskStates.END:
+        elif self.current_state == PickAndPlaceTM.TaskStates.END:
             Logger.state(self, "Task completed.")
             self._track_state_change(PickAndPlaceTM.TaskStates.END)
 
@@ -667,7 +690,7 @@ class PickAndPlaceTM(Node):
             self.running_task = False
 
         # ==================== DEBUG ====================
-        if self.current_state == PickAndPlaceTM.TaskStates.DEBUG:
+        elif self.current_state == PickAndPlaceTM.TaskStates.DEBUG:
             Logger.state(self, "Debugging task.")
             self._track_state_change(PickAndPlaceTM.TaskStates.DEBUG)
             self.subtask_manager.hri.say("Debugging task.")

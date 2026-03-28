@@ -86,6 +86,9 @@ class NavigationTasks:
             Task.HRIC: {
                 "goal_client": {"client": self.goal_client, "type": "action"},
             },
+            Task.PICK_AND_PLACE: {
+                "goal_client": {"client": self.goal_client, "type": "action"},
+            },
             Task.DEBUG: {
                 # "laser_send": {"client": self.laser_send, "type": "service"},
                 "areas_wrapper": {"client": self.areas_wrapper, "type": "service"}

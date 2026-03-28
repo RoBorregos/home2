@@ -203,6 +203,11 @@ class VisionTasks:
                 "shelf_detections": {"client": self.shelf_detections_client, "type": "service"},
                 "detect_objects": {"client": self.object_detector_client, "type": "service"},
             },
+            Task.PICK_AND_PLACE: {
+                "detect_objects": {"client": self.object_detector_client, "type": "service"},
+                "moondream_query": {"client": self.moondream_query_client, "type": "service"},
+                "shelf_detections": {"client": self.shelf_detections_client, "type": "service"},
+            },
             Task.DEBUG: {
                 "moondream_query": {"client": self.moondream_query_client, "type": "service"},
                 "moondream_crop_query": {
@@ -568,7 +573,7 @@ class VisionTasks:
         return Status.EXECUTION_SUCCESS, result.location
 
     @mockable(return_value=(Status.EXECUTION_ERROR, ""), delay=5, mock=False)
-    @service_check("moondream_query_client", Status.EXECUTION_ERROR, TIMEOUT)
+    @service_check("moondream_query_client", (Status.EXECUTION_ERROR, ""), TIMEOUT)
     def moondream_query(self, prompt: str, query_person: bool = False) -> tuple[int, str]:
         """Makes a query of the current image using moondream."""
         Logger.info(self.node, f"Querying image with prompt: {prompt}")
@@ -593,7 +598,7 @@ class VisionTasks:
         return Status.EXECUTION_SUCCESS, result.result
 
     @mockable(return_value=(Status.EXECUTION_ERROR, ""), delay=5, mock=False)
-    @service_check("moondream_crop_query_client", Status.EXECUTION_ERROR, TIMEOUT)
+    @service_check("moondream_crop_query_client", (Status.EXECUTION_ERROR, ""), TIMEOUT)
     def moondream_crop_query(self, prompt: str, bbox: BBOX, timeout=TIMEOUT) -> tuple[int, str]:
         """Makes a query of the current image using moondream."""
         Logger.info(self.node, f"Querying image with prompt: {prompt}")
