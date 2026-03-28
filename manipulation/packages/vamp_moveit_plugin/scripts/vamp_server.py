@@ -102,8 +102,8 @@ class VampServer(Node):
 
             avg_radius = float(np.mean(radii)) if len(radii) > 0 else 0.03
             # r_point compensates for VAMP's 82-sphere model being smaller
-            # than MoveIt's mesh model. Minimum 0.07m for robust avoidance.
-            r_point = max(max(avg_radius, self.security_margin) + self.security_margin, 0.07)
+            # than MoveIt's mesh model. Minimum 0.09m for robust avoidance.
+            r_point = max(max(avg_radius, self.security_margin) + self.security_margin, 0.09)
             n_raw = len(pc)
 
             # Filter robot body at START config (camera sees the robot itself)
