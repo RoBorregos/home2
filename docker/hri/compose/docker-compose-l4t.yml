@@ -3,4 +3,4 @@ include:
   - path: stt-l4t.yaml
   - path: ollama-l4t.yaml
   - path: postgresql.yaml
-  - path: tts-l4t.yaml
+  - path: tts.yaml

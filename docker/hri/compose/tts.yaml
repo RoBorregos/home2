@@ -4,7 +4,7 @@ services:
     image: roborregos/home2:hri-tts-${ENV_TYPE:-cpu}
     build:
       context: ../../..
-      dockerfile: docker/hri/dockerfiles/Dockerfile.tts
+      dockerfile: docker/hri/dockerfiles/Dockerfile.tts${ENV_SUFFIX-:""}
       args:
         BASE_IMAGE: ${TTS_BASE_IMAGE:-python:3.10-bookworm}
     volumes:

@@ -113,6 +113,10 @@ add_or_update_variable compose/.env "LOCAL_GROUP_ID" "$(id -g)"
 
 # Set environment type and runtime
 add_or_update_variable compose/.env "ENV_TYPE" "$ENV_TYPE"
+
+if [ "$ENV_TYPE" = "l4t" ]; then
+  add_or_update_variable compose/.env "ENV_SUFFIX" "-l4t"
+fi
 if [ "$ENV_TYPE" != "cpu" ]; then
   add_or_update_variable compose/.env "RUNTIME" "nvidia"
 fi
