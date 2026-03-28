@@ -271,25 +271,12 @@ class DoorOpener(Node):
             self.set_gripper(True)
             time.sleep(0.3)
 
-            # Pre-grasp: 15cm behind handle (generous orientation tolerance for reachability)
-            pose_pre = Pose()
-            pose_pre.position = Point(x=h.x - 0.15, y=h.y, z=h.z)
-            pose_pre.orientation = orientation
-            if not self.send_pose_goal(pose_pre, 'PRE-GRASP (approach)',
-                                       tolerance_orientation=1.0):
-                continue
-
-            # Set J6 to grasp angle before inserting
-            if not self.move_joints_raw(
-                [self.grasp_j6], velocity=0.2, label='SET J6 FOR GRASP'
-            ):
-                self.get_logger().warn('J6 adjustment failed, continuing anyway')
-
-            # Grasp: move to handle (cartesian, tight tolerance)
+            # Go directly to handle position
             pose_grasp = Pose()
             pose_grasp.position = Point(x=h.x, y=h.y, z=h.z)
             pose_grasp.orientation = orientation
-            if not self.send_pose_goal(pose_grasp, 'GRASP (insert)', is_cartesian=True, velocity=0.15):
+            if not self.send_pose_goal(pose_grasp, 'MOVE TO HANDLE', velocity=0.2,
+                                       tolerance_orientation=1.0):
                 continue
 
             self.set_gripper(False)
@@ -331,9 +318,9 @@ class DoorOpener(Node):
         time.sleep(1.0)
 
         # 0. Move to detection position
-        self.get_logger().info('=== MOVING TO FRONT_LOW_STARE ===')
-        if not self.move_to_named_position('front_low_stare'):
-            self.get_logger().error('Failed to move to front_low_stare position')
+        self.get_logger().info('=== MOVING TO HANDLER_STARE ===')
+        if not self.move_to_named_position('handler_stare'):
+            self.get_logger().error('Failed to move to handler_stare position')
             return
 
         # 1. Detect handle + axis via vision service
