@@ -11,7 +11,7 @@ from rclpy.action import ActionServer, CancelResponse
 from rclpy.callback_groups import MutuallyExclusiveCallbackGroup
 from rclpy.executors import ExternalShutdownException, MultiThreadedExecutor
 from rclpy.node import Node
-from std_msgs.msg import String
+from std_msgs.msg import Bool, String
 
 from frida_interfaces.action import SpeechStream
 from frida_interfaces.msg import AudioData
@@ -34,7 +34,7 @@ class HearStreaming(Node):
         )
 
         audio_topic = (
-            self.declare_parameter("PROCESSED_AUDIO_TOPIC", "/hri/processedAudioChunk")
+            self.declare_parameter("VAD_AUDIO_TOPIC", "/hri/vadAudioChunk")
             .get_parameter_value()
             .string_value
         )
@@ -57,6 +57,12 @@ class HearStreaming(Node):
             .string_value
         )
 
+        voice_activity_topic = (
+            self.declare_parameter("VOICE_ACTIVITY_TOPIC", "/hri/voice_activity")
+            .get_parameter_value()
+            .string_value
+        )
+
         self.hotwords = self.default_hotwords
         self.current_transcription = ""
         self.current_words = []
@@ -64,6 +70,7 @@ class HearStreaming(Node):
         self.stop_flag.set()
         self.transcript_thread = None
         self.cancel_requested = False
+        self._speaker_stopped = False
 
         # gRPC Stub
         channel = grpc.insecure_channel(server_ip)
@@ -79,6 +86,13 @@ class HearStreaming(Node):
             AudioData,
             audio_topic,
             self.audio_callback,
+            10,
+            callback_group=subscription_group,
+        )
+        self.create_subscription(
+            Bool,
+            voice_activity_topic,
+            self._voice_activity_cb,
             10,
             callback_group=subscription_group,
         )
@@ -102,6 +116,23 @@ class HearStreaming(Node):
         self.get_logger().info("Received cancel request")
         self.cancel_requested = True
         return CancelResponse.ACCEPT
+
+    def _voice_activity_cb(self, msg: Bool) -> None:
+        """React to VAD voice-activity events.
+
+        When the speaker starts talking (msg.data=True) log it.
+        When the speaker stops talking (msg.data=False) during an active
+        transcription, flag it so execute_callback can exit cleanly.
+        """
+        if msg.data:
+            if self.debug_audio_logs:
+                self.get_logger().info("Voice activity: speaker started talking")
+        elif not self.stop_flag.is_set():
+            if self.debug_audio_logs:
+                self.get_logger().info(
+                    "Voice activity: speaker stopped — stopping transcription"
+                )
+            self._speaker_stopped = True
 
     def audio_callback(self, msg):
         audio_data = np.frombuffer(msg.data, dtype=np.int16)
@@ -182,6 +213,7 @@ class HearStreaming(Node):
         self.current_words = []
         self.prev_transcription = ""
         self.cancel_requested = False
+        self._speaker_stopped = False
 
         start_time = time.time()
         last_word_time = start_time
@@ -198,6 +230,7 @@ class HearStreaming(Node):
             while (
                 not goal_handle.is_cancel_requested
                 and not self.cancel_requested
+                and not self._speaker_stopped
                 and time.time() - start_time < goal_handle.request.timeout
                 and (
                     (
@@ -229,9 +262,12 @@ class HearStreaming(Node):
         except Exception as e:
             self.get_logger().error(f"Execution interrupted: {e}")
 
-        if time.time() - last_word_time >= goal_handle.request.silence_time:
+        if self._speaker_stopped:
+            self.get_logger().info("Speaker stopped talking, stopping transcription.")
+            reason = "silence"
+        elif time.time() - last_word_time >= goal_handle.request.silence_time:
             self.get_logger().info(
-                f"Silence detected for more than {goal_handle.request.silence_time}, stopping transcription."
+                f"Silence detected for more than {goal_handle.request.silence_time}s, stopping transcription."
             )
             reason = "silence"
         elif time.time() - start_time >= goal_handle.request.timeout:

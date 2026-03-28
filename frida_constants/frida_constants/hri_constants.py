@@ -8,6 +8,8 @@ WAKEWORD_TOPIC = "/hri/speech/oww"
 USEFUL_AUDIO_TOPIC = "/hri/speech/useful_audio"
 RAW_AUDIO_TOPIC = "/hri/rawAudioChunk"
 PROCESSED_AUDIO_TOPIC = "/hri/processedAudioChunk"
+VAD_AUDIO_TOPIC = "/hri/vadAudioChunk"
+VOICE_ACTIVITY_TOPIC = "/hri/voice_activity"
 COMMAND_INTERPRETER_SERVICE = "/hri/nlp/command_interpreter"
 LLM_WRAPPER_SERVICE = "/hri/nlp/llm"
 EXTRACT_DATA_SERVICE = "/hri/nlp/data_extractor"
@@ -81,6 +83,10 @@ CATEGORIZE_IDK_THRESHOLD = 0.01
 USEFUL_AUDIO_NODE_NAME = "useful_audio_node"
 DEFAULT_HOTWORDS = "Frida RoBorregos"
 
+
+# Fundamental frequency range for human voice (Hz)
+VOWEL_FREQ_LOW = 85
+VOWEL_FREQ_HIGH = 255
 
 # HRI Subtask Manager
 SKIP_CONFIRMATION_SIMILARITY_THRESHOLD = 0.5
