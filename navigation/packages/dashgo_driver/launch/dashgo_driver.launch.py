@@ -20,7 +20,8 @@ def generate_launch_description():
             output='screen',
             emulate_tty=True,
             parameters=[
-                config
+                config,
+                {'start_parameter_event_publisher': False},
             ],
             remappings=[
                 ('/cmd_vel', cmd_topic),

@@ -25,6 +25,7 @@ def generate_launch_description():
                 plugin='joy::Joy',
                 name='joy',
                 namespace='',
+                parameters=[{'start_parameter_event_publisher': False}],
             ),
             ComposableNode(
                 package='p9n_node',
@@ -32,7 +33,8 @@ def generate_launch_description():
                 name='teleop_twist_joy_node',
                 namespace='',
                 parameters=[{
-                        'hw_type': LaunchConfiguration('hw_type')
+                        'hw_type': LaunchConfiguration('hw_type'),
+                        'start_parameter_event_publisher': False,
                 }],
                 remappings=[
                     ('cmd_vel', LaunchConfiguration('topic_name'))

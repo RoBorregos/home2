@@ -13,6 +13,10 @@ def generate_launch_description():
     rtab_params_file = os.path.join(pkg_file_route,'config', 'rtabmap', 'rtabmap_default_config.yaml')
     nav2_params_file = os.path.join(pkg_file_route,'config', 'nav2_standard.yaml')
 
+    # Disable parameter event publisher to avoid iceoryx TOO_MANY_CHUNKS_HELD_IN_PARALLEL
+    # and reduce total publisher count to stay under RouDi's 512 publisher port limit
+    shm_params = {'start_parameter_event_publisher': False}
+
     rtab_params_ = LaunchConfiguration('rtab_config_file', default=rtab_params_file)
     nav2_params_ = LaunchConfiguration('nav2_config_file', default=nav2_params_file)
     localization = LaunchConfiguration('localization', default='false')
@@ -49,7 +53,7 @@ def generate_launch_description():
                 package='rtabmap_slam',
                 plugin='rtabmap_slam::CoreWrapper',
                 name='rtabmap',
-                parameters=[rtab_params,
+                parameters=[rtab_params, shm_params,
                     {'Mem/IncrementalMemory': 'False',
                      'Mem/InitWMWithAllNodes': 'True',
                      'Mem/LocalizationReadOnly': 'True'}],
@@ -59,7 +63,7 @@ def generate_launch_description():
                 package='rtabmap_slam',
                 plugin='rtabmap_slam::CoreWrapper',
                 name='rtabmap',
-                parameters=[rtab_params,
+                parameters=[rtab_params, shm_params,
                     {'delete_db_on_start': True,
                      'RGBD/LinearUpdate': '0.1',
                      'RGBD/AngularUpdate': '0.1',
@@ -70,7 +74,7 @@ def generate_launch_description():
                 package='rtabmap_sync',
                 plugin='rtabmap_sync::RGBDSync',
                 name='rgbd_sync',
-                parameters=[rtab_params],
+                parameters=[rtab_params, shm_params],
                 remappings=sync_remapping
             ),
         ],
@@ -91,50 +95,50 @@ def generate_launch_description():
                 package='nav2_controller',
                 plugin='nav2_controller::ControllerServer',
                 name='controller_server',
-                parameters=[nav2_params],
+                parameters=[nav2_params, shm_params],
             ),
             ComposableNode(
                 package='nav2_smoother',
                 plugin='nav2_smoother::SmootherServer',
                 name='smoother_server',
-                parameters=[nav2_params],
+                parameters=[nav2_params, shm_params],
             ),
             ComposableNode(
                 package='nav2_planner',
                 plugin='nav2_planner::PlannerServer',
                 name='planner_server',
-                parameters=[nav2_params],
+                parameters=[nav2_params, shm_params],
             ),
             ComposableNode(
                 package='nav2_behaviors',
                 plugin='behavior_server::BehaviorServer',
                 name='behavior_server',
-                parameters=[nav2_params],
+                parameters=[nav2_params, shm_params],
             ),
             ComposableNode(
                 package='nav2_bt_navigator',
                 plugin='nav2_bt_navigator::BtNavigator',
                 name='bt_navigator',
-                parameters=[nav2_params],
+                parameters=[nav2_params, shm_params],
             ),
             ComposableNode(
                 package='nav2_velocity_smoother',
                 plugin='nav2_velocity_smoother::VelocitySmoother',
                 name='velocity_smoother',
-                parameters=[nav2_params],
+                parameters=[nav2_params, shm_params],
             ),
             ComposableNode(
                 package='opennav_docking',
                 plugin='opennav_docking::DockingServer',
                 name='docking_server',
-                parameters=[nav2_params],
+                parameters=[nav2_params, shm_params],
                 condition=IfCondition(docking),
             ),
             ComposableNode(
                 package='nav2_lifecycle_manager',
                 plugin='nav2_lifecycle_manager::LifecycleManager',
                 name='lifecycle_manager_navigation',
-                parameters=[{
+                parameters=[shm_params, {
                     'use_sim_time': False,
                     'autostart': True,
                     'node_names': [
