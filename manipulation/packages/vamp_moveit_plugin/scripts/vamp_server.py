@@ -132,7 +132,7 @@ class VampServer(Node):
 
             # Add obstacles as individual spheres (reliable collision detection)
             if len(pc) > 0:
-                # DIAGNOSTIC: log voxel positions to verify frame
+                # DIAGNOSTIC: analyze voxel positions vs robot
                 xs = [float(p[0]) for p in pc]
                 ys = [float(p[1]) for p in pc]
                 zs = [float(p[2]) for p in pc]
@@ -140,13 +140,52 @@ class VampServer(Node):
                     f"  VOXEL BOUNDS: x=[{min(xs):.3f}, {max(xs):.3f}] "
                     f"y=[{min(ys):.3f}, {max(ys):.3f}] "
                     f"z=[{min(zs):.3f}, {max(zs):.3f}]")
-                # Test: does a sphere AT a voxel position cause collision?
-                test_env = vamp.Environment()
-                test_env.add_sphere(vamp.Sphere(
-                    [float(pc[0][0]), float(pc[0][1]), float(pc[0][2])], 0.5))
+
+                # Find closest voxel to origin (robot base in link_base)
+                min_d = float('inf')
+                closest = None
+                for pt in pc:
+                    d = float(pt[0])**2 + float(pt[1])**2 + float(pt[2])**2
+                    if d < min_d:
+                        min_d = d
+                        closest = [float(pt[0]), float(pt[1]), float(pt[2])]
                 self.get_logger().warn(
-                    f"  DIAGNOSTIC: 0.5m sphere at first voxel {pc[0]}: "
-                    f"start_valid={vamp.frida_real.validate(start_config, test_env)}")
+                    f"  CLOSEST VOXEL to origin: {closest}, dist={min_d**0.5:.3f}m")
+
+                # Test: sphere at closest voxel
+                te = vamp.Environment()
+                te.add_sphere(vamp.Sphere(closest, 0.3))
+                self.get_logger().warn(
+                    f"  0.3m sphere at closest voxel: "
+                    f"start={vamp.frida_real.validate(start_config, te)}")
+
+                # CRITICAL TEST: undo the C++ link_base transform
+                # If frida_real FK is relative to base_link, voxels should
+                # be in base_link frame (no transform needed)
+                import math
+                ca, sa = math.cos(1.57), math.sin(1.57)
+                pc_base = []
+                for pt in pc:
+                    x, y, z = float(pt[0]), float(pt[1]), float(pt[2])
+                    xr = ca*x - sa*y + 0.036
+                    yr = sa*x + ca*y
+                    zr = z + 0.441
+                    pc_base.append([xr, yr, zr])
+                bxs = [p[0] for p in pc_base]
+                bys = [p[1] for p in pc_base]
+                bzs = [p[2] for p in pc_base]
+                self.get_logger().warn(
+                    f"  BASE_LINK BOUNDS: x=[{min(bxs):.3f},{max(bxs):.3f}] "
+                    f"y=[{min(bys):.3f},{max(bys):.3f}] "
+                    f"z=[{min(bzs):.3f},{max(bzs):.3f}]")
+                # Test with voxels in base_link frame
+                test_base_env = vamp.Environment()
+                for pt in pc_base:
+                    test_base_env.add_sphere(vamp.Sphere(pt, 0.12))
+                base_start = vamp.frida_real.validate(start_config, test_base_env)
+                base_goal = vamp.frida_real.validate(goal_config, test_base_env)
+                self.get_logger().warn(
+                    f"  IN BASE_LINK: start_valid={base_start}, goal_valid={base_goal}")
 
                 for pt in pc:
                     p = [float(pt[0]), float(pt[1]), float(pt[2])]
