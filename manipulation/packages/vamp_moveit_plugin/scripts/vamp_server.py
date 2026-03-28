@@ -131,6 +131,22 @@ class VampServer(Node):
 
             # Add obstacles as individual spheres (reliable collision detection)
             if len(pc) > 0:
+                # DIAGNOSTIC: log voxel positions to verify frame
+                xs = [float(p[0]) for p in pc]
+                ys = [float(p[1]) for p in pc]
+                zs = [float(p[2]) for p in pc]
+                self.get_logger().warn(
+                    f"  VOXEL BOUNDS: x=[{min(xs):.3f}, {max(xs):.3f}] "
+                    f"y=[{min(ys):.3f}, {max(ys):.3f}] "
+                    f"z=[{min(zs):.3f}, {max(zs):.3f}]")
+                # Test: does a sphere AT a voxel position cause collision?
+                test_env = vamp.Environment()
+                test_env.add_sphere(vamp.Sphere(
+                    [float(pc[0][0]), float(pc[0][1]), float(pc[0][2])], 0.5))
+                self.get_logger().warn(
+                    f"  DIAGNOSTIC: 0.5m sphere at first voxel {pc[0]}: "
+                    f"start_valid={vamp.frida_real.validate(start_config, test_env)}")
+
                 for pt in pc:
                     p = [float(pt[0]), float(pt[1]), float(pt[2])]
                     env.add_sphere(vamp.Sphere(p, r_point))
