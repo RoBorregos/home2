@@ -109,7 +109,7 @@ class VampServer(Node):
             if robot_config is not None:
                 try:
                     pc = vamp.frida_real.filter_self_from_pointcloud(
-                        pc, 0.05, robot_config, env)
+                        pc, 0.12, robot_config, env)
                     self.get_logger().info(
                         f"  Self-filter: {n_raw} -> {len(pc)} points "
                         f"(removed {n_raw - len(pc)})")

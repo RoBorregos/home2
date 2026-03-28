@@ -73,7 +73,7 @@ def launch_setup(context, *args, **kwargs):
     moveit_config_package_name = "xarm_moveit_config"
 
     octomap_config = {
-        "octomap_frame": "link_base",
+        "octomap_frame": "base_link",
         "octomap_resolution": 0.025,
         "max_range": 2.0,
     }
