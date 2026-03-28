@@ -37,7 +37,7 @@ RUN cd /tmp && \
         -DCMAKE_PREFIX_PATH=/opt/ros/humble \
         -DENABLE_SHM=ON \
         -DCMAKE_BUILD_TYPE=Release && \
-    make -j$(nproc) && make install && \
+    make -j$(nproc) && sudo make install && \
     cd / && rm -rf /tmp/cyclonedds
 
 COPY roudi_config.toml /etc/iceoryx/roudi_config.toml
