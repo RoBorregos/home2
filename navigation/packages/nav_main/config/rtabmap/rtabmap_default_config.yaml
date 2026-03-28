@@ -33,7 +33,7 @@ rtabmap:
     "Rtabmap/MaxLoopClosureDistance": "5.0"
     "Mem/NotLinkedNodesKept": "false"
     "Mem/ReduceGraph": "false"
-    "Kp/NNStrategy": "2"
+    "Kp/NNStrategy": "1"
     "Kp/MaxFeatures": "1000"
     "Kp/DetectorStrategy": "8"
     "SURF/GpuVersion": "true"
