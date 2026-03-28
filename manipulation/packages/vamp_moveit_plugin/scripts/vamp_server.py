@@ -107,6 +107,8 @@ class VampServer(Node):
             avg_radius = float(np.mean(radii)) if len(radii) > 0 else 0.03
             # r_point compensates for VAMP's 82-sphere model being smaller
             # than MoveIt's mesh model. Tunable via min_r_point parameter.
+            # Note: keep low (0.04-0.06) when pick pipeline adds table cuboids,
+            # as those already provide collision coverage.
             r_point = max(max(avg_radius, self.security_margin) + self.security_margin,
                           self.min_r_point)
             n_raw = len(pc)
@@ -158,6 +160,15 @@ class VampServer(Node):
             idx = i * 3
             cx, cy, cz = box_centers[idx: idx + 3]
             lx, ly, lz = box_sizes[idx: idx + 3]
+
+            # Skip large boxes (e.g. table planes) when we already have
+            # pointcloud data — the octomap already covers the table.
+            max_half = max(float(lx), float(ly), float(lz))
+            if n_spheres > 0 and max_half > 0.3:
+                self.get_logger().info(
+                    f"  Skipping large cuboid (half={max_half:.2f}m) — "
+                    f"octomap already covers it")
+                continue
 
             lx_s = float(lx) + 2 * self.security_margin
             ly_s = float(ly) + 2 * self.security_margin

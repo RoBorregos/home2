@@ -10,6 +10,7 @@
 #include <moveit/trajectory_processing/time_optimal_trajectory_generation.h>
 
 #include <octomap/octomap.h>
+#include <geometry_msgs/msg/pose.hpp>
 #include <chrono>
 
 namespace vamp_moveit_plugin
@@ -217,8 +218,70 @@ bool VampPlanningContext::solve(planning_interface::MotionPlanResponse& res)
   std::vector<double> goal_state;
   if (!req.goal_constraints.empty() &&
       !req.goal_constraints[0].joint_constraints.empty()) {
+    // Joint-space goal: use directly
     for (const auto& jc : req.goal_constraints[0].joint_constraints) {
       goal_state.push_back(jc.position);
+    }
+  } else if (!req.goal_constraints.empty() &&
+             (!req.goal_constraints[0].position_constraints.empty() ||
+              !req.goal_constraints[0].orientation_constraints.empty())) {
+    // Cartesian goal: solve IK to get joint values
+    RCLCPP_INFO(node_->get_logger(), "Cartesian goal detected, solving IK...");
+
+    moveit::core::RobotState goal_robot_state(start_robot_state);
+    const auto& gc = req.goal_constraints[0];
+
+    std::string target_link = jmg->getLinkModelNames().back();
+    if (!gc.position_constraints.empty()) {
+      target_link = gc.position_constraints[0].link_name;
+    } else if (!gc.orientation_constraints.empty()) {
+      target_link = gc.orientation_constraints[0].link_name;
+    }
+
+    geometry_msgs::msg::Pose target_pose;
+    if (!gc.position_constraints.empty()) {
+      const auto& pc = gc.position_constraints[0];
+      target_pose.position.x = pc.constraint_region.primitive_poses[0].position.x;
+      target_pose.position.y = pc.constraint_region.primitive_poses[0].position.y;
+      target_pose.position.z = pc.constraint_region.primitive_poses[0].position.z;
+    }
+    if (!gc.orientation_constraints.empty()) {
+      target_pose.orientation = gc.orientation_constraints[0].orientation;
+    } else {
+      target_pose.orientation.w = 1.0;
+    }
+
+    // Try multiple IK solutions, pick one that's collision-free
+    planning_scene::PlanningSceneConstPtr ik_scene = getPlanningScene();
+    bool ik_valid = false;
+    const int max_ik_attempts = 20;
+
+    for (int attempt = 0; attempt < max_ik_attempts; ++attempt) {
+      if (attempt > 0) {
+        goal_robot_state.setToRandomPositions(jmg);
+      }
+
+      bool ik_found = goal_robot_state.setFromIK(jmg, target_pose, target_link, 0.05);
+      if (!ik_found) continue;
+
+      if (ik_scene->isStateValid(goal_robot_state, jmg->getName())) {
+        goal_robot_state.copyJointGroupPositions(jmg, goal_state);
+        RCLCPP_INFO(node_->get_logger(),
+          "IK solved for '%s' (attempt %d/%d), %zu joints",
+          target_link.c_str(), attempt + 1, max_ik_attempts, goal_state.size());
+        ik_valid = true;
+        break;
+      }
+    }
+
+    if (!ik_valid) {
+      RCLCPP_ERROR(node_->get_logger(),
+        "No collision-free IK for '%s' at (%.3f, %.3f, %.3f) after %d attempts",
+        target_link.c_str(),
+        target_pose.position.x, target_pose.position.y, target_pose.position.z,
+        max_ik_attempts);
+      res.error_code_.val = moveit_msgs::msg::MoveItErrorCodes::NO_IK_SOLUTION;
+      return false;
     }
   } else {
     RCLCPP_ERROR(node_->get_logger(), "No valid goal constraints.");
