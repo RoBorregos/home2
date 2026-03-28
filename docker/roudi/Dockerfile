@@ -3,9 +3,8 @@ FROM ${BASE_IMAGE}
 
 # Build iceoryx from source with expanded publisher/subscriber limits
 # (default 512/1024 is too low when navigation + vision + ZED all use SHM)
-RUN dpkg --force-depends -r ros-humble-iceoryx-posh ros-humble-iceoryx-hoofs ros-humble-iceoryx-binding-c 2>/dev/null || true && \
-    apt-get update -qq && apt-get install -y --no-install-recommends libacl1-dev && \
-    rm -rf /var/lib/apt/lists/*
+RUN apt-get update -qq && apt-get install -y --no-install-recommends libacl1-dev && rm -rf /var/lib/apt/lists/* && \
+    dpkg --force-depends -r ros-humble-iceoryx-posh ros-humble-iceoryx-hoofs ros-humble-iceoryx-binding-c 2>/dev/null || true
 RUN cd /tmp && \
     git clone --depth 1 -b v2.0.6 https://github.com/eclipse-iceoryx/iceoryx.git && \
     cd iceoryx && \
