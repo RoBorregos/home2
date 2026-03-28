@@ -216,3 +216,23 @@ ensure_roudi() {
   echo "[RouDi] WARNING: RouDi container did not start in time." >&2
   return 1
 }
+
+update_map(){
+  local map_flag=${2:-}
+  echo "Updating actual map to $map_flag"
+
+  local constant_source_file="$HOME/.bashrc"
+
+  if [ -f "$HOME/.zshrc" ]; then
+    echo "ZSHELL DETECTED"
+    constant_source_file="$HOME/.zshrc"
+  fi
+
+  if grep -q "export MAP_NAME=" "$constant_source_file"; then
+      sed -i "s|export MAP_NAME=.*|export MAP_NAME=\"$map_flag\"|" "$constant_source_file"
+  else
+      echo "export MAP_NAME=\"$map_flag\"" >> "$constant_source_file"
+  fi
+
+  echo "REMEMBER TO SOURCE $constant_source_file TO BE ABLE TO USE MAP" 
+}
