@@ -43,6 +43,8 @@ class VampServer(Node):
         self.declare_parameter("max_retries", 3)
         self.declare_parameter("retry_range_multiplier", 1.5)
         self.declare_parameter("retry_iterations_multiplier", 2.0)
+        self.declare_parameter("min_r_point", 0.09)
+        self.declare_parameter("self_filter_distance", 0.12)
 
         
         self.security_margin = self.get_parameter("security_margin").value
@@ -54,6 +56,8 @@ class VampServer(Node):
         self.retry_range_mult = self.get_parameter("retry_range_multiplier").value
         self.rng = vamp.frida_real.halton()
         self.retry_iter_mult = self.get_parameter("retry_iterations_multiplier").value
+        self.min_r_point = self.get_parameter("min_r_point").value
+        self.self_filter_dist = self.get_parameter("self_filter_distance").value
 
         
         self.base_settings = vamp.RRTCSettings()
@@ -102,15 +106,16 @@ class VampServer(Node):
 
             avg_radius = float(np.mean(radii)) if len(radii) > 0 else 0.03
             # r_point compensates for VAMP's 82-sphere model being smaller
-            # than MoveIt's mesh model. Minimum 0.09m for robust avoidance.
-            r_point = max(max(avg_radius, self.security_margin) + self.security_margin, 0.09)
+            # than MoveIt's mesh model. Tunable via min_r_point parameter.
+            r_point = max(max(avg_radius, self.security_margin) + self.security_margin,
+                          self.min_r_point)
             n_raw = len(pc)
 
             # Filter robot body at START config (camera sees the robot itself)
             if start_config is not None:
                 try:
                     pc = vamp.frida_real.filter_self_from_pointcloud(
-                        pc, 0.12, start_config, env)
+                        pc, self.self_filter_dist, start_config, env)
                     self.get_logger().info(
                         f"  Self-filter (start): {n_raw} -> {len(pc)} points "
                         f"(removed {n_raw - len(pc)})")
@@ -123,7 +128,7 @@ class VampServer(Node):
                 n_before_goal = len(pc)
                 try:
                     pc = vamp.frida_real.filter_self_from_pointcloud(
-                        pc, 0.12, goal_config, env)
+                        pc, self.self_filter_dist, goal_config, env)
                     self.get_logger().info(
                         f"  Self-filter (goal):  {n_before_goal} -> {len(pc)} points "
                         f"(removed {n_before_goal - len(pc)})")

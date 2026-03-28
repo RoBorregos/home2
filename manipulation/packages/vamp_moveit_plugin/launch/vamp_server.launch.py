@@ -43,6 +43,10 @@ def generate_launch_description():
             description="Moving average window for path smoothing"),
         DeclareLaunchArgument("smoothing_passes", default_value="3",
             description="Number of smoothing passes"),
+        DeclareLaunchArgument("min_r_point", default_value="0.09",
+            description="Minimum collision radius per voxel (compensates sphere model)"),
+        DeclareLaunchArgument("self_filter_distance", default_value="0.12",
+            description="Distance to filter robot body from pointcloud (meters)"),
 
         # ── VAMP Server Node ────────────────────────────────────
         Node(
@@ -60,6 +64,8 @@ def generate_launch_description():
                 "validation_step_size": LaunchConfiguration("validation_step_size"),
                 "smoothing_window": LaunchConfiguration("smoothing_window"),
                 "smoothing_passes": LaunchConfiguration("smoothing_passes"),
+                "min_r_point": LaunchConfiguration("min_r_point"),
+                "self_filter_distance": LaunchConfiguration("self_filter_distance"),
             }],
         ),
     ])
