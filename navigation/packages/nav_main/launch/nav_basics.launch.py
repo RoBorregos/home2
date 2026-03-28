@@ -73,7 +73,6 @@ def launch_setup(context, *args, **kwargs):
     joint_state = Node(
         package='joint_state_publisher',
         executable='joint_state_publisher',
-        parameters=[{'start_parameter_event_publisher': False}],
     )
 
     dualshock_launch = IncludeLaunchDescription(

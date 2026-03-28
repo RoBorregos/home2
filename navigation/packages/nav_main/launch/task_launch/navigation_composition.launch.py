@@ -25,8 +25,7 @@ def launch_function(context, *args, **kwargs):
         name='nav_lifecycle_manager',
         namespace='',
         output='screen',
-        parameters=[{'managed_nodes': ['map_service'],
-                      'start_parameter_event_publisher': False}],
+        parameters=[{'managed_nodes': ['map_service']}],
     )
 
 
@@ -50,8 +49,7 @@ def launch_function(context, *args, **kwargs):
         executable='map_service',
         name='map_service',
         namespace='',
-        parameters=[{'map_name': map_name_str[:-3],
-                      'start_parameter_event_publisher': False}],
+        parameters=[{'map_name': map_name_str[:-3]}],
         output='screen',
     )
 

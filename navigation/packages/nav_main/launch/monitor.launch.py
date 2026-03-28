@@ -15,8 +15,7 @@ def generate_launch_description():
                     'map_server',
                     'dashgo_driver',
                     'rplidar_node'
-                ],
-                'start_parameter_event_publisher': False,
+                ]
             }]
         )
     ])

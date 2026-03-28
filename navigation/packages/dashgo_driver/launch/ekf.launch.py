@@ -10,9 +10,7 @@ def generate_launch_description():
             executable='ekf_node',
             output='screen',
             emulate_tty=True,
-            parameters=[
-                {'start_parameter_event_publisher': False},
-                {
+            parameters=[{
                     'output_frame': 'odom',
                     'frequency': 20.0,
                     'sensor_timeout': 0.2,
