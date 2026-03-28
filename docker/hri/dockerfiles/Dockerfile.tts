@@ -3,20 +3,28 @@ FROM ${BASE_IMAGE}
 
 WORKDIR /app
 
+ENV VIRTUAL_ENV=/opt/venv
+ENV PATH="$VIRTUAL_ENV/bin:$PATH"
+ENV PYTHONUNBUFFERED=1
+
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    python3-venv \
+    libopenmpi-dev \
+    libportaudio2 \
+    libportaudiocpp0 \
+    portaudio19-dev \
+    espeak-ng \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN python3 -m venv "$VIRTUAL_ENV"
+
 COPY hri/requirements/tts.txt requirements.txt
 RUN python3 -m pip install --upgrade pip
 RUN pip install --no-cache-dir -r /app/requirements.txt
 RUN pip install --upgrade protobuf
 RUN python3 -m spacy download en_core_web_sm
-
-RUN apt update && \
-    apt install -y \
-    libopenmpi-dev \
-    libportaudio2 \
-    libportaudiocpp0 \
-    portaudio19-dev
-
-RUN apt-get -qq -y install espeak-ng > /dev/null 2>&1
 
 COPY hri/proto_interfaces /tmp/proto_interfaces
 RUN pip install --no-cache-dir /tmp/proto_interfaces

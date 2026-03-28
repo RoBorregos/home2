@@ -1,19 +1,17 @@
 services:
   tts:
-    container_name: home2-hri-tts-${ENV_TYPE:-cpu}
-    image: roborregos/home2:hri-tts-${ENV_TYPE:-cpu}
+    container_name: home2-hri-tts-l4t
+    image: roborregos/home2:hri-tts-l4t
     build:
       context: ../../..
-      dockerfile: docker/hri/dockerfiles/Dockerfile.tts
-      args:
-        BASE_IMAGE: ${TTS_BASE_IMAGE:-python:3.10-bookworm}
+      dockerfile: docker/hri/dockerfiles/Dockerfile.tts-l4t
     volumes:
       - ../../../hri/microservices/tts/:/app
       - ../../../hri/packages/speech/assets/downloads/offline_voice/audios/:/app/audios
       - ../../../hri/packages/speech/assets/downloads/offline_voice/model/:/home/ros/.cache/huggingface/hub
       - ~/.config/pulse:/tmp/pulse
     network_mode: host
-    runtime: ${RUNTIME:-runc}
+    runtime: nvidia
     user: ${LOCAL_USER_ID:-1000}:${LOCAL_GROUP_ID:-1000}
     privileged: true
     tty: true

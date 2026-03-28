@@ -118,6 +118,7 @@ if [ "$ENV_TYPE" != "cpu" ]; then
 fi
 if [ "$ENV_TYPE" = "cuda" ]; then
   add_or_update_variable compose/.env "STT_BASE_IMAGE" "nvidia/cuda:12.6.3-cudnn-runtime-ubuntu22.04"
+  add_or_update_variable compose/.env "TTS_BASE_IMAGE" "nvidia/cuda:12.6.3-cudnn-runtime-ubuntu22.04"
 fi
 # If setup was done before persist it again now that .env has been reset
 if [ "${SETUP_DONE:-}" = "true" ]; then
