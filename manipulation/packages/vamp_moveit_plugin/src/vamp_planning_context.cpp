@@ -74,21 +74,15 @@ void VampPlanningContext::extractCollisionScene(
 
 
   
-  Eigen::Isometry3d vamp_frame_transform = Eigen::Isometry3d::Identity();
-  try {
-    vamp_frame_transform = scene->getFrameTransform("link_base").inverse();
-  } catch (const std::exception& e) {
-    RCLCPP_WARN(node_->get_logger(), "Could not get link_base transform: %s", e.what());
-  }
-  RCLCPP_DEBUG(node_->get_logger(), "vamp_frame_transform translation: (%.3f, %.3f, %.3f)", vamp_frame_transform.translation().x(), vamp_frame_transform.translation().y(), vamp_frame_transform.translation().z());
+  // frida_real FK is relative to base_link (URDF root), NOT link_base.
+  // Obstacles from MoveIt's planning scene are already in base_link frame.
+  // No frame transform needed.
   for (const auto& object_id : world->getObjectIds()) {
     auto object = world->getObject(object_id);
     Eigen::Isometry3d global_pose = scene->getFrameTransform(object_id);
 
     for (size_t i = 0; i < object->shapes_.size(); ++i) {
-      Eigen::Isometry3d shape_pose = vamp_frame_transform * global_pose * object->shape_poses_[i];
-
-      RCLCPP_DEBUG(node_->get_logger(), "Object %s: global=(%.3f,%.3f,%.3f) transformed=(%.3f,%.3f,%.3f)", object_id.c_str(), global_pose.translation().x(), global_pose.translation().y(), global_pose.translation().z(), shape_pose.translation().x(), shape_pose.translation().y(), shape_pose.translation().z());
+      Eigen::Isometry3d shape_pose = global_pose * object->shape_poses_[i];
       switch (object->shapes_[i]->type) {
 
         case shapes::SPHERE: {
