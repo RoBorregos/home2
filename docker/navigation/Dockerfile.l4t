@@ -58,6 +58,7 @@ RUN sudo apt-get update -qq && sudo apt-get install -y --no-install-recommends l
 RUN cd /tmp && \
     git clone --depth 1 -b v2.0.6 https://github.com/eclipse-iceoryx/iceoryx.git && \
     cd iceoryx && \
+    sed -i 's|set(IOX_INTERNAL_MAX_NUMBER_OF_NOTIFIERS 256)|set(IOX_INTERNAL_MAX_NUMBER_OF_NOTIFIERS 1024)|' iceoryx_posh/cmake/IceoryxPoshDeployment.cmake && \
     cmake -S iceoryx_meta -B build \
         -DCMAKE_INSTALL_PREFIX=/opt/ros/humble \
         -DIOX_MAX_PUBLISHERS=20000 \
