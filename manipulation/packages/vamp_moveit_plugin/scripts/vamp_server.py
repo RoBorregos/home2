@@ -101,30 +101,33 @@ class VampServer(Node):
                 pc.append(centers[idx: idx + 3].tolist())
 
             avg_radius = float(np.mean(radii)) if len(radii) > 0 else 0.03
+            # Ensure r_point is at least the octomap resolution to form a solid shell
+            r_point = max(avg_radius, self.security_margin) + self.security_margin
+            n_raw = len(pc)
 
             # Filter self-collision points if we have robot config
             if robot_config is not None:
                 try:
                     pc = vamp.frida_real.filter_self_from_pointcloud(
-                        pc, 0.20, robot_config, env)
+                        pc, 0.05, robot_config, env)
                     self.get_logger().info(
-                        f"  Self-filter: {len(centers)//3} -> {len(pc)} points")
+                        f"  Self-filter: {n_raw} -> {len(pc)} points "
+                        f"(removed {n_raw - len(pc)})")
                 except Exception as e:
                     self.get_logger().warn(f"  Self-filter failed: {e}")
 
             # Use CAPT pointcloud (much faster than individual spheres)
             if len(pc) > 0:
                 try:
-                    n_nodes = env.add_pointcloud(
-                        pc, 0.01, 0.20, avg_radius + self.security_margin)
+                    n_nodes = env.add_pointcloud(pc, 0.01, 0.20, r_point)
                     n_spheres = len(pc)
                     self.get_logger().info(
                         f"  CAPT pointcloud: {len(pc)} points, {n_nodes} nodes, "
-                        f"r_point={avg_radius + self.security_margin:.3f}")
+                        f"r_point={r_point:.3f}")
                 except Exception as e:
                     self.get_logger().warn(f"  CAPT failed: {e}, falling back to spheres")
                     for pt in pc:
-                        env.add_sphere(vamp.Sphere(pt, avg_radius + self.security_margin))
+                        env.add_sphere(vamp.Sphere(pt, r_point))
                         n_spheres += 1
 
         box_centers = np.array(request.box_centers_flat, dtype=np.float32)
