@@ -163,7 +163,14 @@ class DoorDetectionService(Node):
         if handle_box is not None:
             x1, y1, x2, y2 = handle_box.xyxy[0].cpu().numpy()
             cx, cy = int((x1 + x2) / 2), int((y1 + y2) / 2)
+            cam_pt = self._pixel_to_camera_point(cx, cy)
+            if cam_pt is not None:
+                self.get_logger().info(
+                    f'Handle in CAMERA frame: ({cam_pt.x:.3f}, {cam_pt.y:.3f}, {cam_pt.z:.3f}), pixel=({cx}, {cy})')
             handle_point = self._pixel_to_base_point(cx, cy)
+            if handle_point is not None:
+                self.get_logger().info(
+                    f'Handle in BASE frame: ({handle_point.x:.3f}, {handle_point.y:.3f}, {handle_point.z:.3f})')
 
         if axis_box is not None:
             x1, y1, x2, y2 = axis_box.xyxy[0].cpu().numpy()
