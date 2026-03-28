@@ -11,6 +11,7 @@ def generate_launch_description():
             output='screen',
             emulate_tty=True,
             parameters=[
+                {'start_parameter_event_publisher': False},
                 {
                     'output_frame': 'odom',
                     'frequency': 20.0,

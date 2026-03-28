@@ -17,13 +17,15 @@ def generate_launch_description():
         Node(
             package='nav_main',
             executable='ignore_laser',
-            parameters = [{'ignore_array': '-139.9, -122.4, -86.4, -78.4, -40.8, -30.3, 0, 21.8, 30.8, 40.3, 78.4, 93.9, 120.9, 138.4'}],
+            parameters = [{'ignore_array': '-139.9, -122.4, -86.4, -78.4, -40.8, -30.3, 0, 21.8, 30.8, 40.3, 78.4, 93.9, 120.9, 138.4',
+                           'start_parameter_event_publisher': False}],
 	    #parameters = [{'ignore_array': '-138.4, -120.4, -86.9, -78.4, -39.8, -32.3, -22.3, -4.8, 33.3, 39.8, 77.9, 86.9, 122.4, 139.9'}],
             condition=UnlessCondition(use_sim)
         ),
         Node(
             package='nav_main',
             executable='ignore_laser',
+            parameters=[{'start_parameter_event_publisher': False}],
             condition=IfCondition(use_sim)
         ),
         Node(
@@ -36,7 +38,8 @@ def generate_launch_description():
                          'frame_id': 'laser',
                          'inverted': True,
                          'angle_compensate': True,
-                         'scan_mode': 'Standard'}],
+                         'scan_mode': 'Standard',
+                         'start_parameter_event_publisher': False}],
             output='screen',
             remappings=[
             ('/scan', '/scan_input')],
