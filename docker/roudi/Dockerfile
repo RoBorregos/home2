@@ -6,7 +6,7 @@ FROM ${BASE_IMAGE}
 RUN apt-get update -qq && \
     apt-get remove -y ros-humble-iceoryx-posh ros-humble-iceoryx-hoofs ros-humble-iceoryx-binding-c 2>/dev/null || true && \
     apt-get install -y --no-install-recommends libacl1-dev && \
-    apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/*
 RUN cd /tmp && \
     git clone --depth 1 -b v2.0.6 https://github.com/eclipse-iceoryx/iceoryx.git && \
     cd iceoryx && \
