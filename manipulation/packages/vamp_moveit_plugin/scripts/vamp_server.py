@@ -129,19 +129,14 @@ class VampServer(Node):
                 except Exception as e:
                     self.get_logger().warn(f"  Self-filter (goal) failed: {e}")
 
-            # Use CAPT pointcloud (much faster than individual spheres)
+            # Add obstacles as individual spheres (reliable collision detection)
             if len(pc) > 0:
-                try:
-                    n_nodes = env.add_pointcloud(pc, 0.01, 0.20, r_point)
-                    n_spheres = len(pc)
-                    self.get_logger().info(
-                        f"  CAPT pointcloud: {len(pc)} points, {n_nodes} nodes, "
-                        f"r_point={r_point:.3f}")
-                except Exception as e:
-                    self.get_logger().warn(f"  CAPT failed: {e}, falling back to spheres")
-                    for pt in pc:
-                        env.add_sphere(vamp.Sphere(pt, r_point))
-                        n_spheres += 1
+                for pt in pc:
+                    p = [float(pt[0]), float(pt[1]), float(pt[2])]
+                    env.add_sphere(vamp.Sphere(p, r_point))
+                n_spheres = len(pc)
+                self.get_logger().info(
+                    f"  Added {n_spheres} spheres, r_point={r_point:.3f}")
 
         box_centers = np.array(request.box_centers_flat, dtype=np.float32)
         box_sizes = np.array(request.box_sizes_flat, dtype=np.float32)
