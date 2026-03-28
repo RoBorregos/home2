@@ -101,8 +101,9 @@ class VampServer(Node):
                 pc.append(centers[idx: idx + 3].tolist())
 
             avg_radius = float(np.mean(radii)) if len(radii) > 0 else 0.03
-            # Ensure r_point is at least the octomap resolution to form a solid shell
-            r_point = max(avg_radius, self.security_margin) + self.security_margin
+            # r_point must compensate for VAMP's sphere model being smaller than
+            # MoveIt's mesh model. Use at least 0.12m for robust detection.
+            r_point = max(max(avg_radius, self.security_margin) + self.security_margin, 0.12)
             n_raw = len(pc)
 
             # Filter robot body at START config (camera sees the robot itself)
