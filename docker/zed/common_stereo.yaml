@@ -49,7 +49,7 @@
             sensors_pub_rate: 30. # frequency of publishing of sensors data. MAX: 400. - MIN: grab rate
 
         region_of_interest:
-            automatic_roi: true # Enable the automatic ROI generation
+            automatic_roi: false # Enable the automatic ROI generation
             depth_far_threshold_meters: 2.5 # Filtering how far object in the ROI should be considered
             image_height_ratio_cutoff: 0.5 # By default consider only the lower half of the image
             #manual_polygon: '[]' # A polygon defining the ROI where the ZED SDK perform the processing ignoring the rest. Coordinates must be normalized to '1.0' to be resolution independent.
