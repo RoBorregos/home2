@@ -494,7 +494,7 @@ class object_detector_node(rclpy.node.Node):
 
         self.detections_frame = self.visualize_detections(
             visual_image,
-            visual_detections + cutlery_detections,
+            all_detections,
             use_normalized_coordinates=True,
             max_boxes_to_draw=200,
             agnostic_mode=False,
