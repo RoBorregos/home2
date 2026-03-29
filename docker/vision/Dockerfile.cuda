@@ -24,6 +24,7 @@ RUN pip install --upgrade pip
 WORKDIR /workspace/requirements
 
 RUN pip install -r opencv.txt
+RUN pip install --ignore-installed sympy
 RUN pip install -r torch-gpu.txt
 RUN pip install -r face_recognition.txt
 RUN pip install -r models.txt
