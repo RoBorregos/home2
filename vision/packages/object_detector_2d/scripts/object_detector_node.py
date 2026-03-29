@@ -59,7 +59,7 @@ ARGS = {
     "FLIP_IMAGE": False,
     "USE_ZED_TRANSFORM": True,
     "MIN_SCORE_THRESH": 0.3,
-    "MAX_DEPTH_THRESH": 2.5,  
+    "MAX_DEPTH_THRESH": 2.5,
 }
 
 
