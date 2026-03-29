@@ -56,6 +56,7 @@ ARGS = {
     "FLIP_IMAGE": False,
     "USE_ZED_TRANSFORM": True,
     "MIN_SCORE_THRESH": 0.3,
+    "MAX_DEPTH_THRESH": 2.5,  # meters, adjust as needed
 }
 
 
@@ -75,6 +76,7 @@ class NodeParams:
     VERBOSE: bool = None
     USE_YOLO8: bool = None
     USE_YOLO26: bool = None
+    MAX_DEPTH_THRESH: float = None
 
 
 # TODO DEFINE HOW TO GET params
@@ -134,7 +136,19 @@ class object_detector_node(rclpy.node.Node):
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer, self)
 
-    # No longer needed: cutlery_detections_callback
+    def compute_iou(self, det1, det2):
+        # det1, det2: Detection objects
+        xA = max(det1.bbox_.x1, det2.bbox_.x1)
+        yA = max(det1.bbox_.y1, det2.bbox_.y1)
+        xB = min(det1.bbox_.x2, det2.bbox_.x2)
+        yB = min(det1.bbox_.y2, det2.bbox_.y2)
+        interW = max(0, xB - xA)
+        interH = max(0, yB - yA)
+        interArea = interW * interH
+        boxAArea = (det1.bbox_.x2 - det1.bbox_.x1) * (det1.bbox_.y2 - det1.bbox_.y1)
+        boxBArea = (det2.bbox_.x2 - det2.bbox_.x1) * (det2.bbox_.y2 - det2.bbox_.y1)
+        iou = interArea / float(boxAArea + boxBArea - interArea + 1e-6)
+        return iou
 
     def set_parameters(self):
         self.object_detector_parameters = ObjectDectectorParams()
@@ -206,6 +220,9 @@ class object_detector_node(rclpy.node.Node):
         )
         self.node_params.USE_YOLO26 = (
             self.get_parameter("USE_YOLO26").get_parameter_value().bool_value
+        )
+        self.node_params.MAX_DEPTH_THRESH = (
+            self.get_parameter("MAX_DEPTH_THRESH").get_parameter_value().double_value
         )
         self.get_logger().info(
             "Listening to image on topic: " + self.node_params.RGB_IMAGE_TOPIC
@@ -361,7 +378,7 @@ class object_detector_node(rclpy.node.Node):
             # draw label, name and score
             cv.putText(
                 image,
-                f"{detection.class_id_}: {detection.label_}: {detection.confidence_}",
+                f"{detection.class_id_}: {detection.label_}: {detection.confidence_:.2f}",
                 (left, top - 10),
                 cv.FONT_HERSHEY_SIMPLEX,
                 2,
@@ -448,8 +465,28 @@ class object_detector_node(rclpy.node.Node):
                 det.bbox_.y2 = y2
                 cutlery_detections.append(det)
 
+        # Remove duplicate cutlery detections using IoU
+        IOU_THRESHOLD = 0.6
+        filtered_cutlery = []
+        for c_det in cutlery_detections:
+            duplicate = False
+            for m_det in detected_objects:
+                if self.compute_iou(c_det, m_det) > IOU_THRESHOLD:
+                    duplicate = True
+                    break
+            if not duplicate:
+                filtered_cutlery.append(c_det)
+
+
         # Merge detections
-        all_detections = detected_objects + cutlery_detections
+        all_detections = detected_objects + filtered_cutlery
+
+        # Ensure all detections have point_stamped_ (extract3D sets this)
+        all_detections = self.object_detector_2d.extract3D(self.depth_image, self.tfBuffer)
+
+        # Filter by depth threshold
+        max_depth = self.node_params.MAX_DEPTH_THRESH
+        all_detections = [d for d in all_detections if hasattr(d, 'point_stamped_') and hasattr(d.point_stamped_, 'point') and d.point_stamped_.point.z <= max_depth]
 
         self.detections_frame = self.visualize_detections(
             visual_image,
@@ -491,6 +528,7 @@ class object_detector_node(rclpy.node.Node):
             ObjectDetectionArray(detections=merged_detections)
         )
 
+        self.get_logger().info(f"Objects detected: {len(all_detections)}")
 
 def main(args=None):
     rclpy.init(args=args)
