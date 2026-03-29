@@ -477,16 +477,23 @@ class object_detector_node(rclpy.node.Node):
             if not duplicate:
                 filtered_cutlery.append(c_det)
 
-
         # Merge detections
         all_detections = detected_objects + filtered_cutlery
 
         # Ensure all detections have point_stamped_ (extract3D sets this)
-        all_detections = self.object_detector_2d.extract3D(self.depth_image, self.tfBuffer)
+        all_detections = self.object_detector_2d.extract3D(
+            self.depth_image, self.tfBuffer
+        )
 
         # Filter by depth threshold
         max_depth = self.node_params.MAX_DEPTH_THRESH
-        all_detections = [d for d in all_detections if hasattr(d, 'point_stamped_') and hasattr(d.point_stamped_, 'point') and d.point_stamped_.point.z <= max_depth]
+        all_detections = [
+            d
+            for d in all_detections
+            if hasattr(d, "point_stamped_")
+            and hasattr(d.point_stamped_, "point")
+            and d.point_stamped_.point.z <= max_depth
+        ]
 
         self.detections_frame = self.visualize_detections(
             visual_image,
@@ -529,6 +536,7 @@ class object_detector_node(rclpy.node.Node):
         )
 
         self.get_logger().info(f"Objects detected: {len(all_detections)}")
+
 
 def main(args=None):
     rclpy.init(args=args)
