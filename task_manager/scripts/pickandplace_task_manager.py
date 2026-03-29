@@ -401,51 +401,54 @@ class PickAndPlaceTM(Node):
                 f"Placing {self.grasped_object.name} → {self.grasped_object.placement_location.value}",
             )
 
-            if (
-                self.grasped_object.placement_location == Location.DISHWASHER
-                and not self.dishwasher_open
-            ):
-                self.current_state = PickAndPlaceTM.TaskStates.CHECK_DISHWASHER
-            else:
-                self.current_state = PickAndPlaceTM.TaskStates.NAVIGATE_TO_PLACEMENT
-
-        # ==================== CHECK DISHWASHER ====================
-        elif self.current_state == PickAndPlaceTM.TaskStates.CHECK_DISHWASHER:
-            self._track_state_change(PickAndPlaceTM.TaskStates.CHECK_DISHWASHER)
-            self.navigate_to_location(Location.DISHWASHER, say=False)
-            status, answer = self.subtask_manager.vision.moondream_query(
-                "Is the dishwasher door open? Reply only with yes or no."
-            )
-            if status == Status.EXECUTION_SUCCESS and "yes" in answer.lower():
-                self.dishwasher_open = True
-                self.current_state = PickAndPlaceTM.TaskStates.NAVIGATE_TO_PLACEMENT
-            else:
-                self.current_state = PickAndPlaceTM.TaskStates.REQUEST_DISHWASHER_HELP
-
-        # ==================== REQUEST DISHWASHER HELP ====================
-        elif self.current_state == PickAndPlaceTM.TaskStates.REQUEST_DISHWASHER_HELP:
-            self._track_state_change(PickAndPlaceTM.TaskStates.REQUEST_DISHWASHER_HELP)
-            # Per rules: requesting help with dishwasher door/rack has NO score penalty
-            self.subtask_manager.hri.say(
-                "I cannot open the dishwasher door. Could you please open it for me?",
-                wait=True,
-            )
-            _, answer = self.subtask_manager.hri.confirm(
-                "Please say yes once the dishwasher door is open.",
-                use_hotwords=True,
-                retries=5,
-                wait_between_retries=10.0,
-            )
-            if answer == "yes":
-                Logger.success(self, "Referee confirmed dishwasher is open.")
-                self.subtask_manager.hri.say("Thank you! I will now place the items.", wait=False)
-            else:
-                Logger.warn(self, "No confirmation received; assuming dishwasher is open.")
-                self.subtask_manager.hri.say(
-                    "I did not hear a confirmation, but I will proceed.", wait=False
-                )
-            self.dishwasher_open = True
+            # TODO: Re-enable dishwasher check/request states when dishwasher is available for testing.
+            # if (
+            #     self.grasped_object.placement_location == Location.DISHWASHER
+            #     and not self.dishwasher_open
+            # ):
+            #     self.current_state = PickAndPlaceTM.TaskStates.CHECK_DISHWASHER
+            # else:
+            #     self.current_state = PickAndPlaceTM.TaskStates.NAVIGATE_TO_PLACEMENT
             self.current_state = PickAndPlaceTM.TaskStates.NAVIGATE_TO_PLACEMENT
+
+        # # ==================== CHECK DISHWASHER ====================
+        # TODO: Re-enable when dishwasher is available for testing.
+        # elif self.current_state == PickAndPlaceTM.TaskStates.CHECK_DISHWASHER:
+        #     self._track_state_change(PickAndPlaceTM.TaskStates.CHECK_DISHWASHER)
+        #     self.navigate_to_location(Location.DISHWASHER, say=False)
+        #     status, answer = self.subtask_manager.vision.moondream_query(
+        #         "Is the dishwasher door open? Reply only with yes or no."
+        #     )
+        #     if status == Status.EXECUTION_SUCCESS and "yes" in answer.lower():
+        #         self.dishwasher_open = True
+        #         self.current_state = PickAndPlaceTM.TaskStates.NAVIGATE_TO_PLACEMENT
+        #     else:
+        #         self.current_state = PickAndPlaceTM.TaskStates.REQUEST_DISHWASHER_HELP
+
+        # # ==================== REQUEST DISHWASHER HELP ====================
+        # elif self.current_state == PickAndPlaceTM.TaskStates.REQUEST_DISHWASHER_HELP:
+        #     self._track_state_change(PickAndPlaceTM.TaskStates.REQUEST_DISHWASHER_HELP)
+        #     # Per rules: requesting help with dishwasher door/rack has NO score penalty
+        #     self.subtask_manager.hri.say(
+        #         "I cannot open the dishwasher door. Could you please open it for me?",
+        #         wait=True,
+        #     )
+        #     _, answer = self.subtask_manager.hri.confirm(
+        #         "Please say yes once the dishwasher door is open.",
+        #         use_hotwords=True,
+        #         retries=5,
+        #         wait_between_retries=10.0,
+        #     )
+        #     if answer == "yes":
+        #         Logger.success(self, "Referee confirmed dishwasher is open.")
+        #         self.subtask_manager.hri.say("Thank you! I will now place the items.", wait=False)
+        #     else:
+        #         Logger.warn(self, "No confirmation received; assuming dishwasher is open.")
+        #         self.subtask_manager.hri.say(
+        #             "I did not hear a confirmation, but I will proceed.", wait=False
+        #         )
+        #     self.dishwasher_open = True
+        #     self.current_state = PickAndPlaceTM.TaskStates.NAVIGATE_TO_PLACEMENT
 
         # ==================== NAVIGATE TO PLACEMENT ====================
         elif self.current_state == PickAndPlaceTM.TaskStates.NAVIGATE_TO_PLACEMENT:
@@ -468,7 +471,7 @@ class PickAndPlaceTM(Node):
         # ==================== PERCEIVE CABINET SHELVES ====================
         elif self.current_state == PickAndPlaceTM.TaskStates.PERCEIVE_CABINET_SHELVES:
             self._track_state_change(PickAndPlaceTM.TaskStates.PERCEIVE_CABINET_SHELVES)
-            self.subtask_manager.manipulation.move_to_position("cabinet_stare")
+            self.subtask_manager.manipulation.move_to_position("front_stare")
 
             # detect_shelf returns (Status, list[ShelfDetection])
             # Each ShelfDetection has .level, .x1, .x2, .y1, .y2
