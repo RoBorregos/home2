@@ -93,7 +93,6 @@ set(msg_files
   "vision/msg/ShelfDetection.msg"
   "vision/msg/Detection.msg"
   "vision/msg/MoondreamDetection.msg"
-  "vision/msg/MoondreamDetectionsArray.msg"
   "navigation/msg/NodeStatus.msg"
   "navigation/msg/MonitorReport.msg"
   )
@@ -168,6 +167,7 @@ set(srv_files
   "vision/srv/ShowDetection.srv"
   "vision/srv/Customer.srv"
   "vision/srv/YoloDetect.srv"
+  "vision/srv/MoondreamDetections.srv"
   "navigation/srv/MapAreas.srv"
 )
 
