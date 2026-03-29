@@ -1,0 +1,4 @@
+string subject
+---
+frida_interfaces/MoondreamDetection[] detections
+bool success

@@ -50,6 +50,14 @@ def run():
     )
     print(f"Object points: {points_response.points}")
 
+    # Generate subject bboxes
+    detections_response = stub.GetObjectDetections(
+        moondream_proto_pb2.GetObjectDetectionsRequest(
+            encoded_image=encoded_image, subject="Table"
+        )
+    )
+    print(f"Object detections: {detections_response.detections}")
+
 
 if __name__ == "__main__":
     run()

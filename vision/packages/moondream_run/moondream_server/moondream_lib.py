@@ -156,6 +156,26 @@ class MoonDreamModel:
 
         return points_out
 
+    def get_detections(self, encoded_image_data, subject):
+        encoded_image = pickle.loads(encoded_image_data)
+        result = self.model.detect(encoded_image, subject)
+
+        if not result["objects"]:
+            return []
+
+        detections = []
+        for bbox in result["objects"]:
+            detections.append(
+                {
+                    "x_min": bbox["x_min"],
+                    "y_min": bbox["y_min"],
+                    "x_max": bbox["x_max"],
+                    "y_max": bbox["y_max"],
+                }
+            )
+
+        return detections
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="MoonDream Server")

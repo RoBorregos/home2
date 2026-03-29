@@ -16,6 +16,7 @@ DETECTIONS_TOPIC = "/vision/detections"
 DETECTIONS_IMAGE_TOPIC = "/vision/detections_image"
 DETECTIONS_POSES_TOPIC = "/vision/detection_poses"
 DETECTIONS_3D_TOPIC = "/vision/detections_3d"
+ACTIVE_OBJECT_DETECTION = "/vision/object_detector/active"
 
 # ZERO SHOT OBJECT DETECTOR TOPICS
 ZERO_SHOT_DETECTIONS_TOPIC = "/vision/zero_shot_detections"
@@ -92,6 +93,7 @@ SET_POINTING_OBJECT_CLASSES_SERVICE = "/vision/set_pointing_object_classes"
 
 # Moondream
 BEVERAGE_TOPIC = "/vision/beverage_location"
+MOONDREAM_DETECTIONS_TOPIC = "/vision/moondream_detections"
 # PERSON_DESCRIPTION_TOPIC = "/vision/person_description"
 PERSON_POSTURE_TOPIC = "/vision/person_posture"
 QUERY_TOPIC = "/vision/query"
@@ -106,6 +108,7 @@ PERSON_LIST_TOPIC = "/vision/person_list"
 PERSON_NAME_TOPIC = "/vision/person_detected_name"
 FACE_RECOGNITION_IMAGE = "/vision/face_recognition_image"
 FOLLOW_BY_TOPIC = "/vision/follow_by_name"
+ACTIVE_FACE_RECOGNITION = "/vision/face_recognition/active"
 
 # HRIC commands node
 CHECK_PERSON_TOPIC = "/vision/hric/detect_person"

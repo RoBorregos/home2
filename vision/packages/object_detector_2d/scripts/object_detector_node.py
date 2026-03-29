@@ -2,7 +2,6 @@
 import rclpy
 import rclpy.duration
 import rclpy.node
-import rclpy.time
 import tf2_ros
 from cv_bridge import CvBridge, CvBridgeError
 from geometry_msgs.msg import Point, PoseArray, Pose
@@ -10,6 +9,7 @@ from std_msgs.msg import Bool
 from sensor_msgs.msg import Image, CameraInfo
 from visualization_msgs.msg import Marker, MarkerArray
 from frida_interfaces.msg import ObjectDetectionArray
+from frida_interfaces.srv import MoondreamDetections
 from dataclasses import dataclass
 import pathlib
 import threading
@@ -31,6 +31,8 @@ from frida_constants.vision_constants import (
     DEBUG_IMAGE_TOPIC,
     CAMERA_FRAME,
     CUTLERY_DETECTIONS_TOPIC,
+    ACTIVE_OBJECT_DETECTION,
+    MOONDREAM_DETECTIONS_TOPIC,
 )
 
 MODELS_PATH = str(pathlib.Path(__file__).parent) + "/models/"
@@ -100,9 +102,14 @@ class object_detector_node(rclpy.node.Node):
         self.set_parameters()
         self.active_flag = not self.node_params.USE_ACTIVE_FLAG
 
+        # Set table bbox mask during initialization
+        table_bbox = self.get_moondream_detections("table")
+
         if self.node_params.USE_YOLO26 or self.node_params.USE_YOLO8:
             self.object_detector_2d = YoloV8ObjectDetector(
-                self.node_params.YOLO_MODEL_PATH, self.object_detector_parameters
+                self.node_params.YOLO_MODEL_PATH,
+                self.object_detector_parameters,
+                table_bbox,
             )
         else:
             self.object_detector_2d = YoloV5ObjectDetector(
@@ -117,7 +124,7 @@ class object_detector_node(rclpy.node.Node):
 
         # Global vision pause/resume — pauses inference when manipulation needs GPU
         self.create_subscription(
-            Bool, "/vision/object_detector/active", self._vision_active_cb, 10
+            Bool, ACTIVE_OBJECT_DETECTION, self._vision_active_cb, 10
         )
 
         # Subscribe to cutlery detections (published as ObjectDetectionArray on DETECTIONS_TOPIC)
@@ -128,8 +135,48 @@ class object_detector_node(rclpy.node.Node):
             10,
         )
 
+        self.moondream_detections_client = self.create_client(
+            MoondreamDetections,
+            MOONDREAM_DETECTIONS_TOPIC,
+            self.get_moondream_detections,
+        )
+
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer, self)
+
+    def get_moondream_detections(self, subject) -> tuple[float, float, float, float]:
+        """Get object points from the MoonDream service."""
+        req = MoondreamDetections.Request()
+        req.subject = subject
+
+        future = self.moondream_detections_client.call_async(req)
+
+        if future is False or not future.done():
+            self.get_logger().error("MoonDream service call timed out or failed")
+            return []
+
+        result = future.result()
+
+        if result is None or not result.success:
+            self.get_logger().error("MoonDream table point detection failed")
+            return []
+
+        # Get largest bbox from detections
+        if result.detections:
+            table_bbox = sorted(
+                result.detections,
+                key=lambda x: (x.x_max - x.x_min) * (x.y_max - x.y_min),
+                reverse=True,
+            )[0]
+            print(f"Received table bbox from MoonDream: {table_bbox}")
+
+        return (
+            tuple(
+                [table_bbox.x_min, table_bbox.y_min, table_bbox.x_max, table_bbox.y_max]
+            )
+            if result.detections
+            else (0.0, 0.0, 1.0, 1.0)
+        )
 
     def cutlery_detections_callback(self, msg):
         self.latest_cutlery_detections = msg.detections
@@ -208,6 +255,8 @@ class object_detector_node(rclpy.node.Node):
         self.get_logger().info(
             "Listening to image on topic: " + self.node_params.RGB_IMAGE_TOPIC
         )
+
+        # ...existing code...
 
     def handlePublishers(self):
         self.detections_publisher = self.create_publisher(

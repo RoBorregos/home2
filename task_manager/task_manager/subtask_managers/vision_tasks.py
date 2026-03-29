@@ -34,6 +34,8 @@ from frida_constants.vision_constants import (
     SET_TARGET_TOPIC,
     SHELF_DETECTION_TOPIC,
     DETECT_HAND_SERVICE,
+    ACTIVE_OBJECT_DETECTION,
+    ACTIVE_FACE_RECOGNITION,
 )
 from frida_interfaces.action import DetectPerson
 from frida_interfaces.msg import ObjectDetection, PersonList
@@ -83,12 +85,8 @@ class VisionTasks:
         self.follow_face = {"x": None, "y": None}
 
         # Per-node publishers to pause/resume heavy vision inference
-        self._face_rec_pub = self.node.create_publisher(
-            BoolMsg, "/vision/face_recognition/active", 10
-        )
-        self._obj_det_pub = self.node.create_publisher(
-            BoolMsg, "/vision/object_detector/active", 10
-        )
+        self._face_rec_pub = self.node.create_publisher(BoolMsg, ACTIVE_FACE_RECOGNITION, 10)
+        self._obj_det_pub = self.node.create_publisher(BoolMsg, ACTIVE_OBJECT_DETECTION, 10)
         self._face_rec_active = True
         self._obj_det_active = True
         self.flag_active_face = False

@@ -92,6 +92,8 @@ set(msg_files
   "vision/msg/ShelfArray.msg"
   "vision/msg/ShelfDetection.msg"
   "vision/msg/Detection.msg"
+  "vision/msg/MoondreamDetection.msg"
+  "vision/msg/MoondreamDetectionsArray.msg"
   "navigation/msg/NodeStatus.msg"
   "navigation/msg/MonitorReport.msg"
   )

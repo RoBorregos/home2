@@ -7,10 +7,11 @@ Node for Moondream functions
 import grpc
 import rclpy
 import pathlib
-from ultralytics import YOLO
 import cv2
 import sys
 import os
+
+from vision_general.utils.trt_utils import load_yolo_trt
 
 # from moondream_run.moondream_lib import MoonDreamModel, Position
 from rclpy.node import Node
@@ -18,8 +19,14 @@ from cv_bridge import CvBridge
 from sensor_msgs.msg import Image
 
 from frida_interfaces.srv import BeverageLocation
-from frida_interfaces.srv import PersonPosture, Query, CropQuery, ObjectPoints
-from frida_interfaces.msg import Point2D
+from frida_interfaces.srv import (
+    PersonPosture,
+    Query,
+    CropQuery,
+    ObjectPoints,
+    MoondreamDetections,
+)
+from frida_interfaces.msg import Point2D, MoondreamDetection
 
 from frida_constants.vision_constants import (
     CAMERA_TOPIC,
@@ -28,6 +35,7 @@ from frida_constants.vision_constants import (
     QUERY_TOPIC,
     CROP_QUERY_TOPIC,
     OBJECT_POINTS_TOPIC,
+    MOONDREAM_DETECTIONS_TOPIC,
 )
 from enum import Enum
 
@@ -40,7 +48,7 @@ sys.path.append(os.path.join(PATH, "moondream_server"))
 import moondream_proto_pb2  # noqa
 import moondream_proto_pb2_grpc  # noqa
 
-YOLO_LOCATION = str(pathlib.Path(__file__).parent) + "/yolov8n.pt"
+YOLO_LOCATION = str(pathlib.Path(__file__).parent) + "/yolo26n.pt"
 NOT_FOUND = "not found"
 
 # MOONDREAM_LOCATION = MOONDREAM_LOCATION = str(pathlib.Path(__file__).parent) + "/moondream-2b-int8.mf.gz"
@@ -64,26 +72,30 @@ class MoondreamNode(Node):
         self.image_subscriber = self.create_subscription(
             Image, CAMERA_TOPIC, self.image_callback, 10
         )
-
         self.beverage_location_service = self.create_service(
             BeverageLocation, BEVERAGE_TOPIC, self.beverage_location_callback
         )
         self.person_posture_service = self.create_service(
             PersonPosture, PERSON_POSTURE_TOPIC, self.person_posture_callback
         )
-
         self.query_service = self.create_service(
             Query, QUERY_TOPIC, self.query_callback
         )
-
         self.crop_query_service = self.create_service(
             CropQuery, CROP_QUERY_TOPIC, self.crop_query_callback
         )
         self.object_points_service = self.create_service(
             ObjectPoints, OBJECT_POINTS_TOPIC, self.object_points_callback
         )
+        self.object_detections_service = self.create_service(
+            MoondreamDetections,
+            MOONDREAM_DETECTIONS_TOPIC,
+            self.object_detections_callback,
+        )
 
-        self.yolo_model = YOLO(YOLO_LOCATION)
+        # Use TensorRT-accelerated YOLO model
+        self.yolo_model = load_yolo_trt(YOLO_LOCATION)
+        self.get_logger().info("YOLO model loaded with TensorRT (moondream_node)")
         # self.moondream_model = MoonDreamModel()
 
         # gRPC client setup
@@ -239,6 +251,55 @@ class MoondreamNode(Node):
 
         return response
 
+    def object_detections_callback(self, request, response):
+        """Callback to get the bboxes of a subject in the current image."""
+        self.get_logger().info("Executing service Object Detections")
+
+        if self.image is None:
+            response.detections = []
+            response.success = False
+            self.get_logger().warn("No image received yet.")
+            return response
+
+        _, image_bytes = cv2.imencode(".jpg", self.image)
+        image_bytes = image_bytes.tobytes()
+
+        try:
+            encoded = self.stub.EncodeImage(
+                moondream_proto_pb2.ImageRequest(image_data=image_bytes)
+            )
+            grpc_response = self.stub.FindObjectDetections(
+                moondream_proto_pb2.FindObjectDetectionsRequest(
+                    encoded_image=encoded.encoded_image, subject=request.subject
+                )
+            )
+
+            if not grpc_response.found or len(grpc_response.detections) == 0:
+                response.detections = []
+                response.success = False
+                self.get_logger().warn(f"No detections found for {request.subject}")
+                return response
+
+            detections = []
+            for det in grpc_response.detections:
+                md_det = MoondreamDetection()
+                md_det.xmin = det.xmin
+                md_det.ymin = det.ymin
+                md_det.xmax = det.xmax
+                md_det.ymax = det.ymax
+                detections.append(md_det)
+
+            response.detections = detections
+            response.success = True
+            self.success(f"Found {len(detections)} detections for {request.subject}")
+
+        except Exception as e:
+            self.get_logger().error(f"Error getting object detections: {e}")
+            response.detections = []
+            response.success = False
+
+        return response
+
     def object_points_callback(self, request, response):
         """Callback to get the points of a subject in the current image."""
         self.get_logger().info("Executing service Object Points")
@@ -333,7 +394,7 @@ class MoondreamNode(Node):
         frame = self.image
         self.output_image = frame.copy()
 
-        results = self.yolo_model(frame, verbose=False, classes=0)
+        results = self.yolo_model(frame, verbose=False, classes=[0])
         largest_area = 0
         largest_box = None
 

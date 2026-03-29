@@ -34,6 +34,7 @@ from frida_constants.vision_constants import (
     PERSON_LIST_TOPIC,
     PERSON_NAME_TOPIC,
     SAVE_NAME_TOPIC,
+    ACTIVE_FACE_RECOGNITION,
 )
 from frida_interfaces.msg import Person, PersonList
 from frida_interfaces.srv import SaveName
@@ -114,7 +115,7 @@ class FaceRecognition(Node):
         self.is_processing = False
         self.create_subscription(
             Bool,
-            "/vision/face_recognition/active",
+            ACTIVE_FACE_RECOGNITION,
             self._active_callback,
             10,
             callback_group=self.callback_group,

@@ -14,8 +14,7 @@ from vision_general.utils.trt_utils import load_yolo_trt
 from frida_constants.vision_constants import CAMERA_TOPIC, CUTLERY_DETECTIONS_TOPIC
 from ament_index_python.packages import get_package_share_directory
 
-
-CONF_THRESHOLD = 0.2
+CONF_THRESHOLD = 0.3
 
 # Map Spanish class names to English
 SPANISH_TO_ENGLISH = {

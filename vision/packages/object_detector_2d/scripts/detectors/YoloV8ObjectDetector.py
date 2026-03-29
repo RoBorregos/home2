@@ -36,9 +36,20 @@ def _load_yolo_trt(model_path: str) -> YOLO:
 
 
 class YoloV8ObjectDetector(ObjectDectector):
-    def __init__(self, model_path: str, object_detector_params: ObjectDectectorParams):
+    def __init__(
+        self,
+        model_path: str,
+        object_detector_params: ObjectDectectorParams,
+        mask_bbox=None,
+    ):
+        """
+        mask_bbox: (x_min, y_min, x_max, y_max) in normalized image coordinates (0-1), or None for no mask.
+        """
         super().__init__(model_path, object_detector_params)
         self.loadModel()
+        self.mask_bbox = (
+            mask_bbox  # (x_min, y_min, x_max, y_max) in normalized coordinates
+        )
 
     def loadModel(self):
         self.model = _load_yolo_trt(self.model_path_)
@@ -69,6 +80,16 @@ class YoloV8ObjectDetector(ObjectDectector):
                 detection_.bbox_.y2 = float(y2) / height
                 detection_.bbox_.w = width
                 detection_.bbox_.h = height
+
+                # Compute centroid in normalized coordinates
+                cx = (detection_.bbox_.x1 + detection_.bbox_.x2) / 2.0
+                cy = (detection_.bbox_.y1 + detection_.bbox_.y2) / 2.0
+
+                # If mask_bbox is set, filter detections outside the mask
+                if self.mask_bbox is not None:
+                    x_min, y_min, x_max, y_max = self.mask_bbox
+                    if not (x_min <= cx <= x_max and y_min <= cy <= y_max):
+                        continue  # skip detection outside mask
 
                 self.detections_.append(detection_)
 
