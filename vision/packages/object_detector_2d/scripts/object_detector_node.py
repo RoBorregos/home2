@@ -4,6 +4,7 @@ import rclpy.duration
 import rclpy.node
 import rclpy.time
 import tf2_ros
+import os
 from cv_bridge import CvBridge, CvBridgeError
 from geometry_msgs.msg import Point, PoseArray, Pose
 from std_msgs.msg import Bool
@@ -14,8 +15,10 @@ from dataclasses import dataclass
 import pathlib
 import threading
 import copy
-from typing import List
 import cv2 as cv
+from typing import List
+from vision_general.utils.trt_utils import load_yolo_trt
+from ament_index_python.packages import get_package_share_directory
 from detectors.YoloV5ObjectDetector import YoloV5ObjectDetector
 from detectors.YoloV8ObjectDetector import YoloV8ObjectDetector
 from detectors.ObjectDetector import Detection, ObjectDectectorParams
@@ -56,7 +59,7 @@ ARGS = {
     "FLIP_IMAGE": False,
     "USE_ZED_TRANSFORM": True,
     "MIN_SCORE_THRESH": 0.3,
-    "MAX_DEPTH_THRESH": 2.5,  # meters, adjust as needed
+    "MAX_DEPTH_THRESH": 2.5,  
 }
 
 
@@ -96,10 +99,6 @@ class object_detector_node(rclpy.node.Node):
         self.detections_frame = []
 
         # Load cutlery detection model (YOLO TRT)
-        from vision_general.utils.trt_utils import load_yolo_trt
-        from ament_index_python.packages import get_package_share_directory
-        import os
-
         cutlery_model_path = os.path.join(
             get_package_share_directory("vision_general"),
             "Utils",
@@ -130,8 +129,6 @@ class object_detector_node(rclpy.node.Node):
         self.create_subscription(
             Bool, "/vision/object_detector/active", self._vision_active_cb, 10
         )
-
-        # No need to subscribe to cutlery detections; handled internally
 
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer, self)
