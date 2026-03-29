@@ -30,7 +30,6 @@ from frida_constants.vision_constants import (
     DETECTIONS_ACTIVE_TOPIC,
     DEBUG_IMAGE_TOPIC,
     CAMERA_FRAME,
-    CUTLERY_DETECTIONS_TOPIC,
 )
 
 MODELS_PATH = str(pathlib.Path(__file__).parent) + "/models/"
@@ -94,8 +93,18 @@ class object_detector_node(rclpy.node.Node):
         self.camera_info = CameraInfo()
         self.detections_frame = []
 
-        # Store latest cutlery detections
-        self.latest_cutlery_detections = []
+        # Load cutlery detection model (YOLO TRT)
+        from vision_general.utils.trt_utils import load_yolo_trt
+        from ament_index_python.packages import get_package_share_directory
+        import os
+
+        cutlery_model_path = os.path.join(
+            get_package_share_directory("vision_general"),
+            "Utils",
+            "models",
+            "cutlery.pt",
+        )
+        self.cutlery_model = load_yolo_trt(cutlery_model_path)
 
         self.set_parameters()
         self.active_flag = not self.node_params.USE_ACTIVE_FLAG
@@ -120,19 +129,12 @@ class object_detector_node(rclpy.node.Node):
             Bool, "/vision/object_detector/active", self._vision_active_cb, 10
         )
 
-        # Subscribe to cutlery detections (published as ObjectDetectionArray on DETECTIONS_TOPIC)
-        self.create_subscription(
-            ObjectDetectionArray,
-            CUTLERY_DETECTIONS_TOPIC,
-            self.cutlery_detections_callback,
-            10,
-        )
+        # No need to subscribe to cutlery detections; handled internally
 
         self.tfBuffer = tf2_ros.Buffer()
         self.listener = tf2_ros.TransformListener(self.tfBuffer, self)
 
-    def cutlery_detections_callback(self, msg):
-        self.latest_cutlery_detections = msg.detections
+    # No longer needed: cutlery_detections_callback
 
     def set_parameters(self):
         self.object_detector_parameters = ObjectDectectorParams()
@@ -408,27 +410,62 @@ class object_detector_node(rclpy.node.Node):
 
     def run(self, frame):
         copy_frame = copy.deepcopy(frame)
+        # Run main object detector
         detected_objects, visual_detections, visual_image = (
             self.object_detector_2d.inference(
                 copy_frame, self.depth_image, self.tfBuffer
             )
         )
 
+        # Run cutlery detector (YOLO TRT)
+        cutlery_results = self.cutlery_model(
+            copy_frame, verbose=False, classes=[0, 1, 3]
+        )
+        cutlery_detections = []
+        SPANISH_TO_ENGLISH = {
+            "cuchara": "spoon",
+            "tenedor": "fork",
+            "cuchillo": "knife",
+        }
+        CONF_THRESHOLD = 0.3
+        for res in cutlery_results:
+            for box in res.boxes:
+                conf = box.conf.item()
+                if conf < CONF_THRESHOLD:
+                    continue
+                x1, y1, x2, y2 = [round(x) for x in box.xyxy[0].tolist()]
+                cls_id = int(box.cls.item())
+                label_text = (
+                    self.cutlery_model.names[cls_id]
+                    if hasattr(self.cutlery_model, "names")
+                    else str(cls_id)
+                )
+                label_text = SPANISH_TO_ENGLISH.get(label_text.lower(), label_text)
+                det = Detection(label_text, cls_id, conf)
+                det.bbox_.x1 = x1
+                det.bbox_.y1 = y1
+                det.bbox_.x2 = x2
+                det.bbox_.y2 = y2
+                cutlery_detections.append(det)
+
+        # Merge detections
+        all_detections = detected_objects + cutlery_detections
+
         self.detections_frame = self.visualize_detections(
             visual_image,
-            visual_detections,
+            visual_detections + cutlery_detections,
             use_normalized_coordinates=True,
             max_boxes_to_draw=200,
             agnostic_mode=False,
         )
 
         if self.node_params.VERBOSE:
-            for index in range(len(detected_objects)):
+            for index in range(len(all_detections)):
                 self.get_logger().info(
-                    f"Detection #{str(index)}:   {detected_objects[index].__str__()}"
+                    f"Detection #{str(index)}:   {all_detections[index].__str__()}"
                 )
 
-        self.visualize_3d_detections(detected_objects)
+        self.visualize_3d_detections(all_detections)
 
         self.detections_pose_publisher.publish(
             PoseArray(
@@ -440,19 +477,16 @@ class object_detector_node(rclpy.node.Node):
                             z=detection.point_stamped_.point.z,
                         )
                     )
-                    for detection in detected_objects
+                    for detection in all_detections
                 ]
             )
         )
 
         # update time
-        for detection in self.object_detector_2d.getFridaDetections(detected_objects):
+        for detection in self.object_detector_2d.getFridaDetections(all_detections):
             detection.point3d.header.stamp = self.curr_clock
-        # Merge with cutlery detections if available
-        own_detections = self.object_detector_2d.getFridaDetections(detected_objects)
-        merged_detections = own_detections.copy()
-        if self.latest_cutlery_detections:
-            merged_detections.extend(self.latest_cutlery_detections)
+
+        merged_detections = self.object_detector_2d.getFridaDetections(all_detections)
         self.detections_publisher.publish(
             ObjectDetectionArray(detections=merged_detections)
         )
