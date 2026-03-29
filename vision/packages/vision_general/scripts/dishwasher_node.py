@@ -14,15 +14,18 @@ from frida_constants.vision_constants import (
     CAMERA_TOPIC,
     DISHWASHER_LAYOUT_DETECTION_TOPIC,
     DISHWASHER_RACK_DETECTION_TOPIC,
+    DISHWASHER_TABLET_DETECTION_TOPIC,
+    OBJECT_POINTS_TOPIC,
+    DISHWASHER_DEBUG_IMAGE_TOPIC,
 )
 from frida_interfaces.msg import ObjectDetection, ObjectDetectionArray
-from frida_interfaces.srv import DishwasherDetection
-from geometry_msgs.msg import PointStamped
+from frida_interfaces.srv import DishwasherDetection, ObjectPoints
 from vision_general.utils.calculations import (
-    get_depth,
-    deproject_pixel_to_point,
+    point2d_to_ros_point_stamped,
     get2DCentroid,
 )
+from vision_general.utils.ros_utils import wait_for_future
+import cv2
 
 
 class DishwasherNode(Node):
@@ -74,7 +77,64 @@ class DishwasherNode(Node):
             callback_group=self.callback_group,
         )
 
+        self.tablet_detection_service = self.create_service(
+            DishwasherDetection,
+            DISHWASHER_TABLET_DETECTION_TOPIC,
+            self.dishwasher_tablet_callback,
+            callback_group=self.callback_group,
+        )
+
+        self.moondream_client = self.create_client(
+            ObjectPoints, OBJECT_POINTS_TOPIC, callback_group=self.callback_group
+        )
+
+        self.debug_publisher = self.create_publisher(
+            Image, DISHWASHER_DEBUG_IMAGE_TOPIC, 10
+        )
+
         self.image = None
+
+    def publish_debug_image(self, detections):
+        if self.image is None:
+            return
+
+        debug_image = self.image.copy()
+
+        for det in detections:
+            # draw bounding box if x1 != x2 and y1 != y2
+            if int(det.xmin) != int(det.xmax) and int(det.ymin) != int(det.ymax):
+                cv2.rectangle(
+                    debug_image,
+                    (int(det.xmin), int(det.ymin)),
+                    (int(det.xmax), int(det.ymax)),
+                    (0, 255, 0),
+                    2,
+                )
+                cv2.putText(
+                    debug_image,
+                    f"{det.label_text} {det.score:.2f}",
+                    (int(det.xmin), int(det.ymin) - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.5,
+                    (0, 255, 0),
+                    2,
+                )
+            else:
+                # it's a point (like the tablet)
+                cv2.circle(
+                    debug_image, (int(det.xmin), int(det.ymin)), 5, (0, 0, 255), -1
+                )
+                cv2.putText(
+                    debug_image,
+                    f"{det.label_text}",
+                    (int(det.xmin) - 20, int(det.ymin) - 20),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.5,
+                    (0, 0, 255),
+                    2,
+                )
+
+        self.debug_publisher.publish(self.bridge.cv2_to_imgmsg(debug_image, "bgr8"))
 
     def image_callback(self, msg):
         self.image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
@@ -119,6 +179,7 @@ class DishwasherNode(Node):
                 )
                 response.detection_array.detections.append(object_detection)
 
+        self.publish_debug_image(response.detection_array.detections)
         response.success = True
         return response
 
@@ -146,20 +207,17 @@ class DishwasherNode(Node):
                 confidence = float(box.conf[0].item())
 
                 point_2D = get2DCentroid(
-                    [x1, y1, x2, y2],
+                    [y1, x1, y2, x2],
                     self.image,
                 )
 
-                depth = get_depth(self.depth_image, point_2D)
-                point_3D_ = deproject_pixel_to_point(self.image_info, point_2D, depth)
-
-                point_3D = PointStamped()
-                point_3D.header.frame_id = CAMERA_FRAME
-                point_3D.header.stamp = self.get_clock().now().to_msg()
-
-                point_3D.point.x = float(point_3D_[0])
-                point_3D.point.y = float(point_3D_[1])
-                point_3D.point.z = float(point_3D_[2])
+                point_3D = point2d_to_ros_point_stamped(
+                    self.image_info,
+                    self.depth_image,
+                    point_2D,
+                    CAMERA_FRAME,
+                    self.get_clock().now().to_msg(),
+                )
 
                 object_detection = ObjectDetection(
                     label=class_id,
@@ -174,6 +232,74 @@ class DishwasherNode(Node):
 
                 response.detection_array.detections.append(object_detection)
 
+        self.publish_debug_image(response.detection_array.detections)
+        response.success = True
+        return response
+
+    def dishwasher_tablet_callback(self, request, response):
+        if self.image is None or self.depth_image is None or self.image_info is None:
+            response.detection_array = ObjectDetectionArray()
+            response.detection_array.detections = []
+            response.success = False
+            self.get_logger().error("No image, depth, or camera info received")
+            return response
+
+        req = ObjectPoints.Request()
+        req.subject = "A small, clear plastic pouch containing a blue and green laundry detergent packet rests on a plain off-white surface. The packet features a white swirl design on a blue and green background."
+
+        future = self.moondream_client.call_async(req)
+        future = wait_for_future(future, 15)
+
+        if future is False or not future.done():
+            self.get_logger().error(
+                "MoonDream service call timed out or failed for dishwasher tablet"
+            )
+            response.detection_array = ObjectDetectionArray()
+            response.detection_array.detections = []
+            response.success = False
+            return response
+
+        result = future.result()
+
+        response.detection_array = ObjectDetectionArray()
+        response.detection_array.detections = []
+
+        if result is None or not result.success or len(result.points) == 0:
+            self.get_logger().error(
+                "MoonDream tablet point detection failed or no points found"
+            )
+            response.success = False
+            return response
+
+        for i, point in enumerate(result.points):
+            # Moondream returns normalized coords, need to scale to image dims
+            u = int(point.x * self.image_info.width)
+            v = int(point.y * self.image_info.height)
+
+            point_2D = (u, v)
+
+            point_3D = point2d_to_ros_point_stamped(
+                self.image_info,
+                self.depth_image,
+                point_2D,
+                CAMERA_FRAME,
+                self.get_clock().now().to_msg(),
+            )
+
+            object_detection = ObjectDetection(
+                label=0,  # generic id
+                label_text="tablet",
+                score=1.0,
+                xmin=float(u),
+                ymin=float(v),
+                xmax=float(u),
+                ymax=float(v),
+                point3d=point_3D,
+            )
+
+            response.detection_array.detections.append(object_detection)
+
+        self.publish_debug_image(response.detection_array.detections)
         response.success = True
         return response
 
