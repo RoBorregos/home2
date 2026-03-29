@@ -8,6 +8,7 @@
         <parent link="base_link"/>
         <child link="caster_wheel_left"/>
         <origin xyz="0.11 0.1 -0.09"/>
+        <axis xyz="0 0 1"/>
     </joint>
 
 
@@ -35,6 +36,7 @@
         <parent link="base_link"/>
         <child link="caster_wheel_right"/>
         <origin xyz="0.11 -0.1 -0.09"/>
+        <axis xyz="0 0 1"/>
     </joint>
 
 
