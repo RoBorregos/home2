@@ -17,13 +17,6 @@ def generate_launch_description():
         [
             Node(
                 package="vision_general",
-                executable="cutlery_detection_node.py",
-                name="cutlery_detection",
-                output="screen",
-                emulate_tty=True,
-            ),
-            Node(
-                package="vision_general",
                 executable="yolo_node.py",
                 name="yolo_node",
                 output="screen",

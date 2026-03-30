@@ -4,5 +4,5 @@ object_detection_handler:
     VERBOSE : False
     DETECTIONS_TOPIC : /vision/detections
     TRAGET_FRAME : BASE_LINK
-    IOU_THRESHOLD : 0.95
+    IOU_THRESHOLD : 0.7
     RECORDED_SECONDS : 0.5
