@@ -18,6 +18,8 @@ services:
       - $HOME/.Xauthority:/home/ros/.Xauthority:rw
       - /run/jtop.sock:/run/jtop.sock
       - ../../vision/packages/moondream_run/:/workspace
+      - /home/orin/moon:/home/ros/.cache/huggingface
+
     working_dir: /workspace/moondream_server
     network_mode: host
     privileged: true
