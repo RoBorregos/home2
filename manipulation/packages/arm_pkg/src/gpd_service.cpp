@@ -448,11 +448,13 @@ private:
       }
 
       // normalize scores
-      double max_score = *std::max_element(res->grasp_scores.begin(), res->grasp_scores.end());
-      if (max_score > 0) {
-        for (int i = 0; i < res->grasp_scores.size(); ++i) {
-          res->grasp_scores[i] /= max_score;
-          RCLCPP_INFO(this->get_logger(), "Grasp %d distance: %f score: %f", i, distance_to_centroid(i), res->grasp_scores[i]);
+      if (!res->grasp_scores.empty()) {
+        double max_score = *std::max_element(res->grasp_scores.begin(), res->grasp_scores.end());
+        if (max_score > 0) {
+          for (int i = 0; i < res->grasp_scores.size(); ++i) {
+            res->grasp_scores[i] /= max_score;
+            RCLCPP_INFO(this->get_logger(), "Grasp %d distance: %f score: %f", i, distance_to_centroid(i), res->grasp_scores[i]);
+          }
         }
       }
 
