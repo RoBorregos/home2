@@ -17,9 +17,15 @@ install(DIRECTORY launch Utils config
   DESTINATION share/${PROJECT_NAME})
 
 # Install model weights alongside the Python package
-install(DIRECTORY ${PROJECT_NAME}/utils/models/
-  DESTINATION ${PYTHON_INSTALL_DIR}/${PROJECT_NAME}/utils/models/
-)
+if(NOT DEFINED PYTHON_INSTALL_DIR OR "${PYTHON_INSTALL_DIR}" STREQUAL "")
+  find_package(Python3 REQUIRED COMPONENTS Interpreter)
+  set(PYTHON_INSTALL_DIR "lib/python${Python3_VERSION_MAJOR}.${Python3_VERSION_MINOR}/site-packages")
+endif()
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${PROJECT_NAME}/utils/models")
+  install(DIRECTORY ${PROJECT_NAME}/utils/models/
+    DESTINATION ${PYTHON_INSTALL_DIR}/${PROJECT_NAME}/utils/models/
+  )
+endif()
 
 
 ######################### Python  #########################
