@@ -113,8 +113,8 @@ Inheritance diagram for object_detector_node.object_detector_node:</div>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:ab3646ec3f0f655765e49e1f8caf58ec0"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classobject__detector__node_1_1object__detector__node.html#ab3646ec3f0f655765e49e1f8caf58ec0">__init__</a> (self, str node_name=&quot;object_detector_2D_node&quot;)</td></tr>
 <tr class="separator:ab3646ec3f0f655765e49e1f8caf58ec0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a148ca46ed316aded4708b02ef28e9337"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classobject__detector__node_1_1object__detector__node.html#a148ca46ed316aded4708b02ef28e9337">cutlery_detections_callback</a> (self, msg)</td></tr>
-<tr class="separator:a148ca46ed316aded4708b02ef28e9337"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac7cadc92776a24adfc18a7ffb79e53b3"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classobject__detector__node_1_1object__detector__node.html#ac7cadc92776a24adfc18a7ffb79e53b3">compute_iou</a> (self, det1, det2)</td></tr>
+<tr class="separator:ac7cadc92776a24adfc18a7ffb79e53b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a94379d5beaf6d663287330a991d956dd"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classobject__detector__node_1_1object__detector__node.html#a94379d5beaf6d663287330a991d956dd">set_parameters</a> (self)</td></tr>
 <tr class="separator:a94379d5beaf6d663287330a991d956dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aef47122bc5e39b92fc02b210e90b0e27"><td class="memItemLeft" align="right" valign="top">def&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classobject__detector__node_1_1object__detector__node.html#aef47122bc5e39b92fc02b210e90b0e27">handlePublishers</a> (self)</td></tr>
@@ -148,8 +148,8 @@ Public Attributes</h2></td></tr>
 <tr class="separator:a5b0326f8a41d88951d404bb733a4af0a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa9732a7d69d516ed2d17520ca2a9c8bd"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classobject__detector__node_1_1object__detector__node.html#aa9732a7d69d516ed2d17520ca2a9c8bd">detections_frame</a></td></tr>
 <tr class="separator:aa9732a7d69d516ed2d17520ca2a9c8bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a77150af325626bee1f79600ed3fd6750"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classobject__detector__node_1_1object__detector__node.html#a77150af325626bee1f79600ed3fd6750">latest_cutlery_detections</a></td></tr>
-<tr class="separator:a77150af325626bee1f79600ed3fd6750"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9e1007fe1adcaf8b4c1f5c8a717f2df7"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classobject__detector__node_1_1object__detector__node.html#a9e1007fe1adcaf8b4c1f5c8a717f2df7">cutlery_model</a></td></tr>
+<tr class="separator:a9e1007fe1adcaf8b4c1f5c8a717f2df7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae0d00dfb267a60a9223804fcdaf611e0"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classobject__detector__node_1_1object__detector__node.html#ae0d00dfb267a60a9223804fcdaf611e0">active_flag</a></td></tr>
 <tr class="separator:ae0d00dfb267a60a9223804fcdaf611e0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae43467a52161e147f592914a483ddcc2"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classobject__detector__node_1_1object__detector__node.html#ae43467a52161e147f592914a483ddcc2">object_detector_2d</a></td></tr>
@@ -321,14 +321,14 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a148ca46ed316aded4708b02ef28e9337" name="a148ca46ed316aded4708b02ef28e9337"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a148ca46ed316aded4708b02ef28e9337">&#9670;&#160;</a></span>cutlery_detections_callback()</h2>
+<a id="ac7cadc92776a24adfc18a7ffb79e53b3" name="ac7cadc92776a24adfc18a7ffb79e53b3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac7cadc92776a24adfc18a7ffb79e53b3">&#9670;&#160;</a></span>compute_iou()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">def object_detector_node.object_detector_node.cutlery_detections_callback </td>
+          <td class="memname">def object_detector_node.object_detector_node.compute_iou </td>
           <td>(</td>
           <td class="paramtype">&#160;</td>
           <td class="paramname"><em>self</em>, </td>
@@ -337,7 +337,13 @@ Protected Attributes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">&#160;</td>
-          <td class="paramname"><em>msg</em>&#160;</td>
+          <td class="paramname"><em>det1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">&#160;</td>
+          <td class="paramname"><em>det2</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -686,6 +692,20 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="a9e1007fe1adcaf8b4c1f5c8a717f2df7" name="a9e1007fe1adcaf8b4c1f5c8a717f2df7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9e1007fe1adcaf8b4c1f5c8a717f2df7">&#9670;&#160;</a></span>cutlery_model</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">object_detector_node.object_detector_node.cutlery_model</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+</div>
+</div>
 <a id="a0e54ab06ed56e351f5e28cb9b2e8c8bc" name="a0e54ab06ed56e351f5e28cb9b2e8c8bc"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a0e54ab06ed56e351f5e28cb9b2e8c8bc">&#9670;&#160;</a></span>debug_image_publisher</h2>
 
@@ -792,20 +812,6 @@ Protected Attributes</h2></td></tr>
       <table class="memname">
         <tr>
           <td class="memname">object_detector_node.object_detector_node.detections_publisher</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-</div>
-</div>
-<a id="a77150af325626bee1f79600ed3fd6750" name="a77150af325626bee1f79600ed3fd6750"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a77150af325626bee1f79600ed3fd6750">&#9670;&#160;</a></span>latest_cutlery_detections</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">object_detector_node.object_detector_node.latest_cutlery_detections</td>
         </tr>
       </table>
 </div><div class="memdoc">

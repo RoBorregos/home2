@@ -102,7 +102,6 @@ var namespacefrida__constants =
       [ "CROP_QUERY_TOPIC", "namespacefrida__constants_1_1vision__constants.html#a033a5597e312e4e911732ea94d904b9c", null ],
       [ "CUSTOMER", "namespacefrida__constants_1_1vision__constants.html#ab35182c94c1fbaaca0593e028e875669", null ],
       [ "CUSTOMER_TABLES_TOPIC", "namespacefrida__constants_1_1vision__constants.html#a6fd036ec5673e8f43b506b54659639a1", null ],
-      [ "CUTLERY_DETECTIONS_TOPIC", "namespacefrida__constants_1_1vision__constants.html#aef301c79500fefcf9d9fd4f0f0cf5c01", null ],
       [ "DEBUG_IMAGE_TOPIC", "namespacefrida__constants_1_1vision__constants.html#a4b8e111e56a54c09d20b165b64879b20", null ],
       [ "DEPTH_IMAGE_TOPIC", "namespacefrida__constants_1_1vision__constants.html#afb389b8319a0ea3880ffcdd8fe70c122", null ],
       [ "DETECT_HAND_SERVICE", "namespacefrida__constants_1_1vision__constants.html#ac3cae675675194c971abd743804acef6", null ],

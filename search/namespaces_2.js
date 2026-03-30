@@ -12,6 +12,5 @@ var searchData=
   ['client_9',['client',['../namespaceclient.html',1,'']]],
   ['close_5fby_5fgenerators_10',['close_by_generators',['../namespaceclose__by__generators.html',1,'']]],
   ['closed_5fdoor_5ftest_11',['closed_door_test',['../namespaceclosed__door__test.html',1,'']]],
-  ['customer_5fnode_12',['customer_node',['../namespacecustomer__node.html',1,'']]],
-  ['cutlery_5fdetection_5fnode_13',['cutlery_detection_node',['../namespacecutlery__detection__node.html',1,'']]]
+  ['customer_5fnode_12',['customer_node',['../namespacecustomer__node.html',1,'']]]
 ];

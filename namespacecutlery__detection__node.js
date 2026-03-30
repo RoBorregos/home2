@@ -1,7 +1,0 @@
-var namespacecutlery__detection__node =
-[
-    [ "CutleryDetectionNode", "classcutlery__detection__node_1_1CutleryDetectionNode.html", "classcutlery__detection__node_1_1CutleryDetectionNode" ],
-    [ "main", "namespacecutlery__detection__node.html#aebbda9ac83098ead385f7b78a0ada9d1", null ],
-    [ "CONF_THRESHOLD", "namespacecutlery__detection__node.html#a1fc39be2fc97d7036ace7fd443b05ee7", null ],
-    [ "SPANISH_TO_ENGLISH", "namespacecutlery__detection__node.html#ac0059ea9aaf86133a4d4b30fd22269a4", null ]
-];

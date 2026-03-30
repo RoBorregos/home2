@@ -149,7 +149,6 @@ var hierarchy =
       [ "clean_table_task_manager.CleanTableTM", "classclean__table__task__manager_1_1CleanTableTM.html", null ],
       [ "closed_door_test.VirtualStop", "classclosed__door__test_1_1VirtualStop.html", null ],
       [ "customer_node.CustomerNode", "classcustomer__node_1_1CustomerNode.html", null ],
-      [ "cutlery_detection_node.CutleryDetectionNode", "classcutlery__detection__node_1_1CutleryDetectionNode.html", null ],
       [ "dashgo_driver2.DashgoDriver", "classdashgo__driver2_1_1DashgoDriver.html", null ],
       [ "demo_manager.DemoTM", "classdemo__manager_1_1DemoTM.html", null ],
       [ "dishwasher_node.DishwasherNode", "classdishwasher__node_1_1DishwasherNode.html", null ],

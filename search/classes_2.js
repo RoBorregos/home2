@@ -8,6 +8,5 @@ var searchData=
   ['commandhistory_5',['CommandHistory',['../classtask__manager_1_1subtask__managers_1_1hri__dataclasses_1_1CommandHistory.html',1,'task_manager::subtask_managers::hri_dataclasses']]],
   ['config_6',['Config',['../classtask__manager_1_1utils_1_1config_1_1MockConfig_1_1Config.html',1,'task_manager.utils.config.MockConfig.Config'],['../classtask__manager_1_1utils_1_1config_1_1SubtaskConfig_1_1Config.html',1,'task_manager.utils.config.SubtaskConfig.Config'],['../classtask__manager_1_1utils_1_1config_1_1TopicConfig_1_1Config.html',1,'task_manager.utils.config.TopicConfig.Config']]],
   ['crossentropylabelsmooth_7',['CrossEntropyLabelSmooth',['../classutils_1_1CrossEntropyLabelSmooth.html',1,'utils']]],
-  ['customernode_8',['CustomerNode',['../classcustomer__node_1_1CustomerNode.html',1,'customer_node']]],
-  ['cutlerydetectionnode_9',['CutleryDetectionNode',['../classcutlery__detection__node_1_1CutleryDetectionNode.html',1,'cutlery_detection_node']]]
+  ['customernode_8',['CustomerNode',['../classcustomer__node_1_1CustomerNode.html',1,'customer_node']]]
 ];

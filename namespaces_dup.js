@@ -35,7 +35,6 @@ var namespaces_dup =
     ] ],
     [ "closed_door_test", "namespaceclosed__door__test.html", "namespaceclosed__door__test" ],
     [ "customer_node", "namespacecustomer__node.html", "namespacecustomer__node" ],
-    [ "cutlery_detection_node", "namespacecutlery__detection__node.html", "namespacecutlery__detection__node" ],
     [ "dashgo_driver", "namespacedashgo__driver.html", "namespacedashgo__driver" ],
     [ "dashgo_driver2", "namespacedashgo__driver2.html", "namespacedashgo__driver2" ],
     [ "demo_ds4", "namespacedemo__ds4.html", [
