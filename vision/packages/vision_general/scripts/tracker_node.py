@@ -74,6 +74,7 @@ from vision_general.utils.reid_model import (
 from vision_general.utils.deep_sort.tracker import Tracker as DeepSORTTracker
 from vision_general.utils.deep_sort.detection import Detection as DeepSORTDetection
 from vision_general.utils.deep_sort.nn_matching import NearestNeighborDistanceMetric
+from vision_general.utils.trt_utils import load_yolo_trt
 
 from std_srvs.srv import SetBool, Trigger
 from frida_interfaces.srv import TrackBy, CropQuery
@@ -278,10 +279,19 @@ class SingleTracker(Node):
 
     def _run_deepsort(self, frame, yolo_results):
         """Run DeepSORT on YOLO detections, returns list of confirmed tracks."""
+        frame_h, frame_w = frame.shape[:2]  # ✅ use distinct names
+            
         detections = []
         for out in yolo_results:
             for box in out.boxes:
                 x1, y1, x2, y2 = [round(x) for x in box.xyxy[0].tolist()]
+
+                # Ensure the bounding box is within the frame
+                x1 = max(0, min(x1, frame_w - 1))
+                y1 = max(0, min(y1, frame_h - 1))
+                x2 = max(0, min(x2, frame_w))
+                y2 = max(0, min(y2, frame_h))
+
                 prob = round(box.conf[0].item(), 2)
                 if prob < CONF_THRESHOLD:
                     continue
@@ -306,7 +316,12 @@ class SingleTracker(Node):
             if not track.is_confirmed() or track.time_since_update > 1:
                 continue
             bbox = track.to_tlbr()
-            x1, y1, x2, y2 = int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3])
+            
+            x1 = max(0, int(bbox[0]))
+            y1 = max(0, int(bbox[1]))
+            x2 = min(frame_w, int(bbox[2]))  
+            y2 = min(frame_h, int(bbox[3]))
+
             tracks.append(
                 {
                     "track_id": track.track_id,
